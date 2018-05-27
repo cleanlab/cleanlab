@@ -18,7 +18,7 @@ setup(
     name='confidentlearning',
     version=__version__,
     license='MIT',
-    long_description=long_description,
+#     long_description=long_description,
     description = 'A family of algorithms and theory for multiclass learning with noisy labels.',
     url = 'https://github.com/cgnorthcutt/confidentlearning',
 
