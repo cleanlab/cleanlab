@@ -40,7 +40,7 @@ def show_decision_boundary(clf, title):
     # Plot the distribution for viewing.
     for k in range(K):
         X_k = X_train[y_train == k] # data for class k
-        plt.scatter(X_k[:,0], X_k[:, 1], c=[color_map[noisy_k] for noisy_k in s[y_train==k]], s=150, marker=r"${a}$".format(a=str(k)), linewidth=1)
+        plt.scatter(X_k[:,0], X_k[:, 1], color=[color_map[noisy_k] for noisy_k in s[y_train==k]], s=150, marker=r"${a}$".format(a=str(k)), linewidth=1)
     plt.scatter(X_train[:,0][s != y_train], X_train[:,1][s != y_train], s=400, facecolors='none', edgecolors='green', linewidth=0.8)
     plt.title(title, fontsize=25)
     plt.show()
@@ -94,7 +94,7 @@ idx_errors = get_noise_indices(s, psx)
 # #### To show off the power of **confidentlearning**, we've chosen an example of multiclass learning with noisy labels in which over 50% of the training labels are wrong.
 # Toggle the ```avg_trace``` parameter in ```generate_noise_matrix_from_trace``` above to try out different amounts of noise.
 
-# In[28]:
+# In[4]:
 
 
 true_joint_distribution_of_label_errors = (noise_matrix * py)
@@ -110,7 +110,7 @@ try:
     plt.axis('off')
     for k in range(K):
         X_k = X_train[y_train==k] # data for class k
-        plt.scatter(X_k[:,0], X_k[:, 1], c=colors[k], s=150, marker=r"${a}$".format(a=str(k)), linewidth=1)
+        plt.scatter(X_k[:,0], X_k[:, 1], color=colors[k], s=150, marker=r"${a}$".format(a=str(k)), linewidth=1)
     plt.title("Original distribution, without any label errors.", fontsize=30)
 
     print("\n\n\n\n")
@@ -120,7 +120,7 @@ try:
     plt.axis('off')
     for k in range(K):
       X_k = X_train[y_train == k] # data for class k
-      plt.scatter(X_k[:,0], X_k[:, 1], c=[color_map[noisy_k] for noisy_k in s[y_train==k]], s=150, marker=r"${a}$".format(a=str(k)), linewidth=1)
+      plt.scatter(X_k[:,0], X_k[:, 1], color=[color_map[noisy_k] for noisy_k in s[y_train==k]], s=150, marker=r"${a}$".format(a=str(k)), linewidth=1)
     plt.scatter(X_train[:,0][s != y_train], X_train[:,1][s != y_train], s=400, facecolors='none', edgecolors='black', linewidth=2, alpha = 0.5)
     plt.title('Observed distribution, with label errors circled.\n'+percent_error_str, fontsize=30)
     plt.show()
@@ -132,7 +132,7 @@ try:
     plt.axis('off')
     for k in range(K):
       X_k = X_train[idx_errors & (y_train == k)] # data for class k
-      plt.scatter(X_k[:,0], X_k[:, 1], c=[color_map[noisy_k] for noisy_k in s[y_train==k]], s=150, marker=r"${a}$".format(a=str(k)), linewidth=1)
+      plt.scatter(X_k[:,0], X_k[:, 1], color=[color_map[noisy_k] for noisy_k in s[y_train==k]], s=150, marker=r"${a}$".format(a=str(k)), linewidth=1)
     plt.scatter(X_train[:,0][s != y_train], X_train[:,1][s != y_train], s=400, facecolors='none', edgecolors='black', linewidth=2, alpha = 0.5)
     plt.title('Detected label errors. Empty circles show undetected label errors.', fontsize=30)
     plt.show()
@@ -144,7 +144,7 @@ try:
     plt.axis('off')
     for k in range(K):
       X_k = X_train[~idx_errors & (y_train == k)] # data for class k
-      plt.scatter(X_k[:,0], X_k[:, 1], c=[color_map[noisy_k] for noisy_k in s[y_train==k]], s=150, marker=r"${a}$".format(a=str(k)), linewidth=1)
+      plt.scatter(X_k[:,0], X_k[:, 1], color=[color_map[noisy_k] for noisy_k in s[y_train==k]], s=150, marker=r"${a}$".format(a=str(k)), linewidth=1)
     plt.scatter(X_train[~idx_errors][:,0][s[~idx_errors] != y_train[~idx_errors]], X_train[~idx_errors][:,1][s[~idx_errors] != y_train[~idx_errors]], s=400, facecolors='none', edgecolors='black', linewidth=2, alpha = 0.5)
     plt.title('Dataset after pruning.', fontsize=30)
     plt.show()
@@ -182,7 +182,7 @@ try:
     max_score = accuracy_score(y_test, clf.predict(X_test))
     show_decision_boundary(clf, 'Decision boundary for logistic regression trained with no label errors.\n Test Accuracy: ' + str(round(max_score, 3)))
 
-    show_decision_boundary(rp.clf, 'Decision boundary for logistic regression (+rankpruning) trained with noisy labels.\n Test Accuracy: ' + str(round(rp_score, 3)))
+    show_decision_boundary(rp.clf, 'Decision boundary for logreg (+rankpruning) trained with noisy labels.\n Test Accuracy: ' + str(round(rp_score, 3)))
 except:
     print("Plotting is only supported in an iPython interface.")
 
