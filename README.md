@@ -16,6 +16,7 @@ $ pip install git+https://github.com/cgnorthcutt/confidentlearning.git
 If you have issues, you can also clone the repo and install by typing:
 
 ```
+$ conda update pip # if you use conda
 $ git clone https://github.com/cgnorthcutt/confidentlearning.git
 $ cd confidentlearning
 $ pip install -e .
