@@ -14,9 +14,10 @@
 # ```python
 # from confidentlearning.classification import RankPruning
 # from sklearn.linear_model import LogisticRegression as logreg
-# rp = RankPruning(clf = logreg())
-# rp.fit(X_train, y_train_noisy)
-# y_pred = rp.predict(X_test) # Predictions approximate rp.fit(X_train, y_train_no_noise)
+# 
+# rp = RankPruning(clf=logreg()) # Pass in any classifier. Yup, neural networks work, too.
+# rp.fit(X_train, y_may_have_label_errors)
+# pred = rp.predict(X_test) # Estimates the predictions you would have gotten had you trained without label errors.
 # ```
 # ## Notes
 # 
@@ -27,7 +28,7 @@
 # In[1]:
 
 
-from __future__ import print_function
+from __future__ import print_function, absolute_import, division, unicode_literals, with_statement
 
 from sklearn.linear_model import LogisticRegression as logreg
 from sklearn.model_selection import StratifiedKFold
@@ -145,16 +146,26 @@ class RankPruning(object):
           inverse_noise_matrix will be computed from psx and s.
           Assumes columns of inverse_noise_matrix sum to 1.
 
-        prune_method : str
+        prune_method : str (default: 'prune_by_noise_rate')
           'prune_by_class', 'prune_by_noise_rate', or 'both'. Method used for pruning.
+          1. 'prune_by_noise_rate': works by removing examples with *high probability* of 
+          being mislabeled for every non-diagonal in the prune_counts_matrix (see pruning.py).
+          2. 'prune_by_class': works by removing the examples with *smallest probability* of
+          belonging to their given class label for every class.
+          3. 'both': Finds the examples satisfying (1) AND (2) and removes their set conjunction. 
           
         prune_count_method : str (default 'inverse_nm_dot_s')
-          Options are 'inverse_nm_dot_s' or 'calibrate_confident_joint'. Method used to estimate the counts of the
-          joint P(s, y) that will be used to determine which how many examples to prune
-          for every class that are flipped to every other class.
+          Options are 'inverse_nm_dot_s' or 'calibrate_confident_joint'. 
+          Determines the method used to estimate the counts of the joint P(s, y) that will 
+          be used to determine how many examples to prune
+          for every class that are flipped to every other class, as follows:
+            if prune_count_method == 'inverse_nm_dot_s':
+              prune_count_matrix = inverse_noise_matrix * s_counts # Matrix of counts(y=k and s=l)
+            elif prune_count_method == 'calibrate_confident_joint':# calibrate
+              prune_count_matrix = confident_joint.T / float(confident_joint.sum()) * len(s) 
 
         converge_latent_estimates : bool (Default: False)
-          If true, forces numerical consistency of estimates. Each is estimated
+          If true, forces numerical consistency of latent estimates. Each is estimated
           independently, but they are related mathematically with closed form 
           equivalences. This will iteratively enforce mathematically consistency.
 
