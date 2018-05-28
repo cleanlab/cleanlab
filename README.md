@@ -1,5 +1,5 @@
 # confidentlearning
-A Python package for Confident Learning with state-of-the-art algorithms for multiclass learning with noisy labels, latent noisy channel estimation, latent prior estimation, detection of label errors in massive datasets, and much more.
+A Python package for Confident Learning with state-of-the-art algorithms for multiclass learning with noisy labels, detection of label errors in massive datasets, latent noisy channel estimation, latent prior estimation, and much more.
 
 ## Note to reviewers only
 Please view the supplementary materials of our NIPS2018 submission [by clicking here](https://www.dropbox.com/s/n8hydz9zj6skqwg/nips2018_confident_learning_supplements.pdf?dl=0). The password is the first word of the title of our submission, all lowercased. A system error prevented inclusion at submit-time. 
