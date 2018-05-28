@@ -46,7 +46,7 @@ def show_decision_boundary(clf, title):
     plt.show()
 
 
-# In[3]:
+# In[4]:
 
 
 seed = 46 # Seeded for reproducibility - remove to created random noise and distributions.
@@ -77,7 +77,7 @@ py = np.bincount(y_train) / float(len(y_train))
 
 noise_matrix = generate_noise_matrix_from_trace(
   K, 
-  avg_trace=0.5,
+  trace=1.5,
   py=py,
   valid_noise_matrix=True,
 )
@@ -92,9 +92,9 @@ idx_errors = get_noise_indices(s, psx)
 
 
 # #### To show off the power of **confidentlearning**, we've chosen an example of multiclass learning with noisy labels in which over 50% of the training labels are wrong.
-# Toggle the ```avg_trace``` parameter in ```generate_noise_matrix_from_trace``` above to try out different amounts of noise.
+# Toggle the ```trace``` parameter in ```generate_noise_matrix_from_trace``` above to try out different amounts of noise. Note, as we prove in our paper, learning becomes impossible if the ```trace <= 1```, so choose a value greater than 1, but less than, or equal to, the number of classes (3).
 
-# In[4]:
+# In[5]:
 
 
 true_joint_distribution_of_label_errors = (noise_matrix * py)
