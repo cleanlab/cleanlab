@@ -105,7 +105,7 @@ def generate_noisy_labels(y, noise_matrix, verbose=False):
 
 def generate_noise_matrix_from_trace(
     K,                                      
-    avg_trace,  
+    trace,  
     max_trace_prob=1.0,
     min_trace_prob=1e-5,
     max_noise_rate=1-1e-5,                                      
@@ -114,7 +114,7 @@ def generate_noise_matrix_from_trace(
     py=None,
     frac_zero_noise_rates=0.,
 ): 
-    '''Generates a K x K noise matrix P(s=k_s|y=k_y) with avg_trace
+    '''Generates a K x K noise matrix P(s=k_s|y=k_y) with trace
     as the np.mean(np.diagonal(noise_matrix)).
 
     Parameters
@@ -124,8 +124,8 @@ def generate_noise_matrix_from_trace(
       Creates a noise matrix of shape (K, K). Implies there are 
       K classes for learning with noisy labels. 
 
-    avg_trace : float (0.0, 1.0]
-      Sum of np.array of random probabilites that is returned.
+    trace : float (0.0, 1.0]
+      Sum of diagonal entries of np.array of random probabilites that is returned.
 
     max_trace_prob : float (0.0, 1.0]
       Maximum probability of any entry in the trace of the return matrix.
@@ -142,7 +142,7 @@ def generate_noise_matrix_from_trace(
     valid_noise_matrix : bool
       If True, returns a matrix having all necessary conditions for
       learning with noisy labels. In particular, p(y=k)p(s=k) < p(y=k,s=k)
-      is satisfied. This requires that Trace > 1 (avg_trace > 1/K).
+      is satisfied. This requires that Trace > 1.
 
     py : np.array (shape (K, 1))
       The fraction (prior probability) of each true, hidden class label, P(y = k).
@@ -150,7 +150,7 @@ def generate_noise_matrix_from_trace(
 
     frac_zero_noise_rates : float
       The fraction of the n*(n-1) noise rates that will be set to 0. Note that if
-      you set a high trace (avg_trace), it may be impossible to also have a low
+      you set a high trace, it may be impossible to also have a low
       fraction of zero noise rates without forcing all non-"1" diagonal values. 
       Instead, when this happens we only guarantee to produce a noise matrix with
       frac_zero_noise_rates **or higher**. The opposite occurs with a small trace.
@@ -158,14 +158,14 @@ def generate_noise_matrix_from_trace(
     Output
     ------
     np.array (shape (K, K)) 
-      noise matrix P(s=k_s|y=k_y) with avg_trace 
-      as the np.mean(np.diagonal(noise_matrix)).
+      noise matrix P(s=k_s|y=k_y) with trace 
+      as the np.sum(np.diagonal(noise_matrix)).
       This a conditional probability matrix and a
       left stochastic matrix.'''
 
 
-    if valid_noise_matrix and avg_trace <= 1/float(K):
-        raise ValueError("avg_trace > 1/float(K), i.e. trace > 1 is necessary for a               valid noise matrix to be return (valid_noise_matrix == True)")
+    if valid_noise_matrix and trace <= 1:
+        raise ValueError("trace > 1 is necessary for a               valid noise matrix to be returned (valid_noise_matrix == True)")
     
     if valid_noise_matrix and py is None:
         raise ValueError("py must be provided (not None) if the input parameter               valid_noise_matrix == True")
@@ -176,7 +176,7 @@ def generate_noise_matrix_from_trace(
         # Randomly generate noise_matrix diagonal.
         nm_diagonal = generate_n_rand_probabilities_that_sum_to_m(
             n=K, 
-            m=avg_trace * K, 
+            m=trace, 
             max_prob=max_trace_prob, 
             min_prob=min_trace_prob,
         )
