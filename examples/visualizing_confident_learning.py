@@ -111,7 +111,7 @@ try:
     for k in range(K):
         X_k = X_train[y_train==k] # data for class k
         plt.scatter(X_k[:,0], X_k[:, 1], color=colors[k], s=150, marker=r"${a}$".format(a=str(k)), linewidth=1)
-    plt.title("Original distribution, without any label errors.", fontsize=30)
+    plt.title("Original (unobserved) distribution, without any label errors.", fontsize=30)
 
     print("\n\n\n\n")
 
@@ -122,7 +122,7 @@ try:
       X_k = X_train[y_train == k] # data for class k
       plt.scatter(X_k[:,0], X_k[:, 1], color=[color_map[noisy_k] for noisy_k in s[y_train==k]], s=150, marker=r"${a}$".format(a=str(k)), linewidth=1)
     plt.scatter(X_train[:,0][s != y_train], X_train[:,1][s != y_train], s=400, facecolors='none', edgecolors='black', linewidth=2, alpha = 0.5)
-    plt.title('Observed distribution, with label errors circled.\n'+percent_error_str, fontsize=30)
+    plt.title('Observed distribution, with label errors circled.\nColors are the given labels, the numbers are latent.\n'+percent_error_str, fontsize=30)
     plt.show()
 
     print("\n\n\n\n")
@@ -134,7 +134,7 @@ try:
       X_k = X_train[idx_errors & (y_train == k)] # data for class k
       plt.scatter(X_k[:,0], X_k[:, 1], color=[color_map[noisy_k] for noisy_k in s[y_train==k]], s=150, marker=r"${a}$".format(a=str(k)), linewidth=1)
     plt.scatter(X_train[:,0][s != y_train], X_train[:,1][s != y_train], s=400, facecolors='none', edgecolors='black', linewidth=2, alpha = 0.5)
-    plt.title('Detected label errors. Empty circles show undetected label errors.', fontsize=30)
+    plt.title('Label errors detected using confident learning.\nEmpty circles show undetected label errors.\nUncircled data depicts false positives.', fontsize=30)
     plt.show()
 
 
@@ -146,7 +146,7 @@ try:
       X_k = X_train[~idx_errors & (y_train == k)] # data for class k
       plt.scatter(X_k[:,0], X_k[:, 1], color=[color_map[noisy_k] for noisy_k in s[y_train==k]], s=150, marker=r"${a}$".format(a=str(k)), linewidth=1)
     plt.scatter(X_train[~idx_errors][:,0][s[~idx_errors] != y_train[~idx_errors]], X_train[~idx_errors][:,1][s[~idx_errors] != y_train[~idx_errors]], s=400, facecolors='none', edgecolors='black', linewidth=2, alpha = 0.5)
-    plt.title('Dataset after pruning.', fontsize=30)
+    plt.title('Dataset after pruning detected label errors.', fontsize=30)
     plt.show()
 except:
     print("Plotting is only supported in an iPython interface.")
