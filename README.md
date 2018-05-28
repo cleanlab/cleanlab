@@ -21,8 +21,13 @@ $ cd confidentlearning
 $ pip install -e .
 ```
 
+## Get started with easy, quick examples.
+
+New to **confidentlearing**? Start with [visualizing confident learning](examples/visualizing_confident_learning.ipynb) and [this simple example](examples/iris_simple_example.ipynb). These examples show how easy it is to characterize label noise in datasets, learn with noisy labels, identify label errors, estimate latent priors and noisy channels, and more.
+
+
 ## The first general solution for multiclass learning with noisy labels
-And it only requires three lines of code:
+Multiclass learning with noisy labels in just three lines of code:
 
 ```python
 from confidentlearning.classification import RankPruning
@@ -32,8 +37,3 @@ rp = RankPruning(clf=logreg()) # Pass in any classifier. Yup, neural networks wo
 rp.fit(X_train, y_may_have_label_errors)
 pred = rp.predict(X_test) # Estimates the predictions you would have gotten had you trained without label errors.
 ``` 
-
-
-## Starter Examples
-
-New to **confidentlearing**? Check out the [visualizing confident learning](examples/visualizing_confident_learning.ipynb) and the [Iris dataset simple example](examples/iris_simple_example.ipynb) pages to see how easy it is to characterize label noise in datasets, learn with noisy labels, identify label errors, estimate latent priors and noisy channels, and more.
