@@ -8,7 +8,7 @@
 # In[ ]:
 
 
-from __future__ import print_function
+from __future__ import print_function, absolute_import, division, unicode_literals, with_statement
 import numpy as np
 
 
@@ -234,9 +234,11 @@ def compute_confusion_noise_rate_matrix(y, s):
 # In[ ]:
 
 
-def print_noise_matrix(nm):
+def print_noise_matrix(nm, title = ""):
+    '''Pretty prints the noise matrix nm. The second parameter 'title' is a str
+    that for the printed noise matrix.'''
     print()
-    print('Noise Matrix (Noisy Channel):')
+    print(title + ' Noise Matrix (Noisy Channel):')
     print('\ty=0\ty=1\ty=2')
     print('\t---\t---\t---')
     # print(noise_matrix.round(2))

@@ -12,7 +12,7 @@
 # In[ ]:
 
 
-from __future__ import print_function
+from __future__ import print_function, absolute_import, division, unicode_literals, with_statement
 from sklearn.linear_model import LogisticRegression as logreg
 from sklearn.model_selection import StratifiedKFold
 import numpy as np
@@ -147,7 +147,11 @@ def estimate_latent(
     converge_latent_estimates : bool
       If true, forces numerical consistency of estimates. Each is estimated
       independently, but they are related mathematically with closed form 
-      equivalences. This will iteratively make them mathematically consistent. '''
+      equivalences. This will iteratively make them mathematically consistent.
+
+    Output
+    ------
+        A tuple containing (py, noise_matrix, inv_noise_matrix).'''
     
     # Number of classes
     K = len(np.unique(s))  
