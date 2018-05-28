@@ -24,10 +24,16 @@ $ pip install -e .
 
 ## Get started with easy, quick examples.
 
-New to **confidentlearing**? Start with [visualizing confident learning](examples/visualizing_confident_learning.ipynb) and [this simple example of learning with noisy labels on the multiclass Iris dataset](examples/iris_simple_example.ipynb). These examples show how easy it is to characterize label noise in datasets, learn with noisy labels, identify label errors, estimate latent priors and noisy channels, and more.
+New to **confidentlearing**? Start with:
+
+1. [Visualizing confident learning](examples/visualizing_confident_learning.ipynb)
+2. [A simple example of learning with noisy labels on the multiclass Iris dataset](examples/iris_simple_example.ipynb). 
+
+These examples show how easy it is to characterize label noise in datasets, learn with noisy labels, identify label errors, estimate latent priors and noisy channels, and more.
 
 
-## The first general solution for multiclass learning with noisy labels
+## The first practical, general algorithm for multiclass learning with noisy labels
+### **confidentlearning** algorithms are fast, robust, and work with any probablistic classifier - see [examples](examples)
 Multiclass learning with noisy labels in just three lines of code:
 
 ```python
