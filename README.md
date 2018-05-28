@@ -36,4 +36,4 @@ pred = rp.predict(X_test) # Estimates the predictions you would have gotten had 
 
 ## Starter Examples
 
-New to **confidentlearing**? Check out the visualizing confident learning and the Iris dataset simple example pages to see how easy it is to characterize label noise in datasets, learn with noisy labels, identify label errors, estimate latent priors and noisy channels, and more.
+New to **confidentlearing**? Check out the [visualizing confident learning](examples/visualizing_confident_learning.ipynb) and the [Iris dataset simple example](examples/iris_simple_example.ipynb) pages to see how easy it is to characterize label noise in datasets, learn with noisy labels, identify label errors, estimate latent priors and noisy channels, and more.
