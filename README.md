@@ -44,3 +44,9 @@ rp = RankPruning(clf=logreg()) # Pass in any classifier. Yup, neural networks wo
 rp.fit(X_train, y_may_have_label_errors)
 pred = rp.predict(X_test) # Estimates the predictions you would have gotten had you trained without label errors.
 ``` 
+
+## The Polyplex 
+### The key to learning in the presence of label errors is estimating the joint distribution between the actual, hidden labels '*y*' and the observed, noisy labels '*s*'. Using **confidentlearning**, we can completely characterize the trace of the latent joint distribution, *trace(P<sub>s,y</sub>)*, given *p(y)*, for any fraction of label errors, i.e. for any trace of the noisy channel, *trace(P<sub>s|y</sub>)*.
+You can check out how to do this yourself here:
+1. [Drawing Polyplices](examples/drawing_polyplices.ipynb)
+2. [Computing Polyplices](confidentlearning/polyplex.ipynb)
