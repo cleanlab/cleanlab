@@ -40,7 +40,7 @@ Label errors of the original MNIST train dataset identified algorithmically usin
  Selected label errors in the MNIST test dataset ordered by increasing self-confidence (in teal).
 
 ## We identify ~5000 validation set label errors in ImageNet. Learn more [here](finding_ImageNet_label_errors).
-![Image depicting label errors in ImageNet validation set.](img/imagenet_validation_label_errors_96_prune_by_noise_rate.jpg)
+![Image depicting label errors in ImageNet validation set.](https://raw.githubusercontent.com/cgnorthcutt/confidentlearning/master/img/imagenet_validation_label_errors_96_prune_by_noise_rate.jpg)
 Label errors in the 2012 ImageNet validation dataset identified automatically with confident learning using a pre-trained resnet18. Displayed are the 96 least confident labels. We see that ImageNet contains numerous multi-label images.
 
 
