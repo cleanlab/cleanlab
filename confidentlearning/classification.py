@@ -40,7 +40,7 @@ from confidentlearning.latent_algebra import compute_py_inv_noise_matrix, comput
 from confidentlearning.pruning import get_noise_indices
 
 
-# In[292]:
+# In[9]:
 
 
 class RankPruning(object):

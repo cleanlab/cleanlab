@@ -190,7 +190,8 @@ def compute_py(ps, noise_matrix, inverse_noise_matrix):
   
     if len(np.shape(ps)) > 2 or (len(np.shape(ps)) == 2 and np.shape(ps)[0] != 1):
         import warnings
-        warnings.warn("Input parameter np.array 'ps' has shape " + str(np.shape(ps)) +                       ", but shape should be (K, ) or (1, K)")
+        warnings.warn("Input parameter np.array 'ps' has shape " + str(np.shape(ps)) +
+                      ", but shape should be (K, ) or (1, K)")
   
     # Computing py this way avoids dividing by zero noise rates! Also more robust.
     # More robust because error est_p(y|s) / est_p(s|y) ~ p(y|s) / p(s|y) 
@@ -232,7 +233,8 @@ def compute_pyx(psx, noise_matrix, inverse_noise_matrix):
         P(y=k|x) is a matrix with K probabilities for each of the N examples x.'''
   
     if len(np.shape(psx)) != 2:
-        raise ValueError("Input parameter np.array 'psx' has shape " + str(np.shape(psx)) +                          ", but shape should be (N, K)")
+        raise ValueError("Input parameter np.array 'psx' has shape " + str(np.shape(psx)) +
+                         ", but shape should be (N, K)")
   
     pyx = psx * inverse_noise_matrix.diagonal() / noise_matrix.diagonal()
     # Make sure valid probabilites that sum to 1.0

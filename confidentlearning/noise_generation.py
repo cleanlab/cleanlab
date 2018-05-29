@@ -95,7 +95,8 @@ def generate_noisy_labels(y, noise_matrix, verbose=False):
 
     # Validate that s indeed produces the correct noise_matrix (or close to it)
     if np.linalg.norm(noise_matrix - new_noise_matrix) > 1:
-        raise ValueError("s does not yield the same noise_matrix. " +             "The difference in norms is " + str(np.linalg.norm(noise_matrix - new_noise_matrix)))
+        raise ValueError("s does not yield the same noise_matrix. " +
+            "The difference in norms is " + str(np.linalg.norm(noise_matrix - new_noise_matrix)))
 
     return s  
 
@@ -165,10 +166,12 @@ def generate_noise_matrix_from_trace(
 
 
     if valid_noise_matrix and trace <= 1:
-        raise ValueError("trace > 1 is necessary for a               valid noise matrix to be returned (valid_noise_matrix == True)")
+        raise ValueError("trace > 1 is necessary for a" +
+              " valid noise matrix to be returned (valid_noise_matrix == True)")
     
     if valid_noise_matrix and py is None:
-        raise ValueError("py must be provided (not None) if the input parameter               valid_noise_matrix == True")
+        raise ValueError("py must be provided (not None) if the input parameter" +
+              " valid_noise_matrix == True")
   
     while True:
         noise_matrix = np.zeros(shape=(K, K))
@@ -246,11 +249,17 @@ def generate_n_rand_probabilities_that_sum_to_m(
     if n == 0:
         return np.array([])    
     if (max_prob + epsilon) < m / float(n):
-        raise ValueError("max_prob must be greater or equal to m / n, but "+                         "max_prob = "+str(max_prob)+", m = "+str(m)+", n = "+                         str(n)+", m / n = "+str(m/float(n)))
+        raise ValueError("max_prob must be greater or equal to m / n, but " +
+                         "max_prob = "+str(max_prob)+", m = "+str(m)+", n = " +
+                         str(n)+", m / n = "+str(m/float(n)))
     if min_prob > (m + epsilon) / float(n):
-        raise ValueError("min_prob must be less or equal to m / n, but "+                         "max_prob = "+str(max_prob)+", m = "+str(m)+", n = "+                         str(n)+", m / n = "+str(m/float(n)))
+        raise ValueError("min_prob must be less or equal to m / n, but " +
+                         "max_prob = "+str(max_prob)+", m = "+str(m)+", n = " +
+                         str(n)+", m / n = "+str(m/float(n)))
     if min_prob >= (max_prob + epsilon):
-        raise ValueError("min_prob must be less than max_prob, but "+                         "max_prob = "+str(max_prob)+", m = "+str(m)+", n = "+                         str(n)+", m / n = "+str(m/float(n)))
+        raise ValueError("min_prob must be less than max_prob, but " +
+                         "max_prob = "+str(max_prob)+", m = "+str(m)+", n = " +
+                         str(n)+", m / n = "+str(m/float(n)))
 
     # When max_prob = 1, min_prob = 0, the following two lines are equivalent to:
     #   intermediate = np.sort(np.append(np.random.uniform(0, 1, n-1), [0, 1]))
