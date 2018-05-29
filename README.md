@@ -31,6 +31,11 @@ New to **confidentlearing**? Start with:
 
 These examples show how easy it is to characterize label noise in datasets, learn with noisy labels, identify label errors, estimate latent priors and noisy channels, and more.
 
+## There are label errors in MNIST. We found them with confident learning. Learn more [here](finding_MNIST_label_errors).
+
+
+## There are thousands of label errors in ImageNet. We found them with confident learning. Learn more [here](finding_ImageNet_label_errors)
+
 
 ## The first practical, general algorithm for multiclass learning with noisy labels
 ### **confidentlearning** algorithms are fast, robust, and work with any probablistic classifier - see [examples](examples)
