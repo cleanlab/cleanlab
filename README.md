@@ -1,4 +1,4 @@
-# confidentlearning
+# ```confidentlearning```
 A Python package for Confident Learning with state-of-the-art algorithms for multiclass learning with noisy labels, detection of label errors in massive datasets, latent noisy channel estimation, latent prior estimation, and much more.
 
 ## Note to the reviewers of our NIPS 2018 manuscript
@@ -31,10 +31,10 @@ New to **confidentlearing**? Start with:
 
 These examples show how easy it is to characterize label noise in datasets, learn with noisy labels, identify label errors, estimate latent priors and noisy channels, and more.
 
-## We identify ~50 label errors in MNIST with ```confidentlearning```. Learn more [here](finding_MNIST_label_errors).
+## We identify ~50 label errors in MNIST with confident learning. Learn more [here](finding_MNIST_label_errors).
 
 
-## We identify thousands of label errors in ImageNet with ```confidentlearning```. Learn more [here](finding_ImageNet_label_errors).
+## We identify ~5000 validation set label errors in ImageNet. Learn more [here](finding_ImageNet_label_errors).
 
 
 ## The first practical, general algorithm for multiclass learning with noisy labels
