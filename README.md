@@ -5,7 +5,8 @@ A Python package for Confident Learning with state-of-the-art algorithms for mul
 Please view the [supplementary materials of our NIPS2018 submission by clicking here](https://www.dropbox.com/s/n8hydz9zj6skqwg/nips2018_confident_learning_supplements.pdf?dl=0). The password is the first word of the title of our submission, all lowercased. A system error prevented inclusion at submit-time. 
 
 ## Installation
-### Both Python 2.7 and Python 3.5 are supported.
+
+Python 2.7 and Python 3.5 are supported.
 
 To use the **confidentlearning** package just run:
 
@@ -32,9 +33,15 @@ New to **confidentlearing**? Start with:
 These examples show how easy it is to characterize label noise in datasets, learn with noisy labels, identify label errors, estimate latent priors and noisy channels, and more.
 
 ## We identify ~50 label errors in MNIST with confident learning. Learn more [here](finding_MNIST_label_errors).
+![Image depicting label errors in MNIST train set.](img/mnist_training_label_errors24_prune_by_noise_rate.png)
+Label errors of the original MNIST train dataset identified algorithmically using the rankpruning algorithm. Depicts the 24 least confident labels, ordered left-right, top-down by increasing self-confidence (probability of belonging to the given label), denoted conf in teal. The label with the largest predicted probability is in green. Overt errors are in red.
 
+![Image depicting label errors in MNIST test set.](img/mnist_test_label_errors8.png)
+ Selected label errors in the MNIST test dataset ordered by increasing self-confidence (in teal).
 
 ## We identify ~5000 validation set label errors in ImageNet. Learn more [here](finding_ImageNet_label_errors).
+![Image depicting label errors in ImageNet validation set.](img/imagenet_validation_label_errors_96_prune_by_noise_rate.jpg)
+Label errors in the 2012 ImageNet validation dataset identified automatically with confident learning using a pre-trained resnet18. Displayed are the 96 least confident labels. We see that ImageNet contains numerous multi-label images.
 
 
 ## The first practical, general algorithm for multiclass learning with noisy labels
