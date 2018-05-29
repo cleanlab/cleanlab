@@ -33,10 +33,10 @@ New to **confidentlearing**? Start with:
 These examples show how easy it is to characterize label noise in datasets, learn with noisy labels, identify label errors, estimate latent priors and noisy channels, and more.
 
 ## We identify ~50 label errors in MNIST with confident learning. Learn more [here](finding_MNIST_label_errors).
-![Image depicting label errors in MNIST train set.](img/mnist_training_label_errors24_prune_by_noise_rate.png)
+![Image depicting label errors in MNIST train set.](https://raw.githubusercontent.com/cgnorthcutt/confidentlearning/master/img/mnist_training_label_errors24_prune_by_noise_rate.png)
 Label errors of the original MNIST train dataset identified algorithmically using the rankpruning algorithm. Depicts the 24 least confident labels, ordered left-right, top-down by increasing self-confidence (probability of belonging to the given label), denoted conf in teal. The label with the largest predicted probability is in green. Overt errors are in red.
 
-![Image depicting label errors in MNIST test set.](img/mnist_test_label_errors8.png)
+![Image depicting label errors in MNIST test set.](https://raw.githubusercontent.com/cgnorthcutt/confidentlearning/master/img/mnist_test_label_errors8.png)
  Selected label errors in the MNIST test dataset ordered by increasing self-confidence (in teal).
 
 ## We identify ~5000 validation set label errors in ImageNet. Learn more [here](finding_ImageNet_label_errors).
