@@ -45,7 +45,7 @@ Label errors in the 2012 ImageNet validation dataset identified automatically wi
 
 
 ## The first practical, general algorithm for multiclass learning with noisy labels
-### Confident learning algorithms are fast, robust, and work with any probablistic classifier - see [examples](examples).
+### Confident learning algorithms are fast, robust, & work with any probablistic classifier, see [examples](examples).
 Multiclass learning with noisy labels in just three lines of code:
 
 ```python
