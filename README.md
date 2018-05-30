@@ -45,7 +45,7 @@ Label errors in the 2012 ImageNet validation dataset identified automatically wi
 
 
 ## The first practical, general algorithm for multiclass learning with noisy labels
-### **confidentlearning** algorithms are fast, robust, and work with any probablistic classifier - see [examples](examples)
+### Confident learning algorithms are fast, robust, and work with any probablistic classifier - see [examples](examples).
 Multiclass learning with noisy labels in just three lines of code:
 
 ```python
@@ -58,7 +58,7 @@ pred = rp.predict(X_test) # Estimates the predictions you would have gotten had 
 ``` 
 
 ## The Polyplex 
-### The key to learning in the presence of label errors is estimating the joint distribution between the actual, hidden labels '*y*' and the observed, noisy labels '*s*'. Using **confidentlearning**, we can completely characterize the trace of the latent joint distribution, *trace(P<sub>s,y</sub>)*, given *p(y)*, for any fraction of label errors, i.e. for any trace of the noisy channel, *trace(P<sub>s|y</sub>)*.
+### The key to learning in the presence of label errors is estimating the joint distribution between the actual, hidden labels '*y*' and the observed, noisy labels '*s*'. Using confident learning, we can completely characterize the trace of the latent joint distribution, *trace(P<sub>s,y</sub>)*, given *p(y)*, for any fraction of label errors, i.e. for any trace of the noisy channel, *trace(P<sub>s|y</sub>)*.
 You can check out how to do this yourself here:
 1. [Drawing Polyplices](examples/drawing_polyplices.ipynb)
 2. [Computing Polyplices](confidentlearning/polyplex.ipynb)
