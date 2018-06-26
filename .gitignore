@@ -1,3 +1,7 @@
+# Added by Curtis G. Northcutt
+confidentlearning/*.ipynb
+examples/models/*.ipynb
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
