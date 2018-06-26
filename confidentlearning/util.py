@@ -237,12 +237,13 @@ def compute_confusion_noise_rate_matrix(y, s):
 def print_noise_matrix(nm, title = ""):
     '''Pretty prints the noise matrix nm. The second parameter 'title' is a str
     that for the printed noise matrix.'''
+    K = len(nm) # Number of classes
     print()
     print(title + ' Noise Matrix (Noisy Channel):')
-    print('\ty=0\ty=1\ty=2')
-    print('\t---\t---\t---')
+    print("".join(['\ty='+str(i) for i in range(K)]))
+    print('\t---'*K)
     # print(noise_matrix.round(2))
-    for i in range(len(nm)):
+    for i in range(K):
         print("s="+str(i)+" |\t"+"\t".join([str(z) for z in list(nm.round(2)[i,:])]))
     print()
 
