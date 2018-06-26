@@ -265,18 +265,28 @@ def generate_n_rand_probabilities_that_sum_to_m(
     #   intermediate = np.sort(np.append(np.random.uniform(0, 1, n-1), [0, 1]))
     #   result = (intermediate[1:] - intermediate[:-1]) * m
     result = np.random.dirichlet(np.ones(n))*m
-
-    max_val = max(result) 
+ 
+    min_val = min(result) 
+    max_val = max(result)
     while max_val > (max_prob + epsilon):
-        result[np.argmin(result)] = min(result) + (max_val - max_prob)
-        result[np.argmax(result)] = max_prob   
-        max_val = max(result)
+        new_min = min_val + (max_val - max_prob)
+        # This adjustment prevents the new max from always being max_prob.
+        adjustment = (max_prob - new_min) * np.random.rand() 
+        result[np.argmin(result)] = new_min + adjustment
+        result[np.argmax(result)] = max_prob - adjustment
+        min_val = min(result)
+        max_val = max(result) 
 
     min_val = min(result)
+    max_val = max(result)
     while min_val < (min_prob - epsilon):
-        result[np.argmax(result)] = max(result) - (min_prob - min_val)
-        result[np.argmin(result)] = min_prob   
+        new_max = max_val - (min_prob - min_val)
+        # This adjustment prevents the new min from always being min_prob.
+        adjustment = (new_max - min_prob) * np.random.rand() 
+        result[np.argmax(result)] = new_max - adjustment
+        result[np.argmin(result)] = min_prob + adjustment  
         min_val = min(result)
+        max_val = max(result)
 
     return result
 
