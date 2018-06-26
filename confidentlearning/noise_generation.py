@@ -172,8 +172,20 @@ def generate_noise_matrix_from_trace(
     if valid_noise_matrix and py is None:
         raise ValueError("py must be provided (not None) if the input parameter" +
               " valid_noise_matrix == True")
+        
+    if K == 1:
+        raise ValueError('K must be >= 2. Your input parameter is K = 1.')
+    
+    # Special (highly constrained) case with faster solution.
+    # Note that every 2 x 2 noise matrix is valid, py is not used.
+    if K == 2 and frac_zero_noise_rates >= 0.5:
+        noise_mat = np.array([
+            [1., 1 - (trace - 1.)],
+            [0., trace - 1.],
+        ])
+        return noise_mat if np.random.rand() > 0.5 else np.rot90(noise_mat, k=2)
   
-    while True:
+    while True: # assumes K > 2
         noise_matrix = np.zeros(shape=(K, K))
         
         # Randomly generate noise_matrix diagonal.
@@ -191,18 +203,12 @@ def generate_noise_matrix_from_trace(
         # Remove zeros already in [1,0,..,0] columns
         num_zero_noise_rates -= (K - num_col_with_noise) * (K - 1) 
         num_zero_noise_rates = np.maximum(num_zero_noise_rates, 0) # Prevent negative
-        if K == 2: # Special case for K = 2
-            num_zero_noise_rates_per_col = np.array([0, 0])
-            if frac_zero_noise_rates >= 0.25:
-                # Randomly flip a 0 in [0., 0.] to 1. (adds 1 zero noise rate)
-                num_zero_noise_rates_per_col[np.random.choice([0,1])] = 1
-        else: # K > 2
-            num_zero_noise_rates_per_col = randomly_distribute_N_balls_into_K_bins(
-                N = num_zero_noise_rates,
-                K = num_col_with_noise,
-                max_balls_per_bin = K - 2, # 2 = one for diagonal, and one to sum to 1
-                min_balls_per_bin = 0,
-            ) 
+        num_zero_noise_rates_per_col = randomly_distribute_N_balls_into_K_bins(
+            N = num_zero_noise_rates,
+            K = num_col_with_noise,
+            max_balls_per_bin = K - 2, # 2 = one for diagonal, and one to sum to 1
+            min_balls_per_bin = 0,
+        ) if K > 2 else np.array([0, 0]) # Special case when K == 2
         stack_nonzero_noise_rates_per_col = list(K - 1 - num_zero_noise_rates_per_col)[::-1]
         # Randomly generate noise rates for columns with noise.
         for col in np.arange(K)[nm_diagonal != 1]:
