@@ -1,7 +1,8 @@
 
 # coding: utf-8
 
-# In[2]:
+# In[ ]:
+
 
 from __future__ import print_function
 import argparse
@@ -16,11 +17,13 @@ from torch.utils.data.sampler import SubsetRandomSampler
 
 # In[ ]:
 
+
 MNIST_TRAIN_SIZE = 60000
 MNIST_TEST_SIZE = 10000
 
 
 # In[ ]:
+
 
 class Net(nn.Module):
     '''Basic Pytorch CNN'''
@@ -44,6 +47,7 @@ class Net(nn.Module):
 
 
 # In[ ]:
+
 
 class CNN(object):
     '''Wraps a PyTorch CNN for the MNIST dataset within an sklearn template by defining 
@@ -253,6 +257,7 @@ class CNN(object):
 
 
 # In[ ]:
+
 
 if __name__ == '__main__':
     y_train = datasets.MNIST('../data', train=True).train_labels.numpy()
