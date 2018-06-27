@@ -173,19 +173,28 @@ def generate_noise_matrix_from_trace(
         raise ValueError("py must be provided (not None) if the input parameter" +
               " valid_noise_matrix == True")
         
-    if K == 1:
-        raise ValueError('K must be >= 2. Your input parameter is K = 1.')
+    if K <= 1:
+        raise ValueError('K must be >= 2. Your input parameter is K = ' + str(K) + '.')
     
     # Special (highly constrained) case with faster solution.
-    # Note that every 2 x 2 noise matrix is valid, py is not used.
-    if K == 2 and frac_zero_noise_rates >= 0.5:
-        noise_mat = np.array([
-            [1., 1 - (trace - 1.)],
-            [0., trace - 1.],
-        ])
-        return noise_mat if np.random.rand() > 0.5 else np.rot90(noise_mat, k=2)
-  
-    while True: # assumes K > 2
+    # Every 2 x 2 noise matrix with trace > 1 is valid because p(y) is not used
+    if K == 2:
+        if frac_zero_noise_rates >= 0.5: # Include a single zero noise rate
+            noise_mat = np.array([
+                [1., 1 - (trace - 1.)],
+                [0., trace - 1.],
+            ])
+            return noise_mat if np.random.rand() > 0.5 else np.rot90(noise_mat, k=2)
+        else: # No zero noise rates
+            diag = generate_n_rand_probabilities_that_sum_to_m(2, trace)
+            noise_matrix = np.array([
+                [diag[0], 1 - diag[1]],
+                [1 - diag[0], diag[1]],
+            ])
+            return noise_matrix  
+        
+    # K > 2  
+    while True:           
         noise_matrix = np.zeros(shape=(K, K))
         
         # Randomly generate noise_matrix diagonal.
@@ -278,7 +287,7 @@ def generate_n_rand_probabilities_that_sum_to_m(
     #   result = (intermediate[1:] - intermediate[:-1]) * m
     result = np.random.dirichlet(np.ones(n))*m
  
-    min_val = min(result) 
+    min_val = min(result)
     max_val = max(result)
     while max_val > (max_prob + epsilon):
         new_min = min_val + (max_val - max_prob)
@@ -287,11 +296,13 @@ def generate_n_rand_probabilities_that_sum_to_m(
         result[np.argmin(result)] = new_min + adjustment
         result[np.argmax(result)] = max_prob - adjustment
         min_val = min(result)
-        max_val = max(result) 
+        max_val = max(result)
 
     min_val = min(result)
     max_val = max(result)
     while min_val < (min_prob - epsilon):
+        min_val = min(result)
+        max_val = max(result)
         new_max = max_val - (min_prob - min_val)
         # This adjustment prevents the new min from always being min_prob.
         adjustment = (new_max - min_prob) * np.random.rand() 
