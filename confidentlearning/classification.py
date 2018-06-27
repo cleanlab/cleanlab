@@ -77,8 +77,21 @@ class RankPruning(object):
   
   
     def __init__(self, clf = None, seed = None):
-        self.clf = logreg() if clf is None else clf
+        
+        if clf is None:
+            clf = logreg() # Use logistic regression if no classifier is provided.
+        
+        # Make sure the passed in classifier has the appropriate methods defined.
+        if not hasattr(clf, "fit"):
+            raise ValueError('The classifier (clf) must define a .fit() method.')
+        if not hasattr(clf, "predict_proba"):
+            raise ValueError('The classifier (clf) must define a .predict_proba() method.')
+        if not hasattr(clf, "predict"):
+            raise ValueError('The classifier (clf) must define a .predict() method.')
+        
+        self.clf = clf
         self.seed = seed
+        
         if seed is not None:
             np.random.seed(seed = seed)
   
@@ -247,15 +260,20 @@ class RankPruning(object):
         X_mask = ~self.noise_mask
         X_pruned = X[X_mask]
         s_pruned = s[X_mask]
+        
+        if 'sample_weight' in inspect.getfullargspec(self.clf.fit).args:
+            # Re-weight examples in the loss function for the final fitting
+            # s.t. the "apparent" original number of examples in each class
+            # is preserved, even though the pruned sets may differ.
+            self.sample_weight = np.ones(np.shape(s_pruned))
+            for k in range(self.K): 
+                self.sample_weight[s_pruned == k] = 1.0 / self.noise_matrix[k][k]
 
-        # Re-weight examples in the loss function for the final fitting
-        # s.t. the "apparent" original number of examples in each class
-        # is preserved, even though the pruned sets may differ.
-        self.sample_weight = np.ones(np.shape(s_pruned))
-        for k in range(self.K): 
-            self.sample_weight[s_pruned == k] = 1.0 / self.noise_matrix[k][k]
-
-        self.clf.fit(X_pruned, s_pruned, sample_weight=self.sample_weight)
+            self.clf.fit(X_pruned, s_pruned, sample_weight=self.sample_weight)
+        else:
+            # This is less accurate, but its all we can do if sample_weight isn't available.
+            self.clf.fit(X_pruned, s_pruned)
+            
         return self.clf
     
     
