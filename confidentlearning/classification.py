@@ -33,6 +33,7 @@ from __future__ import print_function, absolute_import, division, unicode_litera
 from sklearn.linear_model import LogisticRegression as logreg
 from sklearn.model_selection import StratifiedKFold
 import numpy as np
+import inspect
 
 from confidentlearning.util import assert_inputs_are_valid, value_counts, remove_noise_from_class
 from confidentlearning.latent_estimation import     estimate_py_noise_matrices_and_cv_pred_proba,     estimate_py_and_noise_matrices_from_probabilities,     estimate_cv_predicted_probabilities
