@@ -21,11 +21,10 @@
 # ```
 # ## Notes
 # 
-# * s - used to denote the noisy labels in the code
+# * s - denotes *noisy labels*, just means training labels, but maybe with label errors
 # * Class labels (K classes) must be formatted as natural numbers: 0, 1, 2, ..., K-1
-# * Do not skip a natural number, i.e. 0, 1, 3, 4, .. is ***NOT*** okay!
 
-# In[1]:
+# In[ ]:
 
 
 from __future__ import print_function, absolute_import, division, unicode_literals, with_statement
@@ -41,10 +40,12 @@ from confidentlearning.latent_algebra import compute_py_inv_noise_matrix, comput
 from confidentlearning.pruning import get_noise_indices
 
 
-# In[9]:
+# In[ ]:
 
 
-class RankPruning(object):
+from sklearn.base import BaseEstimator
+
+class RankPruning(BaseEstimator): # Inherits sklearn classifier
     '''Rank Pruning is a state-of-the-art algorithm (2017) for 
       multiclass classification with (potentially extreme) mislabeling 
       across any or all pairs of class labels. It works with ANY classifier,
@@ -66,18 +67,62 @@ class RankPruning(object):
     ----------
     clf : sklearn.classifier or equivalent class
       The clf object must have the following three functions defined:
-        1. clf.predict_proba(X) # Predicted probabilities
-        2. clf.predict(X) # Predict labels
-        3. clf.fit(X,y) # Train classifier
+      1. clf.predict_proba(X) # Predicted probabilities
+      2. clf.predict(X) # Predict labels
+      3. clf.fit(X, y, sample_weight) # Train classifier
       Stores the classifier used in Rank Pruning.
       Default classifier used is logistic regression.
         
     seed : int (default = None)
-        Number to set the default state of the random number generator used to split 
-        the cross-validated folds. If None, uses np.random current random state.'''  
+      Number to set the default state of the random number generator used to split
+      the cross-validated folds. If None, uses np.random current random state.
+          
+    cv_n_folds : int
+      This class needs holdout predicted probabilities for every training example
+      and f not provided, uses cross-validation to compute them. cv_n_folds sets
+      the number of cross-validation folds used to compute
+      out-of-sample probabilities for each example in X.
+
+    prune_method : str (default: 'prune_by_noise_rate')
+      'prune_by_class', 'prune_by_noise_rate', or 'both'. Method used for pruning.
+      1. 'prune_by_noise_rate': works by removing examples with *high probability* of
+      being mislabeled for every non-diagonal in the prune_counts_matrix (see pruning.py).
+      2. 'prune_by_class': works by removing the examples with *smallest probability* of
+      belonging to their given class label for every class.
+      3. 'both': Finds the examples satisfying (1) AND (2) and removes their set conjunction. 
+
+    prune_count_method : str (default 'inverse_nm_dot_s')
+      Options are 'inverse_nm_dot_s' or 'calibrate_confident_joint'. 
+      Determines the method used to estimate the counts of the joint P(s, y) that will 
+      be used to determine how many examples to prune
+      for every class that are flipped to every other class, as follows:
+        if prune_count_method == 'inverse_nm_dot_s':
+          prune_count_matrix = inverse_noise_matrix * s_counts # Matrix of counts(y=k and s=l)
+        elif prune_count_method == 'calibrate_confident_joint':# calibrate
+          prune_count_matrix = confident_joint.T / float(confident_joint.sum()) * len(s) 
+
+    converge_latent_estimates : bool (Default: False)
+      If true, forces numerical consistency of latent estimates. Each is estimated
+      independently, but they are related mathematically with closed form 
+      equivalences. This will iteratively enforce mathematically consistency.
+
+    pulearning : int
+      Set to the integer of the class that is perfectly labeled, if such
+      a class exists. Otherwise, or if you are unsure, 
+      leave pulearning = None (default).'''  
   
   
-    def __init__(self, clf = None, seed = None):
+    def __init__(
+        self, 
+        clf = None, 
+        seed = None,
+        # Hyper-parameters (used by .fit() function)
+        cv_n_folds = 5,
+        prune_method = 'prune_by_noise_rate',
+        prune_count_method = 'inverse_nm_dot_s',
+        converge_latent_estimates = False,
+        pulearning = None,
+    ):
         
         if clf is None:
             clf = logreg() # Use logistic regression if no classifier is provided.
@@ -90,26 +135,26 @@ class RankPruning(object):
         if not hasattr(clf, "predict"):
             raise ValueError('The classifier (clf) must define a .predict() method.')
         
-        self.clf = clf
-        self.seed = seed
-        
         if seed is not None:
             np.random.seed(seed = seed)
+        
+        self.clf = clf
+        self.seed = seed
+        self.cv_n_folds = cv_n_folds
+        self.prune_method = prune_method
+        self.prune_count_method = prune_count_method
+        self.converge_latent_estimates = converge_latent_estimates
+        self.pulearning = pulearning
   
   
     def fit(
         self, 
         X,
         s,
-        cv_n_folds = 5,
-        pulearning = None,
         psx = None,
         thresholds = None,
         noise_matrix = None,
         inverse_noise_matrix = None,
-        prune_method = 'prune_by_noise_rate',
-        prune_count_method = 'inverse_nm_dot_s',
-        converge_latent_estimates = False,
         
     ):
         '''This method implements the Rank Pruning mantra 'learning with confident examples.'
@@ -122,17 +167,7 @@ class RankPruning(object):
           Input feature matrix (N, D), 2D numpy array
 
         s : np.array
-          A binary vector of labels, s, which may contain mislabeling. "s" denotes
-          the noisy label instead of \tilde(y), for ASCII encoding reasons.
-
-        cv_n_folds : int
-          The number of cross-validation folds used to compute
-          out-of-sample probabilities for each example in X.
-
-        pulearning : int
-          Set to the integer of the class that is perfectly labeled, if such
-          a class exists. Otherwise, or if you are unsure, 
-          leave pulearning = None (default).
+          A binary vector of labels, s, which may contain mislabeling. 
 
         psx : np.array (shape (N, K))
           P(s=k|x) is a matrix with K (noisy) probabilities for each of the N examples x.
@@ -143,45 +178,22 @@ class RankPruning(object):
           it will be computed for you using cross-validation.
 
         thresholds : iterable (list or np.array) of shape (K, 1)  or (K,)
-          P(s^=k|s=k). If an example has a predicted probability "greater" than 
-          this threshold, it is counted as having hidden label y = k. This is 
-          not used for pruning, only for estimating the noise rates using 
+          P(s^=k|s=k). If an example has a predicted probability "greater" than
+          this threshold, it is counted as having hidden label y = k. This is
+          not used for pruning, only for estimating the noise rates using
           confident counts. This value should be between 0 and 1. Default is None.
 
-        noise_matrix : np.array of shape (K, K), K = number of classes 
+        noise_matrix : np.array of shape (K, K), K = number of classes
           A conditional probablity matrix of the form P(s=k_s|y=k_y) containing
           the fraction of examples in every class, labeled as every other class.
           Assumes columns of noise_matrix sum to 1. 
     
-        inverse_noise_matrix : np.array of shape (K, K), K = number of classes 
+        inverse_noise_matrix : np.array of shape (K, K), K = number of classes
           A conditional probablity matrix of the form P(y=k_y|s=k_s) representing
           the estimated fraction observed examples in each class k_s, that are
           mislabeled examples from every other class k_y. If None, the 
           inverse_noise_matrix will be computed from psx and s.
           Assumes columns of inverse_noise_matrix sum to 1.
-
-        prune_method : str (default: 'prune_by_noise_rate')
-          'prune_by_class', 'prune_by_noise_rate', or 'both'. Method used for pruning.
-          1. 'prune_by_noise_rate': works by removing examples with *high probability* of 
-          being mislabeled for every non-diagonal in the prune_counts_matrix (see pruning.py).
-          2. 'prune_by_class': works by removing the examples with *smallest probability* of
-          belonging to their given class label for every class.
-          3. 'both': Finds the examples satisfying (1) AND (2) and removes their set conjunction. 
-          
-        prune_count_method : str (default 'inverse_nm_dot_s')
-          Options are 'inverse_nm_dot_s' or 'calibrate_confident_joint'. 
-          Determines the method used to estimate the counts of the joint P(s, y) that will 
-          be used to determine how many examples to prune
-          for every class that are flipped to every other class, as follows:
-            if prune_count_method == 'inverse_nm_dot_s':
-              prune_count_matrix = inverse_noise_matrix * s_counts # Matrix of counts(y=k and s=l)
-            elif prune_count_method == 'calibrate_confident_joint':# calibrate
-              prune_count_matrix = confident_joint.T / float(confident_joint.sum()) * len(s) 
-
-        converge_latent_estimates : bool (Default: False)
-          If true, forces numerical consistency of latent estimates. Each is estimated
-          independently, but they are related mathematically with closed form 
-          equivalences. This will iteratively enforce mathematically consistency.
 
         Output
         ------
@@ -218,9 +230,9 @@ class RankPruning(object):
                     X = X, 
                     s = s, 
                     clf = self.clf,
-                    cv_n_folds = cv_n_folds,
+                    cv_n_folds = self.cv_n_folds,
                     thresholds = thresholds, 
-                    converge_latent_estimates = converge_latent_estimates,
+                    converge_latent_estimates = self.converge_latent_estimates,
                     seed = self.seed,
                 )
             else: # psx is provided by user (assumed holdout probabilities)
@@ -228,7 +240,7 @@ class RankPruning(object):
                     s = s, 
                     psx = psx,
                     thresholds = thresholds, 
-                    converge_latent_estimates = converge_latent_estimates,
+                    converge_latent_estimates = self.converge_latent_estimates,
                 )
 
         if psx is None: 
@@ -236,14 +248,14 @@ class RankPruning(object):
                 X = X, 
                 labels = s, 
                 clf = self.clf,
-                cv_n_folds = cv_n_folds,
+                cv_n_folds = self.cv_n_folds,
                 seed = self.seed,
             ) 
 
         # Zero out noise matrix entries if pulearning = the integer specifying the class without noise.
-        if pulearning is not None:
-            self.noise_matrix = remove_noise_from_class(self.noise_matrix, class_without_noise=pulearning)
-            # TODO: self.inverse_noise_matrix = remove_noise_from_class(self.inverse_noise_matrix, class_without_noise=pulearning)
+        if self.pulearning is not None:
+            self.noise_matrix = remove_noise_from_class(self.noise_matrix, class_without_noise=self.pulearning)
+            # TODO: self.inverse_noise_matrix = remove_noise_from_class(self.inverse_noise_matrix, class_without_noise=self.pulearning)
 
         # This is the actual work of this function.
 
@@ -253,9 +265,9 @@ class RankPruning(object):
             psx, 
             inverse_noise_matrix = self.inverse_noise_matrix, 
             confident_joint = self.confident_joint,
-            prune_method = prune_method, 
-            prune_count_method = prune_count_method,
-            converge_latent_estimates = converge_latent_estimates,
+            prune_method = self.prune_method, 
+            prune_count_method = self.prune_count_method,
+            converge_latent_estimates = self.converge_latent_estimates,
         ) 
 
         X_mask = ~self.noise_mask
@@ -289,4 +301,13 @@ class RankPruning(object):
         for each example in X.'''
 
         return self.clf.predict_proba(X)
+    
+    def score(self, X, y, sample_weight=None):
+        '''Returns the clf's score on a test set X with labels y. '''
+        
+        if 'sample_weight' in inspect.getfullargspec(self.clf.score).args:
+            return self.clf.score(X, y, sample_weight=sample_weight)
+        else:
+            return self.clf.score(X, y)
+            
 
