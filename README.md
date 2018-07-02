@@ -17,7 +17,7 @@ Please view the [supplementary materials of our NIPS2018 submission by clicking 
 
 Python 2.7 and Python 3.5 are supported.
 
-To install the **confidentlearning** package with pip, just run:
+To install the `confidentlearning` package with pip, just run:
 
 ```
 $ pip install git+https://github.com/cgnorthcutt/confidentlearning.git
@@ -106,7 +106,7 @@ predicted_test_labels = rp.predict(X_test)
 ``` 
 
 ### Estimate the confident joint, the latent noisy channel matrix, *P<sub>s | y</sub>* and inverse, *P<sub>y | s</sub>*, the latent prior of the unobserved, actual true labels, *p(y)*, and the predicted probabilities.:
-where *s* denotes a random variable that represents the observed, noisy label and *y* denotes a random variable representing the hidden, actual labels. Both *s* and *y* take any of the m classes as values. The **confidentlearning** package supports different levels of granularity for computation depending on the needs of the user. Because of this, we support multiple alternatives, all no more than a few lines, to estimate these latent distribution arrays, enabling the user to reduce computation time by only computing what they need to compute, as seen in the examples below.
+where *s* denotes a random variable that represents the observed, noisy label and *y* denotes a random variable representing the hidden, actual labels. Both *s* and *y* take any of the m classes as values. The `confidentlearning` package supports different levels of granularity for computation depending on the needs of the user. Because of this, we support multiple alternatives, all no more than a few lines, to estimate these latent distribution arrays, enabling the user to reduce computation time by only computing what they need to compute, as seen in the examples below.
 
 Throughout these examples, you'll see a variable called *confident_joint*. The confident joint is an m x m matrix (m is the number of classes) that counts, for every observed, noisy class, the number of examples that confidently belong to every latent, hidden class. It counts the number of examples that we are confident are labeled correctly or incorrectly for every pair of obseved and unobserved classes. The confident joint is an unnormalized estimate of the complete-information latent joint distribution, *P<sub>s,y</sub>*. Most of the methods in the **confidentlearing** package start by first estimating the *confident_joint*.
 
@@ -150,7 +150,7 @@ est_py, est_nm, est_inv, confident_joint = estimate_py_and_noise_matrices_from_p
 ``` 
 
 ### Estimate label errors in a dataset:
-With the **confidentlearning** package, we can instantly fetch the indices of all estimated label errors, with nothing provided by the user except a classifier, examples, and their noisy labels. Like the previous example, there are various levels of granularity.
+With the `confidentlearning` package, we can instantly fetch the indices of all estimated label errors, with nothing provided by the user except a classifier, examples, and their noisy labels. Like the previous example, there are various levels of granularity.
 
 ```python
 from confidentlearning.pruning import get_noise_indices
