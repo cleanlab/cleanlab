@@ -303,11 +303,14 @@ class RankPruning(BaseEstimator): # Inherits sklearn classifier
         return self.clf.predict_proba(X)
     
     def score(self, X, y, sample_weight=None):
-        '''Returns the clf's score on a test set X with labels y. '''
+        '''Returns the clf's score on a test set X with labels y. '''        
         
-        if 'sample_weight' in inspect.getfullargspec(self.clf.score).args:
-            return self.clf.score(X, y, sample_weight=sample_weight)
+        if hasattr(self.clf, 'score'):        
+            if 'sample_weight' in inspect.getfullargspec(self.clf.score).args:
+                return self.clf.score(X, y, sample_weight=sample_weight)
+            else:
+                return self.clf.score(X, y)
         else:
-            return self.clf.score(X, y)
-            
+            from sklearn.metrics import accuracy_score
+            return accuracy_score(y, clf.predict(X_val), sample_weight=None) 
 
