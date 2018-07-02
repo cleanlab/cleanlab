@@ -57,7 +57,7 @@ Label errors in the 2012 ImageNet validation dataset identified automatically wi
 All of the features of the `confidentlearning` package work with **any model**. Yes, any model. Feel free to use PyTorch, Tensorflow, caffe2, scikit-learn, mxnet, etc. If you use a scikit-learn classifier, all `confidentlearning` methods will work out-of-the-box. It's also easy to use your favorite model from a non-scikit-learn package, just wrap your model into a Python class that inherets the `sklearn.base.BaseEstimator`:
 ```python
 from sklearn.base import BaseEstimator
-class YourModel(BaseEstimator): # Inherits sklearn base classifier
+class YourFavoriteModel(BaseEstimator): # Inherits sklearn base classifier
     def __init__(self, ):
         pass
     def fit(self, X, y, sample_weight = None):
@@ -71,7 +71,7 @@ class YourModel(BaseEstimator): # Inherits sklearn base classifier
         
 # Now you can use your model with `confidentlearning`. Here's one example:
 from confidentlearning.classification import RankPruning
-rp = RankPruning(clf=)
+rp = RankPruning(clf=YourFavoriteModel())
 rp.fit(train_data, train_labels_with_errors)
 ```
 ### Want to see a working example? [Here's a compliant PyTorch MNIST CNN class](https://github.com/cgnorthcutt/confidentlearning/blob/master/examples/models/mnist_pytorch.py#L28)
