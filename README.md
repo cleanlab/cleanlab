@@ -2,7 +2,7 @@
 A Python package for Confident Learning with state-of-the-art algorithms for multiclass learning with noisy labels, detection of label errors in massive datasets, latent noisy channel estimation, latent prior estimation, and much more.
 
 #### Confident learning theory and algorithms are:
-1. fast - only two hours (on cpu-based laptop) to find all label errors in the 2012 ImageNet Validation set 
+1. fast - only two hours (on cpu-based laptop) to find the label errors in the 2012 ImageNet Validation set 
 2. robust - provable generalization and risk minimimzation guarantees with imperfect probability estimation
 3. general - works with any probablistic classifier, Faster R-CNN, logistic regression, LSTM, etc.
 
@@ -43,14 +43,14 @@ These examples show how easy it is to characterize label noise in datasets, lear
 
 ## Automatically identify ~50 label errors in MNIST with confident learning. [[link]](examples/finding_MNIST_label_errors).
 ![Image depicting label errors in MNIST train set.](https://raw.githubusercontent.com/cgnorthcutt/confidentlearning/master/img/mnist_training_label_errors24_prune_by_noise_rate.png)
-Label errors of the original MNIST train dataset identified algorithmically using the rankpruning algorithm. Depicts the 24 least confident labels, ordered left-right, top-down by increasing self-confidence (probability of belonging to the given label), denoted conf in teal. The label with the largest predicted probability is in green. Overt errors are in red.
+Label errors of the original MNIST **train** dataset identified algorithmically using the rankpruning algorithm. Depicts the 24 least confident labels, ordered left-right, top-down by increasing self-confidence (probability of belonging to the given label), denoted conf in teal. The label with the largest predicted probability is in green. Overt errors are in red.
 
 ![Image depicting label errors in MNIST test set.](https://raw.githubusercontent.com/cgnorthcutt/confidentlearning/master/img/mnist_test_label_errors8.png)
- Selected label errors in the MNIST test dataset ordered by increasing self-confidence (in teal).
+ Selected label errors in the MNIST **test** dataset ordered by increasing self-confidence (in teal).
 
-## Automatically identify ~5000 validation set label errors in ImageNet. [[link]](examples/finding_ImageNet_label_errors).
+## Automatically identify ~5k (of 50k) validation set label errors in ImageNet. [[link]](examples/finding_ImageNet_label_errors).
 ![Image depicting label errors in ImageNet validation set.](https://raw.githubusercontent.com/cgnorthcutt/confidentlearning/master/img/imagenet_validation_label_errors_96_prune_by_noise_rate.jpg)
-Label errors in the 2012 ImageNet validation dataset identified automatically with confident learning using a pre-trained resnet18. Displayed are the 96 least confident labels. We see that ImageNet contains numerous multi-label images.
+Label errors in the 2012 ImageNet validation dataset identified automatically with confident learning using a pre-trained resnet18. Displayed are the 96 least confident labels. We see that ImageNet contains numerous multi-label images, although it is used widely by the machine learning and vision communities as a single-label benchmark dataset.
 
 
 ## Documentation by Example - Quick Tutorials
