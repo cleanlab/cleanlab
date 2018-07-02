@@ -53,6 +53,32 @@ Label errors of the original MNIST **train** dataset identified algorithmically 
 Label errors in the 2012 ImageNet validation dataset identified automatically with confident learning using a pre-trained resnet18. Displayed are the 96 least confident labels. We see that ImageNet contains numerous multi-label images, although it is used widely by the machine learning and vision communities as a single-label benchmark dataset.
 
 
+## Use `confidentlearning` with any model (Tensorflow, caffe2, PyTorch, etc.)
+All of the features of the `confidentlearning` package work with **any model**. Yes, any model. Feel free to use PyTorch, Tensorflow, caffe2, scikit-learn, mxnet, etc. If you use a scikit-learn classifier, all `confidentlearning` methods will work out-of-the-box. It's also easy to use your favorite model from a non-scikit-learn package, just wrap your model into a Python class that inherets the `sklearn.base.BaseEstimator`:
+```python
+from sklearn.base import BaseEstimator
+class YourModel(BaseEstimator): # Inherits sklearn base classifier
+    def __init__(self, ):
+        pass
+    def fit(self, X, y, sample_weight = None):
+        pass
+    def predict(self, X):
+        pass
+    def predict_proba(self, X):
+        pass
+    def score(self, X, y, sample_weight = None):
+        pass
+        
+# Now you can use your model with `confidentlearning`. Here's one example:
+from confidentlearning.classification import RankPruning
+rp = RankPruning(clf=)
+rp.fit(train_data, train_labels_with_errors)
+```
+### Want to see a working example? [Here's a compliant PyTorch MNIST CNN class](https://github.com/cgnorthcutt/confidentlearning/blob/master/examples/models/mnist_pytorch.py#L28)
+
+As you can see [here](https://github.com/cgnorthcutt/confidentlearning/blob/master/examples/models/mnist_pytorch.py#L28), technically you don't actually need to inherit from `sklearn.base.BaseEstimator`, as you can just create a class that defines .fit(), .predict(), and .predict_proba(), but inheriting makes downstream scikit-learn applications like hyper-parameter optimization work seamlessly. For example, the [RankPruning() model](https://github.com/cgnorthcutt/confidentlearning/blob/master/confidentlearning/classification.py#L48) is fully compliant.
+
+
 ## Documentation by Example - Quick Tutorials
 
 Many of these methods have default parameters that won't cover here. Check out the method docstrings for full documentation.
@@ -65,11 +91,16 @@ from confidentlearning.classification import RankPruning
 # We include it here for clarity, but this step is omitted below.
 from sklearn.linear_model import LogisticRegression as logreg
 
+# 1.
 # Wrap around any classifier. Yup, neural networks work, too.
 rp = RankPruning(clf=logreg()) 
+
+# 2.
 # X_train is numpy matrix of training examples (integers for large data)
 # train_labels_with_errors is a numpy array of labels of length n (# of examples), usually denoted 's'.
 rp.fit(X_train, train_labels_with_errors) 
+
+# 3.
 # Estimate the predictions you would have gotten by training with *no* label errors.
 predicted_test_labels = rp.predict(X_test)
 ``` 
