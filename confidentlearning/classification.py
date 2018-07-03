@@ -6,6 +6,7 @@
 # * clf.fit(X, y, sample_weight = None)
 # * clf.predict_proba(X)
 # * clf.predict(X)
+# * clf.predict(X)
 # 
 # where 'X' (of length n) contains your data, 'y' (of length n) contains your targets formatted as 0, 1, 2, ..., K-1, and sample_weight (of length n) that reweights examples in the loss function while training.
 # 
@@ -19,10 +20,29 @@
 # rp.fit(X_train, y_may_have_label_errors)
 # pred = rp.predict(X_test) # Estimates the predictions you would have gotten had you trained without label errors.
 # ```
+# 
 # ## Notes
 # 
 # * s - denotes *noisy labels*, just means training labels, but maybe with label errors
 # * Class labels (K classes) must be formatted as natural numbers: 0, 1, 2, ..., K-1
+# 
+# 
+# 
+# ### The easiest way to use any model (Tensorflow, caffe2, PyTorch, etc.) with `confidentlearning` is to wrap it in a class that inherets the `sklearn.base.BaseEstimator`:
+# ```python
+# from sklearn.base import BaseEstimator
+# class YourModel(BaseEstimator): # Inherits sklearn base classifier
+#     def __init__(self, ):
+#         pass
+#     def fit(self, X, y, sample_weight = None):
+#         pass
+#     def predict(self, X):
+#         pass
+#     def predict_proba(self, X):
+#         pass
+#     def score(self, X, y, sample_weight = None):
+#         pass
+# ```
 
 # In[ ]:
 
@@ -291,19 +311,40 @@ class RankPruning(BaseEstimator): # Inherits sklearn classifier
     
     
     def predict(self, X):
-        '''Returns a binary vector of predictions.'''
+        '''Returns a binary vector of predictions.
+
+        Parameters
+        ----------
+        X : np.array of shape (n, m)
+          The test data as a feature matrix.'''
 
         return self.clf.predict(X)
   
   
     def predict_proba(self, X):
         '''Returns a vector of probabilties P(y=k)
-        for each example in X.'''
+        for each example in X.
+
+        Parameters
+        ----------
+        X : np.array of shape (n, m)
+          The test data as a feature matrix.'''
 
         return self.clf.predict_proba(X)
     
     def score(self, X, y, sample_weight=None):
-        '''Returns the clf's score on a test set X with labels y. '''        
+        '''Returns the clf's score on a test set X with labels y.
+
+        Parameters
+        ----------
+        X : np.array of shape (n, m)
+          The test data as a feature matrix.
+          
+        y : np.array<int> of shape (n,) or (n, 1)
+          The test classification labels as an array.
+          
+        sample_weight : np.array<float> of shape (n,) or (n, 1)
+          Weights each example when computing the score / accuracy.'''
         
         if hasattr(self.clf, 'score'):        
             if 'sample_weight' in inspect.getfullargspec(self.clf.score).args:
@@ -312,5 +353,5 @@ class RankPruning(BaseEstimator): # Inherits sklearn classifier
                 return self.clf.score(X, y)
         else:
             from sklearn.metrics import accuracy_score
-            return accuracy_score(y, clf.predict(X_val), sample_weight=None) 
+            return accuracy_score(y, self.clf.predict(X_val), sample_weight=sample_weight) 
 
