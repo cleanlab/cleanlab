@@ -98,7 +98,7 @@ As you can see [here](https://github.com/cgnorthcutt/confidentlearning/blob/mast
 
 ## Documentation by Example - Quick Tutorials
 
-Many of these methods have default parameters that won't cover here. Check out the method docstrings for full documentation.
+Many of these methods have default parameters that won't be covered here. Check out the method docstrings for full documentation.
 
 ### Multiclass learning with noisy labels (in **3** lines of code):
 **rankpruning** is a fast, general, robust algorithm for multiclass learning with noisy labels. It adds minimal overhead, needing only *O(nm<sup>2</sup>)* time for n training examples and m classes, works with any classifier, and is easy to use.
