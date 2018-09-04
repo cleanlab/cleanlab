@@ -31,6 +31,23 @@ $ git clone https://github.com/cgnorthcutt/confidentlearning.git
 $ cd confidentlearning
 $ pip install -e .
 ```
+## Citations and Related Publications
+
+Although this package goes far beyond our 2017 publication, if you find this repository helpful, please cite our paper [http://auai.org/uai2017/proceedings/papers/35.pdf](http://auai.org/uai2017/proceedings/papers/35.pdf). New papers will be posted here when they are published.
+
+```
+@inproceedings{northcutt2017rankpruning,
+ author={Northcutt, Curtis G. and Wu, Tailin and Chuang, Isaac L.},
+ title={Learning with Confident Examples: Rank Pruning for Robust Classification with Noisy Labels},
+ booktitle = {Proceedings of the Thirty-Third Conference on Uncertainty in Artificial Intelligence},
+ series = {UAI'17},
+ year = {2017},
+ location = {Sydney, Australia},
+ numpages = {10},
+ url = {http://auai.org/uai2017/proceedings/papers/35.pdf},
+ publisher = {AUAI Press},
+} 
+```
 
 ## Get started with easy, quick examples.
 
