@@ -58,6 +58,8 @@ New to **confidentlearing**? Start with:
 
 These examples show how easy it is to characterize label noise in datasets, learn with noisy labels, identify label errors, estimate latent priors and noisy channels, and more.
 
+<!---
+
 ## Automatically identify ~50 label errors in MNIST with confident learning. [[link]](examples/finding_MNIST_label_errors).
 ![Image depicting label errors in MNIST train set.](https://raw.githubusercontent.com/cgnorthcutt/confidentlearning/master/img/mnist_training_label_errors24_prune_by_noise_rate.png)
 Label errors of the original MNIST **train** dataset identified algorithmically using the rankpruning algorithm. Depicts the 24 least confident labels, ordered left-right, top-down by increasing self-confidence (probability of belonging to the given label), denoted conf in teal. The label with the largest predicted probability is in green. Overt errors are in red.
@@ -69,6 +71,7 @@ Label errors of the original MNIST **train** dataset identified algorithmically 
 ![Image depicting label errors in ImageNet validation set.](https://raw.githubusercontent.com/cgnorthcutt/confidentlearning/master/img/imagenet_validation_label_errors_96_prune_by_noise_rate.jpg)
 Label errors in the 2012 ImageNet validation dataset identified automatically with confident learning using a pre-trained resnet18. Displayed are the 96 least confident labels. We see that ImageNet contains numerous multi-label images, although it is used widely by the machine learning and vision communities as a single-label benchmark dataset.
 
+--->
 
 ## Use `confidentlearning` with any model (Tensorflow, caffe2, PyTorch, etc.)
 All of the features of the `confidentlearning` package work with **any model**. Yes, any model. Feel free to use PyTorch, Tensorflow, caffe2, scikit-learn, mxnet, etc. If you use a scikit-learn classifier, all `confidentlearning` methods will work out-of-the-box. It's also easy to use your favorite model from a non-scikit-learn package, just wrap your model into a Python class that inherets the `sklearn.base.BaseEstimator`:
