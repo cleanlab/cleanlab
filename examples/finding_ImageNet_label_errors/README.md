@@ -10,7 +10,7 @@ https://raw.githubusercontent.com/soumith/imagenetloader.torch/master/valprep.sh
 ## If you just want a list of all the label errors in 2012 ImageNet validation set:
 
 #### The top 5000 predicted label errors are available as a text file here:
-https://raw.githubusercontent.com/cgnorthcutt/confidentlearning/master/finding_ImageNet_label_errors/imagenet_val_label_errors.txt
+https://github.com/cgnorthcutt/confidentlearning/blob/master/examples/finding_ImageNet_label_errors/imagenet_val_label_errors.txt
 
 This text file contains a list of 5000 Python dicts, each representing a predicted label error.  
 The first two dicts in the list, look like:
@@ -34,4 +34,4 @@ The first two dicts in the list, look like:
 The dicts are ordered from top to bottom by confidence of being a label error. Computationally, this means they are sorted by prob_max_label - prob_given_label.
 
 #### You can download a smaller file containing only the unique id's of the label errors here:
-https://raw.githubusercontent.com/cgnorthcutt/confidentlearning/master/finding_ImageNet_label_errors/imagenet_val_label_errors_unique_id_only.txt
+https://github.com/cgnorthcutt/confidentlearning/blob/master/examples/finding_ImageNet_label_errors/imagenet_val_label_errors_unique_id_only.txt
