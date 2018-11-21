@@ -66,6 +66,17 @@ posted here when they are published.
     publisher = {AUAI Press},
    } 
 
+
+Core ```cleanlab``` Package Descriptions
+------------------------------
+1. **cleanlab/classification.py** - The RankPruning() class for learning with noisy labels.
+2. **cleanlab/latent_algebra.py** -	Equalities when noise information is known.
+3. **cleanlab/latent_estimation.py** -	Estimates and fully characterizes all variants of label noise.
+4. **cleanlab/noise_generation.py** - Generate mathematically valid synthetic noise matrices.
+5. **cleanlab/polyplex.py** -	Characterizes joint distribution of label noise EXACTLY from noisy channel.
+6. **cleanlab/pruning.py** - Finds the indices of the examples with label errors in a dataset.
+
+
 Get started with easy, quick examples.
 --------------------------------------
 
@@ -331,6 +342,7 @@ Support for numerous *weak supervision* and *learning with noisy labels* functio
 
    # This package is a full of other useful methods for learning with noisy labels.
    # The tutorial stops here, but you don't have to. Inspect method docstrings for full docs.
+   
 
 The Polyplex
 ------------
