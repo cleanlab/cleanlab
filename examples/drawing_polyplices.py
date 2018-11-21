@@ -6,8 +6,8 @@
 
 from __future__ import print_function, absolute_import, division, unicode_literals, with_statement
 import numpy as np
-from confidentlearning.noise_generation import generate_noise_matrix_from_trace, noise_matrix_is_valid
-from confidentlearning import polyplex
+from cleanlab.noise_generation import generate_noise_matrix_from_trace, noise_matrix_is_valid
+from cleanlab import polyplex
 
 # Plotting functions and imports
 get_ipython().run_line_magic('matplotlib', 'inline')

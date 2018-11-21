@@ -12,17 +12,17 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
 
 # Get version number
-exec(open('confidentlearning/version.py').read())
+exec(open('cleanlab/version.py').read())
 
 setup(
-    name='confidentlearning',
+    name='cleanlab',
     version=__version__,
     license='MIT',
     long_description='A Python package for Confident Learning with state-of-the-art algorithms' + 
     ' for multiclass learning with noisy labels, latent noisy channel estimation, latent prior' +
     ' estimation, detection of label errors in massive datasets, and much more.',
     description = 'A family of algorithms and theory for multiclass learning with noisy labels.',
-    url = 'https://github.com/cgnorthcutt/confidentlearning',
+    url = 'https://github.com/cgnorthcutt/cleanlab',
 
     author = 'Curtis G. Northcutt',
     author_email = 'cgn@mit.edu',
