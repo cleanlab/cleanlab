@@ -67,7 +67,7 @@ posted here when they are published.
    } 
 
 
-Core ```cleanlab``` Package Descriptions
+Core ``cleanlab`` Package Descriptions
 ------------------------------
 1. **cleanlab/classification.py** - The RankPruning() class for learning with noisy labels.
 2. **cleanlab/latent_algebra.py** -	Equalities when noise information is known.
@@ -190,7 +190,7 @@ classifier, and is easy to use.
    # Estimate the predictions you would have gotten by training with *no* label errors.
    predicted_test_labels = rp.predict(X_test)
 
-Estimate the confident joint, the latent noisy channel matrix, *Ps \| y* and inverse, *Py \| s*, the latent prior of the unobserved, actual true labels, *p(y)*, and the predicted probabilities.:
+Estimate the confident joint, the latent noisy channel matrix, *P(s \| y)* and inverse, *P(y \| s)*, the latent prior of the unobserved, actual true labels, *p(y)*, and the predicted probabilities.:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 where *s* denotes a random variable that represents the observed, noisy
@@ -277,14 +277,14 @@ there are various levels of granularity.
        confident_joint=confident_joint, # not required, include to avoid recomputing
    )
 
-Estimate the latent joint probability distribution matrix of the noisy and true labels, *Ps,y*:
+Estimate the latent joint probability distribution matrix of the noisy and true labels, *P(s,y)*:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-There are two methods to compute *Ps,y*, the complete-information
+There are two methods to compute *P(s,y)*, the complete-information
 distribution matrix that captures the number of pairwise label flip
-errors when multipled by the total number of examples as *n* Ps,y\*.
+errors when multipled by the total number of examples as *n* P(s,y)*.
 
-Method 1: Guarantees the rows of *Ps,y* correctly sum to *p(s)*, by first computing *Py \| s*.
+Method 1: Guarantees the rows of *P(s,y)* correctly sum to *p(s)*, by first computing *P(y \| s)*.
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 This method occurs when hyperparameter prune_count_method =
@@ -347,7 +347,7 @@ Support for numerous *weak supervision* and *learning with noisy labels* functio
 The Polyplex
 ------------
 
-The key to learning in the presence of label errors is estimating the joint distribution between the actual, hidden labels ‘*y*’ and the observed, noisy labels ‘*s*’. Using ``cleanlab`` and theory of confident learning, we can completely characterize the trace of the latent joint distribution, *trace(Ps,y)*, given *p(y)*, for any fraction of label errors, i.e. for any trace of the noisy channel, *trace(Ps|y)*.
+The key to learning in the presence of label errors is estimating the joint distribution between the actual, hidden labels ‘*y*’ and the observed, noisy labels ‘*s*’. Using ``cleanlab`` and theory of confident learning, we can completely characterize the trace of the latent joint distribution, *trace(P(s,y))*, given *p(y)*, for any fraction of label errors, i.e. for any trace of the noisy channel, *trace(P(s|y))*.
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 You can check out how to do this yourself here: 1. `Drawing
