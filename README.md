@@ -1,10 +1,11 @@
 # ```cleanlab```
-A Python package for Confident Learning with state-of-the-art algorithms for multiclass learning with noisy labels, detection of label errors in massive datasets, latent noisy channel estimation, latent prior estimation, and much more.
+A Python package for cleaning/fixing errors in dataset labels using state-of-the-art algorithms for multiclass learning with noisy labels, detection of label errors in massive datasets, latent noisy channel estimation, latent prior estimation, and much more. This package implements the theory and algorithms of the machine learning subfield known as confident learning.
 
-#### Confident learning theory and algorithms are:
+## ```cleanlab``` is:
 1. fast - only two hours (on cpu-based laptop) to find the label errors in the 2012 ImageNet Validation set 
 2. robust - provable generalization and risk minimimzation guarantees with imperfect probability estimation
 3. general - works with any probablistic classifier, Faster R-CNN, logistic regression, LSTM, etc.
+4. unique - the only general implementation for multiclass learning with noisy lables for ANY classifier (deep or not), for ANY amount/distribution of label noise distribution, with no information about the label noise needed a priori.
 
 Check out these [examples](examples).
 
@@ -47,7 +48,7 @@ Although this package goes far beyond our 2017 publication, if you find this rep
 
 ## Get started with easy, quick examples.
 
-New to **confidentlearing**? Start with:
+New to **cleanlab**? Start with:
 
 1. [Visualizing confident learning](examples/visualizing_confident_learning.ipynb)
 2. [A simple example of learning with noisy labels on the multiclass Iris dataset](examples/iris_simple_example.ipynb). 
@@ -56,7 +57,7 @@ These examples show how easy it is to characterize label noise in datasets, lear
 
 <!---
 
-## Automatically identify ~50 label errors in MNIST with confident learning. [[link]](examples/finding_MNIST_label_errors).
+## Automatically identify ~50 label errors in MNIST with cleanlab. [[link]](examples/finding_MNIST_label_errors).
 ![Image depicting label errors in MNIST train set.](https://raw.githubusercontent.com/cgnorthcutt/cleanlab/master/img/mnist_training_label_errors24_prune_by_noise_rate.png)
 Label errors of the original MNIST **train** dataset identified algorithmically using the rankpruning algorithm. Depicts the 24 least confident labels, ordered left-right, top-down by increasing self-confidence (probability of belonging to the given label), denoted conf in teal. The label with the largest predicted probability is in green. Overt errors are in red.
 
@@ -65,7 +66,7 @@ Label errors of the original MNIST **train** dataset identified algorithmically 
 
 ## Automatically identify ~5k (of 50k) validation set label errors in ImageNet. [[link]](examples/finding_ImageNet_label_errors).
 ![Image depicting label errors in ImageNet validation set.](https://raw.githubusercontent.com/cgnorthcutt/cleanlab/master/img/imagenet_validation_label_errors_96_prune_by_noise_rate.jpg)
-Label errors in the 2012 ImageNet validation dataset identified automatically with confident learning using a pre-trained resnet18. Displayed are the 96 least confident labels. We see that ImageNet contains numerous multi-label images, although it is used widely by the machine learning and vision communities as a single-label benchmark dataset.
+Label errors in the 2012 ImageNet validation dataset identified automatically with cleanlab using a pre-trained resnet18. Displayed are the 96 least confident labels. We see that ImageNet contains numerous multi-label images, although it is used widely by the machine learning and vision communities as a single-label benchmark dataset.
 
 --->
 
@@ -124,7 +125,7 @@ predicted_test_labels = rp.predict(X_test)
 ### Estimate the confident joint, the latent noisy channel matrix, *P<sub>s | y</sub>* and inverse, *P<sub>y | s</sub>*, the latent prior of the unobserved, actual true labels, *p(y)*, and the predicted probabilities.:
 where *s* denotes a random variable that represents the observed, noisy label and *y* denotes a random variable representing the hidden, actual labels. Both *s* and *y* take any of the m classes as values. The `cleanlab` package supports different levels of granularity for computation depending on the needs of the user. Because of this, we support multiple alternatives, all no more than a few lines, to estimate these latent distribution arrays, enabling the user to reduce computation time by only computing what they need to compute, as seen in the examples below.
 
-Throughout these examples, you'll see a variable called *confident_joint*. The confident joint is an m x m matrix (m is the number of classes) that counts, for every observed, noisy class, the number of examples that confidently belong to every latent, hidden class. It counts the number of examples that we are confident are labeled correctly or incorrectly for every pair of obseved and unobserved classes. The confident joint is an unnormalized estimate of the complete-information latent joint distribution, *P<sub>s,y</sub>*. Most of the methods in the **confidentlearing** package start by first estimating the *confident_joint*.
+Throughout these examples, you'll see a variable called *confident_joint*. The confident joint is an m x m matrix (m is the number of classes) that counts, for every observed, noisy class, the number of examples that confidently belong to every latent, hidden class. It counts the number of examples that we are confident are labeled correctly or incorrectly for every pair of obseved and unobserved classes. The confident joint is an unnormalized estimate of the complete-information latent joint distribution, *P<sub>s,y</sub>*. Most of the methods in the **cleanlab** package start by first estimating the *confident_joint*.
 
 #### Option 1: Compute the confident joint and predicted probs first. Stop if that's all you need.
 ```python
@@ -237,7 +238,7 @@ s_noisy_labels = generate_noisy_labels(y_hidden_actual_labels, noise_matrix)
 
 
 ## The Polyplex 
-### The key to learning in the presence of label errors is estimating the joint distribution between the actual, hidden labels '*y*' and the observed, noisy labels '*s*'. Using confident learning, we can completely characterize the trace of the latent joint distribution, *trace(P<sub>s,y</sub>)*, given *p(y)*, for any fraction of label errors, i.e. for any trace of the noisy channel, *trace(P<sub>s|y</sub>)*.
+### The key to learning in the presence of label errors is estimating the joint distribution between the actual, hidden labels '*y*' and the observed, noisy labels '*s*'. Using ```cleanlab``` and theory of confident learning, we can completely characterize the trace of the latent joint distribution, *trace(P<sub>s,y</sub>)*, given *p(y)*, for any fraction of label errors, i.e. for any trace of the noisy channel, *trace(P<sub>s|y</sub>)*.
 You can check out how to do this yourself here:
 1. [Drawing Polyplices](examples/drawing_polyplices.ipynb)
 2. [Computing Polyplices](cleanlab/polyplex.ipynb)
