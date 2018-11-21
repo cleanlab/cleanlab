@@ -1,6 +1,8 @@
 # Added by Curtis G. Northcutt
 cleanlab/*.ipynb
 examples/models/*.ipynb
+.DS_Store
+*/.DS_Store
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
