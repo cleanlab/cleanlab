@@ -95,6 +95,8 @@ rp.fit(train_data, train_labels_with_errors)
 
 As you can see [here](https://github.com/cgnorthcutt/cleanlab/blob/master/examples/models/mnist_pytorch.py#L28), technically you don't actually need to inherit from `sklearn.base.BaseEstimator`, as you can just create a class that defines .fit(), .predict(), and .predict_proba(), but inheriting makes downstream scikit-learn applications like hyper-parameter optimization work seamlessly. For example, the [RankPruning() model](https://github.com/cgnorthcutt/cleanlab/blob/master/cleanlab/classification.py#L48) is fully compliant.
 
+Note, some libraries exists to do this for you. For pyTorch, check out the ```skorch``` Python library which will wrap your ```pytorch``` model into a ```scikit-learn``` compliant model.
+
 
 ## Documentation by Example - Quick Tutorials
 
