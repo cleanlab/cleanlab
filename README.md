@@ -3,7 +3,7 @@ A Python package for cleaning/fixing errors in dataset labels using state-of-the
 
 ## ```cleanlab``` is:
 1. fast - only two hours (on cpu-based laptop) to find the label errors in the 2012 ImageNet Validation set 
-2. robust - provable generalization and risk minimimzation guarantees with imperfect probability estimation
+2. robust - provable generalization and risk minimimzation guarantees even for imperfect probability estimation
 3. general - works with any probablistic classifier, Faster R-CNN, logistic regression, LSTM, etc.
 4. unique - the only general implementation for multiclass learning with noisy lables for ANY classifier (deep or not), for ANY amount/distribution of label noise distribution, with no information about the label noise needed a priori.
 
