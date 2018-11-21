@@ -128,11 +128,11 @@ model into a Python class that inherets the
    rp = RankPruning(clf=YourFavoriteModel())
    rp.fit(train_data, train_labels_with_errors)
 
-Want to see a working example? `Here’s a compliant PyTorch MNIST CNN class <https://github.com/cgnorthcutt/cleanlab/blob/master/examples/models/mnist_pytorch.py#L28>`__
+Want to see a working example? `Here’s a compliant PyTorch MNIST CNN class <https://github.com/cgnorthcutt/cleanlab/blob/master/cleanlab/models/mnist_pytorch.py#L28>`__
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 As you can see
-`here <https://github.com/cgnorthcutt/cleanlab/blob/master/examples/models/mnist_pytorch.py#L28>`__,
+`here <https://github.com/cgnorthcutt/cleanlab/blob/master/cleanlab/models/mnist_pytorch.py#L28>`__,
 technically you don’t actually need to inherit from
 ``sklearn.base.BaseEstimator``, as you can just create a class that
 defines .fit(), .predict(), and .predict_proba(), but inheriting makes
