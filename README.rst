@@ -69,6 +69,7 @@ posted here when they are published.
 
 Core ``cleanlab`` Package Descriptions
 --------------------------------------
+
 1. **cleanlab/classification.py** - The RankPruning() class for learning with noisy labels.
 2. **cleanlab/latent_algebra.py** -	Equalities when noise information is known.
 3. **cleanlab/latent_estimation.py** -	Estimates and fully characterizes all variants of label noise.
