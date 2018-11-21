@@ -1,5 +1,9 @@
 # Written by Curtis G. Northcutt
 
+# For pypi upload
+# 1. python setup.py sdist bdist_wheel --universal
+# 2. twine upload dist/*
+
 from setuptools import setup, find_packages
 # To use a consistent encoding
 from codecs import open
@@ -8,7 +12,7 @@ from os import path
 here = path.abspath(path.dirname(__file__))
 
 # Get the long description from the README file
-with open(path.join(here, 'README.md'), encoding='utf-8') as f:
+with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
     long_description = f.read()
 
 # Get version number
@@ -18,12 +22,9 @@ setup(
     name='cleanlab',
     version=__version__,
     license='MIT',
-    long_description='A Python package for Confident Learning with state-of-the-art algorithms' + 
-    ' for multiclass learning with noisy labels, latent noisy channel estimation, latent prior' +
-    ' estimation, detection of label errors in massive datasets, and much more.',
-    description = 'A family of algorithms and theory for multiclass learning with noisy labels.',
+    long_description=long_description,
+    description = 'A Python package for learning with noisy labels and cleaning noisy labels in datasets, including large benchmark datasets.',
     url = 'https://github.com/cgnorthcutt/cleanlab',
-
     author = 'Curtis G. Northcutt',
     author_email = 'cgn@mit.edu',
 
@@ -36,7 +37,7 @@ setup(
       'Development Status :: 3 - Alpha',
       'Intended Audience :: Developers',
       'Topic :: Machine Learning :: Learning with Noisy Labels',
-       'License :: OSI Approved :: MIT License',
+      'License :: OSI Approved :: MIT License',
 
       # We believe this package works will all versions, but we do not guarantee it!
       'Programming Language :: Python :: 2.7',
@@ -48,11 +49,11 @@ setup(
     ],
 
     # What does your project relate to?
-    keywords='machine_learning denoising classification weak_supervision learning_with_noisy_labels',
+    keywords='machine_learning denoising classification weak_supervision learning_with_noisy_labels unsupervised_learning',
 
     # You can just specify the packages manually here if your project is
     # simple. Or you can use find_packages().
-    packages=find_packages(exclude=['tutorial_and_testing']),
+    packages=find_packages(exclude=['img', 'examples']),
 
     # List run-time dependencies here.  These will be installed by pip when
     # your project is installed. For an analysis of "install_requires" vs pip's
