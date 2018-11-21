@@ -1,5 +1,5 @@
 # Added by Curtis G. Northcutt
-confidentlearning/*.ipynb
+cleanlab/*.ipynb
 examples/models/*.ipynb
 
 # Byte-compiled / optimized / DLL files
