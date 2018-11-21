@@ -103,7 +103,7 @@ def make_linearly_seperable_dataset(n_classes = 3):
 # In[74]:
 
 
-get_ipython().magic(u'matplotlib inline')
+get_ipython().run_line_magic('matplotlib', 'inline')
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
