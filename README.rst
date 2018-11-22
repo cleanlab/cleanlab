@@ -92,7 +92,7 @@ These examples show how easy it is to characterize label noise in
 datasets, learn with noisy labels, identify label errors, estimate
 latent priors and noisy channels, and more.
 
-.. raw:: html
+.. ..
 
    <!---
 
