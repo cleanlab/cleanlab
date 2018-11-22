@@ -27,22 +27,29 @@ Check out these `examples <examples>`__.
 Installation
 ------------
 
-Python 2.7 and Python 3.5 are supported.
+Python 2.7 is supported. Python 3.4, 3.5, and 3.6 will be supported soon (some things work already).
 
-To install the ``cleanlab`` package with pip, just run:
+Stable release:
 
-::
+.. code-block::
+
+   $ pip install cleanlab
+
+Developer (unstable) release:
+
+.. code-block::
 
    $ pip install git+https://github.com/cgnorthcutt/cleanlab.git
 
-If you have issues, you can also clone the repo and install:
+To install the codebase (enabling you to make modifications):
 
-::
+.. code-block::
 
    $ conda update pip # if you use conda
    $ git clone https://github.com/cgnorthcutt/cleanlab.git
-   $ cd cleanlab
+   $ cd hypopt
    $ pip install -e .
+
 
 Citations and Related Publications
 ----------------------------------
