@@ -30,22 +30,35 @@ setup(
 
     # See https://pypi.python.org/pypi?%3Aaction=list_classifiers
     classifiers=[
-      # How mature is this project? Common values are
-      #   3 - Alpha
-      #   4 - Beta
-      #   5 - Production/Stable
       'Development Status :: 3 - Alpha',
+
       'Intended Audience :: Developers',
-      'Topic :: Machine Learning :: Learning with Noisy Labels',
+      'Intended Audience :: Education',
+      'Intended Audience :: Science/Research',
+
       'License :: OSI Approved :: MIT License',
 
       # We believe this package works will all versions, but we do not guarantee it!
       'Programming Language :: Python :: 2.7',
       # 'Programming Language :: Python :: 3',
-      # 'Programming Language :: Python :: 3.2',
-      # 'Programming Language :: Python :: 3.3',
       # 'Programming Language :: Python :: 3.4',
       # 'Programming Language :: Python :: 3.5',
+      # 'Programming Language :: Python :: 3.6',
+
+      'Programming Language :: Python',
+      'Topic :: Software Development',
+      'Topic :: Scientific/Engineering',
+      'Topic :: Scientific/Engineering',
+      'Topic :: Scientific/Engineering :: Mathematics',
+      'Topic :: Scientific/Engineering :: Artificial Intelligence',
+      'Topic :: Software Development',
+      'Topic :: Software Development :: Libraries',
+      'Topic :: Software Development :: Libraries :: Python Modules',
+
+      'Operating System :: Microsoft :: Windows',
+      'Operating System :: POSIX',
+      'Operating System :: Unix',
+      'Operating System :: MacOS',
     ],
 
     # What does your project relate to?
