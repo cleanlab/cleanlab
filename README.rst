@@ -245,8 +245,8 @@ Option 2: Estimate the latent distribution matrices in a single line of code.
        s=train_labels_with_errors,
    )
 
-Option 3: Skip computing the predicted probabilities if you already have them
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Option 3: Skip computing the predicted probabilities if you already have them.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. code:: python
 
@@ -279,14 +279,14 @@ there are various levels of granularity.
    )
 
 Estimate the latent joint probability distribution matrix of the noisy and true labels, *P(s,y)*:
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 There are two methods to compute *P(s,y)*, the complete-information
 distribution matrix that captures the number of pairwise label flip
 errors when multipled by the total number of examples as *n* P(s,y)*.
 
 Method 1: Guarantees the rows of *P(s,y)* correctly sum to *p(s)*, by first computing *P(y \| s)*.
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 This method occurs when hyperparameter prune_count_method =
 ‘inverse_nm_dot_s’ in RankPruning.fit() and get_noise_indices().
@@ -299,8 +299,8 @@ This method occurs when hyperparameter prune_count_method =
    # We computed est_inv (estimated inverse noise matrix) in the previous example (two above).
    psy = np.transpose(est_inv * ps) # Matrix of prob(s=l and y=k)
 
-Method 2: Simplest. Compute by re-normalizing the confident joint. Rows won’t sum to *p(s)*
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Method 2: Simplest. Compute by re-normalizing the confident joint. Rows won’t sum to *p(s)*.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 This method occurs when hyperparameter prune_count_method =
 ‘calibrate_confident_joint’ in RankPruning.fit() and
