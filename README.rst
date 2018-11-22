@@ -6,9 +6,11 @@
 
 ``cleanlab`` is a machine learning python package for **learning with noisy labels** and **cleaning label errors in datasets**. It
 
-* cleans/finds label errors in small or massive datasets.
-* state-of-the-art learning with noisy labels (multiclass, works with any classifier, any amount of noise).
-* estimates the latent noisy channel, label prior distribution, and much more. 
+* cleans/finds label errors in massive (and small) datasets.
+* contains state-of-the-art algorithms for
+
+  - learning with noisy labels .
+  - estimating the latent noisy-channel, latent class prior distribution, and more. 
 
 ``cleanlab`` implements a family of theory and algorithms known as confident learning.
 
@@ -19,8 +21,8 @@
    in the 2012 ImageNet Validation set
 2. robust - provable generalization and risk minimimzation guarantees
    even for imperfect probability estimation
-3. general - works with any probablistic classifier, Faster R-CNN,
-   logistic regression, LSTM, etc.
+3. general - works with any probablistic classifier, LSTM, Mask-RCNN,
+   logistic regression, etc.
 4. unique - the only general implementation for multiclass learning with
    noisy lables for ANY classifier (deep or not), for ANY
    amount/distribution of label noise distribution, with no information
