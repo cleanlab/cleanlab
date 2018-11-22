@@ -4,7 +4,7 @@
 
 |  
 
-``cleanlab`` is a machine learning python package for learning with noisy labels and cleaning label errors in datasets. It
+``cleanlab`` is a machine learning python package for **learning with noisy labels** and **cleaning label errors in datasets**. It
 
 * cleans/finds label errors in small or massive datasets.
 * state-of-the-art learning with noisy labels (multiclass, works with any classifier, any amount of noise).
