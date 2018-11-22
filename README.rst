@@ -1,10 +1,10 @@
 ``cleanlab``
 ============
 
-A machine learning python package for cleaning label errors in datasets. This package:
+A machine learning python package for learning with noisy labels and cleaning label errors in datasets. This package:
 
 * cleans/finds label errors in small or massive datasets
-* implements state-of-the-art algorithms for multiclass learning with noisy labels
+* state-of-the-art learning with noisy labels (multiclass, works with any classifier, any amount of noise)
 * estimates the latent noisy channel, label prior distribution, and much more. 
 
 This package implements a family of theory and algorithms called confident learning.
