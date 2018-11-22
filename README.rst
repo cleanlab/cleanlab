@@ -2,7 +2,9 @@
 ============
 
 A Python machine learning package for cleaning label errors in datasets.
+
 This package:
+
 * cleans/finds label errors in small or massive datasets
 * implements state-of-the-art algorithms for multiclass learning with noisy labels
 * estimates the latent noisy channel, label prior distribution, and much more. 
