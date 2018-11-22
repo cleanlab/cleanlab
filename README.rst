@@ -359,4 +359,4 @@ The key to learning in the presence of label errors is estimating the joint dist
 
 You can check out how to do this yourself here: 1. `Drawing
 Polyplices <examples/drawing_polyplices.ipynb>`__ 2. `Computing
-Polyplices <cleanlab/polyplex.ipynb>`__
+Polyplices <cleanlab/polyplex.py>`__
