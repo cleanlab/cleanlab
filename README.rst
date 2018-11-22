@@ -1,6 +1,6 @@
-.. figure:: https://github.com/cgnorthcutt/cleanlab/blob/master/img/cleanlab_logo.png
+.. figure:: https://raw.githubusercontent.com/cgnorthcutt/cleanlab/master/img/cleanlab_logo.png
    :align: center
-   :alt: ``cleanlab`` 
+   :alt: cleanlab 
 
 |  
 
