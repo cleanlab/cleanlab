@@ -9,8 +9,8 @@
 * cleans/finds label errors in massive (and small) datasets.
 * contains state-of-the-art algorithms for
 
-  - learning with noisy labels .
-  - estimating the latent noisy-channel, latent class prior distribution, and more. 
+  - learning with noisy labels.
+  - estimating the latent noisy-channel, prior (distribution of class labels), and more. 
 
 ``cleanlab`` implements a family of theory and algorithms known as confident learning.
 
@@ -33,7 +33,7 @@ Check out these `examples <examples>`__.
 Installation
 ------------
 
-Python 2.7 is supported. Python 3.4, 3.5, and 3.6 will be supported soon (some things work already).
+Python 2.7 is supported. Python 3.4, 3.5, and 3.6 will be supported soon (use at your own risk).
 
 Stable release:
 
