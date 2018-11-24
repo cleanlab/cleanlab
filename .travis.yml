@@ -1,0 +1,17 @@
+language: python
+python:
+  - "2.7"
+  - "3.4"
+  - "3.5"
+  - "3.6"
+# command to install dependencies
+install:
+  - pip install tox-travis
+  - pip install pytest
+  - pip install pytest-cov
+  - pip install -r requirements.txt
+  - pip install -e .
+# command to run tests
+script:
+  - tox 
+  - bash <(curl -s https://codecov.io/bash) -t a9a27c70-d1dd-4d8b-bd05-8a506ce24fb2
