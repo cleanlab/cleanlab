@@ -1,6 +1,7 @@
 # Added by Curtis G. Northcutt
 cleanlab/*.ipynb
 examples/models/*.ipynb
+tests/*.ipynb
 .DS_Store
 */.DS_Store
 
