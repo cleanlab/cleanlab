@@ -4,6 +4,7 @@ python:
   - "3.4"
   - "3.5"
   - "3.6"
+  - "3.7"
 # command to install dependencies
 install:
   - pip install tox-travis
@@ -14,4 +15,4 @@ install:
 # command to run tests
 script:
   - tox 
-  - bash <(curl -s https://codecov.io/bash) -t a9a27c70-d1dd-4d8b-bd05-8a506ce24fb2
+  - bash <(curl -s https://codecov.io/bash) -t c1817983-8176-4535-b31d-9fa9d649438a
