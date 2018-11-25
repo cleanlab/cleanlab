@@ -10,8 +10,8 @@ install:
   - pip install pytest
   - pip install pytest-cov
   - pip install -r requirements.txt
-#  - pip install -e .
-  - pip install git+https://github.com/cgnorthcutt/cleanlab.git
+  - pip install -e .
+  # - pip install git+https://github.com/cgnorthcutt/cleanlab.git
 # command to run tests
 script:
   - tox 
