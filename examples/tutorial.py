@@ -2,7 +2,7 @@
 # coding: utf-8
 
 # # Tutorial - Documentation by Example
-# ## In this tutorial, we provide simple examples to demonstrate some of the things one can do with the confidentlearning package. For full package documentation, check out the method docstrings. This tutorial will typically use default parameters, but best results may require hyper-parameter optimization.
+# ## In this tutorial, we provide simple examples to demonstrate some of the things one can do with the cleanlab package. For full package documentation, check out the method docstrings. This tutorial will typically use default parameters, but best results may require hyper-parameter optimization.
 
 # In[35]:
 
@@ -220,7 +220,7 @@ plt.show()
 # In[21]:
 
 
-from confidentlearning.classification import RankPruning
+from cleanlab.classification import RankPruning
 # RankPruning uses logreg by default, so this is unnecessary. 
 # We include it here for clarity, but this step is omitted below.
 from sklearn.linear_model import LogisticRegression as logreg
@@ -238,14 +238,14 @@ predicted_test_labels = rp.predict(X_test)
 
 
 ### Estimate the confident joint, the latent noisy channel matrix, *P<sub>s | y</sub>* and inverse, *P<sub>y | s</sub>*, the latent prior of the unobserved, actual true labels, *p(y)*, and the predicted probabilities.:
-where *s* denotes a random variable that represents the observed, noisy label and *y* denotes a random variable representing the hidden, actual labels. Both *s* and *y* take any of the m classes as values. The **confidentlearning** package supports different levels of granularity for computation depending on the needs of the user. Because of this, we support multiple alternatives, all no more than a few lines, to estimate these latent distribution arrays, enabling the user to reduce computation time by only computing what they need to compute, as seen in the examples below.
+where *s* denotes a random variable that represents the observed, noisy label and *y* denotes a random variable representing the hidden, actual labels. Both *s* and *y* take any of the m classes as values. The **cleanlab** package supports different levels of granularity for computation depending on the needs of the user. Because of this, we support multiple alternatives, all no more than a few lines, to estimate these latent distribution arrays, enabling the user to reduce computation time by only computing what they need to compute, as seen in the examples below.
 
 Throughout these examples, you'll see a variable called *confident_joint*. The confident joint is an m x m matrix (m is the number of classes) that counts, for every observed, noisy class, the number of examples that confidently belong to every latent, hidden class. It counts the number of examples that we are confident are labeled correctly or incorrectly for every pair of obseved and unobserved classes. The confident joint is an unnormalized estimate of the complete-information latent joint distribution, *P<sub>s,y</sub>*. Most of the methods in the **confidentlearing** package start by first estimating the *confident_joint*.
 
 #### Option 1: Compute the confident joint and predicted probs first. Stop if that's all you need.
 ```python
-from confidentlearning.latent_estimation import estimate_latent
-from confidentlearning.latent_estimation import estimate_confident_joint_and_cv_pred_proba
+from cleanlab.latent_estimation import estimate_latent
+from cleanlab.latent_estimation import estimate_confident_joint_and_cv_pred_proba
 
 # Compute the confident joint and the n x m predicted probabilities matrix (psx),
 # for n examples, m classes. Stop here if all you need is the confident joint.
@@ -261,7 +261,7 @@ est_py, est_nm, est_inv = estimate_latent(confident_joint, s=train_labels_with_e
 
 #### Option 2: Estimate the latent distribution matrices in a single line of code.
 ```python
-from confidentlearning.latent_estimation import estimate_py_noise_matrices_and_cv_pred_proba
+from cleanlab.latent_estimation import estimate_py_noise_matrices_and_cv_pred_proba
 est_py, est_nm, est_inv, confident_joint, psx = estimate_py_noise_matrices_and_cv_pred_proba(
     X=X_train,
     s=train_labels_with_errors,
@@ -272,8 +272,8 @@ est_py, est_nm, est_inv, confident_joint, psx = estimate_py_noise_matrices_and_c
 ```python
 # Already have psx? (n x m matrix of predicted probabilities)
 # For example, you might get them from a pre-trained model (like resnet on ImageNet)
-# With the confidentlearning package, you estimate directly with psx.
-from confidentlearning.latent_estimation import estimate_py_and_noise_matrices_from_probabilities
+# With the cleanlab package, you estimate directly with psx.
+from cleanlab.latent_estimation import estimate_py_and_noise_matrices_from_probabilities
 est_py, est_nm, est_inv, confident_joint = estimate_py_and_noise_matrices_from_probabilities(
     s=train_labels_with_errors, 
     psx=psx,
@@ -282,10 +282,10 @@ est_py, est_nm, est_inv, confident_joint = estimate_py_and_noise_matrices_from_p
 ``` 
 
 ### Estimate label errors in a dataset:
-With the **confidentlearning** package, we can instantly fetch the indices of all estimated label errors, with nothing provided by the user except a classifier, examples, and their noisy labels. Like the previous example, there are various levels of granularity.
+With the **cleanlab** package, we can instantly fetch the indices of all estimated label errors, with nothing provided by the user except a classifier, examples, and their noisy labels. Like the previous example, there are various levels of granularity.
 
 ```python
-from confidentlearning.pruning import get_noise_indices
+from cleanlab.pruning import get_noise_indices
 # We computed psx, est_inv, confident_joint in the previous example.
 label_errors = get_noise_indices(
     s=train_labels_with_errors, # required
@@ -303,7 +303,7 @@ There are two methods to compute *P<sub>s,y</sub>*, the complete-information dis
 This method occurs when hyperparameter prune_count_method = 'inverse_nm_dot_s' in RankPruning.fit() and get_noise_indices(). 
 
 ```python
-from confidentlearning.util import value_counts
+from cleanlab.util import value_counts
 # *p(s)* is the prior of the observed, noisy labels and an array of length m (# of classes)
 ps = value_counts(s) / float(len(s))
 # We computed est_inv (estimated inverse noise matrix) in the previous example (two above).
@@ -314,7 +314,7 @@ psy = np.transpose(est_inv * ps) # Matrix of prob(s=l and y=k)
 #### Method 2: Simplest. Compute by re-normalizing the confident joint. Rows won't sum to *p(s)*
 This method occurs when hyperparameter prune_count_method = 'calibrate_confident_joint' in RankPruning.fit() and get_noise_indices().
 ```python
-from confidentlearning.util import value_counts
+from cleanlab.util import value_counts
 # *p(s)* is the prior of the observed, noisy labels and an array of length m (# of classes)
 ps = value_counts(s) / float(len(s))
 # We computed confident_joint in the previous example (two above).
@@ -325,7 +325,7 @@ psy = confident_joint / float(confident_joint.sum()) # calibration, i.e. re-norm
 
 ```python
 # Generate a valid (necessary conditions for learnability are met) noise matrix for any trace > 1
-from confidentlearning.noise_generation import generate_noise_matrix_from_trace
+from cleanlab.noise_generation import generate_noise_matrix_from_trace
 noise_matrix = generate_noise_matrix_from_trace(
     K = number_of_classes, 
     trace = float_value_greater_than_1_and_leq_K,
@@ -334,7 +334,7 @@ noise_matrix = generate_noise_matrix_from_trace(
 )
 
 # Check if a noise matrix is valid (necessary conditions for learnability are met)
-from confidentlearning.noise_generation import noise_matrix_is_valid
+from cleanlab.noise_generation import noise_matrix_is_valid
 is_valid = noise_matrix_is_valid(noise_matrix, prior_of_y_which_is_just_an_array_of_length_K)
 
 ```
@@ -343,7 +343,7 @@ is_valid = noise_matrix_is_valid(noise_matrix, prior_of_y_which_is_just_an_array
 
 ```python
 # Generate noisy labels using the noise_marix. Guarantees exact amount of noise in labels.
-from confidentlearning.noise_generation import generate_noisy_labels
+from cleanlab.noise_generation import generate_noisy_labels
 s_noisy_labels = generate_noisy_labels(y_hidden_actual_labels, noise_matrix)
 
 # This package is a full of other useful methods for learning with noisy labels.
