@@ -4,7 +4,7 @@
 branch = True
 omit =
     # omit this single file
-    models/mnist_pytorch.py
+    cleanlab/models/mnist_pytorch.py
 
 [report]
 # Regexes for lines to exclude from consideration
