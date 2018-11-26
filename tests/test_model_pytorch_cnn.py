@@ -1,7 +1,7 @@
 
 # coding: utf-8
 
-# In[1]:
+# In[ ]:
 
 
 # Python 2 and 3 compatibility
@@ -11,33 +11,27 @@ from __future__ import print_function, absolute_import, division, unicode_litera
 # In[2]:
 
 
-from cleanlab.models.mnist_pytorch import CNN, MNIST_TEST_SIZE, MNIST_TRAIN_SIZE
-import cleanlab
-from os.path import expanduser
-import sys
-import numpy as np
-from sklearn.metrics import accuracy_score
-from torchvision import datasets
-
-
-# In[3]:
-
-
-# Get home directory to store MNIST dataset
-home_dir = expanduser("~")
-data_dir = home_dir + "/data/"
-
-
-# In[4]:
-
-
-X_train = np.arange(MNIST_TRAIN_SIZE)
-X_test = np.arange(MNIST_TEST_SIZE)
-# X_train = X_train[X_train % 10 == 0]
-y_train = datasets.MNIST(data_dir, train=True, download = True).train_labels.numpy()
-y_test = datasets.MNIST(data_dir, train=False, download = True).test_labels.numpy()
-py_train = cleanlab.util.value_counts(y_train) / float(len(y_train))
-X_test_data = datasets.MNIST(data_dir, train=False, download = True).test_data.numpy()
+# pyTorch only exists for these versions that are also compatible with cleanlab
+if sys.version_info[0] + 0.1 * sys.version_info[1] in [2.7, 3.5, 3.6]:
+    from cleanlab.models.mnist_pytorch import CNN, MNIST_TEST_SIZE, MNIST_TRAIN_SIZE
+    import cleanlab
+    from os.path import expanduser
+    import sys
+    import numpy as np
+    from sklearn.metrics import accuracy_score
+    from torchvision import datasets
+    
+    # Get home directory to store MNIST dataset
+    home_dir = expanduser("~")
+    data_dir = home_dir + "/data/"
+    
+    X_train = np.arange(MNIST_TRAIN_SIZE)
+    X_test = np.arange(MNIST_TEST_SIZE)
+    # X_train = X_train[X_train % 10 == 0]
+    y_train = datasets.MNIST(data_dir, train=True, download = True).train_labels.numpy()
+    y_test = datasets.MNIST(data_dir, train=False, download = True).test_labels.numpy()
+    py_train = cleanlab.util.value_counts(y_train) / float(len(y_train))
+    X_test_data = datasets.MNIST(data_dir, train=False, download = True).test_data.numpy()
 
 
 # In[5]:
