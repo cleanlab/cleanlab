@@ -23,13 +23,13 @@
 ``cleanlab`` is:
 ----------------
 
-1. fast - only two hours (on cpu-based laptop) to find the label errors
-   in the 2012 ImageNet Validation set
-2. robust - provable generalization and risk minimimzation guarantees
-   even for imperfect probability estimation
-3. general - works with any probablistic classifier, LSTM, Mask-RCNN,
+1. fast - Only two hours (on cpu-based laptop) to find the label errors
+   in ImageNet's validation set.
+2. robust - Provable generalization and risk minimimzation guarantees
+   even for imperfect probability estimation.
+3. general - Works with any probablistic classifier, LSTM, Mask-RCNN,
    logistic regression, etc.
-4. unique - the only general implementation for multiclass learning with
+4. unique - The only general implementation for multiclass learning with
    noisy lables for ANY classifier (deep or not), for ANY
    amount/distribution of label noise distribution, with no information
    about the label noise needed a priori.
@@ -39,7 +39,7 @@ Check out these `examples <examples>`__.
 Installation
 ------------
 
-Python 2.7 is supported. Python 3.4, 3.5, and 3.6 will be supported soon (use at your own risk).
+Python 2.7, 3.4, 3.5, and 3.6 are supported.
 
 Stable release:
 
