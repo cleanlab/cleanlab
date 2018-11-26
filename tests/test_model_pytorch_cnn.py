@@ -8,7 +8,13 @@
 from __future__ import print_function, absolute_import, division, unicode_literals, with_statement
 
 
-# In[2]:
+# In[ ]:
+
+
+import sys
+
+
+# In[ ]:
 
 
 # pyTorch only exists for these versions that are also compatible with cleanlab
@@ -16,7 +22,6 @@ if sys.version_info[0] + 0.1 * sys.version_info[1] in [2.7, 3.5, 3.6]:
     from cleanlab.models.mnist_pytorch import CNN, MNIST_TEST_SIZE, MNIST_TRAIN_SIZE
     import cleanlab
     from os.path import expanduser
-    import sys
     import numpy as np
     from sklearn.metrics import accuracy_score
     from torchvision import datasets
@@ -34,7 +39,7 @@ if sys.version_info[0] + 0.1 * sys.version_info[1] in [2.7, 3.5, 3.6]:
     X_test_data = datasets.MNIST(data_dir, train=False, download = True).test_data.numpy()
 
 
-# In[5]:
+# In[ ]:
 
 
 def test_mnist_pytorch_cnn(seed = 43):
