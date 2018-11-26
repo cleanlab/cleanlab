@@ -1,10 +1,15 @@
 
 # coding: utf-8
 
+# In[ ]:
+
+
+# Python 2 and 3 compatibility
+from __future__ import print_function, absolute_import, division, unicode_literals, with_statement
+
+
 # In[1]:
 
-
-from __future__ import print_function, absolute_import, division, unicode_literals, with_statement
 
 import numpy as np
 from cleanlab.classification import RankPruning
