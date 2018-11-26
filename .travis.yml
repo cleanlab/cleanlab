@@ -6,13 +6,13 @@ python:
   - "3.6"
 # command to install dependencies
 install:
-  - pip install tox-travis
-  - pip install pytest
-  - pip install pytest-cov
+  - pip install -q tox-travis
+  - pip install -q pytest
+  - pip install -q pytest-cov
   - pip install -r requirements.txt
   # For testing cleanlab.models
-  - pip install torch torchvision
-  - pip install -e .
+  - pip install -qq torch torchvision
+  - pip install -q -e .
   # - pip install git+https://github.com/cgnorthcutt/cleanlab.git
 # command to run tests
 script:
