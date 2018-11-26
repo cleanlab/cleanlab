@@ -19,7 +19,7 @@
 # ## Example
 # 
 # ```python
-# from confidentlearning.classification import RankPruning
+# from cleanlab.classification import RankPruning
 # from sklearn.linear_model import LogisticRegression as logreg
 # 
 # rp = RankPruning(clf=logreg()) # Pass in any classifier. Yup, neural networks work, too.
@@ -34,7 +34,7 @@
 # 
 # 
 # 
-# ### The easiest way to use any model (Tensorflow, caffe2, PyTorch, etc.) with `confidentlearning` is to wrap it in a class that inherets the `sklearn.base.BaseEstimator`:
+# ### The easiest way to use any model (Tensorflow, caffe2, PyTorch, etc.) with `cleanlab` is to wrap it in a class that inherets the `sklearn.base.BaseEstimator`:
 # ```python
 # from sklearn.base import BaseEstimator
 # class YourModel(BaseEstimator): # Inherits sklearn base classifier
@@ -61,10 +61,10 @@ from sklearn.metrics import accuracy_score
 import numpy as np
 import inspect
 
-from confidentlearning.util import assert_inputs_are_valid, value_counts, remove_noise_from_class
-from confidentlearning.latent_estimation import     estimate_py_noise_matrices_and_cv_pred_proba,     estimate_py_and_noise_matrices_from_probabilities,     estimate_cv_predicted_probabilities
-from confidentlearning.latent_algebra import compute_py_inv_noise_matrix, compute_noise_matrix_from_inverse
-from confidentlearning.pruning import get_noise_indices
+from cleanlab.util import assert_inputs_are_valid, value_counts, remove_noise_from_class
+from cleanlab.latent_estimation import     estimate_py_noise_matrices_and_cv_pred_proba,     estimate_py_and_noise_matrices_from_probabilities,     estimate_cv_predicted_probabilities
+from cleanlab.latent_algebra import compute_py_inv_noise_matrix, compute_noise_matrix_from_inverse
+from cleanlab.pruning import get_noise_indices
 
 
 # In[ ]:
