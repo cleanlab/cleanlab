@@ -7,7 +7,6 @@
 from __future__ import print_function, absolute_import, division, unicode_literals, with_statement
 
 import numpy as np
-import cleanlab
 from cleanlab.classification import RankPruning
 from cleanlab.noise_generation import generate_noise_matrix_from_trace
 from cleanlab.noise_generation import generate_noisy_labels
