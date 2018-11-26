@@ -2,6 +2,17 @@
    :align: center
    :alt: cleanlab 
 
+|pypi| |py_versions| |build_status| |coverage|
+
+.. |pypi| image:: https://img.shields.io/pypi/v/cleanlab.svg
+    :target: https://pypi.org/pypi/cleanlab/
+.. |py_versions| image:: https://img.shields.io/pypi/pyversions/cleanlab.svg
+    :target: https://pypi.org/pypi/cleanlab/
+.. |build_status| image:: https://travis-ci.com/cgnorthcutt/cleanlab.svg?branch=master
+    :target: https://travis-ci.com/cgnorthcutt/cleanlab
+.. |coverage| image:: https://codecov.io/gh/cgnorthcutt/cleanlab/branch/master/graph/badge.svg
+    :target: https://codecov.io/gh/cgnorthcutt/cleanlab
+
 |  
 
 ``cleanlab`` is a machine learning python package for **learning with noisy labels** and **cleaning label errors in datasets**. It
@@ -53,7 +64,7 @@ To install the codebase (enabling you to make modifications):
 
    $ conda update pip # if you use conda
    $ git clone https://github.com/cgnorthcutt/cleanlab.git
-   $ cd hypopt
+   $ cd cleanlab
    $ pip install -e .
 
 
