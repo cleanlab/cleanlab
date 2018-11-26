@@ -1,10 +1,21 @@
-#!/usr/bin/env python
+
 # coding: utf-8
+
+# ## A cleanlab compatible PyTorch CNN classifier.
+# 
+# ## Note to use this model you'll need to have pytorch installed
+# See: https://pytorch.org/get-started/locally/
 
 # In[ ]:
 
 
-from __future__ import print_function
+# Python 2 and 3 compatibility
+from __future__ import print_function, absolute_import, division, unicode_literals, with_statement
+
+
+# In[ ]:
+
+
 import argparse
 import torch
 import torch.nn as nn
@@ -13,6 +24,7 @@ import torch.optim as optim
 from torchvision import datasets, transforms
 from torch.autograd import Variable
 from torch.utils.data.sampler import SubsetRandomSampler
+import numpy as np
 
 
 # In[ ]:
@@ -49,7 +61,9 @@ class Net(nn.Module):
 # In[ ]:
 
 
-class CNN(object):
+from sklearn.base import BaseEstimator
+
+class CNN(BaseEstimator): # Inherits sklearn classifier
     '''Wraps a PyTorch CNN for the MNIST dataset within an sklearn template by defining 
     .fit(), .predict(), and .predict_proba() functions. This template enables the PyTorch
     CNN to flexibly be used within the sklearn architecture -- meaning it can be passed into
@@ -105,7 +119,7 @@ class CNN(object):
         if sample_weight is not None:
             if len(sample_weight) != len(train_labels):
                 raise ValueError("Check that train_labels and sample_weight are the same length.")
-            class_weight = sample_weight[torch.np.unique(train_labels, return_index=True)[1]]
+            class_weight = sample_weight[np.unique(train_labels, return_index=True)[1]]
             class_weight = torch.from_numpy(class_weight).float()
             if self.cuda:
                 class_weight = class_weight.cuda()
@@ -125,7 +139,7 @@ class CNN(object):
         if train_labels is not None:
             # Create sparse tensor of train_labels with (-1)s for labels not in train_idx.
             # We avoid train_data[idx] because train_data may very large, i.e. image_net
-            sparse_labels = torch.np.zeros(MNIST_TRAIN_SIZE if loader == 'train' else MNIST_TEST_SIZE, dtype=int) - 1
+            sparse_labels = np.zeros(MNIST_TRAIN_SIZE if loader == 'train' else MNIST_TEST_SIZE, dtype=int) - 1
             sparse_labels[train_idx] = train_labels
             train_dataset.train_labels = sparse_labels
         
@@ -156,7 +170,7 @@ class CNN(object):
                 if self.log_interval is not None and batch_idx % self.log_interval == 0:
                     print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
                         epoch, batch_idx * len(data), len(train_idx),
-                        100. * batch_idx / len(train_loader), loss.data[0]))
+                        100. * batch_idx / len(train_loader), loss.item()))
     
     def predict(self, idx = None, loader = None):
         # get the index of the max probability
@@ -168,7 +182,7 @@ class CNN(object):
         if self.loader is not None:
             loader = self.loader
         if loader is None:
-            is_test_idx = (len(idx) == MNIST_TEST_SIZE) and                 (torch.np.array(idx) == torch.np.arange(MNIST_TEST_SIZE)).all()
+            is_test_idx = (len(idx) == MNIST_TEST_SIZE) and                 (np.array(idx) == np.arange(MNIST_TEST_SIZE)).all()
             loader = 'test' if is_test_idx else 'train'       
         dataset = datasets.MNIST(
             root = '../data', 
@@ -201,85 +215,14 @@ class CNN(object):
         for data, _ in loader:
             if self.cuda:
                 data = data.cuda()
-            data = Variable(data, volatile=True)
-            output = self.model(data)
+            with torch.no_grad():
+                data = Variable(data)
+                output = self.model(data)
             outputs.append(output)
         
         # Outputs are log_softmax (log probabilities)
         outputs = torch.cat(outputs, dim=0)
         # Convert to probabilities and return the numpy array of shape N x K
-        pred = torch.np.exp(outputs.data.numpy())
+        pred = np.exp(outputs.data.numpy())
         return pred
-    
-    
-    def test(self):
-        
-        target = datasets.MNIST('../data', train=False, transform=transforms.Compose([
-            transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))
-        ])).test_labels.numpy()
-        
-        pred = self.predict(loader = 'test')
-        correct = torch.np.count_nonzero(pred == target)
-        
-        print('\nTest set: Accuracy: {}/{} ({:.0f}%)\n'.format(
-            correct, MNIST_TEST_SIZE,
-            100. * correct / MNIST_TEST_SIZE))        
-
-    
-    def test_deprecated(self):
-        
-        test_loader = torch.utils.data.DataLoader(
-            datasets.MNIST('../data', train=False, transform=transforms.Compose([
-                           transforms.ToTensor(),
-                           transforms.Normalize((0.1307,), (0.3081,))
-                       ])),
-            batch_size=self.test_batch_size, 
-            shuffle=True, 
-            **self.loader_kwargs
-        )
-        
-        self.model.eval()
-        test_loss = 0
-        correct = 0
-        for data, target in test_loader:
-            if self.cuda:
-                data, target = data.cuda(), target.cuda()
-            data, target = Variable(data, volatile=True), Variable(target)
-            output = self.model(data)
-            test_loss += F.nll_loss(output, target, size_average=False).data[0] # sum up batch loss
-            pred = output.data.max(1, keepdim=True)[1] # get the index of the max log-probability
-            correct += pred.eq(target.data.view_as(pred)).cpu().sum()
-
-        test_loss /= len(test_loader.dataset)
-        print('\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n'.format(
-            test_loss, correct, len(test_loader.dataset),
-            100. * correct / len(test_loader.dataset)))
-
-
-# In[ ]:
-
-
-if __name__ == '__main__':
-    y_train = datasets.MNIST('../data', train=True).train_labels.numpy()
-    y_test = datasets.MNIST('../data', train=False).test_labels.numpy()
-
-    cnn = CNN(epochs=10)
-
-    mod_val = 1
-    train_idx = torch.np.arange(MNIST_TRAIN_SIZE)[torch.np.arange(MNIST_TRAIN_SIZE) % mod_val == 0]
-    train_labels = y_train[torch.np.arange(MNIST_TRAIN_SIZE) % mod_val == 0]
-    sample_weight = torch.np.ones(len(train_labels)) /len(train_labels)
-    sample_weight[(train_labels == 9) | (train_labels == 8)] *= 5
-    sample_weight = sample_weight / sum(sample_weight)
-
-    cnn.fit(train_idx, train_labels, sample_weight)
-    # cnn.model = m
-    # m = cnn.model = m
-
-    # Test to make sure predict is working
-    assert((cnn.predict_proba(loader='test').argmax(axis=1) == cnn.predict(loader='test')).all())
-
-    cnn.test()
-    pred = cnn.predict(loader='test')
-    torch.np.bincount(y_test[pred == y_test]) / torch.np.bincount(y_test).astype(float)
 
