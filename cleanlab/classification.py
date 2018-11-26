@@ -356,13 +356,13 @@ class RankPruning(BaseEstimator): # Inherits sklearn classifier
         sample_weight : np.array<float> of shape (n,) or (n, 1)
           Weights each example when computing the score / accuracy.'''
         
-        if hasattr(self.model, 'score'):
+        if hasattr(self.clf, 'score'):
         
             # Check if sample_weight in clf.score(). Compatible with Python 2/3.
-            if hasattr(inspect, 'getfullargspec') and                 'sample_weight' in inspect.getfullargspec(self.model.score).args or                 hasattr(inspect, 'getargspec') and                 'sample_weight' in inspect.getargspec(self.model.score).args:  
-                return self.model.score(X, y, sample_weight=sample_weight)
+            if hasattr(inspect, 'getfullargspec') and                 'sample_weight' in inspect.getfullargspec(self.clf.score).args or                 hasattr(inspect, 'getargspec') and                 'sample_weight' in inspect.getargspec(self.clf.score).args:  
+                return self.clf.score(X, y, sample_weight=sample_weight)
             else:
-                return self.model.score(X, y)
+                return self.clf.score(X, y)
         else:
-            return metrics.accuracy_score(y, self.model.predict(X), sample_weight=sample_weight) 
+            return metrics.accuracy_score(y, self.clf.predict(X), sample_weight=sample_weight) 
 
