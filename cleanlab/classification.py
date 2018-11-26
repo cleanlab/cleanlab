@@ -19,7 +19,7 @@
 # ## Example
 # 
 # ```python
-# from cleanlab.classification import RankPruning
+# from confidentlearning.classification import RankPruning
 # from sklearn.linear_model import LogisticRegression as logreg
 # 
 # rp = RankPruning(clf=logreg()) # Pass in any classifier. Yup, neural networks work, too.
@@ -34,7 +34,7 @@
 # 
 # 
 # 
-# ### The easiest way to use any model (Tensorflow, caffe2, PyTorch, etc.) with `cleanlab` is to wrap it in a class that inherets the `sklearn.base.BaseEstimator`:
+# ### The easiest way to use any model (Tensorflow, caffe2, PyTorch, etc.) with `confidentlearning` is to wrap it in a class that inherets the `sklearn.base.BaseEstimator`:
 # ```python
 # from sklearn.base import BaseEstimator
 # class YourModel(BaseEstimator): # Inherits sklearn base classifier
@@ -61,10 +61,10 @@ from sklearn.metrics import accuracy_score
 import numpy as np
 import inspect
 
-from cleanlab.util import assert_inputs_are_valid, value_counts, remove_noise_from_class
-from cleanlab.latent_estimation import     estimate_py_noise_matrices_and_cv_pred_proba,     estimate_py_and_noise_matrices_from_probabilities,     estimate_cv_predicted_probabilities
-from cleanlab.latent_algebra import compute_py_inv_noise_matrix, compute_noise_matrix_from_inverse
-from cleanlab.pruning import get_noise_indices
+from confidentlearning.util import assert_inputs_are_valid, value_counts, remove_noise_from_class
+from confidentlearning.latent_estimation import     estimate_py_noise_matrices_and_cv_pred_proba,     estimate_py_and_noise_matrices_from_probabilities,     estimate_cv_predicted_probabilities
+from confidentlearning.latent_algebra import compute_py_inv_noise_matrix, compute_noise_matrix_from_inverse
+from confidentlearning.pruning import get_noise_indices
 
 
 # In[ ]:
@@ -343,6 +343,7 @@ class RankPruning(BaseEstimator): # Inherits sklearn classifier
     
     def score(self, X, y, sample_weight=None):
         '''Returns the clf's score on a test set X with labels y.
+        Uses the models default scoring function.
 
         Parameters
         ----------
@@ -355,11 +356,13 @@ class RankPruning(BaseEstimator): # Inherits sklearn classifier
         sample_weight : np.array<float> of shape (n,) or (n, 1)
           Weights each example when computing the score / accuracy.'''
         
-        if hasattr(self.clf, 'score'):        
-            if 'sample_weight' in inspect.getfullargspec(self.clf.score).args:
-                return self.clf.score(X, y, sample_weight=sample_weight)
+        if hasattr(self.model, 'score'):
+        
+            # Check if sample_weight in clf.score(). Compatible with Python 2/3.
+            if hasattr(inspect, 'getfullargspec') and                 'sample_weight' in inspect.getfullargspec(self.model.score).args or                 hasattr(inspect, 'getargspec') and                 'sample_weight' in inspect.getargspec(self.model.score).args:  
+                return self.model.score(X, y, sample_weight=sample_weight)
             else:
-                return self.clf.score(X, y)
+                return self.model.score(X, y)
         else:
-            return accuracy_score(y, self.clf.predict(X_val), sample_weight=sample_weight) 
+            return metrics.accuracy_score(y, self.model.predict(X), sample_weight=sample_weight) 
 
