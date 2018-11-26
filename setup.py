@@ -17,7 +17,6 @@ with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
 
 # Get version number
 exec(open('cleanlab/version.py').read())
-# __version__ = '0.0.3'
 
 setup(
     name='cleanlab',
