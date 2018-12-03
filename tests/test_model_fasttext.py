@@ -19,6 +19,12 @@ python_version = VersionWarning(
 )
 
 
+# In[47]:
+
+
+cwd[-5:] == 'tests'
+
+
 # In[ ]:
 
 
@@ -56,9 +62,10 @@ def create_cooking_dataset(data_dir = None):
 
         # Start out with cooking.preprocessed.txt by running the code here:
         # https://github.com/facebookresearch/fastText/blob/master/tests/fetch_test_data.sh#L111
-        
+        import sys
+        print('NOB PATH: ' + cwd, file=sys.stderr)
         # Help travis.CI tests find get_cooking_stackexchange_data.sh
-        path = cwd + "tests/" if 'TRAVIS' in os.environ else ''
+        path = '' if cwd[-5:] == 'tests' else cwd + "/tests/"
         # Fetch stackexchange data
         subprocess.call(
             "bash {}get_cooking_stackexchange_data.sh '{}'".format(path, data_dir), 
