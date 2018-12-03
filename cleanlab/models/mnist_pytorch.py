@@ -16,15 +16,26 @@ from __future__ import print_function, absolute_import, division, unicode_litera
 # In[ ]:
 
 
-import argparse
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-import torch.optim as optim
-from torchvision import datasets, transforms
-from torch.autograd import Variable
-from torch.utils.data.sampler import SubsetRandomSampler
-import numpy as np
+# pyTorch only exists for these versions that are also compatible with cleanlab
+import sys
+v = sys.version_info[0] + 0.1 * sys.version_info[1]
+if v in [2.7, 3.5, 3.6]:
+    import argparse
+    import torch
+    import torch.nn as nn
+    import torch.nn.functional as F
+    import torch.optim as optim
+    from torchvision import datasets, transforms
+    from torch.autograd import Variable
+    from torch.utils.data.sampler import SubsetRandomSampler
+    import numpy as np
+else:
+    import warnings
+    warning = '''pyTorch supports Python versions 2.7, 3.5, 3.6, 3.7.
+    cleanlab supports Python versions 2.7, 3.4, 3.5, and 3.6.
+    You are using Python version {}. To use cleanlab with pyTorch, 
+    you'll need to use Python 2.7, 3.5, or 3.6.'''.format(v)
+    warnings.warn(warning)
 
 
 # In[ ]:
