@@ -22,12 +22,6 @@ python_version = VersionWarning(
 # In[ ]:
 
 
-DATA_DIR = 'fasttext_data/'
-
-
-# In[ ]:
-
-
 def create_cooking_dataset(data_dir = None):
     '''This only needs to be run if you do not have
     fasttext_data/cooking.test.txt
@@ -40,6 +34,9 @@ def create_cooking_dataset(data_dir = None):
     This is originally modified from here:
     https://github.com/facebookresearch/fastText/blob/master/tests/fetch_test_data.sh#L111
     '''
+    
+    import os
+    cwd = os.getcwd()
     
     if data_dir is None:
         data_dir = DATA_DIR
@@ -63,9 +60,12 @@ def create_cooking_dataset(data_dir = None):
         # Start out with cooking.preprocessed.txt by running the code here:
         # https://github.com/facebookresearch/fastText/blob/master/tests/fetch_test_data.sh#L111
 
-        subprocess.call("bash get_cooking_stackexchange_data.sh .", shell = True)
+        subprocess.call(
+            "bash '{}'/get_cooking_stackexchange_data.sh '{}'".format(cwd, data_dir), 
+            shell = True,
+        )
 
-        with open('cooking/cooking.preprocessed.txt', 'rU') as f:
+        with open(data_dir + '/cooking/cooking.preprocessed.txt', 'rU') as f:
             cook_data = f.readlines()
 
         single_label_cook_data = []
@@ -84,7 +84,7 @@ def create_cooking_dataset(data_dir = None):
             f.writelines(single_label_cook_data[-5000:])
 
         # Clean-up download files
-        shutil.rmtree('cooking')
+        shutil.rmtree(data_dir + 'cooking')
 
 
 # In[ ]:
@@ -97,7 +97,11 @@ if python_version.is_compatible():
     import numpy as np
     
     # Set-up for testing.
+    import os
+    cwd = os.getcwd()
+    DATA_DIR = cwd + "/" + 'fasttext_data/'
 
+    # Create train and test datasets for testing.
     create_cooking_dataset()
 
     # Load train text data
