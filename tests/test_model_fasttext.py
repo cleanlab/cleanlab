@@ -35,9 +35,6 @@ def create_cooking_dataset(data_dir = None):
     https://github.com/facebookresearch/fastText/blob/master/tests/fetch_test_data.sh#L111
     '''
     
-    import os
-    cwd = os.getcwd()
-    
     if data_dir is None:
         data_dir = DATA_DIR
     
@@ -59,9 +56,12 @@ def create_cooking_dataset(data_dir = None):
 
         # Start out with cooking.preprocessed.txt by running the code here:
         # https://github.com/facebookresearch/fastText/blob/master/tests/fetch_test_data.sh#L111
-
+        
+        # Help travis.CI tests find get_cooking_stackexchange_data.sh
+        path = cwd + "tests/" if cwd == "/home/travis/build/cgnorthcutt/cleanlab/" else ''
+        # Fetch stackexchange data
         subprocess.call(
-            "bash '{}'/get_cooking_stackexchange_data.sh '{}'".format(cwd, data_dir), 
+            "bash {}get_cooking_stackexchange_data.sh '{}'".format(path, data_dir), 
             shell = True,
         )
 
@@ -99,10 +99,10 @@ if python_version.is_compatible():
     # Set-up for testing.
     import os
     cwd = os.getcwd()
-    DATA_DIR = cwd + "/" + 'fasttext_data/'
+    DATA_DIR = cwd + '/fasttext_data/'
 
     # Create train and test datasets for testing.
-    create_cooking_dataset()
+    create_cooking_dataset(DATA_DIR)
 
     # Load train text data
     with open(DATA_DIR + 'cooking.train.txt', 'r') as f:
