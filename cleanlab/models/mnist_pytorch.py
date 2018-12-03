@@ -16,10 +16,18 @@ from __future__ import print_function, absolute_import, division, unicode_litera
 # In[ ]:
 
 
-# pyTorch only exists for these versions that are also compatible with cleanlab
-import sys
-v = sys.version_info[0] + 0.1 * sys.version_info[1]
-if v in [2.7, 3.5, 3.6]:
+# Make sure python version is compatible with pyTorch
+from cleanlab.util import VersionWarning
+python_version = VersionWarning(
+    warning_str = "pyTorch supports Python version 2.7, 3.5, 3.6, 3.7.",
+    list_of_compatible_versions = [2.7, 3.5, 3.6],
+)
+
+
+# In[ ]:
+
+
+if python_version.is_compatible():
     import argparse
     import torch
     import torch.nn as nn
@@ -29,13 +37,6 @@ if v in [2.7, 3.5, 3.6]:
     from torch.autograd import Variable
     from torch.utils.data.sampler import SubsetRandomSampler
     import numpy as np
-else:
-    import warnings
-    warning = '''pyTorch supports Python versions 2.7, 3.5, 3.6, 3.7.
-    cleanlab supports Python versions 2.7, 3.4, 3.5, and 3.6.
-    You are using Python version {}. To use cleanlab with pyTorch, 
-    you'll need to use Python 2.7, 3.5, or 3.6.'''.format(v)
-    warnings.warn(warning)
 
 
 # In[ ]:
@@ -48,25 +49,26 @@ MNIST_TEST_SIZE = 10000
 # In[ ]:
 
 
-class Net(nn.Module):
-    '''Basic Pytorch CNN'''
-    def __init__(self):
-        super(Net, self).__init__()
-        self.conv1 = nn.Conv2d(1, 10, kernel_size=5)
-        self.conv2 = nn.Conv2d(10, 20, kernel_size=5)
-        self.conv2_drop = nn.Dropout2d()
-        self.fc1 = nn.Linear(320, 50)
-        self.fc2 = nn.Linear(50, 10)
+if python_version.is_compatible():
+    class Net(nn.Module):
+        '''Basic Pytorch CNN'''
+        def __init__(self):
+            super(Net, self).__init__()
+            self.conv1 = nn.Conv2d(1, 10, kernel_size=5)
+            self.conv2 = nn.Conv2d(10, 20, kernel_size=5)
+            self.conv2_drop = nn.Dropout2d()
+            self.fc1 = nn.Linear(320, 50)
+            self.fc2 = nn.Linear(50, 10)
 
-    def forward(self, x, T=1.0):
-        x = F.relu(F.max_pool2d(self.conv1(x), 2))
-        x = F.relu(F.max_pool2d(self.conv2_drop(self.conv2(x)), 2))
-        x = x.view(-1, 320)
-        x = F.relu(self.fc1(x))
-        x = F.dropout(x, training=self.training)
-        x = self.fc2(x)
-        x = F.log_softmax(x, dim=1)
-        return x
+        def forward(self, x, T=1.0):
+            x = F.relu(F.max_pool2d(self.conv1(x), 2))
+            x = F.relu(F.max_pool2d(self.conv2_drop(self.conv2(x)), 2))
+            x = x.view(-1, 320)
+            x = F.relu(self.fc1(x))
+            x = F.dropout(x, training=self.training)
+            x = self.fc2(x)
+            x = F.log_softmax(x, dim=1)
+            return x
 
 
 # In[ ]:

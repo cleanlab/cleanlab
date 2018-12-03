@@ -1,25 +1,25 @@
 
 # coding: utf-8
 
-# In[ ]:
+# In[1]:
 
 
 # Python 2 and 3 compatibility
 from __future__ import print_function, absolute_import, division, unicode_literals, with_statement
 
 
-# In[ ]:
+# In[2]:
 
 
 # Make sure python version is compatible with fasttext
 from cleanlab.util import VersionWarning
 python_version = VersionWarning(
     warning_str = "fastText supports Python 3 versions (not python 2).",
-    list_of_compatible_versions = [3.4, 3.5, 3.6],
+    list_of_compatible_versions = [3.4, 3.5, 3.6, 3.7],
 )
 
 
-# In[ ]:
+# In[3]:
 
 
 def create_cooking_dataset(data_dir = None):
@@ -88,7 +88,7 @@ def create_cooking_dataset(data_dir = None):
         shutil.rmtree(data_dir + 'cooking')
 
 
-# In[ ]:
+# In[4]:
 
 
 if python_version.is_compatible():
@@ -128,7 +128,7 @@ if python_version.is_compatible():
     ftc.fit(X = None)   
 
 
-# In[ ]:
+# In[5]:
 
 
 def test_predict_proba_masking():
@@ -139,7 +139,7 @@ def test_predict_proba_masking():
     assert(True)
 
 
-# In[ ]:
+# In[6]:
 
 
 def test_predict_masking():
@@ -150,7 +150,7 @@ def test_predict_masking():
     assert(True)
 
 
-# In[ ]:
+# In[7]:
 
 
 def test_score_masking():
@@ -161,7 +161,7 @@ def test_score_masking():
     assert(True)
 
 
-# In[ ]:
+# In[8]:
 
 
 def test_apk_strictly_increasing():
@@ -180,7 +180,7 @@ def test_apk_strictly_increasing():
     assert(True)
 
 
-# In[ ]:
+# In[9]:
 
 
 def test_predict_and_predict_proba():
@@ -203,7 +203,7 @@ def test_predict_and_predict_proba():
     assert(True)
 
 
-# In[ ]:
+# In[39]:
 
 
 def test_correctness():
@@ -211,22 +211,23 @@ def test_correctness():
     same results as the '''
     
     if python_version.is_compatible():
-
         original = train_supervised(DATA_DIR + 'cooking.train.txt', )
 
         # Check labels
         us = ftc.predict(train_data = False)
         them = [ftc.label2num[z[0]] for z in original.predict(X_test)[0]]
-        assert(accuracy_score(us, them) > 0.95)
+        # Results should be similar, sans stochasticity (fasttext is not seeded)
+        assert(accuracy_score(us, them) > 0.9)
 
         # Check probabilities
         us_prob = ftc.predict_proba(train_data = False).max(axis = 1)
         them_prob = original.predict(X_test, k = len(us_prob))[1].max(axis = 1)
-        assert(np.sum((us_prob - them_prob)**2) < 1e-4)
+        # Results should be similar, sans stochasticity (fasttext is not seeded)
+        assert(np.mean(abs(us_prob - them_prob)) < 0.1)
     assert(True)
 
 
-# In[ ]:
+# In[40]:
 
 
 def test_cleanlab_with_fasttext():
