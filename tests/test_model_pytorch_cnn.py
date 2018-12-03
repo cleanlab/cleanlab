@@ -1,20 +1,28 @@
 
 # coding: utf-8
 
-# In[ ]:
+# In[1]:
 
 
 # Python 2 and 3 compatibility
 from __future__ import print_function, absolute_import, division, unicode_literals, with_statement
 
 
-# In[ ]:
+# In[3]:
 
 
-# pyTorch only exists for these versions that are also compatible with cleanlab
-import sys
-v = sys.version_info[0] + 0.1 * sys.version_info[1]
-if v in [2.7, 3.5, 3.6]:
+# Make sure python version is compatible with pyTorch
+from cleanlab.util import VersionWarning
+warn = VersionWarning(
+    warning_str = "pyTorch supports Python version 2.7, 3.5, 3.6, 3.7.",
+    list_of_compatible_versions = [2.7, 3.5, 3.6],
+)
+
+
+# In[4]:
+
+
+if warn.is_compatible():
     from cleanlab.models.mnist_pytorch import CNN, MNIST_TEST_SIZE, MNIST_TRAIN_SIZE
     import cleanlab
     from os.path import expanduser
@@ -33,22 +41,13 @@ if v in [2.7, 3.5, 3.6]:
     y_test = datasets.MNIST(data_dir, train=False, download = True).test_labels.numpy()
     py_train = cleanlab.util.value_counts(y_train) / float(len(y_train))
     X_test_data = datasets.MNIST(data_dir, train=False, download = True).test_data.numpy()
-else:
-    import warnings
-    warning = '''pyTorch supports Python versions 2.7, 3.5, 3.6, 3.7.
-    cleanlab supports Python versions 2.7, 3.4, 3.5, and 3.6.
-    You are using Python version {}. To use cleanlab with pyTorch, 
-    you'll need to use Python 2.7, 3.5, or 3.6.'''.format(v)
-    warnings.warn(warning)
 
 
-# In[ ]:
+# In[5]:
 
 
 def test_mnist_pytorch_cnn(seed = 43):
-    
-    # pyTorch only exists for these versions that are also compatible with cleanlab
-    if sys.version_info[0] in [2.7, 3.5, 3.6]:
+    if warn.is_compatible():
         np.random.seed(seed)
 
         prune_method = 'prune_by_noise_rate'
