@@ -7,10 +7,6 @@
 # Python 2 and 3 compatibility
 from __future__ import print_function, absolute_import, division, unicode_literals, with_statement
 
-from cleanlab.models.fasttext import FastTextClassifier
-from sklearn.metrics import accuracy_score
-import numpy as np
-
 
 # In[2]:
 
@@ -83,28 +79,21 @@ def create_cooking_dataset(data_dir = None):
 # In[4]:
 
 
-create_cooking_dataset()
-    
-# Load train text data
-with open(DATA_DIR + 'cooking.train.txt', 'r') as f:
-    train_data = [z.strip() for z in f.readlines()]
-y_train, X_train = [list(t) for t in zip(*(z.split(" ", 1) for z in train_data))]
-    
-# Load test text data
-with open(DATA_DIR + 'cooking.test.txt', 'r') as f:
-    test_data = [z.strip() for z in f.readlines()]
-y_test, X_test = [list(t) for t in zip(*(z.split(" ", 1) for z in test_data))]
-
-# Set-up a FastTextClassifier model. Train it for five epochs.
-ftc = FastTextClassifier(
-    train_data_fn= DATA_DIR + 'cooking.train.txt', 
-    test_data_fn='/Users/cgn/data/cooking/cooking.test.txt',
-    kwargs_train_supervised = {
-        'epoch': 5,
-    },
-    del_intermediate_data=True,
-)
-ftc.fit(X = None)
+# fasttext only exists for these versions that are also compatible with cleanlab
+import sys
+v = sys.version_info[0] + 0.1 * sys.version_info[1]
+if v in [3.4, 3.5, 3.6]:
+    from fastText import train_supervised
+    from cleanlab.models.fasttext import FastTextClassifier
+    from sklearn.metrics import accuracy_score
+    import numpy as np
+else:
+    import warnings
+    warning = '''\n    fastText only supports Python 3.
+    cleanlab supports Python versions 2.7, 3.4, 3.5, and 3.6.
+    You are using Python version {}. To use cleanlab with fasttext, 
+    you'll need to use Python 3.4, 3.5, or 3.6.'''.format(v)
+    warnings.warn(warning)    
 
 
 # In[5]:
@@ -208,16 +197,16 @@ def test_correctness():
     _, text = [list(t) for t in zip(*(z.split(" ", 1) for z in test_data))]
     
     ftc = FastTextClassifier(
-        train_data_fn= DATA_DIR + 'cooking.train.txt', 
-        test_data_fn= DATA_DIR + 'cooking.test.txt',
+        train_data_fn = DATA_DIR + 'cooking.train.txt', 
+        test_data_fn = DATA_DIR + 'cooking.test.txt',
         kwargs_train_supervised = {
             'epoch': 5,
         },
-        del_intermediate_data=True,
+        del_intermediate_data = True,
     )
     ftc.fit(X = None)
     
-    original = fastText.train_supervised(DATA_DIR + 'cooking.train.txt', )
+    original = train_supervised(DATA_DIR + 'cooking.train.txt', )
     
     # Check labels
     us = ftc.predict(train_data = False)
