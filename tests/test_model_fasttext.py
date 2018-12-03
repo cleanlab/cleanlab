@@ -193,7 +193,7 @@ def test_predict_and_predict_proba():
     if python_version.is_compatible():
         # Check labels
         us = ftc.predict(train_data = False)
-        them = [ftc.label2num[z[0]] for z in ftc.clf.predict(text)[0]]
+        them = [ftc.label2num[z[0]] for z in ftc.clf.predict(X_test)[0]]
         assert(accuracy_score(us, them) > 0.95)
 
         # Check probabilities
@@ -216,7 +216,7 @@ def test_correctness():
 
         # Check labels
         us = ftc.predict(train_data = False)
-        them = [ftc.label2num[z[0]] for z in original.predict(text)[0]]
+        them = [ftc.label2num[z[0]] for z in original.predict(X_test)[0]]
         assert(accuracy_score(us, them) == 0.95)
 
         # Check probabilities
