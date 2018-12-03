@@ -87,6 +87,31 @@ if v in [3.4, 3.5, 3.6]:
     from cleanlab.models.fasttext import FastTextClassifier
     from sklearn.metrics import accuracy_score
     import numpy as np
+    
+    # Set-up for testing.
+
+    create_cooking_dataset()
+
+    # Load train text data
+    with open(DATA_DIR + 'cooking.train.txt', 'r') as f:
+        train_data = [z.strip() for z in f.readlines()]
+    y_train, X_train = [list(t) for t in zip(*(z.split(" ", 1) for z in train_data))]
+
+    # Load test text data
+    with open(DATA_DIR + 'cooking.test.txt', 'r') as f:
+        test_data = [z.strip() for z in f.readlines()]
+    y_test, X_test = [list(t) for t in zip(*(z.split(" ", 1) for z in test_data))]
+
+    # Set-up a FastTextClassifier model. Train it for five epochs.
+    ftc = FastTextClassifier(
+        train_data_fn = DATA_DIR + 'cooking.train.txt', 
+        test_data_fn = DATA_DIR + 'cooking.test.txt', 
+        kwargs_train_supervised = {
+            'epoch': 5,
+        },
+        del_intermediate_data = True,
+    )
+    ftc.fit(X = None)
 else:
     import warnings
     warning = '''\n    fastText only supports Python 3.
@@ -217,6 +242,31 @@ def test_correctness():
     us_prob = ftc.predict_proba(train_data = False).max(axis = 1)
     them_prob = original.predict(text, k = len(us_prob))[1].max(axis = 1)
     assert(np.sum((us_prob - them_prob)**2) < 1e-4)
+
+
+# In[14]:
+
+
+
+
+
+# In[15]:
+
+
+import cleanlab
+
+# Pre-train
+ftc = FastTextClassifier(
+    train_data_fn= DATA_DIR + 'cooking.train.txt', 
+    test_data_fn='/Users/cgn/data/cooking/cooking.test.txt',
+    kwargs_train_supervised = {
+        'epoch': 10,
+    },
+    del_intermediate_data=True,
+)
+ftc.fit()
+ftc.clf.epoch = 1
+psx = ftc.predict_proba(train_data = False)
 
 
 # In[179]:
