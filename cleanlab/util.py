@@ -298,3 +298,54 @@ def print_joint_matrix(joint_matrix):
         short_title = "p(s,y)",
     )
 
+
+# In[ ]:
+
+
+def _python_version_is_compatible(
+    warning_str = "pyTorch supports Python version 2.7, 3.5, 3.6, 3.7.",
+    warning_already_issued = False,
+    list_of_compatible_versions = [2.7, 3.5, 3.6],
+):
+    '''Helper function for VersionWarning class that issues
+    a warning (if a warning has not already been issued),
+    whenever the python version is not in the 
+    list_of_compatible_versions.
+    '''
+    
+    import sys
+    v = sys.version_info[0] + 0.1 * sys.version_info[1]
+    if v in list_of_compatible_versions:
+        return True
+    elif not warning_already_issued:
+        import warnings
+        warning = '''
+        {}
+        cleanlab supports Python versions 2.7, 3.4, 3.5, 3.6.
+        You are using Python version {}.
+        You'll need to use a version compatible with both.'''.format(warning_str, v)
+        warnings.warn(warning)
+        warning_already_issued = True
+    return False
+
+
+class VersionWarning(object):
+    '''Functor that calls _python_version_is_compatible
+    and manages the state of the bool variable
+    warning_already_issued to make sure the same warning
+    is never displayed multiple times. '''
+    
+    def __init__(self, warning_str, list_of_compatible_versions):
+        self.warning_str = warning_str
+        self.warning_already_issued = False
+        self.list_of_compatible_versions = list_of_compatible_versions
+    def is_compatible(self):
+        compatible = _python_version_is_compatible(
+            self.warning_str,
+            self.warning_already_issued,
+            self.list_of_compatible_versions,
+        )
+        if not compatible:
+            self.warning_already_issued = True
+        return compatible
+
