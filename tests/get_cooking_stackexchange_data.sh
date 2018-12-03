@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# Modified from https://github.com/facebookresearch/fastText/blob/master/tests/fetch_test_data.sh#L111
+
 DATADIR=$1
 
 echo "Downloading cooking dataset to ${DATADIR}"
