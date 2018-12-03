@@ -217,7 +217,7 @@ def test_correctness():
         # Check labels
         us = ftc.predict(train_data = False)
         them = [ftc.label2num[z[0]] for z in original.predict(X_test)[0]]
-        assert(accuracy_score(us, them) == 0.95)
+        assert(accuracy_score(us, them) > 0.95)
 
         # Check probabilities
         us_prob = ftc.predict_proba(train_data = False).max(axis = 1)
