@@ -1,14 +1,14 @@
 
 # coding: utf-8
 
-# In[1]:
+# In[ ]:
 
 
 # Python 2 and 3 compatibility
 from __future__ import print_function, absolute_import, division, unicode_literals, with_statement
 
 
-# In[3]:
+# In[ ]:
 
 
 # Make sure python version is compatible with pyTorch
@@ -19,7 +19,7 @@ warn = VersionWarning(
 )
 
 
-# In[4]:
+# In[ ]:
 
 
 if warn.is_compatible():
@@ -43,7 +43,7 @@ if warn.is_compatible():
     X_test_data = datasets.MNIST(data_dir, train=False, download = True).test_data.numpy()
 
 
-# In[5]:
+# In[ ]:
 
 
 def test_mnist_pytorch_cnn(seed = 43):
