@@ -11,14 +11,10 @@ from __future__ import print_function, absolute_import, division, unicode_litera
 # In[ ]:
 
 
-import sys
-
-
-# In[ ]:
-
-
 # pyTorch only exists for these versions that are also compatible with cleanlab
-if sys.version_info[0] + 0.1 * sys.version_info[1] in [2.7, 3.5, 3.6]:
+import sys
+v = sys.version_info[0] + 0.1 * sys.version_info[1]
+if v in [2.7, 3.5, 3.6]:
     from cleanlab.models.mnist_pytorch import CNN, MNIST_TEST_SIZE, MNIST_TRAIN_SIZE
     import cleanlab
     from os.path import expanduser
@@ -37,6 +33,13 @@ if sys.version_info[0] + 0.1 * sys.version_info[1] in [2.7, 3.5, 3.6]:
     y_test = datasets.MNIST(data_dir, train=False, download = True).test_labels.numpy()
     py_train = cleanlab.util.value_counts(y_train) / float(len(y_train))
     X_test_data = datasets.MNIST(data_dir, train=False, download = True).test_data.numpy()
+else:
+    import warnings
+    warning = '''pyTorch supports Python versions 2.7, 3.5, 3.6, 3.7.
+    cleanlab supports Python versions 2.7, 3.4, 3.5, and 3.6.
+    You are using Python version {}. To use cleanlab with pyTorch, 
+    you'll need to use Python 2.7, 3.5, or 3.6.'''.format(v)
+    warnings.warn(warning)
 
 
 # In[ ]:
