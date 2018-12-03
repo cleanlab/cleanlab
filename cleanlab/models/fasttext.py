@@ -1,30 +1,41 @@
 
 # coding: utf-8
 
-# In[1]:
+# In[ ]:
 
 
 # Python 2 and 3 compatibility
 from __future__ import print_function, absolute_import, division, unicode_literals, with_statement
 
 
-# In[2]:
+# In[ ]:
 
 
-import time
-import os
-from sklearn.metrics import accuracy_score
-import numpy as np
-from fastText import train_supervised
+# fasttext only exists for these versions that are also compatible with cleanlab
+import sys
+v = sys.version_info[0] + 0.1 * sys.version_info[1]
+if v in [3.4, 3.5, 3.6]:
+    import time
+    import os
+    from sklearn.metrics import accuracy_score
+    import numpy as np
+    from fastText import train_supervised
+else:
+    import warnings
+    warning = '''\n    fastText only supports Python 3.
+    cleanlab supports Python versions 2.7, 3.4, 3.5, and 3.6.
+    You are using Python version {}. To use cleanlab with fasttext, 
+    you'll need to use Python 3.4, 3.5, or 3.6.'''.format(v)
+    warnings.warn(warning)    
 
 
-# In[3]:
+# In[ ]:
 
 
 LABEL = '__label__'
 
 
-# In[4]:
+# In[ ]:
 
 
 def _get_labels_text(
@@ -47,7 +58,7 @@ def _get_labels_text(
     return (labels, text)
 
 
-# In[5]:
+# In[ ]:
 
 
 from sklearn.base import BaseEstimator
