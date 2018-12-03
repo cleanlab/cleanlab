@@ -1,11 +1,10 @@
 MIT License
 
-Copyright (c) 2018 Curtis G. Northcutt 
+Copyright (c) 2018 Curtis G. Northcutt
 
 http://curtisnorthcutt.com/
 https://github.com/cgnorthcutt/
-
-Curtis G. Northcutt is the sole author responsible for the creation of 
+Curtis G. Northcutt is the author responsible for the creation of 
 the cleanlab Python package and all software, code, algorithms, ideas, 
 and innovations herein.
 
@@ -18,10 +17,6 @@ furnished to do so, SUBJECT TO THE FOLLOWING CONDITIONS:
 
 The above copyright notice and this permission notice shall be included in all
 copies or substantial portions of the Software.
-
-Usage of this software, by any means, without credit to the authors identified
-in this copyright and/or without inclusion of this copyright notice, 
-is strictly prohibited.
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
