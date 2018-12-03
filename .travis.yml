@@ -17,9 +17,9 @@ install:
   - if [[ $TRAVIS_PYTHON_VERSION == 2.7 ]]; then pip install -q torchvision; fi
   - if [[ $TRAVIS_PYTHON_VERSION == 3.5 ]]; then pip install -q torchvision; fi
   - if [[ $TRAVIS_PYTHON_VERSION == 3.6 ]]; then pip install -q torchvision; fi
-  - if [[ $TRAVIS_PYTHON_VERSION == 3.4 ]]; then git clone https://github.com/facebookresearch/fastText.git && pip install -q -e fastText/.; fi
-  - if [[ $TRAVIS_PYTHON_VERSION == 3.5 ]]; then git clone https://github.com/facebookresearch/fastText.git && pip install -q -e fastText/.; fi
-  - if [[ $TRAVIS_PYTHON_VERSION == 3.6 ]]; then git clone https://github.com/facebookresearch/fastText.git && pip install -q -e fastText/.; fi
+  - if [[ $TRAVIS_PYTHON_VERSION == 3.4 ]]; then git clone -q https://github.com/facebookresearch/fastText.git && pip install -q -e fastText/.; fi
+  - if [[ $TRAVIS_PYTHON_VERSION == 3.5 ]]; then git clone -q https://github.com/facebookresearch/fastText.git && pip install -q -e fastText/.; fi
+  - if [[ $TRAVIS_PYTHON_VERSION == 3.6 ]]; then git clone -q https://github.com/facebookresearch/fastText.git && pip install -q -e fastText/.; fi
   - pip install -q -e .
 # command to run tests
 script:
