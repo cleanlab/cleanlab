@@ -19,12 +19,6 @@ python_version = VersionWarning(
 )
 
 
-# In[47]:
-
-
-cwd[-5:] == 'tests'
-
-
 # In[ ]:
 
 
