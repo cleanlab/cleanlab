@@ -65,7 +65,7 @@ def create_cooking_dataset(data_dir = None):
             shell = True,
         )
 
-        with open(data_dir + '/cooking/cooking.preprocessed.txt', 'rU') as f:
+        with open(data_dir + 'cooking/cooking.preprocessed.txt', 'rU') as f:
             cook_data = f.readlines()
 
         single_label_cook_data = []
