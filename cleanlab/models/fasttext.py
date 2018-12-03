@@ -11,22 +11,24 @@ from __future__ import print_function, absolute_import, division, unicode_litera
 # In[ ]:
 
 
+# Make sure python version is compatible with fasttext
+from cleanlab.util import VersionWarning
+python_version = VersionWarning(
+    warning_str = "fastText supports Python 3 versions (not python 2).",
+    list_of_compatible_versions = [3.4, 3.5, 3.6, 3.7],
+)
+
+
+# In[ ]:
+
+
 # fasttext only exists for these versions that are also compatible with cleanlab
-import sys
-v = sys.version_info[0] + 0.1 * sys.version_info[1]
-if v in [3.4, 3.5, 3.6]:
+if python_version.is_compatible():
     import time
     import os
     from sklearn.metrics import accuracy_score
     import numpy as np
     from fastText import train_supervised
-else:
-    import warnings
-    warning = '''\n    fastText only supports Python 3.
-    cleanlab supports Python versions 2.7, 3.4, 3.5, and 3.6.
-    You are using Python version {}. To use cleanlab with fasttext, 
-    you'll need to use Python 3.4, 3.5, or 3.6.'''.format(v)
-    warnings.warn(warning)    
 
 
 # In[ ]:

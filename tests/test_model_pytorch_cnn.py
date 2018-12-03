@@ -13,7 +13,7 @@ from __future__ import print_function, absolute_import, division, unicode_litera
 
 # Make sure python version is compatible with pyTorch
 from cleanlab.util import VersionWarning
-warn = VersionWarning(
+python_version = VersionWarning(
     warning_str = "pyTorch supports Python version 2.7, 3.5, 3.6, 3.7.",
     list_of_compatible_versions = [2.7, 3.5, 3.6],
 )
@@ -22,7 +22,7 @@ warn = VersionWarning(
 # In[ ]:
 
 
-if warn.is_compatible():
+if python_version.is_compatible():
     from cleanlab.models.mnist_pytorch import CNN, MNIST_TEST_SIZE, MNIST_TRAIN_SIZE
     import cleanlab
     from os.path import expanduser
@@ -47,7 +47,7 @@ if warn.is_compatible():
 
 
 def test_mnist_pytorch_cnn(seed = 43):
-    if warn.is_compatible():
+    if python_version.is_compatible():
         np.random.seed(seed)
 
         prune_method = 'prune_by_noise_rate'
