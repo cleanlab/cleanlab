@@ -58,7 +58,7 @@ def create_cooking_dataset(data_dir = None):
         # https://github.com/facebookresearch/fastText/blob/master/tests/fetch_test_data.sh#L111
         
         # Help travis.CI tests find get_cooking_stackexchange_data.sh
-        path = cwd + "tests/" if cwd == "/home/travis/build/cgnorthcutt/cleanlab/" else ''
+        path = cwd + "tests/" if 'TRAVIS' in os.environ else ''
         # Fetch stackexchange data
         subprocess.call(
             "bash {}get_cooking_stackexchange_data.sh '{}'".format(path, data_dir), 
