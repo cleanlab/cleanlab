@@ -89,7 +89,7 @@ posted here when they are published.
 Core ``cleanlab`` Package Descriptions
 --------------------------------------
 
-1. **cleanlab/classification.py** - The RankPruning() class for learning with noisy labels.
+1. **cleanlab/classification.py** - The LearningWithNoisyLabels() class for learning with noisy labels.
 2. **cleanlab/latent_algebra.py** -	Equalities when noise information is known.
 3. **cleanlab/latent_estimation.py** -	Estimates and fully characterizes all variants of label noise.
 4. **cleanlab/noise_generation.py** - Generate mathematically valid synthetic noise matrices.
@@ -155,8 +155,8 @@ model into a Python class that inherets the
            pass
            
    # Now you can use your model with `cleanlab`. Here's one example:
-   from cleanlab.classification import RankPruning
-   rp = RankPruning(clf=YourFavoriteModel())
+   from cleanlab.classification import LearningWithNoisyLabels
+   rp = LearningWithNoisyLabels(clf=YourFavoriteModel())
    rp.fit(train_data, train_labels_with_errors)
 
 Want to see a working example? `Here’s a compliant PyTorch MNIST CNN class <https://github.com/cgnorthcutt/cleanlab/blob/master/cleanlab/models/mnist_pytorch.py#L28>`__
@@ -168,7 +168,7 @@ technically you don’t actually need to inherit from
 ``sklearn.base.BaseEstimator``, as you can just create a class that
 defines .fit(), .predict(), and .predict_proba(), but inheriting makes
 downstream scikit-learn applications like hyper-parameter optimization
-work seamlessly. For example, the `RankPruning()
+work seamlessly. For example, the `LearningWithNoisyLabels()
 model <https://github.com/cgnorthcutt/cleanlab/blob/master/cleanlab/classification.py#L48>`__
 is fully compliant.
 
@@ -192,14 +192,14 @@ classifier, and is easy to use.
 
 .. code:: python
 
-   from cleanlab.classification import RankPruning
-   # RankPruning uses logreg by default, so this is unnecessary. 
+   from cleanlab.classification import LearningWithNoisyLabels
+   # LearningWithNoisyLabels uses logreg by default, so this is unnecessary. 
    # We include it here for clarity, but this step is omitted below.
    from sklearn.linear_model import LogisticRegression as logreg
 
    # 1.
    # Wrap around any classifier. Yup, neural networks work, too.
-   rp = RankPruning(clf=logreg()) 
+   rp = LearningWithNoisyLabels(clf=logreg()) 
 
    # 2.
    # X_train is numpy matrix of training examples (integers for large data)
@@ -308,7 +308,7 @@ Method 1: Guarantees the rows of *P(s,y)* correctly sum to *p(s)*, by first comp
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 This method occurs when hyperparameter prune_count_method =
-‘inverse_nm_dot_s’ in RankPruning.fit() and get_noise_indices().
+‘inverse_nm_dot_s’ in LearningWithNoisyLabels.fit() and get_noise_indices().
 
 .. code:: python
 
@@ -322,7 +322,7 @@ Method 2: Simplest. Compute by re-normalizing the confident joint. Rows won’t 
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 This method occurs when hyperparameter prune_count_method =
-‘calibrate_confident_joint’ in RankPruning.fit() and
+‘calibrate_confident_joint’ in LearningWithNoisyLabels.fit() and
 get_noise_indices().
 
 .. code:: python

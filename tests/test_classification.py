@@ -12,7 +12,7 @@ from __future__ import print_function, absolute_import, division, unicode_litera
 
 
 import numpy as np
-from cleanlab.classification import RankPruning
+from cleanlab.classification import LearningWithNoisyLabels
 from cleanlab.noise_generation import generate_noise_matrix_from_trace
 from cleanlab.noise_generation import generate_noisy_labels
 from sklearn.linear_model import LogisticRegression
@@ -82,7 +82,7 @@ def make_data(
 def test_rp():
     seed = 46
     data = make_data(seed = seed)
-    rp = RankPruning(clf = LogisticRegression(multi_class='auto', solver='lbfgs', random_state=seed))
+    rp = LearningWithNoisyLabels(clf = LogisticRegression(multi_class='auto', solver='lbfgs', random_state=seed))
     rp.fit(data["X_train"], data["s"])
     score = rp.score(data["X_test"], data["y_test"])
     assert(abs(score - 0.88) < 0.01)

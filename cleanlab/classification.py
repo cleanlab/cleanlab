@@ -1,8 +1,8 @@
 
 # coding: utf-8
 
-# ## The RankPruning algorithm class for multiclass learning with noisy labels. 
-# #### The RankPruning class wraps around an instantion of a classifier. Your classifier must adhere to the sklearn template, meaning it must define three functions:
+# ## The LearningWithNoisyLabels algorithm class for multiclass learning with noisy labels. 
+# #### The LearningWithNoisyLabels class wraps around an instantion of a classifier. Your classifier must adhere to the sklearn template, meaning it must define three functions:
 # * clf.fit(X, y, sample_weight = None)
 # * clf.predict_proba(X)
 # * clf.predict(X)
@@ -19,10 +19,10 @@
 # ## Example
 # 
 # ```python
-# from cleanlab.classification import RankPruning
+# from cleanlab.classification import LearningWithNoisyLabels
 # from sklearn.linear_model import LogisticRegression as logreg
 # 
-# rp = RankPruning(clf=logreg()) # Pass in any classifier. Yup, neural networks work, too.
+# rp = LearningWithNoisyLabels(clf=logreg()) # Pass in any classifier. Yup, neural networks work, too.
 # rp.fit(X_train, y_may_have_label_errors)
 # pred = rp.predict(X_test) # Estimates the predictions you would have gotten had you trained without label errors.
 # ```
@@ -72,7 +72,7 @@ from cleanlab.pruning import get_noise_indices
 
 from sklearn.base import BaseEstimator
 
-class RankPruning(BaseEstimator): # Inherits sklearn classifier
+class LearningWithNoisyLabels(BaseEstimator): # Inherits sklearn classifier
     '''Rank Pruning is a state-of-the-art algorithm (2017) for 
       multiclass classification with (potentially extreme) mislabeling 
       across any or all pairs of class labels. It works with ANY classifier,
