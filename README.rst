@@ -47,7 +47,7 @@
    # Estimate the predictions you would have gotten by training with *no* label errors.
    predicted_test_labels = lnl.predict(X_test)
 
-Check out these `examples <examples>`__.
+Check out these `examples <examples>`__ and `tests <tests>`__ (includes how to use pyTorch, FastText, etc.).
 
 Installation
 ------------
