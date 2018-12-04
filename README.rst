@@ -40,6 +40,7 @@
    from sklearn.linear_model import LogisticRegression
    
    # Learning with noisy labels in 3 lines of code!
+   
    # Wrap around any classifier. Yup, you can use sklearn/pyTorch/Tensorflow/FastText/etc.
    lnl = LearningWithNoisyLabels(clf=LogisticRegression()) 
    lnl.fit(X = X_train_data, s = train_noisy_labels) 
