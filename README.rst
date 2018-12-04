@@ -33,6 +33,18 @@
    noisy lables for ANY classifier (deep or not), for ANY
    amount/distribution of label noise distribution, with no information
    about the label noise needed a priori.
+   
+.. code:: python
+   
+   from cleanlab.classification import LearningWithNoisyLabels
+   from sklearn.linear_model import LogisticRegression
+   
+   # Learning with noisy labels in 3 lines of code!
+   # Wrap around any classifier. Yup, you can use sklearn/pyTorch/Tensorflow/FastText/etc.
+   lnl = LearningWithNoisyLabels(clf=LogisticRegression()) 
+   lnl.fit(X = X_train_data, s = train_noisy_labels) 
+   # Estimate the predictions you would have gotten by training with *no* label errors.
+   predicted_test_labels = lnl.predict(X_test)
 
 Check out these `examples <examples>`__.
 
@@ -156,8 +168,8 @@ model into a Python class that inherets the
            
    # Now you can use your model with `cleanlab`. Here's one example:
    from cleanlab.classification import LearningWithNoisyLabels
-   rp = LearningWithNoisyLabels(clf=YourFavoriteModel())
-   rp.fit(train_data, train_labels_with_errors)
+   lnl = LearningWithNoisyLabels(clf=YourFavoriteModel())
+   lnl.fit(train_data, train_labels_with_errors)
 
 Want to see a working example? `Here’s a compliant PyTorch MNIST CNN class <https://github.com/cgnorthcutt/cleanlab/blob/master/cleanlab/models/mnist_pytorch.py#L28>`__
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -188,10 +200,17 @@ Multiclass learning with noisy labels (in **3** lines of code):
 **rankpruning** is a fast, general, robust algorithm for multiclass
 learning with noisy labels. It adds minimal overhead, needing only
 *O(nm2)* time for n training examples and m classes, works with any
-classifier, and is easy to use.
+classifier, and is easy to use. Here is the example from above, with
+added commments for clarity.
 
 .. code:: python
-
+   
+   # LearningWithNoisyLabels implements a faster,
+   # cross-platform and more-compatible version of the RankPruning
+   # algorithm for learning with noisy labels. Unlike the original
+   # algorithm which only worked for binary classification,
+   # LearningWithNoisyLabels generalizes the theory and algorithms
+   # of RankPruning for any number of classes.
    from cleanlab.classification import LearningWithNoisyLabels
    # LearningWithNoisyLabels uses logreg by default, so this is unnecessary. 
    # We include it here for clarity, but this step is omitted below.
@@ -199,16 +218,16 @@ classifier, and is easy to use.
 
    # 1.
    # Wrap around any classifier. Yup, neural networks work, too.
-   rp = LearningWithNoisyLabels(clf=logreg()) 
+   lnl = LearningWithNoisyLabels(clf=logreg()) 
 
    # 2.
    # X_train is numpy matrix of training examples (integers for large data)
    # train_labels_with_errors is a numpy array of labels of length n (# of examples), usually denoted 's'.
-   rp.fit(X_train, train_labels_with_errors) 
+   lnl.fit(X_train, train_labels_with_errors) 
 
    # 3.
    # Estimate the predictions you would have gotten by training with *no* label errors.
-   predicted_test_labels = rp.predict(X_test)
+   predicted_test_labels = lnl.predict(X_test)
 
 Estimate the confident joint, the latent noisy channel matrix, *P(s \| y)* and inverse, *P(y \| s)*, the latent prior of the unobserved, actual true labels, *p(y)*, and the predicted probabilities.:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
