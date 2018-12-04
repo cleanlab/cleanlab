@@ -220,13 +220,13 @@ plt.show()
 # In[21]:
 
 
-from cleanlab.classification import RankPruning
-# RankPruning uses logreg by default, so this is unnecessary. 
+from cleanlab.classification import LearningWithNoisyLabels
+# LearningWithNoisyLabels uses logreg by default, so this is unnecessary. 
 # We include it here for clarity, but this step is omitted below.
 from sklearn.linear_model import LogisticRegression as logreg
 
 # Wrap around any classifier. Yup, neural networks work, too.
-rp = RankPruning(clf=logreg()) 
+rp = LearningWithNoisyLabels(clf=logreg()) 
 # X_train is numpy matrix of training examples (integers for large data)
 # train_labels_with_errors is a numpy array of labels of length n (# of examples), usually denoted 's'.
 rp.fit(X_train, train_labels_with_errors) 
@@ -300,7 +300,7 @@ label_errors = get_noise_indices(
 There are two methods to compute *P<sub>s,y</sub>*, the complete-information distribution matrix that captures the number of pairwise label flip errors when multipled by the total number of examples as *n * P<sub>s,y</sub>*.
 
 #### Method 1: Guarantees the rows of *P<sub>s,y</sub>* correctly sum to *p(s)*, by first computing *P<sub>y | s</sub>*. 
-This method occurs when hyperparameter prune_count_method = 'inverse_nm_dot_s' in RankPruning.fit() and get_noise_indices(). 
+This method occurs when hyperparameter prune_count_method = 'inverse_nm_dot_s' in LearningWithNoisyLabels.fit() and get_noise_indices(). 
 
 ```python
 from cleanlab.util import value_counts
@@ -312,7 +312,7 @@ psy = np.transpose(est_inv * ps) # Matrix of prob(s=l and y=k)
 
 
 #### Method 2: Simplest. Compute by re-normalizing the confident joint. Rows won't sum to *p(s)*
-This method occurs when hyperparameter prune_count_method = 'calibrate_confident_joint' in RankPruning.fit() and get_noise_indices().
+This method occurs when hyperparameter prune_count_method = 'calibrate_confident_joint' in LearningWithNoisyLabels.fit() and get_noise_indices().
 ```python
 from cleanlab.util import value_counts
 # *p(s)* is the prior of the observed, noisy labels and an array of length m (# of classes)

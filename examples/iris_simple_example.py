@@ -11,7 +11,7 @@ from sklearn.metrics import accuracy_score
 from sklearn.linear_model import LogisticRegression as logreg
 from sklearn.model_selection import ParameterGrid
 import numpy as np
-from cleanlab.classification import RankPruning
+from cleanlab.classification import LearningWithNoisyLabels
 from cleanlab.noise_generation import generate_noisy_labels
 from cleanlab.util import value_counts
 from cleanlab.latent_algebra import compute_inv_noise_matrix
@@ -26,7 +26,7 @@ from cleanlab.latent_algebra import compute_inv_noise_matrix
 
 # Seed for reproducibility
 seed = 2
-rp = RankPruning(clf = logreg(), seed = seed)
+rp = LearningWithNoisyLabels(clf = logreg(), seed = seed)
 np.random.seed(seed = seed)
 
 # Get iris dataset
@@ -124,13 +124,13 @@ pred = rp.predict(X_test)
 print("Iris dataset test accuracy:", round(accuracy_score(pred, y_test),2))
 
 print('WITH confident learning (using latent noise matrix estimation),', end=" ")
-rp = RankPruning(clf = logreg(), seed = seed, prune_count_method='inverse_nm_dot_s')
+rp = LearningWithNoisyLabels(clf = logreg(), seed = seed, prune_count_method='inverse_nm_dot_s')
 _ = rp.fit(X_train, s)
 pred = rp.predict(X_test)
 print("Iris dataset test accuracy:", round(accuracy_score(pred, y_test),2))
 
 print('WITH confident learning (using calibrated confident joint),', end=" ")
-rp = RankPruning(clf = logreg(), seed = seed, prune_count_method='calibrate_confident_joint')
+rp = LearningWithNoisyLabels(clf = logreg(), seed = seed, prune_count_method='calibrate_confident_joint')
 _ = rp.fit(X_train, s)
 pred = rp.predict(X_test)
 print("Iris dataset test accuracy:", round(accuracy_score(pred, y_test),2))
@@ -147,11 +147,11 @@ param_grid = {
     "converge_latent_estimates": [True, False],
 }
 
-# Fit RankPruning across all parameter settings.
+# Fit LearningWithNoisyLabels across all parameter settings.
 params = ParameterGrid(param_grid)
 scores = []
 for param in params:
-    rp = RankPruning(clf = logreg(), **param)
+    rp = LearningWithNoisyLabels(clf = logreg(), **param)
     _ = rp.fit(X_train, s) # s is the noisy y_train labels
     scores.append(accuracy_score(rp.predict(X_test), y_test))
 

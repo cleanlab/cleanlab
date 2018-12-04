@@ -14,7 +14,7 @@ from cleanlab.noise_generation import generate_noise_matrix_from_trace, generate
 from cleanlab.util import print_noise_matrix
 from cleanlab.latent_estimation import estimate_confident_joint_and_cv_pred_proba, estimate_latent
 from cleanlab.pruning import get_noise_indices
-from cleanlab.classification import RankPruning
+from cleanlab.classification import LearningWithNoisyLabels
 
 
 # In[2]:
@@ -167,7 +167,7 @@ print("-------------------")
 clf = logreg()
 baseline_score = accuracy_score(y_test, clf.fit(X_train, s).predict(X_test))
 print("Logistic regression:", baseline_score)
-rp = RankPruning(seed = seed)
+rp = LearningWithNoisyLabels(seed = seed)
 rp_score = accuracy_score(y_test, rp.fit(X_train, s, psx=psx).predict(X_test))
 print("Logistic regression (+rankpruning):", rp_score)
 diff = rp_score - baseline_score
@@ -205,12 +205,12 @@ param_grid = {
     "converge_latent_estimates": [True, False],
 }
 
-# Fit RankPruning across all parameter settings.
+# Fit LearningWithNoisyLabels across all parameter settings.
 from sklearn.model_selection import ParameterGrid
 params = ParameterGrid(param_grid)
 scores = []
 for param in params:
-    rp = RankPruning(clf = logreg(), **param)
+    rp = LearningWithNoisyLabels(clf = logreg(), **param)
     _ = rp.fit(X_train, s) # s is the noisy y_train labels
     scores.append(accuracy_score(rp.predict(X_test), y_test))
 
@@ -226,11 +226,11 @@ for i in np.argsort(scores)[::-1]:
     # Print noise matrix for highest/lowest scoring models
     if i == np.argmax(scores) or i == np.argmin(scores):
         # Retrain with best parameters and show noise matrix estimation
-        rp = RankPruning(clf = logreg(), **param)
+        rp = LearningWithNoisyLabels(clf = logreg(), **param)
         _ = rp.fit(X_train, s) # s is the noisy y_train labels
         print('The actual, latent, underlying noise matrix:', end = "")
         print_noise_matrix(noise_matrix)
-        print('RankPruning best estimate of the noise matrix:', end = "")
+        print('LearningWithNoisyLabels best estimate of the noise matrix:', end = "")
         print_noise_matrix(rp.noise_matrix)
         
 
