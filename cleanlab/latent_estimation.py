@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+
 # coding: utf-8
 
 # ## Latent Estimation
@@ -277,7 +277,7 @@ def estimate_py_and_noise_matrices_from_probabilities(
 def estimate_confident_joint_and_cv_pred_proba(
     X, 
     s, 
-    clf = logreg(),
+    clf = logreg(multi_class = 'auto'),
     cv_n_folds = 5,
     thresholds = None,
     force_ps = False,
@@ -393,7 +393,7 @@ def estimate_confident_joint_and_cv_pred_proba(
 def estimate_py_noise_matrices_and_cv_pred_proba(
     X, 
     s, 
-    clf = logreg(),
+    clf = logreg(multi_class = 'auto'),
     cv_n_folds = 5,
     thresholds = None,
     converge_latent_estimates = False,
@@ -494,7 +494,7 @@ def estimate_py_noise_matrices_and_cv_pred_proba(
 def estimate_cv_predicted_probabilities(
     X, 
     labels, # class labels can be noisy (s) or not noisy (y).
-    clf = logreg(),
+    clf = logreg(multi_class = 'auto'),
     cv_n_folds = 5,
     seed = None,
 ):
@@ -537,7 +537,7 @@ def estimate_cv_predicted_probabilities(
 def estimate_noise_matrices(
     X, 
     s, 
-    clf = logreg(),
+    clf = logreg(multi_class = 'auto'),
     cv_n_folds = 5,
     thresholds = None,
     converge_latent_estimates = True,
@@ -652,121 +652,4 @@ def converge_estimates(
         noise_matrix = compute_noise_matrix_from_inverse(ps, inverse_noise_matrix, py)
     
     return py, noise_matrix, inverse_noise_matrix
-
-
-# In[ ]:
-
-
-# def estimate_confident_joint_and_cv_pred_proba(
-#     X, 
-#     s, 
-#     clf = logreg(),
-#     cv_n_folds = 5,
-#     thresholds = None,
-#     force_ps = False,
-#     return_list_of_converging_cj_matrices = False,
-#     seed = None,
-# ):
-#     '''Estimates P(s,y), the confident counts of the latent 
-#     joint distribution of true and noisy labels 
-#     using observed s and predicted probabilities psx. 
-
-#     The output of this function is a numpy array of shape (K, K). 
-
-#     Under certain conditions, estimates are exact, and in many
-#     conditions, estimates are within one percent of actual.
-
-#     Parameters
-#     ----------
-#     X : np.array
-#       Input feature matrix (N, D), 2D numpy array
-
-#     s : np.array
-#       A discrete vector of labels, s, which may contain mislabeling. "s" denotes
-#       the noisy label instead of \tilde(y), for ASCII encoding reasons.
-
-#     clf : sklearn.classifier or equivalent
-#       Default classifier used is logistic regression. Assumes clf
-#       has predict_proba() and fit() defined.
-
-#     cv_n_folds : int
-#       The number of cross-validation folds used to compute
-#       out-of-sample probabilities for each example in X.
-
-#     thresholds : iterable (list or np.array) of shape (K, 1)  or (K,)
-#       P(s^=k|s=k). If an example has a predicted probability "greater" than 
-#       this threshold, it is counted as having hidden label y = k. This is 
-#       not used for pruning, only for estimating the noise rates using 
-#       confident counts. This value should be between 0 and 1. Default is None.
-        
-#     force_ps : bool or int
-#         If true, forces the output confident_joint matrix to have p(s) closer to the true
-#         p(s). The method used is SGD with a learning rate of eta = 0.5.
-#         If force_ps is an integer, it represents the number of epochs.
-#         Setting this to True is not always good. To make p(s) match, fewer confident
-#         examples are used to estimate the confident_joint, resulting in poorer estimation of
-#         the overall matrix even if p(s) is more accurate. 
-        
-#     return_list_of_converging_cj_matrices : bool (default = False)
-#         When force_ps is true, it converges the joint count matrix that is returned.
-#         Setting this to true will return the list of the converged matrices. The first
-#         item in the list is the original and the last item is the final result.
-        
-#     seed : int (default = None)
-#         Number to set the default state of the random number generator used to split 
-#         the cross-validated folds. If None, uses np.random current random state.
-
-#     Output
-#     ------
-#       Returns a tuple of two numpy array matrices in the form:
-#       (joint counts matrix, predicted probability matrix)'''
-  
-#     # Number of classes
-#     K = len(np.unique(s))  
-#     # 'ps' is p(s=k)
-#     ps = value_counts(s) / float(len(s))
-    
-#     # Ensure labels are of type np.array()
-#     s = np.asarray(s)
-
-#     # Create cross-validation object for out-of-sample predicted probabilities.
-#     # CV folds preserve the fraction of noisy positive and
-#     # noisy negative examples in each class.
-#     kf = StratifiedKFold(n_splits = cv_n_folds, shuffle = True, random_state = seed)
-
-#     # Intialize result storage and final psx array
-#     confident_joint_per_cv_fold = []
-#     psx = np.zeros((len(s), K))
-
-#     # Split X and s into "cv_n_folds" stratified folds.
-#     for k, (cv_train_idx, cv_holdout_idx) in enumerate(kf.split(X, s)):
-
-#         # Select the training and holdout cross-validated sets.
-#         X_train_cv, X_holdout_cv = X[cv_train_idx], X[cv_holdout_idx]
-#         s_train_cv, s_holdout_cv = s[cv_train_idx], s[cv_holdout_idx]
-
-#         # Fit the clf classifier to the training set and 
-#         # predict on the holdout set and update psx. 
-#         clf.fit(X_train_cv, s_train_cv)
-#         psx_cv = clf.predict_proba(X_holdout_cv) # P(s = k|x) # [:,1]
-#         psx[cv_holdout_idx] = psx_cv
-
-#         # Compute and append the confident counts noise estimators
-#         # to estimate the positive and negative mislabeling rates.
-#         confident_joint_cv = estimate_confident_joint_from_probabilities(
-#             s = s_holdout_cv, 
-#             psx = psx_cv, # P(s = k|x)
-#             thresholds = thresholds, 
-#             force_ps = force_ps,
-#             return_list_of_converging_cj_matrices = return_list_of_converging_cj_matrices,
-#         )
-        
-#         confident_joint_per_cv_fold.append(confident_joint_cv)
-    
-#     if return_list_of_converging_cj_matrices:
-#         jcs = [np.sum(np.stack(jcs), axis=0) for jcs in zip(*confident_joint_per_cv_fold)] 
-#         return jcs, psx
-    
-#     confident_joint = np.sum(np.stack(confident_joint_per_cv_fold), axis=0)
-#     return confident_joint, psx
 
