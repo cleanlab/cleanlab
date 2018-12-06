@@ -78,14 +78,14 @@ def make_data(
     }
 
 
-# In[21]:
+# In[4]:
 
 
 seed = 46
 data = make_data(seed = seed)
 
 
-# In[4]:
+# In[5]:
 
 
 def test_rp():
@@ -95,14 +95,14 @@ def test_rp():
     assert(abs(score - 0.88) < 0.01)
 
 
-# In[5]:
+# In[6]:
 
 
-def test_raise_error_no_clf_fit():
+def self():
     class struct(object):
-        def predict():
+        def predict(self):
             pass
-        def predict_proba():
+        def predict_proba(self):
             pass
     try:
         LearningWithNoisyLabels(clf = struct())
@@ -112,14 +112,14 @@ def test_raise_error_no_clf_fit():
             LearningWithNoisyLabels(clf = struct())
 
 
-# In[6]:
+# In[7]:
 
 
 def test_raise_error_no_clf_predict_proba():
     class struct(object):
-        def fit():
+        def fit(self):
             pass
-        def predict():
+        def predict(self):
             pass
     try:
         LearningWithNoisyLabels(clf = struct())
@@ -129,14 +129,14 @@ def test_raise_error_no_clf_predict_proba():
             LearningWithNoisyLabels(clf = struct())
 
 
-# In[7]:
+# In[8]:
 
 
 def test_raise_error_no_clf_predict():
     class struct(object):
-        def fit():
+        def fit(self):
             pass
-        def predict_proba():
+        def predict_proba(self):
             pass
     try:
         LearningWithNoisyLabels(clf = struct())
@@ -146,7 +146,7 @@ def test_raise_error_no_clf_predict():
             LearningWithNoisyLabels(clf = struct())
 
 
-# In[8]:
+# In[9]:
 
 
 def test_seed():
@@ -154,7 +154,7 @@ def test_seed():
     assert(lnl.seed is not None)
 
 
-# In[9]:
+# In[10]:
 
 
 def test_default_clf():
@@ -162,7 +162,7 @@ def test_default_clf():
     return lnl.clf is not None and         hasattr(lnl.clf, 'fit') and         hasattr(lnl.clf, 'predict') and         hasattr(lnl.clf, 'predict_proba')
 
 
-# In[10]:
+# In[11]:
 
 
 def test_clf_fit_nm():
@@ -178,7 +178,7 @@ def test_clf_fit_nm():
     
 
 
-# In[48]:
+# In[12]:
 
 
 def test_clf_fit_inm():
@@ -193,7 +193,7 @@ def test_clf_fit_inm():
             lnl.fit(X = np.arange(3), s = np.array([0,0,1]), noise_matrix = nm)
 
 
-# In[49]:
+# In[13]:
 
 
 def test_fit_with_nm(
@@ -222,7 +222,7 @@ def test_fit_with_nm(
         assert(score < score_nm)
 
 
-# In[50]:
+# In[14]:
 
 
 def test_warning_nm_calibrate_cj():
@@ -234,7 +234,7 @@ def test_warning_nm_calibrate_cj():
     assert((s1 - s2) < 1e-4)
 
 
-# In[51]:
+# In[15]:
 
 
 def test_fit_with_inm(
@@ -268,7 +268,7 @@ def test_fit_with_inm(
         assert(score < score_inm)
 
 
-# In[52]:
+# In[16]:
 
 
 def test_warning_inm_calibrate_cj():
@@ -277,10 +277,10 @@ def test_warning_inm_calibrate_cj():
             prune_count_method = 'calibrate_confident_joint',
             used_by_another_test = True,
         )
-    assert((s1 - s2) < 1e-4)
+    assert(abs(s1 - s2) < 1e-4)
 
 
-# In[80]:
+# In[17]:
 
 
 def test_pred_and_pred_proba():
@@ -293,4 +293,59 @@ def test_pred_and_pred_proba():
     # Just check that this functions return what we expect
     assert(np.shape(pred)[0] == n)
     assert(np.shape(probs) == (n, m))
+
+
+# In[21]:
+
+
+def test_score():
+    phrase = 'cleanlab is dope'
+    class Struct():
+        def fit(self):
+            pass
+        def predict_proba(self):
+            pass
+        def predict(self):
+            pass
+        def score(self, X, y):
+            return phrase
+    lnl = LearningWithNoisyLabels(clf = Struct())
+    score = lnl.score(data['X_test'], data['y_test'])
+    assert(score == phrase)
+
+
+# In[31]:
+
+
+def test_no_score():
+    class Struct():
+        def fit(self):
+            pass
+        def predict_proba(self):
+            pass
+        def predict(self, X):
+            return data['y_test']
+    lnl = LearningWithNoisyLabels(clf = Struct())
+    score = lnl.score(data['X_test'], data['y_test'])
+    assert(abs(score - 1) < 1e-6)
+
+
+# In[46]:
+
+
+def test_no_fit_sample_weight():
+    class Struct():
+        def fit(self, X, y):
+            pass
+        def predict_proba(self):
+            pass
+        def predict(self, X):
+            return data['y_test']
+    n = np.shape(data['y_test'])[0]
+    m = len(np.unique(data['y_test']))
+    psx = np.zeros(shape = (n, m))
+    lnl = LearningWithNoisyLabels(clf = Struct())
+    lnl.fit(data['X_train'], data['y_train'], psx = psx, noise_matrix = data['noise_matrix'])
+    # If we make it here, without any error:
+    assert(True)
 
