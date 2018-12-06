@@ -66,6 +66,8 @@ from cleanlab.latent_estimation import     estimate_py_noise_matrices_and_cv_pre
 from cleanlab.latent_algebra import compute_py_inv_noise_matrix, compute_noise_matrix_from_inverse
 from cleanlab.pruning import get_noise_indices
 
+import warnings
+
 
 # In[ ]:
 
@@ -92,7 +94,8 @@ class LearningWithNoisyLabels(BaseEstimator): # Inherits sklearn classifier
 
     Parameters 
     ----------
-    clf : sklearn.classifier or equivalent class
+    clf : sklearn.classifier compliant class (e.g. skorch wraps around PyTorch)
+      See cleanlab.models for examples of sklearn wrappers around FastText, PyTorch, etc.
       The clf object must have the following three functions defined:
       1. clf.predict_proba(X) # Predicted probabilities
       2. clf.predict(X) # Predict labels
@@ -120,13 +123,19 @@ class LearningWithNoisyLabels(BaseEstimator): # Inherits sklearn classifier
 
     prune_count_method : str (default 'inverse_nm_dot_s')
       Options are 'inverse_nm_dot_s' or 'calibrate_confident_joint'. 
-      Determines the method used to estimate the counts of the joint P(s, y) that will 
+        !DO NOT USE! 'calibrate_confident_joint' if you already know the noise matrix
+      and will call .fit(noise_matrix = known_noise_matrix) or
+      .fit(inverse_noise_matrix = known_inverse_noise_matrix) because
+      'calibrate_confident_joint' will estimate the noise without using this information.
+        !IN ALL OTHER CASES! We recommend always using 'calibrate_confident_joint'
+      because it is faster and more robust when no noise matrix info is given.
+        Determines the method used to estimate the counts of the joint P(s, y) that will 
       be used to determine how many examples to prune
       for every class that are flipped to every other class, as follows:
         if prune_count_method == 'inverse_nm_dot_s':
           prune_count_matrix = inverse_noise_matrix * s_counts # Matrix of counts(y=k and s=l)
         elif prune_count_method == 'calibrate_confident_joint':# calibrate
-          prune_count_matrix = confident_joint.T / float(confident_joint.sum()) * len(s) 
+          prune_count_matrix = confident_joint.T / float(confident_joint.sum()) * len(s)
 
     converge_latent_estimates : bool (Default: False)
       If true, forces numerical consistency of latent estimates. Each is estimated
@@ -152,7 +161,8 @@ class LearningWithNoisyLabels(BaseEstimator): # Inherits sklearn classifier
     ):
         
         if clf is None:
-            clf = logreg() # Use logistic regression if no classifier is provided.
+            # Use logistic regression if no classifier is provided.
+            clf = logreg(multi_class = 'auto', solver = 'lbfgs')
         
         # Make sure the passed in classifier has the appropriate methods defined.
         if not hasattr(clf, "fit"):
@@ -183,7 +193,9 @@ class LearningWithNoisyLabels(BaseEstimator): # Inherits sklearn classifier
         noise_matrix = None,
         inverse_noise_matrix = None, 
     ):
-        '''This method implements the Rank Pruning mantra 'learning with confident examples.'
+        '''This method implements the confident learning. It counts examples that are likely
+        labeled correctly and incorrectly and uses their ratio to create a predicted
+        confusion matrix.
         This function fits the classifer (self.clf) to (X, s) accounting for the noise in
         both the positive and negative sets.
 
@@ -228,9 +240,11 @@ class LearningWithNoisyLabels(BaseEstimator): # Inherits sklearn classifier
         # Check inputs
         assert_inputs_are_valid(X, s, psx)
         if noise_matrix is not None and np.trace(noise_matrix) <= 1:
-            raise Exception("Trace(noise_matrix) must exceed 1.")
+            t = np.round(np.trace(noise_matrix), 2)
+            raise ValueError("Trace(noise_matrix) is {}, but must exceed 1.".format(t))
         if inverse_noise_matrix is not None and np.trace(inverse_noise_matrix) <= 1:
-            raise Exception("Trace(inverse_noise_matrix) must exceed 1.")
+            t = np.round(np.trace(inverse_noise_matrix), 2)
+            raise ValueError("Trace(inverse_noise_matrix) is {}, but must exceed 1.".format(t))
 
         # Number of classes
         self.K = len(np.unique(s))
@@ -244,10 +258,26 @@ class LearningWithNoisyLabels(BaseEstimator): # Inherits sklearn classifier
         
         # Set / re-set noise matrices / psx; estimate if not provided.
         if noise_matrix is not None:
+            if self.prune_count_method == 'calibrate_confident_joint':
+                w = "Y\nou should not use self.prune_count_method == 'calibrate_confident_joint'."
+                w += "\nwhen .fit(noise_matrix = something) because"
+                w += "\n'calibrate_confident_joint' estimates the noise from scratch and will"
+                w += "\nnot use your 'something' noise matrix information. Instead, use"
+                w += "\nprune_count_method == 'inverse_nm_dot_s' which will find label errors"
+                w += "\nby using the noise matrix you provde."
+                warnings.warn(w)
             self.noise_matrix = noise_matrix
             if inverse_noise_matrix is None:
                 self.py, self.inverse_noise_matrix = compute_py_inv_noise_matrix(self.ps, self.noise_matrix)
         if inverse_noise_matrix is not None:
+            if self.prune_count_method == 'calibrate_confident_joint':
+                w = "\nYou should not use self.prune_count_method == 'calibrate_confident_joint'."
+                w += "\nwhen .fit(inverse_noise_matrix = something) because"
+                w += "\n'calibrate_confident_joint' estimates the noise from scratch and will"
+                w += "\nnot use your 'something' inv noise matrix information. Instead, use"
+                w += "\nprune_count_method == 'inverse_nm_dot_s' which will find label errors"
+                w += "\nby using the inverse noise matrix you provde."
+                warnings.warn(w)
             self.inverse_noise_matrix = inverse_noise_matrix
             if noise_matrix is None:
                 self.noise_matrix = compute_noise_matrix_from_inverse(self.ps, self.inverse_noise_matrix)
