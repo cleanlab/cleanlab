@@ -1,27 +1,29 @@
 
 # coding: utf-8
 
-# In[ ]:
+# In[1]:
 
 
 # Python 2 and 3 compatibility
 from __future__ import print_function, absolute_import, division, unicode_literals, with_statement
 
 
-# In[1]:
+# In[2]:
 
 
 import numpy as np
+from cleanlab import classification
 from cleanlab.classification import LearningWithNoisyLabels
 from cleanlab.noise_generation import generate_noise_matrix_from_trace
 from cleanlab.noise_generation import generate_noisy_labels
+from cleanlab.latent_algebra import compute_inv_noise_matrix
 from sklearn.linear_model import LogisticRegression
 from numpy.random import multivariate_normal
 
 import pytest
 
 
-# In[2]:
+# In[3]:
 
 
 def make_data(
@@ -40,7 +42,7 @@ def make_data(
     test_data = []
     test_labels = []
 
-    for idx in range(len(means)):
+    for idx in range(K):
         data.append(np.random.multivariate_normal(mean=means[idx], cov=covs[idx], size=sizes[idx]))
         test_data.append(np.random.multivariate_normal(mean=means[idx], cov=covs[idx], size=sizes[idx]))
         labels.append(np.array([idx for i in range(sizes[idx])]))
@@ -76,14 +78,219 @@ def make_data(
     }
 
 
-# In[3]:
+# In[21]:
+
+
+seed = 46
+data = make_data(seed = seed)
+
+
+# In[4]:
 
 
 def test_rp():
-    seed = 46
-    data = make_data(seed = seed)
     rp = LearningWithNoisyLabels(clf = LogisticRegression(multi_class='auto', solver='lbfgs', random_state=seed))
     rp.fit(data["X_train"], data["s"])
     score = rp.score(data["X_test"], data["y_test"])
     assert(abs(score - 0.88) < 0.01)
+
+
+# In[5]:
+
+
+def test_raise_error_no_clf_fit():
+    class struct(object):
+        def predict():
+            pass
+        def predict_proba():
+            pass
+    try:
+        LearningWithNoisyLabels(clf = struct())
+    except Exception as e:
+        assert('fit' in str(e))
+        with pytest.raises(ValueError) as e:
+            LearningWithNoisyLabels(clf = struct())
+
+
+# In[6]:
+
+
+def test_raise_error_no_clf_predict_proba():
+    class struct(object):
+        def fit():
+            pass
+        def predict():
+            pass
+    try:
+        LearningWithNoisyLabels(clf = struct())
+    except Exception as e:
+        assert('predict_proba' in str(e))
+        with pytest.raises(ValueError) as e:
+            LearningWithNoisyLabels(clf = struct())
+
+
+# In[7]:
+
+
+def test_raise_error_no_clf_predict():
+    class struct(object):
+        def fit():
+            pass
+        def predict_proba():
+            pass
+    try:
+        LearningWithNoisyLabels(clf = struct())
+    except Exception as e:
+        assert('predict' in str(e))
+        with pytest.raises(ValueError) as e:
+            LearningWithNoisyLabels(clf = struct())
+
+
+# In[8]:
+
+
+def test_seed():
+    lnl = LearningWithNoisyLabels(seed = 0)
+    assert(lnl.seed is not None)
+
+
+# In[9]:
+
+
+def test_default_clf():
+    lnl = LearningWithNoisyLabels()
+    return lnl.clf is not None and         hasattr(lnl.clf, 'fit') and         hasattr(lnl.clf, 'predict') and         hasattr(lnl.clf, 'predict_proba')
+
+
+# In[10]:
+
+
+def test_clf_fit_nm():
+    lnl = LearningWithNoisyLabels()
+    # Example of a bad noise matrix (impossible to learn from)
+    nm = np.array([[0, 1],[1, 0]])
+    try:
+        lnl.fit(X = np.arange(3), s = np.array([0,0,1]), noise_matrix = nm)
+    except Exception as e:
+        assert('Trace(noise_matrix)' in str(e))
+        with pytest.raises(ValueError) as e:
+            lnl.fit(X = np.arange(3), s = np.array([0,0,1]), noise_matrix = nm)
+    
+
+
+# In[48]:
+
+
+def test_clf_fit_inm():
+    lnl = LearningWithNoisyLabels()
+    # Example of a bad noise matrix (impossible to learn from)
+    nm = np.array([[.1, .9],[.9, .1]])
+    try:
+        lnl.fit(X = np.arange(3), s = np.array([0,0,1]), inverse_noise_matrix = nm)
+    except Exception as e:
+        assert('Trace(inverse_noise_matrix)' in str(e))
+        with pytest.raises(ValueError) as e:
+            lnl.fit(X = np.arange(3), s = np.array([0,0,1]), noise_matrix = nm)
+
+
+# In[49]:
+
+
+def test_fit_with_nm(
+    prune_count_method = 'inverse_nm_dot_s',
+    seed = 0, 
+    used_by_another_test = False,
+):
+    lnl = LearningWithNoisyLabels(
+        seed = seed, 
+        prune_count_method = prune_count_method,
+    )
+    nm = data['noise_matrix']
+    # Learn with noisy labels with noise matrix given
+    lnl.fit(data['X_train'], data['s'], noise_matrix = nm)
+    score_nm = lnl.score(data['X_test'], data['y_test'])
+    # Learn with noisy labels and estimate the noise matrix.
+    lnl2 = LearningWithNoisyLabels(
+        seed = seed,
+        prune_count_method = prune_count_method,
+    )
+    lnl2.fit(data['X_train'], data['s'],)
+    score = lnl2.score(data['X_test'], data['y_test'])
+    if used_by_another_test:
+        return score, score_nm
+    else:
+        assert(score < score_nm)
+
+
+# In[50]:
+
+
+def test_warning_nm_calibrate_cj():
+    with pytest.warns(UserWarning):
+        s1, s2 = test_fit_with_nm(
+            prune_count_method = 'calibrate_confident_joint',
+            used_by_another_test = True,
+        )
+    assert((s1 - s2) < 1e-4)
+
+
+# In[51]:
+
+
+def test_fit_with_inm(
+    prune_count_method = 'inverse_nm_dot_s',
+    seed = 0, 
+    used_by_another_test = False,
+):
+    lnl = LearningWithNoisyLabels(
+        seed = seed, 
+        prune_count_method = prune_count_method,
+    )
+    nm = data['noise_matrix']
+    inm = compute_inv_noise_matrix(
+        data["py"],
+        data["noise_matrix"],
+        data["ps"],
+    )
+    # Learn with noisy labels with inverse noise matrix given
+    lnl.fit(data['X_train'], data['s'], inverse_noise_matrix = inm)
+    score_inm = lnl.score(data['X_test'], data['y_test'])
+    # Learn with noisy labels and estimate the inv noise matrix.
+    lnl2 = LearningWithNoisyLabels(
+        seed = seed,
+        prune_count_method = prune_count_method,
+    )
+    lnl2.fit(data['X_train'], data['s'],)
+    score = lnl2.score(data['X_test'], data['y_test'])
+    if used_by_another_test:
+        return score, score_inm
+    else:
+        assert(score < score_inm)
+
+
+# In[52]:
+
+
+def test_warning_inm_calibrate_cj():
+    with pytest.warns(UserWarning):
+        s1, s2 = test_fit_with_inm(
+            prune_count_method = 'calibrate_confident_joint',
+            used_by_another_test = True,
+        )
+    assert((s1 - s2) < 1e-4)
+
+
+# In[80]:
+
+
+def test_pred_and_pred_proba():
+    lnl = LearningWithNoisyLabels()
+    lnl.fit(data['X_train'], data['s'])
+    n = np.shape(data['y_test'])[0]
+    m = len(np.unique(data['y_test']))
+    pred = lnl.predict(data['X_test'])
+    probs = lnl.predict_proba(data['X_test'])
+    # Just check that this functions return what we expect
+    assert(np.shape(pred)[0] == n)
+    assert(np.shape(probs) == (n, m))
 
