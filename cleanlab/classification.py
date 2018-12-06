@@ -310,7 +310,7 @@ class LearningWithNoisyLabels(BaseEstimator): # Inherits sklearn classifier
             ) 
 
         # Zero out noise matrix entries if pulearning = the integer specifying the class without noise.
-        if self.pulearning is not None:
+        if self.pulearning is not None: # pragma: no cover
             self.noise_matrix = remove_noise_from_class(self.noise_matrix, class_without_noise=self.pulearning)
             # TODO: self.inverse_noise_matrix = remove_noise_from_class(self.inverse_noise_matrix, class_without_noise=self.pulearning)
 
@@ -394,5 +394,5 @@ class LearningWithNoisyLabels(BaseEstimator): # Inherits sklearn classifier
             else:
                 return self.clf.score(X, y)
         else:
-            return metrics.accuracy_score(y, self.clf.predict(X), sample_weight=sample_weight) 
+            return accuracy_score(y, self.clf.predict(X), sample_weight=sample_weight) 
 
