@@ -89,13 +89,19 @@ def get_noise_indices(
 
     prune_count_method : str (default 'inverse_nm_dot_s')
       Options are 'inverse_nm_dot_s' or 'calibrate_confident_joint'. 
-      Determines the method used to estimate the counts of the joint P(s, y) that will 
+        !DO NOT USE! 'calibrate_confident_joint' if you already know the noise matrix
+      and will call .fit(noise_matrix = known_noise_matrix) or
+      .fit(inverse_noise_matrix = known_inverse_noise_matrix) because
+      'calibrate_confident_joint' will estimate the noise without using this information.
+        !IN ALL OTHER CASES! We recommend always using 'calibrate_confident_joint'
+      because it is faster and more robust when no noise matrix info is given.
+        Determines the method used to estimate the counts of the joint P(s, y) that will 
       be used to determine how many examples to prune
       for every class that are flipped to every other class, as follows:
         if prune_count_method == 'inverse_nm_dot_s':
           prune_count_matrix = inverse_noise_matrix * s_counts # Matrix of counts(y=k and s=l)
         elif prune_count_method == 'calibrate_confident_joint':# calibrate
-          prune_count_matrix = confident_joint.T / float(confident_joint.sum()) * len(s) 
+          prune_count_matrix = confident_joint.T / float(confident_joint.sum()) * len(s)
 
     converge_latent_estimates : bool (Default: False)
       If true, forces numerical consistency of estimates. Each is estimated
