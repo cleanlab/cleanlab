@@ -184,6 +184,20 @@ def test_one_class_error():
 # In[ ]:
 
 
+def test_two_class_nofraczero():
+    trace = 1.1
+    nm = noise_generation.generate_noise_matrix_from_trace(
+        K = 2, 
+        trace = trace,
+        valid_noise_matrix = True,
+    )
+    assert(not np.any(nm == 0)) # Make sure there is not a zero noise rate.
+    assert(abs(trace - np.trace(nm) < 1e-2))
+
+
+# In[ ]:
+
+
 def test_two_class_fraczero_high(valid = False):
     trace = 1.8
     frac_zero_noise_rates = 0.75
@@ -214,12 +228,16 @@ def test_two_class_gen_with_trace_not_valid(valid = False):
 # In[ ]:
 
 
-def test_deprecated_warning(verbose = False): 
+def test_deprecated_warning(
+    verbose = False,
+    frac_zero_noise_rates = 0,
+): 
     K = 3
     with pytest.warns(DeprecationWarning):
         nm = noise_generation.generate_noise_matrix(
             K = K, 
             verbose = verbose,
+            frac_zero_noise_rates = frac_zero_noise_rates,
         )
     assert(abs(nm.sum() - K) < 1e-4)
     assert(all(abs(nm.sum(axis = 0) - 1) < 1e-4))
@@ -230,6 +248,13 @@ def test_deprecated_warning(verbose = False):
 
 def test_deprecated_warning_verbose(verbose = True):    
     test_deprecated_warning(verbose)   
+
+
+# In[ ]:
+
+
+def test_deprecated_fraczero():    
+    test_deprecated_warning(frac_zero_noise_rates = 0.5)   
 
 
 # In[ ]:
@@ -271,10 +296,10 @@ def test_gen_probs_min_error():
 
 def test_probs_min_max_error():    
     f = noise_generation.generate_n_rand_probabilities_that_sum_to_m
-    min_prob = 0.6
-    max_prob = 0.4
+    min_prob = 0.5
+    max_prob = 0.5
     try:
-        f(n = 5, m = 1, min_prob = min_prob, max_prob = max_prob)
+        f(n = 2, m = 1, min_prob = min_prob, max_prob = max_prob)
     except ValueError as e:
         assert('min_prob must be less than max_prob' in str(e))
         with pytest.raises(ValueError) as e:
