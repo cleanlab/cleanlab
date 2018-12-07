@@ -100,7 +100,7 @@ def generate_noisy_labels(y, noise_matrix, verbose=False):
         for k_y in range(K):
             if k_s != k_y:
                 idx_flip = np.where((s==k_y)&(y==k_y))[0]
-                if len(idx_flip):
+                if len(idx_flip): # pragma: no cover
                     s[np.random.choice(idx_flip, count_joint[k_s][k_y], replace=False)] = k_s
 
     # Compute the actual noise matrix induced by s
