@@ -53,8 +53,6 @@ def test_main_pipeline(
     assert(abs(np.sum(nm*py) - 1 < 1e-4))
     s = noise_generation.generate_noisy_labels(y, nm, verbose)
     assert(noise_generation.noise_matrix_is_valid(nm, py, verbose))
-    
-test_main_pipeline()
 
 
 # In[ ]:
