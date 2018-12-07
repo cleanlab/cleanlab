@@ -46,8 +46,18 @@ def noise_matrix_is_valid(noise_matrix, py, verbose = False):
         E2 = N * joint_noise.T[i].sum() - C
         O = N - E1 - E2 - C
         if verbose:
-            print("E1E2/C", E1*E2/C,"E1", E1, "E2", E2, "C", C, "|", E1*E2/C + E1 + E2 + C, "|",  E1*E2/C, "<", O)
-            print(ps[i] * py[i], "<", joint_noise[i][i], ":", ps[i] * py[i] < joint_noise[i][i])
+            print(
+                "E1E2/C", round(E1*E2/C),
+                "E1", round(E1),
+                "E2", round(E2),
+                "C", round(C),
+                "|", round(E1*E2/C + E1 + E2 + C),
+                "|", round(E1*E2/C), "<", round(O),
+            )
+            print(
+                round(ps[i] * py[i]), "<", round(joint_noise[i][i]),
+                ":", ps[i] * py[i] < joint_noise[i][i],
+            )
 
         if not (ps[i] * py[i] < joint_noise[i][i]):
             return False
@@ -73,6 +83,9 @@ def generate_noisy_labels(y, noise_matrix, verbose=False):
         A conditional probablity matrix of the form P(s=k_s|y=k_y) containing
         the fraction of examples in every class, labeled as every other class.
         Assumes columns of noise_matrix sum to 1.'''
+    
+    # Make y a numpy array, if it is not
+    y = np.asarray(y)
   
     # Number of classes
     K = len(noise_matrix)
@@ -86,14 +99,16 @@ def generate_noisy_labels(y, noise_matrix, verbose=False):
     for k_s in range(K):
         for k_y in range(K):
             if k_s != k_y:
-                s[np.random.choice(np.where((s==k_y)&(y==k_y))[0], count_joint[k_s][k_y], replace=False)] = k_s
+                idx_flip = np.where((s==k_y)&(y==k_y))[0]
+                if len(idx_flip):
+                    s[np.random.choice(idx_flip, count_joint[k_s][k_y], replace=False)] = k_s
 
     # Compute the actual noise matrix induced by s
     counts = confusion_matrix(s, y).astype(float)
     new_noise_matrix = counts / counts.sum(axis=0)
 
     # Validate that s indeed produces the correct noise_matrix (or close to it)
-    assert(np.linalg.norm(noise_matrix - new_noise_matrix) <= 1)
+    assert(np.linalg.norm(noise_matrix - new_noise_matrix) <= 2)
 
     return s  
 
@@ -104,13 +119,14 @@ def generate_noisy_labels(y, noise_matrix, verbose=False):
 def generate_noise_matrix_from_trace(
     K,                                      
     trace,  
-    max_trace_prob=1.0,
-    min_trace_prob=1e-5,
-    max_noise_rate=1-1e-5,                                      
-    min_noise_rate=0.0,                                      
-    valid_noise_matrix=True, 
-    py=None,
-    frac_zero_noise_rates=0.,
+    max_trace_prob = 1.0,
+    min_trace_prob = 1e-5,
+    max_noise_rate = 1-1e-5,                                      
+    min_noise_rate = 0.0,                                      
+    valid_noise_matrix = True, 
+    py = None,
+    frac_zero_noise_rates = 0.,
+    seed = 0,
 ): 
     '''Generates a K x K noise matrix P(s=k_s|y=k_y) with trace
     as the np.mean(np.diagonal(noise_matrix)).
@@ -166,12 +182,14 @@ def generate_noise_matrix_from_trace(
         raise ValueError("trace > 1 is necessary for a" +
               " valid noise matrix to be returned (valid_noise_matrix == True)")
     
-    if valid_noise_matrix and py is None:
+    if valid_noise_matrix and py is None and K > 2:
         raise ValueError("py must be provided (not None) if the input parameter" +
               " valid_noise_matrix == True")
         
     if K <= 1:
-        raise ValueError('K must be >= 2. Your input parameter is K = ' + str(K) + '.')
+        raise ValueError('K must be >= 2, but K = {}.'.format(K))
+        
+    np.random.seed(0)
     
     # Special (highly constrained) case with faster solution.
     # Every 2 x 2 noise matrix with trace > 1 is valid because p(y) is not used
