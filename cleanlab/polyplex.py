@@ -35,6 +35,7 @@ def slope_intercept(point1, point2):
     intercept = y1 - slope * x1
     return slope, intercept
 
+
 def joint_bounds(py):
     '''Computes three lists: noise_matrix_trace, joint_trace_min, joint_trace_max that when
     plotted, the noise_matrix_trace values represent x-values and the joint_trace_min and 
@@ -43,7 +44,6 @@ def joint_bounds(py):
 
     Parameters
     ----------
-
     py : np.array (shape (K, 1))
         The fraction (prior probability) of each true, hidden class label, P(y = k)
         
@@ -65,19 +65,22 @@ def joint_bounds(py):
     joint_trace_max = 1 - joint_trace_min[::-1]
     return noise_matrix_trace, joint_trace_min, joint_trace_max
 
+
 def joint_min_max(noise_matrix_trace, py):
     '''Computes the min and max bounds on the trace(P_{s,y}), the trace of the 
     joint distribution, given the trace of the noise matrix and p(y).
 
     Parameters
     ----------
-
+    noise_matrix_trace : float
+        The sum of the diagonals of the noise matrix P(s = k' | y = k)
     py : np.array (shape (K, 1))
         The fraction (prior probability) of each true, hidden class label, P(y = k)
         
     Output
     ------
         A tuple of two floats (y_min, y_max) representing the bounds on the trace of the joint.'''
+    
     _, y_mins, y_maxs = joint_bounds(py)
     if int(noise_matrix_trace) == noise_matrix_trace:
         return y_mins[int(noise_matrix_trace)], y_maxs[int(noise_matrix_trace)]
