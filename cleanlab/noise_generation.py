@@ -189,7 +189,7 @@ def generate_noise_matrix_from_trace(
     if K <= 1:
         raise ValueError('K must be >= 2, but K = {}.'.format(K))
         
-    np.random.seed(0)
+    np.random.seed(seed)
     
     # Special (highly constrained) case with faster solution.
     # Every 2 x 2 noise matrix with trace > 1 is valid because p(y) is not used
