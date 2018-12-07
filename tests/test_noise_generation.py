@@ -29,6 +29,7 @@ def test_main_pipeline(
     verbose = False,
     n = 10,
     valid_noise_matrix = True,
+    frac_zero_noise_rates = 0,
 ):
     trace = 1.5
     py = [0.1, 0.1, 0.2, 0.6]
@@ -40,6 +41,7 @@ def test_main_pipeline(
         py = py,
         seed = 0,
         valid_noise_matrix = valid_noise_matrix,
+        frac_zero_noise_rates = frac_zero_noise_rates,
     )
     # Check that trace is what its supposed to be
     assert(abs(trace - np.trace(nm) < 1e-2))
@@ -53,6 +55,13 @@ def test_main_pipeline(
     assert(noise_generation.noise_matrix_is_valid(nm, py, verbose))
     
 test_main_pipeline()
+
+
+# In[ ]:
+
+
+def test_main_pipeline_fraczero_high():
+    test_main_pipeline(n = 1000, frac_zero_noise_rates = 0.75)
 
 
 # In[ ]:
@@ -177,14 +186,24 @@ def test_one_class_error():
 # In[ ]:
 
 
-def test_two_class_gen_with_trace(valid = True):
-    trace = 1.5
+def test_two_class_fraczero_high(valid = False):
+    trace = 1.8
+    frac_zero_noise_rates = 0.75
     nm = noise_generation.generate_noise_matrix_from_trace(
         K = 2, 
         trace = trace,
         valid_noise_matrix = valid,
+        frac_zero_noise_rates = frac_zero_noise_rates,
     )
+    assert(np.any(nm == 0)) # Make sure there is a zero noise rate.
     assert(abs(trace - np.trace(nm) < 1e-2))
+
+
+# In[ ]:
+
+
+def test_two_class_fraczero_high_valid():
+    test_two_class_fraczero_high(True)
 
 
 # In[ ]:
@@ -252,14 +271,14 @@ def test_gen_probs_min_error():
 # In[ ]:
 
 
-def test_gen_probs_min_max_error():    
+def test_probs_min_max_error():    
     f = noise_generation.generate_n_rand_probabilities_that_sum_to_m
     min_prob = 0.6
     max_prob = 0.4
     try:
         f(n = 5, m = 1, min_prob = min_prob, max_prob = max_prob)
     except ValueError as e:
-        assert('min_prob must be less' in str(e))
+        assert('min_prob must be less than max_prob' in str(e))
         with pytest.raises(ValueError) as e:
             f(n = 5, m = 1, min_prob = min_prob, max_prob = max_prob)
 
