@@ -184,13 +184,13 @@ def test_clf_fit_nm():
 def test_clf_fit_inm():
     lnl = LearningWithNoisyLabels()
     # Example of a bad noise matrix (impossible to learn from)
-    nm = np.array([[.1, .9],[.9, .1]])
+    inm = np.array([[.1, .9],[.9, .1]])
     try:
-        lnl.fit(X = np.arange(3), s = np.array([0,0,1]), inverse_noise_matrix = nm)
+        lnl.fit(X = np.arange(3), s = np.array([0,0,1]), inverse_noise_matrix = inm)
     except Exception as e:
         assert('Trace(inverse_noise_matrix)' in str(e))
         with pytest.raises(ValueError) as e:
-            lnl.fit(X = np.arange(3), s = np.array([0,0,1]), noise_matrix = nm)
+            lnl.fit(X = np.arange(3), s = np.array([0,0,1]), inverse_noise_matrix = inm)
 
 
 # In[ ]:
@@ -246,7 +246,6 @@ def test_fit_with_inm(
         seed = seed, 
         prune_count_method = prune_count_method,
     )
-    nm = data['noise_matrix']
     inm = compute_inv_noise_matrix(
         data["py"],
         data["noise_matrix"],
@@ -266,6 +265,32 @@ def test_fit_with_inm(
         return score, score_inm
     else:
         assert(score < score_inm)
+
+
+# In[29]:
+
+
+def test_clf_fit_nm_inm():
+    lnl = LearningWithNoisyLabels(seed = seed)
+    nm = data['noise_matrix']
+    inm = compute_inv_noise_matrix(
+        data["py"],
+        nm,
+        data["ps"],
+    )
+    lnl.fit(
+        X = data['X_train'], 
+        s = data['s'],
+        noise_matrix = nm,
+        inverse_noise_matrix = inm,
+    )
+    score_nm_inm = lnl.score(data['X_test'], data['y_test'])
+    
+    # Learn with noisy labels and estimate the inv noise matrix.
+    lnl2 = LearningWithNoisyLabels(seed = seed)
+    lnl2.fit(data['X_train'], data['s'],)
+    score = lnl2.score(data['X_test'], data['y_test'])
+    assert(score < score_nm_inm)
 
 
 # In[ ]:
