@@ -221,13 +221,6 @@ def test_two_class_fraczero_high_valid():
 # In[ ]:
 
 
-def test_two_class_gen_with_trace_not_valid(valid = False):
-    test_two_class_gen_with_trace(valid = valid)
-
-
-# In[ ]:
-
-
 def test_deprecated_warning(
     verbose = False,
     frac_zero_noise_rates = 0,
