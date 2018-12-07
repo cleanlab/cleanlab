@@ -156,14 +156,14 @@ def test_valid_no_py_error():
             )
 
 
-# In[15]:
+# In[91]:
 
 
 def test_one_class_error():
     try:
         noise_generation.generate_noise_matrix_from_trace(
             K = 1, 
-            trace = 1,
+            trace = 2,
         )
     except ValueError as e:
         assert('must be >= 2' in str(e))
@@ -172,6 +172,12 @@ def test_one_class_error():
                 K = 1, 
                 trace = 1,
             )
+
+
+# In[92]:
+
+
+test_one_class_error()
 
 
 # In[22]:
