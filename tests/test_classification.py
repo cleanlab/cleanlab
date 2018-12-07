@@ -1,14 +1,14 @@
 
 # coding: utf-8
 
-# In[1]:
+# In[ ]:
 
 
 # Python 2 and 3 compatibility
 from __future__ import print_function, absolute_import, division, unicode_literals, with_statement
 
 
-# In[2]:
+# In[ ]:
 
 
 import numpy as np
@@ -23,7 +23,7 @@ from numpy.random import multivariate_normal
 import pytest
 
 
-# In[3]:
+# In[ ]:
 
 
 def make_data(
@@ -78,14 +78,14 @@ def make_data(
     }
 
 
-# In[4]:
+# In[ ]:
 
 
 seed = 46
 data = make_data(seed = seed)
 
 
-# In[5]:
+# In[ ]:
 
 
 def test_rp():
@@ -95,10 +95,10 @@ def test_rp():
     assert(abs(score - 0.88) < 0.01)
 
 
-# In[6]:
+# In[ ]:
 
 
-def self():
+def test_raise_error_no_clf_fit():
     class struct(object):
         def predict(self):
             pass
@@ -112,7 +112,7 @@ def self():
             LearningWithNoisyLabels(clf = struct())
 
 
-# In[7]:
+# In[ ]:
 
 
 def test_raise_error_no_clf_predict_proba():
@@ -129,7 +129,7 @@ def test_raise_error_no_clf_predict_proba():
             LearningWithNoisyLabels(clf = struct())
 
 
-# In[8]:
+# In[ ]:
 
 
 def test_raise_error_no_clf_predict():
@@ -146,7 +146,7 @@ def test_raise_error_no_clf_predict():
             LearningWithNoisyLabels(clf = struct())
 
 
-# In[9]:
+# In[ ]:
 
 
 def test_seed():
@@ -154,7 +154,7 @@ def test_seed():
     assert(lnl.seed is not None)
 
 
-# In[10]:
+# In[ ]:
 
 
 def test_default_clf():
@@ -162,7 +162,7 @@ def test_default_clf():
     return lnl.clf is not None and         hasattr(lnl.clf, 'fit') and         hasattr(lnl.clf, 'predict') and         hasattr(lnl.clf, 'predict_proba')
 
 
-# In[11]:
+# In[ ]:
 
 
 def test_clf_fit_nm():
@@ -178,7 +178,7 @@ def test_clf_fit_nm():
     
 
 
-# In[12]:
+# In[ ]:
 
 
 def test_clf_fit_inm():
@@ -193,7 +193,7 @@ def test_clf_fit_inm():
             lnl.fit(X = np.arange(3), s = np.array([0,0,1]), noise_matrix = nm)
 
 
-# In[13]:
+# In[ ]:
 
 
 def test_fit_with_nm(
@@ -222,7 +222,7 @@ def test_fit_with_nm(
         assert(score < score_nm)
 
 
-# In[14]:
+# In[ ]:
 
 
 def test_warning_nm_calibrate_cj():
@@ -234,7 +234,7 @@ def test_warning_nm_calibrate_cj():
     assert((s1 - s2) < 1e-4)
 
 
-# In[15]:
+# In[ ]:
 
 
 def test_fit_with_inm(
@@ -268,7 +268,7 @@ def test_fit_with_inm(
         assert(score < score_inm)
 
 
-# In[16]:
+# In[ ]:
 
 
 def test_warning_inm_calibrate_cj():
@@ -280,7 +280,7 @@ def test_warning_inm_calibrate_cj():
     assert(abs(s1 - s2) < 1e-4)
 
 
-# In[17]:
+# In[ ]:
 
 
 def test_pred_and_pred_proba():
@@ -295,7 +295,7 @@ def test_pred_and_pred_proba():
     assert(np.shape(probs) == (n, m))
 
 
-# In[21]:
+# In[ ]:
 
 
 def test_score():
@@ -314,7 +314,7 @@ def test_score():
     assert(score == phrase)
 
 
-# In[31]:
+# In[ ]:
 
 
 def test_no_score():
@@ -330,7 +330,7 @@ def test_no_score():
     assert(abs(score - 1) < 1e-6)
 
 
-# In[46]:
+# In[ ]:
 
 
 def test_no_fit_sample_weight():
@@ -348,4 +348,29 @@ def test_no_fit_sample_weight():
     lnl.fit(data['X_train'], data['y_train'], psx = psx, noise_matrix = data['noise_matrix'])
     # If we make it here, without any error:
     assert(True)
+
+
+# In[ ]:
+
+
+def test_fit_psx():
+    from cleanlab.latent_estimation import estimate_cv_predicted_probabilities
+    lnl = LearningWithNoisyLabels()
+    psx = estimate_cv_predicted_probabilities(
+        X = data['X_train'],
+        labels = data['y_train'],
+    )
+    lnl.fit(
+        X = data['X_train'],
+        s = data['y_train'],
+        psx = psx
+    )
+    score_with_psx = lnl.score(data['X_test'], data['y_test'])
+    lnl = LearningWithNoisyLabels()
+    lnl.fit(
+        X = data['X_train'],
+        s = data['y_train'],
+    )
+    score_no_psx = lnl.score(data['X_test'], data['y_test'])
+    assert(abs(score_with_psx - score_no_psx) < 1e-6)
 
