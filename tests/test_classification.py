@@ -302,7 +302,7 @@ def test_warning_inm_calibrate_cj():
             prune_count_method = 'calibrate_confident_joint',
             used_by_another_test = True,
         )
-    assert(abs(s1 - s2) < 1e-4)
+    assert(abs(s1 - s2) < 0.1)
 
 
 # In[ ]:
