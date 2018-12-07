@@ -93,9 +93,7 @@ def generate_noisy_labels(y, noise_matrix, verbose=False):
     new_noise_matrix = counts / counts.sum(axis=0)
 
     # Validate that s indeed produces the correct noise_matrix (or close to it)
-    if np.linalg.norm(noise_matrix - new_noise_matrix) > 1:
-        raise ValueError("s does not yield the same noise_matrix. " +
-            "The difference in norms is " + str(np.linalg.norm(noise_matrix - new_noise_matrix)))
+    assert(np.linalg.norm(noise_matrix - new_noise_matrix) <= 1)
 
     return s  
 
