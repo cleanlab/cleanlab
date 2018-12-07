@@ -220,13 +220,29 @@ def confusion_matrix(y, s):
     Results are identical (and similar computation time) to: 
         "sklearn.metrics.confusion_matrix"
 
-    However, this function avoids the dependency on sklearn.'''
-  
-    K = len(np.unique(y)) # Number of classes 
-    result = np.zeros((K, K))
+    However, this function avoids the dependency on sklearn.
+    
+    Parameters
+    ----------
+    y : np.array 1d
+      Contains non-negative integers 0, 1, 2... Labels are consecutive.
+      For example y = [0, 1, 1, 2] is okay.
+      But y = [0, 1, 3, 1] is BAD because there is no "2" class.
+      
+    s : np.array 1d
+      Same as y'''
+    
+    y_classes = np.unique(y)
+    s_classes = np.unique(s)
+    K_y = len(y_classes) # Number of classes in y
+    K_s = len(s_classes) # Number of classes in s    
+    mapy = dict(zip(y_classes, range(K_y)))    
+    maps = dict(zip(s_classes, range(K_s)))
+    
+    result = np.zeros((K_y, K_s))
 
     for i in range(len(y)):
-        result[y[i]][s[i]] += 1
+        result[mapy[y[i]]][maps[s[i]]] += 1
 
     return result.astype(float) / result.sum(axis=0)  
 
