@@ -1,13 +1,13 @@
 
 # coding: utf-8
 
-# In[1]:
+# In[ ]:
 
 
 from __future__ import print_function, absolute_import, division, unicode_literals, with_statement
 
 
-# In[2]:
+# In[ ]:
 
 
 import numpy as np
@@ -15,14 +15,14 @@ from cleanlab import noise_generation
 import pytest
 
 
-# In[3]:
+# In[ ]:
 
 
 seed = 0
 np.random.seed(0)
 
 
-# In[31]:
+# In[ ]:
 
 
 def test_main_pipeline(
@@ -55,14 +55,14 @@ def test_main_pipeline(
 test_main_pipeline()
 
 
-# In[14]:
+# In[ ]:
 
 
 def test_main_pipeline_verbose(verbose = True, n = 10):
     test_main_pipeline(verbose = verbose, n = n)
 
 
-# In[32]:
+# In[ ]:
 
 
 def test_main_pipeline_many(verbose = False, n = 1000):
@@ -75,14 +75,14 @@ def test_main_pipeline_many_valid(verbose = False, n = 100):
     test_main_pipeline(verbose, n, valid_noise_matrix = True)
 
 
-# In[7]:
+# In[ ]:
 
 
 def test_main_pipeline_many_verbose(verbose = True, n = 1000):
     test_main_pipeline(verbose = verbose, n = n)
 
 
-# In[8]:
+# In[ ]:
 
 
 def test_invalid_inputs_verify():
@@ -105,7 +105,7 @@ def test_invalid_inputs_verify():
     assert(not noise_generation.noise_matrix_is_valid(nm, py))
 
 
-# In[9]:
+# In[ ]:
 
 
 def test_invalid_matrix():    
@@ -117,7 +117,7 @@ def test_invalid_matrix():
     assert(not noise_generation.noise_matrix_is_valid(nm, py))
 
 
-# In[12]:
+# In[ ]:
 
 
 def test_trace_less_than_1_error(trace = 0.5):
@@ -129,14 +129,14 @@ def test_trace_less_than_1_error(trace = 0.5):
             noise_generation.generate_noise_matrix_from_trace(3, trace)
 
 
-# In[13]:
+# In[ ]:
 
 
 def test_trace_equals_1_error(trace = 1):
     test_trace_less_than_1_error(trace)
 
 
-# In[14]:
+# In[ ]:
 
 
 def test_valid_no_py_error():
@@ -156,7 +156,7 @@ def test_valid_no_py_error():
             )
 
 
-# In[91]:
+# In[ ]:
 
 
 def test_one_class_error():
@@ -174,13 +174,7 @@ def test_one_class_error():
             )
 
 
-# In[92]:
-
-
-test_one_class_error()
-
-
-# In[22]:
+# In[ ]:
 
 
 def test_two_class_gen_with_trace(valid = True):
@@ -193,14 +187,14 @@ def test_two_class_gen_with_trace(valid = True):
     assert(abs(trace - np.trace(nm) < 1e-2))
 
 
-# In[23]:
+# In[ ]:
 
 
 def test_two_class_gen_with_trace_not_valid(valid = False):
     test_two_class_gen_with_trace(valid = valid)
 
 
-# In[48]:
+# In[ ]:
 
 
 def test_deprecated_warning(verbose = False): 
@@ -214,14 +208,14 @@ def test_deprecated_warning(verbose = False):
     assert(all(abs(nm.sum(axis = 0) - 1) < 1e-4))
 
 
-# In[49]:
+# In[ ]:
 
 
 def test_deprecated_warning_verbose(verbose = True):    
     test_deprecated_warning(verbose)   
 
 
-# In[39]:
+# In[ ]:
 
 
 def test_gen_probs_sum_empty():
@@ -229,7 +223,7 @@ def test_gen_probs_sum_empty():
     assert(len(f(n = 0, m = 1)) == 0)
 
 
-# In[54]:
+# In[ ]:
 
 
 def test_gen_probs_max_error():    
@@ -242,7 +236,7 @@ def test_gen_probs_max_error():
             f(n = 5, m = 1, max_prob = 0.1)
 
 
-# In[58]:
+# In[ ]:
 
 
 def test_gen_probs_min_error():    
@@ -255,7 +249,7 @@ def test_gen_probs_min_error():
             f(n = 5, m = 1, min_prob = 0.9)
 
 
-# In[61]:
+# In[ ]:
 
 
 def test_gen_probs_min_max_error():    
@@ -270,7 +264,7 @@ def test_gen_probs_min_max_error():
             f(n = 5, m = 1, min_prob = min_prob, max_prob = max_prob)
 
 
-# In[64]:
+# In[ ]:
 
 
 def test_balls_zero():    
@@ -281,7 +275,7 @@ def test_balls_zero():
     assert(sum(result) == 0)
 
 
-# In[81]:
+# In[ ]:
 
 
 def test_balls_params():    
