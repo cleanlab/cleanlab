@@ -5,13 +5,13 @@
 # 
 # #### Contains methods for generating valid (learning with noise is possible) noise matrices, generating noisy labels given a noise matrix, generating valid noise matrices with a specific trace value, and more.
 
-# In[1]:
+# In[ ]:
 
 
 from __future__ import print_function, absolute_import, division, unicode_literals, with_statement
 import numpy as np
-
 from cleanlab.util import value_counts, confusion_matrix
+import warnings
 
 
 # In[ ]:
@@ -362,7 +362,7 @@ def generate_noise_matrix(
     '''DEPRECATED - Use generate_noise_matrix_from_trace()
 
     Generates a noise matrix by randomly assigning noise rates
-    up to max_noise_rate, then setting noise rates to zero until
+    up to max_noise_rate, then setting noise rates to
     zero until P(s!=k|s=k) < 1 is satisified. Additionally,
     frac_zero_noise_rates are set to zero.
 
@@ -382,6 +382,11 @@ def generate_noise_matrix(
 
     prob_y : np.array of floats
       P(y=k). Sums to 1.'''
+    
+    warnings.warn(
+        "This method is deprecated. Use 'generate_noise_matrix_from_trace' instead.", 
+        DeprecationWarning,
+    )
     
     # Init noise matrix to be random values from (0, max_noise_rate)
     # P(s=k|y=k')
