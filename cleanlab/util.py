@@ -278,11 +278,13 @@ def print_square_matrix(
         )
     
     K = len(matrix) # Number of classes
+    # Make sure matrix is 2d array
+    if len(np.shape(matrix)) == 1:
+        matrix = np.array([matrix])
     print()
-    print(title, 'of shape', matrix.shape) # u'H\u2082O\u2082'
+    print(title, 'of shape', matrix.shape)
     print(" "+short_title+"".join(['\t'+top_name+'='+str(i) for i in range(K)]))
     print('\t---'*K)
-    # print(noise_matrix.round(2))
     for i in range(K):
         print(left_name+"="+str(i)+" |\t"+"\t".join([str(z) for z in list(matrix.round(2)[i,:])]))
     print("\tTrace(matrix) =", np.round(np.trace(matrix), 2))
