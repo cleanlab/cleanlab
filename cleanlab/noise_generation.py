@@ -5,13 +5,13 @@
 # 
 # #### Contains methods for generating valid (learning with noise is possible) noise matrices, generating noisy labels given a noise matrix, generating valid noise matrices with a specific trace value, and more.
 
-# In[ ]:
+# In[1]:
 
 
 from __future__ import print_function, absolute_import, division, unicode_literals, with_statement
 import numpy as np
 
-from cleanlab.util import value_counts
+from cleanlab.util import value_counts, confusion_matrix
 
 
 # In[ ]:
@@ -89,7 +89,6 @@ def generate_noisy_labels(y, noise_matrix, verbose=False):
                 s[np.random.choice(np.where((s==k_y)&(y==k_y))[0], count_joint[k_s][k_y], replace=False)] = k_s
 
     # Compute the actual noise matrix induced by s
-    from sklearn.metrics import confusion_matrix
     counts = confusion_matrix(s, y).astype(float)
     new_noise_matrix = counts / counts.sum(axis=0)
 
