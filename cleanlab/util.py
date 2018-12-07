@@ -213,12 +213,12 @@ def estimate_pu_f1(s, prob_s_eq_1):
     return recall ** 2 / frac_positive_predictions if frac_positive_predictions != 0 else np.nan
 
 
-def compute_confusion_noise_rate_matrix(y, s):
+def confusion_matrix(y, s):
     '''Implements a confusion matrix assuming y as true classes
     and s as noisy (or sometimes predicted) classes.
 
     Results are identical (and similar computation time) to: 
-        "from sklearn.metrics import confusion_matrix"
+        "sklearn.metrics.confusion_matrix"
 
     However, this function avoids the dependency on sklearn.'''
   
