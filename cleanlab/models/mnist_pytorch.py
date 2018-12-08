@@ -195,7 +195,7 @@ class CNN(BaseEstimator): # Inherits sklearn classifier
         if self.loader is not None:
             loader = self.loader
         if loader is None:
-            is_test_idx = (len(idx) == MNIST_TEST_SIZE) and                 (np.array(idx) == np.arange(MNIST_TEST_SIZE)).all()
+            is_test_idx = idx is not None and len(idx) == MNIST_TEST_SIZE and np.all(np.array(idx) == np.arange(MNIST_TEST_SIZE))
             loader = 'test' if is_test_idx else 'train'       
         dataset = datasets.MNIST(
             root = '../data', 
