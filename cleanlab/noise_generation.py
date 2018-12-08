@@ -292,10 +292,6 @@ def generate_n_rand_probabilities_that_sum_to_m(
         raise ValueError("min_prob must be less or equal to m / n, but " +
                          "max_prob = "+str(max_prob)+", m = "+str(m)+", n = " +
                          str(n)+", m / n = "+str(m/float(n)))
-    if abs(min_prob - max_prob) < epsilon:
-        raise ValueError("min_prob must be less than max_prob, but " +
-                         "max_prob = "+str(max_prob)+", m = "+str(m)+", n = " +
-                         str(n)+", m / n = "+str(m/float(n)))
 
     # When max_prob = 1, min_prob = 0, the following two lines are equivalent to:
     #   intermediate = np.sort(np.append(np.random.uniform(0, 1, n-1), [0, 1]))
