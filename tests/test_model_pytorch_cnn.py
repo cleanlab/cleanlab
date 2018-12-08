@@ -49,37 +49,49 @@ if python_version.is_compatible():
 
 def test_loaders(
     seed = 0,
+    n = 1000, # Number of training examples to use
     pretrain_epochs = 2, # Increase to at least 10 for good results
 ):
+    '''This is going to OVERFIT - train and test on the SAME SET.
+    The goal of this test is just to make sure the data loads correctly.
+    And all the main functions work.'''
+    
     if python_version.is_compatible():
         np.random.seed(seed)
+        cnn = CNN(epochs=3, log_interval=1000, loader = 'train', seed = 0)
+        idx = np.random.choice(X_train, n, replace = False) # Grab n random examples.
 
         prune_method = 'prune_by_noise_rate'
         
         # Pre-train
-        cnn = CNN(epochs=2, log_interval=1000, seed = seed) #pre-train
+        cnn = CNN(epochs=1, log_interval=1000, seed = seed) #pre-train
+        score = 0
         for loader in ['train', 'test', None]:
+            prev_score = score
+            X = X_test if loader == 'test' else X_train[idx]
+            y = y_test if loader == 'test' else y_train[idx]
+            # Setting this overides all future functions.
             cnn.loader = loader
-            cnn.fit(X_test, y_test, loader=loader) # pre-train (overfit, not out-of-sample) to entire dataset.
+            # pre-train (overfit, not out-of-sample) to entire dataset.
+            cnn.fit(X, None, loader = 'train') 
 
             # Out-of-sample cross-validated holdout predicted probabilities
             np.random.seed(seed)
             # Single epoch for cross-validation (already pre-trained)
             cnn.epochs = 1 
-            cj, psx = cleanlab.latent_estimation.estimate_confident_joint_and_cv_pred_proba(X_test, y_test, cnn, cv_n_folds=2)
-            est_py, est_nm, est_inv = cleanlab.latent_estimation.estimate_latent(cj, y_test)
+            cj, psx = cleanlab.latent_estimation.estimate_confident_joint_and_cv_pred_proba(X, y, cnn, cv_n_folds=2)
+            est_py, est_nm, est_inv = cleanlab.latent_estimation.estimate_latent(cj, y)
             # algorithmic identification of label errors
-            noise_idx = cleanlab.pruning.get_noise_indices(y_test, psx, est_inv, prune_method=prune_method) 
+            noise_idx = cleanlab.pruning.get_noise_indices(y, psx, est_inv, prune_method=prune_method) 
 
-            # Get prediction on test set
-            pred = cnn.predict(loader = loader)
-            if loader == 'test':
-                score = accuracy_score(y_test, pred)
-            else:
-                score = accuracy_score(y_train, pred)
+            # Get prediction on loader set (in this case same as train set)
+            pred = cnn.predict(X, loader = 'train')
+            score = accuracy_score(y, pred)
             print(score)
+            assert(score > prev_score) # Scores should increase
         
     assert(True)
+test_loaders()
 
 
 # In[ ]:
