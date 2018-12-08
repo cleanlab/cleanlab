@@ -107,12 +107,12 @@ class CNN(BaseEstimator): # Inherits sklearn classifier
         self.cuda = not self.no_cuda and torch.cuda.is_available()
 
         torch.manual_seed(self.seed)
-        if self.cuda:
+        if self.cuda: # pragma: no cover
             torch.cuda.manual_seed(self.seed)
         
         # Instantiate PyTorch model
         self.model = Net()
-        if self.cuda:
+        if self.cuda: # pragma: no cover
             self.model.cuda()
             
         self.loader_kwargs = {'num_workers': 1, 'pin_memory': True} if self.cuda else {}
@@ -134,7 +134,7 @@ class CNN(BaseEstimator): # Inherits sklearn classifier
                 raise ValueError("Check that train_labels and sample_weight are the same length.")
             class_weight = sample_weight[np.unique(train_labels, return_index=True)[1]]
             class_weight = torch.from_numpy(class_weight).float()
-            if self.cuda:
+            if self.cuda: # pragma: no cover
                 class_weight = class_weight.cuda()
         else:
             class_weight = None
@@ -172,7 +172,7 @@ class CNN(BaseEstimator): # Inherits sklearn classifier
             # Enable dropout and batch norm layers
             self.model.train()
             for batch_idx, (data, target) in enumerate(train_loader):
-                if self.cuda:
+                if self.cuda: # pragma: no cover
                     data, target = data.cuda(), target.cuda()
                 data, target = Variable(data), Variable(target)
                 optimizer.zero_grad()
@@ -226,7 +226,7 @@ class CNN(BaseEstimator): # Inherits sklearn classifier
         # Run forward pass on model to compute outputs
         outputs = []
         for data, _ in loader:
-            if self.cuda:
+            if self.cuda: # pragma: no cover
                 data = data.cuda()
             with torch.no_grad():
                 data = Variable(data)
