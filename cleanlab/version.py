@@ -1,5 +1,6 @@
-__version__ = '0.0.4'
+__version__ = '0.0.45
 
+# 0.0.5 - 100% testing coverage. Numerous small bug fixes, but no major API changes.
 # 0.0.4 - FIRST CROSS-PLATFORM WORKING VERSION OF CLEANLAB. Adding test support.
 # 0.0.3 - Adding working logo to README, pypi working
 # 0.0.2 - Added logo to README, but link does not load on pypi
