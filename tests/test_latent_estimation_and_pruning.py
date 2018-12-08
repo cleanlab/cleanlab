@@ -1,13 +1,13 @@
 
 # coding: utf-8
 
-# In[ ]:
+# In[5]:
 
 
 from __future__ import print_function, absolute_import, division, unicode_literals, with_statement
 
 
-# In[ ]:
+# In[6]:
 
 
 from cleanlab import latent_estimation
@@ -20,13 +20,13 @@ import numpy as np
 import pytest
 
 
-# In[ ]:
+# In[7]:
 
 
 seed = 1
 
 
-# In[ ]:
+# In[8]:
 
 
 def make_data(
@@ -101,13 +101,13 @@ def make_data(
     }
 
 
-# In[ ]:
+# In[9]:
 
 
 data = make_data(seed = seed)
 
 
-# In[ ]:
+# In[10]:
 
 
 def test_invalid_prune_count_method():
@@ -127,7 +127,7 @@ def test_invalid_prune_count_method():
         )
 
 
-# In[ ]:
+# In[11]:
 
 
 def test_invalid_prune_count_method():
@@ -141,7 +141,7 @@ def test_invalid_prune_count_method():
     assert(all(value_counts(s[noise_idx]) == remove))
 
 
-# In[ ]:
+# In[12]:
 
 
 def test_pruning_both():
@@ -169,6 +169,21 @@ def test_pruning_both():
 
 
 # In[ ]:
+
+
+def test_prune_on_small_data():
+    data = make_data(sizes = [4,4,4])
+    for pm in ['prune_by_noise_rate', 'prune_by_class', 'both']:
+        noise_idx = pruning.get_noise_indices(
+            s = data['s'],
+            psx = data['psx'],
+            prune_method = pm,
+        )
+        # Num in each class < 5. Nothing should be pruned.
+        assert(not any(noise_idx))
+
+
+# In[2]:
 
 
 def test_cj_from_probs():
@@ -199,7 +214,7 @@ def test_cj_from_probs():
     assert(np.mean(true_ps - forced1) - np.mean(true_ps - regular) < 2e-4)
 
 
-# In[ ]:
+# In[3]:
 
 
 def test_estimate_latent_py_method():
