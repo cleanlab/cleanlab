@@ -107,7 +107,7 @@ def make_data(
 data = make_data(seed = seed)
 
 
-# In[ ]:
+# In[53]:
 
 
 def test_invalid_prune_count_method():
@@ -119,12 +119,18 @@ def test_invalid_prune_count_method():
         )
     except ValueError as e:
         assert('should be' in str(e))
-        with pytest.raises(ValueError) as e:
-            pruning.get_noise_indices(
-                s = data['s'],
-                psx = data['psx'],
-                prune_count_method = 'INVALID_METHOD',
-            )
+    with pytest.raises(ValueError) as e:
+        pruning.get_noise_indices(
+            s = data['s'],
+            psx = data['psx'],
+            prune_count_method = 'INVALID_METHOD',
+        )
+
+
+# In[54]:
+
+
+test_invalid_prune_count_method()
 
 
 # In[ ]:
