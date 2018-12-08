@@ -1,13 +1,13 @@
 
 # coding: utf-8
 
-# In[5]:
+# In[ ]:
 
 
 from __future__ import print_function, absolute_import, division, unicode_literals, with_statement
 
 
-# In[6]:
+# In[ ]:
 
 
 from cleanlab import latent_estimation
@@ -20,13 +20,13 @@ import numpy as np
 import pytest
 
 
-# In[7]:
+# In[ ]:
 
 
 seed = 1
 
 
-# In[8]:
+# In[ ]:
 
 
 def make_data(
@@ -101,16 +101,16 @@ def make_data(
     }
 
 
-# In[9]:
+# In[ ]:
 
 
 data = make_data(seed = seed)
 
 
-# In[10]:
+# In[ ]:
 
 
-def test_invalid_prune_count_method():
+def test_prune_count_err():
     try:
         pruning.get_noise_indices(
             s = data['s'],
@@ -127,7 +127,7 @@ def test_invalid_prune_count_method():
         )
 
 
-# In[11]:
+# In[ ]:
 
 
 def test_invalid_prune_count_method():
@@ -141,7 +141,7 @@ def test_invalid_prune_count_method():
     assert(all(value_counts(s[noise_idx]) == remove))
 
 
-# In[12]:
+# In[ ]:
 
 
 def test_pruning_both():
@@ -183,7 +183,7 @@ def test_prune_on_small_data():
         assert(not any(noise_idx))
 
 
-# In[2]:
+# In[ ]:
 
 
 def test_cj_from_probs():
@@ -214,7 +214,7 @@ def test_cj_from_probs():
     assert(np.mean(true_ps - forced1) - np.mean(true_ps - regular) < 2e-4)
 
 
-# In[3]:
+# In[ ]:
 
 
 def test_estimate_latent_py_method():
