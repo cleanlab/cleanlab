@@ -23,7 +23,7 @@ python_version = VersionWarning(
 
 
 # fasttext only exists for these versions that are also compatible with cleanlab
-if python_version.is_compatible():
+if python_version.is_compatible(): # pragma: no cover
     import time
     import os
     from sklearn.metrics import accuracy_score
@@ -137,17 +137,17 @@ class FastTextClassifier(BaseEstimator): # Inherits sklearn base classifier
         self._remove_masked_data(train_fn)
     
     
-    def predict_proba(self, X = None, train_data = True,return_labels = False):
+    def predict_proba(self, X = None, train_data = True, return_labels = False):
         '''docstring'''
         
         fn = self.train_data_fn if train_data else self.test_data_fn
-        test_labels, text = _get_labels_text(fn = fn, indices = X)
+        gold_labels, text = _get_labels_text(fn = fn, indices = X)
         pred = self.clf.predict(text = text, k = len(self.clf.get_labels()))
         # Get p(s = k | x) matrix of shape (N x K) of pred probs for each example & class label
         psx = [[p for _, p in sorted(list(zip(*l)), key=lambda x: x[0])] for l in list(zip(*pred))]
         psx = np.array(psx)
         if return_labels:
-            return (psx, np.array([self.label2num[z] for y in test_labels]))
+            return (psx, np.array([self.label2num[y] for y in gold_labels]))
         else:
             return psx
     
@@ -156,10 +156,10 @@ class FastTextClassifier(BaseEstimator): # Inherits sklearn base classifier
         '''Predict labels of X'''
         
         fn = self.train_data_fn if train_data else self.test_data_fn
-        test_labels, text = _get_labels_text(fn = fn, indices = X)
+        gold_labels, text = _get_labels_text(fn = fn, indices = X)
         pred = np.array([self.label2num[z[0]] for z in self.clf.predict(text)[0]])
         if return_labels:
-            return (pred, np.array([self.label2num[y] for y in test_labels]))
+            return (pred, np.array([self.label2num[y] for y in gold_labels]))
         else:
             return pred
     
