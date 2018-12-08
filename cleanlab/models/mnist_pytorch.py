@@ -27,7 +27,7 @@ python_version = VersionWarning(
 # In[ ]:
 
 
-if python_version.is_compatible():
+if python_version.is_compatible(): # pragma: no cover
     import argparse
     import torch
     import torch.nn as nn
@@ -49,7 +49,7 @@ MNIST_TEST_SIZE = 10000
 # In[ ]:
 
 
-if python_version.is_compatible():
+if python_version.is_compatible(): # pragma: no cover
     class Net(nn.Module):
         '''Basic Pytorch CNN'''
         def __init__(self):
@@ -93,7 +93,11 @@ class CNN(BaseEstimator): # Inherits sklearn classifier
         no_cuda = False,
         seed = 1,
         test_batch_size = MNIST_TEST_SIZE,
-        loader = None, # Set to 'test' to force fit() and predict_proba() on test_set
+        # Set to 'test' to force fit() and predict_proba() on test_set
+        # Be careful setting this, it will override every other loader
+        # If you set this to 'test', but call .predict(loader = 'train')
+        # then .predict() will still predict on test!
+        loader = None, 
     ):
         self.batch_size = batch_size
         self.epochs = epochs
@@ -129,12 +133,12 @@ class CNN(BaseEstimator): # Inherits sklearn classifier
         if train_labels is not None and len(train_idx) != len(train_labels):
             raise ValueError("Check that train_idx and train_labels are the same length.")
             
-        if sample_weight is not None:
+        if sample_weight is not None:  # pragma: no cover
             if len(sample_weight) != len(train_labels):
                 raise ValueError("Check that train_labels and sample_weight are the same length.")
             class_weight = sample_weight[np.unique(train_labels, return_index=True)[1]]
             class_weight = torch.from_numpy(class_weight).float()
-            if self.cuda: # pragma: no cover
+            if self.cuda:
                 class_weight = class_weight.cuda()
         else:
             class_weight = None
