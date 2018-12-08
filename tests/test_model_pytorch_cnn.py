@@ -22,7 +22,7 @@ python_version = VersionWarning(
 # In[ ]:
 
 
-# if python_version.is_compatible():
+if python_version.is_compatible():
     from cleanlab.models.mnist_pytorch import CNN, MNIST_TEST_SIZE, MNIST_TRAIN_SIZE
     import cleanlab
     from os.path import expanduser
