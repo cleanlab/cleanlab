@@ -22,18 +22,18 @@ python_version = VersionWarning(
 # In[ ]:
 
 
-if python_version.is_compatible():
+# if python_version.is_compatible():
     from cleanlab.models.mnist_pytorch import CNN, MNIST_TEST_SIZE, MNIST_TRAIN_SIZE
     import cleanlab
     from os.path import expanduser
     import numpy as np
     from sklearn.metrics import accuracy_score
     from torchvision import datasets
-    
+
     # Get home directory to store MNIST dataset
     home_dir = expanduser("~")
     data_dir = home_dir + "/data/"
-    
+
     X_train = np.arange(MNIST_TRAIN_SIZE)
     X_test = np.arange(MNIST_TEST_SIZE)
     # X_train = X_train[X_train % 10 == 0]
@@ -46,32 +46,37 @@ if python_version.is_compatible():
 # In[ ]:
 
 
-def test_mnist_pytorch_cnn(seed = 43):
+def test_loaders(
+    seed = 0,
+    pretrain_epochs = 2, # Increase to at least 10 for good results
+):
     if python_version.is_compatible():
         np.random.seed(seed)
 
         prune_method = 'prune_by_noise_rate'
-
-        # Pre-train
-        cnn = CNN(epochs=3, log_interval=1000, loader='test', seed = seed) #pre-train
-        cnn.fit(X_test, y_test, loader='test') # pre-train (overfit, not out-of-sample) to entire dataset.
-
-        # Out-of-sample cross-validated holdout predicted probabilities
-        np.random.seed(4)
-        cnn.epochs = 1 # Single epoch for cross-validation (already pre-trained)
-        cj, psx = cleanlab.latent_estimation.estimate_confident_joint_and_cv_pred_proba(X_test, y_test, cnn, cv_n_folds=2)
-        est_py, est_nm, est_inv = cleanlab.latent_estimation.estimate_latent(cj, y_test)
-        # algorithmic identification of label errors
-        noise_idx = cleanlab.pruning.get_noise_indices(y_test, psx, est_inv, prune_method=prune_method) 
-
-        # Get prediction on test set
-        pred = cnn.predict(loader = 'test')
-
-        score = accuracy_score(y_test, pred)
-        print(score)
-
-        assert(abs(score - 0.929) < .01)
         
-    else:
-        assert(True)
+        # Pre-train
+        cnn = CNN(epochs=2, log_interval=1000, seed = seed) #pre-train
+        for loader in ['train', 'test', None]:
+            cnn.loader = loader
+            cnn.fit(X_test, y_test, loader=loader) # pre-train (overfit, not out-of-sample) to entire dataset.
+
+            # Out-of-sample cross-validated holdout predicted probabilities
+            np.random.seed(seed)
+            # Single epoch for cross-validation (already pre-trained)
+            cnn.epochs = 1 
+            cj, psx = cleanlab.latent_estimation.estimate_confident_joint_and_cv_pred_proba(X_test, y_test, cnn, cv_n_folds=2)
+            est_py, est_nm, est_inv = cleanlab.latent_estimation.estimate_latent(cj, y_test)
+            # algorithmic identification of label errors
+            noise_idx = cleanlab.pruning.get_noise_indices(y_test, psx, est_inv, prune_method=prune_method) 
+
+            # Get prediction on test set
+            pred = cnn.predict(loader = loader)
+            if loader == 'test':
+                score = accuracy_score(y_test, pred)
+            else:
+                score = accuracy_score(y_train, pred)
+            print(score)
+        
+    assert(True)
 
