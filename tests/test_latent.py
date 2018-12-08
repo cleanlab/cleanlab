@@ -41,7 +41,7 @@ def test_latent_py_ps_inv():
 
 def test_latent_inv():
     ps, py, inv = test_latent_py_ps_inv()
-    inv2 = latent_algebra.compute_inv_noise_matrix(py, nm, ps)
+    inv2 = latent_algebra.compute_inv_noise_matrix(py, nm)
     assert(np.all(abs(inv - inv2) < 1e-3))    
 
 
@@ -97,4 +97,18 @@ def test_pyx():
     ps, py, inv = test_latent_py_ps_inv()
     pyx = latent_algebra.compute_pyx(psx, nm, inv)
     assert(np.all(np.sum(pyx, axis = 1) - 1 < 1e-4))
+
+
+# In[33]:
+
+
+def test_pyx_error():  
+    psx = np.array([0.1, 0.3, 0.6])
+    ps, py, inv = test_latent_py_ps_inv()
+    try:
+        pyx = latent_algebra.compute_pyx(psx, nm, inv)
+    except ValueError as e:
+        assert('should be (N, K)' in str(e))
+    with pytest.raises(ValueError) as e:
+        pyx = latent_algebra.compute_pyx(psx, nm, inv)
 
