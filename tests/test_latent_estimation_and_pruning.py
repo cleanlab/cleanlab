@@ -107,7 +107,7 @@ def make_data(
 data = make_data(seed = seed)
 
 
-# In[53]:
+# In[ ]:
 
 
 def test_invalid_prune_count_method():
@@ -125,12 +125,6 @@ def test_invalid_prune_count_method():
             psx = data['psx'],
             prune_count_method = 'INVALID_METHOD',
         )
-
-
-# In[54]:
-
-
-test_invalid_prune_count_method()
 
 
 # In[ ]:
@@ -172,4 +166,97 @@ def test_pruning_both():
         prune_method = 'both',
     )
     assert(all(s[both_idx] == s[class_idx & nr_idx]))
+
+
+# In[ ]:
+
+
+def test_cj_from_probs():
+    cj = latent_estimation.estimate_confident_joint_from_probabilities(
+        s = data["s"],
+        psx = data["psx"],
+        force_ps = 10,
+    )
+    true_ps = data["ps"] * data["n"]
+    forced = cj.sum(axis = 1)
+    
+    cj = latent_estimation.estimate_confident_joint_from_probabilities(
+        s = data["s"],
+        psx = data["psx"],
+        force_ps = 1,
+    )
+    forced1 = cj.sum(axis = 1)
+    
+    cj = latent_estimation.estimate_confident_joint_from_probabilities(
+        s = data["s"],
+        psx = data["psx"],
+        force_ps = False,
+    )
+    regular = cj.sum(axis = 1)
+    # Forcing ps should make ps more similar to the true ps.
+    assert(np.mean(true_ps - forced) <= np.mean(true_ps - regular))
+    # Check that one iteration is the same as not forcing ps
+    assert(np.mean(true_ps - forced1) - np.mean(true_ps - regular) < 2e-4)
+
+
+# In[ ]:
+
+
+def test_estimate_latent_py_method():
+    for py_method in ["cnt", "eqn", "marginal"]:
+        py, nm, inv = latent_estimation.estimate_latent(
+            confident_joint = data['cj'],
+            s = data['s'],
+            py_method = py_method,
+        )
+        assert(sum(py) - 1 < 1e-4)
+    try:
+        py, nm, inv = latent_estimation.estimate_latent(
+            confident_joint = data['cj'],
+            s = data['s'],
+            py_method = 'INVALID',
+        )
+    except ValueError as e:
+        assert('should be' in str(e))
+        with pytest.raises(ValueError) as e:
+            py, nm, inv = latent_estimation.estimate_latent(
+                confident_joint = data['cj'],
+                s = data['s'],
+                py_method = 'INVALID',
+            )
+
+
+# In[ ]:
+
+
+def test_estimate_latent_converge():
+    py, nm, inv = latent_estimation.estimate_latent(
+        confident_joint = data['cj'],
+        s = data['s'],
+        converge_latent_estimates = True,
+    )
+    
+    py2, nm2, inv2 = latent_estimation.estimate_latent(
+        confident_joint = data['cj'],
+        s = data['s'],
+        converge_latent_estimates = False,
+    )
+    # Check results are similar, but not the same.
+    assert(np.any(inv != inv2))
+    assert(np.any(py != py2))
+    assert(np.all(abs(py - py2) < 0.1))
+    assert(np.all(abs(nm -  nm2) < 0.1))
+    assert(np.all(abs(inv -  inv2) < 0.1))
+
+
+# In[ ]:
+
+
+def test_estimate_noise_matrices():
+    nm, inv = latent_estimation.estimate_noise_matrices(
+        X = data["X_train"],
+        s = data["s"],
+    )
+    assert(np.all(abs(nm -  data["est_nm"]) < 0.1))
+    assert(np.all(abs(inv -  data["est_inv"]) < 0.1))
 
