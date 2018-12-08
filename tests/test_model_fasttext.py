@@ -302,6 +302,16 @@ def test_cleanlab_with_fasttext():
 # In[ ]:
 
 
+def test_create_all_data():
+    if python_version.is_compatible():
+        fn = ftc._create_train_data(X_train)
+        with open(fn, 'r') as f:
+            assert(len(f.readlines()) == len(X_train))
+
+
+# In[ ]:
+
+
 def test_score():
     if python_version.is_compatible():
         n = 1000
