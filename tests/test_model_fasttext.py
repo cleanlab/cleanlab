@@ -1,14 +1,14 @@
 
 # coding: utf-8
 
-# In[1]:
+# In[ ]:
 
 
 # Python 2 and 3 compatibility
 from __future__ import print_function, absolute_import, division, unicode_literals, with_statement
 
 
-# In[2]:
+# In[ ]:
 
 
 # Make sure python version is compatible with fasttext
@@ -19,7 +19,7 @@ python_version = VersionWarning(
 )
 
 
-# In[3]:
+# In[ ]:
 
 
 def create_cooking_dataset(data_dir = None):
@@ -87,7 +87,7 @@ def create_cooking_dataset(data_dir = None):
         shutil.rmtree(data_dir + 'cooking')
 
 
-# In[4]:
+# In[ ]:
 
 
 if python_version.is_compatible():
@@ -127,7 +127,7 @@ if python_version.is_compatible():
     ftc.fit(X = None)   
 
 
-# In[5]:
+# In[ ]:
 
 
 def test_predict_proba_masking():
@@ -138,7 +138,7 @@ def test_predict_proba_masking():
     assert(True)
 
 
-# In[6]:
+# In[ ]:
 
 
 def test_predict_masking():
@@ -149,7 +149,7 @@ def test_predict_masking():
     assert(True)
 
 
-# In[7]:
+# In[ ]:
 
 
 def test_score_masking():
@@ -160,7 +160,7 @@ def test_score_masking():
     assert(True)
 
 
-# In[8]:
+# In[ ]:
 
 
 def test_apk_strictly_increasing():
@@ -179,7 +179,7 @@ def test_apk_strictly_increasing():
     assert(True)
 
 
-# In[9]:
+# In[ ]:
 
 
 def test_predict_and_predict_proba():
@@ -202,7 +202,7 @@ def test_predict_and_predict_proba():
     assert(True)
 
 
-# In[39]:
+# In[ ]:
 
 
 def test_correctness():
@@ -226,7 +226,20 @@ def test_correctness():
     assert(True)
 
 
-# In[40]:
+# In[ ]:
+
+
+def test_return_labels():
+    if python_version.is_compatible():
+        # Get predictions, probabilities and labels
+        pred, labels1 = ftc.predict(train_data = False, return_labels = True)
+        psx, labels2 = ftc.predict_proba(train_data = False, return_labels = True)
+        assert(len(pred) == len(labels1))
+        assert(all(labels1 == labels2))
+    assert(True)
+
+
+# In[ ]:
 
 
 def test_cleanlab_with_fasttext():
@@ -283,5 +296,17 @@ def test_cleanlab_with_fasttext():
 
         # Known error - this should be tagged as substituion, not baking.
         assert('__label__baking what can i use instead of corn syrup ?' in errors)
+    assert(True)
+
+
+# In[ ]:
+
+
+def test_score():
+    if python_version.is_compatible():
+        n = 1000
+        y = [ftc.label2num[z] for z in y_test[:n]]
+        score = ftc.score(X = range(n), y = y)
+        assert(score > 0)
     assert(True)
 
