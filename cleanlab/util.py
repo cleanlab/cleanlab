@@ -15,7 +15,7 @@ import numpy as np
 # In[ ]:
 
 
-def assert_inputs_are_valid(X, s, psx = None):
+def assert_inputs_are_valid(X, s, psx = None): # pragma: no cover
     '''Checks that X, s, and psx
     are correctly formatted'''
 
@@ -205,12 +205,12 @@ def estimate_pu_f1(s, prob_s_eq_1):
     ------
     Claesen's estimate for f1 in the pulearning setting.'''
   
-    pred = prob_s_eq_1 >= 0.5
-    true_positives = sum((np.array(s) == 1) & (np.array(pred) == 1))
+    pred = np.asarray(prob_s_eq_1) >= 0.5
+    true_positives = sum((np.asarray(s) == 1) & (np.asarray(pred) == 1))
     all_positives = sum(s)
     recall = true_positives / float(all_positives)
-    frac_positive_predictions = sum(pred) / float(len(s))
-    return recall ** 2 / frac_positive_predictions if frac_positive_predictions != 0 else np.nan
+    frac_positive = sum(pred) / float(len(s))
+    return recall ** 2 / (2.0 * frac_positive) if frac_positive != 0 else np.nan
 
 
 def confusion_matrix(y, s):
@@ -272,11 +272,7 @@ def print_square_matrix(
     short_title : str
         A short title (6 characters or less) like P(s|y) or P(s,y).'''
     
-    if len(short_title) > 6:
-        raise ValueError(
-            'Length of short_title must be <=6. len('+short_title+') = '+str(len(short_title))
-        )
-    
+    short_title = sort_title[:6]    
     K = len(matrix) # Number of classes
     # Make sure matrix is 2d array
     if len(np.shape(matrix)) == 1:
