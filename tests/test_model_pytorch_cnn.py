@@ -15,7 +15,7 @@ from __future__ import print_function, absolute_import, division, unicode_litera
 from cleanlab.util import VersionWarning
 python_version = VersionWarning(
     warning_str = "pyTorch supports Python version 2.7, 3.5, 3.6, 3.7.",
-    list_of_compatible_versions = [2.7, 3.5, 3.6],
+    list_of_compatible_versions = [2.7, 3.5, 3.6, 3.7],
 )
 
 
@@ -29,6 +29,7 @@ if python_version.is_compatible():
     import numpy as np
     from sklearn.metrics import accuracy_score
     from torchvision import datasets
+    import pytest
 
     # Get home directory to store MNIST dataset
     home_dir = expanduser("~")
@@ -78,5 +79,39 @@ def test_loaders(
                 score = accuracy_score(y_train, pred)
             print(score)
         
+    assert(True)
+
+
+# In[ ]:
+
+
+def test_throw_exception():
+    if python_version.is_compatible():
+        cnn = CNN(epochs=1, log_interval=1000, seed = 0)
+        try:
+            cnn.fit(train_idx = [0,1], train_labels = [1])
+        except Exception as e:
+            assert('same length' in str(e))
+            with pytest.raises(ValueError) as e:
+                cnn.fit(train_idx = [0,1], train_labels = [1])
+    assert(True)
+
+
+# In[ ]:
+
+
+def test_n_train_examples(n = 3000):
+    if python_version.is_compatible():
+        cnn = CNN(epochs=3, log_interval=1000, loader = 'train', seed = 0)
+        idx = np.random.choice(X_train, n, replace = False) # Grab n random examples.
+        cnn.fit(train_idx = X_train[idx], train_labels = y_train[idx], loader = 'train')
+        cnn.loader = 'test'
+        pred = cnn.predict(X_test[:n])
+        assert(accuracy_score(y_test[:n], pred) > 0.5)
+
+        # Check that dataset defaults to test set when an invalid name is given.
+        cnn.loader = 'INVALID'
+        pred = cnn.predict(X_test[:n])
+        assert(len(pred) == MNIST_TEST_SIZE)
     assert(True)
 
