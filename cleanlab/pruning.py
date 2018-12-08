@@ -142,7 +142,13 @@ def get_noise_indices(
     )
   
     if num_to_remove_per_class is not None:
-        np.fill_diagonal(prune_count_matrix, s_counts - num_to_remove_per_class)
+        # Estimate joint probability distribution over label errors
+        psy = prune_count_matrix / np.sum(prune_count_matrix, axis = 1)
+        noise_per_s = psy.sum(axis = 1) - psy.diagonal()
+        # Calibrate s.t. noise rates sum to num_to_remove_per_class
+        tmp = (psy.T * num_to_remove_per_class / noise_per_s).T
+        np.fill_diagonal(tmp, s_counts - num_to_remove_per_class)
+        prune_count_matrix = np.round(tmp).astype(int)
 
     # Initialize the boolean mask of noise indices.
     noise_mask = np.zeros(len(psx), dtype=bool)
