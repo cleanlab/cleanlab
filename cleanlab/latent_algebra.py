@@ -12,6 +12,7 @@ from __future__ import print_function, absolute_import, division, unicode_litera
 import numpy as np
 
 from cleanlab.util import value_counts, clip_values, clip_noise_rates
+import warnings
 
 
 # In[ ]:
@@ -189,9 +190,9 @@ def compute_py(ps, noise_matrix, inverse_noise_matrix):
         The fraction (prior probability) of each observed, noisy class label, P(y = k).'''
   
     if len(np.shape(ps)) > 2 or (len(np.shape(ps)) == 2 and np.shape(ps)[0] != 1):
-        import warnings
-        warnings.warn("Input parameter np.array 'ps' has shape " + str(np.shape(ps)) +
-                      ", but shape should be (K, ) or (1, K)")
+        w = 'Input parameter np.array ps has shape ' + str(np.shape(ps))
+        w += ', but shape should be (K, ) or (1, K)'
+        warnings.warn(w)
   
     # Computing py this way avoids dividing by zero noise rates! Also more robust.
     # More robust because error est_p(y|s) / est_p(s|y) ~ p(y|s) / p(s|y) 
