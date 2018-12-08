@@ -90,8 +90,9 @@ def estimate_confident_joint_from_probabilities(
     
     # Ensure labels are of type np.array()
     s = np.asarray(s)
-    
-    sgd_epochs = force_ps if type(force_ps) == int else 1   
+    sgd_epochs = 5 if force_ps is True else 1 # Default 5 epochs if force_ps
+    if type(force_ps) == int:
+        sgd_epochs = force_ps
     for sgd_iteration in range(sgd_epochs): 
         # Estimate the probability thresholds for confident counting 
         if thresholds is None:
@@ -579,7 +580,11 @@ def estimate_noise_matrices(
         
     seed : int (default = None)
         Number to set the default state of the random number generator used to split 
-        the cross-validated folds. If None, uses np.random current random state.'''
+        the cross-validated folds. If None, uses np.random current random state.
+
+    Output
+    ------
+        A two-item tuple containing (noise_matrix, inv_noise_matrix).'''
 
     return estimate_py_noise_matrices_and_cv_pred_proba(
         X = X, 
