@@ -272,7 +272,7 @@ def print_square_matrix(
     short_title : str
         A short title (6 characters or less) like P(s|y) or P(s,y).'''
     
-    short_title = sort_title[:6]    
+    short_title = short_title[:6]    
     K = len(matrix) # Number of classes
     # Make sure matrix is 2d array
     if len(np.shape(matrix)) == 1:
