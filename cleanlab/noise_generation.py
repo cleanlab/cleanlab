@@ -280,7 +280,7 @@ def generate_n_rand_probabilities_that_sum_to_m(
     min_prob : float [0.0, 1.0) | Default value is 0.0
       Minimum probability of any entry in the returned np.array.'''
   
-    epsilon = 1e-8 # Imprecision allowed for inequalities with floats
+    epsilon = 1e-6 # Imprecision allowed for inequalities with floats
 
     if n == 0:
         return np.array([])    
@@ -292,7 +292,7 @@ def generate_n_rand_probabilities_that_sum_to_m(
         raise ValueError("min_prob must be less or equal to m / n, but " +
                          "max_prob = "+str(max_prob)+", m = "+str(m)+", n = " +
                          str(n)+", m / n = "+str(m/float(n)))
-    if min_prob >= (max_prob + epsilon):
+    if abs(min_prob - max_prob) < epsilon:
         raise ValueError("min_prob must be less than max_prob, but " +
                          "max_prob = "+str(max_prob)+", m = "+str(m)+", n = " +
                          str(n)+", m / n = "+str(m/float(n)))
@@ -357,7 +357,7 @@ def randomly_distribute_N_balls_into_K_bins(
         min_prob = min_balls_per_bin/float(N),
     ) * N)
     while sum(arr) != N:
-        while sum(arr) > N:
+        while sum(arr) > N: # pragma: no cover
             arr[np.argmax(arr)] -= 1
         while sum(arr) < N:
             arr[np.argmin(arr)] += 1
