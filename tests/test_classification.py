@@ -1,14 +1,14 @@
 
 # coding: utf-8
 
-# In[3]:
+# In[ ]:
 
 
 # Python 2 and 3 compatibility
 from __future__ import print_function, absolute_import, division, unicode_literals, with_statement
 
 
-# In[4]:
+# In[ ]:
 
 
 import numpy as np
@@ -23,13 +23,13 @@ from numpy.random import multivariate_normal
 import pytest
 
 
-# In[40]:
+# In[ ]:
 
 
 seed = 1
 
 
-# In[41]:
+# In[ ]:
 
 
 def make_data(
@@ -85,13 +85,13 @@ def make_data(
     }
 
 
-# In[42]:
+# In[ ]:
 
 
 data = make_data(seed = seed)
 
 
-# In[43]:
+# In[ ]:
 
 
 def test_rp():
@@ -103,7 +103,7 @@ def test_rp():
     assert(True)
 
 
-# In[36]:
+# In[ ]:
 
 
 def test_raise_error_no_clf_fit():
@@ -201,7 +201,7 @@ def test_clf_fit_inm():
             lnl.fit(X = np.arange(3), s = np.array([0,0,1]), inverse_noise_matrix = inm)
 
 
-# In[58]:
+# In[ ]:
 
 
 def test_fit_with_nm(
@@ -230,7 +230,7 @@ def test_fit_with_nm(
         assert(score < score_nm)
 
 
-# In[61]:
+# In[ ]:
 
 
 def test_warning_nm_calibrate_cj():
@@ -242,7 +242,7 @@ def test_warning_nm_calibrate_cj():
     assert((s1 - s2) < 0.1)
 
 
-# In[50]:
+# In[ ]:
 
 
 def test_fit_with_inm(
@@ -275,7 +275,7 @@ def test_fit_with_inm(
         assert(score < score_inm)
 
 
-# In[51]:
+# In[ ]:
 
 
 def test_clf_fit_nm_inm():
@@ -301,7 +301,7 @@ def test_clf_fit_nm_inm():
     assert(score < score_nm_inm)
 
 
-# In[52]:
+# In[ ]:
 
 
 def test_warning_inm_calibrate_cj():
