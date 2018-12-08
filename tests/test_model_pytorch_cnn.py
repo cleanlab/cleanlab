@@ -125,5 +125,11 @@ def test_n_train_examples(n = 3000):
         cnn.loader = 'INVALID'
         pred = cnn.predict(X_test[:n])
         assert(len(pred) == MNIST_TEST_SIZE)
+        
+        # Check that pred_proba runs on all examples when None is passed in
+        cnn.loader = 'test'
+        proba = cnn.predict_proba(idx = None, loader = 'test')
+        assert(len(pred) == MNIST_TEST_SIZE)
+        
     assert(True)
 
