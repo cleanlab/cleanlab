@@ -1,10 +1,11 @@
 # Added by Curtis G. Northcutt
 cleanlab/*.ipynb
-examples/models/*.ipynb
 cleanlab/models/*.ipynb
 tests/*.ipynb
 .DS_Store
 */.DS_Store
+tests/fasttext_data/
+data/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
