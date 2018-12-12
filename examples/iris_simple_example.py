@@ -37,7 +37,7 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
 
 
 try:
-    get_ipython().magic(u'matplotlib inline')
+    get_ipython().run_line_magic('matplotlib', 'inline')
     from matplotlib import pyplot as plt
     _ = plt.figure(figsize=(12,8))
     color_list = plt.cm.tab10(np.linspace(0, 1, 6))
@@ -69,7 +69,7 @@ py = value_counts(y_train)
 s = generate_noisy_labels(y_train, noise_matrix)
 
 try:
-    get_ipython().magic(u'matplotlib inline')
+    get_ipython().run_line_magic('matplotlib', 'inline')
     from matplotlib import pyplot as plt
     _ = plt.figure(figsize=(15,8))
     color_list = plt.cm.tab10(np.linspace(0, 1, 6))
@@ -163,10 +163,4 @@ for i in np.argsort(scores)[::-1]:
         round(scores[i], 2),
         "\n"
     )
-
-
-# In[ ]:
-
-
-
 
