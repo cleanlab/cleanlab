@@ -179,7 +179,7 @@ def generate_noise_matrix_from_trace(
 
 
     if valid_noise_matrix and trace <= 1:
-        raise ValueError("trace > 1 is necessary for a" +
+        raise ValueError("trace = {}. trace > 1 is necessary for a".format(trace) +
               " valid noise matrix to be returned (valid_noise_matrix == True)")
     
     if valid_noise_matrix and py is None and K > 2:
