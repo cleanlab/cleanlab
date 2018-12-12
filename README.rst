@@ -98,17 +98,36 @@ posted here when they are published.
     publisher = {AUAI Press},
    } 
 
+ 
+``cleanlab`` Generality: View performance across 4 distributions and 9 classifiers.
+-----------------------------------------------------------------------------------
 
-Core ``cleanlab`` Package Descriptions
---------------------------------------
+We use ``cleanlab`` to automatically learn with noisy labels regardless of dataset distribution or classifier. 
 
-1. **cleanlab/classification.py** - The LearningWithNoisyLabels() class for learning with noisy labels.
-2. **cleanlab/latent_algebra.py** -	Equalities when noise information is known.
-3. **cleanlab/latent_estimation.py** -	Estimates and fully characterizes all variants of label noise.
-4. **cleanlab/noise_generation.py** - Generate mathematically valid synthetic noise matrices.
-5. **cleanlab/polyplex.py** -	Characterizes joint distribution of label noise EXACTLY from noisy channel.
-6. **cleanlab/pruning.py** - Finds the indices of the examples with label errors in a dataset.
+.. figure:: https://raw.githubusercontent.com/cgnorthcutt/cleanlab/master/img/demo_cleanlab_across_datasets_and_classifiers.png
+   :align: center
+   :alt: Image depicting generality of cleanlab across datasets and classifiers 
 
+Each figure depicts the decision boundary learned using ``cleanlab.classification.LearningWithNoisyLabels`` in the presence of extreme label errors. Columns are organized by the classifier used, with the left-most column reserved to demonstrate the ground truth dataset distribution. Rows are organized by dataset used. Each figure has three accuracy scores on a test set: 
+
+1. LEFT (in black): The classifier test accuracy trained with perfect labels (no label errors). 
+2. MIDDLE (in blue): The classifier test accuracy trained with noisy labels using ``cleanlab``. 
+3. RIGHT (in white): The baseline classifier test accuracy trained with noisy labels.
+
+The code to reproduce this figure is available `here <https://github.com/cgnorthcutt/cleanlab/blob/master/examples/classifier_comparison.ipynb>`__.
+
+
+``cleanlab`` on MNIST
+---------------------
+
+We use ``cleanlab`` to automatically identify ~50 label errors in the MNIST dataset. 
+
+.. figure:: https://raw.githubusercontent.com/cgnorthcutt/cleanlab/master/img/mnist_training_label_errors24_prune_by_noise_rate.png
+   :align: center
+   :alt: Image depicting label errors in MNIST train set 
+
+Label errors of the original MNIST **train** dataset identified algorithmically using the rankpruning algorithm. Depicts the 24 least confident labels, ordered left-right, top-down by increasing self-confidence (probability of belonging to the given label), denoted conf in teal. The label with the largest predicted probability is in green. Overt errors are in red.
+ 
 
 Get started with easy, quick examples.
 --------------------------------------
@@ -116,9 +135,9 @@ Get started with easy, quick examples.
 New to **cleanlab**? Start with:
 
 1. `Visualizing confident
-   learning <examples/visualizing_confident_learning.ipynb>`__
+   learning <https://github.com/cgnorthcutt/cleanlab/blob/master/examples/visualizing_confident_learning.ipynb>`__
 2. `A simple example of learning with noisy labels on the multiclass
-   Iris dataset <examples/iris_simple_example.ipynb>`__.
+   Iris dataset <https://github.com/cgnorthcutt/cleanlab/blob/master/examples/iris_simple_example.ipynb>`__.
 
 These examples show how easy it is to characterize label noise in
 datasets, learn with noisy labels, identify label errors, estimate
@@ -128,9 +147,7 @@ latent priors and noisy channels, and more.
 
    <!---
 
-   ## Automatically identify ~50 label errors in MNIST with cleanlab. [[link]](examples/finding_MNIST_label_errors).
-   ![Image depicting label errors in MNIST train set.](https://raw.githubusercontent.com/cgnorthcutt/cleanlab/master/img/mnist_training_label_errors24_prune_by_noise_rate.png)
-   Label errors of the original MNIST **train** dataset identified algorithmically using the rankpruning algorithm. Depicts the 24 least confident labels, ordered left-right, top-down by increasing self-confidence (probability of belonging to the given label), denoted conf in teal. The label with the largest predicted probability is in green. Overt errors are in red.
+   
 
    ![Image depicting label errors in MNIST test set.](https://raw.githubusercontent.com/cgnorthcutt/cleanlab/master/img/mnist_test_label_errors8.png)
     Selected label errors in the MNIST **test** dataset ordered by increasing self-confidence (in teal).
@@ -189,8 +206,19 @@ Note, some libraries exists to do this for you. For pyTorch, check out
 the ``skorch`` Python library which will wrap your ``pytorch`` model
 into a ``scikit-learn`` compliant model.
 
-Documentation by Example - Quick Tutorials
-------------------------------------------
+
+Documentation by Example
+------------------------
+
+``cleanlab`` Core Package Components
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+1. **cleanlab/classification.py** - The LearningWithNoisyLabels() class for learning with noisy labels.
+2. **cleanlab/latent_algebra.py** -	Equalities when noise information is known.
+3. **cleanlab/latent_estimation.py** -	Estimates and fully characterizes all variants of label noise.
+4. **cleanlab/noise_generation.py** - Generate mathematically valid synthetic noise matrices.
+5. **cleanlab/polyplex.py** -	Characterizes joint distribution of label noise EXACTLY from noisy channel.
+6. **cleanlab/pruning.py** - Finds the indices of the examples with label errors in a dataset.
 
 Many of these methods have default parameters that won’t be covered
 here. Check out the method docstrings for full documentation.
