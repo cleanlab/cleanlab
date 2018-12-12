@@ -120,11 +120,24 @@ We use ``cleanlab`` to automatically learn with noisy labels regardless of datas
    :align: center
    :alt: Image depicting generality of cleanlab across datasets and classifiers 
 
-Each figure depicts the decision boundary learned using ``cleanlab.classification.LearningWithNoisyLabels`` in the presence of extreme label errors. Columns are organized by the classifier used, with the left-most column reserved to demonstrate the ground truth dataset distribution. Rows are organized by dataset used. Each figure has three accuracy scores on a test set: 
+Each figure depicts the decision boundary learned using ``cleanlab.classification.LearningWithNoisyLabels`` in the presence of extreme (~35%) label errors. Label noise is class-conditional (not simply uniformly random). Columns are organized by the classifier used, except the left-most column which depicts the ground-truth dataset distribution. Rows are organized by dataset used. A matrix characterizing the label noise for the first row is shown below. 
+
+Each figure depicts accuracy scores on a test set as decimal values: 
 
 1. LEFT (in black): The classifier test accuracy trained with perfect labels (no label errors). 
 2. MIDDLE (in blue): The classifier test accuracy trained with noisy labels using ``cleanlab``. 
 3. RIGHT (in white): The baseline classifier test accuracy trained with noisy labels.
+
+As an example, this is the noise matrix (noisy channel) *P(s \| y)* characterizing the label noise for the first dataset row in the figure. *s* represents the observed noisy labels and *y* represents the latent, true labels. The trace of this matrix is 2.6. A trace of 4 implies no label noise. A cell in this matrix is read like, "A random 38% of '3' labels were flipped to '2' labels."
+
+======  ====  ====  ====  ==== 
+p(s|y)   y=0   y=1   y=2   y=3
+======  ====  ====  ====  ==== 
+s=0     0.55  0.01  0.07  0.06
+s=1     0.22  0.87  0.24  0.02
+s=2     0.12  0.04  0.64  0.38
+s=3     0.11  0.08  0.05  0.54
+======  ====  ====  ====  ====
 
 The code to reproduce this figure is available `here <https://github.com/cgnorthcutt/cleanlab/blob/master/examples/classifier_comparison.ipynb>`__.
 
