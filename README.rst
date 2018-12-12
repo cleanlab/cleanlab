@@ -47,7 +47,7 @@
    # Estimate the predictions you would have gotten by training with *no* label errors.
    predicted_test_labels = lnl.predict(X_test)
 
-Check out these `examples <examples>`__ and `tests <tests>`__ (includes how to use pyTorch, FastText, etc.).
+Check out these `examples <https://github.com/cgnorthcutt/cleanlab/tree/master/examples>`__ and `tests <https://github.com/cgnorthcutt/cleanlab/tree/master/tests>`__ (includes how to use pyTorch, FastText, etc.).
 
 Installation
 ------------
@@ -418,5 +418,5 @@ The Polyplex
 The key to learning in the presence of label errors is estimating the joint distribution between the actual, hidden labels ‘*y*’ and the observed, noisy labels ‘*s*’. Using ``cleanlab`` and the theory of confident learning, we can completely characterize the trace of the latent joint distribution, *trace(P(s,y))*, given *p(y)*, for any fraction of label errors, i.e. for any trace of the noisy channel, *trace(P(s|y))*.
 
 You can check out how to do this yourself here: 1. `Drawing
-Polyplices <examples/drawing_polyplices.ipynb>`__ 2. `Computing
-Polyplices <cleanlab/polyplex.py>`__
+Polyplices <https://github.com/cgnorthcutt/cleanlab/blob/master/examples/drawing_polyplices.ipynb>`__ 2. `Computing
+Polyplices <https://github.com/cgnorthcutt/cleanlab/blob/master/cleanlab/polyplex.py>`__
