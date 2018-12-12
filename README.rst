@@ -98,6 +98,18 @@ posted here when they are published.
     publisher = {AUAI Press},
    } 
 
+
+``cleanlab`` on MNIST
+---------------------
+
+We use ``cleanlab`` to automatically identify ~50 label errors in the MNIST dataset. 
+
+.. figure:: https://raw.githubusercontent.com/cgnorthcutt/cleanlab/master/img/mnist_training_label_errors24_prune_by_noise_rate.png
+   :align: center
+   :alt: Image depicting label errors in MNIST train set 
+
+Label errors of the original MNIST **train** dataset identified algorithmically using the rankpruning algorithm. Depicts the 24 least confident labels, ordered left-right, top-down by increasing self-confidence (probability of belonging to the given label), denoted conf in teal. The label with the largest predicted probability is in green. Overt errors are in red.
+
  
 ``cleanlab`` Generality: View performance across 4 distributions and 9 classifiers.
 -----------------------------------------------------------------------------------
@@ -116,18 +128,6 @@ Each figure depicts the decision boundary learned using ``cleanlab.classificatio
 
 The code to reproduce this figure is available `here <https://github.com/cgnorthcutt/cleanlab/blob/master/examples/classifier_comparison.ipynb>`__.
 
-
-``cleanlab`` on MNIST
----------------------
-
-We use ``cleanlab`` to automatically identify ~50 label errors in the MNIST dataset. 
-
-.. figure:: https://raw.githubusercontent.com/cgnorthcutt/cleanlab/master/img/mnist_training_label_errors24_prune_by_noise_rate.png
-   :align: center
-   :alt: Image depicting label errors in MNIST train set 
-
-Label errors of the original MNIST **train** dataset identified algorithmically using the rankpruning algorithm. Depicts the 24 least confident labels, ordered left-right, top-down by increasing self-confidence (probability of belonging to the given label), denoted conf in teal. The label with the largest predicted probability is in green. Overt errors are in red.
- 
 
 Get started with easy, quick examples.
 --------------------------------------
