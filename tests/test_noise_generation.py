@@ -329,3 +329,30 @@ def test_balls_params():
             assert(min(r) <= (K if mn is None else mn))
             assert(len(r) == K)
 
+
+# In[ ]:
+
+
+def test_max_iter(): 
+    trace = 2
+    K = 3
+    py = [1/float(K)]*K
+    nm = noise_generation.generate_noise_matrix_from_trace(
+        K = K, 
+        trace = trace,
+        valid_noise_matrix = True,
+        max_iter = 1,
+        py = py,
+        seed = 1,
+    )
+    assert(abs(np.trace(nm) - trace) < 1e-6)
+    assert(abs(sum(np.dot(nm, py)) - 1) < 1e-6)
+    nm2 = noise_generation.generate_noise_matrix_from_trace(
+        K = 3, 
+        trace = trace,
+        valid_noise_matrix = True,
+        py = [0.1, 0.1, 0.8],
+        max_iter = 0,
+    )
+    assert(nm2 == False)
+
