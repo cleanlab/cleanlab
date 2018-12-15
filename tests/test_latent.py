@@ -1,13 +1,13 @@
 
 # coding: utf-8
 
-# In[1]:
+# In[ ]:
 
 
 from __future__ import print_function, absolute_import, division, unicode_literals, with_statement
 
 
-# In[2]:
+# In[ ]:
 
 
 from cleanlab import latent_algebra, latent_estimation
@@ -15,7 +15,7 @@ import numpy as np
 import pytest
 
 
-# In[3]:
+# In[ ]:
 
 
 s = [0] * 10 + [1] * 5 + [2] * 15
@@ -26,7 +26,7 @@ nm = np.array([
 ])
 
 
-# In[4]:
+# In[ ]:
 
 
 def test_latent_py_ps_inv():
@@ -36,7 +36,7 @@ def test_latent_py_ps_inv():
     return ps, py, inv
 
 
-# In[5]:
+# In[ ]:
 
 
 def test_latent_inv():
@@ -45,7 +45,7 @@ def test_latent_inv():
     assert(np.all(abs(inv - inv2) < 1e-3))    
 
 
-# In[6]:
+# In[ ]:
 
 
 def test_latent_nm():
@@ -54,7 +54,7 @@ def test_latent_nm():
     assert(np.all(abs(nm - nm2) < 1e-3))
 
 
-# In[7]:
+# In[ ]:
 
 
 def test_latent_py():
@@ -63,7 +63,7 @@ def test_latent_py():
     assert(np.all(abs(py - py2) < 1e-3))
 
 
-# In[16]:
+# In[ ]:
 
 
 def test_latent_py_warning():
@@ -83,7 +83,47 @@ def test_latent_py_warning():
             assert(True)
 
 
-# In[29]:
+# In[ ]:
+
+
+def test_compute_py_err():
+    ps, py, inv = test_latent_py_ps_inv()
+    try:
+        py = latent_algebra.compute_py(
+            ps = ps,
+            noise_matrix = nm,
+            inverse_noise_matrix = inv,
+            py_method = 'marginal_ps',
+        )
+    except ValueError as e:
+        assert('y_count' in str(e))
+        with pytest.raises(ValueError) as e:
+            py = latent_algebra.compute_py(
+                ps = ps,
+                noise_matrix = nm,
+                inverse_noise_matrix = inv,
+                py_method = 'marginal_ps',
+            )    
+
+
+# In[ ]:
+
+
+def test_compute_py_marginal_ps():
+    ps, py, inv = test_latent_py_ps_inv()
+    cj = nm * ps * len(s)
+    y_count = cj.sum(axis = 0)
+    py2 = latent_algebra.compute_py(
+        ps = ps,
+        noise_matrix = nm,
+        inverse_noise_matrix = inv,
+        py_method = 'marginal_ps',
+        y_count = y_count
+    )
+    assert(all(abs(py - py2) < 1e-2))
+
+
+# In[ ]:
 
 
 def test_pyx():
@@ -99,7 +139,7 @@ def test_pyx():
     assert(np.all(np.sum(pyx, axis = 1) - 1 < 1e-4))
 
 
-# In[33]:
+# In[ ]:
 
 
 def test_pyx_error():  
