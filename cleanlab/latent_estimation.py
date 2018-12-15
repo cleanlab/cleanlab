@@ -103,7 +103,7 @@ def estimate_confident_joint_from_probabilities(
         confident_joint = np.zeros((K,K))
         for k_s in range(K): # k_s is the class value k of noisy label s
             for k_y in range(K): # k_y is the (guessed) class value k of true label y
-                confident_joint[k_s][k_y] = sum((psx[:,k_y] >= thresholds[k_y]) & (s == k_s))
+                confident_joint[k_s][k_y] = sum((psx[:,k_y] >= (thresholds[k_y] - 1e-8)) & (s == k_s))
         cjs.append(confident_joint)
         
         if force_ps:
@@ -174,20 +174,9 @@ def estimate_latent(
     # Confident Counts Estimator for p(y=k_y|s=k_s) ~ |y=k_y and s=k_s| / |s=k_s|
     inv_noise_matrix = confident_joint.T / s_count
     
-    if py_method == 'cnt': 
-        py = (y_count / s_count) * ps
-        # Equivalently,
-        # py = inv_noise_matrix.diagonal() / noise_matrix.diagonal() * ps
-    elif py_method == 'eqn':
-        py = np.linalg.inv(noise_matrix).dot(ps)
-    elif py_method == 'marginal':
-        py = y_count / float(sum(y_count))
-    else:
-        raise ValueError('py_method parameter should be cnt, eqn, or marginal')
+    # Compute the prior p(y), the latent (uncorrupted) class distribution.
+    py = compute_py(ps, noise_matrix, inv_noise_matrix, py_method)
     
-    # Clip py and noise rates into proper range [0,1)
-    # For py, no class should have probability 0 so we use 1e-5
-    py = clip_values(py, low=1e-5, high=1.0, new_sum = 1.0)
     noise_matrix = clip_noise_rates(noise_matrix) 
     inv_noise_matrix = clip_noise_rates(inv_noise_matrix)
 
