@@ -127,6 +127,7 @@ def generate_noise_matrix_from_trace(
     py = None,
     frac_zero_noise_rates = 0.,
     seed = 0,
+    max_iter = 10000,
 ): 
     '''Generates a K x K noise matrix P(s=k_s|y=k_y) with trace
     as the np.mean(np.diagonal(noise_matrix)).
@@ -169,6 +170,12 @@ def generate_noise_matrix_from_trace(
       Instead, when this happens we only guarantee to produce a noise matrix with
       frac_zero_noise_rates **or higher**. The opposite occurs with a small trace.
 
+    seed : int
+      Seeds the random number generator for numpy.
+
+    max_iter : int (default: 10000)
+      The max number of tries to produce a valid matrix before returning False.
+
     Output
     ------
     np.array (shape (K, K)) 
@@ -188,6 +195,9 @@ def generate_noise_matrix_from_trace(
         
     if K <= 1:
         raise ValueError('K must be >= 2, but K = {}.'.format(K))
+        
+    if max_iter < 1:
+        return False
         
     np.random.seed(seed)
     
@@ -209,7 +219,7 @@ def generate_noise_matrix_from_trace(
             return noise_matrix  
         
     # K > 2  
-    while True:           
+    for z in range(max_iter):           
         noise_matrix = np.zeros(shape=(K, K))
         
         # Randomly generate noise_matrix diagonal.
