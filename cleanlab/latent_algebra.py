@@ -173,8 +173,9 @@ def compute_noise_matrix_from_inverse(ps, inverse_noise_matrix, py = None):
 def compute_py(ps, noise_matrix, inverse_noise_matrix, py_method = 'cnt', y_count = None):
     '''Compute py := P(y=k) from ps := P(s=k), noise_matrix, and inverse noise matrix.
 
-    This method is ** ROBUST ** - meaning it works well even when the
-    noise matrices are estimated poorly by only using the diagonals of the matrices
+    This method is ** ROBUST ** when py_method = 'cnt'
+    It may work well even when the noise matrices are estimated
+    poorly by using the diagonals of the matrices
     instead of all the probabilities in the entire matrix.
 
     Parameters
@@ -196,8 +197,9 @@ def compute_py(ps, noise_matrix, inverse_noise_matrix, py_method = 'cnt', y_coun
         Assumes columns of inverse_noise_matrix sum to 1.
         
     py_method : str (Options: ["cnt", "eqn", "marginal", "marginal_ps"])
-        How to compute the latent prior p(y=k). Default is "cnt" as it tends to
-        work best, but you may also set this hyperparameter to "eqn" or "marginal".
+        How to compute the latent prior p(y=k). Default is "cnt" as it often
+        works well even when the noise matrices are estimated poorly by using
+        the matrix diagonals instead of all the probabilities.
         
     y_count : np.array (shape (K, ) or (1, K)) 
         The marginal counts of the confident joint (like cj.sum(axis = 0))
