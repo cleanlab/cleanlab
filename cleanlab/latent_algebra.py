@@ -213,7 +213,12 @@ def compute_py(ps, noise_matrix, inverse_noise_matrix, py_method = 'cnt', y_coun
     if len(np.shape(ps)) > 2 or (len(np.shape(ps)) == 2 and np.shape(ps)[0] != 1):
         w = 'Input parameter np.array ps has shape ' + str(np.shape(ps))
         w += ', but shape should be (K, ) or (1, K)'
-        warnings.warn(w)    
+        warnings.warn(w)
+        
+    if py_method == 'marginal' and y_count is None:
+        err = 'py_method == "marginal" requires y_count, but y_count is None.'
+        err += ' Provide parameter y_count.'
+        raise ValueError(err)
     
     if py_method == 'cnt': 
         # Computing py this way avoids dividing by zero noise rates.
