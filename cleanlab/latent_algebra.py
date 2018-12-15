@@ -216,7 +216,7 @@ def compute_py(ps, noise_matrix, inverse_noise_matrix, py_method = 'cnt', y_coun
     if py_method == 'cnt': 
         # Computing py this way avoids dividing by zero noise rates.
         # More robust bc error est_p(y|s) / est_p(s|y) ~ p(y|s) / p(s|y) 
-        py = inv_noise_matrix.diagonal() / noise_matrix.diagonal() * ps
+        py = inverse_noise_matrix.diagonal() / noise_matrix.diagonal() * ps
         # Equivalently,
         # py = (y_count / s_count) * ps
     elif py_method == 'eqn':
@@ -224,7 +224,7 @@ def compute_py(ps, noise_matrix, inverse_noise_matrix, py_method = 'cnt', y_coun
     elif py_method == 'marginal':
         py = y_count / float(sum(y_count))
     elif py_method == 'marginal_ps':
-        py = np.dot(inv_noise_matrix, ps)
+        py = np.dot(inverse_noise_matrix, ps)
     else:
         err = 'py_method {}'.format(py_method)
         err += ' should be in [cnt, eqn, marginal, marginal_ps]'
