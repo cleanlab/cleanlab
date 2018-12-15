@@ -141,9 +141,10 @@ def estimate_latent(
         Each entry in the matrix contains the number of examples confidently 
         counted into every pair (s=j, y=k) classes.
         
-    py_method : str
-        How to compute the latent prior p(y=k). Default is "cnt" as it tends to
-        work best, but you may also set this hyperparameter to "eqn" or "marginal".
+    py_method : str (Options: ["cnt", "eqn", "marginal", "marginal_ps"])
+        How to compute the latent prior p(y=k). Default is "cnt" as it often
+        works well even when the noise matrices are estimated poorly by using
+        the matrix diagonals instead of all the probabilities.
 
     converge_latent_estimates : bool
       If true, forces numerical consistency of estimates. Each is estimated
