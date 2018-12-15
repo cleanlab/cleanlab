@@ -176,7 +176,7 @@ def estimate_latent(
     inv_noise_matrix = confident_joint.T / s_count
     
     # Compute the prior p(y), the latent (uncorrupted) class distribution.
-    py = compute_py(ps, noise_matrix, inv_noise_matrix, py_method)
+    py = compute_py(ps, noise_matrix, inv_noise_matrix, py_method, y_count)
     
     noise_matrix = clip_noise_rates(noise_matrix) 
     inv_noise_matrix = clip_noise_rates(inv_noise_matrix)
