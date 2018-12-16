@@ -44,6 +44,17 @@ def estimate_confident_joint_from_probabilities(
 
     Under certain conditions, estimates are exact, and in most
     conditions, the estimate is within 1 percent of the truth.
+    
+    We provide a for-loop based implementation of the confident joint
+    below. This implementation is not efficient and not used in practice,
+    but it makes clear how the confident joint is computed:
+
+    # Confident examples are those that we are confident have label y = k
+    # Estimate the (K, K) matrix of confident examples with s = k_s and y = k_y
+    cj = np.zeros((K, K))
+    for k_s in range(K): # k_s is the class value k of noisy label s
+        for k_y in range(K): # k_y is the (guessed) class value k of true label y
+            cj[k_s][k_y] = sum((psx[:,k_y] >= (thresholds[k_y] - 1e-8)) & (s == k_s))
 
     Parameters
     ----------
@@ -97,13 +108,11 @@ def estimate_confident_joint_from_probabilities(
         # Estimate the probability thresholds for confident counting 
         if thresholds is None:
             thresholds = [np.mean(psx[:,k][s == k]) for k in range(K)] # P(s^=k|s=k)
-
-        # Confident examples are those that we are confident have label y = k
-        # Estimate the (K, K) matrix of confident examples having s = k_s and y = k_y
-        confident_joint = np.zeros((K,K))
-        for k_s in range(K): # k_s is the class value k of noisy label s
-            for k_y in range(K): # k_y is the (guessed) class value k of true label y
-                confident_joint[k_s][k_y] = sum((psx[:,k_y] >= (thresholds[k_y] - 1e-8)) & (s == k_s))
+        # Create mask for every example if for each class, prob >= threshold 
+        psx_bool = psx >= thresholds
+        # Estimate confident joint matrix (K, K) of form count(s=s_k, y=y_k)
+        confident_joint = np.array([psx_bool[s==k].sum(axis = 0) for k in range(K)])        
+        
         cjs.append(confident_joint)
         
         if force_ps:
