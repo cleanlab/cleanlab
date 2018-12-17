@@ -227,7 +227,7 @@ def test_fit_with_nm(
     if used_by_another_test:
         return score, score_nm
     else:
-        assert(score < score_nm)
+        assert(score < score_nm + 1e-4)
 
 
 # In[ ]:
@@ -272,7 +272,7 @@ def test_fit_with_inm(
     if used_by_another_test:
         return score, score_inm
     else:
-        assert(score < score_inm)
+        assert(score < score_inm + 1e-4)
 
 
 # In[ ]:
@@ -298,7 +298,7 @@ def test_clf_fit_nm_inm():
     lnl2 = LearningWithNoisyLabels(seed = seed)
     lnl2.fit(data['X_train'], data['s'],)
     score = lnl2.score(data['X_test'], data['y_test'])
-    assert(score < score_nm_inm)
+    assert(score < score_nm_inm + 1e-4)
 
 
 # In[ ]:
