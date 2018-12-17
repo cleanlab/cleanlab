@@ -112,7 +112,7 @@ def generate_noisy_labels(y, noise_matrix, verbose=False):
     py = value_counts(y) / float(len(y))    
     
     # Counts of pairs (s, y)
-    count_joint = (noise_matrix * py * len(y)).round().astype(int) 
+    count_joint = (noise_matrix * py * len(y)).astype(int) 
     # Remove diagonal entries as they do not involve flipping of labels.
     np.fill_diagonal(count_joint, 0)
     
@@ -127,7 +127,7 @@ def generate_noisy_labels(y, noise_matrix, verbose=False):
         noise = [s_labels[i] for i, c in enumerate(s_counts) for z in range(c)]
         # Randomly choose y labels for class k and set them to the noisy labels.
         idx_flip = np.where((s==k)&(y==k))[0]
-        if len(idx_flip) and len(noise): # pragma: no cover
+        if len(idx_flip) and len(noise) and len(idx_flip) >= len(noise): # pragma: no cover
             s[np.random.choice(idx_flip, len(noise), replace=False)] = noise    
 
     # # Validate that s indeed produces the correct noise_matrix (or close to it)
