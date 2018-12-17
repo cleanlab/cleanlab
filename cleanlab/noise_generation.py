@@ -71,6 +71,24 @@ def noise_matrix_is_valid(noise_matrix, py, verbose = False):
 def generate_noisy_labels(y, noise_matrix, verbose=False):  
     '''Generates noisy labels s (shape (N, 1)) from perfect labels y,
     'exactly' yielding the provided noise_matrix between s and y.
+    
+    Below we provide a for loop implementation of what this function does.
+    We do not use this implementation as it is not a fast algorithm, but
+    it explains as Python pseudocode what is happening in this function.    
+
+    # Generate s
+    count_joint = (noise_matrix * py * len(y)).round().astype(int)
+    s = np.array(y)
+    for k_s in range(K):
+        for k_y in range(K):
+            if k_s != k_y:
+                idx_flip = np.where((s==k_y)&(y==k_y))[0]
+                if len(idx_flip): # pragma: no cover
+                    s[np.random.choice(
+                        idx_flip, 
+                        count_joint[k_s][k_y], 
+                        replace=False,
+                    )] = k_s
 
     Parameters
     ----------
@@ -92,23 +110,32 @@ def generate_noisy_labels(y, noise_matrix, verbose=False):
 
     # Compute p(y=k)
     py = value_counts(y) / float(len(y))
-
+    
+    
+    # Counts of pairs (s, y)
+    count_joint = (noise_matrix * py * len(y)).round().astype(int) 
+    # Remove diagonal entries as they do not involve flipping of labels.
+    np.fill_diagonal(count_joint, 0)
+    
     # Generate s
-    count_joint = (noise_matrix * py * len(y)).round().astype(int) # count(s and y)
     s = np.array(y)
-    for k_s in range(K):
-        for k_y in range(K):
-            if k_s != k_y:
-                idx_flip = np.where((s==k_y)&(y==k_y))[0]
-                if len(idx_flip): # pragma: no cover
-                    s[np.random.choice(idx_flip, count_joint[k_s][k_y], replace=False)] = k_s
+    for k in range(K): # Iterate over true class y == k
+        # Get the noisey s labels that have non-zero counts
+        s_labels = np.where(count_joint[:, k] != 0)[0]
+        # Find out how many of each noisy s label we need to flip to
+        s_counts = count_joint[s_labels, k] 
+        # Create a list of the new noisy labels
+        noise = [s_labels[i] for i, c in enumerate(s_counts) for z in range(c)]
+        # Randomly choose y labels for class k and set them to the noisy labels.
+        idx_flip = np.where((s==k)&(y==k))[0]
+        if len(idx_flip): # pragma: no cover
+            s[np.random.choice(idx_flip, len(noise), replace=False)] = noise    
 
-    # Compute the actual noise matrix induced by s
-    counts = confusion_matrix(s, y).astype(float)
-    new_noise_matrix = counts / counts.sum(axis=0)
-
-    # Validate that s indeed produces the correct noise_matrix (or close to it)
-    assert(np.linalg.norm(noise_matrix - new_noise_matrix) <= 2)
+    # # Validate that s indeed produces the correct noise_matrix (or close to it)
+    # # Compute the actual noise matrix induced by s
+    # counts = confusion_matrix(s, y).astype(float)
+    # new_noise_matrix = counts / counts.sum(axis=0)
+    # assert(np.linalg.norm(noise_matrix - new_noise_matrix) <= 2)
 
     return s  
 
