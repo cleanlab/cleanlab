@@ -179,7 +179,7 @@ Yes, any model. Feel free to use PyTorch, Tensorflow, caffe2,
 scikit-learn, mxnet, etc. If you use a scikit-learn classifier, all
 ``cleanlab`` methods will work out-of-the-box. It’s also easy to use
 your favorite model from a non-scikit-learn package, just wrap your
-model into a Python class that inherets the
+model into a Python class that inherits the
 ``sklearn.base.BaseEstimator``:
 
 .. code:: python
