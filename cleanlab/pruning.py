@@ -161,7 +161,7 @@ def get_noise_indices(
                 num2prune = s_counts[k] - prune_count_matrix[k][k]
                 # num2keep'th smallest probability of class k for examples with noisy label k
                 threshold = np.partition(psx[:,k][s == k], num2prune)[num2prune]
-                noise_mask = noise_mask | ((psx[:,k] < threshold) & (s == k))
+                noise_mask = noise_mask | ((s == k) & (psx[:,k] < threshold))
   
     if prune_method == 'both':
         noise_mask_by_class = noise_mask
@@ -175,9 +175,9 @@ def get_noise_indices(
                         num2prune = prune_count_matrix[k][j]
                         if num2prune > 0:
                             # num2prune'th largest p(class k) - p(class j) for x with noisy label j
-                            margin = psx[:,k][s == j] - psx[:,j][s == j]
-                            threshold = -np.partition(-margin, num2prune)[num2prune]
-                            noise_mask = noise_mask | ((margin > threshold) & (s == j))
+                            margin = psx[:,k] - psx[:,j]
+                            threshold = -np.partition(-margin[s == j], num2prune)[num2prune]
+                            noise_mask = noise_mask | ((s == j) & (margin > threshold))
             
     return noise_mask & noise_mask_by_class if prune_method == 'both' else noise_mask
 
