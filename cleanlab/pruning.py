@@ -173,9 +173,10 @@ def get_noise_indices(
                 for j in range(K):
                     if k!=j: # Only prune for noise rates
                         num2prune = prune_count_matrix[k][j]
-                        # num2prune'th largest probability of class k for examples with noisy label j
-                        threshold = -np.partition(-psx[:,k][s == j], num2prune)[num2prune]
-                        noise_mask = noise_mask | ((psx[:,k] > threshold) & (s == j))
+                        if num2prune > 0:
+                            # num2prune'th largest probability of class k for examples with noisy label j
+                            threshold = -np.partition(-psx[:,k][s == j], num2prune)[num2prune]
+                            noise_mask = noise_mask | ((psx[:,k] > threshold) & (s == j))
             
     return noise_mask & noise_mask_by_class if prune_method == 'both' else noise_mask
 
