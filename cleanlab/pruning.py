@@ -315,7 +315,7 @@ def order_label_errors(
     
     # Compute the normalized margin to sort errors
     # https://arxiv.org/pdf/1810.05369.pdf (eqn 2.2)
-    prob_label = np.array([pyx[i, l] for i, l in enumerate(labels)])
+    prob_label = np.array([psx[i, l] for i, l in enumerate(labels)])
     max_prob_not_label = np.array([max(np.delete(pyx[i], l, -1)) for i, l in enumerate(labels)])
     normalized_margin = prob_label - max_prob_not_label
     
