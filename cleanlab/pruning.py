@@ -168,15 +168,16 @@ def get_noise_indices(
 
     if prune_method == 'prune_by_noise_rate' or prune_method == 'both':
         noise_mask = np.zeros(len(psx), dtype=bool)
-        for k in range(K):
+        for k in range(K): # true hidden label index
             if s_counts[k] > MIN_NUM_PER_CLASS: # Don't prune if not MIN_NUM_PER_CLASS
-                for j in range(K):
+                for j in range(K): # noisy label index
                     if k!=j: # Only prune for noise rates
                         num2prune = prune_count_matrix[k][j]
                         if num2prune > 0:
-                            # num2prune'th largest probability of class k for examples with noisy label j
-                            threshold = -np.partition(-psx[:,k][s == j], num2prune)[num2prune]
-                            noise_mask = noise_mask | ((psx[:,k] > threshold) & (s == j))
+                            # num2prune'th largest p(class k) - p(class j) for x with noisy label j
+                            margin = psx[:,k][s == j] - psx[:,j][s == j]
+                            threshold = -np.partition(-margin, num2prune)[num2prune]
+                            noise_mask = noise_mask | ((margin > threshold) & (s == j))
             
     return noise_mask & noise_mask_by_class if prune_method == 'both' else noise_mask
 
