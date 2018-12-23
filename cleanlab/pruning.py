@@ -35,6 +35,7 @@ def get_noise_indices(
     prune_method = 'prune_by_noise_rate',
     prune_count_method = 'inverse_nm_dot_s',
     converge_latent_estimates = False,
+    return_sorted_index = False,
 ):
     '''Returns the indices of most likely (confident) label errors in s. The
     number of indices returned is specified by frac_of_noise. When 
@@ -106,7 +107,11 @@ def get_noise_indices(
     converge_latent_estimates : bool (Default: False)
       If true, forces numerical consistency of estimates. Each is estimated
       independently, but they are related mathematically with closed form 
-      equivalences. This will iteratively enforce mathematically consistency.'''
+      equivalences. This will iteratively enforce mathematically consistency.
+      
+    return_sorted_index : bool
+      If true, returns an array of the label error indices (instead of a bool mask)
+      where error indices are ordered by the normalized margin (p(s = k) - max(p(s != k)))'''
   
     # Number of examples in each class of s
     s_counts = value_counts(s)
@@ -179,7 +184,12 @@ def get_noise_indices(
                             threshold = -np.partition(-margin[s == j], num2prune)[num2prune]
                             noise_mask = noise_mask | ((s == j) & (margin > threshold))
             
-    return noise_mask & noise_mask_by_class if prune_method == 'both' else noise_mask
+    noise_mask = noise_mask & noise_mask_by_class if prune_method == 'both' else noise_mask
+    
+    if return_sorted_index:
+        return order_label_errors(noise_mask, psx, s)
+    
+    return noise_mask
 
 
 def keep_at_least_n_per_class(prune_count_matrix, n, frac_noise=1.0):
@@ -271,4 +281,48 @@ def reduce_prune_counts(prune_count_matrix, frac_noise=1.0):
 
     # These are counts, so return a matrix of ints.
     return new_mat.astype(int)
+
+
+def order_label_errors(
+    label_errors_bool,
+    psx,
+    labels,
+):
+    '''Sorts label errors by normalized margin.
+    See https://arxiv.org/pdf/1810.05369.pdf (eqn 2.2)
+    eg. normalized_margin = prob_label - max_prob_not_label
+    
+    Parameters
+    ----------
+    label_errors_bool : np.array (bool)
+      Contains True if the index of labels is an error, o.w. false
+    
+    psx : np.array (shape (N, K))
+      P(s=k|x) is a matrix with K (noisy) probabilities for each of the N examples x.
+      This is the probability distribution over all K classes, for each
+      example, regarding whether the example has label s==k P(s=k|x). psx should
+      have been computed using 3 (or higher) fold cross-validation.
+      
+    labels : np.array
+      A binary vector of labels, which may contain label errors.
+    
+    Returns
+    -------
+      label_errors_idx : np.array (int)
+        Return the index integers of the label errors, ordered by 
+        the normalized margin.
+    '''
+    
+    # Compute the normalized margin to sort errors
+    # https://arxiv.org/pdf/1810.05369.pdf (eqn 2.2)
+    prob_label = np.array([pyx[i, l] for i, l in enumerate(labels)])
+    max_prob_not_label = np.array([max(np.delete(pyx[i], l, -1)) for i, l in enumerate(labels)])
+    normalized_margin = prob_label - max_prob_not_label
+    
+    # Convert bool mask to index mask
+    label_errors_idx = np.arange(len(labels))[label_errors_bool]
+    # Sort the errors by the normalized margin
+    margin_errors = list(zip(normalized_margin, label_errors_idx))
+    margin_errors.sort(key = lambda x: x[0])
+    return np.array([err for mar, err in margin_errors])
 
