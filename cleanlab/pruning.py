@@ -181,8 +181,8 @@ def get_noise_indices(
                         if num2prune > 0:
                             # num2prune'th largest p(class k) - p(class j) for x with noisy label j
                             margin = psx[:,k] - psx[:,j]
-                            threshold = -np.partition(-margin[s == j], num2prune)[num2prune]
-                            noise_mask = noise_mask | ((s == j) & (margin > threshold))
+                            threshold = -np.partition(-margin[s == j], num2prune - 1)[num2prune - 1]
+                            noise_mask = noise_mask | ((s == j) & (margin >= threshold))
             
     noise_mask = noise_mask & noise_mask_by_class if prune_method == 'both' else noise_mask
     
