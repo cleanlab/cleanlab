@@ -73,7 +73,7 @@ class FastTextClassifier(BaseEstimator): # Inherits sklearn base classifier
         tmp_dir = '',
         label = LABEL,
         del_intermediate_data = True,
-        kwargs_train_supervised = None,
+        kwargs_train_supervised = {},
         p_at_k = 5,
         
     ):
