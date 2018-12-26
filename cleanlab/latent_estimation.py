@@ -25,6 +25,46 @@ from cleanlab.latent_algebra import compute_inv_noise_matrix, compute_py, comput
 # In[ ]:
 
 
+def number_label_errors(
+    labels, 
+    psx, 
+    confident_joint = None,
+):
+    '''Estimates the number of label errors in `labels`.
+
+    Parameters
+    ----------
+
+    labels : np.array
+        A discrete vector of labels, s, which may contain mislabeling. "s" denotes
+        the noisy label instead of \tilde(y), for ASCII encoding reasons.
+
+    psx : np.array (shape (N, K))
+        P(label=k|x) is a matrix with K (noisy) probabilities for each of the N examples x.
+        This is the probability distribution over all K classes, for each
+        example, regarding whether the example has label s==k P(s=k|x). psx should
+        have been computed using 3 (or higher) fold cross-validation.
+        
+    confident_joint : np.array (shape (K, K), type int)
+        A K,K integer matrix of count(s=k, y=k). Estimatesa a confident subset of
+        the joint disribution of the noisy and true labels P_{s,y}.
+        Each entry in the matrix contains the number of examples confidently 
+        counted into every pair (s=j, y=k) classes.'''
+    
+    if confident_joint is None:
+        confident_joint = estimate_confident_joint_from_probabilities(
+            s = labels, 
+            psx = psx,
+        )
+        
+    # Normalize confident joint so that it estimates the joint, p(s,y)
+    joint = cj / float(np.sum(cj))
+    frac_errors = 1. - joint.trace()
+    num_errors = int(frac_errors * len(labels))
+        
+    return num_errors    
+
+
 def estimate_confident_joint_from_probabilities(
     s, 
     psx, 
