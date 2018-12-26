@@ -240,6 +240,7 @@ class CNN(BaseEstimator): # Inherits sklearn classifier
         # Outputs are log_softmax (log probabilities)
         outputs = torch.cat(outputs, dim=0)
         # Convert to probabilities and return the numpy array of shape N x K
-        pred = np.exp(outputs.data.numpy())
+        out = outputs.cpu().numpy() if self.cuda else outputs.numpy()
+        pred = np.exp(out)
         return pred
 
