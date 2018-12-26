@@ -25,7 +25,7 @@ from cleanlab.latent_algebra import compute_inv_noise_matrix, compute_py, comput
 # In[ ]:
 
 
-def number_label_errors(
+def num_label_errors(
     labels, 
     psx, 
     confident_joint = None,
