@@ -58,7 +58,7 @@ def num_label_errors(
         )
         
     # Normalize confident joint so that it estimates the joint, p(s,y)
-    joint = cj / float(np.sum(cj))
+    joint = confident_joint / float(np.sum(confident_joint))
     frac_errors = 1. - joint.trace()
     num_errors = int(frac_errors * len(labels))
         
