@@ -16,6 +16,7 @@ from __future__ import print_function, absolute_import, division, unicode_litera
 from sklearn.linear_model import LogisticRegression as logreg
 from sklearn.model_selection import StratifiedKFold
 import numpy as np
+import copy
 
 from cleanlab.util import value_counts, clip_values, clip_noise_rates
 from cleanlab.latent_algebra import compute_inv_noise_matrix, compute_py, compute_noise_matrix_from_inverse
@@ -367,6 +368,8 @@ def estimate_confident_joint_and_cv_pred_proba(
 
     # Split X and s into "cv_n_folds" stratified folds.
     for k, (cv_train_idx, cv_holdout_idx) in enumerate(kf.split(X, s)):
+        
+        clf_copy = copy.deepcopy(clf)
 
         # Select the training and holdout cross-validated sets.
         X_train_cv, X_holdout_cv = X[cv_train_idx], X[cv_holdout_idx]
@@ -374,8 +377,8 @@ def estimate_confident_joint_and_cv_pred_proba(
 
         # Fit the clf classifier to the training set and 
         # predict on the holdout set and update psx. 
-        clf.fit(X_train_cv, s_train_cv)
-        psx_cv = clf.predict_proba(X_holdout_cv) # P(s = k|x) # [:,1]
+        clf_copy.fit(X_train_cv, s_train_cv)
+        psx_cv = clf_copy.predict_proba(X_holdout_cv) # P(s = k|x) # [:,1]
         psx[cv_holdout_idx] = psx_cv
 
     # Compute the confident counts of all pairwise label-flipping mislabeling rates.
