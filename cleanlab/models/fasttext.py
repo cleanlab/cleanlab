@@ -47,6 +47,9 @@ def _get_labels_text(
 ):
     '''Helper function for FastTextClassifier'''
 
+    if fn is None:
+        return [],[]
+
     # Prepare data as a list of strings
     with open(fn, 'rU') as f:
         data = [z.strip() for z in f.readlines()]
@@ -69,7 +72,8 @@ class FastTextClassifier(BaseEstimator): # Inherits sklearn base classifier
     def __init__(
         self, 
         train_data_fn,
-        test_data_fn,
+        test_data_fn = None,
+        labels = None,
         tmp_dir = '',
         label = LABEL,
         del_intermediate_data = True,
@@ -84,6 +88,18 @@ class FastTextClassifier(BaseEstimator): # Inherits sklearn base classifier
         self.del_intermediate_data = del_intermediate_data
         self.kwargs_train_supervised = kwargs_train_supervised  
         self.p_at_k = p_at_k
+        
+        if labels is None:
+            #Find all class labels across the train and test set
+            labels = set(_get_labels_text(fn = train_data_fn)[0])
+            labels = labels.union(set(_get_labels_text(fn = test_data_fn)[0]))
+        else:
+            # Prepend labels with label (e.g. '__label__'). 
+            labels = [label + str(l) for l in labels]
+        # Create maps: label strings <-> integers when label strings are used
+        labels = sorted(list(labels))
+        self.label2num = dict(zip(labels, range(len(labels))))
+        self.num2label = dict((y,x) for x,y in self.label2num.items())
         
         #Find all class labels across the train and test set
         labels = set(_get_labels_text(fn = train_data_fn)[0])
