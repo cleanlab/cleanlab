@@ -40,6 +40,40 @@ LABEL = '__label__'
 # In[ ]:
 
 
+def _get_labels_text(
+    fn = None,
+    indices = None, 
+    label = LABEL,
+    batch_size = 1000,
+):
+    '''Helper function for FastTextClassifier'''
+
+    if fn is None:
+        return [],[]
+
+     # Read in training data one line at a time
+    with open(fn, 'rU') as f:
+        for idx, line in enumerate(f):
+            # Mask by data_indices
+            if idx in data_indices:
+                with open(masked_fn, 'a+') as f:
+                    f.write(masked_data)
+    # Prepare data as a list of strings
+    with open(fn, 'rU') as f:
+        data = [z.strip() for z in f.readlines()]
+    # Split text data into a list of examples
+    data = [label+z.strip() for z in ''.join(data).split(label) if len(z) > 0]
+    if indices is not None and len(indices) < len(data):
+        # Only fetch indices provided by indices.
+        data = [data[i] for i in indices]
+    # Seperate labels and text
+    labels, text = [list(t) for t in zip(*(z.split(" ", 1) for z in data))]
+    return (labels, text)
+
+
+# In[ ]:
+
+
 def data_loader(
     fn = None,
     indices = None, 
@@ -63,6 +97,7 @@ def data_loader(
         while True:
             try:
                 line = f.readline()
+                line = line.strip().replace('\n', ' __newline__ ')
                 if line[:len_label] == label or line == '':
                     if indices is None or idx in indices:
                         # Write out prev line and reset prev
