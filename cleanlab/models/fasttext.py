@@ -97,7 +97,7 @@ def data_loader(
         while True:
             try:
                 line = f.readline()
-                line = line.strip().replace('\n', ' __newline__ ')
+                line = line.strip() #.replace('\n', ' __newline__ ')
                 if line[:len_label] == label or line == '':
                     if indices is None or idx in indices:
                         # Write out prev line and reset prev
@@ -186,7 +186,7 @@ class FastTextClassifier(BaseEstimator): # Inherits sklearn base classifier
                     # Mask by data_indices
                     if idx in data_indices:
                         with open(masked_fn, 'a+') as f:
-                            f.write(masked_data)
+                            f.write(line.strip())
             self.masked_data_was_created = True
                 
         return masked_fn
