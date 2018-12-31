@@ -304,9 +304,10 @@ def test_cleanlab_with_fasttext():
 
 def test_create_all_data():
     if python_version.is_compatible():
-        fn = ftc._create_train_data(X_train)
+        fn = ftc._create_train_data(range(len(X_train)))
         with open(fn, 'r') as f:
             assert(len(f.readlines()) == len(X_train))
+        os.remove(fn)
 
 
 # In[ ]:
