@@ -35,7 +35,7 @@ if python_version.is_compatible(): # pragma: no cover
 
 
 LABEL = '__label__'
-NEWLINE = '__newline__'
+NEWLINE = ' __newline__ '
 
 
 # In[ ]:
