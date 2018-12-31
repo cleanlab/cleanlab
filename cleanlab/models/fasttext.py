@@ -150,7 +150,7 @@ class FastTextClassifier(BaseEstimator): # Inherits sklearn base classifier
             # Read in training data one line at a time
             with open(self.train_data_fn, 'rU') as rf:
                 idx = 0
-                for line in f:
+                for line in rf:
                     # Mask by data_indices
                     if idx in data_indices:
                         with open(masked_fn, 'a') as wf:
