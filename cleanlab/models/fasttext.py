@@ -146,13 +146,14 @@ class FastTextClassifier(BaseEstimator): # Inherits sklearn base classifier
         # Mask training data by data_indices
         else:            
             masked_fn = "fastTextClf_" + str(int(time.time())) + ".txt"
+            open(masked_fn, 'w').close()
             # Read in training data one line at a time
             with open(self.train_data_fn, 'rU') as f:
                 idx = 0
                 for line in f:
                     # Mask by data_indices
                     if idx in data_indices:
-                        with open(masked_fn, 'a+') as f:
+                        with open(masked_fn, 'a') as f:
                             f.write(line.strip().replace('\n', NEWLINE) + "\n")
             self.masked_data_was_created = True
                 
