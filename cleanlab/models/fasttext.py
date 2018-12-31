@@ -35,6 +35,7 @@ if python_version.is_compatible(): # pragma: no cover
 
 
 LABEL = '__label__'
+NEWLINE = '__newline__'
 
 
 # In[ ]:
@@ -58,16 +59,16 @@ def data_loader(
         len_label = len(label)
         idx = 0
         batch_counter = 0
-        prev = f.readline().strip()
+        prev = f.readline()
         batch = []
         while True:
             try:
                 line = f.readline()
-                line = line.strip() #.replace('\n', ' __newline__ ')
+                line = line
                 if line[:len_label] == label or line == '':
                     if indices is None or idx in indices:
                         # Write out prev line and reset prev
-                        batch.append(prev)
+                        batch.append(prev.strip().replace('\n', NEWLINE))
                         batch_counter += 1
                     prev = ''
                     idx += 1
@@ -84,7 +85,7 @@ def data_loader(
             except EOFError:
                 if indices is None or idx in indices:
                     # Write out prev line and reset prev
-                    batch.append(prev)
+                    batch.append(prev.strip().replace('\n', NEWLINE))
                     batch_counter += 1
                     yield _split_labels_and_text(batch)
                 break
@@ -152,7 +153,7 @@ class FastTextClassifier(BaseEstimator): # Inherits sklearn base classifier
                     # Mask by data_indices
                     if idx in data_indices:
                         with open(masked_fn, 'a+') as f:
-                            f.write(line.strip())
+                            f.write(line.strip().replace('\n', NEWLINE) + "\n")
             self.masked_data_was_created = True
                 
         return masked_fn
