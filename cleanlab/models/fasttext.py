@@ -155,6 +155,10 @@ class FastTextClassifier(BaseEstimator): # Inherits sklearn base classifier
                     if idx in data_indices:
                         with open(masked_fn, 'a') as wf:
                             wf.write(line.strip().replace('\n', NEWLINE) + "\n")
+                    # Increment training example index if it contains __label__
+                    # This enables support for text data containing '\n'.
+                    if LABEL in line:
+                        idx += 1
             self.masked_data_was_created = True
                 
         return masked_fn
