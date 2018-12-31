@@ -119,6 +119,7 @@ class FastTextClassifier(BaseEstimator): # Inherits sklearn base classifier
         self.kwargs_train_supervised = kwargs_train_supervised  
         self.p_at_k = p_at_k
         self.batch_size = batch_size
+        self.clf = None
         
         if labels is None:
             #Find all class labels across the train and test set (if provided)
@@ -173,10 +174,13 @@ class FastTextClassifier(BaseEstimator): # Inherits sklearn base classifier
     
     
     def __deepcopy__(self, memo):
-        fn = 'tmp_{}.fasttext.model'.format(int(time.time()))
-        self.clf.save_model(fn)
-        self_clf_copy = load_model(fn)
-        os.remove(fn)
+        if self.clf is None:
+            self_clf_copy = None
+        else:
+            fn = 'tmp_{}.fasttext.model'.format(int(time.time()))
+            self.clf.save_model(fn)
+            self_clf_copy = load_model(fn)
+            os.remove(fn)
         # Store self.clf
         params = self.__dict__
         clf = params.pop('clf')
