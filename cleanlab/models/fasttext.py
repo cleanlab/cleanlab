@@ -26,9 +26,10 @@ python_version = VersionWarning(
 if python_version.is_compatible(): # pragma: no cover
     import time
     import os
+    import copy
     from sklearn.metrics import accuracy_score
     import numpy as np
-    from fastText import train_supervised
+    from fastText import train_supervised, load_model
 
 
 # In[ ]:
@@ -169,6 +170,25 @@ class FastTextClassifier(BaseEstimator): # Inherits sklearn base classifier
         
         if self.del_intermediate_data and self.masked_data_was_created:
             os.remove(fn)
+    
+    
+    def __deepcopy__(self, memo):
+        fn = 'tmp_{}.fasttext.model'.format(int(time.time()))
+        self.clf.save_model(fn)
+        self_clf_copy = load_model(fn)
+        os.remove(fn)
+        # Store self.clf
+        params = self.__dict__
+        clf = params.pop('clf')
+        # Copy params without self.clf (it can't be copied)
+        params_copy = copy.deepcopy(params)
+        # Add clf back to self.clf
+        self.clf = clf
+        # Create copy to return
+        clf_copy = FastTextClassifier(self.train_data_fn)
+        params_copy['clf'] = self_clf_copy
+        clf_copy.__dict__ = params_copy
+        return clf_copy
     
     
     def fit(self, X = None, y = None, sample_weight = None):
