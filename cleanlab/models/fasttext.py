@@ -139,24 +139,30 @@ class FastTextClassifier(BaseEstimator): # Inherits sklearn base classifier
     
     
     def _create_train_data(self, data_indices):
-        '''Returns filename of the masked fasttext data file.'''
+        '''Returns filename of the masked fasttext data file.
+        Items are written in the order they are in the file,
+        regardless if indices are provided.'''
         
         # If X indexes all training data, no need to rewrite the file.
         if data_indices is None:
             self.masked_data_was_created = False
             return self.train_data_fn
         # Mask training data by data_indices
-        else:            
+        else:
+            data_indices = sorted(data_indices, reverse = True)            
             masked_fn = "fastTextClf_" + str(int(time.time())) + ".txt"
             open(masked_fn, 'w').close()
             # Read in training data one line at a time
             with open(self.train_data_fn, 'rU') as rf:
                 idx = 0
+                data_idx = data_indices.pop()
                 for line in rf:
                     # Mask by data_indices
-                    if idx in data_indices:
+                    if idx == data_idx:
                         with open(masked_fn, 'a') as wf:
                             wf.write(line.strip().replace('\n', NEWLINE) + "\n")
+                        if LABEL in line:
+                            data_idx = data_indices.pop()
                     # Increment training example index if it contains __label__
                     # This enables support for text data containing '\n'.
                     if LABEL in line:
