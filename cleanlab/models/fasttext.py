@@ -58,7 +58,8 @@ def data_loader(
     
     # Prepare a stack of indices
     if indices is not None:
-        stack_indices = sorted(data_indices, reverse = True)
+        stack_indices = sorted(indices, reverse = True)
+        stack_idx = stack_indices.pop()
     
     with open(fn, 'r') as f:
         len_label = len(label)
@@ -71,10 +72,17 @@ def data_loader(
                 line = f.readline()
                 line = line
                 if line[:len_label] == label or line == '':
-                    if indices is None or idx in indices:
+                    if indices is None or stack_idx == idx:
                         # Write out prev line and reset prev
                         batch.append(prev.strip().replace('\n', NEWLINE))
                         batch_counter += 1
+
+                        if indices is not None:
+                            if len(stack_indices):
+                                stack_idx = stack_indices.pop()
+                            else: # No more data in indices, quit loading data.
+                                yield _split_labels_and_text(batch)
+                                break
                     prev = ''
                     idx += 1
                     if batch_counter == batch_size:
@@ -153,6 +161,7 @@ class FastTextClassifier(BaseEstimator): # Inherits sklearn base classifier
             return self.train_data_fn
         # Mask training data by data_indices
         else:
+            len_label = len(LABEL)
             data_indices = sorted(data_indices, reverse = True)            
             masked_fn = "fastTextClf_" + str(int(time.time())) + ".txt"
             open(masked_fn, 'w').close()
@@ -165,11 +174,14 @@ class FastTextClassifier(BaseEstimator): # Inherits sklearn base classifier
                     if idx == data_idx:
                         with open(masked_fn, 'a') as wf:
                             wf.write(line.strip().replace('\n', NEWLINE) + "\n")
-                        if LABEL in line:
-                            data_idx = data_indices.pop() if len(data_indices) else -1
-                    # Increment training example index if it contains __label__
+                        if line[:len_label] == LABEL:
+                            if len(data_indices):
+                                data_idx = data_indices.pop()
+                            else:
+                                break
+                    # Increment data index if starts with __label__
                     # This enables support for text data containing '\n'.
-                    if LABEL in line:
+                    if line[:len_label] == LABEL:
                         idx += 1
             self.masked_data_was_created = True
                 
