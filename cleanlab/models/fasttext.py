@@ -56,6 +56,10 @@ def data_loader(
         l, t = [list(t) for t in zip(*(z.split(" ", 1) for z in batch))]
         return l, t
     
+    # Prepare a stack of indices
+    if indices is not None:
+        stack_indices = sorted(data_indices, reverse = True)
+    
     with open(fn, 'r') as f:
         len_label = len(label)
         idx = 0
@@ -162,7 +166,7 @@ class FastTextClassifier(BaseEstimator): # Inherits sklearn base classifier
                         with open(masked_fn, 'a') as wf:
                             wf.write(line.strip().replace('\n', NEWLINE) + "\n")
                         if LABEL in line:
-                            data_idx = data_indices.pop()
+                            data_idx = data_indices.pop() if len(data_indices) else -1
                     # Increment training example index if it contains __label__
                     # This enables support for text data containing '\n'.
                     if LABEL in line:
