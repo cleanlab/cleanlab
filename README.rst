@@ -433,3 +433,8 @@ The key to learning in the presence of label errors is estimating the joint dist
 You can check out how to do this yourself here: 1. `Drawing
 Polyplices <https://github.com/cgnorthcutt/cleanlab/blob/master/examples/drawing_polyplices.ipynb>`__ 2. `Computing
 Polyplices <https://github.com/cgnorthcutt/cleanlab/blob/master/cleanlab/polyplex.py>`__
+
+License
+-------
+
+Copyright (c) 2017-2019 Curtis Northcutt. Released under the MIT License. See `LICENSE <https://github.com/cgnorthcutt/cleanlab/blob/master/LICENSE>`__ for details.
