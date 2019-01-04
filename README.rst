@@ -101,7 +101,7 @@ posted here when they are published.
 Collaboration
 ~~~~~~~~~~~~~
 
-Most of the algorithms, theory, and results of ``cleanlab`` remain unpublished. If you'd like to work together, please reach out. your_brain + my_brain is always >> my_brain.
+Most of the algorithms, theory, and results of ``cleanlab`` remain unpublished. If you'd like to work together, please reach out. "Science and collaboration and like peas and carrots" - Forrest Gump.
 
 ``cleanlab`` on MNIST
 ---------------------
