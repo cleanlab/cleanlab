@@ -98,6 +98,10 @@ posted here when they are published.
     publisher = {AUAI Press},
    } 
 
+Collaboration
+~~~~~~~~~~~~~
+
+Most of the algorithms, theory, and results of ``cleanlab`` remain unpublished. If you'd like to work together, please reach out. your_brain + my_brain is always >> my_brain.
 
 ``cleanlab`` on MNIST
 ---------------------
