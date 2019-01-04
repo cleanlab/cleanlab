@@ -96,7 +96,7 @@ def data_loader(
                         yield _split_labels_and_text(batch)
                     break
             except EOFError:
-                if indices is None or idx in indices:
+                if indices is None or stack_idx == idx:
                     # Write out prev line and reset prev
                     batch.append(prev.strip().replace('\n', NEWLINE))
                     batch_counter += 1
