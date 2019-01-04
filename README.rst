@@ -20,8 +20,8 @@
 ``cleanlab``  finds and cleans label errors in massive or small datasets and contains state-of-the-art algorithms for learning with noisy labels, estimating the latent noisy-channel, prior (distribution of class labels), and much more. ``cleanlab`` implements the family of theory and algorithms called *confident learning*.
 
 
-``cleanlab`` is:
-----------------
+``cleanlab`` CLEANs LABels and is:
+----------------------------------
 
 1. fast - Only two hours (on cpu-based laptop) to find the label errors
    in ImageNet's validation set.
