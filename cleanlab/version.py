@@ -1,5 +1,6 @@
-__version__ = '0.0.6'
+__version__ = '0.0.7'
 
+# 0.0.7 - Massive speed increases across the board. Estimating confident joint now nearly instant. NO major API changes.
 # 0.0.6 - NO API changes. README updates. Examples added. Tutorials added.
 # 0.0.5 - Numerous small bug fixes, but not major API changes. 100% testing code coverage.
 # 0.0.4 - FIRST CROSS-PLATFORM WORKING VERSION OF CLEANLAB. Adding test support.
