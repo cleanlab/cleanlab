@@ -36,6 +36,7 @@ def get_noise_indices(
     prune_count_method = 'inverse_nm_dot_s',
     converge_latent_estimates = False,
     return_sorted_index = False,
+    multi_label = False,
 ):
     '''Returns the indices of most likely (confident) label errors in s. The
     number of indices returned is specified by frac_of_noise. When 
@@ -114,9 +115,12 @@ def get_noise_indices(
       where error indices are ordered by the normalized margin (p(s = k) - max(p(s != k)))'''
   
     # Number of examples in each class of s
-    s_counts = value_counts(s)
+    if multi_label:
+        s_counts = value_counts([l for l in s])
+    else:
+        s_counts = value_counts(s)
     # 'ps' is p(s=k)
-    ps = s_counts / float(len(s))
+    ps = s_counts / float(sum(s_counts))
     # Number of classes s
     K = len(psx.T)
 
@@ -165,8 +169,9 @@ def get_noise_indices(
             if s_counts[k] > MIN_NUM_PER_CLASS: # Don't prune if not MIN_NUM_PER_CLASS
                 num2prune = s_counts[k] - prune_count_matrix[k][k]
                 # num2keep'th smallest probability of class k for examples with noisy label k
-                threshold = np.partition(psx[:,k][s == k], num2prune)[num2prune]
-                noise_mask = noise_mask | ((s == k) & (psx[:,k] < threshold))
+                s_filter = np.array([k in l for l in s]) if multi_label else s == k
+                threshold = np.partition(psx[:,k][s_filter], num2prune)[num2prune]
+                noise_mask = noise_mask | ((s_filter) & (psx[:,k] < threshold))
   
     if prune_method == 'both':
         noise_mask_by_class = noise_mask
@@ -181,8 +186,9 @@ def get_noise_indices(
                         if num2prune > 0:
                             # num2prune'th largest p(class k) - p(class j) for x with noisy label j
                             margin = psx[:,k] - psx[:,j]
-                            threshold = -np.partition(-margin[s == j], num2prune - 1)[num2prune - 1]
-                            noise_mask = noise_mask | ((s == j) & (margin >= threshold))
+                            s_filter = np.array([j in l for l in s]) if multi_label else s == j
+                            threshold = -np.partition(-margin[s_filter], num2prune - 1)[num2prune - 1]
+                            noise_mask = noise_mask | ((s_filter) & (margin >= threshold))
             
     noise_mask = noise_mask & noise_mask_by_class if prune_method == 'both' else noise_mask
     
@@ -315,7 +321,7 @@ def order_label_errors(
     
     # Compute the normalized margin to sort errors
     # https://arxiv.org/pdf/1810.05369.pdf (eqn 2.2)
-    prob_label = np.array([psx[i, l] for i, l in enumerate(labels)])
+    prob_label = np.array([np.mean(psx[i, l]) for i, l in enumerate(labels)])
     max_prob_not_label = np.array([max(np.delete(psx[i], l, -1)) for i, l in enumerate(labels)])
     normalized_margin = prob_label - max_prob_not_label
     
