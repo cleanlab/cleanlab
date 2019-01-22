@@ -150,7 +150,7 @@ def estimate_confident_joint_from_probabilities(
         if thresholds is None:
             thresholds = [np.mean(psx[:,k][s == k]) for k in range(K)] # P(s^=k|s=k)
         # Create mask for every example if for each class, prob >= threshold 
-        psx_bool = psx >= thresholds
+        psx_bool = psx >= np.asarray(thresholds) - 1e-6
         # Estimate confident joint matrix (K, K) of form count(s=s_k, y=y_k)
         confident_joint = np.array([psx_bool[s==k].sum(axis = 0) for k in range(K)])        
         
