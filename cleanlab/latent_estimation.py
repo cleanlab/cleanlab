@@ -14,7 +14,8 @@
 
 from __future__ import print_function, absolute_import, division, unicode_literals, with_statement
 from sklearn.linear_model import LogisticRegression as logreg
-from sklearn.model_selection import StratifiedKFold
+from sklearn.model_selection import StratifiedKFold    
+from sklearn.preprocessing import LabelBinarizer 
 import numpy as np
 import copy
 
@@ -63,6 +64,63 @@ def num_label_errors(
     num_errors = int(frac_errors * len(labels))
         
     return num_errors    
+
+
+
+def compute_confident_joint(
+    s, 
+    psx, 
+    K,
+    thresholds = None, 
+):
+    '''Estimates P(s,y), the confident counts of the latent 
+    joint distribution of true and noisy labels 
+    using observed s and predicted probabilities psx.
+    
+    This estimate is called the confident joint. 
+
+    Parameters
+    ----------
+
+    s : np.array
+        A discrete vector of labels, s, which may contain mislabeling. "s" denotes
+        the noisy label instead of \tilde(y), for ASCII encoding reasons.
+
+    psx : np.array (shape (N, K))
+        P(s=k|x) is a matrix with K (noisy) probabilities for each of the N examples x.
+        This is the probability distribution over all K classes, for each
+        example, regarding whether the example has label s==k P(s=k|x). psx should
+        have been computed using 3 (or higher) fold cross-validation.
+        
+    K : int
+        Number of unique classes.
+
+    thresholds : iterable (list or np.array) of shape (K, 1)  or (K,)
+        P(s^=k|s=k). If an example has a predicted probability "greater" than 
+        this threshold, it is counted as having hidden label y = k. This is 
+        not used for pruning, only for estimating the noise rates using 
+        confident counts. This value should be between 0 and 1. Default is None.'''
+    
+    # Estimate the probability thresholds for confident counting 
+    if thresholds is None:
+        thresholds = [np.mean(psx[:,k][s == k]) for k in range(K)] # P(s^=k|s=k)
+     
+    # Create mask for every example if for each class, prob >= threshold 
+    
+    label_binarizer = LabelBinarizer()
+    # For each example, find maximum deviation above threshold
+    psx_argmax = (psx - np.asarray(thresholds) - 1e-6).argmax(axis = 1)
+    psx_argmax_bool = label_binarizer.fit_transform(psx_argmax).astype(bool)
+    # Find, for each example, when each prob is greater than threshold.
+    psx_bool = psx >= np.asarray(thresholds) - 1e-6
+    # If more than one prob greater than threshold, only take the max prob.
+    psx_more_than_one = psx_bool.sum(axis = 1) > 1
+    psx_bool[psx_more_than_one] = psx_argmax_bool[psx_more_than_one]
+    
+    # Estimate confident joint matrix (K, K) of form count(s=s_k, y=y_k)
+    confident_joint = np.array([psx_bool[s==k].sum(axis = 0) for k in range(K)]) 
+    
+    return confident_joint
 
 
 def estimate_confident_joint_from_probabilities(
@@ -146,14 +204,8 @@ def estimate_confident_joint_from_probabilities(
     if type(force_ps) == int:
         sgd_epochs = force_ps
     for sgd_iteration in range(sgd_epochs): 
-        # Estimate the probability thresholds for confident counting 
-        if thresholds is None:
-            thresholds = [np.mean(psx[:,k][s == k]) for k in range(K)] # P(s^=k|s=k)
-        # Create mask for every example if for each class, prob >= threshold 
-        psx_bool = psx >= np.asarray(thresholds) - 1e-6
-        # Estimate confident joint matrix (K, K) of form count(s=s_k, y=y_k)
-        confident_joint = np.array([psx_bool[s==k].sum(axis = 0) for k in range(K)])        
-        
+        # Compute the confident joint.      
+        confident_joint = compute_confident_joint(s, psx, K, thresholds)
         cjs.append(confident_joint)
         
         if force_ps:
