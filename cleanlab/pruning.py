@@ -112,7 +112,11 @@ def get_noise_indices(
       
     return_sorted_index : bool
       If true, returns an array of the label error indices (instead of a bool mask)
-      where error indices are ordered by the normalized margin (p(s = k) - max(p(s != k)))'''
+      where error indices are ordered by the normalized margin (p(s = k) - max(p(s != k)))
+      
+    multi_label : bool
+      If true, s should be a list of lists (or iterable of iterables), containing a
+      list of labels for each example, instead of just a single label.'''
   
     # Number of examples in each class of s
     if multi_label:
