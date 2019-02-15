@@ -1,6 +1,21 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+# ### This code extends the functionality of https://github.com/pytorch/examples/tree/master/imagenet to support cross-validation training, allowing you compute the out of sample predicted probabilities for the entire imagenet training set: a necessary step for confident learning and the cleanlab package.
+# 
+# Here is an example of how to use this file:
+# 
+# ```bash
+# # Four fold cross-validation training.
+# $ python3 imagenet_train_pyx.py -a resnet18 -b 256 --lr 0.1 --gpu 0 --cvn 4 --cv 0 /IMAGENET_PATH
+# $ python3 imagenet_train_pyx.py -a resnet18 -b 256 --lr 0.1 --gpu 1 --cvn 4 --cv 1 /IMAGENET_PATH
+# $ python3 imagenet_train_pyx.py -a resnet18 -b 256 --lr 0.1 --gpu 2 --cvn 4 --cv 2 /IMAGENET_PATH
+# $ python3 imagenet_train_pyx.py -a resnet18 -b 256 --lr 0.1 --gpu 3 --cvn 4 --cv 3 /IMAGENET_PATH
+# 
+# # Combine the results
+# $ python3 imagenet_train_pyx.py -a resnet18 --cvn 4 --combine-folds /IMAGENET_PATH
+# ```
+
 # In[ ]:
 
 
