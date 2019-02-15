@@ -97,7 +97,7 @@ posted here when they are published.
 Collaboration
 ~~~~~~~~~~~~~
 
-Most of the algorithms, theory, and results of ``cleanlab`` remain unpublished. If you'd like to work together, please reach out. "Science and collaboration and like peas and carrots" - Forrest Gump.
+Most of the algorithms, theory, and results of ``cleanlab`` remain unpublished. If you'd like to work together, please reach out. 
 
 ``cleanlab`` on MNIST
 ---------------------
