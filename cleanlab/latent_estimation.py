@@ -70,7 +70,7 @@ def num_label_errors(
 def compute_confident_joint(
     s, 
     psx, 
-    K,
+    K = None,
     thresholds = None, 
 ):
     '''Estimates P(s,y), the confident counts of the latent 
@@ -92,8 +92,8 @@ def compute_confident_joint(
         example, regarding whether the example has label s==k P(s=k|x). psx should
         have been computed using 3 (or higher) fold cross-validation.
         
-    K : int
-        Number of unique classes.
+    K : int (default: None)
+        Number of unique classes. Calculated as len(np.unique(s)) when K == None.
 
     thresholds : iterable (list or np.array) of shape (K, 1)  or (K,)
         P(s^=k|s=k). If an example has a predicted probability "greater" than 
@@ -104,24 +104,47 @@ def compute_confident_joint(
     # s needs to be a numpy array
     s = np.asarray(s)
     
+    # Find the number of unique classes if K is not given
+    if K is None:
+        K = len(np.unique(s))
+    
     # Estimate the probability thresholds for confident counting 
     if thresholds is None:
         thresholds = [np.mean(psx[:,k][s == k]) for k in range(K)] # P(s^=k|s=k)
-     
-    # Create mask for every example if for each class, prob >= threshold 
+    thresholds = np.asarray(thresholds)
+
+    # The following code computes the confident joint.
+    # The code is optimized with vectorized functions.
+    # For ease of understanding, here is (a slow) implementation with for loops.
+    #     confident_joint = np.zeros((K, K), dtype = int)
+    #     for i, row in enumerate(psx):
+    #         s_label = s[i]
+    #         confident_bins = row >= thresholds - 1e-6
+    #         num_confident_bins = sum(confident_bins)
+    #         if num_confident_bins == 1:
+    #             confident_joint[s_label][np.argmax(confident_bins)] += 1
+    #         elif num_confident_bins > 1:
+    #             confident_joint[s_label][np.argmax(row)] += 1
     
-    label_binarizer = LabelBinarizer()
-    # For each example, find maximum deviation above threshold
-    psx_argmax = (psx - np.asarray(thresholds) - 1e-6).argmax(axis = 1)
-    psx_argmax_bool = label_binarizer.fit_transform(psx_argmax).astype(bool)
-    # Find, for each example, when each prob is greater than threshold.
-    psx_bool = psx >= np.asarray(thresholds) - 1e-6
-    # If more than one prob greater than threshold, only take the max prob.
-    psx_more_than_one = psx_bool.sum(axis = 1) > 1
-    psx_bool[psx_more_than_one] = psx_argmax_bool[psx_more_than_one]
+    # Compute confident joint (vectorized for speed).
     
-    # Estimate confident joint matrix (K, K) of form count(s=s_k, y=y_k)
-    confident_joint = np.array([psx_bool[s==k].sum(axis = 0) for k in range(K)]) 
+    # psx_bool is a bool matrix where each row represents a training example as
+    # a boolean vector of size K, with True if the example confidentally belongs
+    # to that class and False if not.
+    psx_bool = (psx >= thresholds - 1e-6) 
+    num_confident_bins = psx_bool.sum(axis = 1)
+    at_least_one_confident = num_confident_bins > 0
+    more_than_one_confident = num_confident_bins > 1
+    psx_argmax = psx.argmax(axis = 1)
+    # Note that confident_argmax is meaningless for rows of all False
+    confident_argmax = psx_bool.argmax(axis = 1)
+    # For each example, choose the confident class (greater than threshold)
+    # When there is more than one confident class, choose the class with largest prob.
+    true_label_guess = np.where(more_than_one_confident, psx_argmax, confident_argmax)
+    y_confident = true_label_guess[at_least_one_confident] # Omits meaningless all-False rows
+    s_confident = s[at_least_one_confident]
+    from sklearn.metrics import confusion_matrix
+    confident_joint = confusion_matrix(y_confident, s_confident).T
     
     return confident_joint
 
