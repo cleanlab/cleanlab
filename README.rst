@@ -28,7 +28,7 @@ Its called ``cleanlab`` because it CLEANs LABels.
 1. fast - Find label errors in ImageNet in less than a second (given probabilities and labels).
 2. robust - Provable generalization and risk minimimzation guarantees, including imperfect probability estimation.
 3. general - Works with any probablistic classifier: PyTorch, Tensorflow, MxNet, Caffe2, scikit-learn, etc.
-4. unique - The only package for multiclass learning with noisy labels and finding label errors for any dataset with any classifier.
+4. unique - The only package for multiclass learning with noisy labels or finding label errors for any dataset / classifier.
    
 .. code:: python
    
