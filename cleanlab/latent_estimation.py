@@ -1,4 +1,4 @@
-
+#!/usr/bin/env python
 # coding: utf-8
 
 # ## Latent Estimation
@@ -100,6 +100,9 @@ def compute_confident_joint(
         this threshold, it is counted as having hidden label y = k. This is 
         not used for pruning, only for estimating the noise rates using 
         confident counts. This value should be between 0 and 1. Default is None.'''
+    
+    # s needs to be a numpy array
+    s = np.asarray(s)
     
     # Estimate the probability thresholds for confident counting 
     if thresholds is None:
