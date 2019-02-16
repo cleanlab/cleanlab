@@ -230,6 +230,16 @@ def estimate_confident_joint_from_probabilities(
     '''Estimates P(s,y), the confident counts of the latent 
     joint distribution of true and noisy labels 
     using observed s and predicted probabilities psx.
+    
+    UNLIKE compute_confident_joint, this function calibrates
+    the confident joint estimate P(s=i, y=j) such that
+    np.sum(cj) == len(s) and np.sum(cj, axis = 1) == np.bincount(s).
+    
+    In other words, this function forces the confident joint to have the
+    true noisy prior p(s) (summed over columns for each row) and also
+    forces the confident joint to add up to the total number of examples.
+    This method RETURNS A VALID COUNT ESTIMATE
+    of the actual joint of noisy and true labels.
 
     Important! This function assumes that psx are out-of-sample 
     holdout probabilities. This can be done with cross validation. If
@@ -241,16 +251,16 @@ def estimate_confident_joint_from_probabilities(
     Under certain conditions, estimates are exact, and in most
     conditions, the estimate is within 1 percent of the truth.
     
-    We provide a for-loop based implementation of the confident joint
-    below. This implementation is not efficient and not used in practice,
-    but it makes clear how the confident joint is computed:
+    We provide a for-loop based simplification of the confident joint
+    below. This implementation is not efficient, not used in practice, and
+    not complete, but covers the jist of how the confident joint is computed:
 
     # Confident examples are those that we are confident have label y = k
     # Estimate the (K, K) matrix of confident examples with s = k_s and y = k_y
-    cj = np.zeros((K, K))
+    cj_ish = np.zeros((K, K))
     for k_s in range(K): # k_s is the class value k of noisy label s
         for k_y in range(K): # k_y is the (guessed) class value k of true label y
-            cj[k_s][k_y] = sum((psx[:,k_y] >= (thresholds[k_y] - 1e-8)) & (s == k_s))
+            cj_ish[k_s][k_y] = sum((psx[:,k_y] >= (thresholds[k_y] - 1e-8)) & (s == k_s))
 
     Parameters
     ----------
@@ -286,7 +296,8 @@ def estimate_confident_joint_from_probabilities(
 
     Output
     ------
-        confident_joint matrix count(s, y) : np.array (shape (K, K))'''
+        confident_joint matrix count(s, y) : np.array (shape (K, K)) 
+        where np.sum(confident_joint) ~ len(s) and rows sum to np.bincount(s)'''
     
     # Number of classes
     K = len(np.unique(s))  
