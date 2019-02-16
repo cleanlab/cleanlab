@@ -1,4 +1,4 @@
-
+#!/usr/bin/env python
 # coding: utf-8
 
 # # Classifier Comparison Tutorial
@@ -156,7 +156,6 @@ dataset_names = [
 params = {
     "cv_n_folds": [5], # Default. Keep as default for fair comparison.
     "prune_method": ['prune_by_noise_rate', 'prune_by_class', 'both'],
-    "prune_count_method": ['inverse_nm_dot_s', 'calibrate_confident_joint'],
     "converge_latent_estimates": [False, True],
 }
 
