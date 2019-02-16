@@ -1,4 +1,4 @@
-
+#!/usr/bin/env python
 # coding: utf-8
 
 # In[ ]:
@@ -286,8 +286,6 @@ def test_cleanlab_with_fasttext():
             s_train, 
             psx, 
             confident_joint=cj, 
-            prune_count_method='calibrate_confident_joint',
-            prune_method = 'prune_by_class',
         )
         # Extract errors. This works by:
         # (1) masking the training examples we used with the noise indices identified.

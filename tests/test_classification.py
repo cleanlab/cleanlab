@@ -1,4 +1,4 @@
-
+#!/usr/bin/env python
 # coding: utf-8
 
 # In[ ]:
@@ -205,13 +205,11 @@ def test_clf_fit_inm():
 
 
 def test_fit_with_nm(
-    prune_count_method = 'inverse_nm_dot_s',
     seed = 0, 
     used_by_another_test = False,
 ):
     lnl = LearningWithNoisyLabels(
-        seed = seed, 
-        prune_count_method = prune_count_method,
+        seed = seed,
     )
     nm = data['noise_matrix']
     # Learn with noisy labels with noise matrix given
@@ -220,7 +218,6 @@ def test_fit_with_nm(
     # Learn with noisy labels and estimate the noise matrix.
     lnl2 = LearningWithNoisyLabels(
         seed = seed,
-        prune_count_method = prune_count_method,
     )
     lnl2.fit(data['X_train'], data['s'],)
     score = lnl2.score(data['X_test'], data['y_test'])
@@ -236,7 +233,6 @@ def test_fit_with_nm(
 def test_warning_nm_calibrate_cj():
     with pytest.warns(UserWarning):
         s1, s2 = test_fit_with_nm(
-            prune_count_method = 'calibrate_confident_joint',
             used_by_another_test = True,
         )
     assert((s1 - s2) < 0.1)
@@ -246,13 +242,11 @@ def test_warning_nm_calibrate_cj():
 
 
 def test_fit_with_inm(
-    prune_count_method = 'inverse_nm_dot_s',
     seed = 0, 
     used_by_another_test = False,
 ):
     lnl = LearningWithNoisyLabels(
         seed = seed, 
-        prune_count_method = prune_count_method,
     )
     inm = compute_inv_noise_matrix(
         data["py"],
@@ -265,7 +259,6 @@ def test_fit_with_inm(
     # Learn with noisy labels and estimate the inv noise matrix.
     lnl2 = LearningWithNoisyLabels(
         seed = seed,
-        prune_count_method = prune_count_method,
     )
     lnl2.fit(data['X_train'], data['s'],)
     score = lnl2.score(data['X_test'], data['y_test'])
@@ -307,7 +300,6 @@ def test_clf_fit_nm_inm():
 def test_warning_inm_calibrate_cj():
     with pytest.warns(UserWarning):
         s1, s2 = test_fit_with_inm(
-            prune_count_method = 'calibrate_confident_joint',
             used_by_another_test = True,
         )
     assert(abs(s1 - s2) < 0.1)
