@@ -1,4 +1,4 @@
-
+#!/usr/bin/env python
 # coding: utf-8
 
 # In[ ]:
@@ -110,27 +110,7 @@ data = make_data(seed = seed)
 # In[ ]:
 
 
-def test_prune_count_err():
-    try:
-        pruning.get_noise_indices(
-            s = data['s'],
-            psx = data['psx'],
-            prune_count_method = 'INVALID_METHOD',
-        )
-    except ValueError as e:
-        assert('should be' in str(e))
-    with pytest.raises(ValueError) as e:
-        pruning.get_noise_indices(
-            s = data['s'],
-            psx = data['psx'],
-            prune_count_method = 'INVALID_METHOD',
-        )
-
-
-# In[ ]:
-
-
-def test_invalid_prune_count_method():
+def test_exact_prune_count():
     remove = 5
     s = data['s']
     noise_idx = pruning.get_noise_indices(
