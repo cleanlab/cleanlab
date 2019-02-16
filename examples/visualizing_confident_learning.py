@@ -1,4 +1,4 @@
-
+#!/usr/bin/env python
 # coding: utf-8
 
 # In[1]:
@@ -6,7 +6,7 @@
 
 from __future__ import print_function, absolute_import, division, unicode_literals, with_statement
 from numpy.random import multivariate_normal
-from sklearn.linear_model import LogisticRegression as logreg
+from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score
 import numpy as np
 
@@ -111,7 +111,7 @@ colors = [(31 / 255., 119 / 255., 180 / 255.), (255 / 255., 127 / 255., 14 / 255
 color_map = dict(zip(range(len(colors)), colors))
 try:
 # Plot the distribution for your viewing.
-    get_ipython().magic(u'matplotlib inline')
+    get_ipython().run_line_magic('matplotlib', 'inline')
     from matplotlib import pyplot as plt
     _ = plt.figure(figsize=(15, 12))
     _ = plt.axis('off')
@@ -126,8 +126,8 @@ try:
     _ = plt.figure(figsize=(15, 12))
     _ = plt.axis('off')
     for k in range(K):
-      X_k = X_train[y_train == k] # data for class k
-      _ = plt.scatter(X_k[:,0], X_k[:, 1], color=[color_map[noisy_k] for noisy_k in s[y_train==k]], s=150, marker=r"${a}$".format(a=str(k)), linewidth=1)
+        X_k = X_train[y_train == k] # data for class k
+        _ = plt.scatter(X_k[:,0], X_k[:, 1], color=[color_map[noisy_k] for noisy_k in s[y_train==k]], s=150, marker=r"${a}$".format(a=str(k)), linewidth=1)
     _ = plt.scatter(X_train[:,0][s != y_train], X_train[:,1][s != y_train], s=400, facecolors='none', edgecolors='black', linewidth=2, alpha = 0.5)
     _ = plt.title('Observed distribution, with label errors circled.\nColors are the given labels, the numbers are latent.\n'+percent_error_str, fontsize=30)
     plt.show()
@@ -138,8 +138,8 @@ try:
     _ = plt.figure(figsize=(15, 12))
     _ = plt.axis('off')
     for k in range(K):
-      X_k = X_train[idx_errors & (y_train == k)] # data for class k
-      _ = plt.scatter(X_k[:,0], X_k[:, 1], color=[color_map[noisy_k] for noisy_k in s[y_train==k]], s=150, marker=r"${a}$".format(a=str(k)), linewidth=1)
+        X_k = X_train[idx_errors & (y_train == k)] # data for class k
+        _ = plt.scatter(X_k[:,0], X_k[:, 1], color=[color_map[noisy_k] for noisy_k in s[y_train==k]], s=150, marker=r"${a}$".format(a=str(k)), linewidth=1)
     _ = plt.scatter(X_train[:,0][s != y_train], X_train[:,1][s != y_train], s=400, facecolors='none', edgecolors='black', linewidth=2, alpha = 0.5)
     _ = plt.title('Label errors detected using confident learning.\nEmpty circles show undetected label errors.\nUncircled data depicts false positives.', fontsize=30)
     plt.show()
@@ -150,8 +150,8 @@ try:
     _ = plt.figure(figsize=(15, 12))
     _ = plt.axis('off')
     for k in range(K):
-      X_k = X_train[~idx_errors & (y_train == k)] # data for class k
-      _ = plt.scatter(X_k[:,0], X_k[:, 1], color=[color_map[noisy_k] for noisy_k in s[y_train==k]], s=150, marker=r"${a}$".format(a=str(k)), linewidth=1)
+        X_k = X_train[~idx_errors & (y_train == k)] # data for class k
+        _ = plt.scatter(X_k[:,0], X_k[:, 1], color=[color_map[noisy_k] for noisy_k in s[y_train==k]], s=150, marker=r"${a}$".format(a=str(k)), linewidth=1)
     _ = plt.scatter(X_train[~idx_errors][:,0][s[~idx_errors] != y_train[~idx_errors]], X_train[~idx_errors][:,1][s[~idx_errors] != y_train[~idx_errors]], s=400, facecolors='none', edgecolors='black', linewidth=2, alpha = 0.5)
     _ = plt.title('Dataset after pruning detected label errors.', fontsize=30)
     plt.show()
@@ -164,26 +164,26 @@ print('Our estimate of the noise matrix.')
 print_noise_matrix(est_noise_matrix)
 print("Accuracy Comparison")
 print("-------------------")
-clf = logreg()
+clf = LogisticRegression(solver = 'lbfgs', multi_class = 'auto')
 baseline_score = accuracy_score(y_test, clf.fit(X_train, s).predict(X_test))
 print("Logistic regression:", baseline_score)
 rp = LearningWithNoisyLabels(seed = seed)
 rp_score = accuracy_score(y_test, rp.fit(X_train, s, psx=psx).predict(X_test))
 print("Logistic regression (+rankpruning):", rp_score)
 diff = rp_score - baseline_score
-clf = logreg()
+clf = LogisticRegression(solver = 'lbfgs', multi_class = 'auto')
 # If we fit on the pruned dataset without reweighting, performance is much worse.
 print('Fit on denoised data without re-weighting:', accuracy_score(y_test, clf.fit(X_train[~idx_errors], s[~idx_errors]).predict(X_test)))
 
 
 
 try:
-    get_ipython().magic(u'matplotlib inline')
+    get_ipython().run_line_magic('matplotlib', 'inline')
     from matplotlib import pyplot as plt
     
     print("\n\n\n\n\n\n")
     
-    clf = logreg()
+    clf = LogisticRegression(solver = 'lbfgs', multi_class = 'auto')
     _ = clf.fit(X_train, s)
     show_decision_boundary(clf, 'Decision boundary for logistic regression trained with noisy labels.\n Test Accuracy: ' + str(round(baseline_score, 3)))
 
@@ -191,16 +191,15 @@ try:
     max_score = accuracy_score(y_test, clf.predict(X_test))
     show_decision_boundary(clf, 'Decision boundary for logistic regression trained with no label errors.\n Test Accuracy: ' + str(round(max_score, 3)), show_noise = False)
 
-    show_decision_boundary(rp.clf, 'Decision boundary for logreg (+rankpruning) trained with noisy labels.\n Test Accuracy: ' + str(round(rp_score, 3)))
+    show_decision_boundary(rp.clf, 'Decision boundary for LogisticRegression (+rankpruning) trained with noisy labels.\n Test Accuracy: ' + str(round(rp_score, 3)))
 except:
     print("Plotting is only supported in an iPython interface.")
 
 
-# In[6]:
+# In[5]:
 
 
 param_grid = {
-    "prune_count_method": ["calibrate_confident_joint", "inverse_nm_dot_s"],
     "prune_method": ["prune_by_noise_rate", "prune_by_class", "both"],
     "converge_latent_estimates": [True, False],
 }
@@ -210,6 +209,7 @@ from sklearn.model_selection import ParameterGrid
 params = ParameterGrid(param_grid)
 scores = []
 for param in params:
+    clf = clf = LogisticRegression(solver = 'lbfgs', multi_class = 'auto')
     rp = LearningWithNoisyLabels(clf = logreg(), **param)
     _ = rp.fit(X_train, s) # s is the noisy y_train labels
     scores.append(accuracy_score(rp.predict(X_test), y_test))
