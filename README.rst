@@ -361,38 +361,28 @@ there are various levels of granularity.
 Estimate the latent joint probability distribution matrix of the noisy and true labels, *P(s,y)*:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-There are two methods to compute *P(s,y)*, the complete-information
+To compute *P(s,y)*, the complete-information
 distribution matrix that captures the number of pairwise label flip
 errors when multipled by the total number of examples as *n* P(s,y)*.
-
-Method 1: Guarantees the rows of *P(s,y)* correctly sum to *p(s)*, by first computing *P(y \| s)*.
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Using `cleanlab.latent_estimation.calibrate_confident_joint, 
+this method guarantees the rows of *P(s,y)* correctly sum to *p(s)*, 
+and the entire matrix sums to 1.
 
 This method occurs when hyperparameter prune_count_method =
 ‘inverse_nm_dot_s’ in LearningWithNoisyLabels.fit() and get_noise_indices().
 
 .. code:: python
 
-   from cleanlab.util import value_counts
-   # *p(s)* is the prior of the observed, noisy labels and an array of length m (# of classes)
-   ps = value_counts(s) / float(len(s))
-   # We computed est_inv (estimated inverse noise matrix) in the previous example (two above).
-   psy = np.transpose(est_inv * ps) # Matrix of prob(s=l and y=k)
+   from cleanlab.latent_estimation import estimate_confident_joint_from_probabilities
+   joint = estimate_confident_joint_from_probabilities(s=noisy_labels, psx=probabilities)
 
-Method 2: Simplest. Compute by re-normalizing the confident joint. Rows won’t sum to *p(s)*.
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-This method occurs when hyperparameter prune_count_method =
-‘calibrate_confident_joint’ in LearningWithNoisyLabels.fit() and
-get_noise_indices().
+If you already have the confident joint, then you can quickly
+estimate the complete joint distribution of label noise by:
 
 .. code:: python
 
-   from cleanlab.util import value_counts
-   # *p(s)* is the prior of the observed, noisy labels and an array of length m (# of classes)
-   ps = value_counts(s) / float(len(s))
-   # We computed confident_joint in the previous example (two above).
-   psy = confident_joint / float(confident_joint.sum()) # calibration, i.e. re-normalization
+   from cleanlab.latent_estimation import estimate_joint
+   joint = estimate_joint(confident_joint=cj, s=noisy_labels, psx=probabilities)
 
 Generate valid, class-conditional, unformly random noisy channel matrices:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
