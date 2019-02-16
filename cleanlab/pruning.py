@@ -12,8 +12,10 @@ from __future__ import print_function, absolute_import, division, unicode_litera
 import numpy as np
 import multiprocessing
 import tqdm
+import sys
 
 from cleanlab.util import value_counts
+from cleanlab.latent_estimation import calibrate_confident_joint
 
 
 # In[ ]:
@@ -22,6 +24,22 @@ from cleanlab.util import value_counts
 # Leave at least this many examples in each class after
 # pruning, regardless if noise estimates are larger.
 MIN_NUM_PER_CLASS = 5
+
+
+# In[ ]:
+
+
+# For python 2/3 compatibility, define pool context manager
+# to support the 'with' statement in Python 2
+if sys.version_info[0] == 2:
+    from contextlib import contextmanager
+    @contextmanager
+    def multiprocessing_context(*args, **kwargs):
+        pool = multiprocessing.Pool(*args, **kwargs)
+        yield pool
+        pool.terminate()
+else:
+    multiprocessing_context = multiprocessing.Pool
 
 
 # In[2]:
@@ -37,10 +55,16 @@ def _multiprocessing_initialization(_s, _s_counts, _prune_count_matrix, _psx, _m
         prune_count_matrix = _prune_count_matrix
         psx = _psx
         multi_label = _multi_label
+        
+        
+def _make_psx_global( _psx):
+        '''Shares memory of psx across child processes. ASSUMES psx will not change!'''
+        global psx
+        psx = _psx
 
 
 def _prune_by_class(k):
-    """Helper function that assumes globals
+    """multiprocessing Helper function that assumes globals
     and produces a mask for class k for each example by 
     removing the examples with *smallest probability* of
     belonging to their given class label.
@@ -63,10 +87,11 @@ def _prune_by_class(k):
 
 
 def _prune_by_count(k):
-    """Helper function that assumes globals
+    """multiprocessing Helper function that assumes globals
     and produces a mask for class k for each example by 
     removing the example with noisy label k having *largest margin*,
-    where margin = prob(noisy label) - prob(given label). 
+    where 
+    margin of example := prob of given label - max prob of non-given labels
     
     Parameters
     ----------
@@ -89,6 +114,22 @@ def _prune_by_count(k):
         return noise_mask
     else:
         return np.zeros(len(s), dtype = bool)
+    
+
+def _self_confidence(args):
+    """multiprocessing Helper function that assumes global
+    psx and computes the self confidence (prob of given label)
+    for an example (row in psx) given the example index idx
+    and its label l. 
+    np.mean(psx[]) enables this code to work for multi-class l."""
+    (idx, l) = args
+    return np.mean(psx[idx, l])
+    
+
+def _top2(i):
+    """multiprocessing Helper function that assumes global
+    psx and returns the indices of the top 2 values in psx[i]."""
+    return np.argpartition(-psx[i], 2)[:2]
 
 
 # In[ ]:
@@ -102,7 +143,6 @@ def get_noise_indices(
     frac_noise = 1.0,
     num_to_remove_per_class = None,
     prune_method = 'prune_by_noise_rate',
-    prune_count_method = 'inverse_nm_dot_s',
     converge_latent_estimates = False,
     return_sorted_index = False,
     multi_label = False,
@@ -158,22 +198,6 @@ def get_noise_indices(
       belonging to their given class label for every class.
       3. 'both': Finds the examples satisfying (1) AND (2) and removes their set conjunction. 
 
-    prune_count_method : str (default 'inverse_nm_dot_s')
-      Options are 'inverse_nm_dot_s' or 'calibrate_confident_joint'. 
-        !DO NOT USE! 'calibrate_confident_joint' if you already know the noise matrix
-      and will call .fit(noise_matrix = known_noise_matrix) or
-      .fit(inverse_noise_matrix = known_inverse_noise_matrix) because
-      'calibrate_confident_joint' will estimate the noise without using this information.
-        !IN ALL OTHER CASES! We recommend always using 'calibrate_confident_joint'
-      because it is faster and more robust when no noise matrix info is given.
-        Determines the method used to estimate the counts of the joint P(s, y) that will 
-      be used to determine how many examples to prune
-      for every class that are flipped to every other class, as follows:
-        if prune_count_method == 'inverse_nm_dot_s':
-          prune_count_matrix = inverse_noise_matrix * s_counts # Matrix of counts(y=k and s=l)
-        elif prune_count_method == 'calibrate_confident_joint':# calibrate
-          prune_count_matrix = confident_joint.T / float(confident_joint.sum()) * len(s)
-
     converge_latent_estimates : bool (Default: False)
       If true, forces numerical consistency of estimates. Each is estimated
       independently, but they are related mathematically with closed form 
@@ -201,28 +225,14 @@ def get_noise_indices(
     # Ensure labels are of type np.array()
     s = np.asarray(s)
     
-    # Estimate the number of examples to confidently prune for each (s=j, y=k) pair.
-    if (inverse_noise_matrix is None and prune_count_method == 'inverse_nm_dot_s') or        (confident_joint is None and prune_count_method == 'calibrate_confident_joint'):
-            from cleanlab.latent_estimation import estimate_py_and_noise_matrices_from_probabilities
-            _, _, inverse_noise_matrix, confident_joint = estimate_py_and_noise_matrices_from_probabilities(
-                s, 
-                psx, 
-                converge_latent_estimates=converge_latent_estimates,
-            )
-    if prune_count_method == 'inverse_nm_dot_s':
-        prune_count_matrix = inverse_noise_matrix * s_counts # Matrix of counts(y=k and s=l)
-    elif prune_count_method == 'calibrate_confident_joint':
-        prune_count_matrix = confident_joint.T / float(confident_joint.sum()) * len(s) # calibrate
-    else:
-        raise ValueError("prune_count_method should be 'inverse_nm_dot_s' or " + 
-            "'calibrate_confident_joint', but '" + prune_count_method + "' was given.")
-        
-#     from cleanlab.latent_estimation import calibrate_confident_joint
-#     prune_count_matrix = calibrate_confident_joint(cj, s, psx).T.round().astype(int)
+    if confident_joint is None:
+        from cleanlab.latent_estimation import estimate_confident_joint_from_probabilities
+        confident_joint = estimate_confident_joint_from_probabilities(s, psx)
         
     # Leave at least MIN_NUM_PER_CLASS examples per class.
+    # NOTE prune_count_matrix is transposed (relative to confident_joint)
     prune_count_matrix = keep_at_least_n_per_class(
-        prune_count_matrix=prune_count_matrix, 
+        prune_count_matrix=confident_joint.T, 
         n=MIN_NUM_PER_CLASS, 
         frac_noise=frac_noise,
     )
@@ -240,13 +250,14 @@ def get_noise_indices(
     # Operations are parallelized across all CPU processes
 
     if prune_method == 'prune_by_class' or prune_method == 'both':
-        with multiprocessing.Pool(
+        with multiprocessing_context(
             multiprocessing.cpu_count(), 
             initializer = _multiprocessing_initialization, 
             initargs = (s, s_counts, prune_count_matrix, psx, multi_label),
         ) as p:
             if big_dataset:
-                print('Parallel processing label errors by class.', flush = True)
+                print('Parallel processing label errors by class.')
+                sys.stdout.flush()
                 noise_masks_per_class = list(tqdm.tqdm(p.imap(_prune_by_class, range(K)), total=K))
             else:
                 noise_masks_per_class = p.map(_prune_by_class, range(K))
@@ -256,13 +267,14 @@ def get_noise_indices(
         label_errors_mask_by_class = label_errors_mask
 
     if prune_method == 'prune_by_noise_rate' or prune_method == 'both':
-        with multiprocessing.Pool(
+        with multiprocessing_context(
             multiprocessing.cpu_count(), 
             initializer = _multiprocessing_initialization, 
             initargs = (s, s_counts, prune_count_matrix, psx, multi_label),
         ) as p:
             if big_dataset:
-                print('Parallel processing label errors by noise rate.', flush = True)
+                print('Parallel processing label errors by noise rate.')
+                sys.stdout.flush()
                 noise_masks_per_class = list(tqdm.tqdm(p.imap(_prune_by_count, range(K)), total=K))
             else:
                 noise_masks_per_class = p.map(_prune_by_count, range(K))
@@ -372,6 +384,7 @@ def order_label_errors(
     label_errors_bool,
     psx,
     labels,
+    multi_label = False,
 ):
     '''Sorts label errors by normalized margin.
     See https://arxiv.org/pdf/1810.05369.pdf (eqn 2.2)
@@ -390,6 +403,10 @@ def order_label_errors(
       
     labels : np.array
       A binary vector of labels, which may contain label errors.
+      
+    multi_label : bool
+      If true, s should be a list of lists (or iterable of iterables), containing a
+      list of labels for each example, instead of just a single label.
     
     Returns
     -------
@@ -398,12 +415,29 @@ def order_label_errors(
         the normalized margin.
     '''
     
-    # Compute the normalized margin to sort errors
-    # https://arxiv.org/pdf/1810.05369.pdf (eqn 2.2)
+    # Number of classes
+    K = psx.shape[1]
+    # Boolean set to true if dataset is large
+    big_dataset = psx.size > 1e8
+    if big_dataset:
+        print('Computing normalized margin. Takes ~{:.0f} seconds.'.format(1.311e-8 * psx.size))
     prob_label = np.array([np.mean(psx[i, l]) for i, l in enumerate(labels)])
-    max_prob_not_label = np.array([max(np.delete(psx[i], l, -1)) for i, l in enumerate(labels)])
-    normalized_margin = prob_label - max_prob_not_label
+    # Find the max prob of non-given labels for each example
+    if multi_label:
+        max_prob_not_label = np.array([max(np.delete(psx[i], l, -1)) for i, l in enumerate(labels)])
+    else: # Faster method if single labeled
+        # Find the top 2 labels with largest probabilities
+        top_2 = np.argpartition(-psx, 2, axis=1)[:, :2]
+        top_2_probs = psx[np.arange(psx.shape[0])[:, None], top_2]
+        # Find first index of top2 with different label than given label
+        not_given_label = np.argmax(abs(top_2 - np.expand_dims(labels, axis = -1)) != 0, axis = 1)
+        # Map index to boolean mask
+        idxmap = [[True, False], [False, True]]
+        not_given_label = np.array([idxmap[x] for x in not_given_label])
+        # Use mask to get the max prob that does not correspond to the given label.
+        max_prob_not_label = top_2_probs[not_given_label]
     
+    normalized_margin = prob_label - max_prob_not_label    
     # Convert bool mask to index mask
     label_errors_idx = np.arange(len(labels))[label_errors_bool]
     # Sort the errors by the normalized margin
