@@ -23,5 +23,8 @@ install:
   - pip install -q -e .
 # command to run tests
 script:
+  # Remove any pyc dependencies that may affect pytests
+  - find -name '*.pyc' -delete
+  - find -name __pycache__ -delete
   - tox 
   - bash <(curl -s https://codecov.io/bash) -t c1817983-8176-4535-b31d-9fa9d649438a
