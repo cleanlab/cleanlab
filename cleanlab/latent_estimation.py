@@ -37,8 +37,7 @@ def num_label_errors(
     ----------
 
     labels : np.array
-        A discrete vector of labels, s, which may contain mislabeling. "s" denotes
-        the noisy label instead of \tilde(y), for ASCII encoding reasons.
+        A discrete vector of noisy labels, i.e. some labels may be erroneous.
 
     psx : np.array (shape (N, K))
         P(label=k|x) is a matrix with K (noisy) probabilities for each of the N examples x.
@@ -107,7 +106,7 @@ def calibrate_confident_joint(cj, s, psx):
     '''
     
     s_counts = np.bincount(s)
-    cj = compute_confident_joint(labels, psx)
+    cj = compute_confident_joint(s, psx)
     # Calibrate confident joint to have correct p(s) prior on noisy labels.
     calibrated_cj = (cj.T / cj.sum(axis=1) * s_counts).T
     # Calibrate confident joint to sum to 1 (now an estimate of true joint counts)
