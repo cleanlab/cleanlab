@@ -230,17 +230,6 @@ def test_fit_with_nm(
 # In[ ]:
 
 
-def test_warning_nm_calibrate_cj():
-    with pytest.warns(UserWarning):
-        s1, s2 = test_fit_with_nm(
-            used_by_another_test = True,
-        )
-    assert((s1 - s2) < 0.1)
-
-
-# In[ ]:
-
-
 def test_fit_with_inm(
     seed = 0, 
     used_by_another_test = False,
@@ -292,17 +281,6 @@ def test_clf_fit_nm_inm():
     lnl2.fit(data['X_train'], data['s'],)
     score = lnl2.score(data['X_test'], data['y_test'])
     assert(score < score_nm_inm + 1e-4)
-
-
-# In[ ]:
-
-
-def test_warning_inm_calibrate_cj():
-    with pytest.warns(UserWarning):
-        s1, s2 = test_fit_with_inm(
-            used_by_another_test = True,
-        )
-    assert(abs(s1 - s2) < 0.1)
 
 
 # In[ ]:
