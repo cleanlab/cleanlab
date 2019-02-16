@@ -1,9 +1,9 @@
-
+#!/usr/bin/env python
 # coding: utf-8
 
 # # Hyperparameter Optimization Tutorial
 # 
-# This tutorial will show you the main hyper-parameters for LearningWithNoisyLabels. There are only three!
+# This tutorial will show you the main hyper-parameters for LearningWithNoisyLabels. There are only two!
 # 
 # 1. `prune_method` : str (default: `'prune_by_noise_rate'`), Method used for pruning.
 #     * Values: [`'prune_by_class'`, `'prune_by_noise_rate'`, or `'both'`]. 
@@ -12,36 +12,20 @@
 #     * `'both'`: Finds the examples satisfying (1) AND (2) and removes their set conjunction. 
 # 
 # 
-# 2. `prune_count_method` : str (default `'inverse_nm_dot_s'`)
-#     * Values: [`'inverse_nm_dot_s'` or `'calibrate_confident_joint'`]
-#     * DO NOT USE 'calibrate_confident_joint' if you already know the noise matrix and will call .fit(noise_matrix = known_noise_matrix) or .fit(inverse_noise_matrix = known_inverse_noise_matrix) because 'calibrate_confident_joint' will estimate the noise without using this information.
-#     * IN ALL OTHER CASES, We recommend always using 'calibrate_confident_joint' because it is faster and more robust when no noise matrix info is given.
-#     * Determines the method used to estimate the counts of the joint P(s, y) that will be used to determine how many examples to prune for every class that are flipped to every other class, as follows:
-#     
-#     ```python
-#     if prune_count_method == 'inverse_nm_dot_s':
-#         # Matrix of counts(y=k and s=l)
-#         prune_count_matrix = inverse_noise_matrix * s_counts 
-#     elif prune_count_method == 'calibrate_confident_joint':
-#         # Calibrate so (first make sum to 1, then make sum to total number of examples)
-#         prune_count_matrix = confident_joint.T / float(confident_joint.sum()) * len(s)
-#       ```
-# 
-# 
-# 3. converge_latent_estimates : bool (Default: False)
+# 2. converge_latent_estimates : bool (Default: False)
 #     * If true, forces numerical consistency of latent estimates. Each is estimated independently, but they are related mathematically with closed form  equivalences. This will iteratively enforce mathematically consistency.
 # 
 # ## This tutorial uses hypopt for faster hyper-optimization using a validation set (instead of slow cross validation).
 # ### `$ pip install hypopt`
 
-# In[5]:
+# In[1]:
 
 
 # Python 2 and 3 compatibility
 from __future__ import print_function, absolute_import, division, unicode_literals, with_statement
 
 
-# In[50]:
+# In[3]:
 
 
 from hypopt.model_selection import GridSearch
@@ -74,7 +58,6 @@ def make_linear_dataset(n_classes = 3, n_samples = 300):
 
 param_grid = {
     'prune_method': ['prune_by_class', 'prune_by_noise_rate', 'both'],
-    'prune_count_method': ['inverse_nm_dot_s', 'calibrate_confident_joint'],
     'converge_latent_estimates': [True, False],
 }
 
