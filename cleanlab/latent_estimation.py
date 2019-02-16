@@ -69,7 +69,7 @@ def num_label_errors(
     return num_errors
 
 
-def calibrate_confident_joint(cj, s, psx):
+def calibrate_confident_joint(confident_joint, s, psx):
     '''Calibrates any confident joint estimate P(s=i, y=j) such that
     np.sum(cj) == len(s) and np.sum(cj, axis = 1) == np.bincount(s).
     
@@ -82,6 +82,12 @@ def calibrate_confident_joint(cj, s, psx):
     
     Parameters
     ----------
+        
+    confident_joint : np.array (shape (K, K))
+        A K,K integer matrix of count(s=k, y=k). Estimates a confident subset of
+        the joint disribution of the noisy and true labels P_{s,y}.
+        Each entry in the matrix contains the number of examples confidently 
+        counted into every pair (s=j, y=k) classes.
 
     s : np.array
         A discrete vector of labels, s, which may contain mislabeling. "s" denotes
@@ -92,12 +98,6 @@ def calibrate_confident_joint(cj, s, psx):
         This is the probability distribution over all K classes, for each
         example, regarding whether the example has label s==k P(s=k|x). psx should
         have been computed using 3 (or higher) fold cross-validation.
-        
-    confident_joint : np.array (shape (K, K))
-        A K,K integer matrix of count(s=k, y=k). Estimates a confident subset of
-        the joint disribution of the noisy and true labels P_{s,y}.
-        Each entry in the matrix contains the number of examples confidently 
-        counted into every pair (s=j, y=k) classes.
     
     Returns
     -------
@@ -106,9 +106,9 @@ def calibrate_confident_joint(cj, s, psx):
     '''
     
     s_counts = np.bincount(s)
-    cj = compute_confident_joint(s, psx)
+    confident_joint = compute_confident_joint(s, psx)
     # Calibrate confident joint to have correct p(s) prior on noisy labels.
-    calibrated_cj = (cj.T / cj.sum(axis=1) * s_counts).T
+    calibrated_cj = (confident_joint.T / confident_joint.sum(axis=1) * s_counts).T
     # Calibrate confident joint to sum to 1 (now an estimate of true joint counts)
     calibrated_cj = calibrated_cj / np.sum(calibrated_cj) * len(s)
     
@@ -119,7 +119,7 @@ def calibrate_confident_joint(cj, s, psx):
     return calibrated_cj
 
 
-def estimate_joint(cj, s, psx):
+def estimate_joint(confident_joint, s, psx):
     '''Estimates the joint distribution of label noise P(s=i, y=j) guranteed to
       * sum to 1
       * np.sum(joint_estimate, axis = 1) == p(s)
@@ -134,7 +134,7 @@ def estimate_joint(cj, s, psx):
         estimate of the true joint of noisy and true labels.
     '''
     
-    calibrated_cj = calibrate_confident_joint(cj, s, psx)
+    calibrated_cj = calibrate_confident_joint(confident_joint, s, psx)
     return calibrated_cj / float(sum(calibrated_cj))
 
 
@@ -305,6 +305,7 @@ def estimate_confident_joint_from_probabilities(
     for sgd_iteration in range(sgd_epochs):          
         # Compute the confident joint. 
         confident_joint = compute_confident_joint(s, psx, K, thresholds)
+        confident_joint = calibrate_confident_joint(confident_joint, s, psx)
         cjs.append(confident_joint)
         
         if force_ps:
