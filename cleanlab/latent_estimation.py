@@ -47,10 +47,14 @@ def num_label_errors(
         have been computed using 3 (or higher) fold cross-validation.
         
     confident_joint : np.array (shape (K, K), type int)
-        A K,K integer matrix of count(s=k, y=k). Estimatesa a confident subset of
+        A K,K integer matrix of count(s=k, y=k). Estimates a confident subset of
         the joint disribution of the noisy and true labels P_{s,y}.
         Each entry in the matrix contains the number of examples confidently 
-        counted into every pair (s=j, y=k) classes.'''
+        counted into every pair (s=j, y=k) classes.
+    
+    Returns
+    -------
+        An integer estimating the number of label errors.'''
     
     if confident_joint is None:
         confident_joint = estimate_confident_joint_from_probabilities(
@@ -65,6 +69,55 @@ def num_label_errors(
         
     return num_errors    
 
+
+def calibrate_confident_joint(cj, s, psx):
+    '''Calibrates any confident joint estimate P(s=i, y=j) such that
+    np.sum(cj) == len(s) and np.sum(cj, axis = 1) == np.bincount(s).
+    
+    In other words, this function forces the confident joint to have the
+    true noisy prior p(s) (summed over columns for each row) and also
+    forces the confident joint to add up to the total number of examples.
+    
+    This method makes the confident joint a valid counts estimate
+    of the actual joint of noisy and true labels.
+    
+    Parameters
+    ----------
+
+    s : np.array
+        A discrete vector of labels, s, which may contain mislabeling. "s" denotes
+        the noisy label instead of \tilde(y), for ASCII encoding reasons.
+
+    psx : np.array (shape (N, K))
+        P(s=k|x) is a matrix with K (noisy) probabilities for each of the N examples x.
+        This is the probability distribution over all K classes, for each
+        example, regarding whether the example has label s==k P(s=k|x). psx should
+        have been computed using 3 (or higher) fold cross-validation.
+        
+    confident_joint : np.array (shape (K, K))
+        A K,K integer matrix of count(s=k, y=k). Estimates a confident subset of
+        the joint disribution of the noisy and true labels P_{s,y}.
+        Each entry in the matrix contains the number of examples confidently 
+        counted into every pair (s=j, y=k) classes.
+    
+    Returns
+    -------
+        An np.array of shape (K, K) of type float representing a valid
+        estimate of the true joint of noisy and true labels.
+    '''
+    
+    s_counts = np.bincount(s)
+    cj = cleanlab.latent_estimation.compute_confident_joint(labels, psx)
+    # Calibrate confident joint to have correct p(s) prior on noisy labels.
+    calibrated_cj = (cj.T / cj.sum(axis=1) * s_counts).T
+    # Calibrate confident joint to sum to 1 (now an estimate of true joint counts)
+    calibrated_cj = calibrated_cj / np.sum(calibrated_cj) * len(s)
+    
+    # Check calibration
+    assert(all(calibrated_cj.sum(axis = 1).round().astype(int) == s_counts))
+    assert(len(s) == int(round(np.sum(calibrated_cj))))
+    
+    return calibrated_cj
 
 
 def compute_confident_joint(
@@ -220,17 +273,19 @@ def estimate_confident_joint_from_probabilities(
     # Number of classes
     K = len(np.unique(s))  
     # 'ps' is p(s=k)
-    ps = value_counts(s) / float(len(s))
-    # joint counts
-    cjs = []
-    
-    # Ensure labels are of type np.array()
+    ps = value_counts(s) / float(len(s))        
+    # Estimate the probability thresholds for confident counting 
     s = np.asarray(s)
+    if thresholds is None:
+        thresholds = [np.mean(psx[:,k][s == k]) for k in range(K)] # P(s^=k|s=k)
+    thresholds = np.asarray(thresholds)         
+    # joint counts
+    cjs = []   
     sgd_epochs = 5 if force_ps is True else 1 # Default 5 epochs if force_ps
     if type(force_ps) == int:
         sgd_epochs = force_ps
-    for sgd_iteration in range(sgd_epochs): 
-        # Compute the confident joint.      
+    for sgd_iteration in range(sgd_epochs):          
+        # Compute the confident joint. 
         confident_joint = compute_confident_joint(s, psx, K, thresholds)
         cjs.append(confident_joint)
         
