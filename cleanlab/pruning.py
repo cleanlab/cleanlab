@@ -58,6 +58,8 @@ def _prune_by_class(k):
         rank = np.partition(class_probs[s_filter], num_errors)[num_errors]
 #        noise_mask = noise_mask | ((s_filter) & (psx[:,k] < threshold))
         return ((s_filter) & (class_probs < rank))
+    else:
+        return np.zeros(len(s), dtype = bool)
 
 
 def _prune_by_count(k):
@@ -85,6 +87,8 @@ def _prune_by_count(k):
                     threshold = -np.partition(-margin[s_filter], num2prune - 1)[num2prune - 1]
                     noise_mask = noise_mask | ((s_filter) & (margin >= threshold))
         return noise_mask
+    else:
+        return np.zeros(len(s), dtype = bool)
 
 
 # In[ ]:
