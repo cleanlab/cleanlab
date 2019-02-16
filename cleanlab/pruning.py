@@ -10,6 +10,8 @@
 
 from __future__ import print_function, absolute_import, division, unicode_literals, with_statement
 import numpy as np
+import multiprocessing
+import tqdm
 
 from cleanlab.util import value_counts
 
@@ -20,6 +22,69 @@ from cleanlab.util import value_counts
 # Leave at least this many examples in each class after
 # pruning, regardless if noise estimates are larger.
 MIN_NUM_PER_CLASS = 5
+
+
+# In[2]:
+
+
+# Multiprocessing Helper functions
+
+def _multiprocessing_initialization(_s, _s_counts, _prune_count_matrix, _psx, _multi_label):
+        '''Shares memory objects across child processes. ASSUMES none of these will change!'''
+        global s, s_counts, prune_count_matrix, psx, multi_label
+        s = _s
+        s_counts = _s_counts
+        prune_count_matrix = _prune_count_matrix
+        psx = _psx
+        multi_label = _multi_label
+
+
+def _prune_by_class(k):
+    """Helper function that assumes globals
+    and produces a mask for class k for each example by 
+    removing the examples with *smallest probability* of
+    belonging to their given class label.
+    
+    Parameters
+    ----------
+    k : int (between 0 and num classes - 1)
+      The class of interest."""
+    
+    if s_counts[k] > MIN_NUM_PER_CLASS: # Don't prune if not MIN_NUM_PER_CLASS
+        num_errors = s_counts[k] - prune_count_matrix[k][k]
+        # Get rank of smallest prob of class k for examples with noisy label k
+        s_filter = np.array([k in l for l in s]) if multi_label else s == k
+        class_probs = psx[:,k]
+        rank = np.partition(class_probs[s_filter], num_errors)[num_errors]
+#        noise_mask = noise_mask | ((s_filter) & (psx[:,k] < threshold))
+        return ((s_filter) & (class_probs < rank))
+
+
+def _prune_by_count(k):
+    """Helper function that assumes globals
+    and produces a mask for class k for each example by 
+    removing the example with noisy label k having *largest margin*,
+    where margin = prob(noisy label) - prob(given label). 
+    
+    Parameters
+    ----------
+    k : int (between 0 and num classes - 1)
+      The true, hidden label class of interest."""
+    
+    noise_mask = np.zeros(len(psx), dtype=bool)
+    psx_k = psx[:,k]
+    K = len(s_counts)
+    if s_counts[k] > MIN_NUM_PER_CLASS: # Don't prune if not MIN_NUM_PER_CLASS
+        for j in range(K): # noisy label index (k is the true label index)
+            if k!=j: # Only prune for noise rates, not diagonal entries
+                num2prune = prune_count_matrix[k][j]
+                if num2prune > 0:
+                    # num2prune'th largest p(class k) - p(class j) for x with noisy label j
+                    margin = psx_k - psx[:,j]
+                    s_filter = np.array([j in l for l in s]) if multi_label else s == j
+                    threshold = -np.partition(-margin[s_filter], num2prune - 1)[num2prune - 1]
+                    noise_mask = noise_mask | ((s_filter) & (margin >= threshold))
+        return noise_mask
 
 
 # In[ ]:
@@ -127,7 +192,8 @@ def get_noise_indices(
     ps = s_counts / float(sum(s_counts))
     # Number of classes s
     K = len(psx.T)
-
+    # Boolean set to true if dataset is large
+    big_dataset = K * len(s) > 1e8
     # Ensure labels are of type np.array()
     s = np.asarray(s)
     
@@ -147,6 +213,9 @@ def get_noise_indices(
         raise ValueError("prune_count_method should be 'inverse_nm_dot_s' or " + 
             "'calibrate_confident_joint', but '" + prune_count_method + "' was given.")
         
+#     from cleanlab.latent_estimation import calibrate_confident_joint
+#     prune_count_matrix = calibrate_confident_joint(cj, s, psx).T.round().astype(int)
+        
     # Leave at least MIN_NUM_PER_CLASS examples per class.
     prune_count_matrix = keep_at_least_n_per_class(
         prune_count_matrix=prune_count_matrix, 
@@ -162,44 +231,46 @@ def get_noise_indices(
         tmp = (psy.T * num_to_remove_per_class / noise_per_s).T
         np.fill_diagonal(tmp, s_counts - num_to_remove_per_class)
         prune_count_matrix = np.round(tmp).astype(int)
-
-    # Initialize the boolean mask of noise indices.
-    noise_mask = np.zeros(len(psx), dtype=bool)
-
+    
     # Peform Pruning with threshold probabilities from BFPRT algorithm in O(n)
+    # Operations are parallelized across all CPU processes
 
     if prune_method == 'prune_by_class' or prune_method == 'both':
-        for k in range(K):
-            if s_counts[k] > MIN_NUM_PER_CLASS: # Don't prune if not MIN_NUM_PER_CLASS
-                num2prune = s_counts[k] - prune_count_matrix[k][k]
-                # num2keep'th smallest probability of class k for examples with noisy label k
-                s_filter = np.array([k in l for l in s]) if multi_label else s == k
-                threshold = np.partition(psx[:,k][s_filter], num2prune)[num2prune]
-                noise_mask = noise_mask | ((s_filter) & (psx[:,k] < threshold))
+        with multiprocessing.Pool(
+            multiprocessing.cpu_count(), 
+            initializer = _multiprocessing_initialization, 
+            initargs = (s, s_counts, prune_count_matrix, psx, multi_label),
+        ) as p:
+            if big_dataset:
+                print('Parallel processing label errors by class.', flush = True)
+                noise_masks_per_class = list(tqdm.tqdm(p.imap(_prune_by_class, range(K)), total=K))
+            else:
+                noise_masks_per_class = p.map(_prune_by_class, range(K))
+        label_errors_mask = np.stack(noise_masks_per_class).any(axis = 0)
   
     if prune_method == 'both':
-        noise_mask_by_class = noise_mask
+        label_errors_mask_by_class = label_errors_mask
 
     if prune_method == 'prune_by_noise_rate' or prune_method == 'both':
-        noise_mask = np.zeros(len(psx), dtype=bool)
-        for k in range(K): # true hidden label index
-            if s_counts[k] > MIN_NUM_PER_CLASS: # Don't prune if not MIN_NUM_PER_CLASS
-                for j in range(K): # noisy label index
-                    if k!=j: # Only prune for noise rates
-                        num2prune = prune_count_matrix[k][j]
-                        if num2prune > 0:
-                            # num2prune'th largest p(class k) - p(class j) for x with noisy label j
-                            margin = psx[:,k] - psx[:,j]
-                            s_filter = np.array([j in l for l in s]) if multi_label else s == j
-                            threshold = -np.partition(-margin[s_filter], num2prune - 1)[num2prune - 1]
-                            noise_mask = noise_mask | ((s_filter) & (margin >= threshold))
+        with multiprocessing.Pool(
+            multiprocessing.cpu_count(), 
+            initializer = _multiprocessing_initialization, 
+            initargs = (s, s_counts, prune_count_matrix, psx, multi_label),
+        ) as p:
+            if big_dataset:
+                print('Parallel processing label errors by noise rate.', flush = True)
+                noise_masks_per_class = list(tqdm.tqdm(p.imap(_prune_by_count, range(K)), total=K))
+            else:
+                noise_masks_per_class = p.map(_prune_by_count, range(K))
+        label_errors_mask = np.stack(noise_masks_per_class).any(axis = 0)
             
-    noise_mask = noise_mask & noise_mask_by_class if prune_method == 'both' else noise_mask
+    if prune_method == 'both':
+        label_errors_mask = label_errors_mask & label_errors_mask_by_class
     
     if return_sorted_index:
-        return order_label_errors(noise_mask, psx, s)
+        return order_label_errors(label_errors_mask, psx, s)
     
-    return noise_mask
+    return label_errors_mask
 
 
 def keep_at_least_n_per_class(prune_count_matrix, n, frac_noise=1.0):
