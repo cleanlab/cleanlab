@@ -67,7 +67,7 @@ def num_label_errors(
     frac_errors = 1. - joint.trace()
     num_errors = int(frac_errors * len(labels))
         
-    return num_errors    
+    return num_errors
 
 
 def calibrate_confident_joint(cj, s, psx):
@@ -103,11 +103,11 @@ def calibrate_confident_joint(cj, s, psx):
     Returns
     -------
         An np.array of shape (K, K) of type float representing a valid
-        estimate of the true joint of noisy and true labels.
+        estimate of the joint COUNTS of noisy and true labels.
     '''
     
     s_counts = np.bincount(s)
-    cj = cleanlab.latent_estimation.compute_confident_joint(labels, psx)
+    cj = compute_confident_joint(labels, psx)
     # Calibrate confident joint to have correct p(s) prior on noisy labels.
     calibrated_cj = (cj.T / cj.sum(axis=1) * s_counts).T
     # Calibrate confident joint to sum to 1 (now an estimate of true joint counts)
@@ -118,6 +118,25 @@ def calibrate_confident_joint(cj, s, psx):
     assert(len(s) == int(round(np.sum(calibrated_cj))))
     
     return calibrated_cj
+
+
+def estimate_joint(cj, s, psx):
+    '''Estimates the joint distribution of label noise P(s=i, y=j) guranteed to
+      * sum to 1
+      * np.sum(joint_estimate, axis = 1) == p(s)
+    
+    Parameters
+    ----------
+    See cleanlab.latent_estimation.calibrate_confident_joint docstring.
+    
+    Returns
+    -------
+        An np.array of shape (K, K) of type float representing a valid
+        estimate of the true joint of noisy and true labels.
+    '''
+    
+    calibrated_cj = calibrate_confident_joint(cj, s, psx)
+    return calibrated_cj / float(sum(calibrated_cj))
 
 
 def compute_confident_joint(
