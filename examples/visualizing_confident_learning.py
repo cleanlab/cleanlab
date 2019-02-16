@@ -209,8 +209,8 @@ from sklearn.model_selection import ParameterGrid
 params = ParameterGrid(param_grid)
 scores = []
 for param in params:
-    clf = clf = LogisticRegression(solver = 'lbfgs', multi_class = 'auto')
-    rp = LearningWithNoisyLabels(clf = logreg(), **param)
+    clf = LogisticRegression(solver = 'lbfgs', multi_class = 'auto')
+    rp = LearningWithNoisyLabels(clf = clf, **param)
     _ = rp.fit(X_train, s) # s is the noisy y_train labels
     scores.append(accuracy_score(rp.predict(X_test), y_test))
 
@@ -226,7 +226,8 @@ for i in np.argsort(scores)[::-1]:
     # Print noise matrix for highest/lowest scoring models
     if i == np.argmax(scores) or i == np.argmin(scores):
         # Retrain with best parameters and show noise matrix estimation
-        rp = LearningWithNoisyLabels(clf = logreg(), **param)
+        clf = LogisticRegression(solver = 'lbfgs', multi_class = 'auto')
+        rp = LearningWithNoisyLabels(clf = clf, **param)
         _ = rp.fit(X_train, s) # s is the noisy y_train labels
         print('The actual, latent, underlying noise matrix:', end = "")
         print_noise_matrix(noise_matrix)
