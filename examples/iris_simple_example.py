@@ -1,14 +1,14 @@
-
+#!/usr/bin/env python
 # coding: utf-8
 
-# In[14]:
+# In[1]:
 
 
 from __future__ import print_function, absolute_import, division, unicode_literals, with_statement
 from sklearn.model_selection import train_test_split
 from sklearn import datasets
 from sklearn.metrics import accuracy_score
-from sklearn.linear_model import LogisticRegression as logreg
+from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import ParameterGrid
 import numpy as np
 from cleanlab.classification import LearningWithNoisyLabels
@@ -21,12 +21,13 @@ from cleanlab.latent_algebra import compute_inv_noise_matrix
 # 
 # ## Here we show the performance of multiclass rankpruning wrapped around a sklearn LogisiticRegression classifier versus LogisticRegression without any help from confident learning on the Iris dataset.
 
-# In[16]:
+# In[2]:
 
 
 # Seed for reproducibility
 seed = 2
-rp = LearningWithNoisyLabels(clf = logreg(), seed = seed)
+clf = LogisticRegression(solver = 'lbfgs', multi_class = 'auto', max_iter = 1000)
+rp = LearningWithNoisyLabels(clf = clf, seed = seed)
 np.random.seed(seed = seed)
 
 # Get iris dataset
@@ -54,7 +55,7 @@ except Exception as e:
     print("Plotting is only supported in an iPython interface.")
 
 
-# In[17]:
+# In[3]:
 
 
 # Generate lots of noise.
@@ -99,13 +100,11 @@ except Exception as e:
     print("Plotting is only supported in an iPython interface.")
 
 
-# In[19]:
-
-
+# In[4]:
 
 
 print('WITHOUT confident learning,', end=" ")
-clf = logreg()
+clf = LogisticRegression(solver = 'lbfgs', multi_class = 'auto', max_iter = 1000)
 _ = clf.fit(X_train, s)
 pred = clf.predict(X_test)
 print("Iris dataset test accuracy:", round(accuracy_score(pred, y_test), 2))
@@ -124,13 +123,15 @@ pred = rp.predict(X_test)
 print("Iris dataset test accuracy:", round(accuracy_score(pred, y_test),2))
 
 print('WITH confident learning (using latent noise matrix estimation),', end=" ")
-rp = LearningWithNoisyLabels(clf = logreg(), seed = seed, prune_count_method='inverse_nm_dot_s')
+clf = LogisticRegression(solver = 'lbfgs', multi_class = 'auto', max_iter = 1000)
+rp = LearningWithNoisyLabels(clf = clf, seed = seed)
 _ = rp.fit(X_train, s)
 pred = rp.predict(X_test)
 print("Iris dataset test accuracy:", round(accuracy_score(pred, y_test),2))
 
 print('WITH confident learning (using calibrated confident joint),', end=" ")
-rp = LearningWithNoisyLabels(clf = logreg(), seed = seed, prune_count_method='calibrate_confident_joint')
+clf = LogisticRegression(solver = 'lbfgs', multi_class = 'auto', max_iter = 1000)
+rp = LearningWithNoisyLabels(clf = clf, seed = seed)
 _ = rp.fit(X_train, s)
 pred = rp.predict(X_test)
 print("Iris dataset test accuracy:", round(accuracy_score(pred, y_test),2))
@@ -138,11 +139,10 @@ print("Iris dataset test accuracy:", round(accuracy_score(pred, y_test),2))
 
 # ## The **rankpruning** algorithm's fit function has a few hyper-parameters. Although the default settings tend to work well, here we show the performance of confident learning across varying parameter settings. To learn more about the hyper-parameter settings, inspect ```cleanlab/pruning.py```.
 
-# In[30]:
+# In[5]:
 
 
 param_grid = {
-    "prune_count_method": ["calibrate_confident_joint", "inverse_nm_dot_s"],
     "prune_method": ["prune_by_noise_rate", "prune_by_class", "both"],
     "converge_latent_estimates": [True, False],
 }
@@ -151,7 +151,8 @@ param_grid = {
 params = ParameterGrid(param_grid)
 scores = []
 for param in params:
-    rp = LearningWithNoisyLabels(clf = logreg(), **param)
+    clf = LogisticRegression(solver = 'lbfgs', multi_class = 'auto', max_iter = 1000)
+    rp = LearningWithNoisyLabels(clf = clf, **param)
     _ = rp.fit(X_train, s) # s is the noisy y_train labels
     scores.append(accuracy_score(rp.predict(X_test), y_test))
 
