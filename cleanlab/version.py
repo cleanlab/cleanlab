@@ -1,5 +1,10 @@
-__version__ = '0.0.7'
+__version__ = '0.0.8'
 
+# 0.0.8 - Multiple major changes
+#   - Finding label errors is no fully parallelized. 
+#   - prune_count_method parameter has been removed. 
+#   - estimate_confident_joint_from_probabilities now automatically calibrates confident joint to be a true joint estimate.
+#   - Confident joint algorithm changed! When an example is found confidently as 2+ labels, choose class with max probability.
 # 0.0.7 - Massive speed increases across the board. Estimating confident joint now nearly instant. NO major API changes.
 # 0.0.6 - NO API changes. README updates. Examples added. Tutorials added.
 # 0.0.5 - Numerous small bug fixes, but not major API changes. 100% testing code coverage.
