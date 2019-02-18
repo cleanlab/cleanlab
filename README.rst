@@ -364,7 +364,7 @@ Estimate the latent joint probability distribution matrix of the noisy and true 
 To compute *P(s,y)*, the complete-information
 distribution matrix that captures the number of pairwise label flip
 errors when multipled by the total number of examples as *n* P(s,y)*.
-Using `cleanlab.latent_estimation.calibrate_confident_joint, 
+Using `cleanlab.latent_estimation.calibrate_confident_joint`, 
 this method guarantees the rows of *P(s,y)* correctly sum to *p(s)*, 
 and the entire matrix sums to 1.
 
