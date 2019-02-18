@@ -17,7 +17,7 @@
 .. |coverage| image:: https://codecov.io/gh/cgnorthcutt/cleanlab/branch/master/graph/badge.svg
     :target: https://codecov.io/gh/cgnorthcutt/cleanlab
 
-``cleanlab``  finds and cleans label errors in massive or small datasets and contains state-of-the-art algorithms for learning with noisy labels, estimating the latent noisy-channel, prior (distribution of class labels), and much more. ``cleanlab`` implements the family of theory and algorithms called *confident learning*.
+``cleanlab``  finds and cleans label errors in any dataset using state-of-the-art algorithms for learning with noisy labels and estimating the complete joint distribution of label noise. ``cleanlab`` is fast: its built on optimized algorithms and parallelized across all CPU threads automatically. ``cleanlab`` implements the family of theory and algorithms called **confident learning** with provable guarantees of exact noise estimation and label error finding (when model output probabilities are exact). 
 
 
 Its called ``cleanlab`` because it CLEANs LABels. 
@@ -25,7 +25,7 @@ Its called ``cleanlab`` because it CLEANs LABels.
 
 ``cleanlab`` is:
 
-1. fast - Find label errors in ImageNet in less than a second (given probabilities and labels).
+1. fast - **runs in parallel on all CPU threads automatically**. (e.g. < 1 second to find label errors in ImageNet)
 2. robust - Provable generalization and risk minimimzation guarantees, including imperfect probability estimation.
 3. general - Works with any probablistic classifier: PyTorch, Tensorflow, MxNet, Caffe2, scikit-learn, etc.
 4. unique - The only package for multiclass learning with noisy labels or finding label errors for any dataset / classifier.
