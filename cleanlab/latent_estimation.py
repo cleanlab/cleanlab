@@ -135,7 +135,7 @@ def estimate_joint(confident_joint, s, psx):
     '''
     
     calibrated_cj = calibrate_confident_joint(confident_joint, s, psx)
-    return calibrated_cj / float(sum(calibrated_cj))
+    return calibrated_cj / float(np.sum(calibrated_cj))
 
 
 def compute_confident_joint(
