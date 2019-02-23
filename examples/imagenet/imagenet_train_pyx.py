@@ -238,6 +238,9 @@ def main_worker(gpu, ngpus_per_node, args):
             checkpoint = torch.load(args.resume)
             args.start_epoch = checkpoint['epoch']
             best_acc1 = checkpoint['best_acc1']
+            if args.gpu is not None:
+                # In case you load checkpoint from different GPU
+                best_acc1 = best_acc1.to(args.gpu)
             model.load_state_dict(checkpoint['state_dict'])
             optimizer.load_state_dict(checkpoint['optimizer'])
             print("=> loaded checkpoint '{}' (epoch {})"
@@ -328,10 +331,6 @@ def main_worker(gpu, ngpus_per_node, args):
         acc1 = validate(val_loader, model, criterion, args)
 
         # remember best acc@1, model, and save checkpoint
-        if args.gpu is not None:
-            # In case you load checkpoint from different GPU
-            acc1 = acc1.to(args.gpu)
-            best_acc1 = best_acc1.to(args.gpu)
         is_best = acc1 > best_acc1
         best_acc1 = max(best_acc1, acc1)
 
