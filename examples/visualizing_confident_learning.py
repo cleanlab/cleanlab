@@ -10,6 +10,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score
 import numpy as np
 
+import cleanlab
 from cleanlab.noise_generation import generate_noise_matrix_from_trace, generate_noisy_labels
 from cleanlab.util import print_noise_matrix
 from cleanlab.latent_estimation import estimate_confident_joint_and_cv_pred_proba, estimate_latent
@@ -101,9 +102,14 @@ idx_errors = get_noise_indices(s, psx)
 # #### To show off the power of **cleanlab**, we've chosen an example of multiclass learning with noisy labels in which over 50% of the training labels are wrong.
 # Toggle the ```trace``` parameter in ```generate_noise_matrix_from_trace``` above to try out different amounts of noise. Note, as we prove in our paper, learning becomes impossible if the ```trace <= 1```, so choose a value greater than 1, but less than, or equal to, the number of classes (3).
 
-# In[4]:
+# In[7]:
 
 
+est_joint = cleanlab.latent_estimation.estimate_joint(
+    confident_joint, 
+    s, 
+    psx,
+)
 true_joint_distribution_of_label_errors = (noise_matrix * py)
 percent_error_str = 'Percent of training examples that have wrong labels: ' +       str(int(round(100 - 100*true_joint_distribution_of_label_errors.trace()))) + "%"
 
@@ -162,6 +168,11 @@ print('The actual, latent, underlying noise matrix.')
 print_noise_matrix(noise_matrix)
 print('Our estimate of the noise matrix.')
 print_noise_matrix(est_noise_matrix)
+print()
+print('The actual, latent, underlying joint distribution matrix.')
+cleanlab.util.print_joint_matrix(true_joint_distribution_of_label_errors)
+print('Our estimate of the joint distribution matrix.')
+cleanlab.util.print_joint_matrix(est_joint)
 print("Accuracy Comparison")
 print("-------------------")
 clf = LogisticRegression(solver = 'lbfgs', multi_class = 'auto')
@@ -239,3 +250,21 @@ for i in np.argsort(scores)[::-1]:
 # ### In the above example, notice the robustness to hyper-parameter choice and the stability of the algorithms across parameters. No setting of parameters dramatically affects the results. In fact, in certain non-trivial cases, we can prove that certain settings of parameters are equivalent.
 # 
 # ### In summary, the default setting of parameters tends to work well, but optimize across their settings freely.
+
+# In[5]:
+
+
+cleanlab.latent_estimation.estimate_joint(confident_joint, np.asarray(s), psx)
+
+
+# In[6]:
+
+
+(confident_joint / len(s)) 
+
+
+# In[ ]:
+
+
+
+
