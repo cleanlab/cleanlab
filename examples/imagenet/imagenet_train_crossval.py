@@ -304,6 +304,7 @@ def main_worker(gpu, ngpus_per_node, args):
             train_bool_mask = np.load(args.dir_train_mask)
             train_dataset.imgs = [img for i, img in enumerate(train_dataset.imgs) if train_bool_mask[i]]
             train_dataset.samples = train_dataset.imgs
+            print('Train size:', len(cv_train_idx), len(train_dataset.imgs))
         val_dataset = datasets.ImageFolder(
             valdir, 
             transforms.Compose([
