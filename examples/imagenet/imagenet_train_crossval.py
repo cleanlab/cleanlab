@@ -301,8 +301,8 @@ def main_worker(gpu, ngpus_per_node, args):
         if use_mask:            
             checkpoint_fn = "model_{}__masked__checkpoint.pth.tar".format(args.arch)
             labels = [label for img, label in datasets.ImageFolder(traindir).imgs]
-            holdout_bool_mask = np.load(args.dir_holdout_mask)
-            train_dataset.imgs = [img for i, img in enumerate(train_dataset.imgs) if holdout_bool_mask[i]]
+            train_bool_mask = np.load(args.dir_train_mask)
+            train_dataset.imgs = [img for i, img in enumerate(train_dataset.imgs) if train_bool_mask[i]]
             train_dataset.samples = train_dataset.imgs
         val_dataset = datasets.ImageFolder(
             valdir, 
