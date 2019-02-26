@@ -120,6 +120,9 @@ parser.add_argument('--cv', '--cv-fold', type=int, default = None,
                     metavar='N', help='The fold to holdout')
 parser.add_argument('--cvn', '--cv-n-folds', default = 0, type=int,
                     metavar='N', help='The number of folds')
+parser.add_argument('-b', '--dir-train-mask', default = None, type=str,
+                    metavar='DIR', help='Boolean mask with True for indices to '
+                    'train with and false for indices to skip.')
 parser.add_argument('--combine-folds',  action='store_true', default = False, 
                     help='Pass this flag and -a arch to combine probs '
                     'from all folds. You must pass -a and -cvn flags as well!')
@@ -172,8 +175,12 @@ def main_worker(gpu, ngpus_per_node, args):
     args.gpu = gpu
     val_size = 50000
     use_crossval = args.cvn > 0
+    use_mask = args.dir_train_mask is not None
     cv_fold = args.cv
     cv_n_folds = args.cvn
+    
+    if use_crossval and use_mask:
+        raise ValueError('Either args.cvn > 0 or dir-train-mask not None, but not both.')
 
     if args.gpu is not None:
         print("Use GPU: {} for training".format(args.gpu))
@@ -267,6 +274,7 @@ def main_worker(gpu, ngpus_per_node, args):
     
     # If training only on a cross-validated portion & make val_set = train_holdout.
     if use_crossval:
+        checkpoint_fn = "model_{}__fold_{}__checkpoint.pth.tar".format(args.arch, cv_fold)
         print('Computing fold indices. This takes 15 seconds.')
         # Prepare labels
         labels = [label for img, label in datasets.ImageFolder(traindir).imgs]
@@ -288,7 +296,14 @@ def main_worker(gpu, ngpus_per_node, args):
         print('Train size:', len(cv_train_idx), len(train_dataset.imgs))
         print('Holdout size:', len(cv_holdout_idx), len(holdout_dataset.imgs))
         print('Val size (subset of holdout):', len(val_imgs_idx), len(val_dataset.imgs))
-    else:
+    else:        
+        checkpoint_fn = "model_{}__checkpoint.pth.tar".format(args.arch)
+        if use_mask:            
+            checkpoint_fn = "model_{}__masked__checkpoint.pth.tar".format(args.arch)
+            labels = [label for img, label in datasets.ImageFolder(traindir).imgs]
+            holdout_bool_mask = np.load(args.dir_holdout_mask)
+            train_dataset.imgs = [img for i, img in enumerate(train_dataset.imgs) if holdout_bool_mask[i]]
+            train_dataset.samples = train_dataset.imgs
         val_dataset = datasets.ImageFolder(
             valdir, 
             transforms.Compose([
@@ -336,6 +351,7 @@ def main_worker(gpu, ngpus_per_node, args):
 
         if not args.multiprocessing_distributed or (args.multiprocessing_distributed
                 and args.rank % ngpus_per_node == 0):
+            if use_crossval:
             save_checkpoint(
                 {
                     'epoch': epoch + 1,
@@ -345,7 +361,7 @@ def main_worker(gpu, ngpus_per_node, args):
                     'optimizer' : optimizer.state_dict(),
                 }, 
                 is_best = is_best,                
-                filename = "model_{}__fold_{}__checkpoint.pth.tar".format(args.arch, cv_fold),
+                filename = checkpoint_fn,
                 cv_fold = cv_fold,
             )
     if use_crossval:
