@@ -135,6 +135,38 @@ def _top2(i):
 # In[ ]:
 
 
+def multiclass_crossval_predict(pyx, labels):
+    '''Returns an numpy 2D array of one-hot encoded
+    multiclass predictions. Each row in the array
+    provides the predictions for a particular example.
+    The boundary condition used to threshold predictions 
+    is computed by maximizing the F1 ROC curve.
+    
+    Parameters
+    ----------    
+    pyx : np.array (shape (N, K))
+      P(label=k|x) is a NxK matrix with K probs for each of N examples.
+      This is the probability distribution over all K classes, for each
+      pyx should have been computed out of sample (holdout or crossval).
+      
+    labels : list of lists (length N)
+      These are multiclass labels. Each list in the list contains all the
+      labels for that example.'''
+    
+    from sklearn.metrics import f1_score
+    from sklearn.preprocessing import MultiLabelBinarizer
+    boundaries = np.arange(0.05, 0.9, .05)
+    labels_one_hot = MultiLabelBinarizer().fit_transform(labels)
+    f1s = [f1_score(labels_one_hot, (pyx > boundary).astype(np.uint8), average='micro') 
+           for boundary in boundaries]
+    boundary = boundaries[np.argmax(f1s)]
+    pred = (pyx > boundary).astype(np.uint8)
+    return pred
+
+
+# In[ ]:
+
+
 def get_noise_indices(
     s, 
     psx, 
@@ -144,7 +176,7 @@ def get_noise_indices(
     num_to_remove_per_class = None,
     prune_method = 'prune_by_noise_rate',
     converge_latent_estimates = False,
-    return_sorted_index = False,
+    sorted_index_method = None,
     multi_label = False,
 ):
     '''Returns the indices of most likely (confident) label errors in s. The
@@ -203,9 +235,11 @@ def get_noise_indices(
       independently, but they are related mathematically with closed form 
       equivalences. This will iteratively enforce mathematically consistency.
       
-    return_sorted_index : bool
-      If true, returns an array of the label error indices (instead of a bool mask)
-      where error indices are ordered by the normalized margin (p(s = k) - max(p(s != k)))
+    sorted_index_method : str [None (default), 'prob_given_label', 'normalized_margin']
+      If not None, returns an array of the label error indices (instead of a bool mask)
+      where error indices are ordered by the either:
+        'normalized_margin' := normalized margin (p(s = k) - max(p(s != k)))
+        'prob_given_label' := [psx[i][labels[i]] for i in label_errors_idx]
       
     multi_label : bool
       If true, s should be a list of lists (or iterable of iterables), containing a
@@ -213,7 +247,7 @@ def get_noise_indices(
   
     # Number of examples in each class of s
     if multi_label:
-        s_counts = value_counts([l for l in s])
+        s_counts = value_counts([i for l in s for i in l])
     else:
         s_counts = value_counts(s)
     # 'ps' is p(s=k)
@@ -282,9 +316,15 @@ def get_noise_indices(
             
     if prune_method == 'both':
         label_errors_mask = label_errors_mask & label_errors_mask_by_class
+        
+    # Remove label errors if given label == model prediction
+    pred = multiclass_crossval_predict(psx, s) if multi_label else psx.argmax(axis=1)
+    for i, pred_label in enumerate(pred):
+        if label_errors_mask[i] and pred_label == s[i]:
+            label_errors_mask[i] == False
     
-    if return_sorted_index:
-        return order_label_errors(label_errors_mask, psx, s)
+    if sorted_index_method is not None:
+        return order_label_errors(label_errors_mask, psx, s, sorted_index_method)
     
     return label_errors_mask
 
@@ -384,7 +424,7 @@ def order_label_errors(
     label_errors_bool,
     psx,
     labels,
-    multi_label = False,
+    sorted_index_method = 'normalized_margin',
 ):
     '''Sorts label errors by normalized margin.
     See https://arxiv.org/pdf/1810.05369.pdf (eqn 2.2)
@@ -404,9 +444,10 @@ def order_label_errors(
     labels : np.array
       A binary vector of labels, which may contain label errors.
       
-    multi_label : bool
-      If true, s should be a list of lists (or iterable of iterables), containing a
-      list of labels for each example, instead of just a single label.
+    sorted_index_method : str ['normalized_margin' (default), 'prob_given_label']
+      Method to order label error indices (instead of a bool mask), either:
+        'normalized_margin' := normalized margin (p(s = k) - max(p(s != k)))
+        'prob_given_label' := [psx[i][labels[i]] for i in label_errors_idx]
     
     Returns
     -------
@@ -415,33 +456,13 @@ def order_label_errors(
         the normalized margin.
     '''
     
-    # Number of classes
-    K = psx.shape[1]
-    # Boolean set to true if dataset is large
-    big_dataset = psx.size > 1e8
-    if big_dataset:
-        print('Computing normalized margin. Takes ~{:.0f} seconds.'.format(1.311e-8 * psx.size))
-    prob_label = np.array([np.mean(psx[i, l]) for i, l in enumerate(labels)])
-    # Find the max prob of non-given labels for each example
-    if multi_label:
-        max_prob_not_label = np.array([max(np.delete(psx[i], l, -1)) for i, l in enumerate(labels)])
-    else: # Faster method if single labeled
-        # Find the top 2 labels with largest probabilities
-        top_2 = np.argpartition(-psx, 2, axis=1)[:, :2]
-        top_2_probs = psx[np.arange(psx.shape[0])[:, None], top_2]
-        # Find first index of top2 with different label than given label
-        not_given_label = np.argmax(abs(top_2 - np.expand_dims(labels, axis = -1)) != 0, axis = 1)
-        # Map index to boolean mask
-        idxmap = [[True, False], [False, True]]
-        not_given_label = np.array([idxmap[x] for x in not_given_label])
-        # Use mask to get the max prob that does not correspond to the given label.
-        max_prob_not_label = top_2_probs[not_given_label]
-    
-    normalized_margin = prob_label - max_prob_not_label    
     # Convert bool mask to index mask
     label_errors_idx = np.arange(len(labels))[label_errors_bool]
-    # Sort the errors by the normalized margin
-    margin_errors = list(zip(normalized_margin, label_errors_idx))
-    margin_errors.sort(key = lambda x: x[0])
-    return np.array([err for mar, err in margin_errors])
+    # self confidence is the holdout probability that an example belongs to its given class label
+    self_confidence = np.array([np.mean(psx[i][labels[i]]) for i in label_errors_idx])    
+    if sorted_index_method == 'prob_given_label':
+        return label_errors_idx[np.argsort(self_confidence)]
+    else: # sorted_index_method == 'normalized_margin'
+        margin = self_confidence - psx[label_errors_bool].max(axis=1)
+        return label_errors_idx[np.argsort(margin)]
 
