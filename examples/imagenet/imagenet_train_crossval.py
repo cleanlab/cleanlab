@@ -7,7 +7,7 @@
 # 
 # ```bash
 # # Four fold cross-validation training.
-# $ python3 imagenet_train_crossval.py -a resnet18 -b 256 --lr 0.1 --gpu 0 --cvn 4 --cv 0 /IMAGENET_PATH
+#     $ python3 imagenet_train_crossval.py -a resnet18 -b 256 --lr 0.1 --gpu 0 --cvn 4 --cv 0 /IMAGENET_PATH
 # $ python3 imagenet_train_crossval.py -a resnet18 -b 256 --lr 0.1 --gpu 1 --cvn 4 --cv 1 /IMAGENET_PATH
 # $ python3 imagenet_train_crossval.py -a resnet18 -b 256 --lr 0.1 --gpu 2 --cvn 4 --cv 2 /IMAGENET_PATH
 # $ python3 imagenet_train_crossval.py -a resnet18 -b 256 --lr 0.1 --gpu 3 --cvn 4 --cv 3 /IMAGENET_PATH
@@ -120,7 +120,7 @@ parser.add_argument('--cv', '--cv-fold', type=int, default = None,
                     metavar='N', help='The fold to holdout')
 parser.add_argument('--cvn', '--cv-n-folds', default = 0, type=int,
                     metavar='N', help='The number of folds')
-parser.add_argument('-b', '--dir-train-mask', default = None, type=str,
+parser.add_argument('-m', '--dir-train-mask', default = None, type=str,
                     metavar='DIR', help='Boolean mask with True for indices to '
                     'train with and false for indices to skip.')
 parser.add_argument('--combine-folds',  action='store_true', default = False, 
