@@ -7,7 +7,7 @@
 # 
 # ```bash
 # # Four fold cross-validation training.
-#     $ python3 imagenet_train_crossval.py -a resnet18 -b 256 --lr 0.1 --gpu 0 --cvn 4 --cv 0 /IMAGENET_PATH
+# $ python3 imagenet_train_crossval.py -a resnet18 -b 256 --lr 0.1 --gpu 0 --cvn 4 --cv 0 /IMAGENET_PATH
 # $ python3 imagenet_train_crossval.py -a resnet18 -b 256 --lr 0.1 --gpu 1 --cvn 4 --cv 1 /IMAGENET_PATH
 # $ python3 imagenet_train_crossval.py -a resnet18 -b 256 --lr 0.1 --gpu 2 --cvn 4 --cv 2 /IMAGENET_PATH
 # $ python3 imagenet_train_crossval.py -a resnet18 -b 256 --lr 0.1 --gpu 3 --cvn 4 --cv 3 /IMAGENET_PATH
@@ -363,6 +363,7 @@ def main_worker(gpu, ngpus_per_node, args):
                 is_best = is_best,                
                 filename = checkpoint_fn,
                 cv_fold = cv_fold,
+                use_mask = use_mask,
             )
     if use_crossval:
         holdout_loader = torch.utils.data.DataLoader(
@@ -508,11 +509,13 @@ def validate(val_loader, model, criterion, args):
     return top1.avg
 
 
-def save_checkpoint(state, is_best, filename='checkpoint.pth.tar', cv_fold = None):
+def save_checkpoint(state, is_best, filename='checkpoint.pth.tar', cv_fold = None, use_mask = False):
     torch.save(state, filename)
     if is_best:
         if cv_fold is None:
             shutil.copyfile(filename, 'model_best.pth.tar')
+        elif use_mask:
+            shutil.copyfile(filename, "model_{}__masked__model_best.pth.tar".format(state['arch']))
         else:
             shutil.copyfile(filename, "model_{}__fold_{}__model_best.pth.tar".format(state['arch'], cv_fold))
 
