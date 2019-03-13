@@ -29,6 +29,67 @@ except ImportError:
     from urllib2 import urlopen
 
 
+# In[22]:
+
+
+# Set-up name mapping for ImageNet
+url = 'https://gist.githubusercontent.com/aaronpolhamus/964a4411c0906315deb9f4a3723aac57/'
+url += 'raw/aa66dd9dbf6b56649fa3fab83659b2acbf3cbfd1/map_clsloc.txt'
+with urlopen(url) as f:
+    lines = [x.decode('utf-8') for x in f.readlines()]    
+    nid2name = dict([(l.split(" ")[0], l.split(" ")[2][:-1]) for l in lines])
+    
+dataset = datasets.ImageFolder(data_dir)
+nid2idx = dataset.class_to_idx
+idx2nid = {v: k for k, v in nid2idx.items()}
+name2nid = {v: k for k, v in nid2name.items()}
+idx2name = {k: nid2name[v] for k, v in idx2nid.items()}
+
+
+# ## Analyze the train set on ImageNet
+
+# In[15]:
+
+
+# CHANGE THIS TO CHANGE EXPERIMENT
+# pyx_file = 'imagenet_val_out.npy' # NO FINE TUNING
+pyx_file = 'imagenet__train__model_resnet50__pyx.npy' # fine tuned with 10fold cv
+
+# where imagenet dataset is located
+train_dir = '/datasets/datasets/imagenet/train/'
+# Stored results directory
+pyx_dir = '/datasets/cgn/pyx/imagenet/'
+
+# Load in data
+pyx = np.load(pyx_dir + pyx_file)
+imgs, labels = [list(z) for  z in zip(*datasets.ImageFolder(train_dir).imgs)]
+labels = np.array(labels, dtype=int)
+
+
+# In[19]:
+
+
+cj = cleanlab.latent_estimation.estimate_confident_joint_from_probabilities(labels, pyx)
+
+
+# In[21]:
+
+
+cj_non_diag = cj - np.eye(len(cj)) * cj.diagonal()
+largest_non_diag_raveled = np.argsort(cj_non_diag.ravel())[::-1]
+largest_non_diag = np.unravel_index(largest_non_diag_raveled, cj_non_diag.shape)
+largest_non_diag = list(zip(*(list(z) for z in largest_non_diag)))
+
+
+# In[26]:
+
+
+for i,j in largest_non_diag[:10]:
+    print(int(round(cj[i,j])), "|", idx2nid[i], idx2name[i], "|",  idx2nid[j], idx2name[j])
+
+
+# # Analye the validation set on ImageNet
+
 # In[3]:
 
 
