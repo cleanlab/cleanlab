@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+
 # coding: utf-8
 
 # ### This code extends the functionality of https://github.com/pytorch/examples/tree/master/imagenet to support cross-validation training, allowing you compute the out of sample predicted probabilities for the entire imagenet training set: a necessary step for confident learning and the cleanlab package.
@@ -512,12 +512,10 @@ def validate(val_loader, model, criterion, args):
 def save_checkpoint(state, is_best, filename='checkpoint.pth.tar', cv_fold = None, use_mask = False):
     torch.save(state, filename)
     if is_best:
-        if cv_fold is None:
-            shutil.copyfile(filename, 'model_best.pth.tar')
-        elif use_mask:
-            shutil.copyfile(filename, "model_{}__masked__model_best.pth.tar".format(state['arch']))
-        else:
-            shutil.copyfile(filename, "model_{}__fold_{}__model_best.pth.tar".format(state['arch'], cv_fold))
+        sm = "__masked" if use_mask else ""
+        sf = "__fold_{}".format(cv_fold) if cv_fold is not None else ""
+        wfn = 'model_{}{}{}_best.pth.tar'.format(state['arch'], sm, sf)
+        shutil.copyfile(filename, wfn)
 
 
 class AverageMeter(object):
