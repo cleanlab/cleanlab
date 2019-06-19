@@ -11,7 +11,6 @@
 from __future__ import print_function, absolute_import, division, unicode_literals, with_statement
 import numpy as np
 import multiprocessing
-import tqdm
 import sys
 
 from cleanlab.util import value_counts
