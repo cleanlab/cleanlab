@@ -75,6 +75,28 @@ labels = np.array(labels, dtype=int)
 cj = cleanlab.latent_estimation.estimate_confident_joint_from_probabilities(labels, pyx)
 
 
+# # A bad way to approach this problem might be to just look at the correlation of every column in the probability matrix. The problem is correlation is symmetric and this will correlate everything that has small counts. 
+
+# In[143]:
+
+
+corr = np.corrcoef(pyx.T)
+
+
+# In[220]:
+
+
+corr_non_diag = corr - np.eye(len(corr)) * corr.diagonal()
+corr_largest_non_diag_raveled = np.argsort(corr_non_diag.ravel())[::-1]
+corr_largest_non_diag = np.unravel_index(corr_largest_non_diag_raveled, corr_non_diag.shape)
+corr_largest_non_diag = list(zip(*(list(z) for z in corr_largest_non_diag)))
+
+print([(nid2name[idx2nid[z[0]]], nid2name[idx2nid[z[1]]]) for z in corr_largest_non_diag][:5])
+print([nid2name[idx2nid[z]] for z in corr.diagonal().argsort()[:10]])
+
+
+# # Using confident joint
+
 # In[47]:
 
 
@@ -100,6 +122,8 @@ assert(all(joint.sum(axis = 1) - np.bincount(labels) / len(labels) < 1e-4))
 
 # In[123]:
 
+
+class_name = 'bighorn'
 
 print("Index of '{}' in sorted diagonal of cj: ".format(class_name), end = "")
 print([nid2name[idx2nid[i]] for i in cj.diagonal().argsort()].index(class_name))
@@ -130,7 +154,52 @@ print("Least confident class by max sum of column of non-diagonal elements of cj
 print('Largest noise rate:', [(nid2name[idx2nid[z]], z) for z in largest_non_diag[0]])
 
 
-# In[17]:
+# In[221]:
+
+
+cj
+
+
+# In[251]:
+
+
+edges = [(
+    idx2name[i].replace('American_chameleon', 'chameleon').replace('typewriter_keyboard', 'keyboard'), 
+    idx2name[j].replace('American_chameleon', 'chameleon').replace('typewriter_keyboard', 'keyboard'), 
+    idx2nid[i], 
+    idx2nid[j], 
+    int(round(cj[i,j])),
+    joint[i,j].round(6),
+) for i,j in largest_non_diag[:30]]
+# nodes = list({z for i,j in largest_non_diag[:30] for z in (idx2name[i], idx2name[j])})
+
+
+# In[268]:
+
+
+df
+
+
+# In[270]:
+
+
+df = pd.DataFrame(edges, columns = [r"$\tilde{y}$ name", r"$y^*$ name", r"$\tilde{y}$ nid", r"$y^*$ nid", r"$C(\tilde{y},y^*)$", r"$P(\tilde{y},y^*)$"])[:10]
+df.insert(loc = 0, column = 'Rank', value = df.index + 1)
+tex = df.to_latex(index = False)
+orig = '\\$\\textbackslash tilde\\{y\\}\\$ name &    \\$y\\textasciicircum *\\$ name & \\$\\textbackslash tilde\\{y\\}\\$ nid &  \\$y\\textasciicircum *\\$ nid &  \\$C(\\textbackslash tilde\\{y\\},y\\textasciicircum *)\\$ &  \\$P(\\textbackslash tilde\\{y\\},y\\textasciicircum *)\\$'
+new = '$\\tilde{y}$ name   &   $y^*$ name   &   $\\tilde{y}$ nid   &   $y^*$ nid   &   $C(\\tilde{y},y^*)$   &   $P(\\tilde{y},y^*)$ '
+tex = tex.replace(orig, new)
+print(tex)
+df.style.set_properties(subset=[r"$C(\tilde{y},y^*)$"], **{'width': '50px'})
+
+
+# In[257]:
+
+
+tex
+
+
+# In[250]:
 
 
 for i,j in largest_non_diag[:30]:
