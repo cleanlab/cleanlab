@@ -72,5 +72,5 @@ setup(
     # your project is installed. For an analysis of "install_requires" vs pip's
     # requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
-    install_requires=['numpy>=1.11.3', 'scikit-learn>=0.18', 'scipy>=1.1.0', 'tqdm>=4.31.1'],
+    install_requires=['numpy>=1.11.3', 'scikit-learn>=0.18', 'scipy>=1.1.0', ],
 )

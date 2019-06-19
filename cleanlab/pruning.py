@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+
 # coding: utf-8
 
 # ## Pruning
@@ -16,6 +16,21 @@ import sys
 
 from cleanlab.util import value_counts
 from cleanlab.latent_estimation import calibrate_confident_joint
+
+
+# In[ ]:
+
+
+# tqdm is a module used to print time-to-complete when multiprocessing is used.
+# This module is not necessary, and therefore is not a package dependency, but 
+# when installed it improves user experience for large datsets.
+try:
+    import tqdm
+    tqdm_exists = True
+except ImportError as e:
+    tqdm_exists = False
+    import warnings
+    warnings.warn('To see estimated completion time')
 
 
 # In[ ]:
@@ -124,12 +139,6 @@ def _self_confidence(args):
     np.mean(psx[]) enables this code to work for multi-class l."""
     (idx, l) = args
     return np.mean(psx[idx, l])
-    
-
-def _top2(i):
-    """multiprocessing Helper function that assumes global
-    psx and returns the indices of the top 2 values in psx[i]."""
-    return np.argpartition(-psx[i], 2)[:2]
 
 
 # In[ ]:
@@ -289,9 +298,8 @@ def get_noise_indices(
             initializer = _multiprocessing_initialization, 
             initargs = (s, s_counts, prune_count_matrix, psx, multi_label),
         ) as p:
-            if big_dataset:
-                print('Parallel processing label errors by class.')
-                sys.stdout.flush()
+            print('Parallel processing label errors by class.', flush = True)
+            if big_dataset and tqdm_exists:
                 noise_masks_per_class = list(tqdm.tqdm(p.imap(_prune_by_class, range(K)), total=K))
             else:
                 noise_masks_per_class = p.map(_prune_by_class, range(K))
@@ -306,9 +314,8 @@ def get_noise_indices(
             initializer = _multiprocessing_initialization, 
             initargs = (s, s_counts, prune_count_matrix, psx, multi_label),
         ) as p:
-            if big_dataset:
-                print('Parallel processing label errors by noise rate.')
-                sys.stdout.flush()
+            print('Parallel processing label errors by noise rate.', flush = True)
+            if big_dataset and tqdm_exists:
                 noise_masks_per_class = list(tqdm.tqdm(p.imap(_prune_by_count, range(K)), total=K))
             else:
                 noise_masks_per_class = p.map(_prune_by_count, range(K))
