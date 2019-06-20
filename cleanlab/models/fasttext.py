@@ -226,7 +226,7 @@ class FastTextClassifier(BaseEstimator): # Inherits sklearn base classifier
     
     
     def predict_proba(self, X = None, train_data = True, return_labels = False):
-        '''Produces a probability matrix with exmaples on rows and 
+        '''Produces a probability matrix with examples on rows and 
         classes on columns, where each row sums to 1 and captures the
         probability of the example belonging to each class.'''
         
