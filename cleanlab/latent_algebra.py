@@ -78,7 +78,7 @@ def compute_inv_noise_matrix(py, noise_matrix, ps = None):
     # Number of classes
     K = len(py)
 
-    # 'ps' is p(s=k) = noise_matrix * p(s=k)
+    # 'ps' is p(s=k) = noise_matrix * p(y=k)
     # because in *vector computation*: P(s=k|y=k) * p(y=k) = P(s=k)
     if ps is None:
         ps = noise_matrix.dot(py)
