@@ -176,7 +176,7 @@ class LearningWithNoisyLabels(BaseEstimator): # Inherits sklearn classifier
         '''This method implements the confident learning. It counts examples that are likely
         labeled correctly and incorrectly and uses their ratio to create a predicted
         confusion matrix.
-        This function fits the classifer (self.clf) to (X, s) accounting for the noise in
+        This function fits the classifier (self.clf) to (X, s) accounting for the noise in
         both the positive and negative sets.
 
         Parameters
