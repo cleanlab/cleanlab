@@ -566,7 +566,7 @@ def estimate_confident_joint_and_cv_pred_proba(
     # noisy negative examples in each class.
     kf = StratifiedKFold(n_splits = cv_n_folds, shuffle = True, random_state = seed)
 
-    # Intialize psx array
+    # Initialize psx array
     psx = np.zeros((len(s), K))
 
     # Split X and s into "cv_n_folds" stratified folds.
