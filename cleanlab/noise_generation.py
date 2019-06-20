@@ -411,7 +411,7 @@ def generate_noise_matrix(
 
     Generates a noise matrix by randomly assigning noise rates
     up to max_noise_rate, then setting noise rates to
-    zero until P(s!=k|s=k) < 1 is satisified. Additionally,
+    zero until P(s!=k|s=k) < 1 is satisfied. Additionally,
     frac_zero_noise_rates are set to zero.
 
     Parameters
