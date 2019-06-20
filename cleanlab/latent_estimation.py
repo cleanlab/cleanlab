@@ -120,7 +120,7 @@ def calibrate_confident_joint(confident_joint, s, psx):
 
 
 def estimate_joint(confident_joint, s, psx):
-    '''Estimates the joint distribution of label noise P(s=i, y=j) guranteed to
+    '''Estimates the joint distribution of label noise P(s=i, y=j) guaranteed to
       * sum to 1
       * np.sum(joint_estimate, axis = 1) == p(s)
     
