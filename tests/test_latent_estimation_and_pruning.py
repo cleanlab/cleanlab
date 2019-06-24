@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+
 # coding: utf-8
 
 # In[ ]:
@@ -116,8 +116,11 @@ def test_exact_prune_count():
     noise_idx = pruning.get_noise_indices(
         s = s,
         psx = data['psx'],
-        num_to_remove_per_class = remove
+        num_to_remove_per_class = remove, 
+        prune_method = 'prune_by_class'
     )
+    print(s[noise_idx])
+    print(value_counts(s[noise_idx]))
     assert(all(value_counts(s[noise_idx]) == remove))
 
 
