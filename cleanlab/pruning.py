@@ -297,7 +297,8 @@ def get_noise_indices(
             initializer = _multiprocessing_initialization, 
             initargs = (s, s_counts, prune_count_matrix, psx, multi_label),
         ) as p:
-            print('Parallel processing label errors by class.', flush = True)
+            print('Parallel processing label errors by class.')
+            sys.stdout.flush()
             if big_dataset and tqdm_exists:
                 noise_masks_per_class = list(tqdm.tqdm(p.imap(_prune_by_class, range(K)), total=K))
             else:
@@ -313,7 +314,8 @@ def get_noise_indices(
             initializer = _multiprocessing_initialization, 
             initargs = (s, s_counts, prune_count_matrix, psx, multi_label),
         ) as p:
-            print('Parallel processing label errors by noise rate.', flush = True)
+            print('Parallel processing label errors by noise rate.')
+            sys.stdout.flush()
             if big_dataset and tqdm_exists:
                 noise_masks_per_class = list(tqdm.tqdm(p.imap(_prune_by_count, range(K)), total=K))
             else:
