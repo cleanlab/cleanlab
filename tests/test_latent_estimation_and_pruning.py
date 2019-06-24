@@ -5,16 +5,11 @@
 
 
 from __future__ import print_function, absolute_import, division, unicode_literals, with_statement
-
-
-# In[ ]:
-
-
 from cleanlab import latent_estimation
+from cleanlab import pruning
+from cleanlab.latent_algebra import compute_inv_noise_matrix
 from cleanlab.noise_generation import generate_noise_matrix_from_trace
 from cleanlab.noise_generation import generate_noisy_labels
-from cleanlab.latent_algebra import compute_inv_noise_matrix
-from cleanlab import pruning
 from cleanlab.util import value_counts
 import numpy as np
 import pytest
