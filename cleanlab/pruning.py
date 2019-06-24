@@ -229,6 +229,11 @@ def get_noise_indices(
       the indices of the 5 most likely mislabeled examples in class s = 0,
       and the most likely mislabeled example in class s = 1.
       ***Only set this parameter if prune_method == 'prune_by_class'
+      You may use with prune_method == 'prune_by_noise_rate', but
+      if num_to_remove_per_class == k, then either k-1, k, or k+1
+      examples may be removed for any class. This is because noise rates
+      are floats, and rounding may cause a one-off. If you need exactly 
+      'k' examples removed from every class, you should use 'prune_by_class'.
 
     prune_method : str (default: 'prune_by_noise_rate')
       'prune_by_class', 'prune_by_noise_rate', or 'both'. Method used for pruning.
