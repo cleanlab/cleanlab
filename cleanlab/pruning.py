@@ -5,26 +5,19 @@
 # 
 # #### Contains methods for estimating the latent indices of all label errors.
 
-# In[8]:
+# In[ ]:
 
 
 from __future__ import (
-    print_function,
-    absolute_import,
-    division,
-    unicode_literals,
-    with_statement,
+    print_function, absolute_import, division, unicode_literals, with_statement,
 )
-
-import numpy as np
 import multiprocessing
 import sys
-
 from cleanlab.util import value_counts
-from cleanlab.latent_estimation import calibrate_confident_joint
+import numpy as np
 
 
-# In[12]:
+# In[ ]:
 
 
 # tqdm is a module used to print time-to-complete when multiprocessing is used.
@@ -39,7 +32,7 @@ except ImportError as e:
     warnings.warn('To see estimated completion time')
 
 
-# In[13]:
+# In[ ]:
 
 
 # Leave at least this many examples in each class after
@@ -47,7 +40,7 @@ except ImportError as e:
 MIN_NUM_PER_CLASS = 5
 
 
-# In[14]:
+# In[ ]:
 
 
 # For python 2/3 compatibility, define pool context manager
@@ -63,7 +56,7 @@ else:
     multiprocessing_context = multiprocessing.Pool
 
 
-# In[48]:
+# In[ ]:
 
 
 # Multiprocessing Helper functions
@@ -163,7 +156,7 @@ def _self_confidence(args):
     return np.mean(psx[idx, l])
 
 
-# In[57]:
+# In[ ]:
 
 
 def multiclass_crossval_predict(pyx, labels):
@@ -196,7 +189,7 @@ def multiclass_crossval_predict(pyx, labels):
     return pred
 
 
-# In[109]:
+# In[ ]:
 
 
 
