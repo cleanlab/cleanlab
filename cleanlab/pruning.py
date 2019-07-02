@@ -21,7 +21,7 @@ import numpy as np
 
 
 # tqdm is a module used to print time-to-complete when multiprocessing is used.
-# This module is not necessary, and therefore is not a package dependency, but
+# This module is not necessary, and therefore is not a package dependency, but 
 # when installed it improves user experience for large datsets.
 try:
     import tqdm
@@ -29,7 +29,10 @@ try:
 except ImportError as e:
     tqdm_exists = False
     import warnings
-    warnings.warn('To see estimated completion time')
+    w = '''If you want to see estimated completion times
+    while running methods in cleanlab.pruning, install tqdm
+    via pip install tqdm.'''
+    warnings.warn(w)
 
 
 # In[ ]:
