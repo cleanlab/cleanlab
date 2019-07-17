@@ -333,7 +333,7 @@ def estimate_confident_joint_from_probabilities(
         else: # Do not converge p(s) of joint with actual p(s)
             break
 
-        return cjs if return_list_of_converging_cj_matrices else confident_joint
+    return cjs if return_list_of_converging_cj_matrices else confident_joint
 
 
 def estimate_latent(
