@@ -180,11 +180,13 @@ def value_counts(x):
         A list of discrete objects, like lists or strings, for
         example, class labels 'y' when training a classifier.
         e.g. ["dog","dog","cat"] or [1,2,0,1,1,0,2]'''
-    
-    if type(x[0]) is int and (np.array(x) >= 0).all():
-        return np.bincount(x)
-    else:
-        return np.unique(x, return_counts=True)[1] 
+    try:
+        return x.value_counts()
+    except:
+        if type(x[0]) is int and (np.array(x) >= 0).all():
+            return np.bincount(x)
+        else:
+            return np.unique(x, return_counts=True)[1] 
 
 
 # In[ ]:
