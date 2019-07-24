@@ -254,10 +254,11 @@ def confusion_matrix(y, s):
 
 def print_square_matrix(
     matrix, 
-    left_name = 's', 
-    top_name = 'y', 
-    title = " A square matrix",
-    short_title = 's,y',
+    left_name='s', 
+    top_name='y', 
+    title=' A square matrix',
+    short_title='s,y',
+    round_places=2,
 ):
     '''Pretty prints a matrix. 
     
@@ -272,7 +273,9 @@ def print_square_matrix(
     title : str
         Prints this string above the printed square matrix.
     short_title : str
-        A short title (6 characters or less) like P(s|y) or P(s,y).'''
+        A short title (6 characters or less) like P(s|y) or P(s,y).
+    round_places : int
+        Number of decimals to show for each matrix value.'''
     
     short_title = short_title[:6]    
     K = len(matrix) # Number of classes
@@ -284,34 +287,38 @@ def print_square_matrix(
     print(" "+short_title+"".join(['\t'+top_name+'='+str(i) for i in range(K)]))
     print('\t---'*K)
     for i in range(K):
-        print(left_name+"="+str(i)+" |\t"+"\t".join([str(z) for z in list(matrix.round(2)[i,:])]))
-    print("\tTrace(matrix) =", np.round(np.trace(matrix), 2))
+        entry = "\t".join([str(z) for z in list(matrix.round(round_places)[i,:])])
+        print(left_name + "=" + str(i) + " |\t" + entry)
+    print("\tTrace(matrix) =", np.round(np.trace(matrix), round_places))
     print()  
     
-def print_noise_matrix(noise_matrix):
+def print_noise_matrix(noise_matrix, round_places=2):
     '''Pretty prints the noise matrix.'''
     print_square_matrix(
         noise_matrix,
         title=' Noise Matrix (aka Noisy Channel) P(s|y)', 
-        short_title = "p(s|y)",
+        short_title='p(s|y)',
+        round_places=round_places,
     )
     
-def print_inverse_noise_matrix(inverse_noise_matrix):
+def print_inverse_noise_matrix(inverse_noise_matrix, round_places=2):
     '''Pretty prints the inverse noise matrix.'''
     print_square_matrix(
         inverse_noise_matrix, 
-        left_name = 'y', 
-        top_name = 's', 
+        left_name='y', 
+        top_name='s', 
         title=' Inverse Noise Matrix P(y|s)',
-        short_title = "p(y|s)",
+        short_title='p(y|s)',
+        round_places=round_places,
     )
     
-def print_joint_matrix(joint_matrix):
+def print_joint_matrix(joint_matrix, round_places=2):
     '''Pretty prints the joint label noise matrix.'''
     print_square_matrix(
         joint_matrix,
         title=' Joint Label Noise Distribution Matrix P(s,y)',
-        short_title = "p(s,y)",
+        short_title='p(s,y)',
+        round_places=round_places,
     )
 
 
