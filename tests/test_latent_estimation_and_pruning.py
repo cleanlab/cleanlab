@@ -99,7 +99,7 @@ def make_data(
 # In[ ]:
 
 
-data = make_data(seed = seed)
+data = make_data(seed=seed)
 
 
 # In[ ]:
@@ -124,22 +124,22 @@ def test_pruning_both():
     remove = 5
     s = data['s']
     class_idx = pruning.get_noise_indices(
-        s = s,
-        psx = data['psx'],
-        num_to_remove_per_class = remove,
-        prune_method = 'prune_by_class',
+        s=s,
+        psx=data['psx'],
+        num_to_remove_per_class=remove,
+        prune_method='prune_by_class',
     )
     nr_idx = pruning.get_noise_indices(
-        s = s,
-        psx = data['psx'],
-        num_to_remove_per_class = remove,
-        prune_method = 'prune_by_noise_rate',
+        s=s,
+        psx=data['psx'],
+        num_to_remove_per_class=remove,
+        prune_method='prune_by_noise_rate',
     )
     both_idx = pruning.get_noise_indices(
-        s = s,
-        psx = data['psx'],
-        num_to_remove_per_class = remove,
-        prune_method = 'both',
+        s=s,
+        psx=data['psx'],
+        num_to_remove_per_class=remove,
+        prune_method='both',
     )
     assert(all(s[both_idx] == s[class_idx & nr_idx]))
 
@@ -151,12 +151,70 @@ def test_prune_on_small_data():
     data = make_data(sizes = [4,4,4])
     for pm in ['prune_by_noise_rate', 'prune_by_class', 'both']:
         noise_idx = pruning.get_noise_indices(
-            s = data['s'],
-            psx = data['psx'],
-            prune_method = pm,
+            s=data['s'],
+            psx=data['psx'],
+            prune_method=pm,
         )
         # Num in each class < 5. Nothing should be pruned.
         assert(not any(noise_idx))
+
+
+# In[ ]:
+
+
+def test_calibrate_joint():
+    cj = latent_estimation.compute_confident_joint(
+        s=data["s"],
+        psx=data["psx"],
+        calibrate=False,
+    )
+    calibrated_cj = latent_estimation.calibrate_confident_joint(
+        s=data["s"],
+        psx=data["psx"],
+        confident_joint=cj,
+    )
+    s_counts = np.bincount(data["s"])
+    
+    # Check calibration
+    assert(all(calibrated_cj.sum(axis = 1).round().astype(int) == s_counts))
+    assert(len(data["s"]) == int(round(np.sum(calibrated_cj))))
+    
+    calibrated_cj2 = latent_estimation.compute_confident_joint(
+        s=data["s"],
+        psx=data["psx"],
+        calibrate=True,
+    )
+    
+    # Check equivalency
+    assert(np.all(calibrated_cj == calibrated_cj2))
+
+
+# In[ ]:
+
+
+def test_estimate_joint():
+    joint = latent_estimation.estimate_joint(
+        s=data["s"],
+        psx=data["psx"],
+    )
+    
+    # Check that oint sums to 1.
+    assert(abs(np.sum(joint) - 1.) < 1e-6)
+
+
+# In[ ]:
+
+
+def test_compute_confident_joint():
+    cj = latent_estimation.compute_confident_joint(
+        s=data["s"],
+        psx=data["psx"],
+    )
+    
+    # Check that confident joint doesn't overcount number of examples.
+    assert(np.sum(cj) <= data["n"])
+    # Check that confident joint is correct shape
+    assert(np.shape(cj) == (data["m"], data["m"]))
 
 
 # In[ ]:
