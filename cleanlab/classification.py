@@ -1,12 +1,12 @@
-#!/usr/bin/env python
+
 # coding: utf-8
 
 # ## The LearningWithNoisyLabels algorithm class for multiclass learning with noisy labels. 
-# #### The LearningWithNoisyLabels class wraps around an instantion of a classifier. Your classifier must adhere to the sklearn template, meaning it must define three functions:
+# #### The LearningWithNoisyLabels class wraps around an instantion of a classifier. Your classifier must adhere to the sklearn template, meaning it must define four functions:
 # * clf.fit(X, y, sample_weight = None)
 # * clf.predict_proba(X)
 # * clf.predict(X)
-# * clf.predict(X)
+# * clf.score(X, y, sample_weight = None)
 # 
 # where 'X' (of length n) contains your data, 'y' (of length n) contains your targets formatted as 0, 1, 2, ..., K-1, and sample_weight (of length n) that reweights examples in the loss function while training.
 # 
