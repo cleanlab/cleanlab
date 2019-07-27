@@ -116,10 +116,6 @@ def calibrate_confident_joint(confident_joint, s, psx):
     # Calibrate confident joint to sum to 1 (now an estimate of true joint counts)
     calibrated_cj = calibrated_cj / np.sum(calibrated_cj) * len(s)
 
-    # Check calibration
-    assert(all(calibrated_cj.sum(axis = 1).round().astype(int) == s_counts))
-    assert(len(s) == int(round(np.sum(calibrated_cj))))
-
     return calibrated_cj
 
 
