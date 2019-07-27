@@ -221,31 +221,32 @@ def test_compute_confident_joint():
 
 
 def test_cj_from_probs():
-    cj = latent_estimation.estimate_confident_joint_from_probabilities(
-        s = data["s"],
-        psx = data["psx"],
-        force_ps = 10,
-    )
-    true_ps = data["ps"] * data["n"]
-    forced = cj.sum(axis = 1)
-    
-    cj = latent_estimation.estimate_confident_joint_from_probabilities(
-        s = data["s"],
-        psx = data["psx"],
-        force_ps = 1,
-    )
-    forced1 = cj.sum(axis = 1)
-    
-    cj = latent_estimation.estimate_confident_joint_from_probabilities(
-        s = data["s"],
-        psx = data["psx"],
-        force_ps = False,
-    )
-    regular = cj.sum(axis = 1)
-    # Forcing ps should make ps more similar to the true ps.
-    assert(np.mean(true_ps - forced) <= np.mean(true_ps - regular))
-    # Check that one iteration is the same as not forcing ps
-    assert(np.mean(true_ps - forced1) - np.mean(true_ps - regular) < 2e-4)
+    with pytest.warns(UserWarning) as w:
+        cj = latent_estimation.estimate_confident_joint_from_probabilities(
+            s = data["s"],
+            psx = data["psx"],
+            force_ps = 10,
+        )
+        true_ps = data["ps"] * data["n"]
+        forced = cj.sum(axis = 1)
+
+        cj = latent_estimation.estimate_confident_joint_from_probabilities(
+            s = data["s"],
+            psx = data["psx"],
+            force_ps = 1,
+        )
+        forced1 = cj.sum(axis = 1)
+
+        cj = latent_estimation.estimate_confident_joint_from_probabilities(
+            s = data["s"],
+            psx = data["psx"],
+            force_ps = False,
+        )
+        regular = cj.sum(axis = 1)
+        # Forcing ps should make ps more similar to the true ps.
+        assert(np.mean(true_ps - forced) <= np.mean(true_ps - regular))
+        # Check that one iteration is the same as not forcing ps
+        assert(np.mean(true_ps - forced1) - np.mean(true_ps - regular) < 2e-4)
 
 
 # In[ ]:

@@ -31,7 +31,7 @@ except ImportError as e:
     import warnings
     w = '''If you want to see estimated completion times
     while running methods in cleanlab.pruning, install tqdm
-    via pip install tqdm.'''
+    via "pip install tqdm".'''
     warnings.warn(w)
 
 
@@ -297,10 +297,8 @@ def get_noise_indices(
     s = np.asarray(s)
 
     if confident_joint is None:
-        from cleanlab.latent_estimation import (
-            estimate_confident_joint_from_probabilities
-        )
-        confident_joint = estimate_confident_joint_from_probabilities(s, psx)
+        from cleanlab.latent_estimation import compute_confident_joint
+        confident_joint = compute_confident_joint(s, psx)
 
     # Leave at least MIN_NUM_PER_CLASS examples per class.
     # NOTE prune_count_matrix is transposed (relative to confident_joint)
