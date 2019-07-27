@@ -150,6 +150,7 @@ def compute_confident_joint(
     psx,
     K=None,
     thresholds=None,
+    calibrate=True,
 ):
     '''Estimates P(s,y), the confident counts of the latent
     joint distribution of true and noisy labels
@@ -177,7 +178,11 @@ def compute_confident_joint(
         P(s^=k|s=k). If an example has a predicted probability "greater" than
         this threshold, it is counted as having hidden label y = k. This is
         not used for pruning, only for estimating the noise rates using
-        confident counts. This value should be between 0 and 1. Default is None.'''
+        confident counts. This value should be between 0 and 1. Default is None.
+        
+    calibrate : bool (default: True)
+        Calibrates confident joint estimate P(s=i, y=j) such that
+        np.sum(cj) == len(s) and np.sum(cj, axis = 1) == np.bincount(s)'''
 
     # s needs to be a numpy array
     s = np.asarray(s)
@@ -223,6 +228,9 @@ def compute_confident_joint(
     s_confident = s[at_least_one_confident]
     from sklearn.metrics import confusion_matrix
     confident_joint = confusion_matrix(y_confident, s_confident).T
+    
+    if calibrate:
+        confident_joint = calibrate_confident_joint(confident_joint, s, psx)
     
     return confident_joint
 
