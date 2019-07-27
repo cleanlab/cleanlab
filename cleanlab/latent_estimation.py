@@ -112,7 +112,6 @@ def calibrate_confident_joint(confident_joint, s, psx):
     '''
 
     s_counts = np.bincount(s)
-    confident_joint = compute_confident_joint(s, psx)
     # Calibrate confident joint to have correct p(s) prior on noisy labels.
     calibrated_cj = (confident_joint.T / confident_joint.sum(axis=1) * s_counts).T
     # Calibrate confident joint to sum to 1 (now an estimate of true joint counts)
@@ -125,7 +124,7 @@ def calibrate_confident_joint(confident_joint, s, psx):
     return calibrated_cj
 
 
-def estimate_joint(confident_joint, s, psx):
+def estimate_joint(s, psx, confident_joint = None):
     '''Estimates the joint distribution of label noise P(s=i, y=j) guranteed to
       * sum to 1
       * np.sum(joint_estimate, axis = 1) == p(s)
@@ -139,7 +138,9 @@ def estimate_joint(confident_joint, s, psx):
         An np.array of shape (K, K) of type float representing a valid
         estimate of the true joint of noisy and true labels.
     '''
-
+    
+    if confident_joint is None:
+        confident_joint = compute_confident_joint(s, psx)
     calibrated_cj = calibrate_confident_joint(confident_joint, s, psx)
     return calibrated_cj / float(np.sum(calibrated_cj))
 
@@ -222,7 +223,7 @@ def compute_confident_joint(
     s_confident = s[at_least_one_confident]
     from sklearn.metrics import confusion_matrix
     confident_joint = confusion_matrix(y_confident, s_confident).T
-
+    
     return confident_joint
 
 
@@ -319,7 +320,7 @@ def estimate_confident_joint_from_probabilities(
     sgd_epochs = 5 if force_ps is True else 1 # Default 5 epochs if force_ps
     if type(force_ps) == int:
         sgd_epochs = force_ps
-    for sgd_iteration in range(sgd_epochs):
+    for sgd_iteration in range(sgd_epochs): #  ONLY 1 iteration by default.
         # Compute the confident joint.
         confident_joint = compute_confident_joint(s, psx, K, thresholds)
         confident_joint = calibrate_confident_joint(confident_joint, s, psx)
