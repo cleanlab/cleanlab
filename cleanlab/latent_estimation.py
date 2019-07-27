@@ -779,6 +779,7 @@ def converge_estimates(
 
 # Deprecated methods
 
+# pragma: no cover
 def estimate_confident_joint_from_probabilities(
     s,
     psx,
