@@ -139,8 +139,9 @@ def estimate_joint(s, psx, confident_joint = None):
     '''
     
     if confident_joint is None:
-        confident_joint = compute_confident_joint(s, psx)
-    calibrated_cj = calibrate_confident_joint(confident_joint, s, psx)
+        calibrated_cj = compute_confident_joint(s, psx, calibrate=True)
+    else:
+        calibrated_cj = calibrate_confident_joint(confident_joint, s, psx)
     return calibrated_cj / float(np.sum(calibrated_cj))
 
 
@@ -205,7 +206,7 @@ def compute_confident_joint(
         
     calibrate : bool (default: True)
         Calibrates confident joint estimate P(s=i, y=j) such that
-        np.sum(cj) == len(s) and np.sum(cj, axis = 1) == np.bincount(s)'''
+        np.sum(cj) == len(s) and np.sum(cj, axis = 1) == np.bincount(s).'''
 
     # s needs to be a numpy array
     s = np.asarray(s)
@@ -337,6 +338,7 @@ def estimate_py_and_noise_matrices_from_probabilities(
     thresholds=None,
     converge_latent_estimates=True,
     py_method='cnt',
+    calibrate=True,
 ):
     '''Computes the confident counts
     estimate of latent variables py and the noise rates
@@ -381,6 +383,10 @@ def estimate_py_and_noise_matrices_from_probabilities(
         How to compute the latent prior p(y=k). Default is "cnt" as it tends to
         work best, but you may also set this hyperparameter to "eqn" or "marginal".
 
+    calibrate : bool (default: True)
+        Calibrates confident joint estimate P(s=i, y=j) such that
+        np.sum(cj) == len(s) and np.sum(cj, axis = 1) == np.bincount(s).
+
     Returns
     ------
         py, noise_matrix, inverse_noise_matrix'''
@@ -389,6 +395,7 @@ def estimate_py_and_noise_matrices_from_probabilities(
         s=s,
         psx=psx,
         thresholds=thresholds,
+        calibrate=calibrate,
     )
     py, noise_matrix, inv_noise_matrix = estimate_latent(
         confident_joint=confident_joint,
@@ -407,6 +414,7 @@ def estimate_confident_joint_and_cv_pred_proba(
     cv_n_folds=5,
     thresholds=None,
     seed=None,
+    calibrate=True,
 ):
     '''Estimates P(s,y), the confident counts of the latent
     joint distribution of true and noisy labels
@@ -454,6 +462,10 @@ def estimate_confident_joint_and_cv_pred_proba(
     seed : int (default = None)
         Number to set the default state of the random number generator used to split
         the cross-validated folds. If None, uses np.random current random state.
+        
+    calibrate : bool (default: True)
+        Calibrates confident joint estimate P(s=i, y=j) such that
+        np.sum(cj) == len(s) and np.sum(cj, axis = 1) == np.bincount(s).
 
     Returns
     ------
@@ -496,6 +508,7 @@ def estimate_confident_joint_and_cv_pred_proba(
         s=s,
         psx=psx, # P(s = k|x)
         thresholds=thresholds,
+        calibrate=calibrate,
     )
 
     return confident_joint, psx
@@ -617,7 +630,14 @@ def estimate_cv_predicted_probabilities(
     seed : int (default = None)
         Number to set the default state of the random number generator used to split
         the cross-validated folds. If None, uses np.random current random state.
-    '''
+
+    Returns
+    --------
+    psx : np.array (shape (N, K))
+        P(s=k|x) is a matrix with K (noisy) probabilities for each of the N examples x.
+        This is the probability distribution over all K classes, for each
+        example, regarding whether the example has label s==k P(s=k|x). psx should
+        have been computed using 3 (or higher) fold cross-validation.'''
 
     return estimate_py_noise_matrices_and_cv_pred_proba(
         X=X,
@@ -836,7 +856,6 @@ def estimate_confident_joint_from_probabilities(
     for sgd_iteration in range(sgd_epochs): #  ONLY 1 iteration by default.
         # Compute the confident joint.
         confident_joint = compute_confident_joint(s, psx, K, thresholds)
-        confident_joint = calibrate_confident_joint(confident_joint, s, psx)
         cjs.append(confident_joint)
 
         if force_ps:
