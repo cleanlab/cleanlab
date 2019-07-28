@@ -19,7 +19,7 @@
 
 ``cleanlab``  finds and cleans label errors in any dataset using state-of-the-art algorithms for learning with noisy labels and estimating the complete joint distribution of label noise. ``cleanlab`` is fast: its built on optimized algorithms and parallelized across all CPU threads automatically. ``cleanlab`` implements the family of theory and algorithms called **confident learning** with provable guarantees of exact noise estimation and label error finding (when model output probabilities are exact).
 
-News! As of version 0.0.9, ``cleanlab`` now supports multi-label in addition to multiclass learning :)
+**News! As of version 0.0.10, ``cleanlab`` now supports multi-label learning** in addition to multiclass learning :)
 
 
 Its called ``cleanlab`` because it CLEANs LABels.
