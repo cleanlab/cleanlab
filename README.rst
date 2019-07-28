@@ -1,4 +1,5 @@
 .. figure:: https://raw.githubusercontent.com/cgnorthcutt/cleanlab/master/img/cleanlab_logo.png
+   :target: https://github.com/cgnorthcutt/cleanlab/
    :align: center
    :alt: cleanlab 
 
