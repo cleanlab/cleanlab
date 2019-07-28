@@ -58,7 +58,7 @@ Find label errors with PyTorch, Tensorflow, MXNet, etc. in 1 line of code!
    # Be sure you compute probs in a holdout/out-of-sample manner (e.g. cross-validation)
    # Now getting label errors is trivial with cleanlab... its one line of code.
    # Label errors are ordered by likelihood of being an error. First index is most likely error.
-   from cleanlab.pruning import estimate_py_and_noise_matrices_from_probabilities
+   from cleanlab.pruning import get_noise_indices
 
    ordered_label_errors = get_noise_indices(
        s = noisy_labels,
