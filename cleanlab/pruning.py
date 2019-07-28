@@ -85,7 +85,7 @@ def _multiprocessing_initialization(
     multi_label = _multi_label
 
 
-def _prune_by_class(k):
+def _prune_by_class(k):  # pragma: no cover
     """multiprocessing Helper function that assumes globals
     and produces a mask for class k for each example by
     removing the examples with *smallest probability* of
@@ -108,7 +108,7 @@ def _prune_by_class(k):
         return np.zeros(len(s), dtype=bool)
 
 
-def _prune_by_count(k):
+def _prune_by_count(k):  # pragma: no cover
     """multiprocessing Helper function that assumes globals
     and produces a mask for class k for each example by
     removing the example with noisy label k having *largest margin*,
@@ -143,7 +143,7 @@ def _prune_by_count(k):
         return np.zeros(len(s), dtype=bool)
 
 
-def _self_confidence(args):
+def _self_confidence(args):  # pragma: no cover
     """multiprocessing Helper function that assumes global
     psx and computes the self confidence (prob of given label)
     for an example (row in psx) given the example index idx
