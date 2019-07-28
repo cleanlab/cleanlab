@@ -1,7 +1,7 @@
 
 # coding: utf-8
 
-# In[ ]:
+# In[1]:
 
 
 from __future__ import print_function, absolute_import, division, unicode_literals, with_statement
@@ -15,13 +15,13 @@ import numpy as np
 import pytest
 
 
-# In[ ]:
+# In[2]:
 
 
 seed = 1
 
 
-# In[ ]:
+# In[3]:
 
 
 def make_data(
@@ -96,7 +96,7 @@ def make_data(
     }
 
 
-# In[ ]:
+# In[4]:
 
 
 data = make_data(seed=seed)
@@ -109,10 +109,10 @@ def test_exact_prune_count():
     remove = 5
     s = data['s']
     noise_idx = pruning.get_noise_indices(
-        s = s,
-        psx = data['psx'],
-        num_to_remove_per_class = remove, 
-        prune_method = 'prune_by_class'
+        s=s,
+        psx=data['psx'],
+        num_to_remove_per_class=remove, 
+        prune_method='prune_by_class',
     )
     assert(all(value_counts(s[noise_idx]) == remove))
 
@@ -170,11 +170,10 @@ def test_calibrate_joint():
     )
     calibrated_cj = latent_estimation.calibrate_confident_joint(
         s=data["s"],
-        psx=data["psx"],
         confident_joint=cj,
     )
     s_counts = np.bincount(data["s"])
-    
+
     # Check calibration
     assert(all(calibrated_cj.sum(axis = 1).round().astype(int) == s_counts))
     assert(len(data["s"]) == int(round(np.sum(calibrated_cj))))
@@ -198,7 +197,7 @@ def test_estimate_joint():
         psx=data["psx"],
     )
     
-    # Check that oint sums to 1.
+    # Check that jjoint sums to 1.
     assert(abs(np.sum(joint) - 1.) < 1e-6)
 
 
@@ -223,26 +222,26 @@ def test_compute_confident_joint():
 def test_cj_from_probs():
     with pytest.warns(UserWarning) as w:
         cj = latent_estimation.estimate_confident_joint_from_probabilities(
-            s = data["s"],
-            psx = data["psx"],
-            force_ps = 10,
+            s=data["s"],
+            psx=data["psx"],
+            force_ps=10,
         )
         true_ps = data["ps"] * data["n"]
         forced = cj.sum(axis = 1)
 
         cj = latent_estimation.estimate_confident_joint_from_probabilities(
-            s = data["s"],
-            psx = data["psx"],
-            force_ps = 1,
+            s=data["s"],
+            psx=data["psx"],
+            force_ps=1,
         )
         forced1 = cj.sum(axis = 1)
 
         cj = latent_estimation.estimate_confident_joint_from_probabilities(
-            s = data["s"],
-            psx = data["psx"],
-            force_ps = False,
+            s=data["s"],
+            psx=data["psx"],
+            force_ps=False,
         )
-        regular = cj.sum(axis = 1)
+        regular = cj.sum(axis=1)
         # Forcing ps should make ps more similar to the true ps.
         assert(np.mean(true_ps - forced) <= np.mean(true_ps - regular))
         # Check that one iteration is the same as not forcing ps
@@ -255,24 +254,24 @@ def test_cj_from_probs():
 def test_estimate_latent_py_method():
     for py_method in ["cnt", "eqn", "marginal"]:
         py, nm, inv = latent_estimation.estimate_latent(
-            confident_joint = data['cj'],
-            s = data['s'],
-            py_method = py_method,
+            confident_joint=data['cj'],
+            s=data['s'],
+            py_method=py_method,
         )
         assert(sum(py) - 1 < 1e-4)
     try:
         py, nm, inv = latent_estimation.estimate_latent(
-            confident_joint = data['cj'],
-            s = data['s'],
-            py_method = 'INVALID',
+            confident_joint=data['cj'],
+            s=data['s'],
+            py_method='INVALID',
         )
     except ValueError as e:
         assert('should be' in str(e))
         with pytest.raises(ValueError) as e:
             py, nm, inv = latent_estimation.estimate_latent(
-                confident_joint = data['cj'],
-                s = data['s'],
-                py_method = 'INVALID',
+                confident_joint=data['cj'],
+                s=data['s'],
+                py_method='INVALID',
             )
 
 
@@ -309,4 +308,50 @@ def test_estimate_noise_matrices():
     )
     assert(np.all(abs(nm -  data["est_nm"]) < 0.1))
     assert(np.all(abs(inv -  data["est_inv"]) < 0.1))
+
+
+# In[ ]:
+
+
+def test_pruning_keep_at_least_n_per_class():
+    '''Make sure it doesnt remove when its not supposed to'''
+    cj = np.array([
+        [325,  16,  22],
+        [ 47, 178,  10],
+        [ 36,   8, 159],
+    ])
+    cj2 = pruning.reduce_prune_counts(cj, frac_noise=1.0)
+    assert(np.all(cj == cj2))
+
+def test_pruning_keep_at_least_n_per_class():
+    '''Make sure it doesnt remove when its not supposed to'''
+    cj = np.array([
+        [325,  16,  22],
+        [ 47, 178,  10],
+        [ 36,   8, 159],
+    ])
+    prune_count_matrix = pruning.keep_at_least_n_per_class(
+        prune_count_matrix=cj.T,
+        n=5,
+    )
+    assert(np.all(cj == prune_count_matrix.T))
+
+
+# In[8]:
+
+
+def test_get_noise_indices_multi_label():
+    s_ml = [[z, data['y_train'][i]] for i, z in enumerate(data['s'])]
+    for multi_label in [True, False]:
+        for prune_method in ['prune_by_class', 'prune_by_noise_rate']:
+            noise_idx = pruning.get_noise_indices(
+                s=s_ml if multi_label else data['s'],
+                psx=data['psx'],
+                prune_method=prune_method,
+                multi_label=multi_label,
+            )
+            acc = np.mean((data['s'] != data['y_train']) == noise_idx)
+            # Make sure cleanlab does reasonably well finding the errors.
+            # acc is the accuracy of detecting a label error.
+            assert(acc > 0.9)
 
