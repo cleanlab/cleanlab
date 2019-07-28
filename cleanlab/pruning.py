@@ -73,7 +73,7 @@ def _multiprocessing_initialization(
     _prune_count_matrix,
     _psx,
     _multi_label,
-):
+):  # pragma: no cover
     '''Shares memory objects across child processes.
     ASSUMES none of these will change!'''
 
