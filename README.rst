@@ -48,8 +48,8 @@ Learning with noisy labels in 3 lines of code!
    predicted_test_labels = lnl.predict(X_test)
 
 
-ONE LINE OF CODE workflow for PyTorch, Tensorflow, MXNet, Caffe2, etc.
-----------------------------------------------------------------------
+Find label errors with PyTorch, Tensorflow, MXNet, etc. in 1 line of code!
+--------------------------------------------------------------------------
 
 .. code:: python
 
