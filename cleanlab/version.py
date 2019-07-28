@@ -1,4 +1,6 @@
-__version__ = '0.0.9'
+__version__ = '0.0.10'
+
+# 0.0.10 - Improved documentation, code formatting, README, and testing coverage.
 
 # 0.0.9 - Multiple major changes
 #   - Important: refactored all confident joint methods and parameters
