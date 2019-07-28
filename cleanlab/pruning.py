@@ -201,6 +201,7 @@ def get_noise_indices(
     converge_latent_estimates=False,
     sorted_index_method=None,
     multi_label=False,
+    verbose=0,
 ):
     '''Returns the indices of most likely (confident) label errors in s. The
     number of indices returned is specified by frac_of_noise. When
@@ -275,7 +276,10 @@ def get_noise_indices(
 
     multi_label : bool
       If true, s should be an iterable (e.g. list) of iterables, containing a
-      list of labels for each example, instead of just a single label.'''
+      list of labels for each example, instead of just a single label.
+
+    verbose : int
+      If 0, no print statements. If 1, prints when multiprocessing happens.'''
 
     # Number of examples in each class of s
     if multi_label:
@@ -322,7 +326,8 @@ def get_noise_indices(
             initializer=_multiprocessing_initialization,
             initargs=(s, s_counts, prune_count_matrix, psx, multi_label),
         ) as p:
-            print('Parallel processing label errors by class.')
+            if verbose:
+                print('Parallel processing label errors by class.')
             sys.stdout.flush()
             if big_dataset and tqdm_exists:
                 noise_masks_per_class = list(
@@ -341,7 +346,8 @@ def get_noise_indices(
             initializer=_multiprocessing_initialization,
             initargs=(s, s_counts, prune_count_matrix, psx, multi_label),
         ) as p:
-            print('Parallel processing label errors by noise rate.')
+            if verbose:
+                print('Parallel processing label errors by noise rate.')
             sys.stdout.flush()
             if big_dataset and tqdm_exists:
                 noise_masks_per_class = list(
