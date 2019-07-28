@@ -1,7 +1,7 @@
 
 # coding: utf-8
 
-# In[1]:
+# In[ ]:
 
 
 from __future__ import print_function, absolute_import, division, unicode_literals, with_statement
@@ -15,13 +15,13 @@ import numpy as np
 import pytest
 
 
-# In[2]:
+# In[ ]:
 
 
 seed = 1
 
 
-# In[3]:
+# In[ ]:
 
 
 def make_data(
@@ -96,7 +96,7 @@ def make_data(
     }
 
 
-# In[4]:
+# In[ ]:
 
 
 data = make_data(seed=seed)
@@ -313,7 +313,7 @@ def test_estimate_noise_matrices():
 # In[ ]:
 
 
-def test_pruning_keep_at_least_n_per_class():
+def test_pruning_reduce_prune_counts():
     '''Make sure it doesnt remove when its not supposed to'''
     cj = np.array([
         [325,  16,  22],
@@ -336,8 +336,19 @@ def test_pruning_keep_at_least_n_per_class():
     )
     assert(np.all(cj == prune_count_matrix.T))
 
+def test_pruning_order_method():
+    order_methods = ["prob_given_label", "normalized_margin"]
+    results = []
+    for method in order_methods:
+        results.append(pruning.get_noise_indices(
+            s=data['s'],
+            psx=data['psx'],
+            sorted_index_method=method,
+        ))
+    assert(len(results[0]) == len(results[1]))
 
-# In[8]:
+
+# In[ ]:
 
 
 def test_get_noise_indices_multi_label():
