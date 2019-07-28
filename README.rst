@@ -17,7 +17,9 @@
 .. |coverage| image:: https://codecov.io/gh/cgnorthcutt/cleanlab/branch/master/graph/badge.svg
     :target: https://codecov.io/gh/cgnorthcutt/cleanlab
 
-``cleanlab``  finds and cleans label errors in any dataset using state-of-the-art algorithms for learning with noisy labels and estimating the complete joint distribution of label noise. ``cleanlab`` is fast: its built on optimized algorithms and parallelized across all CPU threads automatically. ``cleanlab`` implements the family of theory and algorithms called **confident learning** with provable guarantees of exact noise estimation and label error finding (when model output probabilities are exact). 
+``cleanlab``  finds and cleans label errors in any dataset using state-of-the-art algorithms for learning with noisy labels and estimating the complete joint distribution of label noise. ``cleanlab`` is fast: its built on optimized algorithms and parallelized across all CPU threads automatically. ``cleanlab`` implements the family of theory and algorithms called **confident learning** with provable guarantees of exact noise estimation and label error finding (when model output probabilities are exact).
+
+News! As of version 0.0.9, ``cleanlab`` now supports multi_label in addition to multiclasss learning :)
 
 
 Its called ``cleanlab`` because it CLEANs LABels. 
@@ -44,6 +46,23 @@ Its called ``cleanlab`` because it CLEANs LABels.
    predicted_test_labels = lnl.predict(X_test)
 
 Check out these `examples <https://github.com/cgnorthcutt/cleanlab/tree/master/examples>`__ and `tests <https://github.com/cgnorthcutt/cleanlab/tree/master/tests>`__ (includes how to use pyTorch, FastText, etc.).
+
+ONE LINE OF CODE workflow for PyTorch, Tensorflow, MXNet, Caffe2, etc.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. code:: python
+
+    # Compute psx (n x m matrix of predicted probabilities) on your own, with any classifier.
+    # Be sure you compute probs in a holdout/out-of-sample manner (e.g. cross-validation)
+    # Now getting label errors is trivial with cleanlab... its one line of code.
+    # Label errors are ordered by likelihood of being an error. First index is most likely error.
+    from cleanlab.pruning import estimate_py_and_noise_matrices_from_probabilities
+
+    ordered_label_errors = get_noise_indices(
+        s = noisy_labels,
+        psx = numpy_array_of_predicted_probabilities,
+        sorted_index_method='normalized_margin', # Orders label errors
+     )
 
 Installation
 ------------
@@ -366,23 +385,23 @@ distribution matrix that captures the number of pairwise label flip
 errors when multipled by the total number of examples as *n* P(s,y)*.
 Using `cleanlab.latent_estimation.calibrate_confident_joint`, 
 this method guarantees the rows of *P(s,y)* correctly sum to *p(s)*, 
-and the entire matrix sums to 1.
+and np.sum(confident_joint) == n (the number of labels).
 
 This method occurs when hyperparameter prune_count_method =
 ‘inverse_nm_dot_s’ in LearningWithNoisyLabels.fit() and get_noise_indices().
 
 .. code:: python
 
-   from cleanlab.latent_estimation import estimate_confident_joint_from_probabilities
-   joint = estimate_confident_joint_from_probabilities(s=noisy_labels, psx=probabilities)
+   from cleanlab.latent_estimation import compute_confident_joint
+   joint = compute_confident_joint(s=noisy_labels, psx=probabilities)
 
-If you already have the confident joint, then you can quickly
+If you've already computed the confident joint, then you can
 estimate the complete joint distribution of label noise by:
 
 .. code:: python
 
    from cleanlab.latent_estimation import estimate_joint
-   joint = estimate_joint(confident_joint=cj, s=noisy_labels, psx=probabilities)
+   joint = estimate_joint(confident_joint=cj, s=noisy_labels)
 
 Generate valid, class-conditional, unformly random noisy channel matrices:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
