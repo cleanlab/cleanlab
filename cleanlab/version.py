@@ -1,4 +1,6 @@
-__version__ = '0.0.10'
+__version__ = '0.0.11'
+
+# 0.0.11 - New logo! Improved README.
 
 # 0.0.10 - Improved documentation, code formatting, README, and testing coverage.
 
