@@ -28,7 +28,7 @@ Its called ``cleanlab`` because it CLEANs LABels.
 
 ``cleanlab`` is:
 
-1. fast - **runs in parallel on all CPU threads automatically**. (e.g. < 1 second to find label errors in ImageNet)
+1. fast - Single-shot, non-iterative, parallelized algorithms (e.g. < 1 second to find label errors in ImageNet)
 2. robust - Provable generalization and risk minimimzation guarantees, including imperfect probability estimation.
 3. general - Works with any probablistic classifier: PyTorch, Tensorflow, MxNet, Caffe2, scikit-learn, etc.
 4. unique - The only package for multiclass learning with noisy labels or finding label errors for any dataset / classifier.
