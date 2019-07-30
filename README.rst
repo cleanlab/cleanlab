@@ -46,7 +46,7 @@ Find label errors with PyTorch, Tensorflow, MXNet, etc. in 1 line of code!
    from cleanlab.pruning import get_noise_indices
 
    ordered_label_errors = get_noise_indices(
-       s = noisy_labels,
+       s = numpy_array_of_noisy_labels,
        psx = numpy_array_of_predicted_probabilities,
        sorted_index_method='normalized_margin', # Orders label errors
     )
