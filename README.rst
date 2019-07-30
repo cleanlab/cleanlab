@@ -33,21 +33,6 @@ Its called ``cleanlab`` because it CLEANs LABels.
 3. general - Works with any probablistic classifier: PyTorch, Tensorflow, MxNet, Caffe2, scikit-learn, etc.
 4. unique - The only package for multiclass learning with noisy labels or finding label errors for any dataset / classifier.
 
-   
-Learning with noisy labels in 3 lines of code!
-----------------------------------------------
-   
-.. code:: python
-   
-   from cleanlab.classification import LearningWithNoisyLabels
-   from sklearn.linear_model import LogisticRegression
-
-   # Wrap around any classifier. Yup, you can use sklearn/pyTorch/Tensorflow/FastText/etc.
-   lnl = LearningWithNoisyLabels(clf=LogisticRegression()) 
-   lnl.fit(X = X_train_data, s = train_noisy_labels) 
-   # Estimate the predictions you would have gotten by training with *no* label errors.
-   predicted_test_labels = lnl.predict(X_test)
-
 
 Find label errors with PyTorch, Tensorflow, MXNet, etc. in 1 line of code!
 --------------------------------------------------------------------------
@@ -65,6 +50,21 @@ Find label errors with PyTorch, Tensorflow, MXNet, etc. in 1 line of code!
        psx = numpy_array_of_predicted_probabilities,
        sorted_index_method='normalized_margin', # Orders label errors
     )
+
+   
+Learning with noisy labels in 3 lines of code!
+----------------------------------------------
+   
+.. code:: python
+   
+   from cleanlab.classification import LearningWithNoisyLabels
+   from sklearn.linear_model import LogisticRegression
+
+   # Wrap around any classifier. Yup, you can use sklearn/pyTorch/Tensorflow/FastText/etc.
+   lnl = LearningWithNoisyLabels(clf=LogisticRegression()) 
+   lnl.fit(X = X_train_data, s = train_noisy_labels) 
+   # Estimate the predictions you would have gotten by training with *no* label errors.
+   predicted_test_labels = lnl.predict(X_test)
 
 
 Check out these `examples <https://github.com/cgnorthcutt/cleanlab/tree/master/examples>`__ and `tests <https://github.com/cgnorthcutt/cleanlab/tree/master/tests>`__ (includes how to use pyTorch, FastText, etc.).
