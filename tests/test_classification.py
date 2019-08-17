@@ -85,11 +85,6 @@ def make_data(sparse,
         "noise_matrix": noise_matrix,
     }
 
-
-# In[ ]:
-
-# sparse_data = make_data(seed = seed, sparse=sparse_bool)
-
 # In[ ]:
 @pytest.mark.parametrize("sparse", [True, False])
 def test_rp(sparse):
@@ -103,7 +98,6 @@ def test_rp(sparse):
 
 
 # In[ ]:
-
 
 def test_raise_error_no_clf_fit():
     class struct(object):
@@ -123,7 +117,6 @@ def test_raise_error_no_clf_fit():
 
 # In[ ]:
 
-
 def test_raise_error_no_clf_predict_proba():
     class struct(object):
         def fit(self):
@@ -141,7 +134,6 @@ def test_raise_error_no_clf_predict_proba():
 
 
 # In[ ]:
-
 
 def test_raise_error_no_clf_predict():
     class struct(object):
@@ -161,7 +153,6 @@ def test_raise_error_no_clf_predict():
 
 # In[ ]:
 
-
 def test_seed():
     lnl = LearningWithNoisyLabels(seed=0)
     assert (lnl.seed is not None)
@@ -175,9 +166,7 @@ def test_default_clf():
     return lnl.clf is not None and hasattr(lnl.clf, 'fit') and hasattr(lnl.clf, 'predict') and hasattr(lnl.clf,
                                                                                                        'predict_proba')
 
-
 # In[ ]:
-
 
 def test_clf_fit_nm():
     lnl = LearningWithNoisyLabels()
@@ -192,7 +181,6 @@ def test_clf_fit_nm():
 
 
 # In[ ]:
-
 
 def test_clf_fit_inm():
     lnl = LearningWithNoisyLabels()
