@@ -1,21 +1,12 @@
 
 # coding: utf-8
 
-# In[ ]:
-
-
 from __future__ import print_function, absolute_import, division, unicode_literals, with_statement
-
-
-# In[ ]:
 
 
 from cleanlab.polyplex import joint_bounds, slope_intercept, joint_min_max
 import numpy as np
 import pytest
-
-
-# In[ ]:
 
 
 def test_polyplex(py = [0.1, 0.2, 0.2, 0.5]):
@@ -31,11 +22,7 @@ def test_polyplex(py = [0.1, 0.2, 0.2, 0.5]):
     assert(all((np.ediff1d(maxs) - max_slopes) < 1e-2))
 
 
-# In[ ]:
-
-
 def test_joint_min_max_float(py = [0.1, 0.1, 0.3, 0.5]):
     vals = np.array((joint_min_max(1, py), joint_min_max(2, py)))
     averages = vals.mean(axis = 0)
     assert(all((averages - joint_min_max(1.5, py)) < 1e-4))
-

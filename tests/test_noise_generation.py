@@ -1,13 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[ ]:
-
-
 from __future__ import print_function, absolute_import, division, unicode_literals, with_statement
-
-
-# In[ ]:
 
 
 import numpy as np
@@ -15,14 +9,8 @@ from cleanlab import noise_generation
 import pytest
 
 
-# In[ ]:
-
-
 seed = 0
 np.random.seed(0)
-
-
-# In[ ]:
 
 
 def test_main_pipeline(
@@ -55,76 +43,56 @@ def test_main_pipeline(
     assert(noise_generation.noise_matrix_is_valid(nm, py, verbose))
 
 
-# In[ ]:
-
-
 def test_main_pipeline_fraczero_high():
     test_main_pipeline(n = 1000, frac_zero_noise_rates = 0.75)
-
-
-# In[ ]:
 
 
 def test_main_pipeline_verbose(verbose = True, n = 10):
     test_main_pipeline(verbose = verbose, n = n)
 
 
-# In[ ]:
-
-
 def test_main_pipeline_many(verbose = False, n = 1000):
     test_main_pipeline(verbose = verbose, n = n)
-    
+
+
 def test_main_pipeline_many_verbose_valid(verbose = True, n = 100):
     test_main_pipeline(verbose, n, valid_noise_matrix = True)
-    
+
+
 def test_main_pipeline_many_valid(verbose = False, n = 100):
     test_main_pipeline(verbose, n, valid_noise_matrix = True)
-
-
-# In[ ]:
 
 
 def test_main_pipeline_many_verbose(verbose = True, n = 1000):
     test_main_pipeline(verbose = verbose, n = n)
 
 
-# In[ ]:
-
-
 def test_invalid_inputs_verify():
-    
     nm = np.array([
         [0.2, 0.5],
         [0.8, 0.5],
     ])
     py = [0.1, 0.8]
     assert(not noise_generation.noise_matrix_is_valid(nm, py))
-    
+
     nm = np.array([
         [0.2, 0.5],
         [0.8, 0.4],
     ])
     py = [0.1, 0.9]
     assert(not noise_generation.noise_matrix_is_valid(nm, py))
-    
+
     py = [0.1, 0.8]
     assert(not noise_generation.noise_matrix_is_valid(nm, py))
 
 
-# In[ ]:
-
-
-def test_invalid_matrix():    
+def test_invalid_matrix():
     nm = np.array([
         [0.1, 0.9],
         [0.9, 0.1],
     ])
     py = [0.1, 0.9]
     assert(not noise_generation.noise_matrix_is_valid(nm, py))
-
-
-# In[ ]:
 
 
 def test_trace_less_than_1_error(trace = 0.5):
@@ -136,14 +104,8 @@ def test_trace_less_than_1_error(trace = 0.5):
             noise_generation.generate_noise_matrix_from_trace(3, trace)
 
 
-# In[ ]:
-
-
 def test_trace_equals_1_error(trace = 1):
     test_trace_less_than_1_error(trace)
-
-
-# In[ ]:
 
 
 def test_valid_no_py_error():
@@ -163,9 +125,6 @@ def test_valid_no_py_error():
             )
 
 
-# In[ ]:
-
-
 def test_one_class_error():
     try:
         noise_generation.generate_noise_matrix_from_trace(
@@ -181,9 +140,6 @@ def test_one_class_error():
             )
 
 
-# In[ ]:
-
-
 def test_two_class_nofraczero():
     trace = 1.1
     nm = noise_generation.generate_noise_matrix_from_trace(
@@ -193,9 +149,6 @@ def test_two_class_nofraczero():
     )
     assert(not np.any(nm == 0)) # Make sure there is not a zero noise rate.
     assert(abs(trace - np.trace(nm) < 1e-2))
-
-
-# In[ ]:
 
 
 def test_two_class_fraczero_high(valid = False):
@@ -211,14 +164,8 @@ def test_two_class_fraczero_high(valid = False):
     assert(abs(trace - np.trace(nm) < 1e-2))
 
 
-# In[ ]:
-
-
 def test_two_class_fraczero_high_valid():
     test_two_class_fraczero_high(True)
-
-
-# In[ ]:
 
 
 def test_deprecated_warning(
@@ -236,29 +183,17 @@ def test_deprecated_warning(
     assert(all(abs(nm.sum(axis = 0) - 1) < 1e-4))
 
 
-# In[ ]:
-
-
 def test_deprecated_warning_verbose(verbose = True):    
-    test_deprecated_warning(verbose)   
-
-
-# In[ ]:
+    test_deprecated_warning(verbose)
 
 
 def test_deprecated_fraczero():    
-    test_deprecated_warning(frac_zero_noise_rates = 0.5)   
-
-
-# In[ ]:
+    test_deprecated_warning(frac_zero_noise_rates = 0.5)
 
 
 def test_gen_probs_sum_empty():
     f = noise_generation.generate_n_rand_probabilities_that_sum_to_m
     assert(len(f(n = 0, m = 1)) == 0)
-
-
-# In[ ]:
 
 
 def test_gen_probs_max_error():    
@@ -271,9 +206,6 @@ def test_gen_probs_max_error():
             f(n = 5, m = 1, max_prob = 0.1)
 
 
-# In[ ]:
-
-
 def test_gen_probs_min_error():    
     f = noise_generation.generate_n_rand_probabilities_that_sum_to_m
     try:
@@ -282,9 +214,6 @@ def test_gen_probs_min_error():
         assert('min_prob must be less' in str(e))
         with pytest.raises(ValueError) as e:
             f(n = 5, m = 1, min_prob = 0.9)
-
-
-# In[ ]:
 
 
 def test_probs_min_max_error():    
@@ -299,18 +228,12 @@ def test_probs_min_max_error():
             f(n = 5, m = 1, min_prob = min_prob, max_prob = max_prob)
 
 
-# In[ ]:
-
-
 def test_balls_zero():    
     f = noise_generation.randomly_distribute_N_balls_into_K_bins
     K = 3
     result = f(N=0,K=K)
     assert(len(result) == K)
     assert(sum(result) == 0)
-
-
-# In[ ]:
 
 
 def test_balls_params():    
@@ -328,9 +251,6 @@ def test_balls_params():
             assert(sum(r) == K)
             assert(min(r) <= (K if mn is None else mn))
             assert(len(r) == K)
-
-
-# In[ ]:
 
 
 def test_max_iter(): 
@@ -355,4 +275,3 @@ def test_max_iter():
         max_iter = 0,
     )
     assert(nm2 == False)
-

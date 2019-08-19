@@ -1,20 +1,11 @@
 
 # coding: utf-8
 
-# In[ ]:
-
-
 from __future__ import print_function, absolute_import, division, unicode_literals, with_statement
-
-
-# In[ ]:
 
 
 from cleanlab import util
 import numpy as np
-
-
-# In[ ]:
 
 
 noise_matrix = np.array([
@@ -42,31 +33,28 @@ joint_matrix_2 = np.array([
 single_element = np.array([1])
 
 
-# In[ ]:
-
-
 def test_print_inm():
     for m in [noise_matrix, noise_matrix_2, single_element]:
         util.print_inverse_noise_matrix(m, round_places=3)
     assert(True)
+
 
 def test_print_joint():
     for m in [joint_matrix, joint_matrix_2, single_element]:
         util.print_joint_matrix(m, round_places=3)
     assert(True)
 
+
 def test_print_square():
     for m in [noise_matrix, noise_matrix_2, single_element]:
         util.print_square_matrix(noise_matrix, round_places=3)
     assert(True)
 
+
 def test_print_noise_matrix():
     for m in [noise_matrix, noise_matrix_2, single_element]:
         util.print_noise_matrix(noise_matrix, round_places=3)
     assert(True)
-
-
-# In[ ]:
 
 
 def test_pu_f1():
@@ -75,15 +63,9 @@ def test_pu_f1():
     assert(abs(util.estimate_pu_f1(s, p) - 1) < 1e-4)
 
 
-# In[ ]:
-
-
 def test_value_counts_str():
     r = util.value_counts(['a','b','a'])
     assert(all(np.array([2, 1]) - r < 1e-4))
-
-
-# In[ ]:
 
 
 def test_pu_remove_noise():
@@ -94,9 +76,6 @@ def test_pu_remove_noise():
     ])
     r = util.remove_noise_from_class(nm, 0)
     assert(np.all(r - nm < 1e-4))
-
-
-# In[ ]:
 
 
 def test_round_preserving_sum():
@@ -117,13 +96,9 @@ def test_round_preserving_row_totals():
     assert(np.all(mat_int.sum(axis=1) == mat.sum(axis=1)))
 
 
-# In[ ]:
-
-
 def test_version_warning():
     util.VersionWarning(
         warning_str='Test warning.',
         list_of_compatible_versions=[2.7, 3.5, 3.6],
     )
     assert(True)
-
