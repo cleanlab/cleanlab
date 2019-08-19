@@ -11,9 +11,11 @@
 from __future__ import (
     print_function, absolute_import, division, unicode_literals, with_statement,
 )
+from sklearn.preprocessing import MultiLabelBinarizer
 import multiprocessing
 import sys
-from cleanlab.util import value_counts
+import time
+from cleanlab.util import value_counts, round_preserving_row_totals
 import numpy as np
 
 
@@ -31,7 +33,7 @@ except ImportError as e:
     import warnings
     w = '''If you want to see estimated completion times
     while running methods in cleanlab.pruning, install tqdm
-    via pip install tqdm.'''
+    via "pip install tqdm".'''
     warnings.warn(w)
 
 
@@ -71,7 +73,7 @@ def _multiprocessing_initialization(
     _prune_count_matrix,
     _psx,
     _multi_label,
-):
+):  # pragma: no cover
     '''Shares memory objects across child processes.
     ASSUMES none of these will change!'''
 
@@ -83,15 +85,7 @@ def _multiprocessing_initialization(
     multi_label = _multi_label
 
 
-def _make_psx_global(_psx):
-    '''Shares memory of psx across child processes.
-    ASSUMES psx will not change!'''
-
-    global psx
-    psx = _psx
-
-
-def _prune_by_class(k):
+def _prune_by_class(k):  # pragma: no cover
     """multiprocessing Helper function that assumes globals
     and produces a mask for class k for each example by
     removing the examples with *smallest probability* of
@@ -114,7 +108,7 @@ def _prune_by_class(k):
         return np.zeros(len(s), dtype=bool)
 
 
-def _prune_by_count(k):
+def _prune_by_count(k):  # pragma: no cover
     """multiprocessing Helper function that assumes globals
     and produces a mask for class k for each example by
     removing the example with noisy label k having *largest margin*,
@@ -149,7 +143,7 @@ def _prune_by_count(k):
         return np.zeros(len(s), dtype=bool)
 
 
-def _self_confidence(args):
+def _self_confidence(args):  # pragma: no cover
     """multiprocessing Helper function that assumes global
     psx and computes the self confidence (prob of given label)
     for an example (row in psx) given the example index idx
@@ -181,7 +175,6 @@ def multiclass_crossval_predict(pyx, labels):
       labels for that example.'''
 
     from sklearn.metrics import f1_score
-    from sklearn.preprocessing import MultiLabelBinarizer
     boundaries = np.arange(0.05, 0.9, .05)
     labels_one_hot = MultiLabelBinarizer().fit_transform(labels)
     f1s = [f1_score(
@@ -208,6 +201,7 @@ def get_noise_indices(
     converge_latent_estimates=False,
     sorted_index_method=None,
     multi_label=False,
+    verbose=0,
 ):
     '''Returns the indices of most likely (confident) label errors in s. The
     number of indices returned is specified by frac_of_noise. When
@@ -282,7 +276,10 @@ def get_noise_indices(
 
     multi_label : bool
       If true, s should be an iterable (e.g. list) of iterables, containing a
-      list of labels for each example, instead of just a single label.'''
+      list of labels for each example, instead of just a single label.
+
+    verbose : int
+      If 0, no print statements. If 1, prints when multiprocessing happens.'''
 
     # Number of examples in each class of s
     if multi_label:
@@ -297,10 +294,12 @@ def get_noise_indices(
     s = np.asarray(s)
 
     if confident_joint is None:
-        from cleanlab.latent_estimation import (
-            estimate_confident_joint_from_probabilities
+        from cleanlab.latent_estimation import compute_confident_joint
+        confident_joint = compute_confident_joint(
+            s=s,
+            psx=psx,
+            multi_label=multi_label,
         )
-        confident_joint = estimate_confident_joint_from_probabilities(s, psx)
 
     # Leave at least MIN_NUM_PER_CLASS examples per class.
     # NOTE prune_count_matrix is transposed (relative to confident_joint)
@@ -317,22 +316,22 @@ def get_noise_indices(
         # Calibrate s.t. noise rates sum to num_to_remove_per_class
         tmp = (psy.T * num_to_remove_per_class / noise_per_s).T
         np.fill_diagonal(tmp, s_counts - num_to_remove_per_class)
-        prune_count_matrix = np.round(tmp).astype(int)
+        prune_count_matrix = round_preserving_row_totals(tmp)
 
     # Peform Pruning with threshold probabilities from BFPRT algorithm in O(n)
     # Operations are parallelized across all CPU processes
-
     if prune_method == 'prune_by_class' or prune_method == 'both':
         with multiprocessing_context(
             multiprocessing.cpu_count(),
             initializer=_multiprocessing_initialization,
             initargs=(s, s_counts, prune_count_matrix, psx, multi_label),
         ) as p:
-            print('Parallel processing label errors by class.')
+            if verbose:
+                print('Parallel processing label errors by class.')
             sys.stdout.flush()
             if big_dataset and tqdm_exists:
                 noise_masks_per_class = list(
-                    tqdm.tqdm(p.imap(_prune_by_class, range(K)), total=K)
+                    tqdm.tqdm(p.imap(_prune_by_class, range(K)), total=K),
                 )
             else:
                 noise_masks_per_class = p.map(_prune_by_class, range(K))
@@ -347,7 +346,8 @@ def get_noise_indices(
             initializer=_multiprocessing_initialization,
             initargs=(s, s_counts, prune_count_matrix, psx, multi_label),
         ) as p:
-            print('Parallel processing label errors by noise rate.')
+            if verbose:
+                print('Parallel processing label errors by noise rate.')
             sys.stdout.flush()
             if big_dataset and tqdm_exists:
                 noise_masks_per_class = list(
@@ -363,10 +363,12 @@ def get_noise_indices(
     # Remove label errors if given label == model prediction
     if multi_label:
         pred = multiclass_crossval_predict(psx, s)
+        s = MultiLabelBinarizer().fit_transform(s)
     else:
         pred = psx.argmax(axis=1)
     for i, pred_label in enumerate(pred):
-        if label_errors_mask[i] and pred_label == s[i]:
+        # np.all let's this work for multi_label and single label
+        if label_errors_mask[i] and np.all(pred_label == s[i]):
             label_errors_mask[i] = False
 
     if sorted_index_method is not None:
@@ -390,9 +392,8 @@ def keep_at_least_n_per_class(prune_count_matrix, n, frac_noise=1.0):
     ----------
 
     prune_count_matrix : np.array of shape (K, K), K = number of classes
-        A counts of mislabeled examples in every class. For this function, it
-        does not matter what the rows or columns are, but the diagonal terms
-        reflect the number of correctly labeled examples.
+        A counts of mislabeled examples in every class. For this function.
+        NOTE prune_count_matrix is transposed relative to confident_joint.
 
     n : int
         Number of examples to make sure are left in each class.
@@ -434,7 +435,7 @@ def keep_at_least_n_per_class(prune_count_matrix, n, frac_noise=1.0):
     new_mat[new_mat < 0] = 0
 
     # Round diagonal terms (correctly labeled examples)
-    np.fill_diagonal(new_mat, new_diagonal.round())
+    np.fill_diagonal(new_mat, new_diagonal)
 
     # Reduce (multiply) all noise rates (non-diagonal) by frac_noise and
     # increase diagonal by the total amount reduced in each column
@@ -442,7 +443,7 @@ def keep_at_least_n_per_class(prune_count_matrix, n, frac_noise=1.0):
     new_mat = reduce_prune_counts(new_mat, frac_noise)
 
     # These are counts, so return a matrix of ints.
-    return new_mat.astype(int)
+    return round_preserving_row_totals(new_mat)
 
 
 def reduce_prune_counts(prune_count_matrix, frac_noise=1.0):
