@@ -292,8 +292,7 @@ def test_estimate_latent_converge():
 
 @pytest.mark.parametrize("sparse", [True, False])
 def test_estimate_noise_matrices(sparse):
-    if sparse:
-        data = make_data(sparse=True, seed=seed)
+    data = make_data(sparse=sparse, seed=seed)
     nm, inv = latent_estimation.estimate_noise_matrices(
         X=data["X_train"],
         s=data["s"],
