@@ -1,13 +1,8 @@
 
 # coding: utf-8
 
-# In[ ]:
-
-
 # Python 2 and 3 compatibility
 from __future__ import print_function, absolute_import, division, unicode_literals, with_statement
-
-# In[ ]:
 
 
 import numpy as np
@@ -18,22 +13,14 @@ from cleanlab.noise_generation import generate_noisy_labels
 from cleanlab.latent_algebra import compute_inv_noise_matrix
 from sklearn.linear_model import LogisticRegression
 from numpy.random import multivariate_normal
-
 import scipy
 import pytest
 
-# In[ ]:
-
-
-seed = 1
-
-
-# In[ ]:
 
 def make_data(sparse,
               means=[[3, 2], [7, 7], [0, 8]],
               covs=[[[5, -1.5], [-1.5, 1]], [[1, 0.5], [0.5, 4]], [[5, 1], [1, 5]]],
-              sizes=[800, 400, 400],
+              sizes=[100, 50, 50],
               avg_trace=0.8,
               seed=0,  # set to None for non-reproducible randomness
               ):
@@ -85,19 +72,23 @@ def make_data(sparse,
         "noise_matrix": noise_matrix,
     }
 
-# In[ ]:
+
+SEED = 1
+DATA = make_data(sparse=False, seed=SEED)
+SPARSE_DATA = make_data(sparse=False, seed=SEED)
+
+
 @pytest.mark.parametrize("sparse", [True, False])
 def test_rp(sparse):
-    data = make_data(sparse=sparse, seed=seed)
-    rp = LearningWithNoisyLabels(clf=LogisticRegression(multi_class='auto', solver='lbfgs', random_state=seed))
+    data = SPARSE_DATA if sparse else DATA
+    rp = LearningWithNoisyLabels(clf=LogisticRegression(
+        multi_class='auto', solver='lbfgs', random_state=seed))
     rp.fit(data["X_train"], data["s"])
     score = rp.score(data["X_test"], data["y_test"])
     print(score)
     # Check that this runs without error.
     assert (True)
 
-
-# In[ ]:
 
 def test_raise_error_no_clf_fit():
     class struct(object):
@@ -115,8 +106,6 @@ def test_raise_error_no_clf_fit():
             LearningWithNoisyLabels(clf=struct())
 
 
-# In[ ]:
-
 def test_raise_error_no_clf_predict_proba():
     class struct(object):
         def fit(self):
@@ -132,8 +121,6 @@ def test_raise_error_no_clf_predict_proba():
         with pytest.raises(ValueError) as e:
             LearningWithNoisyLabels(clf=struct())
 
-
-# In[ ]:
 
 def test_raise_error_no_clf_predict():
     class struct(object):
@@ -151,22 +138,17 @@ def test_raise_error_no_clf_predict():
             LearningWithNoisyLabels(clf=struct())
 
 
-# In[ ]:
-
 def test_seed():
     lnl = LearningWithNoisyLabels(seed=0)
     assert (lnl.seed is not None)
 
 
-# In[ ]:
-
-
 def test_default_clf():
     lnl = LearningWithNoisyLabels()
-    return lnl.clf is not None and hasattr(lnl.clf, 'fit') and hasattr(lnl.clf, 'predict') and hasattr(lnl.clf,
-                                                                                                       'predict_proba')
+    check1 = lnl.clf is not None and hasattr(lnl.clf, 'fit')
+    check2 = hasattr(lnl.clf, 'predict') and hasattr(lnl.clf, 'predict_proba')
+    assert (check1 and check2)
 
-# In[ ]:
 
 def test_clf_fit_nm():
     lnl = LearningWithNoisyLabels()
@@ -180,8 +162,6 @@ def test_clf_fit_nm():
             lnl.fit(X=np.arange(3), s=np.array([0, 0, 1]), noise_matrix=nm)
 
 
-# In[ ]:
-
 def test_clf_fit_inm():
     lnl = LearningWithNoisyLabels()
     # Example of a bad noise matrix (impossible to learn from)
@@ -194,15 +174,13 @@ def test_clf_fit_inm():
             lnl.fit(X=np.arange(3), s=np.array([0, 0, 1]), inverse_noise_matrix=inm)
 
 
-# In[ ]:
-
 @pytest.mark.parametrize("sparse", [True, False])
 def test_fit_with_nm(
         sparse,
         seed=0,
         used_by_another_test=False,
 ):
-    data = make_data(sparse=sparse, seed=seed)
+    data = SPARSE_DATA if sparse else DATA
     lnl = LearningWithNoisyLabels(
         seed=seed,
     )
@@ -222,15 +200,13 @@ def test_fit_with_nm(
         assert (score < score_nm + 1e-4)
 
 
-# In[ ]:
-
 @pytest.mark.parametrize("sparse", [True, False])
 def test_fit_with_inm(
         sparse,
         seed=0,
         used_by_another_test=False,
 ):
-    data = make_data(sparse=sparse, seed=seed)
+    data = SPARSE_DATA if sparse else DATA
     lnl = LearningWithNoisyLabels(
         seed=seed,
     )
@@ -254,11 +230,9 @@ def test_fit_with_inm(
         assert (score < score_inm + 1e-4)
 
 
-# In[ ]:
-
 @pytest.mark.parametrize("sparse", [True, False])
 def test_clf_fit_nm_inm(sparse):
-    data = make_data(sparse, seed=seed)
+    data = SPARSE_DATA if sparse else DATA
     lnl = LearningWithNoisyLabels(seed=seed)
     nm = data['noise_matrix']
     inm = compute_inv_noise_matrix(
@@ -281,11 +255,9 @@ def test_clf_fit_nm_inm(sparse):
     assert (score < score_nm_inm + 1e-4)
 
 
-# In[ ]:
-
 @pytest.mark.parametrize("sparse", [True, False])
 def test_pred_and_pred_proba(sparse):
-    data = make_data(sparse=sparse, seed=seed)
+    data = SPARSE_DATA if sparse else DATA
     lnl = LearningWithNoisyLabels()
     lnl.fit(data['X_train'], data['s'])
     n = np.shape(data['y_test'])[0]
@@ -297,11 +269,9 @@ def test_pred_and_pred_proba(sparse):
     assert (np.shape(probs) == (n, m))
 
 
-# In[ ]:
-
 @pytest.mark.parametrize("sparse", [True, False])
 def test_score(sparse):
-    data = make_data(sparse=sparse, seed=seed)
+    data = SPARSE_DATA if sparse else DATA
     phrase = 'cleanlab is dope'
 
     class Struct():
@@ -322,11 +292,9 @@ def test_score(sparse):
     assert (score == phrase)
 
 
-# In[ ]:
-
 @pytest.mark.parametrize("sparse", [True, False])
 def test_no_score(sparse):
-    data = make_data(sparse=sparse, seed=seed)
+    data = SPARSE_DATA if sparse else DATA
 
     class Struct():
         def fit(self):
@@ -343,11 +311,9 @@ def test_no_score(sparse):
     assert (abs(score - 1) < 1e-6)
 
 
-# In[ ]:
-
 @pytest.mark.parametrize("sparse", [True, False])
 def test_no_fit_sample_weight(sparse):
-    data = make_data(sparse, seed=seed)
+    data = SPARSE_DATA if sparse else DATA
 
     class Struct():
         def fit(self, X, y):
@@ -368,11 +334,9 @@ def test_no_fit_sample_weight(sparse):
     assert (True)
 
 
-# In[ ]:
-
 @pytest.mark.parametrize("sparse", [True, False])
 def test_fit_psx(sparse):
-    data = make_data(sparse=sparse, seed=seed)
+    data = SPARSE_DATA if sparse else DATA
     from cleanlab.latent_estimation import estimate_cv_predicted_probabilities
     lnl = LearningWithNoisyLabels()
     psx = estimate_cv_predicted_probabilities(
