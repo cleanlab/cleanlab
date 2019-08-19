@@ -158,7 +158,7 @@ class CNN(BaseEstimator): # Inherits sklearn classifier
             # We avoid train_data[idx] because train_data may very large, i.e. image_net
             sparse_labels = np.zeros(MNIST_TRAIN_SIZE if loader == 'train' else MNIST_TEST_SIZE, dtype=int) - 1
             sparse_labels[train_idx] = train_labels
-            train_dataset.train_labels = sparse_labels
+            train_dataset.targets = sparse_labels
         
         train_loader = torch.utils.data.DataLoader(
             dataset=train_dataset,
@@ -211,12 +211,10 @@ class CNN(BaseEstimator): # Inherits sklearn classifier
         )        
         # Filter by idx
         if idx is not None:
-            if loader == 'train' and len(idx) != MNIST_TRAIN_SIZE:
-                dataset.train_data = dataset.train_data[idx]
-                dataset.train_labels = dataset.train_labels[idx]
-            elif loader == 'test' and len(idx) != MNIST_TEST_SIZE:
-                dataset.test_data = dataset.test_data[idx]
-                dataset.test_labels = dataset.test_labels[idx]            
+            if (loader == 'train' and len(idx) != MNIST_TRAIN_SIZE) or (
+                loader == 'test' and len(idx) != MNIST_TEST_SIZE):
+                dataset.data = dataset.data[idx]
+                dataset.targets = dataset.targets[idx]       
         
         loader = torch.utils.data.DataLoader(
             dataset = dataset,
