@@ -102,3 +102,30 @@ def test_version_warning():
         list_of_compatible_versions=[2.7, 3.5, 3.6],
     )
     assert(True)
+
+
+def test_confusion_matrix():
+    true = [0,1,1,2,2,2]
+    pred = [0,0,1,1,1,2]
+    cmat = util.confusion_matrix(true, pred)
+    assert(np.shape(cmat) == (3,3))
+    assert(cmat[0][0] == 1)
+    assert(cmat[1][1] == 1)
+    assert(cmat[2][2] == 1)
+    assert(cmat[1][0] == 1)
+    assert(cmat[2][1] == 2)
+    assert(cmat[0][1] == 0)
+    assert(cmat[0][2] == 0)
+    assert(cmat[2][0] == 0)
+    assert(cmat[0][1] == 0)
+
+
+def test_confusion_matrix_nonconsecutive():
+    true = [-1,-1,-1,1]
+    pred = [1, 1, -1,1]
+    cmat = util.confusion_matrix(true, pred)
+    assert(np.shape(cmat) == (2,2))
+    assert(cmat[0][0] == 1)
+    assert(cmat[0][1] == 2)
+    assert(cmat[1][0] == 0)
+    assert(cmat[1][1] == 1)
