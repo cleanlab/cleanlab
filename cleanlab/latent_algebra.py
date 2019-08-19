@@ -5,17 +5,11 @@
 # 
 # #### Contains mathematical functions relating the latent terms, $p(s), P_{s \vert y}, P_{y \vert s}, p(y)$, etc. together. For every function here, if the inputs are exact, the output is guaranteed to be exact. Every function herein is the computational equivalent of a mathematical equation having a closed, exact form. If the inputs are inexact, the error will of course propagate.
 
-# In[ ]:
-
-
 from __future__ import print_function, absolute_import, division, unicode_literals, with_statement
 import numpy as np
 
 from cleanlab.util import value_counts, clip_values, clip_noise_rates
 import warnings
-
-
-# In[ ]:
 
 
 def compute_ps_py_inv_noise_matrix(s, noise_matrix):
@@ -286,4 +280,3 @@ def compute_pyx(psx, noise_matrix, inverse_noise_matrix):
         arr=pyx,
         **{"low":0.0, "high":1.0, "new_sum":1.0}
     )
-

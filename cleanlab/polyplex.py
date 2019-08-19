@@ -5,15 +5,8 @@
 # 
 # ### The polyplex is a geometric solution for the domain of $trace (P_{s,y})$ given $trace (P_{s \vert y})$ for some the latent prior $p(y)$. Like the simplex, the polyplex describes the domain of a probabilistic quantity, but unlike the simplex, the coordinates need not sum to one and the shape is instead defined by a convex polyhedron, hence the name. Understanding the domain of the trace, as opposed to the matrices themselves, is of fundamental importance to confident learning because the diagonal terms of these matrices are what determine learnability and the class re-weighting coefficients. Polyplices connect our learnability theory with our algorithms. Consider the canonical example when $trace (P_{s \vert y}) = m$, then $P_{s \vert y}=\mathbf{I}$ and all noise rates (non-diagonal entries) are zero. Thus, $P_{s,y} = \mathbf{I}$ and $trace (P_{s,y}) = m$. In this vacuous example, $s = y, p(s) = p(y), P_{s,y} = \mathbf{I} \cdot p(s)$, and $P_{y \vert s} = P_{s \vert y} = \mathbf{I}$, all of which was determined from the trace. The role of the polyplex is to generalize to non-vacuous cases by using the geometry of confident learning to solve for $trace (P_{s,y})$ given $trace (P_{s \vert y})$ for some $p(y)$.
 
-# In[3]:
-
-
 from __future__ import print_function, absolute_import, division, unicode_literals, with_statement
 import numpy as np
-
-
-# In[2]:
-
 
 def slope_intercept(point1, point2):
     '''Returns the slope and intercept between point1 and point2.
@@ -90,4 +83,3 @@ def joint_min_max(noise_matrix_trace, py):
         slope_max = y_maxs[int(noise_matrix_trace)+1] - y_maxs[int(noise_matrix_trace)]
         y_max = (noise_matrix_trace - int(noise_matrix_trace)) * slope_max + y_maxs[int(noise_matrix_trace)]
         return y_min, y_max
-
