@@ -1,8 +1,4 @@
-
 # coding: utf-8
-
-# In[ ]:
-
 
 from __future__ import print_function, absolute_import, division, unicode_literals, with_statement
 from cleanlab import latent_estimation
@@ -12,29 +8,21 @@ from cleanlab.noise_generation import generate_noise_matrix_from_trace
 from cleanlab.noise_generation import generate_noisy_labels
 from cleanlab.util import value_counts
 import numpy as np
+import scipy
 import pytest
 
 
-# In[ ]:
-
-
-seed = 1
-
-
-# In[ ]:
-
-
 def make_data(
-    means = [ [3, 2], [7, 7], [0, 8] ],
-    covs = [ [[5, -1.5],[-1.5, 1]] , [[1, 0.5],[0.5, 4]], [[5, 1],[1, 5]] ],
-    sizes = [ 400, 200, 200 ],
-    avg_trace = 0.8,
-    seed = 1, # set to None for non-reproducible randomness
+        sparse=False,
+        means=[[3, 2], [7, 7], [0, 8]],
+        covs=[[[5, -1.5], [-1.5, 1]], [[1, 0.5], [0.5, 4]], [[5, 1], [1, 5]]],
+        sizes=[80, 40, 40],
+        avg_trace=0.8,
+        seed=1,  # set to None for non-reproducible randomness
 ):
-    
-    np.random.seed(seed = seed)
+    np.random.seed(seed=seed)
 
-    m = len(means) # number of classes
+    m = len(means)  # number of classes
     n = sum(sizes)
     data = []
     labels = []
@@ -49,60 +37,61 @@ def make_data(
     X_train = np.vstack(data)
     y_train = np.hstack(labels)
     X_test = np.vstack(test_data)
-    y_test = np.hstack(test_labels) 
+    y_test = np.hstack(test_labels)
+
+    if sparse:
+        X_train = scipy.sparse.csr_matrix(X_train)
+        X_test = scipy.sparse.csr_matrix(X_test)
 
     # Compute p(y=k)
     py = np.bincount(y_train) / float(len(y_train))
 
     noise_matrix = generate_noise_matrix_from_trace(
-      m, 
-      trace = avg_trace * m,
-      py = py,
-      valid_noise_matrix = True,
-      seed = seed,
+        m,
+        trace=avg_trace * m,
+        py=py,
+        valid_noise_matrix=True,
+        seed=seed,
     )
 
     # Generate our noisy labels using the noise_marix.
     s = generate_noisy_labels(y_train, noise_matrix)
     ps = np.bincount(s) / float(len(s))
-    
+
     # Compute inverse noise matrix
     inv = compute_inv_noise_matrix(py, noise_matrix, ps)
-    
+
     # Estimate psx
     latent = latent_estimation.estimate_py_noise_matrices_and_cv_pred_proba(
-        X = X_train,
-        s = s,
-        cv_n_folds = 3,
+        X=X_train,
+        s=s,
+        cv_n_folds=3,
     )
-    
+
     return {
-        "X_train" : X_train,
-        "y_train" : y_train,
-        "X_test" : X_test,
-        "y_test" : y_test,
-        "s" : s,
-        "ps" : ps,
-        "py" : py,
-        "noise_matrix" : noise_matrix,
-        "inverse_noise_matrix" : inv,
-        "est_py" : latent[0],
-        "est_nm" : latent[1],
-        "est_inv" : latent[2],
-        "cj" : latent[3],
-        "psx" : latent[4],
-        "m" : m,
-        "n" : n,
+        "X_train": X_train,
+        "y_train": y_train,
+        "X_test": X_test,
+        "y_test": y_test,
+        "s": s,
+        "ps": ps,
+        "py": py,
+        "noise_matrix": noise_matrix,
+        "inverse_noise_matrix": inv,
+        "est_py": latent[0],
+        "est_nm": latent[1],
+        "est_inv": latent[2],
+        "cj": latent[3],
+        "psx": latent[4],
+        "m": m,
+        "n": n,
     }
 
 
-# In[ ]:
-
-
-data = make_data(seed=seed)
-
-
-# In[ ]:
+# Global to be used by all test methods.
+# Only compute this once for speed.
+seed = 1
+data = make_data(sparse=False, seed=seed)
 
 
 def test_exact_prune_count():
@@ -111,13 +100,10 @@ def test_exact_prune_count():
     noise_idx = pruning.get_noise_indices(
         s=s,
         psx=data['psx'],
-        num_to_remove_per_class=remove, 
+        num_to_remove_per_class=remove,
         prune_method='prune_by_class',
     )
-    assert(all(value_counts(s[noise_idx]) == remove))
-
-
-# In[ ]:
+    assert (all(value_counts(s[noise_idx]) == remove))
 
 
 def test_pruning_both():
@@ -141,10 +127,7 @@ def test_pruning_both():
         num_to_remove_per_class=remove,
         prune_method='both',
     )
-    assert(all(s[both_idx] == s[class_idx & nr_idx]))
-
-
-# In[ ]:
+    assert (all(s[both_idx] == s[class_idx & nr_idx]))
 
 
 def test_prune_on_small_data():
@@ -156,10 +139,35 @@ def test_prune_on_small_data():
             prune_method=pm,
         )
         # Num in each class < 5. Nothing should be pruned.
-        assert(not any(noise_idx))
+        assert (not any(noise_idx))
 
 
-# In[ ]:
+def test_cj_from_probs():
+    cj = latent_estimation.estimate_confident_joint_from_probabilities(
+        s=data["s"],
+        psx=data["psx"],
+        force_ps=10,
+    )
+    true_ps = data["ps"] * data["n"]
+    forced = cj.sum(axis=1)
+
+    cj = latent_estimation.estimate_confident_joint_from_probabilities(
+        s=data["s"],
+        psx=data["psx"],
+        force_ps=1,
+    )
+    forced1 = cj.sum(axis=1)
+
+    cj = latent_estimation.estimate_confident_joint_from_probabilities(
+        s=data["s"],
+        psx=data["psx"],
+        force_ps=False,
+    )
+    regular = cj.sum(axis=1)
+    # Forcing ps should make ps more similar to the true ps.
+    assert (np.mean(true_ps - forced) <= np.mean(true_ps - regular))
+    # Check that one iteration is the same as not forcing ps
+    assert (np.mean(true_ps - forced1) - np.mean(true_ps - regular) < 2e-4)
 
 
 def test_calibrate_joint():
@@ -185,10 +193,7 @@ def test_calibrate_joint():
     )
     
     # Check equivalency
-    assert(np.all(calibrated_cj == calibrated_cj2))
-
-
-# In[ ]:
+    assert (np.all(calibrated_cj == calibrated_cj2))
 
 
 def test_estimate_joint():
@@ -201,9 +206,6 @@ def test_estimate_joint():
     assert(abs(np.sum(joint) - 1.) < 1e-6)
 
 
-# In[ ]:
-
-
 def test_compute_confident_joint():
     cj = latent_estimation.compute_confident_joint(
         s=data["s"],
@@ -213,10 +215,7 @@ def test_compute_confident_joint():
     # Check that confident joint doesn't overcount number of examples.
     assert(np.sum(cj) <= data["n"])
     # Check that confident joint is correct shape
-    assert(np.shape(cj) == (data["m"], data["m"]))
-
-
-# In[ ]:
+    assert (np.shape(cj) == (data["m"], data["m"]))
 
 
 def test_cj_from_probs():
@@ -243,12 +242,9 @@ def test_cj_from_probs():
         )
         regular = cj.sum(axis=1)
         # Forcing ps should make ps more similar to the true ps.
-        assert(np.mean(true_ps - forced) <= np.mean(true_ps - regular))
+        assert (np.mean(true_ps - forced) <= np.mean(true_ps - regular))
         # Check that one iteration is the same as not forcing ps
-        assert(np.mean(true_ps - forced1) - np.mean(true_ps - regular) < 2e-4)
-
-
-# In[ ]:
+        assert (np.mean(true_ps - forced1) - np.mean(true_ps - regular) < 2e-4)
 
 
 def test_estimate_latent_py_method():
@@ -258,7 +254,7 @@ def test_estimate_latent_py_method():
             s=data['s'],
             py_method=py_method,
         )
-        assert(sum(py) - 1 < 1e-4)
+        assert (sum(py) - 1 < 1e-4)
     try:
         py, nm, inv = latent_estimation.estimate_latent(
             confident_joint=data['cj'],
@@ -266,7 +262,7 @@ def test_estimate_latent_py_method():
             py_method='INVALID',
         )
     except ValueError as e:
-        assert('should be' in str(e))
+        assert ('should be' in str(e))
         with pytest.raises(ValueError) as e:
             py, nm, inv = latent_estimation.estimate_latent(
                 confident_joint=data['cj'],
@@ -275,42 +271,35 @@ def test_estimate_latent_py_method():
             )
 
 
-# In[ ]:
-
-
 def test_estimate_latent_converge():
     py, nm, inv = latent_estimation.estimate_latent(
-        confident_joint = data['cj'],
-        s = data['s'],
-        converge_latent_estimates = True,
+        confident_joint=data['cj'],
+        s=data['s'],
+        converge_latent_estimates=True,
     )
-    
+
     py2, nm2, inv2 = latent_estimation.estimate_latent(
-        confident_joint = data['cj'],
-        s = data['s'],
-        converge_latent_estimates = False,
+        confident_joint=data['cj'],
+        s=data['s'],
+        converge_latent_estimates=False,
     )
     # Check results are similar, but not the same.
-    assert(np.any(inv != inv2))
-    assert(np.any(py != py2))
-    assert(np.all(abs(py - py2) < 0.1))
-    assert(np.all(abs(nm -  nm2) < 0.1))
-    assert(np.all(abs(inv -  inv2) < 0.1))
+    assert (np.any(inv != inv2))
+    assert (np.any(py != py2))
+    assert (np.all(abs(py - py2) < 0.1))
+    assert (np.all(abs(nm - nm2) < 0.1))
+    assert (np.all(abs(inv - inv2) < 0.1))
 
 
-# In[ ]:
-
-
-def test_estimate_noise_matrices():
+@pytest.mark.parametrize("sparse", [True, False])
+def test_estimate_noise_matrices(sparse):
+    data = make_data(sparse=sparse, seed=seed)
     nm, inv = latent_estimation.estimate_noise_matrices(
-        X = data["X_train"],
-        s = data["s"],
+        X=data["X_train"],
+        s=data["s"],
     )
-    assert(np.all(abs(nm -  data["est_nm"]) < 0.1))
-    assert(np.all(abs(inv -  data["est_inv"]) < 0.1))
-
-
-# In[ ]:
+    assert (np.all(abs(nm - data["est_nm"]) < 0.1))
+    assert (np.all(abs(inv - data["est_inv"]) < 0.1))
 
 
 def test_pruning_reduce_prune_counts():
@@ -321,7 +310,7 @@ def test_pruning_reduce_prune_counts():
         [ 36,   8, 159],
     ])
     cj2 = pruning.reduce_prune_counts(cj, frac_noise=1.0)
-    assert(np.all(cj == cj2))
+    assert (np.all(cj == cj2))
 
 def test_pruning_keep_at_least_n_per_class():
     '''Make sure it doesnt remove when its not supposed to'''
@@ -334,7 +323,8 @@ def test_pruning_keep_at_least_n_per_class():
         prune_count_matrix=cj.T,
         n=5,
     )
-    assert(np.all(cj == prune_count_matrix.T))
+    assert (np.all(cj == prune_count_matrix.T))
+
 
 def test_pruning_order_method():
     order_methods = ["prob_given_label", "normalized_margin"]
@@ -345,10 +335,7 @@ def test_pruning_order_method():
             psx=data['psx'],
             sorted_index_method=method,
         ))
-    assert(len(results[0]) == len(results[1]))
-
-
-# In[ ]:
+    assert (len(results[0]) == len(results[1]))
 
 
 def test_get_noise_indices_multi_label():
@@ -364,5 +351,4 @@ def test_get_noise_indices_multi_label():
             acc = np.mean((data['s'] != data['y_train']) == noise_idx)
             # Make sure cleanlab does reasonably well finding the errors.
             # acc is the accuracy of detecting a label error.
-            assert(acc > 0.9)
-
+            assert (acc > 0.85)
