@@ -211,12 +211,10 @@ class CNN(BaseEstimator): # Inherits sklearn classifier
         )        
         # Filter by idx
         if idx is not None:
-            if loader == 'train' and len(idx) != MNIST_TRAIN_SIZE:
-                dataset.train_data = dataset.train_data[idx]
-                dataset.targets = dataset.targets[idx]
-            elif loader == 'test' and len(idx) != MNIST_TEST_SIZE:
-                dataset.test_data = dataset.test_data[idx]
-                dataset.targets = dataset.targets[idx]            
+            if (loader == 'train' and len(idx) != MNIST_TRAIN_SIZE) or (
+                loader == 'test' and len(idx) != MNIST_TEST_SIZE):
+                dataset.data = dataset.data[idx]
+                dataset.targets = dataset.targets[idx]       
         
         loader = torch.utils.data.DataLoader(
             dataset = dataset,
