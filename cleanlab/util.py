@@ -5,16 +5,10 @@
 # 
 # #### Contains ancillarly helper functions used throughout this package.
 
-# In[ ]:
-
-
 from __future__ import (
     print_function, absolute_import, division, unicode_literals, with_statement
 )
 import numpy as np
-from sklearn.utils import check_X_y
-
-# In[ ]:
 
 
 def assert_inputs_are_valid(X, s, psx = None): # pragma: no cover
@@ -32,8 +26,9 @@ def assert_inputs_are_valid(X, s, psx = None): # pragma: no cover
 
     if not isinstance(s, (np.ndarray, np.generic)):
         raise TypeError("s should be a numpy array.")
-
-    check_X_y(X, s, accept_sparse=True, dtype=None, force_all_finite=False, ensure_2d=False)
+    if not isinstance(X, (np.ndarray, np.generic)):
+        raise TypeError("X should be a numpy array.")
+    
     
 def remove_noise_from_class(noise_matrix, class_without_noise):
     '''A helper function in the setting of PU learning.
@@ -69,9 +64,6 @@ def remove_noise_from_class(noise_matrix, class_without_noise):
         x[i][i] = 1 - float(np.sum(x[:,i]) - x[i][i])
 
     return x
-
-
-# In[ ]:
 
 
 def clip_noise_rates(noise_matrix):
@@ -155,9 +147,6 @@ def clip_values(x, low = 0.0, high = 1.0, new_sum = None):
     x = x * prev_sum / float(sum(x))
 
     return x
-
-
-# In[ ]:
 
 
 def value_counts(x):
@@ -246,9 +235,6 @@ def round_preserving_row_totals(confident_joint):
     ).astype(int)
 
 
-# In[ ]:
-
-
 def estimate_pu_f1(s, prob_s_eq_1):
     '''Computes Claesen's estimate of f1 in the pulearning setting.
     
@@ -272,9 +258,10 @@ def estimate_pu_f1(s, prob_s_eq_1):
     return recall ** 2 / (2.0 * frac_positive) if frac_positive != 0 else np.nan
 
 
-def confusion_matrix(y, s):
-    '''Implements a confusion matrix assuming y as true classes
-    and s as noisy (or sometimes predicted) classes.
+def confusion_matrix(true, pred):
+    '''Implements a confusion matrix for true labels
+    and predicted labels. true and pred MUST BE the same length
+    and have the same distinct set of class labels represtented.
 
     Results are identical (and similar computation time) to: 
         "sklearn.metrics.confusion_matrix"
@@ -284,29 +271,32 @@ def confusion_matrix(y, s):
     Parameters
     ----------
     y : np.array 1d
-      Contains non-negative integers 0, 1, 2... Labels are consecutive.
-      For example y = [0, 1, 1, 2] is okay.
-      But y = [0, 1, 3, 1] is BAD because there is no "2" class.
+      Contains labels.
+      Assumes s and y contains the same distinct set of labels.
       
     s : np.array 1d
-      Same as y'''
+      Contains labels.
+      Assumes s and y contains the same distinct set of labels.
+  
+    Returns
+    -------
+    confusion_matrix : np.array (2D)
+      matrix of confusion counts with true on rows and pred on columns.'''
+
+    assert(len(true) == len(pred))
+    true_classes = np.unique(true)
+    pred_classes = np.unique(pred)
+    assert(all(true_classes == pred_classes))
+    K_true = len(true_classes) # Number of classes in true
+    K_pred = len(pred_classes) # Number of classes in pred    
+    map_true = dict(zip(true_classes, range(K_true)))    
+    map_pred = dict(zip(pred_classes, range(K_pred)))
     
-    y_classes = np.unique(y)
-    s_classes = np.unique(s)
-    K_y = len(y_classes) # Number of classes in y
-    K_s = len(s_classes) # Number of classes in s    
-    mapy = dict(zip(y_classes, range(K_y)))    
-    maps = dict(zip(s_classes, range(K_s)))
-    
-    result = np.zeros((K_y, K_s))
+    result = np.zeros((K_true, K_pred))
+    for i in range(len(true)):
+        result[map_true[true[i]]][map_pred[pred[i]]] += 1
 
-    for i in range(len(y)):
-        result[mapy[y[i]]][maps[s[i]]] += 1
-
-    return result.astype(float) / result.sum(axis=0)  
-
-
-# In[ ]:
+    return result
 
 
 def print_square_matrix(
@@ -348,7 +338,8 @@ def print_square_matrix(
         print(left_name + "=" + str(i) + " |\t" + entry)
     print("\tTrace(matrix) =", np.round(np.trace(matrix), round_places))
     print()  
-    
+
+
 def print_noise_matrix(noise_matrix, round_places=2):
     '''Pretty prints the noise matrix.'''
     print_square_matrix(
@@ -357,7 +348,8 @@ def print_noise_matrix(noise_matrix, round_places=2):
         short_title='p(s|y)',
         round_places=round_places,
     )
-    
+
+
 def print_inverse_noise_matrix(inverse_noise_matrix, round_places=2):
     '''Pretty prints the inverse noise matrix.'''
     print_square_matrix(
@@ -368,7 +360,8 @@ def print_inverse_noise_matrix(inverse_noise_matrix, round_places=2):
         short_title='p(y|s)',
         round_places=round_places,
     )
-    
+
+
 def print_joint_matrix(joint_matrix, round_places=2):
     '''Pretty prints the joint label noise matrix.'''
     print_square_matrix(
@@ -377,9 +370,6 @@ def print_joint_matrix(joint_matrix, round_places=2):
         short_title='p(s,y)',
         round_places=round_places,
     )
-
-
-# In[ ]:
 
 
 def _python_version_is_compatible(
@@ -429,4 +419,3 @@ class VersionWarning(object):
         if not compatible:
             self.warning_already_issued = True
         return compatible
-

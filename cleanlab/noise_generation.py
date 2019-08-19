@@ -5,16 +5,10 @@
 # 
 # #### Contains methods for generating valid (learning with noise is possible) noise matrices, generating noisy labels given a noise matrix, generating valid noise matrices with a specific trace value, and more.
 
-# In[ ]:
-
-
 from __future__ import print_function, absolute_import, division, unicode_literals, with_statement
 import numpy as np
 from cleanlab.util import value_counts, confusion_matrix
 import warnings
-
-
-# In[ ]:
 
 
 def noise_matrix_is_valid(noise_matrix, py, verbose = False):
@@ -63,9 +57,6 @@ def noise_matrix_is_valid(noise_matrix, py, verbose = False):
             return False
 
     return True
-
-
-# In[ ]:
 
 
 def generate_noisy_labels(y, noise_matrix, verbose=False):  
@@ -136,10 +127,7 @@ def generate_noisy_labels(y, noise_matrix, verbose=False):
     # new_noise_matrix = counts / counts.sum(axis=0)
     # assert(np.linalg.norm(noise_matrix - new_noise_matrix) <= 2)
 
-    return s  
-
-
-# In[ ]:
+    return s
 
 
 def generate_noise_matrix_from_trace(
@@ -396,9 +384,7 @@ def randomly_distribute_N_balls_into_K_bins(
     return arr.astype(int)
 
 
-# #### Deprecated functions below
-
-# In[ ]:
+# Deprecated functions below
 
 
 def generate_noise_matrix(
@@ -478,4 +464,3 @@ def generate_noise_matrix(
         print("Average trace of noise matrix is", np.trace(noise_matrix) / float(K))
     
     return noise_matrix
-

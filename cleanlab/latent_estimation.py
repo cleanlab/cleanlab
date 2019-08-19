@@ -9,8 +9,6 @@
 # * The latent inverse noise matrix characterizing flipping process: denoted $P_{y \vert s}$ (latex) & '```inv```' (code).
 # * The latent ```confident_joint```, an unnormalized counts matrix of counting a confident subset of the joint counts of label errors.
 
-# In[ ]:
-
 
 from __future__ import (
     print_function, absolute_import, division, unicode_literals, with_statement
@@ -29,11 +27,6 @@ from cleanlab.util import (
 from cleanlab.latent_algebra import (
     compute_inv_noise_matrix, compute_py, compute_noise_matrix_from_inverse
 )
-
-
-# In[ ]:
-
-
 
 
 def num_label_errors(
@@ -845,11 +838,6 @@ def converge_estimates(
     return py, noise_matrix, inverse_noise_matrix
 
 
-# In[ ]:
-
-
-
-
 # Deprecated methods
 
 # pragma: no cover
@@ -941,4 +929,3 @@ def estimate_confident_joint_from_probabilities(
             break
 
     return cjs if return_list_of_converging_cj_matrices else confident_joint
-

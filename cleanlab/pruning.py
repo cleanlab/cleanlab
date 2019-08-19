@@ -5,8 +5,6 @@
 # 
 # #### Contains methods for estimating the latent indices of all label errors.
 
-# In[ ]:
-
 
 from __future__ import (
     print_function, absolute_import, division, unicode_literals, with_statement,
@@ -17,9 +15,6 @@ import sys
 import time
 from cleanlab.util import value_counts, round_preserving_row_totals
 import numpy as np
-
-
-# In[ ]:
 
 
 # tqdm is a module used to print time-to-complete when multiprocessing is used.
@@ -37,15 +32,9 @@ except ImportError as e:
     warnings.warn(w)
 
 
-# In[ ]:
-
-
 # Leave at least this many examples in each class after
 # pruning, regardless if noise estimates are larger.
 MIN_NUM_PER_CLASS = 5
-
-
-# In[ ]:
 
 
 # For python 2/3 compatibility, define pool context manager
@@ -59,9 +48,6 @@ if sys.version_info[0] == 2:
         pool.terminate()
 else:
     multiprocessing_context = multiprocessing.Pool
-
-
-# In[ ]:
 
 
 # Multiprocessing Helper functions
@@ -137,7 +123,7 @@ def _prune_by_count(k):  # pragma: no cover
                     threshold = -np.partition(
                         -margin[s_filter], num2prune - 1
                     )[num2prune - 1]
-                    noise_mask = noise_mask |                         ((s_filter) & (margin >= threshold))
+                    noise_mask = noise_mask | ((s_filter) & (margin >= threshold))
         return noise_mask
     else:
         return np.zeros(len(s), dtype=bool)
@@ -151,9 +137,6 @@ def _self_confidence(args):  # pragma: no cover
     np.mean(psx[]) enables this code to work for multi-class l."""
     (idx, l) = args
     return np.mean(psx[idx, l])
-
-
-# In[ ]:
 
 
 def multiclass_crossval_predict(pyx, labels):
@@ -183,11 +166,6 @@ def multiclass_crossval_predict(pyx, labels):
     boundary = boundaries[np.argmax(f1s)]
     pred = (pyx > boundary).astype(np.uint8)
     return pred
-
-
-# In[ ]:
-
-
 
 
 def get_noise_indices(
@@ -523,4 +501,3 @@ def order_label_errors(
     else:  # sorted_index_method == 'normalized_margin'
         margin = self_confidence - psx[label_errors_bool].max(axis=1)
         return label_errors_idx[np.argsort(margin)]
-
