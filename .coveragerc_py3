@@ -2,6 +2,9 @@
 # https://coverage.readthedocs.io/en/latest/config.html
 [run]
 branch = True
+omit =
+    # omit this single file
+    cleanlab/models/fasttext.py
 
 [report]
 # Regexes for lines to exclude from consideration
