@@ -17,6 +17,9 @@ import scipy
 import pytest
 
 
+SEED = 1
+
+
 def make_data(sparse,
               means=[[3, 2], [7, 7], [0, 8]],
               covs=[[[5, -1.5], [-1.5, 1]], [[1, 0.5], [0.5, 4]], [[5, 1], [1, 5]]],
@@ -73,7 +76,6 @@ def make_data(sparse,
     }
 
 
-SEED = 1
 DATA = make_data(sparse=False, seed=SEED)
 SPARSE_DATA = make_data(sparse=False, seed=SEED)
 
