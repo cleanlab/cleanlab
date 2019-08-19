@@ -18,7 +18,7 @@
 .. |coverage| image:: https://codecov.io/gh/cgnorthcutt/cleanlab/branch/master/graph/badge.svg
     :target: https://codecov.io/gh/cgnorthcutt/cleanlab
 
-``cleanlab``  finds and cleans label errors in any dataset using state-of-the-art algorithms for learning with noisy labels and estimating the complete joint distribution of label noise. ``cleanlab`` is fast: its built on optimized algorithms and parallelized across all CPU threads automatically. ``cleanlab`` implements the family of theory and algorithms called **confident learning** with provable guarantees of exact noise estimation and label error finding (when model output probabilities are exact).
+``cleanlab`` finds and cleans label errors in any dataset using state-of-the-art algorithms for learning with noisy labels by characterizing label noise. ``cleanlab`` is fast: its built on optimized algorithms and parallelized across all CPU threads automatically. ``cleanlab`` implements the family of theory and algorithms called **confident learning** with provable guarantees of exact noise estimation and label error finding (when model output probabilities are exact).
 
 ``cleanlab`` supports multi-label, multiclass, sparse matrices, and more.
 
