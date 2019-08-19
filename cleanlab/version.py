@@ -3,7 +3,8 @@ __version__ = '0.0.12'
 # 0.0.12 - Minor changes.
 #   - Added support and testing for sparse matrices scipy.sparse.csr_matrix
 #   - Dropped integrated dependency and support on fasttext. Use fasttext at your own risk.
-#   - Added testing and dropping fasttext bumped testing code coverage up to 95%.
+#   - Added testing and dropping fasttext bumped testing code coverage up to 96%.
+#   - Remove all ipynb artifacts of the form # In [ ].
 
 # 0.0.11 - New logo! Improved README.
 
