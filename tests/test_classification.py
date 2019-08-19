@@ -22,9 +22,9 @@ def make_data(sparse,
               covs=[[[5, -1.5], [-1.5, 1]], [[1, 0.5], [0.5, 4]], [[5, 1], [1, 5]]],
               sizes=[100, 50, 50],
               avg_trace=0.8,
-              seed=0,  # set to None for non-reproducible randomness
+              seed=SEED,  # set to None for non-reproducible randomness
               ):
-    np.random.seed(seed=seed)
+    np.random.seed(seed=SEED)
 
     K = len(means)  # number of classes
     data = []
@@ -54,7 +54,7 @@ def make_data(sparse,
         trace=avg_trace * K,
         py=py,
         valid_noise_matrix=True,
-        seed=seed,
+        seed=SEED,
     )
 
     # Generate our noisy labels using the noise_marix.
@@ -82,7 +82,7 @@ SPARSE_DATA = make_data(sparse=False, seed=SEED)
 def test_rp(sparse):
     data = SPARSE_DATA if sparse else DATA
     rp = LearningWithNoisyLabels(clf=LogisticRegression(
-        multi_class='auto', solver='lbfgs', random_state=seed))
+        multi_class='auto', solver='lbfgs', random_state=SEED))
     rp.fit(data["X_train"], data["s"])
     score = rp.score(data["X_test"], data["y_test"])
     print(score)
@@ -139,7 +139,7 @@ def test_raise_error_no_clf_predict():
 
 
 def test_seed():
-    lnl = LearningWithNoisyLabels(seed=0)
+    lnl = LearningWithNoisyLabels(seed=SEED)
     assert (lnl.seed is not None)
 
 
@@ -168,7 +168,7 @@ def test_clf_fit_inm():
     inm = np.array([[.1, .9], [.9, .1]])
     try:
         lnl.fit(X=np.arange(3), s=np.array([0, 0, 1]), inverse_noise_matrix=inm)
-    except Exception as e:
+    except Exception azs e:
         assert ('Trace(inverse_noise_matrix)' in str(e))
         with pytest.raises(ValueError) as e:
             lnl.fit(X=np.arange(3), s=np.array([0, 0, 1]), inverse_noise_matrix=inm)
@@ -177,7 +177,7 @@ def test_clf_fit_inm():
 @pytest.mark.parametrize("sparse", [True, False])
 def test_fit_with_nm(
         sparse,
-        seed=0,
+        seed=SEED,
         used_by_another_test=False,
 ):
     data = SPARSE_DATA if sparse else DATA
@@ -203,7 +203,7 @@ def test_fit_with_nm(
 @pytest.mark.parametrize("sparse", [True, False])
 def test_fit_with_inm(
         sparse,
-        seed=0,
+        seed=SEED,
         used_by_another_test=False,
 ):
     data = SPARSE_DATA if sparse else DATA
@@ -233,7 +233,7 @@ def test_fit_with_inm(
 @pytest.mark.parametrize("sparse", [True, False])
 def test_clf_fit_nm_inm(sparse):
     data = SPARSE_DATA if sparse else DATA
-    lnl = LearningWithNoisyLabels(seed=seed)
+    lnl = LearningWithNoisyLabels(seed=SEED)
     nm = data['noise_matrix']
     inm = compute_inv_noise_matrix(
         data["py"],
@@ -249,7 +249,7 @@ def test_clf_fit_nm_inm(sparse):
     score_nm_inm = lnl.score(data['X_test'], data['y_test'])
 
     # Learn with noisy labels and estimate the inv noise matrix.
-    lnl2 = LearningWithNoisyLabels(seed=seed)
+    lnl2 = LearningWithNoisyLabels(seed=SEED)
     lnl2.fit(data['X_train'], data['s'], )
     score = lnl2.score(data['X_test'], data['y_test'])
     assert (score < score_nm_inm + 1e-4)
