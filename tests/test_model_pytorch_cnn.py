@@ -1,14 +1,8 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[ ]:
-
-
 # Python 2 and 3 compatibility
 from __future__ import print_function, absolute_import, division, unicode_literals, with_statement
-
-
-# In[ ]:
 
 
 # Make sure python version is compatible with pyTorch
@@ -17,9 +11,6 @@ python_version = VersionWarning(
     warning_str = "pyTorch supports Python version 2.7, 3.5, 3.6, 3.7.",
     list_of_compatible_versions = [2.7, 3.5, 3.6, 3.7],
 )
-
-
-# In[ ]:
 
 
 if python_version.is_compatible():
@@ -42,9 +33,6 @@ if python_version.is_compatible():
     y_test = datasets.MNIST(data_dir, train=False, download = True).test_labels.numpy()
     py_train = cleanlab.util.value_counts(y_train) / float(len(y_train))
     X_test_data = datasets.MNIST(data_dir, train=False, download = True).test_data.numpy()
-
-
-# In[ ]:
 
 
 def test_loaders(
@@ -95,9 +83,6 @@ def test_loaders(
     assert(True)
 
 
-# In[ ]:
-
-
 def test_throw_exception():
     if python_version.is_compatible():
         cnn = CNN(epochs=1, log_interval=1000, seed = 0)
@@ -108,9 +93,6 @@ def test_throw_exception():
             with pytest.raises(ValueError) as e:
                 cnn.fit(train_idx = [0,1], train_labels = [1])
     assert(True)
-
-
-# In[ ]:
 
 
 def test_n_train_examples(n = 500):
@@ -134,4 +116,3 @@ def test_n_train_examples(n = 500):
         assert(len(pred) == MNIST_TEST_SIZE)
         
     assert(True)
-

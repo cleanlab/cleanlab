@@ -1,21 +1,12 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[ ]:
-
-
 from __future__ import print_function, absolute_import, division, unicode_literals, with_statement
-
-
-# In[ ]:
 
 
 from cleanlab import latent_algebra, latent_estimation
 import numpy as np
 import pytest
-
-
-# In[ ]:
 
 
 s = [0] * 10 + [1] * 5 + [2] * 15
@@ -26,9 +17,6 @@ nm = np.array([
 ])
 
 
-# In[ ]:
-
-
 def test_latent_py_ps_inv():
     ps, py, inv = latent_algebra.compute_ps_py_inv_noise_matrix(s, nm)
     assert(all(abs(np.dot(inv, ps) - py) < 1e-3))
@@ -36,16 +24,10 @@ def test_latent_py_ps_inv():
     return ps, py, inv
 
 
-# In[ ]:
-
-
 def test_latent_inv():
     ps, py, inv = test_latent_py_ps_inv()
     inv2 = latent_algebra.compute_inv_noise_matrix(py, nm)
-    assert(np.all(abs(inv - inv2) < 1e-3))    
-
-
-# In[ ]:
+    assert(np.all(abs(inv - inv2) < 1e-3))
 
 
 def test_latent_nm():
@@ -54,16 +36,10 @@ def test_latent_nm():
     assert(np.all(abs(nm - nm2) < 1e-3))
 
 
-# In[ ]:
-
-
 def test_latent_py():
     ps, py, inv = test_latent_py_ps_inv()
     py2 = latent_algebra.compute_py(ps, nm, inv)
     assert(np.all(abs(py - py2) < 1e-3))
-
-
-# In[ ]:
 
 
 def test_latent_py_warning():
@@ -83,9 +59,6 @@ def test_latent_py_warning():
             assert(True)
 
 
-# In[ ]:
-
-
 def test_compute_py_err():
     ps, py, inv = test_latent_py_ps_inv()
     try:
@@ -103,10 +76,7 @@ def test_compute_py_err():
                 noise_matrix = nm,
                 inverse_noise_matrix = inv,
                 py_method = 'marginal_ps',
-            )    
-
-
-# In[ ]:
+            )
 
 
 def test_compute_py_marginal_ps():
@@ -123,9 +93,6 @@ def test_compute_py_marginal_ps():
     assert(all(abs(py - py2) < 1e-2))
 
 
-# In[ ]:
-
-
 def test_pyx():
     psx = np.array([
         [0.1, 0.3, 0.6],
@@ -139,9 +106,6 @@ def test_pyx():
     assert(np.all(np.sum(pyx, axis = 1) - 1 < 1e-4))
 
 
-# In[ ]:
-
-
 def test_pyx_error():  
     psx = np.array([0.1, 0.3, 0.6])
     ps, py, inv = test_latent_py_ps_inv()
@@ -151,4 +115,3 @@ def test_pyx_error():
         assert('should be (N, K)' in str(e))
     with pytest.raises(ValueError) as e:
         pyx = latent_algebra.compute_pyx(psx, nm, inv)
-

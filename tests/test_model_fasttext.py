@@ -1,15 +1,8 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[ ]:
-
-
 # Python 2 and 3 compatibility
 from __future__ import print_function, absolute_import, division, unicode_literals, with_statement
-
-
-# In[ ]:
-
 
 # Make sure python version is compatible with fasttext
 from cleanlab.util import VersionWarning
@@ -17,9 +10,6 @@ python_version = VersionWarning(
     warning_str = "fastText supports Python 3 versions (not python 2).",
     list_of_compatible_versions = [3.4, 3.5, 3.6, 3.7],
 )
-
-
-# In[ ]:
 
 
 def create_cooking_dataset(data_dir = None):
@@ -87,9 +77,6 @@ def create_cooking_dataset(data_dir = None):
         shutil.rmtree(data_dir + 'cooking')
 
 
-# In[ ]:
-
-
 if python_version.is_compatible():
     from fastText import train_supervised
     import cleanlab
@@ -124,10 +111,7 @@ if python_version.is_compatible():
         },
         del_intermediate_data = True,
     )
-    ftc.fit(X = None)   
-
-
-# In[ ]:
+    ftc.fit(X = None)
 
 
 def test_predict_proba_masking():
@@ -138,9 +122,6 @@ def test_predict_proba_masking():
     assert(True)
 
 
-# In[ ]:
-
-
 def test_predict_masking():
     
     if python_version.is_compatible():
@@ -149,18 +130,12 @@ def test_predict_masking():
     assert(True)
 
 
-# In[ ]:
-
-
 def test_score_masking():
     
     if python_version.is_compatible():
         score = ftc.score(X = [4, 8,  500, 1000, 4999], k = 5)
         assert(0. <= score <= 1.0)
     assert(True)
-
-
-# In[ ]:
 
 
 def test_apk_strictly_increasing():
@@ -177,9 +152,6 @@ def test_apk_strictly_increasing():
             prev_score = score
             print(prev_score)
     assert(True)
-
-
-# In[ ]:
 
 
 def test_predict_and_predict_proba():
@@ -200,9 +172,6 @@ def test_predict_and_predict_proba():
         them_prob = ftc.clf.predict(X_test, k = len(us_prob))[1].max(axis = 1)
         assert(np.sum((us_prob - them_prob)**2) < 1e-4)
     assert(True)
-
-
-# In[ ]:
 
 
 def test_correctness():
@@ -226,9 +195,6 @@ def test_correctness():
     assert(True)
 
 
-# In[ ]:
-
-
 def test_return_labels():
     if python_version.is_compatible():
         # Get predictions, probabilities and labels
@@ -237,9 +203,6 @@ def test_return_labels():
         assert(len(pred) == len(labels1))
         assert(all(labels1 == labels2))
     assert(True)
-
-
-# In[ ]:
 
 
 def test_cleanlab_with_fasttext():
@@ -254,8 +217,10 @@ def test_cleanlab_with_fasttext():
         top_labels = [v for v,c in sorted(label_counts, key=lambda x: x[1])[::-1][:top]]
 
         # Get indices of data and labels for the top labels
-        X_train_idx, y_train_top = [list(w) for w in zip(*[(i, z.split(" ", 1)[0]) for i, z in enumerate(train_data) if z.split(" ", 1)[0] in top_labels])]
-        X_test_idx, y_test_top = [list(w) for w in zip(*[(i, z.split(" ", 1)[0]) for i, z in enumerate(test_data) if z.split(" ", 1)[0] in top_labels])]
+        X_train_idx, y_train_top = [list(w) for w in zip(*[(i, z.split(" ", 1)[0])
+            for i, z in enumerate(train_data) if z.split(" ", 1)[0] in top_labels])]
+        X_test_idx, y_test_top = [list(w) for w in zip(*[(i, z.split(" ", 1)[0])
+            for i, z in enumerate(test_data) if z.split(" ", 1)[0] in top_labels])]
 
         # Pre-train
         ftc = FastTextClassifier(
@@ -297,18 +262,12 @@ def test_cleanlab_with_fasttext():
     assert(True)
 
 
-# In[ ]:
-
-
 def test_create_all_data():
     if python_version.is_compatible():
         fn = ftc._create_train_data(range(len(X_train)))
         with open(fn, 'r') as f:
             assert(len(f.readlines()) == len(X_train))
         os.remove(fn)
-
-
-# In[ ]:
 
 
 def test_score():
@@ -318,4 +277,3 @@ def test_score():
         score = ftc.score(X = range(n), y = y)
         assert(score > 0)
     assert(True)
-
