@@ -168,7 +168,7 @@ def test_clf_fit_inm():
     inm = np.array([[.1, .9], [.9, .1]])
     try:
         lnl.fit(X=np.arange(3), s=np.array([0, 0, 1]), inverse_noise_matrix=inm)
-    except Exception azs e:
+    except Exception as e:
         assert ('Trace(inverse_noise_matrix)' in str(e))
         with pytest.raises(ValueError) as e:
             lnl.fit(X=np.arange(3), s=np.array([0, 0, 1]), inverse_noise_matrix=inm)
