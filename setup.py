@@ -4,7 +4,7 @@
 # 0. python setup.py check -r -s
 # 0. rm -rf dist build
 # 1. python setup.py sdist bdist_wheel --universal
-# 2. twine upload dist/*
+# 2. python3 -m twine upload dist/*
 
 from setuptools import setup, find_packages
 # To use a consistent encoding
