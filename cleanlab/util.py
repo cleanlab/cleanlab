@@ -8,7 +8,9 @@
 # In[ ]:
 
 
-from __future__ import print_function, absolute_import, division, unicode_literals, with_statement
+from __future__ import (
+    print_function, absolute_import, division, unicode_literals, with_statement
+)
 import numpy as np
 from sklearn.utils import check_X_y
 
@@ -185,7 +187,63 @@ def value_counts(x):
         if type(x[0]) is int and (np.array(x) >= 0).all():
             return np.bincount(x)
         else:
-            return np.unique(x, return_counts=True)[1] 
+            return np.unique(x, return_counts=True)[1]
+
+
+def round_preserving_sum(iterable):
+    """Rounds an iterable of floats while retaining the original summed value.
+    Function parameters should be documented in the ``Args`` section. The name
+    of each parameter is required. The type and description of each parameter
+    is optional, but should be included if not obvious.
+
+    The while loop in this code was adapted from:
+    https://github.com/cgdeboer/iteround
+
+    Parameters
+    -----------
+    iterable : list<float> or np.array<float>
+        An iterable of floats
+
+    Returns
+    -------
+    iterable : list<int> or np.array<int>
+        The iterable rounded to int, preserving sum."""
+
+    floats = np.asarray(iterable, dtype=float)
+    ints = floats.round()
+    orig_sum = np.sum(floats).round()
+    int_sum = np.sum(ints).round()
+    # Adjust the integers so that they sum to orig_sum
+    while abs(int_sum - orig_sum) > 1e-6:
+        diff = np.round(orig_sum - int_sum)
+        increment = -1 if int(diff < 0.) else 1
+        changes = min(int(abs(diff)), len(iterable))
+        # Orders indices by difference. Increments # of changes.
+        indices = np.argsort(floats - ints)[::-increment][:changes]
+        for i in indices:
+            ints[i] = ints[i] + increment
+        int_sum = np.sum(ints).round()
+    return ints.astype(int)
+
+
+def round_preserving_row_totals(confident_joint):
+    '''Rounds confident_joint cj to type int
+    while preserving the totals of reach row.
+    Assumes that cj is a 2D np.array of type float.
+
+    Parameters:
+    confident_joint : 2D np.array<float> of shape (K, K)
+        See compute_confident_joint docstring for details.
+
+    Returns:
+    confident_joint : 2D np.array<int> of shape (K,K)
+        Rounded to int while preserving row totals.'''
+
+    return np.apply_along_axis(
+        func1d=round_preserving_sum,
+        axis=1,
+        arr=confident_joint,
+    ).astype(int)
 
 
 # In[ ]:
@@ -361,6 +419,7 @@ class VersionWarning(object):
         self.warning_str = warning_str
         self.warning_already_issued = False
         self.list_of_compatible_versions = list_of_compatible_versions
+        
     def is_compatible(self):
         compatible = _python_version_is_compatible(
             self.warning_str,

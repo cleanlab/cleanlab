@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+
 # coding: utf-8
 
 # In[1]:
@@ -57,7 +57,7 @@ def show_decision_boundary(clf, title, show_noise = True):
 # In[3]:
 
 
-seed = 46 # Seeded for reproducibility - remove to created random noise and distributions.
+seed = 1 # Seeded for reproducibility - remove to created random noise and distributions.
 np.random.seed(seed = seed)
 
 means = [ [3, 2], [7, 7], [0, 8] ]
@@ -102,13 +102,13 @@ idx_errors = get_noise_indices(s, psx)
 # #### To show off the power of **cleanlab**, we've chosen an example of multiclass learning with noisy labels in which over 50% of the training labels are wrong.
 # Toggle the ```trace``` parameter in ```generate_noise_matrix_from_trace``` above to try out different amounts of noise. Note, as we prove in our paper, learning becomes impossible if the ```trace <= 1```, so choose a value greater than 1, but less than, or equal to, the number of classes (3).
 
-# In[7]:
+# In[4]:
 
 
 est_joint = cleanlab.latent_estimation.estimate_joint(
-    confident_joint, 
-    s, 
-    psx,
+    s=s,
+    psx=psx,
+    confident_joint=confident_joint, 
 )
 true_joint_distribution_of_label_errors = (noise_matrix * py)
 percent_error_str = 'Percent of training examples that have wrong labels: ' +       str(int(round(100 - 100*true_joint_distribution_of_label_errors.trace()))) + "%"
@@ -183,7 +183,6 @@ rp_score = accuracy_score(y_test, rp.fit(X_train, s, psx=psx).predict(X_test))
 print("Logistic regression (+rankpruning):", rp_score)
 diff = rp_score - baseline_score
 clf = LogisticRegression(solver = 'lbfgs', multi_class = 'auto')
-# If we fit on the pruned dataset without reweighting, performance is much worse.
 print('Fit on denoised data without re-weighting:', accuracy_score(y_test, clf.fit(X_train[~idx_errors], s[~idx_errors]).predict(X_test)))
 
 
@@ -251,20 +250,12 @@ for i in np.argsort(scores)[::-1]:
 # 
 # ### In summary, the default setting of parameters tends to work well, but optimize across their settings freely.
 
-# In[5]:
-
-
-cleanlab.latent_estimation.estimate_joint(confident_joint, np.asarray(s), psx)
-
-
 # In[6]:
 
 
-(confident_joint / len(s)) 
+joint = cleanlab.latent_estimation.estimate_joint(s, psx, confident_joint)
+print(joint)
 
-
-# In[ ]:
-
-
-
+print('\nThe above output should look like this:')
+print(confident_joint / len(s)) 
 

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+
 # coding: utf-8
 
 # In[1]:
@@ -104,7 +104,7 @@ except Exception as e:
 
 
 print('WITHOUT confident learning,', end=" ")
-clf = LogisticRegression(solver = 'lbfgs', multi_class = 'auto', max_iter = 1000)
+clf = LogisticRegression(solver='lbfgs', multi_class='auto', max_iter=1000)
 _ = clf.fit(X_train, s)
 pred = clf.predict(X_test)
 print("Iris dataset test accuracy:", round(accuracy_score(pred, y_test), 2))
@@ -113,7 +113,7 @@ print("\nNow we show the improvement using confident learning to characterize th
 print("and learn on the data that is (with high confidence) labeled correctly.")
 print()
 print('WITH confident learning (noise matrix given),', end=" ")
-_ = rp.fit(X_train, s, noise_matrix = noise_matrix)
+_ = rp.fit(X_train, s, noise_matrix=noise_matrix)
 pred = rp.predict(X_test)
 print("Iris dataset test accuracy:", round(accuracy_score(pred, y_test),2))
 
@@ -123,15 +123,15 @@ pred = rp.predict(X_test)
 print("Iris dataset test accuracy:", round(accuracy_score(pred, y_test),2))
 
 print('WITH confident learning (using latent noise matrix estimation),', end=" ")
-clf = LogisticRegression(solver = 'lbfgs', multi_class = 'auto', max_iter = 1000)
+clf = LogisticRegression(solver='lbfgs', multi_class='auto', max_iter=1000)
 rp = LearningWithNoisyLabels(clf = clf, seed = seed)
 _ = rp.fit(X_train, s)
 pred = rp.predict(X_test)
 print("Iris dataset test accuracy:", round(accuracy_score(pred, y_test),2))
 
 print('WITH confident learning (using calibrated confident joint),', end=" ")
-clf = LogisticRegression(solver = 'lbfgs', multi_class = 'auto', max_iter = 1000)
-rp = LearningWithNoisyLabels(clf = clf, seed = seed)
+clf = LogisticRegression(solver='lbfgs', multi_class='auto', max_iter=1000)
+rp = LearningWithNoisyLabels(clf=clf, seed=seed)
 _ = rp.fit(X_train, s)
 pred = rp.predict(X_test)
 print("Iris dataset test accuracy:", round(accuracy_score(pred, y_test),2))

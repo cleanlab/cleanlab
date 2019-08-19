@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+
 # coding: utf-8
 
 # # Hyperparameter Optimization Tutorial
@@ -25,7 +25,7 @@
 from __future__ import print_function, absolute_import, division, unicode_literals, with_statement
 
 
-# In[3]:
+# In[2]:
 
 
 from hypopt.model_selection import GridSearch
@@ -42,7 +42,7 @@ import numpy as np
 import copy
 
 
-# In[35]:
+# In[3]:
 
 
 def make_linear_dataset(n_classes = 3, n_samples = 300):
@@ -53,7 +53,7 @@ def make_linear_dataset(n_classes = 3, n_samples = 300):
     return (X, y)
 
 
-# In[43]:
+# In[4]:
 
 
 param_grid = {
@@ -62,7 +62,7 @@ param_grid = {
 }
 
 
-# In[44]:
+# In[5]:
 
 
 # Set the sparsity of the noise matrix.
@@ -80,7 +80,7 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=.4, random_s
 X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=.25, random_state=1)
 
 
-# In[72]:
+# In[6]:
 
 
 for name, clf in [
@@ -109,17 +109,18 @@ for name, clf in [
     # Create the noisy labels. This method is exact w.r.t. the noise_matrix.
     y_train_with_errors = generate_noisy_labels(y_train, noise_matrix)
     lnl_cv = GridSearch(
-        model = LearningWithNoisyLabels(clf), 
-        param_grid = param_grid, 
-        num_threads = 4,
-        seed = 0,
+        model=LearningWithNoisyLabels(clf),
+        param_grid=param_grid,
+        num_threads=4,
+        seed=0,
+        parallelize=True,
     )
     lnl_cv.fit(
         X_train = X_train, 
         y_train = y_train_with_errors,
         X_val = X_val,
         y_val = y_val,
-        verbose = False,
+        verbose = True,
     )
     # Also compute the test score with default parameters
     clf_copy.fit(X_train, y_train_with_errors)
