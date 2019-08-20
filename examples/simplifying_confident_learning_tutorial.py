@@ -2,7 +2,7 @@
 # coding: utf-8
 
 # # simplified Confident Learning Tutorial
-# #### Author: Curtis G. Northcutt, cgn@mit.edu
+# *Author: Curtis G. Northcutt, cgn@mit.edu*
 # 
 # In this tutorial, we show how to implement confident learning without using cleanlab (for the most part). 
 # This tutorial is to confident learning what this tutorial https://pytorch.org/tutorials/beginner/examples_tensor/two_layer_net_numpy.html
@@ -33,20 +33,23 @@ import cleanlab
 import numpy as np
 from sklearn.datasets import load_digits
 from sklearn.linear_model import LogisticRegression
+# To silence convergence warnings caused by using a weak
+# logistic regression classifier on image data
+import warnings
+warnings.simplefilter("ignore")
 np.random.seed(477)
 
 
 # In[2]:
 
 
-max_score = -1
-best_seed = -1
-
 # STEP 0 - Get some real digits data. Add a bunch of label errors. Get probs.
 
 # Get handwritten digits data
 X = load_digits()['data']
 y = load_digits()['target']
+print('Handwritten digits datasets number of classes:', len(np.unique(y)))
+print('Handwritten digits datasets number of examples:', len(y))
 
 # Add lots of errors to labels
 NUM_ERRORS = 100
@@ -59,6 +62,8 @@ for i in error_indices:
 
 # Confirm that we indeed added NUM_ERRORS label errors
 assert (len(s) - sum(s == y) == NUM_ERRORS)
+actual_label_errors = np.arange(len(y))[s != y]
+print('\nIndices of actual label errors:\n', actual_label_errors)
 
 # To keep the tutorial short, we use cleanlab to get the 
 # out-of-sample predicted probabilities using cross-validation
@@ -168,7 +173,6 @@ label_errors_idx = label_errors_idx[np.argsort(margin)]
 # In[5]:
 
 
-actual_label_errors = np.arange(len(y))[s != y]
 score = sum([e in label_errors_idx for e in actual_label_errors]) / NUM_ERRORS
 print('% actual errors that confident learning found: {:.0%}'.format(score))
 score = sum([e in actual_label_errors for e in label_errors_idx]) / len(label_errors_idx)
