@@ -20,7 +20,7 @@
 
 ``cleanlab`` finds and cleans label errors in any dataset using state-of-the-art algorithms for learning with noisy labels by characterizing label noise. ``cleanlab`` is fast: its built on optimized algorithms and parallelized across CPU threads automatically. ``cleanlab`` implements the family of theory and algorithms called **confident learning** with provable guarantees of exact noise estimation and label error finding (even when model output probabilities are noisy/imperfect). 
 
-**How does cleanlab work?** Similar to `deep learning with just numpy and for-loops <https://pytorch.org/tutorials/beginner/examples_tensor/two_layer_net_numpy.html>`__, check out `confident learning with just numpy and for-loops <https://github.com/cgnorthcutt/cleanlab/blob/master/examples/simplifying_confident_learning_tutorial.ipynbl>`__ to understand how confident learning works through code.
+**How does cleanlab work?** Check out `confident learning with just numpy and for-loops <https://github.com/cgnorthcutt/cleanlab/blob/master/examples/simplifying_confident_learning_tutorial.ipynbl>`__ to understand how confident learning works through code.
 
 ``cleanlab`` supports multi-label, multiclass, sparse matrices, and more. 
 
