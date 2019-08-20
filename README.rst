@@ -37,7 +37,7 @@ Its called ``cleanlab`` because it CLEANs LABels.
 
 
 Find label errors with PyTorch, Tensorflow, MXNet, etc. in 1 line of code!
---------------------------------------------------------------------------
+==========================================================================
 
 .. code:: python
 
@@ -55,7 +55,7 @@ Find label errors with PyTorch, Tensorflow, MXNet, etc. in 1 line of code!
 
    
 Learning with noisy labels in 3 lines of code!
-----------------------------------------------
+==============================================
    
 .. code:: python
    
