@@ -111,6 +111,8 @@ for i, row in enumerate(psx):
 confident_joint = cleanlab.latent_estimation.calibrate_confident_joint(
     confident_joint, s)
 
+cleanlab.util.print_joint_matrix(confident_joint)
+
 
 # In[4]:
 
@@ -168,6 +170,11 @@ self_confidence = np.array(
 )
 margin = self_confidence - psx[label_errors_bool].max(axis=1)
 label_errors_idx = label_errors_idx[np.argsort(margin)]
+
+print('Indices of label errors found by confident learning:')
+print('Note label errors are sorted by likelihood of being an error')
+print('but here we just sort them by index for comparison with above.')
+print(np.array(sorted(label_errors_idx)))
 
 
 # In[5]:
