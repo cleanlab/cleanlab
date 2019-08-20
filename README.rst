@@ -103,10 +103,19 @@ To install the codebase (enabling you to make modifications):
 Citations and Related Publications
 ==================================
 
-Although this package goes far beyond our 2017 publication, if you find
-this repository helpful, please cite our paper
-http://auai.org/uai2017/proceedings/papers/35.pdf. New papers will be
-posted here when they are published.
+If you use this package in your work, please cite the following:
+
+::
+
+   @misc{northcutt2019cleanlab,
+     author = {Curtis Northcutt},
+     title = {Clean Lab},
+     year = {2019},
+     howpublished = {\url{https://github.com/cgnorthcutt/cleanlab}},
+     note = {commit xxxxxxx, version xxxx}
+   }
+
+If you compare with, build on, or use confident learning (the theory and methods behind cleanlab), please cite the following. We will release a paper strictly on confident learning later this year, in addition to other related publications.
 
 ::
 
