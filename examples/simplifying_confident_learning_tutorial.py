@@ -28,7 +28,7 @@
 # In[1]:
 
 
-from __future__ import print_function, absolute_import, division, unicode_literals, with_statement
+from __future__ import print_function, absolute_import, division, with_statement
 import cleanlab
 import numpy as np
 from sklearn.datasets import load_digits
