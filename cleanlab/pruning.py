@@ -345,8 +345,8 @@ def get_noise_indices(
     else:
         pred = psx.argmax(axis=1)
     for i, pred_label in enumerate(pred):
-        # np.all let's this work for multi_label and single label
-        if label_errors_mask[i] and np.all(pred_label == s[i]):
+        if multi_label and np.all(pred_label == s[i]) or \
+            not multi_label and pred_label == s[i]:
             label_errors_mask[i] = False
 
     if sorted_index_method is not None:
