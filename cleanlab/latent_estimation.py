@@ -211,6 +211,7 @@ def compute_confident_joint(
     thresholds=None,
     calibrate=True,
     multi_label=False,
+    return_indices_of_off_diagonals=False,
 ):
     '''Estimates P(s,y), the confident counts of the latent
     joint distribution of true and noisy labels
@@ -270,7 +271,15 @@ def compute_confident_joint(
 
     multi_label : bool
         If true, s should be an iterable (e.g. list) of iterables, containing a
-        list of labels for each example, instead of just a single label.'''
+        list of labels for each example, instead of just a single label.
+
+    return_indices_of_off_digaonals: bool
+        If true returns indices of examples that were counted in off-diagonals of
+        the confident joint. These are a baseline proxy for the label errors. This
+        is NOT as effective as using pruning.get_noise_indices(confident_joint)
+        because (1) this method is based on probabilities which may be erroneous,
+        and (2) this simple approach does not normalize or take into account priors.
+        '''
 
     if multi_label:
         return _compute_confident_joint_multi_label(
@@ -326,6 +335,11 @@ def compute_confident_joint(
     
     if calibrate:
         confident_joint = calibrate_confident_joint(confident_joint, s)
+
+    if return_indices_of_off_diagonals:
+        indices = np.arange(len(s))[at_least_one_confident][y_confident != s_confident]
+
+        return confident_joint, indices
 
     return confident_joint
 
