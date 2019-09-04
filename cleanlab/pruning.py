@@ -110,16 +110,16 @@ def _prune_by_count(k):
     psx_k = psx[:, k]
     K = len(s_counts)
     if s_counts[k] > MIN_NUM_PER_CLASS:  # Don't prune if not MIN_NUM_PER_CLASS
-        for j in range(K):  # noisy label index (k is the true label index)
+        for j in range(K):  # noisy label index (k is the noisy label index)
             if k != j:  # Only prune for noise rates, not diagonal entries
-                num2prune = prune_count_matrix[k][j]
+                num2prune = prune_count_matrix[j][k]
                 if num2prune > 0:
                     # num2prune'th largest p(classk) - p(class j)
                     # for x with noisy label j
-                    margin = psx_k - psx[:, j]
+                    margin = psx_k - psx[:, k]
                     s_filter = np.array(
-                        [j in l for l in s]
-                    ) if multi_label else s == j
+                        [k in l for l in s]
+                    ) if multi_label else s == k
                     threshold = -np.partition(
                         -margin[s_filter], num2prune - 1
                     )[num2prune - 1]
@@ -248,6 +248,7 @@ def get_noise_indices(
       equivalences. This will iteratively enforce mathematically consistency.
 
     sorted_index_method : str [None, 'prob_given_label', 'normalized_margin']
+      If None, returns a boolean mask (true if example at index is label error)
       If not None, returns an array of the label error indices
       (instead of a bool mask) where error indices are ordered by the either:
         'normalized_margin' := normalized margin (p(s = k) - max(p(s != k)))
