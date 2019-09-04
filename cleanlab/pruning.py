@@ -71,7 +71,7 @@ def _multiprocessing_initialization(
     multi_label = _multi_label
 
 
-def _prune_by_class(k):  # pragma: no cover
+def _prune_by_class(k):
     """multiprocessing Helper function that assumes globals
     and produces a mask for class k for each example by
     removing the examples with *smallest probability* of
@@ -94,7 +94,7 @@ def _prune_by_class(k):  # pragma: no cover
         return np.zeros(len(s), dtype=bool)
 
 
-def _prune_by_count(k):  # pragma: no cover
+def _prune_by_count(k):
     """multiprocessing Helper function that assumes globals
     and produces a mask for class k for each example by
     removing the example with noisy label k having *largest margin*,
@@ -179,6 +179,7 @@ def get_noise_indices(
     converge_latent_estimates=False,
     sorted_index_method=None,
     multi_label=False,
+    n_jobs = None,
     verbose=0,
 ):
     '''Returns the indices of most likely (confident) label errors in s. The
@@ -256,8 +257,19 @@ def get_noise_indices(
       If true, s should be an iterable (e.g. list) of iterables, containing a
       list of labels for each example, instead of just a single label.
 
+    n_jobs : int
+      Number of processing threads used by multiprocessing. Default None
+      sets to the number of processing threads on your CPU.
+      Set this to 1 to REMOVE parallel processing (if its causing issues).
+
     verbose : int
       If 0, no print statements. If 1, prints when multiprocessing happens.'''
+
+    # Set-up number of multiprocessing threads
+    if n_jobs is None:
+        n_jobs = multiprocessing.cpu_count()
+    else:
+        assert (n_jobs >= 1)
 
     # Number of examples in each class of s
     if multi_label:
@@ -299,40 +311,46 @@ def get_noise_indices(
     # Peform Pruning with threshold probabilities from BFPRT algorithm in O(n)
     # Operations are parallelized across all CPU processes
     if prune_method == 'prune_by_class' or prune_method == 'both':
-        with multiprocessing_context(
-            multiprocessing.cpu_count(),
-            initializer=_multiprocessing_initialization,
-            initargs=(s, s_counts, prune_count_matrix, psx, multi_label),
-        ) as p:
-            if verbose:
-                print('Parallel processing label errors by class.')
-            sys.stdout.flush()
-            if big_dataset and tqdm_exists:
-                noise_masks_per_class = list(
-                    tqdm.tqdm(p.imap(_prune_by_class, range(K)), total=K),
-                )
-            else:
-                noise_masks_per_class = p.map(_prune_by_class, range(K))
+        if n_jobs > 1:  # parallelize
+            with multiprocessing_context(
+                n_jobs,
+                initializer=_multiprocessing_initialization,
+                initargs=(s, s_counts, prune_count_matrix, psx, multi_label),
+            ) as p:
+                if verbose:
+                    print('Parallel processing label errors by class.')
+                sys.stdout.flush()
+                if big_dataset and tqdm_exists:
+                    noise_masks_per_class = list(
+                        tqdm.tqdm(p.imap(_prune_by_class, range(K)), total=K),
+                    )
+                else:
+                    noise_masks_per_class = p.map(_prune_by_class, range(K))
+        else:  # n_jobs = 1, so no parallelization
+            noise_masks_per_class = [_prune_by_class(k) for k in range(K)]
         label_errors_mask = np.stack(noise_masks_per_class).any(axis=0)
 
     if prune_method == 'both':
         label_errors_mask_by_class = label_errors_mask
 
     if prune_method == 'prune_by_noise_rate' or prune_method == 'both':
-        with multiprocessing_context(
-            multiprocessing.cpu_count(),
-            initializer=_multiprocessing_initialization,
-            initargs=(s, s_counts, prune_count_matrix, psx, multi_label),
-        ) as p:
-            if verbose:
-                print('Parallel processing label errors by noise rate.')
-            sys.stdout.flush()
-            if big_dataset and tqdm_exists:
-                noise_masks_per_class = list(
-                    tqdm.tqdm(p.imap(_prune_by_count, range(K)), total=K)
-                )
-            else:
-                noise_masks_per_class = p.map(_prune_by_count, range(K))
+        if n_jobs > 1:  # parallelize
+            with multiprocessing_context(
+                n_jobs,
+                initializer=_multiprocessing_initialization,
+                initargs=(s, s_counts, prune_count_matrix, psx, multi_label),
+            ) as p:
+                if verbose:
+                    print('Parallel processing label errors by noise rate.')
+                sys.stdout.flush()
+                if big_dataset and tqdm_exists:
+                    noise_masks_per_class = list(
+                        tqdm.tqdm(p.imap(_prune_by_count, range(K)), total=K)
+                    )
+                else:
+                    noise_masks_per_class = p.map(_prune_by_count, range(K))
+        else:  # n_jobs = 1, so no parallelization
+            noise_masks_per_class = [_prune_by_count(k) for k in range(K)]
         label_errors_mask = np.stack(noise_masks_per_class).any(axis=0)
 
     if prune_method == 'both':
