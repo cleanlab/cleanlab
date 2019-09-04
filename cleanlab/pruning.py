@@ -53,7 +53,7 @@ else:
 # Multiprocessing Helper functions
 
 
-def _multiprocessing_initialization(
+def _make_global(
     _s,
     _s_counts,
     _prune_count_matrix,
@@ -307,16 +307,15 @@ def get_noise_indices(
         tmp = (psy.T * num_to_remove_per_class / noise_per_s).T
         np.fill_diagonal(tmp, s_counts - num_to_remove_per_class)
         prune_count_matrix = round_preserving_row_totals(tmp)
+        
+    # Make static data global for use in multiprocessing or sub-functions
+    _make_global(s, s_counts, prune_count_matrix, psx, multi_label)
 
     # Peform Pruning with threshold probabilities from BFPRT algorithm in O(n)
     # Operations are parallelized across all CPU processes
     if prune_method == 'prune_by_class' or prune_method == 'both':
         if n_jobs > 1:  # parallelize
-            with multiprocessing_context(
-                n_jobs,
-                initializer=_multiprocessing_initialization,
-                initargs=(s, s_counts, prune_count_matrix, psx, multi_label),
-            ) as p:
+            with multiprocessing_context(n_jobs) as p:
                 if verbose:
                     print('Parallel processing label errors by class.')
                 sys.stdout.flush()
@@ -335,11 +334,7 @@ def get_noise_indices(
 
     if prune_method == 'prune_by_noise_rate' or prune_method == 'both':
         if n_jobs > 1:  # parallelize
-            with multiprocessing_context(
-                n_jobs,
-                initializer=_multiprocessing_initialization,
-                initargs=(s, s_counts, prune_count_matrix, psx, multi_label),
-            ) as p:
+            with multiprocessing_context(n_jobs) as p:
                 if verbose:
                     print('Parallel processing label errors by noise rate.')
                 sys.stdout.flush()
