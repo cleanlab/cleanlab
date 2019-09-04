@@ -280,7 +280,10 @@ class LearningWithNoisyLabels(BaseEstimator): # Inherits sklearn classifier
 
         # Zero out noise matrix entries if pulearning = the integer specifying the class without noise.
         if self.pulearning is not None: # pragma: no cover
-            self.noise_matrix = remove_noise_from_class(self.noise_matrix, class_without_noise=self.pulearning)
+            self.noise_matrix = remove_noise_from_class(
+                self.noise_matrix,
+                class_without_noise=self.pulearning,
+            )
             # TODO: self.inverse_noise_matrix = remove_noise_from_class(self.inverse_noise_matrix, class_without_noise=self.pulearning)
 
         # This is the actual work of this function.
@@ -300,7 +303,10 @@ class LearningWithNoisyLabels(BaseEstimator): # Inherits sklearn classifier
         s_pruned = s[X_mask]
 
         # Check if sample_weight in clf.fit(). Compatible with Python 2/3.
-        if hasattr(inspect, 'getfullargspec') and             'sample_weight' in inspect.getfullargspec(self.clf.fit).args or             hasattr(inspect, 'getargspec') and             'sample_weight' in inspect.getargspec(self.clf.fit).args:       
+        if hasattr(inspect, 'getfullargspec') and \
+                'sample_weight' in inspect.getfullargspec(self.clf.fit).args or \
+                hasattr(inspect, 'getargspec') and \
+                'sample_weight' in inspect.getargspec(self.clf.fit).args:
             # Re-weight examples in the loss function for the final fitting
             # s.t. the "apparent" original number of examples in each class
             # is preserved, even though the pruned sets may differ.
@@ -357,7 +363,10 @@ class LearningWithNoisyLabels(BaseEstimator): # Inherits sklearn classifier
         if hasattr(self.clf, 'score'):
         
             # Check if sample_weight in clf.score(). Compatible with Python 2/3.
-            if hasattr(inspect, 'getfullargspec') and                 'sample_weight' in inspect.getfullargspec(self.clf.score).args or                 hasattr(inspect, 'getargspec') and                 'sample_weight' in inspect.getargspec(self.clf.score).args:  
+            if hasattr(inspect, 'getfullargspec') and \
+                    'sample_weight' in inspect.getfullargspec(self.clf.score).args or \
+                    hasattr(inspect, 'getargspec') and \
+                    'sample_weight' in inspect.getargspec(self.clf.score).args:
                 return self.clf.score(X, y, sample_weight=sample_weight)
             else:
                 return self.clf.score(X, y)
