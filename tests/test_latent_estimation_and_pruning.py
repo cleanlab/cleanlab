@@ -115,18 +115,21 @@ def test_pruning_both(n_jobs):
         psx=data['psx'],
         num_to_remove_per_class=remove,
         prune_method='prune_by_class',
+        n_jobs=n_jobs,
     )
     nr_idx = pruning.get_noise_indices(
         s=s,
         psx=data['psx'],
         num_to_remove_per_class=remove,
         prune_method='prune_by_noise_rate',
+        n_jobs=n_jobs,
     )
     both_idx = pruning.get_noise_indices(
         s=s,
         psx=data['psx'],
         num_to_remove_per_class=remove,
         prune_method='both',
+        n_jobs=n_jobs,
     )
     assert (all(s[both_idx] == s[class_idx & nr_idx]))
 
