@@ -92,6 +92,22 @@ def make_data(
 seed = 1
 data = make_data(sparse=False, seed=seed)
 
+# Create some simple data to test
+psx_ = np.array([
+    [0.9, 0.1, 0],
+    [0.6, 0.2, 0.2],
+    [0.1, 0, 0.9],
+    [0.1, 0.8, 0.1],
+    [0.1, 0.8, 0.1],
+    [0.1, 0.8, 0.1],
+    [0.1, 0.8, 0.1],
+    [0.1, 0.8, 0.1],
+    [0.1, 0.8, 0.1],
+    [0.1, 0.1, 0.8],
+])
+s_ = np.array([0,0,1,1,1,1,1,1,1,2])
+
+
 def test_confident_learning_baseline():
     cj, indices = latent_estimation.compute_confident_joint(
         s=data["s"],
@@ -116,41 +132,14 @@ def test_baseline_argmax():
     label_errors = baseline_methods.baseline_argmax(psx, s)
     assert(all(label_errors == [False, False, True, True, True]))
     
-    # Try another example
-    psx = np.array([
-        [0.9, 0.1, 0],
-        [0.6, 0.2, 0.2],
-        [0.1, 0, 0.9],
-        [0.1, 0.8, 0.1],
-        [0.1, 0.8, 0.1],
-        [0.1, 0.8, 0.1],
-        [0.1, 0.8, 0.1],
-        [0.1, 0.8, 0.1],
-        [0.1, 0.8, 0.1],
-        [0.1, 0.1, 0.8],
-    ])
-    s = np.array([0,0,1,1,1,1,1,1,1,2])
-    label_errors = baseline_methods.baseline_argmax(psx, s)
+    label_errors = baseline_methods.baseline_argmax(psx_, s_)
     assert(all(label_errors == np.array([False, False, True, False, 
         False, False, False, False, False, False])))
 
 
 def test_baseline_argmax_confusion_matrix():
-    psx = np.array([
-        [0.9, 0.1, 0],
-        [0.6, 0.2, 0.2],
-        [0.1, 0, 0.9],
-        [0.1, 0.8, 0.1],
-        [0.1, 0.8, 0.1],
-        [0.1, 0.8, 0.1],
-        [0.1, 0.8, 0.1],
-        [0.1, 0.8, 0.1],
-        [0.1, 0.8, 0.1],
-        [0.1, 0.1, 0.8],
-    ])
-    s = np.array([0,0,1,1,1,1,1,1,1,2])
-    confident_joint = confusion_matrix(true=np.argmax(psx, axis=1), pred=s).T
-    label_errors = baseline_methods.baseline_argmax_confusion_matrix(psx, s)
+    confident_joint = confusion_matrix(true=np.argmax(psx_, axis=1), pred=s_).T
+    label_errors = baseline_methods.baseline_argmax_confusion_matrix(psx_, s_)
     assert(all(label_errors == np.array([False, False, True, False, 
         False, False, False, False, False, False])))
 
@@ -169,7 +158,8 @@ def test_baseline_argmax_calibrated_confusion_matrix():
         [0.1, 0.1, 0.8],
     ])
     s = np.array([0,0,1,1,1,1,1,1,1,2])
-    confident_joint = confusion_matrix(true=np.argmax(psx, axis=1), pred=s).T
-    label_errors = baseline_methods.baseline_argmax_calibrated_confusion_matrix(psx, s)
+    confident_joint = confusion_matrix(true=np.argmax(psx_, axis=1), pred=s_).T
+    label_errors = baseline_methods.baseline_argmax_calibrated_confusion_matrix(
+        psx_, s_)
     assert(all(label_errors == np.array([False, False, True, False, 
         False, False, False, False, False, False])))
