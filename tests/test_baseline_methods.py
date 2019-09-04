@@ -145,19 +145,6 @@ def test_baseline_argmax_confusion_matrix():
 
 
 def test_baseline_argmax_calibrated_confusion_matrix():
-    psx = np.array([
-        [0.9, 0.1, 0],
-        [0.6, 0.2, 0.2],
-        [0.1, 0, 0.9],
-        [0.1, 0.8, 0.1],
-        [0.1, 0.8, 0.1],
-        [0.1, 0.8, 0.1],
-        [0.1, 0.8, 0.1],
-        [0.1, 0.8, 0.1],
-        [0.1, 0.8, 0.1],
-        [0.1, 0.1, 0.8],
-    ])
-    s = np.array([0,0,1,1,1,1,1,1,1,2])
     confident_joint = confusion_matrix(true=np.argmax(psx_, axis=1), pred=s_).T
     label_errors = baseline_methods.baseline_argmax_calibrated_confusion_matrix(
         psx_, s_)
