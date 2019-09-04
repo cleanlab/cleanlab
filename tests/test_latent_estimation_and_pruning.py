@@ -106,7 +106,8 @@ def test_exact_prune_count():
     assert (all(value_counts(s[noise_idx]) == remove))
 
 
-def test_pruning_both():
+@pytest.mark.parametrize("n_jobs", [None, 1, 2])
+def test_pruning_both(n_jobs):
     remove = 5
     s = data['s']
     class_idx = pruning.get_noise_indices(
