@@ -176,7 +176,6 @@ def get_noise_indices(
     frac_noise=1.0,
     num_to_remove_per_class=None,
     prune_method='prune_by_noise_rate',
-    converge_latent_estimates=False,
     sorted_index_method=None,
     multi_label=False,
     n_jobs = None,
@@ -241,11 +240,6 @@ def get_noise_indices(
       probability* of belonging to their given class label for every class.
       3. 'both': Finds the examples satisfying (1) AND (2) and
       removes their set conjunction.
-
-    converge_latent_estimates : bool (Default: False)
-      If true, forces numerical consistency of estimates. Each is estimated
-      independently, but they are related mathematically with closed form
-      equivalences. This will iteratively enforce mathematically consistency.
 
     sorted_index_method : str [None, 'prob_given_label', 'normalized_margin']
       If None, returns a boolean mask (true if example at index is label error)
