@@ -137,14 +137,18 @@ def test_baseline_argmax():
         False, False, False, False, False, False])))
 
 
-def test_baseline_argmax_confusion_matrix():
+@pytest.mark.parametrize("prune_method", ['prune_by_noise_rate',
+                                          'prune_by_class', 'both'])
+def test_baseline_argmax_confusion_matrix(prune_method):
     confident_joint = confusion_matrix(true=np.argmax(psx_, axis=1), pred=s_).T
     label_errors = baseline_methods.baseline_argmax_confusion_matrix(psx_, s_)
     assert(all(label_errors == np.array([False, False, True, False, 
         False, False, False, False, False, False])))
 
 
-def test_baseline_argmax_calibrated_confusion_matrix():
+@pytest.mark.parametrize("prune_method", ['prune_by_noise_rate',
+                                          'prune_by_class', 'both'])
+def test_baseline_argmax_calibrated_confusion_matrix(prune_method):
     confident_joint = confusion_matrix(true=np.argmax(psx_, axis=1), pred=s_).T
     label_errors = baseline_methods.baseline_argmax_calibrated_confusion_matrix(
         psx_, s_)
