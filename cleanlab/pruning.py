@@ -110,13 +110,13 @@ def _prune_by_count(k):
     psx_k = psx[:, k]
     K = len(s_counts)
     if s_counts[k] > MIN_NUM_PER_CLASS:  # Don't prune if not MIN_NUM_PER_CLASS
-        for j in range(K):  # noisy label index (k is the noisy label index)
+        for j in range(K):  # j is true label index (k is noisy label index)
             if k != j:  # Only prune for noise rates, not diagonal entries
                 num2prune = prune_count_matrix[j][k]
                 if num2prune > 0:
-                    # num2prune'th largest p(classk) - p(class j)
-                    # for x with noisy label j
-                    margin = psx_k - psx[:, k]
+                    # num2prune'th largest p(true class k) - p(noisy class k)
+                    # for x with true label j
+                    margin = psx[:, j] - psx_k
                     s_filter = np.array(
                         [k in l for l in s]
                     ) if multi_label else s == k
