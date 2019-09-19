@@ -109,24 +109,19 @@ def _prune_by_count(k):
     noise_mask = np.zeros(len(psx), dtype=bool)
     psx_k = psx[:, k]
     K = len(s_counts)
-    if s_counts[k] > MIN_NUM_PER_CLASS:  # Don't prune if not MIN_NUM_PER_CLASS
-        for j in range(K):  # j is true label index (k is noisy label index)
-            if k != j:  # Only prune for noise rates, not diagonal entries
-                num2prune = prune_count_matrix[j][k]
-                if num2prune > 0:
-                    # num2prune'th largest p(true class k) - p(noisy class k)
-                    # for x with true label j
-                    margin = psx[:, j] - psx_k
-                    s_filter = np.array(
-                        [k in l for l in s]
-                    ) if multi_label else s == k
-                    threshold = -np.partition(
-                        -margin[s_filter], num2prune - 1
-                    )[num2prune - 1]
-                    noise_mask = noise_mask | ((s_filter) & (margin >= threshold))
-        return noise_mask
-    else:
+    if s_counts[k] <= MIN_NUM_PER_CLASS:  # Don't prune if not MIN_NUM_PER_CLASS
         return np.zeros(len(s), dtype=bool)
+    for j in range(K):  # j is true label index (k is noisy label index)
+        num2prune = prune_count_matrix[j][k]
+        # Only prune for noise rates, not diagonal entries
+        if k != j and num2prune > 0:
+            # num2prune'th largest p(true class k) - p(noisy class k)
+            # for x with true label j
+            margin = psx[:, j] - psx_k
+            s_filter = np.array([k in l for l in s]) if multi_label else s == k
+            cut = -np.partition(-margin[s_filter], num2prune - 1)[num2prune - 1]
+            noise_mask = noise_mask | ((s_filter) & (margin >= cut))
+    return noise_mask
 
 
 def _self_confidence(args):  # pragma: no cover
