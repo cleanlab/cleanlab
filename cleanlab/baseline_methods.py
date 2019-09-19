@@ -37,10 +37,15 @@ def baseline_argmax(psx, s):
         A boolean mask that is true if the example belong
         to that index is label error..'''
     
-    return np.argmax(psx, axis=1) != s
+    return np.argmax(psx, axis=1) != np.asarray(s)
 
 
-def baseline_argmax_confusion_matrix(psx, s, calibrate=False):
+def baseline_argmax_confusion_matrix(
+    psx,
+    s,
+    calibrate=False,
+    prune_method='prune_by_noise_rate',
+):
     '''This is a baseline approach. That uses the a confusion matrix
     of argmax(psx) and s as the confident joint and then uses cleanlab
     (confident learning) to find the label errors using this matrix.
@@ -65,13 +70,27 @@ def baseline_argmax_confusion_matrix(psx, s, calibrate=False):
     confident_joint = confusion_matrix(true=np.argmax(psx, axis=1), pred=s).T
     if calibrate:
         confident_joint = calibrate_confident_joint(confident_joint, s)
-    return get_noise_indices(s, psx, confident_joint=confident_joint)
+    return get_noise_indices(
+        s=s,
+        psx=psx,
+        confident_joint=confident_joint,
+        prune_method=prune_method,
+    )
 
 
-def baseline_argmax_calibrated_confusion_matrix(psx, s):
+def baseline_argmax_calibrated_confusion_matrix(
+    psx,
+    s,
+    prune_method='prune_by_noise_rate',
+):
     '''docstring is the same as baseline_argmax_confusion_matrix
     Except in this method, we calibrate the confident joint created using
     the confusion matrix before using cleanlab to find the label errors.'''
 
-    return baseline_argmax_confusion_matrix(psx, s, calibrate=True)
+    return baseline_argmax_confusion_matrix(
+        s=s,
+        psx=psx,
+        calibrate=True,
+        prune_method=prune_method,
+    )
     
