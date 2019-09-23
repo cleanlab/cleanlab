@@ -10,7 +10,7 @@
 from __future__ import (
     print_function, absolute_import, division, unicode_literals, with_statement
 )
-from cleanlab.util import confusion_matrix
+from sklearn.metrics import confusion_matrix
 from cleanlab.pruning import get_noise_indices
 from cleanlab.latent_estimation import calibrate_confident_joint
 import numpy as np
@@ -67,7 +67,7 @@ def baseline_argmax_confusion_matrix(
         A boolean mask that is true if the example belong
         to that index is label error..'''
 
-    confident_joint = confusion_matrix(true=np.argmax(psx, axis=1), pred=s).T
+    confident_joint = confusion_matrix(np.argmax(psx, axis=1), s).T
     if calibrate:
         confident_joint = calibrate_confident_joint(confident_joint, s)
     return get_noise_indices(
