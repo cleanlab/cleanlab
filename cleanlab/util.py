@@ -286,7 +286,6 @@ def confusion_matrix(true, pred):
     assert(len(true) == len(pred))
     true_classes = np.unique(true)
     pred_classes = np.unique(pred)
-    assert(all(true_classes == pred_classes))
     K_true = len(true_classes) # Number of classes in true
     K_pred = len(pred_classes) # Number of classes in pred    
     map_true = dict(zip(true_classes, range(K_true)))    
