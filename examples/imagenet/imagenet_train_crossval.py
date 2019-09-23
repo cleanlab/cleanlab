@@ -52,6 +52,12 @@ import copy
 import numpy as np
 
 
+# In[ ]:
+
+
+num_classes = 1000
+
+
 # In[19]:
 
 
@@ -178,6 +184,7 @@ def main_worker(gpu, ngpus_per_node, args):
     use_mask = args.dir_train_mask is not None
     cv_fold = args.cv
     cv_n_folds = args.cvn
+    class_weights = None
     
     if use_crossval and use_mask:
         raise ValueError('Either args.cvn > 0 or dir-train-mask not None, but not both.')
@@ -200,7 +207,7 @@ def main_worker(gpu, ngpus_per_node, args):
         model = models.__dict__[args.arch](pretrained=True)
     else:
         print("=> creating model '{}'".format(args.arch))
-        model = models.__dict__[args.arch]()
+        model = models.__dict__[args.arch](num_classes=num_classes)
 
     if args.distributed:
         # For multiprocessing distributed, DistributedDataParallel constructor
@@ -231,9 +238,7 @@ def main_worker(gpu, ngpus_per_node, args):
         else:
             model = torch.nn.DataParallel(model).cuda()    
     
-    # define loss function (criterion) and optimizer
-    criterion = nn.CrossEntropyLoss().cuda(args.gpu)
-
+    # define optimizer
     optimizer = torch.optim.SGD(model.parameters(), args.lr,
                                 momentum=args.momentum,
                                 weight_decay=args.weight_decay)
@@ -242,7 +247,12 @@ def main_worker(gpu, ngpus_per_node, args):
     if args.resume:
         if os.path.isfile(args.resume):
             print("=> loading checkpoint '{}'".format(args.resume))
-            checkpoint = torch.load(args.resume)
+            if args.gpu is None:
+                checkpoint = torch.load(args.resume)
+            else:
+                # Map model to be loaded to specified single gpu.
+                loc = 'cuda:{}'.format(args.gpu)
+                checkpoint = torch.load(args.resume, map_location=loc)
             args.start_epoch = checkpoint['epoch']
             best_acc1 = checkpoint['best_acc1']
             if args.gpu is not None:
@@ -296,15 +306,26 @@ def main_worker(gpu, ngpus_per_node, args):
         print('Train size:', len(cv_train_idx), len(train_dataset.imgs))
         print('Holdout size:', len(cv_holdout_idx), len(holdout_dataset.imgs))
         print('Val size (subset of holdout):', len(val_imgs_idx), len(val_dataset.imgs))
-    else:        
+    else:
         checkpoint_fn = "model_{}__checkpoint.pth.tar".format(args.arch)
         if use_mask:            
             checkpoint_fn = "model_{}__masked__checkpoint.pth.tar".format(args.arch)
-            labels = [label for img, label in datasets.ImageFolder(traindir).imgs]
+            orig_class_counts = np.bincount(
+                [lab for img, lab in datasets.ImageFolder(traindir).imgs])
             train_bool_mask = np.load(args.dir_train_mask)
+            # Mask labels
             train_dataset.imgs = [img for i, img in enumerate(train_dataset.imgs) if train_bool_mask[i]]
             train_dataset.samples = train_dataset.imgs
+            clean_class_counts = np.bincount(
+                [lab for img, lab in train_dataset.imgs])
             print('Train size:', len(train_dataset.imgs))
+            # Compute class weights to re-weight loss during training
+            # Should use the confident joint to estimate the noise matrix then
+            # class_weights = 1 / p(s=k, y=k) for each class k.
+            # Here we approximate this with a simpler approach
+            # class_weights = count(y=k) / count(s=k, y=k)
+            class_weights = torch.Tensor(orig_class_counts / clean_class_counts)
+
         val_dataset = datasets.ImageFolder(
             valdir, 
             transforms.Compose([
@@ -330,6 +351,9 @@ def main_worker(gpu, ngpus_per_node, args):
         batch_size=args.batch_size, shuffle=False,
         num_workers=args.workers, pin_memory=True,
     )
+
+    # define loss function (criterion)
+    criterion = nn.CrossEntropyLoss(weight=class_weights).cuda(args.gpu)
 
     if args.evaluate:
         validate(val_loader, model, criterion, args)
@@ -578,7 +602,7 @@ def combine_folds(args):
     kf = StratifiedKFold(n_splits = args.cvn, shuffle = True, random_state = args.cv_seed)
     for k, (cv_train_idx, cv_holdout_idx) in enumerate(kf.split(range(len(labels)), labels)):
         probs = np.load('model_{}__fold_{}__probs.npy'.format(args.arch, k)) 
-        pyx[cv_holdout_idx] = probs
+        pyx[cv_holdout_idx] = probs[:, :num_classes]
     print('Writing final predicted probabilities.')
     np.save(wfn, pyx) 
     
