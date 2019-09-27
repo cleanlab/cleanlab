@@ -1,4 +1,10 @@
-__version__ = '0.0.12'
+__version__ = '0.0.13'
+
+# 0.0.13 - Major bug fix in finding label errors.
+#   - Fixed an important bug that broke finding label errors correctly.
+#   - Added baseline methods for finding label errors and estimating joint
+#   - Increased testing
+#   - Simplified logic
 
 # 0.0.12 - Minor changes.
 #   - Added support and testing for sparse matrices scipy.sparse.csr_matrix
