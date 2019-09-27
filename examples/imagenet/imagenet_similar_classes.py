@@ -1,14 +1,14 @@
 
 # coding: utf-8
 
-# In[1]:
+# In[4]:
 
 
 # These imports enhance Python2/3 compatibility.
 from __future__ import print_function, absolute_import, division, unicode_literals, with_statement
 
 
-# In[4]:
+# In[9]:
 
 
 import cleanlab
@@ -19,6 +19,8 @@ import torch
 from PIL import Image
 from torchvision import datasets
 from matplotlib import pyplot as plt
+import pandas as pd
+from sklearn.metrics import confusion_matrix
 
 # urllib2 for python2 and python3
 try:
@@ -32,7 +34,7 @@ except ImportError:
 train_dir = '/datasets/datasets/imagenet/val/'
 
 
-# In[5]:
+# In[6]:
 
 
 # Set-up name mapping for ImageNet train data
@@ -51,7 +53,7 @@ idx2name = {k: nid2name[v] for k, v in idx2nid.items()}
 
 # ## Analyze the train set on ImageNet
 
-# In[6]:
+# In[7]:
 
 
 # CHANGE THIS TO CHANGE EXPERIMENT
@@ -69,13 +71,7 @@ imgs, labels = [list(z) for  z in zip(*datasets.ImageFolder(train_dir).imgs)]
 labels = np.array(labels, dtype=int)
 
 
-# In[38]:
-
-
-cj = cleanlab.latent_estimation.estimate_confident_joint_from_probabilities(labels, pyx)
-
-
-# # A bad way to approach this problem might be to just look at the correlation of every column in the probability matrix. The problem is correlation is symmetric and this will correlate everything that has small counts. 
+# # A bad way to approach this problem might be to just look at the correlation of every column in the probability matrix. The problem is correlation is symmetric and this will correlate everything that has small probabilities. 
 
 # In[143]:
 
@@ -95,16 +91,23 @@ print([(nid2name[idx2nid[z[0]]], nid2name[idx2nid[z[1]]]) for z in corr_largest_
 print([nid2name[idx2nid[z]] for z in corr.diagonal().argsort()[:10]])
 
 
-# # Using confident joint
+# # Understand ImageNet ontological issues on the TRAIN SET
+# ## Uses ARGMAX baseline (not confident learning)
 
-# In[47]:
+# In[12]:
 
 
-joint = cleanlab.latent_estimation.estimate_joint(cj, labels, pyx)
+cj = confusion_matrix(np.argmax(pyx, axis=1), labels).T
+
+
+# In[13]:
+
+
+joint = cleanlab.latent_estimation.estimate_joint(labels, pyx, cj)
 joint_non_diag = joint - np.eye(len(joint)) * joint.diagonal()
 
 
-# In[8]:
+# In[14]:
 
 
 cj_non_diag = cj - np.eye(len(cj)) * cj.diagonal()
@@ -113,14 +116,14 @@ largest_non_diag = np.unravel_index(largest_non_diag_raveled, cj_non_diag.shape)
 largest_non_diag = list(zip(*(list(z) for z in largest_non_diag)))
 
 
-# In[69]:
+# In[15]:
 
 
 # Checks that joint correctly has rows that are p(s)
 assert(all(joint.sum(axis = 1) - np.bincount(labels) / len(labels) < 1e-4))
 
 
-# In[123]:
+# In[16]:
 
 
 class_name = 'bighorn'
@@ -154,13 +157,13 @@ print("Least confident class by max sum of column of non-diagonal elements of cj
 print('Largest noise rate:', [(nid2name[idx2nid[z]], z) for z in largest_non_diag[0]])
 
 
-# In[221]:
+# In[17]:
 
 
 cj
 
 
-# In[251]:
+# In[18]:
 
 
 edges = [(
@@ -174,13 +177,124 @@ edges = [(
 # nodes = list({z for i,j in largest_non_diag[:30] for z in (idx2name[i], idx2name[j])})
 
 
-# In[268]:
+# In[19]:
 
 
-df
+df = pd.DataFrame(edges)
 
 
-# In[270]:
+# In[25]:
+
+
+df[r"$\tilde{y}$ name"].isin(['a','b'])
+
+
+# In[29]:
+
+
+df[df[r"$\tilde{y}$ name"].isin(['projectile','tub', 'breastplate', 'chameleon', 'green_lizard', 'maillot', 'ram', 'missile', 'corn', 'keyboard'])][r"$C(\tilde{y},y^*)$"]
+
+
+# In[21]:
+
+
+df = pd.DataFrame(edges, columns = [r"$\tilde{y}$ name", r"$y^*$ name", r"$\tilde{y}$ nid", r"$y^*$ nid", r"$C(\tilde{y},y^*)$", r"$P(\tilde{y},y^*)$"])[:20]
+df.insert(loc = 0, column = 'Rank', value = df.index + 1)
+tex = df.to_latex(index = False)
+orig = '\\$\\textbackslash tilde\\{y\\}\\$ name &    \\$y\\textasciicircum *\\$ name & \\$\\textbackslash tilde\\{y\\}\\$ nid &  \\$y\\textasciicircum *\\$ nid &  \\$C(\\textbackslash tilde\\{y\\},y\\textasciicircum *)\\$ &  \\$P(\\textbackslash tilde\\{y\\},y\\textasciicircum *)\\$'
+new = '$\\tilde{y}$ name   &   $y^*$ name   &   $\\tilde{y}$ nid   &   $y^*$ nid   &   $C(\\tilde{y},y^*)$   &   $P(\\tilde{y},y^*)$ '
+tex = tex.replace(orig, new)
+print(tex)
+df.style.set_properties(subset=[r"$C(\tilde{y},y^*)$"], **{'width': '50px'})
+
+
+# # Understand ImageNet ontological issues on the TRAIN SET
+
+# In[9]:
+
+
+cj = cleanlab.latent_estimation.compute_confident_joint(labels, pyx)
+joint = cleanlab.latent_estimation.estimate_joint(labels, pyx, cj)
+joint_non_diag = joint - np.eye(len(joint)) * joint.diagonal()
+
+
+# In[10]:
+
+
+cj_non_diag = cj - np.eye(len(cj)) * cj.diagonal()
+largest_non_diag_raveled = np.argsort(cj_non_diag.ravel())[::-1]
+largest_non_diag = np.unravel_index(largest_non_diag_raveled, cj_non_diag.shape)
+largest_non_diag = list(zip(*(list(z) for z in largest_non_diag)))
+
+
+# In[11]:
+
+
+# Checks that joint correctly has rows that are p(s)
+assert(all(joint.sum(axis = 1) - np.bincount(labels) / len(labels) < 1e-4))
+
+
+# In[12]:
+
+
+class_name = 'bighorn'
+
+print("Index of '{}' in sorted diagonal of cj: ".format(class_name), end = "")
+print([nid2name[idx2nid[i]] for i in cj.diagonal().argsort()].index(class_name))
+
+print("Index of '{}' in sorted diagonal of joint: ".format(class_name), end = "")
+print([nid2name[idx2nid[i]] for i in joint.diagonal().argsort()].index(class_name))
+
+print("Index of '{}' in sorted most noisy classes in cj: ".format(class_name), end = "")
+print([nid2name[idx2nid[i]] for i in np.argsort(cj_non_diag.sum(axis = 0))[::-1]].index(class_name))
+
+print("Index of '{}' in sorted most noisy classes in joint: ".format(class_name), end = "")
+print([nid2name[idx2nid[i]] for i in np.argsort(joint_non_diag.sum(axis = 0))[::-1]].index(class_name))
+
+print("Index of '{}' in sorted most noisy true classes in cj: ".format(class_name), end = "")
+print([nid2name[idx2nid[i]] for i in np.argsort(cj_non_diag.sum(axis = 1))[::-1]].index(class_name))
+
+print("Index of '{}' in sorted most noisy true classes in joint: ".format(class_name), end = "")
+print([nid2name[idx2nid[i]] for i in np.argsort(joint_non_diag.sum(axis = 1))[::-1]].index(class_name))
+
+idx = cj.diagonal().argmin()
+print("Least confident class by diagonal of cj:", nid2name[idx2nid[idx]], idx)
+idx = joint.diagonal().argmin()
+print("Least confident class by diagonal of joint:", nid2name[idx2nid[idx]], idx)
+idx = cj_non_diag.sum(axis = 0).argmax()
+print("Least confident class by max sum of row of non-diagonal elements of cj:", nid2name[idx2nid[idx]], idx)
+idx = joint_non_diag.sum(axis = 1).argmax()
+print("Least confident class by max sum of column of non-diagonal elements of cj:", nid2name[idx2nid[idx]], idx)
+print('Largest noise rate:', [(nid2name[idx2nid[z]], z) for z in largest_non_diag[0]])
+
+
+# In[13]:
+
+
+cj
+
+
+# In[14]:
+
+
+edges = [(
+    idx2name[i].replace('American_chameleon', 'chameleon').replace('typewriter_keyboard', 'keyboard'), 
+    idx2name[j].replace('American_chameleon', 'chameleon').replace('typewriter_keyboard', 'keyboard'), 
+    idx2nid[i], 
+    idx2nid[j], 
+    int(round(cj[i,j])),
+    joint[i,j].round(6),
+) for i,j in largest_non_diag[:30]]
+# nodes = list({z for i,j in largest_non_diag[:30] for z in (idx2name[i], idx2name[j])})
+
+
+# In[3]:
+
+
+df = pd.DataFrame(edges)
+
+
+# In[24]:
 
 
 df = pd.DataFrame(edges, columns = [r"$\tilde{y}$ name", r"$y^*$ name", r"$\tilde{y}$ nid", r"$y^*$ nid", r"$C(\tilde{y},y^*)$", r"$P(\tilde{y},y^*)$"])[:10]
@@ -213,7 +327,7 @@ print("Top 30 row sums in confident joint (most noisy classes):\n")
 [(idx2nid[i], idx2name[i]) for i in np.argsort(cj_non_diag.sum(axis = 0))[::-1][:30]]
 
 
-# # Analye the validation set on ImageNet
+# # Analyze the validation set on ImageNet
 
 # In[5]:
 
