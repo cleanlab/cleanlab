@@ -295,7 +295,6 @@ class LearningWithNoisyLabels(BaseEstimator): # Inherits sklearn classifier
             inverse_noise_matrix = self.inverse_noise_matrix,
             confident_joint = self.confident_joint,
             prune_method = self.prune_method,
-            converge_latent_estimates = self.converge_latent_estimates,
         ) 
 
         X_mask = ~self.noise_mask
