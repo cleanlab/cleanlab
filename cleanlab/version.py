@@ -1,4 +1,6 @@
-__version__ = '0.0.13'
+__version__ = '0.0.14'
+
+# 0.0.14 - Major bug fix in classification. Unused param broke code.
 
 # 0.0.13 - Major bug fix in finding label errors.
 #   - Fixed an important bug that broke finding label errors correctly.
