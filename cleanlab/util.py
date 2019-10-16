@@ -9,6 +9,7 @@ from __future__ import (
     print_function, absolute_import, division, unicode_literals, with_statement
 )
 import numpy as np
+from sklearn.utils import check_X_y
 
 
 def assert_inputs_are_valid(X, s, psx = None): # pragma: no cover
@@ -26,8 +27,8 @@ def assert_inputs_are_valid(X, s, psx = None): # pragma: no cover
 
     if not isinstance(s, (np.ndarray, np.generic)):
         raise TypeError("s should be a numpy array.")
-    if not isinstance(X, (np.ndarray, np.generic)):
-        raise TypeError("X should be a numpy array.")
+    # Allow sparse matrices and check that they are valid format.
+    check_X_y(X, s, accept_sparse=True, dtype=None, force_all_finite=False, ensure_2d=False)
     
     
 def remove_noise_from_class(noise_matrix, class_without_noise):
