@@ -1,4 +1,9 @@
-__version__ = '0.0.14'
+__version__ = '0.1.0'
+
+# 0.1.0 - Release of confident learning paper based on this version of cleanlab: https://arxiv.org/pdf/1911.00068.pdf
+#   - Documentation increase
+#   - Add examples to find label errors in mnist, cifar, imagenet
+#   - re-organized examples and added readme.
 
 # 0.0.14 - Major bug fix in classification. Unused param broke code.
 
