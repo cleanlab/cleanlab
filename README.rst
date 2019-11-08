@@ -145,12 +145,24 @@ This work extends Rank Pruning for binary classification here:
     publisher = {AUAI Press},
    } 
 
-Collaboration
--------------
+Reproducing Results in  `confident learning paper <https://arxiv.org/abs/1911.00068>`__ 
+---------------------------------------------------------------------------------------
 
-Most of the algorithms, theory, and results of ``cleanlab`` remain unpublished. If you'd like to work together, please reach out. 
+See `cleanlab/examples <https://github.com/cgnorthcutt/cleanlab/tree/master/examples>`__. You'll need to ``git clone`` `confidentlearning-reproduce <https://github.com/cgnorthcutt/confidentlearning-reproduce>`__  which contains the data and files needed to reproduce the CIFAR-10 results.
 
-``cleanlab`` on MNIST
+
+``cleanlab``: Find Label Errors in ImageNet
+---------------------
+
+We use ``cleanlab`` to automatically identify ~100,000 label errors in the 2012 ImageNet training dataset. 
+
+.. figure:: https://raw.githubusercontent.com/cgnorthcutt/cleanlab/master/img/imagenet_train_label_errors_32.jpg
+   :align: center
+   :alt: Image depicting label errors in ImageNet train set 
+
+Top label issues in the 2012 ILSVRC ImageNet train set identified using ``cleanlab``. Label Errors are boxed in red. Ontological issues in green. Multi-label images in blue.
+
+``cleanlab``: Find Label Errors in MNIST
 ---------------------
 
 We use ``cleanlab`` to automatically identify ~50 label errors in the MNIST dataset. 
