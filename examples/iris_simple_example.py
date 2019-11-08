@@ -17,9 +17,9 @@ from cleanlab.util import value_counts
 from cleanlab.latent_algebra import compute_inv_noise_matrix
 
 
-# ## **rankpruning** is the first practical *(works for any classifier, runs fast, robust to poor probability estimation)* algorithm for multiclass learning with noisy labels. Its comprised of components from the theory and algorithsm of **confident learning**. It's a Python class that wraps around any classifier as long as .fit(X, y, sample_weight), .predict(X), .predict_proba(X) are defined. Inspect the **cleanlab** package for documentation.
+# ## `cleanlab` can be used with any classifier and dataset for multiclass learning with noisy labels. Its comprised of components from the theory and algorithsm of **confident learning**. It's a Python class that wraps around any classifier as long as .fit(X, y, sample_weight), .predict(X), .predict_proba(X) are defined. Inspect the **cleanlab** package for documentation.
 # 
-# ## Here we show the performance of multiclass rankpruning wrapped around a sklearn LogisiticRegression classifier versus LogisticRegression without any help from confident learning on the Iris dataset.
+# ## Here we show the performance of cleanlab using sklearn's LogisiticRegression classifier versus LogisticRegression without any help from confident learning on the Iris dataset.
 
 # In[2]:
 
@@ -137,7 +137,7 @@ pred = rp.predict(X_test)
 print("Iris dataset test accuracy:", round(accuracy_score(pred, y_test),2))
 
 
-# ## The **rankpruning** algorithm's fit function has a few hyper-parameters. Although the default settings tend to work well, here we show the performance of confident learning across varying parameter settings. To learn more about the hyper-parameter settings, inspect ```cleanlab/pruning.py```.
+# ## Performance of confident learning across varying settings. To learn more about the hyper-parameter settings, inspect ```cleanlab/pruning.py```.
 
 # In[5]:
 
