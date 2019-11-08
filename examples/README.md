@@ -1,5 +1,8 @@
 # ``cleanlab`` Examples
 
+Not sure where to start? Try checking out how we find [ImageNet Label Errors](https://github.com/cgnorthcutt/cleanlab/blob/master/examples/imagenet/imagenet_train_label_errors.ipynb).
+
+
 A brief description of the files and folders:
 * `imagenet`, 'cifar10', 'mnist' - code to find label errors in these datasets and reproduce the results in the [confident learning paper](https://arxiv.org/abs/1911.00068). You will also need to `git clone` [confidentlearning-reproduce](https://github.com/cgnorthcutt/confidentlearning-reproduce).
   - [imagenet_train_crossval.py](https://github.com/cgnorthcutt/cleanlab/blob/master/examples/imagenet/imagenet_train_crossval.py) - a powerful script to train cross-validated predictions on ImageNet, combine cv folds, train with on masked input (train without label errors), etc.
