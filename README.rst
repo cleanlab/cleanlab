@@ -152,7 +152,7 @@ See `cleanlab/examples <https://github.com/cgnorthcutt/cleanlab/tree/master/exam
 
 
 ``cleanlab``: Find Label Errors in ImageNet
----------------------
+-------------------------------------------
 
 We use ``cleanlab`` to automatically identify ~100,000 label errors in the 2012 ImageNet training dataset. 
 
@@ -163,7 +163,7 @@ We use ``cleanlab`` to automatically identify ~100,000 label errors in the 2012 
 Top label issues in the 2012 ILSVRC ImageNet train set identified using ``cleanlab``. Label Errors are boxed in red. Ontological issues in green. Multi-label images in blue.
 
 ``cleanlab``: Find Label Errors in MNIST
----------------------
+----------------------------------------
 
 We use ``cleanlab`` to automatically identify ~50 label errors in the MNIST dataset. 
 
