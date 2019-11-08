@@ -1,6 +1,10 @@
 
 # coding: utf-8
 
+# # Generates the table of the ontological issues.
+# 
+# ### Note this code assumes that you've already computed psx -- the predicted probabilities for all examples in the training set using four-fold cross-validation. If you have no done that you will need to use `imagenet_train_crossval.py` to do this!
+
 # In[4]:
 
 

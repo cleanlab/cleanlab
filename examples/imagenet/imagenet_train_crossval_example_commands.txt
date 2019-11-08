@@ -1,0 +1,176 @@
+python cgn/cleanlab/examples/imagenet/imagenet_train_crossval.py -a densenet121 --lr 0.1 -b 64 -m cgn/cleanlab/examples/imagenet/imagenet_train_bool_mask.npy --gpu 1 --resume model_densenet121__masked__checkpoint.pth.tar /datasets/datasets/imagenet >> densenet121.log
+
+python cgn/cleanlab/examples/imagenet/imagenet_train_crossval.py -a vgg16_bn --lr 0.1 -b 64  -m cgn/cleanlab/examples/imagenet/imagenet_train_bool_mask.npy --gpu 0 --resume model_vgg16_bn__masked__checkpoint.pth.tar /datasets/datasets/imagenet >> vgg16_bn.log
+
+python cgn/cleanlab/examples/imagenet/imagenet_train_crossval.py -a alexnet --lr 0.01 -b 256  -m cgn/cleanlab/examples/imagenet/imagenet_train_bool_mask__fraction_20.npy --gpu 2 --resume model_alexnet__masked__checkpoint.pth.tar /datasets/datasets/imagenet >> alexnet_20.log
+
+
+
+python cgn/cleanlab/examples/imagenet/imagenet_train_crossval.py -a resnet152 --lr 0.1 -b 128  -m imagenet_train_bool_mask.npy --gpu 0 --resume model_resnet152__masked__checkpoint.pth.tar imagenet >> resnet152.log
+
+
+python cgn/cleanlab/examples/imagenet/imagenet_train_crossval.py -a resnet50 --lr 0.1 -b 128  -m cgn/cleanlab/examples/imagenet/imagenet_train_bool_mask__fraction_20.npy --gpu 2 imagenet >> resnet50_20.log
+
+
+
+---------
+11 GPU experiments (not including the random baseline)
+---------
+
+
+cd masked_imagenet_training/vgg16_bn/vgg16bn_20
+rm vgg16bn_20.log
+python3 /home/cgn/cgn/cleanlab/examples/imagenet/imagenet_train_crossval.py -a "vgg16_bn" --lr 0.1 -b 64 --gpu 0 -m /home/cgn/masks/imagenet_train_bool_both_mask__fraction_20.npy /datasets/datasets/imagenet/ >> vgg16bn_20.log &
+tail -f *.log
+
+cd masked_imagenet_training/vgg16_bn/vgg16bn_40
+rm vgg16bn_40.log
+python3 /home/cgn/cgn/cleanlab/examples/imagenet/imagenet_train_crossval.py -a "vgg16_bn" --lr 0.1 -b 64 --gpu 1 -m /home/cgn/masks/imagenet_train_bool_both_mask__fraction_40.npy /datasets/datasets/imagenet/ >> vgg16bn_40.log &
+tail -f *.log
+
+cd masked_imagenet_training/vgg16_bn/vgg16bn_60
+rm vgg16bn_60.log
+python3 /home/cgn/cgn/cleanlab/examples/imagenet/imagenet_train_crossval.py -a "vgg16_bn" --lr 0.1 -b 64 --gpu 2 -m /home/cgn/masks/imagenet_train_bool_both_mask__fraction_60.npy /datasets/datasets/imagenet/ >> vgg16bn_60.log &
+tail -f *.log
+
+cd masked_imagenet_training/vgg16_bn/vgg16bn_80
+rm vgg16bn_80.log
+python3 /home/cgn/cgn/cleanlab/examples/imagenet/imagenet_train_crossval.py -a "vgg16_bn" --lr 0.1 -b 64 --gpu 3 -m /home/cgn/masks/imagenet_train_bool_both_mask__fraction_80.npy /datasets/datasets/imagenet/ >> vgg16bn_80.log &
+tail -f *.log
+
+
+
+cd masked_imagenet_training/vgg16_bn/vgg16bn_20
+rm vgg16bn_20.log
+python3 /home/cgn/cgn/cleanlab/examples/imagenet/imagenet_train_crossval.py -a "vgg16_bn" --lr 0.1 -b 64 --gpu 0 -m /home/cgn/masks/imagenet_train_bool_argmax_mask__fraction_20.npy /datasets/datasets/imagenet/ >> vgg16bn_20.log &
+tail -f *.log
+
+cd masked_imagenet_training/vgg16_bn/vgg16bn_40
+rm vgg16bn_40.log
+python3 /home/cgn/cgn/cleanlab/examples/imagenet/imagenet_train_crossval.py -a "vgg16_bn" --lr 0.1 -b 64 --gpu 1 -m /home/cgn/masks/imagenet_train_bool_argmax_mask__fraction_40.npy /datasets/datasets/imagenet/ >> vgg16bn_40.log &
+tail -f *.log
+
+cd masked_imagenet_training/vgg16_bn/vgg16bn_60
+rm vgg16bn_60.log
+python3 /home/cgn/cgn/cleanlab/examples/imagenet/imagenet_train_crossval.py -a "vgg16_bn" --lr 0.1 -b 64 --gpu 2 -m /home/cgn/masks/imagenet_train_bool_argmax_mask__fraction_60.npy /datasets/datasets/imagenet/ >> vgg16bn_60.log &
+tail -f *.log
+
+cd masked_imagenet_training/vgg16_bn/vgg16bn_80
+rm vgg16bn_80.log
+python3 /home/cgn/cgn/cleanlab/examples/imagenet/imagenet_train_crossval.py -a "vgg16_bn" --lr 0.1 -b 64 --gpu 3 -m /home/cgn/masks/imagenet_train_bool_argmax_mask__fraction_80.npy /datasets/datasets/imagenet/ >> vgg16bn_80.log &
+tail -f *.log
+
+
+
+
+cd masked_imagenet_training/vgg16_bn/vgg16bn_00
+rm vgg16bn_00.log
+python3 /home/cgn/cgn/cleanlab/examples/imagenet/imagenet_train_crossval.py -a "vgg16_bn" --lr 0.1 -b 64 --gpu 0 /datasets/datasets/imagenet/ >> vgg16bn_00.log &
+tail -f *.log
+
+
+cd masked_imagenet_training/resnet18/resnet18_20
+python3 /home/cgn/cgn/cleanlab/examples/imagenet/imagenet_train_crossval.py -a "resnet18" --lr 0.1 -b 256 --gpu 1 -m /home/cgn/masks/imagenet_train_bool_mask__fraction_20.npy --resume model_resnet18__masked__checkpoint.pth.tar /datasets/datasets/imagenet/ >> resnet18_20.log &
+tail -f *.log
+
+
+cd masked_imagenet_training/resnet18/resnet18_40
+python3 /home/cgn/cgn/cleanlab/examples/imagenet/imagenet_train_crossval.py -a "resnet18" --lr 0.1 -b 256 --gpu 2 -m /home/cgn/masks/imagenet_train_bool_mask__fraction_40.npy --resume model_resnet18__masked__checkpoint.pth.tar /datasets/datasets/imagenet/ >> resnet18_40.log &
+tail -f *.log
+
+
+
+
+---------
+11 GPU VGG experiments 
+---------
+
+
+cd masked_imagenet_training/vgg16_bn/vgg16bn_20
+rm vgg16bn_20.log
+python3 /home/cgn/cgn/cleanlab/examples/imagenet/imagenet_train_crossval.py -a "vgg16_bn" --lr 0.1 -b 64 --gpu 0 -m /home/cgn/masks/imagenet_train_bool_mask__fraction_20.npy /datasets/datasets/imagenet/ >> vgg16bn_20.log &
+tail -f *.log
+
+cd masked_imagenet_training/vgg16_bn/vgg16bn_40
+rm vgg16bn_40.log
+python3 /home/cgn/cgn/cleanlab/examples/imagenet/imagenet_train_crossval.py -a "vgg16_bn" --lr 0.1 -b 64 --gpu 1 -m /home/cgn/masks/imagenet_train_bool_mask__fraction_40.npy /datasets/datasets/imagenet/ >> vgg16bn_40.log &
+tail -f *.log
+
+cd masked_imagenet_training/vgg16_bn/vgg16bn_60
+rm vgg16bn_60.log
+python3 /home/cgn/cgn/cleanlab/examples/imagenet/imagenet_train_crossval.py -a "vgg16_bn" --lr 0.1 -b 64 --gpu 2 -m /home/cgn/masks/imagenet_train_bool_mask__fraction_60.npy /datasets/datasets/imagenet/ >> vgg16bn_60.log &
+tail -f *.log
+
+cd masked_imagenet_training/vgg16_bn/vgg16bn_80
+rm vgg16bn_80.log
+python3 /home/cgn/cgn/cleanlab/examples/imagenet/imagenet_train_crossval.py -a "vgg16_bn" --lr 0.1 -b 64 --gpu 3 -m /home/cgn/masks/imagenet_train_bool_mask__fraction_80.npy /datasets/datasets/imagenet/ >> vgg16bn_80.log &
+tail -f *.log
+
+
+
+cd masked_imagenet_training/vgg16_bn/vgg16bn_20random
+rm vgg16bn_20.log
+python3 /home/cgn/cgn/cleanlab/examples/imagenet/imagenet_train_crossval.py -a "vgg16_bn" --lr 0.1 -b 64 --gpu 0 -m /home/cgn/masks/imagenet_train_RANDOM_bool_mask__fraction_0.2.npy /datasets/datasets/imagenet/ >> vgg16bn_20random.log &
+tail -f *.log
+
+cd masked_imagenet_training/vgg16_bn/vgg16bn_40random
+rm vgg16bn_40.log
+python3 /home/cgn/cgn/cleanlab/examples/imagenet/imagenet_train_crossval.py -a "vgg16_bn" --lr 0.1 -b 64 --gpu 1 -m /home/cgn/masks/imagenet_train_RANDOM_bool_mask__fraction_0.4.npy /datasets/datasets/imagenet/ >> vgg16bn_40random.log &
+tail -f *.log
+
+cd masked_imagenet_training/vgg16_bn/vgg16bn_60random
+rm vgg16bn_60.log
+python3 /home/cgn/cgn/cleanlab/examples/imagenet/imagenet_train_crossval.py -a "vgg16_bn" --lr 0.1 -b 64 --gpu 2 -m /home/cgn/masks/imagenet_train_RANDOM_bool_mask__fraction_0.6.npy /datasets/datasets/imagenet/ >> vgg16bn_60random.log &
+tail -f *.log
+
+cd masked_imagenet_training/vgg16_bn/vgg16bn_80random
+rm vgg16bn_80.log
+python3 /home/cgn/cgn/cleanlab/examples/imagenet/imagenet_train_crossval.py -a "vgg16_bn" --lr 0.1 -b 64 --gpu 3 -m /home/cgn/masks/imagenet_train_RANDOM_bool_mask__fraction_0.8.npy /datasets/datasets/imagenet/ >> vgg16bn_80random.log &
+tail -f *.log
+
+
+
+
+cd masked_imagenet_training/vgg16_bn/vgg16bn_00
+rm vgg16bn_00.log
+python3 /home/cgn/cgn/cleanlab/examples/imagenet/imagenet_train_crossval.py -a "vgg16_bn" --lr 0.1 -b 64 --gpu 0 /datasets/datasets/imagenet/ >> vgg16bn_00.log &
+tail -f *.log
+
+
+cd masked_imagenet_training/resnet18/resnet18_20
+python3 /home/cgn/cgn/cleanlab/examples/imagenet/imagenet_train_crossval.py -a "resnet18" --lr 0.1 -b 256 --gpu 1 -m /home/cgn/masks/imagenet_train_bool_mask__fraction_20.npy --resume model_resnet18__masked__checkpoint.pth.tar /datasets/datasets/imagenet/ >> resnet18_20.log &
+tail -f *.log
+
+
+cd masked_imagenet_training/resnet18/resnet18_40
+python3 /home/cgn/cgn/cleanlab/examples/imagenet/imagenet_train_crossval.py -a "resnet18" --lr 0.1 -b 256 --gpu 2 -m /home/cgn/masks/imagenet_train_bool_mask__fraction_40.npy --resume model_resnet18__masked__checkpoint.pth.tar /datasets/datasets/imagenet/ >> resnet18_40.log &
+tail -f *.log
+
+
+
+---------
+OLD NOTES
+---------
+
+sudo nvidia-smi -pm 1
+sudo nvidia-smi -pl 180
+CUDA_VISIBLE_DEVICES=2 python3 /home/cgn/repos/pytorch_examples/imagenet/main.py -a resnet50 -b 128 --lr 0.01 --dist-url 'tcp://127.0.0.1:8887' --dist-backend 'nccl' --multiprocessing-distributed --world-size 1 --rank 0 /datasets/datasets/imagenet
+
+
+CUDA_VISIBLE_DEVICES=0,1 python3 /home/cgn/cgn/label-errors/imagenet/imagenet_train_pyx.py -a resnet18 -b 256 --lr 0.1 --dist-url 'tcp://127.0.0.1:8840' --dist-backend 'nccl' --multiprocessing-distributed --world-size 1 --rank 0 --cvn 4 --cv 0 /home/cgn/imagenet/
+CUDA_VISIBLE_DEVICES=2,3 python3 /home/cgn/cgn/label-errors/imagenet/imagenet_train_pyx.py -a resnet18 -b 256 --lr 0.1 --dist-url 'tcp://127.0.0.1:8841' --dist-backend 'nccl' --multiprocessing-distributed --world-size 1 --rank 0 --cvn 4 --cv 1 /home/cgn/imagenet/
+CUDA_VISIBLE_DEVICES=4,5 python3 /home/cgn/cgn/label-errors/imagenet/imagenet_train_pyx.py -a resnet18 -b 256 --lr 0.1 --dist-url 'tcp://127.0.0.1:8842' --dist-backend 'nccl' --multiprocessing-distributed --world-size 1 --rank 0 --cvn 4 --cv 2 /home/cgn/imagenet/
+CUDA_VISIBLE_DEVICES=6,7 python3 /home/cgn/cgn/label-errors/imagenet/imagenet_train_pyx.py -a resnet18 -b 256 --lr 0.1 --dist-url 'tcp://127.0.0.1:8843' --dist-backend 'nccl' --multiprocessing-distributed --world-size 1 --rank 0 --cvn 4 --cv 3 /home/cgn/imagenet/
+
+
+python3 /home/cgn/Dropbox\ \(MIT\)/cgn/label-errors/imagenet/imagenet_train_pyx.py -a resnet18 -b 256 --lr 0.1 --gpu 0 --cvn 3 --cv 0 --resume /home/cgn/fold0_checkpoint.pth.tar /datasets/datasets/imagenet
+
+python3 /home/cgn/Dropbox\ \(MIT\)/cgn/label-errors/imagenet/imagenet_train_pyx.py -a resnet18 -b 256 --lr 0.1 --gpu 1 --cvn 3 --cv 1 --resume /home/cgn/fold1_checkpoint.pth.tar /datasets/datasets/imagenet
+
+python3 /home/cgn/Dropbox\ \(MIT\)/cgn/label-errors/imagenet/imagenet_train_pyx.py -a resnet18 -b 256 --lr 0.1 --gpu 2 --cvn 3 --cv 2 --resume /home/cgn/fold2_checkpoint.pth.tar /datasets/datasets/imagenet
+
+
+python3 /home/cgn/Dropbox\ \(MIT\)/cgn/cleanlab/examples/imagenet/imagenet_train_pyx.py -a resnet50 -b 256 --lr 0.1 --gpu 0 --cvn 5 --cv 0 /datasets/datasets/imagenet
+
+
+/home/cgn/Dropbox\ \(MIT\)/cgn/cleanlab/examples/imagenet/imagenet_train_pyx.py -a resnet50 -b 64 --lr 0.1 --gpu 0 --cvn 5 --cv 0 /datasets/datasets/imagenet --resume /home/cgn/model_resnet50__fold_0__checkpoint.pth.tar
