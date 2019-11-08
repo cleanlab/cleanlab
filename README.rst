@@ -5,7 +5,8 @@
 
 |  
 
-``cleanlab`` is a machine learning python package for **learning with noisy labels** and **finding label errors in datasets**. ``cleanlab`` CLEANs LABels. It is is powered by the theory of **confident learning**.
+``cleanlab`` is a machine learning python package for **learning with noisy labels** and **finding label errors in datasets**. ``cleanlab`` CLEANs LABels. It is is powered by the theory of **confident learning**, published in  `this paper <https://arxiv.org/abs/1911.00068>`__ and explained in  `this blog <https://l7.curtisnorthcutt.com/confident-learning>`__. Using the `confidentlearning-reproduce <https://l7.curtisnorthcutt.com/confident-learning>`__ repo, ``cleanlab`` v0.0.14 reproduces results in `the CL paper <https://arxiv.org/abs/1911.00068>`__.
+
 
 |pypi| |py_versions| |build_status| |coverage|
 
@@ -18,7 +19,7 @@
 .. |coverage| image:: https://codecov.io/gh/cgnorthcutt/cleanlab/branch/master/graph/badge.svg
     :target: https://codecov.io/gh/cgnorthcutt/cleanlab
 
-``cleanlab`` finds and cleans label errors in any dataset using state-of-the-art algorithms for learning with noisy labels by characterizing label noise. ``cleanlab`` is fast: its built on optimized algorithms and parallelized across CPU threads automatically. ``cleanlab`` implements the family of theory and algorithms called **confident learning** with provable guarantees of exact noise estimation and label error finding (even when model output probabilities are noisy/imperfect). 
+``cleanlab`` finds and cleans label errors in any dataset using state-of-the-art algorithms for learning with noisy labels by characterizing label noise. ``cleanlab`` is fast: its built on optimized algorithms and parallelized across CPU threads automatically. ``cleanlab`` implements the family of theory and algorithms called `confident learning <https://arxiv.org/abs/1911.00068>`__ with provable guarantees of exact noise estimation and label error finding (even when model output probabilities are noisy/imperfect). 
 
 How does **confident learning** work? Find out here:  `TUTORIAL: confident learning with just numpy and for-loops <https://github.com/cgnorthcutt/cleanlab/blob/master/examples/simplifying_confident_learning_tutorial.ipynb>`__.
 
@@ -103,7 +104,20 @@ To install the codebase (enabling you to make modifications):
 Citations and Related Publications
 ==================================
 
-If you use this package in your work, please cite the following:
+If you use this package in your work, please cite the `confident learning paper <https://arxiv.org/abs/1911.00068>`__:
+
+::
+
+   @misc{northcutt2019confidentlearning,
+     title={Confident Learning: Estimating Uncertainty in Dataset Labels},
+     author={Curtis G. Northcutt and Lu Jiang and Isaac L. Chuang},
+     year={2019},
+     eprint={1911.00068},
+     archivePrefix={arXiv},
+     primaryClass={stat.ML}
+ }
+
+and the cleanlab code base here:
 
 ::
 
@@ -115,7 +129,7 @@ If you use this package in your work, please cite the following:
      note = {commit xxxxxxx, version xxxx}
    }
 
-If you compare with, build on, or use confident learning (the theory and methods behind cleanlab), please cite the following. We will release a paper strictly on confident learning later this year, in addition to other related publications.
+This work extends Rank Pruning for binary classification here:
 
 ::
 
@@ -131,12 +145,24 @@ If you compare with, build on, or use confident learning (the theory and methods
     publisher = {AUAI Press},
    } 
 
-Collaboration
--------------
+Reproducing Results in  `confident learning paper <https://arxiv.org/abs/1911.00068>`__ 
+=======================================================================================
 
-Most of the algorithms, theory, and results of ``cleanlab`` remain unpublished. If you'd like to work together, please reach out. 
+See `cleanlab/examples <https://github.com/cgnorthcutt/cleanlab/tree/master/examples>`__. You'll need to ``git clone`` `confidentlearning-reproduce <https://github.com/cgnorthcutt/confidentlearning-reproduce>`__  which contains the data and files needed to reproduce the CIFAR-10 results.
 
-``cleanlab`` on MNIST
+
+``cleanlab``: Find Label Errors in ImageNet
+---------------------
+
+We use ``cleanlab`` to automatically identify ~100,000 label errors in the 2012 ImageNet training dataset. 
+
+.. figure:: https://raw.githubusercontent.com/cgnorthcutt/cleanlab/master/img/imagenet_train_label_errors_32.jpg
+   :align: center
+   :alt: Image depicting label errors in ImageNet train set 
+
+Top label issues in the 2012 ILSVRC ImageNet train set identified using ``cleanlab``. Label Errors are boxed in red. Ontological issues in green. Multi-label images in blue.
+
+``cleanlab``: Find Label Errors in MNIST
 ---------------------
 
 We use ``cleanlab`` to automatically identify ~50 label errors in the MNIST dataset. 
@@ -330,7 +356,7 @@ labeled correctly or incorrectly for every pair of obseved and
 unobserved classes. The confident joint is an unnormalized estimate of
 the complete-information latent joint distribution, *Ps,y*. Most of the
 methods in the **cleanlab** package start by first estimating the
-*confident_joint*.
+*confident_joint*. You can learn more about this in the `confident learning paper <https://arxiv.org/abs/1911.00068>`__.
 
 Option 1: Compute the confident joint and predicted probs first. Stop if that’s all you need.
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
