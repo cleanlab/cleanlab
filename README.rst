@@ -146,7 +146,7 @@ This work extends Rank Pruning for binary classification here:
    } 
 
 Reproducing Results in  `confident learning paper <https://arxiv.org/abs/1911.00068>`__ 
----------------------------------------------------------------------------------------
+=======================================================================================
 
 See `cleanlab/examples <https://github.com/cgnorthcutt/cleanlab/tree/master/examples>`__. You'll need to ``git clone`` `confidentlearning-reproduce <https://github.com/cgnorthcutt/confidentlearning-reproduce>`__  which contains the data and files needed to reproduce the CIFAR-10 results.
 
