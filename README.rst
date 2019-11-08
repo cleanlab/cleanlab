@@ -129,7 +129,7 @@ and the cleanlab code base here:
      note = {commit xxxxxxx, version xxxx}
    }
 
-This work extends Rank Pruning for binary classification here:
+If used for binary classification, cleanlab also implements `this paper <https://arxiv.org/abs/1705.01936>`__:
 
 ::
 
