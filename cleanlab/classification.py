@@ -61,7 +61,6 @@ import inspect
 from cleanlab.util import (
     assert_inputs_are_valid,
     value_counts,
-    remove_noise_from_class,
 )
 from cleanlab.latent_estimation import (
     estimate_py_noise_matrices_and_cv_pred_proba,
