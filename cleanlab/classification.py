@@ -128,7 +128,7 @@ class LearningWithNoisyLabels(BaseEstimator): # Inherits sklearn classifier
 
     pulearning : int (0 or 1, default: None)
       Only works for 2 class datasets. Set to the integer of the class that is
-      perfectly labeled (certain no errors in that class). If unsure, set to None. 
+      perfectly labeled (certain no errors in that class). If unsure, set to None.''' 
   
   
     def __init__(
