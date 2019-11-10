@@ -277,7 +277,7 @@ class LearningWithNoisyLabels(BaseEstimator): # Inherits sklearn classifier
             )
 
         # if pulearning == the integer specifying the class without noise.
-        if K == 2 and self.pulearning is not None: # pragma: no cover
+        if self.K == 2 and self.pulearning is not None: # pragma: no cover
             # pulearning = 1 (no error in 1 class) implies p(s=1|y=0) = 0
             self.noise_matrix[self.pulearning][1 - self.pulearning] = 0
             self.noise_matrix[1 - self.pulearning][1 - self.pulearning] = 1
