@@ -127,10 +127,9 @@ class LearningWithNoisyLabels(BaseEstimator): # Inherits sklearn classifier
       independently, but they are related mathematically with closed form 
       equivalences. This will iteratively enforce mathematically consistency.
 
-    pulearning : int
-      Set to the integer of the class that is perfectly labeled, if such
-      a class exists. Otherwise, or if you are unsure, 
-      leave pulearning = None (default).'''  
+    pulearning : int (0 or 1, default: None)
+      Only works for 2 class datasets. Set to the integer of the class that is
+      perfectly labeled (certain no errors in that class). If unsure, set to None. 
   
   
     def __init__(
@@ -278,15 +277,21 @@ class LearningWithNoisyLabels(BaseEstimator): # Inherits sklearn classifier
                 seed = self.seed,
             )
 
-        # Zero out noise matrix entries if pulearning = the integer specifying the class without noise.
-        if self.pulearning is not None: # pragma: no cover
-            self.noise_matrix = remove_noise_from_class(
-                self.noise_matrix,
-                class_without_noise=self.pulearning,
-            )
-            # TODO: self.inverse_noise_matrix = remove_noise_from_class(self.inverse_noise_matrix, class_without_noise=self.pulearning)
+        # if pulearning == the integer specifying the class without noise.
+        if K == 2 and pulearning is not None: # pragma: no cover
+            # pulearning = 1 (no error in 1 class) implies p(s=1|y=0) = 0
+            self.noise_matrix[self.pulearning][1 - self.pulearning] = 0
+            self.noise_matrix[1 - self.pulearning][1 - self.pulearning] = 1
+            # pulearning = 1 (no error in 1 class) implies p(y=0|s=1) = 0
+            self.inverse_noise_matrix[1 - self.pulearning][self.pulearning] = 0
+            self.inverse_noise_matrix[self.pulearning][self.pulearning] = 1
+            # pulearning = 1 (no error in 1 class) implies p(s=1,y=0) = 0
+            self.confident_joint[self.pulearning][1 - self.pulearning] = 0
+            self.confident_joint[1 - self.pulearning][1 - self.pulearning] = 1
+
 
         # This is the actual work of this function.
+
 
         # Get the indices of the examples we wish to prune
         self.noise_mask = get_noise_indices(
