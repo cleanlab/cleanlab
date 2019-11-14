@@ -54,6 +54,7 @@ Find label errors with PyTorch, Tensorflow, MXNet, etc. in 1 line of code!
        sorted_index_method='normalized_margin', # Orders label errors
     )
 
+Pre-computed out-of-sample predicted probabilities for CIFAR-10 train set are available [here](https://github.com/cgnorthcutt/confidentlearning-reproduce/blob/master/README.md#need-out-of-sample-predicted-probabilities-for-cifar-10-train-set).
    
 Learning with noisy labels in 3 lines of code!
 ==============================================
