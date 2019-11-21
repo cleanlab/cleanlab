@@ -1,6 +1,6 @@
 # ``cleanlab`` Examples
 
-Not sure where to start? Try checking out how we find [ImageNet Label Errors](https://github.com/cgnorthcutt/cleanlab/blob/master/examples/imagenet/imagenet_train_label_errors.ipynb).
+Not sure where to start? Try checking out how to find [ImageNet Label Errors](https://github.com/cgnorthcutt/cleanlab/blob/master/examples/imagenet/imagenet_train_label_errors.ipynb).
 
 
 A brief description of the files and folders:
