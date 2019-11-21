@@ -303,7 +303,7 @@ here. Check out the method docstrings for full documentation.
 Multiclass learning with noisy labels (in **3** lines of code):
 ---------------------------------------------------------------
 
-**rankpruning** is a fast, general, robust algorithm for multiclass
+``cleanlab`` uses a fast, general, robust algorithm for multiclass
 learning with noisy labels. It adds minimal overhead, needing only
 *O(nm2)* time for n training examples and m classes, works with any
 classifier, and is easy to use. Here is the example from above, with
@@ -311,12 +311,8 @@ added commments for clarity.
 
 .. code:: python
    
-   # LearningWithNoisyLabels implements a faster,
-   # cross-platform and more-compatible version of the RankPruning
-   # algorithm for learning with noisy labels. Unlike the original
-   # algorithm which only worked for binary classification,
    # LearningWithNoisyLabels generalizes the theory and algorithms
-   # of RankPruning for any number of classes.
+   # of Confident Learning for learning with noisy labels.
    from cleanlab.classification import LearningWithNoisyLabels
    # LearningWithNoisyLabels uses logreg by default, so this is unnecessary. 
    # We include it here for clarity, but this step is omitted below.
