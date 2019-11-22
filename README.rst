@@ -370,31 +370,20 @@ Option 3: Skip computing the predicted probabilities if you already have them.
    )
 
 
-Estimate the latent joint probability distribution matrix of the noisy and true labels, *P(s,y)*:
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Completely characterize label noise in a dataset:
+-------------------------------------------------
 
-To compute *P(s,y)*, the complete-information
-distribution matrix that captures the number of pairwise label flip
-errors when multipled by the total number of examples as *n* P(s,y)*.
-Using `cleanlab.latent_estimation.calibrate_confident_joint`, 
-this method guarantees the rows of *P(s,y)* correctly sum to *p(s)*, 
-and np.sum(confident_joint) == n (the number of labels).
-
-This method occurs when hyperparameter prune_count_method =
-‘inverse_nm_dot_s’ in LearningWithNoisyLabels.fit() and get_noise_indices().
+The joint probability distribution of noisy and true labels, *P(s,y)*, completely characterizes label noise with a class-conditional *m x m* matrix. 
 
 .. code:: python
 
-   from cleanlab.latent_estimation import compute_confident_joint
-   joint = compute_confident_joint(s=noisy_labels, psx=probabilities)
+    from cleanlab.latent_estimation import estimate_joint
+    joint = compute_confident_joint(
+        s=noisy_labels,
+        psx=probabilities,
+        confident_joint=None,  # Provide if you have it already
+    )
 
-If you've already computed the confident joint, then you can
-estimate the complete joint distribution of label noise by:
-
-.. code:: python
-
-   from cleanlab.latent_estimation import estimate_joint
-   joint = estimate_joint(confident_joint=cj, s=noisy_labels)
 
 Methods to Standardize Research with Noisy Labels
 -------------------------------------------------
