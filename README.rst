@@ -184,7 +184,9 @@ We use ``cleanlab`` to automatically learn with noisy labels regardless of datas
    :align: center
    :alt: Image depicting generality of cleanlab across datasets and classifiers 
 
-Each figure depicts the decision boundary learned using ``cleanlab.classification.LearningWithNoisyLabels`` in the presence of extreme (~35%) label errors. Label errors are circled in green. Label noise is class-conditional (not simply uniformly random). Columns are organized by the classifier used, except the left-most column which depicts the ground-truth dataset distribution. Rows are organized by dataset used. A matrix characterizing the label noise for the first row is shown below. 
+Each sub-figure in the figure above depicts the decision boundary learned using ``cleanlab.classification.LearningWithNoisyLabels`` in the presence of extreme (\~35%) label errors. Label errors are circled in green. Label noise is class-conditional (not simply uniformly random). Columns are organized by the classifier used, except the left-most column which depicts the ground-truth dataset distribution. Rows are organized by dataset used.
+
+The code to reproduce this figure is available `here <https://github.com/cgnorthcutt/cleanlab/blob/master/examples/classifier_comparison.ipynb>`__.
 
 Each figure depicts accuracy scores on a test set as decimal values: 
 
@@ -202,8 +204,6 @@ s=1     0.22  0.87  0.24  0.02
 s=2     0.12  0.04  0.64  0.38
 s=3     0.11  0.08  0.05  0.54
 ======  ====  ====  ====  ====
-
-The code to reproduce this figure is available `here <https://github.com/cgnorthcutt/cleanlab/blob/master/examples/classifier_comparison.ipynb>`__.
 
 
 Get started with easy, quick examples.
