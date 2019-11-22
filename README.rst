@@ -157,7 +157,7 @@ See `cleanlab/examples <https://github.com/cgnorthcutt/cleanlab/tree/master/exam
 ``cleanlab``: Find Label Errors in ImageNet
 -------------------------------------------
 
-We use ``cleanlab`` to automatically identify ~100,000 label errors in the 2012 ImageNet training dataset. 
+Use ``cleanlab`` to identify ~100,000 label errors in the 2012 ImageNet training dataset. 
 
 .. figure:: https://raw.githubusercontent.com/cgnorthcutt/cleanlab/master/img/imagenet_train_label_errors_32.jpg
    :align: center
@@ -168,7 +168,7 @@ Top label issues in the 2012 ILSVRC ImageNet train set identified using ``cleanl
 ``cleanlab``: Find Label Errors in MNIST
 ----------------------------------------
 
-We use ``cleanlab`` to automatically identify ~50 label errors in the MNIST dataset. 
+Use ``cleanlab`` to identify ~50 label errors in the MNIST dataset. 
 
 .. figure:: https://raw.githubusercontent.com/cgnorthcutt/cleanlab/master/img/mnist_training_label_errors24_prune_by_noise_rate.png
    :align: center
@@ -180,7 +180,7 @@ Label errors of the original MNIST **train** dataset identified algorithmically 
 ``cleanlab`` Generality: View performance across 4 distributions and 9 classifiers.
 -----------------------------------------------------------------------------------
 
-We use ``cleanlab`` to automatically learn with noisy labels regardless of dataset distribution or classifier. 
+Use ``cleanlab`` to learn with noisy labels regardless of dataset distribution or classifier. 
 
 .. figure:: https://raw.githubusercontent.com/cgnorthcutt/cleanlab/master/img/demo_cleanlab_across_datasets_and_classifiers.png
    :align: center
