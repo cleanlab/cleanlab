@@ -27,8 +27,19 @@ def assert_inputs_are_valid(X, s, psx = None): # pragma: no cover
 
     if not isinstance(s, (np.ndarray, np.generic)):
         raise TypeError("s should be a numpy array.")
+
+    # Check that s is zero-indexed (first label is 0).
+    unique_classes = np.unique(s)
+    if all(unique_classes != np.arange(len(unique_classes))):
+        msg = "cleanlab requires zero-indexed labels (0,1,2,..,m-1), but in "
+        msg += "your case: np.unique(s) = {}".format(str(unique_classes))
+        raise TypeError(msg)
+
     # Allow sparse matrices and check that they are valid format.
-    check_X_y(X, s, accept_sparse=True, dtype=None, force_all_finite=False, ensure_2d=False)
+    check_X_y(
+        X, s, accept_sparse=True, dtype=None, force_all_finite=False,
+        ensure_2d=False,
+    )
     
     
 def remove_noise_from_class(noise_matrix, class_without_noise):
