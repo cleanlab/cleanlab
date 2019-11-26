@@ -22,7 +22,8 @@ import copy
 import warnings
 
 from cleanlab.util import (
-    value_counts, clip_values, clip_noise_rates, round_preserving_row_totals
+    value_counts, clip_values, clip_noise_rates, round_preserving_row_totals,
+    assert_inputs_are_valid,
 )
 from cleanlab.latent_algebra import (
     compute_inv_noise_matrix, compute_py, compute_noise_matrix_from_inverse
@@ -552,6 +553,7 @@ def estimate_confident_joint_and_cv_pred_proba(
       Returns a tuple of two numpy array matrices in the form:
       (joint counts matrix, predicted probability matrix)'''
 
+    assert_inputs_are_valid(X, s)
     # Number of classes
     K = len(np.unique(s))
     # 'ps' is p(s=k)
