@@ -53,7 +53,7 @@ y = np.asarray([v for k,v in d.items()])
 # In[14]:
 
 
-# This code assumes that the `cifar10/cifar
+# This code assumes that the `cifar10` folder contains trained models.
 
 folders = [c for c in os.listdir(base_dir) if '__' in c]
 results = []
