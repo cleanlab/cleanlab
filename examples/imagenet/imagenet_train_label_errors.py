@@ -1,4 +1,4 @@
-
+#!/usr/bin/env python
 # coding: utf-8
 
 # # Find label errors in ImageNet train set using confident learning
@@ -6,27 +6,60 @@
 # ### Note this code assumes that you've already computed psx -- the predicted probabilities for all examples in the training set using four-fold cross-validation. If you have no done that you will need to use `imagenet_train_crossval.py` to do this!
 # 
 
-# In[3]:
+# In[1]:
 
 
 # These imports enhance Python2/3 compatibility.
 from __future__ import print_function, absolute_import, division, unicode_literals, with_statement
 
 
-# In[4]:
+# In[2]:
 
 
+# Common ML stuff
 import numpy as np
-from torchvision import datasets
 from sklearn.metrics import accuracy_score
+
+# Cleanlab
 import cleanlab
 from cleanlab import baseline_methods
+
+# System modules
 from IPython.display import Image, display
 import json
 import sys
 
+# PyTorch modules
+from torchvision.utils import make_grid
+from torchvision import datasets
 
-# In[5]:
+# Plotting
+import matplotlib.pyplot as plt
+import matplotlib
+import torchvision.transforms as transforms
+import matplotlib.image as mpimg
+
+
+# In[3]:
+
+
+def show(img, savefig=False):
+    '''Show a grid of images.'''
+    npimg = img.numpy()
+    plt.imshow(np.transpose(npimg, (1,2,0)), interpolation='nearest')
+    plt.axis('off')
+    plt.gca().xaxis.set_major_locator(matplotlib.ticker.NullLocator())
+    plt.gca().yaxis.set_major_locator(matplotlib.ticker.NullLocator())
+    if savefig:
+        plt.savefig('imagenet_figure_32.png', dpi=300, pad_inches=0.0, bbox_inches='tight')
+    
+def make3d(img_arr):
+    '''Reshape images to include a third dimensions for numpy.'''
+    img_arr = np.asarray(img_arr)
+    return np.stack((img_arr,)*3, -1) if len(img_arr.shape) < 3 else img_arr
+
+
+# In[4]:
 
 
 # urllib2 for python2 and python3
@@ -43,7 +76,7 @@ f = urlopen(url)
 simple_labels = json.loads('\n'.join(i.decode('ascii') for i in f.readlines()))
 
 
-# In[6]:
+# In[5]:
 
 
 # Load psx, labels, and image locations
@@ -55,7 +88,7 @@ labels = np.array(labels, dtype=int)
 print('Overall accuracy: {:.2%}'.format(accuracy_score(labels, psx.argmax(axis = 1))))
 
 
-# In[8]:
+# In[6]:
 
 
 # This takes ~3 minutes on a 20-thread processor for ImageNet train set.
@@ -72,7 +105,7 @@ else:
 #     np.save("imagenet_train_bool_mask.npy", ~label_errors_bool) # Store false for errors
 
 
-# In[9]:
+# In[7]:
 
 
 label_errors_idx = cleanlab.pruning.order_label_errors(
@@ -83,136 +116,82 @@ label_errors_idx = cleanlab.pruning.order_label_errors(
 )
 
 
-# In[10]:
+# In[8]:
 
 
-from torchvision.utils import make_grid
-import matplotlib.pyplot as plt
-import matplotlib
-import torchvision.transforms as transforms
-import matplotlib.image as mpimg
+# Number of errors to store labels and images for.
+# Here we only print the first three, but we will print all of them later on.
+num2print = 32
 
-
-# In[11]:
-
-
-def show(img, savefig=False):
-    npimg = img.numpy()
-    plt.imshow(np.transpose(npimg, (1,2,0)), interpolation='nearest')
-    plt.axis('off')
-    plt.gca().xaxis.set_major_locator(matplotlib.ticker.NullLocator())
-    plt.gca().yaxis.set_major_locator(matplotlib.ticker.NullLocator())
-    if savefig:
-        plt.savefig('imagenet_figure_32.png', dpi=300, pad_inches=0.0, bbox_inches='tight')
-    
-def make3d(img_arr):
-    img_arr = np.asarray(img_arr)
-    return np.stack((img_arr,)*3, -1) if len(img_arr.shape) < 3 else img_arr
-
-
-# In[21]:
-
-
-from PIL import Image
-num2print = 8
-rs = transforms.Resize((333,333))
-
-
-# In[22]:
-
-
-plt.figure(figsize=(50,40))
-imglist = [transforms.ToTensor()(make3d(rs(Image.open(fn)))) for fn in fns[:32]]
-show(make_grid(imglist, padding=1, normalize=True), savefig=True)
-
-
-# In[27]:
-
-
-def padtext(s, l = 27): # 27 works well
-    return s + " " * (l - len(s))
-rows2print = 4
-for i in range(rows2print):
-    for z in given[num2print * i :num2print * i + num2print]:
-        item = " Given: " + z.upper()
-        print(padtext(item), end = "")
-    print()
-    for z in pred[num2print * i :num2print * i + num2print]:
-        item = " Given: " + z.upper()
-        print(padtext(item), end = "")
-    print()
-    for fn in fns[num2print * i:num2print * i + num2print]:
-        item = " " + fn.split("/")[-1]
-        print(padtext(item), end = "")
-    print()
-
-
-# In[ ]:
-
-
-def padtext(s, l = 27): # 27 works well
-    return s + " " * (l - len(s))
-rows2print = 4
-for i in range(rows2print):
-    for z in given[num2print * i :num2print * i + num2print]:
-        item = " Given: " + z.upper()
-        print(padtext(item), end = "")
-    print()
-    for z in pred[num2print * i :num2print * i + num2print]:
-        item = " Given: " + z.upper()
-        print(padtext(item), end = "")
-    print()
-    for fn in fns[num2print * i:num2print * i + num2print]:
-        item = " " + fn.split("/")[-1]
-        print(padtext(item), end = "")
-    print()
-
-
-# In[186]:
-
-
-rows2print = 4
-for i in range(rows2print):
-    plt.figure(figsize=(30,10))
-    imglist = [transforms.ToTensor()(make3d(rs(Image.open(fn)))) for fn in fns[
-        num2print * i :num2print * i + num2print]]
-    show(make_grid(imglist, padding=1, normalize=True))
-    plt.show()
-    for z in given[num2print * i :num2print * i + num2print]:
-        item = " GIVEN: " + z
-        print(padtext(item), end = "")
-    print()
-    for z in guess[num2print * i :num2print * i + num2print]:
-        item = " GUESS: " + z
-        print(padtext(item), end = "")
-    print()
-    for z in fns[num2print * i:num2print * i + num2print]:
-        item = " " + fn.split("/")[-1]
-        print(padtext(item), end = "")
-
-
-# In[28]:
-
-
+# Import this here because this version of Image is used to print a single image
 from IPython.display import Image, display
-num2print = 40
 fns = []
 given = []
 pred = []
-for idx in label_errors_idx[:num2print]:
+for i, idx in enumerate(label_errors_idx[:num2print]):
     fn = imgs[idx]
     fns.append(fn)
     given.append(simple_labels[labels[idx]])
     pred.append(simple_labels[np.argmax(psx[idx])])
-    print("Given:", given[-1].upper()) 
-    print("Guess:", pred[-1].upper())
-    print(fn.split("/")[-1])
-    sys.stdout.flush()
-    display(Image(filename=fn))
-    print("\n")
+    # Print out the first 3 examples
+    if i < 3:
+        print("Given:", given[-1].upper()) 
+        print("Guess:", pred[-1].upper())
+        print(fn.split("/")[-1])
+        sys.stdout.flush()
+        display(Image(filename=fn))
+        print("\n")
 
 
-# # Create multiple files storing the indices of errors for the top 20% of errors, top 40% of errors, etc.
+# In[9]:
+
+
+# Now re-import Image from PIL. PIL Image module displays grids of images.
+from PIL import Image
+num2print = 32
+image_size = 333
+save_figure = False
+
+rs = transforms.Resize((333,333))
+
+plt.figure(figsize=(50,40))
+fns = [imgs[i] for i in label_errors_idx[:num2print]]  # Filenames of errors
+imglist = [transforms.ToTensor()(make3d(rs(Image.open(fn)))) for fn in fns]
+show(make_grid(imglist, padding=1, normalize=True), savefig=save_figure)
+
+
+# In[10]:
+
+
+# Print rows of images with captions
+
+def padtext(s, l = 27): # 27 works well
+    return s + " " * (l - len(s))
+
+rows2print = 4
+num_per_row = int(num2print / rows2print)
+for i in range(rows2print):
+    plt.figure(figsize=(30,10))
+    imglist = [transforms.ToTensor()(make3d(rs(Image.open(fn)))) for fn in fns[
+        num_per_row * i : num_per_row * i + num_per_row]]
+    show(make_grid(imglist, padding=1, normalize=True))
+    plt.show()
+    for z in given[num_per_row * i :num_per_row * i + num_per_row]:
+        item = " GIVEN: " + z
+        print(padtext(item), end = "")
+    print()
+    for z in pred[num_per_row * i :num_per_row * i + num_per_row]:
+        item = " GUESS: " + z
+        print(padtext(item), end = "")
+    print()
+    for z in fns[num_per_row * i:num_per_row * i + num_per_row]:
+        item = " " + fn.split("/")[-1]
+        print(padtext(item), end = "")
+
+
+# # This concludes the tutorial for displaying imagenet label errors. The code below is for reproducing the label errors in the confiding learning paper: https://arxiv.org/abs/1911.00068
+
+# ## Create multiple files storing the indices of errors for the top 20% of errors, top 40% of errors, etc.
 
 # In[60]:
 
@@ -258,7 +237,7 @@ for i in range(1, 5):
     assert(all(truth == us))
 
 
-# # Create these files for various methods of finding label errors
+# ## Create these files for various methods of finding label errors
 
 # In[5]:
 
