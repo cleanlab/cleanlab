@@ -171,7 +171,8 @@ def _compute_confident_joint_multi_label(
     ----------
     labels : list of list/iterable (length N)
         These are multiclass labels. Each list in the list contains
-        all the labels for that example.
+        all the labels for that example. This method will fail if labels
+        is not a list of lists (or a list of np.arrays or iterable).
 
     psx : np.array (shape (N, K))
         P(s=k|x) is a matrix with K (noisy) probabilities for each of the N examples x.
@@ -189,7 +190,8 @@ def _compute_confident_joint_multi_label(
         Calibrates confident joint estimate P(s=i, y=j) such that
         np.sum(cj) == len(s) and np.sum(cj, axis = 1) == np.bincount(s).'''
 
-    K = len(np.unique(labels))
+    # Compute unique number of classes K by flattening labels (list of lists)
+    K = len(np.unique([i for l in labels for i in l]))
     # Compute thresholds = p(s=k | k in set of given labels)
     # This is the average probability of class given that the label is represented.
     k_in_l = np.array([[k in l for l in labels] for k in range(K)])
