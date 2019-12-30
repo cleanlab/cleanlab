@@ -53,8 +53,8 @@ Find label errors with PyTorch, Tensorflow, MXNet, etc. in 1 line of code.
    from cleanlab.pruning import get_noise_indices
 
    ordered_label_errors = get_noise_indices(
-       s = numpy_array_of_noisy_labels,
-       psx = numpy_array_of_predicted_probabilities,
+       s=numpy_array_of_noisy_labels,
+       psx=numpy_array_of_predicted_probabilities,
        sorted_index_method='normalized_margin', # Orders label errors
     )
 
@@ -70,7 +70,7 @@ Learning with noisy labels in 3 lines of code!
 
    # Wrap around any classifier. Yup, you can use sklearn/pyTorch/Tensorflow/FastText/etc.
    lnl = LearningWithNoisyLabels(clf=LogisticRegression()) 
-   lnl.fit(X = X_train_data, s = train_noisy_labels) 
+   lnl.fit(X=X_train_data, s=train_noisy_labels) 
    # Estimate the predictions you would have gotten by training with *no* label errors.
    predicted_test_labels = lnl.predict(X_test)
 
@@ -256,13 +256,13 @@ model into a Python class that inherits the
    class YourFavoriteModel(BaseEstimator): # Inherits sklearn base classifier
        def __init__(self, ):
            pass
-       def fit(self, X, y, sample_weight = None):
+       def fit(self, X, y, sample_weight=None):
            pass
        def predict(self, X):
            pass
        def predict_proba(self, X):
            pass
-       def score(self, X, y, sample_weight = None):
+       def score(self, X, y, sample_weight=None):
            pass
            
    # Now you can use your model with `cleanlab`. Here's one example:
@@ -342,7 +342,7 @@ Option 1: Compute the confident joint and predicted probs first. Stop if that’
    confident_joint, psx = estimate_confident_joint_and_cv_pred_proba(
        X=X_train, 
        s=train_labels_with_errors,
-       clf = logreg(), # default, you can use any classifier
+       clf=logreg(), # default, you can use any classifier
    )
 
    # Estimate latent distributions: p(y) as est_py, P(s|y) as est_nm, and P(y|s) as est_inv
@@ -398,16 +398,16 @@ Methods to Standardize Research with Noisy Labels
 
     # Generate a valid (necessary conditions for learnability are met) noise matrix for any trace > 1
     from cleanlab.noise_generation import generate_noise_matrix_from_trace
-    noise_matrix = generate_noise_matrix_from_trace(
-        K = number_of_classes, 
-        trace = float_value_greater_than_1_and_leq_K,
-        py = prior_of_y_actual_labels_which_is_just_an_array_of_length_K,
-        frac_zero_noise_rates = float_from_0_to_1_controlling_sparsity,
+    noise_matrix=generate_noise_matrix_from_trace(
+        K=number_of_classes, 
+        trace=float_value_greater_than_1_and_leq_K,
+        py=prior_of_y_actual_labels_which_is_just_an_array_of_length_K,
+        frac_zero_noise_rates=float_from_0_to_1_controlling_sparsity,
     )
 
     # Check if a noise matrix is valid (necessary conditions for learnability are met)
     from cleanlab.noise_generation import noise_matrix_is_valid
-    is_valid = noise_matrix_is_valid(noise_matrix, prior_of_y_which_is_just_an_array_of_length_K)
+    is_valid=noise_matrix_is_valid(noise_matrix, prior_of_y_which_is_just_an_array_of_length_K)
 
 For a given noise matrix, this example shows how to generate noisy labels. Methods can be seeded for reproducibility.
 
