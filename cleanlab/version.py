@@ -1,9 +1,25 @@
 __version__ = '0.1.0'
 
+# ----------------------------------------
+# | CURRENT STABLE VERSION RELEASE NOTES |
+# ----------------------------------------
+
 # 0.1.0 - Release of confident learning paper based on this version of cleanlab: https://arxiv.org/pdf/1911.00068.pdf
 #   - Documentation increase
 #   - Add examples to find label errors in mnist, cifar, imagenet
 #   - re-organized examples and added readme.
+
+# ---------------------------
+# | FUTURE FEATURES PLANNED |
+# ---------------------------
+
+#   - Support Co-Teaching and PyTorch built-in training for learning with noisy labels
+#   - Add easy to run script for reproducing confident learning state-of-the-art results
+#   - Extensions to regression
+
+# ----------------------------------
+# | PREVIOUS VERSION RELEASE NOTES |
+# ----------------------------------
 
 # 0.0.14 - Major bug fix in classification. Unused param broke code.
 
