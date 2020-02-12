@@ -19,8 +19,9 @@
 .. |coverage| image:: https://codecov.io/gh/cgnorthcutt/cleanlab/branch/master/graph/badge.svg
     :target: https://codecov.io/gh/cgnorthcutt/cleanlab
 
-``cleanlab`` **documentation is available in** `this blog post <https://l7.curtisnorthcutt.com/cleanlab-python-package>`__.
+``cleanlab`` **documentation** is available in `this blog post <https://l7.curtisnorthcutt.com/cleanlab-python-package>`__.
 
+Past release notes and **future features planned**  is available `here <https://l7.curtisnorthcutt.com/cleanlab-python-package>`__.
 
 So fresh, so ``cleanlab`` 
 =========================
