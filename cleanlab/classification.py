@@ -58,6 +58,7 @@ from sklearn.metrics import accuracy_score
 from sklearn.base import BaseEstimator
 import numpy as np
 import inspect
+import os
 from cleanlab.util import (
     assert_inputs_are_valid,
     value_counts,
@@ -75,19 +76,19 @@ from cleanlab.pruning import get_noise_indices
 
 
 class LearningWithNoisyLabels(BaseEstimator): # Inherits sklearn classifier
-    '''Rank Pruning is a state-of-the-art algorithm (2017) for
+    '''Confident Learning is a state-of-the-art algorithm (Northcutt et al. 2019) for
       multiclass classification with (potentially extreme) mislabeling 
       across any or all pairs of class labels. It works with ANY classifier,
       including deep neural networks. See clf parameter.
     This subfield of machine learning is referred to as Confident Learning.
-    Rank Pruning also achieves state-of-the-art performance for binary
+    Confident Learning also achieves state-of-the-art performance for binary
       classification with noisy labels and positive-unlabeled
       learning (PU learning) where a subset of positive examples is given and
       all other examples are unlabeled and assumed to be negative examples.
-    Rank Pruning works by "learning from confident examples." Confident examples are
+    Confident Learning works by "learning from confident examples." Confident examples are
       identified as examples with high predicted probability for their training label.
     Given any classifier having the predict_proba() method, an input feature matrix, X, 
-      and a discrete vector of labels, s, which may contain mislabeling, Rank Pruning
+      and a discrete vector of labels, s, which may contain mislabeling, Confident Learning
       estimates the classifications that would be obtained if the hidden, true labels, y,
       had instead been provided to the classifier during training.
     "s" denotes the noisy label instead of \tilde(y), for ASCII encoding reasons.
@@ -100,7 +101,7 @@ class LearningWithNoisyLabels(BaseEstimator): # Inherits sklearn classifier
       1. clf.predict_proba(X) # Predicted probabilities
       2. clf.predict(X) # Predict labels
       3. clf.fit(X, y, sample_weight) # Train classifier
-      Stores the classifier used in Rank Pruning.
+      Stores the classifier used inConfident Learning.
       Default classifier used is logistic regression.
 
     seed : int (default = None)
@@ -128,7 +129,12 @@ class LearningWithNoisyLabels(BaseEstimator): # Inherits sklearn classifier
 
     pulearning : int (0 or 1, default: None)
       Only works for 2 class datasets. Set to the integer of the class that is
-      perfectly labeled (certain no errors in that class). If unsure, set to None.''' 
+      perfectly labeled (certain no errors in that class). If unsure, set to None.
+
+    n_jobs : int
+      Number of processing threads used by multiprocessing. Default None
+      sets to the number of processing threads on your CPU.
+      Set this to 1 to REMOVE parallel processing (if its causing issues).'''
   
   
     def __init__(
@@ -140,6 +146,7 @@ class LearningWithNoisyLabels(BaseEstimator): # Inherits sklearn classifier
         prune_method = 'prune_by_noise_rate',
         converge_latent_estimates = False,
         pulearning = None,
+        n_jobs = None,
     ):
 
         if clf is None:
@@ -156,6 +163,15 @@ class LearningWithNoisyLabels(BaseEstimator): # Inherits sklearn classifier
 
         if seed is not None:
             np.random.seed(seed = seed)
+
+        # Set-up number of multiprocessing threads used by get_noise_indices()
+        if n_jobs is None:
+            if os.name == 'nt':  # Windows Python users
+                n_jobs = 1  # Windows has multiprocessing issues so we use 1 job.
+            else:  # Mac and Linux Python users
+                n_jobs = multiprocessing.cpu_count()
+        else:
+            assert (n_jobs >= 1)
         
         self.clf = clf
         self.seed = seed
@@ -163,6 +179,7 @@ class LearningWithNoisyLabels(BaseEstimator): # Inherits sklearn classifier
         self.prune_method = prune_method
         self.converge_latent_estimates = converge_latent_estimates
         self.pulearning = pulearning
+        self.n_jobs = n_jobs
   
   
     def fit(
@@ -172,7 +189,7 @@ class LearningWithNoisyLabels(BaseEstimator): # Inherits sklearn classifier
         psx = None,
         thresholds = None,
         noise_matrix = None,
-        inverse_noise_matrix = None, 
+        inverse_noise_matrix = None,
     ):
         '''This method implements the confident learning. It counts examples that are likely
         labeled correctly and incorrectly and uses their ratio to create a predicted
@@ -297,6 +314,7 @@ class LearningWithNoisyLabels(BaseEstimator): # Inherits sklearn classifier
             inverse_noise_matrix = self.inverse_noise_matrix,
             confident_joint = self.confident_joint,
             prune_method = self.prune_method,
+            n_jobs = self.n_jobs,
         ) 
 
         X_mask = ~self.noise_mask
