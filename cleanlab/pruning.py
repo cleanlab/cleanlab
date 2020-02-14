@@ -12,6 +12,7 @@ from __future__ import (
 from sklearn.preprocessing import MultiLabelBinarizer
 import multiprocessing
 import sys
+import os
 import time
 from cleanlab.util import value_counts, round_preserving_row_totals
 import numpy as np
@@ -72,8 +73,8 @@ def _make_global(
 
 
 def _prune_by_class(k):
-    """multiprocessing Helper function that assumes globals
-    and produces a mask for class k for each example by
+    """multiprocessing Helper function for get_noise_indices()
+    that assumes globals and produces a mask for class k for each example by
     removing the examples with *smallest probability* of
     belonging to their given class label.
 
@@ -95,8 +96,8 @@ def _prune_by_class(k):
 
 
 def _prune_by_count(k):
-    """multiprocessing Helper function that assumes globals
-    and produces a mask for class k for each example by
+    """multiprocessing Helper function for get_noise_indices() that assumes
+    globals and produces a mask for class k for each example by
     removing the example with noisy label k having *largest margin*,
     where
     margin of example := prob of given label - max prob of non-given labels
@@ -125,8 +126,8 @@ def _prune_by_count(k):
 
 
 def _self_confidence(args):  # pragma: no cover
-    """multiprocessing Helper function that assumes global
-    psx and computes the self confidence (prob of given label)
+    """multiprocessing Helper function for get_noise_indices() that assumes
+    global psx and computes the self confidence (prob of given label)
     for an example (row in psx) given the example index idx
     and its label l.
     np.mean(psx[]) enables this code to work for multi-class l."""
@@ -179,6 +180,7 @@ def get_noise_indices(
     '''Returns the indices of most likely (confident) label errors in s. The
     number of indices returned is specified by frac_of_noise. When
     frac_of_noise = 1.0, all "confident" estimated noise indices are returned.
+    * If you encounter the error 'psx is not defined', try setting n_jobs = 1.
 
     Parameters
     ----------
@@ -257,7 +259,10 @@ def get_noise_indices(
 
     # Set-up number of multiprocessing threads
     if n_jobs is None:
-        n_jobs = multiprocessing.cpu_count()
+        if os.name == 'nt':  # Windows Python users
+            n_jobs = 1  # Windows has multiprocessing issues so we use 1 job.
+        else:  # Mac and Linux Python users
+            n_jobs = multiprocessing.cpu_count()
     else:
         assert (n_jobs >= 1)
 
