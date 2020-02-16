@@ -1,6 +1,6 @@
-# State-of-the-art (2020) for learning with noisy labels on CIFAR-10.
+# State-of-the-art for learning with noisy labels on CIFAR-10.
 
-Checkout the repo: [cgnorthcutt/confidentlearning-reproduce](https://github.com/cgnorthcutt/confidentlearning-reproduce/tree/master/cifar10) to see how `cleanlab` is used to achieve state-of-the-art for learning with noisy labels on CIFAR-10.
+Checkout the repo: [cgnorthcutt/confidentlearning-reproduce](https://github.com/cgnorthcutt/confidentlearning-reproduce/tree/master/cifar10) to see how `cleanlab` is used to achieve state-of-the-art (as of Feb. 2020) for learning with noisy labels on CIFAR-10.
 
 The main procedure is simple:
 1. Use cleanlab to find the label errors in CIFAR-10.
