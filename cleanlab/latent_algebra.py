@@ -286,7 +286,7 @@ def compute_pyx(psx, noise_matrix, inverse_noise_matrix):
             ", but shape should be (N, K)")
 
     pyx = psx * inverse_noise_matrix.diagonal() / noise_matrix.diagonal()
-    # Make sure valid probabilites that sum to 1.0
+    # Make sure valid probabilities that sum to 1.0
     return np.apply_along_axis(
         func1d=clip_values,
         axis=1,
