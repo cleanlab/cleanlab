@@ -26,7 +26,7 @@ setup(
     license='MIT',
     long_description=long_description,
     long_description_content_type='text/x-rst',
-    description = 'The Python package for cleaning and learning with noisy labels. Works for all noisy label distributions, datasets, and models.',
+    description = 'Find label errors in datasets, weak supervision, and learning with noisy labels. Works for all datasets and models.',
     url = 'https://github.com/cgnorthcutt/cleanlab',
     author = 'Curtis G. Northcutt',
     author_email = 'cgn@mit.edu',
@@ -46,6 +46,7 @@ setup(
       'Programming Language :: Python :: 3.4',
       'Programming Language :: Python :: 3.5',
       'Programming Language :: Python :: 3.6',
+      'Programming Language :: Python :: 3.7',
 
       'Programming Language :: Python',
       'Topic :: Software Development',
