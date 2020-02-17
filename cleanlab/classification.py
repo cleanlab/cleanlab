@@ -148,7 +148,7 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
       Only works for 2 class datasets. Set to the integer of the class that is
       perfectly labeled (certain no errors in that class).
 
-    n_jobs : int
+    n_jobs : int (Windows users may see a speed-up with n_jobs = 1)
       Number of processing threads used by multiprocessing. Default None
       sets to the number of processing threads on your CPU.
       Set this to 1 to REMOVE parallel processing (if its causing issues)."""
@@ -185,10 +185,7 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
 
         # Set-up number of multiprocessing threads used by get_noise_indices()
         if n_jobs is None:
-            if os.name == 'nt':  # Windows Python users
-                n_jobs = 1  # Windows has multiprocessing issues so use 1 job.
-            else:  # Mac and Linux Python users
-                n_jobs = multiprocessing.cpu_count()
+            n_jobs = multiprocessing.cpu_count()
         else:
             assert (n_jobs >= 1)
         
