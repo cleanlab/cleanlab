@@ -1,6 +1,8 @@
 # coding: utf-8
 
-from __future__ import print_function, absolute_import, division, unicode_literals, with_statement
+from __future__ import (
+    print_function, absolute_import, division, unicode_literals,
+    with_statement, )
 from cleanlab import latent_estimation
 from cleanlab import pruning
 from cleanlab.latent_algebra import compute_inv_noise_matrix
@@ -24,17 +26,19 @@ def make_data(
 
     m = len(means)  # number of classes
     n = sum(sizes)
-    data = []
+    local_data = []
     labels = []
     test_data = []
     test_labels = []
 
     for idx in range(m):
-        data.append(np.random.multivariate_normal(mean=means[idx], cov=covs[idx], size=sizes[idx]))
-        test_data.append(np.random.multivariate_normal(mean=means[idx], cov=covs[idx], size=sizes[idx]))
+        local_data.append(np.random.multivariate_normal(
+            mean=means[idx], cov=covs[idx], size=sizes[idx]))
+        test_data.append(np.random.multivariate_normal(
+            mean=means[idx], cov=covs[idx], size=sizes[idx]))
         labels.append(np.array([idx for i in range(sizes[idx])]))
         test_labels.append(np.array([idx for i in range(sizes[idx])]))
-    X_train = np.vstack(data)
+    X_train = np.vstack(local_data)
     y_train = np.hstack(labels)
     X_test = np.vstack(test_data)
     y_test = np.hstack(test_labels)
@@ -54,7 +58,7 @@ def make_data(
         seed=seed,
     )
 
-    # Generate our noisy labels using the noise_marix.
+    # Generate our noisy labels using the noise_matrix.
     s = generate_noisy_labels(y_train, noise_matrix)
     ps = np.bincount(s) / float(len(s))
 
@@ -91,7 +95,7 @@ def make_data(
 # Global to be used by all test methods.
 # Only compute this once for speed.
 seed = 1
-data = make_data(sparse=False, seed=seed)
+data = make_data(sparse=False, seed=1)
 
 
 def test_exact_prune_count():
@@ -135,7 +139,7 @@ def test_pruning_both(n_jobs):
 
 
 def test_prune_on_small_data():
-    data = make_data(sizes = [4,4,4])
+    data = make_data(sizes=[4, 4, 4])
     for pm in ['prune_by_noise_rate', 'prune_by_class', 'both']:
         noise_idx = pruning.get_noise_indices(
             s=data['s'],
@@ -187,15 +191,15 @@ def test_calibrate_joint():
     s_counts = np.bincount(data["s"])
 
     # Check calibration
-    assert(all(calibrated_cj.sum(axis = 1).round().astype(int) == s_counts))
-    assert(len(data["s"]) == int(round(np.sum(calibrated_cj))))
-    
+    assert (all(calibrated_cj.sum(axis=1).round().astype(int) == s_counts))
+    assert (len(data["s"]) == int(round(np.sum(calibrated_cj))))
+
     calibrated_cj2 = latent_estimation.compute_confident_joint(
         s=data["s"],
         psx=data["psx"],
         calibrate=True,
     )
-    
+
     # Check equivalency
     assert (np.all(calibrated_cj == calibrated_cj2))
 
@@ -205,9 +209,9 @@ def test_estimate_joint():
         s=data["s"],
         psx=data["psx"],
     )
-    
+
     # Check that jjoint sums to 1.
-    assert(abs(np.sum(joint) - 1.) < 1e-6)
+    assert (abs(np.sum(joint) - 1.) < 1e-6)
 
 
 def test_compute_confident_joint():
@@ -215,9 +219,9 @@ def test_compute_confident_joint():
         s=data["s"],
         psx=data["psx"],
     )
-    
+
     # Check that confident joint doesn't overcount number of examples.
-    assert(np.sum(cj) <= data["n"])
+    assert (np.sum(cj) <= data["n"])
     # Check that confident joint is correct shape
     assert (np.shape(cj) == (data["m"], data["m"]))
 
@@ -230,14 +234,14 @@ def test_cj_from_probs():
             force_ps=10,
         )
         true_ps = data["ps"] * data["n"]
-        forced = cj.sum(axis = 1)
+        forced = cj.sum(axis=1)
 
         cj = latent_estimation.estimate_confident_joint_from_probabilities(
             s=data["s"],
             psx=data["psx"],
             force_ps=1,
         )
-        forced1 = cj.sum(axis = 1)
+        forced1 = cj.sum(axis=1)
 
         cj = latent_estimation.estimate_confident_joint_from_probabilities(
             s=data["s"],
@@ -309,19 +313,20 @@ def test_estimate_noise_matrices(sparse):
 def test_pruning_reduce_prune_counts():
     '''Make sure it doesnt remove when its not supposed to'''
     cj = np.array([
-        [325,  16,  22],
-        [ 47, 178,  10],
-        [ 36,   8, 159],
+        [325, 16, 22],
+        [47, 178, 10],
+        [36, 8, 159],
     ])
     cj2 = pruning.reduce_prune_counts(cj, frac_noise=1.0)
     assert (np.all(cj == cj2))
 
+
 def test_pruning_keep_at_least_n_per_class():
     '''Make sure it doesnt remove when its not supposed to'''
     cj = np.array([
-        [325,  16,  22],
-        [ 47, 178,  10],
-        [ 36,   8, 159],
+        [325, 16, 22],
+        [47, 178, 10],
+        [36, 8, 159],
     ])
     prune_count_matrix = pruning.keep_at_least_n_per_class(
         prune_count_matrix=cj.T,
