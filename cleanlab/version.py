@@ -1,13 +1,13 @@
-__version__ = '0.1.0'
+__version__ = '0.1.1'
 
 # ----------------------------------------
 # | CURRENT STABLE VERSION RELEASE NOTES |
 # ----------------------------------------
 
-# 0.1.0 - Release of confident learning paper based on this version of cleanlab: https://arxiv.org/pdf/1911.00068.pdf
-#   - Documentation increase
-#   - Add examples to find label errors in mnist, cifar, imagenet
-#   - re-organized examples and added readme.
+# 0.1.1 - Major update adding support for Windows and Python 3.7
+#   - Added support for Python 3.7
+#   - Added full support for Windows, including multiprocessing parallelization support in cleanlab/pruning.py
+#   - Improved PEP-8 adherence in core cleanlab/ code.
 
 # ---------------------------
 # | FUTURE FEATURES PLANNED |
@@ -20,6 +20,11 @@ __version__ = '0.1.0'
 # ----------------------------------
 # | PREVIOUS VERSION RELEASE NOTES |
 # ----------------------------------
+
+# 0.1.0 - Release of confident learning paper based on this version of cleanlab: https://arxiv.org/pdf/1911.00068.pdf
+#   - Documentation increase
+#   - Add examples to find label errors in mnist, cifar, imagenet
+#   - re-organized examples and added readme.
 
 # 0.0.14 - Major bug fix in classification. Unused param broke code.
 
