@@ -20,7 +20,7 @@ from __future__ import print_function, absolute_import, division, unicode_litera
 from cleanlab.util import VersionWarning
 python_version = VersionWarning(
     warning_str = "pyTorch supports Python version 2.7, 3.5, 3.6, 3.7.",
-    list_of_compatible_versions = [2.7, 3.5, 3.6],
+    list_of_compatible_versions = [2.7, 3.5, 3.6, 3.7],
 )
 
 
