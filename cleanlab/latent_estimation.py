@@ -158,6 +158,7 @@ def estimate_joint(s, psx=None, confident_joint=None, multi_label=False):
 def _compute_confident_joint_multi_label(
     labels,
     psx,
+    thresholds=None,
     calibrate=True,
 ):
     """Computes the confident joint for multi_labeled data. Thus,
@@ -185,6 +186,12 @@ def _compute_confident_joint_multi_label(
         each example, regarding whether the example has label s==k P(s=k|x).
         psx should have been computed using 3 (or higher) fold cross-validation.
 
+    thresholds : iterable (list or np.array) of shape (K, 1)  or (K,)
+      P(s^=k|s=k). If an example has a predicted probability "greater" than
+      this threshold, it is counted as having hidden label y = k. This is
+      not used for pruning, only for estimating the noise rates using
+      confident counts. This value should be between 0 and 1. Default is None.
+
     calibrate : bool (default: True)
         Calibrates confident joint estimate P(s=i, y=j) such that
         np.sum(cj) == len(s) and np.sum(cj, axis = 1) == np.bincount(s)."""
@@ -194,7 +201,8 @@ def _compute_confident_joint_multi_label(
     # Compute thresholds = p(s=k | k in set of given labels)
     # This is the avg probability of class given that the label is represented.
     k_in_l = np.array([[k in lst for lst in labels] for k in range(K)])
-    thresholds = [np.mean(psx[:, k][k_in_l[k]]) for k in range(K)]
+    if thresholds is None:
+        thresholds = [np.mean(psx[:, k][k_in_l[k]]) for k in range(K)]
     # Create mask for every example if for each class, prob >= threshold
     psx_bool = psx >= thresholds
     # Compute confident joint
