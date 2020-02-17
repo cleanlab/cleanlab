@@ -311,7 +311,7 @@ def test_estimate_noise_matrices(sparse):
 
 
 def test_pruning_reduce_prune_counts():
-    '''Make sure it doesnt remove when its not supposed to'''
+    """Make sure it doesnt remove when its not supposed to"""
     cj = np.array([
         [325, 16, 22],
         [47, 178, 10],
@@ -322,7 +322,7 @@ def test_pruning_reduce_prune_counts():
 
 
 def test_pruning_keep_at_least_n_per_class():
-    '''Make sure it doesnt remove when its not supposed to'''
+    """Make sure it doesnt remove when its not supposed to"""
     cj = np.array([
         [325, 16, 22],
         [47, 178, 10],
