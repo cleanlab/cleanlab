@@ -172,9 +172,3 @@ for i in np.argsort(scores)[::-1]:
         "\n",
     )
 
-
-# In[ ]:
-
-
-
-
