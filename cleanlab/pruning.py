@@ -3,17 +3,22 @@
 # ## Pruning
 # 
 # #### Contains methods for estimating the latent indices of all label errors.
+# This code uses advanced multiprocessing to speed up computation.
+# see: https://research.wmz.ninja/articles/2018/03/ (link continued below)
+# on-sharing-large-arrays-when-using-pythons-multiprocessing.html
+# This approach supports posix and nt OS's: i.e. Windows, Mac, and Linux
 
 
 from __future__ import (
-    print_function, absolute_import, division, unicode_literals, with_statement,
-)
+    print_function, absolute_import, division, unicode_literals, with_statement)
 from sklearn.preprocessing import MultiLabelBinarizer
 import multiprocessing
+from multiprocessing.sharedctypes import RawArray
 import sys
 import os
 import time
-from cleanlab.util import value_counts, round_preserving_row_totals
+from cleanlab.util import (value_counts, round_preserving_row_totals,
+                           onehot2int, int2onehot, )
 import numpy as np
 
 # tqdm is a module used to print time-to-complete when multiprocessing is used.
@@ -50,29 +55,71 @@ if sys.version_info[0] == 2:
 else:
     multiprocessing_context = multiprocessing.Pool
 
+# Globals to be shared across threads in multiprocessing
+mp_params = {}  # parameters passed to multiprocessing helper functions
+
 
 # Multiprocessing Helper functions
 
 
-def _make_global(
-        _s,
-        _s_counts,
-        _prune_count_matrix,
-        _psx,
-        _multi_label,
+def _to_np_array(mp_arr, dtype="int32", shape=None):  # pragma: no cover
+    """multipropcessing Helper function to convert a multiprocessing
+    RawArray to a numpy array."""
+    arr = np.frombuffer(mp_arr, dtype=dtype)
+    if shape is None:
+        return arr
+    return arr.reshape(shape)
+
+
+def _init(
+        __s,
+        __s_counts,
+        __prune_count_matrix,
+        __pcm_shape,
+        __psx,
+        __psx_shape,
+        __multi_label,
 ):  # pragma: no cover
-    '''Shares memory objects across child processes.
-    ASSUMES none of these will change!'''
+    """Shares memory objects across child processes.
+    ASSUMES none of these will be changed by child processes!"""
 
-    global s, s_counts, prune_count_matrix, psx, multi_label
-    s = _s
-    s_counts = _s_counts
-    prune_count_matrix = _prune_count_matrix
-    psx = _psx
-    multi_label = _multi_label
+    mp_params['s'] = __s
+    mp_params['s_counts'] = __s_counts
+    mp_params['prune_count_matrix'] = __prune_count_matrix
+    mp_params['pcm_shape'] = __pcm_shape
+    mp_params['psx'] = __psx
+    mp_params['psx_shape'] = __psx_shape
+    mp_params['multi_label'] = __multi_label
 
 
-def _prune_by_class(k):
+def _get_shared_data():  # pragma: no cover
+    """multiprocessing helper function to extract numpy arrays from
+    shared RawArray types used to shared data across process."""
+
+    s_counts = _to_np_array(mp_params['s_counts'])
+    prune_count_matrix = _to_np_array(
+        mp_arr=mp_params['prune_count_matrix'],
+        shape=mp_params['pcm_shape'],
+    )
+    psx = _to_np_array(
+        mp_arr=mp_params['psx'],
+        dtype='float32',
+        shape=mp_params['psx_shape'],
+    )
+    multi_label = mp_params['multi_label']
+    if multi_label:  # Shared data is passed as one-hot encoded matrix
+        print('before', mp_params['s'])
+        s = onehot2int(_to_np_array(
+            mp_arr=mp_params['s'],
+            shape=(psx.shape[0], psx.shape[1]),
+        ))
+        print('after', s)
+    else:
+        s = _to_np_array(mp_params['s'])
+    return s, s_counts, prune_count_matrix, psx, multi_label
+
+
+def _prune_by_class(k, args=None):
     """multiprocessing Helper function for get_noise_indices()
     that assumes globals and produces a mask for class k for each example by
     removing the examples with *smallest probability* of
@@ -83,19 +130,24 @@ def _prune_by_class(k):
     k : int (between 0 and num classes - 1)
       The class of interest."""
 
-    if s_counts[k] > MIN_NUM_PER_CLASS:  # Don't prune if not MIN_NUM_PER_CLASS
+    if args:  # Single processing - params are passed in
+        s, s_counts, prune_count_matrix, psx, multi_label = args
+    else:  # Multiprocessing - data is shared across sub-processes
+        s, s_counts, prune_count_matrix, psx, multi_label = _get_shared_data()
+
+    if s_counts[k] > MIN_NUM_PER_CLASS:  # No prune if not MIN_NUM_PER_CLASS
         num_errors = s_counts[k] - prune_count_matrix[k][k]
         # Get rank of smallest prob of class k for examples with noisy label k
-        s_filter = np.array([k in l for l in s]) if multi_label else s == k
+        s_filter = np.array(
+            [k in lst for lst in s]) if multi_label else s == k
         class_probs = psx[:, k]
         rank = np.partition(class_probs[s_filter], num_errors)[num_errors]
-        #        noise_mask = noise_mask | ((s_filter) & (psx[:,k] < threshold))
         return s_filter & (class_probs < rank)
     else:
         return np.zeros(len(s), dtype=bool)
 
 
-def _prune_by_count(k):
+def _prune_by_count(k, args=None):
     """multiprocessing Helper function for get_noise_indices() that assumes
     globals and produces a mask for class k for each example by
     removing the example with noisy label k having *largest margin*,
@@ -107,10 +159,15 @@ def _prune_by_count(k):
     k : int (between 0 and num classes - 1)
       The true, hidden label class of interest."""
 
+    if args:  # Single processing - params are passed in
+        s, s_counts, prune_count_matrix, psx, multi_label = args
+    else:  # Multiprocessing - data is shared across sub-processes
+        s, s_counts, prune_count_matrix, psx, multi_label = _get_shared_data()
+
     noise_mask = np.zeros(len(psx), dtype=bool)
     psx_k = psx[:, k]
     K = len(s_counts)
-    if s_counts[k] <= MIN_NUM_PER_CLASS:  # Don't prune if not MIN_NUM_PER_CLASS
+    if s_counts[k] <= MIN_NUM_PER_CLASS:  # No prune if not MIN_NUM_PER_CLASS
         return np.zeros(len(s), dtype=bool)
     for j in range(K):  # j is true label index (k is noisy label index)
         num2prune = prune_count_matrix[j][k]
@@ -119,20 +176,22 @@ def _prune_by_count(k):
             # num2prune'th largest p(true class k) - p(noisy class k)
             # for x with true label j
             margin = psx[:, j] - psx_k
-            s_filter = np.array([k in l for l in s]) if multi_label else s == k
+            s_filter = np.array(
+                [k in lst for lst in s]
+            ) if multi_label else s == k
             cut = -np.partition(-margin[s_filter], num2prune - 1)[num2prune - 1]
             noise_mask = noise_mask | (s_filter & (margin >= cut))
     return noise_mask
 
 
-def _self_confidence(args):  # pragma: no cover
+def _self_confidence(args, _psx):  # pragma: no cover
     """multiprocessing Helper function for get_noise_indices() that assumes
     global psx and computes the self confidence (prob of given label)
     for an example (row in psx) given the example index idx
     and its label l.
     np.mean(psx[]) enables this code to work for multi-class l."""
     (idx, l) = args
-    return np.mean(psx[idx, l])
+    return np.mean(_psx[idx, l])
 
 
 def multiclass_crossval_predict(pyx, labels):
@@ -197,15 +256,15 @@ def get_noise_indices(
       psx should have been computed using 3+ fold cross-validation.
 
     inverse_noise_matrix : np.array of shape (K, K), K = number of classes
-      A conditional probablity matrix of the form P(y=k_y|s=k_s) representing
+      A conditional probability matrix of the form P(y=k_y|s=k_s) representing
       the estimated fraction observed examples in each class k_s, that are
       mislabeled examples from every other class k_y. If None, the
       inverse_noise_matrix will be computed from psx and s.
       Assumes columns of inverse_noise_matrix sum to 1.
 
     confident_joint : np.array (shape (K, K), type int) (default: None)
-      A K,K integer matrix of count(s=k, y=k). Estimatesa a confident
-      subset of the joint disribution of the noisy and true labels P_{s,y}.
+      A K,K integer matrix of count(s=k, y=k). Estimates a a confident
+      subset of the joint distribution of the noisy and true labels P_{s,y}.
       Each entry in the matrix contains the number of examples confidently
       counted into every pair (s=j, y=k) classes.
 
@@ -228,7 +287,7 @@ def get_noise_indices(
       'k' examples removed from every class, you should use 'prune_by_class'.
 
     prune_method : str (default: 'prune_by_noise_rate')
-      Posible Values: 'prune_by_class', 'prune_by_noise_rate', or 'both'.
+      Possible Values: 'prune_by_class', 'prune_by_noise_rate', or 'both'.
       Method used for pruning.
       1. 'prune_by_noise_rate': works by removing examples with
       *high probability* of being mislabeled for every non-diagonal
@@ -249,7 +308,7 @@ def get_noise_indices(
       If true, s should be an iterable (e.g. list) of iterables, containing a
       list of labels for each example, instead of just a single label.
 
-    n_jobs : int
+    n_jobs : int (Windows users may see a speed-up with n_jobs = 1)
       Number of processing threads used by multiprocessing. Default None
       sets to the number of processing threads on your CPU.
       Set this to 1 to REMOVE parallel processing (if its causing issues).
@@ -259,16 +318,13 @@ def get_noise_indices(
 
     # Set-up number of multiprocessing threads
     if n_jobs is None:
-        if os.name == 'nt':  # Windows Python users
-            n_jobs = 1  # Windows has multiprocessing issues so we use 1 job.
-        else:  # Mac and Linux Python users
-            n_jobs = multiprocessing.cpu_count()
+        n_jobs = multiprocessing.cpu_count()
     else:
         assert (n_jobs >= 1)
 
     # Number of examples in each class of s
     if multi_label:
-        s_counts = value_counts([i for l in s for i in l])
+        s_counts = value_counts([i for lst in s for i in lst])
     else:
         s_counts = value_counts(s)
     # Number of classes s
@@ -303,14 +359,30 @@ def get_noise_indices(
         np.fill_diagonal(tmp, s_counts - num_to_remove_per_class)
         prune_count_matrix = round_preserving_row_totals(tmp)
 
-    # Make static data global for use in multiprocessing or sub-functions
-    _make_global(s, s_counts, prune_count_matrix, psx, multi_label)
+    if n_jobs > 1:  # Prepare multiprocessing shared data
+        if multi_label:
+            _s = RawArray('I', int2onehot(s).flatten())
+        else:
+            _s = RawArray('I', s)
+        _s_counts = RawArray('I', s_counts)
+        _prune_count_matrix = RawArray(
+            'I', prune_count_matrix.flatten())
+        _psx = RawArray(
+            'f', psx.flatten())
+    else:  # Multiprocessing is turned off. Create tuple with all parameters
+        args = (s, s_counts, prune_count_matrix, psx, multi_label)
 
     # Perform Pruning with threshold probabilities from BFPRT algorithm in O(n)
     # Operations are parallelized across all CPU processes
     if prune_method == 'prune_by_class' or prune_method == 'both':
         if n_jobs > 1:  # parallelize
-            with multiprocessing_context(n_jobs) as p:
+            with multiprocessing_context(
+                    n_jobs,
+                    initializer=_init,
+                    initargs=(_s, _s_counts, _prune_count_matrix,
+                              prune_count_matrix.shape, _psx, psx.shape,
+                              multi_label),
+            ) as p:
                 if verbose:
                     print('Parallel processing label errors by class.')
                 sys.stdout.flush()
@@ -321,7 +393,7 @@ def get_noise_indices(
                 else:
                     noise_masks_per_class = p.map(_prune_by_class, range(K))
         else:  # n_jobs = 1, so no parallelization
-            noise_masks_per_class = [_prune_by_class(k) for k in range(K)]
+            noise_masks_per_class = [_prune_by_class(k, args) for k in range(K)]
         label_errors_mask = np.stack(noise_masks_per_class).any(axis=0)
 
     if prune_method == 'both':
@@ -329,7 +401,13 @@ def get_noise_indices(
 
     if prune_method == 'prune_by_noise_rate' or prune_method == 'both':
         if n_jobs > 1:  # parallelize
-            with multiprocessing_context(n_jobs) as p:
+            with multiprocessing_context(
+                    n_jobs,
+                    initializer=_init,
+                    initargs=(_s, _s_counts, _prune_count_matrix,
+                              prune_count_matrix.shape, _psx, psx.shape,
+                              multi_label),
+            ) as p:
                 if verbose:
                     print('Parallel processing label errors by noise rate.')
                 sys.stdout.flush()
@@ -340,7 +418,7 @@ def get_noise_indices(
                 else:
                     noise_masks_per_class = p.map(_prune_by_count, range(K))
         else:  # n_jobs = 1, so no parallelization
-            noise_masks_per_class = [_prune_by_count(k) for k in range(K)]
+            noise_masks_per_class = [_prune_by_count(k, args) for k in range(K)]
         label_errors_mask = np.stack(noise_masks_per_class).any(axis=0)
 
     if prune_method == 'both':
@@ -397,7 +475,6 @@ def keep_at_least_n_per_class(prune_count_matrix, n, frac_noise=1.0):
     prune_count_matrix : np.array of shape (K, K), K = number of classes
         Number of examples to remove from each class, for every other class."""
 
-    K = len(prune_count_matrix)
     prune_count_matrix_diagonal = np.diagonal(prune_count_matrix)
 
     # Set diagonal terms less than n, to n.
@@ -429,7 +506,7 @@ def keep_at_least_n_per_class(prune_count_matrix, n, frac_noise=1.0):
     new_mat = reduce_prune_counts(new_mat, frac_noise)
 
     # These are counts, so return a matrix of ints.
-    return round_preserving_row_totals(new_mat)
+    return round_preserving_row_totals(new_mat).astype(int)
 
 
 def reduce_prune_counts(prune_count_matrix, frac_noise=1.0):
