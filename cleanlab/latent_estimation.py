@@ -336,9 +336,9 @@ def compute_confident_joint(
     # For each example, choose the confident class (greater than threshold)
     # When there is 2+ confident classes, choose the class with largest prob.
     true_label_guess = np.where(
-        condition=more_than_one_confident,
-        x=psx_argmax,
-        y=confident_argmax,
+        more_than_one_confident,
+        psx_argmax,
+        confident_argmax,
     )
     # y_confident omits meaningless all-False rows
     y_confident = true_label_guess[at_least_one_confident]
