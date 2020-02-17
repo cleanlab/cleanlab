@@ -1,4 +1,3 @@
-
 # coding: utf-8
 
 # ## Pruning
@@ -17,31 +16,32 @@ import time
 from cleanlab.util import value_counts, round_preserving_row_totals
 import numpy as np
 
-
 # tqdm is a module used to print time-to-complete when multiprocessing is used.
 # This module is not necessary, and therefore is not a package dependency, but 
-# when installed it improves user experience for large datsets.
+# when installed it improves user experience for large datasets.
 try:
     import tqdm
+
     tqdm_exists = True
 except ImportError as e:
     tqdm_exists = False
     import warnings
+
     w = '''If you want to see estimated completion times
     while running methods in cleanlab.pruning, install tqdm
     via "pip install tqdm".'''
     warnings.warn(w)
 
-
 # Leave at least this many examples in each class after
 # pruning, regardless if noise estimates are larger.
 MIN_NUM_PER_CLASS = 5
-
 
 # For python 2/3 compatibility, define pool context manager
 # to support the 'with' statement in Python 2
 if sys.version_info[0] == 2:
     from contextlib import contextmanager
+
+
     @contextmanager
     def multiprocessing_context(*args, **kwargs):
         pool = multiprocessing.Pool(*args, **kwargs)
@@ -55,11 +55,11 @@ else:
 
 
 def _make_global(
-    _s,
-    _s_counts,
-    _prune_count_matrix,
-    _psx,
-    _multi_label,
+        _s,
+        _s_counts,
+        _prune_count_matrix,
+        _psx,
+        _multi_label,
 ):  # pragma: no cover
     '''Shares memory objects across child processes.
     ASSUMES none of these will change!'''
@@ -89,8 +89,8 @@ def _prune_by_class(k):
         s_filter = np.array([k in l for l in s]) if multi_label else s == k
         class_probs = psx[:, k]
         rank = np.partition(class_probs[s_filter], num_errors)[num_errors]
-#        noise_mask = noise_mask | ((s_filter) & (psx[:,k] < threshold))
-        return ((s_filter) & (class_probs < rank))
+        #        noise_mask = noise_mask | ((s_filter) & (psx[:,k] < threshold))
+        return s_filter & (class_probs < rank)
     else:
         return np.zeros(len(s), dtype=bool)
 
@@ -121,7 +121,7 @@ def _prune_by_count(k):
             margin = psx[:, j] - psx_k
             s_filter = np.array([k in l for l in s]) if multi_label else s == k
             cut = -np.partition(-margin[s_filter], num2prune - 1)[num2prune - 1]
-            noise_mask = noise_mask | ((s_filter) & (margin >= cut))
+            noise_mask = noise_mask | (s_filter & (margin >= cut))
     return noise_mask
 
 
@@ -136,7 +136,7 @@ def _self_confidence(args):  # pragma: no cover
 
 
 def multiclass_crossval_predict(pyx, labels):
-    '''Returns an numpy 2D array of one-hot encoded
+    """Returns an numpy 2D array of one-hot encoded
     multiclass predictions. Each row in the array
     provides the predictions for a particular example.
     The boundary condition used to threshold predictions
@@ -151,7 +151,7 @@ def multiclass_crossval_predict(pyx, labels):
 
     labels : list of lists (length N)
       These are multiclass labels. Each list in the list contains all the
-      labels for that example.'''
+      labels for that example."""
 
     from sklearn.metrics import f1_score
     boundaries = np.arange(0.05, 0.9, .05)
@@ -165,19 +165,19 @@ def multiclass_crossval_predict(pyx, labels):
 
 
 def get_noise_indices(
-    s,
-    psx,
-    inverse_noise_matrix=None,
-    confident_joint=None,
-    frac_noise=1.0,
-    num_to_remove_per_class=None,
-    prune_method='prune_by_noise_rate',
-    sorted_index_method=None,
-    multi_label=False,
-    n_jobs = None,
-    verbose=0,
+        s,
+        psx,
+        inverse_noise_matrix=None,
+        confident_joint=None,
+        frac_noise=1.0,
+        num_to_remove_per_class=None,
+        prune_method='prune_by_noise_rate',
+        sorted_index_method=None,
+        multi_label=False,
+        n_jobs=None,
+        verbose=0,
 ):
-    '''Returns the indices of most likely (confident) label errors in s. The
+    """Returns the indices of most likely (confident) label errors in s. The
     number of indices returned is specified by frac_of_noise. When
     frac_of_noise = 1.0, all "confident" estimated noise indices are returned.
     * If you encounter the error 'psx is not defined', try setting n_jobs = 1.
@@ -255,7 +255,7 @@ def get_noise_indices(
       Set this to 1 to REMOVE parallel processing (if its causing issues).
 
     verbose : int
-      If 0, no print statements. If 1, prints when multiprocessing happens.'''
+      If 0, no print statements. If 1, prints when multiprocessing happens."""
 
     # Set-up number of multiprocessing threads
     if n_jobs is None:
@@ -302,11 +302,11 @@ def get_noise_indices(
         tmp = (psy.T * num_to_remove_per_class / noise_per_s).T
         np.fill_diagonal(tmp, s_counts - num_to_remove_per_class)
         prune_count_matrix = round_preserving_row_totals(tmp)
-        
+
     # Make static data global for use in multiprocessing or sub-functions
     _make_global(s, s_counts, prune_count_matrix, psx, multi_label)
 
-    # Peform Pruning with threshold probabilities from BFPRT algorithm in O(n)
+    # Perform Pruning with threshold probabilities from BFPRT algorithm in O(n)
     # Operations are parallelized across all CPU processes
     if prune_method == 'prune_by_class' or prune_method == 'both':
         if n_jobs > 1:  # parallelize
@@ -354,7 +354,7 @@ def get_noise_indices(
         pred = psx.argmax(axis=1)
     for i, pred_label in enumerate(pred):
         if multi_label and np.all(pred_label == s[i]) or \
-            not multi_label and pred_label == s[i]:
+                not multi_label and pred_label == s[i]:
             label_errors_mask[i] = False
 
     if sorted_index_method is not None:
@@ -365,7 +365,7 @@ def get_noise_indices(
 
 
 def keep_at_least_n_per_class(prune_count_matrix, n, frac_noise=1.0):
-    '''Make sure every class has at least n examples after removing noise.
+    """Make sure every class has at least n examples after removing noise.
     Functionally, increase each column, increases the diagonal term #(y=k,s=k)
     of prune_count_matrix until it is at least n, distributing the amount
     increased by subtracting uniformly from the rest of the terms in the
@@ -395,7 +395,7 @@ def keep_at_least_n_per_class(prune_count_matrix, n, frac_noise=1.0):
     ------
 
     prune_count_matrix : np.array of shape (K, K), K = number of classes
-        Number of examples to remove from each class, for every other class.'''
+        Number of examples to remove from each class, for every other class."""
 
     K = len(prune_count_matrix)
     prune_count_matrix_diagonal = np.diagonal(prune_count_matrix)
@@ -433,7 +433,7 @@ def keep_at_least_n_per_class(prune_count_matrix, n, frac_noise=1.0):
 
 
 def reduce_prune_counts(prune_count_matrix, frac_noise=1.0):
-    '''Reduce (multiply) all prune counts (non-diagonal) by frac_noise and
+    """Reduce (multiply) all prune counts (non-diagonal) by frac_noise and
     increase diagonal by the total amount reduced in each column to
     preserve column counts.
 
@@ -450,7 +450,7 @@ def reduce_prune_counts(prune_count_matrix, frac_noise=1.0):
         Value in range (0, 1] that determines the fraction of noisy example
         indices to return based on the following formula for example class k.
         frac_of_noise * number_of_mislabeled_examples_in_class_k, or
-        frac_of_noise * inverse_noise_rate_class_k * num_examples_s_equal_k'''
+        frac_of_noise * inverse_noise_rate_class_k * num_examples_s_equal_k."""
 
     new_mat = prune_count_matrix * frac_noise
     np.fill_diagonal(new_mat, prune_count_matrix.diagonal())
@@ -462,12 +462,12 @@ def reduce_prune_counts(prune_count_matrix, frac_noise=1.0):
 
 
 def order_label_errors(
-    label_errors_bool,
-    psx,
-    labels,
-    sorted_index_method='normalized_margin',
+        label_errors_bool,
+        psx,
+        labels,
+        sorted_index_method='normalized_margin',
 ):
-    '''Sorts label errors by normalized margin.
+    """Sorts label errors by normalized margin.
     See https://arxiv.org/pdf/1810.05369.pdf (eqn 2.2)
     eg. normalized_margin = prob_label - max_prob_not_label
 
@@ -494,8 +494,7 @@ def order_label_errors(
     -------
       label_errors_idx : np.array (int)
         Return the index integers of the label errors, ordered by
-        the normalized margin.
-    '''
+        the normalized margin."""
 
     # Convert bool mask to index mask
     label_errors_idx = np.arange(len(labels))[label_errors_bool]
