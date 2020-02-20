@@ -7,4 +7,3 @@ from . import polyplex
 from . import pruning
 from . import util
 from . import baseline_methods
-from . import coteaching
