@@ -47,6 +47,25 @@ Make sure you run this in the same path as all the .npy files containing the pre
 
 `psx` stands for prob(s|x), the predicted probability of the noisy label `s` for every example `x`. This shoudl be a `n` (number of examples) x `m` (number of classes) matrix.
 
+#### Pre-computed `psx` for every noise / sparsity condition
+
+These `psx` CIFAR-10 predicted probabilities are computed using four-fold cross-validation with a ResNet50 architecture. The code above was used exactly. You can download the out-of-sample predicted probabilities for all training examples in CIFAR-10 for various noise and sparsities settings at these links:
+
+ * Noise: 0% | Sparsity: 0% | [[LINK](https://github.com/cgnorthcutt/confidentlearning-reproduce/blob/master/cifar10/cifar10_noisy_labels__frac_zero_noise_rates__0_0__noise_amount__0_0/cifar10__train__model_resnet50__pyx.npy)]
+ * Noise: 20% | Sparsity: 0% | [[LINK](https://github.com/cgnorthcutt/confidentlearning-reproduce/blob/master/cifar10/cifar10_noisy_labels__frac_zero_noise_rates__0_0__noise_amount__0_2/cifar10__train__model_resnet50__pyx.npy)]
+ * Noise: 40% | Sparsity: 0% | [[LINK](https://github.com/cgnorthcutt/confidentlearning-reproduce/blob/master/cifar10/cifar10_noisy_labels__frac_zero_noise_rates__0_0__noise_amount__0_4/cifar10__train__model_resnet50__pyx.npy)]
+ * Noise: 70% | Sparsity: 0% | [[LINK](https://github.com/cgnorthcutt/confidentlearning-reproduce/blob/master/cifar10/cifar10_noisy_labels__frac_zero_noise_rates__0_0__noise_amount__0_6/cifar10__train__model_resnet50__pyx.npy)]
+ * Noise: 20% | Sparsity: 20% | [[LINK](https://github.com/cgnorthcutt/confidentlearning-reproduce/blob/master/cifar10/cifar10_noisy_labels__frac_zero_noise_rates__0_2__noise_amount__0_2/cifar10__train__model_resnet50__pyx.npy)]
+ * Noise: 40% | Sparsity: 20% | [[LINK](https://github.com/cgnorthcutt/confidentlearning-reproduce/blob/master/cifar10/cifar10_noisy_labels__frac_zero_noise_rates__0_2__noise_amount__0_4/cifar10__train__model_resnet50__pyx.npy)]
+ * Noise: 70% | Sparsity: 20% | [[LINK](https://github.com/cgnorthcutt/confidentlearning-reproduce/blob/master/cifar10/cifar10_noisy_labels__frac_zero_noise_rates__0_2__noise_amount__0_6/cifar10__train__model_resnet50__pyx.npy)]
+ * Noise: 20% | Sparsity: 40% | [[LINK](https://github.com/cgnorthcutt/confidentlearning-reproduce/blob/master/cifar10/cifar10_noisy_labels__frac_zero_noise_rates__0_4__noise_amount__0_2/cifar10__train__model_resnet50__pyx.npy)]
+ * Noise: 40% | Sparsity: 40% | [[LINK](https://github.com/cgnorthcutt/confidentlearning-reproduce/blob/master/cifar10/cifar10_noisy_labels__frac_zero_noise_rates__0_4__noise_amount__0_4/cifar10__train__model_resnet50__pyx.npy)]
+ * Noise: 70% | Sparsity: 40% | [[LINK](https://github.com/cgnorthcutt/confidentlearning-reproduce/blob/master/cifar10/cifar10_noisy_labels__frac_zero_noise_rates__0_4__noise_amount__0_6/cifar10__train__model_resnet50__pyx.npy)]
+ * Noise: 20% | Sparsity: 60% | [[LINK](https://github.com/cgnorthcutt/confidentlearning-reproduce/blob/master/cifar10/cifar10_noisy_labels__frac_zero_noise_rates__0_6__noise_amount__0_2/cifar10__train__model_resnet50__pyx.npy)]
+ * Noise: 40% | Sparsity: 60% | [[LINK](https://github.com/cgnorthcutt/confidentlearning-reproduce/blob/master/cifar10/cifar10_noisy_labels__frac_zero_noise_rates__0_6__noise_amount__0_4/cifar10__train__model_resnet50__pyx.npy)]
+ * Noise: 70% | Sparsity: 60% | [[LINK](https://github.com/cgnorthcutt/confidentlearning-reproduce/blob/master/cifar10/cifar10_noisy_labels__frac_zero_noise_rates__0_6__noise_amount__0_6/cifar10__train__model_resnet50__pyx.npy)]
+
+
 ### Use confident learning to find the label errors.
 
 Now that we have the predicted probabilities, and of course, we have the noisy labels. We can use confident learning via the `cleanlab` package to find the label errors.
