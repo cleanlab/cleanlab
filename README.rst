@@ -153,13 +153,14 @@ If used for binary classification, cleanlab also implements `this paper <https:/
 Reproducing Results in  `confident learning paper <https://arxiv.org/abs/1911.00068>`__ 
 =======================================================================================
 
-See `cleanlab/examples <https://github.com/cgnorthcutt/cleanlab/tree/master/examples>`__. You'll need to ``git clone`` `confidentlearning-reproduce <https://github.com/cgnorthcutt/confidentlearning-reproduce>`__  which contains the data and files needed to reproduce the CIFAR-10 results.
+See `cleanlab/examples/cifar10 <https://github.com/cgnorthcutt/cleanlab/tree/master/examples/cifar10>`__ and  `cleanlab/examples/imagenet <https://github.com/cgnorthcutt/cleanlab/tree/master/examples/imagenet>`__. You'll need to ``git clone`` `confidentlearning-reproduce <https://github.com/cgnorthcutt/confidentlearning-reproduce>`__  which contains the data and files needed to reproduce the CIFAR-10 results.
 
 
 ``cleanlab``: State of the Art Learning with Noisy Labels in CIFAR
 ------------------------------------------------------------------
 
-Use ``cleanlab`` to identify ~100,000 label errors in the 2012 ImageNet training dataset. 
+
+A [`step-by-step guide <https://github.com/cgnorthcutt/cleanlab/tree/master/examples/cifar10>`__] to reproduce these results is available [`here <https://github.com/cgnorthcutt/cleanlab/tree/master/examples/cifar10>`__]. This guide is also helpful as a tutorial to use cleanlab on any large-scale dataset.
 
 .. figure:: https://raw.githubusercontent.com/cgnorthcutt/cleanlab/master/img/cifar10_benchmarks.png
    :align: center
@@ -168,8 +169,6 @@ Use ``cleanlab`` to identify ~100,000 label errors in the 2012 ImageNet training
 Comparison of confident learning (CL) and `cleanlab` versus seven recent methods for learning with noisy labels in CIFAR-10. Highlighted cells show CL robustness to sparsity. The five CL methods estimate label errors, remove them, then train on the cleaned data using `Co-Teaching <https://github.com/cgnorthcutt/cleanlab/blob/master/cleanlab/coteaching.py>`__.
 
 Observe how cleanlab (CL methods) are robust to large sparsity in label noise whereas prior art tends to reduce in performance for increased sparsity, as shown by the red highlighted regions. This is important because real-world label noise is often sparse, e.g. a tiger is likely to be mislabeled as a lion, but not as most other classes like airplane, bathtub, and microwave.
-
-A step-by-step guide to reproduce these results is available here: [`LINK <https://github.com/cgnorthcutt/cleanlab/tree/master/examples/cifar10>`__]. This is a helpful tutorial if you want to use cleanlab on any large-scale dataset.
 
 ``cleanlab``: Find Label Errors in ImageNet
 -------------------------------------------
