@@ -29,7 +29,7 @@
 
 ``cleanlab`` **documentation** is available in `this blog post <https://l7.curtisnorthcutt.com/cleanlab-python-package>`__.
 
-Past release notes and **future features planned**  is available `here <https://l7.curtisnorthcutt.com/cleanlab-python-package>`__.
+Past release notes and **future features planned**  is available `here <https://github.com/cgnorthcutt/cleanlab/blob/master/cleanlab/version.py>`__.
 
 So fresh, so ``cleanlab`` 
 =========================
