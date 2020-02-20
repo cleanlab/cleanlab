@@ -1,5 +1,9 @@
 #!/usr/bin/env python
 # coding: utf-8
+# Author: Curtis G. Northcutt, MIT
+# Significant code was adapted from the following GitHub:
+# https://github.com/bhanML/Co-teaching/blob/master/loss.py
+# See (Han et al., 2018).
 
 # Python 2 and 3 compatibility
 from __future__ import (
@@ -21,8 +25,6 @@ def loss_coteaching(
         class_weights=None,
 ):
     """Co-Teaching Loss function.
-    Parts of this code were adapted from the following GitHub:
-    https://github.com/bhanML/Co-teaching/blob/master/loss.py
 
     Parameters
     ----------
