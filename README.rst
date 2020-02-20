@@ -5,7 +5,7 @@
 
 |  
 
-``cleanlab`` is a machine learning python package for **learning with noisy labels** and **finding label errors in datasets**. ``cleanlab`` CLEANs LABels. It is powered by the theory of **confident learning**, published in  `paper <https://arxiv.org/abs/1911.00068>`__ |  `blog <https://l7.curtisnorthcutt.com/confident-learning>`__. 
+``cleanlab`` is a machine learning python package for **learning with noisy labels** and **finding label errors in datasets**. ``cleanlab`` CLEANs LABels. It is powered by the theory of **confident learning**, published in this `paper <https://arxiv.org/abs/1911.00068>`__ |  `blog <https://l7.curtisnorthcutt.com/confident-learning>`__. 
 
 ****
 
@@ -432,4 +432,4 @@ Polyplices <https://github.com/cgnorthcutt/cleanlab/blob/master/cleanlab/polyple
 License
 -------
 
-Copyright (c) 2017-2019 Curtis Northcutt. Released under the MIT License. See `LICENSE <https://github.com/cgnorthcutt/cleanlab/blob/master/LICENSE>`__ for details.
+Copyright (c) 2017-2020 Curtis Northcutt. Released under the MIT License. See `LICENSE <https://github.com/cgnorthcutt/cleanlab/blob/master/LICENSE>`__ for details.
