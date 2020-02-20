@@ -10,7 +10,8 @@
 
 
 # Python 2 and 3 compatibility
-from __future__ import print_function, absolute_import, division, unicode_literals, with_statement
+from __future__ import (
+    print_function, absolute_import, division, unicode_literals, with_statement)
 
 
 # In[ ]:
