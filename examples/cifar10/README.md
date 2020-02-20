@@ -56,9 +56,7 @@ Now that we have the predicted probabilities, and of course, we have the noisy l
 # psx is the n x m matrix of cross-validated pred probabilities
 # s is the array of noisy labels
 
-##############################
-# Method: C_{\tilde{y}, y^*} #
-##############################
+# Method: C_{\tilde{y}, y^*}
 label_error_mask = np.zeros(len(s), dtype=bool)
 label_error_indices = compute_confident_joint(
     s, psx, return_indices_of_off_diagonals=True
@@ -67,26 +65,18 @@ for idx in label_error_indices:
     label_error_mask[idx] = True
 baseline_conf_joint_only = label_error_mask
 
-#######################
-# Method: C_confusion #
-#######################
+# Method: C_confusion
 baseline_argmax = baseline_methods.baseline_argmax(psx, s)
 
-###################
-# Method: CL: PBC #
-###################
+# Method: CL: PBC
 baseline_cl_pbc = cleanlab.pruning.get_noise_indices(
             s, psx, prune_method='prune_by_class')
 
-####################
-# Method: CL: PBNR #
-####################
+# Method: CL: PBNR
 baseline_cl_pbnr = cleanlab.pruning.get_noise_indices(
             s, psx, prune_method='prune_by_noise_rate')
 
-####################
-# Method: CL: C+NR #
-####################
+# Method: CL: C+NR
 baseline_cl_both = cleanlab.pruning.get_noise_indices(
             s, psx, prune_method='both')
 ```
