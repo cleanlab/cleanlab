@@ -91,7 +91,7 @@ The noise masks have already been precomputed. Here is an example of how to run 
 ```bash
 { time python3 ~/cgn/cleanlab/examples/cifar10/cifar10_train_crossval.py \
 	--coteaching \
-    --seed 1 \
+    	--seed 1 \
 	--batch-size 128 \
 	--lr 0.001 \
 	--epochs 250 \
