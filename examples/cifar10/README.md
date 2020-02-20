@@ -12,20 +12,27 @@ The main procedure is simple:
 
 ## Step-by-step: finding label errors and state-of-the-art test accuracy.
 
-### Computing the cross-validated predicted probabilities
+
+### 1. A PyTorch-ready version of CIFAR-10 dataset
+
+To facilitate these computations, a PyTorch-prepared version of the CIFAR-10 dataset is available here for download: [`cifar10/dataset`](https://github.com/cgnorthcutt/confidentlearning-reproduce/tree/master/cifar10/dataset). The dataset was prepared by creating `train/` and `test/` directories and organizing their images into folders by class.
+
+### 2. Compute the cross-validated predicted probabilities
+
+The code below shows how to compute cross-validated predicted probabilities for a given labels file `LABELS_PATH.json`.
 
 ```bash
-$ python3 imagenet_train_crossval.py \
-    -a resnet50 -b 256 --lr 0.1 --gpu 0 --cvn 4 --cv 0  \
+$ python3 cifar10_train_crossval.py \
+    -a resnet50 --gpu 0 --cvn 4 --cv 0  \
     --train-labels LABELS_PATH.json CIFAR10_PATH
-$ python3 imagenet_train_crossval.py \
-    -a resnet50 -b 256 --lr 0.1 --gpu 1 --cvn 4 --cv 1  \
+$ python3 cifar10_train_crossval.py \
+    -a resnet50 --gpu 1 --cvn 4 --cv 1  \
   --train-labels LABELS_PATH.json CIFAR10_PATH
-$ python3 imagenet_train_crossval.py \
-    -a resnet50 -b 256 --lr 0.1 --gpu 2 --cvn 4 --cv 2  \
+$ python3 cifar10_train_crossval.py \
+    -a resnet50 --gpu 2 --cvn 4 --cv 2  \
   --train-labels LABELS_PATH.json CIFAR10_PATH
-$ python3 imagenet_train_crossval.py \
-    -a resnet50 -b 256 --lr 0.1 --gpu 3 --cvn 4 --cv 3  \
+$ python3 cifar10_train_crossval.py \
+    -a resnet50 --gpu 3 --cvn 4 --cv 3  \
   --train-labels LABELS_PATH.json CIFAR10_PATH
 ```
 
@@ -34,11 +41,8 @@ where an example of `LABELS_PATH.json` might be `/home/cgn/cifar10/cifar10_noisy
 
 Each of the above commands will output a `.npy` file with 1/4 of the predicted probabilities on the dataset.
 
-### A PyTorch-ready version of CIFAR-10 dataset
 
-To facilitate these computations, a PyTorch-prepared version of the CIFAR-10 dataset is available here for download: [`cifar10/dataset`](https://github.com/cgnorthcutt/confidentlearning-reproduce/tree/master/cifar10/dataset)
-
-### Combining the cv fold partial `.npy` outputs to get `psx`.
+### 3. Combining the cv fold partial `.npy` outputs to get `psx`.
 
 Each cross-validation fold outputs only 1/4 of the predicted probabilities. We need to combine them. We can do this easily:
 
@@ -70,7 +74,7 @@ If you want to save time, I've already done the above step for you. You can down
  * Noise: 70% | Sparsity: 60% | [[LINK](https://github.com/cgnorthcutt/confidentlearning-reproduce/blob/master/cifar10/cifar10_noisy_labels__frac_zero_noise_rates__0_6__noise_amount__0_6/cifar10__train__model_resnet50__pyx.npy)]
 
 
-### Use confident learning to find the label errors.
+### 4. Use confident learning to find the label errors.
 
 Now that we have the predicted probabilities, and of course, we have the noisy labels. We can use confident learning via the `cleanlab` package to find the label errors.
 
@@ -123,7 +127,7 @@ Column headers are formatted as: *<sparsity * 10>\_<noise * 10>*.
 | **CL: C+NR** |  [LINK](https://github.com/cgnorthcutt/confidentlearning-reproduce/blob/master/cifar10/confidentlearning_and_coteaching/results/0_2/train_pruned_cl_both/train_mask.npy) | [LINK](https://github.com/cgnorthcutt/confidentlearning-reproduce/blob/master/cifar10/confidentlearning_and_coteaching/results/2_2/train_pruned_cl_both/train_mask.npy) | [LINK](https://github.com/cgnorthcutt/confidentlearning-reproduce/blob/master/cifar10/confidentlearning_and_coteaching/results/4_2/train_pruned_cl_both/train_mask.npy) | [LINK](https://github.com/cgnorthcutt/confidentlearning-reproduce/blob/master/cifar10/confidentlearning_and_coteaching/results/6_2/train_pruned_cl_both/train_mask.npy) |[LINK](https://github.com/cgnorthcutt/confidentlearning-reproduce/blob/master/cifar10/confidentlearning_and_coteaching/results/0_4/train_pruned_cl_both/train_mask.npy) | [LINK](https://github.com/cgnorthcutt/confidentlearning-reproduce/blob/master/cifar10/confidentlearning_and_coteaching/results/2_4/train_pruned_cl_both/train_mask.npy) | [LINK](https://github.com/cgnorthcutt/confidentlearning-reproduce/blob/master/cifar10/confidentlearning_and_coteaching/results/4_4/train_pruned_cl_both/train_mask.npy) | [LINK](https://github.com/cgnorthcutt/confidentlearning-reproduce/blob/master/cifar10/confidentlearning_and_coteaching/results/6_4/train_pruned_cl_both/train_mask.npy) |[LINK](https://github.com/cgnorthcutt/confidentlearning-reproduce/blob/master/cifar10/confidentlearning_and_coteaching/results/0_7/train_pruned_cl_both/train_mask.npy) | [LINK](https://github.com/cgnorthcutt/confidentlearning-reproduce/blob/master/cifar10/confidentlearning_and_coteaching/results/2_7/train_pruned_cl_both/train_mask.npy) | [LINK](https://github.com/cgnorthcutt/confidentlearning-reproduce/blob/master/cifar10/confidentlearning_and_coteaching/results/4_7/train_pruned_cl_both/train_mask.npy) | [LINK](https://github.com/cgnorthcutt/confidentlearning-reproduce/blob/master/cifar10/confidentlearning_and_coteaching/results/6_7/train_pruned_cl_both/train_mask.npy) |
 
 
-### Final training
+### 5. Final training
 
 The noise masks have already been precomputed. Here is an example of how to run Confident Learning training with Co-Teaching on labels with 40% label noise (noise is asymmetric and in this example we'll look at label noise with 40% sparsity);
 
