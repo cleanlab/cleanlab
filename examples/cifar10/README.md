@@ -7,8 +7,7 @@ This code can be used to achieve state-of-the-art (as of Feb. 2020) for learning
 The main procedure is simple:
 1. Compute cross-validated predicted probabilities.
 2. Use `cleanlab` to find the label errors in CIFAR-10.
-3. Remove them.
-4. Train on the remaining cleaned data using CoTeaching.
+3. Remove errors and train on cleaned data via [Co-Teaching](https://github.com/cgnorthcutt/cleanlab/blob/4245cde2f177cdb999b7216fef67d3fe6425982d/examples/cifar10/cifar10_train_crossval.py#L139).
 
 ## Step-by-step: finding label errors and state-of-the-art test accuracy.
 
@@ -53,7 +52,7 @@ $ python3 imagenet_train_crossval.py \
 
 Make sure you run this in the same path as all the .npy files containing the predicted probabilities for each fold.
 
-`psx` stands for prob(s|x), the predicted probability of the noisy label `s` for every example `x`. This shoudl be a `n` (number of examples) x `m` (number of classes) matrix.
+`psx` stands for prob(s|x), the predicted probability of the noisy label `s` for every example `x`. This should be a `n` (number of examples) x `m` (number of classes) matrix.
 
 #### Pre-computed `psx` for every noise / sparsity condition
 
@@ -80,7 +79,7 @@ Now that we have the predicted probabilities, and of course, we have the noisy l
 
 ```python3
 # cleanlab code for computing the 5 confident learning methods.
-# psx is the n x m matrix of cross-validated pred probabilities
+# psx is the n x m matrix of cross-validated predicted probabilities
 # s is the array of noisy labels
 
 # Method: C_{\tilde{y}, y^*}
@@ -156,7 +155,7 @@ Additional information about the parameters used in the Python command:
 * --coteaching uses the CoTeaching algorithm for training.
 * --seed 1 makes results reproducible, although similar results are obtained without it.
 * --turn-off-save-checkpoint is not necessary, it just prevents the code from saving the large 50MB model file every epoch.
-* --gpu 0 chooses the 0 gpu. If you have multiple gpus, select whichever GPU you like.
+* --gpu 0 chooses GPU 0. If you have multiple gpus, select whichever GPU you like.
 * --train-labels is the path to a json file that maps image ids to noisy labels.
 * --dir-train-mask is a npy file storing a boolean mask for the CLEANED dataset. We computed this earlier.
 
