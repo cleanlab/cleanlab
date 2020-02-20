@@ -125,17 +125,7 @@ If you use this package in your work, please cite the `confident learning paper 
      primaryClass={stat.ML}
  }
 
-and the cleanlab code base here:
 
-::
-
-   @misc{northcutt2019cleanlab,
-     author = {Curtis Northcutt},
-     title = {Clean Lab},
-     year = {2019},
-     howpublished = {\url{https://github.com/cgnorthcutt/cleanlab}},
-     note = {commit xxxxxxx, version xxxx}
-   }
 
 If used for binary classification, cleanlab also implements `this paper <https://arxiv.org/abs/1705.01936>`__:
 
