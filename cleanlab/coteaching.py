@@ -5,6 +5,14 @@
 # https://github.com/bhanML/Co-teaching/blob/master/loss.py
 # See (Han et al., 2018).
 
+# An example of how this module is used with cleanlab to achieve
+# state of the art on CIFAR-10 for learning with noisy labels is
+# provided here:
+# https://github.com/cgnorthcutt/cleanlab/tree/master/examples/cifar10
+
+# This module requires PyTorch. Please see:
+# https://pytorch.org/get-started/locally/
+
 # Python 2 and 3 compatibility
 from __future__ import (
     print_function, absolute_import, division, unicode_literals, with_statement,
