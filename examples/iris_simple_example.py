@@ -116,37 +116,41 @@ except Exception as e:
     print("Plotting is only supported in an iPython interface.")
 
 
-# print('WITHOUT confident learning,', end=" ")
-# clf = LogisticRegression(solver='lbfgs', multi_class='auto', max_iter=1000)
-# _ = clf.fit(X_train, s)
-# pred = clf.predict(X_test)
-# print("Iris dataset test accuracy:", round(accuracy_score(pred, y_test), 2))
-# 
-# print("\nNow we show improvement using cleanlab to characterize the noise")
-# print("and learn on the data that is (with high confidence) labeled correctly.")
-# print()
-# print('WITH confident learning (noise matrix given),', end=" ")
-# _ = rp.fit(X_train, s, noise_matrix=noise_matrix)
-# pred = rp.predict(X_test)
-# print("Iris dataset test accuracy:", round(accuracy_score(pred, y_test), 2))
-# 
-# print('WITH confident learning (noise / inverse noise matrix given),', end=" ")
-# inv = compute_inv_noise_matrix(py, noise_matrix)
-# _ = rp.fit(X_train, s, noise_matrix=noise_matrix, inverse_noise_matrix=inv)
-# pred = rp.predict(X_test)
-# print("Iris dataset test accuracy:", round(accuracy_score(pred, y_test), 2))
-# 
-# print('WITH confident learning noise not given,', end=" ")
-# clf = LogisticRegression(solver='lbfgs', multi_class='auto', max_iter=1000)
-# rp = LearningWithNoisyLabels(clf=clf, seed=seed)
-# _ = rp.fit(X_train, s)
-# pred = rp.predict(X_test)
-# print("Iris dataset test accuracy:", round(accuracy_score(pred, y_test), 2))
-# 
-# # ## Performance of confident learning across varying settings.
-# # ## To learn more, inspect ```cleanlab/pruning.py```.
-
 # In[4]:
+
+
+print('WITHOUT confident learning,', end=" ")
+clf = LogisticRegression(solver='lbfgs', multi_class='auto', max_iter=1000)
+_ = clf.fit(X_train, s)
+pred = clf.predict(X_test)
+print("Iris dataset test accuracy:", round(accuracy_score(pred, y_test), 2))
+
+print("\nNow we show improvement using cleanlab to characterize the noise")
+print("and learn on the data that is (with high confidence) labeled correctly.")
+print()
+print('WITH confident learning (noise matrix given),', end=" ")
+_ = rp.fit(X_train, s, noise_matrix=noise_matrix)
+pred = rp.predict(X_test)
+print("Iris dataset test accuracy:", round(accuracy_score(pred, y_test), 2))
+
+print('WITH confident learning (noise / inverse noise matrix given),', end=" ")
+inv = compute_inv_noise_matrix(py, noise_matrix)
+_ = rp.fit(X_train, s, noise_matrix=noise_matrix, inverse_noise_matrix=inv)
+pred = rp.predict(X_test)
+print("Iris dataset test accuracy:", round(accuracy_score(pred, y_test), 2))
+
+print('WITH confident learning noise not given,', end=" ")
+clf = LogisticRegression(solver='lbfgs', multi_class='auto', max_iter=1000)
+rp = LearningWithNoisyLabels(clf=clf, seed=seed)
+_ = rp.fit(X_train, s)
+pred = rp.predict(X_test)
+print("Iris dataset test accuracy:", round(accuracy_score(pred, y_test), 2))
+
+
+# ## Performance of confident learning across varying settings.
+# To learn more, inspect ```cleanlab/pruning.py``` and ```cleanlab/classification.py```.
+
+# In[ ]:
 
 
 param_grid = {
@@ -159,7 +163,34 @@ params = ParameterGrid(param_grid)
 scores = []
 for param in params:
     clf = LogisticRegression(solver='lbfgs', multi_class='auto', max_iter=1000)
-    rp = LearningWithNoisyLabels(clf=clf, **param)
+    rp = LearningWithNoisyLabels(clf=clf, n_jobs=1, **param)
+    _ = rp.fit(X_train, s)  # s is the noisy y_train labels
+    scores.append(accuracy_score(rp.predict(X_test), y_test))
+
+# Print results sorted from best to least
+for i in np.argsort(scores)[::-1]:
+    print("Param settings:", params[i])
+    print(
+        "Iris dataset test accuracy (using confident learning):\t",
+        round(scores[i], 2),
+        "\n",
+    )
+
+
+# In[5]:
+
+
+param_grid = {
+    "prune_method": ["prune_by_noise_rate", "prune_by_class", "both"],
+    "converge_latent_estimates": [True, False],
+}
+
+# Fit LearningWithNoisyLabels across all parameter settings.
+params = ParameterGrid(param_grid)
+scores = []
+for param in params:
+    clf = LogisticRegression(solver='lbfgs', multi_class='auto', max_iter=1000)
+    rp = LearningWithNoisyLabels(clf=clf, n_jobs=1, **param)
     _ = rp.fit(X_train, s)  # s is the noisy y_train labels
     scores.append(accuracy_score(rp.predict(X_test), y_test))
 
