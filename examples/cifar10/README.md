@@ -49,7 +49,7 @@ Make sure you run this in the same path as all the .npy files containing the pre
 
 #### Pre-computed `psx` for every noise / sparsity condition
 
-These `psx` CIFAR-10 predicted probabilities are computed using four-fold cross-validation with a ResNet50 architecture. The code above was used exactly. You can download the out-of-sample predicted probabilities for all training examples in CIFAR-10 for various noise and sparsities settings at these links:
+If you want to save time, I've already done the above step for you. You can download the `psx` predicted probabilities for all CIFAR-10 training examples computed using four-fold cross-validation with a ResNet50 architecture for every noise / sparsity condition. The code above was used exactly. 
 
  * Noise: 0% | Sparsity: 0% | [[LINK](https://github.com/cgnorthcutt/confidentlearning-reproduce/blob/master/cifar10/cifar10_noisy_labels__frac_zero_noise_rates__0_0__noise_amount__0_0/cifar10__train__model_resnet50__pyx.npy)]
  * Noise: 20% | Sparsity: 0% | [[LINK](https://github.com/cgnorthcutt/confidentlearning-reproduce/blob/master/cifar10/cifar10_noisy_labels__frac_zero_noise_rates__0_0__noise_amount__0_2/cifar10__train__model_resnet50__pyx.npy)]
