@@ -386,6 +386,7 @@ def main_worker(gpu, ngpus_per_node, args):
             # Here we approximate this with a simpler approach
             # class_weights = count(y=k) / count(s=k, y=k)
             class_weights = torch.Tensor(orig_class_counts / clean_class_counts)
+            class_weights = class_weights.cuda(args.gpu)
 
     val_dataset = datasets.ImageFolder(
         valdir,
@@ -435,7 +436,7 @@ def main_worker(gpu, ngpus_per_node, args):
                 optimizer2, epoch, alpha_plan, beta1_plan)
             coteaching.train(train_loader, epoch, model, optimizer, model2,
                              optimizer2, args, forget_rate_schedule,
-                             class_weights.cuda(args.gpu), accuracy)
+                             class_weights, accuracy)
             # Evaluate
             val_acc1, val_acc2 = coteaching.evaluate(val_loader, model, model2)
             print('Epoch [%d/%d] Test Accuracy on the %s test images: Model1 '
