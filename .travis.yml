@@ -26,7 +26,6 @@ matrix:
       language: shell  # 'language: python' errors on Travis CI macOS
       before_install:
         - python --version
-        - pip install -U -q pip
         - pip install -U -q pytest --user
         - pip install -q pytest-cov --user
         - pip install -q tox-travis --user
