@@ -483,11 +483,13 @@ def main_worker(gpu, ngpus_per_node, args):
             batch_size=args.batch_size, shuffle=False,
             num_workers=args.workers, pin_memory=True,
         )
-        print("=> loading best model_{}__fold_{}_best.pth.tar".format(args.arch,
-                                                                      cv_fold))
-        checkpoint = torch.load(
-            "model_{}__fold_{}_best.pth.tar".format(args.arch, cv_fold))
-        model.load_state_dict(checkpoint['state_dict'])
+
+        if not args.turn_off_save_checkpoint:  # Load best of saved checkpoints
+            print("=> loading best model_{}__fold_{}_best.pth.tar".format(
+                args.arch, cv_fold))
+            checkpoint = torch.load(
+                "model_{}__fold_{}_best.pth.tar".format(args.arch, cv_fold))
+            model.load_state_dict(checkpoint['state_dict'])
         print("Running forward pass on holdout set of size:",
               len(holdout_dataset.imgs))
         probs = get_probs(holdout_loader, model, args)
@@ -559,7 +561,6 @@ def get_probs(loader, model, args):
             print("\rComplete: {:.1%}".format(i / n_total), end="")
             if args.gpu is not None:
                 input = input.cuda(args.gpu, non_blocking=True)
-            target = target.cuda(args.gpu, non_blocking=True)
 
             # compute output
             outputs.append(model(input))
