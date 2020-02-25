@@ -29,7 +29,8 @@ matrix:
         - pip install -U -q pytest --user
         - pip install -q pytest-cov --user
         - pip install -q tox-travis --user
-        - pip install -q -r requirements.txt --user  
+        - pip install -q -r requirements.txt --user
+      script: pytest --verbose --cov=cleanlab/ --cov-config .coveragerc_py27 
     - name: "Python 3.6.5 on macOS 10.13"
       os: osx
       osx_image: xcode9.4  # Python 3.6.5 running on macOS 10.13
@@ -41,6 +42,7 @@ matrix:
         - pip3 install -q pytest-cov
         - pip3 install -q tox-travis
         - pip3 install -q -r requirements.txt
+      script: pytest --verbose --cov=cleanlab/ --cov-config .coveragerc_py3
     - name: "Python 3.6.5 on macOS 10.13"
       os: osx
       osx_image: xcode10.2  # Python 3.7.3 running on macOS 10.13
@@ -52,6 +54,7 @@ matrix:
         - pip3 install -q pytest-cov
         - pip3 install -q tox-travis
         - pip3 install -q -r requirements.txt
+      script: pytest --verbose --cov=cleanlab/ --cov-config .coveragerc_py3
     #  ====== WINDOWS =========
     - name: "Python 2.7 on Windows"
       os: windows           # Windows 10.0.17134 N/A Build 17134
@@ -65,6 +68,7 @@ matrix:
         - pip install -q tox-travis
         - pip install -q -r requirements.txt
       env: PATH=/c/Python27:/c/Python27/Scripts:$PATH
+      script: pytest --verbose --cov=cleanlab/ --cov-config .coveragerc_py27
     - name: "Python 3.5.4 on Windows"
       os: windows           # Windows 10.0.17134 N/A Build 17134
       language: shell       # 'language: python' is an error on Travis CI Windows
@@ -77,6 +81,7 @@ matrix:
         - pip3 install -q tox-travis
         - pip3 install -q -r requirements.txt
       env: PATH=/c/Python35:/c/Python35/Scripts:$PATH
+      script: pytest --verbose --cov=cleanlab/ --cov-config .coveragerc_py3
     - name: "Python 3.6.8 on Windows"
       os: windows           # Windows 10.0.17134 N/A Build 17134
       language: shell       # 'language: python' is an error on Travis CI Windows
@@ -89,6 +94,7 @@ matrix:
         - pip3 install -q tox-travis
         - pip3 install -q -r requirements.txt
       env: PATH=/c/Python36:/c/Python36/Scripts:$PATH
+      script: pytest --verbose --cov=cleanlab/ --cov-config .coveragerc_py3
     - name: "Python 3.7.4 on Windows"
       os: windows           # Windows 10.0.17134 N/A Build 17134
       language: shell       # 'language: python' is an error on Travis CI Windows
@@ -101,6 +107,7 @@ matrix:
         - pip3 install -q tox-travis
         - pip3 install -q -r requirements.txt
       env: PATH=/c/Python37:/c/Python37/Scripts:$PATH
+      script: pytest --verbose --cov=cleanlab/ --cov-config .coveragerc_py3
   
 # Install cleanlab, pytorch, torchvision.
 install:
