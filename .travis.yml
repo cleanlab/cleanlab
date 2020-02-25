@@ -1,25 +1,25 @@
 language: python
-
+#  ====== Linux =========
+os:
+  - linux
+python:
+  - "2.7"
+  - "3.4"
+  - "3.5"
+  - "3.6"
+  - "3.7"
+# Install dependencies
+before_install:
+  - python --version
+  - pip install -U -q pip
+  - pip install -U -q pytest
+  - pip install -q pytest-cov
+  - pip install -q tox-travis
+  - pip install -q -r requirements.txt
 # Set-up for macOS and Windows and Linux
 matrix:
   include:
-    - name: "Python 2.7, 3.4, 3.5, 3.6, 3.7 on Linux"
-      os:
-        - linux
-      python:
-        - "2.7"
-        - "3.4"
-        - "3.5"
-        - "3.6"
-        - "3.7"
-      # Install dependencies
-      before_install:
-        - python --version
-        - pip install -U -q pip
-        - pip install -U -q pytest
-        - pip install -q pytest-cov
-        - pip install -q tox-travis
-        - pip install -q -r requirements.txt
+    #  ====== macOS =========
     - name: "Python 2.7.14 on macOS 10.13"
       os: osx
       osx_image: xcode9.3  # Python 2.7.14_2 running on macOS 10.13
@@ -53,6 +53,19 @@ matrix:
         - pip3 install -q pytest-cov
         - pip3 install -q tox-travis
         - pip3 install -q -r requirements.txt
+    #  ====== WINDOWS =========
+    - name: "Python 2.7 on Windows"
+      os: windows           # Windows 10.0.17134 N/A Build 17134
+      language: shell # 'language: python' errors Travis CI Windows
+      before_install:
+        - choco install python2
+        - python --version
+        - python -m pip install --upgrade pip
+        - pip install --upgrade pytest
+        - pip install -q pytest-cov
+        - pip install -q tox-travis
+        - pip install -q -r requirements.txt
+      env: PATH=/c/Python27:/c/Python27/Scripts:$PATH
     - name: "Python 3.5.4 on Windows"
       os: windows           # Windows 10.0.17134 N/A Build 17134
       language: shell       # 'language: python' is an error on Travis CI Windows
@@ -65,6 +78,30 @@ matrix:
         - pip3 install -q tox-travis
         - pip3 install -q -r requirements.txt
       env: PATH=/c/Python35:/c/Python35/Scripts:$PATH
+    - name: "Python 3.6.8 on Windows"
+      os: windows           # Windows 10.0.17134 N/A Build 17134
+      language: shell       # 'language: python' is an error on Travis CI Windows
+      before_install:
+        - choco install python --version 3.6.8
+        - python --version
+        - python -m pip install --upgrade pip
+        - pip3 install --upgrade pytest
+        - pip3 install -q pytest-cov
+        - pip3 install -q tox-travis
+        - pip3 install -q -r requirements.txt
+      env: PATH=/c/Python36:/c/Python36/Scripts:$PATH
+    - name: "Python 3.7.4 on Windows"
+      os: windows           # Windows 10.0.17134 N/A Build 17134
+      language: shell       # 'language: python' is an error on Travis CI Windows
+      before_install:
+        - choco install python --version 3.7.4
+        - python --version
+        - python -m pip install --upgrade pip
+        - pip3 install --upgrade pytest
+        - pip3 install -q pytest-cov
+        - pip3 install -q tox-travis
+        - pip3 install -q -r requirements.txt
+      env: PATH=/c/Python37:/c/Python37/Scripts:$PATH
   
 # Install cleanlab, pytorch, torchvision.
 install:
