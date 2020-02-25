@@ -7,25 +7,25 @@
 # a necessary step for confident learning and the cleanlab package.
 # 
 # Example showing how to obtain 4-fold cross-validated predicted probabilities:
-# $ python3 imagenet_train_crossval.py \
+# $ python3 cifar10_train_crossval.py \
 #     -a resnet50 -b 256 --lr 0.1 --gpu 0 --cvn 4 --cv 0  \
 #     --train-labels LABELS_PATH.json CIFAR10_PATH
-# $ python3 imagenet_train_crossval.py \
+# $ python3 cifar10_train_crossval.py \
 #     -a resnet50 -b 256 --lr 0.1 --gpu 1 --cvn 4 --cv 1  \
 # #   --train-labels LABELS_PATH.json CIFAR10_PATH
-# $ python3 imagenet_train_crossval.py \
+# $ python3 cifar10_train_crossval.py \
 #     -a resnet50 -b 256 --lr 0.1 --gpu 2 --cvn 4 --cv 2  \
 # #   --train-labels LABELS_PATH.json CIFAR10_PATH
-# $ python3 imagenet_train_crossval.py \
+# $ python3 cifar10_train_crossval.py \
 #     -a resnet50 -b 256 --lr 0.1 --gpu 3 --cvn 4 --cv 3  \
 # #   --train-labels LABELS_PATH.json CIFAR10_PATH
 # 
 # Combine the cross-validation folds into a single predicted prob matrix
-# $ python3 imagenet_train_crossval.py \
+# $ python3 cifar10_train_crossval.py \
 #     -a resnet50 --cvn 4 --combine-folds CIFAR10_PATH
 #
 # This script can also be used to train on CLEANED datasets, like this:
-# python3 imagenet_train_crossval.py \
+# python3 cifar10_train_crossval.py \
 #     -a resnet50 -b 256 --lr 0.1 --gpu 0 --train-labels LABELS_PATH.json \
 #     --dir-train-mask PATH_TO_CLEAN_DATA_BOOL_MASK.npy CIFAR10_PATH
 
