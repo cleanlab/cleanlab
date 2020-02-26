@@ -80,8 +80,9 @@ matrix:
         - pip install -q -r requirements.txt
       env: PATH=/c/Python27:/c/Python27/Scripts:$PATH
       install:
-        - pip install -q https://download.pytorch.org/whl/cpu/torch_stable.html
-        - pip install torchvision
+        # Windows python 2.7 has issues with pytorch. Do not install.
+#         - pip install -q https://download.pytorch.org/whl/cpu/torch_stable.html
+#         - pip install torchvision
         - pip install -q -e .
       script: pytest --verbose --cov=cleanlab/ --cov-config .coveragerc_py27
     - name: "Python 3.5.4 on Windows"
