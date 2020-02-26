@@ -29,6 +29,7 @@ matrix:
         - pip install -U -q pytest --user
         - pip install -q pytest-cov --user
         - pip install -q tox-travis --user
+        - pip install -q future --user  # Needed for pytorch in python 2.7
         - pip install -q -r requirements.txt --user
       install:
         - pip install -q torch torchvision --user
@@ -75,10 +76,11 @@ matrix:
         - pip install --upgrade pytest
         - pip install -q pytest-cov
         - pip install -q tox-travis
+        - pip install -q future  # Needed for pytorch in python 2.7
         - pip install -q -r requirements.txt
       env: PATH=/c/Python27:/c/Python27/Scripts:$PATH
       install:
-        - pip install -q https://download.pytorch.org/whl/cpu/torch-1.0.1-cp27-cp27mu-linux_x86_64.whl
+        - pip install -q https://download.pytorch.org/whl/cpu/torch_stable.html
         - pip install torchvision
         - pip install -q -e .
       script: pytest --verbose --cov=cleanlab/ --cov-config .coveragerc_py27
@@ -135,7 +137,7 @@ matrix:
 install:
   # For testing cleanlab.models
   - if [[ $TRAVIS_PYTHON_VERSION == 2.7 ]]; then pip install -q https://download.pytorch.org/whl/cpu/torch-1.0.1.post2-cp27-cp27mu-linux_x86_64.whl; fi
-  - if [[ $TRAVIS_PYTHON_VERSION == 2.7 ]]; then pip install -q future; fi
+  - if [[ $TRAVIS_PYTHON_VERSION == 2.7 ]]; then pip install -q future; fi  # Needed for pytorch in python 2.7
   - if [[ $TRAVIS_PYTHON_VERSION == 3.5 ]]; then pip3 install -q https://download.pytorch.org/whl/cpu/torch-1.0.1.post2-cp35-cp35m-linux_x86_64.whl; fi
   - if [[ $TRAVIS_PYTHON_VERSION == 3.6 ]]; then pip3 install -q https://download.pytorch.org/whl/cpu/torch-1.0.1.post2-cp36-cp36m-linux_x86_64.whl; fi
   - if [[ $TRAVIS_PYTHON_VERSION == 3.7 ]]; then pip3 install -q https://download.pytorch.org/whl/cpu/torch-1.0.1.post2-cp37-cp37m-linux_x86_64.whl; fi
