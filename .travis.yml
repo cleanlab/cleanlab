@@ -33,7 +33,7 @@ matrix:
       install:
         - pip install -q torch torchvision --user
         - pip install -q -e . --user
-      script: pytest --verbose --cov=cleanlab/ --cov-config .coveragerc_py27
+      script: python -m pytest --verbose --cov=cleanlab/ --cov-config .coveragerc_py27
     - name: "Python 3.6.5 on macOS 10.13"
       os: osx
       osx_image: xcode9.4  # Python 3.6.5 running on macOS 10.13
@@ -78,7 +78,8 @@ matrix:
         - pip install -q -r requirements.txt
       env: PATH=/c/Python27:/c/Python27/Scripts:$PATH
       install:
-        - pip install -q torch==1.4.0+cpu torchvision==0.5.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
+        - pip install -q https://download.pytorch.org/whl/cpu/torch-1.0.1-cp27-cp27mu-linux_x86_64.whl
+        - pip install torchvision
         - pip install -q -e .
       script: pytest --verbose --cov=cleanlab/ --cov-config .coveragerc_py27
     - name: "Python 3.5.4 on Windows"
