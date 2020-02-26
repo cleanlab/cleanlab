@@ -3,7 +3,10 @@
 [run]
 branch = True
 omit =
-    # omit this single file
+    # Remove PyTorch-dependent tests (Python 2.7 is deprecated).
+    tests/test_model_pytorch_cnn.py
+    cleanlab/models/mnist_pytorch.py
+    cleanlab/models/cifar_cnn.py
     cleanlab/models/fasttext.py
 
 [report]
