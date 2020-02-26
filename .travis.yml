@@ -31,8 +31,8 @@ matrix:
         - pip install -q tox-travis --user
         - pip install -q -r requirements.txt --user
       install:
-        - pip install -q torch torchvision
-        - pip install -q -e .
+        - pip install -q torch torchvision --user
+        - pip install -q -e . --user
       script: pytest --verbose --cov=cleanlab/ --cov-config .coveragerc_py27
     - name: "Python 3.6.5 on macOS 10.13"
       os: osx
@@ -78,7 +78,7 @@ matrix:
         - pip install -q -r requirements.txt
       env: PATH=/c/Python27:/c/Python27/Scripts:$PATH
       install:
-        - pip install -q torch==1.2.0+cpu torchvision==0.4.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
+        - pip install -q torch==1.4.0+cpu torchvision==0.5.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
         - pip install -q -e .
       script: pytest --verbose --cov=cleanlab/ --cov-config .coveragerc_py27
     - name: "Python 3.5.4 on Windows"
@@ -93,7 +93,7 @@ matrix:
         - pip3 install -q tox-travis
         - pip3 install -q -r requirements.txt
       install:
-        - pip3 install -q torch==1.2.0+cpu torchvision==0.4.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
+        - pip3 install -q torch==1.4.0+cpu torchvision==0.5.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
         - pip3 install -q -e .
       env: PATH=/c/Python35:/c/Python35/Scripts:$PATH
       script: pytest --verbose --cov=cleanlab/ --cov-config .coveragerc_py3
@@ -110,7 +110,7 @@ matrix:
         - pip3 install -q -r requirements.txt
       env: PATH=/c/Python36:/c/Python36/Scripts:$PATH
       install:
-        - pip3 install -q torch==1.2.0+cpu torchvision==0.4.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
+        - pip3 install -q torch==1.4.0+cpu torchvision==0.5.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
         - pip3 install -q -e .
       script: pytest --verbose --cov=cleanlab/ --cov-config .coveragerc_py3
     - name: "Python 3.7.4 on Windows"
@@ -126,7 +126,7 @@ matrix:
         - pip3 install -q -r requirements.txt
       env: PATH=/c/Python37:/c/Python37/Scripts:$PATH
       install:
-        - pip3 install -q torch==1.2.0+cpu torchvision==0.4.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
+        - pip3 install -q torch==1.4.0+cpu torchvision==0.5.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
         - pip3 install -q -e .
       script: pytest --verbose --cov=cleanlab/ --cov-config .coveragerc_py3
   
