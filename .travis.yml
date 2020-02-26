@@ -31,8 +31,7 @@ matrix:
         - pip install -q tox-travis --user
         - pip install -q -r requirements.txt --user
       install:
-        - pip install -q https://download.pytorch.org/whl/cpu/torch-1.0.1.post2-cp27-cp27mu-linux_x86_64.whl
-        - pip install -q torchvision --no-cache-dir
+        - pip install -q torch torchvision
         - pip install -q -e .
       script: pytest --verbose --cov=cleanlab/ --cov-config .coveragerc_py27
     - name: "Python 3.6.5 on macOS 10.13"
@@ -47,8 +46,7 @@ matrix:
         - pip3 install -q tox-travis
         - pip3 install -q -r requirements.txt
       install:
-        - pip3 install -q https://download.pytorch.org/whl/cpu/torch-1.0.1.post2-cp36-cp36m-linux_x86_64.whl
-        - pip3 install -q torchvision
+        - pip install -q torch torchvision
         - pip3 install -q -e .
       script: pytest --verbose --cov=cleanlab/ --cov-config .coveragerc_py3
     - name: "Python 3.7.3 on macOS 10.13"
@@ -63,8 +61,7 @@ matrix:
         - pip3 install -q tox-travis
         - pip3 install -q -r requirements.txt
       install:
-        - pip3 install -q https://download.pytorch.org/whl/cpu/torch-1.0.1.post2-cp37-cp37m-linux_x86_64.whl
-        - pip3 install -q torchvision
+        - pip install -q torch torchvision
         - pip3 install -q -e .
       script: pytest --verbose --cov=cleanlab/ --cov-config .coveragerc_py3
     #  ====== WINDOWS =========
