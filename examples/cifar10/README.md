@@ -46,8 +46,7 @@ Each of the above commands will output a `.npy` file with 1/4 of the predicted p
 Each cross-validation fold outputs only 1/4 of the predicted probabilities. We need to combine them. We can do this easily:
 
 ```bash
-$ python3 imagenet_train_crossval.py \
-    -a resnet50 --cvn 4 --combine-folds CIFAR10_PATH
+$ python3 imagenet_train_crossval.py --cvn 4 --combine-folds CIFAR10_PATH
 ```
 
 Make sure you run this in the same path as all the .npy files containing the predicted probabilities for each fold.
