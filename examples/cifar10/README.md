@@ -14,7 +14,7 @@ The main procedure is simple:
 
 ### 1. A PyTorch-ready version of CIFAR-10 dataset
 
-To facilitate these computations, a PyTorch-prepared version of the CIFAR-10 dataset is available here for download: [`cifar10/dataset`](https://github.com/cgnorthcutt/confidentlearning-reproduce/tree/master/cifar10/dataset). The dataset was prepared by creating `train/` and `test/` directories and organizing their images into folders by class.
+To facilitate these computations, a PyTorch-prepared version of the CIFAR-10 dataset is available [here for download](https://github.com/cgnorthcutt/confidentlearning-reproduce/tree/master/cifar10/dataset): [`cgnorthcutt/confidentlearning-reproduce/cifar10/dataset`](https://github.com/cgnorthcutt/confidentlearning-reproduce/tree/master/cifar10/dataset). The dataset was prepared by creating `train/` and `test/` directories and organizing their images into folders by class.
 
 ### 2. Compute the cross-validated predicted probabilities
 
