@@ -92,7 +92,7 @@ Check out these `examples <https://github.com/cgnorthcutt/cleanlab/tree/master/e
 Installation
 ============
 
-Python 2.7, 3.4, 3.5, 3.6, and 3.7 are supported. Linix, MacOS, and Windows are supported.
+Python 2.7, 3.4, 3.5, 3.6, and 3.7 are supported. Linux, macOS, and Windows are supported.
 
 Stable release:
 
