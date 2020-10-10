@@ -20,8 +20,8 @@ if python_version.is_compatible():  # pragma: no cover
     import copy
     from sklearn.metrics import accuracy_score
     import numpy as np
-    # You need to install fastText using pip for this library to work
-    from fastText import train_supervised, load_model
+    # You need to install fasttext using pip for this library to work
+    from fasttext import train_supervised, load_model
 
 
 LABEL = '__label__'
