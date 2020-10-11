@@ -123,7 +123,7 @@ If you use this package in your work, please cite the `confident learning paper 
 
 ::
 
-   @misc{northcutt2019confidentlearning,
+@misc{northcutt2019confidentlearning,
      title={Confident Learning: Estimating Uncertainty in Dataset Labels},
      author={Curtis G. Northcutt and Lu Jiang and Isaac L. Chuang},
      year={2019},
