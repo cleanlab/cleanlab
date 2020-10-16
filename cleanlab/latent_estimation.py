@@ -150,7 +150,7 @@ def estimate_joint(s, psx=None, confident_joint=None, multi_label=False):
             multi_label=multi_label,
         )
     else:
-        calibrated_cj = calibrate_confident_joint(confident_joint, s)
+        calibrated_cj = calibrate_confident_joint(confident_joint, s, multi_label)
 
     return calibrated_cj / float(np.sum(calibrated_cj))
 
