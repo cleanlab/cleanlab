@@ -12,6 +12,7 @@
 * **News! (Jan 2020)** `cleanlab` achieves state-of-the-art on CIFAR-10 for learning with noisy labels. Code to reproduce is here:  `examples/cifar10 <https://github.com/cgnorthcutt/cleanlab/tree/master/examples/cifar10>`__. This is a great place for newcomers to see how to use cleanlab on real datasets. Data needed is available in the `confidentlearning-reproduce <https://github.com/cgnorthcutt/confidentlearning-reproduce>`__ repo, ``cleanlab`` v0.1.0 reproduces results in `the CL paper <https://arxiv.org/abs/1911.00068>`__.
 * **News! (Feb 2020)**  `cleanlab` now natively supports Mac, Linux, and Windows.
 * **News! (Feb 2020)**  `cleanlab` now supports `Co-Teaching <https://github.com/cgnorthcutt/cleanlab/blob/master/cleanlab/coteaching.py>`__  `(Han et al., 2018) <https://arxiv.org/abs/1804.06872>`__.
+* **News! (Dec 2020)**  `cleanlab` supports `PU learning <https://github.com/cgnorthcutt/cleanlab/blob/master/cleanlab/classification.py#L147>`__.
 
 
 |pypi| |os| |py_versions| |build_status| |coverage|
@@ -433,6 +434,67 @@ The joint probability distribution of noisy and true labels, *P(s,y)*, completel
         psx=probabilities,
         confident_joint=None,  # Provide if you have it already
     )
+
+
+PU learning with cleanlab:
+--------------------------
+
+PU learning is a special case when one of your classes has no error. P stands for the positive class and **is assumed to have zero label errors** and U stands for unlabeled data, but in practice, we just assume the U class is a noisy negative class that contains some positive examples. Thus, the goal of PU learning is to (1) estimate the proportion of positives in the negative class (see `fraction_noise_in_unlabeled_class` in the last example), (2) find the errors (see last example), and (3) train on clean data (see first example below). `cleanlab` does all three, taking into account that there is no label errors in whichever class you specify.
+
+There are two ways to use `cleanlab` for PU learning. We'll look at each here.
+
+Method 1. If you are using the cleanlab classifier `LearningWithNoisyLabels()`, and your dataset has exactly two classes (positive = 1, and negative = 0), PU learning is supported directly in `cleanlab`. You can perform PU learning like this:
+
+.. code:: python
+
+   from cleanlab.classification import LearningWithNoisyLabels
+   from sklearn.linear_model import LogisticRegression
+   # Wrap around any classifier. Yup, you can use sklearn/pyTorch/Tensorflow/FastText/etc.
+   pu_class = 0 # Should be 0 or 1. Label of class with NO ERRORS. (e.g., P class in PU)
+   lnl = LearningWithNoisyLabels(clf=LogisticRegression(pulearning=pu_class))
+   lnl.fit(X=X_train_data, s=train_noisy_labels)
+   # Estimate the predictions you would have gotten by training with *no* label errors.
+   predicted_test_labels = lnl.predict(X_test)
+
+
+Method 2. However, you might be using a more complicated classifier that doesn't work well with LearningWithNoisyLabels (see this example for CIFAR-10). Or you might have 3 or more classes. Here's how to use cleanlab for PU learning in this situation.
+To let cleanlab know which class has no error (in standard PU learning, this is the P class), you need to set the threshold for that class to 1 (1 means the probability that the labels of that class are correct is 1, i.e. that class has no error). Here's the code:
+
+.. code:: python
+
+   import numpy as np
+   # K is the number of classes in your dataset
+   # psx are the cross-validated predicted probabilities.
+   # s is the array/list/iterable of noisy labels
+   # pu_class is a 0-based integer for the class that has no label errors.
+   thresholds = np.asarray([np.mean(psx[:, k][s == k]) for k in range(K)])
+   thresholds[pu_class] = 1.0
+
+
+Now you can use cleanlab however you were before.
+Just be sure to pass in this thresholds parameter wherever it applies. For example:
+ 
+.. code:: python
+
+   # Uncertainty quantification (characterize the label noise
+   # by estimating the joint distribution of noisy and true labels)
+   cj = compute_confident_joint(s, psx, thresholds=thresholds, )
+   # Now the noise (cj) has been estimated taking into account that some class(es) have no error.
+   # We can use cj to find label errors like this:
+   indices_of_label_errors = get_noise_indices(s, psx, confident_joint=cj, )
+   
+   # In addition to label errors, we can find the fraction of noise in the unlabeled class.
+   # First we need the inv_noise_matrix which contains P(y|s) (proportion of mislabeling).
+   _, _, inv_noise_matrix = estimate_latent(confident_joint=cj, s=s, )
+   # Because inv_noise_matrix contains P(y|s), p (y = anything | s = pu_class) should be 0
+   # because the prob(true label is something else | example is in pu_class) is 0.
+   # What's more interesting is p(y = anything | s is not put_class), or in the binary case
+   # this translates to p(y = pu_class | s = 1 - pu_class) because pu_class is 0 or 1.
+   # So, to find the fraction_noise_in_unlabeled_class, for binary, you just compute:
+   fraction_noise_in_unlabeled_class = inv_noise_matrix[pu_class][1 - pu_class] 
+
+
+Now that you have `indices_of_label_errors`, you can remove those label errors and train on clean data (or only remove some of the label errors and iteratively use confident learning / cleanlab to improve results)
 
 
 The Polyplex
