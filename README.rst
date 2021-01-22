@@ -452,7 +452,7 @@ Method 1. If you are using the cleanlab classifier `LearningWithNoisyLabels()`, 
    from sklearn.linear_model import LogisticRegression
    # Wrap around any classifier. Yup, you can use sklearn/pyTorch/Tensorflow/FastText/etc.
    pu_class = 0 # Should be 0 or 1. Label of class with NO ERRORS. (e.g., P class in PU)
-   lnl = LearningWithNoisyLabels(clf=LogisticRegression(pulearning=pu_class))
+   lnl = LearningWithNoisyLabels(clf=LogisticRegression(), pulearning=pu_class)
    lnl.fit(X=X_train_data, s=train_noisy_labels)
    # Estimate the predictions you would have gotten by training with *no* label errors.
    predicted_test_labels = lnl.predict(X_test)
