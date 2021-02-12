@@ -36,31 +36,28 @@ from __future__ import (
 )
 
 import argparse
+import copy
+import json
 import os
 import random
 import shutil
 import time
 import warnings
-import json
 
+import numpy as np
 import torch
-import torch.nn as nn
-import torch.nn.parallel
 import torch.backends.cudnn as cudnn
 import torch.distributed as dist
-import torch.optim
 import torch.multiprocessing as mp
+import torch.nn as nn
+import torch.nn.parallel
+import torch.optim
 import torch.utils.data
 import torch.utils.data.distributed
-import torchvision.transforms as transforms
 import torchvision.datasets as datasets
 import torchvision.models as models
-
+import torchvision.transforms as transforms
 from sklearn.model_selection import StratifiedKFold
-from sklearn.metrics import confusion_matrix
-import copy
-import numpy as np
-
 
 num_classes = 10
 
@@ -142,7 +139,7 @@ parser.add_argument('--num-iter-per-epoch', type=int, default=400,
                     help='In each epoch, only train for this many iterations.'
                         'Total number of examples trained per epoch is'
                          'args.num_iter_per_epoch * args.batch_size')
-parser.add_argument('--forget_rate', type=float, default=0.2,
+parser.add_argument('--forget-rate', type=float, default=0.2,
                     help='Co-Teaching forget rate. Set to % noise if you can.')
 parser.add_argument('--num_gradual', type=int, default=10,
                     help='Co-Teaching num epochs for linear drop rate,'
@@ -404,9 +401,13 @@ def main_worker(gpu, ngpus_per_node, args):
         train_sampler = None
 
     train_loader = torch.utils.data.DataLoader(
-        train_dataset, batch_size=args.batch_size,
-        shuffle=(train_sampler is None),
-        num_workers=args.workers, pin_memory=True, sampler=train_sampler,
+        train_dataset,
+        batch_size=args.batch_size,
+        shuffle=not args.distributed,
+        num_workers=args.workers,
+        pin_memory=True,
+        sampler=train_sampler,
+        drop_last=True,  # Don't train on last batch: could be 1 noisy example.
     )
 
     val_loader = torch.utils.data.DataLoader(
@@ -561,6 +562,7 @@ def get_probs(loader, model, args):
             print("\rComplete: {:.1%}".format(i / n_total), end="")
             if args.gpu is not None:
                 input = input.cuda(args.gpu, non_blocking=True)
+            target = target.cuda(args.gpu, non_blocking=True)
 
             # compute output
             outputs.append(model(input))
@@ -682,11 +684,11 @@ def accuracy(output, target, topk=(1,)):
 
         _, pred = output.topk(maxk, 1, True, True)
         pred = pred.t()
-        correct = pred.eq(target.view(1, -1).expand_as(pred))
+        correct = pred.eq(target.reshape(1, -1).expand_as(pred))
 
         res = []
         for k in topk:
-            correct_k = correct[:k].view(-1).float().sum(0, keepdim=True)
+            correct_k = correct[:k].reshape(-1).float().sum(0, keepdim=True)
             res.append(correct_k.mul_(100.0 / batch_size))
         return res
 
