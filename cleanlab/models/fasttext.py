@@ -14,14 +14,14 @@ python_version = VersionWarning(
 )
 
 # fasttext only exists for these versions that are also compatible with cleanlab
-if python_version.is_compatible():  # pragma: no cover
-    import time
-    import os
-    import copy
-    from sklearn.metrics import accuracy_score
-    import numpy as np
-    # You need to install fasttext using pip for this library to work
-    from fasttext import train_supervised, load_model
+# if python_version.is_compatible():  # pragma: no cover
+import time
+import os
+import copy
+from sklearn.metrics import accuracy_score
+import numpy as np
+# You need to install fasttext using pip for this library to work
+from fasttext import train_supervised, load_model
 
 
 LABEL = '__label__'
@@ -104,7 +104,7 @@ class FastTextClassifier(BaseEstimator):  # Inherits sklearn base classifier
             label=LABEL,
             del_intermediate_data=True,
             kwargs_train_supervised={},
-            p_at_k=5,
+            p_at_k=1,
             batch_size=1000,
 
     ):
@@ -201,7 +201,19 @@ class FastTextClassifier(BaseEstimator):  # Inherits sklearn base classifier
         return clf_copy
 
     def fit(self, X=None, y=None, sample_weight=None):
-        '''Trains the fast text classifier.'''
+        '''Trains the fast text classifier.
+        Typical usage requires NO parameters,
+        just clf.fit()  # No params.
+        
+        Parameters
+        ----------
+        X : iterable, e.g. list, numpy array (default None)
+          The list of indices of the data to use.
+          When in doubt, set as None. None defaults to range(len(data)).
+        y : None
+          Leave this as None. Its a filler to suit sklearns reqs.
+        sample_weight : None
+          Leave this as None. Its a filler to suit sklearns reqs.'''
 
         train_fn = self._create_train_data(data_indices=X)
         self.clf = train_supervised(train_fn, **self.kwargs_train_supervised)
@@ -257,7 +269,7 @@ class FastTextClassifier(BaseEstimator):  # Inherits sklearn base classifier
         labels predicted from X and the true labels given by y.'''
 
         # Set the k for precision@k.
-        #mFor single label: 1 if label is in top k, else 0
+        # For single label: 1 if label is in top k, else 0
         if k is None:
             k = self.p_at_k
 
