@@ -23,6 +23,7 @@ import torch.nn.functional as F
 from torch.autograd import Variable
 import numpy as np
 
+MINIMUM_BATCH_SIZE = 16
 
 # Loss function for Co-Teaching
 def loss_coteaching(
@@ -43,7 +44,7 @@ def loss_coteaching(
       Output logits from model 2
 
     t : np.array
-      List of Noisy Labels (t standards for targets)
+      List of Noisy Labels (t means targets)
 
     forget_rate : float
       Decimal between 0 and 1 for how quickly the models forget what they learn.
@@ -66,7 +67,7 @@ def loss_coteaching(
     ind_1_update = ind_1_sorted[:num_remember]
     ind_2_update = ind_2_sorted[:num_remember]
     # Share updates between the two models.
-    # TODO: these class weights should take into account the ind_ mask filters.
+    # TODO: these class weights should take into account the ind_mask filters.
     loss_1_update = F.cross_entropy(
         y_1[ind_2_update], t[ind_2_update], weight=class_weights)
     loss_2_update = F.cross_entropy(
@@ -81,7 +82,7 @@ def loss_coteaching(
 def initialize_lr_scheduler(lr=0.001, epochs=250, epoch_decay_start=80):
     """Scheduler to adjust learning rate and betas for Adam Optimizer"""
     mom1 = 0.9
-    mom2 = 0.1
+    mom2 = 0.9  # Original author had this set to 0.1
     alpha_plan = [lr] * epochs
     beta1_plan = [mom1] * epochs
     for i in range(epoch_decay_start, epochs):
@@ -130,7 +131,7 @@ def train(train_loader, epoch, model1, optimizer1, model2, optimizer2, args,
       A np.torch.tensor list of length number of classes with weights
     accuracy : function
         A function of the form accuracy(output, target, topk=(1,)) for
-        computing top1 and top5 accuracy given output and true tagets."""
+        computing top1 and top5 accuracy given output and true targets."""
 
     train_total = 0
     train_correct = 0
@@ -142,8 +143,17 @@ def train(train_loader, epoch, model1, optimizer1, model2, optimizer2, args,
     model2.train()
 
     for i, (images, labels) in enumerate(train_loader):
-        if i > args.num_iter_per_epoch:
-            break
+        print(len(train_loader))
+        if i == len(train_loader) - 1 and len(labels) < MINIMUM_BATCH_SIZE:
+            # Edge case -- the last leftover batch is small (potentially size 1)
+            # This will happen if, for example, you train on 35101 examples with
+            # batch size of 450. The last batch will be size 1.
+            # If you update the weights based on the gradient from one example
+            # if that example is noisy, you will add tons of noise to your net
+            # and accuracy will actually go down with each epoch.
+            # To avoid this, do not train on the last batch if its small.
+            continue
+        
         images = Variable(images).cuda()
         labels = Variable(labels).cuda()
 
