@@ -1,4 +1,6 @@
 # Added by Curtis G. Northcutt
+examples/imagenet/img
+examples/cifar10/img
 cleanlab/*.ipynb
 cleanlab/models/*.ipynb
 tests/*.ipynb
