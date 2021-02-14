@@ -92,7 +92,7 @@ print('Overall accuracy: {:.2%}'.format(accuracy_score(labels, psx.argmax(axis =
 
 
 # This takes ~3 minutes on a 20-thread processor for ImageNet train set.
-already_computed = False
+already_computed = True
 if already_computed:
     label_errors_bool = ~np.load("/home/cgn/masks/imagenet_train_bool_mask.npy")
 else:
@@ -105,7 +105,7 @@ else:
 #     np.save("imagenet_train_bool_mask.npy", ~label_errors_bool) # Store false for errors
 
 
-# In[7]:
+# In[13]:
 
 
 label_errors_idx = cleanlab.pruning.order_label_errors(
@@ -116,7 +116,13 @@ label_errors_idx = cleanlab.pruning.order_label_errors(
 )
 
 
-# In[8]:
+# In[14]:
+
+
+label_errors_idx
+
+
+# In[15]:
 
 
 # Number of errors to store labels and images for.
@@ -134,7 +140,7 @@ for i, idx in enumerate(label_errors_idx[:num2print]):
     given.append(simple_labels[labels[idx]])
     pred.append(simple_labels[np.argmax(psx[idx])])
     # Print out the first 3 examples
-    if i < 3:
+    if i < 10:
         print("Given:", given[-1].upper()) 
         print("Guess:", pred[-1].upper())
         print(fn.split("/")[-1])
