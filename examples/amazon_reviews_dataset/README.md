@@ -2,10 +2,12 @@
 
 Download the Amazon 5core data from https://jmcauley.ucsd.edu/data/amazon/. The dataset has also been made available at https://nijianmo.github.io/amazon/index.html.
 
-From the Amazon 5core dataset, select only the data that adheres to:
+From the Amazon 5core dataset (40+ million examples), select only the data that adheres to:
 1. non-empty reviews.
 2. label must be 1 star, 3 stars, or 5 stars. (2 and 4 star reviews are removed)
 3. Only consider reviews with more than upvotes than downvotes (and at least one upvote).
+
+You should have about 10 million examples left-over. These are higher quality, which will allow us to have more control over noise in the labels (instead of just general noise in the text itself).
 
 Pre-process the data for reading by fast text. Here are the first two lines of my formatted training data file:
 
