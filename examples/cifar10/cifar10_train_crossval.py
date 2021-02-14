@@ -367,7 +367,9 @@ def main_worker(gpu, ngpus_per_node, args):
             checkpoint_fn = "model_{}__masked__checkpoint.pth.tar".format(
                 args.arch)
             orig_class_counts = np.bincount(
-                [lab for img, lab in datasets.ImageFolder(traindir).imgs])
+                [lab for img, lab in datasets.ImageFolder(traindir).imgs],
+                minlength=num_classes,
+            )
             train_bool_mask = np.load(args.dir_train_mask)
             # Mask labels
             train_dataset.imgs = [img for i, img in
@@ -375,7 +377,12 @@ def main_worker(gpu, ngpus_per_node, args):
                                   train_bool_mask[i]]
             train_dataset.samples = train_dataset.imgs
             clean_class_counts = np.bincount(
-                [lab for img, lab in train_dataset.imgs])
+                [lab for img, lab in train_dataset.imgs],
+                minlength=num_classes,
+            )
+            # We divide by this, so make sure no count is zero
+            clean_class_counts = np.asarray(
+                [1 if z == 0 else z for z in clean_class_counts])
             print('Train size:', len(train_dataset.imgs))
             # Compute class weights to re-weight loss during training
             # Should use the confident joint to estimate the noise matrix then
