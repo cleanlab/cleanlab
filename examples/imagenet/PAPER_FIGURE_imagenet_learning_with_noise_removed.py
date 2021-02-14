@@ -1,11 +1,11 @@
-
+#!/usr/bin/env python
 # coding: utf-8
 
 # # Generates experimental figure in the paper
 # 
 # ## This script assumes you have trained imagenet using `imagenet_train_crossval.py` for the conditions stored in the paper and then saved them in folders resnetX/model_name/model.pickle which we load and compute a forward pass to get the test accuracy.
 
-# In[6]:
+# In[3]:
 
 
 # These imports enhance Python2/3 compatibility.
@@ -14,7 +14,7 @@ from __future__ import print_function, absolute_import, division, unicode_litera
 
 # # Set-up imports and directories
 
-# In[73]:
+# In[4]:
 
 
 import cleanlab
@@ -33,6 +33,7 @@ import torchvision.models as models
 
 # Standard imports
 import os
+import pandas as pd
 import numpy as np
 from matplotlib import pyplot as plt
 
@@ -57,7 +58,7 @@ val_dir = '/datasets/datasets/imagenet/val/'
 train_dir = '/datasets/datasets/imagenet/train/'
 
 
-# In[8]:
+# In[5]:
 
 
 def accuracy(output, target, topk=(1,)):
@@ -113,14 +114,14 @@ def validate(val_loader, model, gpu):
     return acc1s, acc5s
 
 
-# In[9]:
+# In[6]:
 
 
 # Choose a GPU to use.
 gpu = 0
 
 
-# In[10]:
+# In[7]:
 
 
 # Get train set size
@@ -129,7 +130,7 @@ imagenet_train_size = len(train_dataset.imgs)
 del train_dataset
 
 
-# In[81]:
+# In[8]:
 
 
 # Set-up validation data
@@ -151,7 +152,7 @@ val_loader = torch.utils.data.DataLoader(
 )
 
 
-# In[12]:
+# In[9]:
 
 
 # Set-up name mapping for ImageNet train data
@@ -167,7 +168,7 @@ name2nid = {v: k for k, v in nid2name.items()}
 idx2name = {k: nid2name[v] for k, v in idx2nid.items()}
 
 
-# In[13]:
+# In[10]:
 
 
 # Fetch label errors identified with confident learning
@@ -177,7 +178,7 @@ num_label_errors = sum(np.array(label_error_mask, dtype=int))
 
 # # First we need to use confident learning to compute the confident joint
 
-# In[14]:
+# In[11]:
 
 
 # Stores cross validated predicted probabilities for imagenet train set
@@ -192,7 +193,7 @@ imgs, labels = [list(z) for  z in zip(*datasets.ImageFolder(train_dir).imgs)]
 labels = np.array(labels, dtype=int)
 
 
-# In[15]:
+# In[12]:
 
 
 # Compute the confident joint
@@ -200,7 +201,7 @@ labels = np.array(labels, dtype=int)
 cj = cleanlab.latent_estimation.compute_confident_joint(labels, pyx)
 
 
-# In[16]:
+# In[13]:
 
 
 # Compute an estimate of the true joint
@@ -209,7 +210,7 @@ joint = cleanlab.latent_estimation.estimate_joint(labels, pyx, confident_joint=c
 joint_non_diag = joint - np.eye(len(joint)) * joint.diagonal()
 
 
-# In[17]:
+# In[14]:
 
 
 # Compute a list of the (row,column) indices with largest non-digonal value (most noise)
@@ -219,7 +220,7 @@ largest_non_diag = np.unravel_index(largest_non_diag_raveled, cj_non_diag.shape)
 largest_non_diag = list(zip(*(list(z) for z in largest_non_diag)))
 
 
-# In[18]:
+# In[15]:
 
 
 # Let's view some things
@@ -239,7 +240,7 @@ forty_noisiest_classes = [z[1] for z in largest_non_diag][:40]
 print("\nThe estimated actual class in the forty largest non-diagonal values (most noise) in cj:\n", [ nid2name[idx2nid[z]] for z in forty_noisiest_classes])
 
 
-# In[15]:
+# In[16]:
 
 
 # Let's view some things
@@ -261,7 +262,7 @@ print("\nThe estimated actual class in the forty largest non-diagonal values (mo
 
 # # Use the output logs during training to get the validation accuracies, for models trainined by removing 0%, 20%,..., 100% of the noisy labels identified by confident learning as well as models trained by removing a random 0%, 20%,..., 100%
 
-# In[54]:
+# In[17]:
 
 
 def parse_line(i):
@@ -270,13 +271,7 @@ def parse_line(i):
     return (float(stuff[1]), float(stuff[3]))
 
 
-# In[67]:
-
-
-num_removed
-
-
-# In[57]:
+# In[19]:
 
 
 use_best = False
@@ -286,7 +281,8 @@ acc1s, acc5s, num_removed = {}, {}, {}
 
 for model_name in model_names:
     for folder in sorted(os.listdir(base_path + model_name + "/")):
-#         print(folder)
+        if 'trial' in folder:
+            continue
         path = base_path + model_name + "/" + folder + "/"
         log_fn = [z for z in os.listdir(path) if 'log' in z][0]
         with open(base_path + model_name + "/" + folder + "/" + log_fn, 'r') as rf:
@@ -308,38 +304,10 @@ for model_name in model_names:
 
 
 # # Compute the validation accuracies for every class, for models trainined by removing 0%, 20%,..., 100% of the noisy labels identified by confident learning as well as models trained by removing a random 0%, 20%,..., 100%
+# 
+# ### Use the method above. These next two lines are slower and the logs above already have the accuracies computed.
 
-# In[61]:
-
-
-model_names = ["resnet18"]
-
-for model_name in model_names:
-    for folder in sorted(os.listdir(base_path + model_name + "/")):
-        if 'argmax' in folder or 'cj_only' in folder:
-            print("\n\n", folder)
-            path = base_path + model_name + "/" + folder + "/"
-            fn = [fn for fn in os.listdir(path) if best_or_checkpoint in fn]
-            if len(fn) > 0:
-                fn = fn[0]
-            else:
-                print('FAILURE:', folder)
-                continue
-            path += fn
-            print(path)
-
-            model = models.resnet18() if model_name == 'resnet18' else models.resnet50()
-
-            checkpoint = torch.load(path, map_location = 'cuda:{}'.format(gpu))
-            model.load_state_dict(checkpoint['state_dict']) # Load weights
-            _ = model.cuda() # move to GPU
-
-            acc1, acc5 = validate(val_loader, model, gpu)
-            # Store results
-            acc1s[folder], acc5s[folder] = acc1, acc5
-
-
-# In[58]:
+# In[21]:
 
 
 # Choice to make: Use models trained after 90 epochs, or use best models (best on validation set)
@@ -396,7 +364,7 @@ except:  # Need to compute
 
 # # Create the figure
 
-# In[23]:
+# In[22]:
 
 
 # Choices: Resnet18 vs Resnet50, acc@1 vs acc@5, best model vs 90 epochs model (bad for 20% removed on total avg graph due to some training stability issue)
@@ -409,7 +377,7 @@ except:  # Need to compute
 # 2. smallest_diag_idx
 # 3. twenty_noisiest_classes
 
-# In[199]:
+# In[23]:
 
 
 def get_errors(y_vals, n = imagenet_train_size):
@@ -420,7 +388,7 @@ def get_errors(y_vals, n = imagenet_train_size):
     return list(zip(*errs))
 
 
-# In[200]:
+# In[24]:
 
 
 def make_plot(
@@ -542,6 +510,199 @@ def make_plot(
         plt.show()
         
 #     return x_cl_pbc, x_cl_both, x_cl_pbnr, y_cl_pbc, y_cl_both, y_cl_pbnr
+
+
+# In[28]:
+
+
+def make_plot2(
+    data, 
+    title='', 
+    text_round=1, 
+    savefig=False, 
+    fontsize=30, 
+    legend_loc='best', 
+    plot_legend=True,
+    plot_xlabel=True,
+    plot_title=False,
+    legend_ncols=1,
+    force_yaxis=False,
+    plt_error_bars=True,
+    only_compute_improvement=False,
+):
+    
+    # Computation
+    
+    # Make sure fontsize is set
+    matplotlib.rcParams.update({'font.size': fontsize})
+    # Compute accuracy when there is no noise
+    no_noise_acc = plot_data[[z for z in plot_data.keys() if '_00' == z[-3:]][0]]
+    # Convert CL accuracies (y-axis) to pandas dataframe for easy manipulation
+    df = pd.DataFrame(
+        data=[(num_removed[k],v) for k,v in plot_data.items() if not 'random' in k],
+        columns=['x','y'],
+    )
+    # Take max CL when x has same value
+    df = df.groupby('x').max().sort_index()
+    # Create x (x axis), ran (random removal, other y data)
+    x_rand = sorted([num_removed[k] for k,v in plot_data.items() if 'random' in k or '_00' in k])
+    x_cl = x_rand
+    y_rand_dict = {num_removed[k]: v for k,v in plot_data.items() if 'random' in k or '_00' in k}
+    y_rand, y_cl = [y_rand_dict[0]], [y_rand_dict[0]]
+    for i in range(len(x_rand) - 1):
+        # Get the best performing CL method for each bin of data removed.
+        relevant = [df.loc[z][0] for z in df.index[(df.index > x_rand[i]) & (df.index <= x_rand[i + 1])]]
+        y_cl.append(max(relevant))
+        y_rand.append(y_rand_dict[x_rand[i + 1]])
+    # Compute differences in scores.
+    score_diff = np.array(y_cl) - np.array(y_rand)
+    if only_compute_improvement:
+        return sum(score_diff)
+    
+    # Plotting
+    
+    # Create figure
+    plt.figure(figsize = (10, 5))
+    x_axis_formatter = lambda x: [str(int(round(z/1000.)))+"K" for z in x]
+    ax = plt.gca()
+    # Plot the data
+    p = plt.plot(x_rand, y_cl, label='Confident Learning', linestyle="-", marker = 'o', linewidth=int(fontsize / 7))
+    if plt_error_bars:            
+        plt.errorbar(x_rand, y_cl, yerr=get_errors(y_cl), fmt='none', ecolor=p[0].get_color())
+    p = plt.plot(x_rand, y_rand, label='Random Removal', linestyle="-.", marker='s', linewidth=int(fontsize / 7), c='#ff7f0e') 
+    if plt_error_bars:            
+        plt.errorbar(x_rand, y_rand, yerr=get_errors(y_rand), fmt='none', ecolor=p[0].get_color())
+    #set titles and axis info
+    if plot_title:
+        plt.title(title, fontsize=fontsize)
+    if plot_legend:
+        legend = plt.legend(title = "Pruning Method", fontsize=fontsize* 2/3, loc=legend_loc, ncol=legend_ncols)  # title = "Method", 
+    if plot_xlabel:
+        _ = plt.xlabel("Number of examples removed before training", fontsize = fontsize)
+#     _ = plt.yticks([int(min(y_cl + y_rand)), int(round((min(y_cl + y_rand) + max(y_cl + y_rand)) / 2)), int(round(max(y_cl + y_rand)))])
+    top = int(round(max(y_cl + y_rand)))
+    bottom = int(min(y_cl + y_rand))
+    mid = int(round(top + bottom / 2.))
+    plt.ylim(top=int(round(max(y_cl + y_rand)))+0.5)
+    # create vertical lines
+    _ = plt.vlines(x_cl, [min(z) for z in zip(y_cl, y_rand)], [max(z) for z in zip(y_cl, y_rand)], alpha = 0.4, linestyle = ":")
+    for i in range(len(x_cl))[1:]:
+        t = str(round(score_diff[i], text_round)) if text_round > 0 else str(int(round(score_diff[i])))
+        _ = plt.text(x_cl[i], [np.mean(z) for z in zip(y_cl, y_rand)][i], t + "%", fontsize = fontsize)
+        
+    # Format y-axis values
+    if force_yaxis:
+        if model_name == 'resnet18':
+            ax.yaxis.set_ticks([68,69])
+        if model_name == 'resnet50':
+            ax.yaxis.set_ticks([72,73,74])
+    ax.set_yticklabels([str(int(round(z,1)))+"%" for z in ax.get_yticks()])
+        
+    # Format x-axis values
+    ax.set_xticklabels([str(int(round(z/1000.)))+"K" for z in ax.get_xticks()])
+
+    # Hide the right and top spines
+    ax.spines['right'].set_visible(False)
+    ax.spines['top'].set_visible(False)
+
+    # Only show ticks on the left and bottom spines
+    ax.yaxis.set_ticks_position('left')
+    ax.xaxis.set_ticks_position('bottom')
+    
+    if plot_legend:
+        # Make legend fontsize larger
+        plt.setp(legend.get_title(), fontsize=fontsize*2/3)
+    
+    if savefig:     
+        wfn = "img/{}.pdf".format(title.lower().replace(" ", "_"))
+        plt.savefig(wfn, dpi=300, pad_inches=0, bbox_inches = 'tight')
+        plt.show()
+        
+#     return x_cl_pbc, x_cl_both, x_cl_pbnr, y_cl_pbc, y_cl_both, y_cl_pbnr
+
+
+# In[29]:
+
+
+# # To find the most improved classes. We will just use the maillot class
+# # because it is well known to be erroneous in imagenet.
+# # Some of the most erroneous classes are [639, 178, 124]
+# best = 0
+# best_id = None
+# for class_id in range(1000):
+#     imp = 0
+#     for model_name in ['resnet18', 'resnet50']:
+#         plot_data = {k:v[class_id] for k,v in acc1s.items() if model_name in k}
+#         title = '{} Acc of a noisy class: {}'.format(model_name, nid2name[idx2nid[class_id]])
+#         imp += make_plot2(plot_data, title=title, savefig=False, only_compute_improvement=True)
+#     if imp > best:
+#         best = imp
+#         best_id = class_id
+maillot_class_id = 639
+
+
+# In[30]:
+
+
+for model_name in ['resnet18', 'resnet50']:
+    plot_data = {k:np.mean(v) for k,v in acc1s.items() if model_name in k}
+    # Remove last three points of cl baseline
+    if model_name == 'resnet50':
+        for z in ['_60_argmax', '_80_argmax', '_100_argmax']:
+            del plot_data[model_name + z]
+    if model_name == 'resnet18':
+        del plot_data['resnet18_60_argmax']
+        del plot_data['resnet18_100_argmax']
+    title = "{}_imagenet_comparison_cl_methods".format(model_name)
+    make_plot2(plot_data, title=title, savefig=True, plot_xlabel=False, legend_loc='lower left', plot_legend=model_name)
+
+for model_name in ['resnet18', 'resnet50']:
+    plot_data = {k:np.mean([v[i] for i in forty_noisiest_classes[:20]]) for k,v in acc1s.items() if model_name in k}
+    title = r"{} Acc of 20 noisiest classes".format(model_name)
+    make_plot2(plot_data, title=title, savefig=True, plot_legend=False, plot_xlabel=False, plot_title=False)
+
+for model_name in ['resnet18', 'resnet50']:
+    assert(nid2name[idx2nid[smallest_diag_idx]] == "English_foxhound")
+    plot_data = {k:v[smallest_diag_idx] for k,v in acc1s.items() if model_name in k}
+    title = '{} Acc of noisiest class {}'.format(model_name, 'foxhound')
+    make_plot2(plot_data, title=title, savefig=True, plot_legend=False, plot_xlabel=True, plot_title=False)
+    
+for model_name in ['resnet18', 'resnet50']:
+    plot_data = {k:v[maillot_class_id] for k,v in acc1s.items() if model_name in k}
+    title = '{} Acc of a noisy class {}'.format(model_name, nid2name[idx2nid[maillot_class_id]])
+    make_plot2(plot_data, title=title, savefig=True, plot_legend=False, plot_xlabel=True, plot_title=False)
+
+
+# In[91]:
+
+
+for model_name in ['resnet18', 'resnet50']:
+    plot_data = {k:np.mean(v) for k,v in acc1s.items() if model_name in k}
+    # Remove last three points of cl baseline
+    if model_name == 'resnet50':
+        for z in ['_60_argmax', '_80_argmax', '_100_argmax']:
+            del plot_data[model_name + z]
+    if model_name == 'resnet18':
+        del plot_data['resnet18_60_argmax']
+        del plot_data['resnet18_100_argmax']
+    title = "{}_imagenet_comparison_cl_methods".format(model_name)
+    make_plot2(plot_data, title=title, savefig=True, plot_xlabel=False, legend_loc='lower left', plot_legend=model_name=='resnet18')
+
+for model_name in ['resnet18', 'resnet50']:
+    plot_data = {k:np.mean([v[i] for i in forty_noisiest_classes[:20]]) for k,v in acc1s.items() if model_name in k}
+    title = r"{} Acc of 20 noisiest classes".format(model_name)
+    make_plot2(plot_data, title=title, savefig=True, plot_legend=False, plot_xlabel=False, plot_title=False)
+
+for model_name in ['resnet18', 'resnet50']:
+    assert(nid2name[idx2nid[smallest_diag_idx]] == "English_foxhound")
+    plot_data = {k:v[smallest_diag_idx] for k,v in acc1s.items() if model_name in k}
+    title = '{} Acc of noisiest class {}'.format(model_name, 'foxhound')
+    make_plot2(plot_data, title=title, savefig=True, plot_legend=False, plot_xlabel=True, plot_title=False)
+    
+for model_name in ['resnet18', 'resnet50']:
+    plot_data = {k:v[maillot_class_id] for k,v in acc1s.items() if model_name in k}
+    title = '{} Acc of a noisy class {}'.format(model_name, nid2name[idx2nid[maillot_class_id]])
+    make_plot2(plot_data, title=title, savefig=True, plot_legend=False, plot_xlabel=True, plot_title=False)
 
 
 # In[201]:
