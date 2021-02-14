@@ -143,7 +143,6 @@ def train(train_loader, epoch, model1, optimizer1, model2, optimizer2, args,
     model2.train()
 
     for i, (images, labels) in enumerate(train_loader):
-        print(len(train_loader))
         if i == len(train_loader) - 1 and len(labels) < MINIMUM_BATCH_SIZE:
             # Edge case -- the last leftover batch is small (potentially size 1)
             # This will happen if, for example, you train on 35101 examples with
