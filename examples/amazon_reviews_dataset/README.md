@@ -26,7 +26,8 @@ cat amazon5core.txt | sed -e "s/\([.\!?,'/()]\)/ \1 /g" | tr "[:upper:]" "[:lowe
 
 Use the scripts here, in this order:
 
-1. amazon_pyx.ipynb  # See amazon_pyx_tfidf.ipynb for an example with no fasttext dependency.
-2. amazon_label_errors.ipynb
-3. compare_cl_vs_vanilla.ipynb
-4. cl_vs_vanilla_analysis.ipynb
+  1. amazon_pyx.ipynb
+      * See amazon_pyx_tfidf.ipynb for an example with no fasttext dependency.
+  2. amazon_label_errors.ipynb
+  3. compare_cl_vs_vanilla.ipynb
+  4. cl_vs_vanilla_analysis.ipynb
