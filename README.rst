@@ -507,6 +507,17 @@ You can check out how to do this yourself here: 1. `Drawing
 Polyplices <https://github.com/cgnorthcutt/cleanlab/blob/master/examples/drawing_polyplices.ipynb>`__ 2. `Computing
 Polyplices <https://github.com/cgnorthcutt/cleanlab/blob/master/cleanlab/polyplex.py>`__
 
+
+Join our community
+------------------
+
+Have ideas for the future of cleanlab? How are you using cleanlab?  `Join the discussion <https://github.com/cgnorthcutt/cleanlab/discussions>`__.
+
+Have code improvements for cleanlab?  `Submit a code pull request <https://github.com/cgnorthcutt/cleanlab/issues/new>`__.
+
+Do you have an issue with cleanlab?  `Submit an issue <https://github.com/cgnorthcutt/cleanlab/issues/new>`__.
+
+
 License
 -------
 
