@@ -5,7 +5,7 @@
 
 |  
 
-``cleanlab`` is a machine learning python package for **learning with noisy labels** and **finding label errors in datasets**. ``cleanlab`` CLEANs LABels. It is powered by the theory of **confident learning**, published in this `paper <https://arxiv.org/abs/1911.00068>`__ |  `blog <https://l7.curtisnorthcutt.com/confident-learning>`__. 
+``cleanlab`` is python package for machine learning with noisy labels. ``cleanlab`` ``clean``\s ``lab``\els and supports **finding, quantifying, and learning with label errors in datasets**.  It is powered by **confident learning**, published in this `paper <https://arxiv.org/abs/1911.00068>`__ |  `blog <https://l7.curtisnorthcutt.com/confident-learning>`__. 
 
 ****
 
