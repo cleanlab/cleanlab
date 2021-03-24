@@ -9,7 +9,7 @@
 
 ****
 
-* **News! (Dec 2020)**  `cleanlab` supports NeurIPS research. `(Northcutt et al., NeurIPS, 2020) <http://securedata.lol/camera_ready/28.pdf>`__, and finds label errors across 10 common benchark datasets (ImageNet, CIFAR-10, CIFAR-100, Caltech-256, Quickdraw, MNIST, Amazon Reviews, IMDB, 20 News Groups, AudioSet). Along with the paper, the authors launched `labelerrors.com <https://labelerrors.com>`__ where you can view the label errors in these datasets.
+* **News! (Dec 2020)**  `cleanlab` supports NeurIPS workshop paper `(Northcutt, Athalye, & Lin, 2020) <http://securedata.lol/camera_ready/28.pdf>`__, by finding label errors across 10 common benchark datasets (ImageNet, CIFAR-10, CIFAR-100, Caltech-256, Quickdraw, MNIST, Amazon Reviews, IMDB, 20 News Groups, AudioSet). Along with the paper, the authors launched `labelerrors.com <https://labelerrors.com>`__ where you can view the label errors in these datasets.
 * **News! (Dec 2020)**  `cleanlab` supports `PU learning <https://github.com/cgnorthcutt/cleanlab#pu-learning-with-cleanlab>`__.
 * **News! (Jan 2020)** `cleanlab` achieves state-of-the-art on CIFAR-10 for learning with noisy labels. Code to reproduce is here:  `examples/cifar10 <https://github.com/cgnorthcutt/cleanlab/tree/master/examples/cifar10>`__. This is a great place for newcomers to see how to use cleanlab on real datasets. Data needed is available in the `confidentlearning-reproduce <https://github.com/cgnorthcutt/confidentlearning-reproduce>`__ repo, ``cleanlab`` v0.1.0 reproduces results in `the CL paper <https://arxiv.org/abs/1911.00068>`__.
 * **News! (Feb 2020)**  `cleanlab` now natively supports Mac, Linux, and Windows.
