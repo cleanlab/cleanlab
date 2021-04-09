@@ -269,7 +269,7 @@ class CNN(BaseEstimator):  # Inherits sklearn classifier
             for batch_idx, (data, target) in enumerate(train_loader):
                 if self.cuda:  # pragma: no cover
                     data, target = data.cuda(), target.cuda()
-                data, target = Variable(data), Variable(target)
+                data, target = Variable(data), Variable(target).long()
                 optimizer.zero_grad()
                 output = self.model(data)
                 loss = F.nll_loss(output, target, class_weight)
