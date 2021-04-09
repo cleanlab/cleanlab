@@ -28,9 +28,9 @@ import numpy as np
 from sklearn.utils import check_X_y
 
 
-def assert_inputs_are_valid(X, s, psx = None): # pragma: no cover
-    '''Checks that X, s, and psx
-    are correctly formatted'''
+def assert_inputs_are_valid(X, s, psx=None):  # pragma: no cover
+    """Checks that X, s, and psx
+    are correctly formatted"""
 
     if psx is not None:
         if not isinstance(psx, (np.ndarray, np.generic)):
@@ -56,27 +56,27 @@ def assert_inputs_are_valid(X, s, psx = None): # pragma: no cover
         X, s, accept_sparse=True, dtype=None, force_all_finite=False,
         ensure_2d=False,
     )
-    
-    
+
+
 def remove_noise_from_class(noise_matrix, class_without_noise):
-    '''A helper function in the setting of PU learning.
+    """A helper function in the setting of PU learning.
     Sets all P(s=class_without_noise|y=any_other_class) = 0
-    in noise_matrix for pulearning setting, where we have 
+    in noise_matrix for pulearning setting, where we have
     generalized the positive class in PU learning to be any
     class of choosing, denoted by class_without_noise.
 
     Parameters
     ----------
 
-    noise_matrix : np.array of shape (K, K), K = number of classes 
+    noise_matrix : np.array of shape (K, K), K = number of classes
         A conditional probablity matrix of the form P(s=k_s|y=k_y) containing
         the fraction of examples in every class, labeled as every other class.
         Assumes columns of noise_matrix sum to 1.
 
     class_without_noise : int
         Integer value of the class that has no noise. Traditionally,
-        this is 1 (positive) for PU learning.'''
-  
+        this is 1 (positive) for PU learning."""
+
     # Number of classes
     K = len(noise_matrix)
 
@@ -84,18 +84,18 @@ def remove_noise_from_class(noise_matrix, class_without_noise):
     x = np.copy(noise_matrix)
 
     # Set P( s = cwn | y != cwn) = 0 (no noise)
-    x[cwn, [i for i in range(K) if i!=cwn]] = 0.0
+    x[cwn, [i for i in range(K) if i != cwn]] = 0.0
 
     # Normalize columns by increasing diagnol terms
     # Ensures noise_matrix is a valid probability matrix
     for i in range(K):
-        x[i][i] = 1 - float(np.sum(x[:,i]) - x[i][i])
+        x[i][i] = 1 - float(np.sum(x[:, i]) - x[i][i])
 
     return x
 
 
 def clip_noise_rates(noise_matrix):
-    '''Clip all noise rates to proper range [0,1), but
+    """Clip all noise rates to proper range [0,1), but
     do not modify the diagonal terms because they are not
     noise rates.
 
@@ -104,17 +104,17 @@ def clip_noise_rates(noise_matrix):
     Parameters
     ----------
 
-    noise_matrix : np.array of shape (K, K), K = number of classes 
+    noise_matrix : np.array of shape (K, K), K = number of classes
         A conditional probablity matrix containing the fraction of
         examples in every class, labeled as every other class.
         Diagonal terms are not noise rates, but are consistency P(s=k|y=k)
-        Assumes columns of noise_matrix sum to 1'''
-  
+        Assumes columns of noise_matrix sum to 1"""
+
     def clip_noise_rate_range(noise_rate):
-        '''Clip noise rate P(s=k'|y=k) or P(y=k|s=k')
-        into proper range [0,1)'''
+        """Clip noise rate P(s=k'|y=k) or P(y=k|s=k')
+        into proper range [0,1)"""
         return min(max(noise_rate, 0.0), 0.9999)
-  
+
     # Vectorize clip_noise_rate_range for efficiency with np.arrays.  
     vectorized_clip = np.vectorize(clip_noise_rate_range)
 
@@ -133,14 +133,14 @@ def clip_noise_rates(noise_matrix):
     return noise_matrix
 
 
-def clip_values(x, low = 0.0, high = 1.0, new_sum = None):
-    '''Clip all values in p to range [low,high].
+def clip_values(x, low=0.0, high=1.0, new_sum=None):
+    """Clip all values in p to range [low,high].
     Preserves sum of x.
 
     Parameters
     ----------
 
-    x : np.array 
+    x : np.array
         An array / list of values to be clipped.
 
     low : float
@@ -156,10 +156,10 @@ def clip_values(x, low = 0.0, high = 1.0, new_sum = None):
     -------
 
     x : np.array
-        A list of clipped values, summing to the same sum as x.'''
-  
-    def clip_range(a, low = low, high = high):
-        '''Clip a into range [low,high]'''
+        A list of clipped values, summing to the same sum as x."""
+
+    def clip_range(a, low=low, high=high):
+        """Clip a into range [low,high]"""
         return min(max(a, low), high)
 
     # Vectorize clip_range for efficiency with np.arrays.  
@@ -178,8 +178,8 @@ def clip_values(x, low = 0.0, high = 1.0, new_sum = None):
 
 
 def value_counts(x):
-    '''Returns an np.array of shape (K, 1), with the
-    value counts for every unique item in the labels list/array, 
+    """Returns an np.array of shape (K, 1), with the
+    value counts for every unique item in the labels list/array,
     where K is the number of unique entries in labels.
 
     Why this matters? Here is an example:
@@ -197,7 +197,7 @@ def value_counts(x):
     x : list or np.array (one dimensional)
         A list of discrete objects, like lists or strings, for
         example, class labels 'y' when training a classifier.
-        e.g. ["dog","dog","cat"] or [1,2,0,1,1,0,2]'''
+        e.g. ["dog","dog","cat"] or [1,2,0,1,1,0,2]"""
     try:
         return x.value_counts()
     except:
@@ -244,7 +244,7 @@ def round_preserving_sum(iterable):
 
 
 def round_preserving_row_totals(confident_joint):
-    '''Rounds confident_joint cj to type int
+    """Rounds confident_joint cj to type int
     while preserving the totals of reach row.
     Assumes that cj is a 2D np.array of type float.
 
@@ -254,7 +254,7 @@ def round_preserving_row_totals(confident_joint):
 
     Returns:
     confident_joint : 2D np.array<int> of shape (K,K)
-        Rounded to int while preserving row totals.'''
+        Rounded to int while preserving row totals."""
 
     return np.apply_along_axis(
         func1d=round_preserving_sum,
@@ -295,20 +295,20 @@ def onehot2int(onehot_matrix):
 
 
 def estimate_pu_f1(s, prob_s_eq_1):
-    '''Computes Claesen's estimate of f1 in the pulearning setting.
-    
+    """Computes Claesen's estimate of f1 in the pulearning setting.
+
     Parameters
     ----------
     s : iterable (list or np.array)
       Binary label (whether each element is labeled or not) in pu learning.
-      
+
     prob_s_eq_1 : iterable (list or np.array)
       The probability, for each example, whether it is s==1 P(s==1|x)
-      
+
     Output (float)
     ------
-    Claesen's estimate for f1 in the pulearning setting.'''
-  
+    Claesen's estimate for f1 in the pulearning setting."""
+
     pred = np.asarray(prob_s_eq_1) >= 0.5
     true_positives = sum((np.asarray(s) == 1) & (np.asarray(pred) == 1))
     all_positives = sum(s)
@@ -318,38 +318,38 @@ def estimate_pu_f1(s, prob_s_eq_1):
 
 
 def confusion_matrix(true, pred):
-    '''Implements a confusion matrix for true labels
+    """Implements a confusion matrix for true labels
     and predicted labels. true and pred MUST BE the same length
     and have the same distinct set of class labels represtented.
 
-    Results are identical (and similar computation time) to: 
+    Results are identical (and similar computation time) to:
         "sklearn.metrics.confusion_matrix"
 
     However, this function avoids the dependency on sklearn.
-    
+
     Parameters
     ----------
     y : np.array 1d
       Contains labels.
       Assumes s and y contains the same distinct set of labels.
-      
+
     s : np.array 1d
       Contains labels.
       Assumes s and y contains the same distinct set of labels.
-  
+
     Returns
     -------
     confusion_matrix : np.array (2D)
-      matrix of confusion counts with true on rows and pred on columns.'''
+      matrix of confusion counts with true on rows and pred on columns."""
 
-    assert(len(true) == len(pred))
+    assert (len(true) == len(pred))
     true_classes = np.unique(true)
     pred_classes = np.unique(pred)
-    K_true = len(true_classes) # Number of classes in true
-    K_pred = len(pred_classes) # Number of classes in pred    
-    map_true = dict(zip(true_classes, range(K_true)))    
+    K_true = len(true_classes)  # Number of classes in true
+    K_pred = len(pred_classes)  # Number of classes in pred
+    map_true = dict(zip(true_classes, range(K_true)))
     map_pred = dict(zip(pred_classes, range(K_pred)))
-    
+
     result = np.zeros((K_true, K_pred))
     for i in range(len(true)):
         result[map_true[true[i]]][map_pred[pred[i]]] += 1
@@ -358,15 +358,15 @@ def confusion_matrix(true, pred):
 
 
 def print_square_matrix(
-    matrix, 
-    left_name='s', 
-    top_name='y', 
-    title=' A square matrix',
-    short_title='s,y',
-    round_places=2,
+        matrix,
+        left_name='s',
+        top_name='y',
+        title=' A square matrix',
+        short_title='s,y',
+        round_places=2,
 ):
-    '''Pretty prints a matrix. 
-    
+    """Pretty prints a matrix.
+
     Parameters
     ----------
     matrix : np.array
@@ -380,40 +380,40 @@ def print_square_matrix(
     short_title : str
         A short title (6 characters or less) like P(s|y) or P(s,y).
     round_places : int
-        Number of decimals to show for each matrix value.'''
-    
-    short_title = short_title[:6]    
-    K = len(matrix) # Number of classes
+        Number of decimals to show for each matrix value."""
+
+    short_title = short_title[:6]
+    K = len(matrix)  # Number of classes
     # Make sure matrix is 2d array
     if len(np.shape(matrix)) == 1:
         matrix = np.array([matrix])
     print()
     print(title, 'of shape', matrix.shape)
-    print(" "+short_title+"".join(['\t'+top_name+'='+str(i) for i in range(K)]))
-    print('\t---'*K)
+    print(" " + short_title + "".join(['\t' + top_name + '=' + str(i) for i in range(K)]))
+    print('\t---' * K)
     for i in range(K):
-        entry = "\t".join([str(z) for z in list(matrix.round(round_places)[i,:])])
+        entry = "\t".join([str(z) for z in list(matrix.round(round_places)[i, :])])
         print(left_name + "=" + str(i) + " |\t" + entry)
     print("\tTrace(matrix) =", np.round(np.trace(matrix), round_places))
-    print()  
+    print()
 
 
 def print_noise_matrix(noise_matrix, round_places=2):
-    '''Pretty prints the noise matrix.'''
+    """Pretty prints the noise matrix."""
     print_square_matrix(
         noise_matrix,
-        title=' Noise Matrix (aka Noisy Channel) P(s|y)', 
+        title=' Noise Matrix (aka Noisy Channel) P(s|y)',
         short_title='p(s|y)',
         round_places=round_places,
     )
 
 
 def print_inverse_noise_matrix(inverse_noise_matrix, round_places=2):
-    '''Pretty prints the inverse noise matrix.'''
+    """Pretty prints the inverse noise matrix."""
     print_square_matrix(
-        inverse_noise_matrix, 
-        left_name='y', 
-        top_name='s', 
+        inverse_noise_matrix,
+        left_name='y',
+        top_name='s',
         title=' Inverse Noise Matrix P(y|s)',
         short_title='p(y|s)',
         round_places=round_places,
@@ -421,7 +421,7 @@ def print_inverse_noise_matrix(inverse_noise_matrix, round_places=2):
 
 
 def print_joint_matrix(joint_matrix, round_places=2):
-    '''Pretty prints the joint label noise matrix.'''
+    """Pretty prints the joint label noise matrix."""
     print_square_matrix(
         joint_matrix,
         title=' Joint Label Noise Distribution Matrix P(s,y)',
@@ -431,16 +431,16 @@ def print_joint_matrix(joint_matrix, round_places=2):
 
 
 def _python_version_is_compatible(
-    warning_str = "pyTorch supports Python version 2.7, 3.5, 3.6, 3.7.",
-    warning_already_issued = False,
-    list_of_compatible_versions = [2.7, 3.5, 3.6],
+        warning_str="pyTorch supports Python version 2.7, 3.5, 3.6, 3.7, 3.8",
+        warning_already_issued=False,
+        list_of_compatible_versions=[2.7, 3.5, 3.6, 3.7, 3.8],
 ):
-    '''Helper function for VersionWarning class that issues
+    """Helper function for VersionWarning class that issues
     a warning (if a warning has not already been issued),
-    whenever the python version is not in the 
+    whenever the python version is not in the
     list_of_compatible_versions.
-    '''
-    
+    """
+
     import sys
     v = sys.version_info[0] + 0.1 * sys.version_info[1]
     if v in list_of_compatible_versions:
@@ -458,16 +458,16 @@ def _python_version_is_compatible(
 
 
 class VersionWarning(object):
-    '''Functor that calls _python_version_is_compatible
+    """Functor that calls _python_version_is_compatible
     and manages the state of the bool variable
     warning_already_issued to make sure the same warning
-    is never displayed multiple times. '''
-    
+    is never displayed multiple times. """
+
     def __init__(self, warning_str, list_of_compatible_versions):
         self.warning_str = warning_str
         self.warning_already_issued = False
         self.list_of_compatible_versions = list_of_compatible_versions
-        
+
     def is_compatible(self):
         compatible = _python_version_is_compatible(
             self.warning_str,
