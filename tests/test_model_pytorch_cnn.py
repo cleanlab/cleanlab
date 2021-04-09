@@ -25,6 +25,7 @@ if python_version.is_compatible():
     import numpy as np
     from sklearn.metrics import accuracy_score
     from sklearn.datasets import load_digits
+    from torch import from_numpy
     import pytest
 
 
@@ -32,8 +33,9 @@ if python_version.is_compatible():
     X_test_idx = np.arange(SKLEARN_DIGITS_TEST_SIZE)
     # Get sklearn digits data labels
     _, y_all = load_digits(return_X_y=True)
-    y_train = y_all[:-SKLEARN_DIGITS_TEST_SIZE]
-    y_test = y_all[-SKLEARN_DIGITS_TEST_SIZE:]
+    # PyTorch requires type long targets.
+    y_train = y_all[:-SKLEARN_DIGITS_TEST_SIZE].astype(np.long)
+    y_test = y_all[-SKLEARN_DIGITS_TEST_SIZE:].astype(np.long)
 
 
 def test_loaders(
