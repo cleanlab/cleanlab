@@ -14,7 +14,15 @@ from cleanlab.latent_algebra import compute_inv_noise_matrix
 from sklearn.linear_model import LogisticRegression
 from numpy.random import multivariate_normal
 import scipy
+import warnings
 import pytest
+
+
+# Ignore this warning. getargspec is necessary to support old versions.
+ARGSPEC_WARNING = "DeprecationWarning: inspect.getargspec() is deprecated" \
+                  " since Python 3.0, use inspect.signature() or" \
+                  " inspect.getfullargspec()"
+warnings.filterwarnings("ignore", message=ARGSPEC_WARNING)
 
 
 SEED = 1
