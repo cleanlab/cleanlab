@@ -11,42 +11,33 @@ from __future__ import (
 from cleanlab.util import VersionWarning
 
 python_version = VersionWarning(
-    warning_str="pyTorch supports Python version 2.7, 3.5, 3.6, 3.7.",
-    list_of_compatible_versions=[3.5, 3.6, 3.7],
+    warning_str="pyTorch supports Python version 3.5, 3.6, 3.7, 3.8",
+    list_of_compatible_versions=[3.5, 3.6, 3.7, 3.8, ],
 )
+
 
 if python_version.is_compatible():
     from cleanlab.models.mnist_pytorch import (
-        CNN, MNIST_TEST_SIZE,
-        MNIST_TRAIN_SIZE,
+        CNN, SKLEARN_DIGITS_TEST_SIZE,
+        SKLEARN_DIGITS_TRAIN_SIZE,
     )
     import cleanlab
-    from os.path import expanduser
     import numpy as np
     from sklearn.metrics import accuracy_score
-    from torchvision import datasets
+    from sklearn.datasets import load_digits
     import pytest
 
-    # Get home directory to store MNIST dataset
-    home_dir = expanduser("~")
-    data_dir = home_dir + "/data/"
 
-    X_train = np.arange(MNIST_TRAIN_SIZE)
-    X_test = np.arange(MNIST_TEST_SIZE)
-    # X_train = X_train[X_train % 10 == 0]
-    y_train = datasets.MNIST(data_dir, train=True,
-                             download=True).train_labels.numpy()
-    y_test = datasets.MNIST(data_dir, train=False,
-                            download=True).test_labels.numpy()
-    py_train = cleanlab.util.value_counts(y_train) / float(len(y_train))
-    X_test_data = datasets.MNIST(data_dir, train=False,
-                                 download=True).test_data.numpy()
+    X_train_idx = np.arange(SKLEARN_DIGITS_TRAIN_SIZE)
+    X_test_idx = np.arange(SKLEARN_DIGITS_TEST_SIZE)
+    # Get sklearn digits data labels
+    _, y_all = load_digits(return_X_y=True)
+    y_train = y_all[:-SKLEARN_DIGITS_TEST_SIZE]
+    y_test = y_all[-SKLEARN_DIGITS_TEST_SIZE:]
 
 
 def test_loaders(
         seed=0,
-        n=300,  # Number of training examples to use
-        pretrain_epochs=2,  # Increase to at least 10 for good results
 ):
     """This is going to OVERFIT - train and test on the SAME SET.
     The goal of this test is just to make sure the data loads correctly.
@@ -57,27 +48,21 @@ def test_loaders(
 
     if python_version.is_compatible():
         np.random.seed(seed)
-        cnn = CNN(epochs=3, log_interval=1000, loader='train', seed=0)
-        idx = np.random.choice(X_train, n,
-                               replace=False)  # Grab n random examples.
-        test_idx = np.random.choice(X_test, n,
-                                    replace=False)  # Grab n random examples.
-
         prune_method = 'prune_by_noise_rate'
-
-        # Pre-train
-        cnn = CNN(epochs=1, log_interval=None, seed=seed)  # pre-train
+        # Pre-train for only 3 epochs (it maxes out around 8-12 epochs)
+        cnn = CNN(epochs=3, log_interval=None, seed=seed,
+                  dataset='sklearn-digits')
         score = 0
         for loader in ['train', 'test', None]:
             print('loader:', loader)
             prev_score = score
-            X = X_test[test_idx] if loader == 'test' else X_train[idx]
-            y = y_test[test_idx] if loader == 'test' else y_train[idx]
-            # Setting this overides all future functions.
+            X = X_test_idx if loader == 'test' else X_train_idx
+            y = y_test if loader == 'test' else y_train
+            # Setting this overrides all future functions.
             cnn.loader = loader
             # pre-train (overfit, not out-of-sample) to entire dataset.
-            cnn.fit(X, None, loader='train')
-
+            cnn.fit(X, None, )
+            # This next block of code checks if cleanlab works with the CNN
             # Out-of-sample cross-validated holdout predicted probabilities
             np.random.seed(seed)
             # Single epoch for cross-validation (already pre-trained)
@@ -88,11 +73,12 @@ def test_loaders(
             # algorithmic identification of label errors
             noise_idx = cleanlab.pruning.get_noise_indices(
                 y, psx, est_inv, prune_method=prune_method)
+            assert noise_idx is not None
 
-            # Get prediction on loader set (in this case same as train set)
-            pred = cnn.predict(X, loader='train')
+            # Get prediction on loader set.
+            pred = cnn.predict(X)
             score = accuracy_score(y, pred)
-            print(score)
+            print('Acc Before: {:.2f}, After: {:.2f}'.format(prev_score, score))
             assert (score > prev_score)  # Scores should increase
 
     assert True
@@ -110,27 +96,26 @@ def test_throw_exception():
     assert True
 
 
-def test_n_train_examples(n=500):
+def test_n_train_examples():
     if python_version.is_compatible():
-        cnn = CNN(epochs=3, log_interval=1000, loader='train', seed=0)
-        idx = np.random.choice(X_train, n,
-                               replace=False)  # Grab n random examples.
-        cnn.fit(train_idx=X_train[idx], train_labels=y_train[idx],
-                loader='train')
+        cnn = CNN(epochs=3, log_interval=1000, loader='train', seed=0,
+                  dataset='sklearn-digits', )
+        cnn.fit(train_idx=X_train_idx, train_labels=y_train,
+                loader='train', )
         cnn.loader = 'test'
-        pred = cnn.predict(X_test[:n])
-        print(accuracy_score(y_test[:n], pred))
-        assert (accuracy_score(y_test[:n], pred) > 0.1)
+        pred = cnn.predict(X_test_idx)
+        print(accuracy_score(y_test, pred))
+        assert (accuracy_score(y_test, pred) > 0.1)
 
-        # Check that dataset defaults to test set when an invalid name is given.
+        # Check that exception is raised when invalid name is given.
         cnn.loader = 'INVALID'
-        pred = cnn.predict(X_test[:n])
-        assert (len(pred) == MNIST_TEST_SIZE)
+        with pytest.raises(ValueError) as e:
+            pred = cnn.predict(X_test_idx)
 
         # Check that pred_proba runs on all examples when None is passed in
         cnn.loader = 'test'
         proba = cnn.predict_proba(idx=None, loader='test')
         assert proba is not None
-        assert (len(pred) == MNIST_TEST_SIZE)
+        assert (len(pred) == SKLEARN_DIGITS_TEST_SIZE)
 
     assert True

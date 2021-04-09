@@ -8,7 +8,7 @@ from __future__ import print_function, absolute_import, division, unicode_litera
 from cleanlab.util import VersionWarning
 python_version = VersionWarning(
     warning_str = "fastText supports Python 3 versions (not python 2).",
-    list_of_compatible_versions = [3.5, 3.6, 3.7],
+    list_of_compatible_versions = [3.5, 3.6, 3.7, 3.8, ],
 )
 
 
