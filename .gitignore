@@ -113,3 +113,6 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+
+#sphinx build
+/docs/_build/
