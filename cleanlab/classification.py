@@ -1,4 +1,3 @@
-
 # coding: utf-8
 
 # Copyright (c) 2017-2050 Curtis G. Northcutt
@@ -87,7 +86,6 @@ from sklearn.metrics import accuracy_score
 from sklearn.base import BaseEstimator
 import numpy as np
 import inspect
-import os
 import multiprocessing
 from cleanlab.util import (
     assert_inputs_are_valid,
@@ -206,7 +204,7 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
             n_jobs = multiprocessing.cpu_count()
         else:
             assert (n_jobs >= 1)
-        
+
         self.clf = clf
         self.seed = seed
         self.cv_n_folds = cv_n_folds
@@ -320,7 +318,7 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
         if noise_matrix is None and inverse_noise_matrix is None:
             if psx is None:
                 self.py, self.noise_matrix, self.inverse_noise_matrix, \
-                    self.confident_joint, psx = \
+                self.confident_joint, psx = \
                     estimate_py_noise_matrices_and_cv_pred_proba(
                         X=X,
                         s=s,
@@ -333,7 +331,7 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
                     )
             else:  # psx is provided by user (assumed holdout probabilities)
                 self.py, self.noise_matrix, self.inverse_noise_matrix, \
-                    self.confident_joint = \
+                self.confident_joint = \
                     estimate_py_and_noise_matrices_from_probabilities(
                         s=s,
                         psx=psx,
@@ -373,7 +371,7 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
             confident_joint=self.confident_joint,
             prune_method=self.prune_method,
             n_jobs=self.n_jobs,
-        ) 
+        )
 
         x_mask = ~self.noise_mask
         x_pruned = X[x_mask]
@@ -396,7 +394,7 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
         else:
             # This is less accurate, but best we can do if no sample_weight.
             self.clf.fit(x_pruned, s_pruned)
-            
+
         return self.clf
 
     def predict(self, *args, **kwargs):
@@ -434,9 +432,9 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
 
         sample_weight : np.array<float> of shape (n,) or (n, 1)
           Weights each example when computing the score / accuracy."""
-        
+
         if hasattr(self.clf, 'score'):
-        
+
             # Check if sample_weight in clf.score(). Compatible with Python 2/3.
             if hasattr(inspect, 'getfullargspec') and 'sample_weight' in \
                     inspect.getfullargspec(self.clf.score).args or \
