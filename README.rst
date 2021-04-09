@@ -132,22 +132,22 @@ To install the codebase (enabling you to make modifications):
 Citations and Related Publications
 ==================================
 
-If you use this package in your work, please cite the `confident learning paper <https://arxiv.org/abs/1911.00068>`__:
+If you use this package, please cite the `confident learning paper <https://arxiv.org/abs/1911.00068>`__ (published April 2021, in the `Journal of AI Research <https://jair.org/index.php/jair/issue/view/1158>`__):
 
 ::
 
-  @misc{northcutt2019confidentlearning,
+  @article{northcutt2021confidentlearning,
      title={Confident Learning: Estimating Uncertainty in Dataset Labels},
      author={Curtis G. Northcutt and Lu Jiang and Isaac L. Chuang},
-     year={2019},
-     eprint={1911.00068},
-     archivePrefix={arXiv},
-     primaryClass={stat.ML}
-  }
+     journal={Journal of Artificial Intelligence Research (JAIR)},
+     volume={70},
+     pages={1373--1411},
+     year={2021}
+   }
 
 
 
-If used for binary classification, cleanlab also implements `this paper <https://arxiv.org/abs/1705.01936>`__:
+If you use this package for binary classification, please also cite the `rankpruning paper <https://arxiv.org/abs/1705.01936>`__ (published August 2017, in `Uncertainty in AI <http://auai.org/uai2017/proceedings/papers/35.pdf>`__):
 
 ::
 
