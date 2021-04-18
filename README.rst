@@ -19,6 +19,7 @@
 
 ****
 
+* **News! (Apr 2021)**  `cleanlab` published in the  `confident learning paper (Northcutt, Jiang, & Chuang, 2021) <https://jair.org/index.php/jair/article/view/12125>`__ in the Journal of AI Research.
 * **News! (Mar 2021)**  `cleanlab` supports ICLR workshop paper `(Northcutt, Athalye, & Mueller, 2021) <https://arxiv.org/abs/1911.00068>`__, by finding label errors across 10 common benchark datasets (ImageNet, CIFAR-10, CIFAR-100, Caltech-256, Quickdraw, MNIST, Amazon Reviews, IMDB, 20 News Groups, AudioSet). Along with the paper, the authors launched `labelerrors.com <https://labelerrors.com>`__ where you can view the label errors in these datasets.
 * **News! (Dec 2020)**  `cleanlab` supports NeurIPS workshop paper `(Northcutt, Athalye, & Lin, 2020) <http://securedata.lol/camera_ready/28.pdf>`__.
 * **News! (Dec 2020)**  `cleanlab` supports `PU learning <https://github.com/cgnorthcutt/cleanlab#pu-learning-with-cleanlab>`__.
@@ -132,7 +133,7 @@ To install the codebase (enabling you to make modifications):
 Citations and Related Publications
 ==================================
 
-If you use this package, please cite the `confident learning paper <https://arxiv.org/abs/1911.00068>`__ (published April 2021, in the `Journal of AI Research <https://jair.org/index.php/jair/issue/view/1158>`__):
+If you use this package, please cite the `confident learning paper <https://arxiv.org/abs/1911.00068>`__ (published April 2021, in the `Journal of AI Research <https://jair.org/index.php/jair/article/view/12125>`__):
 
 ::
 
