@@ -7,9 +7,25 @@
 # 2. python3 -m twine upload dist/*
 
 from setuptools import setup, find_packages
+from setuptools.command.egg_info import egg_info
+
 # To use a consistent encoding
 from codecs import open
 from os import path
+
+
+class egg_info_ex(egg_info):
+    """Includes license file into `.egg-info` folder."""
+
+    def run(self):
+        # don't duplicate license into `.egg-info` when building a distribution
+        if not self.distribution.have_run.get('install', True):
+            # `install` command is in progress, copy license
+            self.mkpath(self.egg_info)
+            self.copy_file('LICENSE', self.egg_info)
+
+        egg_info.run(self)
+
 
 here = path.abspath(path.dirname(__file__))
 
@@ -19,6 +35,8 @@ with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
 
 # Get version number
 exec(open('cleanlab/version.py').read())
+
+
 
 setup(
     name='cleanlab',
@@ -77,6 +95,8 @@ setup(
     package_data={
         "": ["LICENSE"],
     },
+    license_files = ('LICENSE',),
+    cmdclass = {'egg_info': egg_info_ex},
 
     # List run-time dependencies here.  These will be installed by pip when
     # your project is installed. For an analysis of "install_requires" vs pip's
