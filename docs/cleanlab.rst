@@ -1,75 +1,66 @@
-cleanlab package
-================
-
-Subpackages
------------
+cleanlab Models
+===============
 
 .. toctree::
-   :maxdepth: 4
 
    cleanlab.models
 
-Submodules
-----------
-
-cleanlab.baseline\_methods module
----------------------------------
-
-.. automodule:: cleanlab.baseline_methods
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 cleanlab.classification module
-------------------------------
+=================================
 
 .. automodule:: cleanlab.classification
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-cleanlab.coteaching module
---------------------------
-
-.. automodule:: cleanlab.coteaching
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-cleanlab.latent\_algebra module
--------------------------------
-
-.. automodule:: cleanlab.latent_algebra
+   :autosummary:
    :members:
    :undoc-members:
    :show-inheritance:
 
 cleanlab.latent\_estimation module
-----------------------------------
+==================================
 
 .. automodule:: cleanlab.latent_estimation
+   :autosummary:
    :members:
    :undoc-members:
    :show-inheritance:
 
 cleanlab.noise\_generation module
----------------------------------
+=================================
 
 .. automodule:: cleanlab.noise_generation
+   :autosummary:
    :members:
    :undoc-members:
    :show-inheritance:
 
-cleanlab.polyplex module
-------------------------
+cleanlab.baseline\_methods module
+=================================
 
-.. automodule:: cleanlab.polyplex
+.. automodule:: cleanlab.baseline_methods
+   :autosummary:
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+cleanlab.coteaching module
+==========================
+
+.. automodule:: cleanlab.coteaching
+   :autosummary:
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+cleanlab.latent\_algebra module
+===============================
+
+.. automodule:: cleanlab.latent_algebra
+   :autosummary:
    :members:
    :undoc-members:
    :show-inheritance:
 
 cleanlab.pruning module
------------------------
+=======================
 
 .. automodule:: cleanlab.pruning
    :members:
@@ -77,25 +68,20 @@ cleanlab.pruning module
    :show-inheritance:
 
 cleanlab.util module
---------------------
+====================
 
 .. automodule:: cleanlab.util
+   :autosummary:
    :members:
    :undoc-members:
    :show-inheritance:
 
-cleanlab.version module
------------------------
+cleanlab.polyplex module
+========================
 
-.. automodule:: cleanlab.version
+.. automodule:: cleanlab.polyplex
+   :autosummary:
    :members:
    :undoc-members:
    :show-inheritance:
 
-Module contents
----------------
-
-.. automodule:: cleanlab
-   :members:
-   :undoc-members:
-   :show-inheritance:

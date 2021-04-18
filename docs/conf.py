@@ -12,14 +12,23 @@
 #
 import os
 import sys
+import datetime
 sys.path.insert(0, '..')
 
 
 # -- Project information -----------------------------------------------------
 
-project = 'cleanlab'
-copyright = 'cgnorthcutt'
-author = 'cgnorthcutt'
+project = "cleanlab"
+copyright = f"{datetime.datetime.now().year}, Curtis G. Northcutt"
+author = "Curtis G. Northcutt"
+master_doc = "index"
+html_logo = "../img/cleanlab_logo.png"
+
+# Get version number
+exec(open('../cleanlab/version.py').read())
+
+# The full version, including alpha/beta/rc tags
+release = __version__
 
 
 # -- General configuration ---------------------------------------------------
@@ -29,9 +38,16 @@ author = 'cgnorthcutt'
 # ones.
 extensions = [
     'sphinx.ext.autodoc',
+    'autodocsumm',
+    'sphinx.ext.autodoc',
     'sphinx.ext.viewcode',
     'sphinx.ext.todo',
+    # 'sphinx.ext.githubpages',
+    # 'sphinx_automodapi.automodapi',
+    # "sphinx.ext.napoleon",
+    # "sphinx.ext.linkcode",
 ]
+numpydoc_show_class_members = False
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -48,18 +64,24 @@ language = 'en'
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 
+# autosummary_generate = True
+autodoc_default_options = {
+    'autosummary': True,
+}
+
 
 # -- Options for HTML output -------------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'alabaster'
+html_theme = "sphinx_rtd_theme"
+html_theme_options = {"navigation_depth": -1, "titles_only": True}
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['_static']
+# html_static_path = ['_static']
 
 
 # -- Extension configuration -------------------------------------------------
@@ -68,3 +90,54 @@ html_static_path = ['_static']
 
 # If true, `todo` and `todoList` produce output, else they produce nothing.
 todo_include_todos = True
+
+
+# -- Options for napoleon extension -------------------------------------------
+
+# napoleon_google_docstring = False
+# napoleon_numpy_docstring = True
+# napoleon_include_init_with_doc = False
+# napoleon_include_private_with_doc = False
+# napoleon_include_special_with_doc = False
+# napoleon_use_admonition_for_examples = False
+# napoleon_use_admonition_for_notes = False
+# napoleon_use_admonition_for_references = False
+# napoleon_use_ivar = False
+# napoleon_use_param = True
+# napoleon_use_rtype = True
+
+# -- Options for autodoc extension -------------------------------------------
+
+# This value selects what content will be inserted into the main body of an autoclass
+# directive
+#
+# http://www.sphinx-doc.org/en/master/usage/extensions/autodoc.html#directive-autoclass
+autoclass_content = "class"
+
+
+# Default options to an ..autoXXX directive.
+autodoc_default_options = {
+    "members": None,
+    "inherited-members": None,
+    "show-inheritance": None,
+    "special-members": "__call__",
+}
+
+# Subclasses should show parent classes docstrings if they don't override them.
+autodoc_inherit_docstrings = True
+
+# -- Options for linkcode extension ------------------------------------------
+
+
+# def linkcode_resolve(domain, info):
+#     if domain != "py":
+#         return None
+#     if not info["module"]:
+#         return None
+#     module_path = info["module"].replace(".", "/")
+#     # If only one `.`, assume it's a package
+#     if info["module"].count(".") == 1:
+#         return f"https://github.com/cgnorthcutt/cleanlab/tree/master/{module_path}"
+#     # Otherwise, it's a module
+#     else:
+#         return f"https://github.com/cgnorthcutt/cleanlab/blob/master/{module_path}.py"

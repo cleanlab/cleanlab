@@ -104,7 +104,9 @@ from cleanlab.pruning import get_noise_indices
 
 
 class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
-    """Confident Learning is the state-of-the-art (Northcutt et al. 2019) for
+    """Automated learning with noisy labels using any model.
+
+    Confident Learning is the state-of-the-art (Northcutt et al., 2021) for
       weak supervision, finding label errors in datasets, learning with noisy
       labels, uncertainty estimation, and omre. It works with ANY classifier,
       including deep neural networks. See clf parameter.
