@@ -442,7 +442,7 @@ The joint probability distribution of noisy and true labels, *P(s,y)*, completel
 .. code:: python
 
     from cleanlab.latent_estimation import estimate_joint
-    joint = compute_confident_joint(
+    joint = estimate_joint(
         s=noisy_labels,
         psx=probabilities,
         confident_joint=None,  # Provide if you have it already
