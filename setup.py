@@ -51,7 +51,7 @@ setup(
 
     # See https://pypi.python.org/pypi?%3Aaction=list_classifiers
     classifiers=[
-      'Development Status :: 3 - Alpha',
+      'Development Status :: 4 - Beta',
 
       'Intended Audience :: Developers',
       'Intended Audience :: Education',

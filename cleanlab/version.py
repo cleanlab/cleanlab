@@ -17,28 +17,50 @@
 # This agreement applies to this version and all previous versions of cleanlab.
 
 
-__version__ = '0.1.1'
+__version__ = '1.0'
+
 
 # ----------------------------------------
 # | CURRENT STABLE VERSION RELEASE NOTES |
 # ----------------------------------------
 
-# 0.1.1 - Major update adding support for Windows and Python 3.7
-#   - Added support for Python 3.7
-#   - Added full support for Windows, including multiprocessing parallelization support in cleanlab/pruning.py
-#   - Improved PEP-8 adherence in core cleanlab/ code.
+# 1.0 - cleanlab official 1.0 (beta) release!
+#   - Added Amazon Reviews NLP to cleanlab/examples
+#   - cleanlab now supports python 2, 2.7, 3.4, 3.5, 3.6, 3.7, 3.8.
+#   - Users have used cleanlab with python version 3.9 (use at your own risk!)
+#   - Added more testing. All tests pass on windows/linux/macOS.
+#   - Update to GNU GPL-3+ License.
+#   - Added documentation: https://cleanlab.readthedocs.io/
+#   - The cleanlab "confident learning" paper is published in the Journal of AI Research: https://jair.org/index.php/jair/article/view/12125
+#   - Added funding, community and contributing guidelines
+#   - Fixed a number of errors in cleanlab/examples
+#   - cleanlab now supports Windows, macOS, Linux, and unix systems
+#   - Numerous examples added to the README and docs
+#   - cleanlab now natively supports Co-Teaching for learning with noisy labels (reqs python3, PyTorch 1.4)
+#   - cleanlab built in support with handwritten datasets (besides MNIST)
+#   - cleanlab built in support for CIFAR dataset
+#   - Multiprocessing fixed for windows systems
+#   - Adhered all core modules to PEP-8 styling.
+#   - Extensive benchmarking of cleanlab methods published.
+#   - Future features planned are now supported in cleanlab/version.py
+#   - Added confidentlearning-reproduce as a seperate repo to reproduce state-of-the-art results.
 
 # ---------------------------
 # | FUTURE FEATURES PLANNED |
 # ---------------------------
 
-#   - Support Co-Teaching and PyTorch built-in training for learning with noisy labels
-#   - Add easy to run script for reproducing confident learning state-of-the-art results
 #   - Extensions to regression
+#   - Extensions for object detection and segmentation tasks.
+#   - cleanlab pro (interface for businesses)
 
 # ----------------------------------
 # | PREVIOUS VERSION RELEASE NOTES |
 # ----------------------------------
+
+# 0.1.1 - Major update adding support for Windows and Python 3.7
+#   - Added support for Python 3.7
+#   - Added full support for Windows, including multiprocessing parallelization support in cleanlab/pruning.py
+#   - Improved PEP-8 adherence in core cleanlab/ code.
 
 # 0.1.0 - Release of confident learning paper based on this version of cleanlab: https://arxiv.org/pdf/1911.00068.pdf
 #   - Documentation increase
