@@ -44,7 +44,7 @@ Co-Teaching
    :undoc-members:
    :show-inheritance:
 
-cleanlab.latent\_algebra module
+Latent Algebra
 ===============================
 
 .. automodule:: cleanlab.latent_algebra
