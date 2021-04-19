@@ -102,19 +102,25 @@ Installation
 
 Python 2.7, 3.4, 3.5, 3.6, and 3.7 are supported. Linux, macOS, and Windows are supported.
 
-Stable release:
+Stable release (pip):
 
 .. code-block:: bash
 
-   $ pip install cleanlab
+   $ pip install cleanlab  # Using pip
 
-Developer (unstable) release:
+Stable release (conda):
+
+.. code-block:: bash
+
+   $ conda install -c conda-forge cleanlab  # Using conda
+
+Developer release:
 
 .. code-block:: bash
 
    $ pip install git+https://github.com/cgnorthcutt/cleanlab.git
 
-To install the codebase (enabling you to make modifications):
+To install with the codebase (enabling you to make modifications):
 
 .. code-block:: bash
 
