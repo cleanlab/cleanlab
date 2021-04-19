@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Copyright (c) 2017-2050 Curtis G. Northcutt
 # This file is part of cleanlab.
 #
@@ -17,10 +15,16 @@
 
 # This agreement applies to this version and all previous versions of cleanlab.
 
-# ## A PyTorch CNN for training CIFAR-10 using Co-Teaching.
-# Code adapted from: https://github.com/bhanML/Co-teaching/blob/master/model.py
-# This code requires you have PyTorch installed
-# See: https://pytorch.org/get-started/locally/
+
+"""
+A PyTorch CNN for training CIFAR-10 using Co-Teaching.
+
+Code adapted from: https://github.com/bhanML/Co-teaching/blob/master/model.py
+
+This code requires you have PyTorch installed
+
+See: https://pytorch.org/get-started/locally/
+"""
 
 
 # Python 2 and 3 compatibility
@@ -36,6 +40,20 @@ def call_bn(bn, x):
 
 
 class CNN(nn.Module):
+    """A CNN architecture shown to be a good baseline for a CIFAR-10 benchmark.
+
+    Parameters
+    ----------
+    input_channel : int
+    n_outputs : int
+    dropout_rate : float
+    top_bn : bool
+
+    Methods
+    -------
+    forward
+      forward pass in PyTorch"""
+
     def __init__(self, input_channel=3, n_outputs=10, dropout_rate=0.25,
                  top_bn=False):
         self.dropout_rate = dropout_rate

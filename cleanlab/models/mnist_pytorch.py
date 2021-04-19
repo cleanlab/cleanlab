@@ -126,11 +126,11 @@ def get_sklearn_digits_dataset(loader):
 
 
 if python_version.is_compatible():
-    class Net(nn.Module):
+    class SimpleNet(nn.Module):
         """Basic Pytorch CNN for MNIST-like data."""
 
         def __init__(self):
-            super(Net, self).__init__()
+            super(SimpleNet, self).__init__()
             self.conv1 = nn.Conv2d(1, 10, kernel_size=5)
             self.conv2 = nn.Conv2d(10, 20, kernel_size=5)
             self.conv2_drop = nn.Dropout2d()
@@ -150,14 +150,58 @@ if python_version.is_compatible():
 
 class CNN(BaseEstimator):  # Inherits sklearn classifier
     """Wraps a PyTorch CNN for the MNIST dataset within an sklearn template
-    by defining .fit(), .predict(), and .predict_proba() functions. This
+
+    Defines ``.fit()``, ``.predict()``, and ``.predict_proba()`` functions. This
     template enables the PyTorch CNN to flexibly be used within the sklearn
     architecture -- meaning it can be passed into functions like
     cross_val_predict as if it were an sklearn model. The cleanlab library
     requires that all models adhere to this basic sklearn template and thus,
     this class allows a PyTorch CNN to be used in for learning with noisy
-    labels among other things."""
+    labels among other things.
 
+    Parameters
+    ----------
+    batch_size: int
+    epochs: int
+    log_interval: int
+    lr: float
+    momentum: float
+    no_cuda: bool
+    seed: int
+    test_batch_size: int, default=None
+    dataset: {'mnist', 'sklearn-digits'}
+    loader: {'train', 'test'}
+      Set to 'test' to force fit() and predict_proba() on test_set
+
+    Note
+    ----
+    Be careful setting the ``loader`` param, it will override every other loader
+    If you set this to 'test', but call .predict(loader = 'train')
+    then .predict() will still predict on test!
+
+    Attributes
+    ----------
+    batch_size: int
+    epochs: int
+    log_interval: int
+    lr: float
+    momentum: float
+    no_cuda: bool
+    seed: int
+    test_batch_size: int, default=None
+    dataset: {'mnist', 'sklearn-digits'}
+    loader: {'train', 'test'}
+      Set to 'test' to force fit() and predict_proba() on test_set
+
+    Methods
+    -------
+    fit
+      fits the model to data.
+    predict
+      get the fitted model's prediction on test data
+    predict_proba
+      get the fitted model's probability distribution over clases for test data
+    """
     def __init__(
             self,
             batch_size=64,
@@ -168,11 +212,7 @@ class CNN(BaseEstimator):  # Inherits sklearn classifier
             no_cuda=False,
             seed=1,
             test_batch_size=None,
-            dataset='mnist',  # you can also choose 'sklearn-digits'
-            # Set to 'test' to force fit() and predict_proba() on test_set
-            # Be careful setting this, it will override every other loader
-            # If you set this to 'test', but call .predict(loader = 'train')
-            # then .predict() will still predict on test!
+            dataset='mnist',
             loader=None,
     ):
         self.batch_size = batch_size
@@ -188,7 +228,7 @@ class CNN(BaseEstimator):  # Inherits sklearn classifier
             torch.cuda.manual_seed(self.seed)
 
         # Instantiate PyTorch model
-        self.model = Net()
+        self.model = SimpleNet()
         if self.cuda:  # pragma: no cover
             self.model.cuda()
 

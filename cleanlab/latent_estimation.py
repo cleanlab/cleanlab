@@ -1,4 +1,3 @@
-
 # coding: utf-8
 
 # Copyright (c) 2017-2050 Curtis G. Northcutt
@@ -53,9 +52,9 @@ from cleanlab.latent_algebra import (
 
 
 def num_label_errors(
-    labels,
-    psx,
-    confident_joint=None,
+        labels,
+        psx,
+        confident_joint=None,
 ):
     """Estimates the number of label errors in `labels`.
 
@@ -159,7 +158,7 @@ def estimate_joint(s, psx=None, confident_joint=None, multi_label=False):
         An np.array of shape (K, K) of type float representing a valid
         estimate of the true joint of noisy and true labels.
     """
-    
+
     if confident_joint is None:
         calibrated_cj = compute_confident_joint(
             s,
@@ -168,16 +167,17 @@ def estimate_joint(s, psx=None, confident_joint=None, multi_label=False):
             multi_label=multi_label,
         )
     else:
-        calibrated_cj = calibrate_confident_joint(confident_joint, s, multi_label)
+        calibrated_cj = calibrate_confident_joint(confident_joint, s,
+                                                  multi_label)
 
     return calibrated_cj / float(np.sum(calibrated_cj))
 
 
 def _compute_confident_joint_multi_label(
-    labels,
-    psx,
-    thresholds=None,
-    calibrate=True,
+        labels,
+        psx,
+        thresholds=None,
+        calibrate=True,
 ):
     """Computes the confident joint for multi_labeled data. Thus,
     input `labels` is a list of lists (or list of iterable).
@@ -238,13 +238,13 @@ def _compute_confident_joint_multi_label(
 
 
 def compute_confident_joint(
-    s,
-    psx,
-    K=None,
-    thresholds=None,
-    calibrate=True,
-    multi_label=False,
-    return_indices_of_off_diagonals=False,
+        s,
+        psx,
+        K=None,
+        thresholds=None,
+        calibrate=True,
+        multi_label=False,
+        return_indices_of_off_diagonals=False,
 ):
     """Estimates P(s,y), the confident counts of the latent
     joint distribution of true and noisy labels
@@ -264,18 +264,6 @@ def compute_confident_joint(
 
     Under certain conditions, estimates are exact, and in most
     conditions, the estimate is within 1 percent of the truth.
-
-    We provide a for-loop based simplification of the confident joint
-    below. This implementation is not efficient, not used in practice, and
-    not complete, but covers the jist of how the confident joint is computed:
-
-    # Confident examples are those that we are confident have label y = k
-    # Estimate the (K, K) matrix of confident examples with s = k_s and y = k_y
-    cj_ish = np.zeros((K, K))
-    for k_s in range(K): # k_s is the class value k of noisy label s
-        for k_y in range(K): # k_y is the (guessed) class k of true label y
-            cj_ish[k_s][k_y] = sum((psx[:,k_y] >= (thresholds[k_y] - 1e-8)) & \
-                               (s == k_s))
 
     Parameters
     ----------
@@ -311,6 +299,40 @@ def compute_confident_joint(
         If true returns indices of examples that were counted in off-diagonals
         of confident joint as a baseline proxy for the label errors. This
         somtimes works as well as pruning.get_noise_indices(confident_joint).
+
+
+    Examples
+    --------
+
+    We provide a for-loop based simplification of the confident joint
+    below. This implementation is not efficient, not used in practice, and
+    not complete, but covers the jist of how the confident joint is computed:
+
+    .. code:: python
+
+        # Confident examples are those that we are confident have label y = k
+        # Estimate (K, K) matrix of confident examples with s = k_s and y = k_y
+        cj_ish = np.zeros((K, K))
+        for k_s in range(K): # k_s is the class value k of noisy label s
+            for k_y in range(K): # k_y is the (guessed) class k of true label y
+                cj_ish[k_s][k_y] = sum((psx[:,k_y] >= (thresholds[k_y] - 1e-8))\
+ & (s == k_s))
+
+    The following is a vectorized (but non-parallelized) implementation of the
+    confident joint, again slow, using for-loops/simplified for understanding.
+    This implementation is 100% accurate, its just not optimized for speed.
+
+    .. code:: python
+
+        confident_joint = np.zeros((K, K), dtype = int)
+        for i, row in enumerate(psx):
+            s_label = s[i]
+            confident_bins = row >= thresholds - 1e-6
+            num_confident_bins = sum(confident_bins)
+            if num_confident_bins == 1:
+                confident_joint[s_label][np.argmax(confident_bins)] += 1
+            elif num_confident_bins > 1:
+                confident_joint[s_label][np.argmax(row)] += 1
         """
 
     if multi_label:
@@ -333,19 +355,6 @@ def compute_confident_joint(
         # P(we predict the given noisy label is k | given noisy label is k)
         thresholds = [np.mean(psx[:, k][s == k]) for k in range(K)]
     thresholds = np.asarray(thresholds)
-
-    # The following code computes the confident joint.
-    # The code is optimized with vectorized functions.
-    # For ease of understanding, here is (a slow) implementation with for loops.
-    #     confident_joint = np.zeros((K, K), dtype = int)
-    #     for i, row in enumerate(psx):
-    #         s_label = s[i]
-    #         confident_bins = row >= thresholds - 1e-6
-    #         num_confident_bins = sum(confident_bins)
-    #         if num_confident_bins == 1:
-    #             confident_joint[s_label][np.argmax(confident_bins)] += 1
-    #         elif num_confident_bins > 1:
-    #             confident_joint[s_label][np.argmax(row)] += 1
 
     # Compute confident joint (vectorized for speed).
 
@@ -370,7 +379,7 @@ def compute_confident_joint(
     y_confident = true_label_guess[at_least_one_confident]
     s_confident = s[at_least_one_confident]
     confident_joint = confusion_matrix(y_confident, s_confident).T
-    
+
     if calibrate:
         confident_joint = calibrate_confident_joint(confident_joint, s)
 
@@ -384,10 +393,10 @@ def compute_confident_joint(
 
 
 def estimate_latent(
-    confident_joint,
-    s,
-    py_method='cnt',
-    converge_latent_estimates=False,
+        confident_joint,
+        s,
+        py_method='cnt',
+        converge_latent_estimates=False,
 ):
     """Computes the latent prior p(y), the noise matrix P(s|y) and the
     inverse noise matrix P(y|s) from the `confident_joint` count(s, y). The
@@ -449,12 +458,12 @@ def estimate_latent(
 
 
 def estimate_py_and_noise_matrices_from_probabilities(
-    s,
-    psx,
-    thresholds=None,
-    converge_latent_estimates=True,
-    py_method='cnt',
-    calibrate=True,
+        s,
+        psx,
+        thresholds=None,
+        converge_latent_estimates=True,
+        py_method='cnt',
+        calibrate=True,
 ):
     """Computes the confident counts
     estimate of latent variables py and the noise rates
@@ -525,13 +534,13 @@ def estimate_py_and_noise_matrices_from_probabilities(
 
 
 def estimate_confident_joint_and_cv_pred_proba(
-    X,
-    s,
-    clf=LogReg(multi_class='auto', solver='lbfgs'),
-    cv_n_folds=5,
-    thresholds=None,
-    seed=None,
-    calibrate=True,
+        X,
+        s,
+        clf=LogReg(multi_class='auto', solver='lbfgs'),
+        cv_n_folds=5,
+        thresholds=None,
+        seed=None,
+        calibrate=True,
 ):
     """Estimates P(s,y), the confident counts of the latent
     joint distribution of true and noisy labels
@@ -606,7 +615,6 @@ def estimate_confident_joint_and_cv_pred_proba(
 
     # Split X and s into "cv_n_folds" stratified folds.
     for k, (cv_train_idx, cv_holdout_idx) in enumerate(kf.split(X, s)):
-
         clf_copy = copy.deepcopy(clf)
 
         # Select the training and holdout cross-validated sets.
@@ -631,14 +639,14 @@ def estimate_confident_joint_and_cv_pred_proba(
 
 
 def estimate_py_noise_matrices_and_cv_pred_proba(
-    X,
-    s,
-    clf=LogReg(multi_class='auto', solver='lbfgs'),
-    cv_n_folds=5,
-    thresholds=None,
-    converge_latent_estimates=False,
-    py_method='cnt',
-    seed=None,
+        X,
+        s,
+        clf=LogReg(multi_class='auto', solver='lbfgs'),
+        cv_n_folds=5,
+        thresholds=None,
+        converge_latent_estimates=False,
+        py_method='cnt',
+        seed=None,
 ):
     """This function computes the out-of-sample predicted
     probability P(s=k|x) for every example x in X using cross
@@ -716,11 +724,11 @@ def estimate_py_noise_matrices_and_cv_pred_proba(
 
 
 def estimate_cv_predicted_probabilities(
-    X,
-    labels,  # class labels can be noisy (s) or not noisy (y).
-    clf=LogReg(multi_class='auto', solver='lbfgs'),
-    cv_n_folds=5,
-    seed=None,
+        X,
+        labels,  # class labels can be noisy (s) or not noisy (y).
+        clf=LogReg(multi_class='auto', solver='lbfgs'),
+        cv_n_folds=5,
+        seed=None,
 ):
     """This function computes the out-of-sample predicted
     probability [P(s=k|x)] for every example in X using cross
@@ -766,13 +774,13 @@ def estimate_cv_predicted_probabilities(
 
 
 def estimate_noise_matrices(
-    X,
-    s,
-    clf=LogReg(multi_class='auto', solver='lbfgs'),
-    cv_n_folds=5,
-    thresholds=None,
-    converge_latent_estimates=True,
-    seed=None,
+        X,
+        s,
+        clf=LogReg(multi_class='auto', solver='lbfgs'),
+        cv_n_folds=5,
+        thresholds=None,
+        converge_latent_estimates=True,
+        seed=None,
 ):
     """Estimates the noise_matrix of shape (K, K). This is the
     fraction of examples in every class, labeled as every other class. The
@@ -829,12 +837,12 @@ def estimate_noise_matrices(
 
 
 def converge_estimates(
-    ps,
-    py,
-    noise_matrix,
-    inverse_noise_matrix,
-    inv_noise_matrix_iterations=5,
-    noise_matrix_iterations=3,
+        ps,
+        py,
+        noise_matrix,
+        inverse_noise_matrix,
+        inv_noise_matrix_iterations=5,
+        noise_matrix_iterations=3,
 ):
     """Computes py := P(y=k) and both noise_matrix and inverse_noise_matrix,
     by numerically converging ps := P(s=k), py, and the noise matrices.
@@ -906,11 +914,11 @@ def converge_estimates(
 
 # pragma: no cover
 def estimate_confident_joint_from_probabilities(
-    s,
-    psx,
-    thresholds=None,
-    force_ps=False,
-    return_list_of_converging_cj_matrices=False,
+        s,
+        psx,
+        thresholds=None,
+        force_ps=False,
+        return_list_of_converging_cj_matrices=False,
 ):
     """DEPRECATED AS OF VERSION 0.0.8.
     REMOVED AS OF VERSION 0.0.10.
@@ -956,11 +964,11 @@ def estimate_confident_joint_from_probabilities(
         matrices. The first item in the list is the original and
         the last item is the final result.
 
-    Output
-    ------
+    Returns
+    -------
         confident_joint matrix count(s, y) : np.array (shape (K, K))
         where np.sum(confident_joint) ~ len(s) and rows sum to np.bincount(s)"""
-    
+
     w = '''WARNING! THIS METHOD IS DEPRICATED.
     USE compute_confident_joint INSTEAD.
     THIS METHOD WILL BE ~REMOVED~ in cleanlab version 0.0.10.'''

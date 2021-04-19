@@ -1,12 +1,6 @@
-cleanlab Models
-===============
 
-.. toctree::
-
-   cleanlab.models
-
-cleanlab.classification module
-=================================
+Classification
+==============
 
 .. automodule:: cleanlab.classification
    :autosummary:
@@ -14,8 +8,8 @@ cleanlab.classification module
    :undoc-members:
    :show-inheritance:
 
-cleanlab.latent\_estimation module
-==================================
+Latent Estimation
+=================
 
 .. automodule:: cleanlab.latent_estimation
    :autosummary:
@@ -23,8 +17,8 @@ cleanlab.latent\_estimation module
    :undoc-members:
    :show-inheritance:
 
-cleanlab.noise\_generation module
-=================================
+Noise Generation
+================
 
 .. automodule:: cleanlab.noise_generation
    :autosummary:
@@ -32,8 +26,8 @@ cleanlab.noise\_generation module
    :undoc-members:
    :show-inheritance:
 
-cleanlab.baseline\_methods module
-=================================
+Baseline Methods
+================
 
 .. automodule:: cleanlab.baseline_methods
    :autosummary:
@@ -41,8 +35,8 @@ cleanlab.baseline\_methods module
    :undoc-members:
    :show-inheritance:
 
-cleanlab.coteaching module
-==========================
+Co-Teaching
+===========
 
 .. automodule:: cleanlab.coteaching
    :autosummary:
@@ -59,16 +53,16 @@ cleanlab.latent\_algebra module
    :undoc-members:
    :show-inheritance:
 
-cleanlab.pruning module
-=======================
+Pruning
+=======
 
 .. automodule:: cleanlab.pruning
    :members:
    :undoc-members:
    :show-inheritance:
 
-cleanlab.util module
-====================
+Utilities
+=========
 
 .. automodule:: cleanlab.util
    :autosummary:
@@ -76,8 +70,8 @@ cleanlab.util module
    :undoc-members:
    :show-inheritance:
 
-cleanlab.polyplex module
-========================
+Polyplex
+========
 
 .. automodule:: cleanlab.polyplex
    :autosummary:
@@ -85,3 +79,9 @@ cleanlab.polyplex module
    :undoc-members:
    :show-inheritance:
 
+Models
+======
+
+.. toctree::
+
+   cleanlab.models
