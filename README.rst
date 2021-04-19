@@ -20,7 +20,7 @@
 * **News! (Feb 2020)**  `cleanlab` now supports `Co-Teaching <https://github.com/cgnorthcutt/cleanlab/blob/master/cleanlab/coteaching.py>`__  `(Han et al., 2018) <https://arxiv.org/abs/1804.06872>`__.
 
 
-|pypi| |os| |py_versions| |build_status| |coverage|
+|pypi| |os| |py_versions| |build_status| |coverage| |docs|
 
 .. |pypi| image:: https://img.shields.io/pypi/v/cleanlab.svg
     :target: https://pypi.org/pypi/cleanlab/
@@ -32,6 +32,8 @@
     :target: https://travis-ci.com/cgnorthcutt/cleanlab
 .. |coverage| image:: https://codecov.io/gh/cgnorthcutt/cleanlab/branch/master/graph/badge.svg
     :target: https://codecov.io/gh/cgnorthcutt/cleanlab
+.. |docs| image:: https://readthedocs.org/projects/cleanlab/badge/?version=latest
+    :target: https://cleanlab.readthedocs.io/en/latest/?badge=latest
 
 ``cleanlab`` **documentation** is available in `this blog post <https://l7.curtisnorthcutt.com/cleanlab-python-package>`__.
 
