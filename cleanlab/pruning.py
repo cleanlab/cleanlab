@@ -265,7 +265,7 @@ def get_noise_indices(
 
     s : np.array
       A binary vector of labels, s, which may contain mislabeling. "s" denotes
-      the noisy label instead of \tilde(y), for ASCII encoding reasons.
+      the noisy label instead of \\tilde(y), for ASCII encoding reasons.
 
     psx : np.array (shape (N, K))
       P(s=k|x) is a matrix with K (noisy) probabilities for each of the N
@@ -298,12 +298,15 @@ def get_noise_indices(
       e.g. if K = 3, num_to_remove_per_class = [5, 0, 1] would return
       the indices of the 5 most likely mislabeled examples in class s = 0,
       and the most likely mislabeled example in class s = 1.
-      ***Only set this parameter if prune_method == 'prune_by_class'
-      You may use with prune_method == 'prune_by_noise_rate', but
-      if num_to_remove_per_class == k, then either k-1, k, or k+1
+
+      Note
+      ----
+      Only set this parameter if ``prune_method == 'prune_by_class'``
+      You may use with ``prune_method == 'prune_by_noise_rate'``, but
+      if ``num_to_remove_per_class == k``, then either k-1, k, or k+1
       examples may be removed for any class. This is because noise rates
       are floats, and rounding may cause a one-off. If you need exactly
-      'k' examples removed from every class, you should use 'prune_by_class'.
+      'k' examples removed from every class, you should use ``'prune_by_class'``
 
     prune_method : str (default: 'prune_by_noise_rate')
       Possible Values: 'prune_by_class', 'prune_by_noise_rate', or 'both'.
@@ -316,12 +319,12 @@ def get_noise_indices(
       3. 'both': Finds the examples satisfying (1) AND (2) and
       removes their set conjunction.
 
-    sorted_index_method : str [None, 'prob_given_label', 'normalized_margin']
+    sorted_index_method : {:obj:`None`, :obj:`prob_given_label`, :obj:`normalized_margin`}
       If None, returns a boolean mask (true if example at index is label error)
       If not None, returns an array of the label error indices
       (instead of a bool mask) where error indices are ordered by the either:
-        'normalized_margin' := normalized margin (p(s = k) - max(p(s != k)))
-        'prob_given_label' := [psx[i][labels[i]] for i in label_errors_idx]
+      ``'normalized_margin' := normalized margin (p(s = k) - max(p(s != k)))``
+      ``'prob_given_label' := [psx[i][labels[i]] for i in label_errors_idx]``
 
     multi_label : bool
       If true, s should be an iterable (e.g. list) of iterables, containing a
@@ -488,8 +491,8 @@ def keep_at_least_n_per_class(prune_count_matrix, n, frac_noise=1.0):
         frac_of_noise * number_of_mislabeled_examples_in_class_k, or
         frac_of_noise * inverse_noise_rate_class_k * num_examples_s_equal_k
 
-    Output
-    ------
+    Returns
+    -------
 
     prune_count_matrix : np.array of shape (K, K), K = number of classes
         Number of examples to remove from each class, for every other class."""

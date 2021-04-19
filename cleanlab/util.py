@@ -209,9 +209,8 @@ def value_counts(x):
 
 def round_preserving_sum(iterable):
     """Rounds an iterable of floats while retaining the original summed value.
-    Function parameters should be documented in the ``Args`` section. The name
-    of each parameter is required. The type and description of each parameter
-    is optional, but should be included if not obvious.
+    The name of each parameter is required. The type and description of each
+    parameter is optional, but should be included if not obvious.
 
     The while loop in this code was adapted from:
     https://github.com/cgdeboer/iteround
@@ -223,7 +222,7 @@ def round_preserving_sum(iterable):
 
     Returns
     -------
-    iterable : list<int> or np.array<int>
+    list<int> or np.array<int>
         The iterable rounded to int, preserving sum."""
 
     floats = np.asarray(iterable, dtype=float)
@@ -248,11 +247,13 @@ def round_preserving_row_totals(confident_joint):
     while preserving the totals of reach row.
     Assumes that cj is a 2D np.array of type float.
 
-    Parameters:
+    Parameters
+    ----------
     confident_joint : 2D np.array<float> of shape (K, K)
         See compute_confident_joint docstring for details.
 
-    Returns:
+    Returns
+    -------
     confident_joint : 2D np.array<int> of shape (K,K)
         Rounded to int while preserving row totals."""
 
