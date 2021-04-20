@@ -57,6 +57,7 @@ Pruning
 =======
 
 .. automodule:: cleanlab.pruning
+   :autosummary:
    :members:
    :undoc-members:
    :show-inheritance:
