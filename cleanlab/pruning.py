@@ -127,12 +127,10 @@ def _get_shared_data():  # pragma: no cover
     )
     multi_label = mp_params['multi_label']
     if multi_label:  # Shared data is passed as one-hot encoded matrix
-        print('before', mp_params['s'])
         s = onehot2int(_to_np_array(
             mp_arr=mp_params['s'],
             shape=(psx.shape[0], psx.shape[1]),
         ))
-        print('after', s)
     else:
         s = _to_np_array(mp_params['s'])
     return s, s_counts, prune_count_matrix, psx, multi_label
