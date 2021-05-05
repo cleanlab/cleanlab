@@ -1,6 +1,6 @@
 # Find label errors in text data (example Amazon Reviews)
 
-Download the Amazon 5core data from https://jmcauley.ucsd.edu/data/amazon/. The dataset has also been made available at https://nijianmo.github.io/amazon/index.html.
+We released pre-prepared version of the Amazon5core reviews dataset. Download it here: https://github.com/cgnorthcutt/label-errors/releases/tag/amazon-reviews-dataset
 
 From the Amazon 5core dataset (40+ million examples), select only the data that adheres to:
 1. non-empty reviews.
