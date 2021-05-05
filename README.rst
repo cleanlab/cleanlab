@@ -5,7 +5,7 @@
 
 |  
 
-``cleanlab`` is python package for **machine learning with noisy labels**. ``cleanlab`` ``clean``\s ``lab``\els and supports **finding, quantifying, and learning** with label errors in datasets.
+``cleanlab`` is python package for **machine learning with noisy labels**. ``cleanlab`` ``clean``\s ``lab``\els and supports **finding, quantifying, and learning** with label errors in datasets. See datasets cleaned with `cleanlab` at `labelerrors.com <https://labelerrors.com>`__.
 
 Check out the: `cleanlab code documentation <https://cleanlab.readthedocs.io/>`__. 
 
@@ -13,8 +13,8 @@ Check out the: `cleanlab code documentation <https://cleanlab.readthedocs.io/>`_
 
 ****
 
-* **News! (Apr 2021)**  `cleanlab` published in the  `confident learning paper (Northcutt, Jiang, & Chuang, 2021) <https://jair.org/index.php/jair/article/view/12125>`__ in the Journal of AI Research.
-* **News! (Mar 2021)**  `cleanlab` supports ICLR workshop paper `(Northcutt, Athalye, & Mueller, 2021) <https://arxiv.org/abs/1911.00068>`__, by finding label errors across 10 common benchark datasets (ImageNet, CIFAR-10, CIFAR-100, Caltech-256, Quickdraw, MNIST, Amazon Reviews, IMDB, 20 News Groups, AudioSet). Along with the paper, the authors launched `labelerrors.com <https://labelerrors.com>`__ where you can view the label errors in these datasets.
+* **News! (Apr 2021)**  The Journal of AI Research published the `confident learning paper (Northcutt, Jiang, & Chuang, 2021) <https://jair.org/index.php/jair/article/view/12125>`__.
+* **News! (Mar 2021)**  `cleanlab` used to find and fix the label errors in 10 of the most common ML benchmark test sets, published in `ICLR 2021 RobustML workshop <https://sites.google.com/connect.hku.hk/robustml-2021/accepted-papers/paper-050>`__ and `ICLR 2021 WeaSuL workshop <https://weasul.github.io/papers/27.pdf>`__. Along with `the paper (Northcutt, Athalye, & Mueller, 2021) <https://arxiv.org/abs/1911.00068>`__, the authors launched `labelerrors.com <https://labelerrors.com>`__ where you can view the label errors in these datasets.
 * **News! (Dec 2020)**  `cleanlab` supports NeurIPS workshop paper `(Northcutt, Athalye, & Lin, 2020) <http://securedata.lol/camera_ready/28.pdf>`__.
 * **News! (Dec 2020)**  `cleanlab` supports `PU learning <https://github.com/cgnorthcutt/cleanlab#pu-learning-with-cleanlab>`__.
 * **News! (Jan 2020)** `cleanlab` achieves state-of-the-art on CIFAR-10 for learning with noisy labels. Code to reproduce is here:  `examples/cifar10 <https://github.com/cgnorthcutt/cleanlab/tree/master/examples/cifar10>`__. This is a great place for newcomers to see how to use cleanlab on real datasets. Data needed is available in the `confidentlearning-reproduce <https://github.com/cgnorthcutt/confidentlearning-reproduce>`__ repo, ``cleanlab`` v0.1.0 reproduces results in `the CL paper <https://arxiv.org/abs/1911.00068>`__.
