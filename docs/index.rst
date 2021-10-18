@@ -9,9 +9,13 @@ cleanlab API Documentation
 If you're looking for technical details on cleanlab's API,
 you're in the right place.
 
-For more narrative walkthroughs of cleanlab fundamentals or
-example use cases, check out this `blog post <https://l7.curtisnorthcutt.com/cleanlab-python-package>`_
-and our `examples repo <https://github.com/cleanlab/cleanlab/tree/master/examples>`_.
+Link to the Cleanlab Open-Source tool: https://github.com/cleanlab/cleanlab 
+
+See Cleanlab in action on 10 of the most commonly used datasets in machine learning: https://labelerrors.com/
+
+For narrative walkthroughs of Cleanlab use cases, see this `blog post <https://l7.curtisnorthcutt.com/cleanlab-python-package>`_.
+
+For example usages of Cleanlab, check out: https://github.com/cleanlab/cleanlab/tree/master/examples
 
 For research and scientific details, check out `the paper <https://www.jair.org/index.php/jair/article/view/12125/26676>`_.
 
