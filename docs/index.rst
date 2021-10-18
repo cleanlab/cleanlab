@@ -11,7 +11,7 @@ you're in the right place.
 
 For more narrative walkthroughs of cleanlab fundamentals or
 example use cases, check out this `blog post <https://l7.curtisnorthcutt.com/cleanlab-python-package>`_
-and our `examples repo <https://github.com/cleanlab/examples/>`_.
+and our `examples repo <https://github.com/cleanlab/cleanlab/tree/master/examples>`_.
 
 For research and scientific details, check out `the paper <https://www.jair.org/index.php/jair/article/view/12125/26676>`_.
 
