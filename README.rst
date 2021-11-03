@@ -1,25 +1,15 @@
 .. figure:: https://raw.githubusercontent.com/cgnorthcutt/cleanlab/master/img/cleanlab_logo.png
-   :target: https://github.com/cgnorthcutt/cleanlab/
+   :target: https://github.com/cleanlab/cleanlab/
    :align: center
    :alt: cleanlab 
 
 |  
 
-``cleanlab`` is the data-centric python package for **machine learning with noisy labels**. ``cleanlab`` ``clean``\s ``lab``\els and supports **finding, quantifying, and learning** with label errors in datasets. See datasets cleaned with ``cleanlab`` at `labelerrors.com <https://labelerrors.com>`__.
+``cleanlab`` is the data-centric ML ops package for **machine learning with noisy labels**. ``cleanlab`` ``clean``\s ``lab``\els and supports **finding, quantifying, and learning** with label errors in datasets. See datasets cleaned with ``cleanlab`` at `labelerrors.com <https://labelerrors.com>`__.
 
 Check out the: `cleanlab code documentation <https://cleanlab.readthedocs.io/>`__. 
 
 ``cleanlab`` is powered by **confident learning**, published in this `paper <https://jair.org/index.php/jair/article/view/12125>`__ | `blog <https://l7.curtisnorthcutt.com/confident-learning>`__. 
-
-****
-
-* **News! (Apr 2021)**  The Journal of AI Research published the `confident learning paper (Northcutt, Jiang, & Chuang, 2021) <https://jair.org/index.php/jair/article/view/12125>`__.
-* **News! (Mar 2021)**  `cleanlab` used to find and fix the label errors in 10 of the most common ML benchmark test sets, published in `ICLR 2021 RobustML workshop <https://sites.google.com/connect.hku.hk/robustml-2021/accepted-papers/paper-050>`__ and `ICLR 2021 WeaSuL workshop <https://weasul.github.io/papers/27.pdf>`__. Along with `the paper (Northcutt, Athalye, & Mueller, 2021) <https://arxiv.org/abs/1911.00068>`__, the authors launched `labelerrors.com <https://labelerrors.com>`__ where you can view the label errors in these datasets.
-* **News! (Dec 2020)**  `cleanlab` supports NeurIPS workshop paper `(Northcutt, Athalye, & Lin, 2020) <http://securedata.lol/camera_ready/28.pdf>`__.
-* **News! (Dec 2020)**  `cleanlab` supports `PU learning <https://github.com/cgnorthcutt/cleanlab#pu-learning-with-cleanlab>`__.
-* **News! (Jan 2020)** `cleanlab` achieves state-of-the-art on CIFAR-10 for learning with noisy labels. Code to reproduce is here:  `examples/cifar10 <https://github.com/cgnorthcutt/cleanlab/tree/master/examples/cifar10>`__. This is a great place for newcomers to see how to use cleanlab on real datasets. Data needed is available in the `confidentlearning-reproduce <https://github.com/cgnorthcutt/confidentlearning-reproduce>`__ repo, ``cleanlab`` v0.1.0 reproduces results in `the CL paper <https://arxiv.org/abs/1911.00068>`__.
-* **News! (Feb 2020)**  `cleanlab` now natively supports Mac, Linux, and Windows.
-* **News! (Feb 2020)**  `cleanlab` now supports `Co-Teaching <https://github.com/cgnorthcutt/cleanlab/blob/master/cleanlab/coteaching.py>`__  `(Han et al., 2018) <https://arxiv.org/abs/1804.06872>`__.
 
 
 |pypi| |os| |py_versions| |build_status| |coverage| |docs|
@@ -28,16 +18,66 @@ Check out the: `cleanlab code documentation <https://cleanlab.readthedocs.io/>`_
     :target: https://pypi.org/pypi/cleanlab/
 .. |os| image:: https://img.shields.io/badge/platform-windows%20%7C%20macos%20%7C%20linux-lightgrey
     :target: https://pypi.org/pypi/cleanlab/
-.. |py_versions| image:: https://img.shields.io/pypi/pyversions/cleanlab.svg
+.. |py_versions| image:: https://img.shields.io/badge/python-2.7%20%7C%203.4%2B-blue
     :target: https://pypi.org/pypi/cleanlab/
-.. |build_status| image:: https://travis-ci.com/cgnorthcutt/cleanlab.svg?branch=master
-    :target: https://travis-ci.com/cgnorthcutt/cleanlab
+.. |build_status| image:: https://travis-ci.com/cleanlab/cleanlab.svg?branch=master
+    :target: https://app.travis-ci.com/github/cleanlab/cleanlab
 .. |coverage| image:: https://codecov.io/gh/cgnorthcutt/cleanlab/branch/master/graph/badge.svg
     :target: https://codecov.io/gh/cgnorthcutt/cleanlab
 .. |docs| image:: https://readthedocs.org/projects/cleanlab/badge/?version=latest
     :target: https://cleanlab.readthedocs.io/en/latest/?badge=latest
 
-Past release notes and **future features planned**  is available `here <https://github.com/cgnorthcutt/cleanlab/blob/master/cleanlab/version.py>`__.
+
+Get started with tutorials
+==========================
+
+* (Easiest) Improve a simple classifier from 60% to 80% accuracy on the Iris dataset:
+  
+  * `TUTORIAL: simple cleanlab on Iris <https://github.com/cleanlab/cleanlab/blob/master/examples/iris_simple_example.ipynb>`__.
+
+* Run Cleanlab on 4 datasets using 9 different classifiers/models:
+  
+  * `TUTORIAL: classifier comparison <https://github.com/cleanlab/cleanlab/blob/master/examples/classifier_comparison.ipynb>`__.
+
+* Find `label errors <https://openreview.net/forum?id=XccDXrDNLek>`_ in MNIST, ImageNet, CIFAR-10/100, Caltech-256, QuickDraw, Amazon Reviews, IMDB, 20 Newsgroups, & AudioSet:
+
+  * `TUTORIAL: Find Label Errors in the 10 most common ML benchmark test datasets with Cleanlab <https://github.com/cleanlab/label-errors/blob/main/examples/Tutorial%20-%20How%20To%20Find%20Label%20Errors%20With%20CleanLab.ipynb>`__.
+
+* Demystifying `Confident Learning <https://www.jair.org/index.php/jair/article/view/12125>`_ with just numpy and for-loops:
+
+  * `TUTORIAL: confident learning with just numpy and for-loops <https://github.com/cleanlab/cleanlab/blob/master/examples/simplifying_confident_learning_tutorial.ipynb>`__.
+
+****
+
+.. raw:: html
+
+  <details><summary><b>News! (2021) </b> -- Cleanlab finds pervasive label errors in the most common ML test sets (click to learn more) </summary>
+   <p>
+
+   * **News! (Apr 2021)**  The Journal of AI Research published the `confident learning paper (Northcutt, Jiang, & Chuang, 2021) <https://jair.org/index.php/jair/article/view/12125>`__.
+   * **News! (Mar 2021)**  `cleanlab` used to find and fix the label errors in 10 of the most common ML benchmark test sets, published in `ICLR 2021 RobustML workshop <https://sites.google.com/connect.hku.hk/robustml-2021/accepted-papers/paper-050>`__ and `ICLR 2021 WeaSuL workshop <https://weasul.github.io/papers/27.pdf>`__. Along with `the paper (Northcutt, Athalye, & Mueller, 2021) <https://arxiv.org/abs/1911.00068>`__, the authors launched `labelerrors.com <https://labelerrors.com>`__ where you can view the label errors in these datasets.
+
+
+   </p>
+   </details>
+ 
+ 
+  <details><summary><b>News! (2020) </b> -- Cleanlab adds support for all OS, achieves state-of-the-art, supports co-teaching, and more (click to learn more) </summary>
+   <p>
+   
+   * **News! (Dec 2020)**  `cleanlab` supports NeurIPS workshop paper `(Northcutt, Athalye, & Lin, 2020) <http://securedata.lol/camera_ready/28.pdf>`__.
+   * **News! (Dec 2020)**  `cleanlab` supports `PU learning <https://github.com/cleanlab/cleanlab#pu-learning-with-cleanlab>`__.
+   * **News! (Jan 2020)** `cleanlab` achieves state-of-the-art on CIFAR-10 for learning with noisy labels. Code to reproduce is here:  `examples/cifar10 <https://github.com/cleanlab/cleanlab/tree/master/examples/cifar10>`__. This is a great place for newcomers to see how to use cleanlab on real datasets. Data needed is available in the `confidentlearning-reproduce <https://github.com/cgnorthcutt/confidentlearning-reproduce>`__ repo, ``cleanlab`` v0.1.0 reproduces results in `the CL paper <https://arxiv.org/abs/1911.00068>`__.
+   * **News! (Feb 2020)**  `cleanlab` now natively supports Mac, Linux, and Windows.
+   * **News! (Feb 2020)**  `cleanlab` now supports `Co-Teaching <https://github.com/cleanlab/cleanlab/blob/master/cleanlab/coteaching.py>`__  `(Han et al., 2018) <https://arxiv.org/abs/1804.06872>`__.
+
+
+   </p>
+   </details>
+
+Past release notes and **future features planned**  is available `here <https://github.com/cleanlab/cleanlab/blob/master/cleanlab/version.py>`__.
+
+****
 
 So fresh, so ``cleanlab`` 
 =========================
@@ -45,8 +85,6 @@ So fresh, so ``cleanlab``
 ``cleanlab`` finds and cleans label errors in any dataset using `state-of-the-art algorithms <https://arxiv.org/abs/1911.00068>`__ to find label errors, characterize noise, and learn in spite of it. ``cleanlab`` is fast: its built on optimized algorithms and parallelized across CPU threads automatically. ``cleanlab`` is powered by `provable guarantees <https://arxiv.org/abs/1911.00068>`__ of exact noise estimation and label error finding in realistic cases when model output probabilities are erroneous. ``cleanlab`` supports multi-label, multiclass, sparse matrices, etc. By default, ``cleanlab`` requires no hyper-parameters.
 
 ``cleanlab`` implements the family of theory and algorithms called `confident learning <https://arxiv.org/abs/1911.00068>`__ with provable guarantees of exact noise estimation and label error finding (even when model output probabilities are noisy/imperfect). 
-
-**How does confident learning work?** See:  `TUTORIAL: confident learning with just numpy and for-loops <https://github.com/cgnorthcutt/cleanlab/blob/master/examples/simplifying_confident_learning_tutorial.ipynb>`__.
 
 ``cleanlab`` supports most weak supervision tasks: multi-label, multiclass, sparse matrices, etc. 
 
@@ -65,7 +103,7 @@ Find label errors with PyTorch, Tensorflow, MXNet, etc. in 1 line of code.
 
    # Compute psx (n x m matrix of predicted probabilities) on your own, with any classifier.
    # Here is an example that shows in detail how to compute psx on CIFAR-10:
-   #    https://github.com/cgnorthcutt/cleanlab/tree/master/examples/cifar10
+   #    https://github.com/cleanlab/cleanlab/tree/master/examples/cifar10
    # Be sure you compute probs in a holdout/out-of-sample manner (e.g. cross-validation)
    # Now getting label errors is trivial with cleanlab... its one line of code.
    # Label errors are ordered by likelihood of being an error. First index is most likely error.
@@ -77,7 +115,7 @@ Find label errors with PyTorch, Tensorflow, MXNet, etc. in 1 line of code.
        sorted_index_method='normalized_margin', # Orders label errors
     )
 
-Pre-computed out-of-sample predicted probabilities for CIFAR-10 train set are available here: [`[LINK] <https://github.com/cgnorthcutt/cleanlab/tree/master/examples/cifar10>`__].
+Pre-computed out-of-sample predicted probabilities for CIFAR-10 train set are available here: [`[LINK] <https://github.com/cleanlab/cleanlab/tree/master/examples/cifar10>`__].
    
 Learning with noisy labels in 3 lines of code!
 ==============================================
@@ -94,7 +132,7 @@ Learning with noisy labels in 3 lines of code!
    predicted_test_labels = lnl.predict(X_test)
 
 
-Check out these `examples <https://github.com/cgnorthcutt/cleanlab/tree/master/examples>`__ and `tests <https://github.com/cgnorthcutt/cleanlab/tree/master/tests>`__ (includes how to use pyTorch, FastText, etc.).
+Check out these `examples <https://github.com/cleanlab/cleanlab/tree/master/examples>`__ and `tests <https://github.com/cleanlab/cleanlab/tree/master/tests>`__ (includes how to use pyTorch, FastText, etc.).
 
 
 Installation
@@ -118,14 +156,14 @@ Developer release:
 
 .. code-block:: bash
 
-   $ pip install git+https://github.com/cgnorthcutt/cleanlab.git
+   $ pip install git+https://github.com/cleanlab/cleanlab.git
 
 To install with the codebase (enabling you to make modifications):
 
 .. code-block:: bash
 
    $ conda update pip # if you use conda
-   $ git clone https://github.com/cgnorthcutt/cleanlab.git
+   $ git clone https://github.com/cleanlab/cleanlab.git
    $ cd cleanlab
    $ pip install -e .
 
@@ -167,20 +205,20 @@ If you use this package for binary classification, please also cite the `rankpru
 Reproducing Results in  `confident learning paper <https://arxiv.org/abs/1911.00068>`__ 
 =======================================================================================
 
-See `cleanlab/examples/cifar10 <https://github.com/cgnorthcutt/cleanlab/tree/master/examples/cifar10>`__ and  `cleanlab/examples/imagenet <https://github.com/cgnorthcutt/cleanlab/tree/master/examples/imagenet>`__. You'll need to ``git clone`` `confidentlearning-reproduce <https://github.com/cgnorthcutt/confidentlearning-reproduce>`__  which contains the data and files needed to reproduce the CIFAR-10 results.
+See `cleanlab/examples/cifar10 <https://github.com/cleanlab/cleanlab/tree/master/examples/cifar10>`__ and  `cleanlab/examples/imagenet <https://github.com/cleanlab/cleanlab/tree/master/examples/imagenet>`__. You'll need to ``git clone`` `confidentlearning-reproduce <https://github.com/cgnorthcutt/confidentlearning-reproduce>`__  which contains the data and files needed to reproduce the CIFAR-10 results.
 
 
 ``cleanlab``: State of the Art Learning with Noisy Labels in CIFAR
 ------------------------------------------------------------------
 
 
-A [`step-by-step guide <https://github.com/cgnorthcutt/cleanlab/tree/master/examples/cifar10>`__] to reproduce these results is available [`here <https://github.com/cgnorthcutt/cleanlab/tree/master/examples/cifar10>`__]. This guide is also helpful as a tutorial to use cleanlab on any large-scale dataset.
+A [`step-by-step guide <https://github.com/cleanlab/cleanlab/tree/master/examples/cifar10>`__] to reproduce these results is available [`here <https://github.com/cleanlab/cleanlab/tree/master/examples/cifar10>`__]. This guide is also helpful as a tutorial to use cleanlab on any large-scale dataset.
 
 .. figure:: https://raw.githubusercontent.com/cgnorthcutt/cleanlab/master/img/cifar10_benchmarks.png
    :align: center
    :alt: Image depicting CIFAR10 benchmarks 
 
-Comparison of confident learning (CL) and `cleanlab` versus seven recent methods for learning with noisy labels in CIFAR-10. Highlighted cells show CL robustness to sparsity. The five CL methods estimate label errors, remove them, then train on the cleaned data using `Co-Teaching <https://github.com/cgnorthcutt/cleanlab/blob/master/cleanlab/coteaching.py>`__.
+Comparison of confident learning (CL) and `cleanlab` versus seven recent methods for learning with noisy labels in CIFAR-10. Highlighted cells show CL robustness to sparsity. The five CL methods estimate label errors, remove them, then train on the cleaned data using `Co-Teaching <https://github.com/cleanlab/cleanlab/blob/master/cleanlab/coteaching.py>`__.
 
 Observe how cleanlab (CL methods) are robust to large sparsity in label noise whereas prior art tends to reduce in performance for increased sparsity, as shown by the red highlighted regions. This is important because real-world label noise is often sparse, e.g. a tiger is likely to be mislabeled as a lion, but not as most other classes like airplane, bathtub, and microwave.
 
@@ -218,7 +256,7 @@ Use ``cleanlab`` to learn with noisy labels regardless of dataset distribution o
 
 Each sub-figure in the figure above depicts the decision boundary learned using ``cleanlab.classification.LearningWithNoisyLabels`` in the presence of extreme (\~35%) label errors. Label errors are circled in green. Label noise is class-conditional (not simply uniformly random). Columns are organized by the classifier used, except the left-most column which depicts the ground-truth dataset distribution. Rows are organized by dataset used.
 
-The code to reproduce this figure is available `here <https://github.com/cgnorthcutt/cleanlab/blob/master/examples/classifier_comparison.ipynb>`__.
+The code to reproduce this figure is available `here <https://github.com/cleanlab/cleanlab/blob/master/examples/classifier_comparison.ipynb>`__.
 
 Each figure depicts accuracy scores on a test set as decimal values: 
 
@@ -244,9 +282,9 @@ Get started with easy, quick examples.
 New to **cleanlab**? Start with:
 
 1. `Visualizing confident
-   learning <https://github.com/cgnorthcutt/cleanlab/blob/master/examples/visualizing_confident_learning.ipynb>`__
+   learning <https://github.com/cleanlab/cleanlab/blob/master/examples/visualizing_confident_learning.ipynb>`__
 2. `A simple example of learning with noisy labels on the multiclass
-   Iris dataset <https://github.com/cgnorthcutt/cleanlab/blob/master/examples/iris_simple_example.ipynb>`__.
+   Iris dataset <https://github.com/cleanlab/cleanlab/blob/master/examples/iris_simple_example.ipynb>`__.
 
 These examples show how easy it is to characterize label noise in
 datasets, learn with noisy labels, identify label errors, estimate
@@ -298,17 +336,17 @@ model into a Python class that inherits the
    lnl = LearningWithNoisyLabels(clf=YourFavoriteModel())
    lnl.fit(train_data, train_labels_with_errors)
 
-Want to see a working example? `Here’s a compliant PyTorch MNIST CNN class <https://github.com/cgnorthcutt/cleanlab/blob/master/cleanlab/models/mnist_pytorch.py#L28>`__
+Want to see a working example? `Here’s a compliant PyTorch MNIST CNN class <https://github.com/cleanlab/cleanlab/blob/master/cleanlab/models/mnist_pytorch.py#L28>`__
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 As you can see
-`here <https://github.com/cgnorthcutt/cleanlab/blob/master/cleanlab/models/mnist_pytorch.py#L28>`__,
+`here <https://github.com/cleanlab/cleanlab/blob/master/cleanlab/models/mnist_pytorch.py#L28>`__,
 technically you don’t actually need to inherit from
 ``sklearn.base.BaseEstimator``, as you can just create a class that
 defines .fit(), .predict(), and .predict_proba(), but inheriting makes
 downstream scikit-learn applications like hyper-parameter optimization
 work seamlessly. For example, the `LearningWithNoisyLabels()
-model <https://github.com/cgnorthcutt/cleanlab/blob/master/cleanlab/classification.py#L48>`__
+model <https://github.com/cleanlab/cleanlab/blob/master/cleanlab/classification.py#L48>`__
 is fully compliant.
 
 Note, some libraries exists to do this for you. For pyTorch, check out
@@ -516,18 +554,18 @@ The Polyplex
 The key to learning in the presence of label errors is estimating the joint distribution between the actual, hidden labels ‘*y*’ and the observed, noisy labels ‘*s*’. Using ``cleanlab`` and the theory of confident learning, we can completely characterize the trace of the latent joint distribution, *trace(P(s,y))*, given *p(y)*, for any fraction of label errors, i.e. for any trace of the noisy channel, *trace(P(s|y))*.
 
 You can check out how to do this yourself here: 1. `Drawing
-Polyplices <https://github.com/cgnorthcutt/cleanlab/blob/master/examples/drawing_polyplices.ipynb>`__ 2. `Computing
-Polyplices <https://github.com/cgnorthcutt/cleanlab/blob/master/cleanlab/polyplex.py>`__
+Polyplices <https://github.com/cleanlab/cleanlab/blob/master/examples/drawing_polyplices.ipynb>`__ 2. `Computing
+Polyplices <https://github.com/cleanlab/cleanlab/blob/master/cleanlab/polyplex.py>`__
 
 
 Join our community
 ------------------
 
-Have ideas for the future of cleanlab? How are you using cleanlab?  `Join the discussion <https://github.com/cgnorthcutt/cleanlab/discussions>`__.
+Have ideas for the future of cleanlab? How are you using cleanlab?  `Join the discussion <https://github.com/cleanlab/cleanlab/discussions>`__.
 
-Have code improvements for cleanlab?  `Submit a code pull request <https://github.com/cgnorthcutt/cleanlab/issues/new>`__.
+Have code improvements for cleanlab?  `Submit a code pull request <https://github.com/cleanlab/cleanlab/issues/new>`__.
 
-Do you have an issue with cleanlab?  `Submit an issue <https://github.com/cgnorthcutt/cleanlab/issues/new>`__.
+Do you have an issue with cleanlab?  `Submit an issue <https://github.com/cleanlab/cleanlab/issues/new>`__.
 
 
 License
@@ -539,6 +577,6 @@ cleanlab is free software: you can redistribute it and/or modify it under the te
 
 cleanlab is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
 
-See `GNU General Public LICENSE <https://github.com/cgnorthcutt/cleanlab/blob/master/LICENSE>`__ for details.
+See `GNU General Public LICENSE <https://github.com/cleanlab/cleanlab/blob/master/LICENSE>`__ for details.
 
 THIS LICENSE APPLIES TO THIS VERSION AND ALL PREVIOUS VERSIONS OF cleanlab.
