@@ -51,25 +51,23 @@ Get started with tutorials
 
 .. raw:: html
 
-  <details><summary><b>News! (2021) </b> -- Cleanlab finds pervasive label errors in the most common ML test sets (click to learn more) </summary>
-   <p>
-
-   * **News! (Apr 2021)**  The Journal of AI Research published the `confident learning paper (Northcutt, Jiang, & Chuang, 2021) <https://jair.org/index.php/jair/article/view/12125>`__.
-   * **News! (Mar 2021)**  `cleanlab` used to find and fix the label errors in 10 of the most common ML benchmark test sets, published in `ICLR 2021 RobustML workshop <https://sites.google.com/connect.hku.hk/robustml-2021/accepted-papers/paper-050>`__ and `ICLR 2021 WeaSuL workshop <https://weasul.github.io/papers/27.pdf>`__. Along with `the paper (Northcutt, Athalye, & Mueller, 2021) <https://arxiv.org/abs/1911.00068>`__, the authors launched `labelerrors.com <https://labelerrors.com>`__ where you can view the label errors in these datasets.
-
-
-   </p>
-   </details>
+    <details><summary><b>News! (2021) </b> -- <code>cleanlab</code> finds pervasive label errors in the most common ML test sets (<b>click to learn more</b>) </summary>
+      <ul>
+        <li> <b>Apr 2021 🎉</b>  The Journal of AI Research published the <a href="https://jair.org/index.php/jair/article/view/12125">confident learning paper (Northcutt, Jiang, & Chuang, 2021)</a>.</li>
+        <li><b>Mar 2021 😲</b>  <code>cleanlab</code> used to find and fix the label errors in 10 of the most common ML benchmark test sets, published in <a href="https://sites.google.com/connect.hku.hk/robustml-2021/accepted-papers/paper-050">ICLR 2021 RobustML workshop</a> and <a href="https://weasul.github.io/papers/27.pdf">ICLR 2021 WeaSuL workshop</a>. Along with <a href="https://arxiv.org/abs/1911.00068">the paper (Northcutt, Athalye, & Mueller, 2021)</a>, the authors launched <a href="https://labelerrors.com">labelerrors.com</a> where you can view the label errors in these datasets.</li>
+      </ul>
+    </details>
  
- 
-  <details><summary><b>News! (2020) </b> -- Cleanlab adds support for all OS, achieves state-of-the-art, supports co-teaching, and more (click to learn more) </summary>
+  <details><summary><b>News! (2020) </b> -- <code>cleanlab</code> adds support for all OS, achieves state-of-the-art, supports co-teaching, and more (<b>click to learn more</b>) </summary>
    <p>
    
-   * **News! (Dec 2020)**  `cleanlab` supports NeurIPS workshop paper `(Northcutt, Athalye, & Lin, 2020) <http://securedata.lol/camera_ready/28.pdf>`__.
-   * **News! (Dec 2020)**  `cleanlab` supports `PU learning <https://github.com/cleanlab/cleanlab#pu-learning-with-cleanlab>`__.
-   * **News! (Jan 2020)** `cleanlab` achieves state-of-the-art on CIFAR-10 for learning with noisy labels. Code to reproduce is here:  `examples/cifar10 <https://github.com/cleanlab/cleanlab/tree/master/examples/cifar10>`__. This is a great place for newcomers to see how to use cleanlab on real datasets. Data needed is available in the `confidentlearning-reproduce <https://github.com/cgnorthcutt/confidentlearning-reproduce>`__ repo, ``cleanlab`` v0.1.0 reproduces results in `the CL paper <https://arxiv.org/abs/1911.00068>`__.
-   * **News! (Feb 2020)**  `cleanlab` now natively supports Mac, Linux, and Windows.
-   * **News! (Feb 2020)**  `cleanlab` now supports `Co-Teaching <https://github.com/cleanlab/cleanlab/blob/master/cleanlab/coteaching.py>`__  `(Han et al., 2018) <https://arxiv.org/abs/1804.06872>`__.
+   <ul>
+      <li> <b>Dec 2020 🎉</b>  <code>cleanlab</code> supports NeurIPS workshop paper <a href="http://securedata.lol/camera_ready/28.pdf">(Northcutt, Athalye, & Lin, 2020)</a>.</li>
+      <li> <b>Dec 2020 🤖</b>  <code>cleanlab</code>` supports <a href="https://github.com/cleanlab/cleanlab#pu-learning-with-cleanlab">PU learning</a>.</li>
+      <li> <b>Feb 2020 🤖</b>  <code>cleanlab</code> now natively supports Mac, Linux, and Windows.</li>
+      <li> <b>Feb 2020 🤖</b>  <code>cleanlab</code> now supports <a href="https://github.com/cleanlab/cleanlab/blob/master/cleanlab/coteaching.py">Co-Teaching</a> <a href="https://arxiv.org/abs/1804.06872">(Han et al., 2018)</a>.</li>
+      <li> <b>Jan 2020 🎉</b> <code>cleanlab</code> achieves state-of-the-art on CIFAR-10 for learning with noisy labels. Code to reproduce is here:  <a href="https://github.com/cleanlab/cleanlab/tree/master/examples/cifar10">examples/cifar10</a>. This is a great place for newcomers to see how to use cleanlab on real datasets. Data needed is available in the <a href="https://github.com/cgnorthcutt/confidentlearning-reproduce">confidentlearning-reproduce</a> repo, <code>cleanlab</code> v0.1.0 reproduces results in <a href="https://arxiv.org/abs/1911.00068">the CL paper</a>.</li>
+   </ul>
 
 
    </p>
