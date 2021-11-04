@@ -1,4 +1,4 @@
-.. figure:: https://raw.githubusercontent.com/cgnorthcutt/cleanlab/master/img/cleanlab_logo.png
+.. figure:: https://raw.githubusercontent.com/cleanlab/cleanlab/master/img/cleanlab_logo.png
    :target: https://github.com/cleanlab/cleanlab/
    :align: center
    :alt: cleanlab 
@@ -22,8 +22,8 @@ Check out the: `cleanlab code documentation <https://cleanlab.readthedocs.io/>`_
     :target: https://pypi.org/pypi/cleanlab/
 .. |build_status| image:: https://travis-ci.com/cleanlab/cleanlab.svg?branch=master
     :target: https://app.travis-ci.com/github/cleanlab/cleanlab
-.. |coverage| image:: https://codecov.io/gh/cgnorthcutt/cleanlab/branch/master/graph/badge.svg
-    :target: https://codecov.io/gh/cgnorthcutt/cleanlab
+.. |coverage| image:: https://codecov.io/gh/cleanlab/cleanlab/branch/master/graph/badge.svg
+    :target: https://app.codecov.io/gh/cleanlab/cleanlab
 .. |docs| image:: https://readthedocs.org/projects/cleanlab/badge/?version=latest
     :target: https://cleanlab.readthedocs.io/en/latest/?badge=latest
 
@@ -212,7 +212,7 @@ See `cleanlab/examples/cifar10 <https://github.com/cleanlab/cleanlab/tree/master
 
 A [`step-by-step guide <https://github.com/cleanlab/cleanlab/tree/master/examples/cifar10>`__] to reproduce these results is available [`here <https://github.com/cleanlab/cleanlab/tree/master/examples/cifar10>`__]. This guide is also helpful as a tutorial to use cleanlab on any large-scale dataset.
 
-.. figure:: https://raw.githubusercontent.com/cgnorthcutt/cleanlab/master/img/cifar10_benchmarks.png
+.. figure:: https://raw.githubusercontent.com/cleanlab/cleanlab/master/img/cifar10_benchmarks.png
    :align: center
    :alt: Image depicting CIFAR10 benchmarks 
 
@@ -225,7 +225,7 @@ Observe how cleanlab (CL methods) are robust to large sparsity in label noise wh
 
 Use ``cleanlab`` to identify ~100,000 label errors in the 2012 ImageNet training dataset. 
 
-.. figure:: https://raw.githubusercontent.com/cgnorthcutt/cleanlab/master/img/imagenet_train_label_errors_32.jpg
+.. figure:: https://raw.githubusercontent.com/cleanlab/cleanlab/master/img/imagenet_train_label_errors_32.jpg
    :align: center
    :alt: Image depicting label errors in ImageNet train set 
 
@@ -236,7 +236,7 @@ Top label issues in the 2012 ILSVRC ImageNet train set identified using ``cleanl
 
 Use ``cleanlab`` to identify ~50 label errors in the MNIST dataset. 
 
-.. figure:: https://raw.githubusercontent.com/cgnorthcutt/cleanlab/master/img/mnist_training_label_errors24_prune_by_noise_rate.png
+.. figure:: https://raw.githubusercontent.com/cleanlab/cleanlab/master/img/mnist_training_label_errors24_prune_by_noise_rate.png
    :align: center
    :alt: Image depicting label errors in MNIST train set 
 
@@ -248,7 +248,7 @@ Label errors of the original MNIST **train** dataset identified algorithmically 
 
 Use ``cleanlab`` to learn with noisy labels regardless of dataset distribution or classifier. 
 
-.. figure:: https://raw.githubusercontent.com/cgnorthcutt/cleanlab/master/img/demo_cleanlab_across_datasets_and_classifiers.png
+.. figure:: https://raw.githubusercontent.com/cleanlab/cleanlab/master/img/demo_cleanlab_across_datasets_and_classifiers.png
    :align: center
    :alt: Image depicting generality of cleanlab across datasets and classifiers 
 
@@ -294,11 +294,11 @@ latent priors and noisy channels, and more.
 
    
 
-   ![Image depicting label errors in MNIST test set.](https://raw.githubusercontent.com/cgnorthcutt/cleanlab/master/img/mnist_test_label_errors8.png)
+   ![Image depicting label errors in MNIST test set.](https://raw.githubusercontent.com/cleanlab/cleanlab/master/img/mnist_test_label_errors8.png)
     Selected label errors in the MNIST **test** dataset ordered by increasing self-confidence (in teal).
 
    ## Automatically identify ~5k (of 50k) validation set label errors in ImageNet. [[link]](examples/finding_ImageNet_label_errors).
-   ![Image depicting label errors in ImageNet validation set.](https://raw.githubusercontent.com/cgnorthcutt/cleanlab/master/img/imagenet_validation_label_errors_96_prune_by_noise_rate.jpg)
+   ![Image depicting label errors in ImageNet validation set.](https://raw.githubusercontent.com/cleanlab/cleanlab/master/img/imagenet_validation_label_errors_96_prune_by_noise_rate.jpg)
    Label errors in the 2012 ImageNet validation dataset identified automatically with cleanlab using a pre-trained resnet18. Displayed are the 96 least confident labels. We see that ImageNet contains numerous multi-label images, although it is used widely by the machine learning and vision communities as a single-label benchmark dataset.
 
    --->
