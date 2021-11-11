@@ -1,0 +1,55 @@
+name: CI
+on:
+  push:
+  schedule:
+    - cron: '0 8 * * 6'
+jobs:
+  test:
+    name: "Test: Python ${{ matrix.python }} on ${{ matrix.os }}"
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+          - windows-latest
+        python:
+          - "2.7"
+          - "3.6"
+          - "3.7"
+          - "3.8"
+          - "3.9"
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install dependencies
+        run: |
+          pip install pytest
+          pip install -r requirements.txt
+      - name: Install torch and torchvision
+        if: "${{ !(contains(matrix.os, 'windows') && matrix.python == '2.7') }}"
+        run: pip install torch torchvision
+      - name: Install cleanlab
+        run: pip install -e .
+      - name: Test
+        run: pytest --verbose
+  cover:
+    name: Coverage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: "3.9"
+      - name: Install dependencies
+        run: |
+          pip install pytest pytest-cov
+          pip install -r requirements.txt
+          pip install torch torchvision
+      - name: Install cleanlab
+        run: pip install -e .
+      - name: Test with coverage
+        run: pytest --verbose --cov=cleanlab/ --cov-config .coveragerc_py3 --cov-report=xml
+      - uses: codecov/codecov-action@v2

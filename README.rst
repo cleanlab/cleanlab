@@ -18,10 +18,10 @@ Check out the: `cleanlab code documentation <https://cleanlab.readthedocs.io/>`_
     :target: https://pypi.org/pypi/cleanlab/
 .. |os| image:: https://img.shields.io/badge/platform-windows%20%7C%20macos%20%7C%20linux-lightgrey
     :target: https://pypi.org/pypi/cleanlab/
-.. |py_versions| image:: https://img.shields.io/badge/python-2.7%20%7C%203.4%2B-blue
+.. |py_versions| image:: https://img.shields.io/badge/python-2.7%20%7C%203.6%2B-blue
     :target: https://pypi.org/pypi/cleanlab/
-.. |build_status| image:: https://travis-ci.com/cleanlab/cleanlab.svg?branch=master
-    :target: https://app.travis-ci.com/github/cleanlab/cleanlab
+.. |build_status| image:: https://github.com/cleanlab/cleanlab/workflows/CI/badge.svg
+    :target: https://github.com/cleanlab/cleanlab/actions?query=workflow%3ACI
 .. |coverage| image:: https://codecov.io/gh/cleanlab/cleanlab/branch/master/graph/badge.svg
     :target: https://app.codecov.io/gh/cleanlab/cleanlab
 .. |docs| image:: https://readthedocs.org/projects/cleanlab/badge/?version=latest
@@ -136,7 +136,7 @@ Check out these `examples <https://github.com/cleanlab/cleanlab/tree/master/exam
 Installation
 ============
 
-Python 2.7, 3.4, 3.5, 3.6, and 3.7 are supported. Linux, macOS, and Windows are supported.
+Python 2.7 and 3.6+ are supported. Linux, macOS, and Windows are supported.
 
 Stable release (pip):
 
