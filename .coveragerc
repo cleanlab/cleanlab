@@ -3,8 +3,8 @@
 [run]
 branch = True
 omit =
-    # omit this single file
     cleanlab/models/fasttext.py
+    cleanlab/models/cifar_cnn.py
 
 [report]
 # Regexes for lines to exclude from consideration
