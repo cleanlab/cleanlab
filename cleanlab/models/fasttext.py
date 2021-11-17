@@ -13,8 +13,6 @@
 # 
 # You should have received a copy of the GNU Affero General Public License
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
-#
-# This agreement applies to this version and all previous versions of cleanlab.
 
 # Python 2 and 3 compatibility
 from __future__ import (
