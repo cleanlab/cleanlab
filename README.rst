@@ -569,7 +569,7 @@ Do you have an issue with cleanlab?  `Submit an issue <https://github.com/cleanl
 License
 -------
 
-Copyright (c) 2017-2050 Curtis G. Northcutt
+Copyright (c) 2017-2021 Cleanlab Inc.
 
 cleanlab is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 
