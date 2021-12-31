@@ -4,7 +4,7 @@ Tests use code coverage. See: https://app.codecov.io/gh/cgnorthcutt/cleanlab
 
 ## License
 
-Copyright (c) 2017-2021 Cleanlab Inc.
+Copyright (c) 2017-2022 Cleanlab Inc.
 
 All files listed above and contained in this folder (https://github.com/cgnorthcutt/cleanlab/tests) are part of cleanlab.
 
