@@ -42,7 +42,7 @@ exec(open('cleanlab/version.py').read())
 setup(
     name='cleanlab',
     version=__version__,
-    license='GPLv3+',
+    license='AGPLv3+',
     long_description=long_description,
     long_description_content_type='text/x-rst',
     description = 'The standard package for machine learning with noisy labels and finding mislabeled data in Python.',
@@ -58,7 +58,7 @@ setup(
       'Intended Audience :: Education',
       'Intended Audience :: Science/Research',
       'Intended Audience :: Information Technology',
-      'License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)',
+      'License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)',
       'Natural Language :: English',
 
       # We believe this package works will these versions, but we do not guarantee it!
