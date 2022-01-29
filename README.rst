@@ -576,3 +576,4 @@ cleanlab is free software: you can redistribute it and/or modify it under the te
 cleanlab is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
 
 See `GNU Affero General Public LICENSE <https://github.com/cleanlab/cleanlab/blob/master/LICENSE>`__ for details.
+
