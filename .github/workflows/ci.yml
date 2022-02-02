@@ -27,7 +27,7 @@ jobs:
           python-version: ${{ matrix.python }}
       - name: Install dependencies
         run: |
-          pip install pytest pytest-cov
+          pip install pytest pytest-cov 'coverage<6.3'
           pip install -r requirements.txt
       - name: Install torch and torchvision
         if: "${{ !(contains(matrix.os, 'windows') && matrix.python == '2.7') }}"
