@@ -84,8 +84,8 @@ What's next?
    :caption: Beginner Tutorials
 
    notebooks/Image_Tut
-   notebooks/Text_Tut
    notebooks/Tabular_Tut
+   notebooks/Text_Tut
    notebooks/Audio_Tut
 
 

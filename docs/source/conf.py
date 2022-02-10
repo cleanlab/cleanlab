@@ -14,8 +14,8 @@ import os
 import sys
 import datetime
 
-sys.path.insert(0, "..")
-sys.path.insert(0, os.path.abspath("..cleanlab/models/"))
+sys.path.insert(0, os.path.abspath("../.."))
+# sys.path.insert(0, os.path.abspath("../cleanlab/models/"))
 # sys.path.insert(1, "./cleanlab/models")
 
 # -- Project information -----------------------------------------------------
@@ -72,7 +72,7 @@ autosummary_generate = True
 todo_include_todos = True
 
 
-# -- Options for Nnapoleon extension -------------------------------------------
+# -- Options for Napoleon extension -------------------------------------------
 
 napoleon_google_docstring = False
 napoleon_numpy_docstring = True
@@ -156,12 +156,12 @@ html_static_path = ["_static"]
 #     ],
 # }
 
-html_sidebars = [
-    "sidebar/brand.html",
-    "sidebar/search.html",
-    "sidebar/scroll-start.html",
-    "sidebar/navigation.html",
-    "sidebar/ethical-ads.html",
-    "sidebar/versioning.html",
-    "sidebar/scroll-end.html",
-]
+# html_sidebars = [
+#     "sidebar/brand.html",
+#     "sidebar/search.html",
+#     "sidebar/scroll-start.html",
+#     "sidebar/navigation.html",
+#     "sidebar/ethical-ads.html",
+#     "sidebar/versioning.html",
+#     "sidebar/scroll-end.html",
+# ]
