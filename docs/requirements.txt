@@ -12,3 +12,4 @@ ipython==8.0.1
 ipykernel==6.8.0
 pandas==1.4.0
 tqdm==4.62.3
+ipywidgets==7.6.5
