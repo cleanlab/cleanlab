@@ -10,10 +10,12 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 
+import os
 import sys
 import datetime
 
 sys.path.insert(0, "..")
+sys.path.insert(0, os.path.abspath("..cleanlab/models/"))
 # sys.path.insert(1, "./cleanlab/models")
 
 # -- Project information -----------------------------------------------------
