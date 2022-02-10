@@ -44,6 +44,7 @@ extensions = [
     "sphinx.ext.todo",
     "sphinx_tabs.tabs",
     # "sphinxcontrib.apidoc",
+    "sphinx_multiversion",
 ]
 
 numpy_show_class_members = True
@@ -125,15 +126,15 @@ nbsphinx_prolog = """
     </style>
 
     <p>
-        <a style= "background-color:white;color:black;padding:4px 12px;text-decoration:none;display:inline-block;border-radius:8px;box-shadow:0 2px 4px 0 rgba(0, 0, 0, 0.2), 0 3px 10px 0 rgba(0, 0, 0, 0.19)" href="https://colab.research.google.com/github/cleanlab/docs/blob/master/source/{{ docname|e }}" target="_blank">
+        <a style= "background-color:white;color:black;padding:4px 12px;text-decoration:none;display:inline-block;border-radius:8px;box-shadow:0 2px 4px 0 rgba(0, 0, 0, 0.2), 0 3px 10px 0 rgba(0, 0, 0, 0.19)" href="https://colab.research.google.com/github/cleanlab/cleanlab/blob/master/docs/source/{{ docname|e }}" target="_blank">
             <img src="https://colab.research.google.com/img/colab_favicon_256px.png" alt="Google Colab Logo" style="width:40px;height:40px;vertical-align:middle">   
             <span style="vertical-align:middle">Run in Google Colab</span>
         </a>
     </p>
 """
 
-# Uncomment this before running in the doc's CI/CD server
-# nbsphinx_execute = "always"
+# Change this to "always" before running in the doc's CI/CD server
+nbsphinx_execute = "never"
 
 # -- Options for HTML output -------------------------------------------------
 
@@ -148,3 +149,19 @@ html_title = "Cleanlab Docs"
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ["_static"]
+
+# html_sidebars = {
+#     '**': [
+#         'versioning.html',
+#     ],
+# }
+
+html_sidebars = [
+    "sidebar/brand.html",
+    "sidebar/search.html",
+    "sidebar/scroll-start.html",
+    "sidebar/navigation.html",
+    "sidebar/ethical-ads.html",
+    "sidebar/versioning.html",
+    "sidebar/scroll-end.html",
+]
