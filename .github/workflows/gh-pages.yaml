@@ -14,6 +14,9 @@ jobs:
     concurrency:
       group: ${{ github.workflow }}-${{ github.ref }}
     steps:
+      - name: Use Pandoc Image
+        uses: docker://pandoc/core:2.16.2
+
       - uses: actions/checkout@v2
 
       - name: Setup Python
