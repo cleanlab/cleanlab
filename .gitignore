@@ -118,3 +118,12 @@ venv.bak/
 
 #sphinx build
 /docs/_build/
+/docs/build
+
+# Downloaded datasets for docs
+/docs/source/notebooks/aclImdb
+/docs/source/notebooks/data
+/docs/source/notebooks/*.tar.gz
+/docs/source/notebooks/spoken_digits
+/docs/source/notebooks/pretrained_models
+

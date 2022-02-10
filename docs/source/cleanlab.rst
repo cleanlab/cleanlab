@@ -1,4 +1,3 @@
-
 Classification
 ==============
 
@@ -45,7 +44,7 @@ Co-Teaching
    :show-inheritance:
 
 Latent Algebra
-===============================
+==============
 
 .. automodule:: cleanlab.latent_algebra
    :autosummary:
@@ -79,6 +78,7 @@ Polyplex
    :members:
    :undoc-members:
    :show-inheritance:
+
 
 Models
 ======

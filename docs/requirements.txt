@@ -1,3 +1,5 @@
-sphinx_rtd_theme==0.4.3
-autodocsumm==0.2.3
-sphinxcontrib-napoleon==0.7
+numpy==1.22.1
+scikit_learn==1.0.2
+scipy==1.7.3
+torchvision==0.11.2
+cleanlab==1.0.0
