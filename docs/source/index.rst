@@ -17,7 +17,7 @@ Introduction
 Quickstart
 ==========
 
-test for v1.0.1
+test for v1.0.2
 
 1. Install Cleanlab.
 --------------------
