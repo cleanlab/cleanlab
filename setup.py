@@ -89,7 +89,7 @@ setup(
 
     # You can just specify the packages manually here if your project is
     # simple. Or you can use find_packages().
-    packages=find_packages(exclude=['img', 'examples']),
+    packages=find_packages(exclude=[]),
     
     # Include cleanlab license file.    
     include_package_data=True,
