@@ -134,7 +134,7 @@ nbsphinx_prolog = """
 """
 
 # Change this to "always" before running in the doc's CI/CD server
-nbsphinx_execute = "never"
+nbsphinx_execute = "always"
 
 # -- Options for HTML output -------------------------------------------------
 
