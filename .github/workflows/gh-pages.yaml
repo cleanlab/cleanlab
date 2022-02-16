@@ -44,8 +44,8 @@ jobs:
       - name: Install dependencies
         run: python3 -m pip install -r docs/requirements.txt
 
-      - name: Run Sphinx
-        run: python -m sphinx docs/source docs/build 
+      - name: Run Sphinx with sphinx-multiversion wrapper
+        run: sphinx-multiversion docs/source docs/build 
 
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
