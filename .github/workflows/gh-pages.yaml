@@ -48,7 +48,7 @@ jobs:
         run: sphinx-multiversion docs/source docs/build 
 
       - name: Copy the file that redirects site visit to master doc
-        run: cp source/_templates/gh-pages-redirect.html build/index.html
+        run: cp docs/source/_templates/gh-pages-redirect.html build/index.html
 
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
