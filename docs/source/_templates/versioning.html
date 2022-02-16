@@ -1,0 +1,26 @@
+{% if versions %}
+
+<div class="sidebar-tree">
+  <p class="caption" role="heading">
+    <span class="caption-text">{{ _('Branches') }}</span>
+  </p>
+  <ul>
+    {% for item in versions.branches %}
+    <li class="toctree-l1">
+      <a class="reference internal" href="{{ item.url }}">{{ item.name }}</a>
+    </li>
+    {% endfor %}
+  </ul>
+  <p class="caption" role="heading">
+    <span class="caption-text">{{ _('Tags') }}</span>
+  </p>
+  <ul>
+    {% for item in versions.tags %}
+    <li class="toctree-l1">
+      <a class="reference internal" href="{{ item.url }}">{{ item.name }}</a>
+    </li>
+    {% endfor %}
+  </ul>
+</div>
+
+{% endif %}

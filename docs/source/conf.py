@@ -14,7 +14,7 @@ import os
 import sys
 import datetime
 
-sys.path.insert(0, os.path.abspath("../.."))
+sys.path.insert(0, os.path.abspath("../...cleanlab"))
 # sys.path.insert(0, os.path.abspath("../cleanlab/models/"))
 # sys.path.insert(1, "./cleanlab/models")
 
@@ -150,18 +150,14 @@ html_title = "Cleanlab Docs"
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ["_static"]
 
-# html_sidebars = {
-#     '**': [
-#         'versioning.html',
-#     ],
-# }
-
-html_sidebars = [
-    "sidebar/brand.html",
-    "sidebar/search.html",
-    "sidebar/scroll-start.html",
-    "sidebar/navigation.html",
-    "sidebar/ethical-ads.html",
-    "sidebar/versioning.html",
-    "sidebar/scroll-end.html",
-]
+html_sidebars = {
+    "**": [
+        "sidebar/brand.html",
+        "sidebar/search.html",
+        "sidebar/scroll-start.html",
+        "sidebar/navigation.html",
+        "sidebar/ethical-ads.html",
+        "versioning.html",
+        "sidebar/scroll-end.html",
+    ],
+}
