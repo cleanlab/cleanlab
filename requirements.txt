@@ -1,4 +1,0 @@
-numpy>=1.11.3
-scipy>=0.13.3
-scikit-learn>=0.18
-tqdm>=4.53.0
