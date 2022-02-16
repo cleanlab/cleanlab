@@ -8,3 +8,4 @@ ipykernel==6.8.0
 tqdm==4.62.3
 ipywidgets==7.6.5
 sphinx-multiversion==0.2.4
+cleanlab==1.0.0
