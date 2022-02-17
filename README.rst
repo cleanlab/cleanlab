@@ -540,9 +540,10 @@ If you use this package for binary classification or PU learning, please also ci
 Other Resources
 ---------------
 
-`Blogpost on Confident Learning <https://l7.curtisnorthcutt.com/confident-learning>`__
+- `Blogpost: Confident Learning <https://l7.curtisnorthcutt.com/confident-learning>`__
 
-`Label Errors Paper <https://arxiv.org/abs/2103.14749>`_
+- `NeurIPS 2021 paper: Pervasive Label Errors in Test Sets Destabilize Machine Learning Benchmarks
+ <https://arxiv.org/abs/2103.14749>`_
 
 
 Join our Community
