@@ -31,6 +31,8 @@ from multiprocessing.sharedctypes import RawArray
 import sys
 import os
 import time
+
+from cleanlab.rank import order_label_errors
 from cleanlab.util import (value_counts, round_preserving_row_totals,
                            onehot2int, int2onehot, )
 import numpy as np
@@ -553,50 +555,3 @@ def reduce_prune_counts(prune_count_matrix, frac_noise=1.0):
     return new_mat.astype(int)
 
 
-def order_label_errors(
-        label_errors_bool,
-        psx,
-        labels,
-        sorted_index_method='normalized_margin',
-):
-    """Sorts label errors by normalized margin.
-    See https://arxiv.org/pdf/1810.05369.pdf (eqn 2.2)
-    eg. normalized_margin = prob_label - max_prob_not_label
-
-    Parameters
-    ----------
-    label_errors_bool : np.array (bool)
-      Contains True if the index of labels is an error, o.w. false
-
-    psx : np.array (shape (N, K))
-      P(s=k|x) is a matrix with K probabilities for all N examples x.
-      This is the probability distribution over all K classes, for each
-      example, regarding whether the example has label s==k P(s=k|x). psx
-      should computed using 3 (or higher) fold cross-validation.
-
-    labels : np.array
-      A binary vector of labels, which may contain label errors.
-
-    sorted_index_method : str ['normalized_margin', 'prob_given_label']
-      Method to order label error indices (instead of a bool mask), either:
-        'normalized_margin' := normalized margin (p(s = k) - max(p(s != k)))
-        'prob_given_label' := [psx[i][labels[i]] for i in label_errors_idx]
-
-    Returns
-    -------
-      label_errors_idx : np.array (int)
-        Return the index integers of the label errors, ordered by
-        the normalized margin."""
-
-    # Convert bool mask to index mask
-    label_errors_idx = np.arange(len(labels))[label_errors_bool]
-    # self confidence is the holdout probability that an example
-    # belongs to its given class label
-    self_confidence = np.array(
-        [np.mean(psx[i][labels[i]]) for i in label_errors_idx]
-    )
-    if sorted_index_method == 'prob_given_label':
-        return label_errors_idx[np.argsort(self_confidence)]
-    else:  # sorted_index_method == 'normalized_margin'
-        margin = self_confidence - psx[label_errors_bool].max(axis=1)
-        return label_errors_idx[np.argsort(margin)]
