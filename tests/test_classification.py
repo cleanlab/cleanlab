@@ -360,7 +360,7 @@ def test_no_fit_sample_weight(sparse):
 @pytest.mark.parametrize("sparse", [True, False])
 def test_fit_psx(sparse):
     data = SPARSE_DATA if sparse else DATA
-    from cleanlab.latent_estimation import estimate_cv_predicted_probabilities
+    from cleanlab.count import estimate_cv_predicted_probabilities
     lnl = LearningWithNoisyLabels()
     psx = estimate_cv_predicted_probabilities(
         X=data['X_train'],

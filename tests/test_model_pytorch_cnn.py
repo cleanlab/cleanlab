@@ -45,7 +45,7 @@ def test_loaders(
     The goal of this test is just to make sure the data loads correctly.
     And all the main functions work."""
 
-    from cleanlab.latent_estimation import (
+    from cleanlab.count import (
         estimate_confident_joint_and_cv_pred_proba, estimate_latent)
 
     if python_version.is_compatible():
@@ -73,7 +73,7 @@ def test_loaders(
                 X, y, cnn, cv_n_folds=2)
             est_py, est_nm, est_inv = estimate_latent(cj, y)
             # algorithmic identification of label errors
-            noise_idx = cleanlab.pruning.get_noise_indices(
+            noise_idx = cleanlab.filter.get_noise_indices(
                 y, psx, est_inv, prune_method=prune_method)
             assert noise_idx is not None
 

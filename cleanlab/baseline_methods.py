@@ -24,8 +24,8 @@ from __future__ import (
     print_function, absolute_import, division, unicode_literals, with_statement
 )
 from sklearn.metrics import confusion_matrix
-from cleanlab.pruning import get_noise_indices
-from cleanlab.latent_estimation import calibrate_confident_joint
+from cleanlab.filter import get_noise_indices
+from cleanlab.count import calibrate_confident_joint
 import numpy as np
 
 

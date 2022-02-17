@@ -56,7 +56,7 @@ __version__ = '1.0'
 
 # 0.1.1 - Major update adding support for Windows and Python 3.7
 #   - Added support for Python 3.7
-#   - Added full support for Windows, including multiprocessing parallelization support in cleanlab/pruning.py
+#   - Added full support for Windows, including multiprocessing parallelization support in cleanlab/filter.py
 #   - Improved PEP-8 adherence in core cleanlab/ code.
 
 # 0.1.0 - Release of confident learning paper based on this version of cleanlab: https://arxiv.org/pdf/1911.00068.pdf

@@ -21,7 +21,6 @@
 # This code uses advanced multiprocessing to speed up computation.
 # see: https://research.wmz.ninja/articles/2018/03/ (link continued below)
 # on-sharing-large-arrays-when-using-pythons-multiprocessing.html
-# This approach supports posix and nt OS's: i.e. Windows, Mac, and Linux
 
 
 from __future__ import (
@@ -307,7 +306,7 @@ def get_noise_indices(
       Method used for pruning.
       1. 'prune_by_noise_rate': works by removing examples with
       *high probability* of being mislabeled for every non-diagonal
-      in the prune_counts_matrix (see pruning.py).
+      in the prune_counts_matrix (see filter.py).
       2. 'prune_by_class': works by removing the examples with *smallest
       probability* of belonging to their given class label for every class.
       3. 'both': Finds the examples satisfying (1) AND (2) and
@@ -351,7 +350,7 @@ def get_noise_indices(
     s = np.asarray(s)
 
     if confident_joint is None:
-        from cleanlab.latent_estimation import compute_confident_joint
+        from cleanlab.count import compute_confident_joint
         confident_joint = compute_confident_joint(
             s=s,
             psx=psx,

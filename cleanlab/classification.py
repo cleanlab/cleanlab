@@ -91,7 +91,7 @@ from cleanlab.util import (
     assert_inputs_are_valid,
     value_counts,
 )
-from cleanlab.latent_estimation import (
+from cleanlab.count import (
     estimate_py_noise_matrices_and_cv_pred_proba,
     estimate_py_and_noise_matrices_from_probabilities,
     estimate_cv_predicted_probabilities,
@@ -100,7 +100,7 @@ from cleanlab.latent_algebra import (
     compute_py_inv_noise_matrix,
     compute_noise_matrix_from_inverse,
 )
-from cleanlab.pruning import get_noise_indices
+from cleanlab.filter import get_noise_indices
 
 
 class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
@@ -157,7 +157,7 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
 
       1. :obj:`prune_method=prune_by_noise_rate`: works by removing examples
       with *high probability* of being mislabeled for every non-diagonal in the
-      ``prune_counts_matrix`` (see ``pruning.py``).
+      ``prune_counts_matrix`` (see ``filter.py``).
 
       2. :obj:`prune_method=prune_by_class`: works by removing the examples
       with *smallest probability* of belonging to their given class label for

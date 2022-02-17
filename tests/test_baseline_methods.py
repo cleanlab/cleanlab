@@ -1,9 +1,9 @@
 # coding: utf-8
 
 from __future__ import print_function, absolute_import, division, unicode_literals, with_statement
-from cleanlab import latent_estimation
+from cleanlab import count
 from cleanlab.noise_generation import generate_noise_matrix_from_trace, generate_noisy_labels
-from cleanlab.latent_estimation import compute_inv_noise_matrix
+from cleanlab.count import compute_inv_noise_matrix
 from cleanlab import baseline_methods
 from cleanlab.util import confusion_matrix
 import numpy as np
