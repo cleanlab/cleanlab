@@ -247,7 +247,7 @@ def test_cleanlab_with_fasttext():
             cv_n_folds=5,
         )
         # Find inidices of errors
-        noise_idx = cleanlab.pruning.get_noise_indices(
+        noise_idx = cleanlab.pruning.find_label_issues(
             s_train, 
             psx, 
             confident_joint=cj, 

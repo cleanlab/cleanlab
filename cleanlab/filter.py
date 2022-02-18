@@ -239,7 +239,7 @@ def multiclass_crossval_predict(pyx, labels):
     return pred
 
 
-def get_noise_indices(
+def find_label_issues(
         s,
         psx,
         inverse_noise_matrix=None,
@@ -621,7 +621,7 @@ def baseline_argmax_confusion_matrix(
     confident_joint = confusion_matrix(np.argmax(psx, axis=1), labels).T
     if calibrate:
         confident_joint = calibrate_confident_joint(confident_joint, labels)
-    return get_noise_indices(
+    return find_label_issues(
         s=labels,
         psx=psx,
         confident_joint=confident_joint,

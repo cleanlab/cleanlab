@@ -100,7 +100,7 @@ from cleanlab.latent_algebra import (
     compute_py_inv_noise_matrix,
     compute_noise_matrix_from_inverse,
 )
-from cleanlab.filter import get_noise_indices
+from cleanlab.filter import find_label_issues
 
 
 class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
@@ -376,7 +376,7 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
         # This is the actual work of this function.
 
         # Get the indices of the examples we wish to prune
-        self.noise_mask = get_noise_indices(
+        self.noise_mask = find_label_issues(
             s,
             psx,
             inverse_noise_matrix=self.inverse_noise_matrix,

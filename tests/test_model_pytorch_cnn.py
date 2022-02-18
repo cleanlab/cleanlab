@@ -73,7 +73,7 @@ def test_loaders(
                 X, y, cnn, cv_n_folds=2)
             est_py, est_nm, est_inv = estimate_latent(cj, y)
             # algorithmic identification of label errors
-            noise_idx = cleanlab.filter.get_noise_indices(
+            noise_idx = cleanlab.filter.find_label_issues(
                 y, psx, est_inv, prune_method=prune_method)
             assert noise_idx is not None
 

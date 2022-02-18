@@ -115,7 +115,7 @@ data = make_data(sparse=False, seed=1)
 def test_exact_prune_count():
     remove = 5
     s = data['s']
-    noise_idx = filter.get_noise_indices(
+    noise_idx = filter.find_label_issues(
         s=s,
         psx=data['psx'],
         num_to_remove_per_class=remove,
@@ -128,21 +128,21 @@ def test_exact_prune_count():
 def test_pruning_both(n_jobs):
     remove = 5
     s = data['s']
-    class_idx = filter.get_noise_indices(
+    class_idx = filter.find_label_issues(
         s=s,
         psx=data['psx'],
         num_to_remove_per_class=remove,
         prune_method='prune_by_class',
         n_jobs=n_jobs,
     )
-    nr_idx = filter.get_noise_indices(
+    nr_idx = filter.find_label_issues(
         s=s,
         psx=data['psx'],
         num_to_remove_per_class=remove,
         prune_method='prune_by_noise_rate',
         n_jobs=n_jobs,
     )
-    both_idx = filter.get_noise_indices(
+    both_idx = filter.find_label_issues(
         s=s,
         psx=data['psx'],
         num_to_remove_per_class=remove,
@@ -155,7 +155,7 @@ def test_pruning_both(n_jobs):
 def test_prune_on_small_data():
     data = make_data(sizes=[4, 4, 4])
     for pm in ['prune_by_noise_rate', 'prune_by_class', 'both']:
-        noise_idx = pruning.get_noise_indices(
+        noise_idx = pruning.find_label_issues(
             s=data['s'],
             psx=data['psx'],
             prune_method=pm,
@@ -353,7 +353,7 @@ def test_pruning_order_method():
     order_methods = ["prob_given_label", "normalized_margin"]
     results = []
     for method in order_methods:
-        results.append(pruning.get_noise_indices(
+        results.append(pruning.find_label_issues(
             s=data['s'],
             psx=data['psx'],
             sorted_index_method=method,
@@ -365,7 +365,7 @@ def test_get_noise_indices_multi_label():
     s_ml = [[z, data['y_train'][i]] for i, z in enumerate(data['s'])]
     for multi_label in [True, False]:
         for prune_method in ['prune_by_class', 'prune_by_noise_rate']:
-            noise_idx = filter.get_noise_indices(
+            noise_idx = filter.find_label_issues(
                 s=s_ml if multi_label else data['s'],
                 psx=data['psx'],
                 prune_method=prune_method,
