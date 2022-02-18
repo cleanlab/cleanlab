@@ -6,7 +6,7 @@
 Introduction
 ============
 
-**Cleanlab automatically identifies potential label errors in your dataset and corrects them for you.**
+**Cleanlab automatically find and fix errors in your ML datasets.**
 
 | This reduces manual work needed to fix data issues and helps train reliable ML models on partially mislabeled datasets. Cleanlab has already found thousands of `label errors <https://labelerrors.com>`_ in ImageNet, MNIST and other popular ML benchmarking datasets, so let's get started with yours!
 
