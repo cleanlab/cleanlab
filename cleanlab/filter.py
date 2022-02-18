@@ -57,7 +57,7 @@ except ImportError as e:
 
 # Leave at least this many examples in each class after
 # pruning, regardless if noise estimates are larger.
-MIN_NUM_PER_CLASS = 5
+MIN_NUM_PER_CLASS = 1
 
 # For python 2/3 compatibility, define pool context manager
 # to support the 'with' statement in Python 2
