@@ -72,7 +72,7 @@ Get started with tutorials
       <li> <b>Dec 2020 🤖</b>  <code>cleanlab</code>` supports <a href="https://github.com/cleanlab/cleanlab#pu-learning-with-cleanlab">PU learning</a>.</li>
       <li> <b>Feb 2020 🤖</b>  <code>cleanlab</code> now natively supports Mac, Linux, and Windows.</li>
       <li> <b>Feb 2020 🤖</b>  <code>cleanlab</code> now supports <a href="https://github.com/cleanlab/cleanlab/blob/master/cleanlab/coteaching.py">Co-Teaching</a> <a href="https://arxiv.org/abs/1804.06872">(Han et al., 2018)</a>.</li>
-      <li> <b>Jan 2020 🎉</b> <code>cleanlab</code> achieves state-of-the-art on CIFAR-10 with noisy labels. Code to reproduce:  <a href="https://github.com/cleanlab/examples/tree/master/cifar10">examples/cifar10</a>. This is a great place to see how to use cleanlab on real datasets.
+      <li> <b>Jan 2020 🎉</b> <code>cleanlab</code> achieves state-of-the-art on CIFAR-10 with noisy labels. Code to reproduce:  <a href="https://github.com/cleanlab/examples/tree/master/cifar10</a>. This is a great place to see how to use cleanlab on real datasets (with   predicted_probas already precomputed for you).
    </ul>
 
 
@@ -121,7 +121,7 @@ Find label errors with PyTorch, Tensorflow, sklearn, xgboost, etc. in 1 line of 
 
 **CAUTION:** Predicted probabilities from your model must be out-of-sample! You should never provide predictions on the same datapoints used to train the model, as these will be overfit and unsuitable for finding label-errors. To obtain out-of-sample predicted probabilities for every datapoint in your dataset, you can use `cross-validation <https://machinelearningmastery.com/out-of-fold-predictions-in-machine-learning/>`__. Alternatively it is ok if your model was trained on a separate dataset and you are only evaluating labels in data that was previously held-out.
 
-Pre-computed **out-of-sample** predicted probabilities for CIFAR-10 train set are available: `here <https://github.com/cleanlab/examples/tree/master/cifar10>`__
+Pre-computed **out-of-sample** predicted probabilities for CIFAR-10 train set are available: `here <https://github.com/cleanlab/examples/tree/master/cifar10#pre-computed-psx-for-every-noise--sparsity-condition>`__
 
 
 Learning with noisy labels in 3 lines of code
@@ -508,7 +508,9 @@ Now that you have `indices_of_label_errors`, you can remove those label errors a
 Citation and Related Publications
 =================================
 
-If you use this package, please cite the `confident learning paper <https://arxiv.org/abs/1911.00068>`__:
+`cleanlab` isn't just a github, it's based on peer-reviewed research. Here are the relevant papers to cite if you use this package:
+
+The `confident learning paper <https://arxiv.org/abs/1911.00068>`__:
 
 ::
 
