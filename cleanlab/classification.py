@@ -379,7 +379,6 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
         self.noise_mask = find_label_issues(
             s,
             psx,
-            inverse_noise_matrix=self.inverse_noise_matrix,
             confident_joint=self.confident_joint,
             prune_method=self.prune_method,
             n_jobs=self.n_jobs,
