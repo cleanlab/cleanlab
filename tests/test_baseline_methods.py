@@ -30,7 +30,8 @@ def make_data(
 
     for idx in range(m):
         data.append(np.random.multivariate_normal(mean=means[idx], cov=covs[idx], size=sizes[idx]))
-        test_data.append(np.random.multivariate_normal(mean=means[idx], cov=covs[idx], size=sizes[idx]))
+        test_data.append(
+            np.random.multivariate_normal(mean=means[idx], cov=covs[idx], size=sizes[idx]))
         labels.append(np.array([idx for i in range(sizes[idx])]))
         test_labels.append(np.array([idx for i in range(sizes[idx])]))
     X_train = np.vstack(data)
@@ -61,7 +62,7 @@ def make_data(
     inv = compute_inv_noise_matrix(py, noise_matrix, ps)
 
     # Estimate psx
-    latent = latent_estimation.estimate_py_noise_matrices_and_cv_pred_proba(
+    latent = count.estimate_py_noise_matrices_and_cv_pred_proba(
         X=X_train,
         s=s,
         cv_n_folds=3,
@@ -105,11 +106,11 @@ psx_ = np.array([
     [0.1, 0.8, 0.1],
     [0.1, 0.1, 0.8],
 ])
-s_ = np.array([0,0,1,1,1,1,1,1,1,2])
+s_ = np.array([0, 0, 1, 1, 1, 1, 1, 1, 1, 2])
 
 
 def test_confident_learning_baseline():
-    cj, indices = latent_estimation.compute_confident_joint(
+    cj, indices = count.compute_confident_joint(
         s=data["s"],
         psx=data["psx"],
         calibrate=False,
@@ -117,7 +118,7 @@ def test_confident_learning_baseline():
     )
     # Check that the number of 'label errors' found in off diagonals
     # matches the off diagonals of the uncalibrated confident joint
-    assert(len(indices) == (np.sum(cj) - np.trace(cj)))
+    assert (len(indices) == (np.sum(cj) - np.trace(cj)))
 
 
 def test_baseline_argmax():
@@ -128,29 +129,20 @@ def test_baseline_argmax():
         [0.1, 0.1, 0.8],
         [0.4, 0.5, 0.1],
     ])
-    s = np.array([0,0,1,1,2])
+    s = np.array([0, 0, 1, 1, 2])
     label_errors = baseline_methods.baseline_argmax(psx, s)
-    assert(all(label_errors == [False, False, True, True, True]))
-    
+    assert (all(label_errors == [False, False, True, True, True]))
+
     label_errors = baseline_methods.baseline_argmax(psx_, s_)
-    assert(all(label_errors == np.array([False, False, True, False, 
-        False, False, False, False, False, False])))
+    assert (all(label_errors == np.array([False, False, True, False,
+                                          False, False, False, False, False, False])))
 
 
+@pytest.mark.parametrize("calibrate", [True, False])
 @pytest.mark.parametrize("prune_method", ['prune_by_noise_rate',
                                           'prune_by_class', 'both'])
-def test_baseline_argmax_confusion_matrix(prune_method):
-    confident_joint = confusion_matrix(true=np.argmax(psx_, axis=1), pred=s_).T
-    label_errors = baseline_methods.baseline_argmax_confusion_matrix(psx_, s_)
-    assert(all(label_errors == np.array([False, False, True, False, 
-        False, False, False, False, False, False])))
-
-
-@pytest.mark.parametrize("prune_method", ['prune_by_noise_rate',
-                                          'prune_by_class', 'both'])
-def test_baseline_argmax_calibrated_confusion_matrix(prune_method):
-    confident_joint = confusion_matrix(true=np.argmax(psx_, axis=1), pred=s_).T
-    label_errors = baseline_methods.baseline_argmax_calibrated_confusion_matrix(
-        psx_, s_)
-    assert(all(label_errors == np.array([False, False, True, False, 
-        False, False, False, False, False, False])))
+def test_baseline_argmax_confusion_matrix(calibrate, prune_method):
+    label_errors = baseline_methods.baseline_argmax_confusion_matrix(
+        psx_, s_, calibrate=calibrate, prune_method=prune_method)
+    assert (all(label_errors == np.array([False, False, True, False,
+                                          False, False, False, False, False, False])))

@@ -29,14 +29,13 @@ from cleanlab.count import calibrate_confident_joint
 import numpy as np
 
 
-def baseline_argmax(psx, s):
-    '''This is the simplest baseline approach. Just consider 
+def baseline_argmax(psx, labels, multi_label=False):
+    """This is the simplest baseline approach. Just consider
     anywhere argmax != s as a label error.
 
     Parameters
     ----------
-
-    s : np.array
+    labels : np.array
         A discrete vector of noisy labels, i.e. some labels may be erroneous.
 
     psx : np.array (shape (N, K))
@@ -45,28 +44,35 @@ def baseline_argmax(psx, s):
         for each example, regarding whether the example has label s==k P(s=k|x).
         psx should have been computed using 3 (or higher) fold cross-validation.
 
+    multi_label : bool
+        Set to True if s is multi-label (list of lists, or np.array of np.array)
+
     Returns
     -------
         A boolean mask that is true if the example belong
-        to that index is label error..'''
+        to that index is label error."""
     
-    return np.argmax(psx, axis=1) != np.asarray(s)
+    if multi_label:
+        return np.array([np.argsort(psx[i]) == j for i, j in enumerate(labels)])
+    return np.argmax(psx, axis=1) != np.asarray(labels)
 
 
 def baseline_argmax_confusion_matrix(
     psx,
-    s,
-    calibrate=False,
+    labels,
+    calibrate=True,
     prune_method='prune_by_noise_rate',
 ):
-    '''This is a baseline approach. That uses the a confusion matrix
+    """This is a baseline approach. That uses the confusion matrix
     of argmax(psx) and s as the confident joint and then uses cleanlab
     (confident learning) to find the label errors using this matrix.
+
+    This method does not support multi-label labels.
 
     Parameters
     ----------
 
-    s : np.array
+    labels : np.array
         A discrete vector of noisy labels, i.e. some labels may be erroneous.
 
     psx : np.array (shape (N, K))
@@ -75,35 +81,21 @@ def baseline_argmax_confusion_matrix(
         for each example, regarding whether the example has label s==k P(s=k|x).
         psx should have been computed using 3 (or higher) fold cross-validation.
 
+    calibrate : bool
+        Set to True to calibrate the confusion matrix created by pred != given labels.
+        This calibration just makes
+
     Returns
     -------
         A boolean mask that is true if the example belong
-        to that index is label error..'''
+        to that index is label error."""
 
-    confident_joint = confusion_matrix(np.argmax(psx, axis=1), s).T
+    confident_joint = confusion_matrix(np.argmax(psx, axis=1), labels).T
     if calibrate:
-        confident_joint = calibrate_confident_joint(confident_joint, s)
+        confident_joint = calibrate_confident_joint(confident_joint, labels)
     return get_noise_indices(
-        s=s,
+        s=labels,
         psx=psx,
         confident_joint=confident_joint,
         prune_method=prune_method,
     )
-
-
-def baseline_argmax_calibrated_confusion_matrix(
-    psx,
-    s,
-    prune_method='prune_by_noise_rate',
-):
-    '''docstring is the same as baseline_argmax_confusion_matrix
-    Except in this method, we calibrate the confident joint created using
-    the confusion matrix before using cleanlab to find the label errors.'''
-
-    return baseline_argmax_confusion_matrix(
-        s=s,
-        psx=psx,
-        calibrate=True,
-        prune_method=prune_method,
-    )
-    
