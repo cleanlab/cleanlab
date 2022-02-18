@@ -36,6 +36,7 @@ from cleanlab.rank import order_label_errors
 from cleanlab.util import (value_counts, round_preserving_row_totals,
                            onehot2int, int2onehot, )
 import numpy as np
+import warnings
 
 # tqdm is a module used to print time-to-complete when multiprocessing is used.
 # This module is not necessary, and therefore is not a package dependency, but 
@@ -44,10 +45,10 @@ from cleanlab.count import calibrate_confident_joint
 
 try:
     import tqdm
+
     tqdm_exists = True
 except ImportError as e:
     tqdm_exists = False
-    import warnings
 
     w = '''If you want to see estimated completion times
     while running methods in cleanlab.pruning, install tqdm
@@ -241,7 +242,6 @@ def multiclass_crossval_predict(pyx, labels):
 def find_label_issues(
         s,
         psx,
-        inverse_noise_matrix=None,
         confident_joint=None,
         frac_noise=1.0,
         num_to_remove_per_class=None,
@@ -256,6 +256,10 @@ def find_label_issues(
     frac_of_noise = 1.0, all "confident" estimated noise indices are returned.
     * If you encounter the error 'psx is not defined', try setting n_jobs = 1.
 
+    WARNING! frac_noise and num_to_remove_per_class parameters are only supported when prune_method
+    is either 'prune_by_noise_rate', 'prune_by_class', or 'both'. They are not supported for methods
+    'confident_learning_off_diagonals' or 'argmax_not_equal_given_label'. TODO.
+
     Parameters
     ----------
 
@@ -269,13 +273,6 @@ def find_label_issues(
       This is the probability distribution over all K classes, for each
       example, regarding whether the example has label s==k P(s=k|x).
       psx should have been computed using 3+ fold cross-validation.
-
-    inverse_noise_matrix : np.array of shape (K, K), K = number of classes
-      A conditional probability matrix of the form P(y=k_y|s=k_s) representing
-      the estimated fraction observed examples in each class k_s, that are
-      mislabeled examples from every other class k_y. If None, the
-      inverse_noise_matrix will be computed from psx and s.
-      Assumes columns of inverse_noise_matrix sum to 1.
 
     confident_joint : np.array (shape (K, K), type int) (default: None)
       A K,K integer matrix of count(s=k, y=k). Estimates a a confident
@@ -340,6 +337,13 @@ def find_label_issues(
 
     assert prune_method in ['prune_by_noise_rate', 'prune_by_class', 'both',
                             'confident_learning_off_diagonals', 'argmax_not_equal_given_label']
+    if prune_method in ['confident_learning_off_diagonals', 'argmax_not_equal_given_label'] and \
+            (frac_noise != 1.0 or num_to_remove_per_class is not None):
+        warn_str = "WARNING! frac_noise and num_to_remove_per_class parameters are only supported" \
+                   " for prune_method 'prune_by_noise_rate', 'prune_by_class', and 'both'. They " \
+                   "are not supported for methods 'confident_learning_off_diagonals' or " \
+                   "'argmax_not_equal_given_label'."
+        warnings.warn(warn_str)
 
     # Set-up number of multiprocessing threads
     if n_jobs is None:

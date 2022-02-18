@@ -17,8 +17,7 @@
 from __future__ import (
     print_function, absolute_import, division, unicode_literals,
     with_statement, )
-from cleanlab import count
-from cleanlab import filter
+from cleanlab import count, filter, rank
 from cleanlab.latent_algebra import compute_inv_noise_matrix
 from cleanlab.noise_generation import generate_noise_matrix_from_trace
 from cleanlab.noise_generation import generate_noisy_labels
@@ -80,7 +79,7 @@ def make_data(
     inv = compute_inv_noise_matrix(py, noise_matrix, ps)
 
     # Estimate psx
-    latent = latent_estimation.estimate_py_noise_matrices_and_cv_pred_proba(
+    latent = count.estimate_py_noise_matrices_and_cv_pred_proba(
         X=X_train,
         s=s,
         cv_n_folds=3,
@@ -152,20 +151,22 @@ def test_pruning_both(n_jobs):
     assert (all(s[both_idx] == s[class_idx & nr_idx]))
 
 
-def test_prune_on_small_data():
-    data = make_data(sizes=[4, 4, 4])
-    for pm in ['prune_by_noise_rate', 'prune_by_class', 'both']:
-        noise_idx = pruning.find_label_issues(
-            s=data['s'],
-            psx=data['psx'],
-            prune_method=pm,
-        )
-        # Num in each class < 5. Nothing should be pruned.
-        assert (not any(noise_idx))
+@pytest.mark.parametrize("prune_method", ['prune_by_noise_rate', 'prune_by_class', 'both',
+                                          'confident_learning_off_diagonals',
+                                          'argmax_not_equal_given_label'])
+def test_prune_on_small_data(prune_method):
+    data = make_data(sizes=[1, 1, 1])
+    noise_idx = filter.find_label_issues(
+        s=data['s'],
+        psx=data['psx'],
+        prune_method=prune_method,
+    )
+    # Num in each class < 5. Nothing should be pruned.
+    assert (not any(noise_idx))
 
 
 def test_cj_from_probs():
-    cj = latent_estimation.estimate_confident_joint_from_probabilities(
+    cj = count.estimate_confident_joint_from_probabilities(
         s=data["s"],
         psx=data["psx"],
         force_ps=10,
@@ -173,14 +174,14 @@ def test_cj_from_probs():
     true_ps = data["ps"] * data["n"]
     forced = cj.sum(axis=1)
 
-    cj = latent_estimation.estimate_confident_joint_from_probabilities(
+    cj = count.estimate_confident_joint_from_probabilities(
         s=data["s"],
         psx=data["psx"],
         force_ps=1,
     )
     forced1 = cj.sum(axis=1)
 
-    cj = latent_estimation.estimate_confident_joint_from_probabilities(
+    cj = count.estimate_confident_joint_from_probabilities(
         s=data["s"],
         psx=data["psx"],
         force_ps=False,
@@ -193,12 +194,12 @@ def test_cj_from_probs():
 
 
 def test_calibrate_joint():
-    cj = latent_estimation.compute_confident_joint(
+    cj = count.compute_confident_joint(
         s=data["s"],
         psx=data["psx"],
         calibrate=False,
     )
-    calibrated_cj = latent_estimation.calibrate_confident_joint(
+    calibrated_cj = count.calibrate_confident_joint(
         s=data["s"],
         confident_joint=cj,
     )
@@ -208,7 +209,7 @@ def test_calibrate_joint():
     assert (all(calibrated_cj.sum(axis=1).round().astype(int) == s_counts))
     assert (len(data["s"]) == int(round(np.sum(calibrated_cj))))
 
-    calibrated_cj2 = latent_estimation.compute_confident_joint(
+    calibrated_cj2 = count.compute_confident_joint(
         s=data["s"],
         psx=data["psx"],
         calibrate=True,
@@ -219,7 +220,7 @@ def test_calibrate_joint():
 
 
 def test_estimate_joint():
-    joint = latent_estimation.estimate_joint(
+    joint = count.estimate_joint(
         s=data["s"],
         psx=data["psx"],
     )
@@ -229,7 +230,7 @@ def test_estimate_joint():
 
 
 def test_compute_confident_joint():
-    cj = latent_estimation.compute_confident_joint(
+    cj = count.compute_confident_joint(
         s=data["s"],
         psx=data["psx"],
     )
@@ -242,7 +243,7 @@ def test_compute_confident_joint():
 
 def test_cj_from_probs():
     with pytest.warns(UserWarning) as w:
-        cj = latent_estimation.estimate_confident_joint_from_probabilities(
+        cj = count.estimate_confident_joint_from_probabilities(
             s=data["s"],
             psx=data["psx"],
             force_ps=10,
@@ -250,14 +251,14 @@ def test_cj_from_probs():
         true_ps = data["ps"] * data["n"]
         forced = cj.sum(axis=1)
 
-        cj = latent_estimation.estimate_confident_joint_from_probabilities(
+        cj = count.estimate_confident_joint_from_probabilities(
             s=data["s"],
             psx=data["psx"],
             force_ps=1,
         )
         forced1 = cj.sum(axis=1)
 
-        cj = latent_estimation.estimate_confident_joint_from_probabilities(
+        cj = count.estimate_confident_joint_from_probabilities(
             s=data["s"],
             psx=data["psx"],
             force_ps=False,
@@ -271,14 +272,14 @@ def test_cj_from_probs():
 
 def test_estimate_latent_py_method():
     for py_method in ["cnt", "eqn", "marginal"]:
-        py, nm, inv = latent_estimation.estimate_latent(
+        py, nm, inv = count.estimate_latent(
             confident_joint=data['cj'],
             s=data['s'],
             py_method=py_method,
         )
         assert (sum(py) - 1 < 1e-4)
     try:
-        py, nm, inv = latent_estimation.estimate_latent(
+        py, nm, inv = count.estimate_latent(
             confident_joint=data['cj'],
             s=data['s'],
             py_method='INVALID',
@@ -286,7 +287,7 @@ def test_estimate_latent_py_method():
     except ValueError as e:
         assert ('should be' in str(e))
         with pytest.raises(ValueError) as e:
-            py, nm, inv = latent_estimation.estimate_latent(
+            py, nm, inv = count.estimate_latent(
                 confident_joint=data['cj'],
                 s=data['s'],
                 py_method='INVALID',
@@ -294,13 +295,13 @@ def test_estimate_latent_py_method():
 
 
 def test_estimate_latent_converge():
-    py, nm, inv = latent_estimation.estimate_latent(
+    py, nm, inv = count.estimate_latent(
         confident_joint=data['cj'],
         s=data['s'],
         converge_latent_estimates=True,
     )
 
-    py2, nm2, inv2 = latent_estimation.estimate_latent(
+    py2, nm2, inv2 = count.estimate_latent(
         confident_joint=data['cj'],
         s=data['s'],
         converge_latent_estimates=False,
@@ -316,7 +317,7 @@ def test_estimate_latent_converge():
 @pytest.mark.parametrize("sparse", [True, False])
 def test_estimate_noise_matrices(sparse):
     data = make_data(sparse=sparse, seed=seed)
-    nm, inv = latent_estimation.estimate_noise_matrices(
+    nm, inv = count.estimate_noise_matrices(
         X=data["X_train"],
         s=data["s"],
     )
@@ -331,7 +332,7 @@ def test_pruning_reduce_prune_counts():
         [47, 178, 10],
         [36, 8, 159],
     ])
-    cj2 = pruning.reduce_prune_counts(cj, frac_noise=1.0)
+    cj2 = filter.reduce_prune_counts(cj, frac_noise=1.0)
     assert (np.all(cj == cj2))
 
 
@@ -342,7 +343,7 @@ def test_pruning_keep_at_least_n_per_class():
         [47, 178, 10],
         [36, 8, 159],
     ])
-    prune_count_matrix = pruning.keep_at_least_n_per_class(
+    prune_count_matrix = filter.keep_at_least_n_per_class(
         prune_count_matrix=cj.T,
         n=5,
     )
@@ -353,7 +354,7 @@ def test_pruning_order_method():
     order_methods = ["prob_given_label", "normalized_margin"]
     results = []
     for method in order_methods:
-        results.append(pruning.find_label_issues(
+        results.append(filter.find_label_issues(
             s=data['s'],
             psx=data['psx'],
             sorted_index_method=method,
@@ -361,17 +362,18 @@ def test_pruning_order_method():
     assert (len(results[0]) == len(results[1]))
 
 
-def test_get_noise_indices_multi_label():
+@pytest.mark.parametrize("multi_label", [True, False])
+@pytest.mark.parametrize("prune_method", ['prune_by_noise_rate', 'prune_by_class', 'both',
+                                          'confident_learning_off_diagonals'])
+def test_get_noise_indices_multi_label(multi_label, prune_method):
     s_ml = [[z, data['y_train'][i]] for i, z in enumerate(data['s'])]
-    for multi_label in [True, False]:
-        for prune_method in ['prune_by_class', 'prune_by_noise_rate']:
-            noise_idx = filter.find_label_issues(
-                s=s_ml if multi_label else data['s'],
-                psx=data['psx'],
-                prune_method=prune_method,
-                multi_label=multi_label,
-            )
-            acc = np.mean((data['s'] != data['y_train']) == noise_idx)
-            # Make sure cleanlab does reasonably well finding the errors.
-            # acc is the accuracy of detecting a label error.
-            assert (acc > 0.85)
+    noise_idx = filter.find_label_issues(
+        s=s_ml if multi_label else data['s'],
+        psx=data['psx'],
+        prune_method=prune_method,
+        multi_label=multi_label,
+    )
+    acc = np.mean((data['s'] != data['y_train']) == noise_idx)
+    # Make sure cleanlab does reasonably well finding the errors.
+    # acc is the accuracy of detecting a label error.
+    assert (acc > 0.85)
