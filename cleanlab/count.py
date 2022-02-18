@@ -237,7 +237,6 @@ def _compute_confident_joint_multi_label(
 def compute_confident_joint(
         s,
         psx,
-        K=None,
         thresholds=None,
         calibrate=True,
         multi_label=False,
@@ -312,8 +311,7 @@ def compute_confident_joint(
         cj_ish = np.zeros((K, K))
         for k_s in range(K): # k_s is the class value k of noisy label s
             for k_y in range(K): # k_y is the (guessed) class k of true label y
-                cj_ish[k_s][k_y] = sum((psx[:,k_y] >= (thresholds[k_y] - 1e-8))\
- & (s == k_s))
+                cj_ish[k_s][k_y] = sum((psx[:,k_y] >= (thresholds[k_y] - 1e-8)) & (s == k_s))
 
     The following is a vectorized (but non-parallelized) implementation of the
     confident joint, again slow, using for-loops/simplified for understanding.
@@ -343,21 +341,19 @@ def compute_confident_joint(
     # s needs to be a numpy array
     s = np.asarray(s)
 
-    # Find the number of unique classes if K is not given
-    if K is None:
-        K = len(np.unique(s))
+    # Find the number of unique classes
+    num_classes = len(np.unique(s))
 
     # Estimate the probability thresholds for confident counting
     if thresholds is None:
         # P(we predict the given noisy label is k | given noisy label is k)
-        thresholds = [np.mean(psx[:, k][s == k]) for k in range(K)]
+        thresholds = [np.mean(psx[:, k][s == k]) for k in range(num_classes)]
     thresholds = np.asarray(thresholds)
 
     # Compute confident joint (vectorized for speed).
 
-    # psx_bool is a bool matrix where each row represents a training example as
-    # a boolean vector of size K, with True if the example confidently belongs
-    # to that class and False if not.
+    # psx_bool is a bool matrix where each row represents a training example as a boolean vector of
+    # size num_classes, with True if the example confidently belongs to that class and False if not.
     psx_bool = (psx >= thresholds - 1e-6)
     num_confident_bins = psx_bool.sum(axis=1)
     at_least_one_confident = num_confident_bins > 0
