@@ -40,11 +40,10 @@ import numpy as np
 # tqdm is a module used to print time-to-complete when multiprocessing is used.
 # This module is not necessary, and therefore is not a package dependency, but 
 # when installed it improves user experience for large datasets.
-from count import calibrate_confident_joint
+from cleanlab.count import calibrate_confident_joint
 
 try:
     import tqdm
-
     tqdm_exists = True
 except ImportError as e:
     tqdm_exists = False
@@ -315,6 +314,10 @@ def find_label_issues(
       probability* of belonging to their given class label for every class.
       3. 'both': Finds the examples satisfying (1) AND (2) and
       removes their set conjunction.
+      4. 'confident_learning_off_diagonals': Find examples that are confidently labeled as a class
+      that's different from their given label while computing the confident joint.
+      5. 'argmax_not_equal_given_label': Find examples where the argmax predictions does not match
+      the given label.
 
     sorted_index_method : {:obj:`None`, :obj:`prob_given_label`, :obj:`normalized_margin`}
       If None, returns a boolean mask (true if example at index is label error)
@@ -335,6 +338,9 @@ def find_label_issues(
     verbose : int
       If 0, no print statements. If 1, prints when multiprocessing happens."""
 
+    assert prune_method in ['prune_by_noise_rate', 'prune_by_class', 'both',
+                            'confident_learning_off_diagonals', 'argmax_not_equal_given_label']
+
     # Set-up number of multiprocessing threads
     if n_jobs is None:
         n_jobs = multiprocessing.cpu_count()
@@ -353,43 +359,47 @@ def find_label_issues(
     # Ensure labels are of type np.array()
     s = np.asarray(s)
 
-    if confident_joint is None:
+    if confident_joint is None or prune_method == 'confident_learning_off_diagonals':
         from cleanlab.count import compute_confident_joint
-        confident_joint = compute_confident_joint(
+        confident_joint, cl_error_indices = compute_confident_joint(
             s=s,
             psx=psx,
             multi_label=multi_label,
+            return_indices_of_off_diagonals=True,
         )
 
-    # Leave at least MIN_NUM_PER_CLASS examples per class.
-    # NOTE prune_count_matrix is transposed (relative to confident_joint)
-    prune_count_matrix = keep_at_least_n_per_class(
-        prune_count_matrix=confident_joint.T,
-        n=MIN_NUM_PER_CLASS,
-        frac_noise=frac_noise,
-    )
+    if prune_method in ['prune_by_noise_rate', 'prune_by_class', 'both']:
+        # Create `prune_count_matrix` with the number of examples to remove in each class and
+        # leave at least MIN_NUM_PER_CLASS examples per class.
+        # `prune_count_matrix` is transposed relative to the confident_joint.
+        prune_count_matrix = keep_at_least_n_per_class(
+            prune_count_matrix=confident_joint.T,
+            n=MIN_NUM_PER_CLASS,
+            frac_noise=frac_noise,
+        )
 
-    if num_to_remove_per_class is not None:
-        # Estimate joint probability distribution over label errors
-        psy = prune_count_matrix / np.sum(prune_count_matrix, axis=1)
-        noise_per_s = psy.sum(axis=1) - psy.diagonal()
-        # Calibrate s.t. noise rates sum to num_to_remove_per_class
-        tmp = (psy.T * num_to_remove_per_class / noise_per_s).T
-        np.fill_diagonal(tmp, s_counts - num_to_remove_per_class)
-        prune_count_matrix = round_preserving_row_totals(tmp)
+        if num_to_remove_per_class is not None:
+            # Estimate joint probability distribution over label errors
+            psy = prune_count_matrix / np.sum(prune_count_matrix, axis=1)
+            noise_per_s = psy.sum(axis=1) - psy.diagonal()
+            # Calibrate s.t. noise rates sum to num_to_remove_per_class
+            tmp = (psy.T * num_to_remove_per_class / noise_per_s).T
+            np.fill_diagonal(tmp, s_counts - num_to_remove_per_class)
+            prune_count_matrix = round_preserving_row_totals(tmp)
 
-    if n_jobs > 1:  # Prepare multiprocessing shared data
-        if multi_label:
-            _s = RawArray('I', int2onehot(s).flatten())
-        else:
-            _s = RawArray('I', s)
-        _s_counts = RawArray('I', s_counts)
-        _prune_count_matrix = RawArray(
-            'I', prune_count_matrix.flatten())
-        _psx = RawArray(
-            'f', psx.flatten())
-    else:  # Multiprocessing is turned off. Create tuple with all parameters
-        args = (s, s_counts, prune_count_matrix, psx, multi_label)
+        # Prepare multiprocessing shared data
+        if n_jobs > 1:
+            if multi_label:
+                _s = RawArray('I', int2onehot(s).flatten())
+            else:
+                _s = RawArray('I', s)
+            _s_counts = RawArray('I', s_counts)
+            _prune_count_matrix = RawArray(
+                'I', prune_count_matrix.flatten())
+            _psx = RawArray(
+                'f', psx.flatten())
+        else:  # Multiprocessing is turned off. Create tuple with all parameters
+            args = (s, s_counts, prune_count_matrix, psx, multi_label)
 
     # Perform Pruning with threshold probabilities from BFPRT algorithm in O(n)
     # Operations are parallelized across all CPU processes
@@ -442,6 +452,14 @@ def find_label_issues(
 
     if prune_method == 'both':
         label_errors_mask = label_errors_mask & label_errors_mask_by_class
+
+    if prune_method == 'confident_learning_off_diagonals':
+        label_errors_mask = np.zeros(len(s), dtype=bool)
+        for idx in cl_error_indices:
+            label_errors_mask[idx] = True
+
+    if prune_method == 'argmax_not_equal_given_label':
+        label_errors_mask = find_argmax_not_equal_given_label(psx, s, multi_label=multi_label)
 
     # Remove label errors if given label == model prediction
     if multi_label:
@@ -595,6 +613,10 @@ def find_label_issues_using_argmax_confusion_matrix(
     of argmax(psx) and s as the confident joint and then uses cleanlab
     (confident learning) to find the label errors using this matrix.
 
+    The only difference between this and find_label_issues is that it uses the confusion matrix
+    based on the argmax and given label instead of using the confident joint from
+    `count.compute_confident_joint`.
+
     This method does not support multi-label labels.
 
     Parameters
@@ -624,6 +646,8 @@ def find_label_issues_using_argmax_confusion_matrix(
       probability* of belonging to their given class label for every class.
       3. 'both': Finds the examples satisfying (1) AND (2) and
       removes their set conjunction.
+      4. 'confident_learning_off_diagonals': Find examples that are confidently labeled as a class
+      that's different from their given label while computing the confident joint.
 
     Returns
     -------
