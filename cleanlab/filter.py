@@ -557,7 +557,7 @@ def reduce_prune_counts(prune_count_matrix, frac_noise=1.0):
     return new_mat.astype(int)
 
 
-def baseline_argmax(psx, labels, multi_label=False):
+def find_argmax_not_equal_given_label(psx, labels, multi_label=False):
     """This is the simplest baseline approach. Just consider
     anywhere argmax != s as a label error.
 
@@ -585,7 +585,7 @@ def baseline_argmax(psx, labels, multi_label=False):
     return np.argmax(psx, axis=1) != np.asarray(labels)
 
 
-def baseline_argmax_confusion_matrix(
+def find_label_issues_using_argmax_confusion_matrix(
     psx,
     labels,
     calibrate=True,
@@ -611,7 +611,19 @@ def baseline_argmax_confusion_matrix(
 
     calibrate : bool
         Set to True to calibrate the confusion matrix created by pred != given labels.
-        This calibration just makes
+        This calibration adjusts the confusion matrix / confident joint so that the
+        prior(given noisy labels) is correct based on the original labels.
+
+    prune_method : str (default: 'prune_by_noise_rate')
+      Possible Values: 'prune_by_class', 'prune_by_noise_rate', or 'both'.
+      Method used for pruning.
+      1. 'prune_by_noise_rate': works by removing examples with
+      *high probability* of being mislabeled for every non-diagonal
+      in the prune_counts_matrix (see filter.py).
+      2. 'prune_by_class': works by removing the examples with *smallest
+      probability* of belonging to their given class label for every class.
+      3. 'both': Finds the examples satisfying (1) AND (2) and
+      removes their set conjunction.
 
     Returns
     -------
