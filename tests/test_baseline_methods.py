@@ -1,11 +1,11 @@
 # coding: utf-8
 
 from __future__ import print_function, absolute_import, division, unicode_literals, with_statement
+
+from cleanlab import filter
 from cleanlab import count
 from cleanlab.noise_generation import generate_noise_matrix_from_trace, generate_noisy_labels
 from cleanlab.count import compute_inv_noise_matrix
-from cleanlab import baseline_methods
-from cleanlab.util import confusion_matrix
 import numpy as np
 import scipy
 import pytest
@@ -130,10 +130,10 @@ def test_baseline_argmax():
         [0.4, 0.5, 0.1],
     ])
     s = np.array([0, 0, 1, 1, 2])
-    label_errors = baseline_methods.baseline_argmax(psx, s)
+    label_errors = filter.baseline_argmax(psx, s)
     assert (all(label_errors == [False, False, True, True, True]))
 
-    label_errors = baseline_methods.baseline_argmax(psx_, s_)
+    label_errors = filter.baseline_argmax(psx_, s_)
     assert (all(label_errors == np.array([False, False, True, False,
                                           False, False, False, False, False, False])))
 
@@ -142,7 +142,7 @@ def test_baseline_argmax():
 @pytest.mark.parametrize("prune_method", ['prune_by_noise_rate',
                                           'prune_by_class', 'both'])
 def test_baseline_argmax_confusion_matrix(calibrate, prune_method):
-    label_errors = baseline_methods.baseline_argmax_confusion_matrix(
+    label_errors = filter.baseline_argmax_confusion_matrix(
         psx_, s_, calibrate=calibrate, prune_method=prune_method)
     assert (all(label_errors == np.array([False, False, True, False,
                                           False, False, False, False, False, False])))
