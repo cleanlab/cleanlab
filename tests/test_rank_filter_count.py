@@ -17,7 +17,8 @@
 from __future__ import (
     print_function, absolute_import, division, unicode_literals,
     with_statement, )
-from cleanlab import count, filter, rank
+
+from cleanlab import count, filter
 from cleanlab.latent_algebra import compute_inv_noise_matrix
 from cleanlab.noise_generation import generate_noise_matrix_from_trace
 from cleanlab.noise_generation import generate_noisy_labels
@@ -109,6 +110,21 @@ def make_data(
 # Only compute this once for speed.
 seed = 1
 data = make_data(sparse=False, seed=1)
+
+# Create some simple data to test
+psx_ = np.array([
+    [0.9, 0.1, 0],
+    [0.6, 0.2, 0.2],
+    [0.1, 0, 0.9],
+    [0.1, 0.8, 0.1],
+    [0.1, 0.8, 0.1],
+    [0.1, 0.8, 0.1],
+    [0.1, 0.8, 0.1],
+    [0.1, 0.8, 0.1],
+    [0.1, 0.8, 0.1],
+    [0.1, 0.1, 0.8],
+])
+s_ = np.array([0, 0, 1, 1, 1, 1, 1, 1, 1, 2])
 
 
 def test_exact_prune_count():
@@ -377,3 +393,42 @@ def test_get_noise_indices_multi_label(multi_label, prune_method):
     # Make sure cleanlab does reasonably well finding the errors.
     # acc is the accuracy of detecting a label error.
     assert (acc > 0.85)
+
+
+def test_confident_learning_off_diagonals_prune_method():
+    cj, indices = count.compute_confident_joint(
+        s=data["s"],
+        psx=data["psx"],
+        calibrate=False,
+        return_indices_of_off_diagonals=True,
+    )
+    # Check that the number of 'label errors' found in off diagonals
+    # matches the off diagonals of the uncalibrated confident joint
+    assert (len(indices) == (np.sum(cj) - np.trace(cj)))
+
+
+def test_argmax_not_equal_given_label_prune_method():
+    psx = np.array([
+        [0.9, 0.1, 0],
+        [0.6, 0.2, 0.2],
+        [0.3, 0.3, 4],
+        [0.1, 0.1, 0.8],
+        [0.4, 0.5, 0.1],
+    ])
+    s = np.array([0, 0, 1, 1, 2])
+    label_errors = filter.baseline_argmax(psx, s)
+    assert (all(label_errors == [False, False, True, True, True]))
+
+    label_errors = filter.baseline_argmax(psx_, s_)
+    assert (all(label_errors == np.array([False, False, True, False,
+                                          False, False, False, False, False, False])))
+
+
+@pytest.mark.parametrize("calibrate", [True, False])
+@pytest.mark.parametrize("prune_method", ['prune_by_noise_rate',
+                                          'prune_by_class', 'both'])
+def test_find_label_issues_using_argmax_confusion_matrix(calibrate, prune_method):
+    label_errors = filter.baseline_argmax_confusion_matrix(
+        psx_, s_, calibrate=calibrate, prune_method=prune_method)
+    assert (all(label_errors == np.array([False, False, True, False,
+                                          False, False, False, False, False, False])))
