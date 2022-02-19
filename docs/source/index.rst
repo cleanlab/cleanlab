@@ -47,7 +47,7 @@ Setting ``sorted_index_method='prob_given_label'`` instructs it to return the po
       sorted_index_method='prob_given_label')
 
 .. important::
-   ``pyx`` is the out-of-sample predicted probabilities computed with cross validation.
+   ``pyx`` is the out-of-sample predicted probabilities computed with cross-validation.
 
 ..
    todo - include the url for tf and torch beginner tutorials
