@@ -52,7 +52,7 @@ Setting ``sorted_index_method='prob_given_label'`` instructs it to return the po
 ..
    todo - include the url for tf and torch beginner tutorials
 
-1. Train robust models with noisy labels using ``LearningWithNoisyLabels``.
+3. Train robust models with noisy labels using ``LearningWithNoisyLabels``.
 ---------------------------------------------------------------------------
 
 Cleanlab's ``LearningWithNoisyLabels`` adapts any classification model, ``clf``, to a more reliable one by allowing it to train directly on partially mislabeled datasets. 
