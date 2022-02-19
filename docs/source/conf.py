@@ -33,17 +33,11 @@ author = "Cleanlab Inc."
 extensions = [
     "sphinx.ext.napoleon",
     "nbsphinx",
-    # 'sphinxcontrib.bibtex',  # for bibliographic references
-    # 'sphinxcontrib.rsvgconverter',  # for SVG->PDF conversion in LaTeX output
-    # "sphinx_gallery.load_style",  # load CSS for gallery (needs SG >= 0.6)
-    # 'sphinx_codeautolink',  # automatic links from code to documentation
-    # "sphinx.ext.intersphinx",  # links to other Sphinx projects (e.g. NumPy)
     "sphinx.ext.autodoc",
     "autodocsumm",
     "sphinx.ext.viewcode",
     "sphinx.ext.todo",
     "sphinx_tabs.tabs",
-    # "sphinxcontrib.apidoc",
     "sphinx_multiversion",
 ]
 

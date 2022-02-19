@@ -48,6 +48,13 @@ jobs:
       - name: Copy the file that redirects site visit to master doc
         run: cp docs/source/_templates/gh-pages-redirect.html docs/build/index.html
 
+      - name: Find and replace
+        uses: jacobtomlinson/gha-find-replace@v2
+        with:
+          find: "repository_owner"
+          replace: ${{ github.repository_owner }}
+          include: "docs/build/index.html"
+
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
         if: ${{ github.ref == 'refs/heads/master' }}

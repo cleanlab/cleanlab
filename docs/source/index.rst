@@ -6,9 +6,9 @@
 Introduction
 ============
 
-**Cleanlab automatically find and fix errors in your ML datasets.**
+**Cleanlab automatically finds and fixes errors in your ML datasets.**
 
-| This reduces manual work needed to fix data issues and helps train reliable ML models on partially mislabeled datasets. Cleanlab has already found thousands of `label errors <https://labelerrors.com>`_ in ImageNet, MNIST and other popular ML benchmarking datasets, so let's get started with yours!
+| This reduces manual work needed to fix data issues and helps train reliable ML models on partially mislabeled datasets. Cleanlab has already found thousands of `label errors <https://labelerrors.com>`_ in ImageNet, MNIST, and other popular ML benchmarking datasets, so let's get started with yours!
 
 .. note::
    Cleanlab currently only supports classification tasks.
@@ -33,9 +33,9 @@ Quickstart
 2. Find label errors with ``get_noise_indices``.
 ------------------------------------------------
 
-Cleanlab's ``get_noise_indices`` function tells you which examples in your dataset are likely mislabeled. At a minimum, it expects two inputs - your data's labels, ``y``, and its out-of-sample predicted probabilities, ``pyx``, computed with cross validation. 
+Cleanlab's ``get_noise_indices`` function tells you which examples in your dataset are likely mislabeled. At a minimum, it expects two inputs - your data's labels, ``y``, and its out-of-sample predicted probabilities, ``pyx``, computed with cross-validation. 
 
-Setting ``sorted_index_method='prob_given_label'`` instructs it to return the positional indices of potential mislabeled example starting with the the most likely one first.
+Setting ``sorted_index_method='prob_given_label'`` instructs it to return the positional indices of potential mislabeled examples starting with the most likely one first.
 
 .. code-block:: python
 
@@ -46,13 +46,13 @@ Setting ``sorted_index_method='prob_given_label'`` instructs it to return the po
       psx=pyx,
       sorted_index_method='prob_given_label')
 
-.. tip::
-   Check out our beginner tutorials for an easy way compute the out-of-sample predicted probabilities, ``pyx``, with cross validation.
+.. important::
+   ``pyx`` is the out-of-sample predicted probabilities computed with cross validation.
 
 ..
    todo - include the url for tf and torch beginner tutorials
 
-3. Train robust models with noisy labels using ``LearningWithNoisyLabels``.
+1. Train robust models with noisy labels using ``LearningWithNoisyLabels``.
 ---------------------------------------------------------------------------
 
 Cleanlab's ``LearningWithNoisyLabels`` adapts any classification model, ``clf``, to a more reliable one by allowing it to train directly on partially mislabeled datasets. 
@@ -68,8 +68,6 @@ When the ``.fit()`` method is called, it automatically identifies and removes an
    lnl = LearningWithNoisyLabels(clf=clf)
    lnl.fit(X=X, s=y)
 
-What's next?
-============
 
 
 .. toctree::
