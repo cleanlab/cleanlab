@@ -2,9 +2,7 @@ name: GitHub Pages
 
 on:
   push:
-    branches: [ master ]
-  pull_request:
-    branches: [ master ]
+    branches: [master]
 
   workflow_dispatch:
 
@@ -22,7 +20,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v2
         with:
-          python-version: '3.8'
+          python-version: "3.8"
 
       - name: Upgrade pip
         run: |
@@ -45,7 +43,7 @@ jobs:
         run: python3 -m pip install -r docs/requirements.txt
 
       - name: Run Sphinx with sphinx-multiversion wrapper
-        run: sphinx-multiversion docs/source docs/build 
+        run: sphinx-multiversion docs/source docs/build
 
       - name: Copy the file that redirects site visit to master doc
         run: cp docs/source/_templates/gh-pages-redirect.html docs/build/index.html
