@@ -81,16 +81,6 @@ What's next?
 
 .. toctree::
    :hidden:
-   :caption: Beginner Tutorials
-
-   notebooks/Image_Tut
-   notebooks/Tabular_Tut
-   notebooks/Text_Tut
-   notebooks/Audio_Tut
-
-
-.. toctree::
-   :hidden:
    :caption: API Reference
 
    cleanlab
