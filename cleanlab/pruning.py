@@ -37,6 +37,7 @@ from multiprocessing.sharedctypes import RawArray
 import sys
 import os
 import time
+import scipy.sparse
 from cleanlab.util import (
     value_counts,
     round_preserving_row_totals,
@@ -101,6 +102,8 @@ def _init(
     __prune_count_matrix,
     __pcm_shape,
     __psx,
+    __psx_indicies,
+    __psx_indptr,
     __psx_shape,
     __multi_label,
 ):  # pragma: no cover
@@ -112,6 +115,8 @@ def _init(
     mp_params["prune_count_matrix"] = __prune_count_matrix
     mp_params["pcm_shape"] = __pcm_shape
     mp_params["psx"] = __psx
+    mp_params["psx_indices"] = __psx_indicies
+    mp_params["psx_indptr"] = __psx_indptr
     mp_params["psx_shape"] = __psx_shape
     mp_params["multi_label"] = __multi_label
 
@@ -125,11 +130,22 @@ def _get_shared_data():  # pragma: no cover
         mp_arr=mp_params["prune_count_matrix"],
         shape=mp_params["pcm_shape"],
     )
-    psx = _to_np_array(
-        mp_arr=mp_params["psx"],
-        dtype="float32",
-        shape=mp_params["psx_shape"],
-    )
+    if mp_params["psx_indices"] is None:
+        psx = _to_np_array(
+            mp_arr=mp_params["psx"],
+            dtype="float32",
+            shape=mp_params["psx_shape"],
+        )
+    else:
+        psx_data = _to_np_array(
+            mp_arr=mp_params["psx"],
+            dtype="float32",
+        )
+        psx_indices = _to_np_array(mp_arr=mp_params["psx_indices"])
+        psx_indptr = _to_np_array(mp_arr=mp_params["psx_indptr"])
+        psx = scipy.sparse.csr_matrix(
+            (psx_data, psx_indices, psx_indptr), shape=mp_params["psx_shape"]
+        )
     multi_label = mp_params["multi_label"]
     if multi_label:  # Shared data is passed as one-hot encoded matrix
         s = onehot2int(
@@ -155,7 +171,15 @@ def _prune_by_class(k, args=None):
       The class of interest."""
 
     if args:  # Single processing - params are passed in
-        s, s_counts, prune_count_matrix, psx, multi_label = args
+        (
+            s,
+            s_counts,
+            prune_count_matrix,
+            psx,
+            psx_indices,
+            psx_indptr,
+            multi_label,
+        ) = args
     else:  # Multiprocessing - data is shared across sub-processes
         s, s_counts, prune_count_matrix, psx, multi_label = _get_shared_data()
 
@@ -187,7 +211,7 @@ def _prune_by_count(k, args=None):
     else:  # Multiprocessing - data is shared across sub-processes
         s, s_counts, prune_count_matrix, psx, multi_label = _get_shared_data()
 
-    noise_mask = np.zeros(len(psx), dtype=bool)
+    noise_mask = np.zeros(psx.shape[0], dtype=bool)
     psx_k = psx[:, k]
     if scipy.sparse.issparse(psx_k):
         psx_k = psx_k.toarray().ravel()
@@ -363,7 +387,7 @@ def get_noise_indices(
     else:
         s_counts = value_counts(s)
     # Number of classes s
-    K = len(psx.T)
+    K = psx.shape[1]
     # Boolean set to true if dataset is large
     big_dataset = K * len(s) > 1e8
     # Ensure labels are of type np.array()
@@ -402,7 +426,26 @@ def get_noise_indices(
             _s = RawArray("I", s)
         _s_counts = RawArray("I", s_counts)
         _prune_count_matrix = RawArray("I", prune_count_matrix.flatten())
-        _psx = RawArray("f", psx.flatten())
+        if scipy.sparse.issparse(psx):
+            psx = psx.tocsr()
+            _psx = RawArray("f", psx.data)
+            _psx_indices = RawArray("I", psx.indices)
+            _psx_indptr = RawArray("I", psx.indptr)
+        else:
+            _psx = RawArray("f", psx.flatten())
+            _psx_indices = None
+            _psx_indptr = None
+        initargs = (
+            _s,
+            _s_counts,
+            _prune_count_matrix,
+            prune_count_matrix.shape,
+            _psx,
+            _psx_indices,
+            _psx_indptr,
+            psx.shape,
+            multi_label,
+        )
     else:  # Multiprocessing is turned off. Create tuple with all parameters
         args = (s, s_counts, prune_count_matrix, psx, multi_label)
 
@@ -412,16 +455,8 @@ def get_noise_indices(
         if n_jobs > 1:  # parallelize
             with multiprocessing_context(
                 n_jobs,
-                initializer=_init,
-                initargs=(
-                    _s,
-                    _s_counts,
-                    _prune_count_matrix,
-                    prune_count_matrix.shape,
-                    _psx,
-                    psx.shape,
-                    multi_label,
-                ),
+                initializer=initializer,
+                initargs=initargs,
             ) as p:
                 if verbose:
                     print("Parallel processing label errors by class.")
@@ -444,15 +479,7 @@ def get_noise_indices(
             with multiprocessing_context(
                 n_jobs,
                 initializer=_init,
-                initargs=(
-                    _s,
-                    _s_counts,
-                    _prune_count_matrix,
-                    prune_count_matrix.shape,
-                    _psx,
-                    psx.shape,
-                    multi_label,
-                ),
+                initargs=initargs,
             ) as p:
                 if verbose:
                     print("Parallel processing label errors by noise rate.")
