@@ -46,9 +46,9 @@ setup(
     long_description=long_description,
     long_description_content_type='text/x-rst',
     description = 'The standard package for machine learning with noisy labels and finding mislabeled data in Python.',
-    url = 'https://github.com/cgnorthcutt/cleanlab',
-    author = 'Curtis G. Northcutt',
-    author_email = 'cgn@csail.mit.edu',
+    url = 'https://github.com/cleanlab/cleanlab',
+    author = 'Cleanlab, Inc.',
+    author_email = 'team@cleanlab.ai',
 
     # See https://pypi.python.org/pypi?%3Aaction=list_classifiers
     classifiers=[
