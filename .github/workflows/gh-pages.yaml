@@ -16,7 +16,7 @@ jobs:
         run: sudo apt-get install pandoc
 
       - uses: actions/checkout@v2
-        with: 
+        with:
           fetch-depth: 0
 
       - name: Setup Python
@@ -56,13 +56,14 @@ jobs:
         with:
           fallback: 1.0.1
 
-      - name: Find and replace
+      - name: Find and replace "repository_owner"
         uses: jacobtomlinson/gha-find-replace@v2
         with:
           find: "repository_owner"
           replace: ${{ github.repository_owner }}
           include: "docs/build/index.html"
 
+      - name: Find and replace "latest_tag"
         uses: jacobtomlinson/gha-find-replace@v2
         with:
           find: "latest_tag"
@@ -74,6 +75,6 @@ jobs:
         # if: ${{ github.ref == 'refs/heads/master' }}
         with:
           deploy_key: ${{ secrets.ACTIONS_DEPLOY_KEY }}
-          external_repository: ${{ github.repository_owner }}/cleanlab-docs 
+          external_repository: ${{ github.repository_owner }}/cleanlab-docs
           publish_branch: master
           publish_dir: docs/build
