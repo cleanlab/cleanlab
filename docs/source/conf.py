@@ -20,7 +20,7 @@ sys.path.insert(0, os.path.abspath("../...cleanlab"))
 
 # -- Project information -----------------------------------------------------
 
-project = "Cleanlab"
+project = "cleanlab"
 copyright = f"{datetime.datetime.now().year}, Cleanlab Inc."
 author = "Cleanlab Inc."
 
@@ -136,8 +136,8 @@ nbsphinx_execute = "always"
 # a list of builtin themes.
 #
 html_theme = "furo"
-html_favicon = "logo.png"
-html_title = "Cleanlab Docs"
+html_favicon = "_static\logo.png"
+html_title = "cleanlab Docs"
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
