@@ -53,8 +53,8 @@ jobs:
       - name: Get latest tag
         id: latest_tag
         uses: WyriHaximus/github-action-get-previous-tag@v1
-        with:
-          fallback: 1.0.1
+        # with:
+        #  fallback: 1.0.1
 
       - name: Find and replace "repository_owner"
         uses: jacobtomlinson/gha-find-replace@v2
