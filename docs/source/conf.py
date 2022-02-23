@@ -136,7 +136,7 @@ nbsphinx_execute = "always"
 # a list of builtin themes.
 #
 html_theme = "furo"
-html_favicon = "_static\logo.png"
+html_favicon = "_static/logo.png"
 html_title = "cleanlab Docs"
 
 # Add any paths that contain custom static files (such as style sheets) here,

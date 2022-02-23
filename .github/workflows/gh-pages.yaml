@@ -16,6 +16,8 @@ jobs:
         run: sudo apt-get install pandoc
 
       - uses: actions/checkout@v2
+        with: 
+          fetch-depth: 0
 
       - name: Setup Python
         uses: actions/setup-python@v2
@@ -45,8 +47,14 @@ jobs:
       - name: Run Sphinx with sphinx-multiversion wrapper
         run: sphinx-multiversion docs/source docs/build
 
-      - name: Copy the file that redirects site visit to master doc
+      - name: Copy the file that redirects site visit to latest doc
         run: cp docs/source/_templates/gh-pages-redirect.html docs/build/index.html
+
+      - name: Get latest tag
+        id: latest_tag
+        uses: WyriHaximus/github-action-get-previous-tag@v1
+        with:
+          fallback: 1.0.1
 
       - name: Find and replace
         uses: jacobtomlinson/gha-find-replace@v2
@@ -55,12 +63,17 @@ jobs:
           replace: ${{ github.repository_owner }}
           include: "docs/build/index.html"
 
+        uses: jacobtomlinson/gha-find-replace@v2
+        with:
+          find: "latest_tag"
+          replace: ${{ steps.latest_tag.outputs.tag }}
+          include: "docs/build/index.html"
+
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
         # if: ${{ github.ref == 'refs/heads/master' }}
         with:
           deploy_key: ${{ secrets.ACTIONS_DEPLOY_KEY }}
-          # github_token: ${{ secrets.GITHUB_TOKEN }}
           external_repository: ${{ github.repository_owner }}/cleanlab-docs 
           publish_branch: master
           publish_dir: docs/build
