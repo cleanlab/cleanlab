@@ -109,7 +109,7 @@ jobs:
         if: ${{ github.ref_type == 'tag' }}
         uses: jacobtomlinson/gha-find-replace@v2
         with:
-          find: "stable_release"
+          find: "stable_url"
           replace: ../${{ steps.stable_release.outputs.release }}/index.html
           include: "docs/build/stable/index.html"
 
