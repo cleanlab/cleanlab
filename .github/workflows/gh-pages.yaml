@@ -66,7 +66,7 @@ jobs:
         uses: jacobtomlinson/gha-find-replace@v2
         with:
           find: "stable_release"
-          replace: ${{ steps.stable_release.outputs.tag }}
+          replace: ${{ steps.stable_release.outputs.release }}
           include: "docs/source/_templates/redirect-to-stable.html"
 
       - name: Find and replace "repository_owner"
