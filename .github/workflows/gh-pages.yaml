@@ -92,3 +92,4 @@ jobs:
           external_repository: ${{ github.repository_owner }}/cleanlab-docs
           publish_branch: master
           publish_dir: docs/build
+          keep_files: true
