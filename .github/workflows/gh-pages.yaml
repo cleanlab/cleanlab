@@ -1,8 +1,11 @@
-name: GitHub Pages
+name: GitHub Pages - master
 
 on:
   push:
     branches: [master]
+
+  release:
+    types: [published] # or released?
 
   workflow_dispatch:
 
@@ -25,9 +28,7 @@ jobs:
           python-version: "3.8"
 
       - name: Upgrade pip
-        run: |
-          # install pip=>20.1 to use "pip cache dir"
-          python3 -m pip install --upgrade pip
+        run: python3 -m pip install --upgrade pip
 
       - name: Get pip cache dir
         id: pip-cache
@@ -38,41 +39,51 @@ jobs:
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
           key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
+          restore-keys: ${{ runner.os }}-pip-
 
       - name: Install dependencies
         run: python3 -m pip install -r docs/requirements.txt
 
-      - name: Run Sphinx with sphinx-multiversion wrapper
-        run: sphinx-multiversion docs/source docs/build
+      - name: Run Sphinx with sphinx-multiversion wrapper - branch trigger
+        if: ${{ github.ref_type == 'branch' }}
+        run: sphinx-multiversion docs/source docs/build -D smv_branch_whitelist=${{ github.ref_name }} -D smv_tags_whitelist=None
+
+      - name: Run Sphinx with sphinx-multiversion wrapper - tag trigger
+        if: ${{ github.ref_type == 'tag' }}
+        run: sphinx-multiversion docs/source docs/build -D smv_branch_whitelist=None -D smv_tags_whitelist=${{ github.ref_name }}
 
       - name: Copy the file that redirects site visit to latest doc
+        if: ${{ github.ref_type == 'tag' }}
         run: cp docs/source/_templates/gh-pages-redirect.html docs/build/index.html
 
-      - name: Get latest tag
-        id: latest_tag
-        uses: WyriHaximus/github-action-get-previous-tag@v1
+      - name: Get latest release AKA stable release
+        if: ${{ github.ref_type == 'tag' }}
+        id: stable_release
+        uses: pozetroninc/github-action-get-latest-release@master
         with:
-          fallback: 1.0.1
+          owner: ${{ github.repository_owner }}
+          repo: cleanlab
+          excludes: prerelease, draft
 
       - name: Find and replace "repository_owner"
+        if: ${{ github.ref_type == 'tag' }}
         uses: jacobtomlinson/gha-find-replace@v2
         with:
           find: "repository_owner"
           replace: ${{ github.repository_owner }}
           include: "docs/build/index.html"
 
-      - name: Find and replace "latest_tag"
+      - name: Find and replace "stable_release"
+        if: ${{ github.ref_type == 'tag' }}
         uses: jacobtomlinson/gha-find-replace@v2
         with:
-          find: "latest_tag"
-          replace: ${{ steps.latest_tag.outputs.tag }}
+          find: "stable_release"
+          replace: ${{ steps.stable_release.outputs.tag }}
           include: "docs/build/index.html"
 
       - name: Deploy
-        uses: peaceiris/actions-gh-pages@v3
         # if: ${{ github.ref == 'refs/heads/master' }}
+        uses: peaceiris/actions-gh-pages@v3
         with:
           deploy_key: ${{ secrets.ACTIONS_DEPLOY_KEY }}
           external_repository: ${{ github.repository_owner }}/cleanlab-docs

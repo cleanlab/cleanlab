@@ -2,10 +2,22 @@
 
 <div class="sidebar-tree">
   <p class="caption" role="heading">
-    <span class="caption-text">{{ _('Tags') }}</span>
+    <span class="caption-text">{{ _('Versions') }}</span>
   </p>
   <ul>
-    {% for item in versions.tags %}
+    <li class="toctree-l1">
+      <a class="reference internal" href="../master/index.html">latest</a>
+    </li>
+    <li class="toctree-l1">
+      <a class="reference internal" href="../stable/index.html">stable</a>
+    </li>
+  </ul>
+
+  <p class="caption" role="heading">
+    <span class="caption-text">{{ _('Releases') }}</span>
+  </p>
+  <ul>
+    {% for item in versions.releases %}
     <li class="toctree-l1">
       <a class="reference internal" href="{{ item.url }}">{{ item.name }}</a>
     </li>
