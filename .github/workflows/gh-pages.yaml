@@ -5,7 +5,7 @@ on:
     branches: [master]
 
   release:
-    types: [published] # or released?
+    types: [published]
 
   workflow_dispatch:
 
@@ -60,7 +60,25 @@ jobs:
           repo: cleanlab
           excludes: prerelease, draft
 
-      - name: Find and replace "repository_owner"
+      - name: Find and replace "placeholder_version_number" in verisioning.js
+        uses: jacobtomlinson/gha-find-replace@v2
+        with:
+          find: "placeholder_version_number"
+          replace: ${{ steps.stable_release.outputs.release }}
+          include: "docs/source/_templates/versioning.js"
+
+        - name: Find and replace "placeholder_commit_hash" in verisioning.js
+        uses: jacobtomlinson/gha-find-replace@v2
+        with:
+          find: "placeholder_commit_hash"
+          replace: ${{ github.sha }}
+          include: "docs/source/_templates/versioning.js"
+
+      - name: Copy redirecting HTML file to docs/build
+        run: |
+          cp docs/source/_templates/versioning.js docs/build/versioning.js
+
+      - name: Find and replace "repository_owner" in redirecting HTML file
         if: ${{ github.ref_type == 'tag' }}
         uses: jacobtomlinson/gha-find-replace@v2
         with:
