@@ -52,8 +52,7 @@ jobs:
         if: ${{ github.ref_type == 'tag' }}
         run: sphinx-multiversion docs/source docs/build -D smv_branch_whitelist=None -D smv_tag_whitelist=${{ github.ref_name }}
 
-      - name: Get latest release AKA stable release
-        if: ${{ github.ref_type == 'tag' }}
+      - name: Get stable release
         id: stable_release
         uses: pozetroninc/github-action-get-latest-release@master
         with:
@@ -61,28 +60,40 @@ jobs:
           repo: cleanlab
           excludes: prerelease, draft
 
-      - name: Find and replace "stable_release"
-        if: ${{ github.ref_type == 'tag' }}
-        uses: jacobtomlinson/gha-find-replace@v2
-        with:
-          find: "stable_release"
-          replace: ${{ steps.stable_release.outputs.release }}
-          include: "docs/source/_templates/redirect-to-stable.html"
-
       - name: Find and replace "repository_owner"
         if: ${{ github.ref_type == 'tag' }}
         uses: jacobtomlinson/gha-find-replace@v2
         with:
           find: "repository_owner"
-          replace: ${{ github.repository_owner }}
+          replace: ${{ github.repository_owner }} 
           include: "docs/source/_templates/redirect-to-stable.html"
 
-      - name: Copy the file that redirects site visit to latest doc
+      - name: Copy redirecting HTML file to docs/build
+        if: ${{ github.ref_type == 'tag' }}
+        run: |
+          cp docs/source/_templates/redirect-to-stable.html docs/build/index.html
+
+      - name: Find and replace "stable_url" in docs/build/index.html
+        if: ${{ github.ref_type == 'tag' }}
+        uses: jacobtomlinson/gha-find-replace@v2
+        with:
+          find: "stable_url"
+          replace: ./${{ steps.stable_release.outputs.release }}/index.html
+          include: "docs/build/index.html"
+
+      - name: Copy redirecting HTML file to docs/build/stable
         if: ${{ github.ref_type == 'tag' }}
         run: |
           mkdir docs/build/stable
           cp docs/source/_templates/redirect-to-stable.html docs/build/stable/index.html
-          cp docs/source/_templates/redirect-to-stable.html docs/build/index.html
+
+      - name: Find and replace "stable_url" in docs/build/stable/index.html
+        if: ${{ github.ref_type == 'tag' }}
+        uses: jacobtomlinson/gha-find-replace@v2
+        with:
+          find: "stable_release"
+          replace: ../${{ steps.stable_release.outputs.release }}/index.html
+          include: "docs/build/stable/index.html"
 
       - name: Deploy
         # if: ${{ github.ref == 'refs/heads/master' }}

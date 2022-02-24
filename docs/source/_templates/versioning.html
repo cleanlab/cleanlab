@@ -6,23 +6,13 @@
   </p>
   <ul>
     <li class="toctree-l1">
-      <a class="reference internal" href="../master/index.html">latest</a>
+      <a class="reference internal" href="../stable/index.html">stable (version_number)</a>
     </li>
     <li class="toctree-l1">
-      <a class="reference internal" href="../stable/index.html">stable</a>
+      <a class="reference internal" href="../master/index.html">developer (commit_hash)</a>
     </li>
   </ul>
 
-  <p class="caption" role="heading">
-    <span class="caption-text">{{ _('Releases') }}</span>
-  </p>
-  <ul>
-    {% for item in versions.releases %}
-    <li class="toctree-l1">
-      <a class="reference internal" href="{{ item.url }}">{{ item.name }}</a>
-    </li>
-    {% endfor %}
-  </ul>
 </div>
 
 {% endif %}
