@@ -31,13 +31,13 @@
     var commit_hash = Version.commit_hash;
 
     document.getElementById("version_number").innerHTML =
-      "stable <code class='docutils literal notranslate'><span class='pre'> " +
+      "stable <code class='docutils literal notranslate'><span class='pre'> (" +
       version_number +
-      "</span></code>";
+      ")</span></code>";
     document.getElementById("commit_hash").innerHTML =
-      "developer <code class='docutils literal notranslate'><span class='pre'> " +
-      commit_hash +
-      "</span></code>";
+      "developer <code class='docutils literal notranslate'><span class='pre'> (" +
+      commit_hash.slice(0, 5) +
+      "...)</span></code>";
   };
 </script>
 
