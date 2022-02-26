@@ -1,0 +1,35 @@
+{% extends "!page.html" %} 
+{% block content %}
+
+<p id="doc_ver_warning"></p>
+
+<script type="text/javascript" src="../versioning.js"></script>
+<script type="text/javascript">
+  function genDocVerWarning() {
+    var version_number = Version.version_number;
+    var path_arr = window.location.pathname.split("/");
+
+    if (path_arr.includes("master")) {
+      document.getElementById("doc_ver_warning").innerHTML = `
+      <div class="admonition warning">
+      <p class="admonition-title">Warning</p>
+      <p>You're reading the developer's version of the doc. If you're looking for the stable version of the doc, click <a href="../stable/index.html">here</a>.</p>
+      </div>      
+      `;
+    } else if (!path_arr.includes(version_number)) {
+      document.getElementById("doc_ver_warning").innerHTML = `
+        <div class="admonition warning">
+        <p class="admonition-title">Warning</p>
+        <p>You're reading an old version of the doc. If you're looking for the stable version of the doc, click <a href="../stable/index.html">here</a>.</p>
+        </div>      
+      `;
+    } else {
+      document.getElementById("doc_ver_warning").remove();
+    }
+  }
+
+  genDocVerWarning();
+</script>
+
+{{ super() }} 
+{% endblock %}

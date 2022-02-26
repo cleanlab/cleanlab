@@ -61,3 +61,43 @@ docs
 6. Activate the workflow with any of the 3 triggers listed above and wait for it to complete.
 
 7. Navigate to the URL where your GitHub Pages site is published in step 3. The default URL should have the format *https://repository_owner.github.io/cleanlab-docs/*
+
+# Behind-the-scenes of the GitHub Pages workflow
+
+We've configured GitHub Actions to run the GitHub Pages workflow (gh-pages.yaml) to build and deploy our docs' static files. Here's a breakdown of what this workflow does in the background:
+
+## Spin up and configure the CI/CD server
+
+1. Spin up a Ubuntu server.
+
+2. Install Pandoc, a document converter required by `nbsphinx` to generate static sites from notebooks (`.ipynb`).
+
+3. Check-out the `cleanlab` repository.
+
+4. Setup Python and cache dependencies.
+
+5. Install dependencies for the docs from `docs/requirements.txt`.
+
+## Build the docs' static site files
+
+6. Run Sphinx with `sphinx-multiversion` wrapper to build the docs' static site files. These files will be outputted to the `docs/build` directory.
+
+## Generate the `versioning.js` file used to store the latest release id and commit hash
+
+7. Get the latest release id and insert it in the `versioning.js` file. The `index.html` of each doc version will read this as a variable and display it beside the **stable** hyperlink.
+
+8. Insert the latest commit hash in the `versioning.js` file. The `index.html` of each doc version will read this as a variable and display it beside the **developer** hyperlink.
+
+9. Copy the `versioning.js` file to the `docs/build` folder. 
+
+## If the workflow is **triggered by a new release**, generate the redirecting HTML which redirects site visits to the latest release
+
+10. Insert the repository owner name in the `redirect-to-stable.html` file AKA the *redirecting HTML*.
+
+11. Create a copy of the `redirect-to-stable.html` file to `docs/build` then insert the stable release docs's `index.html` file path prefixed with ``.``
+
+12. Create a copy of the `redirect-to-stable.html` file to `docs/build/stable` then insert the stable release docs's `index.html` file path prefixed with ``..``
+
+## Deploy the static files
+
+13. Deploy `docs/build` folder to the `cleanlab/cleanlab-docs` repo's `master branch`

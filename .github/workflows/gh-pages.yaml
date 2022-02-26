@@ -74,7 +74,7 @@ jobs:
           replace: ${{ github.sha }}
           include: "docs/source/_templates/versioning.js"
 
-      - name: Copy redirecting HTML file to docs/build
+      - name: Copy versioning JS file to docs/build
         run: |
           cp docs/source/_templates/versioning.js docs/build/versioning.js
 
