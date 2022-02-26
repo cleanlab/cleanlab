@@ -1,5 +1,4 @@
-{% extends "!page.html" %} 
-{% block content %}
+{% extends "!page.html" %} {% block content %}
 
 <p id="doc_ver_warning"></p>
 
@@ -13,14 +12,14 @@
       document.getElementById("doc_ver_warning").innerHTML = `
       <div class="admonition warning">
       <p class="admonition-title">Warning</p>
-      <p>You're reading the developer's version of the doc. If you're looking for the stable version of the doc, click <a href="../stable/index.html">here</a>.</p>
+      <p>You're reading the unreleased developer's version of the doc. If you're looking for the stable version, click <a href="../stable/index.html">here</a>.</p>
       </div>      
       `;
     } else if (!path_arr.includes(version_number)) {
       document.getElementById("doc_ver_warning").innerHTML = `
         <div class="admonition warning">
         <p class="admonition-title">Warning</p>
-        <p>You're reading an old version of the doc. If you're looking for the stable version of the doc, click <a href="../stable/index.html">here</a>.</p>
+        <p>You're reading an old version of the doc. If you're looking for the stable version, click <a href="../stable/index.html">here</a>.</p>
         </div>      
       `;
     } else {
@@ -31,5 +30,4 @@
   genDocVerWarning();
 </script>
 
-{{ super() }} 
-{% endblock %}
+{{ super() }} {% endblock %}

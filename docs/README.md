@@ -2,36 +2,75 @@
 
 1. [Fork](https://docs.github.com/en/get-started/quickstart/fork-a-repo#forking-a-repository) and [clone](https://docs.github.com/en/get-started/quickstart/fork-a-repo#cloning-your-forked-repository) the `cleanlab` repository.
 
-2. Install the doc's required packages:
+2. Install the required packages to build the docs:
 
 ```
 pip install -r docs/requirements.txt
 ```
 
-3. Build the docs for all branches and tags with [`sphinx-multiversion`](https://holzhaus.github.io/sphinx-multiversion):
+3. Build the docs with [`sphinx-multiversion`](https://holzhaus.github.io/sphinx-multiversion):
 
-```
-sphinx-multiversion docs/source docs/build
-```
+   * If you're building from a **branch** (usually the `master` branch):
 
-4. The docs for each branch and tag can be found in the `docs/build` directory, open the `index.html` in your browser to view the docs:
+   ```
+   sphinx-multiversion docs/source docs/build -D smv_branch_whitelist=YOUR_BRANCH_NAME -D smv_tag_whitelist=None
+   ```
+
+   * If you're building from a **tag** (usually the tag of the stable release):
+
+   ```
+   sphinx-multiversion docs/source docs/build -D smv_branch_whitelist=None -D smv_tag_whitelist=YOUR_TAG_NAME
+   ```
+
+   Note: If you have more than one branch or tag, run the above command again changing only the `YOUR_BRANCH_NAME` or `YOUR_TAG_NAME` placeholder.
+
+4. **[Optional]** To show dynamic versioning and version warning banners:
+   
+   * Copy the `docs/_templates/versioning.js` file to the `docs/build` directory.
+   
+   * In the copied `versioning.js` file:
+      
+      * find `placeholder_version_number` and replace it with the latest release tag name, and
+
+      * find `placeholder_commit_hash` and replace it with the `master` branch commit hash.
+
+5. **[Optional]** To redirect site visits from the port address to the stable version of the docs:
+
+   * Copy the `docs/_templates/redirect-to-stable.html` file to the `docs/build` directory and rename it as `index.html`.
+
+   * In this `index.html` file, find `stable_url` and replace it with `./YOUR_LATEST_RELEASE_TAG_NAME/index.html`. Note the single period, `.`, before the subdirectory.
+
+6. **[Optional]** To redirect site visits from the subdirectory `PORT_ADDRESS/stable` to the stable version of the docs:
+
+   * Create a folder called `stable` in `docs/build/stable`
+
+   * Copy the `docs/_templates/redirect-to-stable.html` file to the `docs/build` directory and rename it as `index.html`.
+
+   * In this `index.html` file, find `stable_url` and replace it with `../YOUR_LATEST_RELEASE_TAG_NAME/index.html`. Note the double period, `..`, before the subdirectory.
+
+7. The docs for each branch and/or tag can be found in the `docs/build` directory, open any of the `index.html` in your browser to view the docs:
 
 ```
 docs
 │
 └───build
-│   │
-│   └───branch_1
+│   |   index.html (redirects to stable release of the docs)
+|   |   versioning.js (for dynamic versioning and version warning banner)
+|   |
+│   └───YOUR_BRANCH_NAME (e.g. master)
 │   │       index.html
 │   │       ...
 │   │
-│   └───tag_1
+│   └───YOUR_TAG_NAME_1 (e.g. your stable release tag name)
 │   │       index.html
 │   │       ...
 │   │
-│   └───tag_2
+│   └───YOUR_TAG_NAME_2 (e.g. an old release tag name)
 │   │       index.html
 │   │       ...
+│   │
+│   └───stable
+│   │       index.html (redirects to stable release of the docs)
 │   │
 │   └───...
 │
@@ -49,18 +88,18 @@ docs
 
 4. [Generate SSH deploy key](https://github.com/peaceiris/actions-gh-pages#%EF%B8%8F-create-ssh-deploy-key) and add them to your repos as such:
 
-   - In the `cleanlab-docs` repo, go to **Settings > Deploy Keys > Add deploy key** and add your **public key** with the **Allow write access**
-   - In the `cleanlab` repo, go to **Settings > Secrets > New repository secrets** and add your **private key** named `ACTIONS_DEPLOY_KEY`
+   * In the `cleanlab-docs` repo, go to **Settings > Deploy Keys > Add deploy key** and add your **public key** with the **Allow write access**
+   * In the `cleanlab` repo, go to **Settings > Secrets > New repository secrets** and add your **private key** named `ACTIONS_DEPLOY_KEY`
 
 5. In the `cleanlab` repo, check that you have the **GitHub Pages** workflow under the repo's **Actions** tab. This should be created automatically from `.github\workflows\gh-pages.yaml`. This workflow can be activated by any of the 3 triggers below:
 
-   1. Pushes to the `master` branch in the `cleanlab` repo.
-   2. Publish of a new release in the `cleanlab` repo.
-   3. Manually run from the **Run workflow** option and selecting either the `master` branch or one of the release tag.
+   * A push to the `master` branch in the `cleanlab` repo.
+   * Publish of a new release in the `cleanlab` repo.
+   * Manually run from the **Run workflow** option and select either the `master` branch or one of the release tag.
 
 6. Activate the workflow with any of the 3 triggers listed above and wait for it to complete.
 
-7. Navigate to the URL where your GitHub Pages site is published in step 3. The default URL should have the format *https://repository_owner.github.io/cleanlab-docs/*
+7. Navigate to the URL where your GitHub Pages site is published in step 3. The default URL should have the format *https://repository_owner.github.io/cleanlab-docs/*.
 
 # Behind-the-scenes of the GitHub Pages workflow
 
@@ -80,17 +119,17 @@ We've configured GitHub Actions to run the GitHub Pages workflow (gh-pages.yaml)
 
 ## Build the docs' static site files
 
-6. Run Sphinx with `sphinx-multiversion` wrapper to build the docs' static site files. These files will be outputted to the `docs/build` directory.
+6. Run Sphinx with the `sphinx-multiversion` wrapper to build the doc's static site files. These files will be outputted to the `docs/build` directory.
 
-## Generate the `versioning.js` file used to store the latest release id and commit hash
+## Generate the `versioning.js` file used to store the latest release tag name and commit hash
 
-7. Get the latest release id and insert it in the `versioning.js` file. The `index.html` of each doc version will read this as a variable and display it beside the **stable** hyperlink.
+7. Get the latest release tag name and insert it in the `versioning.js` file. The `index.html` of each doc version will read this as a variable and display it beside the **stable** hyperlink.
 
 8. Insert the latest commit hash in the `versioning.js` file. The `index.html` of each doc version will read this as a variable and display it beside the **developer** hyperlink.
 
 9. Copy the `versioning.js` file to the `docs/build` folder. 
 
-## If the workflow is **triggered by a new release**, generate the redirecting HTML which redirects site visits to the latest release
+## If the workflow is **triggered by a new release**, generate the redirecting HTML which redirects site visits to the stable version
 
 10. Insert the repository owner name in the `redirect-to-stable.html` file AKA the *redirecting HTML*.
 
@@ -100,4 +139,4 @@ We've configured GitHub Actions to run the GitHub Pages workflow (gh-pages.yaml)
 
 ## Deploy the static files
 
-13. Deploy `docs/build` folder to the `cleanlab/cleanlab-docs` repo's `master branch`
+13. Deploy `docs/build` folder to the `cleanlab/cleanlab-docs` repo's `master branch`.
