@@ -14,7 +14,7 @@ Introduction
 Quickstart
 ==========
 
-#. Install ``cleanlab``.
+1. Install ``cleanlab``.
 ------------------------
 
 .. tabs::
@@ -38,7 +38,7 @@ Quickstart
          pip install git+https://github.com/cleanlab/cleanlab.git
 
 
-#. Find label errors with ``get_noise_indices``.
+2. Find label errors with ``get_noise_indices``.
 ------------------------------------------------
 
 ``cleanlab``'s ``get_noise_indices`` function tells you which examples in your dataset are likely mislabeled. At a minimum, it expects two inputs - your data's given labels, ``y``, and predicted probabilities, ``pyx``, from some trained model (Note: these must be out-of-sample predictions where the data points were held out from the model during training, which can be obtained via cross-validation). 
@@ -60,7 +60,7 @@ Setting ``sorted_index_method`` instructs ``cleanlab`` to return the indices of 
 ..
    todo - include the url for tf and torch beginner tutorials
 
-#. Train robust models with noisy labels using ``LearningWithNoisyLabels``.
+3. Train robust models with noisy labels using ``LearningWithNoisyLabels``.
 ---------------------------------------------------------------------------
 
 ``cleanlab``'s ``LearningWithNoisyLabels`` adapts any classification model, ``clf``, to a more reliable one by allowing it to train directly on partially mislabeled datasets. 
