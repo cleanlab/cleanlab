@@ -1,3 +1,17 @@
+
+# CI/CD for `cleanlab` docs
+
+In the `cleanlab` repository, we've configured GitHub Actions to perform the following automatically:
+
+1. When a commit is pushed to the `master` branch, a new version of the `master` docs will be built and deployed to the `cleanlab-docs` repository.
+
+2. When a release is published, a new version of the docs with the corresponding release tag will be built and deployed as a new folder in the `cleanlab-docs` repository. Redirection to the `stable` version of the docs will be changed to this newly released one, accessible via a link on the docs' site sidebar. All the older versions will remain available in the `cleanlab-docs` repo, accessible by manually entering the subdirectory in the URL. 
+
+3. When a user manually runs the workflow, one of the above will happen depending on the user's selection to run from a `branch` or `tag`. 
+
+If you'd like to build our docs locally or remotely yourself, or want to know more about the steps taken in the GitHub Pages workflow, read on!
+
+
 # Build the `cleanlab` docs **locally**
 
 1. [Fork](https://docs.github.com/en/get-started/quickstart/fork-a-repo#forking-a-repository) and [clone](https://docs.github.com/en/get-started/quickstart/fork-a-repo#cloning-your-forked-repository) the `cleanlab` repository.

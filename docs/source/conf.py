@@ -155,7 +155,6 @@ html_theme_options = {
             "class": "",
         },
     ],
-    "light_css_variables": {},
 }
 
 # Add any paths that contain custom static files (such as style sheets) here,
