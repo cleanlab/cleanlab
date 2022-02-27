@@ -78,14 +78,6 @@ jobs:
         run: |
           cp docs/source/_templates/versioning.js docs/build/versioning.js
 
-      - name: Find and replace "repository_owner" in redirecting HTML file
-        if: ${{ github.ref_type == 'tag' }}
-        uses: jacobtomlinson/gha-find-replace@v2
-        with:
-          find: "repository_owner"
-          replace: ${{ github.repository_owner }}
-          include: "docs/source/_templates/redirect-to-stable.html"
-
       - name: Copy redirecting HTML file to docs/build
         if: ${{ github.ref_type == 'tag' }}
         run: |

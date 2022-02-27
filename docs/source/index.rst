@@ -19,19 +19,30 @@ Quickstart
 
 .. tabs::
 
-   .. code-tab:: py pip
+   .. tab:: pip
       
-      pip install cleanlab
+      ``cleanlab`` is distributed on PyPI_:
 
-   .. code-tab:: py conda
+      .. _PyPI: https://pypi.org/project/cleanlab/
 
-      conda install -c conda-forge cleanlab
+      .. code-block:: python
 
-   .. code-tab:: py source
+         pip install cleanlab
 
-      pip install git+https://github.com/cleanlab/cleanlab.git
+   .. tab:: conda
 
-2. Find label errors with ``get_noise_indices``.
+      .. code-block:: python
+
+         conda install -c conda-forge cleanlab
+
+   .. tab:: source
+
+      .. code-block:: python
+
+         pip install git+https://github.com/cleanlab/cleanlab.git
+
+
+1. Find label errors with ``get_noise_indices``.
 ------------------------------------------------
 
 ``cleanlab``'s ``get_noise_indices`` function tells you which examples in your dataset are likely mislabeled. At a minimum, it expects two inputs - your data's given labels, ``y``, and predicted probabilities, ``pyx``, from some trained model (Note: these must be out-of-sample predictions where the data points were held out from the model during training, which can be obtained via cross-validation). 

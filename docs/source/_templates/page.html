@@ -1,5 +1,7 @@
 {% extends "!page.html" %} {% block content %}
 
+<!-- Start of Version Warning Banner -->
+
 <p id="doc_ver_warning"></p>
 
 <script type="text/javascript" src="../versioning.js"></script>
@@ -12,15 +14,15 @@
       document.getElementById("doc_ver_warning").innerHTML = `
       <div class="admonition warning">
       <p class="admonition-title">Warning</p>
-      <p>You're reading the unreleased developer's version of the doc. If you're looking for the stable version, click <a href="../stable/index.html">here</a>.</p>
-      </div>      
+      <p>This version of the documentation corresponds to the master branch of <code class="docutils literal notranslate"><span class="pre">cleanlab</span></code> source code from <a href="https://github.com/cleanlab/cleanlab/">GitHub</a>. To see the documentation for the latest <code class="docutils literal notranslate"><span class="pre">pip</span></code>-installed version, click <a href="../stable/index.html">here</a>.</p>
+      </div>
       `;
     } else if (!path_arr.includes(version_number)) {
       document.getElementById("doc_ver_warning").innerHTML = `
         <div class="admonition warning">
         <p class="admonition-title">Warning</p>
-        <p>You're reading an old version of the doc. If you're looking for the stable version, click <a href="../stable/index.html">here</a>.</p>
-        </div>      
+        <p>This documentation is for an old version ({{ current_version.name }}) of <code class="docutils literal notranslate"><span class="pre">cleanlab</span></code>. To see the documentation for the latest stable version (` + version_number + `), click <a href="../stable/index.html">here</a>.</p>
+        </div>
       `;
     } else {
       document.getElementById("doc_ver_warning").remove();
@@ -29,5 +31,7 @@
 
   genDocVerWarning();
 </script>
+
+<!-- End of Version Warning Banner -->
 
 {{ super() }} {% endblock %}
