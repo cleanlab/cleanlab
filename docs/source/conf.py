@@ -139,9 +139,7 @@ nbsphinx_execute = "always"
 html_theme = "furo"
 html_favicon = "https://raw.githubusercontent.com/cleanlab/assets/master/cleanlab/cleanlab_logo_only.png"
 html_title = "cleanlab docs"
-# html_css_files = [
-#     "css/custom.css",
-# ]
+html_logo = "https://raw.githubusercontent.com/cleanlab/assets/master/cleanlab/cleanlab_logo_only.png"
 html_theme_options = {
     "footer_icons": [
         {

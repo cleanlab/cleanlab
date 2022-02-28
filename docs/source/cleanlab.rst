@@ -1,3 +1,5 @@
+:hide-toc:
+
 Classification
 ==============
 
@@ -85,4 +87,5 @@ Models
 
 .. toctree::
 
-   cleanlab.models
+   cleanlab.models/index
+

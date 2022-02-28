@@ -1,15 +1,9 @@
-.. cleanlab documentation master file, created by
-   sphinx-quickstart on Mon Jan 10 07:17:00 2022.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
-
 Introduction
 ============
 
 **cleanlab automatically finds and fixes errors in your ML datasets.**
 
 | This reduces manual work needed to fix data issues and helps train reliable ML models on partially mislabeled datasets. ``cleanlab`` has already found thousands of `label errors <https://labelerrors.com>`_ in ImageNet, MNIST, and other popular ML benchmarking datasets, so let's get started with yours!
-
 
 Quickstart
 ==========
@@ -86,7 +80,7 @@ When the ``.fit()`` method is called, it automatically identifies and removes an
 
 
 .. toctree::
-   :hidden:
    :caption: API Reference
+   :hidden:
 
    cleanlab
