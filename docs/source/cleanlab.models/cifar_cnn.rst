@@ -1,5 +1,5 @@
-cleanlab.models.cifar\_cnn module
----------------------------------
+CIFAR CNN
+=========
 
 .. automodule:: cleanlab.models.cifar_cnn
    :autosummary:

@@ -1,11 +1,7 @@
-cleanlab.models package
-=======================
+:hide-toc:
 
-Submodules
-----------
-
-cleanlab.models.cifar\_cnn module
----------------------------------
+CIFAR CNN
+=========
 
 .. automodule:: cleanlab.models.cifar_cnn
    :autosummary:
@@ -13,8 +9,8 @@ cleanlab.models.cifar\_cnn module
    :undoc-members:
    :show-inheritance:
 
-cleanlab.models.mnist\_pytorch module
--------------------------------------
+MNIST PyTorch
+=============
 
 .. automodule:: cleanlab.models.mnist_pytorch
    :autosummary:

@@ -70,14 +70,11 @@ When the ``.fit()`` method is called, it automatically identifies and removes an
    lnl = LearningWithNoisyLabels(clf=clf)
    lnl.fit(X=X, s=y)
 
-
-
 .. toctree::
    :hidden:
    :caption: Get Started
 
    Quickstart <self>
-
 
 .. toctree::
    :caption: API Reference

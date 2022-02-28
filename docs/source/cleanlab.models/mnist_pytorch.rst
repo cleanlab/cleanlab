@@ -1,5 +1,5 @@
-cleanlab.models.mnist\_pytorch module
--------------------------------------
+MNIST PyTorch
+=============
 
 .. automodule:: cleanlab.models.mnist_pytorch
    :autosummary:

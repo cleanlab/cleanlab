@@ -81,11 +81,10 @@ Polyplex
    :undoc-members:
    :show-inheritance:
 
-
 Models
 ======
 
 .. toctree::
 
-   cleanlab.models/index
+   cleanlab.models
 
