@@ -151,6 +151,7 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
     prune_method : :obj:`str`, default: :obj:`prune_by_noise_rate`
       Available options: 'prune_by_class', 'prune_by_noise_rate', or 'both'.
       This str determines the method used for pruning.
+      TODO: add the two new methods
 
       Note
       ----
