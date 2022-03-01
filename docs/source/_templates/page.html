@@ -1,0 +1,58 @@
+{% extends "!page.html" %}
+{% block content %}
+{% if current_version %}
+
+<!-- Start of Version Warning Banner -->
+
+<p id="doc_ver_warning"></p>
+
+<script type="text/javascript" src="../versioning.js"></script>
+<script type="text/javascript">
+  function genDocVerWarning() {
+    var version_number = Version.version_number;
+    var path_arr = window.location.pathname.split("/");
+
+    if (path_arr.includes("master")) {
+      document.getElementById("doc_ver_warning").innerHTML = `
+      <div class="admonition warning">
+      <p class="admonition-title">Warning</p>
+      <p>This version of the documentation corresponds to the master branch of <code class="docutils literal notranslate"><span class="pre">cleanlab</span></code> source code from <a href="https://github.com/cleanlab/cleanlab/">GitHub</a>. To see the documentation for the latest <code class="docutils literal notranslate"><span class="pre">pip</span></code>-installed version, click <a href="../stable/index.html">here</a>.</p>
+      </div>
+      `;
+    } else if (!path_arr.includes(version_number)) {
+      document.getElementById("doc_ver_warning").innerHTML =
+        `
+        <div class="admonition warning">
+        <p class="admonition-title">Warning</p>
+        <p>This documentation is for an old version (<code class="docutils literal notranslate"><span class="pre">{{ current_version.name }}</span></code>) of <code class="docutils literal notranslate"><span class="pre">cleanlab</span></code>. To see the documentation for the latest stable version (<code class="docutils literal notranslate"><span class="pre">` +
+        version_number +
+        `</span></code>), click <a href="../stable/index.html">here</a>.</p>
+        </div>
+      `;
+    } else {
+      document.getElementById("doc_ver_warning").remove();
+    }
+  }
+
+  genDocVerWarning();
+</script>
+
+<!-- End of Version Warning Banner -->
+
+{% endif %}
+{{ super() }} 
+{% endblock %} 
+
+{% block footer %}
+{{ super() }} 
+<script type="text/javascript">
+  function genPypiMsg() {
+    var d1 = document.getElementsByClassName("left-details");
+    console.log(d1[0])
+    d1[0].insertAdjacentHTML('afterbegin', '<code class="docutils literal notranslate"><span class="pre">cleanlab</span></code> is distributed on <a href="https://pypi.org/project/cleanlab/">PyPI</a> and <a href="https://anaconda.org/conda-forge/cleanlab">conda</a>.');
+  }
+
+  genPypiMsg()
+</script>
+
+{% endblock %}
