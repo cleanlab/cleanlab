@@ -1,0 +1,46 @@
+{% if versions %}
+
+<!-- Start of versioning -->
+
+<div class="sidebar-tree">
+  <p class="caption" role="heading">
+    <span class="caption-text">{{ _('Versions') }}</span>
+  </p>
+  <ul>
+    <li class="toctree-l1">
+      <a
+        id="version_number"
+        class="reference internal"
+        href="../stable/index.html"
+        >stable</a
+      >
+    </li>
+    <li class="toctree-l1">
+      <a id="commit_hash" class="reference internal" href="../master/index.html"
+        >developer</a
+      >
+    </li>
+  </ul>
+</div>
+
+<script type="text/javascript" src="../versioning.js"></script>
+
+<script type="text/javascript">
+  window.onload = function () {
+    var version_number = Version.version_number;
+    var commit_hash = Version.commit_hash;
+
+    document.getElementById("version_number").innerHTML =
+      "stable <code class='docutils literal notranslate'><span class='pre'> (" +
+      version_number +
+      ")</span></code>";
+    document.getElementById("commit_hash").innerHTML =
+      "master <code class='docutils literal notranslate'><span class='pre'> (" +
+      commit_hash.slice(0, 7) +
+      "&hellip;)</span></code>";
+  };
+</script>
+
+<!-- End of versioning -->
+
+{% endif %}

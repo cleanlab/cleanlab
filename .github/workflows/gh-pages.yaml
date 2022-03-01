@@ -1,0 +1,116 @@
+name: GitHub Pages
+
+on:
+  push:
+    branches: [master]
+
+  release:
+    types: [published]
+
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-20.04
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}
+    steps:
+      - name: Install Pandoc
+        run: sudo apt-get install pandoc
+
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.8"
+
+      - name: Upgrade pip
+        run: python3 -m pip install --upgrade pip
+
+      - name: Get pip cache dir
+        id: pip-cache
+        run: echo "::set-output name=dir::$(pip cache dir)"
+
+      - name: Cache dependencies
+        uses: actions/cache@v2
+        with:
+          path: ${{ steps.pip-cache.outputs.dir }}
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: ${{ runner.os }}-pip-
+
+      - name: Install dependencies
+        run: python3 -m pip install -r docs/requirements.txt
+
+      - name: Run Sphinx with sphinx-multiversion wrapper - branch trigger
+        if: ${{ github.ref_type == 'branch' }}
+        run: sphinx-multiversion docs/source docs/build -D smv_branch_whitelist=${{ github.ref_name }} -D smv_tag_whitelist=None
+
+      - name: Run Sphinx with sphinx-multiversion wrapper - tag trigger
+        if: ${{ github.ref_type == 'tag' }}
+        run: sphinx-multiversion docs/source docs/build -D smv_branch_whitelist=None -D smv_tag_whitelist=${{ github.ref_name }}
+
+      - name: Get stable release
+        id: stable_release
+        uses: pozetroninc/github-action-get-latest-release@master
+        with:
+          owner: ${{ github.repository_owner }}
+          repo: cleanlab
+          excludes: prerelease, draft
+
+      - name: Find and replace "placeholder_version_number" in verisioning.js
+        uses: jacobtomlinson/gha-find-replace@v2
+        with:
+          find: "placeholder_version_number"
+          replace: ${{ steps.stable_release.outputs.release }}
+          include: "docs/source/_templates/versioning.js"
+
+      - name: Find and replace "placeholder_commit_hash" in verisioning.js
+        uses: jacobtomlinson/gha-find-replace@v2
+        with:
+          find: "placeholder_commit_hash"
+          replace: ${{ github.sha }}
+          include: "docs/source/_templates/versioning.js"
+
+      - name: Copy versioning JS file to docs/build
+        run: |
+          cp docs/source/_templates/versioning.js docs/build/versioning.js
+
+      - name: Copy redirecting HTML file to docs/build
+        if: ${{ github.ref_type == 'tag' }}
+        run: |
+          cp docs/source/_templates/redirect-to-stable.html docs/build/index.html
+
+      - name: Find and replace "stable_url" in docs/build/index.html
+        if: ${{ github.ref_type == 'tag' }}
+        uses: jacobtomlinson/gha-find-replace@v2
+        with:
+          find: "stable_url"
+          replace: ./${{ steps.stable_release.outputs.release }}/index.html
+          include: "docs/build/index.html"
+
+      - name: Copy redirecting HTML file to docs/build/stable
+        if: ${{ github.ref_type == 'tag' }}
+        run: |
+          mkdir docs/build/stable
+          cp docs/source/_templates/redirect-to-stable.html docs/build/stable/index.html
+
+      - name: Find and replace "stable_url" in docs/build/stable/index.html
+        if: ${{ github.ref_type == 'tag' }}
+        uses: jacobtomlinson/gha-find-replace@v2
+        with:
+          find: "stable_url"
+          replace: ../${{ steps.stable_release.outputs.release }}/index.html
+          include: "docs/build/stable/index.html"
+
+      - name: Deploy
+        # if: ${{ github.ref == 'refs/heads/master' }}
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          deploy_key: ${{ secrets.ACTIONS_DEPLOY_KEY }}
+          external_repository: ${{ github.repository_owner }}/cleanlab-docs
+          publish_branch: master
+          publish_dir: docs/build
+          keep_files: true
