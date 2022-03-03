@@ -31,7 +31,7 @@ class egg_info_ex(egg_info):
 here = path.abspath(path.dirname(__file__))
 
 # Get the long description from the README file
-with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
+with open(path.join(here, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
 
 # Get version number
@@ -44,7 +44,7 @@ setup(
     version=__version__,
     license='AGPLv3+',
     long_description=long_description,
-    long_description_content_type='text/x-rst',
+    long_description_content_type='text/markdown',
     description = 'The standard package for machine learning with noisy labels and finding mislabeled data in Python.',
     url = 'https://github.com/cleanlab/cleanlab',
     author = 'Cleanlab, Inc.',
