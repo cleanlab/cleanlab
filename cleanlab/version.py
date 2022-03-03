@@ -14,12 +14,41 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
-__version__ = '1.0'
+
+__version__ = '1.0.1'
 
 
 # ----------------------------------------
 # | CURRENT STABLE VERSION RELEASE NOTES |
 # ----------------------------------------
+
+# 1.0.1 - Launch sphinx docs for Cleanlab 1.0 (in preparation for Cleanlab 2.0). Mostly superficial.
+#
+#   For users (+ sometimes developers):
+#   - This releases the new sphinx docs for cleanlab 1.0 documentation (in preparation for CL 2.0)
+#   - Several superficial bug fixes (reduce error printing, fix broken urls, clarify links)
+#   - Extensive docs/README updates
+#   - Support was added for Conda Installation
+#   - Moved to AGPL-3 license
+#   - Added tutorials and a learning section for Cleanlab
+#
+#   For developers:
+#   - Moved to GitHub Actions CI
+#   - Significantly shrunk the clone size to a few MB from 100MB+
+
+# ---------------------------
+# | FUTURE FEATURES PLANNED |
+# ---------------------------
+
+#   - Extensions to regression
+#   - Extensions for object detection and segmentation tasks.
+#   - More functions for ranking data and data quality
+#   - Additional support for finding label errors and filtering out high/low quality data/labels.
+#   - Cleanlab Pro to automate cleaning: coming later this year for businesses and developers.
+
+# ----------------------------------
+# | PREVIOUS VERSION RELEASE NOTES |
+# ----------------------------------
 
 # 1.0 - cleanlab official 1.0 (beta) release!
 #   - Added Amazon Reviews NLP to cleanlab/examples
@@ -28,12 +57,13 @@ __version__ = '1.0'
 #   - Added more testing. All tests pass on windows/linux/macOS.
 #   - Update to GNU GPL-3+ License.
 #   - Added documentation: https://cleanlab.readthedocs.io/
-#   - The cleanlab "confident learning" paper is published in the Journal of AI Research: https://jair.org/index.php/jair/article/view/12125
+#   - The cleanlab "confident learning" paper is published in the Journal of AI Research:
+#       https://jair.org/index.php/jair/article/view/12125
 #   - Added funding, community and contributing guidelines
 #   - Fixed a number of errors in cleanlab/examples
 #   - cleanlab now supports Windows, macOS, Linux, and unix systems
 #   - Numerous examples added to the README and docs
-#   - cleanlab now natively supports Co-Teaching for learning with noisy labels (reqs python3, PyTorch 1.4)
+#   - now natively supports Co-Teaching for learning with noisy labels, req: py3, PyTorch 1.4
 #   - cleanlab built in support with handwritten datasets (besides MNIST)
 #   - cleanlab built in support for CIFAR dataset
 #   - Multiprocessing fixed for windows systems
@@ -42,24 +72,12 @@ __version__ = '1.0'
 #   - Future features planned are now supported in cleanlab/version.py
 #   - Added confidentlearning-reproduce as a seperate repo to reproduce state-of-the-art results.
 
-# ---------------------------
-# | FUTURE FEATURES PLANNED |
-# ---------------------------
-
-#   - Extensions to regression
-#   - Extensions for object detection and segmentation tasks.
-#   - cleanlab pro (interface for businesses)
-
-# ----------------------------------
-# | PREVIOUS VERSION RELEASE NOTES |
-# ----------------------------------
-
 # 0.1.1 - Major update adding support for Windows and Python 3.7
 #   - Added support for Python 3.7
-#   - Added full support for Windows, including multiprocessing parallelization support in cleanlab/filter.py
+#   - Added full support for Windows, including multiprocessing support in cleanlab/pruning.py
 #   - Improved PEP-8 adherence in core cleanlab/ code.
 
-# 0.1.0 - Release of confident learning paper based on this version of cleanlab: https://arxiv.org/pdf/1911.00068.pdf
+# 0.1.0 - Release of confident learning paper: https://arxiv.org/pdf/1911.00068.pdf
 #   - Documentation increase
 #   - Add examples to find label errors in mnist, cifar, imagenet
 #   - re-organized examples and added readme.
@@ -93,10 +111,12 @@ __version__ = '1.0'
 # 0.0.8 - Multiple major changes
 #   - Finding label errors is now fully parallelized. 
 #   - prune_count_method parameter has been removed. 
-#   - estimate_confident_joint_from_probabilities now automatically calibrates confident joint to be a true joint estimate.
-#   - Confident joint algorithm changed! When an example is found confidently as 2+ labels, choose class with max probability.
+#   - estimate_confident_joint_from_probabilities now automatically calibrates confident joint
+#       to be a true joint estimate.
+#   - Confident joint algorithm changed! When an example is found confidently as 2+ labels, choose
+#       class with max probability.
 
-# 0.0.7 - Massive speed increases across the board. Estimating confident joint now nearly instant. NO major API changes.
+# 0.0.7 - Massive speed increases across the board. Estimate joint nearly instantly. NO API changes.
 
 # 0.0.6 - NO API changes. README updates. Examples added. Tutorials added.
 
