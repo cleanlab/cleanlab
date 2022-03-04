@@ -155,7 +155,7 @@ $ pip install cleanlab  # Using pip
 Stable release (conda):
 
 ``` bash
-$ conda install -c conda-forge cleanlab  # Using conda
+$ conda install -c cleanlab cleanlab  # Using conda
 ```
 
 Developer release:
