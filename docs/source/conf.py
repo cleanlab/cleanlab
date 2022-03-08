@@ -118,6 +118,11 @@ nbsphinx_prolog = """
         .nboutput .prompt {
             display: none;
         }
+
+        .output_area {
+            max-height: 300px;
+            overflow: auto;
+        }
     </style>
 
     <p>

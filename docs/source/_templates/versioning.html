@@ -11,22 +11,22 @@
       <a
         id="version_number"
         class="reference internal"
-        href="../stable/index.html"
+        href="/cleanlab-docs/stable/index.html"
         >stable</a
       >
     </li>
     <li class="toctree-l1">
-      <a id="commit_hash" class="reference internal" href="../master/index.html"
+      <a id="commit_hash" class="reference internal" href="/cleanlab-docs/master/index.html"
         >developer</a
       >
     </li>
   </ul>
 </div>
 
-<script type="text/javascript" src="../versioning.js"></script>
+<script type="text/javascript" src="/cleanlab-docs/versioning.js"></script>
 
 <script type="text/javascript">
-  window.onload = function () {
+  function updateVersionInSidebar() {
     var version_number = Version.version_number;
     var commit_hash = Version.commit_hash;
 
@@ -39,6 +39,8 @@
       commit_hash.slice(0, 7) +
       "&hellip;)</span></code>";
   };
+
+  updateVersionInSidebar();
 </script>
 
 <!-- End of versioning -->

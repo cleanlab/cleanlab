@@ -2,7 +2,8 @@ name: GitHub Pages
 
 on:
   push:
-    branches: [master]
+    branches: 
+      - '**'
 
   release:
     types: [published]
@@ -15,12 +16,12 @@ jobs:
     concurrency:
       group: ${{ github.workflow }}-${{ github.ref }}
     steps:
-      - name: Install Pandoc
-        run: sudo apt-get install pandoc
-
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0
+
+      - name: Install Pandoc
+        run: sudo apt-get install pandoc
 
       - name: Setup Python
         uses: actions/setup-python@v2
@@ -46,14 +47,15 @@ jobs:
 
       - name: Run Sphinx with sphinx-multiversion wrapper - branch trigger
         if: ${{ github.ref_type == 'branch' }}
-        run: sphinx-multiversion docs/source docs/build -D smv_branch_whitelist=${{ github.ref_name }} -D smv_tag_whitelist=None
+        run: sphinx-multiversion docs/source cleanlab-docs -D smv_branch_whitelist=${{ github.ref_name }} -D smv_tag_whitelist=None
 
       - name: Run Sphinx with sphinx-multiversion wrapper - tag trigger
         if: ${{ github.ref_type == 'tag' }}
-        run: sphinx-multiversion docs/source docs/build -D smv_branch_whitelist=None -D smv_tag_whitelist=${{ github.ref_name }}
+        run: sphinx-multiversion docs/source cleanlab-docs -D smv_branch_whitelist=None -D smv_tag_whitelist=${{ github.ref_name }}
 
-      - name: Get stable release
+      - name: Get latest stable release
         id: stable_release
+        continue-on-error: true
         uses: pozetroninc/github-action-get-latest-release@master
         with:
           owner: ${{ github.repository_owner }}
@@ -61,6 +63,7 @@ jobs:
           excludes: prerelease, draft
 
       - name: Find and replace "placeholder_version_number" in verisioning.js
+        if: ${{ steps.stable_release.outcome == 'success' }}
         uses: jacobtomlinson/gha-find-replace@v2
         with:
           find: "placeholder_version_number"
@@ -74,43 +77,31 @@ jobs:
           replace: ${{ github.sha }}
           include: "docs/source/_templates/versioning.js"
 
-      - name: Copy versioning JS file to docs/build
+      - name: Copy versioning JS file to cleanlab-docs/
         run: |
-          cp docs/source/_templates/versioning.js docs/build/versioning.js
+          cp docs/source/_templates/versioning.js cleanlab-docs/versioning.js
 
-      - name: Copy redirecting HTML file to docs/build
-        if: ${{ github.ref_type == 'tag' }}
-        run: |
-          cp docs/source/_templates/redirect-to-stable.html docs/build/index.html
-
-      - name: Find and replace "stable_url" in docs/build/index.html
-        if: ${{ github.ref_type == 'tag' }}
+      - name: Find and replace "stable_url" in redirect-to-stable.html
+        if: ${{ github.ref_type == 'tag' && steps.stable_release.outcome == 'success' }}
         uses: jacobtomlinson/gha-find-replace@v2
         with:
           find: "stable_url"
-          replace: ./${{ steps.stable_release.outputs.release }}/index.html
-          include: "docs/build/index.html"
+          replace: /cleanlab-docs/${{ steps.stable_release.outputs.release }}/index.html
+          include: "docs/source/_templates/redirect-to-stable.html"
 
-      - name: Copy redirecting HTML file to docs/build/stable
+      - name: Copy redirecting HTML file to cleanlab-docs/ and cleanlab-docs/stable
         if: ${{ github.ref_type == 'tag' }}
         run: |
-          mkdir docs/build/stable
-          cp docs/source/_templates/redirect-to-stable.html docs/build/stable/index.html
-
-      - name: Find and replace "stable_url" in docs/build/stable/index.html
-        if: ${{ github.ref_type == 'tag' }}
-        uses: jacobtomlinson/gha-find-replace@v2
-        with:
-          find: "stable_url"
-          replace: ../${{ steps.stable_release.outputs.release }}/index.html
-          include: "docs/build/stable/index.html"
+          mkdir cleanlab-docs/stable
+          cp docs/source/_templates/redirect-to-stable.html cleanlab-docs/stable/index.html
+          cp docs/source/_templates/redirect-to-stable.html cleanlab-docs/index.html
 
       - name: Deploy
-        # if: ${{ github.ref == 'refs/heads/master' }}
+        if: ${{ github.ref == 'refs/heads/master' }}
         uses: peaceiris/actions-gh-pages@v3
         with:
           deploy_key: ${{ secrets.ACTIONS_DEPLOY_KEY }}
           external_repository: ${{ github.repository_owner }}/cleanlab-docs
           publish_branch: master
-          publish_dir: docs/build
+          publish_dir: cleanlab-docs
           keep_files: true
