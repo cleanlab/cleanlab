@@ -1,11 +1,16 @@
 # Written by Curtis G. Northcutt
 
 # For pypi upload
-# 0. python setup.py check -r -s
-# 0. rm -rf dist build
-# 1. python setup.py sdist bdist_wheel --universal
-# 1. twine check dist/*
-# 2. python3 -m twine upload dist/*
+# 1. python setup.py check -r -s
+# 2. rm -rf dist build
+# 3. python setup.py sdist bdist_wheel --universal
+# 4. twine check dist/*
+# 5. python3 -m twine upload dist/*
+#
+# For conda upload (after pypi upload)
+# 1. cd ~; conda skeleton pypi cleanlab --noarch-python
+# 2. conda-build cleanlab
+# 3. anaconda upload --user cleanlab LOCATION/cleanlab-x.x.x_0.tar.bz2  # location printed by previous command
 
 from setuptools import setup, find_packages
 from setuptools.command.egg_info import egg_info
