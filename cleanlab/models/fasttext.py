@@ -246,7 +246,7 @@ class FastTextClassifier(BaseEstimator):  # Inherits sklearn base classifier
         for labels, text in data_loader(fn=fn, indices=X,
                                         batch_size=self.batch_size):
             pred = self.clf.predict(text=text, k=len(self.clf.get_labels()))
-            # Get p(s = k | x) matrix of shape (N x K) of pred probs for each x
+            # Get p(labels = k | x) matrix of shape (N x K) of pred probs for each x
             psx = [[p for _, p in sorted(list(zip(*l)), key=lambda x: x[0])] for
                    l in list(zip(*pred))]
             psx_list.append(np.array(psx))

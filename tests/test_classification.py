@@ -90,7 +90,7 @@ def make_data(sparse,
         "y_train": y_train,
         "X_test": X_test,
         "y_test": y_test,
-        "s": s,
+        "labels": s,
         "ps": ps,
         "py": py,
         "noise_matrix": noise_matrix,
@@ -106,7 +106,7 @@ def test_rp(sparse):
     data = SPARSE_DATA if sparse else DATA
     rp = LearningWithNoisyLabels(clf=LogisticRegression(
         multi_class='auto', solver='lbfgs', random_state=SEED))
-    rp.fit(data["X_train"], data["s"])
+    rp.fit(data["X_train"], data["labels"])
     score = rp.score(data["X_test"], data["y_test"])
     print(score)
     # Check that this runs without error.
@@ -178,11 +178,11 @@ def test_clf_fit_nm():
     # Example of a bad noise matrix (impossible to learn from)
     nm = np.array([[0, 1], [1, 0]])
     try:
-        lnl.fit(X=np.arange(3), s=np.array([0, 0, 1]), noise_matrix=nm)
+        lnl.fit(X=np.arange(3), labels=np.array([0, 0, 1]), noise_matrix=nm)
     except Exception as e:
         assert ('Trace(noise_matrix)' in str(e))
         with pytest.raises(ValueError) as e:
-            lnl.fit(X=np.arange(3), s=np.array([0, 0, 1]), noise_matrix=nm)
+            lnl.fit(X=np.arange(3), labels=np.array([0, 0, 1]), noise_matrix=nm)
 
 
 def test_clf_fit_inm():
@@ -190,11 +190,11 @@ def test_clf_fit_inm():
     # Example of a bad noise matrix (impossible to learn from)
     inm = np.array([[.1, .9], [.9, .1]])
     try:
-        lnl.fit(X=np.arange(3), s=np.array([0, 0, 1]), inverse_noise_matrix=inm)
+        lnl.fit(X=np.arange(3), labels=np.array([0, 0, 1]), inverse_noise_matrix=inm)
     except Exception as e:
         assert ('Trace(inverse_noise_matrix)' in str(e))
         with pytest.raises(ValueError) as e:
-            lnl.fit(X=np.arange(3), s=np.array([0, 0, 1]), inverse_noise_matrix=inm)
+            lnl.fit(X=np.arange(3), labels=np.array([0, 0, 1]), inverse_noise_matrix=inm)
 
 
 @pytest.mark.parametrize("sparse", [True, False])
@@ -209,13 +209,13 @@ def test_fit_with_nm(
     )
     nm = data['noise_matrix']
     # Learn with noisy labels with noise matrix given
-    lnl.fit(data['X_train'], data['s'], noise_matrix=nm)
+    lnl.fit(data['X_train'], data['labels'], noise_matrix=nm)
     score_nm = lnl.score(data['X_test'], data['y_test'])
     # Learn with noisy labels and estimate the noise matrix.
     lnl2 = LearningWithNoisyLabels(
         seed=seed,
     )
-    lnl2.fit(data['X_train'], data['s'], )
+    lnl2.fit(data['X_train'], data['labels'], )
     score = lnl2.score(data['X_test'], data['y_test'])
     if used_by_another_test:
         return score, score_nm
@@ -239,13 +239,13 @@ def test_fit_with_inm(
         data["ps"],
     )
     # Learn with noisy labels with inverse noise matrix given
-    lnl.fit(data['X_train'], data['s'], inverse_noise_matrix=inm)
+    lnl.fit(data['X_train'], data['labels'], inverse_noise_matrix=inm)
     score_inm = lnl.score(data['X_test'], data['y_test'])
     # Learn with noisy labels and estimate the inv noise matrix.
     lnl2 = LearningWithNoisyLabels(
         seed=seed,
     )
-    lnl2.fit(data['X_train'], data['s'], )
+    lnl2.fit(data['X_train'], data['labels'], )
     score = lnl2.score(data['X_test'], data['y_test'])
     if used_by_another_test:
         return score, score_inm
@@ -265,7 +265,7 @@ def test_clf_fit_nm_inm(sparse):
     )
     lnl.fit(
         X=data['X_train'],
-        s=data['s'],
+        labels=data['labels'],
         noise_matrix=nm,
         inverse_noise_matrix=inm,
     )
@@ -273,7 +273,7 @@ def test_clf_fit_nm_inm(sparse):
 
     # Learn with noisy labels and estimate the inv noise matrix.
     lnl2 = LearningWithNoisyLabels(seed=SEED)
-    lnl2.fit(data['X_train'], data['s'], )
+    lnl2.fit(data['X_train'], data['labels'], )
     score = lnl2.score(data['X_test'], data['y_test'])
     assert (score < score_nm_inm + 1e-4)
 
@@ -282,7 +282,7 @@ def test_clf_fit_nm_inm(sparse):
 def test_pred_and_pred_proba(sparse):
     data = SPARSE_DATA if sparse else DATA
     lnl = LearningWithNoisyLabels()
-    lnl.fit(data['X_train'], data['s'])
+    lnl.fit(data['X_train'], data['labels'])
     n = np.shape(data['y_test'])[0]
     m = len(np.unique(data['y_test']))
     pred = lnl.predict(data['X_test'])
@@ -368,14 +368,14 @@ def test_fit_psx(sparse):
     )
     lnl.fit(
         X=data['X_train'],
-        s=data['y_train'],
+        labels=data['y_train'],
         psx=psx
     )
     score_with_psx = lnl.score(data['X_test'], data['y_test'])
     lnl = LearningWithNoisyLabels()
     lnl.fit(
         X=data['X_train'],
-        s=data['y_train'],
+        labels=data['y_train'],
     )
     score_no_psx = lnl.score(data['X_test'], data['y_test'])
     assert (abs(score_with_psx - score_no_psx) < 0.01)

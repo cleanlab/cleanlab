@@ -50,7 +50,7 @@ def test_loaders(
 
     if python_version.is_compatible():
         np.random.seed(seed)
-        prune_method = 'prune_by_noise_rate'
+        filter_by = 'prune_by_noise_rate'
         # Pre-train for only 3 epochs (it maxes out around 8-12 epochs)
         cnn = CNN(epochs=3, log_interval=None, seed=seed,
                   dataset='sklearn-digits')
@@ -73,7 +73,7 @@ def test_loaders(
                 X, y, cnn, cv_n_folds=2)
             est_py, est_nm, est_inv = estimate_latent(cj, y)
             # algorithmic identification of label issues
-            err_idx = cleanlab.filter.find_label_issues(y, psx, est_inv, prune_method=prune_method)
+            err_idx = cleanlab.filter.find_label_issues(y, psx, est_inv, filter_by=filter_by)
             assert err_idx is not None
 
             # Get prediction on loader set.

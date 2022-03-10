@@ -242,7 +242,7 @@ def test_cleanlab_with_fasttext():
         # Compute confident joint and predicted probability matrix for each example
         cj, psx = cleanlab.count.estimate_confident_joint_and_cv_pred_proba(
             X = np.array(X_train_idx), 
-            s = s_train, 
+            labels= s_train,
             clf = ftc, 
             cv_n_folds=5,
         )

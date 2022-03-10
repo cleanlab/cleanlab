@@ -42,9 +42,9 @@ def order_label_issues(
       A binary vector of labels, which may contain label issues.
 
     psx : np.array (shape (N, K))
-      P(s=k|x) is a matrix with K probabilities for all N examples x.
+      P(labels=k|x) is a matrix with K probabilities for all N examples x.
       This is the probability distribution over all K classes, for each
-      example, regarding whether the example has label s==k P(s=k|x). psx
+      example, regarding whether the example has label labels==k P(labels=k|x). psx
       should computed using 3 (or higher) fold cross-validation.
 
     rank_by : str ['normalized_margin', 'prob_given_label']
@@ -101,9 +101,9 @@ def get_self_confidence_for_each_label(
       A binary vector of labels, which may contain label issues.
 
     psx : np.array (shape (N, K))
-      P(s=k|x) is a matrix with K probabilities for all N examples x.
+      P(labels=k|x) is a matrix with K probabilities for all N examples x.
       This is the probability distribution over all K classes, for each
-      example, regarding whether the example has label s==k P(s=k|x). psx
+      example, regarding whether the example has label labels==k P(labels=k|x). psx
       should computed using 3 (or higher) fold cross-validation.
 
     Returns
@@ -139,9 +139,9 @@ def get_normalized_margin_for_each_label(
       A binary vector of labels, which may contain label issues.
 
     psx : np.array (shape (N, K))
-      P(s=k|x) is a matrix with K probabilities for all N examples x.
+      P(labels=k|x) is a matrix with K probabilities for all N examples x.
       This is the probability distribution over all K classes, for each
-      example, regarding whether the example has label s==k P(s=k|x). psx
+      example, regarding whether the example has label labels==k P(labels=k|x). psx
       should be computed using 3 (or higher) fold cross-validation.
 
     Returns

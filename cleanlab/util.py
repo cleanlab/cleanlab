@@ -27,26 +27,26 @@ from sklearn.utils import check_X_y
 
 
 def assert_inputs_are_valid(X, s, psx=None):  # pragma: no cover
-    """Checks that X, s, and psx
+    """Checks that X, labels, and psx
     are correctly formatted"""
 
     if psx is not None:
         if not isinstance(psx, (np.ndarray, np.generic)):
             raise TypeError("psx should be a numpy array.")
         if len(psx) != len(s):
-            raise ValueError("psx and s must have same length.")
+            raise ValueError("psx and labels must have same length.")
         # Check for valid probabilities.
         if (psx < 0).any() or (psx > 1).any():
             raise ValueError("Values in psx must be between 0 and 1.")
 
     if not isinstance(s, (np.ndarray, np.generic)):
-        raise TypeError("s should be a numpy array.")
+        raise TypeError("labels should be a numpy array.")
 
-    # Check that s is zero-indexed (first label is 0).
+    # Check that labels is zero-indexed (first label is 0).
     unique_classes = np.unique(s)
     if all(unique_classes != np.arange(len(unique_classes))):
         msg = "cleanlab requires zero-indexed labels (0,1,2,..,m-1), but in "
-        msg += "your case: np.unique(s) = {}".format(str(unique_classes))
+        msg += "your case: np.unique(labels) = {}".format(str(unique_classes))
         raise TypeError(msg)
 
     # Allow sparse matrices and check that they are valid format.
@@ -58,7 +58,7 @@ def assert_inputs_are_valid(X, s, psx=None):  # pragma: no cover
 
 def remove_noise_from_class(noise_matrix, class_without_noise):
     """A helper function in the setting of PU learning.
-    Sets all P(s=class_without_noise|y=any_other_class) = 0
+    Sets all P(labels=class_without_noise|y=any_other_class) = 0
     in noise_matrix for pulearning setting, where we have
     generalized the positive class in PU learning to be any
     class of choosing, denoted by class_without_noise.
@@ -67,7 +67,7 @@ def remove_noise_from_class(noise_matrix, class_without_noise):
     ----------
 
     noise_matrix : np.array of shape (K, K), K = number of classes
-        A conditional probablity matrix of the form P(s=k_s|y=k_y) containing
+        A conditional probablity matrix of the form P(labels=k_s|y=k_y) containing
         the fraction of examples in every class, labeled as every other class.
         Assumes columns of noise_matrix sum to 1.
 
@@ -81,7 +81,7 @@ def remove_noise_from_class(noise_matrix, class_without_noise):
     cwn = class_without_noise
     x = np.copy(noise_matrix)
 
-    # Set P( s = cwn | y != cwn) = 0 (no noise)
+    # Set P( labels = cwn | y != cwn) = 0 (no noise)
     x[cwn, [i for i in range(K) if i != cwn]] = 0.0
 
     # Normalize columns by increasing diagnol terms
@@ -105,11 +105,11 @@ def clip_noise_rates(noise_matrix):
     noise_matrix : np.array of shape (K, K), K = number of classes
         A conditional probablity matrix containing the fraction of
         examples in every class, labeled as every other class.
-        Diagonal terms are not noise rates, but are consistency P(s=k|y=k)
+        Diagonal terms are not noise rates, but are consistency P(labels=k|y=k)
         Assumes columns of noise_matrix sum to 1"""
 
     def clip_noise_rate_range(noise_rate):
-        """Clip noise rate P(s=k'|y=k) or P(y=k|s=k')
+        """Clip noise rate P(labels=k'|y=k) or P(y=k|labels=k')
         into proper range [0,1)"""
         return min(max(noise_rate, 0.0), 0.9999)
 
@@ -294,7 +294,7 @@ def onehot2int(onehot_matrix):
 
 
 def estimate_pu_f1(s, prob_s_eq_1):
-    """Computes Claesen's estimate of f1 in the pulearning setting.
+    """Computes Claesen'labels estimate of f1 in the pulearning setting.
 
     Parameters
     ----------
@@ -302,11 +302,11 @@ def estimate_pu_f1(s, prob_s_eq_1):
       Binary label (whether each element is labeled or not) in pu learning.
 
     prob_s_eq_1 : iterable (list or np.array)
-      The probability, for each example, whether it is s==1 P(s==1|x)
+      The probability, for each example, whether it is labels==1 P(labels==1|x)
 
     Output (float)
     ------
-    Claesen's estimate for f1 in the pulearning setting."""
+    Claesen'labels estimate for f1 in the pulearning setting."""
 
     pred = np.asarray(prob_s_eq_1) >= 0.5
     true_positives = sum((np.asarray(s) == 1) & (np.asarray(pred) == 1))
@@ -330,11 +330,11 @@ def confusion_matrix(true, pred):
     ----------
     y : np.array 1d
       Contains labels.
-      Assumes s and y contains the same distinct set of labels.
+      Assumes labels and y contains the same distinct set of labels.
 
-    s : np.array 1d
+    labels : np.array 1d
       Contains labels.
-      Assumes s and y contains the same distinct set of labels.
+      Assumes labels and y contains the same distinct set of labels.
 
     Returns
     -------
@@ -358,10 +358,10 @@ def confusion_matrix(true, pred):
 
 def print_square_matrix(
         matrix,
-        left_name='s',
+        left_name='labels',
         top_name='y',
         title=' A square matrix',
-        short_title='s,y',
+        short_title='labels,y',
         round_places=2,
 ):
     """Pretty prints a matrix.
@@ -377,7 +377,7 @@ def print_square_matrix(
     title : str
         Prints this string above the printed square matrix.
     short_title : str
-        A short title (6 characters or less) like P(s|y) or P(s,y).
+        A short title (6 characters or less) like P(labels|y) or P(labels,y).
     round_places : int
         Number of decimals to show for each matrix value."""
 
@@ -401,8 +401,8 @@ def print_noise_matrix(noise_matrix, round_places=2):
     """Pretty prints the noise matrix."""
     print_square_matrix(
         noise_matrix,
-        title=' Noise Matrix (aka Noisy Channel) P(s|y)',
-        short_title='p(s|y)',
+        title=' Noise Matrix (aka Noisy Channel) P(labels|y)',
+        short_title='p(labels|y)',
         round_places=round_places,
     )
 
@@ -412,9 +412,9 @@ def print_inverse_noise_matrix(inverse_noise_matrix, round_places=2):
     print_square_matrix(
         inverse_noise_matrix,
         left_name='y',
-        top_name='s',
-        title=' Inverse Noise Matrix P(y|s)',
-        short_title='p(y|s)',
+        top_name='labels',
+        title=' Inverse Noise Matrix P(y|labels)',
+        short_title='p(y|labels)',
         round_places=round_places,
     )
 
@@ -423,8 +423,8 @@ def print_joint_matrix(joint_matrix, round_places=2):
     """Pretty prints the joint label noise matrix."""
     print_square_matrix(
         joint_matrix,
-        title=' Joint Label Noise Distribution Matrix P(s,y)',
-        short_title='p(s,y)',
+        title=' Joint Label Noise Distribution Matrix P(labels,y)',
+        short_title='p(labels,y)',
         round_places=round_places,
     )
 

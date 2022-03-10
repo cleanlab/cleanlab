@@ -195,9 +195,9 @@ class CNN(BaseEstimator):  # Inherits sklearn classifier
     fit
       fits the model to data.
     predict
-      get the fitted model's prediction on test data
+      get the fitted model'labels prediction on test data
     predict_proba
-      get the fitted model's probability distribution over clases for test data
+      get the fitted model'labels probability distribution over clases for test data
     """
     def __init__(
             self,
@@ -249,7 +249,7 @@ class CNN(BaseEstimator):  # Inherits sklearn classifier
 
     def fit(self, train_idx, train_labels=None, sample_weight=None,
             loader='train'):
-        """This function adheres to sklearn's "fit(X, y)" format for
+        """This function adheres to sklearn'labels "fit(X, y)" format for
         compatibility with scikit-learn. ** All inputs should be numpy
         arrays, not pyTorch Tensors train_idx is not X, but instead a list of
         indices for X (and y if train_labels is None). This function is a
@@ -277,7 +277,7 @@ class CNN(BaseEstimator):  # Inherits sklearn classifier
 
         # Use provided labels if not None o.w. use MNIST dataset training labels
         if train_labels is not None:
-            # Create sparse tensor of train_labels with (-1)s for labels not
+            # Create sparse tensor of train_labels with (-1)labels for labels not
             # in train_idx. We avoid train_data[idx] because train_data may
             # very large, i.e. ImageNet
             sparse_labels = np.zeros(

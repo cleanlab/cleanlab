@@ -35,13 +35,13 @@ def noise_matrix_is_valid(noise_matrix, py, verbose=False):
     # Number of classes
     K = len(py)
 
-    # Let's assume some number of training examples for code readability, 
+    # Let'labels assume some number of training examples for code readability,
     # but it doesn't matter what we choose as its not actually used.
     N = float(10000)
 
     ps = np.dot(noise_matrix, py)  # P(y=k)
 
-    # P(s=k, y=k')
+    # P(labels=k, y=k')
     joint_noise = np.multiply(noise_matrix, py)  # / float(N)
 
     # Check that joint_probs is valid probability matrix
@@ -49,7 +49,7 @@ def noise_matrix_is_valid(noise_matrix, py, verbose=False):
         return False
 
     # Check that noise_matrix is a valid matrix
-    # i.e. check p(s=k)*p(y=k) < p(s=k, y=k)
+    # i.e. check p(labels=k)*p(y=k) < p(labels=k, y=k)
     for i in range(K):
         C = N * joint_noise[i][i]
         E1 = N * joint_noise[i].sum() - C
@@ -76,8 +76,8 @@ def noise_matrix_is_valid(noise_matrix, py, verbose=False):
 
 
 def generate_noisy_labels(y, noise_matrix, verbose=False):
-    """Generates noisy labels s (shape (N, 1)) from perfect labels y,
-    'exactly' yielding the provided noise_matrix between s and y.
+    """Generates noisy labels labels (shape (N, 1)) from perfect labels y,
+    'exactly' yielding the provided noise_matrix between labels and y.
 
     Below we provide a for loop implementation of what this function does.
     We do not use this implementation as it is not a fast algorithm, but
@@ -91,7 +91,7 @@ def generate_noisy_labels(y, noise_matrix, verbose=False):
         classes, e.g. 0, 1,..., K-1
 
     noise_matrix : np.array of shape (K, K), K = number of classes
-        A conditional probablity matrix of the form P(s=k_s|y=k_y) containing
+        A conditional probablity matrix of the form P(labels=k_s|y=k_y) containing
         the fraction of examples in every class, labeled as every other class.
         Assumes columns of noise_matrix sum to 1.
 
@@ -100,15 +100,15 @@ def generate_noisy_labels(y, noise_matrix, verbose=False):
 
     .. code:: python
 
-        # Generate s
+        # Generate labels
         count_joint = (noise_matrix * py * len(y)).round().astype(int)
-        s = np.array(y)
+        labels = np.array(y)
         for k_s in range(K):
             for k_y in range(K):
                 if k_s != k_y:
-                    idx_flip = np.where((s==k_y)&(y==k_y))[0]
+                    idx_flip = np.where((labels==k_y)&(y==k_y))[0]
                     if len(idx_flip): # pragma: no cover
-                        s[np.random.choice(
+                        labels[np.random.choice(
                             idx_flip,
                             count_joint[k_s][k_y],
                             replace=False,
@@ -124,29 +124,29 @@ def generate_noisy_labels(y, noise_matrix, verbose=False):
     # Compute p(y=k)
     py = value_counts(y) / float(len(y))
 
-    # Counts of pairs (s, y)
+    # Counts of pairs (labels, y)
     count_joint = (noise_matrix * py * len(y)).astype(int)
     # Remove diagonal entries as they do not involve flipping of labels.
     np.fill_diagonal(count_joint, 0)
 
-    # Generate s
+    # Generate labels
     s = np.array(y)
     for k in range(K):  # Iterate over true class y == k
-        # Get the noisy s labels that have non-zero counts
+        # Get the noisy labels labels that have non-zero counts
         s_labels = np.where(count_joint[:, k] != 0)[0]
-        # Find out how many of each noisy s label we need to flip to
-        s_counts = count_joint[s_labels, k]
+        # Find out how many of each noisy labels label we need to flip to
+        label_counts = count_joint[s_labels, k]
         # Create a list of the new noisy labels
-        noise = [s_labels[i] for i, c in enumerate(s_counts) for z in range(c)]
+        noise = [s_labels[i] for i, c in enumerate(label_counts) for z in range(c)]
         # Randomly choose y labels for class k and set them to the noisy labels.
         idx_flip = np.where((s == k) & (y == k))[0]
         if len(idx_flip) and len(noise) and len(idx_flip) >= len(
                 noise):  # pragma: no cover
             s[np.random.choice(idx_flip, len(noise), replace=False)] = noise
 
-    # Validate that s indeed produces the correct noise_matrix (or close to it)
-    # Compute the actual noise matrix induced by s
-    # counts = confusion_matrix(s, y).astype(float)
+    # Validate that labels indeed produces the correct noise_matrix (or close to it)
+    # Compute the actual noise matrix induced by labels
+    # counts = confusion_matrix(labels, y).astype(float)
     # new_noise_matrix = counts / counts.sum(axis=0)
     # assert(np.linalg.norm(noise_matrix - new_noise_matrix) <= 2)
 
@@ -166,7 +166,7 @@ def generate_noise_matrix_from_trace(
         seed=0,
         max_iter=10000,
 ):
-    """Generates a K x K noise matrix P(s=k_s|y=k_y) with trace
+    """Generates a K x K noise matrix P(labels=k_s|y=k_y) with trace
     as the np.mean(np.diagonal(noise_matrix)).
 
     Parameters
@@ -193,7 +193,7 @@ def generate_noise_matrix_from_trace(
 
     valid_noise_matrix : bool
       If True, returns a matrix having all necessary conditions for
-      learning with noisy labels. In particular, p(y=k)p(s=k) < p(y=k,s=k)
+      learning with noisy labels. In particular, p(y=k)p(labels=k) < p(y=k,labels=k)
       is satisfied. This requires that Trace > 1.
 
     py : np.array (shape (K, 1))
@@ -217,7 +217,7 @@ def generate_noise_matrix_from_trace(
     Returns
     -------
     np.array (shape (K, K))
-      noise matrix P(s=k_s|y=k_y) with trace
+      noise matrix P(labels=k_s|y=k_y) with trace
       as the np.sum(np.diagonal(noise_matrix)).
       This a conditional probability matrix and a
       left stochastic matrix."""
@@ -438,7 +438,7 @@ def generate_noise_matrix(
 
     Generates a noise matrix by randomly assigning noise rates
     up to max_noise_rate, then setting noise rates to
-    zero until P(s!=k|s=k) < 1 is satisfied. Additionally,
+    zero until P(labels!=k|labels=k) < 1 is satisfied. Additionally,
     frac_zero_noise_rates are set to zero.
 
     Parameters
@@ -465,20 +465,20 @@ def generate_noise_matrix(
     )
 
     # Init noise matrix to be random values from (0, max_noise_rate)
-    # P(s=k|y=k')
+    # P(labels=k|y=k')
     noise_matrix = np.random.rand(K, K) * max_noise_rate
 
     # Round all noise rates 
     noise_matrix = noise_matrix.round(2)
 
-    # Initialize all P(s=k|y=k) = 0
+    # Initialize all P(labels=k|y=k) = 0
     for i in range(K):
         noise_matrix[i][i] = 0.0
 
     # Compute sum for each column
     col_sum = noise_matrix.sum(axis=0)
 
-    # For each column, randomly set noise rates to zero until P(s!=k|s=k) < 1.
+    # For each column, randomly set noise rates to zero until P(labels!=k|labels=k) < 1.
     for y in range(K):  # col
         col = noise_matrix.T[y]
         col_sum = np.sum(col)
@@ -499,7 +499,7 @@ def generate_noise_matrix(
     # Compute sum for each column
     col_sum = noise_matrix.sum(axis=0)
 
-    # Normalize each column such that P(s=k|y=k) = 1 - P(s!=k|s=k)
+    # Normalize each column such that P(labels=k|y=k) = 1 - P(labels!=k|labels=k)
     for i in range(K):
         noise_matrix[i][i] = 1 - col_sum[i]
 
