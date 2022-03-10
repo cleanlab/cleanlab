@@ -72,7 +72,7 @@ def test_loaders(
             cj, psx = estimate_confident_joint_and_cv_pred_proba(
                 X, y, cnn, cv_n_folds=2)
             est_py, est_nm, est_inv = estimate_latent(cj, y)
-            # algorithmic identification of label errors
+            # algorithmic identification of label issues
             err_idx = cleanlab.filter.find_label_issues(y, psx, est_inv, prune_method=prune_method)
             assert err_idx is not None
 

@@ -240,14 +240,14 @@ def test_cleanlab_with_fasttext():
         # Map labels
         s_train = np.array([label2num[z] for z in y_train_top])
         # Compute confident joint and predicted probability matrix for each example
-        cj, psx = cleanlab.latent_estimation.estimate_confident_joint_and_cv_pred_proba(
+        cj, psx = cleanlab.count.estimate_confident_joint_and_cv_pred_proba(
             X = np.array(X_train_idx), 
             s = s_train, 
             clf = ftc, 
             cv_n_folds=5,
         )
         # Find inidices of errors
-        noise_idx = cleanlab.pruning.find_label_issues(s_train, psx, confident_joint=cj)
+        noise_idx = cleanlab.filter.find_label_issues(s_train, psx, confident_joint=cj)
         # Extract errors. This works by:
         # (1) masking the training examples we used with the noise indices identified.
         # (2) we find the actual train_data corresponding to those indices.

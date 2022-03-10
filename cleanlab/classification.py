@@ -48,8 +48,8 @@ Examples
 >>> from cleanlab.classification import LearningWithNoisyLabels
 >>> from sklearn.linear_model import LogisticRegression as LogReg
 >>> rp = LearningWithNoisyLabels(clf=LogReg()) # Pass in any classifier.
->>> rp.fit(X_train, y_may_have_label_errors)
->>> # Estimate the predictions as if you had trained without label errors.
+>>> rp.fit(X_train, y_may_have_label_issues)
+>>> # Estimate the predictions as if you had trained without label issues.
 >>> pred = rp.predict(X_test)
 
 The easiest way to use any model (Tensorflow, caffe2, PyTorch, etc.)
@@ -108,7 +108,7 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
     """Automated learning with noisy labels using any model.
 
     Confident Learning is the state-of-the-art (Northcutt et al., 2021) for
-    weak supervision, finding label errors in datasets, learning with noisy
+    weak supervision, finding label issues in datasets, learning with noisy
     labels, uncertainty estimation, and more. It works with ANY classifier,
     including deep neural networks. See clf parameter.
 
@@ -152,7 +152,7 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
     prune_method : :obj:`str`, default: 'prune_by_noise_rate'
       Possible Values: {'prune_by_class', 'prune_by_noise_rate', 'both',
                         'confident_learning_off_diagonals', 'argmax_not_equal_given_label'}
-      Determines the method used to filter label errors.
+      Determines the method used to filter label issues.
 
       Pruning Methods (possible values for `prune_method`)
       ----------------------------------------------------
@@ -216,7 +216,7 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
         if seed is not None:
             np.random.seed(seed=seed)
 
-        # Set-up number of multiprocessing threads used by get_noise_indices()
+        # Set-up number of multiprocessing threads used by find_label_issues()
         if n_jobs is None:
             n_jobs = multiprocessing.cpu_count()
         else:

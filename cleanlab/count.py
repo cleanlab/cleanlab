@@ -47,12 +47,12 @@ from cleanlab.latent_algebra import (
 )
 
 
-def num_label_errors(
+def num_label_issues(
         labels,
         psx,
         confident_joint=None,
 ):
-    """Estimates the number of label errors in `labels`.
+    """Estimates the number of label issues in `labels`.
 
     Parameters
     ----------
@@ -74,7 +74,7 @@ def num_label_errors(
 
     Returns
     -------
-        An integer estimating the number of label errors."""
+        An integer estimating the number of label issues."""
 
     if confident_joint is None:
         confident_joint = compute_confident_joint(s=labels, psx=psx)
@@ -147,7 +147,7 @@ def estimate_joint(s, psx=None, confident_joint=None, multi_label=False):
 
     Parameters
     ----------
-    See cleanlab.latent_estimation.calibrate_confident_joint docstring.
+    See cleanlab.count.calibrate_confident_joint docstring.
 
     Returns
     -------
@@ -212,8 +212,8 @@ def _compute_confident_joint_multi_label(
 
     return_indices_of_off_diagonals: bool
         If true returns indices of examples that were counted in off-diagonals
-        of confident joint as a baseline proxy for the label errors. This
-        somtimes works as well as pruning.get_noise_indices(confident_joint)."""
+        of confident joint as a baseline proxy for the label issues. This
+        somtimes works as well as filterfind_label_issues(confident_joint)."""
 
     # Compute unique number of classes K by flattening labels (list of lists)
     K = len(np.unique([i for lst in labels for i in lst]))
@@ -304,8 +304,8 @@ def compute_confident_joint(
 
     return_indices_of_off_diagonals: bool
         If true returns indices of examples that were counted in off-diagonals
-        of confident joint as a baseline proxy for the label errors. This
-        somtimes works as well as pruning.get_noise_indices(confident_joint).
+        of confident joint as a baseline proxy for the label issues. This
+        somtimes works as well as filterfind_label_issues(confident_joint).
 
 
     Examples
@@ -999,7 +999,7 @@ def estimate_confident_joint_from_probabilities(
         cjs.append(confident_joint)
 
         if force_ps:
-            # Todo: calibrate_confident_joint() makes p(s) of joint = p(s). Ifs this still needed?
+            # Todo: calibrate_confident_joint() makes p(s) of joint = p(s). Is this still needed?
             joint_ps = confident_joint.sum(axis=1) / np.sum(confident_joint)
             # Update thresholds (SGD) to converge p(s) of joint with actual p(s)
             eta = 0.5  # learning rate

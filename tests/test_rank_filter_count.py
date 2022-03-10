@@ -349,14 +349,14 @@ def test_pruning_order_method():
     results = []
     for method in order_methods:
         results.append(
-            filter.find_label_issues(labels=data['s'], psx=data['psx'], return_ranked_indices=method))
+            filter.find_label_issues(labels=data['s'], psx=data['psx'], return_indices_ranked_by=method))
     assert (len(results[0]) == len(results[1]))
 
 
 @pytest.mark.parametrize("multi_label", [True, False])
 @pytest.mark.parametrize("prune_method", ['prune_by_noise_rate', 'prune_by_class', 'both',
                                           'confident_learning_off_diagonals'])
-def test_get_noise_indices_multi_label(multi_label, prune_method):
+def test_find_label_issues_multi_label(multi_label, prune_method):
     """Note: argmax_not_equal method is not compatible with multi_label == True"""
 
     s_ml = [[z, data['y_train'][i]] for i, z in enumerate(data['s'])]
@@ -375,7 +375,7 @@ def test_confident_learning_off_diagonals_prune_method():
         calibrate=False,
         return_indices_of_off_diagonals=True,
     )
-    # Check that the number of 'label errors' found in off diagonals
+    # Check that the number of 'label issues' found in off diagonals
     # matches the off diagonals of the uncalibrated confident joint
     assert (len(indices) == (np.sum(cj) - np.trace(cj)))
 
@@ -389,11 +389,11 @@ def test_argmax_not_equal_given_label_prune_method():
         [0.4, 0.5, 0.1],
     ])
     s = np.array([0, 0, 1, 1, 2])
-    label_errors = filter.find_argmax_not_equal_given_label(s, psx)
-    assert (all(label_errors == [False, False, True, True, True]))
+    label_issues = filter.find_argmax_not_equal_given_label(s, psx)
+    assert (all(label_issues == [False, False, True, True, True]))
 
-    label_errors = filter.find_argmax_not_equal_given_label(s_, psx_)
-    assert (all(label_errors == np.array([False, False, True, False,
+    label_issues = filter.find_argmax_not_equal_given_label(s_, psx_)
+    assert (all(label_issues == np.array([False, False, True, False,
                                           False, False, False, False, False, False])))
 
 
@@ -401,17 +401,17 @@ def test_argmax_not_equal_given_label_prune_method():
 @pytest.mark.parametrize("prune_method", ['prune_by_noise_rate',
                                           'prune_by_class', 'both'])
 def test_find_label_issues_using_argmax_confusion_matrix(calibrate, prune_method):
-    label_errors = filter.find_label_issues_using_argmax_confusion_matrix(
+    label_issues = filter.find_label_issues_using_argmax_confusion_matrix(
         s_, psx_, calibrate=calibrate, prune_method=prune_method)
-    assert (all(label_errors == np.array([False, False, True, False,
+    assert (all(label_issues == np.array([False, False, True, False,
                                           False, False, False, False, False, False])))
 
 
 def test_find_label_issue_prune_methods_match_origin_functions():
-    label_errors = filter.find_label_issues(s_, psx_, prune_method='argmax_not_equal_given_label')
-    label_errors2 = filter.find_argmax_not_equal_given_label(s_, psx_)
-    assert (all(label_errors == label_errors2))
-    label_errors3 = filter.find_label_issues(s_, psx_,
+    label_issues = filter.find_label_issues(s_, psx_, prune_method='argmax_not_equal_given_label')
+    label_issues2 = filter.find_argmax_not_equal_given_label(s_, psx_)
+    assert (all(label_issues == label_issues2))
+    label_issues3 = filter.find_label_issues(s_, psx_,
                                              prune_method='confident_learning_off_diagonals')
-    label_errors4 = filter.find_argmax_not_equal_given_label(s_, psx_)
-    assert (all(label_errors3 == label_errors4))
+    label_issues4 = filter.find_argmax_not_equal_given_label(s_, psx_)
+    assert (all(label_issues3 == label_issues4))

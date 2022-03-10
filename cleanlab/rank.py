@@ -23,23 +23,23 @@
 import numpy as np
 
 
-def order_label_errors(
-    label_errors_bool,
+def order_label_issues(
+    label_issues_mask,
     labels,
     psx,
-    sorted_index_method="normalized_margin",
+    rank_by="normalized_margin",
 ):
-    """Sorts label errors by normalized margin.
+    """Sorts label issues by normalized margin.
     See https://arxiv.org/pdf/1810.05369.pdf (eqn 2.2)
-    eg. normalized_margin = prob_label - max_prob_not_label
+    e.g. normalized_margin = prob_label - max_prob_not_label
 
     Parameters
     ----------
-    label_errors_bool : np.array (bool)
+    label_issues_mask : np.array (bool)
       Contains True if the index of labels is an error, o.w. false
 
     labels : np.array
-      A binary vector of labels, which may contain label errors.
+      A binary vector of labels, which may contain label issues.
 
     psx : np.array (shape (N, K))
       P(s=k|x) is a matrix with K probabilities for all N examples x.
@@ -47,39 +47,38 @@ def order_label_errors(
       example, regarding whether the example has label s==k P(s=k|x). psx
       should computed using 3 (or higher) fold cross-validation.
 
-    sorted_index_method : str ['normalized_margin', 'prob_given_label']
+    rank_by : str ['normalized_margin', 'prob_given_label']
       Method to order label error indices (instead of a bool mask), either:
-        'normalized_margin' := normalized margin (p(s = k) - max(p(s != k)))
-        'prob_given_label' := [psx[i][labels[i]] for i in label_errors_idx]
+        'normalized_margin' := normalized margin (p(label = k) - max(p(label != k)))
+        'prob_given_label' := [psx[i][labels[i]] for i in label_issues_idx]
 
     Returns
     -------
-      label_errors_idx : np.array (int)
-        Return the index integers of the label errors, ordered by
+      label_issues_idx : np.array (int)
+        Return the index integers of the label issues, ordered by
         the normalized margin."""
 
     assert (len(psx) == len(labels))
     # Convert bool mask to index mask
-    label_errors_idx = np.arange(len(labels))[label_errors_bool]
-    # self confidence is the holdout probability that an example
-    # belongs to its given class label
+    label_issues_idx = np.arange(len(labels))[label_issues_mask]
+    # self-confidence is the holdout probability that an example belongs to its given class label
     self_confidence = np.array(
         # np.mean is used so that this works for multi-labels (list of lists)
-        [np.mean(psx[i][labels[i]]) for i in label_errors_idx]
+        [np.mean(psx[i][labels[i]]) for i in label_issues_idx]
     )
-    if sorted_index_method == "prob_given_label":
-        return label_errors_idx[np.argsort(self_confidence)]
-    elif sorted_index_method == "normalized_margin":
-        psx_er, labels_er = psx[label_errors_bool], labels[label_errors_bool]
+    if rank_by == "prob_given_label":
+        return label_issues_idx[np.argsort(self_confidence)]
+    elif rank_by == "normalized_margin":
+        psx_er, labels_er = psx[label_issues_mask], labels[label_issues_mask]
         max_prob_not_label = np.array(
             [max(np.delete(psx_er[i], l, -1)) for i, l in enumerate(labels_er)]
         )
         margin = self_confidence - max_prob_not_label
-        return label_errors_idx[np.argsort(margin)]
+        return label_issues_idx[np.argsort(margin)]
     else:
         raise ValueError(
-            'return_ranked_indices must be "prob_given_label" or "normalized_margin", '
-            'but is "' + sorted_index_method + '".'
+            'rank_by must be "prob_given_label" or "normalized_margin", '
+            'but is "' + rank_by + '".'
         )
 
 
@@ -99,7 +98,7 @@ def get_self_confidence_for_each_label(
     ----------
 
     labels : np.array
-      A binary vector of labels, which may contain label errors.
+      A binary vector of labels, which may contain label issues.
 
     psx : np.array (shape (N, K))
       P(s=k|x) is a matrix with K probabilities for all N examples x.
@@ -123,7 +122,7 @@ def get_normalized_margin_for_each_label(
 ):
     """Returns the "normalized margin" for every example associated psx and
     labels.
-    The normalized margin is (p(s = k) - max(p(s != k))), i.e. the probability
+    The normalized margin is (p(label = k) - max(p(label != k))), i.e. the probability
     of the given label minus the probability of the argmax label that is not
     the given label. This gives you an idea of how likely an example is BOTH
     its given label AND not another label, and therefore, scores its likelihood
@@ -137,7 +136,7 @@ def get_normalized_margin_for_each_label(
     ----------
 
     labels : np.array
-      A binary vector of labels, which may contain label errors.
+      A binary vector of labels, which may contain label issues.
 
     psx : np.array (shape (N, K))
       P(s=k|x) is a matrix with K probabilities for all N examples x.

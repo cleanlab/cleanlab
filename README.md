@@ -77,9 +77,9 @@ Past release notes and **future features planned** is available [here](https://g
 # Be sure you compute probs in a holdout/out-of-sample manner (e.g. via cross-validation)
 # Now getting label errors is trivial with cleanlab... its one line of code.
 # Label errors are ordered by likelihood of being an error. First index is most likely error.
-from cleanlab.pruning import get_noise_indices
+from cleanlab.pruning import find_label_issues
 
-ordered_label_errors = get_noise_indices(
+ordered_label_issues = find_label_issues(
     s=numpy_array_of_noisy_labels,
     psx=numpy_array_of_predicted_probabilities,
     sorted_index_method='normalized_margin', # Orders label errors
@@ -392,7 +392,7 @@ Now you can use cleanlab however you were before. Just be sure to pass in this t
 cj = compute_confident_joint(s, psx, thresholds=thresholds, )
 # Now the noise (cj) has been estimated taking into account that some class(es) have no error.
 # We can use cj to find label errors like this:
-indices_of_label_errors = get_noise_indices(s, psx, confident_joint=cj, )
+indices_of_label_issues = find_label_issues(s, psx, confident_joint=cj, )
 
 # In addition to label errors, we can find the fraction of noise in the unlabeled class.
 # First we need the inv_noise_matrix which contains P(y|s) (proportion of mislabeling).
