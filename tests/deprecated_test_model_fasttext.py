@@ -247,11 +247,7 @@ def test_cleanlab_with_fasttext():
             cv_n_folds=5,
         )
         # Find inidices of errors
-        noise_idx = cleanlab.pruning.find_label_issues(
-            s_train, 
-            psx, 
-            confident_joint=cj, 
-        )
+        noise_idx = cleanlab.pruning.find_label_issues(s_train, psx, confident_joint=cj)
         # Extract errors. This works by:
         # (1) masking the training examples we used with the noise indices identified.
         # (2) we find the actual train_data corresponding to those indices.

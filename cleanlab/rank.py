@@ -25,8 +25,8 @@ import numpy as np
 
 def order_label_errors(
     label_errors_bool,
-    psx,
     labels,
+    psx,
     sorted_index_method="normalized_margin",
 ):
     """Sorts label errors by normalized margin.
@@ -38,14 +38,14 @@ def order_label_errors(
     label_errors_bool : np.array (bool)
       Contains True if the index of labels is an error, o.w. false
 
+    labels : np.array
+      A binary vector of labels, which may contain label errors.
+
     psx : np.array (shape (N, K))
       P(s=k|x) is a matrix with K probabilities for all N examples x.
       This is the probability distribution over all K classes, for each
       example, regarding whether the example has label s==k P(s=k|x). psx
       should computed using 3 (or higher) fold cross-validation.
-
-    labels : np.array
-      A binary vector of labels, which may contain label errors.
 
     sorted_index_method : str ['normalized_margin', 'prob_given_label']
       Method to order label error indices (instead of a bool mask), either:
@@ -58,6 +58,7 @@ def order_label_errors(
         Return the index integers of the label errors, ordered by
         the normalized margin."""
 
+    assert (len(psx) == len(labels))
     # Convert bool mask to index mask
     label_errors_idx = np.arange(len(labels))[label_errors_bool]
     # self confidence is the holdout probability that an example
@@ -77,17 +78,16 @@ def order_label_errors(
         return label_errors_idx[np.argsort(margin)]
     else:
         raise ValueError(
-            'sorted_index_method must be "prob_given_label" or "no'
-            'rmalized_margin", but is "' + sorted_index_method + '".'
+            'return_ranked_indices must be "prob_given_label" or "normalized_margin", '
+            'but is "' + sorted_index_method + '".'
         )
 
 
 def get_self_confidence_for_each_label(
-    psx,
     labels,
+    psx,
 ):
-    """Returns the "self-confidence" for every example associated psx and
-    labels.
+    """Returns the "self-confidence" for every example in the dataset associated psx and labels.
     The self-confidence is the holdout probability that an example belongs to
     its given class label.
 
@@ -97,13 +97,15 @@ def get_self_confidence_for_each_label(
 
     Parameters
     ----------
+
+    labels : np.array
+      A binary vector of labels, which may contain label errors.
+
     psx : np.array (shape (N, K))
       P(s=k|x) is a matrix with K probabilities for all N examples x.
       This is the probability distribution over all K classes, for each
       example, regarding whether the example has label s==k P(s=k|x). psx
       should computed using 3 (or higher) fold cross-validation.
-    labels : np.array
-      A binary vector of labels, which may contain label errors.
 
     Returns
     -------
@@ -116,8 +118,8 @@ def get_self_confidence_for_each_label(
 
 
 def get_normalized_margin_for_each_label(
-    psx,
     labels,
+    psx,
 ):
     """Returns the "normalized margin" for every example associated psx and
     labels.
@@ -133,13 +135,15 @@ def get_normalized_margin_for_each_label(
 
     Parameters
     ----------
+
+    labels : np.array
+      A binary vector of labels, which may contain label errors.
+
     psx : np.array (shape (N, K))
       P(s=k|x) is a matrix with K probabilities for all N examples x.
       This is the probability distribution over all K classes, for each
       example, regarding whether the example has label s==k P(s=k|x). psx
       should be computed using 3 (or higher) fold cross-validation.
-    labels : np.array
-      A binary vector of labels, which may contain label errors.
 
     Returns
     -------
@@ -148,7 +152,7 @@ def get_normalized_margin_for_each_label(
         being correctly labeled. Assumes psx is computed holdout/out-of-sample.
         normalized_margin = prob_label - max_prob_not_label"""
 
-    self_confidence = get_self_confidence_for_each_label(psx, labels)
+    self_confidence = get_self_confidence_for_each_label(labels, psx)
     max_prob_not_label = np.array(
         [max(np.delete(psx[i], l, -1)) for i, l in enumerate(labels)]
     )

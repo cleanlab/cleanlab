@@ -33,7 +33,6 @@ from __future__ import (
 )
 from sklearn.linear_model import LogisticRegression as LogReg
 from sklearn.model_selection import StratifiedKFold
-from sklearn.preprocessing import LabelBinarizer
 from sklearn.metrics import confusion_matrix
 import numpy as np
 import copy
@@ -164,8 +163,7 @@ def estimate_joint(s, psx=None, confident_joint=None, multi_label=False):
             multi_label=multi_label,
         )
     else:
-        calibrated_cj = calibrate_confident_joint(confident_joint, s,
-                                                  multi_label)
+        calibrated_cj = calibrate_confident_joint(confident_joint, s, multi_label)
 
     return calibrated_cj / float(np.sum(calibrated_cj))
 
@@ -175,6 +173,7 @@ def _compute_confident_joint_multi_label(
         psx,
         thresholds=None,
         calibrate=True,
+        return_indices_of_off_diagonals=False,
 ):
     """Computes the confident joint for multi_labeled data. Thus,
     input `labels` is a list of lists (or list of iterable).
@@ -209,27 +208,39 @@ def _compute_confident_joint_multi_label(
 
     calibrate : bool (default: True)
         Calibrates confident joint estimate P(s=i, y=j) such that
-        np.sum(cj) == len(s) and np.sum(cj, axis = 1) == np.bincount(s)."""
+        np.sum(cj) == len(s) and np.sum(cj, axis = 1) == np.bincount(s).
+
+    return_indices_of_off_diagonals: bool
+        If true returns indices of examples that were counted in off-diagonals
+        of confident joint as a baseline proxy for the label errors. This
+        somtimes works as well as pruning.get_noise_indices(confident_joint)."""
 
     # Compute unique number of classes K by flattening labels (list of lists)
     K = len(np.unique([i for lst in labels for i in lst]))
     # Compute thresholds = p(s=k | k in set of given labels)
-    # This is the avg probability of class given that the label is represented.
     k_in_l = np.array([[k in lst for lst in labels] for k in range(K)])
     if thresholds is None:
+        # the avg probability of class given that the label is represented.
         thresholds = [np.mean(psx[:, k][k_in_l[k]]) for k in range(K)]
     # Create mask for every example if for each class, prob >= threshold
     psx_bool = psx >= thresholds
+
     # Compute confident joint
     # (no need to avoid collisions for multi-label, double counting is okay!)
-    confident_joint = np.array(
-        [psx_bool[k_in_l[k]].sum(axis=0) for k in range(K)])
+    confident_joint = np.array([psx_bool[k_in_l[k]].sum(axis=0) for k in range(K)])
     if calibrate:
-        return calibrate_confident_joint(
-            confident_joint,
-            labels,
-            multi_label=True,
-        )
+        confident_joint = calibrate_confident_joint(confident_joint, labels, multi_label=True)
+    if return_indices_of_off_diagonals:
+        # Todo add more tests and consider refactoring for efficiency (combine with confident_joint)
+        # Convert boolean mask of k_in_l to indices of examples that include class k in the labels
+        indices_k_in_l = [np.arange(len(labels))[k_in_l[k]] for k in range(K)]
+        # Find boolean mask where the thresholds exceeds for non-given class, for each class k
+        error_mask = [np.any(np.delete(psx_bool, k, axis=1)[k_in_l[k]], axis=1) for k in range(K)]
+        # Map boolean mask to the indices of the examples, for each class k
+        indices_of_errors = [indices_k_in_l[k][error_mask[k]] for k in range(K)]
+        # Combine error indices for each class k into a single set of all the indices of errors
+        indices_of_errors = np.asarray(list(set([z for lst in indices_of_errors for z in lst])))
+        return confident_joint, sorted(indices_of_errors)
 
     return confident_joint
 
@@ -336,6 +347,7 @@ def compute_confident_joint(
             psx=psx,
             thresholds=thresholds,
             calibrate=calibrate,
+            return_indices_of_off_diagonals=return_indices_of_off_diagonals,
         )
 
     # s needs to be a numpy array
@@ -372,7 +384,6 @@ def compute_confident_joint(
     y_confident = true_label_guess[at_least_one_confident]
     s_confident = s[at_least_one_confident]
     confident_joint = confusion_matrix(y_confident, s_confident).T
-
     if calibrate:
         confident_joint = calibrate_confident_joint(confident_joint, s)
 
@@ -404,8 +415,8 @@ def estimate_latent(
         denotes the noisy label instead of \tilde(y), for ASCII reasons.
 
     confident_joint : np.array (shape (K, K), type int)
-        A K,K integer matrix of count(s=k, y=k). Estimates a a confident subset
-        of the joint disribution of the noisy and true labels P_{s,y}.
+        A K,K integer matrix of count(s=k, y=k). Estimates a confident subset
+        of the joint distribution of the noisy and true labels P_{s,y}.
         Each entry in the matrix contains the number of examples confidently
         counted into every pair (s=j, y=k) classes.
 
@@ -603,7 +614,7 @@ def estimate_confident_joint_and_cv_pred_proba(
     # noisy negative examples in each class.
     kf = StratifiedKFold(n_splits=cv_n_folds, shuffle=True, random_state=seed)
 
-    # Intialize psx array
+    # Initialize psx array
     psx = np.zeros((len(s), K))
 
     # Split X and s into "cv_n_folds" stratified folds.
@@ -984,10 +995,11 @@ def estimate_confident_joint_from_probabilities(
         sgd_epochs = force_ps
     for sgd_iteration in range(sgd_epochs):  # ONLY 1 iteration by default.
         # Compute the confident joint.
-        confident_joint = compute_confident_joint(s, psx, K, thresholds)
+        confident_joint = compute_confident_joint(s=s, psx=psx, thresholds=thresholds)
         cjs.append(confident_joint)
 
         if force_ps:
+            # Todo: calibrate_confident_joint() makes p(s) of joint = p(s). Ifs this still needed?
             joint_ps = confident_joint.sum(axis=1) / np.sum(confident_joint)
             # Update thresholds (SGD) to converge p(s) of joint with actual p(s)
             eta = 0.5  # learning rate

@@ -38,6 +38,7 @@ There are two new notions of confidence in this package:
 1. Confident **examples** -- examples we are confident are labeled correctly
 We prune everything else. Comptuationally, this means keeping the examples
 with high probability of belong to their provided label class.
+
 2. Confident **errors** -- examples we are confident are labeled erroneously.
 We prune these. Comptuationally, this means pruning the examples with
 high probability of belong to a different class.
@@ -148,24 +149,28 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
       cv_n_folds sets the number of cross-validation folds used to compute
       out-of-sample probabilities for each example in X.
 
-    prune_method : :obj:`str`, default: :obj:`prune_by_noise_rate`
-      Available options: 'prune_by_class', 'prune_by_noise_rate', or 'both'.
-      This str determines the method used for pruning.
-      TODO: add the two new methods
+    prune_method : :obj:`str`, default: 'prune_by_noise_rate'
+      Possible Values: {'prune_by_class', 'prune_by_noise_rate', 'both',
+                        'confident_learning_off_diagonals', 'argmax_not_equal_given_label'}
+      Determines the method used to filter label errors.
 
-      Note
-      ----
+      Pruning Methods (possible values for `prune_method`)
+      ----------------------------------------------------
 
-      1. :obj:`prune_method=prune_by_noise_rate`: works by removing examples
-      with *high probability* of being mislabeled for every non-diagonal in the
-      ``prune_counts_matrix`` (see ``filter.py``).
+      1. :obj:`prune_method=prune_by_noise_rate`: works by removing examples with *high probability*
+      of being mislabeled for every non-diagonal in the ``prune_counts_matrix`` (see ``filter.py``).
 
-      2. :obj:`prune_method=prune_by_class`: works by removing the examples
-      with *smallest probability* of belonging to their given class label for
-      every class.
+      2. :obj:`prune_method=prune_by_class`: works by removing the examples with
+      *smallest probability* of belonging to their given class label for every class.
 
       3. :obj:`prune_method=both`: Finds the examples satisfying (1) AND (2)
       and removes their set conjunction.
+
+      4. :obj:`prune_method=confident_learning_off_diagonals`: Find examples that are confidently
+      labeled as a different class from their given label while computing the confident joint.
+
+      5. :obj:`prune_method=argmax_not_equal_given_label`: Find examples where the argmax prediction
+      does not match the given label.
 
     converge_latent_estimates : :obj:`bool` (Default: False)
       If true, forces numerical consistency of latent estimates. Each is
@@ -377,13 +382,8 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
         # This is the actual work of this function.
 
         # Get the indices of the examples we wish to prune
-        self.noise_mask = find_label_issues(
-            s,
-            psx,
-            confident_joint=self.confident_joint,
-            prune_method=self.prune_method,
-            n_jobs=self.n_jobs,
-        )
+        self.noise_mask = find_label_issues(s, psx, confident_joint=self.confident_joint,
+                                            prune_method=self.prune_method, n_jobs=self.n_jobs)
 
         x_mask = ~self.noise_mask
         x_pruned = X[x_mask]

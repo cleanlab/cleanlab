@@ -130,12 +130,8 @@ s_ = np.array([0, 0, 1, 1, 1, 1, 1, 1, 1, 2])
 def test_exact_prune_count():
     remove = 5
     s = data['s']
-    noise_idx = filter.find_label_issues(
-        s=s,
-        psx=data['psx'],
-        num_to_remove_per_class=remove,
-        prune_method='prune_by_class',
-    )
+    noise_idx = filter.find_label_issues(labels=s, psx=data['psx'], num_to_remove_per_class=remove,
+                                         prune_method='prune_by_class')
     assert (all(value_counts(s[noise_idx]) == remove))
 
 
@@ -143,27 +139,12 @@ def test_exact_prune_count():
 def test_pruning_both(n_jobs):
     remove = 5
     s = data['s']
-    class_idx = filter.find_label_issues(
-        s=s,
-        psx=data['psx'],
-        num_to_remove_per_class=remove,
-        prune_method='prune_by_class',
-        n_jobs=n_jobs,
-    )
-    nr_idx = filter.find_label_issues(
-        s=s,
-        psx=data['psx'],
-        num_to_remove_per_class=remove,
-        prune_method='prune_by_noise_rate',
-        n_jobs=n_jobs,
-    )
-    both_idx = filter.find_label_issues(
-        s=s,
-        psx=data['psx'],
-        num_to_remove_per_class=remove,
-        prune_method='both',
-        n_jobs=n_jobs,
-    )
+    class_idx = filter.find_label_issues(labels=s, psx=data['psx'], num_to_remove_per_class=remove,
+                                         prune_method='prune_by_class', n_jobs=n_jobs)
+    nr_idx = filter.find_label_issues(labels=s, psx=data['psx'], num_to_remove_per_class=remove,
+                                      prune_method='prune_by_noise_rate', n_jobs=n_jobs)
+    both_idx = filter.find_label_issues(labels=s, psx=data['psx'], num_to_remove_per_class=remove,
+                                        prune_method='both', n_jobs=n_jobs)
     assert (all(s[both_idx] == s[class_idx & nr_idx]))
 
 
@@ -171,13 +152,10 @@ def test_pruning_both(n_jobs):
                                           'confident_learning_off_diagonals',
                                           'argmax_not_equal_given_label'])
 def test_prune_on_small_data(prune_method):
-    data = make_data(sizes=[1, 1, 1])
-    noise_idx = filter.find_label_issues(
-        s=data['s'],
-        psx=data['psx'],
-        prune_method=prune_method,
-    )
-    # Num in each class < 5. Nothing should be pruned.
+    data = make_data(sizes=[3, 3, 3])
+    noise_idx = filter.find_label_issues(labels=data['s'], psx=data['psx'],
+                                         prune_method=prune_method)
+    # Num in each class <= 1 (when splitting for cross validation). Nothing should be pruned.
     assert (not any(noise_idx))
 
 
@@ -370,11 +348,8 @@ def test_pruning_order_method():
     order_methods = ["prob_given_label", "normalized_margin"]
     results = []
     for method in order_methods:
-        results.append(filter.find_label_issues(
-            s=data['s'],
-            psx=data['psx'],
-            sorted_index_method=method,
-        ))
+        results.append(
+            filter.find_label_issues(labels=data['s'], psx=data['psx'], return_ranked_indices=method))
     assert (len(results[0]) == len(results[1]))
 
 
@@ -382,13 +357,11 @@ def test_pruning_order_method():
 @pytest.mark.parametrize("prune_method", ['prune_by_noise_rate', 'prune_by_class', 'both',
                                           'confident_learning_off_diagonals'])
 def test_get_noise_indices_multi_label(multi_label, prune_method):
+    """Note: argmax_not_equal method is not compatible with multi_label == True"""
+
     s_ml = [[z, data['y_train'][i]] for i, z in enumerate(data['s'])]
-    noise_idx = filter.find_label_issues(
-        s=s_ml if multi_label else data['s'],
-        psx=data['psx'],
-        prune_method=prune_method,
-        multi_label=multi_label,
-    )
+    noise_idx = filter.find_label_issues(labels=s_ml if multi_label else data['s'], psx=data['psx'],
+                                         prune_method=prune_method, multi_label=multi_label)
     acc = np.mean((data['s'] != data['y_train']) == noise_idx)
     # Make sure cleanlab does reasonably well finding the errors.
     # acc is the accuracy of detecting a label error.
@@ -416,10 +389,10 @@ def test_argmax_not_equal_given_label_prune_method():
         [0.4, 0.5, 0.1],
     ])
     s = np.array([0, 0, 1, 1, 2])
-    label_errors = filter.baseline_argmax(psx, s)
+    label_errors = filter.find_argmax_not_equal_given_label(s, psx)
     assert (all(label_errors == [False, False, True, True, True]))
 
-    label_errors = filter.baseline_argmax(psx_, s_)
+    label_errors = filter.find_argmax_not_equal_given_label(s_, psx_)
     assert (all(label_errors == np.array([False, False, True, False,
                                           False, False, False, False, False, False])))
 
@@ -428,7 +401,17 @@ def test_argmax_not_equal_given_label_prune_method():
 @pytest.mark.parametrize("prune_method", ['prune_by_noise_rate',
                                           'prune_by_class', 'both'])
 def test_find_label_issues_using_argmax_confusion_matrix(calibrate, prune_method):
-    label_errors = filter.baseline_argmax_confusion_matrix(
-        psx_, s_, calibrate=calibrate, prune_method=prune_method)
+    label_errors = filter.find_label_issues_using_argmax_confusion_matrix(
+        s_, psx_, calibrate=calibrate, prune_method=prune_method)
     assert (all(label_errors == np.array([False, False, True, False,
                                           False, False, False, False, False, False])))
+
+
+def test_find_label_issue_prune_methods_match_origin_functions():
+    label_errors = filter.find_label_issues(s_, psx_, prune_method='argmax_not_equal_given_label')
+    label_errors2 = filter.find_argmax_not_equal_given_label(s_, psx_)
+    assert (all(label_errors == label_errors2))
+    label_errors3 = filter.find_label_issues(s_, psx_,
+                                             prune_method='confident_learning_off_diagonals')
+    label_errors4 = filter.find_argmax_not_equal_given_label(s_, psx_)
+    assert (all(label_errors3 == label_errors4))
