@@ -152,7 +152,7 @@ class CNN(BaseEstimator):  # Inherits sklearn classifier
     template enables the PyTorch CNN to flexibly be used within the sklearn
     architecture -- meaning it can be passed into functions like
     cross_val_predict as if it were an sklearn model. The cleanlab library
-    requires that all models adhere to this basic sklearn template and thus,
+    requires that all example_models adhere to this basic sklearn template and thus,
     this class allows a PyTorch CNN to be used in for learning with noisy
     labels among other things.
 
@@ -195,9 +195,9 @@ class CNN(BaseEstimator):  # Inherits sklearn classifier
     fit
       fits the model to data.
     predict
-      get the fitted model'labels prediction on test data
+      get the fitted model's prediction on test data
     predict_proba
-      get the fitted model'labels probability distribution over clases for test data
+      get the fitted model's probability distribution over clases for test data
     """
     def __init__(
             self,
@@ -249,7 +249,7 @@ class CNN(BaseEstimator):  # Inherits sklearn classifier
 
     def fit(self, train_idx, train_labels=None, sample_weight=None,
             loader='train'):
-        """This function adheres to sklearn'labels "fit(X, y)" format for
+        """This function adheres to sklearn's "fit(X, y)" format for
         compatibility with scikit-learn. ** All inputs should be numpy
         arrays, not pyTorch Tensors train_idx is not X, but instead a list of
         indices for X (and y if train_labels is None). This function is a

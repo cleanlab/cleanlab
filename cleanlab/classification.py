@@ -122,8 +122,7 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
     for their training label.
 
     Given any classifier having the predict_proba() method, an input feature
-    matrix, X, and a discrete vector of labels, labels, which may contain
-    mislabeling, Confident Learning estimates the classifications that would
+    matrix, `X`, and a discrete vector of noisy labels, `labels`, Confident Learning estimates the classifications that would
     be obtained if the hidden, true labels, y, had instead been provided to
     the classifier during training. "labels" denotes the noisy label instead of
     \\tilde(y), for ASCII encoding reasons.
@@ -131,7 +130,7 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
     Parameters
     ----------
     clf : :obj:`sklearn.classifier` compliant class (e.g. skorch wraps around PyTorch)
-      See cleanlab.models for examples of sklearn wrappers around, e.g. PyTorch.
+      See cleanlab.example_models for examples of sklearn wrappers around, e.g. PyTorch.
       The clf object must have the following three functions defined:
       1. clf.predict_proba(X) # Predicted probabilities
       2. clf.predict(X) # Predict labels
@@ -151,14 +150,16 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
 
     filter_by : :obj:`str`, default: 'prune_by_noise_rate'
       Possible Values: {'prune_by_class', 'prune_by_noise_rate', 'both',
-                        'confident_learning', 'argmax_not_equal_given_label'}
+                        'confident_learning', 'predicted_neq_given'}
       Determines the method used to filter label issues.
 
       Filtering/Pruning Methods (possible values for `filter_by`)
       ----------------------------------------------------
 
-      1. :obj:`filter_by=prune_by_noise_rate`: works by removing examples with *high probability*
-      of being mislabeled for every non-diagonal in the ``prune_counts_matrix`` (see ``filter.py``).
+      1. :obj:`filter_by=prune_by_noise_rate`: works by removing examples with
+      *high probability* of being mislabeled for every non-diagonal in the confident joint
+      (see `prune_counts_matrix` in `filter.py`). These are the examples where (with high
+      confidence) the given label is unlikely to match the predicted label.
 
       2. :obj:`filter_by=prune_by_class`: works by removing the examples with
       *smallest probability* of belonging to their given class label for every class.
@@ -169,7 +170,7 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
       4. :obj:`filter_by=confident_learning`: Find examples that are confidently
       labeled as a different class from their given label while computing the confident joint.
 
-      5. :obj:`filter_by=argmax_not_equal_given_label`: Find examples where the argmax prediction
+      5. :obj:`filter_by=predicted_neq_given`: Find examples where the argmax prediction
       does not match the given label.
 
     converge_latent_estimates : :obj:`bool` (Default: False)
@@ -259,19 +260,23 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
           Input feature matrix (N, D), 2D numpy array
 
         labels : :obj:`np.array`
-          A binary vector of labels, labels, which may contain mislabeling.
+          A discrete vector of noisy labels, i.e. some labels may be erroneous.
+          *Format requirements*: for dataset with K classes, labels must be in {0,1,...,K-1}.
 
         psx : :obj:`np.array` (shape (N, K))
-          P(labels=k|x) is a matrix with K (noisy) probabilities for each of the N
-          examples x.
-          This is the probability distribution over all K classes, for each
-          example, regarding whether the example has label labels==k P(labels=k|x). psx
-          should have been computed using 3 (or higher) fold cross-validation.
-          If you are not sure, leave psx = None (default) and
-          it will be computed for you using cross-validation.
+        P(label=k|x) is a matrix with K model-predicted probabilities.
+        Each row of this matrix corresponds to an example `x` and contains the model-predicted
+        probabilities that `x` belongs to each possible class.
+        The columns must be ordered such that these probabilities correspond to class 0,1,2,...
+        `psx` should have been computed using 3 (or higher) fold cross-validation.
+
+          Note
+          ----
+          If you are not sure, leave `psx = None` (default) and it will be computed for you using
+          cross-validation with your model.
 
         thresholds : :obj:`iterable` (list or np.array) of shape (K, 1)  or (K,)
-          P(labels^=k|labels=k). List of probabilities used to determine the cutoff
+          P(label^=k|labels=k). List of probabilities used to determine the cutoff
           predicted probability necessary to consider an example as a given
           class label.
           Default is ``None``. These are computed for you automatically.
@@ -431,8 +436,8 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
         return self.clf.predict_proba(*args, **kwargs)
 
     def score(self, X, y, sample_weight=None):
-        """Returns the clf'labels score on a test set X with labels y.
-        Uses the models default scoring function.
+        """Returns the clf's score on a test set X with labels y.
+        Uses the example_models default scoring function.
 
         Parameters
         ----------

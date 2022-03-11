@@ -32,15 +32,15 @@ from cleanlab.util import value_counts, clip_values, clip_noise_rates
 import warnings
 
 
-def compute_ps_py_inv_noise_matrix(s, noise_matrix):
+def compute_ps_py_inv_noise_matrix(labels, noise_matrix):
     """Compute ps := P(labels=k), py := P(y=k), and the inverse noise matrix.
 
     Parameters
     ----------
 
-    s : np.array
-        A discrete vector of labels, labels, which may contain mislabeling. "labels"
-        denotes the noisy label instead of \\tilde(y), for ASCII reasons.
+    labels : np.array
+          A discrete vector of noisy labels, i.e. some labels may be erroneous.
+          *Format requirements*: for dataset with K classes, labels must be in {0,1,...,K-1}.
 
     noise_matrix : np.array of shape (K, K), K = number of classes
         A conditional probability matrix of the form P(labels=k_s|y=k_y) containing
@@ -48,7 +48,7 @@ def compute_ps_py_inv_noise_matrix(s, noise_matrix):
         Assumes columns of noise_matrix sum to 1."""
 
     # 'ps' is p(labels=k)
-    ps = value_counts(s) / float(len(s))
+    ps = value_counts(labels) / float(len(labels))
 
     py, inverse_noise_matrix = compute_py_inv_noise_matrix(ps, noise_matrix)
     return ps, py, inverse_noise_matrix
@@ -116,7 +116,7 @@ def compute_inv_noise_matrix(py, noise_matrix, ps=None):
 
         # Estimate the (K, K) inverse noise matrix P(y = k_y | labels = k_s)
         inverse_noise_matrix = np.empty(shape=(K,K))
-        # k_s is the class value k of noisy label labels
+        # k_s is the class value k of noisy label `labels == k`
         for k_s in range(K):
             # k_y is the (guessed) class value k of true label y
             for k_y in range(K):
@@ -176,7 +176,7 @@ def compute_noise_matrix_from_inverse(ps, inverse_noise_matrix, py=None):
 
         # Estimate the (K, K) noise matrix P(labels = k_s | y = k_y)
         noise_matrix = np.empty(shape=(K,K))
-        # k_s is the class value k of noisy label labels
+        # k_s is the class value k of noisy label `labels == k`
         for k_s in range(K):
             # k_y is the (guessed) class value k of true label y
             for k_y in range(K):
@@ -281,10 +281,11 @@ def compute_pyx(psx, noise_matrix, inverse_noise_matrix):
     ----------
 
     psx : np.array (shape (N, K))
-        P(label=k|x) is a matrix with K (noisy) probabilities for each of the N
-        examples x. This is the probability distribution over all K classes, for
-        each example, regarding whether the example has label labels==k P(labels=k|x). psx
-        should have been computed using 3 (or higher) fold cross-validation.
+        P(label=k|x) is a matrix with K model-predicted probabilities.
+        Each row of this matrix corresponds to an example `x` and contains the model-predicted
+        probabilities that `x` belongs to each possible class.
+        The columns must be ordered such that these probabilities correspond to class 0,1,2,...
+        `psx` should have been computed using 3 (or higher) fold cross-validation.
 
     noise_matrix : np.array of shape (K, K), K = number of classes
         A conditional probability matrix of the form P(labels=k_s|y=k_y) containing
@@ -302,7 +303,11 @@ def compute_pyx(psx, noise_matrix, inverse_noise_matrix):
     -------
 
     pyx : np.array (shape (N, K))
-        P(y=k|x) is a matrix with K probabilities for all N examples x."""
+        P(y=k|x) is a matrix with K model-predicted probabilities.
+        Each row of this matrix corresponds to an example `x` and contains the model-predicted
+        probabilities that `x` belongs to each possible class.
+        The columns must be ordered such that these probabilities correspond to class 0,1,2,...
+        `psx` should have been computed using 3 (or higher) fold cross-validation."""
 
     if len(np.shape(psx)) != 2:
         raise ValueError(

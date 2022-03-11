@@ -63,7 +63,7 @@ def loss_coteaching(
       List of Noisy Labels (t means targets)
 
     forget_rate : float
-      Decimal between 0 and 1 for how quickly the models forget what they learn.
+      Decimal between 0 and 1 for how quickly the example_models forget what they learn.
       Just use rate_schedule[epoch] for this value
 
     class_weights : Tensor array, shape (Number of classes x 1), Default: None
@@ -82,7 +82,7 @@ def loss_coteaching(
 
     ind_1_update = ind_1_sorted[:num_remember]
     ind_2_update = ind_2_sorted[:num_remember]
-    # Share updates between the two models.
+    # Share updates between the two example_models.
     # TODO: these class weights should take into account the ind_mask filters.
     loss_1_update = F.cross_entropy(
         y_1[ind_2_update], t[ind_2_update], weight=class_weights)
@@ -154,7 +154,7 @@ def train(train_loader, epoch, model1, optimizer1, model2, optimizer2, args,
     train_total2 = 0
     train_correct2 = 0
 
-    # Prepare models for training
+    # Prepare example_models for training
     model1.train()
     model2.train()
 

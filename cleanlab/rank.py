@@ -39,13 +39,15 @@ def order_label_issues(
       Contains True if the index of labels is an error, o.w. false
 
     labels : np.array
-      A binary vector of labels, which may contain label issues.
+      A discrete vector of noisy labels, i.e. some labels may be erroneous.
+      *Format requirements*: for dataset with K classes, labels must be in {0,1,...,K-1}.
 
     psx : np.array (shape (N, K))
-      P(labels=k|x) is a matrix with K probabilities for all N examples x.
-      This is the probability distribution over all K classes, for each
-      example, regarding whether the example has label labels==k P(labels=k|x). psx
-      should computed using 3 (or higher) fold cross-validation.
+      P(label=k|x) is a matrix with K model-predicted probabilities.
+      Each row of this matrix corresponds to an example x and contains the model-predicted
+      probabilities that x belongs to each possible class.
+      The columns must be ordered such that these probabilities correspond to class 0,1,2,...
+      `psx` should have been computed using 3 (or higher) fold cross-validation.
 
     rank_by : str ['normalized_margin', 'prob_given_label']
       Method to order label error indices (instead of a bool mask), either:
@@ -70,10 +72,7 @@ def order_label_issues(
         return label_issues_idx[np.argsort(self_confidence)]
     elif rank_by == "normalized_margin":
         psx_er, labels_er = psx[label_issues_mask], labels[label_issues_mask]
-        max_prob_not_label = np.array(
-            [max(np.delete(psx_er[i], l, -1)) for i, l in enumerate(labels_er)]
-        )
-        margin = self_confidence - max_prob_not_label
+        margin = get_normalized_margin_for_each_label(labels_er, psx_er)
         return label_issues_idx[np.argsort(margin)]
     else:
         raise ValueError(
@@ -98,13 +97,15 @@ def get_self_confidence_for_each_label(
     ----------
 
     labels : np.array
-      A binary vector of labels, which may contain label issues.
+      A discrete vector of noisy labels, i.e. some labels may be erroneous.
+      *Format requirements*: for dataset with K classes, labels must be in {0,1,...,K-1}.
 
     psx : np.array (shape (N, K))
-      P(labels=k|x) is a matrix with K probabilities for all N examples x.
-      This is the probability distribution over all K classes, for each
-      example, regarding whether the example has label labels==k P(labels=k|x). psx
-      should computed using 3 (or higher) fold cross-validation.
+      P(label=k|x) is a matrix with K model-predicted probabilities.
+      Each row of this matrix corresponds to an example x and contains the model-predicted
+      probabilities that x belongs to each possible class.
+      The columns must be ordered such that these probabilities correspond to class 0,1,2,...
+      `psx` should have been computed using 3 (or higher) fold cross-validation.
 
     Returns
     -------
@@ -136,13 +137,15 @@ def get_normalized_margin_for_each_label(
     ----------
 
     labels : np.array
-      A binary vector of labels, which may contain label issues.
+      A discrete vector of noisy labels, i.e. some labels may be erroneous.
+      *Format requirements*: for dataset with K classes, labels must be in {0,1,...,K-1}.
 
     psx : np.array (shape (N, K))
-      P(labels=k|x) is a matrix with K probabilities for all N examples x.
-      This is the probability distribution over all K classes, for each
-      example, regarding whether the example has label labels==k P(labels=k|x). psx
-      should be computed using 3 (or higher) fold cross-validation.
+      P(label=k|x) is a matrix with K model-predicted probabilities.
+      Each row of this matrix corresponds to an example x and contains the model-predicted
+      probabilities that x belongs to each possible class.
+      The columns must be ordered such that these probabilities correspond to class 0,1,2,...
+      `psx` should have been computed using 3 (or higher) fold cross-validation.
 
     Returns
     -------

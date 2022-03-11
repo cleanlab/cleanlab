@@ -54,17 +54,28 @@ def num_label_issues(
 ):
     """Estimates the number of label issues in `labels`.
 
+    This method is **more accurate** than `sum(find_label_issues())` because its computed using only
+    the Trace(joint), ignoring all off-diagonals (used by `find_label_issues` and harder to
+    estimate). Here we sum over only diagonal elements in the joint (which have more data
+    are more constrained, and therefore easier to compute).
+
+    tl;dr - Use this method to get the most accurate estimate of number of label issues when you
+    don't need the indices of the label issues. This is the canonical way to find errors
+    simply by combining a ranking/scoring function from `rank.py` with `num_label_issues()`.
+
     Parameters
     ----------
 
     labels : np.array
         A discrete vector of noisy labels, i.e. some labels may be erroneous.
+        *Format requirements*: for dataset with K classes, labels must be in {0,1,...,K-1}.
 
     psx : np.array (shape (N, K))
-        P(label=k|x) is a matrix with K (noisy) probabilities for each of the N
-        examples x. This is the probability distribution over all K classes, for
-        each example, regarding whether the example has label labels==k P(labels=k|x). psx
-        should have been computed using 3 (or higher) fold cross-validation.
+        P(label=k|x) is a matrix with K model-predicted probabilities.
+        Each row of this matrix corresponds to an example `x` and contains the model-predicted
+        probabilities that `x` belongs to each possible class.
+        The columns must be ordered such that these probabilities correspond to class 0,1,2,...
+        `psx` should have been computed using 3 (or higher) fold cross-validation.
 
     confident_joint : np.array (shape (K, K), type int)
         A K,K integer matrix of count(labels=k, y=k). Estimates a confident subset of
@@ -107,16 +118,17 @@ def calibrate_confident_joint(confident_joint, labels, multi_label=False):
         counted into every pair (labels=j, y=k) classes.
 
     labels : np.array
-        A discrete vector of labels, labels, which may contain mislabeling. "labels"
-        denotes the noisy label instead of \tilde(y), for ASCII reasons.
+        A discrete vector of noisy labels, i.e. some labels may be erroneous.
+        *Format requirements*: for dataset with K classes, labels must be in {0,1,...,K-1}.
 
     multi_label : bool
         If true, labels should be an iterable (e.g. list) of iterables, containing a
         list of labels for each example, instead of just a single label.
-        The MAJOR DIFFERENCE in how this is calibrated versus single_label,
-        is the total number of errors considered is based on the number
-        of labels, not the number of examples. So, the calibrated
-        confident_joint will sum to the number of total labels.
+        The MAJOR DIFFERENCE in how this is calibrated versus single_label, is the total number of
+        errors considered is based on the number of labels, not the number of examples. So, the
+        calibrated confident_joint will sum to the number of total labels.
+        The multi-label setting supports classification tasks where an example has 1 or more labels.
+        Example of a multi-labeled `labels` input: [[0,1], [1], [0,2], [0,1,2], [0], [1], ...]
 
 
     Returns
@@ -195,16 +207,17 @@ def _compute_confident_joint_multi_label(
         is not a list of lists (or a list of np.arrays or iterable).
 
     psx : np.array (shape (N, K))
-        P(labels=k|x) is a matrix with K (noisy) probabilities for each of the N
-        examples x. This is the probability distribution over all K classes, for
-        each example, regarding whether the example has label labels==k P(labels=k|x).
-        psx should have been computed using 3 (or higher) fold cross-validation.
+        P(label=k|x) is a matrix with K model-predicted probabilities.
+        Each row of this matrix corresponds to an example `x` and contains the model-predicted
+        probabilities that `x` belongs to each possible class.
+        The columns must be ordered such that these probabilities correspond to class 0,1,2,...
+        `psx` should have been computed using 3 (or higher) fold cross-validation.
 
     thresholds : iterable (list or np.array) of shape (K, 1)  or (K,)
-      P(labels^=k|labels=k). If an example has a predicted probability "greater" than
-      this threshold, it is counted as having hidden label y = k. This is
-      not used for pruning, only for estimating the noise rates using
-      confident counts. This value should be between 0 and 1. Default is None.
+        P(label^=k|labels=k). If an example has a predicted probability "greater" than
+        this threshold, it is counted as having hidden label y = k. This is
+        not used for pruning, only for estimating the noise rates using
+        confident counts. This value should be between 0 and 1. Default is None.
 
     calibrate : bool (default: True)
         Calibrates confident joint estimate P(labels=i, y=j) such that
@@ -276,20 +289,21 @@ def compute_confident_joint(
     ----------
 
     labels : np.array
-        A discrete vector of labels, labels, which may contain mislabeling. "labels"
-        denotes the noisy label instead of \tilde(y), for ASCII reasons.
+        A discrete vector of noisy labels, i.e. some labels may be erroneous.
+        *Format requirements*: for dataset with K classes, labels must be in {0,1,...,K-1}.
 
     psx : np.array (shape (N, K))
-        P(label=k|x) is a matrix with K (noisy) probabilities for each of the N
-        examples x. This is the probability distribution over all K classes, for
-        each example, regarding whether the example has label labels==k P(labels=k|x). psx
-        should have been computed using 3 (or higher) fold cross-validation.
+        P(label=k|x) is a matrix with K model-predicted probabilities.
+        Each row of this matrix corresponds to an example `x` and contains the model-predicted
+        probabilities that `x` belongs to each possible class.
+        The columns must be ordered such that these probabilities correspond to class 0,1,2,...
+        `psx` should have been computed using 3 (or higher) fold cross-validation.
 
     K : int (default: None)
         Number of unique classes. Calculated as len(np.unique(labels)) when K == None
 
     thresholds : iterable (list or np.array) of shape (K, 1)  or (K,)
-        P(labels^=k|labels=k). If an example has a predicted probability "greater" than
+        P(label^=k|labels=k). If an example has a predicted probability "greater" than
         this threshold, it is counted as having hidden label y = k. This is
         not used for pruning, only for estimating the noise rates using
         confident counts. This value should be between 0 and 1. Default is None.
@@ -301,6 +315,8 @@ def compute_confident_joint(
     multi_label : bool
         If true, labels should be an iterable (e.g. list) of iterables, containing a
         list of labels for each example, instead of just a single label.
+        The multi-label setting supports classification tasks where an example has 1 or more labels.
+        Example of a multi-labeled `labels` input: [[0,1], [1], [0,2], [0,1,2], [0], [1], ...]
 
     return_indices_of_off_diagonals: bool
         If true returns indices of examples that were counted in off-diagonals
@@ -320,7 +336,7 @@ def compute_confident_joint(
         # Confident examples are those that we are confident have label y = k
         # Estimate (K, K) matrix of confident examples with labels = k_s and y = k_y
         cj_ish = np.zeros((K, K))
-        for k_s in range(K): # k_s is the class value k of noisy label labels
+        for k_s in range(K): # k_s is the class value k of noisy labels `s`
             for k_y in range(K): # k_y is the (guessed) class k of true label y
                 cj_ish[k_s][k_y] = sum((psx[:,k_y] >= (thresholds[k_y] - 1e-8)) & (labels == k_s))
 
@@ -411,8 +427,8 @@ def estimate_latent(
     ----------
 
     labels : np.array
-        A discrete vector of labels, labels, which may contain mislabeling. "labels"
-        denotes the noisy label instead of \tilde(y), for ASCII reasons.
+        A discrete vector of noisy labels, i.e. some labels may be erroneous.
+        *Format requirements*: for dataset with K classes, labels must be in {0,1,...,K-1}.
 
     confident_joint : np.array (shape (K, K), type int)
         A K,K integer matrix of count(labels=k, y=k). Estimates a confident subset
@@ -488,25 +504,26 @@ def estimate_py_and_noise_matrices_from_probabilities(
     ----------
 
     labels : np.array
-        A discrete vector of labels, labels, which may contain mislabeling. "labels"
-        denotes the noisy label instead of \tilde(y), for ASCII reasons.
+        A discrete vector of noisy labels, i.e. some labels may be erroneous.
+        *Format requirements*: for dataset with K classes, labels must be in {0,1,...,K-1}.
 
     psx : np.array (shape (N, K))
-        P(label=k|x) is a matrix with K (noisy) probabilities for each of the N
-        examples x. This is the probability distribution over all K classes, for
-        each example, regarding whether the example has label labels==k P(labels=k|x). psx
-        should have been computed using 3 (or higher) fold cross-validation.
+        P(label=k|x) is a matrix with K model-predicted probabilities.
+        Each row of this matrix corresponds to an example `x` and contains the model-predicted
+        probabilities that `x` belongs to each possible class.
+        The columns must be ordered such that these probabilities correspond to class 0,1,2,...
+        `psx` should have been computed using 3 (or higher) fold cross-validation.
 
     thresholds : iterable (list or np.array) of shape (K, 1)  or (K,)
-      P(labels^=k|labels=k). If an example has a predicted probability "greater" than
-      this threshold, it is counted as having hidden label y = k. This is
-      not used for pruning, only for estimating the noise rates using
-      confident counts. This value should be between 0 and 1. Default is None.
+        P(label^=k|labels=k). If an example has a predicted probability "greater" than
+        this threshold, it is counted as having hidden label y = k. This is
+        not used for pruning, only for estimating the noise rates using
+        confident counts. This value should be between 0 and 1. Default is None.
 
     converge_latent_estimates : bool
-      If true, forces numerical consistency of estimates. Each is estimated
-      independently, but they are related mathematically with closed form
-      equivalences. This will iteratively make them mathematically consistent.
+        If true, forces numerical consistency of estimates. Each is estimated
+        independently, but they are related mathematically with closed form
+        equivalences. This will iteratively make them mathematically consistent.
 
     py_method : str (Options: ["cnt", "eqn", "marginal", "marginal_ps"])
         How to compute the latent prior p(y=k). Default is "cnt" as it often
@@ -572,8 +589,8 @@ def estimate_confident_joint_and_cv_pred_proba(
       Input feature matrix (N, D), 2D numpy array
 
     labels : np.array
-      A discrete vector of labels, labels, which may contain mislabeling. "labels"
-      denotes the noisy label instead of \tilde(y), for ASCII reasons.
+          A discrete vector of noisy labels, i.e. some labels may be erroneous.
+          *Format requirements*: for dataset with K classes, labels must be in {0,1,...,K-1}.
 
     clf : sklearn.classifier or equivalent
       Default classifier used is logistic regression. Assumes clf
@@ -584,7 +601,7 @@ def estimate_confident_joint_and_cv_pred_proba(
       out-of-sample probabilities for each example in X.
 
     thresholds : iterable (list or np.array) of shape (K, 1)  or (K,)
-      P(labels^=k|labels=k). If an example has a predicted probability "greater" than
+      P(label^=k|labels=k). If an example has a predicted probability "greater" than
       this threshold, it is counted as having hidden label y = k. This is
       not used for pruning, only for estimating the noise rates using
       confident counts. This value should be between 0 and 1. Default is None.
@@ -671,8 +688,8 @@ def estimate_py_noise_matrices_and_cv_pred_proba(
       Input feature matrix (N, D), 2D numpy array
 
     labels : np.array
-        A discrete vector of labels, labels, which may contain mislabeling. "labels"
-        denotes the noisy label instead of \tilde(y), for ASCII reasons.
+        A discrete vector of noisy labels, i.e. some labels may be erroneous.
+        *Format requirements*: for dataset with K classes, labels must be in {0,1,...,K-1}.
 
     clf : sklearn.classifier or equivalent
       Default classifier used is logistic regression. Assumes clf
@@ -683,7 +700,7 @@ def estimate_py_noise_matrices_and_cv_pred_proba(
       out-of-sample probabilities for each example in X.
 
     thresholds : iterable (list or np.array) of shape (K, 1)  or (K,)
-      P(labels^=k|labels=k). If an example has a predicted probability "greater" than
+      P(label^=k|labels=k). If an example has a predicted probability "greater" than
       this threshold, it is counted as having hidden label y = k. This is
       not used for pruning, only for estimating the noise rates using
       confident counts. This value should be between 0 and 1. Default is None.
@@ -746,7 +763,8 @@ def estimate_cv_predicted_probabilities(
       Input feature matrix (N, D), 2D numpy array
 
     labels : np.array or list of ints from [0,1,..,K-1]
-      A discrete vector of class labels which may or may not contain mislabeling
+      A discrete vector of class labels which may or may not contain mislabeling.
+      *Format requirements*: for dataset with K classes, labels must be in {0,1,...,K-1}.
 
     clf : sklearn.classifier or equivalent
       Default classifier used is logistic regression. Assumes clf
@@ -763,10 +781,11 @@ def estimate_cv_predicted_probabilities(
     Returns
     --------
     psx : np.array (shape (N, K))
-        P(label=k|x) is a matrix with K (noisy) probabilities for each of the N
-        examples x. This is the probability distribution over all K classes, for
-        each example, regarding whether the example has label labels==k P(labels=k|x). psx
-        should have been computed using 3 (or higher) fold cross-validation."""
+        P(label=k|x) is a matrix with K model-predicted probabilities.
+        Each row of this matrix corresponds to an example `x` and contains the model-predicted
+        probabilities that `x` belongs to each possible class.
+        The columns must be ordered such that these probabilities correspond to class 0,1,2,...
+        `psx` should have been computed using 3 (or higher) fold cross-validation."""
 
     return estimate_py_noise_matrices_and_cv_pred_proba(
         X=X,
@@ -799,8 +818,8 @@ def estimate_noise_matrices(
       Input feature matrix (N, D), 2D numpy array
 
     labels : np.array
-        A discrete vector of labels, labels, which may contain mislabeling. "labels"
-        denotes the noisy label instead of \tilde(y), for ASCII reasons.
+        A discrete vector of noisy labels, i.e. some labels may be erroneous.
+        *Format requirements*: for dataset with K classes, labels must be in {0,1,...,K-1}.
 
     clf : sklearn.classifier or equivalent
       Default classifier used is logistic regression. Assumes clf
@@ -811,7 +830,7 @@ def estimate_noise_matrices(
       out-of-sample probabilities for each example in X.
 
     thresholds : iterable (list or np.array) of shape (K, 1)  or (K,)
-      P(labels^=k|labels=k). If an example has a predicted probability "greater" than
+      P(label^=k|labels=k). If an example has a predicted probability "greater" than
       this threshold, it is counted as having hidden label y = k. This is
       not used for pruning, only for estimating the noise rates using
       confident counts. This value should be between 0 and 1. Default is None.

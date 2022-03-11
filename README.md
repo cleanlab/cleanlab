@@ -68,14 +68,14 @@ Past release notes and **future features planned** is available [here](https://g
 2.  **fast** - Non-iterative, parallelized algorithms (e.g. < 1 second to find label issues in ImageNet with pre-computed probabilities)
 3.  **general** - Works with any dataset, model, and framework, e.g., Tensorflow, PyTorch, sklearn, xgboost, etc.
 
-## Find confident_learning with PyTorch, Tensorflow, sklearn, xgboost, etc. in 1 line of code
+## Find label issues with PyTorch, Tensorflow, sklearn, xgboost, etc. in 1 line of code
 
 ```python
 # Compute psx (n x m matrix of predicted probabilities) on your own, with any classifier.
 # Here is an example that shows in detail how to compute psx on CIFAR-10:
 #    https://github.com/cleanlab/examples/tree/master/cifar10
 # Be sure you compute probs in a holdout/out-of-sample manner (e.g. via cross-validation)
-# Now getting confident_learning is trivial with cleanlab... its one line of code.
+# Now finding label issues is trivial with cleanlab... its one line of code.
 # label issues are ordered by likelihood of being an error. First index is most likely error.
 from cleanlab.filter import find_label_issues
 

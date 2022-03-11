@@ -220,9 +220,11 @@ def multiclass_crossval_predict(labels, pyx):
       labels for that example.
 
     pyx : np.array (shape (N, K))
-      P(label=k|x) is a NxK matrix with K probs for each of N examples.
-      This is the probability distribution over all K classes, for each
-      pyx should have been computed out of sample (holdout or crossval)."""
+        P(label=k|x) is a matrix with K model-predicted probabilities.
+        Each row of this matrix corresponds to an example `x` and contains the model-predicted
+        probabilities that `x` belongs to each possible class.
+        The columns must be ordered such that these probabilities correspond to class 0,1,2,...
+        `psx` should have been computed using 3 (or higher) fold cross-validation."""
 
     from sklearn.metrics import f1_score
     boundaries = np.arange(0.05, 0.9, .05)
@@ -235,49 +237,82 @@ def multiclass_crossval_predict(labels, pyx):
     return pred
 
 
-def find_label_issues(labels, psx, confident_joint=None, frac_noise=1.0,
-                      num_to_remove_per_class=None, filter_by='prune_by_noise_rate',
-                      return_indices_ranked_by=None, multi_label=False, n_jobs=None, verbose=0):
+def find_label_issues(labels, psx, confident_joint=None, filter_by='prune_by_noise_rate',
+                      return_indices_ranked_by=None, multi_label=False, frac_noise=1.0,
+                      num_to_remove_per_class=None, n_jobs=None, verbose=0):
     """By default, this method returns a boolean mask for the entire dataset where True represents
     a label issue and False represents an example that is confidently/accurately labeled.
 
     You can return ONLY the indices of the label issues in your dataset, by setting
     return_indices_ranked_by = {`prob_given_label`, `normalized_margin`}.
 
-    number of indices returned is specified by frac_of_noise. When
-    frac_of_noise = 1.0, all "confident" estimated noise indices are returned.
+    number of indices returned is specified by frac_noise. When
+    frac_noise = 1.0, all "confident" estimated noise indices are returned.
     * If you encounter the error 'psx is not defined', try setting n_jobs = 1.
 
-    WARNING! frac_noise and num_to_remove_per_class parameters are only supported when filter_by
+    WARNING! is a matrix with K model-predicted probabilities and num_to_remove_per_class parameters are only supported when filter_by
     is either 'prune_by_noise_rate', 'prune_by_class', or 'both'. They are not supported for methods
-    'confident_learning' or 'argmax_not_equal_given_label'. TODO.
+    'confident_learning' or 'predicted_neq_given'. TODO.
 
     Parameters
     ----------
 
     labels : np.array
-      A binary vector of labels, labels, which may contain mislabeling. "labels" denotes
+      A discrete vector of noisy labels, i.e. some labels may be erroneous. "labels" denotes
       the noisy label instead of \\tilde(y), for ASCII encoding reasons.
+      *Format requirements*: for dataset with K classes, labels must be in {0,1,...,K-1}.
 
     psx : np.array (shape (N, K))
-      P(labels=k|x) is a matrix with K (noisy) probabilities for each of the N
-      examples x.
-      This is the probability distribution over all K classes, for each
-      example, regarding whether the example has label labels==k P(labels=k|x).
-      psx should have been computed using 3+ fold cross-validation.
+      P(label=k|x) is a matrix with K model-predicted probabilities.
+      Each row of this matrix corresponds to an example x and contains the model-predicted
+      probabilities that x belongs to each possible class.
+      The columns must be ordered such that these probabilities correspond to class 0,1,2,...
+      `psx` should have been computed using 3 (or higher) fold cross-validation.
 
     confident_joint : np.array (shape (K, K), type int) (default: None)
       A K,K integer matrix of count(labels=k, y=k). Estimates a a confident
       subset of the joint distribution of the noisy and true labels P_{labels,y}.
       Each entry in the matrix contains the number of examples confidently
-      counted into every pair (labels=j, y=k) classes.
+      counted into every pair (labels=j, y=k) classes. The `confident joint` can be computed using
+    `count.compute_confident_joint`
+
+    filter_by : str (default: 'prune_by_noise_rate')  TODO: change default to cl_off_diag?
+      Possible Values: {'prune_by_class', 'prune_by_noise_rate', 'both',
+                        'confident_learning', 'predicted_neq_given'}
+      Method used for filtering/pruning out the label issues.
+      1. 'prune_by_noise_rate': works by removing examples with
+      *high probability* of being mislabeled for every non-diagonal in the confident joint
+      (see `prune_counts_matrix` in `filter.py`). These are the examples where (with high
+      confidence) the given label is unlikely to match the predicted label for the example.
+      2. 'prune_by_class': works by removing the examples with *smallest
+      probability* of belonging to their given class label for every class.
+      3. 'both': Removes only the examples that would be filtered by both (1) AND (2).
+      4. 'confident_learning': Returns the examples in the off-diagonals of the confident joint.
+      These are the examples that are confidently predicted to be a different label than their
+      given label.
+      that's different from their given label while computing the confident joint.
+      5. 'predicted_neq_given': Find examples where the predicted class
+      (i.e. argmax of the predicted probabilities) does not match the given label.
+
+    return_indices_ranked_by : {:obj:`None`, :obj:`prob_given_label`, :obj:`normalized_margin`}
+      If None, returns a boolean mask (true if example at index is label error)
+      If not None, returns an array of the label error indices
+      (instead of a bool mask) where error indices are ordered by the either:
+      ``'normalized_margin' := normalized margin (p(label = k) - max(p(label != k)))``
+      ``'prob_given_label' := [psx[i][labels[i]] for i in label_issues_idx]``
+
+    multi_label : bool
+      If true, labels should be an iterable (e.g. list) of iterables, containing a
+      list of labels for each example, instead of just a single label.
+      The multi-label setting supports classification tasks where an example has 1 or more labels.
+      Example of a multi-labeled `labels` input: [[0,1], [1], [0,2], [0,1,2], [0], [1], ...]
 
     frac_noise : float
-      When frac_of_noise = 1.0, return all "confident" estimated noise indices.
+      When frac_noise = 1.0, return all "confident" estimated noise indices.
       Value in range (0, 1] that determines the fraction of noisy example
       indices to return based on the following formula for example class k.
-      frac_of_noise * number_of_mislabeled_examples_in_class_k, or equivalently
-      frac_of_noise * inverse_noise_rate_class_k * num_examples_with_s_equal_k
+      frac_noise * number_of_mislabeled_examples_in_class_k, or equivalently
+      frac_noise * inverse_noise_rate_class_k * num_examples_with_s_equal_k
 
     num_to_remove_per_class : list of int of length K (# of classes)
       e.g. if K = 3, num_to_remove_per_class = [5, 0, 1] would return
@@ -292,33 +327,6 @@ def find_label_issues(labels, psx, confident_joint=None, frac_noise=1.0,
       examples may be removed for any class. This is because noise rates
       are floats, and rounding may cause a one-off. If you need exactly
       'k' examples removed from every class, you should use ``'prune_by_class'``
-
-    filter_by : str (default: 'prune_by_noise_rate')  TODO: change default to cl_off_diag?
-      Possible Values: {'prune_by_class', 'prune_by_noise_rate', 'both',
-                        'confident_learning', 'argmax_not_equal_given_label'}
-      Method used for filtering/pruning out the label issues.
-      1. 'prune_by_noise_rate': works by removing examples with
-      *high probability* of being mislabeled for every non-diagonal
-      in the prune_counts_matrix (see filter.py).
-      2. 'prune_by_class': works by removing the examples with *smallest
-      probability* of belonging to their given class label for every class.
-      3. 'both': Finds the examples satisfying (1) AND (2) and
-      removes their set conjunction.
-      4. 'confident_learning': Find examples that are confidently labeled as a class
-      that'labels different from their given label while computing the confident joint.
-      5. 'argmax_not_equal_given_label': Find examples where the argmax predictions does not match
-      the given label.
-
-    return_indices_ranked_by : {:obj:`None`, :obj:`prob_given_label`, :obj:`normalized_margin`}
-      If None, returns a boolean mask (true if example at index is label error)
-      If not None, returns an array of the label error indices
-      (instead of a bool mask) where error indices are ordered by the either:
-      ``'normalized_margin' := normalized margin (p(label = k) - max(p(label != k)))``
-      ``'prob_given_label' := [psx[i][labels[i]] for i in label_issues_idx]``
-
-    multi_label : bool
-      If true, labels should be an iterable (e.g. list) of iterables, containing a
-      list of labels for each example, instead of just a single label.
 
     n_jobs : int (Windows users may see a speed-up with n_jobs = 1)
       Number of processing threads used by multiprocessing. Default None
@@ -340,14 +348,14 @@ def find_label_issues(labels, psx, confident_joint=None, frac_noise=1.0,
       return_indices_ranked_by = {`prob_given_label`, `normalized_margin`}."""
 
     assert filter_by in ['prune_by_noise_rate', 'prune_by_class', 'both',
-                            'confident_learning', 'argmax_not_equal_given_label']
+                            'confident_learning', 'predicted_neq_given']
     assert (len(labels) == len(psx))
-    if filter_by in ['confident_learning', 'argmax_not_equal_given_label'] and \
+    if filter_by in ['confident_learning', 'predicted_neq_given'] and \
             (frac_noise != 1.0 or num_to_remove_per_class is not None):
         warn_str = "WARNING! frac_noise and num_to_remove_per_class parameters are only supported" \
                    " for filter_by 'prune_by_noise_rate', 'prune_by_class', and 'both'. They " \
                    "are not supported for methods 'confident_learning' or " \
-                   "'argmax_not_equal_given_label'."
+                   "'predicted_neq_given'."
         warnings.warn(warn_str)
 
     # Set-up number of multiprocessing threads
@@ -465,8 +473,8 @@ def find_label_issues(labels, psx, confident_joint=None, frac_noise=1.0,
         for idx in cl_error_indices:
             label_issues_mask[idx] = True
 
-    if filter_by == 'argmax_not_equal_given_label':
-        label_issues_mask = find_argmax_not_equal_given_label(labels, psx, multi_label=multi_label)
+    if filter_by == 'predicted_neq_given':
+        label_issues_mask = find_predicted_neq_given(labels, psx, multi_label=multi_label)
 
     # Remove label issues if given label == model prediction
     if multi_label:
@@ -478,6 +486,9 @@ def find_label_issues(labels, psx, confident_joint=None, frac_noise=1.0,
         if multi_label and np.all(pred_label == labels[i]) or \
                 not multi_label and pred_label == labels[i]:
             label_issues_mask[i] = False
+
+    if verbose:
+        print('Number of label issues found: {}'.format(sum(label_issues_mask)))
 
     if return_indices_ranked_by is not None:
         er = order_label_issues(label_issues_mask, labels, psx, return_indices_ranked_by)
@@ -491,8 +502,8 @@ def keep_at_least_n_per_class(prune_count_matrix, n, frac_noise=1.0):
     Functionally, increase each column, increases the diagonal term #(y=k,labels=k)
     of prune_count_matrix until it is at least n, distributing the amount
     increased by subtracting uniformly from the rest of the terms in the
-    column. When frac_of_noise = 1.0, return all "confidently" estimated
-    noise indices, otherwise this returns frac_of_noise fraction of all
+    column. When frac_noise = 1.0, return all "confidently" estimated
+    noise indices, otherwise this returns frac_noise fraction of all
     the noise counts, with diagonal terms adjusted to ensure column
     totals are preserved.
 
@@ -507,11 +518,11 @@ def keep_at_least_n_per_class(prune_count_matrix, n, frac_noise=1.0):
         Number of examples to make sure are left in each class.
 
     frac_noise : float
-        When frac_of_noise = 1.0, return all estimated noise indices.
+        When frac_noise = 1.0, return all estimated noise indices.
         Value in range (0, 1] that determines the fraction of noisy example
         indices to return based on the following formula for example class k.
-        frac_of_noise * number_of_mislabeled_examples_in_class_k, or
-        frac_of_noise * inverse_noise_rate_class_k * num_examples_s_equal_k
+        frac_noise * number_of_mislabeled_examples_in_class_k, or
+        frac_noise * inverse_noise_rate_class_k * num_examples_s_equal_k
 
     Returns
     -------
@@ -567,11 +578,11 @@ def reduce_prune_counts(prune_count_matrix, frac_noise=1.0):
         reflect the number of correctly labeled examples.
 
     frac_noise : float
-        When frac_of_noise = 1.0, return all estimated noise indices.
+        When frac_noise = 1.0, return all estimated noise indices.
         Value in range (0, 1] that determines the fraction of noisy example
         indices to return based on the following formula for example class k.
-        frac_of_noise * number_of_mislabeled_examples_in_class_k, or
-        frac_of_noise * inverse_noise_rate_class_k * num_examples_s_equal_k."""
+        frac_noise * number_of_mislabeled_examples_in_class_k, or
+        frac_noise * inverse_noise_rate_class_k * num_examples_s_equal_k."""
 
     new_mat = prune_count_matrix * frac_noise
     np.fill_diagonal(new_mat, prune_count_matrix.diagonal())
@@ -582,7 +593,7 @@ def reduce_prune_counts(prune_count_matrix, frac_noise=1.0):
     return new_mat.astype(int)
 
 
-def find_argmax_not_equal_given_label(labels, psx, multi_label=False):
+def find_predicted_neq_given(labels, psx, multi_label=False):
     """This is the simplest baseline approach. Just consider
     anywhere argmax != labels as a label error.
 
@@ -590,15 +601,19 @@ def find_argmax_not_equal_given_label(labels, psx, multi_label=False):
     ----------
     labels : np.array
         A discrete vector of noisy labels, i.e. some labels may be erroneous.
+        *Format requirements*: for dataset with K classes, labels must be in {0,1,...,K-1}.
 
     psx : np.array (shape (N, K))
-        P(label=k|x) is a matrix with K (noisy) probabilities for each of the
-        N examples x. This is the probability distribution over all K classes,
-        for each example, regarding whether the example has label labels==k P(labels=k|x).
-        psx should have been computed using 3 (or higher) fold cross-validation.
+        P(label=k|x) is a matrix with K model-predicted probabilities.
+        Each row of this matrix corresponds to an example `x` and contains the model-predicted
+        probabilities that `x` belongs to each possible class.
+        The columns must be ordered such that these probabilities correspond to class 0,1,2,...
+        `psx` should have been computed using 3 (or higher) fold cross-validation.
 
     multi_label : bool
         Set to True if labels is multi-label (list of lists, or np.array of np.array)
+        The multi-label setting supports classification tasks where an example has 1 or more labels.
+        Example of a multi-labeled `labels` input: [[0,1], [1], [0,2], [0,1,2], [0], [1], ...]
 
     Returns
     -------
@@ -634,12 +649,14 @@ def find_label_issues_using_argmax_confusion_matrix(
 
     labels : np.array
         A discrete vector of noisy labels, i.e. some labels may be erroneous.
+        *Format requirements*: for dataset with K classes, labels must be in {0,1,...,K-1}.
 
     psx : np.array (shape (N, K))
-        P(label=k|x) is a matrix with K (noisy) probabilities for each of the
-        N examples x. This is the probability distribution over all K classes,
-        for each example, regarding whether the example has label labels==k P(labels=k|x).
-        psx should have been computed using 3 (or higher) fold cross-validation.
+        P(label=k|x) is a matrix with K model-predicted probabilities.
+        Each row of this matrix corresponds to an example `x` and contains the model-predicted
+        probabilities that `x` belongs to each possible class.
+        The columns must be ordered such that these probabilities correspond to class 0,1,2,...
+        `psx` should have been computed using 3 (or higher) fold cross-validation.
 
     calibrate : bool
         Set to True to calibrate the confusion matrix created by pred != given labels.
@@ -650,14 +667,15 @@ def find_label_issues_using_argmax_confusion_matrix(
         Possible Values: 'prune_by_class', 'prune_by_noise_rate', or 'both'.
         Method used for pruning/filtering out the label issues:
         1. 'prune_by_noise_rate': works by removing examples with
-        *high probability* of being mislabeled for every non-diagonal
-        in the prune_counts_matrix (see filter.py).
+        *high probability* of being mislabeled for every non-diagonal in the confident joint
+        (see `prune_counts_matrix` in `filter.py`). These are the examples where (with high
+        confidence) the given label is unlikely to match the predicted label.
         2. 'prune_by_class': works by removing the examples with *smallest
         probability* of belonging to their given class label for every class.
         3. 'both': Finds the examples satisfying (1) AND (2) and
         removes their set conjunction.
         4. 'confident_learning': Find examples that are confidently labeled as a class
-        that'labels different from their given label while computing the confident joint.
+        that's different from their given label while computing the confident joint.
 
     Returns
     -------

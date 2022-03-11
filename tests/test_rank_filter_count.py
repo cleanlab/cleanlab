@@ -150,7 +150,7 @@ def test_pruning_both(n_jobs):
 
 @pytest.mark.parametrize("filter_by", ['prune_by_noise_rate', 'prune_by_class', 'both',
                                           'confident_learning',
-                                          'argmax_not_equal_given_label'])
+                                          'predicted_neq_given'])
 def test_prune_on_small_data(filter_by):
     data = make_data(sizes=[3, 3, 3])
     noise_idx = filter.find_label_issues(labels=data['labels'], psx=data['psx'],
@@ -292,7 +292,8 @@ def test_pruning_order_method():
     results = []
     for method in order_methods:
         results.append(
-            filter.find_label_issues(labels=data['labels'], psx=data['psx'], return_indices_ranked_by=method))
+            filter.find_label_issues(
+                labels=data['labels'], psx=data['psx'], return_indices_ranked_by=method))
     assert (len(results[0]) == len(results[1]))
 
 
@@ -303,8 +304,10 @@ def test_find_label_issues_multi_label(multi_label, filter_by):
     """Note: argmax_not_equal method is not compatible with multi_label == True"""
 
     s_ml = [[z, data['y_train'][i]] for i, z in enumerate(data['labels'])]
-    noise_idx = filter.find_label_issues(labels=s_ml if multi_label else data['labels'], psx=data['psx'],
-                                         filter_by=filter_by, multi_label=multi_label)
+    noise_idx = filter.find_label_issues(
+        labels=s_ml if multi_label else data['labels'], psx=data['psx'],
+        filter_by=filter_by, multi_label=multi_label,
+    )
     acc = np.mean((data['labels'] != data['y_train']) == noise_idx)
     # Make sure cleanlab does reasonably well finding the errors.
     # acc is the accuracy of detecting a label error.
@@ -323,7 +326,7 @@ def test_confident_learning_filter():
     assert (len(indices) == (np.sum(cj) - np.trace(cj)))
 
 
-def test_argmax_not_equal_given_label_filter():
+def test_predicted_neq_given_filter():
     psx = np.array([
         [0.9, 0.1, 0],
         [0.6, 0.2, 0.2],
@@ -332,10 +335,10 @@ def test_argmax_not_equal_given_label_filter():
         [0.4, 0.5, 0.1],
     ])
     s = np.array([0, 0, 1, 1, 2])
-    label_issues = filter.find_argmax_not_equal_given_label(s, psx)
+    label_issues = filter.find_predicted_neq_given(s, psx)
     assert (all(label_issues == [False, False, True, True, True]))
 
-    label_issues = filter.find_argmax_not_equal_given_label(s_, psx_)
+    label_issues = filter.find_predicted_neq_given(s_, psx_)
     assert (all(label_issues == np.array([False, False, True, False,
                                           False, False, False, False, False, False])))
 
@@ -351,10 +354,10 @@ def test_find_label_issues_using_argmax_confusion_matrix(calibrate, filter_by):
 
 
 def test_find_label_issue_filters_match_origin_functions():
-    label_issues = filter.find_label_issues(s_, psx_, filter_by='argmax_not_equal_given_label')
-    label_issues2 = filter.find_argmax_not_equal_given_label(s_, psx_)
+    label_issues = filter.find_label_issues(s_, psx_, filter_by='predicted_neq_given')
+    label_issues2 = filter.find_predicted_neq_given(s_, psx_)
     assert (all(label_issues == label_issues2))
     label_issues3 = filter.find_label_issues(s_, psx_,
                                              filter_by='confident_learning')
-    label_issues4 = filter.find_argmax_not_equal_given_label(s_, psx_)
+    label_issues4 = filter.find_predicted_neq_given(s_, psx_)
     assert (all(label_issues3 == label_issues4))

@@ -17,7 +17,7 @@
 from __future__ import print_function, absolute_import, division, unicode_literals, with_statement
 
 
-from cleanlab import latent_algebra, count
+from cleanlab import latent_algebra
 import numpy as np
 import pytest
 

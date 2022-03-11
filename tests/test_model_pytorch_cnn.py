@@ -11,13 +11,13 @@ from __future__ import (
 from cleanlab.util import VersionWarning
 
 python_version = VersionWarning(
-    warning_str="pyTorch supports Python version 3.5, 3.6, 3.7, 3.8",
-    list_of_compatible_versions=[3.5, 3.6, 3.7, 3.8, ],
+    warning_str="pyTorch supports Python version 3.5, 3.6, 3.7, 3.8, 3.9",
+    list_of_compatible_versions=[3.5, 3.6, 3.7, 3.8, 3.9],
 )
 
 
 if python_version.is_compatible():
-    from cleanlab.models.mnist_pytorch import (
+    from cleanlab.example_models.mnist_pytorch import (
         CNN, SKLEARN_DIGITS_TEST_SIZE,
         SKLEARN_DIGITS_TRAIN_SIZE,
     )

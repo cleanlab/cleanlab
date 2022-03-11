@@ -294,7 +294,7 @@ def onehot2int(onehot_matrix):
 
 
 def estimate_pu_f1(s, prob_s_eq_1):
-    """Computes Claesen'labels estimate of f1 in the pulearning setting.
+    """Computes Claesen's estimate of f1 in the pulearning setting.
 
     Parameters
     ----------
@@ -306,7 +306,7 @@ def estimate_pu_f1(s, prob_s_eq_1):
 
     Output (float)
     ------
-    Claesen'labels estimate for f1 in the pulearning setting."""
+    Claesen's estimate for f1 in the pulearning setting."""
 
     pred = np.asarray(prob_s_eq_1) >= 0.5
     true_positives = sum((np.asarray(s) == 1) & (np.asarray(pred) == 1))
@@ -333,8 +333,8 @@ def confusion_matrix(true, pred):
       Assumes labels and y contains the same distinct set of labels.
 
     labels : np.array 1d
-      Contains labels.
-      Assumes labels and y contains the same distinct set of labels.
+      A discrete vector of noisy labels, i.e. some labels may be erroneous.
+      *Format requirements*: for dataset with K classes, labels must be in {0,1,...,K-1}.
 
     Returns
     -------

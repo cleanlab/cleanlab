@@ -80,7 +80,7 @@ def create_cooking_dataset(data_dir = None):
 if python_version.is_compatible():
     from fastText import train_supervised
     import cleanlab
-    from cleanlab.models.fasttext import FastTextClassifier
+    from cleanlab.example_models.fasttext import FastTextClassifier
     from sklearn.metrics import accuracy_score
     import numpy as np
     

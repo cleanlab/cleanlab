@@ -35,7 +35,7 @@ def noise_matrix_is_valid(noise_matrix, py, verbose=False):
     # Number of classes
     K = len(py)
 
-    # Let'labels assume some number of training examples for code readability,
+    # let's assume some number of training examples for code readability,
     # but it doesn't matter what we choose as its not actually used.
     N = float(10000)
 
@@ -76,7 +76,7 @@ def noise_matrix_is_valid(noise_matrix, py, verbose=False):
 
 
 def generate_noisy_labels(y, noise_matrix, verbose=False):
-    """Generates noisy labels labels (shape (N, 1)) from perfect labels y,
+    """Generates noisy labels (shape (N, 1)) from perfect labels y,
     'exactly' yielding the provided noise_matrix between labels and y.
 
     Below we provide a for loop implementation of what this function does.
@@ -132,7 +132,7 @@ def generate_noisy_labels(y, noise_matrix, verbose=False):
     # Generate labels
     s = np.array(y)
     for k in range(K):  # Iterate over true class y == k
-        # Get the noisy labels labels that have non-zero counts
+        # Get the noisy labels that have non-zero counts
         s_labels = np.where(count_joint[:, k] != 0)[0]
         # Find out how many of each noisy labels label we need to flip to
         label_counts = count_joint[s_labels, k]
