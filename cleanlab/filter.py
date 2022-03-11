@@ -23,8 +23,7 @@
 # on-sharing-large-arrays-when-using-pythons-multiprocessing.html
 
 
-from __future__ import (
-    print_function, absolute_import, division, unicode_literals, with_statement)
+
 
 from sklearn.metrics import confusion_matrix
 from sklearn.preprocessing import MultiLabelBinarizer
@@ -258,8 +257,7 @@ def find_label_issues(labels, psx, confident_joint=None, filter_by='prune_by_noi
     ----------
 
     labels : np.array
-      A discrete vector of noisy labels, i.e. some labels may be erroneous. "labels" denotes
-      the noisy label instead of \\tilde(y), for ASCII encoding reasons.
+      A discrete vector of noisy labels, i.e. some labels may be erroneous.
       *Format requirements*: for dataset with K classes, labels must be in {0,1,...,K-1}.
 
     psx : np.array (shape (N, K))

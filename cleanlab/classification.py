@@ -79,8 +79,7 @@ Note
 """
 
 
-from __future__ import (
-    print_function, absolute_import, division, unicode_literals, with_statement)
+
 
 from sklearn.linear_model import LogisticRegression as LogReg
 from sklearn.metrics import accuracy_score
@@ -122,10 +121,10 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
     for their training label.
 
     Given any classifier having the predict_proba() method, an input feature
-    matrix, `X`, and a discrete vector of noisy labels, `labels`, Confident Learning estimates the classifications that would
-    be obtained if the hidden, true labels, y, had instead been provided to
-    the classifier during training. "labels" denotes the noisy label instead of
-    \\tilde(y), for ASCII encoding reasons.
+    matrix, `X`, and a discrete vector of noisy labels, `labels`, Confident Learning estimates the
+    classifications that would be obtained if the hidden, true labels, y, had instead been provided
+    to the classifier during training. "labels" denotes the noisy label instead of
+    \\tilde(y) (used in confident learning paper), for ASCII encoding reasons.
 
     Parameters
     ----------
@@ -394,11 +393,9 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
         x_cleaned = X[x_mask]
         labels_cleaned = labels[x_mask]
 
-        # Check if sample_weight in clf.fit(). Compatible with Python 2/3.
+        # Check if sample_weight in clf.fit(). Not compatible with Python 2.
         if hasattr(inspect, 'getfullargspec') and \
-                'sample_weight' in inspect.getfullargspec(self.clf.fit).args \
-                or hasattr(inspect, 'getargspec') and \
-                'sample_weight' in inspect.getargspec(self.clf.fit).args:
+                'sample_weight' in inspect.getfullargspec(self.clf.fit).args:
             # Re-weight examples in the loss function for the final fitting
             # labels.t. the "apparent" original number of examples in each class
             # is preserved, even though the pruned sets may differ.
@@ -452,11 +449,9 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
 
         if hasattr(self.clf, 'score'):
 
-            # Check if sample_weight in clf.score(). Compatible with Python 2/3.
+            # Check if sample_weight in clf.score(). Not compatible with Python 2.
             if hasattr(inspect, 'getfullargspec') and 'sample_weight' in \
-                    inspect.getfullargspec(self.clf.score).args or \
-                    hasattr(inspect, 'getargspec') and \
-                    'sample_weight' in inspect.getargspec(self.clf.score).args:
+                    inspect.getfullargspec(self.clf.score).args:
                 return self.clf.score(X, y, sample_weight=sample_weight)
             else:
                 return self.clf.score(X, y)

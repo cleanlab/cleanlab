@@ -24,8 +24,6 @@
 # mathematical equation having a closed, exact form. If the inputs are
 # inexact, the error will of course propagate.
 
-from __future__ import (
-    print_function, absolute_import, division, unicode_literals, with_statement)
 import numpy as np
 
 from cleanlab.util import value_counts, clip_values, clip_noise_rates
@@ -264,7 +262,7 @@ def compute_py(ps, noise_matrix, inverse_noise_matrix, py_method='cnt',
         err += ' should be in [cnt, eqn, marginal, marginal_ps]'
         raise ValueError(err)
 
-    # Clip py (0,1), .labels.t. no class should have prob 0, hence 1e-5
+    # Clip py (0,1), s.t. no class should have prob 0, hence 1e-5
     py = clip_values(py, low=1e-5, high=1.0, new_sum=1.0)
     return py
 

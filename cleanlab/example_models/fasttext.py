@@ -14,11 +14,6 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
-# Python 2 and 3 compatibility
-from __future__ import (
-    print_function, absolute_import, division, unicode_literals, with_statement,
-)
-
 # Make sure python version is compatible with fasttext
 from cleanlab.util import VersionWarning
 

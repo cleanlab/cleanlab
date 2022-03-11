@@ -28,9 +28,6 @@
 #     counting a confident subset of the joint counts of label errors.
 
 
-from __future__ import (
-    print_function, absolute_import, division, unicode_literals, with_statement
-)
 from sklearn.linear_model import LogisticRegression as LogReg
 from sklearn.model_selection import StratifiedKFold
 from sklearn.metrics import confusion_matrix

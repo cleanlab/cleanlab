@@ -19,9 +19,6 @@
 # 
 # #### Contains ancillarly helper functions used throughout this package.
 
-from __future__ import (
-    print_function, absolute_import, division, unicode_literals, with_statement
-)
 import numpy as np
 from sklearn.utils import check_X_y
 
