@@ -277,7 +277,7 @@ class CNN(BaseEstimator):  # Inherits sklearn classifier
 
         # Use provided labels if not None o.w. use MNIST dataset training labels
         if train_labels is not None:
-            # Create sparse tensor of train_labels with (-1)labels for labels not
+            # Create sparse tensor of train_labels with (-1)s for labels not
             # in train_idx. We avoid train_data[idx] because train_data may
             # very large, i.e. ImageNet
             sparse_labels = np.zeros(
