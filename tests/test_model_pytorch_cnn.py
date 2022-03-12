@@ -1,12 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# Python 2 and 3 compatibility
-from __future__ import (
-    print_function, absolute_import, division,
-    unicode_literals, with_statement,
-)
-
 # Make sure python version is compatible with pyTorch
 from cleanlab.util import VersionWarning
 
@@ -69,11 +63,11 @@ def test_loaders(
             np.random.seed(seed)
             # Single epoch for cross-validation (already pre-trained)
             cnn.epochs = 1
-            cj, psx = estimate_confident_joint_and_cv_pred_proba(
+            cj, pred_probs = estimate_confident_joint_and_cv_pred_proba(
                 X, y, cnn, cv_n_folds=2)
             est_py, est_nm, est_inv = estimate_latent(cj, y)
             # algorithmic identification of label issues
-            err_idx = cleanlab.filter.find_label_issues(y, psx, est_inv, filter_by=filter_by)
+            err_idx = cleanlab.filter.find_label_issues(y, pred_probs, est_inv, filter_by=filter_by)
             assert err_idx is not None
 
             # Get prediction on loader set.

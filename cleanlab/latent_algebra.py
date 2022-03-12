@@ -143,7 +143,7 @@ def compute_noise_matrix_from_inverse(ps, inverse_noise_matrix, py=None):
         A conditional probability matrix of the form P(y=k_y|labels=k_s) representing
         the estimated fraction observed examples in each class k_s, that are
         mislabeled examples from every other class k_y. If None, the
-        inverse_noise_matrix will be computed from psx and labels.
+        inverse_noise_matrix will be computed from pred_probs and labels.
         Assumes columns of inverse_noise_matrix sum to 1.
 
     ps : np.array (shape (K, 1))
@@ -217,7 +217,7 @@ def compute_py(ps, noise_matrix, inverse_noise_matrix, py_method='cnt',
         A conditional probability matrix of the form P(y=k_y|labels=k_s) representing
         the estimated fraction observed examples in each class k_s, that are
         mislabeled examples from every other class k_y. If None, the
-        inverse_noise_matrix will be computed from psx and labels.
+        inverse_noise_matrix will be computed from pred_probs and labels.
         Assumes columns of inverse_noise_matrix sum to 1.
 
     py_method : str (Options: ["cnt", "eqn", "marginal", "marginal_ps"])
@@ -267,8 +267,8 @@ def compute_py(ps, noise_matrix, inverse_noise_matrix, py_method='cnt',
     return py
 
 
-def compute_pyx(psx, noise_matrix, inverse_noise_matrix):
-    """Compute pyx := P(y=k|x) from psx := P(labels=k|x), and the noise_matrix and
+def compute_pyx(pred_probs, noise_matrix, inverse_noise_matrix):
+    """Compute pyx := P(y=k|x) from pred_probs := P(labels=k|x), and the noise_matrix and
     inverse noise matrix.
 
     This method is ROBUST - meaning it works well even when the
@@ -278,12 +278,12 @@ def compute_pyx(psx, noise_matrix, inverse_noise_matrix):
     Parameters
     ----------
 
-    psx : np.array (shape (N, K))
+    pred_probs : np.array (shape (N, K))
         P(label=k|x) is a matrix with K model-predicted probabilities.
         Each row of this matrix corresponds to an example `x` and contains the model-predicted
         probabilities that `x` belongs to each possible class.
         The columns must be ordered such that these probabilities correspond to class 0,1,2,...
-        `psx` should have been computed using 3 (or higher) fold cross-validation.
+        `pred_probs` should have been computed using 3 (or higher) fold cross-validation.
 
     noise_matrix : np.array of shape (K, K), K = number of classes
         A conditional probability matrix of the form P(labels=k_s|y=k_y) containing
@@ -294,7 +294,7 @@ def compute_pyx(psx, noise_matrix, inverse_noise_matrix):
         A conditional probability matrix of the form P(y=k_y|labels=k_s) representing
         the estimated fraction observed examples in each class k_s, that are
         mislabeled examples from every other class k_y. If None, the
-        inverse_noise_matrix will be computed from psx and labels.
+        inverse_noise_matrix will be computed from pred_probs and labels.
         Assumes columns of inverse_noise_matrix sum to 1.
 
     Returns
@@ -305,14 +305,14 @@ def compute_pyx(psx, noise_matrix, inverse_noise_matrix):
         Each row of this matrix corresponds to an example `x` and contains the model-predicted
         probabilities that `x` belongs to each possible class.
         The columns must be ordered such that these probabilities correspond to class 0,1,2,...
-        `psx` should have been computed using 3 (or higher) fold cross-validation."""
+        `pred_probs` should have been computed using 3 (or higher) fold cross-validation."""
 
-    if len(np.shape(psx)) != 2:
+    if len(np.shape(pred_probs)) != 2:
         raise ValueError(
-            "Input parameter np.array 'psx' has shape " + str(np.shape(psx)) +
+            "Input parameter np.array 'pred_probs' has shape " + str(np.shape(pred_probs)) +
             ", but shape should be (N, K)")
 
-    pyx = psx * inverse_noise_matrix.diagonal() / noise_matrix.diagonal()
+    pyx = pred_probs * inverse_noise_matrix.diagonal() / noise_matrix.diagonal()
     # Make sure valid probabilities that sum to 1.0
     return np.apply_along_axis(
         func1d=clip_values,

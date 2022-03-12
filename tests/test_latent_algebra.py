@@ -14,9 +14,6 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
-from __future__ import print_function, absolute_import, division, unicode_literals, with_statement
-
-
 from cleanlab import latent_algebra
 import numpy as np
 import pytest
@@ -107,7 +104,7 @@ def test_compute_py_marginal_ps():
 
 
 def test_pyx():
-    psx = np.array([
+    pred_probs = np.array([
         [0.1, 0.3, 0.6],
         [0.1, 0.0, 0.9],
         [0.1, 0.0, 0.9],
@@ -115,16 +112,16 @@ def test_pyx():
         [0.1, 0.8, 0.1],
     ])
     ps, py, inv = test_latent_py_ps_inv()
-    pyx = latent_algebra.compute_pyx(psx, nm, inv)
+    pyx = latent_algebra.compute_pyx(pred_probs, nm, inv)
     assert(np.all(np.sum(pyx, axis = 1) - 1 < 1e-4))
 
 
 def test_pyx_error():  
-    psx = np.array([0.1, 0.3, 0.6])
+    pred_probs = np.array([0.1, 0.3, 0.6])
     ps, py, inv = test_latent_py_ps_inv()
     try:
-        pyx = latent_algebra.compute_pyx(psx, nm, inv)
+        pyx = latent_algebra.compute_pyx(pred_probs, nm, inv)
     except ValueError as e:
         assert('should be (N, K)' in str(e))
     with pytest.raises(ValueError) as e:
-        pyx = latent_algebra.compute_pyx(psx, nm, inv)
+        pyx = latent_algebra.compute_pyx(pred_probs, nm, inv)

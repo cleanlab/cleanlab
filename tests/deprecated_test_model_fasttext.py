@@ -1,9 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# Python 2 and 3 compatibility
-from __future__ import print_function, absolute_import, division, unicode_literals, with_statement
-
 # Make sure python version is compatible with fasttext
 from cleanlab.util import VersionWarning
 python_version = VersionWarning(
@@ -117,8 +114,8 @@ if python_version.is_compatible():
 def test_predict_proba_masking():
     
     if python_version.is_compatible():
-        psx = ftc.predict_proba(X = [500, 1000, 4999])
-        assert(psx.shape[0] == 3)
+        pred_probs = ftc.predict_proba(X = [500, 1000, 4999])
+        assert(pred_probs.shape[0] == 3)
     assert(True)
 
 
@@ -199,7 +196,7 @@ def test_return_labels():
     if python_version.is_compatible():
         # Get predictions, probabilities and labels
         pred, labels1 = ftc.predict(train_data = False, return_labels = True)
-        psx, labels2 = ftc.predict_proba(train_data = False, return_labels = True)
+        pred_probs, labels2 = ftc.predict_proba(train_data = False, return_labels = True)
         assert(len(pred) == len(labels1))
         assert(all(labels1 == labels2))
     assert(True)
@@ -240,14 +237,14 @@ def test_cleanlab_with_fasttext():
         # Map labels
         s_train = np.array([label2num[z] for z in y_train_top])
         # Compute confident joint and predicted probability matrix for each example
-        cj, psx = cleanlab.count.estimate_confident_joint_and_cv_pred_proba(
+        cj, pred_probs = cleanlab.count.estimate_confident_joint_and_cv_pred_proba(
             X = np.array(X_train_idx), 
             labels= s_train,
             clf = ftc, 
             cv_n_folds=5,
         )
         # Find inidices of errors
-        noise_idx = cleanlab.filter.find_label_issues(s_train, psx, confident_joint=cj)
+        noise_idx = cleanlab.filter.find_label_issues(s_train, pred_probs, confident_joint=cj)
         # Extract errors. This works by:
         # (1) masking the training examples we used with the noise indices identified.
         # (2) we find the actual train_data corresponding to those indices.

@@ -26,7 +26,7 @@ import numpy as np
 def order_label_issues(
     label_issues_mask,
     labels,
-    psx,
+    pred_probs,
     rank_by="normalized_margin",
 ):
     """Sorts label issues by normalized margin.
@@ -42,17 +42,17 @@ def order_label_issues(
       A discrete vector of noisy labels, i.e. some labels may be erroneous.
       *Format requirements*: for dataset with K classes, labels must be in {0,1,...,K-1}.
 
-    psx : np.array (shape (N, K))
+    pred_probs : np.array (shape (N, K))
       P(label=k|x) is a matrix with K model-predicted probabilities.
       Each row of this matrix corresponds to an example x and contains the model-predicted
       probabilities that x belongs to each possible class.
       The columns must be ordered such that these probabilities correspond to class 0,1,2,...
-      `psx` should have been computed using 3 (or higher) fold cross-validation.
+      `pred_probs` should have been computed using 3 (or higher) fold cross-validation.
 
-    rank_by : str ['normalized_margin', 'prob_given_label']
+    rank_by : str ['normalized_margin', 'self_confidence']
       Method to order label error indices (instead of a bool mask), either:
         'normalized_margin' := normalized margin (p(label = k) - max(p(label != k)))
-        'prob_given_label' := [psx[i][labels[i]] for i in label_issues_idx]
+        'self_confidence' := [pred_probs[i][labels[i]] for i in label_issues_idx]
 
     Returns
     -------
@@ -60,33 +60,28 @@ def order_label_issues(
         Return the index integers of the label issues, ordered by
         the normalized margin."""
 
-    assert (len(psx) == len(labels))
+    assert (len(pred_probs) == len(labels))
     # Convert bool mask to index mask
     label_issues_idx = np.arange(len(labels))[label_issues_mask]
-    # self-confidence is the holdout probability that an example belongs to its given class label
-    self_confidence = np.array(
-        # np.mean is used so that this works for multi-labels (list of lists)
-        [np.mean(psx[i][labels[i]]) for i in label_issues_idx]
-    )
-    if rank_by == "prob_given_label":
-        return label_issues_idx[np.argsort(self_confidence)]
+    pred_probs_er, labels_er = pred_probs[label_issues_mask], labels[label_issues_mask]
+    if rank_by == "self_confidence":
+        label_quality_scores = get_self_confidence_for_each_label(labels_er, pred_probs_er)
     elif rank_by == "normalized_margin":
-        psx_er, labels_er = psx[label_issues_mask], labels[label_issues_mask]
-        margin = get_normalized_margin_for_each_label(labels_er, psx_er)
-        return label_issues_idx[np.argsort(margin)]
+        label_quality_scores = get_normalized_margin_for_each_label(labels_er, pred_probs_er)
     else:
         raise ValueError(
-            'rank_by must be "prob_given_label" or "normalized_margin", '
+            'rank_by must be "self_confidence" or "normalized_margin", '
             'but is "' + rank_by + '".'
         )
+    return label_issues_idx[np.argsort(label_quality_scores)]
 
 
 def get_self_confidence_for_each_label(
     labels,
-    psx,
+    pred_probs,
 ):
-    """Returns the "self-confidence" for every example in the dataset associated psx and labels.
-    The self-confidence is the holdout probability that an example belongs to
+    """Returns the "self-confidence" for every example in the dataset associated pred_probs
+    and labels. The self-confidence is the holdout probability that an example belongs to
     its given class label.
 
     Score is between 0 and 1.
@@ -100,28 +95,28 @@ def get_self_confidence_for_each_label(
       A discrete vector of noisy labels, i.e. some labels may be erroneous.
       *Format requirements*: for dataset with K classes, labels must be in {0,1,...,K-1}.
 
-    psx : np.array (shape (N, K))
+    pred_probs : np.array (shape (N, K))
       P(label=k|x) is a matrix with K model-predicted probabilities.
       Each row of this matrix corresponds to an example x and contains the model-predicted
       probabilities that x belongs to each possible class.
       The columns must be ordered such that these probabilities correspond to class 0,1,2,...
-      `psx` should have been computed using 3 (or higher) fold cross-validation.
+      `pred_probs` should have been computed using 3 (or higher) fold cross-validation.
 
     Returns
     -------
       self_confidence : np.array (float)
-        Return the holdout probability that each example in psx belongs to its
-        label. Assumes psx is computed holdout/out-of-sample."""
+        Return the holdout probability that each example in pred_probs belongs to its
+        label. Assumes pred_probs is computed holdout/out-of-sample."""
 
     # np.mean is used so that this works for multi-labels (list of lists)
-    return np.array([np.mean(psx[i, l]) for i, l in enumerate(labels)])
+    return np.array([np.mean(pred_probs[i, l]) for i, l in enumerate(labels)])
 
 
 def get_normalized_margin_for_each_label(
     labels,
-    psx,
+    pred_probs,
 ):
-    """Returns the "normalized margin" for every example associated psx and
+    """Returns the "normalized margin" for every example associated pred_probs and
     labels.
     The normalized margin is (p(label = k) - max(p(label != k))), i.e. the probability
     of the given label minus the probability of the argmax label that is not
@@ -140,23 +135,23 @@ def get_normalized_margin_for_each_label(
       A discrete vector of noisy labels, i.e. some labels may be erroneous.
       *Format requirements*: for dataset with K classes, labels must be in {0,1,...,K-1}.
 
-    psx : np.array (shape (N, K))
+    pred_probs : np.array (shape (N, K))
       P(label=k|x) is a matrix with K model-predicted probabilities.
       Each row of this matrix corresponds to an example x and contains the model-predicted
       probabilities that x belongs to each possible class.
       The columns must be ordered such that these probabilities correspond to class 0,1,2,...
-      `psx` should have been computed using 3 (or higher) fold cross-validation.
+      `pred_probs` should have been computed using 3 (or higher) fold cross-validation.
 
     Returns
     -------
       normalized_margin : np.array (float)
         Return a score (between 0 and 1) for each example of its likelihood of
-        being correctly labeled. Assumes psx is computed holdout/out-of-sample.
+        being correctly labeled. Assumes pred_probs is computed holdout/out-of-sample.
         normalized_margin = prob_label - max_prob_not_label"""
 
-    self_confidence = get_self_confidence_for_each_label(labels, psx)
+    self_confidence = get_self_confidence_for_each_label(labels, pred_probs)
     max_prob_not_label = np.array(
-        [max(np.delete(psx[i], l, -1)) for i, l in enumerate(labels)]
+        [max(np.delete(pred_probs[i], l, -1)) for i, l in enumerate(labels)]
     )
     margin = (self_confidence - max_prob_not_label + 1) / 2
     return margin

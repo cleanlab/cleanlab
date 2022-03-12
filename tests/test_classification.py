@@ -14,12 +14,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
-# Python 2 and 3 compatibility
-from __future__ import print_function, absolute_import, division, unicode_literals, with_statement
-
-
 import numpy as np
-from cleanlab import classification
 from cleanlab.classification import LearningWithNoisyLabels
 from cleanlab.noise_generation import generate_noise_matrix_from_trace
 from cleanlab.noise_generation import generate_noisy_labels
@@ -30,13 +25,11 @@ import scipy
 import warnings
 import pytest
 
-
 # Ignore this warning. getargspec is necessary to support old versions.
 ARGSPEC_WARNING = "DeprecationWarning: inspect.getargspec() is deprecated" \
                   " since Python 3.0, use inspect.signature() or" \
                   " inspect.getfullargspec()"
 warnings.filterwarnings("ignore", message=ARGSPEC_WARNING)
-
 
 SEED = 1
 
@@ -58,7 +51,8 @@ def make_data(sparse,
 
     for idx in range(K):
         data.append(np.random.multivariate_normal(mean=means[idx], cov=covs[idx], size=sizes[idx]))
-        test_data.append(np.random.multivariate_normal(mean=means[idx], cov=covs[idx], size=sizes[idx]))
+        test_data.append(
+            np.random.multivariate_normal(mean=means[idx], cov=covs[idx], size=sizes[idx]))
         labels.append(np.array([idx for i in range(sizes[idx])]))
         test_labels.append(np.array([idx for i in range(sizes[idx])]))
     X_train = np.vstack(data)
@@ -350,32 +344,40 @@ def test_no_fit_sample_weight(sparse):
 
     n = np.shape(data['y_test'])[0]
     m = len(np.unique(data['y_test']))
-    psx = np.zeros(shape=(n, m))
+    pred_probs = np.zeros(shape=(n, m))
     lnl = LearningWithNoisyLabels(clf=Struct())
-    lnl.fit(data['X_train'], data['y_train'], psx=psx, noise_matrix=data['noise_matrix'])
+    lnl.fit(data['X_train'], data['y_train'], pred_probs=pred_probs, noise_matrix=data['noise_matrix'])
     # If we make it here, without any error:
     assert (True)
 
 
 @pytest.mark.parametrize("sparse", [True, False])
-def test_fit_psx(sparse):
+def test_fit_pred_probs(sparse):
     data = SPARSE_DATA if sparse else DATA
     from cleanlab.count import estimate_cv_predicted_probabilities
     lnl = LearningWithNoisyLabels()
-    psx = estimate_cv_predicted_probabilities(
+    pred_probs = estimate_cv_predicted_probabilities(
         X=data['X_train'],
         labels=data['y_train'],
     )
     lnl.fit(
         X=data['X_train'],
         labels=data['y_train'],
-        psx=psx
+        pred_probs=pred_probs
     )
-    score_with_psx = lnl.score(data['X_test'], data['y_test'])
+    score_with_pred_probs = lnl.score(data['X_test'], data['y_test'])
     lnl = LearningWithNoisyLabels()
     lnl.fit(
         X=data['X_train'],
         labels=data['y_train'],
     )
-    score_no_psx = lnl.score(data['X_test'], data['y_test'])
-    assert (abs(score_with_psx - score_no_psx) < 0.01)
+    score_no_pred_probs = lnl.score(data['X_test'], data['y_test'])
+    assert (abs(score_with_pred_probs - score_no_pred_probs) < 0.01)
+
+
+@pytest.mark.parametrize("sparse", [True, False])
+def test_get_label_issues(sparse):
+    data = SPARSE_DATA if sparse else DATA
+    lnl = LearningWithNoisyLabels(n_jobs=1)
+    lnl.fit(X=data['X_train'], labels=data['y_train'], )
+    assert all((lnl.get_label_issues() == lnl.label_issues_mask))

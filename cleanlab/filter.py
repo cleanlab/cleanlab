@@ -52,7 +52,7 @@ except ImportError as e:
     w = '''To see estimated completion times for methods in cleanlab.filter, "pip install tqdm".'''
     warnings.warn(w)
 
-# Leave at least 1 example in each class after pruning, regardless if noise estimates are larger.
+# Leave at least 1 example in each class after filtering/pruning, even if noise estimates are larger
 MIN_NUM_PER_CLASS = 1
 
 # For python 2/3 compatibility, define pool context manager
@@ -89,8 +89,8 @@ def _init(
         __label_counts,
         __prune_count_matrix,
         __pcm_shape,
-        __psx,
-        __psx_shape,
+        __pred_probs,
+        __pred_probs_shape,
         __multi_label,
 ):  # pragma: no cover
     """Shares memory objects across child processes.
@@ -100,8 +100,8 @@ def _init(
     mp_params['label_counts'] = __label_counts
     mp_params['prune_count_matrix'] = __prune_count_matrix
     mp_params['pcm_shape'] = __pcm_shape
-    mp_params['psx'] = __psx
-    mp_params['psx_shape'] = __psx_shape
+    mp_params['pred_probs'] = __pred_probs
+    mp_params['pred_probs_shape'] = __pred_probs_shape
     mp_params['multi_label'] = __multi_label
 
 
@@ -114,20 +114,20 @@ def _get_shared_data():  # pragma: no cover
         mp_arr=mp_params['prune_count_matrix'],
         shape=mp_params['pcm_shape'],
     )
-    psx = _to_np_array(
-        mp_arr=mp_params['psx'],
+    pred_probs = _to_np_array(
+        mp_arr=mp_params['pred_probs'],
         dtype='float32',
-        shape=mp_params['psx_shape'],
+        shape=mp_params['pred_probs_shape'],
     )
     multi_label = mp_params['multi_label']
     if multi_label:  # Shared data is passed as one-hot encoded matrix
         labels = onehot2int(_to_np_array(
             mp_arr=mp_params['labels'],
-            shape=(psx.shape[0], psx.shape[1]),
+            shape=(pred_probs.shape[0], pred_probs.shape[1]),
         ))
     else:
         labels = _to_np_array(mp_params['labels'])
-    return labels, label_counts, prune_count_matrix, psx, multi_label
+    return labels, label_counts, prune_count_matrix, pred_probs, multi_label
 
 
 def _prune_by_class(k, args=None):
@@ -142,16 +142,16 @@ def _prune_by_class(k, args=None):
       The class of interest."""
 
     if args:  # Single processing - params are passed in
-        labels, label_counts, prune_count_matrix, psx, multi_label = args
+        labels, label_counts, prune_count_matrix, pred_probs, multi_label = args
     else:  # Multiprocessing - data is shared across sub-processes
-        labels, label_counts, prune_count_matrix, psx, multi_label = _get_shared_data()
+        labels, label_counts, prune_count_matrix, pred_probs, multi_label = _get_shared_data()
 
     if label_counts[k] > MIN_NUM_PER_CLASS:  # No prune if not MIN_NUM_PER_CLASS
         num_issues = label_counts[k] - prune_count_matrix[k][k]
         # Get return_indices_ranked_by of the smallest prob of class k for examples with noisy label k
         label_filter = np.array(
             [k in lst for lst in labels]) if multi_label else labels == k
-        class_probs = psx[:, k]
+        class_probs = pred_probs[:, k]
         rank = np.partition(class_probs[label_filter], num_issues)[num_issues]
         return label_filter & (class_probs < rank)
     else:
@@ -171,12 +171,12 @@ def _prune_by_count(k, args=None):
       The true, hidden label class of interest."""
 
     if args:  # Single processing - params are passed in
-        labels, label_counts, prune_count_matrix, psx, multi_label = args
+        labels, label_counts, prune_count_matrix, pred_probs, multi_label = args
     else:  # Multiprocessing - data is shared across sub-processes
-        labels, label_counts, prune_count_matrix, psx, multi_label = _get_shared_data()
+        labels, label_counts, prune_count_matrix, pred_probs, multi_label = _get_shared_data()
 
-    label_issues_mask = np.zeros(len(psx), dtype=bool)
-    psx_k = psx[:, k]
+    label_issues_mask = np.zeros(len(pred_probs), dtype=bool)
+    pred_probs_k = pred_probs[:, k]
     K = len(label_counts)
     if label_counts[k] <= MIN_NUM_PER_CLASS:  # No prune if not MIN_NUM_PER_CLASS
         return np.zeros(len(labels), dtype=bool)
@@ -186,7 +186,7 @@ def _prune_by_count(k, args=None):
         if k != j and num2prune > 0:
             # num2prune'th largest p(true class k) - p(noisy class k)
             # for x with true label j
-            margin = psx[:, j] - psx_k
+            margin = pred_probs[:, j] - pred_probs_k
             label_filter = np.array(
                 [k in lst for lst in labels]
             ) if multi_label else labels == k
@@ -195,14 +195,14 @@ def _prune_by_count(k, args=None):
     return label_issues_mask
 
 
-def _self_confidence(args, _psx):  # pragma: no cover
+def _self_confidence(args, _pred_probs):  # pragma: no cover
     """multiprocessing Helper function for find_label_issues() that assumes
-    global psx and computes the self confidence (prob of given label)
-    for an example (row in psx) given the example index idx
+    global pred_probs and computes the self confidence (prob of given label)
+    for an example (row in pred_probs) given the example index idx
     and its label l.
-    np.mean(psx[]) enables this code to work for multi-class l."""
+    np.mean(pred_probs[]) enables this code to work for multi-class l."""
     (idx, l) = args
-    return np.mean(_psx[idx, l])
+    return np.mean(_pred_probs[idx, l])
 
 
 def multiclass_crossval_predict(labels, pyx):
@@ -223,7 +223,7 @@ def multiclass_crossval_predict(labels, pyx):
         Each row of this matrix corresponds to an example `x` and contains the model-predicted
         probabilities that `x` belongs to each possible class.
         The columns must be ordered such that these probabilities correspond to class 0,1,2,...
-        `psx` should have been computed using 3 (or higher) fold cross-validation."""
+        `pred_probs` should have been computed using 3 (or higher) fold cross-validation."""
 
     from sklearn.metrics import f1_score
     boundaries = np.arange(0.05, 0.9, .05)
@@ -236,18 +236,18 @@ def multiclass_crossval_predict(labels, pyx):
     return pred
 
 
-def find_label_issues(labels, psx, confident_joint=None, filter_by='prune_by_noise_rate',
+def find_label_issues(labels, pred_probs, confident_joint=None, filter_by='prune_by_noise_rate',
                       return_indices_ranked_by=None, multi_label=False, frac_noise=1.0,
                       num_to_remove_per_class=None, n_jobs=None, verbose=0):
     """By default, this method returns a boolean mask for the entire dataset where True represents
     a label issue and False represents an example that is confidently/accurately labeled.
 
     You can return ONLY the indices of the label issues in your dataset, by setting
-    return_indices_ranked_by = {`prob_given_label`, `normalized_margin`}.
+    return_indices_ranked_by = {`self_confidence`, `normalized_margin`}.
 
     number of indices returned is specified by frac_noise. When
     frac_noise = 1.0, all "confident" estimated noise indices are returned.
-    * If you encounter the error 'psx is not defined', try setting n_jobs = 1.
+    * If you encounter the error 'pred_probs is not defined', try setting n_jobs = 1.
 
     WARNING! is a matrix with K model-predicted probabilities and num_to_remove_per_class parameters are only supported when filter_by
     is either 'prune_by_noise_rate', 'prune_by_class', or 'both'. They are not supported for methods
@@ -260,12 +260,12 @@ def find_label_issues(labels, psx, confident_joint=None, filter_by='prune_by_noi
       A discrete vector of noisy labels, i.e. some labels may be erroneous.
       *Format requirements*: for dataset with K classes, labels must be in {0,1,...,K-1}.
 
-    psx : np.array (shape (N, K))
+    pred_probs : np.array (shape (N, K))
       P(label=k|x) is a matrix with K model-predicted probabilities.
       Each row of this matrix corresponds to an example x and contains the model-predicted
       probabilities that x belongs to each possible class.
       The columns must be ordered such that these probabilities correspond to class 0,1,2,...
-      `psx` should have been computed using 3 (or higher) fold cross-validation.
+      `pred_probs` should have been computed using 3 (or higher) fold cross-validation.
 
     confident_joint : np.array (shape (K, K), type int) (default: None)
       A K,K integer matrix of count(labels=k, y=k). Estimates a a confident
@@ -292,12 +292,12 @@ def find_label_issues(labels, psx, confident_joint=None, filter_by='prune_by_noi
       5. 'predicted_neq_given': Find examples where the predicted class
       (i.e. argmax of the predicted probabilities) does not match the given label.
 
-    return_indices_ranked_by : {:obj:`None`, :obj:`prob_given_label`, :obj:`normalized_margin`}
+    return_indices_ranked_by : {:obj:`None`, :obj:`self_confidence`, :obj:`normalized_margin`}
       If None, returns a boolean mask (true if example at index is label error)
       If not None, returns an array of the label error indices
       (instead of a bool mask) where error indices are ordered by the either:
       ``'normalized_margin' := normalized margin (p(label = k) - max(p(label != k)))``
-      ``'prob_given_label' := [psx[i][labels[i]] for i in label_issues_idx]``
+      ``'self_confidence' := [pred_probs[i][labels[i]] for i in label_issues_idx]``
 
     multi_label : bool
       If true, labels should be an iterable (e.g. list) of iterables, containing a
@@ -343,11 +343,11 @@ def find_label_issues(labels, psx, confident_joint=None, filter_by='prune_by_noi
       Note
       ----
       You can also return ONLY the indices of the label issues in your dataset, by setting
-      return_indices_ranked_by = {`prob_given_label`, `normalized_margin`}."""
+      return_indices_ranked_by = {`self_confidence`, `normalized_margin`}."""
 
     assert filter_by in ['prune_by_noise_rate', 'prune_by_class', 'both',
                             'confident_learning', 'predicted_neq_given']
-    assert (len(labels) == len(psx))
+    assert (len(labels) == len(pred_probs))
     if filter_by in ['confident_learning', 'predicted_neq_given'] and \
             (frac_noise != 1.0 or num_to_remove_per_class is not None):
         warn_str = "WARNING! frac_noise and num_to_remove_per_class parameters are only supported" \
@@ -368,7 +368,7 @@ def find_label_issues(labels, psx, confident_joint=None, filter_by='prune_by_noi
     else:
         label_counts = value_counts(labels)
     # Number of classes labels
-    K = len(psx.T)
+    K = len(pred_probs.T)
     # Boolean set to true if dataset is large
     big_dataset = K * len(labels) > 1e8
     # Ensure labels are of type np.array()
@@ -377,7 +377,7 @@ def find_label_issues(labels, psx, confident_joint=None, filter_by='prune_by_noi
         from cleanlab.count import compute_confident_joint
         confident_joint, cl_error_indices = compute_confident_joint(
             labels=labels,
-            psx=psx,
+            pred_probs=pred_probs,
             multi_label=multi_label,
             return_indices_of_off_diagonals=True,
         )
@@ -409,10 +409,10 @@ def find_label_issues(labels, psx, confident_joint=None, filter_by='prune_by_noi
             _label_counts = RawArray('I', label_counts)
             _prune_count_matrix = RawArray(
                 'I', prune_count_matrix.flatten())
-            _psx = RawArray(
-                'f', psx.flatten())
+            _pred_probs = RawArray(
+                'f', pred_probs.flatten())
         else:  # Multiprocessing is turned off. Create tuple with all parameters
-            args = (labels, label_counts, prune_count_matrix, psx, multi_label)
+            args = (labels, label_counts, prune_count_matrix, pred_probs, multi_label)
 
     # Perform Pruning with threshold probabilities from BFPRT algorithm in O(n)
     # Operations are parallelized across all CPU processes
@@ -422,7 +422,7 @@ def find_label_issues(labels, psx, confident_joint=None, filter_by='prune_by_noi
                     n_jobs,
                     initializer=_init,
                     initargs=(_labels, _label_counts, _prune_count_matrix,
-                              prune_count_matrix.shape, _psx, psx.shape,
+                              prune_count_matrix.shape, _pred_probs, pred_probs.shape,
                               multi_label),
             ) as p:
                 if verbose:
@@ -447,7 +447,7 @@ def find_label_issues(labels, psx, confident_joint=None, filter_by='prune_by_noi
                     n_jobs,
                     initializer=_init,
                     initargs=(_labels, _label_counts, _prune_count_matrix,
-                              prune_count_matrix.shape, _psx, psx.shape,
+                              prune_count_matrix.shape, _pred_probs, pred_probs.shape,
                               multi_label),
             ) as p:
                 if verbose:
@@ -472,14 +472,14 @@ def find_label_issues(labels, psx, confident_joint=None, filter_by='prune_by_noi
             label_issues_mask[idx] = True
 
     if filter_by == 'predicted_neq_given':
-        label_issues_mask = find_predicted_neq_given(labels, psx, multi_label=multi_label)
+        label_issues_mask = find_predicted_neq_given(labels, pred_probs, multi_label=multi_label)
 
     # Remove label issues if given label == model prediction
     if multi_label:
-        pred = multiclass_crossval_predict(labels, psx)
+        pred = multiclass_crossval_predict(labels, pred_probs)
         labels = MultiLabelBinarizer().fit_transform(labels)
     else:
-        pred = psx.argmax(axis=1)
+        pred = pred_probs.argmax(axis=1)
     for i, pred_label in enumerate(pred):
         if multi_label and np.all(pred_label == labels[i]) or \
                 not multi_label and pred_label == labels[i]:
@@ -489,7 +489,7 @@ def find_label_issues(labels, psx, confident_joint=None, filter_by='prune_by_noi
         print('Number of label issues found: {}'.format(sum(label_issues_mask)))
 
     if return_indices_ranked_by is not None:
-        er = order_label_issues(label_issues_mask, labels, psx, return_indices_ranked_by)
+        er = order_label_issues(label_issues_mask, labels, pred_probs, return_indices_ranked_by)
         return er
 
     return label_issues_mask
@@ -591,7 +591,7 @@ def reduce_prune_counts(prune_count_matrix, frac_noise=1.0):
     return new_mat.astype(int)
 
 
-def find_predicted_neq_given(labels, psx, multi_label=False):
+def find_predicted_neq_given(labels, pred_probs, multi_label=False):
     """This is the simplest baseline approach. Just consider
     anywhere argmax != labels as a label error.
 
@@ -601,12 +601,12 @@ def find_predicted_neq_given(labels, psx, multi_label=False):
         A discrete vector of noisy labels, i.e. some labels may be erroneous.
         *Format requirements*: for dataset with K classes, labels must be in {0,1,...,K-1}.
 
-    psx : np.array (shape (N, K))
+    pred_probs : np.array (shape (N, K))
         P(label=k|x) is a matrix with K model-predicted probabilities.
         Each row of this matrix corresponds to an example `x` and contains the model-predicted
         probabilities that `x` belongs to each possible class.
         The columns must be ordered such that these probabilities correspond to class 0,1,2,...
-        `psx` should have been computed using 3 (or higher) fold cross-validation.
+        `pred_probs` should have been computed using 3 (or higher) fold cross-validation.
 
     multi_label : bool
         Set to True if labels is multi-label (list of lists, or np.array of np.array)
@@ -618,22 +618,22 @@ def find_predicted_neq_given(labels, psx, multi_label=False):
         A boolean mask that is true if the example belong
         to that index is label error."""
 
-    assert (len(psx) == len(labels))
+    assert (len(pred_probs) == len(labels))
     if multi_label:
         # Todo: This needs to be tested.
         return np.array(
-            [all(np.argsort(psx[i])[:len(j)] == sorted(j)) for i, j in enumerate(labels)])
-    return np.argmax(psx, axis=1) != np.asarray(labels)
+            [all(np.argsort(pred_probs[i])[:len(j)] == sorted(j)) for i, j in enumerate(labels)])
+    return np.argmax(pred_probs, axis=1) != np.asarray(labels)
 
 
 def find_label_issues_using_argmax_confusion_matrix(
     labels,
-    psx,
+    pred_probs,
     calibrate=True,
     filter_by='prune_by_noise_rate',
 ):
     """This is a baseline approach. That uses the confusion matrix
-    of argmax(psx) and labels as the confident joint and then uses cleanlab
+    of argmax(pred_probs) and labels as the confident joint and then uses cleanlab
     (confident learning) to find the label issues using this matrix.
 
     The only difference between this and find_label_issues is that it uses the confusion matrix
@@ -649,12 +649,12 @@ def find_label_issues_using_argmax_confusion_matrix(
         A discrete vector of noisy labels, i.e. some labels may be erroneous.
         *Format requirements*: for dataset with K classes, labels must be in {0,1,...,K-1}.
 
-    psx : np.array (shape (N, K))
+    pred_probs : np.array (shape (N, K))
         P(label=k|x) is a matrix with K model-predicted probabilities.
         Each row of this matrix corresponds to an example `x` and contains the model-predicted
         probabilities that `x` belongs to each possible class.
         The columns must be ordered such that these probabilities correspond to class 0,1,2,...
-        `psx` should have been computed using 3 (or higher) fold cross-validation.
+        `pred_probs` should have been computed using 3 (or higher) fold cross-validation.
 
     calibrate : bool
         Set to True to calibrate the confusion matrix created by pred != given labels.
@@ -679,9 +679,9 @@ def find_label_issues_using_argmax_confusion_matrix(
     -------
         A boolean mask: true if the example at that index is label issue."""
 
-    assert (len(psx) == len(labels))
-    confident_joint = confusion_matrix(np.argmax(psx, axis=1), labels).T
+    assert (len(pred_probs) == len(labels))
+    confident_joint = confusion_matrix(np.argmax(pred_probs, axis=1), labels).T
     if calibrate:
         confident_joint = calibrate_confident_joint(confident_joint, labels)
-    return find_label_issues(labels=labels, psx=psx, confident_joint=confident_joint,
+    return find_label_issues(labels=labels, pred_probs=pred_probs, confident_joint=confident_joint,
                              filter_by=filter_by)

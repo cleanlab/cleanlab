@@ -242,7 +242,7 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
             self,
             X,
             labels,
-            psx=None,
+            pred_probs=None,
             thresholds=None,
             noise_matrix=None,
             inverse_noise_matrix=None,
@@ -262,16 +262,16 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
           A discrete vector of noisy labels, i.e. some labels may be erroneous.
           *Format requirements*: for dataset with K classes, labels must be in {0,1,...,K-1}.
 
-        psx : :obj:`np.array` (shape (N, K))
+        pred_probs : :obj:`np.array` (shape (N, K))
         P(label=k|x) is a matrix with K model-predicted probabilities.
         Each row of this matrix corresponds to an example `x` and contains the model-predicted
         probabilities that `x` belongs to each possible class.
         The columns must be ordered such that these probabilities correspond to class 0,1,2,...
-        `psx` should have been computed using 3 (or higher) fold cross-validation.
+        `pred_probs` should have been computed using 3 (or higher) fold cross-validation.
 
           Note
           ----
-          If you are not sure, leave `psx = None` (default) and it will be computed for you using
+          If you are not sure, leave `pred_probs = None` (default) and it will be computed for you using
           cross-validation with your model.
 
         thresholds : :obj:`iterable` (list or np.array) of shape (K, 1)  or (K,)
@@ -281,7 +281,7 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
           Default is ``None``. These are computed for you automatically.
           If an example has a predicted probability "greater" than
           this threshold, it is counted as having hidden label y = k. This is
-          not used for pruning, only for estimating the noise rates using
+          not used for pruning/filtering, only for estimating the noise rates using
           confident counts. Values in list should be between 0 and 1.
 
         noise_matrix : :obj:`np.array` of shape (K, K), K = number of classes
@@ -293,7 +293,7 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
           A conditional probablity matrix of the form P(y=k_y|labels=k_s). Contains
           the estimated fraction observed examples in each class k_s, that are
           mislabeled examples from every other class k_y. If None, the
-          inverse_noise_matrix will be computed from psx and labels.
+          inverse_noise_matrix will be computed from pred_probs and labels.
           Assumes columns of inverse_noise_matrix sum to 1.
 
         Returns
@@ -302,7 +302,7 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
           (label_issues_mask, sample_weight)"""
 
         # Check inputs
-        assert_inputs_are_valid(X, labels, psx)
+        assert_inputs_are_valid(X, labels, pred_probs)
         if noise_matrix is not None and np.trace(noise_matrix) <= 1:
             t = np.round(np.trace(noise_matrix), 2)
             raise ValueError(
@@ -322,9 +322,9 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
 
         self.confident_joint = None
         # If needed, compute noise rates (mislabeling) for all classes. 
-        # Also, if needed, compute P(labels=k|x), denoted psx.
+        # Also, if needed, compute P(labels=k|x), denoted pred_probs.
 
-        # Set / re-set noise matrices / psx; estimate if not provided.
+        # Set / re-set noise matrices / pred_probs; estimate if not provided.
         if noise_matrix is not None:
             self.noise_matrix = noise_matrix
             if inverse_noise_matrix is None:
@@ -338,9 +338,9 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
                     self.inverse_noise_matrix,
                 )
         if noise_matrix is None and inverse_noise_matrix is None:
-            if psx is None:
+            if pred_probs is None:
                 self.py, self.noise_matrix, self.inverse_noise_matrix, \
-                self.confident_joint, psx = \
+                self.confident_joint, pred_probs = \
                     estimate_py_noise_matrices_and_cv_pred_proba(
                         X=X,
                         labels=labels,
@@ -351,19 +351,19 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
                             self.converge_latent_estimates),
                         seed=self.seed,
                     )
-            else:  # psx is provided by user (assumed holdout probabilities)
+            else:  # pred_probs is provided by user (assumed holdout probabilities)
                 self.py, self.noise_matrix, self.inverse_noise_matrix, \
                 self.confident_joint = \
                     estimate_py_and_noise_matrices_from_probabilities(
                         labels=labels,
-                        psx=psx,
+                        pred_probs=pred_probs,
                         thresholds=thresholds,
                         converge_latent_estimates=(
                             self.converge_latent_estimates),
                     )
 
-        if psx is None:
-            psx = estimate_cv_predicted_probabilities(
+        if pred_probs is None:
+            pred_probs = estimate_cv_predicted_probabilities(
                 X=X,
                 labels=labels,
                 clf=self.clf,
@@ -386,7 +386,7 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
         # This is the actual work of this function.
 
         # Get the indices of the examples we wish to prune
-        self.label_issues_mask = find_label_issues(labels, psx, confident_joint=self.confident_joint,
+        self.label_issues_mask = find_label_issues(labels, pred_probs, confident_joint=self.confident_joint,
                                             filter_by=self.filter_by, n_jobs=self.n_jobs)
 
         x_mask = ~self.label_issues_mask

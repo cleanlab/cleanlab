@@ -23,18 +23,18 @@ import numpy as np
 from sklearn.utils import check_X_y
 
 
-def assert_inputs_are_valid(X, s, psx=None):  # pragma: no cover
-    """Checks that X, labels, and psx
+def assert_inputs_are_valid(X, s, pred_probs=None):  # pragma: no cover
+    """Checks that X, labels, and pred_probs
     are correctly formatted"""
 
-    if psx is not None:
-        if not isinstance(psx, (np.ndarray, np.generic)):
-            raise TypeError("psx should be a numpy array.")
-        if len(psx) != len(s):
-            raise ValueError("psx and labels must have same length.")
+    if pred_probs is not None:
+        if not isinstance(pred_probs, (np.ndarray, np.generic)):
+            raise TypeError("pred_probs should be a numpy array.")
+        if len(pred_probs) != len(s):
+            raise ValueError("pred_probs and labels must have same length.")
         # Check for valid probabilities.
-        if (psx < 0).any() or (psx > 1).any():
-            raise ValueError("Values in psx must be between 0 and 1.")
+        if (pred_probs < 0).any() or (pred_probs > 1).any():
+            raise ValueError("Values in pred_probs must be between 0 and 1.")
 
     if not isinstance(s, (np.ndarray, np.generic)):
         raise TypeError("labels should be a numpy array.")

@@ -71,8 +71,8 @@ Past release notes and **future features planned** is available [here](https://g
 ## Find label issues with PyTorch, Tensorflow, sklearn, xgboost, etc. in 1 line of code
 
 ```python
-# Compute psx (n x m matrix of predicted probabilities) on your own, with any classifier.
-# Here is an example that shows in detail how to compute psx on CIFAR-10:
+# Compute pred_probs (n x m matrix of predicted probabilities) on your own, with any classifier.
+# Here is an example that shows in detail how to compute pred_probs on CIFAR-10:
 #    https://github.com/cleanlab/examples/tree/master/cifar10
 # Be sure you compute probs in a holdout/out-of-sample manner (e.g. via cross-validation)
 # Now finding label issues is trivial with cleanlab... its one line of code.
@@ -81,7 +81,7 @@ from cleanlab.filter import find_label_issues
 
 ordered_label_issues = find_label_issues(
     labels=numpy_array_of_noisy_labels,
-    psx=numpy_array_of_predicted_probabilities,
+    pred_probs=numpy_array_of_predicted_probabilities,
     return_indices_ranked_by='normalized_margin', # Orders label issues
  )
 ```
@@ -292,9 +292,9 @@ Most of the methods in the **cleanlab** package start by first estimating the *c
 from cleanlab.count import estimate_latent
 from cleanlab.count import estimate_confident_joint_and_cv_pred_proba
 
-# Compute the confident joint and the n x m predicted probabilities matrix (psx),
+# Compute the confident joint and the n x m predicted probabilities matrix (pred_probs),
 # for n examples, m classes. Stop here if all you need is the confident joint.
-confident_joint, psx = estimate_confident_joint_and_cv_pred_proba(
+confident_joint, pred_probs = estimate_confident_joint_and_cv_pred_proba(
     X=X_train,
     labels=train_labels_with_errors,
     clf=logreg(), # default, you can use any classifier
@@ -311,7 +311,7 @@ est_py, est_nm, est_inv = estimate_latent(
 
 ``` python
 from cleanlab.count import estimate_py_noise_matrices_and_cv_pred_proba
-est_py, est_nm, est_inv, confident_joint, psx = estimate_py_noise_matrices_and_cv_pred_proba(
+est_py, est_nm, est_inv, confident_joint, pred_probs = estimate_py_noise_matrices_and_cv_pred_proba(
     X=X_train,
     labels=train_labels_with_errors,
 )
@@ -320,13 +320,13 @@ est_py, est_nm, est_inv, confident_joint, psx = estimate_py_noise_matrices_and_c
 ### Option 3: Skip computing the predicted probabilities if you already have them.
 
 ``` python
-# Already have psx? (n x m matrix of predicted probabilities)
+# Already have pred_probs? (n x m matrix of predicted probabilities)
 # For example, you might get them from a pre-trained model (like resnet on ImageNet)
-# With the cleanlab package, you estimate directly with psx.
+# With the cleanlab package, you estimate directly with pred_probs.
 from cleanlab.count import estimate_py_and_noise_matrices_from_probabilities
 est_py, est_nm, est_inv, confident_joint = estimate_py_and_noise_matrices_from_probabilities(
     labels=train_labels_with_errors,
-    psx=psx,
+    pred_probs=pred_probs,
 )
 ```
 
@@ -338,7 +338,7 @@ The joint probability distribution of noisy and true labels, *P(s,y)*, completel
 from cleanlab.count import estimate_joint
 joint = estimate_joint(
     labels=noisy_labels,
-    psx=probabilities,
+    pred_probs=probabilities,
     confident_joint=None,  # Provide if you have it already
 )
 ```
@@ -377,10 +377,10 @@ error). Here's the code:
 ``` python
 import numpy as np
 # K is the number of classes in your dataset
-# psx are the cross-validated predicted probabilities.
+# pred_probs are the cross-validated predicted probabilities.
 # s is the array/list/iterable of noisy labels
 # pu_class is a 0-based integer for the class that has no label errors.
-thresholds = np.asarray([np.mean(psx[:, k][s == k]) for k in range(K)])
+thresholds = np.asarray([np.mean(pred_probs[:, k][s == k]) for k in range(K)])
 thresholds[pu_class] = 1.0
 ```
 
@@ -389,10 +389,10 @@ Now you can use cleanlab however you were before. Just be sure to pass in this t
 ``` python
 # Uncertainty quantification (characterize the label noise
 # by estimating the joint distribution of noisy and true labels)
-cj = compute_confident_joint(s, psx, thresholds=thresholds, )
+cj = compute_confident_joint(s, pred_probs, thresholds=thresholds, )
 # Now the noise (cj) has been estimated taking into account that some class(es) have no error.
 # We can use cj to find label errors like this:
-indices_of_label_issues = find_label_issues(s, psx, confident_joint=cj, )
+indices_of_label_issues = find_label_issues(s, pred_probs, confident_joint=cj, )
 
 # In addition to label issues, we can find the fraction of noise in the unlabeled class.
 # First we need the inv_noise_matrix which contains P(y|s) (proportion of mislabeling).

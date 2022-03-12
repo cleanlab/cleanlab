@@ -235,24 +235,24 @@ class FastTextClassifier(BaseEstimator):  # Inherits sklearn base classifier
         probability of the example belonging to each class.'''
 
         fn = self.train_data_fn if train_data else self.test_data_fn
-        psx_list = []
+        pred_probs_list = []
         if return_labels:
             labels_list = []
         for labels, text in data_loader(fn=fn, indices=X,
                                         batch_size=self.batch_size):
             pred = self.clf.predict(text=text, k=len(self.clf.get_labels()))
             # Get p(labels = k | x) matrix of shape (N x K) of pred probs for each x
-            psx = [[p for _, p in sorted(list(zip(*l)), key=lambda x: x[0])] for
+            pred_probs = [[p for _, p in sorted(list(zip(*l)), key=lambda x: x[0])] for
                    l in list(zip(*pred))]
-            psx_list.append(np.array(psx))
+            pred_probs_list.append(np.array(pred_probs))
             if return_labels:
                 labels_list.append(labels)
-        psx = np.concatenate(psx_list, axis=0)
+        pred_probs = np.concatenate(pred_probs_list, axis=0)
         if return_labels:
             gold_labels = [self.label2num[z] for l in labels_list for z in l]
-            return (psx, np.array(gold_labels))
+            return (pred_probs, np.array(gold_labels))
         else:
-            return psx
+            return pred_probs
 
     def predict(self, X=None, train_data=True, return_labels=False):
         '''Predict labels of X'''
