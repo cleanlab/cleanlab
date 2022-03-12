@@ -197,7 +197,7 @@ def _prune_by_count(k, args=None):
 
 def _self_confidence(args, _pred_probs):  # pragma: no cover
     """multiprocessing Helper function for find_label_issues() that assumes
-    global pred_probs and computes the self confidence (prob of given label)
+    global pred_probs and computes the self-confidence (prob of given label)
     for an example (row in pred_probs) given the example index idx
     and its label l.
     np.mean(pred_probs[]) enables this code to work for multi-class l."""
