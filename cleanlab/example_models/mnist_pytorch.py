@@ -31,8 +31,8 @@
 from cleanlab.util import VersionWarning
 
 python_version = VersionWarning(
-    warning_str="pyTorch supports Python version 2.7, 3.5, 3.6, 3.7.",
-    list_of_compatible_versions=[2.7, 3.5, 3.6, 3.7, 3.8],
+    warning_str="pyTorch supports Python version 2.7, 3.5, 3.6, 3.7, 3.8, 3.9",
+    list_of_compatible_versions=[2.7, 3.5, 3.6, 3.7, 3.8, 3.9],
 )
 
 if python_version.is_compatible():  # pragma: no cover
