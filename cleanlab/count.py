@@ -223,7 +223,7 @@ def _compute_confident_joint_multi_label(
     return_indices_of_off_diagonals: bool
         If true returns indices of examples that were counted in off-diagonals
         of confident joint as a baseline proxy for the label issues. This
-        somtimes works as well as find_label_issues(confident_joint)."""
+        sometimes works as well as filter.find_label_issues(confident_joint)."""
 
     # Compute unique number of classes K by flattening labels (list of lists)
     K = len(np.unique([i for lst in labels for i in lst]))
@@ -318,7 +318,7 @@ def compute_confident_joint(
     return_indices_of_off_diagonals: bool
         If true returns indices of examples that were counted in off-diagonals
         of confident joint as a baseline proxy for the label issues. This
-        somtimes works as well as find_label_issues(confident_joint).
+        sometimes works as well as filter.find_label_issues(confident_joint).
 
 
     Examples
