@@ -76,7 +76,7 @@ def num_label_issues(
 
     confident_joint : np.array (shape (K, K), type int)
         A K,K integer matrix of count(labels=k, y=k). Estimates a confident subset of
-        the joint disribution of the noisy and true labels P_{labels,y}.
+        the joint distribution of the noisy and true labels P_{labels,y}.
         Each entry in the matrix contains the number of examples confidently
         counted into every pair (labels=j, y=k) classes.
 
@@ -110,7 +110,7 @@ def calibrate_confident_joint(confident_joint, labels, multi_label=False):
 
     confident_joint : np.array (shape (K, K))
         A K,K integer matrix of count(labels=k, y=k). Estimates a confident subset of
-        the joint disribution of the noisy and true labels P_{labels,y}.
+        the joint distribution of the noisy and true labels P_{labels,y}.
         Each entry in the matrix contains the number of examples confidently
         counted into every pair (labels=j, y=k) classes.
 
@@ -223,7 +223,7 @@ def _compute_confident_joint_multi_label(
     return_indices_of_off_diagonals: bool
         If true returns indices of examples that were counted in off-diagonals
         of confident joint as a baseline proxy for the label issues. This
-        somtimes works as well as filterfind_label_issues(confident_joint)."""
+        somtimes works as well as find_label_issues(confident_joint)."""
 
     # Compute unique number of classes K by flattening labels (list of lists)
     K = len(np.unique([i for lst in labels for i in lst]))
@@ -318,7 +318,7 @@ def compute_confident_joint(
     return_indices_of_off_diagonals: bool
         If true returns indices of examples that were counted in off-diagonals
         of confident joint as a baseline proxy for the label issues. This
-        somtimes works as well as filterfind_label_issues(confident_joint).
+        somtimes works as well as find_label_issues(confident_joint).
 
 
     Examples
@@ -326,7 +326,7 @@ def compute_confident_joint(
 
     We provide a for-loop based simplification of the confident joint
     below. This implementation is not efficient, not used in practice, and
-    not complete, but covers the jist of how the confident joint is computed:
+    not complete, but covers the gist of how the confident joint is computed:
 
     .. code:: python
 

@@ -15,9 +15,9 @@
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
 
-# ## Confident Learning Utilties
+# ## Confident Learning Utilities
 # 
-# #### Contains ancillarly helper functions used throughout this package.
+# #### Contains ancillary helper functions used throughout this package.
 
 import numpy as np
 from sklearn.utils import check_X_y
@@ -64,7 +64,7 @@ def remove_noise_from_class(noise_matrix, class_without_noise):
     ----------
 
     noise_matrix : np.array of shape (K, K), K = number of classes
-        A conditional probablity matrix of the form P(labels=k_s|y=k_y) containing
+        A conditional probability matrix of the form P(labels=k_s|y=k_y) containing
         the fraction of examples in every class, labeled as every other class.
         Assumes columns of noise_matrix sum to 1.
 
@@ -81,7 +81,7 @@ def remove_noise_from_class(noise_matrix, class_without_noise):
     # Set P( labels = cwn | y != cwn) = 0 (no noise)
     x[cwn, [i for i in range(K) if i != cwn]] = 0.0
 
-    # Normalize columns by increasing diagnol terms
+    # Normalize columns by increasing diagonal terms
     # Ensures noise_matrix is a valid probability matrix
     for i in range(K):
         x[i][i] = 1 - float(np.sum(x[:, i]) - x[i][i])
@@ -100,7 +100,7 @@ def clip_noise_rates(noise_matrix):
     ----------
 
     noise_matrix : np.array of shape (K, K), K = number of classes
-        A conditional probablity matrix containing the fraction of
+        A conditional probability matrix containing the fraction of
         examples in every class, labeled as every other class.
         Diagonal terms are not noise rates, but are consistency P(labels=k|y=k)
         Assumes columns of noise_matrix sum to 1"""
@@ -316,7 +316,7 @@ def estimate_pu_f1(s, prob_s_eq_1):
 def confusion_matrix(true, pred):
     """Implements a confusion matrix for true labels
     and predicted labels. true and pred MUST BE the same length
-    and have the same distinct set of class labels represtented.
+    and have the same distinct set of class labels represented.
 
     Results are identical (and similar computation time) to:
         "sklearn.metrics.confusion_matrix"

@@ -76,7 +76,7 @@ mp_params = {}  # parameters passed to multiprocessing helper functions
 
 
 def _to_np_array(mp_arr, dtype="int32", shape=None):  # pragma: no cover
-    """multipropcessing Helper function to convert a multiprocessing
+    """multipropecessing Helper function to convert a multiprocessing
     RawArray to a numpy array."""
     arr = np.frombuffer(mp_arr, dtype=dtype)
     if shape is None:
@@ -184,7 +184,7 @@ def _prune_by_count(k, args=None):
         num2prune = prune_count_matrix[j][k]
         # Only prune for noise rates, not diagonal entries
         if k != j and num2prune > 0:
-            # num2prune'th largest p(true class k) - p(noisy class k)
+            # num2prune's largest p(true class k) - p(noisy class k)
             # for x with true label j
             margin = pred_probs[:, j] - pred_probs_k
             label_filter = np.array(

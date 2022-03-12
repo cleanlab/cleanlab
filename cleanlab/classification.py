@@ -422,7 +422,7 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
         return self.clf.predict(*args, **kwargs)
 
     def predict_proba(self, *args, **kwargs):
-        """Returns a vector of probabilties P(y=k)
+        """Returns a vector of probabilities P(y=k)
         for each example in X.
 
         Parameters

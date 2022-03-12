@@ -89,7 +89,7 @@ def generate_noisy_labels(y, noise_matrix, verbose=False):
         classes, e.g. 0, 1,..., K-1
 
     noise_matrix : np.array of shape (K, K), K = number of classes
-        A conditional probablity matrix of the form P(labels=k_s|y=k_y) containing
+        A conditional probability matrix of the form P(labels=k_s|y=k_y) containing
         the fraction of examples in every class, labeled as every other class.
         Assumes columns of noise_matrix sum to 1.
 
