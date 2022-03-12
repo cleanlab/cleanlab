@@ -244,7 +244,7 @@ def _compute_confident_joint_multi_label(
         # Todo add more tests and consider refactoring for efficiency (combine with confident_joint)
         # Convert boolean mask of k_in_l to indices of examples that include class k in the labels
         indices_k_in_l = [np.arange(len(labels))[k_in_l[k]] for k in range(K)]
-        # Find boolean mask where the thresholds exceeds for non-given class, for each class k
+        # Find boolean mask where the thresholds exceed for non-given class, for each class k
         issues_mask = [np.any(np.delete(pred_probs_bool, k, axis=1)[k_in_l[k]], axis=1) for k in range(K)]
         # Map boolean mask to the indices of the examples, for each class k
         indices_of_issues = [indices_k_in_l[k][issues_mask[k]] for k in range(K)]
@@ -339,7 +339,7 @@ def compute_confident_joint(
 
     The following is a vectorized (but non-parallelized) implementation of the
     confident joint, again slow, using for-loops/simplified for understanding.
-    This implementation is 100% accurate, its just not optimized for speed.
+    This implementation is 100% accurate, it's just not optimized for speed.
 
     .. code:: python
 

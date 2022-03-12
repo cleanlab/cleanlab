@@ -327,7 +327,7 @@ def confusion_matrix(true, pred):
     ----------
     y : np.array 1d
       Contains labels.
-      Assumes labels and y contains the same distinct set of labels.
+      Assumes labels and y contains the same set of distinct labels.
 
     labels : np.array 1d
       A discrete vector of noisy labels, i.e. some labels may be erroneous.
@@ -374,7 +374,7 @@ def print_square_matrix(
     title : str
         Prints this string above the printed square matrix.
     short_title : str
-        A short title (6 characters or less) like P(labels|y) or P(labels,y).
+        A short title (6 characters or fewer) like P(labels|y) or P(labels,y).
     round_places : int
         Number of decimals to show for each matrix value."""
 

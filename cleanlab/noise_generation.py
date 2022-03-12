@@ -34,7 +34,7 @@ def noise_matrix_is_valid(noise_matrix, py, verbose=False):
     K = len(py)
 
     # let's assume some number of training examples for code readability,
-    # but it doesn't matter what we choose as its not actually used.
+    # but it doesn't matter what we choose as it's not actually used.
     N = float(10000)
 
     ps = np.dot(noise_matrix, py)  # P(y=k)

@@ -221,9 +221,9 @@ class FastTextClassifier(BaseEstimator):  # Inherits sklearn base classifier
           The list of indices of the data to use.
           When in doubt, set as None. None defaults to range(len(data)).
         y : None
-          Leave this as None. Its a filler to suit sklearns reqs.
+          Leave this as None. It's a filler to suit sklearns reqs.
         sample_weight : None
-          Leave this as None. Its a filler to suit sklearns reqs.'''
+          Leave this as None. It's a filler to suit sklearns reqs.'''
 
         train_fn = self._create_train_data(data_indices=X)
         self.clf = train_supervised(train_fn, **self.kwargs_train_supervised)

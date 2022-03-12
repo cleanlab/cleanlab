@@ -184,7 +184,7 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
     n_jobs : :obj:`int` (Windows users may see a speed-up with n_jobs = 1)
       Number of processing threads used by multiprocessing. Default None
       sets to the number of processing threads on your CPU.
-      Set this to 1 to REMOVE parallel processing (if its causing issues)."""
+      Set this to 1 to REMOVE parallel processing (if it's causing issues)."""
 
     def __init__(
             self,
@@ -285,12 +285,12 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
           confident counts. Values in list should be between 0 and 1.
 
         noise_matrix : :obj:`np.array` of shape (K, K), K = number of classes
-          A conditional probablity matrix of the form P(labels=k_s|y=k_y) containing
+          A conditional probability matrix of the form P(labels=k_s|y=k_y) containing
           the fraction of examples in every class, labeled as every other class.
           Assumes columns of noise_matrix sum to 1.
 
         inverse_noise_matrix : :obj:`np.array` of shape (K, K), K = number of classes
-          A conditional probablity matrix of the form P(y=k_y|labels=k_s). Contains
+          A conditional probability matrix of the form P(y=k_y|labels=k_s). Contains
           the estimated fraction observed examples in each class k_s, that are
           mislabeled examples from every other class k_y. If None, the
           inverse_noise_matrix will be computed from pred_probs and labels.

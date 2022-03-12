@@ -161,7 +161,7 @@ def train(train_loader, epoch, model1, optimizer1, model2, optimizer2, args,
             # If you update the weights based on the gradient from one example
             # if that example is noisy, you will add tons of noise to your net
             # and accuracy will actually go down with each epoch.
-            # To avoid this, do not train on the last batch if its small.
+            # To avoid this, do not train on the last batch if it's small.
             continue
         
         images = Variable(images).cuda()

@@ -206,7 +206,7 @@ def _self_confidence(args, _pred_probs):  # pragma: no cover
 
 
 def multiclass_crossval_predict(labels, pyx):
-    """Returns an numpy 2D array of one-hot encoded
+    """Returns a numpy 2D array of one-hot encoded
     multiclass predictions. Each row in the array
     provides the predictions for a particular example.
     The boundary condition used to threshold predictions
