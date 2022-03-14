@@ -39,9 +39,8 @@ here = path.abspath(path.dirname(__file__))
 with open(path.join(here, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
 
-# Get version number
+# Get version number and store it in __version__
 exec(open('cleanlab/version.py').read())
-
 
 
 setup(
@@ -50,10 +49,11 @@ setup(
     license='AGPLv3+',
     long_description=long_description,
     long_description_content_type='text/markdown',
-    description = 'The standard package for machine learning with noisy labels and finding mislabeled data in Python.',
-    url = 'https://github.com/cleanlab/cleanlab',
-    author = 'Cleanlab, Inc.',
-    author_email = 'team@cleanlab.ai',
+    description='The standard package for data-centric AI, machine learning with label errors, '
+                  'and automatically finding and fixing dataset issues in Python.',
+    url='https://github.com/cleanlab/cleanlab',
+    author='Cleanlab, Inc.',
+    author_email='team@cleanlab.ai',
 
     # See https://pypi.python.org/pypi?%3Aaction=list_classifiers
     classifiers=[
@@ -67,11 +67,7 @@ setup(
       'Natural Language :: English',
 
       # We believe this package works will these versions, but we do not guarantee it!
-      'Programming Language :: Python :: 2',
-      'Programming Language :: Python :: 2.7',
       'Programming Language :: Python :: 3',
-      'Programming Language :: Python :: 3.4',
-      'Programming Language :: Python :: 3.5',
       'Programming Language :: Python :: 3.6',
       'Programming Language :: Python :: 3.7',
       'Programming Language :: Python :: 3.8',
@@ -87,10 +83,11 @@ setup(
       'Topic :: Software Development :: Libraries',
       'Topic :: Software Development :: Libraries :: Python Modules',
     ],
-    python_requires='>=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*',
+    python_requires='>=3.6',
     
     # What does your project relate to?
-    keywords='machine_learning denoising classification weak_supervision learning_with_noisy_labels unsupervised_learning',
+    keywords='machine_learning data_cleaning confident_learning classification weak_supervision '
+             'learning_with_noisy_labels unsupervised_learning datacentric_ai, datacentric',
 
     # You can just specify the packages manually here if your project is
     # simple. Or you can use find_packages().
@@ -101,8 +98,8 @@ setup(
     package_data={
         "": ["LICENSE"],
     },
-    license_files = ('LICENSE',),
-    cmdclass = {'egg_info': egg_info_ex},
+    license_files=('LICENSE',),
+    cmdclass={'egg_info': egg_info_ex},
 
     # List run-time dependencies here.  These will be installed by pip when
     # your project is installed. For an analysis of "install_requires" vs pip's
