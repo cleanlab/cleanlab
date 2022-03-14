@@ -15,11 +15,18 @@
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
 
-# ## Rank
-#
-# Methods for ordering data.
-# This includes ranking data by most confusing to a model, most likely to be an
-# error or label issue, and related types of sorting / ordering of data.
+"""Rank module provides methods to rank/order data by cleanlab's `label quality score`.
+
+Except for `order_label_issues`, which operates only on the subset of the data identified
+as potential label issues/errors, the methods in the `rank` module can be used on whichever subset
+of the dataset you choose (including the entire dataset) and provide a `label quality score` for
+every example. You can then do something like: `np.argsort(label_quality_score)` to obtain ranked
+indices of individual data.
+
+If you aren't sure which method to use, try `get_normalized_margin_for_each_label()`.
+"""
+
+
 import numpy as np
 
 
@@ -109,7 +116,8 @@ def get_self_confidence_for_each_label(
         label. Assumes pred_probs is computed holdout/out-of-sample."""
 
     # np.mean is used so that this works for multi-labels (list of lists)
-    return np.array([np.mean(pred_probs[i, l]) for i, l in enumerate(labels)])
+    label_quality_scores = np.array([np.mean(pred_probs[i, l]) for i, l in enumerate(labels)])
+    return label_quality_scores
 
 
 def get_normalized_margin_for_each_label(
@@ -153,5 +161,5 @@ def get_normalized_margin_for_each_label(
     max_prob_not_label = np.array(
         [max(np.delete(pred_probs[i], l, -1)) for i, l in enumerate(labels)]
     )
-    margin = (self_confidence - max_prob_not_label + 1) / 2
-    return margin
+    label_quality_scores = (self_confidence - max_prob_not_label + 1) / 2
+    return label_quality_scores
