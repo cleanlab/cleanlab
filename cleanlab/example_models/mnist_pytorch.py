@@ -28,7 +28,7 @@
 
 
 # Make sure python version is compatible with pyTorch
-from cleanlab.util import VersionWarning
+from cleanlab.utils.util import VersionWarning
 
 python_version = VersionWarning(
     warning_str="pyTorch supports Python version 2.7, 3.5, 3.6, 3.7, 3.8, 3.9",

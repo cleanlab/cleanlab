@@ -33,13 +33,12 @@ from sklearn.model_selection import StratifiedKFold
 from sklearn.metrics import confusion_matrix
 import numpy as np
 import copy
-import warnings
 
-from cleanlab.util import (
+from cleanlab.utils.util import (
     value_counts, clip_values, clip_noise_rates, round_preserving_row_totals,
     assert_inputs_are_valid,
 )
-from cleanlab.latent_algebra import (
+from cleanlab.utils.latent_algebra import (
     compute_inv_noise_matrix, compute_py, compute_noise_matrix_from_inverse
 )
 

@@ -15,14 +15,13 @@
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
 # Make sure python version is compatible with fasttext
-from cleanlab.util import VersionWarning
+from cleanlab.utils.util import VersionWarning
 
 # fasttext only exists for these versions that are also compatible with cleanlab
 # if python_version.is_compatible():  # pragma: no cover
 import time
 import os
 import copy
-from sklearn.metrics import accuracy_score
 import numpy as np
 # You need to install fasttext using pip for this library to work
 from fasttext import train_supervised, load_model

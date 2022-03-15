@@ -2,7 +2,7 @@
 # coding: utf-8
 
 # Make sure python version is compatible with fasttext
-from cleanlab.util import VersionWarning
+from cleanlab.utils.util import VersionWarning
 python_version = VersionWarning(
     warning_str = "fastText supports Python 3 versions (not python 2).",
     list_of_compatible_versions = [3.5, 3.6, 3.7, 3.8, ],
@@ -207,9 +207,10 @@ def test_cleanlab_with_fasttext():
     
     if python_version.is_compatible():
         import cleanlab
+        from cleanlab.utils.util import value_counts
 
         top = 3
-        label_counts = list(zip(np.unique(y_train + y_test), cleanlab.util.value_counts(y_train + y_test)))
+        label_counts = list(zip(np.unique(y_train + y_test), value_counts(y_train + y_test)))
         # Find which labels occur the most often.
         top_labels = [v for v,c in sorted(label_counts, key=lambda x: x[1])[::-1][:top]]
 

@@ -20,7 +20,7 @@
 # #### Contains methods for generating valid (learning with noise is possible) noise matrices, generating noisy labels given a noise matrix, generating valid noise matrices with a specific trace value, and more.
 
 import numpy as np
-from cleanlab.util import value_counts, confusion_matrix
+from cleanlab.utils.util import value_counts
 import warnings
 
 

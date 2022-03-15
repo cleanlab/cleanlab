@@ -2,7 +2,7 @@
 # coding: utf-8
 
 # Make sure python version is compatible with pyTorch
-from cleanlab.util import VersionWarning
+from cleanlab.utils.util import VersionWarning
 
 python_version = VersionWarning(
     warning_str="pyTorch supports Python version 3.5, 3.6, 3.7, 3.8, 3.9",
@@ -19,7 +19,6 @@ if python_version.is_compatible():
     import numpy as np
     from sklearn.metrics import accuracy_score
     from sklearn.datasets import load_digits
-    from torch import from_numpy
     import pytest
 
 

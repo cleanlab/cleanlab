@@ -15,14 +15,13 @@
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
 
-## Filter (previously in Cleanlab 1.0, this module was called Pruning)
+"""Filter (previously in Cleanlab 1.0, this module was called Pruning)
 
-# #### Contains methods for estimating the latent indices of all label issues.
-# This code uses advanced multiprocessing to speed up computation.
-# see: https://research.wmz.ninja/articles/2018/03/ (link continued below)
-# on-sharing-large-arrays-when-using-pythons-multiprocessing.html
-
-
+Contains methods for estimating the latent indices of all label issues.
+This code uses advanced multiprocessing to speed up computation.
+see: https://research.wmz.ninja/articles/2018/03/ (link continued below)
+on-sharing-large-arrays-when-using-pythons-multiprocessing.html
+"""
 
 
 from sklearn.metrics import confusion_matrix
@@ -32,8 +31,8 @@ from multiprocessing.sharedctypes import RawArray
 import sys
 
 from cleanlab.rank import order_label_issues
-from cleanlab.util import (value_counts, round_preserving_row_totals,
-                           onehot2int, int2onehot, )
+from cleanlab.utils.util import (value_counts, round_preserving_row_totals,
+                        onehot2int, int2onehot, )
 import numpy as np
 import warnings
 
@@ -488,6 +487,7 @@ def find_label_issues(labels, pred_probs, confident_joint=None, filter_by='prune
     if verbose:
         print('Number of label issues found: {}'.format(sum(label_issues_mask)))
 
+    # TODO: run count.num_label_issues() and adjust the total issues found here to match
     if return_indices_ranked_by is not None:
         er = order_label_issues(label_issues_mask, labels, pred_probs, return_indices_ranked_by)
         return er
