@@ -151,7 +151,7 @@ class CNN(BaseEstimator):  # Inherits sklearn classifier
     template enables the PyTorch CNN to flexibly be used within the sklearn
     architecture -- meaning it can be passed into functions like
     cross_val_predict as if it were an sklearn model. The cleanlab library
-    requires that all example_models adhere to this basic sklearn template and thus,
+    requires that all models adhere to this basic sklearn template and thus,
     this class allows a PyTorch CNN to be used in for learning with noisy
     labels among other things.
 

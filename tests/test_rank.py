@@ -66,7 +66,7 @@ def make_data(
     ps = np.bincount(s) / float(len(s))
 
     # Compute inverse noise matrix
-    inv = count.compute_inv_noise_matrix(py, noise_matrix, ps)
+    inv = count.compute_inv_noise_matrix(py, noise_matrix, ps=ps)
 
     # Estimate pred_probs
     latent = count.estimate_py_noise_matrices_and_cv_pred_proba(

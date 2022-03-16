@@ -76,10 +76,10 @@ def compute_py_inv_noise_matrix(ps, noise_matrix):
     py = clip_values(py, low=1e-6, high=1.0, new_sum=1.0)
 
     # All the work is done in this function (below)
-    return py, compute_inv_noise_matrix(py, noise_matrix, ps)
+    return py, compute_inv_noise_matrix(py=py, noise_matrix=noise_matrix, ps=ps)
 
 
-def compute_inv_noise_matrix(py, noise_matrix, ps=None):
+def compute_inv_noise_matrix(py, noise_matrix, *, ps=None):
     """Compute the inverse noise matrix if py := P(true_label=k) is given.
 
     Parameters
@@ -131,7 +131,7 @@ def compute_inv_noise_matrix(py, noise_matrix, ps=None):
     return clip_noise_rates(inverse_noise_matrix)
 
 
-def compute_noise_matrix_from_inverse(ps, inverse_noise_matrix, py=None):
+def compute_noise_matrix_from_inverse(ps, inverse_noise_matrix, *, py=None):
     """Compute the noise matrix P(label=k_s|true_label=k_y).
 
     Parameters
@@ -192,7 +192,7 @@ def compute_noise_matrix_from_inverse(ps, inverse_noise_matrix, py=None):
     return clip_noise_rates(noise_matrix)
 
 
-def compute_py(ps, noise_matrix, inverse_noise_matrix, py_method='cnt',
+def compute_py(ps, noise_matrix, inverse_noise_matrix, *, py_method='cnt',
                true_labels_class_counts=None):
     """Compute py := P(true_labels=k) from ps := P(labels=k), noise_matrix, and the
     inverse noise matrix.

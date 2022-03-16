@@ -42,7 +42,7 @@ def test_latent_inv():
 
 def test_latent_nm():
     ps, py, inv = test_latent_py_ps_inv()
-    nm2 = latent_algebra.compute_noise_matrix_from_inverse(ps, inv, py)
+    nm2 = latent_algebra.compute_noise_matrix_from_inverse(ps, inv, py=py)
     assert(np.all(abs(nm - nm2) < 1e-3))
 
 
@@ -120,11 +120,11 @@ def test_pyx_error():
     pred_probs = np.array([0.1, 0.3, 0.6])
     ps, py, inv = test_latent_py_ps_inv()
     try:
-        pyx = latent_algebra.compute_pyx(pred_probs, nm, inv)
+        pyx = latent_algebra.compute_pyx(pred_probs, nm, inverse_noise_matrix=inv)
     except ValueError as e:
         assert('should be (N, K)' in str(e))
     with pytest.raises(ValueError) as e:
-        pyx = latent_algebra.compute_pyx(pred_probs, nm, inv)
+        pyx = latent_algebra.compute_pyx(pred_probs, nm, inverse_noise_matrix=inv)
 
 
 def test_compute_py_method_marginal_true_labels_class_counts_none_error():

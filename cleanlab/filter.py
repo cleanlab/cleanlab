@@ -54,19 +54,6 @@ except ImportError as e:
 # Leave at least 1 example in each class after filtering/pruning, even if noise estimates are larger
 MIN_NUM_PER_CLASS = 1
 
-# For python 2/3 compatibility, define pool context manager
-# to support the 'with' statement in Python 2
-if sys.version_info[0] == 2:
-    from contextlib import contextmanager
-
-    @contextmanager
-    def multiprocessing_context(*args, **kwargs):
-        pool = multiprocessing.Pool(*args, **kwargs)
-        yield pool
-        pool.terminate()
-else:
-    multiprocessing_context = multiprocessing.Pool
-
 # Globals to be shared across threads in multiprocessing
 mp_params = {}  # parameters passed to multiprocessing helper functions
 
@@ -167,7 +154,7 @@ def _prune_by_count(k, args=None):
     Parameters
     ----------
     k : int (between 0 and num classes - 1)
-      The true, hidden label class of interest."""
+      The true_label class of interest."""
 
     if args:  # Single processing - params are passed in
         labels, label_counts, prune_count_matrix, pred_probs, multi_label = args
@@ -235,7 +222,7 @@ def multiclass_crossval_predict(labels, pyx):
     return pred
 
 
-def find_label_issues(labels, pred_probs, confident_joint=None, filter_by='prune_by_noise_rate',
+def find_label_issues(labels, pred_probs, *, confident_joint=None, filter_by='prune_by_noise_rate',
                       return_indices_ranked_by=None, multi_label=False, frac_noise=1.0,
                       num_to_remove_per_class=None, n_jobs=None, verbose=0):
     """By default, this method returns a boolean mask for the entire dataset where True represents
@@ -248,9 +235,9 @@ def find_label_issues(labels, pred_probs, confident_joint=None, filter_by='prune
     frac_noise = 1.0, all "confident" estimated noise indices are returned.
     * If you encounter the error 'pred_probs is not defined', try setting n_jobs = 1.
 
-    WARNING! is a matrix with K model-predicted probabilities and num_to_remove_per_class parameters are only supported when filter_by
-    is either 'prune_by_noise_rate', 'prune_by_class', or 'both'. They are not supported for methods
-    'confident_learning' or 'predicted_neq_given'. TODO.
+    WARNING! is a matrix with K model-predicted probabilities and num_to_remove_per_class parameters
+    are only supported when filter_by is either 'prune_by_noise_rate', 'prune_by_class', or 'both'.
+    They are not supported for methods 'confident_learning' or 'predicted_neq_given'. TODO.
 
     Parameters
     ----------
@@ -417,7 +404,7 @@ def find_label_issues(labels, pred_probs, confident_joint=None, filter_by='prune
     # Operations are parallelized across all CPU processes
     if filter_by == 'prune_by_class' or filter_by == 'both':
         if n_jobs > 1:  # parallelize
-            with multiprocessing_context(
+            with multiprocessing.Pool(
                     n_jobs,
                     initializer=_init,
                     initargs=(_labels, _label_counts, _prune_count_matrix,
@@ -442,7 +429,7 @@ def find_label_issues(labels, pred_probs, confident_joint=None, filter_by='prune
 
     if filter_by == 'prune_by_noise_rate' or filter_by == 'both':
         if n_jobs > 1:  # parallelize
-            with multiprocessing_context(
+            with multiprocessing.Pool(
                     n_jobs,
                     initializer=_init,
                     initargs=(_labels, _label_counts, _prune_count_matrix,
@@ -489,13 +476,18 @@ def find_label_issues(labels, pred_probs, confident_joint=None, filter_by='prune
 
     # TODO: run count.num_label_issues() and adjust the total issues found here to match
     if return_indices_ranked_by is not None:
-        er = order_label_issues(label_issues_mask, labels, pred_probs, return_indices_ranked_by)
+        er = order_label_issues(
+            label_issues_mask=label_issues_mask,
+            labels=labels,
+            pred_probs=pred_probs,
+            rank_by=return_indices_ranked_by,
+        )
         return er
-
+    confident_joint
     return label_issues_mask
 
 
-def keep_at_least_n_per_class(prune_count_matrix, n, frac_noise=1.0):
+def keep_at_least_n_per_class(prune_count_matrix, n, *, frac_noise=1.0):
     """Make sure every class has at least n examples after removing noise.
     Functionally, increase each column, increases the diagonal term #(true_label=k,label=k)
     of prune_count_matrix until it is at least n, distributing the amount
@@ -591,7 +583,7 @@ def reduce_prune_counts(prune_count_matrix, frac_noise=1.0):
     return new_mat.astype(int)
 
 
-def find_predicted_neq_given(labels, pred_probs, multi_label=False):
+def find_predicted_neq_given(labels, pred_probs, *, multi_label=False):
     """This is the simplest baseline approach. Just consider
     anywhere argmax != labels as a label error.
 
@@ -629,6 +621,7 @@ def find_predicted_neq_given(labels, pred_probs, multi_label=False):
 def find_label_issues_using_argmax_confusion_matrix(
     labels,
     pred_probs,
+    *,
     calibrate=True,
     filter_by='prune_by_noise_rate',
 ):

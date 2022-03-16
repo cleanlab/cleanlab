@@ -66,7 +66,8 @@ def test_loaders(
                 X, y, cnn, cv_n_folds=2)
             est_py, est_nm, est_inv = estimate_latent(cj, y)
             # algorithmic identification of label issues
-            err_idx = cleanlab.filter.find_label_issues(y, pred_probs, est_inv, filter_by=filter_by)
+            err_idx = cleanlab.filter.find_label_issues(y, pred_probs, confident_joint=cj,
+                                                        filter_by=filter_by)
             assert err_idx is not None
 
             # Get prediction on loader set.

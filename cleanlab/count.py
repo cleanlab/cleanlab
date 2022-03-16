@@ -93,7 +93,7 @@ def num_label_issues(
     return num_issues
 
 
-def calibrate_confident_joint(confident_joint, labels, multi_label=False):
+def calibrate_confident_joint(confident_joint, labels, *, multi_label=False):
     """Calibrates any confident joint estimate P(label=i, true_label=j) such that
     np.sum(cj) == len(labels) and np.sum(cj, axis = 1) == np.bincount(labels).
 
@@ -148,7 +148,7 @@ def calibrate_confident_joint(confident_joint, labels, multi_label=False):
     return round_preserving_row_totals(calibrated_cj)
 
 
-def estimate_joint(labels, pred_probs=None, confident_joint=None, multi_label=False):
+def estimate_joint(labels, pred_probs=None, *, confident_joint=None, multi_label=False):
     """Estimates the joint distribution of label noise P(label=i, true_label=j) guaranteed to
       * sum to 1
       * np.sum(joint_estimate, axis = 1) == p(labels)
@@ -179,6 +179,7 @@ def estimate_joint(labels, pred_probs=None, confident_joint=None, multi_label=Fa
 def _compute_confident_joint_multi_label(
         labels,
         pred_probs,
+        *,
         thresholds=None,
         calibrate=True,
         return_indices_of_off_diagonals=False,
@@ -211,7 +212,7 @@ def _compute_confident_joint_multi_label(
 
     thresholds : iterable (list or np.array) of shape (K, 1)  or (K,)
         P(label^=k|label=k). If an example has a predicted probability "greater" than
-        this threshold, it is counted as having hidden true_label = k. This is
+        this threshold, it is counted as having true_label = k. This is
         not used for filtering/pruning, only for estimating the noise rates using
         confident counts. This value should be between 0 and 1. Default is None.
 
@@ -257,6 +258,7 @@ def _compute_confident_joint_multi_label(
 def compute_confident_joint(
         labels,
         pred_probs,
+        *,
         thresholds=None,
         calibrate=True,
         multi_label=False,
@@ -300,7 +302,7 @@ def compute_confident_joint(
 
     thresholds : iterable (list or np.array) of shape (K, 1)  or (K,)
         P(label^=k|label=k). If an example has a predicted probability "greater" than
-        this threshold, it is counted as having hidden true_label = k. This is
+        this threshold, it is counted as having true_label = k. This is
         not used for filtering/pruning, only for estimating the noise rates using
         confident counts. This value should be between 0 and 1. Default is None.
 
@@ -411,6 +413,7 @@ def compute_confident_joint(
 def estimate_latent(
         confident_joint,
         labels,
+        *,
         py_method='cnt',
         converge_latent_estimates=False,
 ):
@@ -458,7 +461,8 @@ def estimate_latent(
     # Confident Counts Estimator: p(true_label=k_y|label=k_s) ~ |true_label=k_y and label=k_s| / |label=k_s|
     inv_noise_matrix = confident_joint.T / labels_class_counts
     # Compute the prior p(y), the latent (uncorrupted) class distribution.
-    py = compute_py(ps, noise_matrix, inv_noise_matrix, py_method, true_labels_class_counts)
+    py = compute_py(ps, noise_matrix, inv_noise_matrix, py_method=py_method,
+                    true_labels_class_counts=true_labels_class_counts)
     # Clip noise rates to be valid probabilities.
     noise_matrix = clip_noise_rates(noise_matrix)
     inv_noise_matrix = clip_noise_rates(inv_noise_matrix)
@@ -477,6 +481,7 @@ def estimate_latent(
 def estimate_py_and_noise_matrices_from_probabilities(
         labels,
         pred_probs,
+        *,
         thresholds=None,
         converge_latent_estimates=True,
         py_method='cnt',
@@ -513,7 +518,7 @@ def estimate_py_and_noise_matrices_from_probabilities(
 
     thresholds : iterable (list or np.array) of shape (K, 1)  or (K,)
         P(label^=k|label=k). If an example has a predicted probability "greater" than
-        this threshold, it is counted as having hidden true_label = k. This is
+        this threshold, it is counted as having true_label = k. This is
         not used for filtering/pruning, only for estimating the noise rates using
         confident counts. This value should be between 0 and 1. Default is None.
 
@@ -555,6 +560,7 @@ def estimate_confident_joint_and_cv_pred_proba(
         X,
         labels,
         clf=LogReg(multi_class='auto', solver='lbfgs'),
+        *,
         cv_n_folds=5,
         thresholds=None,
         seed=None,
@@ -599,7 +605,7 @@ def estimate_confident_joint_and_cv_pred_proba(
 
     thresholds : iterable (list or np.array) of shape (K, 1)  or (K,)
       P(label^=k|label=k). If an example has a predicted probability "greater" than
-      this threshold, it is counted as having hidden true_label = k. This is
+      this threshold, it is counted as having true_label = k. This is
       not used for filtering/pruning, only for estimating the noise rates using
       confident counts. This value should be between 0 and 1. Default is None.
 
@@ -660,6 +666,7 @@ def estimate_py_noise_matrices_and_cv_pred_proba(
         X,
         labels,
         clf=LogReg(multi_class='auto', solver='lbfgs'),
+        *,
         cv_n_folds=5,
         thresholds=None,
         converge_latent_estimates=False,
@@ -698,7 +705,7 @@ def estimate_py_noise_matrices_and_cv_pred_proba(
 
     thresholds : iterable (list or np.array) of shape (K, 1)  or (K,)
       P(label^=k|label=k). If an example has a predicted probability "greater" than
-      this threshold, it is counted as having hidden true_label = k. This is
+      this threshold, it is counted as having true_label = k. This is
       not used for filtering/pruning, only for estimating the noise rates using
       confident counts. This value should be between 0 and 1. Default is None.
 
@@ -745,6 +752,7 @@ def estimate_cv_predicted_probabilities(
         X,
         labels,  # class labels can be noisy (labels) or not noisy (y).
         clf=LogReg(multi_class='auto', solver='lbfgs'),
+        *,
         cv_n_folds=5,
         seed=None,
 ):
@@ -797,6 +805,7 @@ def estimate_noise_matrices(
         X,
         labels,
         clf=LogReg(multi_class='auto', solver='lbfgs'),
+        *,
         cv_n_folds=5,
         thresholds=None,
         converge_latent_estimates=True,
@@ -828,7 +837,7 @@ def estimate_noise_matrices(
 
     thresholds : iterable (list or np.array) of shape (K, 1)  or (K,)
       P(label^=k|label). If an example has a predicted probability "greater" than
-      this threshold, it is counted as having hidden true_label = k. This is
+      this threshold, it is counted as having true_label = k. This is
       not used for filtering/pruning, only for estimating the noise rates using
       confident counts. This value should be between 0 and 1. Default is None.
 
@@ -861,6 +870,7 @@ def converge_estimates(
         py,
         noise_matrix,
         inverse_noise_matrix,
+        *,
         inv_noise_matrix_iterations=5,
         noise_matrix_iterations=3,
 ):
@@ -922,9 +932,9 @@ def converge_estimates(
     for j in range(noise_matrix_iterations):
         for i in range(inv_noise_matrix_iterations):
             inverse_noise_matrix = compute_inv_noise_matrix(
-                py, noise_matrix, ps)
+                py=py, noise_matrix=noise_matrix, ps=ps)
             py = compute_py(ps, noise_matrix, inverse_noise_matrix)
         noise_matrix = compute_noise_matrix_from_inverse(
-            ps, inverse_noise_matrix, py)
+            ps=ps, inverse_noise_matrix=inverse_noise_matrix, py=py)
 
     return py, noise_matrix, inverse_noise_matrix

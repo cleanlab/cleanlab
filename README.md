@@ -72,9 +72,9 @@ Past release notes and **future features planned** is available [here](https://g
 
 ```python
 # Compute pred_probs (n x m matrix of predicted probabilities) on your own, with any classifier.
+# Be sure you compute probs in a holdout/out-of-sample manner (e.g. via cross-validation)
 # Here is an example that shows in detail how to compute pred_probs on CIFAR-10:
 #    https://github.com/cleanlab/examples/tree/master/cifar10
-# Be sure you compute probs in a holdout/out-of-sample manner (e.g. via cross-validation)
 # Now finding label issues is trivial with cleanlab... its one line of code.
 # label issues are ordered by likelihood of being an error. First index is most likely error.
 from cleanlab.filter import find_label_issues
@@ -341,14 +341,6 @@ joint = estimate_joint(
     confident_joint=None,  # Provide if you have it already
 )
 ```
-
-## The Polyplex
-
-The key to learning in the presence of label issues is estimating the joint distribution between the actual, hidden labels ‘*y*’ and the observed, noisy labels ‘*s*’. Using `cleanlab` and the theory of confident learning, we can completely characterize the trace of the latent joint distribution, *trace(P(s,y))*, given *p(y)*, for any fraction of label errors, i.e. for any trace of the noisy channel, *trace(P(s|y))*.
-
-You can check out how to do this yourself here:
-1. [Drawing Polyplices](https://github.com/cleanlab/examples/blob/master/drawing_polyplices.ipynb)
-2. [Computing Polyplices](https://github.com/cleanlab/cleanlab/blob/master/cleanlab/polyplex.py)
 
 ## PU learning with cleanlab:
 

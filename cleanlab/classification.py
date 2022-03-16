@@ -74,8 +74,27 @@ the ``sklearn.base.BaseEstimator``:
 Note
 ----
 
-* `labels` - denotes *noisy labels*. This is just dataset labels, maybe with errors.
-* Class labels (K classes) must be formatted as natural numbers: 0, 1, .., K-1
+* `labels` - The given (maybe noisy) labels in the original dataset, which may have errors.
+* Class labels (K classes) must be formatted as natural numbers: 0, 1, ..., K-1
+
+Note
+----
+
+Confident Learning is the state-of-the-art (Northcutt et al., 2021) for
+weak supervision, finding label issues in datasets, learning with noisy
+labels, uncertainty estimation, and more. It works with ANY classifier,
+including deep neural networks. See clf parameter.
+
+Confident learning is a subfield of theory and algorithms of machine learning with noisy labels.
+Cleanlab achieves state-of-the-art performance of any open-sourced implementation of confident
+learning across a variety of tasks like multi-class classification, multi-label classification,
+and PU learning.
+
+Given any classifier having the predict_proba() method, an input feature
+matrix, `X`, and a discrete vector of noisy labels, `labels`, Confident Learning estimates the
+classifications that would be obtained if the `true_labels` had instead been provided
+to the classifier during training. `labels` denotes the noisy label instead of
+\\tilde(y) (used in confident learning paper), for ASCII encoding reasons.
 """
 
 
@@ -104,27 +123,10 @@ from cleanlab.filter import find_label_issues
 
 
 class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
-    """Automated learning with noisy labels using any model.
-
-    Confident Learning is the state-of-the-art (Northcutt et al., 2021) for
-    weak supervision, finding label issues in datasets, learning with noisy
-    labels, uncertainty estimation, and more. It works with ANY classifier,
-    including deep neural networks. See clf parameter.
-
-    This subfield of machine learning is referred to as Confident Learning.
-    Confident Learning also achieves state-of-the-art performance for binary
-    classification with noisy labels and positive-unlabeled learning
-    (PU learning) where a subset of positive examples is given and
-    all other examples are unlabeled and assumed to be negative examples.
-    Confident Learning works by "learning from confident examples." Confident
-    examples are identified as examples with high predicted probability
-    for their training label.
-
-    Given any classifier having the predict_proba() method, an input feature
-    matrix, `X`, and a discrete vector of noisy labels, `labels`, Confident Learning estimates the
-    classifications that would be obtained if the hidden, true labels, y, had instead been provided
-    to the classifier during training. "labels" denotes the noisy label instead of
-    \\tilde(y) (used in confident learning paper), for ASCII encoding reasons.
+    """Automated and robust learning with noisy labels using any dataset and any model. This class
+    trains a model `clf` with error-prone, noisy labels as if the model had been instead trained
+    on a dataset with perfect labels. It achieves this by cleaning out the error and providing
+    cleaned data while training.
 
     Parameters
     ----------
@@ -189,6 +191,7 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
     def __init__(
             self,
             clf=None,
+            *,
             seed=None,
             # Hyper-parameters (used by .fit() function)
             cv_n_folds=5,
@@ -242,16 +245,15 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
             self,
             X,
             labels,
+            *,
             pred_probs=None,
             thresholds=None,
             noise_matrix=None,
             inverse_noise_matrix=None,
     ):
-        """This method implements the confident learning. It counts examples
-        that are likely labeled correctly and incorrectly and uses their ratio
-        to create a predicted confusion matrix.
-        This function fits the classifier (self.clf) to (X, labels) accounting for
-        the noise in both the positive and negative sets.
+        """This method trains the model `self.clf` with error-prone, noisy labels as if
+        the model had been instead trained on a dataset with perfect labels.
+        It achieves this by cleaning out the error and providing cleaned data while training.
 
         Parameters
         ----------
@@ -280,7 +282,7 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
           class label.
           Default is ``None``. These are computed for you automatically.
           If an example has a predicted probability "greater" than
-          this threshold, it is counted as having hidden true_label = k. This is
+          this threshold, it is counted as having true_label = k. This is
           not used for pruning/filtering, only for estimating the noise rates using
           confident counts. Values in list should be between 0 and 1.
 
@@ -394,8 +396,7 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
         labels_cleaned = labels[x_mask]
 
         # Check if sample_weight in clf.fit(). Not compatible with Python 2.
-        if hasattr(inspect, 'getfullargspec') and \
-                'sample_weight' in inspect.getfullargspec(self.clf.fit).args:
+        if 'sample_weight' in inspect.getfullargspec(self.clf.fit).args:
             # Re-weight examples in the loss function for the final fitting
             # labels.t. the "apparent" original number of examples in each class
             # is preserved, even though the pruned sets may differ.
@@ -412,7 +413,7 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
         return self.clf
 
     def predict(self, *args, **kwargs):
-        """Returns a binary vector of predictions.
+        """Returns a vector of predictions.
 
         Parameters
         ----------
@@ -434,7 +435,7 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
 
     def score(self, X, y, sample_weight=None):
         """Returns the clf's score on a test set X with labels y.
-        Uses the example_models default scoring function.
+        Uses the model/clf's default scoring function.
 
         Parameters
         ----------
@@ -450,8 +451,7 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
         if hasattr(self.clf, 'score'):
 
             # Check if sample_weight in clf.score(). Not compatible with Python 2.
-            if hasattr(inspect, 'getfullargspec') and 'sample_weight' in \
-                    inspect.getfullargspec(self.clf.score).args:
+            if 'sample_weight' in inspect.getfullargspec(self.clf.score).args:
                 return self.clf.score(X, y, sample_weight=sample_weight)
             else:
                 return self.clf.score(X, y)

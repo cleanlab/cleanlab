@@ -34,6 +34,7 @@ def order_label_issues(
     label_issues_mask,
     labels,
     pred_probs,
+    *,
     rank_by="normalized_margin",
 ):
     """Sorts label issues by normalized margin.

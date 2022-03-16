@@ -25,11 +25,6 @@ import scipy
 import warnings
 import pytest
 
-# Ignore this warning. getargspec is necessary to support old versions.
-ARGSPEC_WARNING = "DeprecationWarning: inspect.getargspec() is deprecated" \
-                  " since Python 3.0, use inspect.signature() or" \
-                  " inspect.getfullargspec()"
-warnings.filterwarnings("ignore", message=ARGSPEC_WARNING)
 
 SEED = 1
 
@@ -228,9 +223,9 @@ def test_fit_with_inm(
         seed=seed,
     )
     inm = compute_inv_noise_matrix(
-        data["py"],
-        data["noise_matrix"],
-        data["ps"],
+        py=data["py"],
+        noise_matrix=data["noise_matrix"],
+        ps=data["ps"],
     )
     # Learn with noisy labels with inverse noise matrix given
     lnl.fit(data['X_train'], data['labels'], inverse_noise_matrix=inm)
@@ -253,9 +248,9 @@ def test_clf_fit_nm_inm(sparse):
     lnl = LearningWithNoisyLabels(seed=SEED)
     nm = data['noise_matrix']
     inm = compute_inv_noise_matrix(
-        data["py"],
-        nm,
-        data["ps"],
+        py=data["py"],
+        noise_matrix=nm,
+        ps=data["ps"],
     )
     lnl.fit(
         X=data['X_train'],

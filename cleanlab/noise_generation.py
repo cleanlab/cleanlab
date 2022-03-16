@@ -24,7 +24,7 @@ from cleanlab.utils.util import value_counts
 import warnings
 
 
-def noise_matrix_is_valid(noise_matrix, py, verbose=False):
+def noise_matrix_is_valid(noise_matrix, py, *, verbose=False):
     """Given a prior py = p(true_label=k), returns true if the given noise_matrix is a
     learnable matrix. Learnability means that it is possible to achieve
     better than random performance, on average, for the amount of noise in
@@ -154,6 +154,7 @@ def generate_noisy_labels(true_labels, noise_matrix):
 def generate_noise_matrix_from_trace(
         K,
         trace,
+        *,
         max_trace_prob=1.0,
         min_trace_prob=1e-5,
         max_noise_rate=1 - 1e-5,
@@ -195,7 +196,7 @@ def generate_noise_matrix_from_trace(
       is satisfied. This requires that Trace > 1.
 
     py : np.array (shape (K, 1))
-      Fraction (prior probability) of each true/hidden class label, P(true_label = k).
+      Fraction (prior probability) of each true class label, P(true_label = k).
       REQUIRED when valid_noise_matrix == True.
 
     frac_zero_noise_rates : float
@@ -310,6 +311,7 @@ def generate_noise_matrix_from_trace(
 def generate_n_rand_probabilities_that_sum_to_m(
         n,
         m,
+        *,
         max_prob=1.0,
         min_prob=0.0,
 ):
@@ -383,6 +385,7 @@ def generate_n_rand_probabilities_that_sum_to_m(
 def randomly_distribute_N_balls_into_K_bins(
         N,  # int
         K,  # int
+        *,
         max_balls_per_bin=None,
         min_balls_per_bin=None,
 ):
@@ -428,6 +431,7 @@ def randomly_distribute_N_balls_into_K_bins(
 
 def generate_noise_matrix(
         K,
+        *,
         max_noise_rate=1.0,
         frac_zero_noise_rates=0.0,
         verbose=False,
