@@ -45,7 +45,7 @@ try:
     import tqdm
 
     tqdm_exists = True
-except ImportError as e:
+except ImportError as e:  # pragma: no cover
     tqdm_exists = False
 
     w = '''To see estimated completion times for methods in cleanlab.filter, "pip install tqdm".'''

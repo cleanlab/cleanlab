@@ -69,8 +69,8 @@ def make_data(
     )
 
     # Generate our noisy labels using the noise_matrix.
-    s = generate_noisy_labels(true_labels_train, noise_matrix)
-    ps = np.bincount(s) / float(len(s))
+    labels = generate_noisy_labels(true_labels_train, noise_matrix)
+    ps = np.bincount(labels) / float(len(labels))
 
     # Compute inverse noise matrix
     inv = compute_inv_noise_matrix(py, noise_matrix, ps=ps)
@@ -78,7 +78,7 @@ def make_data(
     # Estimate pred_probs
     latent = count.estimate_py_noise_matrices_and_cv_pred_proba(
         X=X_train,
-        labels=s,
+        labels=labels,
         cv_n_folds=3,
     )
 
@@ -87,7 +87,7 @@ def make_data(
         "true_labels_train": true_labels_train,
         "X_test": X_test,
         "true_labels_test": true_labels_test,
-        "labels": s,
+        "labels": labels,
         "ps": ps,
         "py": py,
         "noise_matrix": noise_matrix,
@@ -126,7 +126,8 @@ labels_ = np.array([0, 0, 1, 1, 1, 1, 1, 1, 1, 2])
 def test_exact_prune_count():
     remove = 5
     s = data['labels']
-    noise_idx = filter.find_label_issues(labels=s, pred_probs=data['pred_probs'], num_to_remove_per_class=remove,
+    noise_idx = filter.find_label_issues(labels=s, pred_probs=data['pred_probs'],
+                                         num_to_remove_per_class=remove,
                                          filter_by='prune_by_class')
     assert (all(value_counts(s[noise_idx]) == remove))
 
@@ -135,18 +136,21 @@ def test_exact_prune_count():
 def test_pruning_both(n_jobs):
     remove = 5
     s = data['labels']
-    class_idx = filter.find_label_issues(labels=s, pred_probs=data['pred_probs'], num_to_remove_per_class=remove,
+    class_idx = filter.find_label_issues(labels=s, pred_probs=data['pred_probs'],
+                                         num_to_remove_per_class=remove,
                                          filter_by='prune_by_class', n_jobs=n_jobs)
-    nr_idx = filter.find_label_issues(labels=s, pred_probs=data['pred_probs'], num_to_remove_per_class=remove,
+    nr_idx = filter.find_label_issues(labels=s, pred_probs=data['pred_probs'],
+                                      num_to_remove_per_class=remove,
                                       filter_by='prune_by_noise_rate', n_jobs=n_jobs)
-    both_idx = filter.find_label_issues(labels=s, pred_probs=data['pred_probs'], num_to_remove_per_class=remove,
+    both_idx = filter.find_label_issues(labels=s, pred_probs=data['pred_probs'],
+                                        num_to_remove_per_class=remove,
                                         filter_by='both', n_jobs=n_jobs)
     assert (all(s[both_idx] == s[class_idx & nr_idx]))
 
 
 @pytest.mark.parametrize("filter_by", ['prune_by_noise_rate', 'prune_by_class', 'both',
-                                          'confident_learning',
-                                          'predicted_neq_given'])
+                                       'confident_learning',
+                                       'predicted_neq_given'])
 def test_prune_on_small_data(filter_by):
     data = make_data(sizes=[3, 3, 3])
     noise_idx = filter.find_label_issues(labels=data['labels'], pred_probs=data['pred_probs'],
@@ -162,8 +166,8 @@ def test_calibrate_joint():
         calibrate=False,
     )
     calibrated_cj = count.calibrate_confident_joint(
-        labels=data["labels"],
         confident_joint=cj,
+        labels=data["labels"],
     )
     label_counts = np.bincount(data["labels"])
 
@@ -181,10 +185,12 @@ def test_calibrate_joint():
     assert (np.all(calibrated_cj == calibrated_cj2))
 
 
-def test_estimate_joint():
+@pytest.mark.parametrize("use_confident_joint", [True, False])
+def test_estimate_joint(use_confident_joint):
     joint = count.estimate_joint(
         labels=data["labels"],
         pred_probs=data["pred_probs"],
+        confident_joint=data["cj"] if use_confident_joint else None
     )
 
     # Check that joint sums to 1.
@@ -289,13 +295,14 @@ def test_pruning_order_method():
     for method in order_methods:
         results.append(
             filter.find_label_issues(
-                labels=data['labels'], pred_probs=data['pred_probs'], return_indices_ranked_by=method))
+                labels=data['labels'], pred_probs=data['pred_probs'],
+                return_indices_ranked_by=method))
     assert (len(results[0]) == len(results[1]))
 
 
 @pytest.mark.parametrize("multi_label", [True, False])
 @pytest.mark.parametrize("filter_by", ['prune_by_noise_rate', 'prune_by_class', 'both',
-                                          'confident_learning'])
+                                       'confident_learning'])
 def test_find_label_issues_multi_label(multi_label, filter_by):
     """Note: argmax_not_equal method is not compatible with multi_label == True"""
 
@@ -310,16 +317,26 @@ def test_find_label_issues_multi_label(multi_label, filter_by):
     assert (acc > 0.85)
 
 
-def test_confident_learning_filter():
-    cj, indices = count.compute_confident_joint(
-        labels=data["labels"],
-        pred_probs=data["pred_probs"],
-        calibrate=False,
-        return_indices_of_off_diagonals=True,
-    )
-    # Check that the number of 'label issues' found in off diagonals
-    # matches the off diagonals of the uncalibrated confident joint
-    assert (len(indices) == (np.sum(cj) - np.trace(cj)))
+@pytest.mark.parametrize("return_indices_of_off_diagonals", [True, False])
+def test_confident_learning_filter(return_indices_of_off_diagonals):
+    if return_indices_of_off_diagonals:
+        cj, indices = count.compute_confident_joint(
+            labels=data["labels"],
+            pred_probs=data["pred_probs"],
+            calibrate=False,
+            return_indices_of_off_diagonals=True,
+        )
+        # Check that the number of 'label issues' found in off diagonals
+        # matches the off diagonals of the uncalibrated confident joint
+        assert (len(indices) == (np.sum(cj) - np.trace(cj)))
+    else:
+        cj = count.compute_confident_joint(
+            labels=data["labels"],
+            pred_probs=data["pred_probs"],
+            calibrate=False,
+            return_indices_of_off_diagonals=False,
+        )
+        assert (np.trace(cj) > -1)
 
 
 def test_predicted_neq_given_filter():
@@ -341,7 +358,7 @@ def test_predicted_neq_given_filter():
 
 @pytest.mark.parametrize("calibrate", [True, False])
 @pytest.mark.parametrize("filter_by", ['prune_by_noise_rate',
-                                          'prune_by_class', 'both'])
+                                       'prune_by_class', 'both'])
 def test_find_label_issues_using_argmax_confusion_matrix(calibrate, filter_by):
     label_issues = filter.find_label_issues_using_argmax_confusion_matrix(
         labels_, pred_probs_, calibrate=calibrate, filter_by=filter_by)
@@ -354,6 +371,16 @@ def test_find_label_issue_filters_match_origin_functions():
     label_issues2 = filter.find_predicted_neq_given(labels_, pred_probs_)
     assert (all(label_issues == label_issues2))
     label_issues3 = filter.find_label_issues(labels_, pred_probs_,
-                                             filter_by='confident_learning')
+                                             filter_by='confident_learning', verbose=True)
     label_issues4 = filter.find_predicted_neq_given(labels_, pred_probs_)
     assert (all(label_issues3 == label_issues4))
+
+
+def test_num_label_issues():
+    n = count.num_label_issues(labels=data['labels'], pred_probs=data['pred_probs'],
+                               confident_joint=data['cj'])
+    n2 = filter.find_label_issues(labels=data['labels'], pred_probs=data['pred_probs'],
+                                  confident_joint=data['cj'])
+    # TODO: eventually these should be the same value
+    assert (n == 37)
+    assert (sum(n2) == 35)

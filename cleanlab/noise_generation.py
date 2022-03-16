@@ -132,7 +132,7 @@ def generate_noisy_labels(true_labels, noise_matrix):
     for k in range(K):  # Iterate over true_label == k
         # Get the noisy labels that have non-zero counts
         labels_per_class = np.where(count_joint[:, k] != 0)[0]
-        # Find out how many of each noisy labels label we need to flip to
+        # Find out how many of each noisy  label we need to flip to
         label_counts = count_joint[labels_per_class, k]
         # Create a list of the new noisy labels
         noise = [labels_per_class[i] for i, c in enumerate(label_counts) for z in range(c)]
