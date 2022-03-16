@@ -1,16 +1,16 @@
 # Copyright (C) 2017-2022  Cleanlab Inc.
 # This file is part of cleanlab.
-# 
+#
 # cleanlab is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as published
 # by the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # cleanlab is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Affero General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU Affero General Public License
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
@@ -38,11 +38,11 @@ MINIMUM_BATCH_SIZE = 16
 
 # Loss function for Co-Teaching
 def loss_coteaching(
-        y_1,
-        y_2,
-        t,
-        forget_rate,
-        class_weights=None,
+    y_1,
+    y_2,
+    t,
+    forget_rate,
+    class_weights=None,
 ):
     """Co-Teaching Loss function.
 
@@ -79,10 +79,8 @@ def loss_coteaching(
     ind_2_update = ind_2_sorted[:num_remember]
     # Share updates between the two models.
     # TODO: these class weights should take into account the ind_mask filters.
-    loss_1_update = F.cross_entropy(
-        y_1[ind_2_update], t[ind_2_update], weight=class_weights)
-    loss_2_update = F.cross_entropy(
-        y_2[ind_1_update], t[ind_1_update], weight=class_weights)
+    loss_1_update = F.cross_entropy(y_1[ind_2_update], t[ind_2_update], weight=class_weights)
+    loss_2_update = F.cross_entropy(y_2[ind_1_update], t[ind_1_update], weight=class_weights)
 
     return (
         torch.sum(loss_1_update) / num_remember,
@@ -97,8 +95,7 @@ def initialize_lr_scheduler(lr=0.001, epochs=250, epoch_decay_start=80):
     alpha_plan = [lr] * epochs
     beta1_plan = [mom1] * epochs
     for i in range(epoch_decay_start, epochs):
-        alpha_plan[i] = float(epochs - i) / (
-                epochs - epoch_decay_start) * lr
+        alpha_plan[i] = float(epochs - i) / (epochs - epoch_decay_start) * lr
         beta1_plan[i] = mom2
     return alpha_plan, beta1_plan
 
@@ -106,22 +103,31 @@ def initialize_lr_scheduler(lr=0.001, epochs=250, epoch_decay_start=80):
 def adjust_learning_rate(optimizer, epoch, alpha_plan, beta1_plan):
     """Scheduler to adjust learning rate and betas for Adam Optimizer"""
     for param_group in optimizer.param_groups:
-        param_group['lr'] = alpha_plan[epoch]
-        param_group['betas'] = (beta1_plan[epoch], 0.999)  # Only change beta1
+        param_group["lr"] = alpha_plan[epoch]
+        param_group["betas"] = (beta1_plan[epoch], 0.999)  # Only change beta1
 
 
 def forget_rate_scheduler(epochs, forget_rate, num_gradual, exponent):
     """Tells Co-Teaching what fraction of examples to forget at each epoch."""
     # define how many things to forget at each rate schedule
     forget_rate_schedule = np.ones(epochs) * forget_rate
-    forget_rate_schedule[:num_gradual] = np.linspace(
-        0, forget_rate ** exponent, num_gradual)
+    forget_rate_schedule[:num_gradual] = np.linspace(0, forget_rate**exponent, num_gradual)
     return forget_rate_schedule
 
 
 # Train the Model
-def train(train_loader, epoch, model1, optimizer1, model2, optimizer2, args,
-          forget_rate_schedule, class_weights, accuracy):
+def train(
+    train_loader,
+    epoch,
+    model1,
+    optimizer1,
+    model2,
+    optimizer2,
+    args,
+    forget_rate_schedule,
+    class_weights,
+    accuracy,
+):
     """PyTorch training function.
 
     Parameters
@@ -163,7 +169,7 @@ def train(train_loader, epoch, model1, optimizer1, model2, optimizer2, args,
             # and accuracy will actually go down with each epoch.
             # To avoid this, do not train on the last batch if it's small.
             continue
-        
+
         images = Variable(images).cuda()
         labels = Variable(labels).cuda()
 
@@ -190,11 +196,20 @@ def train(train_loader, epoch, model1, optimizer1, model2, optimizer2, args,
         loss_2.backward()
         optimizer2.step()
         if (i + 1) % args.print_freq == 0:
-            print('Epoch [%d/%d], Iter [%d/%d] Training Accuracy1: %.4F, '
-                  'Training Accuracy2: %.4f, Loss1: %.4f, Loss2: %.4f ' % (
-                      epoch + 1, args.epochs, i + 1,
-                      len(train_loader.dataset) // args.batch_size, prec1,
-                      prec2, loss_1.data.item(), loss_2.data.item(),))
+            print(
+                "Epoch [%d/%d], Iter [%d/%d] Training Accuracy1: %.4F, "
+                "Training Accuracy2: %.4f, Loss1: %.4f, Loss2: %.4f "
+                % (
+                    epoch + 1,
+                    args.epochs,
+                    i + 1,
+                    len(train_loader.dataset) // args.batch_size,
+                    prec1,
+                    prec2,
+                    loss_1.data.item(),
+                    loss_2.data.item(),
+                )
+            )
 
     train_acc1 = float(train_correct) / float(train_total)
     train_acc2 = float(train_correct2) / float(train_total2)
@@ -203,7 +218,7 @@ def train(train_loader, epoch, model1, optimizer1, model2, optimizer2, args,
 
 # Evaluate the Model
 def evaluate(test_loader, model1, model2):
-    print('Evaluating Co-Teaching Model')
+    print("Evaluating Co-Teaching Model")
     model1.eval()  # Change model to 'eval' mode.
     correct1 = 0
     total1 = 0

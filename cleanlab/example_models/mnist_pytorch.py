@@ -1,22 +1,22 @@
 # Copyright (C) 2017-2022  Cleanlab Inc.
 # This file is part of cleanlab.
-# 
+#
 # cleanlab is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as published
 # by the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # cleanlab is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Affero General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU Affero General Public License
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
 
 # ## A cleanlab compatible PyTorch CNN classifier.
-# 
+#
 # ## Note to use this model you'll need to have pytorch installed
 # See: https://pytorch.org/get-started/locally/
 
@@ -60,12 +60,11 @@ def get_mnist_dataset(loader):  # pragma: no cover
     ----------
     loader : str (values: 'train' or 'test')."""
     dataset = datasets.MNIST(
-        root='../data',
-        train=(loader == 'train'),
+        root="../data",
+        train=(loader == "train"),
         download=True,
         transform=transforms.Compose(
-            [transforms.ToTensor(),
-             transforms.Normalize((0.1307,), (0.3081,))]
+            [transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))]
         ),
     )
     return dataset
@@ -100,12 +99,14 @@ def get_sklearn_digits_dataset(loader):
         def __len__(self):
             return len(self.data)
 
-    transform = transforms.Compose([
-        transforms.ToPILImage(),
-        transforms.Resize(28),
-        transforms.ToTensor(),
-        transforms.Normalize((0.1307,), (0.3081,)),
-    ])
+    transform = transforms.Compose(
+        [
+            transforms.ToPILImage(),
+            transforms.Resize(28),
+            transforms.ToTensor(),
+            transforms.Normalize((0.1307,), (0.3081,)),
+        ]
+    )
     # Get sklearn digits dataset
     X_all, y_all = load_digits(return_X_y=True)
     X_all = X_all.reshape((len(X_all), 8, 8))
@@ -113,15 +114,16 @@ def get_sklearn_digits_dataset(loader):
     y_test = y_all[-SKLEARN_DIGITS_TEST_SIZE:]
     X_train = X_all[:-SKLEARN_DIGITS_TEST_SIZE]
     X_test = X_all[-SKLEARN_DIGITS_TEST_SIZE:]
-    if loader == 'train':
+    if loader == "train":
         return TorchDataset(X_train, y_train, transform=transform)
-    elif loader == 'test':
+    elif loader == "test":
         return TorchDataset(X_test, y_test, transform=transform)
     else:  # prama: no cover
         raise ValueError("loader must be either str 'train' or str 'test'.")
 
 
 if python_version.is_compatible():
+
     class SimpleNet(nn.Module):
         """Basic Pytorch CNN for MNIST-like data."""
 
@@ -198,18 +200,19 @@ class CNN(BaseEstimator):  # Inherits sklearn classifier
     predict_proba
       get the fitted model's probability distribution over classes for test data
     """
+
     def __init__(
-            self,
-            batch_size=64,
-            epochs=6,
-            log_interval=50,  # Set to None to not print
-            lr=0.01,
-            momentum=0.5,
-            no_cuda=False,
-            seed=1,
-            test_batch_size=None,
-            dataset='mnist',
-            loader=None,
+        self,
+        batch_size=64,
+        epochs=6,
+        log_interval=50,  # Set to None to not print
+        lr=0.01,
+        momentum=0.5,
+        no_cuda=False,
+        seed=1,
+        test_batch_size=None,
+        dataset="mnist",
+        loader=None,
     ):
         self.batch_size = batch_size
         self.epochs = epochs
@@ -228,15 +231,14 @@ class CNN(BaseEstimator):  # Inherits sklearn classifier
         if self.cuda:  # pragma: no cover
             self.model.cuda()
 
-        self.loader_kwargs = {'num_workers': 1,
-                              'pin_memory': True} if self.cuda else {}
+        self.loader_kwargs = {"num_workers": 1, "pin_memory": True} if self.cuda else {}
         self.loader = loader
-        if dataset == 'mnist':
+        if dataset == "mnist":
             # pragma: no cover
             self.get_dataset = get_mnist_dataset
             self.train_size = MNIST_TRAIN_SIZE
             self.test_size = MNIST_TEST_SIZE
-        elif dataset == 'sklearn-digits':
+        elif dataset == "sklearn-digits":
             self.get_dataset = get_sklearn_digits_dataset
             self.train_size = SKLEARN_DIGITS_TRAIN_SIZE
             self.test_size = SKLEARN_DIGITS_TEST_SIZE
@@ -245,27 +247,24 @@ class CNN(BaseEstimator):  # Inherits sklearn classifier
         if test_batch_size is None:
             self.test_batch_size = self.test_size
 
-
-    def fit(self, train_idx, train_labels=None, sample_weight=None,
-            loader='train'):
+    def fit(self, train_idx, train_labels=None, sample_weight=None, loader="train"):
         """This function adheres to sklearn's "fit(X, y)" format for
         compatibility with scikit-learn. ** All inputs should be numpy
         arrays, not pyTorch Tensors train_idx is not X, but instead a list of
         indices for X (and y if train_labels is None). This function is a
         member of the cnn class which will handle creation of X, y from the
-        train_idx via the train_loader. """
+        train_idx via the train_loader."""
         if self.loader is not None:
             loader = self.loader
         if train_labels is not None and len(train_idx) != len(train_labels):
-            raise ValueError(
-                "Check that train_idx and train_labels are the same length.")
+            raise ValueError("Check that train_idx and train_labels are the same length.")
 
         if sample_weight is not None:  # pragma: no cover
             if len(sample_weight) != len(train_labels):
-                raise ValueError("Check that train_labels and sample_weight "
-                                 "are the same length.")
-            class_weight = sample_weight[
-                np.unique(train_labels, return_index=True)[1]]
+                raise ValueError(
+                    "Check that train_labels and sample_weight " "are the same length."
+                )
+            class_weight = sample_weight[np.unique(train_labels, return_index=True)[1]]
             class_weight = torch.from_numpy(class_weight).float()
             if self.cuda:
                 class_weight = class_weight.cuda()
@@ -279,9 +278,9 @@ class CNN(BaseEstimator):  # Inherits sklearn classifier
             # Create sparse tensor of train_labels with (-1)s for labels not
             # in train_idx. We avoid train_data[idx] because train_data may
             # very large, i.e. ImageNet
-            sparse_labels = np.zeros(
-                self.train_size if loader == 'train' else self.test_size,
-                dtype=int) - 1
+            sparse_labels = (
+                np.zeros(self.train_size if loader == "train" else self.test_size, dtype=int) - 1
+            )
             sparse_labels[train_idx] = train_labels
             train_dataset.targets = sparse_labels
 
@@ -294,8 +293,7 @@ class CNN(BaseEstimator):  # Inherits sklearn classifier
             **self.loader_kwargs
         )
 
-        optimizer = optim.SGD(self.model.parameters(), lr=self.lr,
-                              momentum=self.momentum)
+        optimizer = optim.SGD(self.model.parameters(), lr=self.lr, momentum=self.momentum)
 
         # Train for self.epochs epochs
         for epoch in range(1, self.epochs + 1):
@@ -311,13 +309,15 @@ class CNN(BaseEstimator):  # Inherits sklearn classifier
                 loss = F.nll_loss(output, target, class_weight)
                 loss.backward()
                 optimizer.step()
-                if self.log_interval is not None and \
-                        batch_idx % self.log_interval == 0:
+                if self.log_interval is not None and batch_idx % self.log_interval == 0:
                     print(
-                        'TrainEpoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
-                            epoch, batch_idx * len(data), len(train_idx),
-                            100. * batch_idx / len(train_loader),
-                            loss.item()),
+                        "TrainEpoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}".format(
+                            epoch,
+                            batch_idx * len(data),
+                            len(train_idx),
+                            100.0 * batch_idx / len(train_loader),
+                            loss.item(),
+                        ),
                     )
 
     def predict(self, idx=None, loader=None):
@@ -330,21 +330,24 @@ class CNN(BaseEstimator):  # Inherits sklearn classifier
         if self.loader is not None:
             loader = self.loader
         if loader is None:
-            is_test_idx = idx is not None and len(
-                idx) == self.test_size and np.all(
-                np.array(idx) == np.arange(self.test_size))
-            loader = 'test' if is_test_idx else 'train'
+            is_test_idx = (
+                idx is not None
+                and len(idx) == self.test_size
+                and np.all(np.array(idx) == np.arange(self.test_size))
+            )
+            loader = "test" if is_test_idx else "train"
         dataset = self.get_dataset(loader)
         # Filter by idx
         if idx is not None:
-            if (loader == 'train' and len(idx) != self.train_size) or (
-                    loader == 'test' and len(idx) != self.test_size):
+            if (loader == "train" and len(idx) != self.train_size) or (
+                loader == "test" and len(idx) != self.test_size
+            ):
                 dataset.data = dataset.data[idx]
                 dataset.targets = dataset.targets[idx]
 
         loader = torch.utils.data.DataLoader(
             dataset=dataset,
-            batch_size=self.batch_size if loader == 'train' else self.test_batch_size,
+            batch_size=self.batch_size if loader == "train" else self.test_batch_size,
             **self.loader_kwargs
         )
 

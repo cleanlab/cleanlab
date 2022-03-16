@@ -1,22 +1,22 @@
 # Copyright (C) 2017-2022  Cleanlab Inc.
 # This file is part of cleanlab.
-# 
+#
 # cleanlab is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as published
 # by the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # cleanlab is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Affero General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU Affero General Public License
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
 
 # ## Latent Algebra
-# 
+#
 # #### Contains mathematical functions relating the latent terms,
 # $p(labels), P_{labels \vert y}, P_{y \vert labels}, p(true_labels)$, etc. together.
 # For every function here, if the inputs are exact, the output is guaranteed
@@ -192,8 +192,9 @@ def compute_noise_matrix_from_inverse(ps, inverse_noise_matrix, *, py=None):
     return clip_noise_rates(noise_matrix)
 
 
-def compute_py(ps, noise_matrix, inverse_noise_matrix, *, py_method='cnt',
-               true_labels_class_counts=None):
+def compute_py(
+    ps, noise_matrix, inverse_noise_matrix, *, py_method="cnt", true_labels_class_counts=None
+):
     """Compute py := P(true_labels=k) from ps := P(labels=k), noise_matrix, and the
     inverse noise matrix.
 
@@ -234,33 +235,34 @@ def compute_py(ps, noise_matrix, inverse_noise_matrix, *, py_method='cnt',
     py : np.array (shape (K, ) or (1, K))
         The fraction (prior probability) of each TRUE class label, P(true_label = k)."""
 
-    if len(np.shape(ps)) > 2 or (
-            len(np.shape(ps)) == 2 and np.shape(ps)[0] != 1):
-        w = 'Input parameter np.array ps has shape ' + str(np.shape(ps))
-        w += ', but shape should be (K, ) or (1, K)'
+    if len(np.shape(ps)) > 2 or (len(np.shape(ps)) == 2 and np.shape(ps)[0] != 1):
+        w = "Input parameter np.array ps has shape " + str(np.shape(ps))
+        w += ", but shape should be (K, ) or (1, K)"
         warnings.warn(w)
 
-    if py_method == 'marginal' and true_labels_class_counts is None:
-        err = 'py_method == "marginal" requires true_labels_class_counts, ' \
-              'but true_labels_class_counts is None. '
-        err += ' Provide parameter true_labels_class_counts.'
+    if py_method == "marginal" and true_labels_class_counts is None:
+        err = (
+            'py_method == "marginal" requires true_labels_class_counts, '
+            "but true_labels_class_counts is None. "
+        )
+        err += " Provide parameter true_labels_class_counts."
         raise ValueError(err)
 
-    if py_method == 'cnt':
+    if py_method == "cnt":
         # Computing py this way avoids dividing by zero noise rates.
         # More robust bc error est_p(true_label|labels) / est_p(labels|y) ~ p(true_label|labels) / p(labels|y)
         py = inverse_noise_matrix.diagonal() / noise_matrix.diagonal() * ps
         # Equivalently,
         # py = (true_labels_class_counts / labels_class_counts) * ps
-    elif py_method == 'eqn':
+    elif py_method == "eqn":
         py = np.linalg.inv(noise_matrix).dot(ps)
-    elif py_method == 'marginal':
+    elif py_method == "marginal":
         py = true_labels_class_counts / float(sum(true_labels_class_counts))
-    elif py_method == 'marginal_ps':
+    elif py_method == "marginal_ps":
         py = np.dot(inverse_noise_matrix, ps)
     else:
-        err = 'py_method {}'.format(py_method)
-        err += ' should be in [cnt, eqn, marginal, marginal_ps]'
+        err = "py_method {}".format(py_method)
+        err += " should be in [cnt, eqn, marginal, marginal_ps]"
         raise ValueError(err)
 
     # Clip py (0,1), s.t. no class should have prob 0, hence 1e-5
@@ -310,14 +312,13 @@ def compute_pyx(pred_probs, noise_matrix, inverse_noise_matrix):
 
     if len(np.shape(pred_probs)) != 2:
         raise ValueError(
-            "Input parameter np.array 'pred_probs' has shape " + str(np.shape(pred_probs)) +
-            ", but shape should be (N, K)")
+            "Input parameter np.array 'pred_probs' has shape "
+            + str(np.shape(pred_probs))
+            + ", but shape should be (N, K)"
+        )
 
     pyx = pred_probs * inverse_noise_matrix.diagonal() / noise_matrix.diagonal()
     # Make sure valid probabilities that sum to 1.0
     return np.apply_along_axis(
-        func1d=clip_values,
-        axis=1,
-        arr=pyx,
-        **{"low": 0.0, "high": 1.0, "new_sum": 1.0}
+        func1d=clip_values, axis=1, arr=pyx, **{"low": 0.0, "high": 1.0, "new_sum": 1.0}
     )

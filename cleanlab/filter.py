@@ -1,16 +1,16 @@
 # Copyright (C) 2017-2022  Cleanlab Inc.
 # This file is part of cleanlab.
-# 
+#
 # cleanlab is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as published
 # by the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # cleanlab is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Affero General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU Affero General Public License
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
@@ -31,13 +31,17 @@ from multiprocessing.sharedctypes import RawArray
 import sys
 
 from cleanlab.rank import order_label_issues
-from cleanlab.utils.util import (value_counts, round_preserving_row_totals,
-                        onehot2int, int2onehot, )
+from cleanlab.utils.util import (
+    value_counts,
+    round_preserving_row_totals,
+    onehot2int,
+    int2onehot,
+)
 import numpy as np
 import warnings
 
 # tqdm is a module used to print time-to-complete when multiprocessing is used.
-# This module is not necessary, and therefore is not a package dependency, but 
+# This module is not necessary, and therefore is not a package dependency, but
 # when installed it improves user experience for large datasets.
 from cleanlab.count import calibrate_confident_joint
 
@@ -48,7 +52,7 @@ try:
 except ImportError as e:  # pragma: no cover
     tqdm_exists = False
 
-    w = '''To see estimated completion times for methods in cleanlab.filter, "pip install tqdm".'''
+    w = """To see estimated completion times for methods in cleanlab.filter, "pip install tqdm"."""
     warnings.warn(w)
 
 # Leave at least 1 example in each class after filtering/pruning, even if noise estimates are larger
@@ -71,48 +75,50 @@ def _to_np_array(mp_arr, dtype="int32", shape=None):  # pragma: no cover
 
 
 def _init(
-        __labels,
-        __label_counts,
-        __prune_count_matrix,
-        __pcm_shape,
-        __pred_probs,
-        __pred_probs_shape,
-        __multi_label,
+    __labels,
+    __label_counts,
+    __prune_count_matrix,
+    __pcm_shape,
+    __pred_probs,
+    __pred_probs_shape,
+    __multi_label,
 ):  # pragma: no cover
     """Shares memory objects across child processes.
     ASSUMES none of these will be changed by child processes!"""
 
-    mp_params['labels'] = __labels
-    mp_params['label_counts'] = __label_counts
-    mp_params['prune_count_matrix'] = __prune_count_matrix
-    mp_params['pcm_shape'] = __pcm_shape
-    mp_params['pred_probs'] = __pred_probs
-    mp_params['pred_probs_shape'] = __pred_probs_shape
-    mp_params['multi_label'] = __multi_label
+    mp_params["labels"] = __labels
+    mp_params["label_counts"] = __label_counts
+    mp_params["prune_count_matrix"] = __prune_count_matrix
+    mp_params["pcm_shape"] = __pcm_shape
+    mp_params["pred_probs"] = __pred_probs
+    mp_params["pred_probs_shape"] = __pred_probs_shape
+    mp_params["multi_label"] = __multi_label
 
 
 def _get_shared_data():  # pragma: no cover
     """multiprocessing helper function to extract numpy arrays from
     shared RawArray types used to shared data across process."""
 
-    label_counts = _to_np_array(mp_params['label_counts'])
+    label_counts = _to_np_array(mp_params["label_counts"])
     prune_count_matrix = _to_np_array(
-        mp_arr=mp_params['prune_count_matrix'],
-        shape=mp_params['pcm_shape'],
+        mp_arr=mp_params["prune_count_matrix"],
+        shape=mp_params["pcm_shape"],
     )
     pred_probs = _to_np_array(
-        mp_arr=mp_params['pred_probs'],
-        dtype='float32',
-        shape=mp_params['pred_probs_shape'],
+        mp_arr=mp_params["pred_probs"],
+        dtype="float32",
+        shape=mp_params["pred_probs_shape"],
     )
-    multi_label = mp_params['multi_label']
+    multi_label = mp_params["multi_label"]
     if multi_label:  # Shared data is passed as one-hot encoded matrix
-        labels = onehot2int(_to_np_array(
-            mp_arr=mp_params['labels'],
-            shape=(pred_probs.shape[0], pred_probs.shape[1]),
-        ))
+        labels = onehot2int(
+            _to_np_array(
+                mp_arr=mp_params["labels"],
+                shape=(pred_probs.shape[0], pred_probs.shape[1]),
+            )
+        )
     else:
-        labels = _to_np_array(mp_params['labels'])
+        labels = _to_np_array(mp_params["labels"])
     return labels, label_counts, prune_count_matrix, pred_probs, multi_label
 
 
@@ -135,8 +141,7 @@ def _prune_by_class(k, args=None):
     if label_counts[k] > MIN_NUM_PER_CLASS:  # No prune if not MIN_NUM_PER_CLASS
         num_issues = label_counts[k] - prune_count_matrix[k][k]
         # Get return_indices_ranked_by of the smallest prob of class k for examples with noisy label k
-        label_filter = np.array(
-            [k in lst for lst in labels]) if multi_label else labels == k
+        label_filter = np.array([k in lst for lst in labels]) if multi_label else labels == k
         class_probs = pred_probs[:, k]
         rank = np.partition(class_probs[label_filter], num_issues)[num_issues]
         return label_filter & (class_probs < rank)
@@ -173,9 +178,7 @@ def _prune_by_count(k, args=None):
             # num2prune's largest p(true class k) - p(noisy class k)
             # for x with true label j
             margin = pred_probs[:, j] - pred_probs_k
-            label_filter = np.array(
-                [k in lst for lst in labels]
-            ) if multi_label else labels == k
+            label_filter = np.array([k in lst for lst in labels]) if multi_label else labels == k
             cut = -np.partition(-margin[label_filter], num2prune - 1)[num2prune - 1]
             label_issues_mask = label_issues_mask | (label_filter & (margin >= cut))
     return label_issues_mask
@@ -212,19 +215,35 @@ def multiclass_crossval_predict(labels, pyx):
         `pred_probs` should have been computed using 3 (or higher) fold cross-validation."""
 
     from sklearn.metrics import f1_score
-    boundaries = np.arange(0.05, 0.9, .05)
+
+    boundaries = np.arange(0.05, 0.9, 0.05)
     labels_one_hot = MultiLabelBinarizer().fit_transform(labels)
-    f1s = [f1_score(
-        labels_one_hot, (pyx > boundary).astype(np.uint8), average='micro',
-    ) for boundary in boundaries]
+    f1s = [
+        f1_score(
+            labels_one_hot,
+            (pyx > boundary).astype(np.uint8),
+            average="micro",
+        )
+        for boundary in boundaries
+    ]
     boundary = boundaries[np.argmax(f1s)]
     pred = (pyx > boundary).astype(np.uint8)
     return pred
 
 
-def find_label_issues(labels, pred_probs, *, confident_joint=None, filter_by='prune_by_noise_rate',
-                      return_indices_ranked_by=None, multi_label=False, frac_noise=1.0,
-                      num_to_remove_per_class=None, n_jobs=None, verbose=0):
+def find_label_issues(
+    labels,
+    pred_probs,
+    *,
+    confident_joint=None,
+    filter_by="prune_by_noise_rate",
+    return_indices_ranked_by=None,
+    multi_label=False,
+    frac_noise=1.0,
+    num_to_remove_per_class=None,
+    n_jobs=None,
+    verbose=0,
+):
     """By default, this method returns a boolean mask for the entire dataset where True represents
     a label issue and False represents an example that is confidently/accurately labeled.
 
@@ -331,22 +350,30 @@ def find_label_issues(labels, pred_probs, *, confident_joint=None, filter_by='pr
       You can also return ONLY the indices of the label issues in your dataset, by setting
       return_indices_ranked_by = {`self_confidence`, `normalized_margin`}."""
 
-    assert filter_by in ['prune_by_noise_rate', 'prune_by_class', 'both',
-                            'confident_learning', 'predicted_neq_given']
-    assert (len(labels) == len(pred_probs))
-    if filter_by in ['confident_learning', 'predicted_neq_given'] and \
-            (frac_noise != 1.0 or num_to_remove_per_class is not None):
-        warn_str = "WARNING! frac_noise and num_to_remove_per_class parameters are only supported" \
-                   " for filter_by 'prune_by_noise_rate', 'prune_by_class', and 'both'. They " \
-                   "are not supported for methods 'confident_learning' or " \
-                   "'predicted_neq_given'."
+    assert filter_by in [
+        "prune_by_noise_rate",
+        "prune_by_class",
+        "both",
+        "confident_learning",
+        "predicted_neq_given",
+    ]
+    assert len(labels) == len(pred_probs)
+    if filter_by in ["confident_learning", "predicted_neq_given"] and (
+        frac_noise != 1.0 or num_to_remove_per_class is not None
+    ):
+        warn_str = (
+            "WARNING! frac_noise and num_to_remove_per_class parameters are only supported"
+            " for filter_by 'prune_by_noise_rate', 'prune_by_class', and 'both'. They "
+            "are not supported for methods 'confident_learning' or "
+            "'predicted_neq_given'."
+        )
         warnings.warn(warn_str)
 
     # Set-up number of multiprocessing threads
     if n_jobs is None:
         n_jobs = multiprocessing.cpu_count()
     else:
-        assert (n_jobs >= 1)
+        assert n_jobs >= 1
 
     # Number of examples in each class of labels
     if multi_label:
@@ -359,15 +386,16 @@ def find_label_issues(labels, pred_probs, *, confident_joint=None, filter_by='pr
     big_dataset = K * len(labels) > 1e8
     # Ensure labels are of type np.array()
     labels = np.asarray(labels)
-    if confident_joint is None or filter_by == 'confident_learning':
+    if confident_joint is None or filter_by == "confident_learning":
         from cleanlab.count import compute_confident_joint
+
         confident_joint, cl_error_indices = compute_confident_joint(
             labels=labels,
             pred_probs=pred_probs,
             multi_label=multi_label,
             return_indices_of_off_diagonals=True,
         )
-    if filter_by in ['prune_by_noise_rate', 'prune_by_class', 'both']:
+    if filter_by in ["prune_by_noise_rate", "prune_by_class", "both"]:
         # Create `prune_count_matrix` with the number of examples to remove in each class and
         # leave at least MIN_NUM_PER_CLASS examples per class.
         # `prune_count_matrix` is transposed relative to the confident_joint.
@@ -389,30 +417,34 @@ def find_label_issues(labels, pred_probs, *, confident_joint=None, filter_by='pr
         # Prepare multiprocessing shared data
         if n_jobs > 1:
             if multi_label:
-                _labels = RawArray('I', int2onehot(labels).flatten())
+                _labels = RawArray("I", int2onehot(labels).flatten())
             else:
-                _labels = RawArray('I', labels)
-            _label_counts = RawArray('I', label_counts)
-            _prune_count_matrix = RawArray(
-                'I', prune_count_matrix.flatten())
-            _pred_probs = RawArray(
-                'f', pred_probs.flatten())
+                _labels = RawArray("I", labels)
+            _label_counts = RawArray("I", label_counts)
+            _prune_count_matrix = RawArray("I", prune_count_matrix.flatten())
+            _pred_probs = RawArray("f", pred_probs.flatten())
         else:  # Multiprocessing is turned off. Create tuple with all parameters
             args = (labels, label_counts, prune_count_matrix, pred_probs, multi_label)
 
     # Perform Pruning with threshold probabilities from BFPRT algorithm in O(n)
     # Operations are parallelized across all CPU processes
-    if filter_by == 'prune_by_class' or filter_by == 'both':
+    if filter_by == "prune_by_class" or filter_by == "both":
         if n_jobs > 1:  # parallelize
             with multiprocessing.Pool(
-                    n_jobs,
-                    initializer=_init,
-                    initargs=(_labels, _label_counts, _prune_count_matrix,
-                              prune_count_matrix.shape, _pred_probs, pred_probs.shape,
-                              multi_label),
+                n_jobs,
+                initializer=_init,
+                initargs=(
+                    _labels,
+                    _label_counts,
+                    _prune_count_matrix,
+                    prune_count_matrix.shape,
+                    _pred_probs,
+                    pred_probs.shape,
+                    multi_label,
+                ),
             ) as p:
                 if verbose:
-                    print('Parallel processing label issues by class.')
+                    print("Parallel processing label issues by class.")
                 sys.stdout.flush()
                 if big_dataset and tqdm_exists:
                     label_issues_masks_per_class = list(
@@ -424,20 +456,26 @@ def find_label_issues(labels, pred_probs, *, confident_joint=None, filter_by='pr
             label_issues_masks_per_class = [_prune_by_class(k, args) for k in range(K)]
         label_issues_mask = np.stack(label_issues_masks_per_class).any(axis=0)
 
-    if filter_by == 'both':
+    if filter_by == "both":
         label_issues_mask_by_class = label_issues_mask
 
-    if filter_by == 'prune_by_noise_rate' or filter_by == 'both':
+    if filter_by == "prune_by_noise_rate" or filter_by == "both":
         if n_jobs > 1:  # parallelize
             with multiprocessing.Pool(
-                    n_jobs,
-                    initializer=_init,
-                    initargs=(_labels, _label_counts, _prune_count_matrix,
-                              prune_count_matrix.shape, _pred_probs, pred_probs.shape,
-                              multi_label),
+                n_jobs,
+                initializer=_init,
+                initargs=(
+                    _labels,
+                    _label_counts,
+                    _prune_count_matrix,
+                    prune_count_matrix.shape,
+                    _pred_probs,
+                    pred_probs.shape,
+                    multi_label,
+                ),
             ) as p:
                 if verbose:
-                    print('Parallel processing label issues by noise rate.')
+                    print("Parallel processing label issues by noise rate.")
                 sys.stdout.flush()
                 if big_dataset and tqdm_exists:
                     label_issues_masks_per_class = list(
@@ -449,15 +487,15 @@ def find_label_issues(labels, pred_probs, *, confident_joint=None, filter_by='pr
             label_issues_masks_per_class = [_prune_by_count(k, args) for k in range(K)]
         label_issues_mask = np.stack(label_issues_masks_per_class).any(axis=0)
 
-    if filter_by == 'both':
+    if filter_by == "both":
         label_issues_mask = label_issues_mask & label_issues_mask_by_class
 
-    if filter_by == 'confident_learning':
+    if filter_by == "confident_learning":
         label_issues_mask = np.zeros(len(labels), dtype=bool)
         for idx in cl_error_indices:
             label_issues_mask[idx] = True
 
-    if filter_by == 'predicted_neq_given':
+    if filter_by == "predicted_neq_given":
         label_issues_mask = find_predicted_neq_given(labels, pred_probs, multi_label=multi_label)
 
     # Remove label issues if given label == model prediction
@@ -467,12 +505,16 @@ def find_label_issues(labels, pred_probs, *, confident_joint=None, filter_by='pr
     else:
         pred = pred_probs.argmax(axis=1)
     for i, pred_label in enumerate(pred):
-        if multi_label and np.all(pred_label == labels[i]) or \
-                not multi_label and pred_label == labels[i]:
+        if (
+            multi_label
+            and np.all(pred_label == labels[i])
+            or not multi_label
+            and pred_label == labels[i]
+        ):
             label_issues_mask[i] = False
 
     if verbose:
-        print('Number of label issues found: {}'.format(sum(label_issues_mask)))
+        print("Number of label issues found: {}".format(sum(label_issues_mask)))
 
     # TODO: run count.num_label_issues() and adjust the total issues found here to match
     if return_indices_ranked_by is not None:
@@ -531,8 +573,8 @@ def keep_at_least_n_per_class(prune_count_matrix, n, *, frac_noise=1.0):
     # Count non-zero, non-diagonal items per column
     # np.maximum(*, 1) makes this never 0 (we divide by this next)
     num_noise_rates_per_col = np.maximum(
-        np.count_nonzero(prune_count_matrix, axis=0) - 1.,
-        1.,
+        np.count_nonzero(prune_count_matrix, axis=0) - 1.0,
+        1.0,
     )
 
     # Uniformly decrease non-zero noise rates by the same amount
@@ -576,8 +618,9 @@ def reduce_prune_counts(prune_count_matrix, frac_noise=1.0):
 
     new_mat = prune_count_matrix * frac_noise
     np.fill_diagonal(new_mat, prune_count_matrix.diagonal())
-    np.fill_diagonal(new_mat, prune_count_matrix.diagonal() +
-                     np.sum(prune_count_matrix - new_mat, axis=0))
+    np.fill_diagonal(
+        new_mat, prune_count_matrix.diagonal() + np.sum(prune_count_matrix - new_mat, axis=0)
+    )
 
     # These are counts, so return a matrix of ints.
     return new_mat.astype(int)
@@ -610,11 +653,12 @@ def find_predicted_neq_given(labels, pred_probs, *, multi_label=False):
         A boolean mask that is true if the example belong
         to that index is label error."""
 
-    assert (len(pred_probs) == len(labels))
+    assert len(pred_probs) == len(labels)
     if multi_label:
         # Todo: This needs to be tested.
         return np.array(
-            [all(np.argsort(pred_probs[i])[:len(j)] == sorted(j)) for i, j in enumerate(labels)])
+            [all(np.argsort(pred_probs[i])[: len(j)] == sorted(j)) for i, j in enumerate(labels)]
+        )
     return np.argmax(pred_probs, axis=1) != np.asarray(labels)
 
 
@@ -623,7 +667,7 @@ def find_label_issues_using_argmax_confusion_matrix(
     pred_probs,
     *,
     calibrate=True,
-    filter_by='prune_by_noise_rate',
+    filter_by="prune_by_noise_rate",
 ):
     """This is a baseline approach. That uses the confusion matrix
     of argmax(pred_probs) and labels as the confident joint and then uses cleanlab
@@ -672,9 +716,10 @@ def find_label_issues_using_argmax_confusion_matrix(
     -------
         A boolean mask: true if the example at that index is label issue."""
 
-    assert (len(pred_probs) == len(labels))
+    assert len(pred_probs) == len(labels)
     confident_joint = confusion_matrix(np.argmax(pred_probs, axis=1), labels).T
     if calibrate:
         confident_joint = calibrate_confident_joint(confident_joint, labels)
-    return find_label_issues(labels=labels, pred_probs=pred_probs, confident_joint=confident_joint,
-                             filter_by=filter_by)
+    return find_label_issues(
+        labels=labels, pred_probs=pred_probs, confident_joint=confident_joint, filter_by=filter_by
+    )

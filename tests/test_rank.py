@@ -23,11 +23,11 @@ import pytest
 
 
 def make_data(
-        means=[[3, 2], [7, 7], [0, 8]],
-        covs=[[[5, -1.5], [-1.5, 1]], [[1, 0.5], [0.5, 4]], [[5, 1], [1, 5]]],
-        sizes=[80, 40, 40],
-        avg_trace=0.8,
-        seed=1,  # set to None for non-reproducible randomness
+    means=[[3, 2], [7, 7], [0, 8]],
+    covs=[[[5, -1.5], [-1.5, 1]], [[1, 0.5], [0.5, 4]], [[5, 1], [1, 5]]],
+    sizes=[80, 40, 40],
+    avg_trace=0.8,
+    seed=1,  # set to None for non-reproducible randomness
 ):
     np.random.seed(seed=seed)
 
@@ -39,10 +39,12 @@ def make_data(
     test_labels = []
 
     for idx in range(m):
-        local_data.append(np.random.multivariate_normal(
-            mean=means[idx], cov=covs[idx], size=sizes[idx]))
-        test_data.append(np.random.multivariate_normal(
-            mean=means[idx], cov=covs[idx], size=sizes[idx]))
+        local_data.append(
+            np.random.multivariate_normal(mean=means[idx], cov=covs[idx], size=sizes[idx])
+        )
+        test_data.append(
+            np.random.multivariate_normal(mean=means[idx], cov=covs[idx], size=sizes[idx])
+        )
         labels.append(np.array([idx for i in range(sizes[idx])]))
         test_labels.append(np.array([idx for i in range(sizes[idx])]))
     X_train = np.vstack(local_data)
@@ -103,58 +105,58 @@ data = make_data()
 
 
 def test_get_normalized_margin_for_each_label():
-    scores = rank.get_normalized_margin_for_each_label(data['labels'], data['pred_probs'])
-    label_errors = np.arange(len(data['labels']))[data['label_errors_mask']]
+    scores = rank.get_normalized_margin_for_each_label(data["labels"], data["pred_probs"])
+    label_errors = np.arange(len(data["labels"]))[data["label_errors_mask"]]
     least_confident_label = np.argmin(scores)
     most_confident_label = np.argmax(scores)
-    assert (least_confident_label in label_errors)
-    assert (most_confident_label not in label_errors)
+    assert least_confident_label in label_errors
+    assert most_confident_label not in label_errors
 
 
 def test_get_self_confidence_for_each_label():
-    scores = rank.get_self_confidence_for_each_label(data['labels'], data['pred_probs'])
-    label_errors = np.arange(len(data['labels']))[data['label_errors_mask']]
+    scores = rank.get_self_confidence_for_each_label(data["labels"], data["pred_probs"])
+    label_errors = np.arange(len(data["labels"]))[data["label_errors_mask"]]
     least_confident_label = np.argmin(scores)
     most_confident_label = np.argmax(scores)
-    assert (least_confident_label in label_errors)
-    assert (most_confident_label not in label_errors)
+    assert least_confident_label in label_errors
+    assert most_confident_label not in label_errors
 
 
 def test_bad_rank_by_parameter_error():
     with pytest.raises(ValueError) as e:
         _ = rank.order_label_issues(
-            label_issues_mask=data['label_errors_mask'],
-            labels=data['labels'],
-            pred_probs=data['pred_probs'],
-            rank_by="not_a_real_method"
+            label_issues_mask=data["label_errors_mask"],
+            labels=data["labels"],
+            pred_probs=data["pred_probs"],
+            rank_by="not_a_real_method",
         )
 
 
 def test_order_label_issues_using_margin_ranking():
     label_issues_indices = rank.order_label_issues(
-        label_issues_mask=data['label_errors_mask'],
-        labels=data['labels'],
-        pred_probs=data['pred_probs'],
-        rank_by="normalized_margin"
+        label_issues_mask=data["label_errors_mask"],
+        labels=data["labels"],
+        pred_probs=data["pred_probs"],
+        rank_by="normalized_margin",
     )
-    scores = rank.get_normalized_margin_for_each_label(data['labels'], data['pred_probs'])
-    indices = np.arange(len(scores))[data['label_errors_mask']]
-    scores = scores[data['label_errors_mask']]
+    scores = rank.get_normalized_margin_for_each_label(data["labels"], data["pred_probs"])
+    indices = np.arange(len(scores))[data["label_errors_mask"]]
+    scores = scores[data["label_errors_mask"]]
     score_idx = sorted(list(zip(scores, indices)), key=lambda y: y[0])  # sort indices by score
     label_issues_indices2 = [z[1] for z in score_idx]
-    assert(all(label_issues_indices == label_issues_indices2))
+    assert all(label_issues_indices == label_issues_indices2)
 
 
 def test_order_label_issues_using_self_confidence_ranking():
     label_issues_indices = rank.order_label_issues(
-        label_issues_mask=data['label_errors_mask'],
-        labels=data['labels'],
-        pred_probs=data['pred_probs'],
-        rank_by="self_confidence"
+        label_issues_mask=data["label_errors_mask"],
+        labels=data["labels"],
+        pred_probs=data["pred_probs"],
+        rank_by="self_confidence",
     )
-    scores = rank.get_self_confidence_for_each_label(data['labels'], data['pred_probs'])
-    indices = np.arange(len(scores))[data['label_errors_mask']]
-    scores = scores[data['label_errors_mask']]
+    scores = rank.get_self_confidence_for_each_label(data["labels"], data["pred_probs"])
+    indices = np.arange(len(scores))[data["label_errors_mask"]]
+    scores = scores[data["label_errors_mask"]]
     score_idx = sorted(list(zip(scores, indices)), key=lambda y: y[0])  # sort indices by score
     label_issues_indices2 = [z[1] for z in score_idx]
-    assert(all(label_issues_indices == label_issues_indices2))
+    assert all(label_issues_indices == label_issues_indices2)
