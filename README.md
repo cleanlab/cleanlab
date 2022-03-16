@@ -232,11 +232,10 @@ observed dataset."
 ## `cleanlab` Core Package Components
 
 1.  **cleanlab/classification.py** - [LearningWithNoisyLabels()](https://github.com/cleanlab/cleanlab/blob/master/cleanlab/classification.py#L106) class for learning with noisy labels.
-2.  **cleanlab/latent\_algebra.py** - Equalities when noise information is known.
-3.  **cleanlab/count.py** - Estimates and fully characterizes all variants of label noise.
-4.  **cleanlab/noise\_generation.py** - Generate mathematically valid synthetic noise matrices.
-5.  **cleanlab/polyplex.py** - Characterizes joint distribution of label noise EXACTLY from noisy channel.
-6.  **cleanlab/filter.py** - Finds the examples with label issues in a dataset.
+2.  **cleanlab/count.py** - Estimates and fully characterizes all variants of label noise.
+3.  **cleanlab/noise\_generation.py** - Generate mathematically valid synthetic noise matrices.
+4.  **cleanlab/filter.py** - Finds the examples with label issues in a dataset.
+5.  **cleanlab/rank.py** - Rank every example in a dataset with various label quality scores.
 
 Many methods have default parameters not covered here. Check out the
 method docstrings and our [full documentation](https://docs.cleanlab.ai/).

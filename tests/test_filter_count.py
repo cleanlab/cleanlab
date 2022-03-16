@@ -49,16 +49,16 @@ def make_data(
         labels.append(np.array([idx for i in range(sizes[idx])]))
         test_labels.append(np.array([idx for i in range(sizes[idx])]))
     X_train = np.vstack(local_data)
-    y_train = np.hstack(labels)
+    true_labels_train = np.hstack(labels)
     X_test = np.vstack(test_data)
-    y_test = np.hstack(test_labels)
+    true_labels_test = np.hstack(test_labels)
 
     if sparse:
         X_train = scipy.sparse.csr_matrix(X_train)
         X_test = scipy.sparse.csr_matrix(X_test)
 
-    # Compute p(y=k)
-    py = np.bincount(y_train) / float(len(y_train))
+    # Compute p(true_label=k)
+    py = np.bincount(true_labels_train) / float(len(true_labels_train))
 
     noise_matrix = generate_noise_matrix_from_trace(
         m,
@@ -69,7 +69,7 @@ def make_data(
     )
 
     # Generate our noisy labels using the noise_matrix.
-    s = generate_noisy_labels(y_train, noise_matrix)
+    s = generate_noisy_labels(true_labels_train, noise_matrix)
     ps = np.bincount(s) / float(len(s))
 
     # Compute inverse noise matrix
@@ -84,9 +84,9 @@ def make_data(
 
     return {
         "X_train": X_train,
-        "y_train": y_train,
+        "true_labels_train": true_labels_train,
         "X_test": X_test,
-        "y_test": y_test,
+        "true_labels_test": true_labels_test,
         "labels": s,
         "ps": ps,
         "py": py,
@@ -120,7 +120,7 @@ pred_probs_ = np.array([
     [0.1, 0.8, 0.1],
     [0.1, 0.1, 0.8],
 ])
-s_ = np.array([0, 0, 1, 1, 1, 1, 1, 1, 1, 2])
+labels_ = np.array([0, 0, 1, 1, 1, 1, 1, 1, 1, 2])
 
 
 def test_exact_prune_count():
@@ -299,12 +299,12 @@ def test_pruning_order_method():
 def test_find_label_issues_multi_label(multi_label, filter_by):
     """Note: argmax_not_equal method is not compatible with multi_label == True"""
 
-    s_ml = [[z, data['y_train'][i]] for i, z in enumerate(data['labels'])]
+    s_ml = [[z, data['true_labels_train'][i]] for i, z in enumerate(data['labels'])]
     noise_idx = filter.find_label_issues(
         labels=s_ml if multi_label else data['labels'], pred_probs=data['pred_probs'],
         filter_by=filter_by, multi_label=multi_label,
     )
-    acc = np.mean((data['labels'] != data['y_train']) == noise_idx)
+    acc = np.mean((data['labels'] != data['true_labels_train']) == noise_idx)
     # Make sure cleanlab does reasonably well finding the errors.
     # acc is the accuracy of detecting a label error.
     assert (acc > 0.85)
@@ -334,7 +334,7 @@ def test_predicted_neq_given_filter():
     label_issues = filter.find_predicted_neq_given(s, pred_probs)
     assert (all(label_issues == [False, False, True, True, True]))
 
-    label_issues = filter.find_predicted_neq_given(s_, pred_probs_)
+    label_issues = filter.find_predicted_neq_given(labels_, pred_probs_)
     assert (all(label_issues == np.array([False, False, True, False,
                                           False, False, False, False, False, False])))
 
@@ -344,16 +344,16 @@ def test_predicted_neq_given_filter():
                                           'prune_by_class', 'both'])
 def test_find_label_issues_using_argmax_confusion_matrix(calibrate, filter_by):
     label_issues = filter.find_label_issues_using_argmax_confusion_matrix(
-        s_, pred_probs_, calibrate=calibrate, filter_by=filter_by)
+        labels_, pred_probs_, calibrate=calibrate, filter_by=filter_by)
     assert (all(label_issues == np.array([False, False, True, False,
                                           False, False, False, False, False, False])))
 
 
 def test_find_label_issue_filters_match_origin_functions():
-    label_issues = filter.find_label_issues(s_, pred_probs_, filter_by='predicted_neq_given')
-    label_issues2 = filter.find_predicted_neq_given(s_, pred_probs_)
+    label_issues = filter.find_label_issues(labels_, pred_probs_, filter_by='predicted_neq_given')
+    label_issues2 = filter.find_predicted_neq_given(labels_, pred_probs_)
     assert (all(label_issues == label_issues2))
-    label_issues3 = filter.find_label_issues(s_, pred_probs_,
+    label_issues3 = filter.find_label_issues(labels_, pred_probs_,
                                              filter_by='confident_learning')
-    label_issues4 = filter.find_predicted_neq_given(s_, pred_probs_)
+    label_issues4 = filter.find_predicted_neq_given(labels_, pred_probs_)
     assert (all(label_issues3 == label_issues4))

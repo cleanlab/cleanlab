@@ -18,7 +18,7 @@
 # ## Latent Algebra
 # 
 # #### Contains mathematical functions relating the latent terms,
-# $p(labels), P_{labels \vert y}, P_{y \vert labels}, p(y)$, etc. together.
+# $p(labels), P_{labels \vert y}, P_{y \vert labels}, p(true_labels)$, etc. together.
 # For every function here, if the inputs are exact, the output is guaranteed
 # to be exact. Every function herein is the computational equivalent of a
 # mathematical equation having a closed, exact form. If the inputs are
@@ -31,7 +31,7 @@ import warnings
 
 
 def compute_ps_py_inv_noise_matrix(labels, noise_matrix):
-    """Compute ps := P(labels=k), py := P(y=k), and the inverse noise matrix.
+    """Compute ps := P(labels=k), py := P(true_labels=k), and the inverse noise matrix.
 
     Parameters
     ----------
@@ -41,7 +41,7 @@ def compute_ps_py_inv_noise_matrix(labels, noise_matrix):
           *Format requirements*: for dataset with K classes, labels must be in {0,1,...,K-1}.
 
     noise_matrix : np.array of shape (K, K), K = number of classes
-        A conditional probability matrix of the form P(labels=k_s|y=k_y) containing
+        A conditional probability matrix of the form P(label=k_s|true_label=k_y) containing
         the fraction of examples in every class, labeled as every other class.
         Assumes columns of noise_matrix sum to 1."""
 
@@ -53,7 +53,7 @@ def compute_ps_py_inv_noise_matrix(labels, noise_matrix):
 
 
 def compute_py_inv_noise_matrix(ps, noise_matrix):
-    """Compute py := P(y=k), and the inverse noise matrix.
+    """Compute py := P(true_label=k), and the inverse noise matrix.
 
     Parameters
     ----------
@@ -62,34 +62,34 @@ def compute_py_inv_noise_matrix(ps, noise_matrix):
         The fraction (prior probability) of each observed, NOISY class P(labels = k).
 
     noise_matrix : np.array of shape (K, K), K = number of classes
-        A conditional probability matrix of the form P(labels=k_s|y=k_y) containing
+        A conditional probability matrix of the form P(label=k_s|true_label=k_y) containing
         the fraction of examples in every class, labeled as every other class.
         Assumes columns of noise_matrix sum to 1."""
 
-    # 'py' is p(y=k) = noise_matrix^(-1) * p(labels=k)
-    # because in *vector computation*: P(labels=k|y=k) * p(y=k) = P(labels=k)
+    # 'py' is p(true_labels=k) = noise_matrix^(-1) * p(labels=k)
+    # because in *vector computation*: P(label=k|true_label=k) * p(true_label=k) = P(label=k)
     # The pseudo-inverse is used when noise_matrix is not invertible.
     py = np.linalg.inv(noise_matrix).dot(ps)
 
-    # No class should have probability 0 so we use .001
+    # No class should have probability 0, so we use .000001
     # Make sure valid probabilities that sum to 1.0
-    py = clip_values(py, low=0.001, high=1.0, new_sum=1.0)
+    py = clip_values(py, low=1e-6, high=1.0, new_sum=1.0)
 
     # All the work is done in this function (below)
     return py, compute_inv_noise_matrix(py, noise_matrix, ps)
 
 
 def compute_inv_noise_matrix(py, noise_matrix, ps=None):
-    """Compute the inverse noise matrix if py := P(y=k) is given.
+    """Compute the inverse noise matrix if py := P(true_label=k) is given.
 
     Parameters
     ----------
 
     py : np.array (shape (K, 1))
-        The fraction (prior probability) of each TRUE class label, P(y = k)
+        The fraction (prior probability) of each TRUE class label, P(true_label = k)
 
     noise_matrix : np.array of shape (K, K), K = number of classes
-        A conditional probability matrix of the form P(labels=k_s|y=k_y) containing
+        A conditional probability matrix of the form P(label=k_s|true_label=k_y) containing
         the fraction of examples in every class, labeled as every other class.
         Assumes columns of noise_matrix sum to 1.
 
@@ -107,18 +107,18 @@ def compute_inv_noise_matrix(py, noise_matrix, ps=None):
         # Number of classes
         K = len(py)
 
-        # 'ps' is p(labels=k) = noise_matrix * p(y=k)
-        # because in *vector computation*: P(labels=k|y=k) * p(y=k) = P(labels=k)
+        # 'ps' is p(labels=k) = noise_matrix * p(true_labels=k)
+        # because in *vector computation*: P(label=k|true_label=k) * p(true_label=k) = P(label=k)
         if ps is None:
             ps = noise_matrix.dot(py)
 
-        # Estimate the (K, K) inverse noise matrix P(y = k_y | labels = k_s)
+        # Estimate the (K, K) inverse noise matrix P(true_label = k_y | label = k_s)
         inverse_noise_matrix = np.empty(shape=(K,K))
-        # k_s is the class value k of noisy label `labels == k`
+        # k_s is the class value k of noisy label `label == k`
         for k_s in range(K):
             # k_y is the (guessed) class value k of true label y
             for k_y in range(K):
-                # P(y|labels) = P(labels|y) * P(y) / P(labels)
+                # P(true_label|label) = P(label|y) * P(true_label) / P(labels)
                 inverse_noise_matrix[k_y][k_s] = noise_matrix[k_s][k_y] * \
                                                  py[k_y] / ps[k_s]
     """
@@ -127,20 +127,20 @@ def compute_inv_noise_matrix(py, noise_matrix, ps=None):
     ps = joint.sum(axis=1) if ps is None else ps
     inverse_noise_matrix = joint.T / ps
 
-    # Clip inverse noise rates P(y=k_s|y=k_y) into proper range [0,1)
+    # Clip inverse noise rates P(true_label=k_s|true_label=k_y) into proper range [0,1)
     return clip_noise_rates(inverse_noise_matrix)
 
 
 def compute_noise_matrix_from_inverse(ps, inverse_noise_matrix, py=None):
-    """Compute the noise matrix P(labels=k_s|y=k_y).
+    """Compute the noise matrix P(label=k_s|true_label=k_y).
 
     Parameters
     ----------
     py : np.array (shape (K, 1))
-        The fraction (prior probability) of each TRUE class label, P(y = k)
+        The fraction (prior probability) of each TRUE class label, P(true_label = k)
 
     inverse_noise_matrix : np.array of shape (K, K), K = number of classes
-        A conditional probability matrix of the form P(y=k_y|labels=k_s) representing
+        A conditional probability matrix of the form P(true_label=k_y|label=k_s) representing
         the estimated fraction observed examples in each class k_s, that are
         mislabeled examples from every other class k_y. If None, the
         inverse_noise_matrix will be computed from pred_probs and labels.
@@ -154,7 +154,7 @@ def compute_noise_matrix_from_inverse(ps, inverse_noise_matrix, py=None):
     Returns
     -------
     noise_matrix : np.array of shape (K, K), K = number of classes
-        A conditional probability matrix of the form P(labels=k_s|y=k_y) containing
+        A conditional probability matrix of the form P(label=k_s|true_label=k_y) containing
         the fraction of examples in every class, labeled as every other class.
         Columns of noise_matrix sum to 1.
 
@@ -167,18 +167,18 @@ def compute_noise_matrix_from_inverse(ps, inverse_noise_matrix, py=None):
         # Number of classes labels
         K = len(ps)
 
-        # 'py' is p(y=k) = inverse_noise_matrix * p(y=k)
-        # because in *vector computation*: P(y=k|labels=k) * p(labels=k) = P(y=k)
+        # 'py' is p(true_label=k) = inverse_noise_matrix * p(true_label=k)
+        # because in *vector computation*: P(true_label=k|label=k) * p(label=k) = P(true_label=k)
         if py is None:
             py = inverse_noise_matrix.dot(ps)
 
-        # Estimate the (K, K) noise matrix P(labels = k_s | y = k_y)
+        # Estimate the (K, K) noise matrix P(labels = k_s | true_labels = k_y)
         noise_matrix = np.empty(shape=(K,K))
         # k_s is the class value k of noisy label `labels == k`
         for k_s in range(K):
             # k_y is the (guessed) class value k of true label y
             for k_y in range(K):
-                # P(labels|y) = P(y|labels) * P(labels) / P(y)
+                # P(labels|y) = P(true_label|labels) * P(labels) / P(true_label)
                 noise_matrix[k_s][k_y] = inverse_noise_matrix[k_y][k_s] * \
                                          ps[k_s] / py[k_y]
 
@@ -188,13 +188,13 @@ def compute_noise_matrix_from_inverse(ps, inverse_noise_matrix, py=None):
     py = joint.sum(axis=0) if py is None else py
     noise_matrix = joint / py
 
-    # Clip inverse noise rates P(y=k_y|y=k_s) into proper range [0,1)
+    # Clip inverse noise rates P(true_label=k_y|true_label=k_s) into proper range [0,1)
     return clip_noise_rates(noise_matrix)
 
 
 def compute_py(ps, noise_matrix, inverse_noise_matrix, py_method='cnt',
-               y_count=None):
-    """Compute py := P(y=k) from ps := P(labels=k), noise_matrix, and the
+               true_labels_class_counts=None):
+    """Compute py := P(true_labels=k) from ps := P(labels=k), noise_matrix, and the
     inverse noise matrix.
 
     This method is ** ROBUST ** when py_method = 'cnt'
@@ -209,30 +209,30 @@ def compute_py(ps, noise_matrix, inverse_noise_matrix, py_method='cnt',
         The fraction (prior probability) of each observed, noisy label, P(labels = k)
 
     noise_matrix : np.array of shape (K, K), K = number of classes
-        A conditional probability matrix of the form P(labels=k_s|y=k_y) containing
+        A conditional probability matrix of the form P(label=k_s|true_label=k_y) containing
         the fraction of examples in every class, labeled as every other class.
         Assumes columns of noise_matrix sum to 1.
 
     inverse_noise_matrix : np.array of shape (K, K), K = number of classes
-        A conditional probability matrix of the form P(y=k_y|labels=k_s) representing
+        A conditional probability matrix of the form P(true_label=k_y|label=k_s) representing
         the estimated fraction observed examples in each class k_s, that are
         mislabeled examples from every other class k_y. If None, the
         inverse_noise_matrix will be computed from pred_probs and labels.
         Assumes columns of inverse_noise_matrix sum to 1.
 
     py_method : str (Options: ["cnt", "eqn", "marginal", "marginal_ps"])
-        How to compute the latent prior p(y=k). Default is "cnt" as it often
+        How to compute the latent prior p(true_label=k). Default is "cnt" as it often
         works well even when the noise matrices are estimated poorly by using
         the matrix diagonals instead of all the probabilities.
 
-    y_count : np.array (shape (K, ) or (1, K))
+    true_labels_class_counts : np.array (shape (K, ) or (1, K))
         The marginal counts of the confident joint (like cj.sum(axis = 0))
 
     Returns
     -------
 
     py : np.array (shape (K, ) or (1, K))
-        The fraction (prior probability) of each TRUE class label, P(y = k)."""
+        The fraction (prior probability) of each TRUE class label, P(true_label = k)."""
 
     if len(np.shape(ps)) > 2 or (
             len(np.shape(ps)) == 2 and np.shape(ps)[0] != 1):
@@ -240,21 +240,22 @@ def compute_py(ps, noise_matrix, inverse_noise_matrix, py_method='cnt',
         w += ', but shape should be (K, ) or (1, K)'
         warnings.warn(w)
 
-    if py_method == 'marginal' and y_count is None:
-        err = 'py_method == "marginal" requires y_count, but y_count is None.'
-        err += ' Provide parameter y_count.'
+    if py_method == 'marginal' and true_labels_class_counts is None:
+        err = 'py_method == "marginal" requires true_labels_class_counts, ' \
+              'but true_labels_class_counts is None. '
+        err += ' Provide parameter true_labels_class_counts.'
         raise ValueError(err)
 
     if py_method == 'cnt':
         # Computing py this way avoids dividing by zero noise rates.
-        # More robust bc error est_p(y|labels) / est_p(labels|y) ~ p(y|labels) / p(labels|y)
+        # More robust bc error est_p(true_label|labels) / est_p(labels|y) ~ p(true_label|labels) / p(labels|y)
         py = inverse_noise_matrix.diagonal() / noise_matrix.diagonal() * ps
         # Equivalently,
-        # py = (y_count / s_count) * ps
+        # py = (true_labels_class_counts / labels_class_counts) * ps
     elif py_method == 'eqn':
         py = np.linalg.inv(noise_matrix).dot(ps)
     elif py_method == 'marginal':
-        py = y_count / float(sum(y_count))
+        py = true_labels_class_counts / float(sum(true_labels_class_counts))
     elif py_method == 'marginal_ps':
         py = np.dot(inverse_noise_matrix, ps)
     else:
@@ -268,7 +269,7 @@ def compute_py(ps, noise_matrix, inverse_noise_matrix, py_method='cnt',
 
 
 def compute_pyx(pred_probs, noise_matrix, inverse_noise_matrix):
-    """Compute pyx := P(y=k|x) from pred_probs := P(labels=k|x), and the noise_matrix and
+    """Compute pyx := P(true_label=k|x) from pred_probs := P(label=k|x), and the noise_matrix and
     inverse noise matrix.
 
     This method is ROBUST - meaning it works well even when the
@@ -286,12 +287,12 @@ def compute_pyx(pred_probs, noise_matrix, inverse_noise_matrix):
         `pred_probs` should have been computed using 3 (or higher) fold cross-validation.
 
     noise_matrix : np.array of shape (K, K), K = number of classes
-        A conditional probability matrix of the form P(labels=k_s|y=k_y) containing
+        A conditional probability matrix of the form P(label=k_s|true_label=k_y) containing
         the fraction of examples in every class, labeled as every other class.
         Assumes columns of noise_matrix sum to 1.
 
     inverse_noise_matrix : np.array of shape (K, K), K = number of classes
-        A conditional probability matrix of the form P(y=k_y|labels=k_s) representing
+        A conditional probability matrix of the form P(true_label=k_y|label=k_s) representing
         the estimated fraction observed examples in each class k_s, that are
         mislabeled examples from every other class k_y. If None, the
         inverse_noise_matrix will be computed from pred_probs and labels.
@@ -301,7 +302,7 @@ def compute_pyx(pred_probs, noise_matrix, inverse_noise_matrix):
     -------
 
     pyx : np.array (shape (N, K))
-        P(y=k|x) is a matrix with K model-predicted probabilities.
+        P(true_label=k|x) is a matrix with K model-predicted probabilities.
         Each row of this matrix corresponds to an example `x` and contains the model-predicted
         probabilities that `x` belongs to each possible class.
         The columns must be ordered such that these probabilities correspond to class 0,1,2,...

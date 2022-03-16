@@ -55,7 +55,7 @@ def assert_inputs_are_valid(X, s, pred_probs=None):  # pragma: no cover
 
 def remove_noise_from_class(noise_matrix, class_without_noise):
     """A helper function in the setting of PU learning.
-    Sets all P(labels=class_without_noise|y=any_other_class) = 0
+    Sets all P(label=class_without_noise|true_label=any_other_class) = 0
     in noise_matrix for pulearning setting, where we have
     generalized the positive class in PU learning to be any
     class of choosing, denoted by class_without_noise.
@@ -64,7 +64,7 @@ def remove_noise_from_class(noise_matrix, class_without_noise):
     ----------
 
     noise_matrix : np.array of shape (K, K), K = number of classes
-        A conditional probability matrix of the form P(labels=k_s|y=k_y) containing
+        A conditional probability matrix of the form P(label=k_s|true_label=k_y) containing
         the fraction of examples in every class, labeled as every other class.
         Assumes columns of noise_matrix sum to 1.
 
@@ -102,11 +102,11 @@ def clip_noise_rates(noise_matrix):
     noise_matrix : np.array of shape (K, K), K = number of classes
         A conditional probability matrix containing the fraction of
         examples in every class, labeled as every other class.
-        Diagonal terms are not noise rates, but are consistency P(labels=k|y=k)
+        Diagonal terms are not noise rates, but are consistency P(label=k|true_label=k)
         Assumes columns of noise_matrix sum to 1"""
 
     def clip_noise_rate_range(noise_rate):
-        """Clip noise rate P(labels=k'|y=k) or P(y=k|labels=k')
+        """Clip noise rate P(label=k'|true_label=k) or P(true_label=k|label=k')
         into proper range [0,1)"""
         return min(max(noise_rate, 0.0), 0.9999)
 
@@ -299,7 +299,7 @@ def estimate_pu_f1(s, prob_s_eq_1):
       Binary label (whether each element is labeled or not) in pu learning.
 
     prob_s_eq_1 : iterable (list or np.array)
-      The probability, for each example, whether it is labels==1 P(labels==1|x)
+      The probability, for each example, whether it has label=1 P(label=1|x)
 
     Output (float)
     ------
@@ -325,11 +325,11 @@ def confusion_matrix(true, pred):
 
     Parameters
     ----------
-    y : np.array 1d
+    true : np.array 1d
       Contains labels.
-      Assumes labels and y contains the same set of distinct labels.
+      Assumes true and pred contains the same set of distinct labels.
 
-    labels : np.array 1d
+    pred : np.array 1d
       A discrete vector of noisy labels, i.e. some labels may be erroneous.
       *Format requirements*: for dataset with K classes, labels must be in {0,1,...,K-1}.
 
@@ -427,9 +427,9 @@ def print_joint_matrix(joint_matrix, round_places=2):
 
 
 def _python_version_is_compatible(
-        warning_str="pyTorch supports Python version 2.7, 3.5, 3.6, 3.7, 3.8",
+        warning_str="pyTorch supports Python version 3.6, 3.7, 3.8, 3.9",
         warning_already_issued=False,
-        list_of_compatible_versions=[2.7, 3.5, 3.6, 3.7, 3.8],
+        list_of_compatible_versions=[3.5, 3.6, 3.7, 3.8],
 ):
     """Helper function for VersionWarning class that issues
     a warning (if a warning has not already been issued),
@@ -441,16 +441,14 @@ def _python_version_is_compatible(
     v = sys.version_info[0] + 0.1 * sys.version_info[1]
     if v in list_of_compatible_versions:
         return True
-    elif not warning_already_issued:
+    elif not warning_already_issued:  # pragma: no cover
         import warnings
         warning = '''
         {}
-        cleanlab supports Python versions 2.7, 3.4, 3.5, 3.6.
-        You are using Python version {}.
+        cleanlab supports Python >= 3.6, but you are using Python version {}.
         You'll need to use a version compatible with both.'''.format(warning_str, v)
         warnings.warn(warning)
-        warning_already_issued = True
-    return False
+        return False
 
 
 class VersionWarning(object):
@@ -470,6 +468,6 @@ class VersionWarning(object):
             self.warning_already_issued,
             self.list_of_compatible_versions,
         )
-        if not compatible:
+        if not compatible:  # pragma: no cover
             self.warning_already_issued = True
         return compatible

@@ -46,12 +46,12 @@ def make_data(
         labels.append(np.array([idx for i in range(sizes[idx])]))
         test_labels.append(np.array([idx for i in range(sizes[idx])]))
     X_train = np.vstack(local_data)
-    y_train = np.hstack(labels)
+    true_labels_train = np.hstack(labels)
     X_test = np.vstack(test_data)
-    y_test = np.hstack(test_labels)
+    true_labels_test = np.hstack(test_labels)
 
-    # Compute p(y=k)
-    py = np.bincount(y_train) / float(len(y_train))
+    # Compute p(true_label=k)
+    py = np.bincount(true_labels_train) / float(len(true_labels_train))
 
     noise_matrix = generate_noise_matrix_from_trace(
         m,
@@ -62,7 +62,7 @@ def make_data(
     )
 
     # Generate our noisy labels using the noise_matrix.
-    s = generate_noisy_labels(y_train, noise_matrix)
+    s = generate_noisy_labels(true_labels_train, noise_matrix)
     ps = np.bincount(s) / float(len(s))
 
     # Compute inverse noise matrix
@@ -75,13 +75,13 @@ def make_data(
         cv_n_folds=3,
     )
 
-    label_errors_mask = s != y_train
+    label_errors_mask = s != true_labels_train
 
     return {
         "X_train": X_train,
-        "y_train": y_train,
+        "true_labels_train": true_labels_train,
         "X_test": X_test,
-        "y_test": y_test,
+        "true_labels_test": true_labels_test,
         "labels": s,
         "label_errors_mask": label_errors_mask,
         "ps": ps,

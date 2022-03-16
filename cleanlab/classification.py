@@ -48,7 +48,7 @@ Examples
 >>> from cleanlab.classification import LearningWithNoisyLabels
 >>> from sklearn.linear_model import LogisticRegression as LogReg
 >>> rp = LearningWithNoisyLabels(clf=LogReg()) # Pass in any classifier.
->>> rp.fit(X_train, y_may_have_label_issues)
+>>> rp.fit(X_train, labels_maybe_with_errors)
 >>> # Estimate the predictions as if you had trained without label issues.
 >>> pred = rp.predict(X_test)
 
@@ -275,22 +275,22 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
           cross-validation with your model.
 
         thresholds : :obj:`iterable` (list or np.array) of shape (K, 1)  or (K,)
-          P(label^=k|labels=k). List of probabilities used to determine the cutoff
+          P(label^=k|label=k). List of probabilities used to determine the cutoff
           predicted probability necessary to consider an example as a given
           class label.
           Default is ``None``. These are computed for you automatically.
           If an example has a predicted probability "greater" than
-          this threshold, it is counted as having hidden label y = k. This is
+          this threshold, it is counted as having hidden true_label = k. This is
           not used for pruning/filtering, only for estimating the noise rates using
           confident counts. Values in list should be between 0 and 1.
 
         noise_matrix : :obj:`np.array` of shape (K, K), K = number of classes
-          A conditional probability matrix of the form P(labels=k_s|y=k_y) containing
+          A conditional probability matrix of the form P(label=k_s|true_label=k_y) containing
           the fraction of examples in every class, labeled as every other class.
           Assumes columns of noise_matrix sum to 1.
 
         inverse_noise_matrix : :obj:`np.array` of shape (K, K), K = number of classes
-          A conditional probability matrix of the form P(y=k_y|labels=k_s). Contains
+          A conditional probability matrix of the form P(true_label=k_y|label=k_s). Contains
           the estimated fraction observed examples in each class k_s, that are
           mislabeled examples from every other class k_y. If None, the
           inverse_noise_matrix will be computed from pred_probs and labels.
@@ -322,7 +322,7 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
 
         self.confident_joint = None
         # If needed, compute noise rates (mislabeling) for all classes. 
-        # Also, if needed, compute P(labels=k|x), denoted pred_probs.
+        # Also, if needed, compute P(label=k|x), denoted pred_probs.
 
         # Set / re-set noise matrices / pred_probs; estimate if not provided.
         if noise_matrix is not None:
@@ -373,13 +373,13 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
 
         # if pulearning == the integer specifying the class without noise.
         if self.K == 2 and self.pulearning is not None:  # pragma: no cover
-            # pulearning = 1 (no error in 1 class) implies p(labels=1|y=0) = 0
+            # pulearning = 1 (no error in 1 class) implies p(label=1|true_label=0) = 0
             self.noise_matrix[self.pulearning][1 - self.pulearning] = 0
             self.noise_matrix[1 - self.pulearning][1 - self.pulearning] = 1
-            # pulearning = 1 (no error in 1 class) implies p(y=0|labels=1) = 0
+            # pulearning = 1 (no error in 1 class) implies p(true_label=0|label=1) = 0
             self.inverse_noise_matrix[1 - self.pulearning][self.pulearning] = 0
             self.inverse_noise_matrix[self.pulearning][self.pulearning] = 1
-            # pulearning = 1 (no error in 1 class) implies p(labels=1,y=0) = 0
+            # pulearning = 1 (no error in 1 class) implies p(label=1,true_label=0) = 0
             self.confident_joint[self.pulearning][1 - self.pulearning] = 0
             self.confident_joint[1 - self.pulearning][1 - self.pulearning] = 1
 
@@ -422,7 +422,7 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
         return self.clf.predict(*args, **kwargs)
 
     def predict_proba(self, *args, **kwargs):
-        """Returns a vector of probabilities P(y=k)
+        """Returns a vector of probabilities P(true_label=k)
         for each example in X.
 
         Parameters

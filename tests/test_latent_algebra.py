@@ -79,7 +79,7 @@ def test_compute_py_err():
             py_method = 'marginal_ps',
         )
     except ValueError as e:
-        assert('y_count' in str(e))
+        assert('true_labels_class_counts' in str(e))
         with pytest.raises(ValueError) as e:
             py = latent_algebra.compute_py(
                 ps = ps,
@@ -92,13 +92,13 @@ def test_compute_py_err():
 def test_compute_py_marginal_ps():
     ps, py, inv = test_latent_py_ps_inv()
     cj = nm * ps * len(s)
-    y_count = cj.sum(axis = 0)
+    true_labels_class_counts = cj.sum(axis = 0)
     py2 = latent_algebra.compute_py(
         ps = ps,
         noise_matrix = nm,
         inverse_noise_matrix = inv,
         py_method = 'marginal_ps',
-        y_count = y_count
+        true_labels_class_counts = true_labels_class_counts
     )
     assert(all(abs(py - py2) < 1e-2))
 
@@ -125,3 +125,10 @@ def test_pyx_error():
         assert('should be (N, K)' in str(e))
     with pytest.raises(ValueError) as e:
         pyx = latent_algebra.compute_pyx(pred_probs, nm, inv)
+
+
+def test_compute_py_method_marginal_true_labels_class_counts_none_error():
+    ps, py, inv = test_latent_py_ps_inv()
+    with pytest.raises(ValueError) as e:
+        _ = latent_algebra.compute_py(ps=ps, noise_matrix=nm, inverse_noise_matrix=inv,
+                                      py_method='marginal', true_labels_class_counts=None)

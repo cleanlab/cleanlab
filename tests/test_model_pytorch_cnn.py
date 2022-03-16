@@ -28,7 +28,7 @@ if python_version.is_compatible():
     _, y_all = load_digits(return_X_y=True)
     # PyTorch requires type long targets.
     y_train = y_all[:-SKLEARN_DIGITS_TEST_SIZE].astype(np.long)
-    y_test = y_all[-SKLEARN_DIGITS_TEST_SIZE:].astype(np.long)
+    true_labels_test = y_all[-SKLEARN_DIGITS_TEST_SIZE:].astype(np.long)
 
 
 def test_loaders(
@@ -52,7 +52,7 @@ def test_loaders(
             print('loader:', loader)
             prev_score = score
             X = X_test_idx if loader == 'test' else X_train_idx
-            y = y_test if loader == 'test' else y_train
+            y = true_labels_test if loader == 'test' else y_train
             # Setting this overrides all future functions.
             cnn.loader = loader
             # pre-train (overfit, not out-of-sample) to entire dataset.
@@ -98,8 +98,8 @@ def test_n_train_examples():
                 loader='train', )
         cnn.loader = 'test'
         pred = cnn.predict(X_test_idx)
-        print(accuracy_score(y_test, pred))
-        assert (accuracy_score(y_test, pred) > 0.1)
+        print(accuracy_score(true_labels_test, pred))
+        assert (accuracy_score(true_labels_test, pred) > 0.1)
 
         # Check that exception is raised when invalid name is given.
         cnn.loader = 'INVALID'

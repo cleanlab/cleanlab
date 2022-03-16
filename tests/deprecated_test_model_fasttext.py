@@ -92,12 +92,12 @@ if python_version.is_compatible():
     # Load train text data
     with open(DATA_DIR + 'cooking.train.txt', 'r') as f:
         train_data = [z.strip() for z in f.readlines()]
-    y_train, X_train = [list(t) for t in zip(*(z.split(" ", 1) for z in train_data))]
+    true_labels_train, X_train = [list(t) for t in zip(*(z.split(" ", 1) for z in train_data))]
 
     # Load test text data
     with open(DATA_DIR + 'cooking.test.txt', 'r') as f:
         test_data = [z.strip() for z in f.readlines()]
-    y_test, X_test = [list(t) for t in zip(*(z.split(" ", 1) for z in test_data))]
+    true_labels_test, X_test = [list(t) for t in zip(*(z.split(" ", 1) for z in test_data))]
 
     # Set-up a FastTextClassifier model. Train it for five epochs.
     ftc = FastTextClassifier(
@@ -210,7 +210,7 @@ def test_cleanlab_with_fasttext():
         from cleanlab.utils.util import value_counts
 
         top = 3
-        label_counts = list(zip(np.unique(y_train + y_test), value_counts(y_train + y_test)))
+        label_counts = list(zip(np.unique(true_labels_train + true_labels_test), value_counts(y_train + y_test)))
         # Find which labels occur the most often.
         top_labels = [v for v,c in sorted(label_counts, key=lambda x: x[1])[::-1][:top]]
 

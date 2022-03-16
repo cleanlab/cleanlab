@@ -267,10 +267,10 @@ def find_label_issues(labels, pred_probs, confident_joint=None, filter_by='prune
       `pred_probs` should have been computed using 3 (or higher) fold cross-validation.
 
     confident_joint : np.array (shape (K, K), type int) (default: None)
-      A K,K integer matrix of count(labels=k, y=k). Estimates a a confident
+      A K,K integer matrix of count(label=k, true_label=k). Estimates a a confident
       subset of the joint distribution of the noisy and true labels P_{labels,y}.
       Each entry in the matrix contains the number of examples confidently
-      counted into every pair (labels=j, y=k) classes. The `confident joint` can be computed using
+      counted into every pair (label=j, true_label=k) classes. The `confident joint` can be computed using
     `count.compute_confident_joint`
 
     filter_by : str (default: 'prune_by_noise_rate')  TODO: change default to cl_off_diag?
@@ -497,7 +497,7 @@ def find_label_issues(labels, pred_probs, confident_joint=None, filter_by='prune
 
 def keep_at_least_n_per_class(prune_count_matrix, n, frac_noise=1.0):
     """Make sure every class has at least n examples after removing noise.
-    Functionally, increase each column, increases the diagonal term #(y=k,labels=k)
+    Functionally, increase each column, increases the diagonal term #(true_label=k,label=k)
     of prune_count_matrix until it is at least n, distributing the amount
     increased by subtracting uniformly from the rest of the terms in the
     column. When frac_noise = 1.0, return all "confidently" estimated

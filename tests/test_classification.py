@@ -56,16 +56,16 @@ def make_data(sparse,
         labels.append(np.array([idx for i in range(sizes[idx])]))
         test_labels.append(np.array([idx for i in range(sizes[idx])]))
     X_train = np.vstack(data)
-    y_train = np.hstack(labels)
+    true_labels_train = np.hstack(labels)
     X_test = np.vstack(test_data)
-    y_test = np.hstack(test_labels)
+    true_labels_test = np.hstack(test_labels)
 
     if sparse:
         X_train = scipy.sparse.csr_matrix(X_train)
         X_test = scipy.sparse.csr_matrix(X_test)
 
-    # Compute p(y=k)
-    py = np.bincount(y_train) / float(len(y_train))
+    # Compute p(true_label=k)
+    py = np.bincount(true_labels_train) / float(len(true_labels_train))
 
     noise_matrix = generate_noise_matrix_from_trace(
         K,
@@ -76,14 +76,14 @@ def make_data(sparse,
     )
 
     # Generate our noisy labels using the noise_marix.
-    s = generate_noisy_labels(y_train, noise_matrix)
+    s = generate_noisy_labels(true_labels_train, noise_matrix)
     ps = np.bincount(s) / float(len(s))
 
     return {
         "X_train": X_train,
-        "y_train": y_train,
+        "true_labels_train": true_labels_train,
         "X_test": X_test,
-        "y_test": y_test,
+        "true_labels_test": true_labels_test,
         "labels": s,
         "ps": ps,
         "py": py,
@@ -101,7 +101,7 @@ def test_rp(sparse):
     rp = LearningWithNoisyLabels(clf=LogisticRegression(
         multi_class='auto', solver='lbfgs', random_state=SEED))
     rp.fit(data["X_train"], data["labels"])
-    score = rp.score(data["X_test"], data["y_test"])
+    score = rp.score(data["X_test"], data["true_labels_test"])
     print(score)
     # Check that this runs without error.
     assert (True)
@@ -204,13 +204,13 @@ def test_fit_with_nm(
     nm = data['noise_matrix']
     # Learn with noisy labels with noise matrix given
     lnl.fit(data['X_train'], data['labels'], noise_matrix=nm)
-    score_nm = lnl.score(data['X_test'], data['y_test'])
+    score_nm = lnl.score(data['X_test'], data['true_labels_test'])
     # Learn with noisy labels and estimate the noise matrix.
     lnl2 = LearningWithNoisyLabels(
         seed=seed,
     )
     lnl2.fit(data['X_train'], data['labels'], )
-    score = lnl2.score(data['X_test'], data['y_test'])
+    score = lnl2.score(data['X_test'], data['true_labels_test'])
     if used_by_another_test:
         return score, score_nm
     else:
@@ -234,13 +234,13 @@ def test_fit_with_inm(
     )
     # Learn with noisy labels with inverse noise matrix given
     lnl.fit(data['X_train'], data['labels'], inverse_noise_matrix=inm)
-    score_inm = lnl.score(data['X_test'], data['y_test'])
+    score_inm = lnl.score(data['X_test'], data['true_labels_test'])
     # Learn with noisy labels and estimate the inv noise matrix.
     lnl2 = LearningWithNoisyLabels(
         seed=seed,
     )
     lnl2.fit(data['X_train'], data['labels'], )
-    score = lnl2.score(data['X_test'], data['y_test'])
+    score = lnl2.score(data['X_test'], data['true_labels_test'])
     if used_by_another_test:
         return score, score_inm
     else:
@@ -263,12 +263,12 @@ def test_clf_fit_nm_inm(sparse):
         noise_matrix=nm,
         inverse_noise_matrix=inm,
     )
-    score_nm_inm = lnl.score(data['X_test'], data['y_test'])
+    score_nm_inm = lnl.score(data['X_test'], data['true_labels_test'])
 
     # Learn with noisy labels and estimate the inv noise matrix.
     lnl2 = LearningWithNoisyLabels(seed=SEED)
     lnl2.fit(data['X_train'], data['labels'], )
-    score = lnl2.score(data['X_test'], data['y_test'])
+    score = lnl2.score(data['X_test'], data['true_labels_test'])
     assert (score < score_nm_inm + 1e-4)
 
 
@@ -277,8 +277,8 @@ def test_pred_and_pred_proba(sparse):
     data = SPARSE_DATA if sparse else DATA
     lnl = LearningWithNoisyLabels()
     lnl.fit(data['X_train'], data['labels'])
-    n = np.shape(data['y_test'])[0]
-    m = len(np.unique(data['y_test']))
+    n = np.shape(data['true_labels_test'])[0]
+    m = len(np.unique(data['true_labels_test']))
     pred = lnl.predict(data['X_test'])
     probs = lnl.predict_proba(data['X_test'])
     # Just check that this functions return what we expect
@@ -305,7 +305,7 @@ def test_score(sparse):
             return phrase
 
     lnl = LearningWithNoisyLabels(clf=Struct())
-    score = lnl.score(data['X_test'], data['y_test'])
+    score = lnl.score(data['X_test'], data['true_labels_test'])
     assert (score == phrase)
 
 
@@ -321,10 +321,10 @@ def test_no_score(sparse):
             pass
 
         def predict(self, X):
-            return data['y_test']
+            return data['true_labels_test']
 
     lnl = LearningWithNoisyLabels(clf=Struct())
-    score = lnl.score(data['X_test'], data['y_test'])
+    score = lnl.score(data['X_test'], data['true_labels_test'])
     assert (abs(score - 1) < 1e-6)
 
 
@@ -340,13 +340,13 @@ def test_no_fit_sample_weight(sparse):
             pass
 
         def predict(self, X):
-            return data['y_test']
+            return data['true_labels_test']
 
-    n = np.shape(data['y_test'])[0]
-    m = len(np.unique(data['y_test']))
+    n = np.shape(data['true_labels_test'])[0]
+    m = len(np.unique(data['true_labels_test']))
     pred_probs = np.zeros(shape=(n, m))
     lnl = LearningWithNoisyLabels(clf=Struct())
-    lnl.fit(data['X_train'], data['y_train'], pred_probs=pred_probs, noise_matrix=data['noise_matrix'])
+    lnl.fit(data['X_train'], data['true_labels_train'], pred_probs=pred_probs, noise_matrix=data['noise_matrix'])
     # If we make it here, without any error:
     assert (True)
 
@@ -358,20 +358,20 @@ def test_fit_pred_probs(sparse):
     lnl = LearningWithNoisyLabels()
     pred_probs = estimate_cv_predicted_probabilities(
         X=data['X_train'],
-        labels=data['y_train'],
+        labels=data['true_labels_train'],
     )
     lnl.fit(
         X=data['X_train'],
-        labels=data['y_train'],
+        labels=data['true_labels_train'],
         pred_probs=pred_probs
     )
-    score_with_pred_probs = lnl.score(data['X_test'], data['y_test'])
+    score_with_pred_probs = lnl.score(data['X_test'], data['true_labels_test'])
     lnl = LearningWithNoisyLabels()
     lnl.fit(
         X=data['X_train'],
-        labels=data['y_train'],
+        labels=data['true_labels_train'],
     )
-    score_no_pred_probs = lnl.score(data['X_test'], data['y_test'])
+    score_no_pred_probs = lnl.score(data['X_test'], data['true_labels_test'])
     assert (abs(score_with_pred_probs - score_no_pred_probs) < 0.01)
 
 
@@ -379,5 +379,5 @@ def test_fit_pred_probs(sparse):
 def test_get_label_issues(sparse):
     data = SPARSE_DATA if sparse else DATA
     lnl = LearningWithNoisyLabels(n_jobs=1)
-    lnl.fit(X=data['X_train'], labels=data['y_train'], )
+    lnl.fit(X=data['X_train'], labels=data['true_labels_train'], )
     assert all((lnl.get_label_issues() == lnl.label_issues_mask))
