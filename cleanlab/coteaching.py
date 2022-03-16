@@ -29,11 +29,6 @@
 # This module requires PyTorch. Please see:
 # https://pytorch.org/get-started/locally/
 
-# Python 2 and 3 compatibility
-from __future__ import (
-    print_function, absolute_import, division, unicode_literals, with_statement,
-)
-
 import torch
 import torch.nn.functional as F
 from torch.autograd import Variable
@@ -166,7 +161,7 @@ def train(train_loader, epoch, model1, optimizer1, model2, optimizer2, args,
             # If you update the weights based on the gradient from one example
             # if that example is noisy, you will add tons of noise to your net
             # and accuracy will actually go down with each epoch.
-            # To avoid this, do not train on the last batch if its small.
+            # To avoid this, do not train on the last batch if it's small.
             continue
         
         images = Variable(images).cuda()

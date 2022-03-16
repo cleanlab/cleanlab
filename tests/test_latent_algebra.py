@@ -14,10 +14,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
-from __future__ import print_function, absolute_import, division, unicode_literals, with_statement
-
-
-from cleanlab import latent_algebra, latent_estimation
+from cleanlab.utils import latent_algebra
 import numpy as np
 import pytest
 
@@ -45,7 +42,7 @@ def test_latent_inv():
 
 def test_latent_nm():
     ps, py, inv = test_latent_py_ps_inv()
-    nm2 = latent_algebra.compute_noise_matrix_from_inverse(ps, inv, py)
+    nm2 = latent_algebra.compute_noise_matrix_from_inverse(ps, inv, py=py)
     assert(np.all(abs(nm - nm2) < 1e-3))
 
 
@@ -82,7 +79,7 @@ def test_compute_py_err():
             py_method = 'marginal_ps',
         )
     except ValueError as e:
-        assert('y_count' in str(e))
+        assert('true_labels_class_counts' in str(e))
         with pytest.raises(ValueError) as e:
             py = latent_algebra.compute_py(
                 ps = ps,
@@ -95,19 +92,19 @@ def test_compute_py_err():
 def test_compute_py_marginal_ps():
     ps, py, inv = test_latent_py_ps_inv()
     cj = nm * ps * len(s)
-    y_count = cj.sum(axis = 0)
+    true_labels_class_counts = cj.sum(axis = 0)
     py2 = latent_algebra.compute_py(
         ps = ps,
         noise_matrix = nm,
         inverse_noise_matrix = inv,
         py_method = 'marginal_ps',
-        y_count = y_count
+        true_labels_class_counts = true_labels_class_counts
     )
     assert(all(abs(py - py2) < 1e-2))
 
 
 def test_pyx():
-    psx = np.array([
+    pred_probs = np.array([
         [0.1, 0.3, 0.6],
         [0.1, 0.0, 0.9],
         [0.1, 0.0, 0.9],
@@ -115,16 +112,23 @@ def test_pyx():
         [0.1, 0.8, 0.1],
     ])
     ps, py, inv = test_latent_py_ps_inv()
-    pyx = latent_algebra.compute_pyx(psx, nm, inv)
+    pyx = latent_algebra.compute_pyx(pred_probs, nm, inv)
     assert(np.all(np.sum(pyx, axis = 1) - 1 < 1e-4))
 
 
 def test_pyx_error():  
-    psx = np.array([0.1, 0.3, 0.6])
+    pred_probs = np.array([0.1, 0.3, 0.6])
     ps, py, inv = test_latent_py_ps_inv()
     try:
-        pyx = latent_algebra.compute_pyx(psx, nm, inv)
+        pyx = latent_algebra.compute_pyx(pred_probs, nm, inverse_noise_matrix=inv)
     except ValueError as e:
         assert('should be (N, K)' in str(e))
     with pytest.raises(ValueError) as e:
-        pyx = latent_algebra.compute_pyx(psx, nm, inv)
+        pyx = latent_algebra.compute_pyx(pred_probs, nm, inverse_noise_matrix=inv)
+
+
+def test_compute_py_method_marginal_true_labels_class_counts_none_error():
+    ps, py, inv = test_latent_py_ps_inv()
+    with pytest.raises(ValueError) as e:
+        _ = latent_algebra.compute_py(ps=ps, noise_matrix=nm, inverse_noise_matrix=inv,
+                                      py_method='marginal', true_labels_class_counts=None)

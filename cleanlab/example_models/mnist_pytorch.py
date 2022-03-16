@@ -22,18 +22,17 @@
 
 
 # Python 2 and 3 compatibility
-from __future__ import (
-    print_function, absolute_import, division, unicode_literals, with_statement)
+
 
 # In[ ]:
 
 
 # Make sure python version is compatible with pyTorch
-from cleanlab.util import VersionWarning
+from cleanlab.utils.util import VersionWarning
 
 python_version = VersionWarning(
-    warning_str="pyTorch supports Python version 2.7, 3.5, 3.6, 3.7.",
-    list_of_compatible_versions=[2.7, 3.5, 3.6, 3.7, 3.8],
+    warning_str="pyTorch supports Python version 2.7, 3.5, 3.6, 3.7, 3.8, 3.9",
+    list_of_compatible_versions=[2.7, 3.5, 3.6, 3.7, 3.8, 3.9],
 )
 
 if python_version.is_compatible():  # pragma: no cover
@@ -197,7 +196,7 @@ class CNN(BaseEstimator):  # Inherits sklearn classifier
     predict
       get the fitted model's prediction on test data
     predict_proba
-      get the fitted model's probability distribution over clases for test data
+      get the fitted model's probability distribution over classes for test data
     """
     def __init__(
             self,

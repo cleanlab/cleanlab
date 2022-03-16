@@ -14,20 +14,14 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
-# Python 2 and 3 compatibility
-from __future__ import (
-    print_function, absolute_import, division, unicode_literals, with_statement,
-)
-
 # Make sure python version is compatible with fasttext
-from cleanlab.util import VersionWarning
+from cleanlab.utils.util import VersionWarning
 
 # fasttext only exists for these versions that are also compatible with cleanlab
 # if python_version.is_compatible():  # pragma: no cover
 import time
 import os
 import copy
-from sklearn.metrics import accuracy_score
 import numpy as np
 # You need to install fasttext using pip for this library to work
 from fasttext import train_supervised, load_model
@@ -152,9 +146,9 @@ class FastTextClassifier(BaseEstimator):  # Inherits sklearn base classifier
         self.num2label = dict((y, x) for x, y in self.label2num.items())
 
     def _create_train_data(self, data_indices):
-        '''Returns filename of the masked fasttext data file.
+        """Returns filename of the masked fasttext data file.
         Items are written in the order they are in the file,
-        regardless if indices are provided.'''
+        regardless if indices are provided."""
 
         # If X indexes all training data, no need to rewrite the file.
         if data_indices is None:
@@ -189,7 +183,7 @@ class FastTextClassifier(BaseEstimator):  # Inherits sklearn base classifier
         return masked_fn
 
     def _remove_masked_data(self, fn):
-        '''Deletes intermediate data files.'''
+        """Deletes intermediate data files."""
 
         if self.del_intermediate_data and self.masked_data_was_created:
             os.remove(fn)
@@ -216,51 +210,51 @@ class FastTextClassifier(BaseEstimator):  # Inherits sklearn base classifier
         return clf_copy
 
     def fit(self, X=None, y=None, sample_weight=None):
-        '''Trains the fast text classifier.
+        """Trains the fast text classifier.
         Typical usage requires NO parameters,
         just clf.fit()  # No params.
-        
+
         Parameters
         ----------
         X : iterable, e.g. list, numpy array (default None)
           The list of indices of the data to use.
           When in doubt, set as None. None defaults to range(len(data)).
         y : None
-          Leave this as None. Its a filler to suit sklearns reqs.
+          Leave this as None. It's a filler to suit sklearns reqs.
         sample_weight : None
-          Leave this as None. Its a filler to suit sklearns reqs.'''
+          Leave this as None. It's a filler to suit sklearns reqs."""
 
         train_fn = self._create_train_data(data_indices=X)
         self.clf = train_supervised(train_fn, **self.kwargs_train_supervised)
         self._remove_masked_data(train_fn)
 
     def predict_proba(self, X=None, train_data=True, return_labels=False):
-        '''Produces a probability matrix with examples on rows and 
+        """Produces a probability matrix with examples on rows and
         classes on columns, where each row sums to 1 and captures the
-        probability of the example belonging to each class.'''
+        probability of the example belonging to each class."""
 
         fn = self.train_data_fn if train_data else self.test_data_fn
-        psx_list = []
+        pred_probs_list = []
         if return_labels:
             labels_list = []
         for labels, text in data_loader(fn=fn, indices=X,
                                         batch_size=self.batch_size):
             pred = self.clf.predict(text=text, k=len(self.clf.get_labels()))
-            # Get p(s = k | x) matrix of shape (N x K) of pred probs for each x
-            psx = [[p for _, p in sorted(list(zip(*l)), key=lambda x: x[0])] for
+            # Get p(label = k | x) matrix of shape (N x K) of pred probs for each x
+            pred_probs = [[p for _, p in sorted(list(zip(*l)), key=lambda x: x[0])] for
                    l in list(zip(*pred))]
-            psx_list.append(np.array(psx))
+            pred_probs_list.append(np.array(pred_probs))
             if return_labels:
                 labels_list.append(labels)
-        psx = np.concatenate(psx_list, axis=0)
+        pred_probs = np.concatenate(pred_probs_list, axis=0)
         if return_labels:
             gold_labels = [self.label2num[z] for l in labels_list for z in l]
-            return (psx, np.array(gold_labels))
+            return (pred_probs, np.array(gold_labels))
         else:
-            return psx
+            return pred_probs
 
     def predict(self, X=None, train_data=True, return_labels=False):
-        '''Predict labels of X'''
+        """Predict labels of X"""
 
         fn = self.train_data_fn if train_data else self.test_data_fn
         pred_list = []
@@ -280,8 +274,9 @@ class FastTextClassifier(BaseEstimator):  # Inherits sklearn base classifier
             return pred
 
     def score(self, X=None, y=None, sample_weight=None, k=None):
-        '''Compute the average precision @ k (single label) of the 
-        labels predicted from X and the true labels given by y.'''
+        """Compute the average precision @ k (single label) of the
+        labels predicted from X and the true labels given by y.
+        score expects a `y` variable. In this case, `y` is the noisy labels."""
 
         # Set the k for precision@k.
         # For single label: 1 if label is in top k, else 0

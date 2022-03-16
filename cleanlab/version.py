@@ -70,11 +70,11 @@ __version__ = '1.0.1'
 #   - Adhered all core modules to PEP-8 styling.
 #   - Extensive benchmarking of cleanlab methods published.
 #   - Future features planned are now supported in cleanlab/version.py
-#   - Added confidentlearning-reproduce as a seperate repo to reproduce state-of-the-art results.
+#   - Added confidentlearning-reproduce as a separate repo to reproduce state-of-the-art results.
 
 # 0.1.1 - Major update adding support for Windows and Python 3.7
 #   - Added support for Python 3.7
-#   - Added full support for Windows, including multiprocessing support in cleanlab/pruning.py
+#   - Added full support for Windows, including multiprocessing support in cleanlab/filter.py
 #   - Improved PEP-8 adherence in core cleanlab/ code.
 
 # 0.1.0 - Release of confident learning paper: https://arxiv.org/pdf/1911.00068.pdf

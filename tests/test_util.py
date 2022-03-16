@@ -1,10 +1,7 @@
 
 # coding: utf-8
 
-from __future__ import print_function, absolute_import, division, unicode_literals, with_statement
-
-
-from cleanlab import util
+from cleanlab.utils import util
 import numpy as np
 
 
@@ -64,7 +61,7 @@ def test_pu_f1():
 
 
 def test_value_counts_str():
-    r = util.value_counts(['a','b','a'])
+    r = util.value_counts(['a', 'b', 'a'])
     assert(all(np.array([2, 1]) - r < 1e-4))
 
 

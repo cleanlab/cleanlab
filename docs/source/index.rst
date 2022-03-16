@@ -32,21 +32,21 @@ Quickstart
          pip install git+https://github.com/cleanlab/cleanlab.git
 
 
-2. Find label errors with ``get_noise_indices``.
+2. Find label errors with ``find_label_issues``.
 ------------------------------------------------
 
-``cleanlab``'s ``get_noise_indices`` function tells you which examples in your dataset are likely mislabeled. At a minimum, it expects two inputs - your data's given labels, ``y``, and predicted probabilities, ``pyx``, from some trained model (Note: these must be out-of-sample predictions where the data points were held out from the model during training, which can be obtained via cross-validation). 
+``cleanlab``'s ``find_label_issues`` function tells you which examples in your dataset are likely mislabeled. At a minimum, it expects two inputs - your data's given labels, ``y``, and predicted probabilities, ``pyx``, from some trained model (Note: these must be out-of-sample predictions where the data points were held out from the model during training, which can be obtained via cross-validation).
 
-Setting ``sorted_index_method`` instructs ``cleanlab`` to return the indices of potential mislabeled examples, ordered by the likelihood of label error estimate via ``prob_given_label`` scores (predicted probability of given label according to the model).
+Setting ``sorted_index_method`` instructs ``cleanlab`` to return the indices of potential mislabeled examples, ordered by the likelihood of label error estimate via ``self_confidence`` scores (predicted probability of given label according to the model).
 
 .. code-block:: python
 
-   from cleanlab.pruning import get_noise_indices
+   from cleanlab.pruning import find_label_issues
 
-   ordered_label_errors = get_noise_indices(
+   ordered_label_issues = find_label_issues(
       s=y, 
-      psx=pyx,
-      sorted_index_method='prob_given_label')
+      pred_probs=pyx,
+      sorted_index_method='self_confidence')
 
 .. important::
    The predicted probabilities, ``pyx``, from your model **must be out-of-sample**! You should never provide predictions on the same data points used to train the model - this would reflect predictions of an overfitted model, making it unsuitable for finding label errors. To compute the out-of-sample predicted probabilities of the entire dataset, you can use cross-validation.

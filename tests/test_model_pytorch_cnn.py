@@ -1,23 +1,17 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# Python 2 and 3 compatibility
-from __future__ import (
-    print_function, absolute_import, division,
-    unicode_literals, with_statement,
-)
-
 # Make sure python version is compatible with pyTorch
-from cleanlab.util import VersionWarning
+from cleanlab.utils.util import VersionWarning
 
 python_version = VersionWarning(
-    warning_str="pyTorch supports Python version 3.5, 3.6, 3.7, 3.8",
-    list_of_compatible_versions=[3.5, 3.6, 3.7, 3.8, ],
+    warning_str="pyTorch supports Python version 3.5, 3.6, 3.7, 3.8, 3.9",
+    list_of_compatible_versions=[3.5, 3.6, 3.7, 3.8, 3.9],
 )
 
 
 if python_version.is_compatible():
-    from cleanlab.models.mnist_pytorch import (
+    from cleanlab.example_models.mnist_pytorch import (
         CNN, SKLEARN_DIGITS_TEST_SIZE,
         SKLEARN_DIGITS_TRAIN_SIZE,
     )
@@ -25,7 +19,6 @@ if python_version.is_compatible():
     import numpy as np
     from sklearn.metrics import accuracy_score
     from sklearn.datasets import load_digits
-    from torch import from_numpy
     import pytest
 
 
@@ -35,7 +28,7 @@ if python_version.is_compatible():
     _, y_all = load_digits(return_X_y=True)
     # PyTorch requires type long targets.
     y_train = y_all[:-SKLEARN_DIGITS_TEST_SIZE].astype(np.long)
-    y_test = y_all[-SKLEARN_DIGITS_TEST_SIZE:].astype(np.long)
+    true_labels_test = y_all[-SKLEARN_DIGITS_TEST_SIZE:].astype(np.long)
 
 
 def test_loaders(
@@ -45,12 +38,12 @@ def test_loaders(
     The goal of this test is just to make sure the data loads correctly.
     And all the main functions work."""
 
-    from cleanlab.latent_estimation import (
+    from cleanlab.count import (
         estimate_confident_joint_and_cv_pred_proba, estimate_latent)
 
     if python_version.is_compatible():
         np.random.seed(seed)
-        prune_method = 'prune_by_noise_rate'
+        filter_by = 'prune_by_noise_rate'
         # Pre-train for only 3 epochs (it maxes out around 8-12 epochs)
         cnn = CNN(epochs=3, log_interval=None, seed=seed,
                   dataset='sklearn-digits')
@@ -59,7 +52,7 @@ def test_loaders(
             print('loader:', loader)
             prev_score = score
             X = X_test_idx if loader == 'test' else X_train_idx
-            y = y_test if loader == 'test' else y_train
+            y = true_labels_test if loader == 'test' else y_train
             # Setting this overrides all future functions.
             cnn.loader = loader
             # pre-train (overfit, not out-of-sample) to entire dataset.
@@ -69,13 +62,13 @@ def test_loaders(
             np.random.seed(seed)
             # Single epoch for cross-validation (already pre-trained)
             cnn.epochs = 1
-            cj, psx = estimate_confident_joint_and_cv_pred_proba(
+            cj, pred_probs = estimate_confident_joint_and_cv_pred_proba(
                 X, y, cnn, cv_n_folds=2)
             est_py, est_nm, est_inv = estimate_latent(cj, y)
-            # algorithmic identification of label errors
-            noise_idx = cleanlab.pruning.get_noise_indices(
-                y, psx, est_inv, prune_method=prune_method)
-            assert noise_idx is not None
+            # algorithmic identification of label issues
+            err_idx = cleanlab.filter.find_label_issues(y, pred_probs, confident_joint=cj,
+                                                        filter_by=filter_by)
+            assert err_idx is not None
 
             # Get prediction on loader set.
             pred = cnn.predict(X)
@@ -106,8 +99,8 @@ def test_n_train_examples():
                 loader='train', )
         cnn.loader = 'test'
         pred = cnn.predict(X_test_idx)
-        print(accuracy_score(y_test, pred))
-        assert (accuracy_score(y_test, pred) > 0.1)
+        print(accuracy_score(true_labels_test, pred))
+        assert (accuracy_score(true_labels_test, pred) > 0.1)
 
         # Check that exception is raised when invalid name is given.
         cnn.loader = 'INVALID'
