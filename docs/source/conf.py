@@ -14,7 +14,8 @@ import os
 import sys
 import datetime
 
-sys.path.insert(0, os.path.abspath("../../cleanlab"))
+sys.path.insert(1, os.path.abspath("../../"))
+# sys.path.insert(0, os.path.abspath("../../cleanlab"))
 # sys.path.insert(0, os.path.abspath("../cleanlab/models/"))
 # sys.path.insert(1, "./cleanlab/models")
 
@@ -109,6 +110,12 @@ autodoc_inherit_docstrings = True
 
 # This is processed by Jinja2 and inserted before each notebook
 nbsphinx_prolog = """
+{% if versions %}
+    {% set docver = current_version.name %}
+{% else %}
+    {% set docver = "master" %}
+{% endif %}
+
 {% set docname = env.doc2path(env.docname, base=None) %}
 
 .. raw:: html
@@ -125,16 +132,26 @@ nbsphinx_prolog = """
         }
     </style>
 
-    <p>
-        <a style= "background-color:white;color:black;padding:4px 12px;text-decoration:none;display:inline-block;border-radius:8px;box-shadow:0 2px 4px 0 rgba(0, 0, 0, 0.2), 0 3px 10px 0 rgba(0, 0, 0, 0.19)" href="https://colab.research.google.com/github/cleanlab/cleanlab/blob/master/docs/source/{{ docname|e }}" target="_blank">
-            <img src="https://colab.research.google.com/img/colab_favicon_256px.png" alt="Google Colab Logo" style="width:40px;height:40px;vertical-align:middle">   
-            <span style="vertical-align:middle">Run in Google Colab</span>
-        </a>
-    </p>
+    <script type="text/javascript">
+        window.addEventListener('load', function () {
+            var h1_element = document.getElementsByTagName("h1");
+            h1_element[0].insertAdjacentHTML("afterend", `
+            <p>
+                <a style="background-color:white;color:black;padding:4px 12px;text-decoration:none;display:inline-block;border-radius:8px;box-shadow:0 2px 4px 0 rgba(0, 0, 0, 0.2), 0 3px 10px 0 rgba(0, 0, 0, 0.19)" href="https://colab.research.google.com/github/cleanlab/cleanlab/blob/{{ docver|e }}/docs/source/{{ docname|e }}" target="_blank">
+                <img src="https://colab.research.google.com/img/colab_favicon_256px.png" alt="Google Colab Logo" style="width:40px;height:40px;vertical-align:middle">
+                <span style="vertical-align:middle">Run in Google Colab</span>
+                </a>
+            </p>
+            `);
+        })
+
+    </script>
+
 """
 
 # Change this to "always" before running in the doc's CI/CD server
-nbsphinx_execute = "always"
+if os.getenv('CI'):
+    nbsphinx_execute = "always"
 
 # -- Options for HTML output -------------------------------------------------
 
@@ -143,7 +160,7 @@ nbsphinx_execute = "always"
 #
 html_theme = "furo"
 html_favicon = "https://raw.githubusercontent.com/cleanlab/assets/master/cleanlab/cleanlab_logo_only.png"
-html_title = "cleanlab docs"
+html_title = "cleanlab"
 html_logo = "https://raw.githubusercontent.com/cleanlab/assets/master/cleanlab/cleanlab_logo_only.png"
 html_theme_options = {
     "footer_icons": [

@@ -42,6 +42,9 @@ jobs:
           key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
           restore-keys: ${{ runner.os }}-pip-
 
+      - name: Install cleanlab
+        run: pip install -e .
+
       - name: Install dependencies
         run: python3 -m pip install -r docs/requirements.txt
 
@@ -86,7 +89,7 @@ jobs:
         uses: jacobtomlinson/gha-find-replace@v2
         with:
           find: "stable_url"
-          replace: /cleanlab-docs/${{ steps.stable_release.outputs.release }}/index.html
+          replace: https://docs.cleanlab.ai/${{ steps.stable_release.outputs.release }}/index.html
           include: "docs/source/_templates/redirect-to-stable.html"
 
       - name: Copy redirecting HTML file to cleanlab-docs/ and cleanlab-docs/stable

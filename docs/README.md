@@ -1,3 +1,6 @@
+# Looking for `v1.0` of the `cleanlab` docs?
+
+The `v1.0.1` docs is still relevant to our `v1.0` release.
 
 # CI/CD for `cleanlab` docs
 
@@ -48,11 +51,11 @@ pip install -r docs/requirements.txt
 
       * find `placeholder_commit_hash` and replace it with the `master` branch commit hash.
 
-5. **[Optional]** To redirect site visits from the port address or subdirectory `PORT_ADDRESS/stable` to the stable version of the docs:
+5. **[Optional]** To redirect site visits from `/` or `/stable` to the stable version of the docs:
 
    * Create a copy of the `docs/_templates/redirect-to-stable.html` file and rename it as `index.html`.
 
-   * In this `index.html` file, find `stable_url` and replace it with `cleanlab-docs/YOUR_LATEST_RELEASE_TAG_NAME/index.html`. 
+   * In this `index.html` file, find `stable_url` and replace it with `/cleanlab-docs/YOUR_LATEST_RELEASE_TAG_NAME/index.html`. 
 
    * Copy this `index.html` to:
 
