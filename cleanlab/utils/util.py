@@ -1,64 +1,65 @@
 # Copyright (C) 2017-2022  Cleanlab Inc.
 # This file is part of cleanlab.
-# 
+#
 # cleanlab is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as published
 # by the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # cleanlab is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Affero General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU Affero General Public License
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
 
-# ## Confident Learning Utilties
-# 
-# #### Contains ancillarly helper functions used throughout this package.
+# ## Confident Learning Utilities
+#
+# #### Contains ancillary helper functions used throughout this package.
 
-from __future__ import (
-    print_function, absolute_import, division, unicode_literals, with_statement
-)
 import numpy as np
 from sklearn.utils import check_X_y
 
 
-def assert_inputs_are_valid(X, s, psx=None):  # pragma: no cover
-    """Checks that X, s, and psx
+def assert_inputs_are_valid(X, s, pred_probs=None):  # pragma: no cover
+    """Checks that X, labels, and pred_probs
     are correctly formatted"""
 
-    if psx is not None:
-        if not isinstance(psx, (np.ndarray, np.generic)):
-            raise TypeError("psx should be a numpy array.")
-        if len(psx) != len(s):
-            raise ValueError("psx and s must have same length.")
+    if pred_probs is not None:
+        if not isinstance(pred_probs, (np.ndarray, np.generic)):
+            raise TypeError("pred_probs should be a numpy array.")
+        if len(pred_probs) != len(s):
+            raise ValueError("pred_probs and labels must have same length.")
         # Check for valid probabilities.
-        if (psx < 0).any() or (psx > 1).any():
-            raise ValueError("Values in psx must be between 0 and 1.")
+        if (pred_probs < 0).any() or (pred_probs > 1).any():
+            raise ValueError("Values in pred_probs must be between 0 and 1.")
 
     if not isinstance(s, (np.ndarray, np.generic)):
-        raise TypeError("s should be a numpy array.")
+        raise TypeError("labels should be a numpy array.")
 
-    # Check that s is zero-indexed (first label is 0).
+    # Check that labels is zero-indexed (first label is 0).
     unique_classes = np.unique(s)
     if all(unique_classes != np.arange(len(unique_classes))):
         msg = "cleanlab requires zero-indexed labels (0,1,2,..,m-1), but in "
-        msg += "your case: np.unique(s) = {}".format(str(unique_classes))
+        msg += "your case: np.unique(labels) = {}".format(str(unique_classes))
         raise TypeError(msg)
 
     # Allow sparse matrices and check that they are valid format.
     check_X_y(
-        X, s, accept_sparse=True, dtype=None, force_all_finite=False,
+        X,
+        s,
+        accept_sparse=True,
+        dtype=None,
+        force_all_finite=False,
         ensure_2d=False,
     )
 
 
 def remove_noise_from_class(noise_matrix, class_without_noise):
     """A helper function in the setting of PU learning.
-    Sets all P(s=class_without_noise|y=any_other_class) = 0
+    Sets all P(label=class_without_noise|true_label=any_other_class) = 0
     in noise_matrix for pulearning setting, where we have
     generalized the positive class in PU learning to be any
     class of choosing, denoted by class_without_noise.
@@ -67,7 +68,7 @@ def remove_noise_from_class(noise_matrix, class_without_noise):
     ----------
 
     noise_matrix : np.array of shape (K, K), K = number of classes
-        A conditional probablity matrix of the form P(s=k_s|y=k_y) containing
+        A conditional probability matrix of the form P(label=k_s|true_label=k_y) containing
         the fraction of examples in every class, labeled as every other class.
         Assumes columns of noise_matrix sum to 1.
 
@@ -81,10 +82,10 @@ def remove_noise_from_class(noise_matrix, class_without_noise):
     cwn = class_without_noise
     x = np.copy(noise_matrix)
 
-    # Set P( s = cwn | y != cwn) = 0 (no noise)
+    # Set P( labels = cwn | y != cwn) = 0 (no noise)
     x[cwn, [i for i in range(K) if i != cwn]] = 0.0
 
-    # Normalize columns by increasing diagnol terms
+    # Normalize columns by increasing diagonal terms
     # Ensures noise_matrix is a valid probability matrix
     for i in range(K):
         x[i][i] = 1 - float(np.sum(x[:, i]) - x[i][i])
@@ -103,17 +104,17 @@ def clip_noise_rates(noise_matrix):
     ----------
 
     noise_matrix : np.array of shape (K, K), K = number of classes
-        A conditional probablity matrix containing the fraction of
+        A conditional probability matrix containing the fraction of
         examples in every class, labeled as every other class.
-        Diagonal terms are not noise rates, but are consistency P(s=k|y=k)
+        Diagonal terms are not noise rates, but are consistency P(label=k|true_label=k)
         Assumes columns of noise_matrix sum to 1"""
 
     def clip_noise_rate_range(noise_rate):
-        """Clip noise rate P(s=k'|y=k) or P(y=k|s=k')
+        """Clip noise rate P(label=k'|true_label=k) or P(true_label=k|label=k')
         into proper range [0,1)"""
         return min(max(noise_rate, 0.0), 0.9999)
 
-    # Vectorize clip_noise_rate_range for efficiency with np.arrays.  
+    # Vectorize clip_noise_rate_range for efficiency with np.arrays.
     vectorized_clip = np.vectorize(clip_noise_rate_range)
 
     # Preserve because diagonal entries are not noise rates.
@@ -160,7 +161,7 @@ def clip_values(x, low=0.0, high=1.0, new_sum=None):
         """Clip a into range [low,high]"""
         return min(max(a, low), high)
 
-    # Vectorize clip_range for efficiency with np.arrays.  
+    # Vectorize clip_range for efficiency with np.arrays.
     vectorized_clip = np.vectorize(clip_range)
 
     # Store previous sum
@@ -230,7 +231,7 @@ def round_preserving_sum(iterable):
     # Adjust the integers so that they sum to orig_sum
     while abs(int_sum - orig_sum) > 1e-6:
         diff = np.round(orig_sum - int_sum)
-        increment = -1 if int(diff < 0.) else 1
+        increment = -1 if int(diff < 0.0) else 1
         changes = min(int(abs(diff)), len(iterable))
         # Orders indices by difference. Increments # of changes.
         indices = np.argsort(floats - ints)[::-increment][:changes]
@@ -272,6 +273,7 @@ def int2onehot(labels):
       All integers from 0,1,...,K-1 must be represented."""
 
     from sklearn.preprocessing import MultiLabelBinarizer
+
     mlb = MultiLabelBinarizer()
     return mlb.fit_transform(labels)
 
@@ -302,7 +304,7 @@ def estimate_pu_f1(s, prob_s_eq_1):
       Binary label (whether each element is labeled or not) in pu learning.
 
     prob_s_eq_1 : iterable (list or np.array)
-      The probability, for each example, whether it is s==1 P(s==1|x)
+      The probability, for each example, whether it has label=1 P(label=1|x)
 
     Output (float)
     ------
@@ -313,13 +315,13 @@ def estimate_pu_f1(s, prob_s_eq_1):
     all_positives = sum(s)
     recall = true_positives / float(all_positives)
     frac_positive = sum(pred) / float(len(s))
-    return recall ** 2 / (2.0 * frac_positive) if frac_positive != 0 else np.nan
+    return recall**2 / (2.0 * frac_positive) if frac_positive != 0 else np.nan
 
 
 def confusion_matrix(true, pred):
     """Implements a confusion matrix for true labels
     and predicted labels. true and pred MUST BE the same length
-    and have the same distinct set of class labels represtented.
+    and have the same distinct set of class labels represented.
 
     Results are identical (and similar computation time) to:
         "sklearn.metrics.confusion_matrix"
@@ -328,20 +330,20 @@ def confusion_matrix(true, pred):
 
     Parameters
     ----------
-    y : np.array 1d
+    true : np.array 1d
       Contains labels.
-      Assumes s and y contains the same distinct set of labels.
+      Assumes true and pred contains the same set of distinct labels.
 
-    s : np.array 1d
-      Contains labels.
-      Assumes s and y contains the same distinct set of labels.
+    pred : np.array 1d
+      A discrete vector of noisy labels, i.e. some labels may be erroneous.
+      *Format requirements*: for dataset with K classes, labels must be in {0,1,...,K-1}.
 
     Returns
     -------
     confusion_matrix : np.array (2D)
       matrix of confusion counts with true on rows and pred on columns."""
 
-    assert (len(true) == len(pred))
+    assert len(true) == len(pred)
     true_classes = np.unique(true)
     pred_classes = np.unique(pred)
     K_true = len(true_classes)  # Number of classes in true
@@ -357,12 +359,12 @@ def confusion_matrix(true, pred):
 
 
 def print_square_matrix(
-        matrix,
-        left_name='s',
-        top_name='y',
-        title=' A square matrix',
-        short_title='s,y',
-        round_places=2,
+    matrix,
+    left_name="labels",
+    top_name="y",
+    title=" A square matrix",
+    short_title="labels,y",
+    round_places=2,
 ):
     """Pretty prints a matrix.
 
@@ -377,7 +379,7 @@ def print_square_matrix(
     title : str
         Prints this string above the printed square matrix.
     short_title : str
-        A short title (6 characters or less) like P(s|y) or P(s,y).
+        A short title (6 characters or fewer) like P(labels|y) or P(labels,y).
     round_places : int
         Number of decimals to show for each matrix value."""
 
@@ -387,9 +389,9 @@ def print_square_matrix(
     if len(np.shape(matrix)) == 1:
         matrix = np.array([matrix])
     print()
-    print(title, 'of shape', matrix.shape)
-    print(" " + short_title + "".join(['\t' + top_name + '=' + str(i) for i in range(K)]))
-    print('\t---' * K)
+    print(title, "of shape", matrix.shape)
+    print(" " + short_title + "".join(["\t" + top_name + "=" + str(i) for i in range(K)]))
+    print("\t---" * K)
     for i in range(K):
         entry = "\t".join([str(z) for z in list(matrix.round(round_places)[i, :])])
         print(left_name + "=" + str(i) + " |\t" + entry)
@@ -401,8 +403,8 @@ def print_noise_matrix(noise_matrix, round_places=2):
     """Pretty prints the noise matrix."""
     print_square_matrix(
         noise_matrix,
-        title=' Noise Matrix (aka Noisy Channel) P(s|y)',
-        short_title='p(s|y)',
+        title=" Noise Matrix (aka Noisy Channel) P(labels|y)",
+        short_title="p(labels|y)",
         round_places=round_places,
     )
 
@@ -411,10 +413,10 @@ def print_inverse_noise_matrix(inverse_noise_matrix, round_places=2):
     """Pretty prints the inverse noise matrix."""
     print_square_matrix(
         inverse_noise_matrix,
-        left_name='y',
-        top_name='s',
-        title=' Inverse Noise Matrix P(y|s)',
-        short_title='p(y|s)',
+        left_name="y",
+        top_name="labels",
+        title=" Inverse Noise Matrix P(y|labels)",
+        short_title="p(y|labels)",
         round_places=round_places,
     )
 
@@ -423,16 +425,16 @@ def print_joint_matrix(joint_matrix, round_places=2):
     """Pretty prints the joint label noise matrix."""
     print_square_matrix(
         joint_matrix,
-        title=' Joint Label Noise Distribution Matrix P(s,y)',
-        short_title='p(s,y)',
+        title=" Joint Label Noise Distribution Matrix P(labels,y)",
+        short_title="p(labels,y)",
         round_places=round_places,
     )
 
 
 def _python_version_is_compatible(
-        warning_str="pyTorch supports Python version 2.7, 3.5, 3.6, 3.7, 3.8",
-        warning_already_issued=False,
-        list_of_compatible_versions=[2.7, 3.5, 3.6, 3.7, 3.8],
+    warning_str="pyTorch supports Python version 3.6, 3.7, 3.8, 3.9",
+    warning_already_issued=False,
+    list_of_compatible_versions=[3.5, 3.6, 3.7, 3.8],
 ):
     """Helper function for VersionWarning class that issues
     a warning (if a warning has not already been issued),
@@ -441,26 +443,28 @@ def _python_version_is_compatible(
     """
 
     import sys
+
     v = sys.version_info[0] + 0.1 * sys.version_info[1]
     if v in list_of_compatible_versions:
         return True
-    elif not warning_already_issued:
+    elif not warning_already_issued:  # pragma: no cover
         import warnings
-        warning = '''
+
+        warning = """
         {}
-        cleanlab supports Python versions 2.7, 3.4, 3.5, 3.6.
-        You are using Python version {}.
-        You'll need to use a version compatible with both.'''.format(warning_str, v)
+        cleanlab supports Python >= 3.6, but you are using Python version {}.
+        You'll need to use a version compatible with both.""".format(
+            warning_str, v
+        )
         warnings.warn(warning)
-        warning_already_issued = True
-    return False
+        return False
 
 
 class VersionWarning(object):
     """Functor that calls _python_version_is_compatible
     and manages the state of the bool variable
     warning_already_issued to make sure the same warning
-    is never displayed multiple times. """
+    is never displayed multiple times."""
 
     def __init__(self, warning_str, list_of_compatible_versions):
         self.warning_str = warning_str
@@ -473,6 +477,6 @@ class VersionWarning(object):
             self.warning_already_issued,
             self.list_of_compatible_versions,
         )
-        if not compatible:
+        if not compatible:  # pragma: no cover
             self.warning_already_issued = True
         return compatible

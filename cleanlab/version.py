@@ -1,21 +1,21 @@
 # Copyright (C) 2017-2022  Cleanlab Inc.
 # This file is part of cleanlab.
-# 
+#
 # cleanlab is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as published
 # by the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # cleanlab is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Affero General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU Affero General Public License
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
 
-__version__ = '1.0.1'
+__version__ = "1.0.1"
 
 
 # ----------------------------------------
@@ -70,11 +70,11 @@ __version__ = '1.0.1'
 #   - Adhered all core modules to PEP-8 styling.
 #   - Extensive benchmarking of cleanlab methods published.
 #   - Future features planned are now supported in cleanlab/version.py
-#   - Added confidentlearning-reproduce as a seperate repo to reproduce state-of-the-art results.
+#   - Added confidentlearning-reproduce as a separate repo to reproduce state-of-the-art results.
 
 # 0.1.1 - Major update adding support for Windows and Python 3.7
 #   - Added support for Python 3.7
-#   - Added full support for Windows, including multiprocessing support in cleanlab/pruning.py
+#   - Added full support for Windows, including multiprocessing support in cleanlab/filter.py
 #   - Improved PEP-8 adherence in core cleanlab/ code.
 
 # 0.1.0 - Release of confident learning paper: https://arxiv.org/pdf/1911.00068.pdf
@@ -109,8 +109,8 @@ __version__ = '1.0.1'
 #   - Version 0.0.8 is deprecated. Use this version going forward.
 
 # 0.0.8 - Multiple major changes
-#   - Finding label errors is now fully parallelized. 
-#   - prune_count_method parameter has been removed. 
+#   - Finding label errors is now fully parallelized.
+#   - prune_count_method parameter has been removed.
 #   - estimate_confident_joint_from_probabilities now automatically calibrates confident joint
 #       to be a true joint estimate.
 #   - Confident joint algorithm changed! When an example is found confidently as 2+ labels, choose

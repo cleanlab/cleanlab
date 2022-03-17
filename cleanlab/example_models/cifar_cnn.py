@@ -1,16 +1,16 @@
 # Copyright (C) 2017-2022  Cleanlab Inc.
 # This file is part of cleanlab.
-# 
+#
 # cleanlab is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as published
 # by the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # cleanlab is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Affero General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU Affero General Public License
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
@@ -26,8 +26,7 @@ See: https://pytorch.org/get-started/locally/
 
 
 # Python 2 and 3 compatibility
-from __future__ import (
-    print_function, absolute_import, division, unicode_literals, with_statement)
+
 
 import torch.nn as nn
 import torch.nn.functional as F
@@ -52,13 +51,11 @@ class CNN(nn.Module):
     forward
       forward pass in PyTorch"""
 
-    def __init__(self, input_channel=3, n_outputs=10, dropout_rate=0.25,
-                 top_bn=False):
+    def __init__(self, input_channel=3, n_outputs=10, dropout_rate=0.25, top_bn=False):
         self.dropout_rate = dropout_rate
         self.top_bn = top_bn
         super(CNN, self).__init__()
-        self.c1 = nn.Conv2d(
-            input_channel, 128, kernel_size=3, stride=1, padding=1)
+        self.c1 = nn.Conv2d(input_channel, 128, kernel_size=3, stride=1, padding=1)
         self.c2 = nn.Conv2d(128, 128, kernel_size=3, stride=1, padding=1)
         self.c3 = nn.Conv2d(128, 128, kernel_size=3, stride=1, padding=1)
         self.c4 = nn.Conv2d(128, 256, kernel_size=3, stride=1, padding=1)
@@ -78,7 +75,10 @@ class CNN(nn.Module):
         self.bn8 = nn.BatchNorm2d(256)
         self.bn9 = nn.BatchNorm2d(128)
 
-    def forward(self, x, ):
+    def forward(
+        self,
+        x,
+    ):
         h = x
         h = self.c1(h)
         h = F.leaky_relu(call_bn(self.bn1, h), negative_slope=0.01)
