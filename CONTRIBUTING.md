@@ -44,6 +44,9 @@ substantial changes to the code base, it is *highly recommended* that you first
 Any changes to the code base should try to follow the style and coding
 conventions used in the rest of the project.
 
+Cleanlab follows the [Black] style. Before you submit your pull request,
+install Black with `pip install black` and format the code with `black .`.
+
 ---
 
 If you have any questions about contributing to cleanlab, feel free to
@@ -53,3 +56,4 @@ If you have any questions about contributing to cleanlab, feel free to
 [issues]: https://github.com/cleanlab/cleanlab/issues
 [fork]: https://github.com/cleanlab/cleanlab/fork
 [discussions]: https://github.com/cleanlab/cleanlab/discussions
+[Black]: https://github.com/psf/black

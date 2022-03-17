@@ -1,22 +1,22 @@
 # Copyright (C) 2017-2022  Cleanlab Inc.
 # This file is part of cleanlab.
-# 
+#
 # cleanlab is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as published
 # by the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # cleanlab is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Affero General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU Affero General Public License
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
 
 # ## Confident Learning Utilities
-# 
+#
 # #### Contains ancillary helper functions used throughout this package.
 
 import numpy as np
@@ -48,7 +48,11 @@ def assert_inputs_are_valid(X, s, pred_probs=None):  # pragma: no cover
 
     # Allow sparse matrices and check that they are valid format.
     check_X_y(
-        X, s, accept_sparse=True, dtype=None, force_all_finite=False,
+        X,
+        s,
+        accept_sparse=True,
+        dtype=None,
+        force_all_finite=False,
         ensure_2d=False,
     )
 
@@ -110,7 +114,7 @@ def clip_noise_rates(noise_matrix):
         into proper range [0,1)"""
         return min(max(noise_rate, 0.0), 0.9999)
 
-    # Vectorize clip_noise_rate_range for efficiency with np.arrays.  
+    # Vectorize clip_noise_rate_range for efficiency with np.arrays.
     vectorized_clip = np.vectorize(clip_noise_rate_range)
 
     # Preserve because diagonal entries are not noise rates.
@@ -157,7 +161,7 @@ def clip_values(x, low=0.0, high=1.0, new_sum=None):
         """Clip a into range [low,high]"""
         return min(max(a, low), high)
 
-    # Vectorize clip_range for efficiency with np.arrays.  
+    # Vectorize clip_range for efficiency with np.arrays.
     vectorized_clip = np.vectorize(clip_range)
 
     # Store previous sum
@@ -227,7 +231,7 @@ def round_preserving_sum(iterable):
     # Adjust the integers so that they sum to orig_sum
     while abs(int_sum - orig_sum) > 1e-6:
         diff = np.round(orig_sum - int_sum)
-        increment = -1 if int(diff < 0.) else 1
+        increment = -1 if int(diff < 0.0) else 1
         changes = min(int(abs(diff)), len(iterable))
         # Orders indices by difference. Increments # of changes.
         indices = np.argsort(floats - ints)[::-increment][:changes]
@@ -269,6 +273,7 @@ def int2onehot(labels):
       All integers from 0,1,...,K-1 must be represented."""
 
     from sklearn.preprocessing import MultiLabelBinarizer
+
     mlb = MultiLabelBinarizer()
     return mlb.fit_transform(labels)
 
@@ -310,7 +315,7 @@ def estimate_pu_f1(s, prob_s_eq_1):
     all_positives = sum(s)
     recall = true_positives / float(all_positives)
     frac_positive = sum(pred) / float(len(s))
-    return recall ** 2 / (2.0 * frac_positive) if frac_positive != 0 else np.nan
+    return recall**2 / (2.0 * frac_positive) if frac_positive != 0 else np.nan
 
 
 def confusion_matrix(true, pred):
@@ -338,7 +343,7 @@ def confusion_matrix(true, pred):
     confusion_matrix : np.array (2D)
       matrix of confusion counts with true on rows and pred on columns."""
 
-    assert (len(true) == len(pred))
+    assert len(true) == len(pred)
     true_classes = np.unique(true)
     pred_classes = np.unique(pred)
     K_true = len(true_classes)  # Number of classes in true
@@ -354,12 +359,12 @@ def confusion_matrix(true, pred):
 
 
 def print_square_matrix(
-        matrix,
-        left_name='labels',
-        top_name='y',
-        title=' A square matrix',
-        short_title='labels,y',
-        round_places=2,
+    matrix,
+    left_name="labels",
+    top_name="y",
+    title=" A square matrix",
+    short_title="labels,y",
+    round_places=2,
 ):
     """Pretty prints a matrix.
 
@@ -384,9 +389,9 @@ def print_square_matrix(
     if len(np.shape(matrix)) == 1:
         matrix = np.array([matrix])
     print()
-    print(title, 'of shape', matrix.shape)
-    print(" " + short_title + "".join(['\t' + top_name + '=' + str(i) for i in range(K)]))
-    print('\t---' * K)
+    print(title, "of shape", matrix.shape)
+    print(" " + short_title + "".join(["\t" + top_name + "=" + str(i) for i in range(K)]))
+    print("\t---" * K)
     for i in range(K):
         entry = "\t".join([str(z) for z in list(matrix.round(round_places)[i, :])])
         print(left_name + "=" + str(i) + " |\t" + entry)
@@ -398,8 +403,8 @@ def print_noise_matrix(noise_matrix, round_places=2):
     """Pretty prints the noise matrix."""
     print_square_matrix(
         noise_matrix,
-        title=' Noise Matrix (aka Noisy Channel) P(labels|y)',
-        short_title='p(labels|y)',
+        title=" Noise Matrix (aka Noisy Channel) P(labels|y)",
+        short_title="p(labels|y)",
         round_places=round_places,
     )
 
@@ -408,10 +413,10 @@ def print_inverse_noise_matrix(inverse_noise_matrix, round_places=2):
     """Pretty prints the inverse noise matrix."""
     print_square_matrix(
         inverse_noise_matrix,
-        left_name='y',
-        top_name='labels',
-        title=' Inverse Noise Matrix P(y|labels)',
-        short_title='p(y|labels)',
+        left_name="y",
+        top_name="labels",
+        title=" Inverse Noise Matrix P(y|labels)",
+        short_title="p(y|labels)",
         round_places=round_places,
     )
 
@@ -420,16 +425,16 @@ def print_joint_matrix(joint_matrix, round_places=2):
     """Pretty prints the joint label noise matrix."""
     print_square_matrix(
         joint_matrix,
-        title=' Joint Label Noise Distribution Matrix P(labels,y)',
-        short_title='p(labels,y)',
+        title=" Joint Label Noise Distribution Matrix P(labels,y)",
+        short_title="p(labels,y)",
         round_places=round_places,
     )
 
 
 def _python_version_is_compatible(
-        warning_str="pyTorch supports Python version 3.6, 3.7, 3.8, 3.9",
-        warning_already_issued=False,
-        list_of_compatible_versions=[3.5, 3.6, 3.7, 3.8],
+    warning_str="pyTorch supports Python version 3.6, 3.7, 3.8, 3.9",
+    warning_already_issued=False,
+    list_of_compatible_versions=[3.5, 3.6, 3.7, 3.8],
 ):
     """Helper function for VersionWarning class that issues
     a warning (if a warning has not already been issued),
@@ -438,15 +443,19 @@ def _python_version_is_compatible(
     """
 
     import sys
+
     v = sys.version_info[0] + 0.1 * sys.version_info[1]
     if v in list_of_compatible_versions:
         return True
     elif not warning_already_issued:  # pragma: no cover
         import warnings
-        warning = '''
+
+        warning = """
         {}
         cleanlab supports Python >= 3.6, but you are using Python version {}.
-        You'll need to use a version compatible with both.'''.format(warning_str, v)
+        You'll need to use a version compatible with both.""".format(
+            warning_str, v
+        )
         warnings.warn(warning)
         return False
 
@@ -455,7 +464,7 @@ class VersionWarning(object):
     """Functor that calls _python_version_is_compatible
     and manages the state of the bool variable
     warning_already_issued to make sure the same warning
-    is never displayed multiple times. """
+    is never displayed multiple times."""
 
     def __init__(self, warning_str, list_of_compatible_versions):
         self.warning_str = warning_str

@@ -1,22 +1,22 @@
 # Copyright (C) 2017-2022  Cleanlab Inc.
 # This file is part of cleanlab.
-# 
+#
 # cleanlab is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as published
 # by the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # cleanlab is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Affero General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU Affero General Public License
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
 
 # ## Noise Generation
-# 
+#
 # #### Contains methods for generating valid (learning with noise is possible) noise matrices, generating noisy labels given a noise matrix, generating valid noise matrices with a specific trace value, and more.
 
 import numpy as np
@@ -28,7 +28,7 @@ def noise_matrix_is_valid(noise_matrix, py, *, verbose=False):
     """Given a prior py = p(true_label=k), returns true if the given noise_matrix is a
     learnable matrix. Learnability means that it is possible to achieve
     better than random performance, on average, for the amount of noise in
-    noise_matrix. """
+    noise_matrix."""
 
     # Number of classes
     K = len(py)
@@ -55,16 +55,27 @@ def noise_matrix_is_valid(noise_matrix, py, *, verbose=False):
         O = N - E1 - E2 - C
         if verbose:
             print(
-                "E1E2/C", round(E1 * E2 / C),
-                "E1", round(E1),
-                "E2", round(E2),
-                "C", round(C),
-                "|", round(E1 * E2 / C + E1 + E2 + C),
-                "|", round(E1 * E2 / C), "<", round(O),
+                "E1E2/C",
+                round(E1 * E2 / C),
+                "E1",
+                round(E1),
+                "E2",
+                round(E2),
+                "C",
+                round(C),
+                "|",
+                round(E1 * E2 / C + E1 + E2 + C),
+                "|",
+                round(E1 * E2 / C),
+                "<",
+                round(O),
             )
             print(
-                round(ps[i] * py[i]), "<", round(joint_noise[i][i]),
-                ":", ps[i] * py[i] < joint_noise[i][i],
+                round(ps[i] * py[i]),
+                "<",
+                round(joint_noise[i][i]),
+                ":",
+                ps[i] * py[i] < joint_noise[i][i],
             )
 
         if not (ps[i] * py[i] < joint_noise[i][i]):
@@ -138,8 +149,7 @@ def generate_noisy_labels(true_labels, noise_matrix):
         noise = [labels_per_class[i] for i, c in enumerate(label_counts) for z in range(c)]
         # Randomly choose y labels for class k and set them to the noisy labels.
         idx_flip = np.where((labels == k) & (true_labels == k))[0]
-        if len(idx_flip) and len(noise) and len(idx_flip) >= len(
-                noise):  # pragma: no cover
+        if len(idx_flip) and len(noise) and len(idx_flip) >= len(noise):  # pragma: no cover
             labels[np.random.choice(idx_flip, len(noise), replace=False)] = noise
 
     # Validate that labels indeed produces the correct noise_matrix (or close to it)
@@ -152,18 +162,18 @@ def generate_noisy_labels(true_labels, noise_matrix):
 
 
 def generate_noise_matrix_from_trace(
-        K,
-        trace,
-        *,
-        max_trace_prob=1.0,
-        min_trace_prob=1e-5,
-        max_noise_rate=1 - 1e-5,
-        min_noise_rate=0.0,
-        valid_noise_matrix=True,
-        py=None,
-        frac_zero_noise_rates=0.,
-        seed=0,
-        max_iter=10000,
+    K,
+    trace,
+    *,
+    max_trace_prob=1.0,
+    min_trace_prob=1e-5,
+    max_noise_rate=1 - 1e-5,
+    min_noise_rate=0.0,
+    valid_noise_matrix=True,
+    py=None,
+    frac_zero_noise_rates=0.0,
+    seed=0,
+    max_iter=10000,
 ):
     """Generates a K x K noise matrix P(label=k_s|true_label=k_y) with trace
     as the np.mean(np.diagonal(noise_matrix)).
@@ -223,16 +233,17 @@ def generate_noise_matrix_from_trace(
 
     if valid_noise_matrix and trace <= 1:
         raise ValueError(
-            "trace = {}. trace > 1 is necessary for a".format(trace) +
-            " valid noise matrix to be returned (valid_noise_matrix == True)")
+            "trace = {}. trace > 1 is necessary for a".format(trace)
+            + " valid noise matrix to be returned (valid_noise_matrix == True)"
+        )
 
     if valid_noise_matrix and py is None and K > 2:
         raise ValueError(
-            "py must be provided (not None) if the input parameter" +
-            " valid_noise_matrix == True")
+            "py must be provided (not None) if the input parameter" + " valid_noise_matrix == True"
+        )
 
     if K <= 1:
-        raise ValueError('K must be >= 2, but K = {}.'.format(K))
+        raise ValueError("K must be >= 2, but K = {}.".format(K))
 
     if max_iter < 1:
         return False
@@ -243,18 +254,21 @@ def generate_noise_matrix_from_trace(
     # Every 2 x 2 noise matrix with trace > 1 is valid because p(y) is not used
     if K == 2:
         if frac_zero_noise_rates >= 0.5:  # Include a single zero noise rate
-            noise_mat = np.array([
-                [1., 1 - (trace - 1.)],
-                [0., trace - 1.],
-            ])
-            return noise_mat if np.random.rand() > 0.5 else np.rot90(noise_mat,
-                                                                     k=2)
+            noise_mat = np.array(
+                [
+                    [1.0, 1 - (trace - 1.0)],
+                    [0.0, trace - 1.0],
+                ]
+            )
+            return noise_mat if np.random.rand() > 0.5 else np.rot90(noise_mat, k=2)
         else:  # No zero noise rates
             diag = generate_n_rand_probabilities_that_sum_to_m(2, trace)
-            noise_matrix = np.array([
-                [diag[0], 1 - diag[1]],
-                [1 - diag[0], diag[1]],
-            ])
+            noise_matrix = np.array(
+                [
+                    [diag[0], 1 - diag[1]],
+                    [1 - diag[0], diag[1]],
+                ]
+            )
             return noise_matrix
 
             # K > 2
@@ -275,31 +289,36 @@ def generate_noise_matrix_from_trace(
         num_zero_noise_rates = int(K * (K - 1) * frac_zero_noise_rates)
         # Remove zeros already in [1,0,..,0] columns
         num_zero_noise_rates -= (K - num_col_with_noise) * (K - 1)
-        num_zero_noise_rates = np.maximum(num_zero_noise_rates,
-                                          0)  # Prevent negative
-        num_zero_noise_rates_per_col = randomly_distribute_N_balls_into_K_bins(
-            N=num_zero_noise_rates,
-            K=num_col_with_noise,
-            max_balls_per_bin=K - 2,
-            # 2 = one for diagonal, and one to sum to 1
-            min_balls_per_bin=0,
-        ) if K > 2 else np.array([0, 0])  # Special case when K == 2
-        stack_nonzero_noise_rates_per_col = list(
-            K - 1 - num_zero_noise_rates_per_col)[::-1]
+        num_zero_noise_rates = np.maximum(num_zero_noise_rates, 0)  # Prevent negative
+        num_zero_noise_rates_per_col = (
+            randomly_distribute_N_balls_into_K_bins(
+                N=num_zero_noise_rates,
+                K=num_col_with_noise,
+                max_balls_per_bin=K - 2,
+                # 2 = one for diagonal, and one to sum to 1
+                min_balls_per_bin=0,
+            )
+            if K > 2
+            else np.array([0, 0])
+        )  # Special case when K == 2
+        stack_nonzero_noise_rates_per_col = list(K - 1 - num_zero_noise_rates_per_col)[::-1]
         # Randomly generate noise rates for columns with noise.
         for col in np.arange(K)[nm_diagonal != 1]:
             num_noise = stack_nonzero_noise_rates_per_col.pop()
             # Generate num_noise noise_rates for the given column.
-            noise_rates_col = list(generate_n_rand_probabilities_that_sum_to_m(
-                n=num_noise,
-                m=1 - nm_diagonal[col],
-                max_prob=max_noise_rate,
-                min_prob=min_noise_rate,
-            ))
+            noise_rates_col = list(
+                generate_n_rand_probabilities_that_sum_to_m(
+                    n=num_noise,
+                    m=1 - nm_diagonal[col],
+                    max_prob=max_noise_rate,
+                    min_prob=min_noise_rate,
+                )
+            )
             # Randomly select which rows of the noisy column to assign the
             # random noise rates
-            rows = np.random.choice([row for row in range(K) if row != col],
-                                    num_noise, replace=False)
+            rows = np.random.choice(
+                [row for row in range(K) if row != col], num_noise, replace=False
+            )
             for row in rows:
                 noise_matrix[row][col] = noise_rates_col.pop()
         if not valid_noise_matrix or noise_matrix_is_valid(noise_matrix, py):
@@ -309,11 +328,11 @@ def generate_noise_matrix_from_trace(
 
 
 def generate_n_rand_probabilities_that_sum_to_m(
-        n,
-        m,
-        *,
-        max_prob=1.0,
-        min_prob=0.0,
+    n,
+    m,
+    *,
+    max_prob=1.0,
+    min_prob=0.0,
 ):
     """When min_prob=0 and max_prob = 1.0, this method is deprecated.
     Instead use np.random.dirichlet(np.ones(n))*m
@@ -340,15 +359,29 @@ def generate_n_rand_probabilities_that_sum_to_m(
     if n == 0:
         return np.array([])
     if (max_prob + epsilon) < m / float(n):
-        raise ValueError("max_prob must be greater or equal to m / n, but " +
-                         "max_prob = " + str(max_prob) + ", m = " + str(
-            m) + ", n = " +
-                         str(n) + ", m / n = " + str(m / float(n)))
+        raise ValueError(
+            "max_prob must be greater or equal to m / n, but "
+            + "max_prob = "
+            + str(max_prob)
+            + ", m = "
+            + str(m)
+            + ", n = "
+            + str(n)
+            + ", m / n = "
+            + str(m / float(n))
+        )
     if min_prob > (m + epsilon) / float(n):
-        raise ValueError("min_prob must be less or equal to m / n, but " +
-                         "max_prob = " + str(max_prob) + ", m = " + str(
-            m) + ", n = " +
-                         str(n) + ", m / n = " + str(m / float(n)))
+        raise ValueError(
+            "min_prob must be less or equal to m / n, but "
+            + "max_prob = "
+            + str(max_prob)
+            + ", m = "
+            + str(m)
+            + ", n = "
+            + str(n)
+            + ", m / n = "
+            + str(m / float(n))
+        )
 
     # When max_prob = 1, min_prob = 0, the next two lines are equivalent to:
     #   intermediate = np.sort(np.append(np.random.uniform(0, 1, n-1), [0, 1]))
@@ -383,11 +416,11 @@ def generate_n_rand_probabilities_that_sum_to_m(
 
 
 def randomly_distribute_N_balls_into_K_bins(
-        N,  # int
-        K,  # int
-        *,
-        max_balls_per_bin=None,
-        min_balls_per_bin=None,
+    N,  # int
+    K,  # int
+    *,
+    max_balls_per_bin=None,
+    min_balls_per_bin=None,
 ):
     """Returns a uniformly random numpy integer array of length N that sums
     to K.
@@ -412,12 +445,15 @@ def randomly_distribute_N_balls_into_K_bins(
     if N / float(K) > max_balls_per_bin:
         N = max_balls_per_bin * K
 
-    arr = np.round(generate_n_rand_probabilities_that_sum_to_m(
-        n=K,
-        m=1,
-        max_prob=max_balls_per_bin / float(N),
-        min_prob=min_balls_per_bin / float(N),
-    ) * N)
+    arr = np.round(
+        generate_n_rand_probabilities_that_sum_to_m(
+            n=K,
+            m=1,
+            max_prob=max_balls_per_bin / float(N),
+            min_prob=min_balls_per_bin / float(N),
+        )
+        * N
+    )
     while sum(arr) != N:
         while sum(arr) > N:  # pragma: no cover
             arr[np.argmax(arr)] -= 1
@@ -430,11 +466,11 @@ def randomly_distribute_N_balls_into_K_bins(
 
 
 def generate_noise_matrix(
-        K,
-        *,
-        max_noise_rate=1.0,
-        frac_zero_noise_rates=0.0,
-        verbose=False,
+    K,
+    *,
+    max_noise_rate=1.0,
+    frac_zero_noise_rates=0.0,
+    verbose=False,
 ):
     """DEPRECATED - Use generate_noise_matrix_from_trace()
 
@@ -461,8 +497,7 @@ def generate_noise_matrix(
       Print debugging output if set to True."""
 
     warnings.warn(
-        "This method is deprecated. Use 'generate_noise_matrix_from_trace' "
-        "instead.",
+        "This method is deprecated. Use 'generate_noise_matrix_from_trace' " "instead.",
         DeprecationWarning,
     )
 
@@ -470,7 +505,7 @@ def generate_noise_matrix(
     # P(label=k|true_label=k')
     noise_matrix = np.random.rand(K, K) * max_noise_rate
 
-    # Round all noise rates 
+    # Round all noise rates
     noise_matrix = noise_matrix.round(2)
 
     # Initialize all P(label=k|true_label=k) = 0
@@ -506,7 +541,6 @@ def generate_noise_matrix(
         noise_matrix[i][i] = 1 - col_sum[i]
 
     if verbose:
-        print("Average trace of noise matrix is",
-              np.trace(noise_matrix) / float(K))
+        print("Average trace of noise matrix is", np.trace(noise_matrix) / float(K))
 
     return noise_matrix

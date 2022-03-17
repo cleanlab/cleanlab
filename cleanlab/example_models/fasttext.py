@@ -1,16 +1,16 @@
 # Copyright (C) 2017-2022  Cleanlab Inc.
 # This file is part of cleanlab.
-# 
+#
 # cleanlab is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as published
 # by the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # cleanlab is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Affero General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU Affero General Public License
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
@@ -23,6 +23,7 @@ import time
 import os
 import copy
 import numpy as np
+
 # You need to install fasttext using pip for this library to work
 from fasttext import train_supervised, load_model
 
@@ -33,15 +34,15 @@ python_version = VersionWarning(
 )
 
 
-LABEL = '__label__'
-NEWLINE = ' __newline__ '
+LABEL = "__label__"
+NEWLINE = " __newline__ "
 
 
 def data_loader(
-        fn=None,
-        indices=None,
-        label=LABEL,
-        batch_size=1000,
+    fn=None,
+    indices=None,
+    label=LABEL,
+    batch_size=1000,
 ):
     """Returns a generator, yielding two lists containing
     [labels], [text]. Items are always returned in the
@@ -56,7 +57,7 @@ def data_loader(
         stack_indices = sorted(indices, reverse=True)
         stack_idx = stack_indices.pop()
 
-    with open(fn, 'r') as f:
+    with open(fn, "r") as f:
         len_label = len(label)
         idx = 0
         batch_counter = 0
@@ -66,10 +67,10 @@ def data_loader(
             try:
                 line = f.readline()
                 line = line
-                if line[:len_label] == label or line == '':
+                if line[:len_label] == label or line == "":
                     if indices is None or stack_idx == idx:
                         # Write out prev line and reset prev
-                        batch.append(prev.strip().replace('\n', NEWLINE))
+                        batch.append(prev.strip().replace("\n", NEWLINE))
                         batch_counter += 1
 
                         if indices is not None:
@@ -78,7 +79,7 @@ def data_loader(
                             else:  # No more data in indices, quit loading data.
                                 yield _split_labels_and_text(batch)
                                 break
-                    prev = ''
+                    prev = ""
                     idx += 1
                     if batch_counter == batch_size:
                         yield _split_labels_and_text(batch)
@@ -86,14 +87,14 @@ def data_loader(
                         batch_counter = 0
                         batch = []
                 prev += line
-                if line == '':
+                if line == "":
                     if len(batch) > 0:
                         yield _split_labels_and_text(batch)
                     break
             except EOFError:
                 if indices is None or stack_idx == idx:
                     # Write out prev line and reset prev
-                    batch.append(prev.strip().replace('\n', NEWLINE))
+                    batch.append(prev.strip().replace("\n", NEWLINE))
                     batch_counter += 1
                     yield _split_labels_and_text(batch)
                 break
@@ -103,19 +104,17 @@ from sklearn.base import BaseEstimator
 
 
 class FastTextClassifier(BaseEstimator):  # Inherits sklearn base classifier
-
     def __init__(
-            self,
-            train_data_fn,
-            test_data_fn=None,
-            labels=None,
-            tmp_dir='',
-            label=LABEL,
-            del_intermediate_data=True,
-            kwargs_train_supervised={},
-            p_at_k=1,
-            batch_size=1000,
-
+        self,
+        train_data_fn,
+        test_data_fn=None,
+        labels=None,
+        tmp_dir="",
+        label=LABEL,
+        del_intermediate_data=True,
+        kwargs_train_supervised={},
+        p_at_k=1,
+        batch_size=1000,
     ):
         self.train_data_fn = train_data_fn
         self.test_data_fn = test_data_fn
@@ -130,15 +129,13 @@ class FastTextClassifier(BaseEstimator):  # Inherits sklearn base classifier
         if labels is None:
             # Find all class labels across the train and test set (if provided)
             unique_labels = set([])
-            for labels, _ in data_loader(fn=train_data_fn,
-                                         batch_size=batch_size):
+            for labels, _ in data_loader(fn=train_data_fn, batch_size=batch_size):
                 unique_labels = unique_labels.union(set(labels))
             if test_data_fn is not None:
-                for labels, _ in data_loader(fn=test_data_fn,
-                                             batch_size=batch_size):
+                for labels, _ in data_loader(fn=test_data_fn, batch_size=batch_size):
                     unique_labels = unique_labels.union(set(labels))
         else:
-            # Prepend labels with self.label token (e.g. '__label__'). 
+            # Prepend labels with self.label token (e.g. '__label__').
             unique_labels = [label + str(l) for l in labels]
         # Create maps: label strings <-> integers when label strings are used
         unique_labels = sorted(list(unique_labels))
@@ -159,16 +156,16 @@ class FastTextClassifier(BaseEstimator):  # Inherits sklearn base classifier
             len_label = len(LABEL)
             data_indices = sorted(data_indices, reverse=True)
             masked_fn = "fastTextClf_" + str(int(time.time())) + ".txt"
-            open(masked_fn, 'w').close()
+            open(masked_fn, "w").close()
             # Read in training data one line at a time
-            with open(self.train_data_fn, 'rU') as rf:
+            with open(self.train_data_fn, "rU") as rf:
                 idx = 0
                 data_idx = data_indices.pop()
                 for line in rf:
                     # Mask by data_indices
                     if idx == data_idx:
-                        with open(masked_fn, 'a') as wf:
-                            wf.write(line.strip().replace('\n', NEWLINE) + "\n")
+                        with open(masked_fn, "a") as wf:
+                            wf.write(line.strip().replace("\n", NEWLINE) + "\n")
                         if line[:len_label] == LABEL:
                             if len(data_indices):
                                 data_idx = data_indices.pop()
@@ -192,20 +189,20 @@ class FastTextClassifier(BaseEstimator):  # Inherits sklearn base classifier
         if self.clf is None:
             self_clf_copy = None
         else:
-            fn = 'tmp_{}.fasttext.model'.format(int(time.time()))
+            fn = "tmp_{}.fasttext.model".format(int(time.time()))
             self.clf.save_model(fn)
             self_clf_copy = load_model(fn)
             os.remove(fn)
         # Store self.clf
         params = self.__dict__
-        clf = params.pop('clf')
+        clf = params.pop("clf")
         # Copy params without self.clf (it can't be copied)
         params_copy = copy.deepcopy(params)
         # Add clf back to self.clf
         self.clf = clf
         # Create copy to return
         clf_copy = FastTextClassifier(self.train_data_fn)
-        params_copy['clf'] = self_clf_copy
+        params_copy["clf"] = self_clf_copy
         clf_copy.__dict__ = params_copy
         return clf_copy
 
@@ -237,12 +234,12 @@ class FastTextClassifier(BaseEstimator):  # Inherits sklearn base classifier
         pred_probs_list = []
         if return_labels:
             labels_list = []
-        for labels, text in data_loader(fn=fn, indices=X,
-                                        batch_size=self.batch_size):
+        for labels, text in data_loader(fn=fn, indices=X, batch_size=self.batch_size):
             pred = self.clf.predict(text=text, k=len(self.clf.get_labels()))
             # Get p(label = k | x) matrix of shape (N x K) of pred probs for each x
-            pred_probs = [[p for _, p in sorted(list(zip(*l)), key=lambda x: x[0])] for
-                   l in list(zip(*pred))]
+            pred_probs = [
+                [p for _, p in sorted(list(zip(*l)), key=lambda x: x[0])] for l in list(zip(*pred))
+            ]
             pred_probs_list.append(np.array(pred_probs))
             if return_labels:
                 labels_list.append(labels)
@@ -260,8 +257,7 @@ class FastTextClassifier(BaseEstimator):  # Inherits sklearn base classifier
         pred_list = []
         if return_labels:
             labels_list = []
-        for labels, text in data_loader(fn=fn, indices=X,
-                                        batch_size=self.batch_size):
+        for labels, text in data_loader(fn=fn, indices=X, batch_size=self.batch_size):
             pred = [self.label2num[z[0]] for z in self.clf.predict(text)[0]]
             pred_list.append(pred)
             if return_labels:
@@ -287,8 +283,7 @@ class FastTextClassifier(BaseEstimator):  # Inherits sklearn base classifier
         pred_list = []
         if y is None:
             labels_list = []
-        for labels, text in data_loader(fn=fn, indices=X,
-                                        batch_size=self.batch_size):
+        for labels, text in data_loader(fn=fn, indices=X, batch_size=self.batch_size):
             pred = self.clf.predict(text, k=k)[0]
             pred_list.append(pred)
             if y is None:

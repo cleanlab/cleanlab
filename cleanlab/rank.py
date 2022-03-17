@@ -68,7 +68,7 @@ def order_label_issues(
         Return the index integers of the label issues, ordered by
         the normalized margin."""
 
-    assert (len(pred_probs) == len(labels))
+    assert len(pred_probs) == len(labels)
     # Convert bool mask to index mask
     label_issues_idx = np.arange(len(labels))[label_issues_mask]
     pred_probs_er, labels_er = pred_probs[label_issues_mask], labels[label_issues_mask]
@@ -78,8 +78,7 @@ def order_label_issues(
         label_quality_scores = get_normalized_margin_for_each_label(labels_er, pred_probs_er)
     else:
         raise ValueError(
-            'rank_by must be "self_confidence" or "normalized_margin", '
-            'but is "' + rank_by + '".'
+            'rank_by must be "self_confidence" or "normalized_margin", ' 'but is "' + rank_by + '".'
         )
     return label_issues_idx[np.argsort(label_quality_scores)]
 
