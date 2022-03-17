@@ -15,7 +15,6 @@ jobs:
           - macos-latest
           - windows-latest
         python:
-          - "2.7"
           - "3.6"
           - "3.7"
           - "3.8"
@@ -29,10 +28,15 @@ jobs:
         run: |
           pip install pytest pytest-cov 'coverage<6.3'
       - name: Install torch and torchvision
-        if: "${{ !(contains(matrix.os, 'windows') && matrix.python == '2.7') }}"
         run: pip install torch torchvision
       - name: Install cleanlab
         run: pip install -e .
       - name: Test with coverage
         run: pytest --verbose --cov=cleanlab/ --cov-config .coveragerc --cov-report=xml
       - uses: codecov/codecov-action@v2
+  fmt:
+    name: Format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: psf/black@stable

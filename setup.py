@@ -25,10 +25,10 @@ class egg_info_ex(egg_info):
 
     def run(self):
         # don't duplicate license into `.egg-info` when building a distribution
-        if not self.distribution.have_run.get('install', True):
+        if not self.distribution.have_run.get("install", True):
             # `install` command is in progress, copy license
             self.mkpath(self.egg_info)
-            self.copy_file('LICENSE', self.egg_info)
+            self.copy_file("LICENSE", self.egg_info)
 
         egg_info.run(self)
 
@@ -36,77 +36,71 @@ class egg_info_ex(egg_info):
 here = path.abspath(path.dirname(__file__))
 
 # Get the long description from the README file
-with open(path.join(here, 'README.md'), encoding='utf-8') as f:
+with open(path.join(here, "README.md"), encoding="utf-8") as f:
     long_description = f.read()
 
-# Get version number
-exec(open('cleanlab/version.py').read())
-
+# Get version number and store it in __version__
+exec(open("cleanlab/version.py").read())
 
 
 setup(
-    name='cleanlab',
+    name="cleanlab",
     version=__version__,
-    license='AGPLv3+',
+    license="AGPLv3+",
     long_description=long_description,
-    long_description_content_type='text/markdown',
-    description = 'The standard package for machine learning with noisy labels and finding mislabeled data in Python.',
-    url = 'https://github.com/cleanlab/cleanlab',
-    author = 'Cleanlab, Inc.',
-    author_email = 'team@cleanlab.ai',
-
+    long_description_content_type="text/markdown",
+    description="The standard package for data-centric AI, machine learning with label errors, "
+    "and automatically finding and fixing dataset issues in Python.",
+    url="https://github.com/cleanlab/cleanlab",
+    author="Cleanlab, Inc.",
+    author_email="team@cleanlab.ai",
     # See https://pypi.python.org/pypi?%3Aaction=list_classifiers
     classifiers=[
-      'Development Status :: 4 - Beta',
-
-      'Intended Audience :: Developers',
-      'Intended Audience :: Education',
-      'Intended Audience :: Science/Research',
-      'Intended Audience :: Information Technology',
-      'License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)',
-      'Natural Language :: English',
-
-      # We believe this package works will these versions, but we do not guarantee it!
-      'Programming Language :: Python :: 2',
-      'Programming Language :: Python :: 2.7',
-      'Programming Language :: Python :: 3',
-      'Programming Language :: Python :: 3.4',
-      'Programming Language :: Python :: 3.5',
-      'Programming Language :: Python :: 3.6',
-      'Programming Language :: Python :: 3.7',
-      'Programming Language :: Python :: 3.8',
-      'Programming Language :: Python :: 3.9',
-
-      'Programming Language :: Python',
-      'Topic :: Software Development',
-      'Topic :: Scientific/Engineering',
-      'Topic :: Scientific/Engineering',
-      'Topic :: Scientific/Engineering :: Mathematics',
-      'Topic :: Scientific/Engineering :: Artificial Intelligence',
-      'Topic :: Software Development',
-      'Topic :: Software Development :: Libraries',
-      'Topic :: Software Development :: Libraries :: Python Modules',
+        "Development Status :: 4 - Beta",
+        "Intended Audience :: Developers",
+        "Intended Audience :: Education",
+        "Intended Audience :: Science/Research",
+        "Intended Audience :: Information Technology",
+        "License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)",
+        "Natural Language :: English",
+        # We believe this package works will these versions, but we do not guarantee it!
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python",
+        "Topic :: Software Development",
+        "Topic :: Scientific/Engineering",
+        "Topic :: Scientific/Engineering",
+        "Topic :: Scientific/Engineering :: Mathematics",
+        "Topic :: Scientific/Engineering :: Artificial Intelligence",
+        "Topic :: Software Development",
+        "Topic :: Software Development :: Libraries",
+        "Topic :: Software Development :: Libraries :: Python Modules",
     ],
-    python_requires='>=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*',
-    
+    python_requires=">=3.6",
     # What does your project relate to?
-    keywords='machine_learning denoising classification weak_supervision learning_with_noisy_labels unsupervised_learning',
-
+    keywords="machine_learning data_cleaning confident_learning classification weak_supervision "
+    "learning_with_noisy_labels unsupervised_learning datacentric_ai, datacentric",
     # You can just specify the packages manually here if your project is
     # simple. Or you can use find_packages().
     packages=find_packages(exclude=[]),
-    
-    # Include cleanlab license file.    
+    # Include cleanlab license file.
     include_package_data=True,
     package_data={
         "": ["LICENSE"],
     },
-    license_files = ('LICENSE',),
-    cmdclass = {'egg_info': egg_info_ex},
-
+    license_files=("LICENSE",),
+    cmdclass={"egg_info": egg_info_ex},
     # List run-time dependencies here.  These will be installed by pip when
     # your project is installed. For an analysis of "install_requires" vs pip's
     # requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
-    install_requires=['numpy>=1.11.3', 'scikit-learn>=0.18', 'scipy>=1.1.0', 'tqdm>=4.53.0', ],
+    install_requires=[
+        "numpy>=1.11.3",
+        "scikit-learn>=0.18",
+        "scipy>=1.1.0",
+        "tqdm>=4.53.0",
+    ],
 )

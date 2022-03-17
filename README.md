@@ -6,7 +6,7 @@
 
 `cleanlab` is a data-centric AI package for data quality and **machine learning with messy, real-world data and labels**. 
 
-`cleanlab` `clean`s `lab`els and supports **finding, quantifying, and learning** with label errors in datasets. See datasets cleaned with `cleanlab` at [labelerrors.com](https://labelerrors.com).
+`cleanlab` `clean`s `lab`els and supports **finding, quantifying, and learning** with label issues in datasets. See datasets cleaned with `cleanlab` at [labelerrors.com](https://labelerrors.com).
 
 Check out the: [documentation](https://docs.cleanlab.ai/), [examples](https://github.com/cleanlab/examples), and [installation instructions](https://github.com/cleanlab/cleanlab#installation)
 
@@ -35,7 +35,7 @@ Check out the: [documentation](https://docs.cleanlab.ai/), [examples](https://gi
 <ul>
 <li> <b>Dec 2021 🎉</b>  NeurIPS published the <a href="https://arxiv.org/abs/2103.14749">label errors paper (Northcutt, Athalye, & Mueller, 2021)</a>.</li>
 <li> <b>Apr 2021 🎉</b>  Journal of AI Research published the <a href="https://jair.org/index.php/jair/article/view/12125">confident learning paper (Northcutt, Jiang, & Chuang, 2021)</a>.</li>
-<li> <b>Mar 2021 😲</b>  <code>cleanlab</code> used to find and fix label errors in 10 of the most common ML benchmark datasets, published in: <a href="https://datasets-benchmarks-proceedings.neurips.cc/paper/2021/hash/f2217062e9a397a1dca429e7d70bc6ca-Abstract-round1.html">NeurIPS 2021</a>. Along with <a href="https://arxiv.org/abs/2103.14749">the paper (Northcutt, Athalye, & Mueller, 2021)</a>, the authors launched <a href="https://labelerrors.com">labelerrors.com</a> where you can view the label errors in these datasets.</li>
+<li> <b>Mar 2021 😲</b>  <code>cleanlab</code> used to find and fix label issues in 10 of the most common ML benchmark datasets, published in: <a href="https://datasets-benchmarks-proceedings.neurips.cc/paper/2021/hash/f2217062e9a397a1dca429e7d70bc6ca-Abstract-round1.html">NeurIPS 2021</a>. Along with <a href="https://arxiv.org/abs/2103.14749">the paper (Northcutt, Athalye, & Mueller, 2021)</a>, the authors launched <a href="https://labelerrors.com">labelerrors.com</a> where you can view the label issues in these datasets.</li>
 </ul>
 </p>
 </details>
@@ -56,7 +56,7 @@ Past release notes and **future features planned** is available [here](https://g
 
 ## So fresh, so `cleanlab`
 
-`cleanlab` finds and cleans label errors in any dataset using [state-of-the-art algorithms](https://arxiv.org/abs/1911.00068) to find label errors, characterize noise, and learn in spite of it. `cleanlab` is fast: its built on optimized algorithms and parallelized across CPU threads automatically. `cleanlab` is powered by [provable guarantees](https://arxiv.org/abs/1911.00068) of exact noise estimation and label error finding in realistic cases when model output probabilities are erroneous. `cleanlab` supports multi-label, multiclass, sparse matrices, etc. By default, `cleanlab` requires no hyper-parameters.
+`cleanlab` finds and cleans label issues in any dataset using [state-of-the-art algorithms](https://arxiv.org/abs/1911.00068) to find label issues, characterize noise, and learn in spite of it. `cleanlab` is fast: its built on optimized algorithms and parallelized across CPU threads automatically. `cleanlab` is powered by [provable guarantees](https://arxiv.org/abs/1911.00068) of exact noise estimation and label error finding in realistic cases when model output probabilities are erroneous. `cleanlab` supports multi-label, multiclass, sparse matrices, etc. By default, `cleanlab` requires no hyper-parameters.
 
 `cleanlab` implements the family of theory and algorithms called [confident learning](https://arxiv.org/abs/1911.00068) with provable guarantees of exact noise estimation and label error finding (even when model output probabilities are noisy/imperfect).
 
@@ -65,24 +65,24 @@ Past release notes and **future features planned** is available [here](https://g
 `cleanlab` is:
 
 1.  **backed-by-theory** - Provable perfect label error finding in some realistic conditions.
-2.  **fast** - Non-iterative, parallelized algorithms (e.g. < 1 second to find label errors in ImageNet with pre-computed probabilities)
+2.  **fast** - Non-iterative, parallelized algorithms (e.g. < 1 second to find label issues in ImageNet with pre-computed probabilities)
 3.  **general** - Works with any dataset, model, and framework, e.g., Tensorflow, PyTorch, sklearn, xgboost, etc.
 
-## Find label errors with PyTorch, Tensorflow, sklearn, xgboost, etc. in 1 line of code
+## Find label issues with PyTorch, Tensorflow, sklearn, xgboost, etc. in 1 line of code
 
 ```python
-# Compute psx (n x m matrix of predicted probabilities) on your own, with any classifier.
-# Here is an example that shows in detail how to compute psx on CIFAR-10:
-#    https://github.com/cleanlab/examples/tree/master/cifar10
+# Compute pred_probs (n x m matrix of predicted probabilities) on your own, with any classifier.
 # Be sure you compute probs in a holdout/out-of-sample manner (e.g. via cross-validation)
-# Now getting label errors is trivial with cleanlab... its one line of code.
-# Label errors are ordered by likelihood of being an error. First index is most likely error.
-from cleanlab.pruning import get_noise_indices
+# Here is an example that shows in detail how to compute pred_probs on CIFAR-10:
+#    https://github.com/cleanlab/examples/tree/master/cifar10
+# Now finding label issues is trivial with cleanlab... its one line of code.
+# label issues are ordered by likelihood of being an error. First index is most likely error.
+from cleanlab.filter import find_label_issues
 
-ordered_label_errors = get_noise_indices(
-    s=numpy_array_of_noisy_labels,
-    psx=numpy_array_of_predicted_probabilities,
-    sorted_index_method='normalized_margin', # Orders label errors
+ordered_label_issues = find_label_issues(
+    labels=numpy_array_of_noisy_labels,
+    pred_probs=numpy_array_of_predicted_probabilities,
+    return_indices_ranked_by='normalized_margin', # Orders label issues
  )
 ```
 
@@ -98,8 +98,8 @@ from sklearn.linear_model import LogisticRegression
 
 # Wrap around any classifier. Yup, you can use sklearn/pyTorch/Tensorflow/FastText/etc.
 lnl = LearningWithNoisyLabels(clf=LogisticRegression())
-lnl.fit(X=X_train_data, s=train_noisy_labels)
-# Estimate the predictions you would have gotten by training with *no* label errors.
+lnl.fit(X=X_train_data, labels=train_noisy_labels)
+# Estimate the predictions you would have gotten by training with *no* label issues.
 predicted_test_labels = lnl.predict(X_test)
 ```
 
@@ -182,11 +182,11 @@ A step-by-step guide to reproduce these results is available [here](https://gith
 
 ![](https://raw.githubusercontent.com/cleanlab/assets/master/cleanlab/cifar10_benchmarks.png)
 
-Comparison of confident learning (CL), as implemented in `cleanlab`, versus seven recent methods for learning with noisy labels in CIFAR-10. Highlighted cells show CL robustness to sparsity. The five CL methods estimate label errors, remove them, then train on the cleaned data using [Co-Teaching](https://github.com/cleanlab/cleanlab/blob/master/cleanlab/coteaching.py).
+Comparison of confident learning (CL), as implemented in `cleanlab`, versus seven recent methods for learning with noisy labels in CIFAR-10. Highlighted cells show CL robustness to sparsity. The five CL methods estimate label issues, remove them, then train on the cleaned data using [Co-Teaching](https://github.com/cleanlab/cleanlab/blob/master/cleanlab/coteaching.py).
 
 Observe how cleanlab (i.e. the CL method) is robust to large sparsity in label noise whereas prior art tends to reduce in performance for increased sparsity, as shown by the red highlighted regions. This is important because real-world label noise is often sparse, e.g. a tiger is likely to be mislabeled as a lion, but not as most other classes like airplane, bathtub, and microwave.
 
-### Find Label Errors in ImageNet
+### Find label issues in ImageNet
 
 Use `cleanlab` to identify \~100,000 label errors in the 2012 ILSVRC ImageNet training dataset: [examples/imagenet](https://github.com/cleanlab/examples/tree/master/imagenet).
 
@@ -220,23 +220,22 @@ As an example, the table below is the noise matrix (noisy channel) *P(s | y)
 characterizing the label noise for the first dataset row in the figure. *s* represents the observed noisy labels and *y* represents the latent, true labels. The trace of this matrix is 2.6. A trace of 4 implies no label noise. A cell in this matrix is read like: "Around 38% of true underlying '3' labels were randomly flipped to '2' labels in the
 observed dataset."
 
-| `p(s︱y)` | y=0  | y=1  | y=2  | y=3  |
-|----------|------|------|------|------|
-| s=0      | 0.55 | 0.01 | 0.07 | 0.06 |
-| s=1      | 0.22 | 0.87 | 0.24 | 0.02 |
-| s=2      | 0.12 | 0.04 | 0.64 | 0.38 |
-| s=3      | 0.11 | 0.08 | 0.05 | 0.54 |
+| `p(label︱y)` | y=0  | y=1  | y=2  | y=3  |
+|--------------|------|------|------|------|
+| label=0      | 0.55 | 0.01 | 0.07 | 0.06 |
+| label=1      | 0.22 | 0.87 | 0.24 | 0.02 |
+| label=2      | 0.12 | 0.04 | 0.64 | 0.38 |
+| label=3      | 0.11 | 0.08 | 0.05 | 0.54 |
 
 # ML Research with cleanlab
 
 ## `cleanlab` Core Package Components
 
 1.  **cleanlab/classification.py** - [LearningWithNoisyLabels()](https://github.com/cleanlab/cleanlab/blob/master/cleanlab/classification.py#L106) class for learning with noisy labels.
-2.  **cleanlab/latent\_algebra.py** - Equalities when noise information is known.
-3.  **cleanlab/latent\_estimation.py** - Estimates and fully characterizes all variants of label noise.
-4.  **cleanlab/noise\_generation.py** - Generate mathematically valid synthetic noise matrices.
-5.  **cleanlab/polyplex.py** - Characterizes joint distribution of label noise EXACTLY from noisy channel.
-6.  **cleanlab/pruning.py** - Finds the examples with label errors in a dataset.
+2.  **cleanlab/count.py** - Estimates and fully characterizes all variants of label noise.
+3.  **cleanlab/noise\_generation.py** - Generate mathematically valid synthetic noise matrices.
+4.  **cleanlab/filter.py** - Finds the examples with label issues in a dataset.
+5.  **cleanlab/rank.py** - Rank every example in a dataset with various label quality scores.
 
 Many methods have default parameters not covered here. Check out the
 method docstrings and our [full documentation](https://docs.cleanlab.ai/).
@@ -289,44 +288,44 @@ Most of the methods in the **cleanlab** package start by first estimating the *c
 ### Option 1: Compute the confident joint and predicted probs first. Stop if that’s all you need.
 
 ``` python
-from cleanlab.latent_estimation import estimate_latent
-from cleanlab.latent_estimation import estimate_confident_joint_and_cv_pred_proba
+from cleanlab.count import estimate_latent
+from cleanlab.count import estimate_confident_joint_and_cv_pred_proba
 
-# Compute the confident joint and the n x m predicted probabilities matrix (psx),
+# Compute the confident joint and the n x m predicted probabilities matrix (pred_probs),
 # for n examples, m classes. Stop here if all you need is the confident joint.
-confident_joint, psx = estimate_confident_joint_and_cv_pred_proba(
+confident_joint, pred_probs = estimate_confident_joint_and_cv_pred_proba(
     X=X_train,
-    s=train_labels_with_errors,
+    labels=train_labels_with_errors,
     clf=logreg(), # default, you can use any classifier
 )
 
 # Estimate latent distributions: p(y) as est_py, P(s|y) as est_nm, and P(y|s) as est_inv
 est_py, est_nm, est_inv = estimate_latent(
     confident_joint,
-    s=train_labels_with_errors,
+    labels=train_labels_with_errors,
 )
 ```
 
 ### Option 2: Estimate the latent distribution matrices in a single line of code.
 
 ``` python
-from cleanlab.latent_estimation import estimate_py_noise_matrices_and_cv_pred_proba
-est_py, est_nm, est_inv, confident_joint, psx = estimate_py_noise_matrices_and_cv_pred_proba(
+from cleanlab.count import estimate_py_noise_matrices_and_cv_pred_proba
+est_py, est_nm, est_inv, confident_joint, pred_probs = estimate_py_noise_matrices_and_cv_pred_proba(
     X=X_train,
-    s=train_labels_with_errors,
+    labels=train_labels_with_errors,
 )
 ```
 
 ### Option 3: Skip computing the predicted probabilities if you already have them.
 
 ``` python
-# Already have psx? (n x m matrix of predicted probabilities)
+# Already have pred_probs? (n x m matrix of predicted probabilities)
 # For example, you might get them from a pre-trained model (like resnet on ImageNet)
-# With the cleanlab package, you estimate directly with psx.
-from cleanlab.latent_estimation import estimate_py_and_noise_matrices_from_probabilities
+# With the cleanlab package, you estimate directly with pred_probs.
+from cleanlab.count import estimate_py_and_noise_matrices_from_probabilities
 est_py, est_nm, est_inv, confident_joint = estimate_py_and_noise_matrices_from_probabilities(
-    s=train_labels_with_errors,
-    psx=psx,
+    labels=train_labels_with_errors,
+    pred_probs=pred_probs,
 )
 ```
 
@@ -335,21 +334,13 @@ est_py, est_nm, est_inv, confident_joint = estimate_py_and_noise_matrices_from_p
 The joint probability distribution of noisy and true labels, *P(s,y)*, completely characterizes label noise with a class-conditional *m x m* matrix.
 
 ``` python
-from cleanlab.latent_estimation import estimate_joint
+from cleanlab.count import estimate_joint
 joint = estimate_joint(
-    s=noisy_labels,
-    psx=probabilities,
+    labels=noisy_labels,
+    pred_probs=probabilities,
     confident_joint=None,  # Provide if you have it already
 )
 ```
-
-## The Polyplex
-
-The key to learning in the presence of label errors is estimating the joint distribution between the actual, hidden labels ‘*y*’ and the observed, noisy labels ‘*s*’. Using `cleanlab` and the theory of confident learning, we can completely characterize the trace of the latent joint distribution, *trace(P(s,y))*, given *p(y)*, for any fraction of label errors, i.e. for any trace of the noisy channel, *trace(P(s|y))*.
-
-You can check out how to do this yourself here:
-1. [Drawing Polyplices](https://github.com/cleanlab/examples/blob/master/drawing_polyplices.ipynb)
-2. [Computing Polyplices](https://github.com/cleanlab/cleanlab/blob/master/cleanlab/polyplex.py)
 
 ## PU learning with cleanlab:
 
@@ -366,7 +357,7 @@ from sklearn.linear_model import LogisticRegression
 # Wrap around any classifier. Yup, you can use sklearn/pyTorch/Tensorflow/FastText/etc.
 pu_class = 0 # Should be 0 or 1. Label of class with NO ERRORS. (e.g., P class in PU)
 lnl = LearningWithNoisyLabels(clf=LogisticRegression(), pulearning=pu_class)
-lnl.fit(X=X_train_data, s=train_noisy_labels)
+lnl.fit(X=X_train_data, labels=train_noisy_labels)
 # Estimate the predictions you would have gotten by training with *no* label errors.
 predicted_test_labels = lnl.predict(X_test)
 ```
@@ -377,10 +368,10 @@ error). Here's the code:
 ``` python
 import numpy as np
 # K is the number of classes in your dataset
-# psx are the cross-validated predicted probabilities.
+# pred_probs are the cross-validated predicted probabilities.
 # s is the array/list/iterable of noisy labels
 # pu_class is a 0-based integer for the class that has no label errors.
-thresholds = np.asarray([np.mean(psx[:, k][s == k]) for k in range(K)])
+thresholds = np.asarray([np.mean(pred_probs[:, k][s == k]) for k in range(K)])
 thresholds[pu_class] = 1.0
 ```
 
@@ -389,15 +380,15 @@ Now you can use cleanlab however you were before. Just be sure to pass in this t
 ``` python
 # Uncertainty quantification (characterize the label noise
 # by estimating the joint distribution of noisy and true labels)
-cj = compute_confident_joint(s, psx, thresholds=thresholds, )
+cj = compute_confident_joint(s, pred_probs, thresholds=thresholds, )
 # Now the noise (cj) has been estimated taking into account that some class(es) have no error.
 # We can use cj to find label errors like this:
-indices_of_label_errors = get_noise_indices(s, psx, confident_joint=cj, )
+indices_of_label_issues = find_label_issues(s, pred_probs, confident_joint=cj, )
 
-# In addition to label errors, we can find the fraction of noise in the unlabeled class.
+# In addition to label issues, we can find the fraction of noise in the unlabeled class.
 # First we need the inv_noise_matrix which contains P(y|s) (proportion of mislabeling).
-_, _, inv_noise_matrix = estimate_latent(confident_joint=cj, s=s, )
-# Because inv_noise_matrix contains P(y|s), p (y = anything | s = pu_class) should be 0
+_, _, inv_noise_matrix = estimate_latent(confident_joint=cj, labels=s, )
+# Because inv_noise_matrix contains P(y|s), p (y = anything | labels = pu_class) should be 0
 # because the prob(true label is something else | example is in pu_class) is 0.
 # What's more interesting is p(y = anything | s is not put_class), or in the binary case
 # this translates to p(y = pu_class | s = 1 - pu_class) because pu_class is 0 or 1.
@@ -405,7 +396,7 @@ _, _, inv_noise_matrix = estimate_latent(confident_joint=cj, s=s, )
 fraction_noise_in_unlabeled_class = inv_noise_matrix[pu_class][1 - pu_class] 
 ```
 
-Now that you have `indices\_of\_label\_errors`, you can remove those label errors and train on clean data (or only remove some of the label errors and iteratively use confident learning / cleanlab to improve results).
+Now that you have `indices\_of\_label\_errors`, you can remove those label issues and train on clean data (or only remove some of the label issues and iteratively use confident learning / cleanlab to improve results).
 
 ## Citation and Related Publications
 

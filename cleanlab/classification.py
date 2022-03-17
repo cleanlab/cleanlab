@@ -1,21 +1,21 @@
 # Copyright (C) 2017-2022  Cleanlab Inc.
 # This file is part of cleanlab.
-# 
+#
 # cleanlab is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as published
 # by the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # cleanlab is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Affero General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU Affero General Public License
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
 """
-cleanlab package for multiclass learning with noisy labels for any model.
+cleanlab package for multiclass, multi-label learning with noisy labels for any dataset and model.
 
 The LearningWithNoisyLabels class wraps around an instance of a
 classifier class. Your classifier must adhere to the sklearn template,
@@ -38,6 +38,7 @@ There are two new notions of confidence in this package:
 1. Confident **examples** -- examples we are confident are labeled correctly
 We prune everything else. Comptuationally, this means keeping the examples
 with high probability of belong to their provided label class.
+
 2. Confident **errors** -- examples we are confident are labeled erroneously.
 We prune these. Comptuationally, this means pruning the examples with
 high probability of belong to a different class.
@@ -47,8 +48,8 @@ Examples
 >>> from cleanlab.classification import LearningWithNoisyLabels
 >>> from sklearn.linear_model import LogisticRegression as LogReg
 >>> rp = LearningWithNoisyLabels(clf=LogReg()) # Pass in any classifier.
->>> rp.fit(X_train, y_may_have_label_errors)
->>> # Estimate the predictions as if you had trained without label errors.
+>>> rp.fit(X_train, labels_maybe_with_errors)
+>>> # Estimate the predictions as if you had trained without label issues.
 >>> pred = rp.predict(X_test)
 
 The easiest way to use any model (Tensorflow, caffe2, PyTorch, etc.)
@@ -73,13 +74,29 @@ the ``sklearn.base.BaseEstimator``:
 Note
 ----
 
-* `s` - denotes *noisy labels*. This is just dataset labels, maybe with errors.
-* Class labels (K classes) must be formatted as natural numbers: 0, 1, .., K-1
+* `labels` - The given (maybe noisy) labels in the original dataset, which may have errors.
+* Class labels (K classes) must be formatted as natural numbers: 0, 1, ..., K-1
+
+Note
+----
+
+Confident Learning is the state-of-the-art (Northcutt et al., 2021) for
+weak supervision, finding label issues in datasets, learning with noisy
+labels, uncertainty estimation, and more. It works with ANY classifier,
+including deep neural networks. See clf parameter.
+
+Confident learning is a subfield of theory and algorithms of machine learning with noisy labels.
+Cleanlab achieves state-of-the-art performance of any open-sourced implementation of confident
+learning across a variety of tasks like multi-class classification, multi-label classification,
+and PU learning.
+
+Given any classifier having the predict_proba() method, an input feature
+matrix, `X`, and a discrete vector of noisy labels, `labels`, Confident Learning estimates the
+classifications that would be obtained if the `true_labels` had instead been provided
+to the classifier during training. `labels` denotes the noisy label instead of
+\\tilde(y) (used in confident learning paper), for ASCII encoding reasons.
 """
 
-
-from __future__ import (
-    print_function, absolute_import, division, unicode_literals, with_statement)
 
 from sklearn.linear_model import LogisticRegression as LogReg
 from sklearn.metrics import accuracy_score
@@ -87,55 +104,37 @@ from sklearn.base import BaseEstimator
 import numpy as np
 import inspect
 import multiprocessing
-from cleanlab.util import (
+from cleanlab.utils.util import (
     assert_inputs_are_valid,
     value_counts,
 )
-from cleanlab.latent_estimation import (
+from cleanlab.count import (
     estimate_py_noise_matrices_and_cv_pred_proba,
     estimate_py_and_noise_matrices_from_probabilities,
     estimate_cv_predicted_probabilities,
 )
-from cleanlab.latent_algebra import (
+from cleanlab.utils.latent_algebra import (
     compute_py_inv_noise_matrix,
     compute_noise_matrix_from_inverse,
 )
-from cleanlab.pruning import get_noise_indices
+from cleanlab.filter import find_label_issues
 
 
 class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
-    """Automated learning with noisy labels using any model.
-
-    Confident Learning is the state-of-the-art (Northcutt et al., 2021) for
-    weak supervision, finding label errors in datasets, learning with noisy
-    labels, uncertainty estimation, and more. It works with ANY classifier,
-    including deep neural networks. See clf parameter.
-
-    This subfield of machine learning is referred to as Confident Learning.
-    Confident Learning also achieves state-of-the-art performance for binary
-    classification with noisy labels and positive-unlabeled learning
-    (PU learning) where a subset of positive examples is given and
-    all other examples are unlabeled and assumed to be negative examples.
-    Confident Learning works by "learning from confident examples." Confident
-    examples are identified as examples with high predicted probability
-    for their training label.
-
-    Given any classifier having the predict_proba() method, an input feature
-    matrix, X, and a discrete vector of labels, s, which may contain
-    mislabeling, Confident Learning estimates the classifications that would
-    be obtained if the hidden, true labels, y, had instead been provided to
-    the classifier during training. "s" denotes the noisy label instead of
-    \\tilde(y), for ASCII encoding reasons.
+    """Automated and robust learning with noisy labels using any dataset and any model. This class
+    trains a model `clf` with error-prone, noisy labels as if the model had been instead trained
+    on a dataset with perfect labels. It achieves this by cleaning out the error and providing
+    cleaned data while training.
 
     Parameters
     ----------
     clf : :obj:`sklearn.classifier` compliant class (e.g. skorch wraps around PyTorch)
-      See cleanlab.models for examples of sklearn wrappers around, e.g. PyTorch.
+      See cleanlab.example_models for examples of sklearn wrappers around, e.g. PyTorch.
       The clf object must have the following three functions defined:
       1. clf.predict_proba(X) # Predicted probabilities
       2. clf.predict(X) # Predict labels
       3. clf.fit(X, y, sample_weight) # Train classifier
-      Stores the classifier used inConfident Learning.
+      Stores the classifier used in Confident Learning.
       Default classifier used is logistic regression.
 
     seed : :obj:`int`, default: None
@@ -148,23 +147,30 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
       cv_n_folds sets the number of cross-validation folds used to compute
       out-of-sample probabilities for each example in X.
 
-    prune_method : :obj:`str`, default: :obj:`prune_by_noise_rate`
-      Available options: 'prune_by_class', 'prune_by_noise_rate', or 'both'.
-      This str determines the method used for pruning.
+    filter_by : :obj:`str`, default: 'prune_by_noise_rate'
+      Possible Values: {'prune_by_class', 'prune_by_noise_rate', 'both',
+                        'confident_learning', 'predicted_neq_given'}
+      Determines the method used to filter label issues.
 
-      Note
-      ----
+      Filtering/Pruning Methods (possible values for `filter_by`)
+      ----------------------------------------------------
 
-      1. :obj:`prune_method=prune_by_noise_rate`: works by removing examples
-      with *high probability* of being mislabeled for every non-diagonal in the
-      ``prune_counts_matrix`` (see ``pruning.py``).
+      1. :obj:`filter_by=prune_by_noise_rate`: works by removing examples with
+      *high probability* of being mislabeled for every non-diagonal in the confident joint
+      (see `prune_counts_matrix` in `filter.py`). These are the examples where (with high
+      confidence) the given label is unlikely to match the predicted label.
 
-      2. :obj:`prune_method=prune_by_class`: works by removing the examples
-      with *smallest probability* of belonging to their given class label for
-      every class.
+      2. :obj:`filter_by=prune_by_class`: works by removing the examples with
+      *smallest probability* of belonging to their given class label for every class.
 
-      3. :obj:`prune_method=both`: Finds the examples satisfying (1) AND (2)
+      3. :obj:`filter_by=both`: Finds the examples satisfying (1) AND (2)
       and removes their set conjunction.
+
+      4. :obj:`filter_by=confident_learning`: Find examples that are confidently
+      labeled as a different class from their given label while computing the confident joint.
+
+      5. :obj:`filter_by=predicted_neq_given`: Find examples where the argmax prediction
+      does not match the given label.
 
     converge_latent_estimates : :obj:`bool` (Default: False)
       If true, forces numerical consistency of latent estimates. Each is
@@ -178,52 +184,50 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
     n_jobs : :obj:`int` (Windows users may see a speed-up with n_jobs = 1)
       Number of processing threads used by multiprocessing. Default None
       sets to the number of processing threads on your CPU.
-      Set this to 1 to REMOVE parallel processing (if its causing issues)."""
+      Set this to 1 to REMOVE parallel processing (if it's causing issues)."""
 
     def __init__(
-            self,
-            clf=None,
-            seed=None,
-            # Hyper-parameters (used by .fit() function)
-            cv_n_folds=5,
-            prune_method='prune_by_noise_rate',
-            converge_latent_estimates=False,
-            pulearning=None,
-            n_jobs=None,
+        self,
+        clf=None,
+        *,
+        seed=None,
+        # Hyper-parameters (used by .fit() function)
+        cv_n_folds=5,
+        filter_by="prune_by_noise_rate",
+        converge_latent_estimates=False,
+        pulearning=None,
+        n_jobs=None,
     ):
 
         if clf is None:
             # Use logistic regression if no classifier is provided.
-            clf = LogReg(multi_class='auto', solver='lbfgs')
+            clf = LogReg(multi_class="auto", solver="lbfgs")
 
         # Make sure the given classifier has the appropriate methods defined.
         if not hasattr(clf, "fit"):
-            raise ValueError(
-                'The classifier (clf) must define a .fit() method.')
+            raise ValueError("The classifier (clf) must define a .fit() method.")
         if not hasattr(clf, "predict_proba"):
-            raise ValueError(
-                'The classifier (clf) must define a .predict_proba() method.')
+            raise ValueError("The classifier (clf) must define a .predict_proba() method.")
         if not hasattr(clf, "predict"):
-            raise ValueError(
-                'The classifier (clf) must define a .predict() method.')
+            raise ValueError("The classifier (clf) must define a .predict() method.")
 
         if seed is not None:
             np.random.seed(seed=seed)
 
-        # Set-up number of multiprocessing threads used by get_noise_indices()
+        # Set-up number of multiprocessing threads used by find_label_issues()
         if n_jobs is None:
             n_jobs = multiprocessing.cpu_count()
         else:
-            assert (n_jobs >= 1)
+            assert n_jobs >= 1
 
         self.clf = clf
         self.seed = seed
         self.cv_n_folds = cv_n_folds
-        self.prune_method = prune_method
+        self.filter_by = filter_by
         self.converge_latent_estimates = converge_latent_estimates
         self.pulearning = pulearning
         self.n_jobs = n_jobs
-        self.noise_mask = None
+        self.label_issues_mask = None
         self.sample_weight = None
         self.confident_joint = None
         self.py = None
@@ -233,93 +237,93 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
         self.inverse_noise_matrix = None
 
     def fit(
-            self,
-            X,
-            s,
-            psx=None,
-            thresholds=None,
-            noise_matrix=None,
-            inverse_noise_matrix=None,
+        self,
+        X,
+        labels,
+        *,
+        pred_probs=None,
+        thresholds=None,
+        noise_matrix=None,
+        inverse_noise_matrix=None,
     ):
-        """This method implements the confident learning. It counts examples
-        that are likely labeled correctly and incorrectly and uses their ratio
-        to create a predicted confusion matrix.
-        This function fits the classifier (self.clf) to (X, s) accounting for
-        the noise in both the positive and negative sets.
+        """This method trains the model `self.clf` with error-prone, noisy labels as if
+        the model had been instead trained on a dataset with perfect labels.
+        It achieves this by cleaning out the error and providing cleaned data while training.
 
         Parameters
         ----------
         X : :obj:`np.array`
           Input feature matrix (N, D), 2D numpy array
 
-        s : :obj:`np.array`
-          A binary vector of labels, s, which may contain mislabeling.
+        labels : :obj:`np.array`
+          A discrete vector of noisy labels, i.e. some labels may be erroneous.
+          *Format requirements*: for dataset with K classes, labels must be in {0,1,...,K-1}.
 
-        psx : :obj:`np.array` (shape (N, K))
-          P(s=k|x) is a matrix with K (noisy) probabilities for each of the N
-          examples x.
-          This is the probability distribution over all K classes, for each
-          example, regarding whether the example has label s==k P(s=k|x). psx
-          should have been computed using 3 (or higher) fold cross-validation.
-          If you are not sure, leave psx = None (default) and
-          it will be computed for you using cross-validation.
+        pred_probs : :obj:`np.array` (shape (N, K))
+        P(label=k|x) is a matrix with K model-predicted probabilities.
+        Each row of this matrix corresponds to an example `x` and contains the model-predicted
+        probabilities that `x` belongs to each possible class.
+        The columns must be ordered such that these probabilities correspond to class 0,1,2,...
+        `pred_probs` should have been computed using 3 (or higher) fold cross-validation.
+
+          Note
+          ----
+          If you are not sure, leave `pred_probs = None` (default) and it will be computed for you using
+          cross-validation with your model.
 
         thresholds : :obj:`iterable` (list or np.array) of shape (K, 1)  or (K,)
-          P(s^=k|s=k). List of probabilities used to determine the cutoff
+          P(label^=k|label=k). List of probabilities used to determine the cutoff
           predicted probability necessary to consider an example as a given
           class label.
           Default is ``None``. These are computed for you automatically.
           If an example has a predicted probability "greater" than
-          this threshold, it is counted as having hidden label y = k. This is
-          not used for pruning, only for estimating the noise rates using
+          this threshold, it is counted as having true_label = k. This is
+          not used for pruning/filtering, only for estimating the noise rates using
           confident counts. Values in list should be between 0 and 1.
 
         noise_matrix : :obj:`np.array` of shape (K, K), K = number of classes
-          A conditional probablity matrix of the form P(s=k_s|y=k_y) containing
+          A conditional probability matrix of the form P(label=k_s|true_label=k_y) containing
           the fraction of examples in every class, labeled as every other class.
           Assumes columns of noise_matrix sum to 1.
 
         inverse_noise_matrix : :obj:`np.array` of shape (K, K), K = number of classes
-          A conditional probablity matrix of the form P(y=k_y|s=k_s). Contains
+          A conditional probability matrix of the form P(true_label=k_y|label=k_s). Contains
           the estimated fraction observed examples in each class k_s, that are
           mislabeled examples from every other class k_y. If None, the
-          inverse_noise_matrix will be computed from psx and s.
+          inverse_noise_matrix will be computed from pred_probs and labels.
           Assumes columns of inverse_noise_matrix sum to 1.
 
         Returns
         -------
         tuple
-          (noise_mask, sample_weight)"""
+          (label_issues_mask, sample_weight)"""
 
         # Check inputs
-        assert_inputs_are_valid(X, s, psx)
+        assert_inputs_are_valid(X, labels, pred_probs)
         if noise_matrix is not None and np.trace(noise_matrix) <= 1:
             t = np.round(np.trace(noise_matrix), 2)
-            raise ValueError(
-                "Trace(noise_matrix) is {}, but must exceed 1.".format(t))
-        if inverse_noise_matrix is not None and (
-                np.trace(inverse_noise_matrix) <= 1
-        ):
+            raise ValueError("Trace(noise_matrix) is {}, but must exceed 1.".format(t))
+        if inverse_noise_matrix is not None and (np.trace(inverse_noise_matrix) <= 1):
             t = np.round(np.trace(inverse_noise_matrix), 2)
-            raise ValueError(
-                "Trace(inverse_noise_matrix) is {}. Must exceed 1.".format(t))
+            raise ValueError("Trace(inverse_noise_matrix) is {}. Must exceed 1.".format(t))
 
         # Number of classes
-        self.K = len(np.unique(s))
+        self.K = len(np.unique(labels))
 
-        # 'ps' is p(s=k)
-        self.ps = value_counts(s) / float(len(s))
+        # 'ps' is p(labels=k)
+        self.ps = value_counts(labels) / float(len(labels))
 
         self.confident_joint = None
-        # If needed, compute noise rates (mislabeling) for all classes. 
-        # Also, if needed, compute P(s=k|x), denoted psx.
+        # If needed, compute noise rates (mislabeling) for all classes.
+        # Also, if needed, compute P(label=k|x), denoted pred_probs.
 
-        # Set / re-set noise matrices / psx; estimate if not provided.
+        # Set / re-set noise matrices / pred_probs; estimate if not provided.
         if noise_matrix is not None:
             self.noise_matrix = noise_matrix
             if inverse_noise_matrix is None:
-                self.py, self.inverse_noise_matrix = (
-                    compute_py_inv_noise_matrix(self.ps, self.noise_matrix))
+                self.py, self.inverse_noise_matrix = compute_py_inv_noise_matrix(
+                    self.ps, self.noise_matrix
+                )
         if inverse_noise_matrix is not None:
             self.inverse_noise_matrix = inverse_noise_matrix
             if noise_matrix is None:
@@ -328,34 +332,39 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
                     self.inverse_noise_matrix,
                 )
         if noise_matrix is None and inverse_noise_matrix is None:
-            if psx is None:
-                self.py, self.noise_matrix, self.inverse_noise_matrix, \
-                self.confident_joint, psx = \
-                    estimate_py_noise_matrices_and_cv_pred_proba(
-                        X=X,
-                        s=s,
-                        clf=self.clf,
-                        cv_n_folds=self.cv_n_folds,
-                        thresholds=thresholds,
-                        converge_latent_estimates=(
-                            self.converge_latent_estimates),
-                        seed=self.seed,
-                    )
-            else:  # psx is provided by user (assumed holdout probabilities)
-                self.py, self.noise_matrix, self.inverse_noise_matrix, \
-                self.confident_joint = \
-                    estimate_py_and_noise_matrices_from_probabilities(
-                        s=s,
-                        psx=psx,
-                        thresholds=thresholds,
-                        converge_latent_estimates=(
-                            self.converge_latent_estimates),
-                    )
+            if pred_probs is None:
+                (
+                    self.py,
+                    self.noise_matrix,
+                    self.inverse_noise_matrix,
+                    self.confident_joint,
+                    pred_probs,
+                ) = estimate_py_noise_matrices_and_cv_pred_proba(
+                    X=X,
+                    labels=labels,
+                    clf=self.clf,
+                    cv_n_folds=self.cv_n_folds,
+                    thresholds=thresholds,
+                    converge_latent_estimates=(self.converge_latent_estimates),
+                    seed=self.seed,
+                )
+            else:  # pred_probs is provided by user (assumed holdout probabilities)
+                (
+                    self.py,
+                    self.noise_matrix,
+                    self.inverse_noise_matrix,
+                    self.confident_joint,
+                ) = estimate_py_and_noise_matrices_from_probabilities(
+                    labels=labels,
+                    pred_probs=pred_probs,
+                    thresholds=thresholds,
+                    converge_latent_estimates=(self.converge_latent_estimates),
+                )
 
-        if psx is None:
-            psx = estimate_cv_predicted_probabilities(
+        if pred_probs is None:
+            pred_probs = estimate_cv_predicted_probabilities(
                 X=X,
-                labels=s,
+                labels=labels,
                 clf=self.clf,
                 cv_n_folds=self.cv_n_folds,
                 seed=self.seed,
@@ -363,54 +372,50 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
 
         # if pulearning == the integer specifying the class without noise.
         if self.K == 2 and self.pulearning is not None:  # pragma: no cover
-            # pulearning = 1 (no error in 1 class) implies p(s=1|y=0) = 0
+            # pulearning = 1 (no error in 1 class) implies p(label=1|true_label=0) = 0
             self.noise_matrix[self.pulearning][1 - self.pulearning] = 0
             self.noise_matrix[1 - self.pulearning][1 - self.pulearning] = 1
-            # pulearning = 1 (no error in 1 class) implies p(y=0|s=1) = 0
+            # pulearning = 1 (no error in 1 class) implies p(true_label=0|label=1) = 0
             self.inverse_noise_matrix[1 - self.pulearning][self.pulearning] = 0
             self.inverse_noise_matrix[self.pulearning][self.pulearning] = 1
-            # pulearning = 1 (no error in 1 class) implies p(s=1,y=0) = 0
+            # pulearning = 1 (no error in 1 class) implies p(label=1,true_label=0) = 0
             self.confident_joint[self.pulearning][1 - self.pulearning] = 0
             self.confident_joint[1 - self.pulearning][1 - self.pulearning] = 1
 
         # This is the actual work of this function.
 
         # Get the indices of the examples we wish to prune
-        self.noise_mask = get_noise_indices(
-            s,
-            psx,
-            inverse_noise_matrix=self.inverse_noise_matrix,
+        self.label_issues_mask = find_label_issues(
+            labels,
+            pred_probs,
             confident_joint=self.confident_joint,
-            prune_method=self.prune_method,
+            filter_by=self.filter_by,
             n_jobs=self.n_jobs,
         )
 
-        x_mask = ~self.noise_mask
-        x_pruned = X[x_mask]
-        s_pruned = s[x_mask]
+        x_mask = ~self.label_issues_mask
+        x_cleaned = X[x_mask]
+        labels_cleaned = labels[x_mask]
 
-        # Check if sample_weight in clf.fit(). Compatible with Python 2/3.
-        if hasattr(inspect, 'getfullargspec') and \
-                'sample_weight' in inspect.getfullargspec(self.clf.fit).args \
-                or hasattr(inspect, 'getargspec') and \
-                'sample_weight' in inspect.getargspec(self.clf.fit).args:
+        # Check if sample_weight in clf.fit(). Not compatible with Python 2.
+        if "sample_weight" in inspect.getfullargspec(self.clf.fit).args:
             # Re-weight examples in the loss function for the final fitting
-            # s.t. the "apparent" original number of examples in each class
+            # labels.t. the "apparent" original number of examples in each class
             # is preserved, even though the pruned sets may differ.
-            self.sample_weight = np.ones(np.shape(s_pruned))
+            self.sample_weight = np.ones(np.shape(labels_cleaned))
             for k in range(self.K):
                 sample_weight_k = 1.0 / self.noise_matrix[k][k]
-                self.sample_weight[s_pruned == k] = sample_weight_k
+                self.sample_weight[labels_cleaned == k] = sample_weight_k
 
-            self.clf.fit(x_pruned, s_pruned, sample_weight=self.sample_weight)
+            self.clf.fit(x_cleaned, labels_cleaned, sample_weight=self.sample_weight)
         else:
             # This is less accurate, but best we can do if no sample_weight.
-            self.clf.fit(x_pruned, s_pruned)
+            self.clf.fit(x_cleaned, labels_cleaned)
 
         return self.clf
 
     def predict(self, *args, **kwargs):
-        """Returns a binary vector of predictions.
+        """Returns a vector of predictions.
 
         Parameters
         ----------
@@ -420,7 +425,7 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
         return self.clf.predict(*args, **kwargs)
 
     def predict_proba(self, *args, **kwargs):
-        """Returns a vector of probabilties P(y=k)
+        """Returns a vector of probabilities P(true_label=k)
         for each example in X.
 
         Parameters
@@ -432,7 +437,7 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
 
     def score(self, X, y, sample_weight=None):
         """Returns the clf's score on a test set X with labels y.
-        Uses the models default scoring function.
+        Uses the model/clf's default scoring function.
 
         Parameters
         ----------
@@ -445,16 +450,21 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
         sample_weight : :obj:`np.array<float>` of shape (n,) or (n, 1)
           Weights each example when computing the score / accuracy."""
 
-        if hasattr(self.clf, 'score'):
+        if hasattr(self.clf, "score"):
 
-            # Check if sample_weight in clf.score(). Compatible with Python 2/3.
-            if hasattr(inspect, 'getfullargspec') and 'sample_weight' in \
-                    inspect.getfullargspec(self.clf.score).args or \
-                    hasattr(inspect, 'getargspec') and \
-                    'sample_weight' in inspect.getargspec(self.clf.score).args:
+            # Check if sample_weight in clf.score(). Not compatible with Python 2.
+            if "sample_weight" in inspect.getfullargspec(self.clf.score).args:
                 return self.clf.score(X, y, sample_weight=sample_weight)
             else:
                 return self.clf.score(X, y)
         else:
             return accuracy_score(
-                y, self.clf.predict(X), sample_weight=sample_weight, )
+                y,
+                self.clf.predict(X),
+                sample_weight=sample_weight,
+            )
+
+    def get_label_issues(self):
+        """Accessor. Returns `self.label_issues_mask` computed via `filter.find_label_issues()`"""
+
+        return self.label_issues_mask
