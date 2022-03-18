@@ -243,7 +243,7 @@ def find_label_issues(
     num_to_remove_per_class=None,
     n_jobs=None,
     verbose=0,
-    **rank_by_kwargs,
+    rank_by_kwargs={},
 ):
     """By default, this method returns a boolean mask for the entire dataset where True represents
     a label issue and False represents an example that is confidently/accurately labeled.
@@ -339,6 +339,11 @@ def find_label_issues(
 
     verbose : int
       If 0, no print statements. If 1, prints when multiprocessing happens.
+
+    rank_by_kwargs : dict
+      Optional keyword arguments to pass into scoring functions for ranking.
+      Accepted args includes:
+        adj_pred_probs : bool, default = False
 
     Returns
     -------

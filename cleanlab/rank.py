@@ -36,7 +36,7 @@ def order_label_issues(
     pred_probs: np.array,
     *,
     rank_by: str = "normalized_margin",
-    **rank_by_kwargs,
+    rank_by_kwargs: dict = {},
 ) -> np.array:
     """Sorts label issues by normalized margin.
     See https://arxiv.org/pdf/1810.05369.pdf (eqn 2.2)
@@ -64,7 +64,7 @@ def order_label_issues(
         'self_confidence' := [pred_probs[i][labels[i]] for i in label_issues_idx]
         'confidence_weighted_entropy' := entropy(pred_probs) / self_confidence
 
-    **rank_by_kwargs
+    rank_by_kwargs : dict
       Optional keyword arguments to pass into scoring functions for ranking.
       Accepted args includes:
         adj_pred_probs : bool, default = False
@@ -80,15 +80,13 @@ def order_label_issues(
     # Convert bool mask to index mask
     label_issues_idx = np.arange(len(labels))[label_issues_mask]
 
-    # Get pred_probs and labels for label issues
-    pred_probs_er, labels_er = pred_probs[label_issues_mask], labels[label_issues_mask]
-
     # Calculate label quality scores
-    label_quality_scores = score_label_quality(
-        labels=labels_er, pred_probs=pred_probs_er, method=rank_by, **rank_by_kwargs
-    )
+    label_quality_scores = score_label_quality(labels, pred_probs, method=rank_by, **rank_by_kwargs)
 
-    return label_issues_idx[np.argsort(label_quality_scores)]
+    # Get label quality scores for label issues
+    label_quality_scores_issues = label_quality_scores[label_issues_mask]
+
+    return label_issues_idx[np.argsort(label_quality_scores_issues)]
 
 
 def get_self_confidence_for_each_label(
@@ -324,7 +322,6 @@ def score_label_quality(
     pred_probs: np.array,
     method: str = "self_confidence",
     adj_pred_probs: bool = False,
-    **kwargs,
 ) -> np.array:
     """Returns the label quality scores.
 
