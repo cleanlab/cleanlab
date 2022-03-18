@@ -175,3 +175,23 @@ def test_order_label_issues_using_confidence_weighted_entropy_ranking():
     score_idx = sorted(list(zip(scores, indices)), key=lambda y: y[0])  # sort indices by score
     label_issues_indices2 = [z[1] for z in score_idx]
     assert all(label_issues_indices == label_issues_indices2)
+
+
+def test_order_label_issues_using_scoring_func_ranking():
+
+    # test all scoring methods with the scoring function
+    methods = ["self_confidence", "normalized_margin", "confidence_weighted_entropy"]
+
+    for method in methods:
+        label_issues_indices = rank.order_label_issues(
+            label_issues_mask=data["label_errors_mask"],
+            labels=data["labels"],
+            pred_probs=data["pred_probs"],
+            rank_by=method,
+        )
+        scores = rank.score_label_quality(data["labels"], data["pred_probs"], method=method)
+        indices = np.arange(len(scores))[data["label_errors_mask"]]
+        scores = scores[data["label_errors_mask"]]
+        score_idx = sorted(list(zip(scores, indices)), key=lambda y: y[0])  # sort indices by score
+        label_issues_indices2 = [z[1] for z in score_idx]
+        assert all(label_issues_indices == label_issues_indices2)
