@@ -36,7 +36,7 @@ def order_label_issues(
     pred_probs: np.array,
     *,
     rank_by: str = "normalized_margin",
-    rank_by_kwargs={},
+    **rank_by_kwargs,
 ) -> np.array:
     """Sorts label issues by normalized margin.
     See https://arxiv.org/pdf/1810.05369.pdf (eqn 2.2)
@@ -58,12 +58,13 @@ def order_label_issues(
       The columns must be ordered such that these probabilities correspond to class 0,1,2,...
       `pred_probs` should have been computed using 3 (or higher) fold cross-validation.
 
-    rank_by : str ['normalized_margin', 'self_confidence']
+    rank_by : str ['normalized_margin', 'self_confidence', 'confidence_weighted_entropy']
       Method to order label error indices (instead of a bool mask), either:
         'normalized_margin' := normalized margin (p(label = k) - max(p(label != k)))
         'self_confidence' := [pred_probs[i][labels[i]] for i in label_issues_idx]
+        'confidence_weighted_entropy' := entropy(pred_probs) / self_confidence
 
-    rank_by_kwargs : dict
+    **rank_by_kwargs
       Optional keyword arguments to pass into scoring functions for ranking.
       Accepted args includes:
         adj_pred_probs : bool, default = False
@@ -274,7 +275,7 @@ def subtract_confident_thresholds(labels: np.array, pred_probs: np.array) -> np.
     """
 
     # Get expected (average) self-confidence for each class
-    confident_thresholds = __get_confident_thresholds(labels, pred_probs)
+    confident_thresholds = get_confident_thresholds(labels, pred_probs)
 
     # Subtract the class confident thresholds
     pred_probs_adj = pred_probs - confident_thresholds
@@ -286,7 +287,7 @@ def subtract_confident_thresholds(labels: np.array, pred_probs: np.array) -> np.
     return pred_probs_adj
 
 
-def __get_confident_thresholds(labels: np.array, pred_probs: np.array) -> np.array:
+def get_confident_thresholds(labels: np.array, pred_probs: np.array) -> np.array:
     """Returns expected (average) "self-confidence" for each class.
 
     The confident class threshold for a class j is the expected (average) "self-confidence" for class j.
@@ -377,19 +378,7 @@ def score_label_quality(
     }
 
     # Select scoring function
-    try:
-        scoring_func = scoring_funcs[method]
-    except Exception as e:
-        raise ValueError(
-            f"""
-            Scoring {method} must be one of the following:
-                "self_confidence"
-                "normalized_margin"
-                "confidence_weighted_entropy"
-            
-            Scoring method provided: {method}
-            """
-        )
+    scoring_func = scoring_funcs[method]
 
     # Adjust predicted probabilities
     if adj_pred_probs:
