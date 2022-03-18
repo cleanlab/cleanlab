@@ -534,7 +534,7 @@ def find_label_issues(
             labels=labels,
             pred_probs=pred_probs,
             rank_by=return_indices_ranked_by,
-            **rank_by_kwargs,
+            rank_by_kwargs=rank_by_kwargs,
         )
         return er
     confident_joint
