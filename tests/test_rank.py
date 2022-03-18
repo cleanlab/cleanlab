@@ -220,3 +220,16 @@ def test_order_label_issues_using_scoring_func_adj_pred_probs_ranking():
         score_idx = sorted(list(zip(scores, indices)), key=lambda y: y[0])  # sort indices by score
         label_issues_indices2 = [z[1] for z in score_idx]
         assert all(label_issues_indices == label_issues_indices2)
+
+
+def test_subtract_confident_thresholds():
+    labels = data["labels"]
+    pred_probs = data["pred_probs"]
+
+    # subtract confident class thresholds and renormalize
+    pred_probs_adj = rank.subtract_confident_thresholds(labels, pred_probs)
+
+    assert (pred_probs_adj > 0).all()  # all pred_prob are positive numbers
+    assert (
+        abs(1 - pred_probs_adj.sum(axis=1)) < 1e-6
+    ).all()  # all pred_prob sum to 1 with some small precision error
