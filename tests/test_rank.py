@@ -241,8 +241,8 @@ def test_ensemble_scoring_func():
     pred_probs = data["pred_probs"]
 
     # baseline scenario where all the pred_probs are the same in the ensemble list
-    n = 3
-    pred_probs_list = list(np.repeat([pred_probs], n, axis=0))
+    num_repeat = 3
+    pred_probs_list = list(np.repeat([pred_probs], num_repeat, axis=0))
 
     # test all scoring methods with the scoring function and setting adj_pred_probs=True
     scoring_methods = ["self_confidence", "normalized_margin", "confidence_weighted_entropy"]
@@ -260,4 +260,5 @@ def test_ensemble_scoring_func():
         )
 
         # if all pred_probs in the list are the same, then ensemble score should be the same as the regular score
-        assert (label_quality_scores == label_quality_scores_ensemble).all()
+        # account for small precision error due to averaging of scores
+        assert (abs(label_quality_scores - label_quality_scores_ensemble) < 1e-6).all()
