@@ -377,10 +377,10 @@ def score_label_quality(
     # Select scoring function
     try:
         scoring_func = scoring_funcs[method]
-    except:
+    except KeyError:
         raise ValueError(
             f"""
-            Provided rank_by scoring method {method} is not a valid method!
+            {method} is not a valid scoring method for rank_by!
             Please choose a valid rank_by: self_confidence, normalized_margin, confidence_weighted_entropy
             """
         )
