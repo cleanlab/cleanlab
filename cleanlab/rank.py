@@ -85,7 +85,7 @@ def order_label_issues(
 
     # Calculate label quality scores
     label_quality_scores = score_label_quality(
-        labels_er, pred_probs_er, method=rank_by, **rank_by_kwargs
+        labels=labels_er, pred_probs=pred_probs_er, method=rank_by, **rank_by_kwargs
     )
 
     return label_issues_idx[np.argsort(label_quality_scores)]
