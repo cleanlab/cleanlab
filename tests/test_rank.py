@@ -233,3 +233,31 @@ def test_subtract_confident_thresholds():
     assert (
         abs(1 - pred_probs_adj.sum(axis=1)) < 1e-6
     ).all()  # all pred_prob sum to 1 with some small precision error
+
+
+def test_ensemble_scoring_func():
+
+    labels = data["labels"]
+    pred_probs = data["pred_probs"]
+
+    # baseline scenario where all the pred_probs are the same
+    n = 3
+    pred_probs_list = list(np.repeat([pred_probs], n, axis=0))
+
+    # test all scoring methods with the scoring function and setting adj_pred_probs=True
+    scoring_methods = ["self_confidence", "normalized_margin", "confidence_weighted_entropy"]
+
+    for method in scoring_methods:
+
+        # get label quality score with single pred_probs
+        label_quality_scores = rank.score_label_quality(
+            labels, pred_probs, method=method, adj_pred_probs=True
+        )
+
+        # get ensemble label quality score
+        label_quality_scores_ensemble = rank.score_label_quality_ensemble(
+            labels, pred_probs_list, method=method, adj_pred_probs=True
+        )
+
+        # if all pred_probs in the list are the same, then ensemble score should be the same as the regular score
+        assert label_quality_scores == label_quality_scores_ensemble

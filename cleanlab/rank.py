@@ -28,6 +28,7 @@ If you aren't sure which method to use, try `get_normalized_margin_for_each_labe
 
 
 import numpy as np
+from typing import List
 
 
 def order_label_issues(
@@ -252,7 +253,7 @@ def subtract_confident_thresholds(labels: np.array, pred_probs: np.array) -> np.
     See paper "Confident Learning: Estimating Uncertainty in Dataset Labels" by Northcutt et al.
     https://arxiv.org/abs/1911.00068
 
-    Purpose of this adjustment is to handle class imbalance.
+    The purpose of this adjustment is to handle class imbalance.
 
     Parameters
     ----------
@@ -394,5 +395,83 @@ def score_label_quality(
 
     # Calculate scores
     label_quality_scores = scoring_func(**input)
+
+    return label_quality_scores
+
+
+def score_label_quality_ensemble(
+    labels: np.array,
+    pred_probs_list: List[np.array],
+    method: str = "self_confidence",
+    adj_pred_probs: bool = False,
+) -> np.array:
+    """Returns the ensemble label quality scores.
+
+    This requires a list of pred_probs from each model in the ensemble.
+
+    The scoring methods are heuristics to enable users to quickly rank order data to find potential label quality issues.
+
+    Parameters
+    ----------
+    labels : np.array
+      A discrete vector of noisy labels, i.e. some labels may be erroneous.
+      *Format requirements*: for dataset with K classes, labels must be in {0,1,...,K-1}.
+
+    pred_probs_list : List of np.array (shape (N, K))
+      List of pred_probs from each model in the ensemble.
+      P(label=k|x) is a matrix with K model-predicted probabilities.
+      Each row of this matrix corresponds to an example x and contains the model-predicted
+      probabilities that x belongs to each possible class.
+      The columns must be ordered such that these probabilities correspond to class 0,1,2,...
+      `pred_probs` should have been computed using 3 (or higher) fold cross-validation.
+
+    method : {"self_confidence", "normalized_margin", "confidence_weighted_entropy"}, default="self_confidence"
+      Label quality scoring method. Default is "self_confidence".
+
+      .. seealso::
+        :func:`self_confidence`
+        :func:`normalized_margin`
+        :func:`confidence_weighted_entropy`
+
+    adj_pred_probs : bool, default = True
+      Adjust predicted probabilities by subtracting the class confident thresholds and renormalizing.
+      The confident class threshold for a class j is the expected (average) "self-confidence" for class j.
+      See paper "Confident Learning: Estimating Uncertainty in Dataset Labels" by Northcutt et al.
+      https://arxiv.org/abs/1911.00068
+
+    Returns
+    -------
+    label_quality_scores : np.array (float)
+
+    See Also
+    --------
+    self_confidence
+    normalized_margin
+    confidence_weighted_entropy
+    score_label_quality
+
+    """
+
+    # Generate scores for each model's pred_probs
+    scores_list = []
+    accuracy_list = []
+    for pred_probs in pred_probs_list:
+
+        # Calculate scores and accuracy
+        scores = score_label_quality(
+            labels=labels,
+            pred_probs=pred_probs,
+            method=method,
+            adj_pred_probs=adj_pred_probs,
+        )
+        accuracy = (pred_probs.argmax(axis=1) == labels).mean()
+        scores_list.append(scores)
+        accuracy_list.append(accuracy)
+
+    # Weight by accuracy
+    weights = np.array(accuracy_list) / sum(accuracy_list)
+
+    # Aggregate scores with weighted average
+    label_quality_scores = (np.vstack(scores_list).T * weights).sum(axis=1)
 
     return label_quality_scores
