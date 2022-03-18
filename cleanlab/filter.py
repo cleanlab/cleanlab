@@ -298,12 +298,13 @@ def find_label_issues(
       5. 'predicted_neq_given': Find examples where the predicted class
       (i.e. argmax of the predicted probabilities) does not match the given label.
 
-    return_indices_ranked_by : {:obj:`None`, :obj:`self_confidence`, :obj:`normalized_margin`}
+    return_indices_ranked_by : {:obj:`None`, :obj:`self_confidence`, :obj:`normalized_margin`, :obj:`confidence_weighted_entropy`}
       If None, returns a boolean mask (true if example at index is label error)
       If not None, returns an array of the label error indices
       (instead of a bool mask) where error indices are ordered by the either:
       ``'normalized_margin' := normalized margin (p(label = k) - max(p(label != k)))``
       ``'self_confidence' := [pred_probs[i][labels[i]] for i in label_issues_idx]``
+      ``'confidence_weighted_entropy' := entropy(pred_probs) / self_confidence``
 
     multi_label : bool
       If true, labels should be an iterable (e.g. list) of iterables, containing a
@@ -342,8 +343,12 @@ def find_label_issues(
 
     rank_by_kwargs : dict
       Optional keyword arguments to pass into scoring functions for ranking.
-      Accepted args includes:
+      Accepted args include:
         adj_pred_probs : bool, default = False
+          Adjust predicted probabilities by subtracting the class confident thresholds and renormalizing.
+          The confident class threshold for a class j is the expected (average) "self-confidence" for class j.
+          See paper "Confident Learning: Estimating Uncertainty in Dataset Labels" by Northcutt et al.
+          https://arxiv.org/abs/1911.00068
 
     Returns
     -------
