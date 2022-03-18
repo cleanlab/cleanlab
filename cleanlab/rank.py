@@ -34,7 +34,8 @@ def order_label_issues(
     label_issues_mask: np.array,
     labels: np.array,
     pred_probs: np.array,
-    rank_by="normalized_margin",
+    *,
+    rank_by: str = "normalized_margin",
     **rank_by_kwargs,
 ) -> np.array:
     """Sorts label issues by normalized margin.
@@ -65,7 +66,7 @@ def order_label_issues(
     rank_by_kwargs : dict
       Optional keyword arguments to pass into scoring functions for ranking.
       Accepted args includes:
-        adj_pred_probs : bool, default = True
+        adj_pred_probs : bool, default = False
 
     Returns
     -------
@@ -225,8 +226,12 @@ def get_entropy(pred_probs: np.array) -> np.array:
 
     Parameters
     ----------
-    pred_probs : ndarray of shape (n_samples, n_classes)
-      Predicted probabilities for each class.
+    pred_probs : np.array (shape (N, K))
+      P(label=k|x) is a matrix with K model-predicted probabilities.
+      Each row of this matrix corresponds to an example x and contains the model-predicted
+      probabilities that x belongs to each possible class.
+      The columns must be ordered such that these probabilities correspond to class 0,1,2,...
+      `pred_probs` should have been computed using 3 (or higher) fold cross-validation.
 
     Returns
     -------
@@ -304,7 +309,7 @@ def __get_confident_thresholds(labels: np.array, pred_probs: np.array) -> np.arr
 
     Returns
     -------
-    confident_thresholds : np.array (shape (K))
+    confident_thresholds : np.array (shape (K,))
 
     """
     confident_thresholds = np.array(
@@ -375,10 +380,9 @@ def score_label_quality(
     try:
         scoring_func = scoring_funcs[method]
     except Exception as e:
-        print(f"Exception: {e}")
         raise ValueError(
             f"""
-            Scoring {method} must be one of the following: 
+            Scoring {method} must be one of the following:
                 "self_confidence"
                 "normalized_margin"
                 "confidence_weighted_entropy"
@@ -395,7 +399,6 @@ def score_label_quality(
     input = {"labels": labels, "pred_probs": pred_probs}
 
     # Calculate scores
-    # Using keyword arguments will make it more convenient to add decorators to the scoring functions that check the inputs
     label_quality_scores = scoring_func(**input)
 
     return label_quality_scores
