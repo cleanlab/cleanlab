@@ -378,7 +378,15 @@ def score_label_quality(
     }
 
     # Select scoring function
-    scoring_func = scoring_funcs[method]
+    try:
+        scoring_func = scoring_funcs[method]
+    except:
+        raise ValueError(
+            f"""
+            Provided rank_by scoring method {method} is not a valid method!
+            Please choose a valid rank_by: self_confidence, normalized_margin, confidence_weighted_entropy
+            """
+        )
 
     # Adjust predicted probabilities
     if adj_pred_probs:
