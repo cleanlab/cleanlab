@@ -240,7 +240,7 @@ def test_ensemble_scoring_func():
     labels = data["labels"]
     pred_probs = data["pred_probs"]
 
-    # baseline scenario where all the pred_probs are the same
+    # baseline scenario where all the pred_probs are the same in the ensemble list
     n = 3
     pred_probs_list = list(np.repeat([pred_probs], n, axis=0))
 
@@ -260,4 +260,4 @@ def test_ensemble_scoring_func():
         )
 
         # if all pred_probs in the list are the same, then ensemble score should be the same as the regular score
-        assert label_quality_scores == label_quality_scores_ensemble
+        assert (label_quality_scores == label_quality_scores_ensemble).all()
