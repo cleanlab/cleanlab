@@ -243,6 +243,7 @@ def find_label_issues(
     num_to_remove_per_class=None,
     n_jobs=None,
     verbose=0,
+    **rank_by_kwargs,
 ):
     """By default, this method returns a boolean mask for the entire dataset where True represents
     a label issue and False represents an example that is confidently/accurately labeled.
@@ -523,6 +524,7 @@ def find_label_issues(
             labels=labels,
             pred_probs=pred_probs,
             rank_by=return_indices_ranked_by,
+            **rank_by_kwargs,
         )
         return er
     confident_joint
