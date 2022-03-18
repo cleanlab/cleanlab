@@ -229,7 +229,7 @@ def test_subtract_confident_thresholds():
     # subtract confident class thresholds and renormalize
     pred_probs_adj = rank.subtract_confident_thresholds(labels, pred_probs)
 
-    assert (pred_probs_adj > 0).all()  # all pred_prob are positive numbers
-    assert (
+    assert all(pred_probs_adj > 0)  # all pred_prob are positive numbers
+    assert all(
         abs(1 - pred_probs_adj.sum(axis=1)) < 1e-6
-    ).all()  # all pred_prob sum to 1 with some small precision error
+    )  # all pred_prob sum to 1 with some small precision error
