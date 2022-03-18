@@ -36,7 +36,7 @@ def order_label_issues(
     pred_probs: np.array,
     *,
     rank_by: str = "normalized_margin",
-    **rank_by_kwargs,
+    rank_by_kwargs={},
 ) -> np.array:
     """Sorts label issues by normalized margin.
     See https://arxiv.org/pdf/1810.05369.pdf (eqn 2.2)
