@@ -188,6 +188,26 @@ def test_order_label_issues_using_scoring_func_ranking():
             labels=data["labels"],
             pred_probs=data["pred_probs"],
             rank_by=method,
+        )
+        scores = rank.score_label_quality(data["labels"], data["pred_probs"], method=method)
+        indices = np.arange(len(scores))[data["label_errors_mask"]]
+        scores = scores[data["label_errors_mask"]]
+        score_idx = sorted(list(zip(scores, indices)), key=lambda y: y[0])  # sort indices by score
+        label_issues_indices2 = [z[1] for z in score_idx]
+        assert all(label_issues_indices == label_issues_indices2)
+
+
+def test_order_label_issues_using_scoring_func_adj_pred_probs_ranking():
+
+    # test all scoring methods with the scoring function and setting adj_pred_probs=True
+    scoring_methods = ["self_confidence", "normalized_margin", "confidence_weighted_entropy"]
+
+    for method in scoring_methods:
+        label_issues_indices = rank.order_label_issues(
+            label_issues_mask=data["label_errors_mask"],
+            labels=data["labels"],
+            pred_probs=data["pred_probs"],
+            rank_by=method,
             rank_by_kwargs={
                 "adj_pred_probs": True
             },  # adjust predicted probabilities by subtracting class thresholds (as defined in confident learning paper)
