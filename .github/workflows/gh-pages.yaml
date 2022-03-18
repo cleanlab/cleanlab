@@ -89,7 +89,7 @@ jobs:
         uses: jacobtomlinson/gha-find-replace@v2
         with:
           find: "stable_url"
-          replace: https://docs.cleanlab.ai/${{ steps.stable_release.outputs.release }}/index.html
+          replace: ${{ env.DOCS_SITE_URL }}${{ steps.stable_release.outputs.release }}/index.html
           include: "docs/source/_templates/redirect-to-stable.html"
 
       - name: Copy redirecting HTML file to cleanlab-docs/ and cleanlab-docs/stable

@@ -24,7 +24,6 @@ project = "cleanlab"
 copyright = f"{datetime.datetime.now().year}, Cleanlab Inc."
 author = "Cleanlab Inc."
 
-
 # -- General configuration ---------------------------------------------------
 
 # Add any Sphinx extension module names here, as strings. They can be
@@ -132,8 +131,8 @@ nbsphinx_prolog = """
     </style>
 
     <script type="text/javascript">
-        window.addEventListener('load', function () {
-            var h1_element = document.getElementsByTagName("h1");
+        window.addEventListener('load', () => {
+            const h1_element = document.getElementsByTagName("h1");
             h1_element[0].insertAdjacentHTML("afterend", `
             <p>
                 <a style="background-color:white;color:black;padding:4px 12px;text-decoration:none;display:inline-block;border-radius:8px;box-shadow:0 2px 4px 0 rgba(0, 0, 0, 0.2), 0 3px 10px 0 rgba(0, 0, 0, 0.19)" href="https://colab.research.google.com/github/cleanlab/cleanlab/blob/{{ docver|e }}/docs/source/{{ docname|e }}" target="_blank">
@@ -149,8 +148,23 @@ nbsphinx_prolog = """
 """
 
 # Change this to "always" before running in the doc's CI/CD server
-if os.getenv('CI'):
+if os.getenv("CI"):
     nbsphinx_execute = "always"
+
+# Determine doc site URL (DOCS_SITE_URL)
+
+# Check if it's running in production repo
+if os.getenv("GITHUB_REPOSITORY") == "cleanlab/cleanlab":
+    DOCS_SITE_URL = "https://docs.cleanlab.ai/"
+else:
+    DOCS_SITE_URL = "/cleanlab-docs/"
+
+gh_env_file = os.getenv("GITHUB_ENV")
+if gh_env_file is not None:
+    with open(gh_env_file, "a") as f:
+        f.write(f"\nDOCS_SITE_URL={DOCS_SITE_URL}")  # Set to Environment Var
+
+html_context = {"DOCS_SITE_URL": DOCS_SITE_URL}  # Set to template var
 
 # -- Options for HTML output -------------------------------------------------
 
@@ -158,9 +172,13 @@ if os.getenv('CI'):
 # a list of builtin themes.
 #
 html_theme = "furo"
-html_favicon = "https://raw.githubusercontent.com/cleanlab/assets/master/cleanlab/cleanlab_logo_only.png"
+html_favicon = (
+    "https://raw.githubusercontent.com/cleanlab/assets/master/cleanlab/cleanlab_logo_only.png"
+)
 html_title = "cleanlab"
-html_logo = "https://raw.githubusercontent.com/cleanlab/assets/master/cleanlab/cleanlab_logo_only.png"
+html_logo = (
+    "https://raw.githubusercontent.com/cleanlab/assets/master/cleanlab/cleanlab_logo_only.png"
+)
 html_theme_options = {
     "footer_icons": [
         {

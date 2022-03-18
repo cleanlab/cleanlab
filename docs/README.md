@@ -1,6 +1,6 @@
 # Looking for `v1.0` of the `cleanlab` docs?
 
-The `v1.0.1` docs is still relevant to our `v1.0` release.
+Please refer to the `v1.0.1` documentation; the code for `v1.0` is identical to the code for `v1.0.1`.
 
 # CI/CD for `cleanlab` docs
 
