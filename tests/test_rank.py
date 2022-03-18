@@ -188,7 +188,9 @@ def test_order_label_issues_using_scoring_func_ranking():
             labels=data["labels"],
             pred_probs=data["pred_probs"],
             rank_by=method,
-            adj_pred_probs=True,  # adjust predicted probabilities by subtracting class thresholds (as defined in confident learning paper)
+            rank_by_kwargs={
+                "adj_pred_probs": True
+            },  # adjust predicted probabilities by subtracting class thresholds (as defined in confident learning paper)
         )
         scores = rank.score_label_quality(
             data["labels"], data["pred_probs"], method=method, adj_pred_probs=True
