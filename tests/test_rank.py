@@ -180,16 +180,19 @@ def test_order_label_issues_using_confidence_weighted_entropy_ranking():
 def test_order_label_issues_using_scoring_func_ranking():
 
     # test all scoring methods with the scoring function
-    methods = ["self_confidence", "normalized_margin", "confidence_weighted_entropy"]
+    scoring_methods = ["self_confidence", "normalized_margin", "confidence_weighted_entropy"]
 
-    for method in methods:
+    for method in scoring_methods:
         label_issues_indices = rank.order_label_issues(
             label_issues_mask=data["label_errors_mask"],
             labels=data["labels"],
             pred_probs=data["pred_probs"],
             rank_by=method,
+            adj_pred_probs=True,  # adjust predicted probabilities by subtracting class thresholds (as defined in confident learning paper)
         )
-        scores = rank.score_label_quality(data["labels"], data["pred_probs"], method=method)
+        scores = rank.score_label_quality(
+            data["labels"], data["pred_probs"], method=method, adj_pred_probs=True
+        )
         indices = np.arange(len(scores))[data["label_errors_mask"]]
         scores = scores[data["label_errors_mask"]]
         score_idx = sorted(list(zip(scores, indices)), key=lambda y: y[0])  # sort indices by score
