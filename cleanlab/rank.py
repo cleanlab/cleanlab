@@ -39,7 +39,9 @@ def order_label_issues(
     rank_by: str = "normalized_margin",
     rank_by_kwargs: dict = {},
 ) -> np.array:
-    """Sorts label issues by normalized margin.
+    """Sorts label issues by label quality score.
+
+    Default label quality score is "normalized margin".
     See https://arxiv.org/pdf/1810.05369.pdf (eqn 2.2)
     e.g. normalized_margin = prob_label - max_prob_not_label
 
