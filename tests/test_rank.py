@@ -199,14 +199,14 @@ def test_subtract_confident_thresholds():
 
 
 @pytest.mark.parametrize(
-    "scoring_method",
+    "method",
     [
         "self_confidence",
         "normalized_margin",
         "confidence_weighted_entropy",
     ],
 )
-def test_ensemble_scoring_func(scoring_method):
+def test_ensemble_scoring_func(method):
 
     labels = data["labels"]
     pred_probs = data["pred_probs"]
@@ -217,14 +217,16 @@ def test_ensemble_scoring_func(scoring_method):
 
     # get label quality score with single pred_probs
     label_quality_scores = rank.score_label_quality(
-        labels, pred_probs, method=scoring_method, adj_pred_probs=True
+        labels, pred_probs, method=method, adj_pred_probs=True
     )
 
     # get ensemble label quality score
     label_quality_scores_ensemble = rank.score_label_quality_ensemble(
-        labels, pred_probs_list, method=scoring_method, adj_pred_probs=True
+        labels, pred_probs_list, method=method, adj_pred_probs=True
     )
 
     # if all pred_probs in the list are the same, then ensemble score should be the same as the regular score
     # account for small precision error due to averaging of scores
-    assert (abs(label_quality_scores - label_quality_scores_ensemble) < 1e-6).all()
+    assert (
+        abs(label_quality_scores - label_quality_scores_ensemble) < 1e-6
+    ).all(), f"Test failed with scoring method: {method}"
