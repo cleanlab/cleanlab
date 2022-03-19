@@ -155,7 +155,7 @@ if os.getenv("CI"):
 
 # Check if it's running in production repo
 if os.getenv("GITHUB_REPOSITORY") == "cleanlab/cleanlab":
-    DOCS_SITE_URL = "https://docs.cleanlab.ai/"
+    DOCS_SITE_URL = "/"
 else:
     DOCS_SITE_URL = "/cleanlab-docs/"
 
