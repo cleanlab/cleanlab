@@ -342,13 +342,9 @@ def find_label_issues(
       If 0, no print statements. If 1, prints when multiprocessing happens.
 
     rank_by_kwargs : dict
-      Optional keyword arguments to pass into scoring functions for ranking.
+      Optional keyword arguments to pass into `rank.score_label_quality()` method.
       Accepted args include:
         adj_pred_probs : bool, default = False
-          Adjust predicted probabilities by subtracting the class confident thresholds and renormalizing.
-          The confident class threshold for a class j is the expected (average) "self-confidence" for class j.
-          See paper "Confident Learning: Estimating Uncertainty in Dataset Labels" by Northcutt et al.
-          https://arxiv.org/abs/1911.00068
 
     Returns
     -------

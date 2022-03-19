@@ -43,7 +43,6 @@ def order_label_issues(
 
     Default label quality score is "normalized margin".
     See https://arxiv.org/pdf/1810.05369.pdf (eqn 2.2)
-    e.g. normalized_margin = prob_label - max_prob_not_label
 
     Parameters
     ----------
@@ -68,19 +67,17 @@ def order_label_issues(
         'confidence_weighted_entropy' := entropy(pred_probs) / self_confidence
 
     rank_by_kwargs : dict
-      Optional keyword arguments to pass into scoring functions for ranking.
+      Optional keyword arguments to pass into `score_label_quality()` method.
       Accepted args include:
         adj_pred_probs : bool, default = False
-          Adjust predicted probabilities by subtracting the class confident thresholds and renormalizing.
-          The confident class threshold for a class j is the expected (average) "self-confidence" for class j.
-          See paper "Confident Learning: Estimating Uncertainty in Dataset Labels" by Northcutt et al.
-          https://arxiv.org/abs/1911.00068
 
     Returns
     -------
     label_issues_idx : np.array (int)
-      Return the index integers of the label issues, ordered by
-      the normalized margin."""
+      Return the index integers of the label issues, ordered by the label-quality scoring method
+      passed to rank_by.
+
+    """
 
     assert len(pred_probs) == len(labels)
 
@@ -96,243 +93,20 @@ def order_label_issues(
     return label_issues_idx[np.argsort(label_quality_scores_issues)]
 
 
-def get_self_confidence_for_each_label(
-    labels: np.array,
-    pred_probs: np.array,
-) -> np.array:
-    """Returns the "self-confidence" for every example in the dataset associated pred_probs
-    and labels. The self-confidence is the holdout probability that an example belongs to
-    its given class label.
-
-    Score is between 0 and 1.
-    1 - clean label (not an error).
-    0 - dirty label (label error).
-
-    Parameters
-    ----------
-    labels : np.array
-      A discrete vector of noisy labels, i.e. some labels may be erroneous.
-      *Format requirements*: for dataset with K classes, labels must be in {0,1,...,K-1}.
-
-    pred_probs : np.array (shape (N, K))
-      P(label=k|x) is a matrix with K model-predicted probabilities.
-      Each row of this matrix corresponds to an example x and contains the model-predicted
-      probabilities that x belongs to each possible class.
-      The columns must be ordered such that these probabilities correspond to class 0,1,2,...
-      `pred_probs` should have been computed using 3 (or higher) fold cross-validation.
-
-    Returns
-    -------
-    self_confidence : np.array (float)
-      Return the holdout probability that each example in pred_probs belongs to its
-      label. Assumes pred_probs is computed holdout/out-of-sample."""
-
-    # np.mean is used so that this works for multi-labels (list of lists)
-    self_confidence = np.array([np.mean(pred_probs[i, l]) for i, l in enumerate(labels)])
-    return self_confidence
-
-
-def get_normalized_margin_for_each_label(
-    labels: np.array,
-    pred_probs: np.array,
-) -> np.array:
-    """Returns the "normalized margin" for every example associated pred_probs and
-    labels.
-    The normalized margin is (p(label = k) - max(p(label != k))), i.e. the probability
-    of the given label minus the probability of the argmax label that is not
-    the given label. This gives you an idea of how likely an example is BOTH
-    its given label AND not another label, and therefore, scores its likelihood
-    of being a good label or a label error.
-
-    Score is between 0 and 1.
-    1 - clean label (not an error).
-    0 - dirty label (label error).
-
-    Parameters
-    ----------
-
-    labels : np.array
-      A discrete vector of noisy labels, i.e. some labels may be erroneous.
-      *Format requirements*: for dataset with K classes, labels must be in {0,1,...,K-1}.
-
-    pred_probs : np.array (shape (N, K))
-      P(label=k|x) is a matrix with K model-predicted probabilities.
-      Each row of this matrix corresponds to an example x and contains the model-predicted
-      probabilities that x belongs to each possible class.
-      The columns must be ordered such that these probabilities correspond to class 0,1,2,...
-      `pred_probs` should have been computed using 3 (or higher) fold cross-validation.
-
-    Returns
-    -------
-    normalized_margin : np.array (float)
-      Return a score (between 0 and 1) for each example of its likelihood of
-      being correctly labeled. Assumes pred_probs is computed holdout/out-of-sample.
-      normalized_margin = prob_label - max_prob_not_label"""
-
-    self_confidence = get_self_confidence_for_each_label(labels, pred_probs)
-    max_prob_not_label = np.array(
-        [max(np.delete(pred_probs[i], l, -1)) for i, l in enumerate(labels)]
-    )
-    normalized_margin = (self_confidence - max_prob_not_label + 1) / 2
-    return normalized_margin
-
-
-def get_confidence_weighted_entropy_for_each_label(
-    labels: np.array, pred_probs: np.array
-) -> np.array:
-    """Returns the normalized entropy divided by "self-confidence".
-
-    Score is between 0 and 1.
-    1 - clean label (not an error).
-    0 - dirty label (label error).
-
-    Parameters
-    ----------
-    labels : np.array
-      A discrete vector of noisy labels, i.e. some labels may be erroneous.
-      *Format requirements*: for dataset with K classes, labels must be in {0,1,...,K-1}.
-
-    pred_probs : np.array (shape (N, K))
-      P(label=k|x) is a matrix with K model-predicted probabilities.
-      Each row of this matrix corresponds to an example x and contains the model-predicted
-      probabilities that x belongs to each possible class.
-      The columns must be ordered such that these probabilities correspond to class 0,1,2,...
-      `pred_probs` should have been computed using 3 (or higher) fold cross-validation.
-
-    Returns
-    -------
-    confidence_weighted_entropy : np.array (float)
-      Return a score (between 0 and 1) for each example of its likelihood of
-      being correctly labeled. Assumes pred_probs is computed holdout/out-of-sample.
-
-    """
-
-    # Get confidence of given label
-    self_confidence = get_self_confidence_for_each_label(labels, pred_probs)
-
-    # Divide entropy by self confidence
-    confidence_weighted_entropy = get_entropy(**{"pred_probs": pred_probs}) / self_confidence
-
-    # Rescale
-    confidence_weighted_entropy = (
-        np.log(confidence_weighted_entropy + 1) / confidence_weighted_entropy
-    )
-
-    return confidence_weighted_entropy
-
-
-def get_entropy(pred_probs: np.array) -> np.array:
-    """Returns the normalized entropy of pred_probs.
-
-    Read more about normalized entropy here: https://en.wikipedia.org/wiki/Entropy_(information_theory)
-
-    Normalized entropy is used in active learning for uncertainty sampling: https://towardsdatascience.com/uncertainty-sampling-cheatsheet-ec57bc067c0b
-
-    Normalized entropy is between 0 and 1. Higher values of entropy indicate higher uncertainty in the model's prediction of the correct label.
-
-    Parameters
-    ----------
-    pred_probs : np.array (shape (N, K))
-      P(label=k|x) is a matrix with K model-predicted probabilities.
-      Each row of this matrix corresponds to an example x and contains the model-predicted
-      probabilities that x belongs to each possible class.
-      The columns must be ordered such that these probabilities correspond to class 0,1,2,...
-      `pred_probs` should have been computed using 3 (or higher) fold cross-validation.
-
-    Returns
-    -------
-    entropy : np.array (float)
-
-    """
-
-    num_classes = pred_probs.shape[1]
-
-    # Note that dividing by log(num_classes) changes the base of the log which rescales entropy to 0-1 range
-    return -np.sum(pred_probs * np.log(pred_probs), axis=1) / np.log(num_classes)
-
-
-def subtract_confident_thresholds(labels: np.array, pred_probs: np.array) -> np.array:
-    """Returns adjusted predicted probabilities by subtracting the class confident thresholds and renormalizing.
-
-    The confident class threshold for a class j is the expected (average) "self-confidence" for class j.
-
-    See paper "Confident Learning: Estimating Uncertainty in Dataset Labels" by Northcutt et al.
-    https://arxiv.org/abs/1911.00068
-
-    The purpose of this adjustment is to handle class imbalance.
-
-    Parameters
-    ----------
-    labels : np.array
-      A discrete vector of noisy labels, i.e. some labels may be erroneous.
-      *Format requirements*: for dataset with K classes, labels must be in {0,1,...,K-1}.
-
-    pred_probs : np.array (shape (N, K))
-      P(label=k|x) is a matrix with K model-predicted probabilities.
-      Each row of this matrix corresponds to an example x and contains the model-predicted
-      probabilities that x belongs to each possible class.
-      The columns must be ordered such that these probabilities correspond to class 0,1,2,...
-      `pred_probs` should have been computed using 3 (or higher) fold cross-validation.
-
-    Returns
-    -------
-    pred_probs_adj : np.array (float)
-    """
-
-    # Get expected (average) self-confidence for each class
-    confident_thresholds = get_confident_thresholds(labels, pred_probs)
-
-    # Subtract the class confident thresholds
-    pred_probs_adj = pred_probs - confident_thresholds
-
-    # Renormalize by shifting data to take care of negative values from the subtraction
-    pred_probs_adj += 1
-    pred_probs_adj /= pred_probs_adj.sum(axis=1)[:, None]
-
-    return pred_probs_adj
-
-
-def get_confident_thresholds(labels: np.array, pred_probs: np.array) -> np.array:
-    """Returns expected (average) "self-confidence" for each class.
-
-    The confident class threshold for a class j is the expected (average) "self-confidence" for class j.
-
-    See paper "Confident Learning: Estimating Uncertainty in Dataset Labels" by Northcutt et al.
-    https://arxiv.org/abs/1911.00068
-
-    Parameters
-    ----------
-    labels : np.array
-      A discrete vector of noisy labels, i.e. some labels may be erroneous.
-      *Format requirements*: for dataset with K classes, labels must be in {0,1,...,K-1}.
-
-    pred_probs : np.array (shape (N, K))
-      P(label=k|x) is a matrix with K model-predicted probabilities.
-      Each row of this matrix corresponds to an example x and contains the model-predicted
-      probabilities that x belongs to each possible class.
-      The columns must be ordered such that these probabilities correspond to class 0,1,2,...
-      `pred_probs` should have been computed using 3 (or higher) fold cross-validation.
-
-    Returns
-    -------
-    confident_thresholds : np.array (shape (K,))
-
-    """
-    confident_thresholds = np.array(
-        [np.mean(pred_probs[:, k][labels == k]) for k in range(pred_probs.shape[1])]
-    )
-    return confident_thresholds
-
-
 def score_label_quality(
     labels: np.array,
     pred_probs: np.array,
     method: str = "self_confidence",
     adj_pred_probs: bool = False,
 ) -> np.array:
-    """Returns the label quality scores.
+    """Returns label quality scores for each datapoint.
 
-    The scoring methods are heuristics to enable users to quickly rank order data to find potential label quality issues.
+    This is a function to compute label-quality scores for classification datasets,
+    where lower scores indicate labels less likely to be correct.
+
+    Score is between 0 and 1.
+    1 - clean label (given label is likely correct).
+    0 - dirty label (given label is likely incorrect).
 
     Parameters
     ----------
@@ -356,14 +130,17 @@ def score_label_quality(
         :func:`confidence_weighted_entropy`
 
     adj_pred_probs : bool, default = True
-      Adjust predicted probabilities by subtracting the class confident thresholds and renormalizing.
-      The confident class threshold for a class j is the expected (average) "self-confidence" for class j.
+      Account for class-imbalance in the label-quality scoring (by adjusting predicted probabilities
+      via subtraction of class confident thresholds and renormalization).
+      Set this = False if you prefer to emphasize label issues in classes that are more common
+      throughout the dataset
       See paper "Confident Learning: Estimating Uncertainty in Dataset Labels" by Northcutt et al.
       https://arxiv.org/abs/1911.00068
 
     Returns
     -------
     label_quality_scores : np.array (float)
+      Scores are between 0 and 1 where lower scores indicate labels less likely to be correct.
 
     See Also
     --------
@@ -411,25 +188,25 @@ def score_label_quality_ensemble(
     method: str = "self_confidence",
     adj_pred_probs: bool = False,
 ) -> np.array:
-    """Returns the ensemble label quality scores.
+    """Returns label quality scores based on predictions from an ensemble of models.
 
     This requires a list of pred_probs from each model in the ensemble.
 
-    The scoring methods are heuristics to enable users to quickly rank order data to find potential label quality issues.
+    This is a function to compute label-quality scores for classification datasets,
+    where lower scores indicate labels less likely to be correct.
+
+    Score is between 0 and 1.
+    1 - clean label (given label is likely correct).
+    0 - dirty label (given label is likely incorrect).
 
     Parameters
     ----------
     labels : np.array
-      A discrete vector of noisy labels, i.e. some labels may be erroneous.
-      *Format requirements*: for dataset with K classes, labels must be in {0,1,...,K-1}.
+      Labels in the same format expected by the `score_label_quality()` method.
 
     pred_probs_list : List of np.array (shape (N, K))
-      List of pred_probs from each model in the ensemble.
-      P(label=k|x) is a matrix with K model-predicted probabilities.
-      Each row of this matrix corresponds to an example x and contains the model-predicted
-      probabilities that x belongs to each possible class.
-      The columns must be ordered such that these probabilities correspond to class 0,1,2,...
-      `pred_probs` should have been computed using 3 (or higher) fold cross-validation.
+      Each element in this list should be an array of pred_probs in the same format
+      expected by the `score_label_quality()` method
 
     method : {"self_confidence", "normalized_margin", "confidence_weighted_entropy"}, default="self_confidence"
       Label quality scoring method. Default is "self_confidence".
@@ -440,10 +217,7 @@ def score_label_quality_ensemble(
         :func:`confidence_weighted_entropy`
 
     adj_pred_probs : bool, default = True
-      Adjust predicted probabilities by subtracting the class confident thresholds and renormalizing.
-      The confident class threshold for a class j is the expected (average) "self-confidence" for class j.
-      See paper "Confident Learning: Estimating Uncertainty in Dataset Labels" by Northcutt et al.
-      https://arxiv.org/abs/1911.00068
+      Adj_pred_probs in the same format expected by the `score_label_quality()` method.
 
     Returns
     -------
@@ -481,3 +255,211 @@ def score_label_quality_ensemble(
     label_quality_scores = (np.vstack(scores_list).T * weights).sum(axis=1)
 
     return label_quality_scores
+
+
+def get_self_confidence_for_each_label(
+    labels: np.array,
+    pred_probs: np.array,
+) -> np.array:
+    """Returns the self-confidence label-quality score for each datapoint.
+
+    This is a function to compute label-quality scores for classification datasets,
+    where lower scores indicate labels less likely to be correct.
+
+    The self-confidence is the holdout probability that an example belongs to
+    its given class label.
+
+    Parameters
+    ----------
+    labels : np.array
+      Labels in the same format expected by the `score_label_quality()` method.
+
+    pred_probs : np.array (shape (N, K))
+      Predicted-probabilities in the same format expected by the `score_label_quality()` method.
+
+    Returns
+    -------
+    label_quality_scores : np.array (float)
+      Return the holdout probability that each example in pred_probs belongs to its
+      label.
+
+    """
+
+    # np.mean is used so that this works for multi-labels (list of lists)
+    label_quality_scores = np.array([np.mean(pred_probs[i, l]) for i, l in enumerate(labels)])
+    return label_quality_scores
+
+
+def get_normalized_margin_for_each_label(
+    labels: np.array,
+    pred_probs: np.array,
+) -> np.array:
+    """Returns the "normalized margin" label-quality score for each datapoint.
+
+    This is a function to compute label-quality scores for classification datasets,
+    where lower scores indicate labels less likely to be correct.
+
+    The normalized margin is (p(label = k) - max(p(label != k))), i.e. the probability
+    of the given label minus the probability of the argmax label that is not
+    the given label. This gives you an idea of how likely an example is BOTH
+    its given label AND not another label, and therefore, scores its likelihood
+    of being a good label or a label error.
+
+    Parameters
+    ----------
+
+    labels : np.array
+      Labels in the same format expected by the `score_label_quality()` method.
+
+    pred_probs : np.array (shape (N, K))
+      Predicted-probabilities in the same format expected by the `score_label_quality()` method.
+
+    Returns
+    -------
+    label_quality_scores : np.array (float)
+      Return a score (between 0 and 1) for each example of its likelihood of
+      being correctly labeled.
+      normalized_margin = prob_label - max_prob_not_label
+
+    """
+
+    self_confidence = get_self_confidence_for_each_label(labels, pred_probs)
+    max_prob_not_label = np.array(
+        [max(np.delete(pred_probs[i], l, -1)) for i, l in enumerate(labels)]
+    )
+    label_quality_scores = (self_confidence - max_prob_not_label + 1) / 2
+    return label_quality_scores
+
+
+def get_confidence_weighted_entropy_for_each_label(
+    labels: np.array, pred_probs: np.array
+) -> np.array:
+    """Returns the "confidence weighted entropy" label-quality score for each datapoint.
+
+    This is a function to compute label-quality scores for classification datasets,
+    where lower scores indicate labels less likely to be correct.
+
+    "confidence weighted entropy" is the normalized entropy divided by "self-confidence".
+
+    Parameters
+    ----------
+    labels : np.array
+      Labels in the same format expected by the `score_label_quality()` method.
+
+    pred_probs : np.array (shape (N, K))
+      Predicted-probabilities in the same format expected by the `score_label_quality()` method.
+
+    Returns
+    -------
+    label_quality_scores : np.array (float)
+      Return a score (between 0 and 1) for each example of its likelihood of
+      being correctly labeled.
+
+    """
+
+    self_confidence = get_self_confidence_for_each_label(labels, pred_probs)
+
+    # Divide entropy by self confidence
+    label_quality_scores = get_entropy(**{"pred_probs": pred_probs}) / self_confidence
+
+    # Rescale
+    label_quality_scores = np.log(label_quality_scores + 1) / label_quality_scores
+
+    return label_quality_scores
+
+
+def get_entropy(pred_probs: np.array) -> np.array:
+    """Returns the normalized entropy of pred_probs.
+
+    Read more about normalized entropy here: https://en.wikipedia.org/wiki/Entropy_(information_theory)
+
+    Normalized entropy is used in active learning for uncertainty sampling: https://towardsdatascience.com/uncertainty-sampling-cheatsheet-ec57bc067c0b
+
+    Normalized entropy is between 0 and 1. Higher values of entropy indicate higher uncertainty in the model's prediction of the correct label.
+
+    Parameters
+    ----------
+    pred_probs : np.array (shape (N, K))
+      P(label=k|x) is a matrix with K model-predicted probabilities.
+      Each row of this matrix corresponds to an example x and contains the model-predicted
+      probabilities that x belongs to each possible class.
+      The columns must be ordered such that these probabilities correspond to class 0,1,2,...
+      `pred_probs` should have been computed using 3 (or higher) fold cross-validation.
+
+    Returns
+    -------
+    entropy : np.array (float)
+
+    """
+
+    num_classes = pred_probs.shape[1]
+
+    # Note that dividing by log(num_classes) changes the base of the log which rescales entropy to 0-1 range
+    return -np.sum(pred_probs * np.log(pred_probs), axis=1) / np.log(num_classes)
+
+
+def subtract_confident_thresholds(labels: np.array, pred_probs: np.array) -> np.array:
+    """Returns adjusted predicted probabilities by subtracting the class confident thresholds and renormalizing.
+
+    The confident class threshold for a class j is the expected (average) "self-confidence" for class j.
+
+    The purpose of this adjustment is to handle class imbalance.
+
+    Parameters
+    ----------
+    labels : np.array
+      A discrete vector of noisy labels, i.e. some labels may be erroneous.
+      *Format requirements*: for dataset with K classes, labels must be in {0,1,...,K-1}.
+
+    pred_probs : np.array (shape (N, K))
+      P(label=k|x) is a matrix with K model-predicted probabilities.
+      Each row of this matrix corresponds to an example x and contains the model-predicted
+      probabilities that x belongs to each possible class.
+      The columns must be ordered such that these probabilities correspond to class 0,1,2,...
+      `pred_probs` should have been computed using 3 (or higher) fold cross-validation.
+
+    Returns
+    -------
+    pred_probs_adj : np.array (float)
+    """
+
+    # Get expected (average) self-confidence for each class
+    confident_thresholds = get_confident_thresholds(labels, pred_probs)
+
+    # Subtract the class confident thresholds
+    pred_probs_adj = pred_probs - confident_thresholds
+
+    # Renormalize by shifting data to take care of negative values from the subtraction
+    pred_probs_adj += 1
+    pred_probs_adj /= pred_probs_adj.sum(axis=1)[:, None]
+
+    return pred_probs_adj
+
+
+def get_confident_thresholds(labels: np.array, pred_probs: np.array) -> np.array:
+    """Returns expected (average) "self-confidence" for each class.
+
+    The confident class threshold for a class j is the expected (average) "self-confidence" for class j.
+
+    Parameters
+    ----------
+    labels : np.array
+      A discrete vector of noisy labels, i.e. some labels may be erroneous.
+      *Format requirements*: for dataset with K classes, labels must be in {0,1,...,K-1}.
+
+    pred_probs : np.array (shape (N, K))
+      P(label=k|x) is a matrix with K model-predicted probabilities.
+      Each row of this matrix corresponds to an example x and contains the model-predicted
+      probabilities that x belongs to each possible class.
+      The columns must be ordered such that these probabilities correspond to class 0,1,2,...
+      `pred_probs` should have been computed using 3 (or higher) fold cross-validation.
+
+    Returns
+    -------
+    confident_thresholds : np.array (shape (K,))
+
+    """
+    confident_thresholds = np.array(
+        [np.mean(pred_probs[:, k][labels == k]) for k in range(pred_probs.shape[1])]
+    )
+    return confident_thresholds
