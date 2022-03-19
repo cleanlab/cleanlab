@@ -132,55 +132,19 @@ def test_bad_rank_by_parameter_error():
         )
 
 
-def test_order_label_issues_using_margin_ranking():
-    label_issues_indices = rank.order_label_issues(
-        label_issues_mask=data["label_errors_mask"],
-        labels=data["labels"],
-        pred_probs=data["pred_probs"],
-        rank_by="normalized_margin",
-    )
-    scores = rank.get_normalized_margin_for_each_label(data["labels"], data["pred_probs"])
-    indices = np.arange(len(scores))[data["label_errors_mask"]]
-    scores = scores[data["label_errors_mask"]]
-    score_idx = sorted(list(zip(scores, indices)), key=lambda y: y[0])  # sort indices by score
-    label_issues_indices2 = [z[1] for z in score_idx]
-    assert all(label_issues_indices == label_issues_indices2)
-
-
-def test_order_label_issues_using_self_confidence_ranking():
-    label_issues_indices = rank.order_label_issues(
-        label_issues_mask=data["label_errors_mask"],
-        labels=data["labels"],
-        pred_probs=data["pred_probs"],
-        rank_by="self_confidence",
-    )
-    scores = rank.get_self_confidence_for_each_label(data["labels"], data["pred_probs"])
-    indices = np.arange(len(scores))[data["label_errors_mask"]]
-    scores = scores[data["label_errors_mask"]]
-    score_idx = sorted(list(zip(scores, indices)), key=lambda y: y[0])  # sort indices by score
-    label_issues_indices2 = [z[1] for z in score_idx]
-    assert all(label_issues_indices == label_issues_indices2)
-
-
-def test_order_label_issues_using_confidence_weighted_entropy_ranking():
-    label_issues_indices = rank.order_label_issues(
-        label_issues_mask=data["label_errors_mask"],
-        labels=data["labels"],
-        pred_probs=data["pred_probs"],
-        rank_by="confidence_weighted_entropy",
-    )
-    scores = rank.get_confidence_weighted_entropy_for_each_label(data["labels"], data["pred_probs"])
-    indices = np.arange(len(scores))[data["label_errors_mask"]]
-    scores = scores[data["label_errors_mask"]]
-    score_idx = sorted(list(zip(scores, indices)), key=lambda y: y[0])  # sort indices by score
-    label_issues_indices2 = [z[1] for z in score_idx]
-    assert all(label_issues_indices == label_issues_indices2)
-
-
 def test_order_label_issues_using_scoring_func_ranking():
 
     # test all scoring methods with the scoring function
-    scoring_methods = ["self_confidence", "normalized_margin", "confidence_weighted_entropy"]
+    scoring_methods_dict = {
+        "self_confidence": rank.get_self_confidence_for_each_label,
+        "normalized_margin": rank.get_normalized_margin_for_each_label,
+        "confidence_weighted_entropy": rank.get_confidence_weighted_entropy_for_each_label,
+    }
+    scoring_methods = scoring_methods_dict.keys()
+
+    indices = np.arange(len(data["label_errors_mask"]))[
+        data["label_errors_mask"]
+    ]  # indices of label issues
 
     for method in scoring_methods:
         label_issues_indices = rank.order_label_issues(
@@ -189,12 +153,25 @@ def test_order_label_issues_using_scoring_func_ranking():
             pred_probs=data["pred_probs"],
             rank_by=method,
         )
+
+        # test scoring function with scoring method passed as arg
         scores = rank.score_label_quality(data["labels"], data["pred_probs"], method=method)
-        indices = np.arange(len(scores))[data["label_errors_mask"]]
         scores = scores[data["label_errors_mask"]]
         score_idx = sorted(list(zip(scores, indices)), key=lambda y: y[0])  # sort indices by score
         label_issues_indices2 = [z[1] for z in score_idx]
-        assert all(label_issues_indices == label_issues_indices2)
+        assert all(
+            label_issues_indices == label_issues_indices2
+        ), f"Test failed with scoring method: {method}"
+
+        # test individual scoring function
+        scoring_func = scoring_methods_dict[method]
+        scores = scoring_func(data["labels"], data["pred_probs"])
+        scores = scores[data["label_errors_mask"]]
+        score_idx = sorted(list(zip(scores, indices)), key=lambda y: y[0])  # sort indices by score
+        label_issues_indices3 = [z[1] for z in score_idx]
+        assert all(
+            label_issues_indices == label_issues_indices3
+        ), f"Test failed with scoring method: {method}"
 
 
 def test_order_label_issues_using_scoring_func_adj_pred_probs_ranking():
