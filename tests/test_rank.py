@@ -132,39 +132,50 @@ def test_bad_rank_by_parameter_error():
         )
 
 
-def test_order_label_issues_using_scoring_func_ranking():
+@pytest.mark.parametrize(
+    "scoring_method_func",
+    [
+        ("self_confidence", rank.get_self_confidence_for_each_label),
+        ("normalized_margin", rank.get_normalized_margin_for_each_label),
+        ("confidence_weighted_entropy", rank.get_confidence_weighted_entropy_for_each_label),
+    ],
+)
+@pytest.mark.parametrize("adj_pred_probs", [False, True])
+def test_order_label_issues_using_scoring_func_ranking(scoring_method_func, adj_pred_probs):
 
     # test all scoring methods with the scoring function
-    scoring_methods_dict = {
-        "self_confidence": rank.get_self_confidence_for_each_label,
-        "normalized_margin": rank.get_normalized_margin_for_each_label,
-        "confidence_weighted_entropy": rank.get_confidence_weighted_entropy_for_each_label,
-    }
-    scoring_methods = scoring_methods_dict.keys()
+
+    method, scoring_func = scoring_method_func
 
     indices = np.arange(len(data["label_errors_mask"]))[
         data["label_errors_mask"]
     ]  # indices of label issues
 
-    for method in scoring_methods:
-        label_issues_indices = rank.order_label_issues(
-            label_issues_mask=data["label_errors_mask"],
-            labels=data["labels"],
-            pred_probs=data["pred_probs"],
-            rank_by=method,
-        )
+    label_issues_indices = rank.order_label_issues(
+        label_issues_mask=data["label_errors_mask"],
+        labels=data["labels"],
+        pred_probs=data["pred_probs"],
+        rank_by=method,
+        rank_by_kwargs={"adj_pred_probs": adj_pred_probs},
+    )
 
-        # test scoring function with scoring method passed as arg
-        scores = rank.score_label_quality(data["labels"], data["pred_probs"], method=method)
-        scores = scores[data["label_errors_mask"]]
-        score_idx = sorted(list(zip(scores, indices)), key=lambda y: y[0])  # sort indices by score
-        label_issues_indices2 = [z[1] for z in score_idx]
-        assert all(
-            label_issues_indices == label_issues_indices2
-        ), f"Test failed with scoring method: {method}"
+    # test scoring function with scoring method passed as arg
+    scores = rank.score_label_quality(
+        data["labels"],
+        data["pred_probs"],
+        method=method,
+        adj_pred_probs=adj_pred_probs,
+    )
+    scores = scores[data["label_errors_mask"]]
+    score_idx = sorted(list(zip(scores, indices)), key=lambda y: y[0])  # sort indices by score
+    label_issues_indices2 = [z[1] for z in score_idx]
+    assert all(
+        label_issues_indices == label_issues_indices2
+    ), f"Test failed with scoring method: {method}"
 
-        # test individual scoring function
-        scoring_func = scoring_methods_dict[method]
+    # test individual scoring function
+    # only test if adj_pred_probs=False because the individual scoring functions do not adjust pred_probs
+    if not adj_pred_probs:
         scores = scoring_func(data["labels"], data["pred_probs"])
         scores = scores[data["label_errors_mask"]]
         score_idx = sorted(list(zip(scores, indices)), key=lambda y: y[0])  # sort indices by score
@@ -172,31 +183,6 @@ def test_order_label_issues_using_scoring_func_ranking():
         assert all(
             label_issues_indices == label_issues_indices3
         ), f"Test failed with scoring method: {method}"
-
-
-def test_order_label_issues_using_scoring_func_adj_pred_probs_ranking():
-
-    # test all scoring methods with the scoring function and setting adj_pred_probs=True
-    scoring_methods = ["self_confidence", "normalized_margin", "confidence_weighted_entropy"]
-
-    for method in scoring_methods:
-        label_issues_indices = rank.order_label_issues(
-            label_issues_mask=data["label_errors_mask"],
-            labels=data["labels"],
-            pred_probs=data["pred_probs"],
-            rank_by=method,
-            rank_by_kwargs={
-                "adj_pred_probs": True
-            },  # adjust predicted probabilities by subtracting class thresholds (as defined in confident learning paper)
-        )
-        scores = rank.score_label_quality(
-            data["labels"], data["pred_probs"], method=method, adj_pred_probs=True
-        )
-        indices = np.arange(len(scores))[data["label_errors_mask"]]
-        scores = scores[data["label_errors_mask"]]
-        score_idx = sorted(list(zip(scores, indices)), key=lambda y: y[0])  # sort indices by score
-        label_issues_indices2 = [z[1] for z in score_idx]
-        assert all(label_issues_indices == label_issues_indices2)
 
 
 def test_subtract_confident_thresholds():
