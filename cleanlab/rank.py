@@ -29,6 +29,7 @@ If you aren't sure which method to use, try `get_normalized_margin_for_each_labe
 
 import numpy as np
 from typing import List
+from cleanlab.utils.label_quality_utils import subtract_confident_thresholds
 
 
 def order_label_issues(
@@ -187,13 +188,18 @@ def score_label_quality_ensemble(
     pred_probs_list: List[np.array],
     method: str = "self_confidence",
     adj_pred_probs: bool = False,
+    weight_ensemble_members_by: str = "uniform",
 ) -> np.array:
     """Returns label quality scores based on predictions from an ensemble of models.
 
-    This requires a list of pred_probs from each model in the ensemble.
-
     This is a function to compute label-quality scores for classification datasets,
     where lower scores indicate labels less likely to be correct.
+
+    Ensemble scoring requires a list of pred_probs from each model in the ensemble.
+
+    For each pred_probs in list, compute label quality score.
+    Take the average of the scores with the chosen weighting scheme determined by weight_ensemble_members_by.
+    Default weight_ensemble_members_by is "uniform" which computes the simple average of scores.
 
     Score is between 0 and 1.
     1 - clean label (given label is likely correct).
@@ -218,6 +224,11 @@ def score_label_quality_ensemble(
 
     adj_pred_probs : bool, default = True
       Adj_pred_probs in the same format expected by the `score_label_quality()` method.
+
+    weight_ensemble_members_by : {"uniform", "accuracy"}, default="uniform"
+      Weighting scheme used to aggregate scores from each model:
+        "uniform": Take the simple average of scores
+        "accuracy": Take weighted average of scores, weighted by model accuracy
 
     Returns
     -------
@@ -248,11 +259,30 @@ def score_label_quality_ensemble(
         scores_list.append(scores)
         accuracy_list.append(accuracy)
 
-    # Weight by accuracy
-    weights = np.array(accuracy_list) / sum(accuracy_list)
+    # Transform list of scores into an array of shape (N, M) where M is the number of models in the ensemble
+    scores_ensemble = np.vstack(scores_list).T
 
-    # Aggregate scores with weighted average
-    label_quality_scores = (np.vstack(scores_list).T * weights).sum(axis=1)
+    # Aggregate scores with chosen weighting scheme
+    if weight_ensemble_members_by == "uniform":
+
+        # Uniform weights (simple average)
+        label_quality_scores = scores_ensemble.mean(axis=1)
+
+    elif weight_ensemble_members_by == "accuracy":
+
+        # Weight by accuracy
+        weights = np.array(accuracy_list) / sum(accuracy_list)
+
+        # Aggregate scores with weighted average
+        label_quality_scores = (scores_ensemble * weights).sum(axis=1)
+
+    else:
+        raise ValueError(
+            f"""
+            {weight_ensemble_members_by} is not a valid weighting method for weight_ensemble_members_by!
+            Please choose a valid weight_ensemble_members_by: uniform, accuracy
+            """
+        )
 
     return label_quality_scores
 
@@ -396,70 +426,3 @@ def get_entropy(pred_probs: np.array) -> np.array:
 
     # Note that dividing by log(num_classes) changes the base of the log which rescales entropy to 0-1 range
     return -np.sum(pred_probs * np.log(pred_probs), axis=1) / np.log(num_classes)
-
-
-def subtract_confident_thresholds(labels: np.array, pred_probs: np.array) -> np.array:
-    """Returns adjusted predicted probabilities by subtracting the class confident thresholds and renormalizing.
-
-    The confident class threshold for a class j is the expected (average) "self-confidence" for class j.
-
-    The purpose of this adjustment is to handle class imbalance.
-
-    Parameters
-    ----------
-    labels : np.array
-      A discrete vector of noisy labels, i.e. some labels may be erroneous.
-      *Format requirements*: for dataset with K classes, labels must be in {0,1,...,K-1}.
-
-    pred_probs : np.array (shape (N, K))
-      P(label=k|x) is a matrix with K model-predicted probabilities.
-      Each row of this matrix corresponds to an example x and contains the model-predicted
-      probabilities that x belongs to each possible class.
-      The columns must be ordered such that these probabilities correspond to class 0,1,2,...
-      `pred_probs` should have been computed using 3 (or higher) fold cross-validation.
-
-    Returns
-    -------
-    pred_probs_adj : np.array (float)
-    """
-
-    # Get expected (average) self-confidence for each class
-    confident_thresholds = get_confident_thresholds(labels, pred_probs)
-
-    # Subtract the class confident thresholds
-    pred_probs_adj = pred_probs - confident_thresholds
-
-    # Renormalize by shifting data to take care of negative values from the subtraction
-    pred_probs_adj += 1
-    pred_probs_adj /= pred_probs_adj.sum(axis=1)[:, None]
-
-    return pred_probs_adj
-
-
-def get_confident_thresholds(labels: np.array, pred_probs: np.array) -> np.array:
-    """Returns expected (average) "self-confidence" for each class.
-
-    The confident class threshold for a class j is the expected (average) "self-confidence" for class j.
-
-    Parameters
-    ----------
-    labels : np.array
-      A discrete vector of noisy labels, i.e. some labels may be erroneous.
-      *Format requirements*: for dataset with K classes, labels must be in {0,1,...,K-1}.
-
-    pred_probs : np.array (shape (N, K))
-      P(label=k|x) is a matrix with K model-predicted probabilities.
-      Each row of this matrix corresponds to an example x and contains the model-predicted
-      probabilities that x belongs to each possible class.
-      The columns must be ordered such that these probabilities correspond to class 0,1,2,...
-      `pred_probs` should have been computed using 3 (or higher) fold cross-validation.
-
-    Returns
-    -------
-    confident_thresholds : np.array (shape (K,))
-
-    """
-    confident_thresholds = np.array(
-        [np.mean(pred_probs[:, k][labels == k]) for k in range(pred_probs.shape[1])]
-    )
-    return confident_thresholds

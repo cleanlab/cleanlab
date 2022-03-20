@@ -14,12 +14,13 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
-from cleanlab import rank
 import numpy as np
+import pytest
+from cleanlab import rank
+from cleanlab.utils.label_quality_utils import subtract_confident_thresholds
 from cleanlab.noise_generation import generate_noise_matrix_from_trace
 from cleanlab.noise_generation import generate_noisy_labels
 from cleanlab import count
-import pytest
 
 
 def make_data(
@@ -190,7 +191,7 @@ def test_subtract_confident_thresholds():
     pred_probs = data["pred_probs"]
 
     # subtract confident class thresholds and renormalize
-    pred_probs_adj = rank.subtract_confident_thresholds(labels, pred_probs)
+    pred_probs_adj = subtract_confident_thresholds(labels, pred_probs)
 
     assert (pred_probs_adj > 0).all()  # all pred_prob are positive numbers
     assert (
@@ -206,7 +207,9 @@ def test_subtract_confident_thresholds():
         "confidence_weighted_entropy",
     ],
 )
-def test_ensemble_scoring_func(method):
+@pytest.mark.parametrize("adj_pred_probs", [False, True])
+@pytest.mark.parametrize("weight_ensemble_members_by", ["uniform", "accuracy"])
+def test_ensemble_scoring_func(method, adj_pred_probs, weight_ensemble_members_by):
 
     labels = data["labels"]
     pred_probs = data["pred_probs"]
@@ -217,12 +220,16 @@ def test_ensemble_scoring_func(method):
 
     # get label quality score with single pred_probs
     label_quality_scores = rank.score_label_quality(
-        labels, pred_probs, method=method, adj_pred_probs=True
+        labels, pred_probs, method=method, adj_pred_probs=adj_pred_probs
     )
 
     # get ensemble label quality score
     label_quality_scores_ensemble = rank.score_label_quality_ensemble(
-        labels, pred_probs_list, method=method, adj_pred_probs=True
+        labels,
+        pred_probs_list,
+        method=method,
+        adj_pred_probs=adj_pred_probs,
+        weight_ensemble_members_by=weight_ensemble_members_by,
     )
 
     # if all pred_probs in the list are the same, then ensemble score should be the same as the regular score
