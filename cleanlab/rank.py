@@ -30,7 +30,7 @@ If you aren't sure which method to use, try `get_normalized_margin_for_each_labe
 import numpy as np
 from typing import List
 import warnings
-from cleanlab.utils.label_quality_utils import subtract_confident_thresholds
+from cleanlab.utils.label_quality_utils import subtract_confident_thresholds, get_entropy
 
 
 def order_label_issues(
@@ -52,15 +52,10 @@ def order_label_issues(
       Contains True if the index of labels is an error, o.w. false
 
     labels : np.array
-      A discrete vector of noisy labels, i.e. some labels may be erroneous.
-      *Format requirements*: for dataset with K classes, labels must be in {0,1,...,K-1}.
+      Labels in the same format expected by the `score_label_quality()` method.
 
     pred_probs : np.array (shape (N, K))
-      P(label=k|x) is a matrix with K model-predicted probabilities.
-      Each row of this matrix corresponds to an example x and contains the model-predicted
-      probabilities that x belongs to each possible class.
-      The columns must be ordered such that these probabilities correspond to class 0,1,2,...
-      `pred_probs` should have been computed using 3 (or higher) fold cross-validation.
+      Predicted-probabilities in the same format expected by the `score_label_quality()` method.
 
     rank_by : str ['normalized_margin', 'self_confidence', 'confidence_weighted_entropy']
       Method to order label error indices (instead of a bool mask), either:
@@ -98,6 +93,7 @@ def order_label_issues(
 def score_label_quality(
     labels: np.array,
     pred_probs: np.array,
+    *,
     method: str = "self_confidence",
     adj_pred_probs: bool = False,
 ) -> np.array:
@@ -186,10 +182,11 @@ def score_label_quality(
 def score_label_quality_ensemble(
     labels: np.array,
     pred_probs_list: List[np.array],
+    *,
     method: str = "self_confidence",
     adj_pred_probs: bool = False,
-    weight_ensemble_members_by: str = "uniform",
-    verbose: int = 0,
+    weight_ensemble_members_by: str = "accuracy",
+    verbose: int = 1,
 ) -> np.array:
     """Returns label quality scores based on predictions from an ensemble of models.
 
@@ -200,7 +197,6 @@ def score_label_quality_ensemble(
 
     For each pred_probs in list, compute label quality score.
     Take the average of the scores with the chosen weighting scheme determined by weight_ensemble_members_by.
-    Default weight_ensemble_members_by is "uniform" which computes the simple average of scores.
 
     Score is between 0 and 1.
     1 - clean label (given label is likely correct).
@@ -213,7 +209,8 @@ def score_label_quality_ensemble(
 
     pred_probs_list : List of np.array (shape (N, K))
       Each element in this list should be an array of pred_probs in the same format
-      expected by the `score_label_quality()` method
+      expected by the `score_label_quality()` method.
+      Each element of pred_probs_list corresponds to the predictions from one model for all datapoints.
 
     method : {"self_confidence", "normalized_margin", "confidence_weighted_entropy"}, default="self_confidence"
       Label quality scoring method. Default is "self_confidence".
@@ -226,13 +223,13 @@ def score_label_quality_ensemble(
     adj_pred_probs : bool, default = False
       Adj_pred_probs in the same format expected by the `score_label_quality()` method.
 
-    weight_ensemble_members_by : {"uniform", "accuracy"}, default="uniform"
+    weight_ensemble_members_by : {"uniform", "accuracy"}, default="accuracy"
       Weighting scheme used to aggregate scores from each model:
         "uniform": Take the simple average of scores
         "accuracy": Take weighted average of scores, weighted by model accuracy
 
-    verbose : int
-      If 0, no print statements. If 1, print weighting scheme and accuracy of each model.
+    verbose : int, default = 1
+      Set this = 0 to suppress all print statements.
 
     Returns
     -------
@@ -240,9 +237,6 @@ def score_label_quality_ensemble(
 
     See Also
     --------
-    self_confidence
-    normalized_margin
-    confidence_weighted_entropy
     score_label_quality
 
     """
@@ -274,21 +268,16 @@ def score_label_quality_ensemble(
             method=method,
             adj_pred_probs=adj_pred_probs,
         )
-        accuracy = (pred_probs.argmax(axis=1) == labels).mean()
         scores_list.append(scores)
-        accuracy_list.append(accuracy)
+
+        # Only compute if weighting by accuracy
+        if weight_ensemble_members_by == "accuracy":
+            accuracy = (pred_probs.argmax(axis=1) == labels).mean()
+            accuracy_list.append(accuracy)
 
     # Print statements if enabled by verbose
     if verbose:
         print(f"Weighting scheme for ensemble: {weight_ensemble_members_by}")
-
-        # Only print if the user specified to weight by accuracy
-        if weight_ensemble_members_by == "accuracy":
-            print(
-                "Ensemble members will be weighted by: accuracy of member / (sum of accuracy from all members)"
-            )
-            for i, acc in enumerate(accuracy_list):
-                print(f"  Model {i} accuracy: {acc}")
 
     # Transform list of scores into an array of shape (N, M) where M is the number of models in the ensemble
     scores_ensemble = np.vstack(scores_list).T
@@ -303,6 +292,14 @@ def score_label_quality_ensemble(
 
         # Weight by accuracy
         weights = np.array(accuracy_list) / sum(accuracy_list)
+
+        if verbose:
+            print(
+                "Ensemble members will be weighted by: accuracy of member / (sum of accuracy from all members)"
+            )
+            for i, acc in enumerate(accuracy_list):
+                print(f"  Model {i} accuracy : {acc}")
+                print(f"  Model {i} weights  : {weights[i]}")
 
         # Aggregate scores with weighted average
         label_quality_scores = (scores_ensemble * weights).sum(axis=1)
@@ -360,7 +357,8 @@ def get_normalized_margin_for_each_label(
     This is a function to compute label-quality scores for classification datasets,
     where lower scores indicate labels less likely to be correct.
 
-    The normalized margin is (p(label = k) - max(p(label != k))), i.e. the probability
+    Letting k denote the given label for a datapoint, the normalized margin is
+    (p(label = k) - max(p(label != k))), i.e. the probability
     of the given label minus the probability of the argmax label that is not
     the given label. This gives you an idea of how likely an example is BOTH
     its given label AND not another label, and therefore, scores its likelihood
@@ -427,33 +425,3 @@ def get_confidence_weighted_entropy_for_each_label(
     label_quality_scores = np.log(label_quality_scores + 1) / label_quality_scores
 
     return label_quality_scores
-
-
-def get_entropy(pred_probs: np.array) -> np.array:
-    """Returns the normalized entropy of pred_probs.
-
-    Read more about normalized entropy here: https://en.wikipedia.org/wiki/Entropy_(information_theory)
-
-    Normalized entropy is used in active learning for uncertainty sampling: https://towardsdatascience.com/uncertainty-sampling-cheatsheet-ec57bc067c0b
-
-    Normalized entropy is between 0 and 1. Higher values of entropy indicate higher uncertainty in the model's prediction of the correct label.
-
-    Parameters
-    ----------
-    pred_probs : np.array (shape (N, K))
-      P(label=k|x) is a matrix with K model-predicted probabilities.
-      Each row of this matrix corresponds to an example x and contains the model-predicted
-      probabilities that x belongs to each possible class.
-      The columns must be ordered such that these probabilities correspond to class 0,1,2,...
-      `pred_probs` should have been computed using 3 (or higher) fold cross-validation.
-
-    Returns
-    -------
-    entropy : np.array (float)
-
-    """
-
-    num_classes = pred_probs.shape[1]
-
-    # Note that dividing by log(num_classes) changes the base of the log which rescales entropy to 0-1 range
-    return -np.sum(pred_probs * np.log(pred_probs), axis=1) / np.log(num_classes)

@@ -80,3 +80,35 @@ def subtract_confident_thresholds(labels: np.array, pred_probs: np.array) -> np.
     pred_probs_adj /= pred_probs_adj.sum(axis=1)[:, None]
 
     return pred_probs_adj
+
+
+def get_entropy(pred_probs: np.array) -> np.array:
+    """Returns the normalized entropy of pred_probs.
+
+    Normalized entropy is between 0 and 1. Higher values of entropy indicate higher uncertainty in the model's prediction of the correct label.
+
+    Read more about normalized entropy here: https://en.wikipedia.org/wiki/Entropy_(information_theory)
+
+    Normalized entropy is used in active learning for uncertainty sampling: https://towardsdatascience.com/uncertainty-sampling-cheatsheet-ec57bc067c0b
+
+    Unlike label-quality scores, entropy only depends on the model's predictions, not the given label.
+
+    Parameters
+    ----------
+    pred_probs : np.array (shape (N, K))
+      P(label=k|x) is a matrix with K model-predicted probabilities.
+      Each row of this matrix corresponds to an example x and contains the model-predicted
+      probabilities that x belongs to each possible class.
+      The columns must be ordered such that these probabilities correspond to class 0,1,2,...
+      `pred_probs` should have been computed using 3 (or higher) fold cross-validation.
+
+    Returns
+    -------
+    entropy : np.array (float)
+
+    """
+
+    num_classes = pred_probs.shape[1]
+
+    # Note that dividing by log(num_classes) changes the base of the log which rescales entropy to 0-1 range
+    return -np.sum(pred_probs * np.log(pred_probs), axis=1) / np.log(num_classes)

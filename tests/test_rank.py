@@ -254,3 +254,22 @@ def test_bad_weight_ensemble_members_by_parameter_error():
             pred_probs_list,
             weight_ensemble_members_by="not_a_real_method",  # this should raise ValueError
         )
+
+
+def test_bad_pred_probs_list_parameter_error():
+    with pytest.raises(AssertionError) as e:
+
+        labels = data["labels"]
+        pred_probs = data["pred_probs"]
+
+        # baseline scenario where all the pred_probs are the same in the ensemble list
+        num_repeat = 3
+        pred_probs_list = np.repeat(
+            [pred_probs], num_repeat, axis=0
+        )  # this should be a list not an array
+
+        # AssertionError because pred_probs_list is an array
+        _ = rank.score_label_quality_ensemble(labels, pred_probs_list)
+
+        # AssertionError because pred_probs_list is empty
+        _ = rank.score_label_quality_ensemble(labels=labels, pred_probs_list=[])
