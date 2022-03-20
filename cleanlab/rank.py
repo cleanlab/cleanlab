@@ -131,11 +131,10 @@ def score_label_quality(
         :func:`normalized_margin`
         :func:`confidence_weighted_entropy`
 
-    adj_pred_probs : bool, default = True
-      Account for class-imbalance in the label-quality scoring (by adjusting predicted probabilities
-      via subtraction of class confident thresholds and renormalization).
-      Set this = False if you prefer to emphasize label issues in classes that are more common
-      throughout the dataset
+    adj_pred_probs : bool, default = False
+      Account for class-imbalance in the label-quality scoring by adjusting predicted probabilities
+      via subtraction of class confident thresholds and renormalization.
+      Set this = True if you prefer to account for class-imbalance.
       See paper "Confident Learning: Estimating Uncertainty in Dataset Labels" by Northcutt et al.
       https://arxiv.org/abs/1911.00068
 
@@ -224,7 +223,7 @@ def score_label_quality_ensemble(
         :func:`normalized_margin`
         :func:`confidence_weighted_entropy`
 
-    adj_pred_probs : bool, default = True
+    adj_pred_probs : bool, default = False
       Adj_pred_probs in the same format expected by the `score_label_quality()` method.
 
     weight_ensemble_members_by : {"uniform", "accuracy"}, default="uniform"
@@ -285,8 +284,11 @@ def score_label_quality_ensemble(
 
         # Only print if the user specified to weight by accuracy
         if weight_ensemble_members_by == "accuracy":
+            print(
+                "Ensemble members will be weighted by: accuracy of member / (sum of accuracy from all members)"
+            )
             for i, acc in enumerate(accuracy_list):
-                print(f"Model {i} accuracy: {acc}")
+                print(f"  Model {i} accuracy: {acc}")
 
     # Transform list of scores into an array of shape (N, M) where M is the number of models in the ensemble
     scores_ensemble = np.vstack(scores_list).T
