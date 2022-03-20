@@ -29,6 +29,7 @@ If you aren't sure which method to use, try `get_normalized_margin_for_each_labe
 
 import numpy as np
 from typing import List
+import warnings
 from cleanlab.utils.label_quality_utils import subtract_confident_thresholds
 
 
@@ -189,6 +190,7 @@ def score_label_quality_ensemble(
     method: str = "self_confidence",
     adj_pred_probs: bool = False,
     weight_ensemble_members_by: str = "uniform",
+    verbose: int = 0,
 ) -> np.array:
     """Returns label quality scores based on predictions from an ensemble of models.
 
@@ -230,6 +232,9 @@ def score_label_quality_ensemble(
         "uniform": Take the simple average of scores
         "accuracy": Take weighted average of scores, weighted by model accuracy
 
+    verbose : int
+      If 0, no print statements. If 1, print weighting scheme and accuracy of each model.
+
     Returns
     -------
     label_quality_scores : np.array (float)
@@ -242,6 +247,21 @@ def score_label_quality_ensemble(
     score_label_quality
 
     """
+
+    # Check pred_probs_list for errors
+    assert isinstance(
+        pred_probs_list, list
+    ), f"pred_probs_list needs to be a list. Provided pred_probs_list is a {type(pred_probs_list)}"
+
+    assert len(pred_probs_list) > 0, "pred_probs_list is empty."
+
+    if len(pred_probs_list) == 1:
+        warnings.warn(
+            """
+            pred_probs_list only has one element. 
+            Consider using score_label_quality() if you only have a single array of pred_probs.
+            """
+        )
 
     # Generate scores for each model's pred_probs
     scores_list = []
@@ -258,6 +278,15 @@ def score_label_quality_ensemble(
         accuracy = (pred_probs.argmax(axis=1) == labels).mean()
         scores_list.append(scores)
         accuracy_list.append(accuracy)
+
+    # Print statements if enabled by verbose
+    if verbose:
+        print(f"Weighting scheme for ensemble: {weight_ensemble_members_by}")
+
+        # Only print if the user specified to weight by accuracy
+        if weight_ensemble_members_by == "accuracy":
+            for i, acc in enumerate(accuracy_list):
+                print(f"Model {i} accuracy: {acc}")
 
     # Transform list of scores into an array of shape (N, M) where M is the number of models in the ensemble
     scores_ensemble = np.vstack(scores_list).T
