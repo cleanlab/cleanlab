@@ -237,3 +237,20 @@ def test_ensemble_scoring_func(method, adj_pred_probs, weight_ensemble_members_b
     assert (
         abs(label_quality_scores - label_quality_scores_ensemble) < 1e-6
     ).all(), f"Test failed with scoring method: {method}"
+
+
+def test_bad_weight_ensemble_members_by_parameter_error():
+    with pytest.raises(ValueError) as e:
+
+        labels = data["labels"]
+        pred_probs = data["pred_probs"]
+
+        # baseline scenario where all the pred_probs are the same in the ensemble list
+        num_repeat = 3
+        pred_probs_list = list(np.repeat([pred_probs], num_repeat, axis=0))
+
+        _ = rank.score_label_quality_ensemble(
+            labels,
+            pred_probs_list,
+            weight_ensemble_members_by="not_a_real_method",  # this should raise ValueError
+        )
