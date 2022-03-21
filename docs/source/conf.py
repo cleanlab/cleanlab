@@ -104,16 +104,33 @@ autodoc_default_options = {
 # Subclasses should show parent classes docstrings if they don't override them.
 autodoc_inherit_docstrings = True
 
+# -- Variables Setting ---------------------------------------------------
+
+# Determine doc site URL (DOCS_SITE_URL)
+# Check if it's running in production repo
+if os.getenv("GITHUB_REPOSITORY") == "cleanlab/cleanlab":
+    DOCS_SITE_URL = "/"
+else:
+    DOCS_SITE_URL = "/cleanlab-docs/"
+
+gh_env_file = os.getenv("GITHUB_ENV")
+if gh_env_file is not None:
+    with open(gh_env_file, "a") as f:
+        f.write(f"\nDOCS_SITE_URL={DOCS_SITE_URL}")  # Set to Environment Var
+
+GITHUB_REPOSITORY = os.getenv("GITHUB_REPOSITORY") or "cleanlab/cleanlab"
+GITHUB_REF_NAME = os.getenv("GITHUB_REF_NAME") or "master"
+
+# Pass additional variables to Jinja templates
+html_context = {
+    "DOCS_SITE_URL": DOCS_SITE_URL,
+}
+
 # -- nbsphinx Configuration ---------------------------------------------------
 
 # This is processed by Jinja2 and inserted before each notebook
-nbsphinx_prolog = """
-{% if versions %}
-    {% set docver = current_version.name %}
-{% else %}
-    {% set docver = "master" %}
-{% endif %}
-
+nbsphinx_prolog = (
+    """
 {% set docname = env.doc2path(env.docname, base=None) %}
 
 .. raw:: html
@@ -135,7 +152,11 @@ nbsphinx_prolog = """
             const h1_element = document.getElementsByTagName("h1");
             h1_element[0].insertAdjacentHTML("afterend", `
             <p>
-                <a style="background-color:white;color:black;padding:4px 12px;text-decoration:none;display:inline-block;border-radius:8px;box-shadow:0 2px 4px 0 rgba(0, 0, 0, 0.2), 0 3px 10px 0 rgba(0, 0, 0, 0.19)" href="https://colab.research.google.com/github/cleanlab/cleanlab/blob/{{ docver|e }}/docs/source/{{ docname|e }}" target="_blank">
+                <a style="background-color:white;color:black;padding:4px 12px;text-decoration:none;display:inline-block;border-radius:8px;box-shadow:0 2px 4px 0 rgba(0, 0, 0, 0.2), 0 3px 10px 0 rgba(0, 0, 0, 0.19)" href="https://colab.research.google.com/github/"""
+    + GITHUB_REPOSITORY
+    + """/blob/"""
+    + GITHUB_REF_NAME
+    + """/docs/source/{{ docname|e }}" target="_blank">
                 <img src="https://colab.research.google.com/img/colab_favicon_256px.png" alt="Google Colab Logo" style="width:40px;height:40px;vertical-align:middle">
                 <span style="vertical-align:middle">Run in Google Colab</span>
                 </a>
@@ -144,27 +165,12 @@ nbsphinx_prolog = """
         })
 
     </script>
-
 """
+)
 
 # Change this to "always" before running in the doc's CI/CD server
 if os.getenv("CI"):
     nbsphinx_execute = "always"
-
-# Determine doc site URL (DOCS_SITE_URL)
-
-# Check if it's running in production repo
-if os.getenv("GITHUB_REPOSITORY") == "cleanlab/cleanlab":
-    DOCS_SITE_URL = "/"
-else:
-    DOCS_SITE_URL = "/cleanlab-docs/"
-
-gh_env_file = os.getenv("GITHUB_ENV")
-if gh_env_file is not None:
-    with open(gh_env_file, "a") as f:
-        f.write(f"\nDOCS_SITE_URL={DOCS_SITE_URL}")  # Set to Environment Var
-
-html_context = {"DOCS_SITE_URL": DOCS_SITE_URL}  # Set to template var
 
 # -- Options for HTML output -------------------------------------------------
 
