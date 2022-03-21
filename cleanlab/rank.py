@@ -94,7 +94,7 @@ def score_label_quality(
     labels: np.array,
     pred_probs: np.array,
     *,
-    method: str = "self_confidence",
+    method: str = "normalized_margin",
     adj_pred_probs: bool = False,
 ) -> np.array:
     """Returns label quality scores for each datapoint.
@@ -119,8 +119,14 @@ def score_label_quality(
       The columns must be ordered such that these probabilities correspond to class 0,1,2,...
       `pred_probs` should have been computed using 3 (or higher) fold cross-validation.
 
-    method : {"self_confidence", "normalized_margin", "confidence_weighted_entropy"}, default="self_confidence"
-      Label quality scoring method. Default is "self_confidence".
+    method : {"self_confidence", "normalized_margin", "confidence_weighted_entropy"}, default="normalized_margin"
+      Label quality scoring method. Default is "normalized_margin".
+
+      Self-confidence works better for finding out-of-distribution (OOD) examples, weird examples, bad examples,
+      multi-label, and other types of label errors.
+
+      Normalized margin works better for finding class conditional label errors where
+      there is another label in the class that is better than the given label.
 
       .. seealso::
         :func:`self_confidence`
@@ -183,7 +189,7 @@ def score_label_quality_ensemble(
     labels: np.array,
     pred_probs_list: List[np.array],
     *,
-    method: str = "self_confidence",
+    method: str = "normalized_margin",
     adj_pred_probs: bool = False,
     weight_ensemble_members_by: str = "accuracy",
     verbose: int = 1,
@@ -212,8 +218,9 @@ def score_label_quality_ensemble(
       expected by the `score_label_quality()` method.
       Each element of pred_probs_list corresponds to the predictions from one model for all datapoints.
 
-    method : {"self_confidence", "normalized_margin", "confidence_weighted_entropy"}, default="self_confidence"
-      Label quality scoring method. Default is "self_confidence".
+    method : {"self_confidence", "normalized_margin", "confidence_weighted_entropy"}, default="normalized_margin"
+      Label quality scoring method. Default is "normalized_margin".
+      See `score_label_quality()` for scenarios on when to use each method.
 
       .. seealso::
         :func:`self_confidence`
@@ -327,6 +334,9 @@ def get_self_confidence_for_each_label(
     The self-confidence is the holdout probability that an example belongs to
     its given class label.
 
+    Self-confidence works better for finding out-of-distribution (OOD) examples, weird examples, bad examples,
+    multi-label, and other types of label errors.
+
     Parameters
     ----------
     labels : np.array
@@ -363,6 +373,9 @@ def get_normalized_margin_for_each_label(
     the given label. This gives you an idea of how likely an example is BOTH
     its given label AND not another label, and therefore, scores its likelihood
     of being a good label or a label error.
+
+    Normalized margin works better for finding class conditional label errors where
+    there is another label in the class that is better than the given label.
 
     Parameters
     ----------
