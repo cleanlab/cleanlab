@@ -238,12 +238,12 @@ def find_label_issues(
     confident_joint=None,
     filter_by="prune_by_noise_rate",
     return_indices_ranked_by=None,
+    rank_by_kwargs={},
     multi_label=False,
     frac_noise=1.0,
     num_to_remove_per_class=None,
     n_jobs=None,
     verbose=0,
-    rank_by_kwargs={},
 ):
     """By default, this method returns a boolean mask for the entire dataset where True represents
     a label issue and False represents an example that is confidently/accurately labeled.
@@ -306,6 +306,12 @@ def find_label_issues(
       ``'self_confidence' := [pred_probs[i][labels[i]] for i in label_issues_idx]``
       ``'confidence_weighted_entropy' := entropy(pred_probs) / self_confidence``
 
+    rank_by_kwargs : dict
+      Optional keyword arguments to pass into scoring functions for ranking by label quality score
+      (see: `score_label_quality()` in cleanlab/rank.py).
+      Accepted args include:
+        adj_pred_probs : bool, default = False
+
     multi_label : bool
       If true, labels should be an iterable (e.g. list) of iterables, containing a
       list of labels for each example, instead of just a single label.
@@ -340,11 +346,6 @@ def find_label_issues(
 
     verbose : int
       If 0, no print statements. If 1, prints when multiprocessing happens.
-
-    rank_by_kwargs : dict
-      Optional keyword arguments to pass into `rank.score_label_quality()` method.
-      Accepted args include:
-        adj_pred_probs : bool, default = False
 
     Returns
     -------

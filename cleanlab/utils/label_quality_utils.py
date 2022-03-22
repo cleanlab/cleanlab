@@ -82,7 +82,7 @@ def subtract_confident_thresholds(labels: np.array, pred_probs: np.array) -> np.
     return pred_probs_adj
 
 
-def get_entropy(pred_probs: np.array) -> np.array:
+def get_normalized_entropy(pred_probs: np.array) -> np.array:
     """Returns the normalized entropy of pred_probs.
 
     Normalized entropy is between 0 and 1. Higher values of entropy indicate higher uncertainty in the model's prediction of the correct label.

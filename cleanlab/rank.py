@@ -30,7 +30,7 @@ If you aren't sure which method to use, try `get_normalized_margin_for_each_labe
 import numpy as np
 from typing import List
 import warnings
-from cleanlab.utils.label_quality_utils import subtract_confident_thresholds, get_entropy
+from cleanlab.utils.label_quality_utils import subtract_confident_thresholds, get_normalized_entropy
 
 
 def order_label_issues(
@@ -119,7 +119,7 @@ def score_label_quality(
       `pred_probs` should have been computed using 3 (or higher) fold cross-validation.
 
     method : {"self_confidence", "normalized_margin", "confidence_weighted_entropy"}, default="normalized_margin"
-      Label quality scoring method. Default is "normalized_margin".
+      Label quality scoring method.
 
       Letting `k := labels[i]` and `P := pred_probs[i]` denote the given label and predicted class-probabilities
       for the `i`th datapoint, its score can either be:
@@ -127,11 +127,14 @@ def score_label_quality(
       'self_confidence' := P[k]
       'confidence_weighted_entropy' := entropy(P) / self_confidence
 
-      Self-confidence works better for finding out-of-distribution (OOD) examples, weird examples, bad examples,
-      multi-label, and other types of label errors.
+      Let `C = {0,1,...,K}` denote the classification task's specified set of classes.
 
-      Normalized margin works better for finding class conditional label errors where
-      there is another label in the class that is better than the given label.
+      The normalized_margin score works better for identifying class conditional label errors,
+      i.e. datapoints for which another label in C is appropriate but the given label is not.
+
+      The self_confidence score works better for identifying alternative label issues corresponding
+      to bad datapoints that are: not from any of the classes in C, well-described by 2 or more labels in C,
+      or generally just out-of-distribution (ie. anomalous outliers).
 
       .. seealso::
         :func:`self_confidence`
@@ -437,7 +440,7 @@ def get_confidence_weighted_entropy_for_each_label(
     self_confidence = get_self_confidence_for_each_label(labels, pred_probs)
 
     # Divide entropy by self confidence
-    label_quality_scores = get_entropy(**{"pred_probs": pred_probs}) / self_confidence
+    label_quality_scores = get_normalized_entropy(**{"pred_probs": pred_probs}) / self_confidence
 
     # Rescale
     label_quality_scores = np.log(label_quality_scores + 1) / label_quality_scores
