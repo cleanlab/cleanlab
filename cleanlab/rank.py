@@ -58,10 +58,9 @@ def order_label_issues(
       Predicted-probabilities in the same format expected by the `score_label_quality()` method.
 
     rank_by : str ['normalized_margin', 'self_confidence', 'confidence_weighted_entropy']
-      Method to order label error indices (instead of a bool mask), either:
-        'normalized_margin' := normalized margin (p(label = k) - max(p(label != k)))
-        'self_confidence' := [pred_probs[i][labels[i]] for i in label_issues_idx]
-        'confidence_weighted_entropy' := entropy(pred_probs) / self_confidence
+      Score by which to order label error indices (in increasing order), either:
+      'normalized_margin', 'self_confidence', or 'confidence_weighted_entropy'.
+      See `score_label_quality()` documentation for description of these scores.
 
     rank_by_kwargs : dict
       Optional keyword arguments to pass into `score_label_quality()` method.
@@ -121,6 +120,12 @@ def score_label_quality(
 
     method : {"self_confidence", "normalized_margin", "confidence_weighted_entropy"}, default="normalized_margin"
       Label quality scoring method. Default is "normalized_margin".
+
+      Letting `k := labels[i]` and `P := pred_probs[i]` denote the given label and predicted class-probabilities
+      for the `i`th datapoint, its score can either be:
+      'normalized_margin' := P[k] - max_{k' != k}[ P[k'] ]
+      'self_confidence' := P[k]
+      'confidence_weighted_entropy' := entropy(P) / self_confidence
 
       Self-confidence works better for finding out-of-distribution (OOD) examples, weird examples, bad examples,
       multi-label, and other types of label errors.
