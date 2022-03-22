@@ -1,3 +1,6 @@
+# Looking for `v1.0` of the `cleanlab` docs?
+
+Please refer to the `v1.0.1` documentation; the code for `v1.0` is identical to the code for `v1.0.1`.
 
 # CI/CD for `cleanlab` docs
 
@@ -27,20 +30,20 @@ pip install -r docs/requirements.txt
    * If you're building from a **branch** (usually the `master` branch):
 
    ```
-   sphinx-multiversion docs/source docs/build -D smv_branch_whitelist=YOUR_BRANCH_NAME -D smv_tag_whitelist=None
+   sphinx-multiversion docs/source cleanlab-docs -D smv_branch_whitelist=YOUR_BRANCH_NAME -D smv_tag_whitelist=None
    ```
 
    * If you're building from a **tag** (usually the tag of the stable release):
 
    ```
-   sphinx-multiversion docs/source docs/build -D smv_branch_whitelist=None -D smv_tag_whitelist=YOUR_TAG_NAME
+   sphinx-multiversion docs/source cleanlab-docs -D smv_branch_whitelist=None -D smv_tag_whitelist=YOUR_TAG_NAME
    ```
 
    Note: If you have more than one branch or tag, run the above command again changing only the `YOUR_BRANCH_NAME` or `YOUR_TAG_NAME` placeholder.
 
 4. **[Optional]** To show dynamic versioning and version warning banners:
    
-   * Copy the `docs/_templates/versioning.js` file to the `docs/build` directory.
+   * Copy the `docs/_templates/versioning.js` file to the `cleanlab-docs/` directory.
    
    * In the copied `versioning.js` file:
       
@@ -48,48 +51,41 @@ pip install -r docs/requirements.txt
 
       * find `placeholder_commit_hash` and replace it with the `master` branch commit hash.
 
-5. **[Optional]** To redirect site visits from the port address to the stable version of the docs:
+5. **[Optional]** To redirect site visits from `/` or `/stable` to the stable version of the docs:
 
-   * Copy the `docs/_templates/redirect-to-stable.html` file to the `docs/build` directory and rename it as `index.html`.
+   * Create a copy of the `docs/_templates/redirect-to-stable.html` file and rename it as `index.html`.
 
-   * In this `index.html` file, find `stable_url` and replace it with `./YOUR_LATEST_RELEASE_TAG_NAME/index.html`. Note the single period, `.`, before the subdirectory.
+   * In this `index.html` file, find `stable_url` and replace it with `/cleanlab-docs/YOUR_LATEST_RELEASE_TAG_NAME/index.html`. 
 
-6. **[Optional]** To redirect site visits from the subdirectory `PORT_ADDRESS/stable` to the stable version of the docs:
+   * Copy this `index.html` to:
 
-   * Create a folder called `stable` in `docs/build/stable`
+      * `cleanlab-docs/`, and
 
-   * Copy the `docs/_templates/redirect-to-stable.html` file to the `docs/build` directory and rename it as `index.html`.
+      * `cleanlab-docs/stable/`.
 
-   * In this `index.html` file, find `stable_url` and replace it with `../YOUR_LATEST_RELEASE_TAG_NAME/index.html`. Note the double period, `..`, before the subdirectory.
-
-7. The docs for each branch and/or tag can be found in the `docs/build` directory, open any of the `index.html` in your browser to view the docs:
+6. The docs for each branch and/or tag can be found in the `cleanlab-docs/` directory, open any of the `index.html` in your browser to view the docs:
 
 ```
-docs
+cleanlab-docs
+|   index.html (redirects to stable release of the docs)
+|   versioning.js (for dynamic versioning and version warning banner)
+|
+└───YOUR_BRANCH_NAME (e.g. master)
+│       index.html
+│       ...
 │
-└───build
-│   |   index.html (redirects to stable release of the docs)
-|   |   versioning.js (for dynamic versioning and version warning banner)
-|   |
-│   └───YOUR_BRANCH_NAME (e.g. master)
-│   │       index.html
-│   │       ...
-│   │
-│   └───YOUR_TAG_NAME_1 (e.g. your stable release tag name)
-│   │       index.html
-│   │       ...
-│   │
-│   └───YOUR_TAG_NAME_2 (e.g. an old release tag name)
-│   │       index.html
-│   │       ...
-│   │
-│   └───stable
-│   │       index.html (redirects to stable release of the docs)
-│   │
-│   └───...
+└───YOUR_TAG_NAME_1 (e.g. your stable release tag name)
+│       index.html
+│       ...
+│
+└───YOUR_TAG_NAME_2 (e.g. an old release tag name)
+│       index.html
+│       ...
+│
+└───stable
+│       index.html (redirects to stable release of the docs)
 │
 └───...
-    │   ...
 ```
 
 # Build the `cleanlab` docs **remotely** on GitHub
@@ -133,7 +129,7 @@ We've configured GitHub Actions to run the GitHub Pages workflow (gh-pages.yaml)
 
 ## Build the docs' static site files
 
-6. Run Sphinx with the `sphinx-multiversion` wrapper to build the doc's static site files. These files will be outputted to the `docs/build` directory.
+6. Run Sphinx with the `sphinx-multiversion` wrapper to build the doc's static site files. These files will be outputted to the `cleanlab-docs/` directory.
 
 ## Generate the `versioning.js` file used to store the latest release tag name and commit hash
 
@@ -141,16 +137,14 @@ We've configured GitHub Actions to run the GitHub Pages workflow (gh-pages.yaml)
 
 8. Insert the latest commit hash in the `versioning.js` file. The `index.html` of each doc version will read this as a variable and display it beside the **developer** hyperlink.
 
-9. Copy the `versioning.js` file to the `docs/build` folder. 
+9. Copy the `versioning.js` file to the `cleanlab-docs/` folder. 
 
 ## If the workflow is **triggered by a new release**, generate the redirecting HTML which redirects site visits to the stable version
 
-10. Insert the repository owner name in the `redirect-to-stable.html` file AKA the *redirecting HTML*.
+10. Insert the relative path to the stable docs in the `redirect-to-stable.html` file AKA the *redirecting HTML*.
 
-11. Create a copy of the `redirect-to-stable.html` file to `docs/build` then insert the stable release docs's `index.html` file path prefixed with ``.``
-
-12. Create a copy of the `redirect-to-stable.html` file to `docs/build/stable` then insert the stable release docs's `index.html` file path prefixed with ``..``
+11. Create a copy of the `redirect-to-stable.html` file to `cleanlab-docs/index.html` and `cleanlab-docs/index.html`.
 
 ## Deploy the static files
 
-13. Deploy `docs/build` folder to the `cleanlab/cleanlab-docs` repo's `master branch`.
+12. Deploy `cleanlab-docs/` folder to the `cleanlab/cleanlab-docs` repo's `master branch`.

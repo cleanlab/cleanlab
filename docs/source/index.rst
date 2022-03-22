@@ -1,9 +1,9 @@
-Introduction
-============
+cleanlab documentation
+======================
 
-**cleanlab automatically finds and fixes errors in your ML datasets.**
+`cleanlab <https://github.com/cleanlab/cleanlab>`_ **automatically finds and fixes errors in your ML datasets.**
 
-| This reduces manual work needed to fix data issues and helps train reliable ML models on partially mislabeled datasets. ``cleanlab`` has already found thousands of `label errors <https://labelerrors.com>`_ in ImageNet, MNIST, and other popular ML benchmarking datasets, so let's get started with yours!
+| This reduces manual work needed to fix data issues and helps train reliable ML models on noisy real-world datasets. ``cleanlab`` has already found thousands of `label errors <https://labelerrors.com>`_ in ImageNet, MNIST, and other popular ML benchmarking datasets, so let's get started with yours!
 
 Quickstart
 ==========
@@ -23,7 +23,7 @@ Quickstart
 
       .. code-block:: python
 
-         conda install -c conda-forge cleanlab
+         conda install -c cleanlab cleanlab
 
    .. tab:: source
 
@@ -49,7 +49,7 @@ Setting ``sorted_index_method`` instructs ``cleanlab`` to return the indices of 
       sorted_index_method='self_confidence')
 
 .. important::
-   The predicted probabilities, ``pyx``, from your model **must be out-of-sample**! You should never provide predictions on the same data points used to train the model - this would reflect predictions of an overfitted model, making it unsuitable for finding label errors. To compute the out-of-sample predicted probabilities of the entire dataset, you can use cross-validation.
+   The predicted probabilities, ``psx``, from your model **must be out-of-sample**! You should never provide predictions on the same data points used to train the model - this would reflect predictions of an overfitted model, making it unsuitable for finding label errors. To compute the out-of-sample predicted probabilities of the entire dataset, you can use cross-validation.
 
 ..
    todo - include the url for tf and torch beginner tutorials
@@ -72,12 +72,22 @@ When the ``.fit()`` method is called, it automatically identifies and removes an
 
 .. toctree::
    :hidden:
-   :caption: Get Started
+   :caption: Tutorials
 
    Quickstart <self>
-
+   notebooks/Image_Tut
+   
 .. toctree::
    :caption: API Reference
    :hidden:
 
    cleanlab
+
+.. toctree::
+   :caption: Links
+   :hidden:
+
+   Website <https://cleanlab.ai>
+   GitHub <https://github.com/cleanlab/cleanlab>
+   PyPI <https://pypi.org/project/cleanlab/>
+   Conda <https://anaconda.org/Cleanlab/cleanlab>
