@@ -308,7 +308,7 @@ def find_label_issues(
 
     rank_by_kwargs : dict
       Optional keyword arguments to pass into scoring functions for ranking by label quality score
-      (see: `score_label_quality()` in cleanlab/rank.py).
+      (see: `get_label_quality_scores()` in cleanlab/rank.py).
       Accepted args include:
         adj_pred_probs : bool, default = False
 

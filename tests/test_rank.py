@@ -161,7 +161,7 @@ def test_order_label_issues_using_scoring_func_ranking(scoring_method_func, adj_
     )
 
     # test scoring function with scoring method passed as arg
-    scores = rank.score_label_quality(
+    scores = rank.get_label_quality_scores(
         data["labels"],
         data["pred_probs"],
         method=method,
@@ -219,12 +219,12 @@ def test_ensemble_scoring_func(method, adj_pred_probs, weight_ensemble_members_b
     pred_probs_list = list(np.repeat([pred_probs], num_repeat, axis=0))
 
     # get label quality score with single pred_probs
-    label_quality_scores = rank.score_label_quality(
+    label_quality_scores = rank.get_label_quality_scores(
         labels, pred_probs, method=method, adj_pred_probs=adj_pred_probs
     )
 
     # get ensemble label quality score
-    label_quality_scores_ensemble = rank.score_label_quality_ensemble(
+    label_quality_scores_ensemble = rank.get_label_quality_ensemble_scores(
         labels,
         pred_probs_list,
         method=method,
@@ -249,7 +249,7 @@ def test_bad_weight_ensemble_members_by_parameter_error():
         num_repeat = 3
         pred_probs_list = list(np.repeat([pred_probs], num_repeat, axis=0))
 
-        _ = rank.score_label_quality_ensemble(
+        _ = rank.get_label_quality_ensemble_scores(
             labels,
             pred_probs_list,
             weight_ensemble_members_by="not_a_real_method",  # this should raise ValueError
@@ -269,7 +269,7 @@ def test_bad_pred_probs_list_parameter_error():
         )  # this should be a list not an array
 
         # AssertionError because pred_probs_list is an array
-        _ = rank.score_label_quality_ensemble(labels, pred_probs_list)
+        _ = rank.get_label_quality_ensemble_scores(labels, pred_probs_list)
 
         # AssertionError because pred_probs_list is empty
-        _ = rank.score_label_quality_ensemble(labels=labels, pred_probs_list=[])
+        _ = rank.get_label_quality_ensemble_scores(labels=labels, pred_probs_list=[])

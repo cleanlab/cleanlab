@@ -52,18 +52,18 @@ def order_label_issues(
       Contains True if the index of labels is an error, o.w. false
 
     labels : np.array
-      Labels in the same format expected by the `score_label_quality()` method.
+      Labels in the same format expected by the `get_label_quality_scores()` method.
 
     pred_probs : np.array (shape (N, K))
-      Predicted-probabilities in the same format expected by the `score_label_quality()` method.
+      Predicted-probabilities in the same format expected by the `get_label_quality_scores()` method.
 
     rank_by : str ['normalized_margin', 'self_confidence', 'confidence_weighted_entropy']
       Score by which to order label error indices (in increasing order), either:
       'normalized_margin', 'self_confidence', or 'confidence_weighted_entropy'.
-      See `score_label_quality()` documentation for description of these scores.
+      See `get_label_quality_scores()` documentation for description of these scores.
 
     rank_by_kwargs : dict
-      Optional keyword arguments to pass into `score_label_quality()` method.
+      Optional keyword arguments to pass into `get_label_quality_scores()` method.
       Accepted args include:
         adj_pred_probs : bool, default = False
 
@@ -81,7 +81,9 @@ def order_label_issues(
     label_issues_idx = np.arange(len(labels))[label_issues_mask]
 
     # Calculate label quality scores
-    label_quality_scores = score_label_quality(labels, pred_probs, method=rank_by, **rank_by_kwargs)
+    label_quality_scores = get_label_quality_scores(
+        labels, pred_probs, method=rank_by, **rank_by_kwargs
+    )
 
     # Get label quality scores for label issues
     label_quality_scores_issues = label_quality_scores[label_issues_mask]
@@ -89,7 +91,7 @@ def order_label_issues(
     return label_issues_idx[np.argsort(label_quality_scores_issues)]
 
 
-def score_label_quality(
+def get_label_quality_scores(
     labels: np.array,
     pred_probs: np.array,
     *,
@@ -193,7 +195,7 @@ def score_label_quality(
     return label_quality_scores
 
 
-def score_label_quality_ensemble(
+def get_label_quality_ensemble_scores(
     labels: np.array,
     pred_probs_list: List[np.array],
     *,
@@ -219,16 +221,16 @@ def score_label_quality_ensemble(
     Parameters
     ----------
     labels : np.array
-      Labels in the same format expected by the `score_label_quality()` method.
+      Labels in the same format expected by the `get_label_quality_scores()` method.
 
     pred_probs_list : List of np.array (shape (N, K))
       Each element in this list should be an array of pred_probs in the same format
-      expected by the `score_label_quality()` method.
+      expected by the `get_label_quality_scores()` method.
       Each element of pred_probs_list corresponds to the predictions from one model for all datapoints.
 
     method : {"self_confidence", "normalized_margin", "confidence_weighted_entropy"}, default="normalized_margin"
       Label quality scoring method. Default is "normalized_margin".
-      See `score_label_quality()` for scenarios on when to use each method.
+      See `get_label_quality_scores()` for scenarios on when to use each method.
 
       .. seealso::
         :func:`self_confidence`
@@ -236,7 +238,7 @@ def score_label_quality_ensemble(
         :func:`confidence_weighted_entropy`
 
     adj_pred_probs : bool, default = False
-      Adj_pred_probs in the same format expected by the `score_label_quality()` method.
+      Adj_pred_probs in the same format expected by the `get_label_quality_scores()` method.
 
     weight_ensemble_members_by : {"uniform", "accuracy"}, default="accuracy"
       Weighting scheme used to aggregate scores from each model:
@@ -252,7 +254,7 @@ def score_label_quality_ensemble(
 
     See Also
     --------
-    score_label_quality
+    get_label_quality_scores
 
     """
 
@@ -267,7 +269,7 @@ def score_label_quality_ensemble(
         warnings.warn(
             """
             pred_probs_list only has one element. 
-            Consider using score_label_quality() if you only have a single array of pred_probs.
+            Consider using get_label_quality_scores() if you only have a single array of pred_probs.
             """
         )
 
@@ -277,7 +279,7 @@ def score_label_quality_ensemble(
     for pred_probs in pred_probs_list:
 
         # Calculate scores and accuracy
-        scores = score_label_quality(
+        scores = get_label_quality_scores(
             labels=labels,
             pred_probs=pred_probs,
             method=method,
@@ -348,10 +350,10 @@ def get_self_confidence_for_each_label(
     Parameters
     ----------
     labels : np.array
-      Labels in the same format expected by the `score_label_quality()` method.
+      Labels in the same format expected by the `get_label_quality_scores()` method.
 
     pred_probs : np.array (shape (N, K))
-      Predicted-probabilities in the same format expected by the `score_label_quality()` method.
+      Predicted-probabilities in the same format expected by the `get_label_quality_scores()` method.
 
     Returns
     -------
@@ -389,10 +391,10 @@ def get_normalized_margin_for_each_label(
     ----------
 
     labels : np.array
-      Labels in the same format expected by the `score_label_quality()` method.
+      Labels in the same format expected by the `get_label_quality_scores()` method.
 
     pred_probs : np.array (shape (N, K))
-      Predicted-probabilities in the same format expected by the `score_label_quality()` method.
+      Predicted-probabilities in the same format expected by the `get_label_quality_scores()` method.
 
     Returns
     -------
@@ -424,10 +426,10 @@ def get_confidence_weighted_entropy_for_each_label(
     Parameters
     ----------
     labels : np.array
-      Labels in the same format expected by the `score_label_quality()` method.
+      Labels in the same format expected by the `get_label_quality_scores()` method.
 
     pred_probs : np.array (shape (N, K))
-      Predicted-probabilities in the same format expected by the `score_label_quality()` method.
+      Predicted-probabilities in the same format expected by the `get_label_quality_scores()` method.
 
     Returns
     -------
