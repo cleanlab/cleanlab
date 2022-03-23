@@ -72,16 +72,28 @@ When the ``.fit()`` method is called, it automatically identifies and removes an
 
 .. toctree::
    :hidden:
-   :caption: Tutorials
 
    Quickstart <self>
+
+.. toctree::
+   :hidden:
+   :caption: Tutorials
+
    notebooks/Image_Tut
    
 .. toctree::
    :caption: API Reference
    :hidden:
+   :maxdepth: 3
 
-   cleanlab
+   cleanlab/classification
+   cleanlab/count
+   cleanlab/rank
+   cleanlab/filter
+   cleanlab/noise_generation
+   cleanlab/coteaching
+   cleanlab/example_models/index
+   cleanlab/internal/index
 
 .. toctree::
    :caption: Links

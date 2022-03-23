@@ -169,6 +169,7 @@ nbsphinx_prolog = (
 )
 
 # Change this to "always" before running in the doc's CI/CD server
+nbsphinx_execute = "never"
 if os.getenv("CI"):
     nbsphinx_execute = "always"
 
