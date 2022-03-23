@@ -310,7 +310,7 @@ def find_label_issues(
       Optional keyword arguments to pass into scoring functions for ranking by label quality score
       (see: `get_label_quality_scores()` in cleanlab/rank.py).
       Accepted args include:
-        adj_pred_probs : bool, default = False
+      adj_pred_probs : bool, default = False
 
     multi_label : bool
       If true, labels should be an iterable (e.g. list) of iterables, containing a

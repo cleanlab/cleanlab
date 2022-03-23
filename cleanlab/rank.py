@@ -65,7 +65,7 @@ def order_label_issues(
     rank_by_kwargs : dict
       Optional keyword arguments to pass into `get_label_quality_scores()` method.
       Accepted args include:
-        adj_pred_probs : bool, default = False
+      adj_pred_probs : bool, default = False
 
     Returns
     -------
