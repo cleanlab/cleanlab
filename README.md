@@ -56,11 +56,9 @@ Past release notes and **future features planned** is available [here](https://g
 
 ## So fresh, so `cleanlab`
 
-`cleanlab` finds and cleans label issues in any dataset using [state-of-the-art algorithms](https://arxiv.org/abs/1911.00068) to find label issues, characterize noise, and learn in spite of it. `cleanlab` is fast: its built on optimized algorithms and parallelized across CPU threads automatically. `cleanlab` is powered by [provable guarantees](https://arxiv.org/abs/1911.00068) of exact noise estimation and label error finding in realistic cases when model output probabilities are erroneous. `cleanlab` supports multi-label, multiclass, sparse matrices, etc. By default, `cleanlab` requires no hyper-parameters.
+`cleanlab` finds and cleans label issues in any dataset using [state-of-the-art algorithms](https://arxiv.org/abs/1911.00068) to find label issues, characterize noise, and learn in spite of it. `cleanlab` is fast: its built on optimized algorithms and parallelized across CPU threads automatically. `cleanlab` is powered by [provable guarantees](https://arxiv.org/abs/1911.00068) of exact noise estimation and label error finding in realistic cases when model output probabilities are erroneous. `cleanlab` supports many classification tasks: multi-label, multiclass, sparse matrices, etc. By default, `cleanlab` requires no hyper-parameters.
 
-`cleanlab` implements the family of theory and algorithms called [confident learning](https://arxiv.org/abs/1911.00068) with provable guarantees of exact noise estimation and label error finding (even when model output probabilities are noisy/imperfect).
-
-`cleanlab` supports many classification tasks: multi-label, multiclass, sparse matrices, etc.
+`cleanlab` implements the family of theory and algorithms called [confident learning](https://arxiv.org/abs/1911.00068) with provable guarantees of exact noise estimation and label error finding (even when model output probabilities are imperfect).
 
 `cleanlab` is:
 
