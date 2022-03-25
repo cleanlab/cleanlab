@@ -49,7 +49,9 @@ def _subtract_confident_thresholds(labels: np.array, pred_probs: np.array) -> np
 
     # Renormalize by shifting data to take care of negative values from the subtraction
     pred_probs_adj += 1
-    pred_probs_adj /= pred_probs_adj.sum(axis=1)[:, None]
+    pred_probs_adj /= pred_probs_adj.sum(axis=1)[
+        :, None
+    ]  # The [:, None] adds a dimension to make the /= operator work for broadcasting.
 
     return pred_probs_adj
 
