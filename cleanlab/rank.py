@@ -187,6 +187,11 @@ def get_label_quality_scores(
 
     # Adjust predicted probabilities
     if adjust_pred_probs:
+
+        # Check if adjust_pred_probs is supported for the chosen method
+        if method == "confidence_weighted_entropy":
+            raise ValueError(f"adjust_pred_probs is not currently supported for {method}.")
+
         pred_probs = _subtract_confident_thresholds(labels, pred_probs)
 
     # Pass keyword arguments for scoring function

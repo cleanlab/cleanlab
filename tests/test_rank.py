@@ -273,3 +273,16 @@ def test_bad_pred_probs_list_parameter_error():
 
         # AssertionError because pred_probs_list is empty
         _ = rank.get_label_quality_ensemble_scores(labels=labels, pred_probs_list=[])
+
+
+def test_unsupported_method_for_adjust_pred_probs():
+    with pytest.raises(ValueError) as e:
+
+        labels = data["labels"]
+        pred_probs = data["pred_probs"]
+
+        # method that do not support adjust_pred_probs
+        # note: use a list of methods if there are multiple methods that do not support adjust_pred_probs
+        method = "confidence_weighted_entropy"
+
+        _ = rank.get_label_quality_scores(labels, pred_probs, adjust_pred_probs=True, method=method)
