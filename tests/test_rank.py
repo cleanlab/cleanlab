@@ -148,42 +148,47 @@ def test_order_label_issues_using_scoring_func_ranking(scoring_method_func, adju
 
     method, scoring_func = scoring_method_func
 
-    indices = np.arange(len(data["label_errors_mask"]))[
-        data["label_errors_mask"]
-    ]  # indices of label issues
+    # check if method supports adjust_pred_probs
+    if not (adjust_pred_probs == True and method == "confidence_weighted_entropy"):
 
-    label_issues_indices = rank.order_label_issues(
-        label_issues_mask=data["label_errors_mask"],
-        labels=data["labels"],
-        pred_probs=data["pred_probs"],
-        rank_by=method,
-        rank_by_kwargs={"adjust_pred_probs": adjust_pred_probs},
-    )
+        indices = np.arange(len(data["label_errors_mask"]))[
+            data["label_errors_mask"]
+        ]  # indices of label issues
 
-    # test scoring function with scoring method passed as arg
-    scores = rank.get_label_quality_scores(
-        data["labels"],
-        data["pred_probs"],
-        method=method,
-        adjust_pred_probs=adjust_pred_probs,
-    )
-    scores = scores[data["label_errors_mask"]]
-    score_idx = sorted(list(zip(scores, indices)), key=lambda y: y[0])  # sort indices by score
-    label_issues_indices2 = [z[1] for z in score_idx]
-    assert all(
-        label_issues_indices == label_issues_indices2
-    ), f"Test failed with scoring method: {method}"
+        label_issues_indices = rank.order_label_issues(
+            label_issues_mask=data["label_errors_mask"],
+            labels=data["labels"],
+            pred_probs=data["pred_probs"],
+            rank_by=method,
+            rank_by_kwargs={"adjust_pred_probs": adjust_pred_probs},
+        )
 
-    # test individual scoring function
-    # only test if adjust_pred_probs=False because the individual scoring functions do not adjust pred_probs
-    if not adjust_pred_probs:
-        scores = scoring_func(data["labels"], data["pred_probs"])
+        # test scoring function with scoring method passed as arg
+        scores = rank.get_label_quality_scores(
+            data["labels"],
+            data["pred_probs"],
+            method=method,
+            adjust_pred_probs=adjust_pred_probs,
+        )
         scores = scores[data["label_errors_mask"]]
         score_idx = sorted(list(zip(scores, indices)), key=lambda y: y[0])  # sort indices by score
-        label_issues_indices3 = [z[1] for z in score_idx]
+        label_issues_indices2 = [z[1] for z in score_idx]
         assert all(
-            label_issues_indices == label_issues_indices3
+            label_issues_indices == label_issues_indices2
         ), f"Test failed with scoring method: {method}"
+
+        # test individual scoring function
+        # only test if adjust_pred_probs=False because the individual scoring functions do not adjust pred_probs
+        if not adjust_pred_probs:
+            scores = scoring_func(data["labels"], data["pred_probs"])
+            scores = scores[data["label_errors_mask"]]
+            score_idx = sorted(
+                list(zip(scores, indices)), key=lambda y: y[0]
+            )  # sort indices by score
+            label_issues_indices3 = [z[1] for z in score_idx]
+            assert all(
+                label_issues_indices == label_issues_indices3
+            ), f"Test failed with scoring method: {method}"
 
 
 def test__subtract_confident_thresholds():
@@ -214,29 +219,32 @@ def test_ensemble_scoring_func(method, adjust_pred_probs, weight_ensemble_member
     labels = data["labels"]
     pred_probs = data["pred_probs"]
 
-    # baseline scenario where all the pred_probs are the same in the ensemble list
-    num_repeat = 3
-    pred_probs_list = list(np.repeat([pred_probs], num_repeat, axis=0))
+    # check if method supports adjust_pred_probs
+    if not (adjust_pred_probs == True and method == "confidence_weighted_entropy"):
 
-    # get label quality score with single pred_probs
-    label_quality_scores = rank.get_label_quality_scores(
-        labels, pred_probs, method=method, adjust_pred_probs=adjust_pred_probs
-    )
+        # baseline scenario where all the pred_probs are the same in the ensemble list
+        num_repeat = 3
+        pred_probs_list = list(np.repeat([pred_probs], num_repeat, axis=0))
 
-    # get ensemble label quality score
-    label_quality_scores_ensemble = rank.get_label_quality_ensemble_scores(
-        labels,
-        pred_probs_list,
-        method=method,
-        adjust_pred_probs=adjust_pred_probs,
-        weight_ensemble_members_by=weight_ensemble_members_by,
-    )
+        # get label quality score with single pred_probs
+        label_quality_scores = rank.get_label_quality_scores(
+            labels, pred_probs, method=method, adjust_pred_probs=adjust_pred_probs
+        )
 
-    # if all pred_probs in the list are the same, then ensemble score should be the same as the regular score
-    # account for small precision error due to averaging of scores
-    assert (
-        abs(label_quality_scores - label_quality_scores_ensemble) < 1e-6
-    ).all(), f"Test failed with scoring method: {method}"
+        # get ensemble label quality score
+        label_quality_scores_ensemble = rank.get_label_quality_ensemble_scores(
+            labels,
+            pred_probs_list,
+            method=method,
+            adjust_pred_probs=adjust_pred_probs,
+            weight_ensemble_members_by=weight_ensemble_members_by,
+        )
+
+        # if all pred_probs in the list are the same, then ensemble score should be the same as the regular score
+        # account for small precision error due to averaging of scores
+        assert (
+            abs(label_quality_scores - label_quality_scores_ensemble) < 1e-6
+        ).all(), f"Test failed with scoring method: {method}"
 
 
 def test_bad_weight_ensemble_members_by_parameter_error():
