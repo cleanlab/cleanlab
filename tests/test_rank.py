@@ -17,7 +17,7 @@
 import numpy as np
 import pytest
 from cleanlab import rank
-from cleanlab.utils.label_quality_utils import subtract_confident_thresholds
+from cleanlab.utils.label_quality_utils import _subtract_confident_thresholds
 from cleanlab.noise_generation import generate_noise_matrix_from_trace
 from cleanlab.noise_generation import generate_noisy_labels
 from cleanlab import count
@@ -141,8 +141,8 @@ def test_bad_rank_by_parameter_error():
         ("confidence_weighted_entropy", rank.get_confidence_weighted_entropy_for_each_label),
     ],
 )
-@pytest.mark.parametrize("adj_pred_probs", [False, True])
-def test_order_label_issues_using_scoring_func_ranking(scoring_method_func, adj_pred_probs):
+@pytest.mark.parametrize("adjust_pred_probs", [False, True])
+def test_order_label_issues_using_scoring_func_ranking(scoring_method_func, adjust_pred_probs):
 
     # test all scoring methods with the scoring function
 
@@ -157,7 +157,7 @@ def test_order_label_issues_using_scoring_func_ranking(scoring_method_func, adj_
         labels=data["labels"],
         pred_probs=data["pred_probs"],
         rank_by=method,
-        rank_by_kwargs={"adj_pred_probs": adj_pred_probs},
+        rank_by_kwargs={"adjust_pred_probs": adjust_pred_probs},
     )
 
     # test scoring function with scoring method passed as arg
@@ -165,7 +165,7 @@ def test_order_label_issues_using_scoring_func_ranking(scoring_method_func, adj_
         data["labels"],
         data["pred_probs"],
         method=method,
-        adj_pred_probs=adj_pred_probs,
+        adjust_pred_probs=adjust_pred_probs,
     )
     scores = scores[data["label_errors_mask"]]
     score_idx = sorted(list(zip(scores, indices)), key=lambda y: y[0])  # sort indices by score
@@ -175,8 +175,8 @@ def test_order_label_issues_using_scoring_func_ranking(scoring_method_func, adj_
     ), f"Test failed with scoring method: {method}"
 
     # test individual scoring function
-    # only test if adj_pred_probs=False because the individual scoring functions do not adjust pred_probs
-    if not adj_pred_probs:
+    # only test if adjust_pred_probs=False because the individual scoring functions do not adjust pred_probs
+    if not adjust_pred_probs:
         scores = scoring_func(data["labels"], data["pred_probs"])
         scores = scores[data["label_errors_mask"]]
         score_idx = sorted(list(zip(scores, indices)), key=lambda y: y[0])  # sort indices by score
@@ -186,12 +186,12 @@ def test_order_label_issues_using_scoring_func_ranking(scoring_method_func, adj_
         ), f"Test failed with scoring method: {method}"
 
 
-def test_subtract_confident_thresholds():
+def test__subtract_confident_thresholds():
     labels = data["labels"]
     pred_probs = data["pred_probs"]
 
     # subtract confident class thresholds and renormalize
-    pred_probs_adj = subtract_confident_thresholds(labels, pred_probs)
+    pred_probs_adj = _subtract_confident_thresholds(labels, pred_probs)
 
     assert (pred_probs_adj > 0).all()  # all pred_prob are positive numbers
     assert (
@@ -207,9 +207,9 @@ def test_subtract_confident_thresholds():
         "confidence_weighted_entropy",
     ],
 )
-@pytest.mark.parametrize("adj_pred_probs", [False, True])
+@pytest.mark.parametrize("adjust_pred_probs", [False, True])
 @pytest.mark.parametrize("weight_ensemble_members_by", ["uniform", "accuracy"])
-def test_ensemble_scoring_func(method, adj_pred_probs, weight_ensemble_members_by):
+def test_ensemble_scoring_func(method, adjust_pred_probs, weight_ensemble_members_by):
 
     labels = data["labels"]
     pred_probs = data["pred_probs"]
@@ -220,7 +220,7 @@ def test_ensemble_scoring_func(method, adj_pred_probs, weight_ensemble_members_b
 
     # get label quality score with single pred_probs
     label_quality_scores = rank.get_label_quality_scores(
-        labels, pred_probs, method=method, adj_pred_probs=adj_pred_probs
+        labels, pred_probs, method=method, adjust_pred_probs=adjust_pred_probs
     )
 
     # get ensemble label quality score
@@ -228,7 +228,7 @@ def test_ensemble_scoring_func(method, adj_pred_probs, weight_ensemble_members_b
         labels,
         pred_probs_list,
         method=method,
-        adj_pred_probs=adj_pred_probs,
+        adjust_pred_probs=adjust_pred_probs,
         weight_ensemble_members_by=weight_ensemble_members_by,
     )
 

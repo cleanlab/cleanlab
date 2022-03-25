@@ -949,3 +949,32 @@ def converge_estimates(
         )
 
     return py, noise_matrix, inverse_noise_matrix
+
+
+def get_confident_thresholds(labels: np.array, pred_probs: np.array) -> np.array:
+    """Returns expected (average) "self-confidence" for each class.
+
+    The confident class threshold for a class j is the expected (average) "self-confidence" for class j.
+
+    Parameters
+    ----------
+    labels : np.array
+      A discrete vector of noisy labels, i.e. some labels may be erroneous.
+      *Format requirements*: for dataset with K classes, labels must be in {0,1,...,K-1}.
+
+    pred_probs : np.array (shape (N, K))
+      P(label=k|x) is a matrix with K model-predicted probabilities.
+      Each row of this matrix corresponds to an example x and contains the model-predicted
+      probabilities that x belongs to each possible class.
+      The columns must be ordered such that these probabilities correspond to class 0,1,2,...
+      `pred_probs` should have been computed using 3 (or higher) fold cross-validation.
+
+    Returns
+    -------
+    confident_thresholds : np.array (shape (K,))
+
+    """
+    confident_thresholds = np.array(
+        [np.mean(pred_probs[:, k][labels == k]) for k in range(pred_probs.shape[1])]
+    )
+    return confident_thresholds

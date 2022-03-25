@@ -30,7 +30,10 @@ If you aren't sure which method to use, try `get_normalized_margin_for_each_labe
 import numpy as np
 from typing import List
 import warnings
-from cleanlab.utils.label_quality_utils import subtract_confident_thresholds, get_normalized_entropy
+from cleanlab.utils.label_quality_utils import (
+    _subtract_confident_thresholds,
+    get_normalized_entropy,
+)
 
 
 def order_label_issues(
@@ -65,7 +68,7 @@ def order_label_issues(
     rank_by_kwargs : dict
       Optional keyword arguments to pass into `get_label_quality_scores()` method.
       Accepted args include:
-      adj_pred_probs : bool, default = False
+      adjust_pred_probs : bool, default = False
 
     Returns
     -------
@@ -96,7 +99,7 @@ def get_label_quality_scores(
     pred_probs: np.array,
     *,
     method: str = "normalized_margin",
-    adj_pred_probs: bool = False,
+    adjust_pred_probs: bool = False,
 ) -> np.array:
     """Returns label quality scores for each datapoint.
 
@@ -143,7 +146,7 @@ def get_label_quality_scores(
         :func:`normalized_margin`
         :func:`confidence_weighted_entropy`
 
-    adj_pred_probs : bool, default = False
+    adjust_pred_probs : bool, default = False
       Account for class-imbalance in the label-quality scoring by adjusting predicted probabilities
       via subtraction of class confident thresholds and renormalization.
       Set this = True if you prefer to account for class-imbalance.
@@ -160,7 +163,7 @@ def get_label_quality_scores(
     self_confidence
     normalized_margin
     confidence_weighted_entropy
-    subtract_confident_thresholds
+    _subtract_confident_thresholds
 
     """
 
@@ -183,8 +186,8 @@ def get_label_quality_scores(
         )
 
     # Adjust predicted probabilities
-    if adj_pred_probs:
-        pred_probs = subtract_confident_thresholds(labels, pred_probs)
+    if adjust_pred_probs:
+        pred_probs = _subtract_confident_thresholds(labels, pred_probs)
 
     # Pass keyword arguments for scoring function
     input = {"labels": labels, "pred_probs": pred_probs}
@@ -200,7 +203,7 @@ def get_label_quality_ensemble_scores(
     pred_probs_list: List[np.array],
     *,
     method: str = "normalized_margin",
-    adj_pred_probs: bool = False,
+    adjust_pred_probs: bool = False,
     weight_ensemble_members_by: str = "accuracy",
     verbose: int = 1,
 ) -> np.array:
@@ -237,8 +240,8 @@ def get_label_quality_ensemble_scores(
         :func:`normalized_margin`
         :func:`confidence_weighted_entropy`
 
-    adj_pred_probs : bool, default = False
-      Adj_pred_probs in the same format expected by the `get_label_quality_scores()` method.
+    adjust_pred_probs : bool, default = False
+      adjust_pred_probs in the same format expected by the `get_label_quality_scores()` method.
 
     weight_ensemble_members_by : {"uniform", "accuracy"}, default="accuracy"
       Weighting scheme used to aggregate scores from each model:
@@ -283,7 +286,7 @@ def get_label_quality_ensemble_scores(
             labels=labels,
             pred_probs=pred_probs,
             method=method,
-            adj_pred_probs=adj_pred_probs,
+            adjust_pred_probs=adjust_pred_probs,
         )
         scores_list.append(scores)
 
