@@ -48,6 +48,33 @@ jobs:
       - name: Install dependencies
         run: python3 -m pip install -r docs/requirements.txt
 
+      - name: Find and replace "%pip install cleanlab" with master branch in .ipynb files
+        if: ${{ github.ref_type == 'branch' }}
+        uses: jacobtomlinson/gha-find-replace@v2
+        with:
+          find: "%pip install cleanlab  ${{ '#' }} for colab"
+          replace: "%pip install git+https://github.com/${{ github.repository }}.git@${{ github.sha }}"
+          include: "docs/source**.ipynb"
+
+      - name: Find and replace "%pip install cleanlab" with release tag in .ipynb files
+        if: ${{ github.ref_type == 'tag' }}
+        uses: jacobtomlinson/gha-find-replace@v2
+        with:
+          find: "%pip install cleanlab  ${{ '#' }} for colab"
+          replace: "%pip install cleanlab==${{ github.ref_name }}"
+          include: "docs/source**.ipynb"
+
+      - name: Add and Commit changes to .ipynb files
+        run: |
+          git config --global user.email "actions@github.com"
+          git config --global user.name "GitHub Actions"
+          git add -A && git commit -m "Change cleanlab ver in .ipynb files"
+          
+      - name: Change tag to the latest commit
+        if: ${{ github.ref_type == 'tag' }}
+        run: |
+          git tag -f $GITHUB_REF_NAME
+
       - name: Run Sphinx with sphinx-multiversion wrapper - branch trigger
         if: ${{ github.ref_type == 'branch' }}
         run: sphinx-multiversion docs/source cleanlab-docs -D smv_branch_whitelist=${{ github.ref_name }} -D smv_tag_whitelist=None
