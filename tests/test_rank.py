@@ -149,6 +149,8 @@ def test_order_label_issues_using_scoring_func_ranking(scoring_method_func, adju
     method, scoring_func = scoring_method_func
 
     # check if method supports adjust_pred_probs
+    # do not run the test below if the method does not support adjust_pred_probs
+    # confidence_weighted_entropy scoring method does not support adjust_pred_probs
     if not (adjust_pred_probs == True and method == "confidence_weighted_entropy"):
 
         indices = np.arange(len(data["label_errors_mask"]))[
@@ -220,6 +222,8 @@ def test_ensemble_scoring_func(method, adjust_pred_probs, weight_ensemble_member
     pred_probs = data["pred_probs"]
 
     # check if method supports adjust_pred_probs
+    # do not run the test below if the method does not support adjust_pred_probs
+    # confidence_weighted_entropy scoring method does not support adjust_pred_probs
     if not (adjust_pred_probs == True and method == "confidence_weighted_entropy"):
 
         # baseline scenario where all the pred_probs are the same in the ensemble list
