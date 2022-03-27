@@ -14,12 +14,13 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
-from cleanlab import rank
 import numpy as np
+import pytest
+from cleanlab import rank
+from cleanlab.utils.label_quality_utils import _subtract_confident_thresholds
 from cleanlab.noise_generation import generate_noise_matrix_from_trace
 from cleanlab.noise_generation import generate_noisy_labels
 from cleanlab import count
-import pytest
 
 
 def make_data(
@@ -132,31 +133,168 @@ def test_bad_rank_by_parameter_error():
         )
 
 
-def test_order_label_issues_using_margin_ranking():
-    label_issues_indices = rank.order_label_issues(
-        label_issues_mask=data["label_errors_mask"],
-        labels=data["labels"],
-        pred_probs=data["pred_probs"],
-        rank_by="normalized_margin",
-    )
-    scores = rank.get_normalized_margin_for_each_label(data["labels"], data["pred_probs"])
-    indices = np.arange(len(scores))[data["label_errors_mask"]]
-    scores = scores[data["label_errors_mask"]]
-    score_idx = sorted(list(zip(scores, indices)), key=lambda y: y[0])  # sort indices by score
-    label_issues_indices2 = [z[1] for z in score_idx]
-    assert all(label_issues_indices == label_issues_indices2)
+@pytest.mark.parametrize(
+    "scoring_method_func",
+    [
+        ("self_confidence", rank.get_self_confidence_for_each_label),
+        ("normalized_margin", rank.get_normalized_margin_for_each_label),
+        ("confidence_weighted_entropy", rank.get_confidence_weighted_entropy_for_each_label),
+    ],
+)
+@pytest.mark.parametrize("adjust_pred_probs", [False, True])
+def test_order_label_issues_using_scoring_func_ranking(scoring_method_func, adjust_pred_probs):
+
+    # test all scoring methods with the scoring function
+
+    method, scoring_func = scoring_method_func
+
+    # check if method supports adjust_pred_probs
+    # do not run the test below if the method does not support adjust_pred_probs
+    # confidence_weighted_entropy scoring method does not support adjust_pred_probs
+    if not (adjust_pred_probs == True and method == "confidence_weighted_entropy"):
+
+        indices = np.arange(len(data["label_errors_mask"]))[
+            data["label_errors_mask"]
+        ]  # indices of label issues
+
+        label_issues_indices = rank.order_label_issues(
+            label_issues_mask=data["label_errors_mask"],
+            labels=data["labels"],
+            pred_probs=data["pred_probs"],
+            rank_by=method,
+            rank_by_kwargs={"adjust_pred_probs": adjust_pred_probs},
+        )
+
+        # test scoring function with scoring method passed as arg
+        scores = rank.get_label_quality_scores(
+            data["labels"],
+            data["pred_probs"],
+            method=method,
+            adjust_pred_probs=adjust_pred_probs,
+        )
+        scores = scores[data["label_errors_mask"]]
+        score_idx = sorted(list(zip(scores, indices)), key=lambda y: y[0])  # sort indices by score
+        label_issues_indices2 = [z[1] for z in score_idx]
+        assert all(
+            label_issues_indices == label_issues_indices2
+        ), f"Test failed with scoring method: {method}"
+
+        # test individual scoring function
+        # only test if adjust_pred_probs=False because the individual scoring functions do not adjust pred_probs
+        if not adjust_pred_probs:
+            scores = scoring_func(data["labels"], data["pred_probs"])
+            scores = scores[data["label_errors_mask"]]
+            score_idx = sorted(
+                list(zip(scores, indices)), key=lambda y: y[0]
+            )  # sort indices by score
+            label_issues_indices3 = [z[1] for z in score_idx]
+            assert all(
+                label_issues_indices == label_issues_indices3
+            ), f"Test failed with scoring method: {method}"
 
 
-def test_order_label_issues_using_self_confidence_ranking():
-    label_issues_indices = rank.order_label_issues(
-        label_issues_mask=data["label_errors_mask"],
-        labels=data["labels"],
-        pred_probs=data["pred_probs"],
-        rank_by="self_confidence",
-    )
-    scores = rank.get_self_confidence_for_each_label(data["labels"], data["pred_probs"])
-    indices = np.arange(len(scores))[data["label_errors_mask"]]
-    scores = scores[data["label_errors_mask"]]
-    score_idx = sorted(list(zip(scores, indices)), key=lambda y: y[0])  # sort indices by score
-    label_issues_indices2 = [z[1] for z in score_idx]
-    assert all(label_issues_indices == label_issues_indices2)
+def test__subtract_confident_thresholds():
+    labels = data["labels"]
+    pred_probs = data["pred_probs"]
+
+    # subtract confident class thresholds and renormalize
+    pred_probs_adj = _subtract_confident_thresholds(labels, pred_probs)
+
+    assert (pred_probs_adj > 0).all()  # all pred_prob are positive numbers
+    assert (
+        abs(1 - pred_probs_adj.sum(axis=1)) < 1e-6
+    ).all()  # all pred_prob sum to 1 with some small precision error
+
+
+@pytest.mark.parametrize(
+    "method",
+    [
+        "self_confidence",
+        "normalized_margin",
+        "confidence_weighted_entropy",
+    ],
+)
+@pytest.mark.parametrize("adjust_pred_probs", [False, True])
+@pytest.mark.parametrize("weight_ensemble_members_by", ["uniform", "accuracy"])
+def test_ensemble_scoring_func(method, adjust_pred_probs, weight_ensemble_members_by):
+
+    labels = data["labels"]
+    pred_probs = data["pred_probs"]
+
+    # check if method supports adjust_pred_probs
+    # do not run the test below if the method does not support adjust_pred_probs
+    # confidence_weighted_entropy scoring method does not support adjust_pred_probs
+    if not (adjust_pred_probs == True and method == "confidence_weighted_entropy"):
+
+        # baseline scenario where all the pred_probs are the same in the ensemble list
+        num_repeat = 3
+        pred_probs_list = list(np.repeat([pred_probs], num_repeat, axis=0))
+
+        # get label quality score with single pred_probs
+        label_quality_scores = rank.get_label_quality_scores(
+            labels, pred_probs, method=method, adjust_pred_probs=adjust_pred_probs
+        )
+
+        # get ensemble label quality score
+        label_quality_scores_ensemble = rank.get_label_quality_ensemble_scores(
+            labels,
+            pred_probs_list,
+            method=method,
+            adjust_pred_probs=adjust_pred_probs,
+            weight_ensemble_members_by=weight_ensemble_members_by,
+        )
+
+        # if all pred_probs in the list are the same, then ensemble score should be the same as the regular score
+        # account for small precision error due to averaging of scores
+        assert (
+            abs(label_quality_scores - label_quality_scores_ensemble) < 1e-6
+        ).all(), f"Test failed with scoring method: {method}"
+
+
+def test_bad_weight_ensemble_members_by_parameter_error():
+    with pytest.raises(ValueError) as e:
+
+        labels = data["labels"]
+        pred_probs = data["pred_probs"]
+
+        # baseline scenario where all the pred_probs are the same in the ensemble list
+        num_repeat = 3
+        pred_probs_list = list(np.repeat([pred_probs], num_repeat, axis=0))
+
+        _ = rank.get_label_quality_ensemble_scores(
+            labels,
+            pred_probs_list,
+            weight_ensemble_members_by="not_a_real_method",  # this should raise ValueError
+        )
+
+
+def test_bad_pred_probs_list_parameter_error():
+    with pytest.raises(AssertionError) as e:
+
+        labels = data["labels"]
+        pred_probs = data["pred_probs"]
+
+        # baseline scenario where all the pred_probs are the same in the ensemble list
+        num_repeat = 3
+        pred_probs_list = np.repeat(
+            [pred_probs], num_repeat, axis=0
+        )  # this should be a list not an array
+
+        # AssertionError because pred_probs_list is an array
+        _ = rank.get_label_quality_ensemble_scores(labels, pred_probs_list)
+
+        # AssertionError because pred_probs_list is empty
+        _ = rank.get_label_quality_ensemble_scores(labels=labels, pred_probs_list=[])
+
+
+def test_unsupported_method_for_adjust_pred_probs():
+    with pytest.raises(ValueError) as e:
+
+        labels = data["labels"]
+        pred_probs = data["pred_probs"]
+
+        # method that do not support adjust_pred_probs
+        # note: use a list of methods if there are multiple methods that do not support adjust_pred_probs
+        method = "confidence_weighted_entropy"
+
+        _ = rank.get_label_quality_scores(labels, pred_probs, adjust_pred_probs=True, method=method)
