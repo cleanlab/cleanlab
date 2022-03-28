@@ -233,6 +233,14 @@ class CNN(BaseEstimator):  # Inherits sklearn classifier
 
         self.loader_kwargs = {"num_workers": 1, "pin_memory": True} if self.cuda else {}
         self.loader = loader
+        self._set_dataset(dataset)
+        if test_batch_size is not None:
+            self.test_batch_size = test_batch_size
+        else:
+            self.test_batch_size = self.test_size
+
+    def _set_dataset(self, dataset):
+        self.dataset = dataset
         if dataset == "mnist":
             # pragma: no cover
             self.get_dataset = get_mnist_dataset
@@ -244,8 +252,30 @@ class CNN(BaseEstimator):  # Inherits sklearn classifier
             self.test_size = SKLEARN_DIGITS_TEST_SIZE
         else:  # pragma: no cover
             raise ValueError("dataset must be 'mnist' or 'sklearn-digits'.")
-        if test_batch_size is None:
-            self.test_batch_size = self.test_size
+
+    # XXX this is a pretty weird sklearn estimator that does data loading
+    # internally in `fit`, and it supports multiple datasets and is aware of
+    # which dataset it's using; if we weren't doing this, we wouldn't need to
+    # override `get_params` / `set_params`
+    def get_params(self, deep=True):
+        return {
+            "batch_size": self.batch_size,
+            "epochs": self.epochs,
+            "log_interval": self.log_interval,
+            "lr": self.lr,
+            "momentum": self.momentum,
+            "no_cuda": self.no_cuda,
+            "test_batch_size": self.test_batch_size,
+            "dataset": self.dataset,
+        }
+
+    def set_params(self, **parameters):  # pragma: no cover
+        for parameter, value in parameters.items():
+            if parameter != "dataset":
+                setattr(self, parameter, value)
+        if "dataset" in parameters:
+            self._set_dataset(parameters["dataset"])
+        return self
 
     def fit(self, train_idx, train_labels=None, sample_weight=None, loader="train"):
         """This function adheres to sklearn's "fit(X, y)" format for
