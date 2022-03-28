@@ -18,7 +18,7 @@ import numpy as np
 from cleanlab.classification import LearningWithNoisyLabels
 from cleanlab.noise_generation import generate_noise_matrix_from_trace
 from cleanlab.noise_generation import generate_noisy_labels
-from cleanlab.utils.latent_algebra import compute_inv_noise_matrix
+from cleanlab.internal.latent_algebra import compute_inv_noise_matrix
 from sklearn.linear_model import LogisticRegression
 from numpy.random import multivariate_normal
 import scipy

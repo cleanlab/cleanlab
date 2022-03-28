@@ -30,7 +30,7 @@ If you aren't sure which method to use, try `get_normalized_margin_for_each_labe
 import numpy as np
 from typing import List
 import warnings
-from cleanlab.utils.label_quality_utils import (
+from cleanlab.internal.label_quality_utils import (
     _subtract_confident_thresholds,
     get_normalized_entropy,
 )

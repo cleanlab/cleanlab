@@ -15,7 +15,7 @@
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
 # Make sure python version is compatible with fasttext
-from cleanlab.utils.util import VersionWarning
+from cleanlab.internal.util import VersionWarning
 
 # fasttext only exists for these versions that are also compatible with cleanlab
 # if python_version.is_compatible():  # pragma: no cover

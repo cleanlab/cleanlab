@@ -34,14 +34,14 @@ from sklearn.metrics import confusion_matrix
 import numpy as np
 import copy
 
-from cleanlab.utils.util import (
+from cleanlab.internal.util import (
     value_counts,
     clip_values,
     clip_noise_rates,
     round_preserving_row_totals,
     assert_inputs_are_valid,
 )
-from cleanlab.utils.latent_algebra import (
+from cleanlab.internal.latent_algebra import (
     compute_inv_noise_matrix,
     compute_py,
     compute_noise_matrix_from_inverse,

@@ -25,6 +25,8 @@ If you'd like to build our docs locally or remotely yourself, or want to know mo
 pip install -r docs/requirements.txt
 ```
 
+You'll also need to install [Pandoc](https://pandoc.org/installing.html).
+
 3. Build the docs with [`sphinx-multiversion`](https://holzhaus.github.io/sphinx-multiversion):
 
    * If you're building from a **branch** (usually the `master` branch):
@@ -39,7 +41,7 @@ pip install -r docs/requirements.txt
    sphinx-multiversion docs/source cleanlab-docs -D smv_branch_whitelist=None -D smv_tag_whitelist=YOUR_TAG_NAME
    ```
 
-   Note: If you have more than one branch or tag, run the above command again changing only the `YOUR_BRANCH_NAME` or `YOUR_TAG_NAME` placeholder.
+   Note: To also build docs for another branch or tag, run the above command again changing only the `YOUR_BRANCH_NAME` or `YOUR_TAG_NAME` placeholder.
 
 4. **[Optional]** To show dynamic versioning and version warning banners:
    
