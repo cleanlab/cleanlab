@@ -31,8 +31,8 @@
 from sklearn.linear_model import LogisticRegression as LogReg
 from sklearn.model_selection import StratifiedKFold
 from sklearn.metrics import confusion_matrix
+import sklearn.base
 import numpy as np
-import copy
 
 from cleanlab.internal.util import (
     value_counts,
@@ -650,7 +650,7 @@ def estimate_confident_joint_and_cv_pred_proba(
 
     # Split X and labels into "cv_n_folds" stratified folds.
     for k, (cv_train_idx, cv_holdout_idx) in enumerate(kf.split(X, labels)):
-        clf_copy = copy.deepcopy(clf)
+        clf_copy = sklearn.base.clone(clf)
 
         # Select the training and holdout cross-validated sets.
         X_train_cv, X_holdout_cv = X[cv_train_idx], X[cv_holdout_idx]
