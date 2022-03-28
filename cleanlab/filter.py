@@ -31,7 +31,7 @@ from multiprocessing.sharedctypes import RawArray
 import sys
 
 from cleanlab.rank import order_label_issues
-from cleanlab.utils.util import (
+from cleanlab.internal.util import (
     value_counts,
     round_preserving_row_totals,
     onehot2int,
