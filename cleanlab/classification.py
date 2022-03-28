@@ -31,6 +31,12 @@ contains the contains targets formatted as ``0, 1, 2, ..., K-1``, and
 ``sample_weight`` (of length *n*) re-weights examples in the loss function while
 training.
 
+Furthermore, your estimator should be correctly clonable via
+`sklearn.base.clone`: cleanlab internally creates multiple instances of your
+estimator, and if you e.g. manually wrap a PyTorch model, you must ensure that
+every call to your estimator's `__init__()` creates an independent instance of
+the model.
+
 Note
 ----
 There are two new notions of confidence in this package:
