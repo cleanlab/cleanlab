@@ -19,7 +19,9 @@ If you'd like to build our docs locally or remotely yourself, or want to know mo
 
 1. [Fork](https://docs.github.com/en/get-started/quickstart/fork-a-repo#forking-a-repository) and [clone](https://docs.github.com/en/get-started/quickstart/fork-a-repo#cloning-your-forked-repository) the `cleanlab` repository.
 
-2. Install the required packages to build the docs:
+2. Make your code changes (optionally in a new branch) and then `git commit` them.
+
+3. Install the required packages to build the docs:
 
 ```
 pip install -r docs/requirements.txt
@@ -27,7 +29,7 @@ pip install -r docs/requirements.txt
 
 You'll also need to install [Pandoc](https://pandoc.org/installing.html).
 
-3. Build the docs with [`sphinx-multiversion`](https://holzhaus.github.io/sphinx-multiversion):
+4. Build the docs with [`sphinx-multiversion`](https://holzhaus.github.io/sphinx-multiversion):
 
    * If you're building from a **branch** (usually the `master` branch):
 
@@ -43,7 +45,7 @@ You'll also need to install [Pandoc](https://pandoc.org/installing.html).
 
    Note: To also build docs for another branch or tag, run the above command again changing only the `YOUR_BRANCH_NAME` or `YOUR_TAG_NAME` placeholder.
 
-4. **[Optional]** To show dynamic versioning and version warning banners:
+5. **[Optional]** To show dynamic versioning and version warning banners:
    
    * Copy the `docs/_templates/versioning.js` file to the `cleanlab-docs/` directory.
    
@@ -53,7 +55,7 @@ You'll also need to install [Pandoc](https://pandoc.org/installing.html).
 
       * find `placeholder_commit_hash` and replace it with the `master` branch commit hash.
 
-5. **[Optional]** To redirect site visits from `/` or `/stable` to the stable version of the docs:
+6. **[Optional]** To redirect site visits from `/` or `/stable` to the stable version of the docs:
 
    * Create a copy of the `docs/_templates/redirect-to-stable.html` file and rename it as `index.html`.
 
@@ -65,7 +67,7 @@ You'll also need to install [Pandoc](https://pandoc.org/installing.html).
 
       * `cleanlab-docs/stable/`.
 
-6. The docs for each branch and/or tag can be found in the `cleanlab-docs/` directory, open any of the `index.html` in your browser to view the docs:
+7. The docs for each branch and/or tag can be found in the `cleanlab-docs/` directory, open any of the `index.html` in your browser to view the docs:
 
 ```
 cleanlab-docs
