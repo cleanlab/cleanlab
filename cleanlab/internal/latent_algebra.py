@@ -26,7 +26,7 @@
 
 import numpy as np
 
-from cleanlab.utils.util import value_counts, clip_values, clip_noise_rates
+from cleanlab.internal.util import value_counts, clip_values, clip_noise_rates
 import warnings
 
 

@@ -1,6 +1,6 @@
 # coding: utf-8
 
-from cleanlab.utils import util
+from cleanlab.internal import util
 import numpy as np
 
 

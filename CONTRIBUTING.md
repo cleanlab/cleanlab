@@ -1,9 +1,9 @@
 # Contributing to cleanlab
 
-All kinds of contributions to cleanlab are greatly appreciated. If you're not
-looking to write code, submitting a [feature request](#feature-requests) or
+All kinds of contributions to cleanlab are greatly appreciated. 
+If you're not looking to write code, submitting a [feature request](#feature-requests) or
 [bug report](#bug-reports) is a great way to contribute. If you want to get
-your hands dirty, you can submit a [patch](#patches), either working on your
+your hands dirty, you can submit [Pull Requests](#pull-requests), either working on your
 own ideas or addressing [existing issues][issues].
 
 If you are unsure or confused about anything, please go ahead and submit your
@@ -29,23 +29,28 @@ appreciated!
 
 When you [submit a bug report][issue], please include as much context as you
 can. This includes information like Python version, cleanlab version, an error
-message or stack trace, and detailed steps to reproduce the bug. The more
-information you can include, the better.
+message or stack trace, and detailed steps to reproduce the bug (if possible, including toy data that reproduces the error). The more information you can include, the better.
 
-## Patches
+## Pull Requests
 
 Want to write code to help improve cleanlab? Awesome!
 
-If there are [open issues][issues], you're more than welcome to work on those.
-If you have your own ideas, that's great too! In that case, before working on
-substantial changes to the code base, it is *highly recommended* that you first
+If there are [open issues][issues], you're more than welcome to work on those (a good place to start is those tagged "good first issue"). If you have your own ideas, that's great too! In that case, before working on substantial changes to the code base, it is *highly recommended* that you first
 [open an issue][issue] describing what you intend to work on.
 
-Any changes to the code base should try to follow the style and coding
-conventions used in the rest of the project.
+To contribute your code to the library, you'll want to create a new [Pull Request][pr]. 
 
-Cleanlab follows the [Black] style. Before you submit your pull request,
-install Black with `pip install black` and format the code with `black .`.
+Any changes to the code base should try to follow the style and coding conventions used in the rest of the project. Cleanlab follows the [Black] style. Before you submit your pull request,
+install Black with `pip install black` and format the code with `black `. New functions should be well-documented with accompanying unit tests that run quickly.
+
+Once you have finalized your edits to the cleanlab code, make sure the unit tests pass by executing:
+
+```
+pytest cleanlab/tests/
+```
+
+Also [build the docs from your local cleanlab version][instructions] and ensure the documentation for your new functions is formatted correctly and the existing functions' documentation remains valid. 
+Finally make sure all of the [examples] still work with the new code.
 
 ---
 
@@ -55,5 +60,7 @@ If you have any questions about contributing to cleanlab, feel free to
 [issue]: https://github.com/cleanlab/cleanlab/issues/new
 [issues]: https://github.com/cleanlab/cleanlab/issues
 [fork]: https://github.com/cleanlab/cleanlab/fork
-[discussions]: https://github.com/cleanlab/cleanlab/discussions
+[pr]: https://github.com/cleanlab/cleanlab/pulls
 [Black]: https://github.com/psf/black
+[instructions]: https://github.com/cleanlab/cleanlab/blob/master/docs/README.md#build-the-cleanlab-docs-locally
+[examples]: https://github.com/cleanlab/examples

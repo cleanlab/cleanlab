@@ -15,10 +15,10 @@
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
 from cleanlab import count, filter
-from cleanlab.utils.latent_algebra import compute_inv_noise_matrix
+from cleanlab.internal.latent_algebra import compute_inv_noise_matrix
 from cleanlab.noise_generation import generate_noise_matrix_from_trace
 from cleanlab.noise_generation import generate_noisy_labels
-from cleanlab.utils.util import value_counts
+from cleanlab.internal.util import value_counts
 import numpy as np
 import scipy
 import pytest

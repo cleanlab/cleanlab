@@ -104,7 +104,7 @@ from sklearn.base import BaseEstimator
 import numpy as np
 import inspect
 import multiprocessing
-from cleanlab.utils.util import (
+from cleanlab.internal.util import (
     assert_inputs_are_valid,
     value_counts,
 )
@@ -113,7 +113,7 @@ from cleanlab.count import (
     estimate_py_and_noise_matrices_from_probabilities,
     estimate_cv_predicted_probabilities,
 )
-from cleanlab.utils.latent_algebra import (
+from cleanlab.internal.latent_algebra import (
     compute_py_inv_noise_matrix,
     compute_noise_matrix_from_inverse,
 )

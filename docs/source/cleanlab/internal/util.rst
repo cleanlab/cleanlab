@@ -1,7 +1,7 @@
 util
 ====
 
-.. automodule:: cleanlab.utils.util
+.. automodule:: cleanlab.internal.util
     :autosummary:
     :members:
     :undoc-members:
