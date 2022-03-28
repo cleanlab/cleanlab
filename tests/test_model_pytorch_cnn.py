@@ -27,8 +27,10 @@ if python_version.is_compatible():
     # Get sklearn digits data labels
     _, y_all = load_digits(return_X_y=True)
     # PyTorch requires type long targets.
-    y_train = y_all[:-SKLEARN_DIGITS_TEST_SIZE].astype(np.long)
-    true_labels_test = y_all[-SKLEARN_DIGITS_TEST_SIZE:].astype(np.long)
+    print(y_all)
+    print(type(y_all))
+    y_train = y_all[:-SKLEARN_DIGITS_TEST_SIZE].astype(np.int32)
+    true_labels_test = y_all[-SKLEARN_DIGITS_TEST_SIZE:].astype(np.int32)
 
 
 def test_loaders(
