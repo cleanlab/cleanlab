@@ -54,6 +54,7 @@ def assert_inputs_are_valid(X, s, pred_probs=None):  # pragma: no cover
         dtype=None,
         force_all_finite=False,
         ensure_2d=False,
+        allow_nd=True,
     )
 
 

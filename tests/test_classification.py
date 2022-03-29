@@ -20,6 +20,7 @@ from cleanlab.noise_generation import generate_noise_matrix_from_trace
 from cleanlab.noise_generation import generate_noisy_labels
 from cleanlab.internal.latent_algebra import compute_inv_noise_matrix
 from sklearn.linear_model import LogisticRegression
+from sklearn.base import BaseEstimator
 from numpy.random import multivariate_normal
 import scipy
 import warnings
@@ -393,3 +394,42 @@ def test_get_label_issues(sparse):
         labels=data["true_labels_train"],
     )
     assert all((lnl.get_label_issues() == lnl.label_issues_mask))
+
+
+def make_2d(X):
+    return X.reshape(X.shape[0], -1)
+
+
+class ReshapingLogisticRegression(BaseEstimator):
+    def __init__(self):
+        self.clf = LogisticRegression()
+
+    def fit(self, X, y):
+        self.clf.fit(make_2d(X), y)
+
+    def predict(self, X):
+        return self.clf.predict(make_2d(X))
+
+    def predict_proba(self, X):
+        return self.clf.predict_proba(make_2d(X))
+
+    def score(self, X, y, sample_weight=None):
+        return self.clf.score(make_2d(X), y, sample_weight=sample_weight)
+
+
+@pytest.mark.parametrize("N", [1, 2, 3, 4])
+def test_dimN(N):
+    lnl = LearningWithNoisyLabels(clf=ReshapingLogisticRegression())
+    size = [100] + [3 for _ in range(N - 1)]
+    X = np.random.normal(size=size)
+    labels = np.random.randint(0, 4, size=100)
+    # ensure that every class is represented
+    labels[0:10] = 0
+    labels[11:20] = 1
+    labels[21:30] = 2
+    labels[31:40] = 3
+    # just make sure we don't crash...
+    lnl.fit(X, labels)
+    lnl.predict(X)
+    lnl.predict_proba(X)
+    lnl.score(X, labels)
