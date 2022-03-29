@@ -55,15 +55,11 @@ except ImportError as e:  # pragma: no cover
     w = """To see estimated completion times for methods in cleanlab.filter, "pip install tqdm"."""
     warnings.warn(w)
 
-# Leave at least 1 example in each class after filtering/pruning, even if noise estimates are larger
-MIN_NUM_PER_CLASS = 1
-
 # Globals to be shared across threads in multiprocessing
 mp_params = {}  # parameters passed to multiprocessing helper functions
 
 
 # Multiprocessing Helper functions
-
 
 def _to_np_array(mp_arr, dtype="int32", shape=None):  # pragma: no cover
     """multipropecessing Helper function to convert a multiprocessing
@@ -82,6 +78,7 @@ def _init(
     __pred_probs,
     __pred_probs_shape,
     __multi_label,
+    __min_examples_per_class,
 ):  # pragma: no cover
     """Shares memory objects across child processes.
     ASSUMES none of these will be changed by child processes!"""
@@ -93,7 +90,7 @@ def _init(
     mp_params["pred_probs"] = __pred_probs
     mp_params["pred_probs_shape"] = __pred_probs_shape
     mp_params["multi_label"] = __multi_label
-
+    mp_params["min_examples_per_class"] = __min_examples_per_class
 
 def _get_shared_data():  # pragma: no cover
     """multiprocessing helper function to extract numpy arrays from
@@ -109,6 +106,7 @@ def _get_shared_data():  # pragma: no cover
         dtype="float32",
         shape=mp_params["pred_probs_shape"],
     )
+    min_examples_per_class = mp_params["min_examples_per_class"]
     multi_label = mp_params["multi_label"]
     if multi_label:  # Shared data is passed as one-hot encoded matrix
         labels = onehot2int(
@@ -119,7 +117,7 @@ def _get_shared_data():  # pragma: no cover
         )
     else:
         labels = _to_np_array(mp_params["labels"])
-    return labels, label_counts, prune_count_matrix, pred_probs, multi_label
+    return labels, label_counts, prune_count_matrix, pred_probs, multi_label, min_examples_per_class
 
 
 def _prune_by_class(k, args=None):
@@ -134,11 +132,11 @@ def _prune_by_class(k, args=None):
       The class of interest."""
 
     if args:  # Single processing - params are passed in
-        labels, label_counts, prune_count_matrix, pred_probs, multi_label = args
+        labels, label_counts, prune_count_matrix, pred_probs, multi_label, min_examples_per_class = args
     else:  # Multiprocessing - data is shared across sub-processes
-        labels, label_counts, prune_count_matrix, pred_probs, multi_label = _get_shared_data()
+        labels, label_counts, prune_count_matrix, pred_probs, multi_label, min_examples_per_class = _get_shared_data()
 
-    if label_counts[k] > MIN_NUM_PER_CLASS:  # No prune if not MIN_NUM_PER_CLASS
+    if label_counts[k] > min_examples_per_class:  # No prune if not at least min_examples_per_class
         num_issues = label_counts[k] - prune_count_matrix[k][k]
         # Get return_indices_ranked_by of the smallest prob of class k for examples with noisy label k
         label_filter = np.array([k in lst for lst in labels]) if multi_label else labels == k
@@ -146,6 +144,7 @@ def _prune_by_class(k, args=None):
         rank = np.partition(class_probs[label_filter], num_issues)[num_issues]
         return label_filter & (class_probs < rank)
     else:
+        warnings.warn(f"May not flag all label issues in class: {k}, it has too few examples (see argument: `min_examples_per_class`)")
         return np.zeros(len(labels), dtype=bool)
 
 
@@ -162,14 +161,15 @@ def _prune_by_count(k, args=None):
       The true_label class of interest."""
 
     if args:  # Single processing - params are passed in
-        labels, label_counts, prune_count_matrix, pred_probs, multi_label = args
+        labels, label_counts, prune_count_matrix, pred_probs, multi_label, min_examples_per_class = args
     else:  # Multiprocessing - data is shared across sub-processes
-        labels, label_counts, prune_count_matrix, pred_probs, multi_label = _get_shared_data()
+        labels, label_counts, prune_count_matrix, pred_probs, multi_label, min_examples_per_class = _get_shared_data()
 
     label_issues_mask = np.zeros(len(pred_probs), dtype=bool)
     pred_probs_k = pred_probs[:, k]
     K = len(label_counts)
-    if label_counts[k] <= MIN_NUM_PER_CLASS:  # No prune if not MIN_NUM_PER_CLASS
+    if label_counts[k] <= min_examples_per_class:  # No prune if not at least min_examples_per_class
+        warnings.warn(f"May not flag all label issues in class: {k}, it has too few examples (see `min_examples_per_class` argument)")
         return np.zeros(len(labels), dtype=bool)
     for j in range(K):  # j is true label index (k is noisy label index)
         num2prune = prune_count_matrix[j][k]
@@ -242,6 +242,7 @@ def find_label_issues(
     multi_label=False,
     frac_noise=1.0,
     num_to_remove_per_class=None,
+    min_examples_per_class=1,
     n_jobs=None,
     verbose=0,
 ):
@@ -249,11 +250,11 @@ def find_label_issues(
     a label issue and False represents an example that is confidently/accurately labeled.
 
     You can return ONLY the indices of the label issues in your dataset, by setting
-    return_indices_ranked_by = {`self_confidence`, `normalized_margin`}.
+    `return_indices_ranked_by` to a string value specifying which label quality score to order the label issues
+    (and corresponding indices) by.
 
-    number of indices returned is specified by frac_noise. When
-    frac_noise = 1.0, all "confident" estimated noise indices are returned.
-    * If you encounter the error 'pred_probs is not defined', try setting n_jobs = 1.
+    The number of indices returned is controlled by `frac_noise`, reduce its value to identify fewer label issues.
+    Tip: If you encounter the error 'pred_probs is not defined', try setting `n_jobs = 1`.
 
     WARNING! is a matrix with K model-predicted probabilities and num_to_remove_per_class parameters
     are only supported when filter_by is either 'prune_by_noise_rate', 'prune_by_class', or 'both'.
@@ -271,16 +272,22 @@ def find_label_issues(
       Each row of this matrix corresponds to an example x and contains the model-predicted
       probabilities that x belongs to each possible class.
       The columns must be ordered such that these probabilities correspond to class 0,1,2,...
-      `pred_probs` should have been computed using 3 (or higher) fold cross-validation.
 
-    confident_joint : np.array (shape (K, K), type int) (default: None)
-      A K,K integer matrix of count(label=k, true_label=k). Estimates a a confident
-      subset of the joint distribution of the noisy and true labels P_{labels,y}.
-      Each entry in the matrix contains the number of examples confidently
-      counted into every pair (label=j, true_label=k) classes. The `confident joint` can be computed using
-    `count.compute_confident_joint`
+      CAUTION: `pred_probs` from your model must be out-of-sample!
+      You should never provide predictions on the same datapoints used to train the model,
+      as these will be overfit and unsuitable for finding label-errors.
+      To obtain out-of-sample predicted probabilities for every datapoint in your dataset, you can use cross-validation.
+      Alternatively it is ok if your model was trained on a separate dataset and you are only evaluating
+      labels in data that was previously held-out.
 
-    filter_by : str (default: 'prune_by_noise_rate')  TODO: change default to cl_off_diag?
+    confident_joint : np.array (shape (K, K), type int), default = None
+      A K x K integer matrix used for identifying label issues, which
+      estimates a confident subset of the joint distribution of the noisy and true labels, P_{noisy_label,true_label}.
+      Entry (j,k) in the matrix is the number of examples confidently counted into the pair of (noisy_label=j, true_label=k) classes.
+      The `confident joint` can be computed using `count.compute_confident_joint`.
+      If None, it is computed from the given (noisy) `labels` and `pred_probs`.
+
+    filter_by : str, default: 'prune_by_noise_rate'
       Possible Values: {'prune_by_class', 'prune_by_noise_rate', 'both',
                         'confident_learning', 'predicted_neq_given'}
       Method used for filtering/pruning out the label issues.
@@ -294,11 +301,10 @@ def find_label_issues(
       4. 'confident_learning': Returns the examples in the off-diagonals of the confident joint.
       These are the examples that are confidently predicted to be a different label than their
       given label.
-      that's different from their given label while computing the confident joint.
       5. 'predicted_neq_given': Find examples where the predicted class
       (i.e. argmax of the predicted probabilities) does not match the given label.
 
-    return_indices_ranked_by : {:obj:`None`, :obj:`self_confidence`, :obj:`normalized_margin`, :obj:`confidence_weighted_entropy`}
+    return_indices_ranked_by : {:obj:`None`, :obj:`self_confidence`, :obj:`normalized_margin`, :obj:`confidence_weighted_entropy`}, default = None
       If None, returns a boolean mask (true if example at index is label error)
       If not None, returns an array of the label error indices
       (instead of a bool mask) where error indices are ordered by the either:
@@ -306,19 +312,18 @@ def find_label_issues(
       ``'self_confidence' := [pred_probs[i][labels[i]] for i in label_issues_idx]``
       ``'confidence_weighted_entropy' := entropy(pred_probs) / self_confidence``
 
-    rank_by_kwargs : dict
+    rank_by_kwargs : dict, default = {}
       Optional keyword arguments to pass into scoring functions for ranking by label quality score
       (see: `get_label_quality_scores()` in cleanlab/rank.py).
-      Accepted args include:
-      adjust_pred_probs : bool, default = False
+      Accepted args include: `adjust_pred_probs` (bool, default = False)
 
-    multi_label : bool
+    multi_label : bool, default = False
       If true, labels should be an iterable (e.g. list) of iterables, containing a
       list of labels for each example, instead of just a single label.
       The multi-label setting supports classification tasks where an example has 1 or more labels.
       Example of a multi-labeled `labels` input: [[0,1], [1], [0,2], [0,1,2], [0], [1], ...]
 
-    frac_noise : float
+    frac_noise : float, default 1.0
       When frac_noise = 1.0, return all "confident" estimated noise indices.
       Value in range (0, 1] that determines the fraction of noisy example
       indices to return based on the following formula for example class k.
@@ -339,19 +344,24 @@ def find_label_issues(
       are floats, and rounding may cause a one-off. If you need exactly
       'k' examples removed from every class, you should use ``'prune_by_class'``
 
+    min_examples_per_class : int, default = 1
+      Minimum number of examples per class to avoid flagging as label issues.
+      This is useful to avoid deleting too much data from one class 
+      when pruning noisy examples in datasets with rare classes.
+
     n_jobs : int (Windows users may see a speed-up with n_jobs = 1)
       Number of processing threads used by multiprocessing. Default None
       sets to the number of processing threads on your CPU.
       Set this to 1 to REMOVE parallel processing (if its causing issues).
 
-    verbose : int
+    verbose : int, default = 0
       If 0, no print statements. If 1, prints when multiprocessing happens.
 
     Returns
     -------
     label_issues_mask : np.array<bool>
       This method returns a boolean mask for the entire dataset where True represents
-      a label issue and False represents an example that is confidently/accurately labeled.
+      a label issue and False represents an example that is accurately labeled with high confidence.
 
       Note
       ----
@@ -364,7 +374,7 @@ def find_label_issues(
         "both",
         "confident_learning",
         "predicted_neq_given",
-    ]
+    ]  # TODO: change default to cl_off_diag?
     assert len(labels) == len(pred_probs)
     if filter_by in ["confident_learning", "predicted_neq_given"] and (
         frac_noise != 1.0 or num_to_remove_per_class is not None
@@ -405,11 +415,11 @@ def find_label_issues(
         )
     if filter_by in ["prune_by_noise_rate", "prune_by_class", "both"]:
         # Create `prune_count_matrix` with the number of examples to remove in each class and
-        # leave at least MIN_NUM_PER_CLASS examples per class.
+        # leave at least min_examples_per_class examples per class.
         # `prune_count_matrix` is transposed relative to the confident_joint.
         prune_count_matrix = keep_at_least_n_per_class(
             prune_count_matrix=confident_joint.T,
-            n=MIN_NUM_PER_CLASS,
+            n=min_examples_per_class,
             frac_noise=frac_noise,
         )
 
@@ -432,7 +442,7 @@ def find_label_issues(
             _prune_count_matrix = RawArray("I", prune_count_matrix.flatten())
             _pred_probs = RawArray("f", pred_probs.flatten())
         else:  # Multiprocessing is turned off. Create tuple with all parameters
-            args = (labels, label_counts, prune_count_matrix, pred_probs, multi_label)
+            args = (labels, label_counts, prune_count_matrix, pred_probs, multi_label, min_examples_per_class)
 
     # Perform Pruning with threshold probabilities from BFPRT algorithm in O(n)
     # Operations are parallelized across all CPU processes
@@ -449,6 +459,7 @@ def find_label_issues(
                     _pred_probs,
                     pred_probs.shape,
                     multi_label,
+                    min_examples_per_class,
                 ),
             ) as p:
                 if verbose:
@@ -480,6 +491,7 @@ def find_label_issues(
                     _pred_probs,
                     pred_probs.shape,
                     multi_label,
+                    min_examples_per_class,
                 ),
             ) as p:
                 if verbose:
@@ -659,12 +671,11 @@ def find_predicted_neq_given(labels, pred_probs, *, multi_label=False):
 
     Returns
     -------
-        A boolean mask that is true if the example belong
-        to that index is label error."""
+        A boolean mask whose True entries indicate indices of examples that have label issues."""
 
     assert len(pred_probs) == len(labels)
     if multi_label:
-        # Todo: This needs to be tested.
+        # TODO: This needs to be tested.
         return np.array(
             [all(np.argsort(pred_probs[i])[: len(j)] == sorted(j)) for i, j in enumerate(labels)]
         )
@@ -723,7 +734,7 @@ def find_label_issues_using_argmax_confusion_matrix(
 
     Returns
     -------
-        A boolean mask: true if the example at that index is label issue."""
+        A boolean mask whose True entries indicate indices of examples that have label issues."""
 
     assert len(pred_probs) == len(labels)
     confident_joint = confusion_matrix(np.argmax(pred_probs, axis=1), labels).T

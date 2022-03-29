@@ -153,31 +153,6 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
       cv_n_folds sets the number of cross-validation folds used to compute
       out-of-sample probabilities for each example in X.
 
-    filter_by : :obj:`str`, default: 'prune_by_noise_rate'
-      Possible Values: {'prune_by_class', 'prune_by_noise_rate', 'both',
-                        'confident_learning', 'predicted_neq_given'}
-      Determines the method used to filter label issues.
-
-      Filtering/Pruning Methods (possible values for `filter_by`)
-      ----------------------------------------------------
-
-      1. :obj:`filter_by=prune_by_noise_rate`: works by removing examples with
-      *high probability* of being mislabeled for every non-diagonal in the confident joint
-      (see `prune_counts_matrix` in `filter.py`). These are the examples where (with high
-      confidence) the given label is unlikely to match the predicted label.
-
-      2. :obj:`filter_by=prune_by_class`: works by removing the examples with
-      *smallest probability* of belonging to their given class label for every class.
-
-      3. :obj:`filter_by=both`: Finds the examples satisfying (1) AND (2)
-      and removes their set conjunction.
-
-      4. :obj:`filter_by=confident_learning`: Find examples that are confidently
-      labeled as a different class from their given label while computing the confident joint.
-
-      5. :obj:`filter_by=predicted_neq_given`: Find examples where the argmax prediction
-      does not match the given label.
-
     converge_latent_estimates : :obj:`bool` (Default: False)
       If true, forces numerical consistency of latent estimates. Each is
       estimated independently, but they are related mathematically with closed
@@ -185,12 +160,7 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
 
     pulearning : :obj:`int` (0 or 1, default: None)
       Only works for 2 class datasets. Set to the integer of the class that is
-      perfectly labeled (certain no errors in that class).
-
-    n_jobs : :obj:`int` (Windows users may see a speed-up with n_jobs = 1)
-      Number of processing threads used by multiprocessing. Default None
-      sets to the number of processing threads on your CPU.
-      Set this to 1 to REMOVE parallel processing (if it's causing issues)."""
+      perfectly labeled (certain no errors in that class)."""
 
     def __init__(
         self,
@@ -199,10 +169,8 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
         seed=None,
         # Hyper-parameters (used by .fit() function)
         cv_n_folds=5,
-        filter_by="prune_by_noise_rate",
         converge_latent_estimates=False,
         pulearning=None,
-        n_jobs=None,
     ):
 
         if clf is None:
@@ -220,19 +188,11 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
         if seed is not None:
             np.random.seed(seed=seed)
 
-        # Set-up number of multiprocessing threads used by find_label_issues()
-        if n_jobs is None:
-            n_jobs = multiprocessing.cpu_count()
-        else:
-            assert n_jobs >= 1
-
         self.clf = clf
         self.seed = seed
         self.cv_n_folds = cv_n_folds
-        self.filter_by = filter_by
         self.converge_latent_estimates = converge_latent_estimates
         self.pulearning = pulearning
-        self.n_jobs = n_jobs
         self.label_issues_mask = None
         self.sample_weight = None
         self.confident_joint = None
@@ -251,10 +211,16 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
         thresholds=None,
         noise_matrix=None,
         inverse_noise_matrix=None,
+        find_label_issues_kwargs = {"filter_by": "prune_by_noise_rate",
+                                    "min_examples_per_class": 10},
+        clf_kwargs={},
+        clf_final_kwargs={},
     ):
         """This method trains the model `self.clf` with error-prone, noisy labels as if
-        the model had been instead trained on a dataset with perfect labels.
-        It achieves this by cleaning out the error and providing cleaned data while training.
+        the model had been instead trained on a dataset with the correct labels.
+        It achieves this by: first training `clf` via cross-validation on the noisy data,
+        using the resulting predicted probabilities to identify label issues,
+        pruning the data with label issues, and finally training `clf` on the remaining clean data.
 
         Parameters
         ----------
@@ -299,6 +265,20 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
           inverse_noise_matrix will be computed from pred_probs and labels.
           Assumes columns of inverse_noise_matrix sum to 1.
 
+        find_label_issues_kwargs : dict
+          Optional keyword arguments to pass into `filter.find_label_issues()`.
+          Options that may especially impact accuracy include:
+            filter_by, frac_noise, min_examples_per_class
+        
+        clf_kwargs : dict, default = {}
+          Optional keyword arguments to pass into `clf` fit() method.
+
+        clf_final_kwargs : dict, default = {}
+          Optional extra keyword arguments to pass into the final `clf` fit() on the cleaned data
+          but not the `clf` fit() in each fold of cross-validation on the noisy data.
+          The final fit() will also receive `clf_kwargs`, but these may be overwritten by values in `clf_final_kwargs`.
+          This can be useful for training differently in the final fit() than during cross-validation. 
+
         Returns
         -------
         tuple
@@ -313,13 +293,15 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
             t = np.round(np.trace(inverse_noise_matrix), 2)
             raise ValueError("Trace(inverse_noise_matrix) is {}. Must exceed 1.".format(t))
 
+        self._process_label_issues_kwargs(find_label_issues_kwargs)
         # Number of classes
         self.K = len(np.unique(labels))
+        if len(labels)/self.K < self.cv_n_folds:
+            raise ValueError("You need more data from each class to run this many folds of cross-validation."
+                             "Try decreasing `cv_n_folds` (eg. to 3 or 2) when initializing LearningWithNoisyLabels()")
 
         # 'ps' is p(labels=k)
         self.ps = value_counts(labels) / float(len(labels))
-
-        self.confident_joint = None
         # If needed, compute noise rates (mislabeling) for all classes.
         # Also, if needed, compute P(label=k|x), denoted pred_probs.
 
@@ -353,6 +335,7 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
                     thresholds=thresholds,
                     converge_latent_estimates=(self.converge_latent_estimates),
                     seed=self.seed,
+                    clf_kwargs=clf_kwargs,
                 )
             else:  # pred_probs is provided by user (assumed holdout probabilities)
                 (
@@ -374,6 +357,7 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
                 clf=self.clf,
                 cv_n_folds=self.cv_n_folds,
                 seed=self.seed,
+                clf_kwargs=clf_kwargs,
             )
 
         # if pulearning == the integer specifying the class without noise.
@@ -394,17 +378,16 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
         self.label_issues_mask = find_label_issues(
             labels,
             pred_probs,
-            confident_joint=self.confident_joint,
-            filter_by=self.filter_by,
-            n_jobs=self.n_jobs,
+            **find_label_issues_kwargs,         
         )
 
         x_mask = ~self.label_issues_mask
         x_cleaned = X[x_mask]
         labels_cleaned = labels[x_mask]
+        clf_kwargs.update(clf_final_kwargs)
 
         # Check if sample_weight in clf.fit(). Not compatible with Python 2.
-        if "sample_weight" in inspect.getfullargspec(self.clf.fit).args:
+        if "sample_weight" in inspect.getfullargspec(self.clf.fit).args and "sample_weight" not in clf_kwargs:
             # Re-weight examples in the loss function for the final fitting
             # labels.t. the "apparent" original number of examples in each class
             # is preserved, even though the pruned sets may differ.
@@ -413,10 +396,10 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
                 sample_weight_k = 1.0 / self.noise_matrix[k][k]
                 self.sample_weight[labels_cleaned == k] = sample_weight_k
 
-            self.clf.fit(x_cleaned, labels_cleaned, sample_weight=self.sample_weight)
+            self.clf.fit(x_cleaned, labels_cleaned, sample_weight=self.sample_weight, **clf_kwargs)
         else:
             # This is less accurate, but best we can do if no sample_weight.
-            self.clf.fit(x_cleaned, labels_cleaned)
+            self.clf.fit(x_cleaned, labels_cleaned, **clf_kwargs)
 
         return self.clf
 
@@ -474,3 +457,16 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
         """Accessor. Returns `self.label_issues_mask` computed via `filter.find_label_issues()`"""
 
         return self.label_issues_mask
+
+    def _process_label_issues_kwargs(self, find_label_issues_kwargs):
+        """Helper method to set/override certain attributes."""
+        unsupported_kwargs = ["return_indices_ranked_by", "multi_label"]
+        for unsupported_kwarg in unsupported_kwargs:
+            if unsupported_kwarg in find_label_issues_kwargs:
+                raise ValueError("These kwargs of `find_label_issues()` are not supported "
+                                 f"for `LearningWithNoisyLabels`: {unsupported_kwargs}")
+        if "confident_joint" in find_label_issues_kwargs:
+            self.confident_joint = find_label_issues_kwargs["confident_joint"]
+        self.find_label_issues_kwargs = find_label_issues_kwargs
+
+

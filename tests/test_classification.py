@@ -387,9 +387,10 @@ def test_fit_pred_probs(sparse):
 @pytest.mark.parametrize("sparse", [True, False])
 def test_get_label_issues(sparse):
     data = SPARSE_DATA if sparse else DATA
-    lnl = LearningWithNoisyLabels(n_jobs=1)
+    lnl = LearningWithNoisyLabels()
     lnl.fit(
         X=data["X_train"],
         labels=data["true_labels_train"],
+        find_label_issues_kwargs = {"n_jobs":1, "min_examples_per_class":5}
     )
     assert all((lnl.get_label_issues() == lnl.label_issues_mask))
