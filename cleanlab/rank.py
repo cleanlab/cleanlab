@@ -23,7 +23,6 @@ of the dataset you choose (including the entire dataset) and provide a `label qu
 every example. You can then do something like: `np.argsort(label_quality_score)` to obtain ranked
 indices of individual data.
 
-If you aren't sure which method to use, try `get_normalized_margin_for_each_label()`.
 """
 
 
@@ -41,13 +40,12 @@ def order_label_issues(
     labels: np.array,
     pred_probs: np.array,
     *,
-    rank_by: str = "normalized_margin",
+    rank_by: str = "self_confidence",
     rank_by_kwargs: dict = {},
 ) -> np.array:
     """Sorts label issues by label quality score.
 
-    Default label quality score is "normalized margin".
-    See https://arxiv.org/pdf/1810.05369.pdf (eqn 2.2)
+    Default label quality score is "self_confidence".
 
     Parameters
     ----------
@@ -98,7 +96,7 @@ def get_label_quality_scores(
     labels: np.array,
     pred_probs: np.array,
     *,
-    method: str = "normalized_margin",
+    method: str = "self_confidence",
     adjust_pred_probs: bool = False,
 ) -> np.array:
     """Returns label quality scores for each datapoint.
@@ -123,7 +121,7 @@ def get_label_quality_scores(
       The columns must be ordered such that these probabilities correspond to class 0,1,2,...
       `pred_probs` should have been computed using 3 (or higher) fold cross-validation.
 
-    method : {"self_confidence", "normalized_margin", "confidence_weighted_entropy"}, default="normalized_margin"
+    method : {"self_confidence", "normalized_margin", "confidence_weighted_entropy"}, default="self_confidence"
       Label quality scoring method.
 
       Letting `k := labels[i]` and `P := pred_probs[i]` denote the given label and predicted class-probabilities
@@ -207,7 +205,7 @@ def get_label_quality_ensemble_scores(
     labels: np.array,
     pred_probs_list: List[np.array],
     *,
-    method: str = "normalized_margin",
+    method: str = "self_confidence",
     adjust_pred_probs: bool = False,
     weight_ensemble_members_by: str = "accuracy",
     verbose: int = 1,
@@ -236,8 +234,8 @@ def get_label_quality_ensemble_scores(
       expected by the `get_label_quality_scores()` method.
       Each element of pred_probs_list corresponds to the predictions from one model for all datapoints.
 
-    method : {"self_confidence", "normalized_margin", "confidence_weighted_entropy"}, default="normalized_margin"
-      Label quality scoring method. Default is "normalized_margin".
+    method : {"self_confidence", "normalized_margin", "confidence_weighted_entropy"}, default="self_confidence"
+      Label quality scoring method. Default is "self_confidence".
       See `get_label_quality_scores()` for scenarios on when to use each method.
 
       .. seealso::
