@@ -8,8 +8,8 @@ cleanlab documentation
 Quickstart
 ==========
 
-1. Install ``cleanlab``.
-------------------------
+1. Install ``cleanlab``
+-----------------------
 
 .. tabs::
 
@@ -32,12 +32,12 @@ Quickstart
          pip install git+https://github.com/cleanlab/cleanlab.git
 
 
-2. Find label errors with ``find_label_issues``.
-------------------------------------------------
+2. Find label errors in your data
+---------------------------------
 
-``cleanlab``'s ``find_label_issues`` function tells you which examples in your dataset are likely mislabeled. At a minimum, it expects two inputs - your data's given labels, ``y``, and predicted probabilities, ``pred_probs``, from some trained model (Note: these must be out-of-sample predictions where the data points were held out from the model during training, which can be obtained via cross-validation).
+``cleanlab``'s ``find_label_issues`` function tells you which examples in your dataset are likely mislabeled. At a minimum, it expects two inputs - your data's given labels, ``y``, and predicted probabilities, ``pred_probs``, from some trained classification model (Note: these must be out-of-sample predictions where the data points were held out from the model during training, which can be obtained via cross-validation).
 
-Setting ``return_indices_ranked_by`` instructs ``cleanlab`` to return the indices of potential mislabeled examples, ordered by the likelihood of label error estimate via ``self_confidence`` scores (predicted probability of given label according to the model).
+Setting ``return_indices_ranked_by`` in this function instructs ``cleanlab`` to return the indices of potential mislabeled examples, ordered by how likely their given label is incorrect. This is estimated via a **label quality score**, which for example can be specified as the ``self_confidence`` (predicted probability of given label according to the model).
 
 .. code-block:: python
 
@@ -49,15 +49,15 @@ Setting ``return_indices_ranked_by`` instructs ``cleanlab`` to return the indice
       return_indices_ranked_by='self_confidence')
 
 .. important::
-   The predicted probabilities, ``pred_probs``, from your model **must be out-of-sample**! You should never provide predictions on the same data points used to train the model - this would reflect predictions of an overfitted model, making it unsuitable for finding label errors. To compute the out-of-sample predicted probabilities of the entire dataset, you can use cross-validation.
+   The predicted probabilities, ``pred_probs``, from your model **must be out-of-sample**! You should never provide predictions on the same data points used to train the model as these predictions are overfit and  unsuitable for finding label errors. To compute out-of-sample predicted probabilities for your entire dataset, you can use cross-validation.
 
 ..
    TODO - include the url for tf and torch beginner tutorials
 
-3. Train robust models with noisy labels using ``LearningWithNoisyLabels``.
----------------------------------------------------------------------------
+3. Train robust models with noisy labels
+----------------------------------------
 
-``cleanlab``'s ``LearningWithNoisyLabels`` adapts any existing (scikit-learn compatible) classification model, ``clf``, to a more reliable one by allowing it to train directly on partially mislabeled datasets. 
+``cleanlab``'s ``LearningWithNoisyLabels`` class adapts any existing (scikit-learn compatible) classification model, ``clf``, to a more reliable one by allowing it to train directly on partially mislabeled datasets. 
 
 When the ``.fit()`` method is called, it automatically removes any examples identified as "noisy" in the provided dataset and returns a model trained only on the clean data.
 
