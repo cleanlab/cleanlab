@@ -23,7 +23,6 @@ of the dataset you choose (including the entire dataset) and provide a `label qu
 every example. You can then do something like: `np.argsort(label_quality_score)` to obtain ranked
 indices of individual data.
 
-If you aren't sure which method to use, try `get_self_confidence_for_each_label()`.
 """
 
 
