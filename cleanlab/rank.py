@@ -46,8 +46,7 @@ def order_label_issues(
 ) -> np.array:
     """Sorts label issues by label quality score.
 
-    Default label quality score is "normalized margin".
-    See https://arxiv.org/pdf/1810.05369.pdf (eqn 2.2)
+    Default label quality score is "self_confidence".
 
     Parameters
     ----------
