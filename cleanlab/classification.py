@@ -312,7 +312,7 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
         self.K = len(np.unique(labels))
         if len(labels) / self.K < self.cv_n_folds:
             raise ValueError(
-                "Need more data from each class for cross-validation."
+                "Need more data from each class for cross-validation. "
                 "Try decreasing `cv_n_folds` (eg. to 2,3) in LearningWithNoisyLabels()"
             )
         # 'ps' is p(labels=k)

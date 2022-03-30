@@ -119,9 +119,37 @@ def test_rp(data):
 
 
 @pytest.mark.filterwarnings("ignore::UserWarning")
-def test_learningnoisylabel_rarelabel():
+def test_rare_label():
     data = make_rare_label(DATA)
     test_rp(data)
+
+def test_invalid_inputs():
+    data = make_data(sparse=False, sizes=[1,1,1])
+    try:
+        test_rp(data)
+    except Exception as e:
+        assert "Need more data" in str(e)
+    try:
+        rp = LearningWithNoisyLabels(
+            clf=LogisticRegression(multi_class="auto", solver="lbfgs", random_state=SEED)
+        )
+        rp.fit(data["X_train"], data["labels"], find_label_issues_kwargs={"return_indices_ranked_by":"self_confidence"})
+    except Exception as e:
+        assert "not supported" in str(e)
+
+def test_aux_inputs():
+    data = DATA
+    K = len(np.unique(data["labels"]))
+    confident_joint = np.ones(shape=(K,K))
+    np.fill_diagonal(confident_joint, 10)
+    rp = LearningWithNoisyLabels(
+            clf=LogisticRegression(multi_class="auto", solver="lbfgs", random_state=SEED)
+        )   
+    find_label_issues_kwargs = {"confident_joint":confident_joint, "min_examples_per_class": 2}
+    rp.fit(data["X_train"], data["labels"], find_label_issues_kwargs=find_label_issues_kwargs,
+           clf_kwargs={}, clf_final_kwargs={})
+    score = rp.score(data["X_test"], data["true_labels_test"])
+    assert True
 
 
 def test_raise_error_no_clf_fit():

@@ -683,12 +683,6 @@ def estimate_confident_joint_and_cv_pred_proba(
             )
             for missing_class in missing_classes:
                 holdout_inds = np.where(s_holdout_cv == missing_class)[0]
-                if (
-                    len(holdout_inds) == 0
-                ):  # should never be in this situation but raise Error just in case:
-                    raise ValueError(
-                        f"Cannot run on this dataset, it needs more examples from class: {missing_class}"
-                    )
                 # Duplicate one instance of missing_class from holdout data to the training data:
                 dup_ind = holdout_inds[0]
                 s_train_cv = np.append(s_train_cv, s_holdout_cv[dup_ind])
