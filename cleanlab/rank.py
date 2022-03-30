@@ -23,6 +23,12 @@ of the dataset you choose (including the entire dataset) and provide a `label qu
 every example. You can then do something like: `np.argsort(label_quality_score)` to obtain ranked
 indices of individual data.
 
+CAUTION: These label quality scores are computed based on `pred_probs` from your model that must be out-of-sample!
+You should never provide predictions on the same datapoints used to train the model,
+as these will be overfit and unsuitable for finding label-errors.
+To obtain out-of-sample predicted probabilities for every datapoint in your dataset, you can use cross-validation.
+Alternatively it is ok if your model was trained on a separate dataset and you are only evaluating
+labels in data that was previously held-out.
 """
 
 
@@ -119,7 +125,13 @@ def get_label_quality_scores(
       Each row of this matrix corresponds to an example x and contains the model-predicted
       probabilities that x belongs to each possible class.
       The columns must be ordered such that these probabilities correspond to class 0,1,2,...
-      `pred_probs` should have been computed using 3 (or higher) fold cross-validation.
+
+      CAUTION: `pred_probs` from your model must be out-of-sample!
+      You should never provide predictions on the same datapoints used to train the model,
+      as these will be overfit and unsuitable for finding label-errors.
+      To obtain out-of-sample predicted probabilities for every datapoint in your dataset, you can use cross-validation.
+      Alternatively it is ok if your model was trained on a separate dataset and you are only evaluating
+      labels in data that was previously held-out.
 
     method : {"self_confidence", "normalized_margin", "confidence_weighted_entropy"}, default="self_confidence"
       Label quality scoring method.
@@ -232,7 +244,7 @@ def get_label_quality_ensemble_scores(
     pred_probs_list : List of np.array (shape (N, K))
       Each element in this list should be an array of pred_probs in the same format
       expected by the `get_label_quality_scores()` method.
-      Each element of pred_probs_list corresponds to the predictions from one model for all datapoints.
+      Each element of `pred_probs_list` corresponds to the predictions from one model for all datapoints.
 
     method : {"self_confidence", "normalized_margin", "confidence_weighted_entropy"}, default="self_confidence"
       Label quality scoring method. Default is "self_confidence".
@@ -298,7 +310,6 @@ def get_label_quality_ensemble_scores(
             accuracy = (pred_probs.argmax(axis=1) == labels).mean()
             accuracy_list.append(accuracy)
 
-    # Print statements if enabled by verbose
     if verbose:
         print(f"Weighting scheme for ensemble: {weight_ensemble_members_by}")
 
@@ -307,19 +318,12 @@ def get_label_quality_ensemble_scores(
 
     # Aggregate scores with chosen weighting scheme
     if weight_ensemble_members_by == "uniform":
-
-        # Uniform weights (simple average)
-        label_quality_scores = scores_ensemble.mean(axis=1)
+        label_quality_scores = scores_ensemble.mean(axis=1)  # Uniform weights (simple average)
 
     elif weight_ensemble_members_by == "accuracy":
-
-        # Weight by accuracy
-        weights = np.array(accuracy_list) / sum(accuracy_list)
-
+        weights = np.array(accuracy_list) / sum(accuracy_list)  # Weight by relative accuracy
         if verbose:
-            print(
-                "Ensemble members will be weighted by: accuracy of member / (sum of accuracy from all members)"
-            )
+            print("Ensemble members will be weighted by: their relative accuracy")
             for i, acc in enumerate(accuracy_list):
                 print(f"  Model {i} accuracy : {acc}")
                 print(f"  Model {i} weights  : {weights[i]}")

@@ -14,18 +14,18 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
-import numpy as np
-from cleanlab.classification import LearningWithNoisyLabels
-from cleanlab.noise_generation import generate_noise_matrix_from_trace
-from cleanlab.noise_generation import generate_noisy_labels
-from cleanlab.internal.latent_algebra import compute_inv_noise_matrix
+from copy import deepcopy
 from sklearn.linear_model import LogisticRegression
 from sklearn.base import BaseEstimator
 from numpy.random import multivariate_normal
 import scipy
 import warnings
 import pytest
-
+import numpy as np
+from cleanlab.classification import LearningWithNoisyLabels
+from cleanlab.noise_generation import generate_noise_matrix_from_trace
+from cleanlab.noise_generation import generate_noisy_labels
+from cleanlab.internal.latent_algebra import compute_inv_noise_matrix
 
 SEED = 1
 
@@ -73,7 +73,7 @@ def make_data(
         seed=SEED,
     )
 
-    # Generate our noisy labels using the noise_marix.
+    # Generate our noisy labels using the noise_matrix.
     s = generate_noisy_labels(true_labels_train, noise_matrix)
     ps = np.bincount(s) / float(len(s))
 
@@ -89,13 +89,26 @@ def make_data(
     }
 
 
+def make_rare_label(data):
+    """Makes one label really rare in the dataset."""
+    data = deepcopy(data)
+    y = data["labels"]
+    class0_inds = np.where(y == 0)[0]
+    if len(class0_inds) < 1:
+        raise ValueError("Class 0 too rare already")
+    class0_inds_remove = class0_inds[1:]
+    if len(class0_inds_remove) > 0:
+        y[class0_inds_remove] = 1
+    data["labels"] = y
+    return data
+
+
 DATA = make_data(sparse=False, seed=SEED)
 SPARSE_DATA = make_data(sparse=False, seed=SEED)
 
 
-@pytest.mark.parametrize("sparse", [True, False])
-def test_rp(sparse):
-    data = SPARSE_DATA if sparse else DATA
+@pytest.mark.parametrize("data", [DATA, SPARSE_DATA])
+def test_rp(data):
     rp = LearningWithNoisyLabels(
         clf=LogisticRegression(multi_class="auto", solver="lbfgs", random_state=SEED)
     )
@@ -104,6 +117,55 @@ def test_rp(sparse):
     print(score)
     # Check that this runs without error.
     assert True
+
+
+@pytest.mark.filterwarnings("ignore::UserWarning")
+def test_rare_label():
+    data = make_rare_label(DATA)
+    test_rp(data)
+
+
+def test_invalid_inputs():
+    data = make_data(sparse=False, sizes=[1, 1, 1])
+    try:
+        test_rp(data)
+    except Exception as e:
+        assert "Need more data" in str(e)
+    else:
+        raise Exception("expected test to raise Exception")
+    try:
+        rp = LearningWithNoisyLabels(
+            clf=LogisticRegression(multi_class="auto", solver="lbfgs", random_state=SEED)
+        )
+        rp.fit(
+            data["X_train"],
+            data["labels"],
+            find_label_issues_kwargs={"return_indices_ranked_by": "self_confidence"},
+        )
+    except Exception as e:
+        assert "not supported" in str(e)
+    else:
+        raise Exception("expected test to raise Exception")
+
+
+def test_aux_inputs():
+    data = DATA
+    K = len(np.unique(data["labels"]))
+    confident_joint = np.ones(shape=(K, K))
+    np.fill_diagonal(confident_joint, 10)
+    rp = LearningWithNoisyLabels(
+        clf=LogisticRegression(multi_class="auto", solver="lbfgs", random_state=SEED),
+        verbose=0,
+    )
+    find_label_issues_kwargs = {"confident_joint": confident_joint, "min_examples_per_class": 2}
+    rp.fit(
+        data["X_train"],
+        data["labels"],
+        find_label_issues_kwargs=find_label_issues_kwargs,
+        clf_kwargs={},
+        clf_final_kwargs={},
+    )
+    score = rp.score(data["X_test"], data["true_labels_test"])
 
 
 def test_raise_error_no_clf_fit():
@@ -388,10 +450,11 @@ def test_fit_pred_probs(sparse):
 @pytest.mark.parametrize("sparse", [True, False])
 def test_get_label_issues(sparse):
     data = SPARSE_DATA if sparse else DATA
-    lnl = LearningWithNoisyLabels(n_jobs=1)
+    lnl = LearningWithNoisyLabels()
     lnl.fit(
         X=data["X_train"],
         labels=data["true_labels_train"],
+        find_label_issues_kwargs={"n_jobs": 1, "min_examples_per_class": 5},
     )
     assert all((lnl.get_label_issues() == lnl.label_issues_mask))
 

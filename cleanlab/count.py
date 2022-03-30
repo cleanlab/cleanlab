@@ -33,6 +33,7 @@ from sklearn.model_selection import StratifiedKFold
 from sklearn.metrics import confusion_matrix
 import sklearn.base
 import numpy as np
+import warnings
 
 from cleanlab.internal.util import (
     value_counts,
@@ -76,7 +77,13 @@ def num_label_issues(
         Each row of this matrix corresponds to an example `x` and contains the model-predicted
         probabilities that `x` belongs to each possible class.
         The columns must be ordered such that these probabilities correspond to class 0,1,2,...
-        `pred_probs` should have been computed using 3 (or higher) fold cross-validation.
+
+        CAUTION: `pred_probs` from your model must be out-of-sample!
+        You should never provide predictions on the same datapoints used to train the model,
+        as these will be overfit and unsuitable for finding label-errors.
+        To obtain out-of-sample predicted probabilities for every datapoint in your dataset, you can use cross-validation.
+        Alternatively it is ok if your model was trained on a separate dataset and you are only evaluating
+        labels in data that was previously held-out.
 
     confident_joint : np.array (shape (K, K), type int)
         A K,K integer matrix of count(label=k, true_label=k). Estimates a confident subset of
@@ -86,7 +93,7 @@ def num_label_issues(
 
     Returns
     -------
-        An integer estimating the number of label issues."""
+        An integer estimate of the number of label issues."""
 
     if confident_joint is None:
         confident_joint = compute_confident_joint(labels=labels, pred_probs=pred_probs)
@@ -158,7 +165,7 @@ def estimate_joint(labels, pred_probs=None, *, confident_joint=None, multi_label
 
     Parameters
     ----------
-    See cleanlab.count.calibrate_confident_joint docstring.
+    See `cleanlab.count.calibrate_confident_joint` docstring.
 
     Returns
     -------
@@ -211,7 +218,7 @@ def _compute_confident_joint_multi_label(
         Each row of this matrix corresponds to an example `x` and contains the model-predicted
         probabilities that `x` belongs to each possible class.
         The columns must be ordered such that these probabilities correspond to class 0,1,2,...
-        `pred_probs` should have been computed using 3 (or higher) fold cross-validation.
+        `pred_probs` must be out-of-sample (ideally should have been computed using 3+ fold cross-validation).
 
     thresholds : iterable (list or np.array) of shape (K, 1)  or (K,)
         P(label^=k|label=k). If an example has a predicted probability "greater" than
@@ -300,7 +307,7 @@ def compute_confident_joint(
         Each row of this matrix corresponds to an example `x` and contains the model-predicted
         probabilities that `x` belongs to each possible class.
         The columns must be ordered such that these probabilities correspond to class 0,1,2,...
-        `pred_probs` should have been computed using 3 (or higher) fold cross-validation.
+        `pred_probs` must be out-of-sample and should have been computed using 3 (or higher) fold cross-validation.
 
     K : int (default: None)
         Number of unique classes. Calculated as len(np.unique(labels)) when K == None
@@ -447,9 +454,9 @@ def estimate_latent(
         the matrix diagonals instead of all the probabilities.
 
     converge_latent_estimates : bool
-      If true, forces numerical consistency of estimates. Each is estimated
-      independently, but they are related mathematically with closed form
-      equivalences. This will iteratively make them mathematically consistent.
+        If true, forces numerical consistency of estimates. Each is estimated
+        independently, but they are related mathematically with closed form
+        equivalences. This will iteratively make them mathematically consistent.
 
     Returns
     ------
@@ -576,6 +583,7 @@ def estimate_confident_joint_and_cv_pred_proba(
     thresholds=None,
     seed=None,
     calibrate=True,
+    clf_kwargs={},
 ):
     """Estimates P(labels,y), the confident counts of the latent
     joint distribution of true and noisy labels
@@ -603,22 +611,22 @@ def estimate_confident_joint_and_cv_pred_proba(
       Input feature matrix (N, D), 2D numpy array
 
     labels : np.array
-          A discrete vector of noisy labels, i.e. some labels may be erroneous.
-          *Format requirements*: for dataset with K classes, labels must be in {0,1,...,K-1}.
+        A discrete vector of noisy labels, i.e. some labels may be erroneous.
+        *Format requirements*: for dataset with K classes, labels must be in {0,1,...,K-1}.
 
     clf : sklearn.classifier or equivalent
-      Default classifier used is logistic regression. Assumes clf
-      has predict_proba() and fit() defined.
+        Default classifier used is logistic regression. Assumes clf
+        has predict_proba() and fit() defined.
 
     cv_n_folds : int
-      The number of cross-validation folds used to compute
-      out-of-sample probabilities for each example in X.
+        The number of cross-validation folds used to compute
+        out-of-sample probabilities for each example in X.
 
     thresholds : iterable (list or np.array) of shape (K, 1)  or (K,)
-      P(label^=k|label=k). If an example has a predicted probability "greater" than
-      this threshold, it is counted as having true_label = k. This is
-      not used for filtering/pruning, only for estimating the noise rates using
-      confident counts. This value should be between 0 and 1. Default is None.
+        P(label^=k|label=k). If an example has a predicted probability "greater" than
+        this threshold, it is counted as having true_label = k. This is
+        not used for filtering/pruning, only for estimating the noise rates using
+        confident counts. This value should be between 0 and 1. Default is None.
 
     seed : int (default = None)
         Set the default state of the random number generator used to split
@@ -628,10 +636,13 @@ def estimate_confident_joint_and_cv_pred_proba(
         Calibrates confident joint estimate P(label=i, true_label=j) such that
         np.sum(cj) == len(labels) and np.sum(cj, axis = 1) == np.bincount(labels).
 
+    clf_kwargs : dict, default = {}
+        Optional keyword arguments to pass into `clf` fit() method.
+
     Returns
     ------
-      Returns a tuple of two numpy array matrices in the form:
-      (joint counts matrix, predicted probability matrix)"""
+        Tuple of two numpy array matrices in the form:
+        (joint counts matrix, predicted probability matrix)"""
 
     assert_inputs_are_valid(X, labels)
     # Number of classes
@@ -656,10 +667,39 @@ def estimate_confident_joint_and_cv_pred_proba(
         X_train_cv, X_holdout_cv = X[cv_train_idx], X[cv_holdout_idx]
         s_train_cv, s_holdout_cv = labels[cv_train_idx], labels[cv_holdout_idx]
 
-        # Fit the clf classifier to the training set and
-        # predict on the holdout set and update pred_probs.
-        clf_copy.fit(X_train_cv, s_train_cv)
+        # Ensure no missing classes in training set.
+        train_cv_classes = set(s_train_cv)
+        all_classes = set(
+            range(K)
+        )  # TODO: more efficient if committed to labels 0,...,K, else use this: set(labels)
+        missing_class_inds = (
+            {}
+        )  # keys = which classes are missing, values = index of holdout data from this class that we duplicated
+        if len(train_cv_classes) != len(all_classes):
+            missing_classes = all_classes.difference(train_cv_classes)
+            warnings.warn(
+                "Duplicated some data across multiple folds to ensure training does not fail "
+                f"because these classes do not have enough data for proper cross-validation: {missing_classes}."
+            )
+            for missing_class in missing_classes:
+                holdout_inds = np.where(s_holdout_cv == missing_class)[0]
+                # Duplicate one instance of missing_class from holdout data to the training data:
+                dup_ind = holdout_inds[0]
+                s_train_cv = np.append(s_train_cv, s_holdout_cv[dup_ind])
+                X_train_cv = np.vstack([X_train_cv, X_holdout_cv[dup_ind]])
+                missing_class_inds[missing_class] = dup_ind
+
+        # Fit classifier clf to training set, predict on holdout set, and update pred_probs.
+        clf_copy.fit(X_train_cv, s_train_cv, **clf_kwargs)
         pred_probs_cv = clf_copy.predict_proba(X_holdout_cv)  # P(labels = k|x) # [:,1]
+
+        # Replace predictions for duplicated indices with dummy predictions:
+        for missing_class in missing_class_inds:
+            dummy_pred = np.zeros(pred_probs_cv[0].shape)
+            dummy_pred[missing_class] = 1.0  # predict given label with full confidence
+            dup_ind = missing_class_inds[missing_class]
+            pred_probs_cv[dup_ind] = dummy_pred
+
         pred_probs[cv_holdout_idx] = pred_probs_cv
 
     # Compute the confident counts, a K x K matrix for all pairs of labels.
@@ -683,6 +723,7 @@ def estimate_py_noise_matrices_and_cv_pred_proba(
     converge_latent_estimates=False,
     py_method="cnt",
     seed=None,
+    clf_kwargs={},
 ):
     """This function computes the out-of-sample predicted
     probability P(label=k|x) for every example x in X using cross
@@ -703,8 +744,8 @@ def estimate_py_noise_matrices_and_cv_pred_proba(
       Input feature matrix (N, D), 2D numpy array
 
     labels : np.array
-        A discrete vector of noisy labels, i.e. some labels may be erroneous.
-        *Format requirements*: for dataset with K classes, labels must be in {0,1,...,K-1}.
+      A discrete vector of noisy labels, i.e. some labels may be erroneous.
+      *Format requirements*: for dataset with K classes, labels must be in {0,1,...,K-1}.
 
     clf : sklearn.classifier or equivalent
       Default classifier used is logistic regression. Assumes clf
@@ -726,17 +767,20 @@ def estimate_py_noise_matrices_and_cv_pred_proba(
       equivalences. This will iteratively make them mathematically consistent.
 
     py_method : str (Options: ["cnt", "eqn", "marginal", "marginal_ps"])
-        How to compute the latent prior p(true_label=k). Default is "cnt" as it often
-        works well even when the noise matrices are estimated poorly by using
-        the matrix diagonals instead of all the probabilities.
+      How to compute the latent prior p(true_label=k). Default is "cnt" as it often
+      works well even when the noise matrices are estimated poorly by using
+      the matrix diagonals instead of all the probabilities.
 
     seed : int (default = None)
-        Set the default state of the random number generator used to split
-        the cross-validated folds. If None, uses np.random current random state.
+      Set the default state of the random number generator used to split
+      the cross-validated folds. If None, uses np.random current random state.
+
+    clf_kwargs : dict, default = {}
+      Optional keyword arguments to pass into `clf` fit() method.
 
     Returns
     ------
-      Returns a tuple of five numpy array matrices in the form:
+      Tuple of five numpy array matrices in the form:
       (py, noise_matrix, inverse_noise_matrix,
       joint count matrix i.e. confident joint, predicted probability matrix)"""
 
@@ -747,6 +791,7 @@ def estimate_py_noise_matrices_and_cv_pred_proba(
         cv_n_folds=cv_n_folds,
         thresholds=thresholds,
         seed=seed,
+        clf_kwargs=clf_kwargs,
     )
 
     py, noise_matrix, inv_noise_matrix = estimate_latent(
@@ -761,11 +806,12 @@ def estimate_py_noise_matrices_and_cv_pred_proba(
 
 def estimate_cv_predicted_probabilities(
     X,
-    labels,  # class labels can be noisy (labels) or not noisy (y).
+    labels,
     clf=LogReg(multi_class="auto", solver="lbfgs"),
     *,
     cv_n_folds=5,
     seed=None,
+    clf_kwargs={},
 ):
     """This function computes the out-of-sample predicted
     probability [P(label=k|x)] for every example in X using cross
@@ -791,8 +837,11 @@ def estimate_cv_predicted_probabilities(
       out-of-sample probabilities for each example in X.
 
     seed : int (default = None)
-        Set the default state of the random number generator used to split
-        the cross-validated folds. If None, uses np.random current random state.
+      Set the default state of the random number generator used to split
+      the cross-validated folds. If None, uses np.random current random state.
+
+    clf_kwargs : dict, default = {}
+      Optional keyword arguments to pass into `clf` fit() method.
 
     Returns
     --------
@@ -809,6 +858,7 @@ def estimate_cv_predicted_probabilities(
         clf=clf,
         cv_n_folds=cv_n_folds,
         seed=seed,
+        clf_kwargs=clf_kwargs,
     )[-1]
 
 
@@ -821,6 +871,7 @@ def estimate_noise_matrices(
     thresholds=None,
     converge_latent_estimates=True,
     seed=None,
+    clf_kwargs={},
 ):
     """Estimates the noise_matrix of shape (K, K). This is the
     fraction of examples in every class, labeled as every other class. The
@@ -858,8 +909,11 @@ def estimate_noise_matrices(
       equivalences. This will iteratively make them mathematically consistent.
 
     seed : int (default = None)
-        Set the default state of the random number generator used to split
-        the cross-validated folds. If None, uses np.random current random state.
+      Set the default state of the random number generator used to split
+      the cross-validated folds. If None, uses np.random current random state.
+
+    clf_kwargs : dict, default = {}
+      Optional keyword arguments to pass into `clf` fit() method.
 
     Returns
     ------
@@ -873,6 +927,7 @@ def estimate_noise_matrices(
         thresholds=thresholds,
         converge_latent_estimates=converge_latent_estimates,
         seed=seed,
+        clf_kwargs=clf_kwargs,
     )[1:-2]
 
 
