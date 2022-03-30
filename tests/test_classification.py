@@ -123,8 +123,9 @@ def test_rare_label():
     data = make_rare_label(DATA)
     test_rp(data)
 
+
 def test_invalid_inputs():
-    data = make_data(sparse=False, sizes=[1,1,1])
+    data = make_data(sparse=False, sizes=[1, 1, 1])
     try:
         test_rp(data)
     except Exception as e:
@@ -133,21 +134,32 @@ def test_invalid_inputs():
         rp = LearningWithNoisyLabels(
             clf=LogisticRegression(multi_class="auto", solver="lbfgs", random_state=SEED)
         )
-        rp.fit(data["X_train"], data["labels"], find_label_issues_kwargs={"return_indices_ranked_by":"self_confidence"})
+        rp.fit(
+            data["X_train"],
+            data["labels"],
+            find_label_issues_kwargs={"return_indices_ranked_by": "self_confidence"},
+        )
     except Exception as e:
         assert "not supported" in str(e)
+
 
 def test_aux_inputs():
     data = DATA
     K = len(np.unique(data["labels"]))
-    confident_joint = np.ones(shape=(K,K))
+    confident_joint = np.ones(shape=(K, K))
     np.fill_diagonal(confident_joint, 10)
     rp = LearningWithNoisyLabels(
-            clf=LogisticRegression(multi_class="auto", solver="lbfgs", random_state=SEED)
-        )   
-    find_label_issues_kwargs = {"confident_joint":confident_joint, "min_examples_per_class": 2}
-    rp.fit(data["X_train"], data["labels"], find_label_issues_kwargs=find_label_issues_kwargs,
-           clf_kwargs={}, clf_final_kwargs={})
+        clf=LogisticRegression(multi_class="auto", solver="lbfgs", random_state=SEED),
+        verbose=0,
+    )
+    find_label_issues_kwargs = {"confident_joint": confident_joint, "min_examples_per_class": 2}
+    rp.fit(
+        data["X_train"],
+        data["labels"],
+        find_label_issues_kwargs=find_label_issues_kwargs,
+        clf_kwargs={},
+        clf_final_kwargs={},
+    )
     score = rp.score(data["X_test"], data["true_labels_test"])
     assert True
 
