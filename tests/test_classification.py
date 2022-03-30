@@ -130,6 +130,8 @@ def test_invalid_inputs():
         test_rp(data)
     except Exception as e:
         assert "Need more data" in str(e)
+    else:
+        raise Exception("expected test to raise Exception")
     try:
         rp = LearningWithNoisyLabels(
             clf=LogisticRegression(multi_class="auto", solver="lbfgs", random_state=SEED)
@@ -141,6 +143,8 @@ def test_invalid_inputs():
         )
     except Exception as e:
         assert "not supported" in str(e)
+    else:
+        raise Exception("expected test to raise Exception")
 
 
 def test_aux_inputs():
@@ -161,7 +165,6 @@ def test_aux_inputs():
         clf_final_kwargs={},
     )
     score = rp.score(data["X_test"], data["true_labels_test"])
-    assert True
 
 
 def test_raise_error_no_clf_fit():

@@ -93,7 +93,7 @@ def num_label_issues(
 
     Returns
     -------
-        An integer estimate the number of label issues."""
+        An integer estimate of the number of label issues."""
 
     if confident_joint is None:
         confident_joint = compute_confident_joint(labels=labels, pred_probs=pred_probs)

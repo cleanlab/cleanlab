@@ -103,7 +103,6 @@ to the classifier during training. `labels` denotes the noisy label instead of
 \\tilde(y) (used in confident learning paper), for ASCII encoding reasons.
 """
 
-from copy import deepcopy
 from sklearn.linear_model import LogisticRegression as LogReg
 from sklearn.metrics import accuracy_score
 from sklearn.base import BaseEstimator
@@ -305,7 +304,7 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
 
         self._process_label_issues_kwargs(find_label_issues_kwargs)
         clf_final_kwargs = {**clf_kwargs, **clf_final_kwargs}
-        self.clf_kwargs = deepcopy(clf_kwargs)
+        self.clf_kwargs = clf_kwargs
         self.clf_final_kwargs = clf_final_kwargs
 
         # Number of classes
