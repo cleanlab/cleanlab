@@ -125,7 +125,7 @@ def get_label_quality_scores(
       Each row of this matrix corresponds to an example x and contains the model-predicted
       probabilities that x belongs to each possible class.
       The columns must be ordered such that these probabilities correspond to class 0,1,2,...
-      
+
       CAUTION: `pred_probs` from your model must be out-of-sample!
       You should never provide predictions on the same datapoints used to train the model,
       as these will be overfit and unsuitable for finding label-errors.
@@ -310,7 +310,6 @@ def get_label_quality_ensemble_scores(
             accuracy = (pred_probs.argmax(axis=1) == labels).mean()
             accuracy_list.append(accuracy)
 
-    # Print statements if enabled by verbose
     if verbose:
         print(f"Weighting scheme for ensemble: {weight_ensemble_members_by}")
 
@@ -319,19 +318,12 @@ def get_label_quality_ensemble_scores(
 
     # Aggregate scores with chosen weighting scheme
     if weight_ensemble_members_by == "uniform":
-
-        # Uniform weights (simple average)
-        label_quality_scores = scores_ensemble.mean(axis=1)
+        label_quality_scores = scores_ensemble.mean(axis=1)  # Uniform weights (simple average)
 
     elif weight_ensemble_members_by == "accuracy":
-
-        # Weight by accuracy
-        weights = np.array(accuracy_list) / sum(accuracy_list)
-
+        weights = np.array(accuracy_list) / sum(accuracy_list)  # Weight by relative accuracy
         if verbose:
-            print(
-                "Ensemble members will be weighted by: accuracy of member / (sum of accuracy from all members)"
-            )
+            print("Ensemble members will be weighted by: their relative accuracy")
             for i, acc in enumerate(accuracy_list):
                 print(f"  Model {i} accuracy : {acc}")
                 print(f"  Model {i} weights  : {weights[i]}")

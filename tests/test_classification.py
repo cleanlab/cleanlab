@@ -14,17 +14,17 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
-import numpy as np
-from cleanlab.classification import LearningWithNoisyLabels
-from cleanlab.noise_generation import generate_noise_matrix_from_trace
-from cleanlab.noise_generation import generate_noisy_labels
-from cleanlab.internal.latent_algebra import compute_inv_noise_matrix
+from copy import deepcopy
 from sklearn.linear_model import LogisticRegression
 from numpy.random import multivariate_normal
 import scipy
 import warnings
 import pytest
-
+import numpy as np
+from cleanlab.classification import LearningWithNoisyLabels
+from cleanlab.noise_generation import generate_noise_matrix_from_trace
+from cleanlab.noise_generation import generate_noisy_labels
+from cleanlab.internal.latent_algebra import compute_inv_noise_matrix
 
 SEED = 1
 
@@ -72,7 +72,7 @@ def make_data(
         seed=SEED,
     )
 
-    # Generate our noisy labels using the noise_marix.
+    # Generate our noisy labels using the noise_matrix.
     s = generate_noisy_labels(true_labels_train, noise_matrix)
     ps = np.bincount(s) / float(len(s))
 
@@ -88,13 +88,26 @@ def make_data(
     }
 
 
+def make_rare_label(data):
+    """Makes one label really rare in the dataset."""
+    data = deepcopy(data)
+    y = data["labels"]
+    class0_inds = np.where(y == 0)[0]
+    if len(class0_inds) < 1:
+        raise ValueError("Class 0 too rare already")
+    class0_inds_remove = class0_inds[1:]
+    if len(class0_inds_remove) > 0:
+        y[class0_inds_remove] = 1
+    data["labels"] = y
+    return data
+
+
 DATA = make_data(sparse=False, seed=SEED)
 SPARSE_DATA = make_data(sparse=False, seed=SEED)
 
 
-@pytest.mark.parametrize("sparse", [True, False])
-def test_rp(sparse):
-    data = SPARSE_DATA if sparse else DATA
+@pytest.mark.parametrize("data", [DATA, SPARSE_DATA])
+def test_rp(data):
     rp = LearningWithNoisyLabels(
         clf=LogisticRegression(multi_class="auto", solver="lbfgs", random_state=SEED)
     )
@@ -103,6 +116,12 @@ def test_rp(sparse):
     print(score)
     # Check that this runs without error.
     assert True
+
+
+@pytest.mark.filterwarnings("ignore::UserWarning")
+def test_learningnoisylabel_rarelabel():
+    data = make_rare_label(DATA)
+    test_rp(data)
 
 
 def test_raise_error_no_clf_fit():
@@ -391,6 +410,6 @@ def test_get_label_issues(sparse):
     lnl.fit(
         X=data["X_train"],
         labels=data["true_labels_train"],
-        find_label_issues_kwargs = {"n_jobs":1, "min_examples_per_class":5}
+        find_label_issues_kwargs={"n_jobs": 1, "min_examples_per_class": 5},
     )
     assert all((lnl.get_label_issues() == lnl.label_issues_mask))

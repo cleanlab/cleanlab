@@ -61,6 +61,7 @@ mp_params = {}  # parameters passed to multiprocessing helper functions
 
 # Multiprocessing Helper functions
 
+
 def _to_np_array(mp_arr, dtype="int32", shape=None):  # pragma: no cover
     """multipropecessing Helper function to convert a multiprocessing
     RawArray to a numpy array."""
@@ -91,6 +92,7 @@ def _init(
     mp_params["pred_probs_shape"] = __pred_probs_shape
     mp_params["multi_label"] = __multi_label
     mp_params["min_examples_per_class"] = __min_examples_per_class
+
 
 def _get_shared_data():  # pragma: no cover
     """multiprocessing helper function to extract numpy arrays from
@@ -132,9 +134,23 @@ def _prune_by_class(k, args=None):
       The class of interest."""
 
     if args:  # Single processing - params are passed in
-        labels, label_counts, prune_count_matrix, pred_probs, multi_label, min_examples_per_class = args
+        (
+            labels,
+            label_counts,
+            prune_count_matrix,
+            pred_probs,
+            multi_label,
+            min_examples_per_class,
+        ) = args
     else:  # Multiprocessing - data is shared across sub-processes
-        labels, label_counts, prune_count_matrix, pred_probs, multi_label, min_examples_per_class = _get_shared_data()
+        (
+            labels,
+            label_counts,
+            prune_count_matrix,
+            pred_probs,
+            multi_label,
+            min_examples_per_class,
+        ) = _get_shared_data()
 
     if label_counts[k] > min_examples_per_class:  # No prune if not at least min_examples_per_class
         num_issues = label_counts[k] - prune_count_matrix[k][k]
@@ -144,7 +160,9 @@ def _prune_by_class(k, args=None):
         rank = np.partition(class_probs[label_filter], num_issues)[num_issues]
         return label_filter & (class_probs < rank)
     else:
-        warnings.warn(f"May not flag all label issues in class: {k}, it has too few examples (see argument: `min_examples_per_class`)")
+        warnings.warn(
+            f"May not flag all label issues in class: {k}, it has too few examples (see argument: `min_examples_per_class`)"
+        )
         return np.zeros(len(labels), dtype=bool)
 
 
@@ -161,15 +179,31 @@ def _prune_by_count(k, args=None):
       The true_label class of interest."""
 
     if args:  # Single processing - params are passed in
-        labels, label_counts, prune_count_matrix, pred_probs, multi_label, min_examples_per_class = args
+        (
+            labels,
+            label_counts,
+            prune_count_matrix,
+            pred_probs,
+            multi_label,
+            min_examples_per_class,
+        ) = args
     else:  # Multiprocessing - data is shared across sub-processes
-        labels, label_counts, prune_count_matrix, pred_probs, multi_label, min_examples_per_class = _get_shared_data()
+        (
+            labels,
+            label_counts,
+            prune_count_matrix,
+            pred_probs,
+            multi_label,
+            min_examples_per_class,
+        ) = _get_shared_data()
 
     label_issues_mask = np.zeros(len(pred_probs), dtype=bool)
     pred_probs_k = pred_probs[:, k]
     K = len(label_counts)
     if label_counts[k] <= min_examples_per_class:  # No prune if not at least min_examples_per_class
-        warnings.warn(f"May not flag all label issues in class: {k}, it has too few examples (see `min_examples_per_class` argument)")
+        warnings.warn(
+            f"May not flag all label issues in class: {k}, it has too few examples (see `min_examples_per_class` argument)"
+        )
         return np.zeros(len(labels), dtype=bool)
     for j in range(K):  # j is true label index (k is noisy label index)
         num2prune = prune_count_matrix[j][k]
@@ -346,7 +380,7 @@ def find_label_issues(
 
     min_examples_per_class : int, default = 1
       Minimum number of examples per class to avoid flagging as label issues.
-      This is useful to avoid deleting too much data from one class 
+      This is useful to avoid deleting too much data from one class
       when pruning noisy examples in datasets with rare classes.
 
     n_jobs : int (Windows users may see a speed-up with n_jobs = 1)
@@ -442,7 +476,14 @@ def find_label_issues(
             _prune_count_matrix = RawArray("I", prune_count_matrix.flatten())
             _pred_probs = RawArray("f", pred_probs.flatten())
         else:  # Multiprocessing is turned off. Create tuple with all parameters
-            args = (labels, label_counts, prune_count_matrix, pred_probs, multi_label, min_examples_per_class)
+            args = (
+                labels,
+                label_counts,
+                prune_count_matrix,
+                pred_probs,
+                multi_label,
+                min_examples_per_class,
+            )
 
     # Perform Pruning with threshold probabilities from BFPRT algorithm in O(n)
     # Operations are parallelized across all CPU processes
