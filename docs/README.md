@@ -1,6 +1,11 @@
 # Looking for `v1.0` of the `cleanlab` docs?
 
-Please refer to the `v1.0.1` documentation; the code for `v1.0` is identical to the code for `v1.0.1`.
+Please refer to the [`v1.0.1` documentation](https://docs.cleanlab.ai/v1.0.1/);
+the code for `v1.0` is identical to the code for `v1.0.1`.
+
+# Looking for rendered docs?
+
+See <https://docs.cleanlab.ai/> if you want to browse the documentation (including for past versions).
 
 # CI/CD for `cleanlab` docs
 
