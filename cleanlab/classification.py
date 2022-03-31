@@ -214,7 +214,6 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
         self.inverse_noise_matrix = None
         self.clf_kwargs = None
         self.clf_final_kwargs = None
-
         self._process_label_issues_kwargs(find_label_issues_kwargs)
 
     def fit(
