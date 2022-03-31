@@ -162,9 +162,9 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
       perfectly labeled (certain no errors in that class).
 
     find_label_issues_kwargs : dict, default = {}
-        Optional keyword arguments to pass into `filter.find_label_issues()`.
-        Options that may especially impact accuracy include:
-        `filter_by`, `frac_noise`, `min_examples_per_class`
+      Optional keyword arguments to pass into `filter.find_label_issues()`.
+      Options that may especially impact accuracy include:
+      `filter_by`, `frac_noise`, `min_examples_per_class`
 
     verbose : :obj:`int` (0 or 1, default: 1)
       Controls how much output is printed. Set = 0 to suppress print statements.
