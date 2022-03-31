@@ -161,6 +161,11 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
       Only works for 2 class datasets. Set to the integer of the class that is
       perfectly labeled (certain no errors in that class).
 
+    find_label_issues_kwargs : dict, default = {}
+      Optional keyword arguments to pass into `filter.find_label_issues()`.
+      Options that may especially impact accuracy include:
+      `filter_by`, `frac_noise`, `min_examples_per_class`
+
     verbose : :obj:`int` (0 or 1, default: 1)
       Controls how much output is printed. Set = 0 to suppress print statements.
     """
@@ -174,6 +179,7 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
         cv_n_folds=5,
         converge_latent_estimates=False,
         pulearning=None,
+        find_label_issues_kwargs={},
         verbose=1,
     ):
 
@@ -197,6 +203,7 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
         self.cv_n_folds = cv_n_folds
         self.converge_latent_estimates = converge_latent_estimates
         self.pulearning = pulearning
+        self.find_label_issues_kwargs = find_label_issues_kwargs
         self.verbose = verbose
         self.label_issues_mask = None
         self.sample_weight = None
@@ -206,9 +213,9 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
         self.K = None
         self.noise_matrix = None
         self.inverse_noise_matrix = None
-        self.find_label_issues_kwargs = None
         self.clf_kwargs = None
         self.clf_final_kwargs = None
+        self._process_label_issues_kwargs(find_label_issues_kwargs)
 
     def fit(
         self,
@@ -219,7 +226,6 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
         thresholds=None,
         noise_matrix=None,
         inverse_noise_matrix=None,
-        find_label_issues_kwargs={},
         clf_kwargs={},
         clf_final_kwargs={},
     ):
@@ -272,11 +278,6 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
           inverse_noise_matrix will be computed from pred_probs and labels.
           Assumes columns of inverse_noise_matrix sum to 1.
 
-        find_label_issues_kwargs : dict, default = {}
-          Optional keyword arguments to pass into `filter.find_label_issues()`.
-          Options that may especially impact accuracy include:
-            `filter_by`, `frac_noise`, `min_examples_per_class`
-
         clf_kwargs : dict, default = {}
           Optional keyword arguments to pass into `clf` fit() method.
 
@@ -302,7 +303,6 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
             t = np.round(np.trace(inverse_noise_matrix), 2)
             raise ValueError("Trace(inverse_noise_matrix) is {}. Must exceed 1.".format(t))
 
-        self._process_label_issues_kwargs(find_label_issues_kwargs)
         clf_final_kwargs = {**clf_kwargs, **clf_final_kwargs}
         self.clf_kwargs = clf_kwargs
         self.clf_final_kwargs = clf_final_kwargs

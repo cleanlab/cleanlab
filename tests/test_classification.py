@@ -135,12 +135,12 @@ def test_invalid_inputs():
         raise Exception("expected test to raise Exception")
     try:
         rp = LearningWithNoisyLabels(
-            clf=LogisticRegression(multi_class="auto", solver="lbfgs", random_state=SEED)
+            clf=LogisticRegression(multi_class="auto", solver="lbfgs", random_state=SEED),
+            find_label_issues_kwargs={"return_indices_ranked_by": "self_confidence"},
         )
         rp.fit(
             data["X_train"],
             data["labels"],
-            find_label_issues_kwargs={"return_indices_ranked_by": "self_confidence"},
         )
     except Exception as e:
         assert "not supported" in str(e)
@@ -153,15 +153,15 @@ def test_aux_inputs():
     K = len(np.unique(data["labels"]))
     confident_joint = np.ones(shape=(K, K))
     np.fill_diagonal(confident_joint, 10)
+    find_label_issues_kwargs = {"confident_joint": confident_joint, "min_examples_per_class": 2}
     rp = LearningWithNoisyLabels(
         clf=LogisticRegression(multi_class="auto", solver="lbfgs", random_state=SEED),
+        find_label_issues_kwargs=find_label_issues_kwargs,
         verbose=0,
     )
-    find_label_issues_kwargs = {"confident_joint": confident_joint, "min_examples_per_class": 2}
     rp.fit(
         data["X_train"],
         data["labels"],
-        find_label_issues_kwargs=find_label_issues_kwargs,
         clf_kwargs={},
         clf_final_kwargs={},
     )
@@ -450,11 +450,12 @@ def test_fit_pred_probs(sparse):
 @pytest.mark.parametrize("sparse", [True, False])
 def test_get_label_issues(sparse):
     data = SPARSE_DATA if sparse else DATA
-    lnl = LearningWithNoisyLabels()
+    lnl = LearningWithNoisyLabels(
+        find_label_issues_kwargs={"n_jobs": 1, "min_examples_per_class": 5},
+    )
     lnl.fit(
         X=data["X_train"],
         labels=data["true_labels_train"],
-        find_label_issues_kwargs={"n_jobs": 1, "min_examples_per_class": 5},
     )
     assert all((lnl.get_label_issues() == lnl.label_issues_mask))
 
