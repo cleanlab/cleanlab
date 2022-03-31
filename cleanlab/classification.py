@@ -215,7 +215,6 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
         self.inverse_noise_matrix = None
         self.clf_kwargs = None
         self.clf_final_kwargs = None
-        self._process_label_issues_kwargs(find_label_issues_kwargs)
 
     def fit(
         self,
@@ -302,6 +301,8 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
         if inverse_noise_matrix is not None and (np.trace(inverse_noise_matrix) <= 1):
             t = np.round(np.trace(inverse_noise_matrix), 2)
             raise ValueError("Trace(inverse_noise_matrix) is {}. Must exceed 1.".format(t))
+
+        self._process_label_issues_kwargs(self.find_label_issues_kwargs)
 
         clf_final_kwargs = {**clf_kwargs, **clf_final_kwargs}
         self.clf_kwargs = clf_kwargs
