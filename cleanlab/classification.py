@@ -203,6 +203,7 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
         self.cv_n_folds = cv_n_folds
         self.converge_latent_estimates = converge_latent_estimates
         self.pulearning = pulearning
+        self.find_label_issues_kwargs = find_label_issues_kwargs
         self.verbose = verbose
         self.label_issues_mask = None
         self.sample_weight = None
