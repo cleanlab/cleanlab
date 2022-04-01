@@ -17,6 +17,7 @@
 from copy import deepcopy
 from sklearn.linear_model import LogisticRegression
 from sklearn.base import BaseEstimator
+from sklearn.model_selection import GridSearchCV
 from numpy.random import multivariate_normal
 import scipy
 import warnings
@@ -497,3 +498,24 @@ def test_dimN(N):
     lnl.predict(X)
     lnl.predict_proba(X)
     lnl.score(X, labels)
+
+
+def test_sklearn_gridsearchcv():
+
+    param_grid = {
+        "find_label_issues_kwargs": [
+            {"filter_by": "prune_by_noise_rate"},
+            {"filter_by": "prune_by_class"},
+            {"filter_by": "both"},
+        ],
+        "converge_latent_estimates": [True, False],
+    }
+
+    clf = LogisticRegression(random_state=0, solver="lbfgs", multi_class="auto")
+
+    cv = GridSearchCV(
+        estimator=LearningWithNoisyLabels(clf),
+        param_grid=param_grid,
+    )
+
+    cv.fit(X=DATA["X_train"], y=DATA["labels"])
