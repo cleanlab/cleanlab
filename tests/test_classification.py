@@ -502,6 +502,7 @@ def test_dimN(N):
 
 def test_sklearn_gridsearchcv():
 
+    # hyper-parameters for grid search
     param_grid = {
         "find_label_issues_kwargs": [
             {"filter_by": "prune_by_noise_rate"},
