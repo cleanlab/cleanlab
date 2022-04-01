@@ -514,9 +514,6 @@ def test_sklearn_gridsearchcv():
 
     clf = LogisticRegression(random_state=0, solver="lbfgs", multi_class="auto")
 
-    cv = GridSearchCV(
-        estimator=LearningWithNoisyLabels(clf),
-        param_grid=param_grid,
-    )
+    cv = GridSearchCV(estimator=LearningWithNoisyLabels(clf), param_grid=param_grid, cv=3)
 
     cv.fit(X=DATA["X_train"], y=DATA["labels"])
