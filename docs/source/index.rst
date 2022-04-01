@@ -44,7 +44,7 @@ Setting ``return_indices_ranked_by`` in this function instructs ``cleanlab`` to 
    from cleanlab.pruning import find_label_issues
 
    ordered_label_issues = find_label_issues(
-      labels=y, 
+      labels=y,
       pred_probs=pred_probs,
       return_indices_ranked_by='self_confidence')
 
@@ -57,7 +57,7 @@ Setting ``return_indices_ranked_by`` in this function instructs ``cleanlab`` to 
 3. Train robust models with noisy labels
 ----------------------------------------
 
-``cleanlab``'s ``LearningWithNoisyLabels`` class adapts any existing (scikit-learn compatible) classification model, ``clf``, to a more reliable one by allowing it to train directly on partially mislabeled datasets. 
+``cleanlab``'s ``LearningWithNoisyLabels`` class adapts any existing (scikit-learn compatible) classification model, ``clf``, to a more reliable one by allowing it to train directly on partially mislabeled datasets.
 
 When the ``.fit()`` method is called, it automatically removes any examples identified as "noisy" in the provided dataset and returns a model trained only on the clean data.
 
@@ -80,7 +80,8 @@ When the ``.fit()`` method is called, it automatically removes any examples iden
    :caption: Tutorials
 
    notebooks/Image_Tut
-   
+   notebooks/tabular_tutorial
+
 .. toctree::
    :caption: API Reference
    :hidden:
