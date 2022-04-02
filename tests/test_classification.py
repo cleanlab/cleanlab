@@ -114,6 +114,7 @@ def test_rp(data):
         clf=LogisticRegression(multi_class="auto", solver="lbfgs", random_state=SEED)
     )
     rp.fit(data["X_train"], data["labels"])
+    _ = rp.find_label_issues()
     score = rp.score(data["X_test"], data["true_labels_test"])
     print(score)
     # Check that this runs without error.
@@ -167,6 +168,22 @@ def test_aux_inputs():
         clf_final_kwargs={},
     )
     score = rp.score(data["X_test"], data["true_labels_test"])
+    # Test LNL find_label_issues with pred_prob input
+    pred_probs_test = rp.predict_proba(data["X_test"])
+    rp = LearningWithNoisyLabels(
+        clf=LogisticRegression(multi_class="auto", solver="lbfgs", random_state=SEED),
+        find_label_issues_kwargs=find_label_issues_kwargs,
+        verbose=0,
+    )
+    rp.find_label_issues(X=None, labels=data["true_labels_test"], pred_probs=pred_probs_test)
+
+    # Test LNL find_label_issues with raw data
+    rp = LearningWithNoisyLabels(
+        clf=LogisticRegression(multi_class="auto", solver="lbfgs", random_state=SEED),
+        find_label_issues_kwargs=find_label_issues_kwargs,
+        verbose=0,
+    )
+    rp.find_label_issues(data["X_train"], data["labels"], clf_kwargs={})
 
 
 def test_raise_error_no_clf_fit():
@@ -446,19 +463,6 @@ def test_fit_pred_probs(sparse):
     )
     score_no_pred_probs = lnl.score(data["X_test"], data["true_labels_test"])
     assert abs(score_with_pred_probs - score_no_pred_probs) < 0.01
-
-
-@pytest.mark.parametrize("sparse", [True, False])
-def test_get_label_issues(sparse):
-    data = SPARSE_DATA if sparse else DATA
-    lnl = LearningWithNoisyLabels(
-        find_label_issues_kwargs={"n_jobs": 1, "min_examples_per_class": 5},
-    )
-    lnl.fit(
-        X=data["X_train"],
-        labels=data["true_labels_train"],
-    )
-    assert all((lnl.get_label_issues() == lnl.label_issues_mask))
 
 
 def make_2d(X):
