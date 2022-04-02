@@ -158,7 +158,7 @@ def test_aux_inputs():
     rp = LearningWithNoisyLabels(
         clf=LogisticRegression(multi_class="auto", solver="lbfgs", random_state=SEED),
         find_label_issues_kwargs=find_label_issues_kwargs,
-        verbose=0,
+        verbose=1,
     )
     label_issues_mask = rp.find_label_issues(data["X_train"], data["labels"], clf_kwargs={})
     assert (label_issues_mask == rp.get_label_issues()).all()
@@ -177,6 +177,13 @@ def test_aux_inputs():
     )
 
     # Test a second fit
+    rp.fit(data["X_train"], data["labels"])
+
+    # Verbose off
+    rp = LearningWithNoisyLabels(
+        clf=LogisticRegression(multi_class="auto", solver="lbfgs", random_state=SEED),
+        verbose=0,
+    )
     rp.fit(data["X_train"], data["labels"])
 
 
