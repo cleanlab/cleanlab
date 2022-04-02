@@ -225,6 +225,7 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
         thresholds=None,
         noise_matrix=None,
         inverse_noise_matrix=None,
+        label_issues_mask=None,
         clf_kwargs={},
         clf_final_kwargs={},
     ):
@@ -244,11 +245,11 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
           *Format requirements*: for dataset with K classes, labels must be in {0,1,...,K-1}.
 
         pred_probs : :obj:`np.array` (shape (N, K))
-        P(label=k|x) is a matrix with K model-predicted probabilities.
-        Each row of this matrix corresponds to an example `x` and contains the model-predicted
-        probabilities that `x` belongs to each possible class.
-        The columns must be ordered such that these probabilities correspond to class 0,1,2,...
-        `pred_probs` should have been computed using 3 (or higher) fold cross-validation.
+          P(label=k|x) is a matrix with K model-predicted probabilities.
+          Each row of this matrix corresponds to an example `x` and contains the model-predicted
+          probabilities that `x` belongs to each possible class.
+          The columns must be ordered such that these probabilities correspond to class 0,1,2,...
+          `pred_probs` should have been computed using 3 (or higher) fold cross-validation.
 
           Note
           ----
@@ -277,6 +278,12 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
           inverse_noise_matrix will be computed from pred_probs and labels.
           Assumes columns of inverse_noise_matrix sum to 1.
 
+        label_issues_mask : np.array<bool>, default = None
+            A boolean mask for the entire dataset such as those returned by:
+            `LearningWithNoisyLabels.find_label_issues()` or `filter.find_label_issues()`.
+            If specified, datapoints corresponding to False entries will be pruned from the data before
+            training the `clf` model.
+            Specifying this argument can save a lot of time if you have already estimated the issues in your data.
         clf_kwargs : dict, default = {}
           Optional keyword arguments to pass into `clf` fit() method.
 
@@ -296,16 +303,20 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
         clf_final_kwargs = {**clf_kwargs, **clf_final_kwargs}
         self.clf_final_kwargs = clf_final_kwargs
 
-        _ = self.find_label_issues(
-            X,
-            labels,
-            pred_probs=pred_probs,
-            thresholds=thresholds,
-            noise_matrix=noise_matrix,
-            inverse_noise_matrix=inverse_noise_matrix,
-            clf_kwargs=clf_kwargs,
-        )
+        if label_issues_mask is None:
+            label_issues_mask = self.find_label_issues(
+                X,
+                labels,
+                pred_probs=pred_probs,
+                thresholds=thresholds,
+                noise_matrix=noise_matrix,
+                inverse_noise_matrix=inverse_noise_matrix,
+                clf_kwargs=clf_kwargs,
+            )
+        elif self.verbose:
+            print("Using provided label_issues_mask instead of finding label issues.")
 
+        self.label_issues_mask = label_issues_mask
         x_mask = ~self.label_issues_mask
         x_cleaned = X[x_mask]
         labels_cleaned = labels[x_mask]
@@ -415,8 +426,8 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
         this method only requires a classifier and it can do the cross-validation training for you.
         Both methods return the same boolean mask that identifies which datapoints have label issues.
 
-        Note: This method is only intended to be called once per LearningWithNoisyLabels instance,
-        calling it a second time will simply return the result from the first call.
+        Note: This method computes the label issues from scratch, to access previously-computed label issues
+        from this LearningWithNoisyLabels instance, use `get_label_issues()` instead.
 
         This is the method called to find label issues inside `LearningWithNoisyLabels.fit()`.
         For descriptions of the arguments, see `LearningWithNoisyLabels.fit()` documentation.
@@ -428,14 +439,12 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
             a label issue and False represents an example that is accurately labeled with high confidence.
 
         """
-        label_issues_mask = self._get_label_issues()
-        if label_issues_mask is not None:
-            if self.verbose:
-                print(
-                    "Returning label issues that were already previously identified. "
-                    "Create a new LearningWithNoisyLabels instance to identify new label issues."
-                )
-            return label_issues_mask
+        label_issues_mask = self.get_label_issues()
+        if label_issues_mask is not None and self.verbose:
+            print(
+                "Overwriting previously identified label issues. "
+                "`self.get_label_issues()` will now return the newly identified label issues."
+            )
 
         # Check inputs
         allow_empty_X = False if pred_probs is None else True
@@ -560,7 +569,7 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
 
         return self.label_issues_mask
 
-    def _get_label_issues(self):
+    def get_label_issues(self):
         """Accessor. Returns `self.label_issues_mask` if previously already computed."""
 
         return self.label_issues_mask

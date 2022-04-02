@@ -114,11 +114,10 @@ def test_rp(data):
         clf=LogisticRegression(multi_class="auto", solver="lbfgs", random_state=SEED)
     )
     rp.fit(data["X_train"], data["labels"])
-    _ = rp.find_label_issues()
     score = rp.score(data["X_test"], data["true_labels_test"])
     print(score)
     # Check that this runs without error.
-    assert True
+    assert all((rp.get_label_issues() == rp.label_issues_mask))
 
 
 @pytest.mark.filterwarnings("ignore::UserWarning")
@@ -161,29 +160,24 @@ def test_aux_inputs():
         find_label_issues_kwargs=find_label_issues_kwargs,
         verbose=0,
     )
+    label_issues_mask = rp.find_label_issues(data["X_train"], data["labels"], clf_kwargs={})
+    assert (label_issues_mask == rp.get_label_issues()).all()
     rp.fit(
         data["X_train"],
         data["labels"],
+        label_issues_mask=label_issues_mask,
         clf_kwargs={},
         clf_final_kwargs={},
     )
     score = rp.score(data["X_test"], data["true_labels_test"])
     # Test LNL find_label_issues with pred_prob input
     pred_probs_test = rp.predict_proba(data["X_test"])
-    rp = LearningWithNoisyLabels(
-        clf=LogisticRegression(multi_class="auto", solver="lbfgs", random_state=SEED),
-        find_label_issues_kwargs=find_label_issues_kwargs,
-        verbose=0,
+    label_issues_mask_test = rp.find_label_issues(
+        X=None, labels=data["true_labels_test"], pred_probs=pred_probs_test
     )
-    rp.find_label_issues(X=None, labels=data["true_labels_test"], pred_probs=pred_probs_test)
 
-    # Test LNL find_label_issues with raw data
-    rp = LearningWithNoisyLabels(
-        clf=LogisticRegression(multi_class="auto", solver="lbfgs", random_state=SEED),
-        find_label_issues_kwargs=find_label_issues_kwargs,
-        verbose=0,
-    )
-    rp.find_label_issues(data["X_train"], data["labels"], clf_kwargs={})
+    # Test a second fit
+    rp.fit(data["X_train"], data["labels"])
 
 
 def test_raise_error_no_clf_fit():
