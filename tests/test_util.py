@@ -28,25 +28,21 @@ single_element = np.array([1])
 def test_print_inm():
     for m in [noise_matrix, noise_matrix_2, single_element]:
         util.print_inverse_noise_matrix(m, round_places=3)
-    assert True
 
 
 def test_print_joint():
     for m in [joint_matrix, joint_matrix_2, single_element]:
         util.print_joint_matrix(m, round_places=3)
-    assert True
 
 
 def test_print_square():
     for m in [noise_matrix, noise_matrix_2, single_element]:
         util.print_square_matrix(noise_matrix, round_places=3)
-    assert True
 
 
 def test_print_noise_matrix():
     for m in [noise_matrix, noise_matrix_2, single_element]:
         util.print_noise_matrix(noise_matrix, round_places=3)
-    assert True
 
 
 def test_pu_f1():
@@ -91,14 +87,6 @@ def test_round_preserving_row_totals():
     mat_int = util.round_preserving_row_totals(mat)
     # Check that row sums are preserved
     assert np.all(mat_int.sum(axis=1) == mat.sum(axis=1))
-
-
-def test_version_warning():
-    util.VersionWarning(
-        warning_str="Test warning.",
-        list_of_compatible_versions=[2.7, 3.5, 3.6],
-    )
-    assert True
 
 
 def test_confusion_matrix():

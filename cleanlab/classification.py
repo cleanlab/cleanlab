@@ -420,7 +420,7 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
             print(f"Pruning {len(labels)-len(labels_cleaned)} datapoints with label issues ...")
             print(f"Remaining clean data has {len(labels_cleaned)} datapoints.")
 
-        # Check if sample_weight in clf.fit(). Not compatible with Python 2.
+        # Check if sample_weight in clf.fit()
         if (
             "sample_weight" in inspect.getfullargspec(self.clf.fit).args
             and "sample_weight" not in self.clf_kwargs
@@ -489,7 +489,7 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
 
         if hasattr(self.clf, "score"):
 
-            # Check if sample_weight in clf.score(). Not compatible with Python 2.
+            # Check if sample_weight in clf.score()
             if "sample_weight" in inspect.getfullargspec(self.clf.score).args:
                 return self.clf.score(X, y, sample_weight=sample_weight)
             else:

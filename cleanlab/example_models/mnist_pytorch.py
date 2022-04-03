@@ -21,30 +21,15 @@
 # See: https://pytorch.org/get-started/locally/
 
 
-# Python 2 and 3 compatibility
-
-
-# In[ ]:
-
-
-# Make sure python version is compatible with pyTorch
-from cleanlab.internal.util import VersionWarning
-
-python_version = VersionWarning(
-    warning_str="pyTorch supports Python version 2.7, 3.5, 3.6, 3.7, 3.8, 3.9",
-    list_of_compatible_versions=[2.7, 3.5, 3.6, 3.7, 3.8, 3.9],
-)
-
-if python_version.is_compatible():  # pragma: no cover
-    from sklearn.base import BaseEstimator
-    import torch
-    import torch.nn as nn
-    import torch.nn.functional as F
-    import torch.optim as optim
-    from torchvision import datasets, transforms
-    from torch.autograd import Variable
-    from torch.utils.data.sampler import SubsetRandomSampler
-    import numpy as np
+from sklearn.base import BaseEstimator
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+import torch.optim as optim
+from torchvision import datasets, transforms
+from torch.autograd import Variable
+from torch.utils.data.sampler import SubsetRandomSampler
+import numpy as np
 
 
 MNIST_TRAIN_SIZE = 60000
@@ -122,28 +107,26 @@ def get_sklearn_digits_dataset(loader):
         raise ValueError("loader must be either str 'train' or str 'test'.")
 
 
-if python_version.is_compatible():
+class SimpleNet(nn.Module):
+    """Basic Pytorch CNN for MNIST-like data."""
 
-    class SimpleNet(nn.Module):
-        """Basic Pytorch CNN for MNIST-like data."""
+    def __init__(self):
+        super(SimpleNet, self).__init__()
+        self.conv1 = nn.Conv2d(1, 10, kernel_size=5)
+        self.conv2 = nn.Conv2d(10, 20, kernel_size=5)
+        self.conv2_drop = nn.Dropout2d()
+        self.fc1 = nn.Linear(320, 50)
+        self.fc2 = nn.Linear(50, 10)
 
-        def __init__(self):
-            super(SimpleNet, self).__init__()
-            self.conv1 = nn.Conv2d(1, 10, kernel_size=5)
-            self.conv2 = nn.Conv2d(10, 20, kernel_size=5)
-            self.conv2_drop = nn.Dropout2d()
-            self.fc1 = nn.Linear(320, 50)
-            self.fc2 = nn.Linear(50, 10)
-
-        def forward(self, x, T=1.0):
-            x = F.relu(F.max_pool2d(self.conv1(x), 2))
-            x = F.relu(F.max_pool2d(self.conv2_drop(self.conv2(x)), 2))
-            x = x.view(-1, 320)
-            x = F.relu(self.fc1(x))
-            x = F.dropout(x, training=self.training)
-            x = self.fc2(x)
-            x = F.log_softmax(x, dim=1)
-            return x
+    def forward(self, x, T=1.0):
+        x = F.relu(F.max_pool2d(self.conv1(x), 2))
+        x = F.relu(F.max_pool2d(self.conv2_drop(self.conv2(x)), 2))
+        x = x.view(-1, 320)
+        x = F.relu(self.fc1(x))
+        x = F.dropout(x, training=self.training)
+        x = self.fc2(x)
+        x = F.log_softmax(x, dim=1)
+        return x
 
 
 class CNN(BaseEstimator):  # Inherits sklearn classifier
