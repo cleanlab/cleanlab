@@ -1,0 +1,7 @@
+# Python dependencies for development
+coverage<6.3
+pre-commit
+pytest
+pytest-cov
+torch
+torchvision
