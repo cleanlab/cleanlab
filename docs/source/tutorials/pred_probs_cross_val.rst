@@ -5,7 +5,7 @@ Computing Out-of-Sample Predicted Probabilities with Cross-Validation
 
 Recall that ``cleanlab`` finds label issues in any dataset using some model's predicted class probabilities output. However, predicted probabilities from your model must be out-of-sample! You should never provide predictions on the same datapoints used to train the model, as these will be overfitted and unsuitable for finding label issues. It is ok if your model was trained on a separate dataset and you are only using ``cleanlab`` to evaluate labels in data that was previously held out (e.g., only searching for label issues in the test data).
 
-To find label issues across all your data requires obtaining out-of-sample predicted probabilities for every datapoint in your dataset. This can be done via K-fold cross-validation as described below.
+To find label issues across all your data requires obtaining out-of-sample predicted probabilities for every datapoint in your dataset. This can be done via K-fold cross-validation as described below. Conventionally, `cross-validation <https://scikit-learn.org/stable/modules/cross_validation>`_ is used for hyperparameter tuning, but we'll use it to compute out-of-sample predicted probabilities for the entire dataset.
 
 
 What are out-of-sample predicted probabilities?
