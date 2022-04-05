@@ -25,7 +25,7 @@ K-fold cross-validation partitions the entire dataset into *K* disjoint subsets 
 
 This method of producing out-of-sample predictions via cross-validation is also referred to as cross-validated prediction, out-of-folds predictions, K-fold bagging, etc. It can be easily applied to any `sklearn`-compatible model by invoking `cross_val_predict <https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.cross_val_predict.html>`_. An additional benefit is that cross-validation produces `significantly superior estimates <https://towardsdatascience.com/5-reasons-why-you-should-use-cross-validation-in-your-data-science-project-8163311a1e79>`_ of how the model will perform on new data.
 
-The pseudocode below is for implementing K-fold cross-validation with K = 3:
+Here's pseudocode for implementing K-fold cross-validation with K = 3:
 
 .. code-block:: python
 
