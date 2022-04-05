@@ -1,3 +1,5 @@
+.. _pred_probs_cross_val:
+
 Computing Out-of-Sample Predicted Probabilities with Cross-Validation
 =====================================================================
 

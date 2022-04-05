@@ -35,7 +35,7 @@ Quickstart
 2. Find label errors in your data
 ---------------------------------
 
-``cleanlab``'s ``find_label_issues`` function tells you which examples in your dataset are likely mislabeled. At a minimum, it expects two inputs - your data's given labels, ``y``, and predicted probabilities, ``pred_probs``, from some trained classification model (Note: these must be out-of-sample predictions where the data points were held out from the model during training, which can be obtained via cross-validation).
+``cleanlab``'s ``find_label_issues`` function tells you which examples in your dataset are likely mislabeled. At a minimum, it expects two inputs - your data's given labels, ``y``, and predicted probabilities, ``pred_probs``, from some trained classification model (Note: these must be out-of-sample predictions where the data points were held out from the model during training, which can be :ref:`obtained via cross-validation <pred_probs_cross_val>`).
 
 Setting ``return_indices_ranked_by`` in this function instructs ``cleanlab`` to return the indices of potential mislabeled examples, ordered by how likely their given label is incorrect. This is estimated via a **label quality score**, which for example can be specified as the ``self_confidence`` (predicted probability of given label according to the model).
 
@@ -49,7 +49,7 @@ Setting ``return_indices_ranked_by`` in this function instructs ``cleanlab`` to 
       return_indices_ranked_by='self_confidence')
 
 .. important::
-   The predicted probabilities, ``pred_probs``, from your model **must be out-of-sample**! You should never provide predictions on the same data points used to train the model as these predictions are overfit and  unsuitable for finding label errors. To compute out-of-sample predicted probabilities for your entire dataset, you can use cross-validation.
+   The predicted probabilities, ``pred_probs``, from your model **must be out-of-sample**! You should never provide predictions on the same data points used to train the model as these predictions are overfit and  unsuitable for finding label errors. To compute out-of-sample predicted probabilities for your entire dataset, you can use :ref:`cross-validation <pred_probs_cross_val>`.
 
 ..
    TODO - include the url for tf and torch beginner tutorials
