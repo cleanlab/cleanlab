@@ -21,9 +21,36 @@ When using ``cleanlab``, we will typically want to find label issues in all labe
 What is K-fold cross-validation?
 --------------------------------
 
-.. image:: ./pred-probs-cross-val.png
-
-The diagram above depicts K-fold cross-validation with K = 5. K-fold cross-validation partitions the entire dataset into *k* disjoint subsets of data called **folds**. K independent copies of our model are trained, where for each model copy, one fold of the data is held out from its training (the data in this fold may be viewed as a **validation set** for this copy of the model). Each copy of the model has a different validation set for which we can obtain out-of-sample predicted probabilities from this copy of the model. Since each datapoint is held-out from one copy of the model, this process allows us to get out-of-sample predictions for every datapoint! We, in particular, recommend applying stratified cross-validation, which tries to ensure the proportions of data from each class match across different folds.
+K-fold cross-validation partitions the entire dataset into *k* disjoint subsets of data called **folds**. K independent copies of our model are trained, where for each model copy, one fold of the data is held out from its training (the data in this fold may be viewed as a **validation set** for this copy of the model). Each copy of the model has a different validation set for which we can obtain out-of-sample predicted probabilities from this copy of the model. Since each datapoint is held-out from one copy of the model, this process allows us to get out-of-sample predictions for every datapoint! We, in particular, recommend applying stratified cross-validation, which tries to ensure the proportions of data from each class match across different folds.
 
 This method of producing out-of-sample predictions via cross-validation is also referred to as cross-validated prediction, out-of-folds predictions, K-fold bagging, etc. It can be easily applied to any `sklearn`-compatible model by invoking `cross_val_predict <https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.cross_val_predict.html>`_. An additional benefit is that cross-validation produces `significantly superior estimates <https://towardsdatascience.com/5-reasons-why-you-should-use-cross-validation-in-your-data-science-project-8163311a1e79>`_ of how the model will perform on new data.
 
+The pseudocode below is for implementing K-fold cross-validation with K = 3:
+
+.. code-block:: python
+
+    # Step 0
+    # Separate your data into three equal sized chunks (this is called 3-fold cross validation)
+    # Data = A B C
+
+    # Step 1 -- get oos pred probs for A
+    model = Model()
+    model.fit(data=B+C)
+    out_of_sample_pred_probs_for_A = model.pred_proba(data=A)
+
+    # Step 2 -- get oos pred probs for B
+    model = Model()
+    model.fit(data=A+C)
+    out_of_sample_pred_probs_for_B = model.pred_proba(data=B)
+
+    # Step 3 -- get oos pred probs for C
+    model = Model()
+    model.fit(data=A+B)
+    out_of_sample_pred_probs_for_C = model.pred_proba(data=C)
+
+    # Final step -- combine to get oos pred probs for entire dataset.
+    out_of_sample_pred_probs = concatenate([
+    out_of_sample_pred_probs_for_A,
+    out_of_sample_pred_probs_for_B,
+    out_of_sample_pred_probs_for_C,
+    ])
