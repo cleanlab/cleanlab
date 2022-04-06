@@ -67,8 +67,8 @@ When the ``.fit()`` method is called, it automatically removes any examples iden
    from cleanlab.classification import CleanLearning
 
    clf = LogisticRegression() # Here we've used sklearn's Logistic Regression model, but this can be any classifier that implements sklearn's API.
-   lnl = CleanLearning(clf=clf)
-   lnl.fit(X=X, labels=y)
+   cl = CleanLearning(clf=clf)
+   cl.fit(X=X, labels=y)
 
 .. toctree::
    :hidden:

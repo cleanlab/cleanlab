@@ -95,10 +95,10 @@ from cleanlab.classification import CleanLearning
 from sklearn.linear_model import LogisticRegression
 
 # Wrap around any classifier. Yup, you can use sklearn/pyTorch/Tensorflow/FastText/etc.
-lnl = CleanLearning(clf=LogisticRegression())
-lnl.fit(X=X_train_data, labels=train_noisy_labels)
+cl = CleanLearning(clf=LogisticRegression())
+cl.fit(X=X_train_data, labels=train_noisy_labels)
 # Estimate the predictions you would have gotten by training with *no* label issues.
-predicted_test_labels = lnl.predict(X_test)
+predicted_test_labels = cl.predict(X_test)
 ```
 
 Check out these [examples](https://github.com/cleanlab/examples) and [tests](https://github.com/cleanlab/cleanlab/tree/master/tests) (includes how to use other types of models).
@@ -130,8 +130,8 @@ class YourFavoriteModel(BaseEstimator): # Inherits sklearn base classifier
 
 # Now you can use your model with `cleanlab`. Here's one example:
 from cleanlab.classification import CleanLearning
-lnl = CleanLearning(clf=YourFavoriteModel())
-lnl.fit(train_data, train_labels_with_errors)
+cl = CleanLearning(clf=YourFavoriteModel())
+cl.fit(train_data, train_labels_with_errors)
 ```
 
 #### Want to see a working example? [Here’s a compliant PyTorch MNIST CNN class](https://github.com/cleanlab/cleanlab/blob/master/cleanlab/models/mnist_pytorch.py)
@@ -354,10 +354,10 @@ from cleanlab.classification import CleanLearning
 from sklearn.linear_model import LogisticRegression
 # Wrap around any classifier. Yup, you can use sklearn/pyTorch/Tensorflow/FastText/etc.
 pu_class = 0 # Should be 0 or 1. Label of class with NO ERRORS. (e.g., P class in PU)
-lnl = CleanLearning(clf=LogisticRegression(), pulearning=pu_class)
-lnl.fit(X=X_train_data, labels=train_noisy_labels)
+cl = CleanLearning(clf=LogisticRegression(), pulearning=pu_class)
+cl.fit(X=X_train_data, labels=train_noisy_labels)
 # Estimate the predictions you would have gotten by training with *no* label errors.
-predicted_test_labels = lnl.predict(X_test)
+predicted_test_labels = cl.predict(X_test)
 ```
 
 Method 2. However, you might be using a more complicated classifier that doesn't work well with [CleanLearning](https://github.com/cleanlab/cleanlab/blob/master/cleanlab/classification.py#L106) (see this example for CIFAR-10). Or you might have 3 or more classes. Here's how to use cleanlab for PU learning in this situation. To let cleanlab know which class has no error (in standard PU learning, this is the P class), you need to set the threshold for that class to 1 (1 means the probabilitythat the labels of that class are correct is 1, i.e. that class has no
