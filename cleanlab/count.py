@@ -248,6 +248,8 @@ def _compute_confident_joint_multi_label(
     # Compute confident joint
     # (no need to avoid collisions for multi-label, double counting is okay!)
     confident_joint = np.array([pred_probs_bool[k_in_l[k]].sum(axis=0) for k in range(K)])
+    # Guarantee at least one correctly labeled example is represented in every class
+    np.fill_diagonal(confident_joint, confident_joint.diagonal().clip(min=1))
     if calibrate:
         confident_joint = calibrate_confident_joint(confident_joint, labels, multi_label=True)
     if return_indices_of_off_diagonals:
