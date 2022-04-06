@@ -25,9 +25,6 @@ See: https://pytorch.org/get-started/locally/
 """
 
 
-# Python 2 and 3 compatibility
-
-
 import torch.nn as nn
 import torch.nn.functional as F
 

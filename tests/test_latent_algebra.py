@@ -62,7 +62,6 @@ def test_latent_py_warning():
                 noise_matrix=nm,
                 inverse_noise_matrix=inv,
             )
-            assert True
 
 
 def test_compute_py_err():

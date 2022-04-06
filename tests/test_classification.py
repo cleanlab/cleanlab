@@ -118,7 +118,6 @@ def test_lnl(data):
     score = lnl.score(data["X_test"], data["true_labels_test"])
     print(score)
     # Check that this runs without error.
-    assert all((lnl.get_label_issues() == lnl.label_issues_mask))
 
 
 @pytest.mark.filterwarnings("ignore::UserWarning")
@@ -446,7 +445,6 @@ def test_no_fit_sample_weight(sparse):
         noise_matrix=data["noise_matrix"],
     )
     # If we make it here, without any error:
-    assert True
 
 
 @pytest.mark.parametrize("sparse", [True, False])
