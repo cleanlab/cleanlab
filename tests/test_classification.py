@@ -22,7 +22,7 @@ from numpy.random import multivariate_normal
 import scipy
 import pytest
 import numpy as np
-from cleanlab.classification import LearningWithNoisyLabels
+from cleanlab.classification import CleanLearning
 from cleanlab.noise_generation import generate_noise_matrix_from_trace
 from cleanlab.noise_generation import generate_noisy_labels
 from cleanlab.internal.latent_algebra import compute_inv_noise_matrix
@@ -111,7 +111,7 @@ SPARSE_DATA = make_data(sparse=False, seed=SEED)
 
 @pytest.mark.parametrize("data", [DATA, SPARSE_DATA])
 def test_lnl(data):
-    lnl = LearningWithNoisyLabels(
+    lnl = CleanLearning(
         clf=LogisticRegression(multi_class="auto", solver="lbfgs", random_state=SEED)
     )
     lnl.fit(data["X_train"], data["labels"])
@@ -135,7 +135,7 @@ def test_invalid_inputs():
     else:
         raise Exception("expected test to raise Exception")
     try:
-        lnl = LearningWithNoisyLabels(
+        lnl = CleanLearning(
             clf=LogisticRegression(multi_class="auto", solver="lbfgs", random_state=SEED),
             find_label_issues_kwargs={"return_indices_ranked_by": "self_confidence"},
         )
@@ -158,7 +158,7 @@ def test_aux_inputs():
         "confident_joint": confident_joint,
         "min_examples_per_class": 2,
     }
-    lnl = LearningWithNoisyLabels(
+    lnl = CleanLearning(
         clf=LogisticRegression(multi_class="auto", solver="lbfgs", random_state=SEED),
         find_label_issues_kwargs=find_label_issues_kwargs,
         verbose=1,
@@ -183,7 +183,7 @@ def test_aux_inputs():
     lnl.fit(data["X_train"], data["labels"])
 
     # Verbose off
-    lnl = LearningWithNoisyLabels(
+    lnl = CleanLearning(
         clf=LogisticRegression(multi_class="auto", solver="lbfgs", random_state=SEED),
         verbose=0,
     )
@@ -199,11 +199,11 @@ def test_raise_error_no_clf_fit():
             pass
 
     try:
-        LearningWithNoisyLabels(clf=struct())
+        CleanLearning(clf=struct())
     except Exception as e:
         assert "fit" in str(e)
         with pytest.raises(ValueError) as e:
-            LearningWithNoisyLabels(clf=struct())
+            CleanLearning(clf=struct())
 
 
 def test_raise_error_no_clf_predict_proba():
@@ -215,11 +215,11 @@ def test_raise_error_no_clf_predict_proba():
             pass
 
     try:
-        LearningWithNoisyLabels(clf=struct())
+        CleanLearning(clf=struct())
     except Exception as e:
         assert "predict_proba" in str(e)
         with pytest.raises(ValueError) as e:
-            LearningWithNoisyLabels(clf=struct())
+            CleanLearning(clf=struct())
 
 
 def test_raise_error_no_clf_predict():
@@ -231,27 +231,27 @@ def test_raise_error_no_clf_predict():
             pass
 
     try:
-        LearningWithNoisyLabels(clf=struct())
+        CleanLearning(clf=struct())
     except Exception as e:
         assert "predict" in str(e)
         with pytest.raises(ValueError) as e:
-            LearningWithNoisyLabels(clf=struct())
+            CleanLearning(clf=struct())
 
 
 def test_seed():
-    lnl = LearningWithNoisyLabels(seed=SEED)
+    lnl = CleanLearning(seed=SEED)
     assert lnl.seed is not None
 
 
 def test_default_clf():
-    lnl = LearningWithNoisyLabels()
+    lnl = CleanLearning()
     check1 = lnl.clf is not None and hasattr(lnl.clf, "fit")
     check2 = hasattr(lnl.clf, "predict") and hasattr(lnl.clf, "predict_proba")
     assert check1 and check2
 
 
 def test_clf_fit_nm():
-    lnl = LearningWithNoisyLabels()
+    lnl = CleanLearning()
     # Example of a bad noise matrix (impossible to learn from)
     nm = np.array([[0, 1], [1, 0]])
     try:
@@ -263,7 +263,7 @@ def test_clf_fit_nm():
 
 
 def test_clf_fit_inm():
-    lnl = LearningWithNoisyLabels()
+    lnl = CleanLearning()
     # Example of a bad noise matrix (impossible to learn from)
     inm = np.array([[0.1, 0.9], [0.9, 0.1]])
     try:
@@ -281,7 +281,7 @@ def test_fit_with_nm(
     used_by_another_test=False,
 ):
     data = SPARSE_DATA if sparse else DATA
-    lnl = LearningWithNoisyLabels(
+    lnl = CleanLearning(
         seed=seed,
     )
     nm = data["noise_matrix"]
@@ -289,7 +289,7 @@ def test_fit_with_nm(
     lnl.fit(data["X_train"], data["labels"], noise_matrix=nm)
     score_nm = lnl.score(data["X_test"], data["true_labels_test"])
     # Learn with noisy labels and estimate the noise matrix.
-    lnl2 = LearningWithNoisyLabels(
+    lnl2 = CleanLearning(
         seed=seed,
     )
     lnl2.fit(
@@ -310,7 +310,7 @@ def test_fit_with_inm(
     used_by_another_test=False,
 ):
     data = SPARSE_DATA if sparse else DATA
-    lnl = LearningWithNoisyLabels(
+    lnl = CleanLearning(
         seed=seed,
     )
     inm = compute_inv_noise_matrix(
@@ -322,7 +322,7 @@ def test_fit_with_inm(
     lnl.fit(data["X_train"], data["labels"], inverse_noise_matrix=inm)
     score_inm = lnl.score(data["X_test"], data["true_labels_test"])
     # Learn with noisy labels and estimate the inv noise matrix.
-    lnl2 = LearningWithNoisyLabels(
+    lnl2 = CleanLearning(
         seed=seed,
     )
     lnl2.fit(
@@ -339,7 +339,7 @@ def test_fit_with_inm(
 @pytest.mark.parametrize("sparse", [True, False])
 def test_clf_fit_nm_inm(sparse):
     data = SPARSE_DATA if sparse else DATA
-    lnl = LearningWithNoisyLabels(seed=SEED)
+    lnl = CleanLearning(seed=SEED)
     nm = data["noise_matrix"]
     inm = compute_inv_noise_matrix(
         py=data["py"],
@@ -355,7 +355,7 @@ def test_clf_fit_nm_inm(sparse):
     score_nm_inm = lnl.score(data["X_test"], data["true_labels_test"])
 
     # Learn with noisy labels and estimate the inv noise matrix.
-    lnl2 = LearningWithNoisyLabels(seed=SEED)
+    lnl2 = CleanLearning(seed=SEED)
     lnl2.fit(
         data["X_train"],
         data["labels"],
@@ -367,7 +367,7 @@ def test_clf_fit_nm_inm(sparse):
 @pytest.mark.parametrize("sparse", [True, False])
 def test_pred_and_pred_proba(sparse):
     data = SPARSE_DATA if sparse else DATA
-    lnl = LearningWithNoisyLabels()
+    lnl = CleanLearning()
     lnl.fit(data["X_train"], data["labels"])
     n = np.shape(data["true_labels_test"])[0]
     m = len(np.unique(data["true_labels_test"]))
@@ -396,7 +396,7 @@ def test_score(sparse):
         def score(self, X, y):
             return phrase
 
-    lnl = LearningWithNoisyLabels(clf=Struct())
+    lnl = CleanLearning(clf=Struct())
     score = lnl.score(data["X_test"], data["true_labels_test"])
     assert score == phrase
 
@@ -415,7 +415,7 @@ def test_no_score(sparse):
         def predict(self, X):
             return data["true_labels_test"]
 
-    lnl = LearningWithNoisyLabels(clf=Struct())
+    lnl = CleanLearning(clf=Struct())
     score = lnl.score(data["X_test"], data["true_labels_test"])
     assert abs(score - 1) < 1e-6
 
@@ -437,7 +437,7 @@ def test_no_fit_sample_weight(sparse):
     n = np.shape(data["true_labels_test"])[0]
     m = len(np.unique(data["true_labels_test"]))
     pred_probs = np.zeros(shape=(n, m))
-    lnl = LearningWithNoisyLabels(clf=Struct())
+    lnl = CleanLearning(clf=Struct())
     lnl.fit(
         data["X_train"],
         data["true_labels_train"],
@@ -451,14 +451,14 @@ def test_no_fit_sample_weight(sparse):
 def test_fit_pred_probs(sparse):
     data = SPARSE_DATA if sparse else DATA
 
-    lnl = LearningWithNoisyLabels()
+    lnl = CleanLearning()
     pred_probs = estimate_cv_predicted_probabilities(
         X=data["X_train"],
         labels=data["true_labels_train"],
     )
     lnl.fit(X=data["X_train"], labels=data["true_labels_train"], pred_probs=pred_probs)
     score_with_pred_probs = lnl.score(data["X_test"], data["true_labels_test"])
-    lnl = LearningWithNoisyLabels()
+    lnl = CleanLearning()
     lnl.fit(
         X=data["X_train"],
         labels=data["true_labels_train"],
@@ -491,7 +491,7 @@ class ReshapingLogisticRegression(BaseEstimator):
 @pytest.mark.filterwarnings("ignore::RuntimeWarning")
 @pytest.mark.parametrize("N", [1, 2, 3, 4])
 def test_dimN(N):
-    lnl = LearningWithNoisyLabels(clf=ReshapingLogisticRegression())
+    lnl = CleanLearning(clf=ReshapingLogisticRegression())
     size = [100] + [3 for _ in range(N - 1)]
     X = np.random.normal(size=size)
     labels = np.random.randint(0, 4, size=100)
@@ -523,7 +523,7 @@ def test_sklearn_gridsearchcv():
     clf = LogisticRegression(random_state=0, solver="lbfgs", multi_class="auto")
 
     cv = GridSearchCV(
-        estimator=LearningWithNoisyLabels(clf),
+        estimator=CleanLearning(clf),
         param_grid=param_grid,
         cv=3,
     )
@@ -544,7 +544,7 @@ def test_cj_in_find_label_issues_kwargs(filter_by, seed):
                 X=DATA["X_train"], labels=labels, seed=seed
             )
             confident_joint = compute_confident_joint(labels=labels, pred_probs=pred_probs)
-            lnl = LearningWithNoisyLabels(
+            lnl = CleanLearning(
                 find_label_issues_kwargs={
                     "confident_joint": confident_joint,
                     "filter_by": "both",
@@ -552,7 +552,7 @@ def test_cj_in_find_label_issues_kwargs(filter_by, seed):
                 },
             )
         else:
-            lnl = LearningWithNoisyLabels(
+            lnl = CleanLearning(
                 clf=LogisticRegression(random_state=seed),
                 find_label_issues_kwargs={
                     "filter_by": "both",
