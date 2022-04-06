@@ -17,7 +17,7 @@
 """
 cleanlab package for multiclass, multi-label learning with noisy labels for any dataset and model.
 
-The LearningWithNoisyLabels class wraps around an instance of a
+The CleanLearning class wraps around an instance of a
 classifier class. Your classifier must adhere to the sklearn template,
 meaning it must define four functions:
 
@@ -51,12 +51,12 @@ high probability of belong to a different class.
 
 Examples
 --------
->>> from cleanlab.classification import LearningWithNoisyLabels
+>>> from cleanlab.classification import CleanLearning
 >>> from sklearn.linear_model import LogisticRegression as LogReg
->>> rp = LearningWithNoisyLabels(clf=LogReg()) # Pass in any classifier.
->>> rp.fit(X_train, labels_maybe_with_errors)
+>>> cl = CleanLearning(clf=LogReg()) # Pass in any classifier.
+>>> cl.fit(X_train, labels_maybe_with_errors)
 >>> # Estimate the predictions as if you had trained without label issues.
->>> pred = rp.predict(X_test)
+>>> pred = cl.predict(X_test)
 
 The easiest way to use any model (Tensorflow, caffe2, PyTorch, etc.)
 with ``cleanlab`` is to wrap it in a class that inherits
@@ -126,8 +126,10 @@ from cleanlab.internal.latent_algebra import (
 from cleanlab import filter
 
 
-class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
-    """Automated and robust learning with noisy labels using any dataset and any model. This class
+class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
+    """CleanLearning = Machine Learning with cleaned data (even if with messy, error-prone data).
+
+    Automated and robust learning with noisy labels using any dataset and any model. This class
     trains a model `clf` with error-prone, noisy labels as if the model had been instead trained
     on a dataset with perfect labels. It achieves this by cleaning out the error and providing
     cleaned data while training.
@@ -281,7 +283,7 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
 
         label_issues_mask : np.array<bool>, default = None
           A boolean mask for the entire dataset such as those returned by:
-          `LearningWithNoisyLabels.find_label_issues()` or `filter.find_label_issues()`.
+          `CleanLearning.find_label_issues()` or `filter.find_label_issues()`.
           If specified, examples corresponding to False entries will be pruned from the data before
           training the `clf` model.
           Providing this argument significantly reduces the time this method takes to run by
@@ -428,17 +430,17 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
         and then calls `filter.find_label_issues(labels, pred_probs)` to find label issues.
         The resulting label_issues_mask is saved in self.label_issues_mask and returned.
         Kwargs for `filter.find_label_issues` must have already been specified
-        in the initialization of LearningWithNoisyLabels, not here.
+        in the initialization of CleanLearning, not here.
 
         Unlike `filter.find_label_issues`, which requires `pred_probs`,
         this method only requires a classifier and it can do the cross-validation training for you.
         Both methods return the same boolean mask that identifies which examples have label issues.
 
         Note: This method computes the label issues from scratch, to access previously-computed
-        label issues from this LearningWithNoisyLabels instance, use `self.get_label_issues()`.
+        label issues from this CleanLearning instance, use `self.get_label_issues()`.
 
-        This is the method called to find label issues inside `LearningWithNoisyLabels.fit()`.
-        For descriptions of the arguments, see `LearningWithNoisyLabels.fit()` documentation.
+        This is the method called to find label issues inside `CleanLearning.fit()`.
+        For descriptions of the arguments, see `CleanLearning.fit()` documentation.
 
         Returns
         -------
@@ -470,7 +472,7 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
         if len(labels) / self.num_classes < self.cv_n_folds:
             raise ValueError(
                 "Need more data from each class for cross-validation. "
-                "Try decreasing `cv_n_folds` (eg. to 2,3) in LearningWithNoisyLabels()"
+                "Try decreasing `cv_n_folds` (eg. to 2,3) in CleanLearning()"
             )
         # 'ps' is p(labels=k)
         self.ps = value_counts(labels) / float(len(labels))
@@ -597,14 +599,14 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
 
     def _process_label_issues_kwargs(self, find_label_issues_kwargs):
         """Private helper function that is used to modify the arguments to passed to
-        filter.find_label_issues via the LearningWithNoisyLabels.find_label_issues class. Because
+        filter.find_label_issues via the CleanLearning.find_label_issues class. Because
         this is a classification task, some default parameters change and some errors should
         be throne if certain unsupported (for classification) arguments are passed in. This method
         handles those parameters inside of find_label_issues_kwargs and throws an error if you pass
         in a kwargs argument to filter.find_label_issues that is not supported by the
-        LearningWithNoisyLabels.find_label_issues() function."""
+        CleanLearning.find_label_issues() function."""
 
-        # Defaults for LearningWithNoisyLabels.find_label_issues() vs filter.find_label_issues()
+        # Defaults for CleanLearning.find_label_issues() vs filter.find_label_issues()
         DEFAULT_FIND_LABEL_ISSUES_KWARGS = {"min_examples_per_class": 10}
         find_label_issues_kwargs = {**DEFAULT_FIND_LABEL_ISSUES_KWARGS, **find_label_issues_kwargs}
         # Todo: support multi_label classification in the future and remove multi_label from list
@@ -613,9 +615,9 @@ class LearningWithNoisyLabels(BaseEstimator):  # Inherits sklearn classifier
             if unsupported_kwarg in find_label_issues_kwargs:
                 raise ValueError(
                     "These kwargs of `find_label_issues()` are not supported "
-                    f"for `LearningWithNoisyLabels`: {unsupported_kwargs}"
+                    f"for `CleanLearning`: {unsupported_kwargs}"
                 )
-        # LearningWithNoisyLabels will use this to compute the noise_matrix and inverse_noise_matrix
+        # CleanLearning will use this to compute the noise_matrix and inverse_noise_matrix
         if "confident_joint" in find_label_issues_kwargs:
             self.confident_joint = find_label_issues_kwargs["confident_joint"]
         self.find_label_issues_kwargs = find_label_issues_kwargs

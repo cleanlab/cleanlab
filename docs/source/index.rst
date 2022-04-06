@@ -57,18 +57,18 @@ Setting ``return_indices_ranked_by`` in this function instructs ``cleanlab`` to 
 3. Train robust models with noisy labels
 ----------------------------------------
 
-``cleanlab``'s ``LearningWithNoisyLabels`` class adapts any existing (scikit-learn compatible) classification model, ``clf``, to a more reliable one by allowing it to train directly on partially mislabeled datasets.
+``cleanlab``'s ``CleanLearning`` class adapts any existing (scikit-learn compatible) classification model, ``clf``, to a more reliable one by allowing it to train directly on partially mislabeled datasets.
 
 When the ``.fit()`` method is called, it automatically removes any examples identified as "noisy" in the provided dataset and returns a model trained only on the clean data.
 
 .. code-block:: python
 
    from sklearn.linear_model import LogisticRegression
-   from cleanlab.classification import LearningWithNoisyLabels
+   from cleanlab.classification import CleanLearning
 
    clf = LogisticRegression() # Here we've used sklearn's Logistic Regression model, but this can be any classifier that implements sklearn's API.
-   lnl = LearningWithNoisyLabels(clf=clf)
-   lnl.fit(X=X, labels=y)
+   cl = CleanLearning(clf=clf)
+   cl.fit(X=X, labels=y)
 
 .. toctree::
    :hidden:

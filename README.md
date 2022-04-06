@@ -88,17 +88,18 @@ ordered_label_issues = find_label_issues(
 
 Pre-computed **out-of-sample** predicted probabilities for CIFAR-10 train set are available: [here](https://github.com/cleanlab/examples/tree/master/cifar10#pre-computed-psx-for-every-noise--sparsity-condition).
 
-## Learning with noisy labels in 3 lines of code
+## Learn with noisy labels in 3 lines of code
 
 ```python
-from cleanlab.classification import LearningWithNoisyLabels
+from cleanlab.classification import CleanLearning
 from sklearn.linear_model import LogisticRegression
 
 # Wrap around any classifier. Yup, you can use sklearn/pyTorch/Tensorflow/FastText/etc.
-lnl = LearningWithNoisyLabels(clf=LogisticRegression())
-lnl.fit(X=X_train_data, labels=train_noisy_labels)
+cl = CleanLearning(clf=LogisticRegression())
+# cl now also has access to all methods available to LogisticRegression
+cl.fit(X=X_train_data, labels=train_noisy_labels)
 # Estimate the predictions you would have gotten by training with *no* label issues.
-predicted_test_labels = lnl.predict(X_test)
+predicted_test_labels = cl.predict(X_test)
 ```
 
 Check out these [examples](https://github.com/cleanlab/examples) and [tests](https://github.com/cleanlab/cleanlab/tree/master/tests) (includes how to use other types of models).
@@ -129,14 +130,15 @@ class YourFavoriteModel(BaseEstimator): # Inherits sklearn base classifier
         pass
 
 # Now you can use your model with `cleanlab`. Here's one example:
-from cleanlab.classification import LearningWithNoisyLabels
-lnl = LearningWithNoisyLabels(clf=YourFavoriteModel())
-lnl.fit(train_data, train_labels_with_errors)
+from cleanlab.classification import CleanLearning
+cl = CleanLearning(clf=YourFavoriteModel())
+# cl now also has access to all methods available to YourFavoriteModel
+cl.fit(train_data, train_labels_with_errors)
 ```
 
 #### Want to see a working example? [Here’s a compliant PyTorch MNIST CNN class](https://github.com/cleanlab/cleanlab/blob/master/cleanlab/models/mnist_pytorch.py)
 
-As you can see [here](https://github.com/cleanlab/cleanlab/blob/master/cleanlab/models/mnist_pytorch.py), technically you don’t actually need to inherit from `sklearn.base.BaseEstimator`, as you can just create a class that defines `.fit()`, `.predict()`, and `.predict\_proba()`, but inheriting makes downstream scikit-learn applications like hyper-parameter optimization work seamlessly. See [cleanlab.classification.LearningWithNoisyLabels()](https://github.com/cleanlab/cleanlab/blob/master/cleanlab/classification.py#L106) for a fully compliant model.
+As you can see [here](https://github.com/cleanlab/cleanlab/blob/master/cleanlab/models/mnist_pytorch.py), technically you don’t actually need to inherit from `sklearn.base.BaseEstimator`, as you can just create a class that defines `.fit()`, `.predict()`, and `.predict\_proba()`, but inheriting makes downstream scikit-learn applications like hyper-parameter optimization work seamlessly. See [cleanlab.classification.CleanLearning()](https://github.com/cleanlab/cleanlab/blob/master/cleanlab/classification.py#L106) for a fully compliant model.
 
 Note, some libraries exists to do this for you. For PyTorch, check out the `skorch` Python library which will wrap your `pytorch` model into a `scikit-learn` compliant model.
 
@@ -206,7 +208,7 @@ Top 24 least-confident labels in the original MNIST **train** dataset, algorithm
 
 ![](https://raw.githubusercontent.com/cleanlab/assets/master/cleanlab/demo_cleanlab_across_datasets_and_classifiers.png)
 
-Each sub-figure above depicts the decision boundary learned using [cleanlab.classification.LearningWithNoisyLabels](https://github.com/cleanlab/cleanlab/blob/master/cleanlab/classification.py#L106) in the presence of extreme (\~35%) label errors (circled in green). Label noise is class-conditional (not uniformly random). Columns are organized by the classifier used, except the left-most column which depicts the ground-truth data distribution. Rows are organized by dataset.
+Each sub-figure above depicts the decision boundary learned using [cleanlab.classification.CleanLearning](https://github.com/cleanlab/cleanlab/blob/master/cleanlab/classification.py#L106) in the presence of extreme (\~35%) label errors (circled in green). Label noise is class-conditional (not uniformly random). Columns are organized by the classifier used, except the left-most column which depicts the ground-truth data distribution. Rows are organized by dataset.
 
 Each sub-figure depicts accuracy scores on a test set (with correct non-noisy labels) as decimal values:
 
@@ -229,7 +231,7 @@ observed dataset."
 
 ## `cleanlab` Core Package Components
 
-1.  **cleanlab/classification.py** - [LearningWithNoisyLabels()](https://github.com/cleanlab/cleanlab/blob/master/cleanlab/classification.py#L106) class for learning with noisy labels.
+1.  **cleanlab/classification.py** - [CleanLearning()](https://github.com/cleanlab/cleanlab/blob/master/cleanlab/classification.py#L106) class for learning with noisy labels.
 2.  **cleanlab/count.py** - Estimates and fully characterizes all variants of label noise.
 3.  **cleanlab/noise\_generation.py** - Generate mathematically valid synthetic noise matrices.
 4.  **cleanlab/filter.py** - Finds the examples with label issues in a dataset.
@@ -342,25 +344,25 @@ joint = estimate_joint(
 
 ## PU learning with cleanlab:
 
-Positive-Unlabeled learning (in which your data only contains a few positively labeled examples with the rest unlabeled) is just a special case of [LearningWithNoisyLabels](https://github.com/cleanlab/cleanlab/blob/master/cleanlab/classification.py#L106) when one of the classes has no error. `P` stands for the positive class and **is assumed to have zero label errors** and `U` stands for unlabeled data, but in practice, we just assume the `U` class is a noisy negative class that actually contains some positive examples. Thus, the goal of PU learning is to (1) estimate the proportion of negatively labeled examples that actually belong to the positive class (see`fraction\_noise\_in\_unlabeled\_class` in the last example), (2) find the errors (see last example), and (3) train on clean data (see first example below). `cleanlab` does all three, taking into account that there are no label errors in whichever class you specify as positive.
+Positive-Unlabeled learning (in which your data only contains a few positively labeled examples with the rest unlabeled) is just a special case of [CleanLearning](https://github.com/cleanlab/cleanlab/blob/master/cleanlab/classification.py#L106) when one of the classes has no error. `P` stands for the positive class and **is assumed to have zero label errors** and `U` stands for unlabeled data, but in practice, we just assume the `U` class is a noisy negative class that actually contains some positive examples. Thus, the goal of PU learning is to (1) estimate the proportion of negatively labeled examples that actually belong to the positive class (see`fraction\_noise\_in\_unlabeled\_class` in the last example), (2) find the errors (see last example), and (3) train on clean data (see first example below). `cleanlab` does all three, taking into account that there are no label errors in whichever class you specify as positive.
 
 There are two ways to use `cleanlab` for PU learning. We'll look at each here.
 
-Method 1. If you are using the cleanlab classifier [LearningWithNoisyLabels()](https://github.com/cleanlab/cleanlab/blob/master/cleanlab/classification.py#L106), and your dataset has exactly two classes (positive = 1, and negative = 0), PU
+Method 1. If you are using the cleanlab classifier [CleanLearning()](https://github.com/cleanlab/cleanlab/blob/master/cleanlab/classification.py#L106), and your dataset has exactly two classes (positive = 1, and negative = 0), PU
 learning is supported directly in `cleanlab`. You can perform PU learning like this:
 
 ``` python
-from cleanlab.classification import LearningWithNoisyLabels
+from cleanlab.classification import CleanLearning
 from sklearn.linear_model import LogisticRegression
 # Wrap around any classifier. Yup, you can use sklearn/pyTorch/Tensorflow/FastText/etc.
 pu_class = 0 # Should be 0 or 1. Label of class with NO ERRORS. (e.g., P class in PU)
-lnl = LearningWithNoisyLabels(clf=LogisticRegression(), pulearning=pu_class)
-lnl.fit(X=X_train_data, labels=train_noisy_labels)
+cl = CleanLearning(clf=LogisticRegression(), pulearning=pu_class)
+cl.fit(X=X_train_data, labels=train_noisy_labels)
 # Estimate the predictions you would have gotten by training with *no* label errors.
-predicted_test_labels = lnl.predict(X_test)
+predicted_test_labels = cl.predict(X_test)
 ```
 
-Method 2. However, you might be using a more complicated classifier that doesn't work well with [LearningWithNoisyLabels](https://github.com/cleanlab/cleanlab/blob/master/cleanlab/classification.py#L106) (see this example for CIFAR-10). Or you might have 3 or more classes. Here's how to use cleanlab for PU learning in this situation. To let cleanlab know which class has no error (in standard PU learning, this is the P class), you need to set the threshold for that class to 1 (1 means the probabilitythat the labels of that class are correct is 1, i.e. that class has no
+Method 2. However, you might be using a more complicated classifier that doesn't work well with [CleanLearning](https://github.com/cleanlab/cleanlab/blob/master/cleanlab/classification.py#L106) (see this example for CIFAR-10). Or you might have 3 or more classes. Here's how to use cleanlab for PU learning in this situation. To let cleanlab know which class has no error (in standard PU learning, this is the P class), you need to set the threshold for that class to 1 (1 means the probabilitythat the labels of that class are correct is 1, i.e. that class has no
 error). Here's the code:
 
 ``` python
