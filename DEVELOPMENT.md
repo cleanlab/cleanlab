@@ -84,3 +84,10 @@ You can install the git hook scripts with:
 ```console
 $ pre-commit install
 ```
+
+### EditorConfig
+
+This repo uses [EditorConfig](https://editorconfig.org/) to keep code style
+consistent across editors and IDEs. You can install a plugin for your editor,
+and then your editor will automatically ensure that indentation and line
+endings match the project style.
