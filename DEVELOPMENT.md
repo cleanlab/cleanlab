@@ -70,7 +70,7 @@ You can also run all example notebooks as follows:
 git clone https://github.com/cleanlab/examples.git
 ```
 
-Then specify your local version of cleanlab source in the first line of: **examples/requirements.txt**
+Then specify your local version of cleanlab source in the first line of: **examples/requirements.txt**.
 E.g. you can edit this line to point to your local version of cleanlab as a relative path such as `../cleanlab` if the `cleanlab` and `examples` repos are sibling directories on your computer.
 
 Finally execute the bash script:
