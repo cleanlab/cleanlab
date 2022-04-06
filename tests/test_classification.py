@@ -20,13 +20,14 @@ from sklearn.base import BaseEstimator
 from sklearn.model_selection import GridSearchCV
 from numpy.random import multivariate_normal
 import scipy
-import warnings
 import pytest
 import numpy as np
 from cleanlab.classification import LearningWithNoisyLabels
 from cleanlab.noise_generation import generate_noise_matrix_from_trace
 from cleanlab.noise_generation import generate_noisy_labels
 from cleanlab.internal.latent_algebra import compute_inv_noise_matrix
+from cleanlab.count import compute_confident_joint, estimate_cv_predicted_probabilities
+
 
 SEED = 1
 
@@ -39,7 +40,7 @@ def make_data(
     avg_trace=0.8,
     seed=SEED,  # set to None for non-reproducible randomness
 ):
-    np.random.seed(seed=SEED)
+    np.random.seed(seed=seed)
 
     K = len(means)  # number of classes
     data = []
@@ -71,7 +72,7 @@ def make_data(
         trace=avg_trace * K,
         py=py,
         valid_noise_matrix=True,
-        seed=SEED,
+        seed=seed,
     )
 
     # Generate our noisy labels using the noise_matrix.
@@ -109,12 +110,12 @@ SPARSE_DATA = make_data(sparse=False, seed=SEED)
 
 
 @pytest.mark.parametrize("data", [DATA, SPARSE_DATA])
-def test_rp(data):
-    rp = LearningWithNoisyLabels(
+def test_lnl(data):
+    lnl = LearningWithNoisyLabels(
         clf=LogisticRegression(multi_class="auto", solver="lbfgs", random_state=SEED)
     )
-    rp.fit(data["X_train"], data["labels"])
-    score = rp.score(data["X_test"], data["true_labels_test"])
+    lnl.fit(data["X_train"], data["labels"])
+    score = lnl.score(data["X_test"], data["true_labels_test"])
     print(score)
     # Check that this runs without error.
 
@@ -122,28 +123,28 @@ def test_rp(data):
 @pytest.mark.filterwarnings("ignore::UserWarning")
 def test_rare_label():
     data = make_rare_label(DATA)
-    test_rp(data)
+    test_lnl(data)
 
 
 def test_invalid_inputs():
     data = make_data(sparse=False, sizes=[1, 1, 1])
     try:
-        test_rp(data)
+        test_lnl(data)
     except Exception as e:
         assert "Need more data" in str(e)
     else:
         raise Exception("expected test to raise Exception")
     try:
-        rp = LearningWithNoisyLabels(
+        lnl = LearningWithNoisyLabels(
             clf=LogisticRegression(multi_class="auto", solver="lbfgs", random_state=SEED),
             find_label_issues_kwargs={"return_indices_ranked_by": "self_confidence"},
         )
-        rp.fit(
+        lnl.fit(
             data["X_train"],
             data["labels"],
         )
     except Exception as e:
-        assert "not supported" in str(e)
+        assert "not supported" in str(e) or "Need more data from each class" in str(e)
     else:
         raise Exception("expected test to raise Exception")
 
@@ -153,19 +154,40 @@ def test_aux_inputs():
     K = len(np.unique(data["labels"]))
     confident_joint = np.ones(shape=(K, K))
     np.fill_diagonal(confident_joint, 10)
-    find_label_issues_kwargs = {"confident_joint": confident_joint, "min_examples_per_class": 2}
-    rp = LearningWithNoisyLabels(
+    find_label_issues_kwargs = {
+        "confident_joint": confident_joint,
+        "min_examples_per_class": 2,
+    }
+    lnl = LearningWithNoisyLabels(
         clf=LogisticRegression(multi_class="auto", solver="lbfgs", random_state=SEED),
         find_label_issues_kwargs=find_label_issues_kwargs,
-        verbose=0,
+        verbose=1,
     )
-    rp.fit(
+    label_issues_mask = lnl.find_label_issues(data["X_train"], data["labels"], clf_kwargs={})
+    assert (label_issues_mask == lnl.get_label_issues()).all()
+    lnl.fit(
         data["X_train"],
         data["labels"],
+        label_issues_mask=label_issues_mask,
         clf_kwargs={},
         clf_final_kwargs={},
     )
-    score = rp.score(data["X_test"], data["true_labels_test"])
+    score = lnl.score(data["X_test"], data["true_labels_test"])
+    # Test LNL find_label_issues with pred_prob input
+    pred_probs_test = lnl.predict_proba(data["X_test"])
+    label_issues_mask_test = lnl.find_label_issues(
+        X=None, labels=data["true_labels_test"], pred_probs=pred_probs_test
+    )
+
+    # Test a second fit
+    lnl.fit(data["X_train"], data["labels"])
+
+    # Verbose off
+    lnl = LearningWithNoisyLabels(
+        clf=LogisticRegression(multi_class="auto", solver="lbfgs", random_state=SEED),
+        verbose=0,
+    )
+    lnl.fit(data["X_train"], data["labels"])
 
 
 def test_raise_error_no_clf_fit():
@@ -428,7 +450,6 @@ def test_no_fit_sample_weight(sparse):
 @pytest.mark.parametrize("sparse", [True, False])
 def test_fit_pred_probs(sparse):
     data = SPARSE_DATA if sparse else DATA
-    from cleanlab.count import estimate_cv_predicted_probabilities
 
     lnl = LearningWithNoisyLabels()
     pred_probs = estimate_cv_predicted_probabilities(
@@ -444,19 +465,6 @@ def test_fit_pred_probs(sparse):
     )
     score_no_pred_probs = lnl.score(data["X_test"], data["true_labels_test"])
     assert abs(score_with_pred_probs - score_no_pred_probs) < 0.01
-
-
-@pytest.mark.parametrize("sparse", [True, False])
-def test_get_label_issues(sparse):
-    data = SPARSE_DATA if sparse else DATA
-    lnl = LearningWithNoisyLabels(
-        find_label_issues_kwargs={"n_jobs": 1, "min_examples_per_class": 5},
-    )
-    lnl.fit(
-        X=data["X_train"],
-        labels=data["true_labels_train"],
-    )
-    assert all((lnl.get_label_issues() == lnl.label_issues_mask))
 
 
 def make_2d(X):
@@ -480,6 +488,7 @@ class ReshapingLogisticRegression(BaseEstimator):
         return self.clf.score(make_2d(X), y, sample_weight=sample_weight)
 
 
+@pytest.mark.filterwarnings("ignore::RuntimeWarning")
 @pytest.mark.parametrize("N", [1, 2, 3, 4])
 def test_dimN(N):
     lnl = LearningWithNoisyLabels(clf=ReshapingLogisticRegression())
@@ -499,19 +508,63 @@ def test_dimN(N):
 
 
 def test_sklearn_gridsearchcv():
-
     # hyper-parameters for grid search
     param_grid = {
         "find_label_issues_kwargs": [
             {"filter_by": "prune_by_noise_rate"},
             {"filter_by": "prune_by_class"},
             {"filter_by": "both"},
+            {"filter_by": "confident_learning"},
+            {"filter_by": "pred_neq_given"},
         ],
         "converge_latent_estimates": [True, False],
     }
 
     clf = LogisticRegression(random_state=0, solver="lbfgs", multi_class="auto")
 
-    cv = GridSearchCV(estimator=LearningWithNoisyLabels(clf), param_grid=param_grid, cv=3)
+    cv = GridSearchCV(
+        estimator=LearningWithNoisyLabels(clf),
+        param_grid=param_grid,
+        cv=3,
+    )
 
     cv.fit(X=DATA["X_train"], y=DATA["labels"])
+
+
+@pytest.mark.parametrize("filter_by", ["both", "confident_learning"])
+@pytest.mark.parametrize("seed", [0, 6, 2])
+def test_cj_in_find_label_issues_kwargs(filter_by, seed):
+    labels = DATA["labels"]
+    num_issues = []
+    for provide_confident_joint in [True, False]:
+        print(f"\nfilter_by: {filter_by} | seed: {seed} | cj_provided: {provide_confident_joint}")
+        np.random.seed(seed=seed)
+        if provide_confident_joint:
+            pred_probs = estimate_cv_predicted_probabilities(
+                X=DATA["X_train"], labels=labels, seed=seed
+            )
+            confident_joint = compute_confident_joint(labels=labels, pred_probs=pred_probs)
+            lnl = LearningWithNoisyLabels(
+                find_label_issues_kwargs={
+                    "confident_joint": confident_joint,
+                    "filter_by": "both",
+                    "min_examples_per_class": 1,
+                },
+            )
+        else:
+            lnl = LearningWithNoisyLabels(
+                clf=LogisticRegression(random_state=seed),
+                find_label_issues_kwargs={
+                    "filter_by": "both",
+                    "min_examples_per_class": 1,
+                },
+            )
+        label_issues_mask = lnl.find_label_issues(DATA["X_train"], labels=labels)
+        # Check if the noise matrix was computed based on the passed in confident joint
+        cj_reconstruct = (lnl.inverse_noise_matrix * np.bincount(DATA["labels"])).T.astype(int)
+        np.all(lnl.confident_joint == cj_reconstruct)
+        num_issues.append(sum(label_issues_mask))
+
+    # Chceck that the same exact number of issues are found regardless if the confident joint
+    # is computed during find_label_issues or precomputed and provided as a kwargs parameter.
+    assert num_issues[0] == num_issues[1]

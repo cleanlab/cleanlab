@@ -23,9 +23,8 @@ import numpy as np
 from sklearn.utils import check_X_y
 
 
-def assert_inputs_are_valid(X, s, pred_probs=None):  # pragma: no cover
-    """Checks that X, labels, and pred_probs
-    are correctly formatted"""
+def assert_inputs_are_valid(X, s, pred_probs=None, allow_empty_X=False):  # pragma: no cover
+    """Checks that X, labels, and pred_probs are correctly formatted"""
 
     if pred_probs is not None:
         if not isinstance(pred_probs, (np.ndarray, np.generic)):
@@ -46,16 +45,19 @@ def assert_inputs_are_valid(X, s, pred_probs=None):  # pragma: no cover
         msg += "your case: np.unique(labels) = {}".format(str(unique_classes))
         raise TypeError(msg)
 
-    # Allow sparse matrices and check that they are valid format.
-    check_X_y(
-        X,
-        s,
-        accept_sparse=True,
-        dtype=None,
-        force_all_finite=False,
-        ensure_2d=False,
-        allow_nd=True,
-    )
+    if not allow_empty_X:
+        if X is None:
+            raise ValueError("X cannot be None.")
+
+        check_X_y(
+            X,
+            s,
+            accept_sparse=True,
+            dtype=None,
+            force_all_finite=False,
+            ensure_2d=False,
+            allow_nd=True,
+        )
 
 
 def remove_noise_from_class(noise_matrix, class_without_noise):

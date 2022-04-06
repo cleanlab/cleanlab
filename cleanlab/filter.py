@@ -119,7 +119,14 @@ def _get_shared_data():  # pragma: no cover
         )
     else:
         labels = _to_np_array(mp_params["labels"])
-    return labels, label_counts, prune_count_matrix, pred_probs, multi_label, min_examples_per_class
+    return (
+        labels,
+        label_counts,
+        prune_count_matrix,
+        pred_probs,
+        multi_label,
+        min_examples_per_class,
+    )
 
 
 def _prune_by_class(k, args=None):
@@ -308,7 +315,7 @@ def find_label_issues(
       The columns must be ordered such that these probabilities correspond to class 0,1,2,...
 
       CAUTION: `pred_probs` from your model must be out-of-sample!
-      You should never provide predictions on the same datapoints used to train the model,
+      You should never provide predictions on the same examples used to train the model,
       as these will be overfit and unsuitable for finding label-errors.
       To obtain out-of-sample predicted probabilities for every datapoint in your dataset, you can use cross-validation.
       Alternatively it is ok if your model was trained on a separate dataset and you are only evaluating
@@ -408,7 +415,7 @@ def find_label_issues(
         "both",
         "confident_learning",
         "predicted_neq_given",
-    ]  # TODO: change default to cl_off_diag?
+    ]  # TODO: change default to confident_learning ?
     assert len(labels) == len(pred_probs)
     if filter_by in ["confident_learning", "predicted_neq_given"] and (
         frac_noise != 1.0 or num_to_remove_per_class is not None
@@ -587,7 +594,6 @@ def find_label_issues(
             rank_by_kwargs=rank_by_kwargs,
         )
         return er
-    confident_joint
     return label_issues_mask
 
 
@@ -681,7 +687,8 @@ def reduce_prune_counts(prune_count_matrix, frac_noise=1.0):
     new_mat = prune_count_matrix * frac_noise
     np.fill_diagonal(new_mat, prune_count_matrix.diagonal())
     np.fill_diagonal(
-        new_mat, prune_count_matrix.diagonal() + np.sum(prune_count_matrix - new_mat, axis=0)
+        new_mat,
+        prune_count_matrix.diagonal() + np.sum(prune_count_matrix - new_mat, axis=0),
     )
 
     # These are counts, so return a matrix of ints.
@@ -782,5 +789,8 @@ def find_label_issues_using_argmax_confusion_matrix(
     if calibrate:
         confident_joint = calibrate_confident_joint(confident_joint, labels)
     return find_label_issues(
-        labels=labels, pred_probs=pred_probs, confident_joint=confident_joint, filter_by=filter_by
+        labels=labels,
+        pred_probs=pred_probs,
+        confident_joint=confident_joint,
+        filter_by=filter_by,
     )

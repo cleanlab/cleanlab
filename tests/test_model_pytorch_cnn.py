@@ -79,10 +79,10 @@ def test_throw_exception():
 
 def test_n_train_examples():
     cnn = CNN(
-        epochs=3,
+        epochs=4,
         log_interval=1000,
         loader="train",
-        seed=0,
+        seed=1,
         dataset="sklearn-digits",
     )
     cnn.fit(
