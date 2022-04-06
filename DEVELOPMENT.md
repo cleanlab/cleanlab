@@ -63,7 +63,20 @@ which you can open with your web browser.
 ### Examples
 
 You can check that the [examples](https://github.com/cleanlab/examples) still
-work with changes you make to cleanlab by manually testing them.
+work with changes you make to cleanlab by manually running the notebooks.
+You can also run all example notebooks as follows:
+
+```console
+git clone https://github.com/cleanlab/examples.git
+```
+
+Then specify your local version of cleanlab source in the first line of: **examples/requirements.txt**
+
+Finally execute the bash script:
+
+```console
+examples/run_all_notebooks.sh
+```
 
 ## Documentation
 
