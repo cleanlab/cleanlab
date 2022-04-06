@@ -410,6 +410,8 @@ def compute_confident_joint(
     true_labels_confident = true_label_guess[at_least_one_confident]
     labels_confident = labels[at_least_one_confident]
     confident_joint = confusion_matrix(true_labels_confident, labels_confident).T
+    # Guarantee at least one correctly labeled example is represented in every class
+    np.fill_diagonal(confident_joint, confident_joint.diagonal().clip(min=1))
     if calibrate:
         confident_joint = calibrate_confident_joint(confident_joint, labels)
 
