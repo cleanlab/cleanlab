@@ -96,6 +96,7 @@ from sklearn.linear_model import LogisticRegression
 
 # Wrap around any classifier. Yup, you can use sklearn/pyTorch/Tensorflow/FastText/etc.
 cl = CleanLearning(clf=LogisticRegression())
+# cl now also has access to all methods available to LogisticRegression
 cl.fit(X=X_train_data, labels=train_noisy_labels)
 # Estimate the predictions you would have gotten by training with *no* label issues.
 predicted_test_labels = cl.predict(X_test)
@@ -131,6 +132,7 @@ class YourFavoriteModel(BaseEstimator): # Inherits sklearn base classifier
 # Now you can use your model with `cleanlab`. Here's one example:
 from cleanlab.classification import CleanLearning
 cl = CleanLearning(clf=YourFavoriteModel())
+# cl now also has access to all methods available to YourFavoriteModel
 cl.fit(train_data, train_labels_with_errors)
 ```
 
