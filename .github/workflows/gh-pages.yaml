@@ -2,7 +2,7 @@ name: GitHub Pages
 
 on:
   push:
-    branches: 
+    branches:
       - '**'
 
   release:
@@ -69,7 +69,7 @@ jobs:
           git config --global user.email "actions@github.com"
           git config --global user.name "GitHub Actions"
           git add -A && git commit -m "Change cleanlab ver in .ipynb files"
-          
+
       - name: Change tag to the latest commit
         if: ${{ github.ref_type == 'tag' }}
         run: |
@@ -127,7 +127,7 @@ jobs:
           cp docs/source/_templates/redirect-to-stable.html cleanlab-docs/index.html
 
       - name: Deploy
-        # if: ${{ github.ref == 'refs/heads/master' }}
+        if: ${{ github.ref == 'refs/heads/master' }}
         uses: peaceiris/actions-gh-pages@v3
         with:
           deploy_key: ${{ secrets.ACTIONS_DEPLOY_KEY }}
