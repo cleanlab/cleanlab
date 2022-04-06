@@ -38,7 +38,10 @@ def test_loaders(
     The goal of this test is just to make sure the data loads correctly.
     And all the main functions work."""
 
-    from cleanlab.count import estimate_confident_joint_and_cv_pred_proba, estimate_latent
+    from cleanlab.count import (
+        estimate_confident_joint_and_cv_pred_proba,
+        estimate_latent,
+    )
 
     if python_version.is_compatible():
         np.random.seed(seed)
@@ -63,7 +66,9 @@ def test_loaders(
             np.random.seed(seed)
             # Single epoch for cross-validation (already pre-trained)
             cnn.epochs = 1
-            cj, pred_probs = estimate_confident_joint_and_cv_pred_proba(X, y, cnn, cv_n_folds=2)
+            cj, pred_probs = estimate_confident_joint_and_cv_pred_proba(
+                X, y, cnn, cv_n_folds=2
+            )
             est_py, est_nm, est_inv = estimate_latent(cj, y)
             # algorithmic identification of label issues
             err_idx = cleanlab.filter.find_label_issues(
@@ -95,10 +100,10 @@ def test_throw_exception():
 def test_n_train_examples():
     if python_version.is_compatible():
         cnn = CNN(
-            epochs=3,
+            epochs=4,
             log_interval=1000,
             loader="train",
-            seed=0,
+            seed=1,
             dataset="sklearn-digits",
         )
         cnn.fit(

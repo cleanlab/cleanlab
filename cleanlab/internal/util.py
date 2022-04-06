@@ -24,8 +24,7 @@ from sklearn.utils import check_X_y
 
 
 def assert_inputs_are_valid(X, s, pred_probs=None, allow_empty_X=False):  # pragma: no cover
-    """Checks that X, labels, and pred_probs
-    are correctly formatted"""
+    """Checks that X, labels, and pred_probs are correctly formatted"""
 
     if pred_probs is not None:
         if not isinstance(pred_probs, (np.ndarray, np.generic)):

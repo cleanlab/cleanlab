@@ -24,7 +24,7 @@ every example. You can then do something like: `np.argsort(label_quality_score)`
 indices of individual data.
 
 CAUTION: These label quality scores are computed based on `pred_probs` from your model that must be out-of-sample!
-You should never provide predictions on the same datapoints used to train the model,
+You should never provide predictions on the same examples used to train the model,
 as these will be overfit and unsuitable for finding label-errors.
 To obtain out-of-sample predicted probabilities for every datapoint in your dataset, you can use cross-validation.
 Alternatively it is ok if your model was trained on a separate dataset and you are only evaluating
@@ -127,7 +127,7 @@ def get_label_quality_scores(
       The columns must be ordered such that these probabilities correspond to class 0,1,2,...
 
       CAUTION: `pred_probs` from your model must be out-of-sample!
-      You should never provide predictions on the same datapoints used to train the model,
+      You should never provide predictions on the same examples used to train the model,
       as these will be overfit and unsuitable for finding label-errors.
       To obtain out-of-sample predicted probabilities for every datapoint in your dataset, you can use cross-validation.
       Alternatively it is ok if your model was trained on a separate dataset and you are only evaluating
@@ -145,10 +145,10 @@ def get_label_quality_scores(
       Let `C = {0,1,...,K}` denote the classification task's specified set of classes.
 
       The normalized_margin score works better for identifying class conditional label errors,
-      i.e. datapoints for which another label in C is appropriate but the given label is not.
+      i.e. examples for which another label in C is appropriate but the given label is not.
 
       The self_confidence score works better for identifying alternative label issues corresponding
-      to bad datapoints that are: not from any of the classes in C, well-described by 2 or more labels in C,
+      to bad examples that are: not from any of the classes in C, well-described by 2 or more labels in C,
       or generally just out-of-distribution (ie. anomalous outliers).
 
       .. seealso::
@@ -244,7 +244,7 @@ def get_label_quality_ensemble_scores(
     pred_probs_list : List of np.array (shape (N, K))
       Each element in this list should be an array of pred_probs in the same format
       expected by the `get_label_quality_scores()` method.
-      Each element of `pred_probs_list` corresponds to the predictions from one model for all datapoints.
+      Each element of `pred_probs_list` corresponds to the predictions from one model for all examples.
 
     method : {"self_confidence", "normalized_margin", "confidence_weighted_entropy"}, default="self_confidence"
       Label quality scoring method. Default is "self_confidence".
@@ -286,7 +286,7 @@ def get_label_quality_ensemble_scores(
     if len(pred_probs_list) == 1:
         warnings.warn(
             """
-            pred_probs_list only has one element. 
+            pred_probs_list only has one element.
             Consider using get_label_quality_scores() if you only have a single array of pred_probs.
             """
         )

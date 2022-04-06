@@ -79,7 +79,7 @@ def num_label_issues(
         The columns must be ordered such that these probabilities correspond to class 0,1,2,...
 
         CAUTION: `pred_probs` from your model must be out-of-sample!
-        You should never provide predictions on the same datapoints used to train the model,
+        You should never provide predictions on the same examples used to train the model,
         as these will be overfit and unsuitable for finding label-errors.
         To obtain out-of-sample predicted probabilities for every datapoint in your dataset, you can use cross-validation.
         Alternatively it is ok if your model was trained on a separate dataset and you are only evaluating

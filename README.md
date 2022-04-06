@@ -4,7 +4,7 @@
 
 ![](https://raw.githubusercontent.com/cleanlab/assets/master/cleanlab/cleanlab_logo.png)
 
-`cleanlab` is a data-centric AI package for data quality and **machine learning with messy, real-world data and labels**. 
+`cleanlab` is a data-centric AI package for data quality and **machine learning with messy, real-world data and labels**.
 
 `cleanlab` `clean`s `lab`els and supports **finding, quantifying, and learning** with label issues in datasets. See datasets cleaned with `cleanlab` at [labelerrors.com](https://labelerrors.com).
 
@@ -20,7 +20,7 @@ Check out the: [documentation](https://docs.cleanlab.ai/), [examples](https://gi
     - [TUTORIAL: simple cleanlab on Iris](https://github.com/cleanlab/examples/blob/master/iris_simple_example.ipynb)
   - (Comprehensive) Image classification with noisy labels
     - [TUTORIAL: learning with noisy labels on CIFAR](https://github.com/cleanlab/examples/tree/master/cifar10)
-  - Run Cleanlab on 4 datasets using 9 different classifiers/models:   
+  - Run Cleanlab on 4 datasets using 9 different classifiers/models:
     - [TUTORIAL: classifier comparison](https://github.com/cleanlab/examples/blob/master/classifier_comparison.ipynb)
   - Find [label errors](https://arxiv.org/abs/2103.14749) in MNIST, ImageNet, CIFAR-10/100, Caltech-256, QuickDraw, Amazon Reviews, IMDB, 20 Newsgroups, AudioSet:
     - [TUTORIAL: Find Label Errors in the 10 most common ML benchmark test datasets with cleanlab](https://github.com/cleanlab/label-errors/blob/main/examples/Tutorial%20-%20How%20To%20Find%20Label%20Errors%20With%20CleanLab.ipynb)
@@ -84,7 +84,7 @@ ordered_label_issues = find_label_issues(
  )
 ```
 
-**CAUTION:** Predicted probabilities from your model must be out-of-sample\! You should never provide predictions on the same datapoints used to train the model, as these will be overfit and unsuitable for finding label-errors. To obtain out-of-sample predicted probabilities for every datapoint in your dataset, you can use [cross-validation](https://machinelearningmastery.com/out-of-fold-predictions-in-machine-learning/). Alternatively, you can train your model on a separate dataset and you are only evaluating labels in data that was previously held-out.
+**CAUTION:** Predicted probabilities from your model must be out-of-sample\! You should never provide predictions on the same examples used to train the model, as these will be overfit and unsuitable for finding label-errors. To obtain out-of-sample predicted probabilities for every datapoint in your dataset, you can use [cross-validation](https://machinelearningmastery.com/out-of-fold-predictions-in-machine-learning/). Alternatively, you can train your model on a separate dataset and you are only evaluating labels in data that was previously held-out.
 
 Pre-computed **out-of-sample** predicted probabilities for CIFAR-10 train set are available: [here](https://github.com/cleanlab/examples/tree/master/cifar10#pre-computed-psx-for-every-noise--sparsity-condition).
 
@@ -214,7 +214,7 @@ Each sub-figure depicts accuracy scores on a test set (with correct non-noisy la
 *  MIDDLE (in blue): The classifier test accuracy trained with noisy labels using `cleanlab`.
 *  RIGHT (in white): The baseline classifier test accuracy trained with noisy labels.
 
-As an example, the table below is the noise matrix (noisy channel) *P(s | y) 
+As an example, the table below is the noise matrix (noisy channel) *P(s | y)
 characterizing the label noise for the first dataset row in the figure. *s* represents the observed noisy labels and *y* represents the latent, true labels. The trace of this matrix is 2.6. A trace of 4 implies no label noise. A cell in this matrix is read like: "Around 38% of true underlying '3' labels were randomly flipped to '2' labels in the
 observed dataset."
 
@@ -277,7 +277,7 @@ s_noisy_labels = generate_noisy_labels(y_hidden_actual_labels, noise_matrix)
 
 *s* denotes a random variable that represents the observed, noisy label and *y* denotes a random variable representing the hidden, actual labels. Both *s* and *y* take any of the m classes as values. The `cleanlab` package supports different levels of granularity for computation depending on the needs of the user. Because of this, we support multiple alternatives, all no more than a few lines, to estimate these latent distribution arrays, enabling the user to reduce computation time by only computing what they need to compute, as seen in the examples below.
 
-Throughout these examples, you’ll see a variable called *confident\_joint*. The confident joint is an m x m matrix (m is the number of classes) that counts, for every observed, noisy class, the number of examples that confidently belong to every latent, hidden class. It counts the number of examples that we are confident are labeled correctly or incorrectly for every pair of obseved and unobserved classes. The confident joint is an unnormalized estimate of the complete-information latent joint distribution, *Ps,y*. 
+Throughout these examples, you’ll see a variable called *confident\_joint*. The confident joint is an m x m matrix (m is the number of classes) that counts, for every observed, noisy class, the number of examples that confidently belong to every latent, hidden class. It counts the number of examples that we are confident are labeled correctly or incorrectly for every pair of obseved and unobserved classes. The confident joint is an unnormalized estimate of the complete-information latent joint distribution, *Ps,y*.
 
 The label flipping rates are denoted *P(s | y)*, the inverse rates are *P(y | s)*, and the latent prior of the unobserved, true labels, *p(y)*.
 
@@ -342,7 +342,7 @@ joint = estimate_joint(
 
 ## PU learning with cleanlab:
 
-Positive-Unlabeled learning (in which your data only contains a few positively labeled examples with the rest unlabeled) is just a special case of [LearningWithNoisyLabels](https://github.com/cleanlab/cleanlab/blob/master/cleanlab/classification.py#L106) when one of the classes has no error. `P` stands for the positive class and **is assumed to have zero label errors** and `U` stands for unlabeled data, but in practice, we just assume the `U` class is a noisy negative class that actually contains some positive examples. Thus, the goal of PU learning is to (1) estimate the proportion of negatively labeled datapoints that actually belong to the positive class (see`fraction\_noise\_in\_unlabeled\_class` in the last example), (2) find the errors (see last example), and (3) train on clean data (see first example below). `cleanlab` does all three, taking into account that there are no label errors in whichever class you specify as positive.
+Positive-Unlabeled learning (in which your data only contains a few positively labeled examples with the rest unlabeled) is just a special case of [LearningWithNoisyLabels](https://github.com/cleanlab/cleanlab/blob/master/cleanlab/classification.py#L106) when one of the classes has no error. `P` stands for the positive class and **is assumed to have zero label errors** and `U` stands for unlabeled data, but in practice, we just assume the `U` class is a noisy negative class that actually contains some positive examples. Thus, the goal of PU learning is to (1) estimate the proportion of negatively labeled examples that actually belong to the positive class (see`fraction\_noise\_in\_unlabeled\_class` in the last example), (2) find the errors (see last example), and (3) train on clean data (see first example below). `cleanlab` does all three, taking into account that there are no label errors in whichever class you specify as positive.
 
 There are two ways to use `cleanlab` for PU learning. We'll look at each here.
 
@@ -391,7 +391,7 @@ _, _, inv_noise_matrix = estimate_latent(confident_joint=cj, labels=s, )
 # What's more interesting is p(y = anything | s is not put_class), or in the binary case
 # this translates to p(y = pu_class | s = 1 - pu_class) because pu_class is 0 or 1.
 # So, to find the fraction_noise_in_unlabeled_class, for binary, you just compute:
-fraction_noise_in_unlabeled_class = inv_noise_matrix[pu_class][1 - pu_class] 
+fraction_noise_in_unlabeled_class = inv_noise_matrix[pu_class][1 - pu_class]
 ```
 
 Now that you have `indices\_of\_label\_errors`, you can remove those label issues and train on clean data (or only remove some of the label issues and iteratively use confident learning / cleanlab to improve results).
@@ -401,7 +401,7 @@ Now that you have `indices\_of\_label\_errors`, you can remove those label issue
 `cleanlab` isn't just a github, it's based on peer-reviewed research. Here are the relevant papers to cite if you use this package:
 
 The [confident learning paper](https://arxiv.org/abs/1911.00068):
- 
+
     @article{northcutt2021confidentlearning,
         title={Confident Learning: Estimating Uncertainty in Dataset Labels},
         author={Curtis G. Northcutt and Lu Jiang and Isaac L. Chuang},
