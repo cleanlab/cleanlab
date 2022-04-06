@@ -53,10 +53,10 @@ Examples
 --------
 >>> from cleanlab.classification import CleanLearning
 >>> from sklearn.linear_model import LogisticRegression as LogReg
->>> rp = CleanLearning(clf=LogReg()) # Pass in any classifier.
->>> rp.fit(X_train, labels_maybe_with_errors)
+>>> cl = CleanLearning(clf=LogReg()) # Pass in any classifier.
+>>> cl.fit(X_train, labels_maybe_with_errors)
 >>> # Estimate the predictions as if you had trained without label issues.
->>> pred = rp.predict(X_test)
+>>> pred = cl.predict(X_test)
 
 The easiest way to use any model (Tensorflow, caffe2, PyTorch, etc.)
 with ``cleanlab`` is to wrap it in a class that inherits
