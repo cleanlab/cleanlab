@@ -16,7 +16,7 @@
 
 
 """
-Methods to rank/order data by cleanlab's `label quality score`. 
+Methods to rank/order data by cleanlab's `label quality score`.
 Except for `order_label_issues`, which operates only on the subset of the data identified
 as potential label issues/errors, the methods in the `rank` module can be used on whichever subset
 of the dataset you choose (including the entire dataset) and provide a `label quality score` for
@@ -261,8 +261,8 @@ def get_label_quality_ensemble_scores(
 
     weight_ensemble_members_by : {"uniform", "accuracy"}, default="accuracy"
       Weighting scheme used to aggregate scores from each model:
-        "uniform": Take the simple average of scores
-        "accuracy": Take weighted average of scores, weighted by model accuracy
+      "uniform": Take the simple average of scores
+      "accuracy": Take weighted average of scores, weighted by model accuracy
 
     verbose : int, default = 1
       Set this = 0 to suppress all print statements.

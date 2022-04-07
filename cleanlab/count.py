@@ -597,8 +597,8 @@ def estimate_confident_joint_and_cv_pred_proba(
     conditions, estimates are within one percent of actual.
 
     Notes: There are two ways to compute the confident joint with pros/cons.
-    1. For each holdout set, we compute the confident joint, then sum them up.
-    2. Compute pred_proba for each fold, combine, compute the confident joint.
+    (1) For each holdout set, we compute the confident joint, then sum them up.
+    (2) Compute pred_proba for each fold, combine, compute the confident joint.
     (1) is more accurate because it correctly computes thresholds for each fold
     (2) is more accurate when you have only a little data because it computes
     the confident joint using all the probabilities. For example if you had 100

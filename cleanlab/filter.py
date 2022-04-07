@@ -15,8 +15,8 @@
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
 """
-Methods to identify which examples have label issues. 
-Some of this code uses advanced multiprocessing to speed up computation: 
+Methods to identify which examples have label issues.
+Some of this code uses advanced multiprocessing to speed up computation:
 https://research.wmz.ninja/articles/2018/03/on-sharing-large-arrays-when-using-pythons-multiprocessing.html
 
 Note: Previously in cleanlab versions <= 1.0.1, this module was called `pruning`.
@@ -326,18 +326,12 @@ def find_label_issues(
       Possible Values: {'prune_by_class', 'prune_by_noise_rate', 'both',
                         'confident_learning', 'predicted_neq_given'}
       Method used for filtering/pruning out the label issues.
-      1. 'prune_by_noise_rate': works by removing examples with
-      *high probability* of being mislabeled for every non-diagonal in the confident joint
-      (see `prune_counts_matrix` in `filter.py`). These are the examples where (with high
-      confidence) the given label is unlikely to match the predicted label for the example.
-      2. 'prune_by_class': works by removing the examples with *smallest
-      probability* of belonging to their given class label for every class.
+
+      1. 'prune_by_noise_rate': works by removing examples with *high probability* of being mislabeled for every non-diagonal in the confident joint (see `prune_counts_matrix` in `filter.py`). These are the examples where (with high confidence) the given label is unlikely to match the predicted label for the example.
+      2. 'prune_by_class': works by removing the examples with *smallest probability* of belonging to their given class label for every class.
       3. 'both': Removes only the examples that would be filtered by both (1) AND (2).
-      4. 'confident_learning': Returns the examples in the off-diagonals of the confident joint.
-      These are the examples that are confidently predicted to be a different label than their
-      given label.
-      5. 'predicted_neq_given': Find examples where the predicted class
-      (i.e. argmax of the predicted probabilities) does not match the given label.
+      4. 'confident_learning': Returns the examples in the off-diagonals of the confident joint. These are the examples that are confidently predicted to be a different label than their given label.
+      5. 'predicted_neq_given': Find examples where the predicted class (i.e. argmax of the predicted probabilities) does not match the given label.
 
     return_indices_ranked_by : {:obj:`None`, :obj:`self_confidence`, :obj:`normalized_margin`, :obj:`confidence_weighted_entropy`}, default = None
       If None, returns a boolean mask (true if example at index is label error)
@@ -769,16 +763,11 @@ def find_label_issues_using_argmax_confusion_matrix(
     filter_by : str (default: 'prune_by_noise_rate')
         Possible Values: 'prune_by_class', 'prune_by_noise_rate', or 'both'.
         Method used for pruning/filtering out the label issues:
-        1. 'prune_by_noise_rate': works by removing examples with
-        *high probability* of being mislabeled for every non-diagonal in the confident joint
-        (see `prune_counts_matrix` in `filter.py`). These are the examples where (with high
-        confidence) the given label is unlikely to match the predicted label.
-        2. 'prune_by_class': works by removing the examples with *smallest
-        probability* of belonging to their given class label for every class.
-        3. 'both': Finds the examples satisfying (1) AND (2) and
-        removes their set conjunction.
-        4. 'confident_learning': Find examples that are confidently labeled as a class
-        that's different from their given label while computing the confident joint.
+
+        1. 'prune_by_noise_rate': works by removing examples with *high probability* of being mislabeled for every non-diagonal in the confident joint (see `prune_counts_matrix` in `filter.py`). These are the examples where (with high confidence) the given label is unlikely to match the predicted label.
+        2. 'prune_by_class': works by removing the examples with *smallest probability* of belonging to their given class label for every class.
+        3. 'both': Finds the examples satisfying (1) AND (2) and removes their set conjunction.
+        4. 'confident_learning': Find examples that are confidently labeled as a class that's different from their given label while computing the confident joint.
 
     Returns
     -------

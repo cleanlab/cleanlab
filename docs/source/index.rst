@@ -35,16 +35,16 @@ Quickstart
 2. Find label errors in your data
 ---------------------------------
 
-``cleanlab``'s ``find_label_issues`` function tells you which examples in your dataset are likely mislabeled. At a minimum, it expects two inputs - your data's given labels, ``y``, and predicted probabilities, ``pred_probs``, from some trained classification model (Note: these must be out-of-sample predictions where the data points were held out from the model during training, which can be :ref:`obtained via cross-validation <pred_probs_cross_val>`).
+``cleanlab``'s ``find_label_issues`` function tells you which examples in your dataset are likely mislabeled. At a minimum, it expects two inputs - your data's given labels, ``labels``, and predicted probabilities, ``pred_probs``, from some trained classification model (Note: these must be out-of-sample predictions where the data points were held out from the model during training, which can be :ref:`obtained via cross-validation <pred_probs_cross_val>`).
 
 Setting ``return_indices_ranked_by`` in this function instructs ``cleanlab`` to return the indices of potential mislabeled examples, ordered by how likely their given label is incorrect. This is estimated via a **label quality score**, which for example can be specified as the ``self_confidence`` (predicted probability of given label according to the model).
 
 .. code-block:: python
 
-   from cleanlab.pruning import find_label_issues
+   from cleanlab.filter import find_label_issues
 
    ordered_label_issues = find_label_issues(
-      labels=y,
+      labels=labels,
       pred_probs=pred_probs,
       return_indices_ranked_by='self_confidence')
 
@@ -66,9 +66,9 @@ When the ``.fit()`` method is called, it automatically removes any examples iden
    from sklearn.linear_model import LogisticRegression
    from cleanlab.classification import CleanLearning
 
-   clf = LogisticRegression() # Here we've used sklearn's Logistic Regression model, but this can be any classifier that implements sklearn's API.
+   clf = LogisticRegression() # any classifier implementing the sklearn API
    cl = CleanLearning(clf=clf)
-   cl.fit(X=X, labels=y)
+   cl.fit(X=X, labels=labels)
 
 .. toctree::
    :hidden:

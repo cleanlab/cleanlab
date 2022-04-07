@@ -18,7 +18,8 @@
 cleanlab can be used for multiclass (or multi-label) learning with noisy labels for any dataset and model.
 
 The CleanLearning class wraps around an instance of a
-classifier class. Your classifier must adhere to the sklearn template,
+classifier class. Your classifier must adhere to the `sklearn estimator API
+<https://scikit-learn.org/stable/developers/develop.html#rolling-your-own-estimator>`_,
 meaning it must define four functions:
 
 * ``clf.fit(X, y, sample_weight = None)``
@@ -32,9 +33,9 @@ contains the contains targets formatted as ``0, 1, 2, ..., num_classes-1``, and
 training.
 
 Furthermore, your estimator should be correctly clonable via
-`sklearn.base.clone`: cleanlab internally creates multiple instances of your
+`sklearn.base.clone <https://scikit-learn.org/stable/modules/generated/sklearn.base.clone.html>`_: cleanlab internally creates multiple instances of your
 estimator, and if you e.g. manually wrap a PyTorch model, you must ensure that
-every call to your estimator's `__init__()` creates an independent instance of
+every call to your estimator's ``__init__()`` creates an independent instance of
 the model.
 
 Note
@@ -58,7 +59,7 @@ Examples
 >>> # Estimate the predictions as if you had trained without label issues.
 >>> pred = cl.predict(X_test)
 
-The easiest way to use any model (Tensorflow, caffe2, PyTorch, etc.)
+The easiest way to use any model (TensorFlow, caffe2, PyTorch, etc.)
 with ``cleanlab`` is to wrap it in a class that inherits
 the ``sklearn.base.BaseEstimator``:
 
@@ -86,7 +87,7 @@ Note
 Note
 ----
 
-Confident Learning is the state-of-the-art (Northcutt et al., 2021) for
+Confident Learning is the state-of-the-art (`Northcutt et al., 2021 <https://jair.org/index.php/jair/article/view/12125>`_) for
 weak supervision, finding label issues in datasets, learning with noisy
 labels, uncertainty estimation, and more. It works with ANY classifier,
 including deep neural networks. See clf parameter.
@@ -138,21 +139,26 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
     ----------
     clf : :obj:`sklearn.classifier` compliant class (e.g. skorch wraps around PyTorch)
       See ``cleanlab.experimental`` for examples of sklearn wrappers, e.g. around PyTorch and FastText.
-      The clf object must have the following three functions defined:
-      1. clf.predict_proba(X) # Predicted probabilities
-      2. clf.predict(X) # Predict labels
-      3. clf.fit(X, y, sample_weight) # Train classifier
+      The clf object must follow the `sklearn estimator API
+      <https://scikit-learn.org/stable/developers/develop.html#rolling-your-own-estimator>`_,
+      defining the following functions:
+
+      * ``clf.fit(X, y, sample_weight=None)``
+      * ``clf.predict_proba(X)``
+      * ``clf.predict(X)``
+      * ``clf.score(X, y, sample_weight=None)``
+
       Stores the classifier used in Confident Learning.
       Default classifier used is logistic regression.
 
     seed : :obj:`int`, default: None
       Set the default state of the random number generator used to split
-      the cross-validated folds. If None, uses np.random current random state.
+      the cross-validated folds. If None, uses ``np.random`` current random state.
 
     cv_n_folds : :obj:`int`
       This class needs holdout predicted probabilities for every data example
       and if not provided, uses cross-validation to compute them.
-      cv_n_folds sets the number of cross-validation folds used to compute
+      ``cv_n_folds`` sets the number of cross-validation folds used to compute
       out-of-sample probabilities for each example in X.
 
     converge_latent_estimates : :obj:`bool` (Default: False)
