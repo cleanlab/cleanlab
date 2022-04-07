@@ -17,26 +17,15 @@
 """
 Text classification with FastText models.
 This module allows you to easily find label issues in your text datasets.
+You must first `pip install fasttext`
 """
 
-# Make sure python version is compatible with fasttext
-from cleanlab.internal.util import VersionWarning
-
-# fasttext only exists for these versions that are also compatible with cleanlab
-# if python_version.is_compatible():  # pragma: no cover
 import time
 import os
 import copy
 import numpy as np
-
-# You need to install fasttext using pip for this library to work
+from sklearn.base import BaseEstimator
 from fasttext import train_supervised, load_model
-
-
-python_version = VersionWarning(
-    warning_str="fastText supports Python 3 versions (not python 2).",
-    list_of_compatible_versions=[3.4, 3.5, 3.6, 3.7, 3.8],
-)
 
 
 LABEL = "__label__"
@@ -103,9 +92,6 @@ def data_loader(
                     batch_counter += 1
                     yield _split_labels_and_text(batch)
                 break
-
-
-from sklearn.base import BaseEstimator
 
 
 class FastTextClassifier(BaseEstimator):  # Inherits sklearn base classifier
