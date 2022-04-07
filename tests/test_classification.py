@@ -15,6 +15,7 @@
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
 from copy import deepcopy
+import warnings
 from sklearn.linear_model import LogisticRegression
 from sklearn.base import BaseEstimator
 from sklearn.model_selection import GridSearchCV
@@ -515,7 +516,7 @@ def test_sklearn_gridsearchcv():
             {"filter_by": "prune_by_class"},
             {"filter_by": "both"},
             {"filter_by": "confident_learning"},
-            {"filter_by": "pred_neq_given"},
+            {"filter_by": "predicted_neq_given"},
         ],
         "converge_latent_estimates": [True, False],
     }
@@ -528,7 +529,12 @@ def test_sklearn_gridsearchcv():
         cv=3,
     )
 
-    cv.fit(X=DATA["X_train"], y=DATA["labels"])
+    # cv.fit() raises a warning if some fits fail (including raising
+    # exceptions); we don't expect any fits to fail, so ensure that the code
+    # doesn't raise any warnings
+    with warnings.catch_warnings(record=True) as record:
+        cv.fit(X=DATA["X_train"], y=DATA["labels"])
+    assert len(record) == 0, "expected no warnings"
 
 
 @pytest.mark.parametrize("filter_by", ["both", "confident_learning"])
