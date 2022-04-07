@@ -14,12 +14,13 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
+"""
+A cleanlab-compatible PyTorch ConvNet classifier that can be used to find
+label issues in image data.
+This is a good example to reference for making your own bespoke model compatible with cleanlab.
 
-# ## A cleanlab compatible PyTorch CNN classifier.
-#
-# ## Note to use this model you'll need to have pytorch installed
-# See: https://pytorch.org/get-started/locally/
-
+You must have PyTorch installed: https://pytorch.org/get-started/locally/
+"""
 
 from sklearn.base import BaseEstimator
 import torch

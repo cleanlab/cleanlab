@@ -1,14 +1,18 @@
-# Experimental cleanlab functionality
+# Experimental methods
 
-Methods in this `experimental` module are bleeding edge and may have sharp edges.
-They are not guaranteed to be stable between different `cleanlab` versions.
+Methods in this `experimental` module are bleeding edge and may have sharp edges. They are not guaranteed to be stable between different cleanlab versions.
 
-This submodule in cleanlab requires dependencies on deep learning and other machine learning
-frameworks that are not directly supported in cleanlab.
-You must install these dependencies on your own if you wish to use them.
+Some of these files include various models that can be used with cleanlab to find issues in specific types of data. These require dependencies on deep learning and other machine learning packages that are not official cleanlab dependencies. You must install these dependencies on your own if you wish to use them.
 
 The dependencies are as follows:
-* fasttext.py - text classification with FastText models (allows you to find label issues in your text datasets)
+* fasttext.py - a FastText classifier for text data
 	- fasttext
-* coteaching.py - the Co-teaching algorithm for training neural networks on noisily-labeled data 
+* mnist_pytorch.py - training a simplified AlexNet on MNIST using PyTorch
 	- pytorch
+	- torchvision
+* cifar_cnn.py - training on CIFAR using PyTorch via CoTeaching method
+	- pytorch
+	- torchvision
+* coteaching - an algorithm to train neural networks with noisy labels
+	- pytorch
+

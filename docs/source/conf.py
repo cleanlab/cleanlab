@@ -15,8 +15,6 @@ import sys
 import datetime
 
 sys.path.insert(0, os.path.abspath("../../cleanlab"))
-# sys.path.insert(0, os.path.abspath("../cleanlab/example_models/"))
-# sys.path.insert(1, "./cleanlab/example_models")
 
 # -- Project information -----------------------------------------------------
 
