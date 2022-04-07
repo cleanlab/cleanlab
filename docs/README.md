@@ -29,8 +29,6 @@ pip install -r docs/requirements.txt
 
 4. **[Optional]** [Create a new branch](https://www.atlassian.com/git/tutorials/using-branches), make your code changes, and then `git commit` them. **ONLY COMMITTED CHANGES WILL BE REFLECTED IN THE DOCS BUILD.**
 
-5. **[Optional]** If you do not want to execute any of the Jupyter Notebooks (i.e., the `.ipynb` files) during the docs build process, add the line `nbsphinx_execute = 'never'` under the `nbsphinx Configuration` section in the `conf.py` file. If you're contributing to the docs, this line must be removed before pushing it to the production repo.
-
 6. Build the docs with [`sphinx-multiversion`](https://holzhaus.github.io/sphinx-multiversion):
 
    * If you're building from a **branch** (usually the `master` branch):
@@ -47,7 +45,9 @@ pip install -r docs/requirements.txt
 
    Note: To also build docs for another branch or tag, run the above command again changing only the `YOUR_BRANCH_NAME` or `YOUR_TAG_NAME` placeholder.
 
-   After entering the above command, your terminal might output:
+   **Fast build**: Executing the Jupyter Notebooks (i.e., the `.ipynb` files) that make up some portion of the docs, such as the tutorials, takes a long time. If you want to skip rendering these, set the environment variable `SKIP_NOTEBOOKS=1`. You can either set this using `export SKIP_NOTEBOOKS=1` or do this inline with `SKIP_NOTEBOOKS=1 sphinx-multiversion ...`.
+
+   While building the docs, your terminal might output:
    * `unknown config value 'smv_branch_whitelist' in override, ignoring`, and
    * `unknown config value 'smv_tag_whitelist' in override, ignoring`.
 

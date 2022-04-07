@@ -1,0 +1,6 @@
+Without this directory, Sphinx will warn:
+
+> WARNING: html_static_path entry '_static' does not exist
+
+This file exists to suppress that warning and because empty directories cannot
+be checked in to Git.
