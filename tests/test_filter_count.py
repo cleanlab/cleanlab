@@ -294,7 +294,7 @@ def test_pruning_reduce_prune_counts():
             [36, 8, 159],
         ]
     )
-    cj2 = filter.reduce_prune_counts(cj, frac_noise=1.0)
+    cj2 = filter._reduce_prune_counts(cj, frac_noise=1.0)
     assert np.all(cj == cj2)
 
 
@@ -307,7 +307,7 @@ def test_pruning_keep_at_least_n_per_class():
             [36, 8, 159],
         ]
     )
-    prune_count_matrix = filter.keep_at_least_n_per_class(
+    prune_count_matrix = filter._keep_at_least_n_per_class(
         prune_count_matrix=cj.T,
         n=5,
     )

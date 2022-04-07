@@ -14,19 +14,13 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
-
-# ## Latent Estimation
-#
-# Contains methods for estimating latent structures used for confident learning.
-# * The latent prior of the unobserved, error-less labels $y$:
-#     denoted $p(y)$ (latex) & '```py```' (code).
-# * The latent noisy channel (noise matrix) characterizing the flipping rates:
-#     denoted $P_{labels \vert y }$ (latex) & '```nm```' (code).
-# * The latent inverse noise matrix characterizing flipping process:
-#     denoted $P_{y \vert labels}$ (latex) & '```inv```' (code).
-# * The latent ```confident_joint```, an un-normalized counts matrix of
-#     counting a confident subset of the joint counts of label errors.
-
+"""
+Methods for estimating latent structures used for confident learning, including:
+* Latent prior of the unobserved, error-less labels: `py` a.k.a. $p(y)$
+* Latent noisy channel (noise matrix) characterizing the flipping rates: `nm` a.k.a. $P(given label | true label)$
+* Latent inverse noise matrix characterizing the flipping process: `inv` a.k.a. $P(true label | given label)$
+* Latent `confident_joint`, an un-normalized matrix that counts the confident subset of label errors under the joint distribution for true/given label.
+"""
 
 from sklearn.linear_model import LogisticRegression as LogReg
 from sklearn.model_selection import StratifiedKFold
@@ -226,11 +220,11 @@ def _compute_confident_joint_multi_label(
         not used for filtering/pruning, only for estimating the noise rates using
         confident counts. This value should be between 0 and 1. Default is None.
 
-    calibrate : bool (default: True)
+    calibrate : bool, default = True
         Calibrates confident joint estimate P(label=i, true_label=j) such that
         np.sum(cj) == len(labels) and np.sum(cj, axis = 1) == np.bincount(labels).
 
-    return_indices_of_off_diagonals: bool
+    return_indices_of_off_diagonals: bool, default = False
         If true returns indices of examples that were counted in off-diagonals
         of confident joint as a baseline proxy for the label issues. This
         sometimes works as well as filter.find_label_issues(confident_joint)."""
@@ -309,20 +303,20 @@ def compute_confident_joint(
         The columns must be ordered such that these probabilities correspond to class 0,1,2,...
         `pred_probs` must be out-of-sample and should have been computed using 3 (or higher) fold cross-validation.
 
-    K : int (default: None)
-        Number of unique classes. Calculated as len(np.unique(labels)) when K == None
+    K : int, default = None
+        Number of unique classes. Calculated as `len(np.unique(labels))` when `K == None`.
 
-    thresholds : iterable (list or np.array) of shape (K, 1)  or (K,)
+    thresholds : iterable (list or np.array) of shape (K, 1)  or (K,), default = None
         P(label^=k|label=k). If an example has a predicted probability "greater" than
         this threshold, it is counted as having true_label = k. This is
         not used for filtering/pruning, only for estimating the noise rates using
-        confident counts. This value should be between 0 and 1. Default is None.
+        confident counts. This value should be between 0 and 1.
 
-    calibrate : bool (default: True)
+    calibrate : bool, default = True
         Calibrates confident joint estimate P(label=i, true_label=j) such that
         np.sum(cj) == len(labels) and np.sum(cj, axis = 1) == np.bincount(labels).
 
-    multi_label : bool
+    multi_label : bool, default = False
         If true, labels should be an iterable (e.g. list) of iterables, containing a
         list of labels for each example, instead of just a single label.
         The multi-label setting supports classification tasks where an example has 1 or more labels.
@@ -453,8 +447,8 @@ def estimate_latent(
         "cnt" works well even when the noise matrices are estimated poorly by using
         the matrix diagonals instead of all the probabilities.
 
-    converge_latent_estimates : bool
-        If true, forces numerical consistency of estimates. Each is estimated
+    converge_latent_estimates : bool, default = False
+        If True, forces numerical consistency of estimates. Each is estimated
         independently, but they are related mathematically with closed form
         equivalences. This will iteratively make them mathematically consistent.
 
@@ -485,7 +479,7 @@ def estimate_latent(
     inv_noise_matrix = clip_noise_rates(inv_noise_matrix)
     # Make latent estimates mathematically agree in their algebraic relations.
     if converge_latent_estimates:
-        py, noise_matrix, inv_noise_matrix = converge_estimates(
+        py, noise_matrix, inv_noise_matrix = _converge_estimates(
             ps, py, noise_matrix, inv_noise_matrix
         )
         # Again clip py and noise rates into proper range [0,1)
@@ -540,8 +534,8 @@ def estimate_py_and_noise_matrices_from_probabilities(
         not used for filtering/pruning, only for estimating the noise rates using
         confident counts. This value should be between 0 and 1. Default is None.
 
-    converge_latent_estimates : bool
-        If true, forces numerical consistency of estimates. Each is estimated
+    converge_latent_estimates : bool, default = True
+        If True, forces numerical consistency of estimates. Each is estimated
         independently, but they are related mathematically with closed form
         equivalences. This will iteratively make them mathematically consistent.
 
@@ -550,7 +544,7 @@ def estimate_py_and_noise_matrices_from_probabilities(
         works well even when the noise matrices are estimated poorly by using
         the matrix diagonals instead of all the probabilities.
 
-    calibrate : bool (default: True)
+    calibrate : bool, default = True
         Calibrates confident joint estimate P(label=i, true_label=j) such that
         np.sum(cj) == len(labels) and np.sum(cj, axis = 1) == np.bincount(labels).
 
@@ -628,11 +622,11 @@ def estimate_confident_joint_and_cv_pred_proba(
         not used for filtering/pruning, only for estimating the noise rates using
         confident counts. This value should be between 0 and 1. Default is None.
 
-    seed : int (default = None)
+    seed : int, default = None
         Set the default state of the random number generator used to split
         the cross-validated folds. If None, uses np.random current random state.
 
-    calibrate : bool (default: True)
+    calibrate : bool, default = True
         Calibrates confident joint estimate P(label=i, true_label=j) such that
         np.sum(cj) == len(labels) and np.sum(cj, axis = 1) == np.bincount(labels).
 
@@ -761,8 +755,8 @@ def estimate_py_noise_matrices_and_cv_pred_proba(
       not used for filtering/pruning, only for estimating the noise rates using
       confident counts. This value should be between 0 and 1. Default is None.
 
-    converge_latent_estimates : bool
-      If true, forces numerical consistency of estimates. Each is estimated
+    converge_latent_estimates : bool, default = False
+      If True, forces numerical consistency of estimates. Each is estimated
       independently, but they are related mathematically with closed form
       equivalences. This will iteratively make them mathematically consistent.
 
@@ -771,7 +765,7 @@ def estimate_py_noise_matrices_and_cv_pred_proba(
       works well even when the noise matrices are estimated poorly by using
       the matrix diagonals instead of all the probabilities.
 
-    seed : int (default = None)
+    seed : int, default = None
       Set the default state of the random number generator used to split
       the cross-validated folds. If None, uses np.random current random state.
 
@@ -836,7 +830,7 @@ def estimate_cv_predicted_probabilities(
       The number of cross-validation folds used to compute
       out-of-sample probabilities for each example in X.
 
-    seed : int (default = None)
+    seed : int, default = None
       Set the default state of the random number generator used to split
       the cross-validated folds. If None, uses np.random current random state.
 
@@ -903,12 +897,12 @@ def estimate_noise_matrices(
       not used for filtering/pruning, only for estimating the noise rates using
       confident counts. This value should be between 0 and 1. Default is None.
 
-    converge_latent_estimates : bool
-      If true, forces numerical consistency of estimates. Each is estimated
+    converge_latent_estimates : bool, default = True
+      If True, forces numerical consistency of estimates. Each is estimated
       independently, but they are related mathematically with closed form
       equivalences. This will iteratively make them mathematically consistent.
 
-    seed : int (default = None)
+    seed : int, default = None
       Set the default state of the random number generator used to split
       the cross-validated folds. If None, uses np.random current random state.
 
@@ -931,7 +925,7 @@ def estimate_noise_matrices(
     )[1:-2]
 
 
-def converge_estimates(
+def _converge_estimates(
     ps,
     py,
     noise_matrix,
@@ -940,8 +934,9 @@ def converge_estimates(
     inv_noise_matrix_iterations=5,
     noise_matrix_iterations=3,
 ):
-    """Computes py := P(true_label=k) and both noise_matrix and inverse_noise_matrix,
-    by numerically converging ps := P(labels=k), py, and the noise matrices.
+    """Updates py := P(true_label=k) and both `noise_matrix` and `inverse_noise_matrix`
+    to be numerically consistent with each other, by iteratively updating their estimates based on
+    the mathematical relationships between them.
 
     Forces numerical consistency of estimates. Each is estimated
     independently, but they are related mathematically with closed form
@@ -984,10 +979,10 @@ def converge_estimates(
         inverse_noise_matrix will be computed from pred_probs and labels.
         Assumes columns of inverse_noise_matrix sum to 1.
 
-    inv_noise_matrix_iterations : int (Default: 5)
+    inv_noise_matrix_iterations : int, default = 5
         Number of times to converge inverse noise matrix with py and noise mat.
 
-    noise_matrix_iterations : int (Default: 3)
+    noise_matrix_iterations : int, default = 3
         Number of times to converge noise matrix with py and inverse noise mat.
 
     Returns

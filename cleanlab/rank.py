@@ -15,8 +15,8 @@
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
 
-"""Rank module provides methods to rank/order data by cleanlab's `label quality score`.
-
+"""
+Methods to rank/order data by cleanlab's `label quality score`. 
 Except for `order_label_issues`, which operates only on the subset of the data identified
 as potential label issues/errors, the methods in the `rank` module can be used on whichever subset
 of the dataset you choose (including the entire dataset) and provide a `label quality score` for
@@ -26,7 +26,7 @@ indices of individual data.
 CAUTION: These label quality scores are computed based on `pred_probs` from your model that must be out-of-sample!
 You should never provide predictions on the same examples used to train the model,
 as these will be overfit and unsuitable for finding label-errors.
-To obtain out-of-sample predicted probabilities for every datapoint in your dataset, you can use cross-validation.
+To obtain out-of-sample predicted probabilities for every datapoint in your dataset, you can use :ref:`cross-validation <pred_probs_cross_val>`.
 Alternatively it is ok if your model was trained on a separate dataset and you are only evaluating
 labels in data that was previously held-out.
 """

@@ -15,9 +15,12 @@
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
 
-# ## Noise Generation
-#
-# #### Contains methods for generating valid (learning with noise is possible) noise matrices, generating noisy labels given a noise matrix, generating valid noise matrices with a specific trace value, and more.
+"""
+Helper methods that are useful for benchmarking cleanlab’s core algorithms. 
+These methods introduce synthetic noise into the labels of a classification dataset.
+Specifically, provides methods for generating valid noise matrices (for which learning with noise is possible), 
+generating noisy labels given a noise matrix, generating valid noise matrices with a specific trace value, and more.
+"""
 
 import numpy as np
 from cleanlab.internal.util import value_counts

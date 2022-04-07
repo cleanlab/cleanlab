@@ -14,6 +14,11 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
+"""
+Text classification with FastText models.
+This module allows you to easily find label issues in your text datasets.
+"""
+
 # Make sure python version is compatible with fasttext
 from cleanlab.internal.util import VersionWarning
 
