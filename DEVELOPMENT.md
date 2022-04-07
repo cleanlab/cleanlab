@@ -91,3 +91,10 @@ This repo uses [EditorConfig](https://editorconfig.org/) to keep code style
 consistent across editors and IDEs. You can install a plugin for your editor,
 and then your editor will automatically ensure that indentation and line
 endings match the project style.
+
+## Documentation style
+
+cleanlab uses [NumPy
+style](https://numpydoc.readthedocs.io/en/latest/format.html#docstring-standard)
+docstrings
+([example](https://www.sphinx-doc.org/en/master/usage/extensions/example_numpy.html)).
