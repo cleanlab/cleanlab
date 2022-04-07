@@ -19,7 +19,7 @@ A PyTorch CNN which can be used for finding label issues in CIFAR-10 and CleanLe
 
 Code adapted from: https://github.com/bhanML/Co-teaching/blob/master/model.py
 
-This code requires you have PyTorch installed: https://pytorch.org/get-started/locally/
+You must have PyTorch installed: https://pytorch.org/get-started/locally/
 """
 
 

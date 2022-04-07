@@ -18,8 +18,10 @@
 """
 Implements the co-teaching algorithm for training neural networks on noisily-labeled data (Han et al., 2018).
 This module requires PyTorch (https://pytorch.org/get-started/locally/).
-Example using this module with cleanlab to achieve state of the art on CIFAR-10
+Example using this algorithm with cleanlab to achieve state of the art on CIFAR-10
 for learning with noisy labels is provided within: https://github.com/cleanlab/examples/
+
+``cifar_cnn.py`` provides an example model that can be trained via this algorithm.
 """
 
 # Significant code was adapted from the following GitHub:

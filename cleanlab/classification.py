@@ -15,7 +15,7 @@
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
 """
-cleanlab package for multiclass, multi-label learning with noisy labels for any dataset and model.
+cleanlab can be used for multiclass (or multi-label) learning with noisy labels for any dataset and model.
 
 The CleanLearning class wraps around an instance of a
 classifier class. Your classifier must adhere to the sklearn template,
@@ -137,7 +137,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
     Parameters
     ----------
     clf : :obj:`sklearn.classifier` compliant class (e.g. skorch wraps around PyTorch)
-      See cleanlab.example_models for examples of sklearn wrappers around, e.g. PyTorch.
+      See ``cleanlab.experimental`` for examples of sklearn wrappers, e.g. around PyTorch and FastText.
       The clf object must have the following three functions defined:
       1. clf.predict_proba(X) # Predicted probabilities
       2. clf.predict(X) # Predict labels

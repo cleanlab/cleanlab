@@ -96,7 +96,6 @@ When the ``.fit()`` method is called, it automatically removes any examples iden
    cleanlab/count
    cleanlab/noise_generation
    cleanlab/experimental/index
-   cleanlab/example_models/index
    cleanlab/internal/index
 
 .. toctree::

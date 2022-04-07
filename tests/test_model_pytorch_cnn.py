@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-from cleanlab.example_models.mnist_pytorch import (
+from cleanlab.experimental.mnist_pytorch import (
     CNN,
     SKLEARN_DIGITS_TEST_SIZE,
     SKLEARN_DIGITS_TRAIN_SIZE,

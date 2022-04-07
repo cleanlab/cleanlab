@@ -1,7 +1,7 @@
 mnist_pytorch
 =============
 
-.. automodule:: cleanlab.example_models.mnist_pytorch
+.. automodule:: cleanlab.experimental.mnist_pytorch
    :autosummary:
    :members:
    :undoc-members:

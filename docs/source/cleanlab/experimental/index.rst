@@ -6,5 +6,7 @@ experimental
 
 .. toctree::
 
-    coteaching
     fasttext
+    mnist_pytorch
+    coteaching
+    cifar_cnn

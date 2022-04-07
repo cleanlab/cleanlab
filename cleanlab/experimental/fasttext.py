@@ -15,8 +15,9 @@
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
 """
-Text classification with FastText models.
+Text classification with FastText models that are compatible with cleanlab.
 This module allows you to easily find label issues in your text datasets.
+
 You must first ``pip install fasttext``
 """
 
