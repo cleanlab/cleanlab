@@ -83,7 +83,7 @@ When the ``.fit()`` method is called, it automatically removes any examples iden
    tutorials/text
    tutorials/tabular
    tutorials/audio
-   tutorials/pred_probs_cross_val/pred_probs_cross_val
+   tutorials/pred_probs_cross_val
 
 .. toctree::
    :caption: API Reference
