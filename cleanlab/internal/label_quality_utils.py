@@ -61,7 +61,7 @@ def get_normalized_entropy(pred_probs: np.array) -> np.array:
 
     Normalized entropy is between 0 and 1. Higher values of entropy indicate higher uncertainty in the model's prediction of the correct label.
 
-    Read more about normalized entropy here: https://en.wikipedia.org/wiki/Entropy_(information_theory)
+    Read more about normalized entropy `on Wikipedia <https://en.wikipedia.org/wiki/Entropy_(information_theory)>`_.
 
     Normalized entropy is used in active learning for uncertainty sampling: https://towardsdatascience.com/uncertainty-sampling-cheatsheet-ec57bc067c0b
 

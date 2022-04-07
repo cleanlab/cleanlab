@@ -135,3 +135,20 @@ jobs:
           publish_branch: master
           publish_dir: cleanlab-docs
           keep_files: true
+      - uses: actions/upload-artifact@v3
+        with:
+          name: docs-html
+          path: cleanlab-docs
+          retention-days: 1 # don't need this except in link checking step below
+  links:
+    needs: deploy
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/download-artifact@v3
+        with:
+          name: docs-html
+          path: cleanlab-docs
+      - uses: anishathalye/proof-html@v1
+        with:
+          directory: ./cleanlab-docs
+          external_only: true
