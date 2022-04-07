@@ -17,7 +17,7 @@
 """
 Text classification with FastText models.
 This module allows you to easily find label issues in your text datasets.
-You must first `pip install fasttext`
+You must first ``pip install fasttext``
 """
 
 import time
