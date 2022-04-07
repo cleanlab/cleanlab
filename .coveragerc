@@ -3,8 +3,10 @@
 [run]
 branch = True
 omit =
-    cleanlab/example_models/fasttext.py
+    cleanlab/example_models/mnist_pytorch.py
     cleanlab/example_models/cifar_cnn.py
+    cleanlab/experimental/coteaching.py
+    cleanlab/experimental/fasttext.py
 
 [report]
 # Regexes for lines to exclude from consideration

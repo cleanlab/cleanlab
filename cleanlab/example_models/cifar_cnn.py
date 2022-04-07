@@ -15,13 +15,11 @@
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
 """
-A PyTorch CNN for training CIFAR-10 using Co-Teaching.
+A PyTorch CNN which can be used for finding label issues in CIFAR-10 and CleanLearning with co-teaching.
 
 Code adapted from: https://github.com/bhanML/Co-teaching/blob/master/model.py
 
-This code requires you have PyTorch installed
-
-See: https://pytorch.org/get-started/locally/
+This code requires you have PyTorch installed: https://pytorch.org/get-started/locally/
 """
 
 

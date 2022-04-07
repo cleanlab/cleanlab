@@ -15,19 +15,16 @@
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
 
-# coding: utf-8
-# Author: Curtis G. Northcutt, MIT
+"""
+Implements the co-teaching algorithm for training neural networks on noisily-labeled data (Han et al., 2018).
+This module requires PyTorch (https://pytorch.org/get-started/locally/).
+Example using this module with cleanlab to achieve state of the art on CIFAR-10
+for learning with noisy labels is provided within: https://github.com/cleanlab/examples/
+"""
+
 # Significant code was adapted from the following GitHub:
 # https://github.com/bhanML/Co-teaching/blob/master/loss.py
 # See (Han et al., 2018).
-
-# An example of how this module is used with cleanlab to achieve
-# state of the art on CIFAR-10 for learning with noisy labels is
-# provided here:
-# https://github.com/cgnorthcutt/cleanlab/tree/master/examples/cifar10
-
-# This module requires PyTorch. Please see:
-# https://pytorch.org/get-started/locally/
 
 import torch
 import torch.nn.functional as F

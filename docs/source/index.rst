@@ -91,11 +91,11 @@ When the ``.fit()`` method is called, it automatically removes any examples iden
    :maxdepth: 3
 
    cleanlab/classification
-   cleanlab/count
-   cleanlab/rank
    cleanlab/filter
+   cleanlab/rank
+   cleanlab/count
    cleanlab/noise_generation
-   cleanlab/coteaching
+   cleanlab/experimental/index
    cleanlab/example_models/index
    cleanlab/internal/index
 

@@ -21,3 +21,4 @@ scikeras==0.6.1
 speechbrain==0.5.11
 tensorflow-io==0.24.0
 torchaudio==0.11.0
+fasttext==0.9.2
