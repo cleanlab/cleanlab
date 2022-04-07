@@ -8,9 +8,9 @@ In the `cleanlab` repository, we've configured GitHub Actions to perform the fol
 
 1. When a commit is pushed to the `master` branch, a new version of the `master` docs will be built and deployed to the `cleanlab-docs` repository.
 
-2. When a release is published, a new version of the docs with the corresponding release tag will be built and deployed as a new folder in the `cleanlab-docs` repository. Redirection to the `stable` version of the docs will be changed to this newly released one, accessible via a link on the docs' site sidebar. All the older versions will remain available in the `cleanlab-docs` repo, accessible by manually entering the subdirectory in the URL. 
+2. When a release is published, a new version of the docs with the corresponding release tag will be built and deployed as a new folder in the `cleanlab-docs` repository. Redirection to the `stable` version of the docs will be changed to this newly released one, accessible via a link on the docs' site sidebar. All the older versions will remain available in the `cleanlab-docs` repo, accessible by manually entering the subdirectory in the URL.
 
-3. When a user manually runs the workflow, one of the above will happen depending on the user's selection to run from a `branch` or `tag`. 
+3. When a user manually runs the workflow, one of the above will happen depending on the user's selection to run from a `branch` or `tag`.
 
 If you'd like to build our docs locally or remotely yourself, or want to know more about the steps taken in the GitHub Pages workflow, read on!
 
@@ -19,17 +19,19 @@ If you'd like to build our docs locally or remotely yourself, or want to know mo
 
 1. [Fork](https://docs.github.com/en/get-started/quickstart/fork-a-repo#forking-a-repository) and [clone](https://docs.github.com/en/get-started/quickstart/fork-a-repo#cloning-your-forked-repository) the `cleanlab` repository.
 
-2. Make your code changes (optionally in a new branch) and then `git commit` them.
-
-3. Install the required packages to build the docs:
+2. Install the required packages to build the docs:
 
 ```
 pip install -r docs/requirements.txt
 ```
 
-You'll also need to install [Pandoc](https://pandoc.org/installing.html).
+3. Install [Pandoc](https://pandoc.org/installing.html).
 
-4. Build the docs with [`sphinx-multiversion`](https://holzhaus.github.io/sphinx-multiversion):
+4. **[Optional]** [Create a new branch](https://www.atlassian.com/git/tutorials/using-branches), make your code changes, and then `git commit` them. **ONLY COMMITTED CHANGES WILL BE REFLECTED IN THE DOCS BUILD.**
+
+5. **[Optional]** If you do not want to execute any of the Jupyter Notebooks (i.e., the `.ipynb` files) during the docs build process, add the line `nbsphinx_execute = 'never'` under the `nbsphinx Configuration` section in the `conf.py` file. If you're contributing to the docs, this line must be removed before pushing it to the production repo.
+
+6. Build the docs with [`sphinx-multiversion`](https://holzhaus.github.io/sphinx-multiversion):
 
    * If you're building from a **branch** (usually the `master` branch):
 
@@ -45,21 +47,27 @@ You'll also need to install [Pandoc](https://pandoc.org/installing.html).
 
    Note: To also build docs for another branch or tag, run the above command again changing only the `YOUR_BRANCH_NAME` or `YOUR_TAG_NAME` placeholder.
 
-5. **[Optional]** To show dynamic versioning and version warning banners:
-   
+   After entering the above command, your terminal might output:
+   * `unknown config value 'smv_branch_whitelist' in override, ignoring`, and
+   * `unknown config value 'smv_tag_whitelist' in override, ignoring`.
+
+   This is because the `smv_branch_whitelist` and `smv_tag_whitelist` config values are only used by `sphinx-multiversion`, but may also be checked by `sphinx` or other extensions that do not use them. Hence, these can be safely ignored as long as the docs are built correctly.
+
+7. **[Optional]** To show dynamic versioning and version warning banners:
+
    * Copy the `docs/_templates/versioning.js` file to the `cleanlab-docs/` directory.
-   
+
    * In the copied `versioning.js` file:
-      
+
       * find `placeholder_version_number` and replace it with the latest release tag name, and
 
       * find `placeholder_commit_hash` and replace it with the `master` branch commit hash.
 
-6. **[Optional]** To redirect site visits from `/` or `/stable` to the stable version of the docs:
+8. **[Optional]** To redirect site visits from `/` or `/stable` to the stable version of the docs:
 
    * Create a copy of the `docs/_templates/redirect-to-stable.html` file and rename it as `index.html`.
 
-   * In this `index.html` file, find `stable_url` and replace it with `/cleanlab-docs/YOUR_LATEST_RELEASE_TAG_NAME/index.html`. 
+   * In this `index.html` file, find `stable_url` and replace it with `/cleanlab-docs/YOUR_LATEST_RELEASE_TAG_NAME/index.html`.
 
    * Copy this `index.html` to:
 
@@ -67,7 +75,7 @@ You'll also need to install [Pandoc](https://pandoc.org/installing.html).
 
       * `cleanlab-docs/stable/`.
 
-7. The docs for each branch and/or tag can be found in the `cleanlab-docs/` directory, open any of the `index.html` in your browser to view the docs:
+9. The docs for each branch and/or tag can be found in the `cleanlab-docs/` directory, open any of the `index.html` in your browser to view the docs:
 
 ```
 cleanlab-docs
@@ -141,7 +149,7 @@ We've configured GitHub Actions to run the GitHub Pages workflow (gh-pages.yaml)
 
 8. Insert the latest commit hash in the `versioning.js` file. The `index.html` of each doc version will read this as a variable and display it beside the **developer** hyperlink.
 
-9. Copy the `versioning.js` file to the `cleanlab-docs/` folder. 
+9. Copy the `versioning.js` file to the `cleanlab-docs/` folder.
 
 ## If the workflow is **triggered by a new release**, generate the redirecting HTML which redirects site visits to the stable version
 
