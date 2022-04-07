@@ -403,6 +403,7 @@ def test_find_label_issues_using_argmax_confusion_matrix(calibrate, filter_by):
     )
 
 
+@pytest.mark.filterwarnings("ignore:WARNING!")
 def test_find_label_issue_filters_match_origin_functions():
     label_issues = filter.find_label_issues(labels_, pred_probs_, filter_by="predicted_neq_given")
     label_issues2 = filter.find_predicted_neq_given(labels_, pred_probs_)
@@ -412,6 +413,15 @@ def test_find_label_issue_filters_match_origin_functions():
     )
     label_issues4 = filter.find_predicted_neq_given(labels_, pred_probs_)
     assert all(label_issues3 == label_issues4)
+    try:
+        _ = filter.find_label_issues(
+            labels_,
+            pred_probs_,
+            filter_by="predicted_neq_given",
+            num_to_remove_per_class=[1] * pred_probs_.shape[1],
+        )
+    except ValueError as e:
+        assert "not supported" in str(e)
 
 
 def test_num_label_issues():
