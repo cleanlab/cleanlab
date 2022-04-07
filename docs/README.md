@@ -108,7 +108,7 @@ cleanlab-docs
 
 3. In the `cleanlab-docs` repo, [configure GitHub Pages](https://docs.github.com/en/pages/getting-started-with-github-pages/creating-a-github-pages-site#creating-a-repository-for-your-site); under the **Source** section, select the `master` branch and `/(root)` folder. Take note of the URL where your site is published.
 
-4. [Generate SSH deploy key](https://github.com/peaceiris/actions-gh-pages#%EF%B8%8F-create-ssh-deploy-key) and add them to your repos as such:
+4. [Generate SSH deploy key](https://github.com/peaceiris/actions-gh-pages#user-content-️-create-ssh-deploy-key) and add them to your repos as such:
 
    * In the `cleanlab-docs` repo, go to **Settings > Deploy Keys > Add deploy key** and add your **public key** with the **Allow write access**
    * In the `cleanlab` repo, go to **Settings > Secrets > New repository secrets** and add your **private key** named `ACTIONS_DEPLOY_KEY`
