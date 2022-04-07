@@ -171,6 +171,8 @@ nbsphinx_prolog = (
 # Change this to "always" before running in the doc's CI/CD server
 if os.getenv("CI"):
     nbsphinx_execute = "always"
+if os.getenv("SKIP_NOTEBOOKS", "0") != "0":
+    nbsphinx_execute = "never"
 
 # -- Options for HTML output -------------------------------------------------
 
