@@ -19,7 +19,7 @@ Methods to identify which examples have label issues.
 Some of this code uses advanced multiprocessing to speed up computation: 
 https://research.wmz.ninja/articles/2018/03/on-sharing-large-arrays-when-using-pythons-multiprocessing.html
 
-Note: Previously in cleanlab versions <= 1.0, this module was called `pruning`.
+Note: Previously in cleanlab versions <= 1.0.1, this module was called `pruning`.
 """
 
 from sklearn.metrics import confusion_matrix
