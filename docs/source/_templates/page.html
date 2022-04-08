@@ -1,5 +1,5 @@
-{% extends "!page.html" %} 
-{% block content %} 
+{% extends "!page.html" %}
+{% block content %}
 
 <noscript>
   <div class="admonition warning">
@@ -24,7 +24,7 @@
         const path_arr = window.location.pathname.split("/");
 
         if (path_arr.includes("master")) {
-            document.getElementById("doc_ver_warning").innerHTML = 
+            document.getElementById("doc_ver_warning").innerHTML =
             `<div class="admonition warning">
             <p class="admonition-title">Warning</p>
             <p>This version of the documentation corresponds to the master branch of <code class="docutils literal notranslate"><span class="pre">cleanlab</span></code> source code from <a href="https://github.com/cleanlab/cleanlab/">GitHub</a>. To see the documentation for the latest <code class="docutils literal notranslate"><span class="pre">pip</span></code>-installed version, click <a href="{{ DOCS_SITE_URL }}">here</a>.</p>
@@ -56,4 +56,8 @@
     });
 </script>
 
+{% endblock %}
+
+{% block regular_scripts %}{{ super() }}
+<script async defer src="https://buttons.github.io/buttons.js"></script>
 {% endblock %}
