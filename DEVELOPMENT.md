@@ -102,6 +102,11 @@ docstrings
 Aspects that are not covered in the NumPy style or that are different from the
 NumPy style are documented below:
 
+- **Referring to the cleanlab package**: we refer to cleanlab without any
+  special formatting, so no `cleanlab`, just cleanlab.
+- **Cross-referencing**: when mentioning functions/classes/methods, always
+  [cross-reference](https://www.sphinx-doc.org/en/master/usage/restructuredtext/domains.html#cross-referencing-python-objects)
+  them to create a clickable link.
 - **Math**: We support [LaTeX
   math](https://sphinxcontrib-katex.readthedocs.io/en/v0.8.6/examples.html)
   with the inline `` :math:`x+y` `` or the block:
