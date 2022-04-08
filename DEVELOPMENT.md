@@ -108,6 +108,10 @@ NumPy style are documented below:
   [cross-reference](https://www.sphinx-doc.org/en/master/usage/restructuredtext/domains.html#cross-referencing-python-objects)
   them to create a clickable link. Cross-referencing code from Jupyter
   notebooks is not currently supported.
+- **Variable, module, function, and class names**: when not cross-references,
+  should be written between single back-ticks, like `` `pred_probs` ``. Such
+  names in Jupyter notebooks (Markdown) can be written between single
+  back-ticks as well.
 - **Math**: We support [LaTeX
   math](https://sphinxcontrib-katex.readthedocs.io/en/v0.8.6/examples.html)
   with the inline `` :math:`x+y` `` or the block:
