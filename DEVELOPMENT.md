@@ -106,7 +106,8 @@ NumPy style are documented below:
   special formatting, so no `cleanlab`, just cleanlab.
 - **Cross-referencing**: when mentioning functions/classes/methods, always
   [cross-reference](https://www.sphinx-doc.org/en/master/usage/restructuredtext/domains.html#cross-referencing-python-objects)
-  them to create a clickable link.
+  them to create a clickable link. Cross-referencing code from Jupyter
+  notebooks is not currently supported.
 - **Math**: We support [LaTeX
   math](https://sphinxcontrib-katex.readthedocs.io/en/v0.8.6/examples.html)
   with the inline `` :math:`x+y` `` or the block:
