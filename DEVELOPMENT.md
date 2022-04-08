@@ -123,3 +123,8 @@ NumPy style are documented below:
   ```
 - **Bold vs italics**: Use italics when defining a term, and use bold sparingly
   for extra emphasis.
+- **Shapes**: Do not include shapes in the type of parameters, instead use
+  `np.array` or `array_like` as the type and specify allowed shapes in the
+  description. See, for example, the documentation for
+  `cleanlab.classification.CleanLearning.fit()`.
+- **Optional arguments**: for the most part, just put `, optional` in the type.
