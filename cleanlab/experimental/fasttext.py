@@ -117,6 +117,7 @@ class FastTextClassifier(BaseEstimator):  # Inherits sklearn base classifier
         self.p_at_k = p_at_k
         self.batch_size = batch_size
         self.clf = None
+        self.labels = None
 
         if labels is None:
             # Find all class labels across the train and test set (if provided)
