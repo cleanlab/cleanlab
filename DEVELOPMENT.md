@@ -98,3 +98,16 @@ cleanlab uses [NumPy
 style](https://numpydoc.readthedocs.io/en/latest/format.html#docstring-standard)
 docstrings
 ([example](https://www.sphinx-doc.org/en/master/usage/extensions/example_numpy.html)).
+
+Aspects that are not covered in the NumPy style or that are different from the
+NumPy style are documented below:
+
+- **Math**: We support [LaTeX
+  math](https://sphinxcontrib-katex.readthedocs.io/en/v0.8.6/examples.html)
+  with the inline `` :math:`x+y` `` or the block:
+
+  ```
+  .. math::
+
+     \sum_{0}^{n} 2n+1
+  ```
