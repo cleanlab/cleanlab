@@ -179,7 +179,7 @@ if os.getenv("SKIP_NOTEBOOKS", "0") != "0":
 #
 html_theme = "furo"
 html_favicon = (
-    "https://raw.githubusercontent.com/cleanlab/assets/master/cleanlab/cleanlab_logo_only.png"
+    "https://raw.githubusercontent.com/cleanlab/assets/a4483476d449f2f05a4c7cde329e72358099cc07/cleanlab/cleanlab_favicon.svg"
 )
 html_title = "cleanlab"
 html_logo = (
@@ -207,7 +207,7 @@ html_static_path = ["_static"]
 
 html_sidebars = {
     "**": [
-        "sidebar/brand.html",
+        "brand.html",
         "sidebar/search.html",
         "sidebar/scroll-start.html",
         "sidebar/navigation.html",
