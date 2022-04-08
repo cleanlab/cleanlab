@@ -116,3 +116,5 @@ NumPy style are documented below:
 
      \sum_{0}^{n} 2n+1
   ```
+- **Bold vs italics**: Use italics when defining a term, and use bold sparingly
+  for extra emphasis.
