@@ -112,26 +112,7 @@ def calibrate_confident_joint(confident_joint, labels, *, multi_label=False):
 
     Parameters
     ----------
-
-    confident_joint : np.array (shape (K, K))
-        A K,K integer matrix of count(label=k, true_label=k). Estimates a confident subset of
-        the joint distribution of the noisy and true labels P_{labels,y}.
-        Each entry in the matrix contains the number of examples confidently
-        counted into every pair (label=j, true_label=k) classes.
-
-    labels : np.array
-        A discrete vector of noisy labels, i.e. some labels may be erroneous.
-        *Format requirements*: for dataset with K classes, labels must be in {0,1,...,K-1}.
-
-    multi_label : bool
-        If true, labels should be an iterable (e.g. list) of iterables, containing a
-        list of labels for each example, instead of just a single label.
-        The MAJOR DIFFERENCE in how this is calibrated versus single_label, is the total number of
-        errors considered is based on the number of labels, not the number of examples. So, the
-        calibrated confident_joint will sum to the number of total labels.
-        The multi-label setting supports classification tasks where an example has 1 or more labels.
-        Example of a multi-labeled `labels` input: [[0,1], [1], [0,2], [0,1,2], [0], [1], ...]
-
+    See `cleanlab.count.estimate_joint` docstring.
 
     Returns
     -------
@@ -159,7 +140,31 @@ def estimate_joint(labels, pred_probs=None, *, confident_joint=None, multi_label
 
     Parameters
     ----------
-    See `cleanlab.count.calibrate_confident_joint` docstring.
+    labels : np.array
+        A discrete vector of noisy labels, i.e. some labels may be erroneous.
+        *Format requirements*: for dataset with K classes, labels must be in {0,1,...,K-1}.
+
+    pred_probs : np.array (shape (N, K))
+        P(label=k|x) is a matrix with K model-predicted probabilities.
+        Each row of this matrix corresponds to an example `x` and contains the model-predicted
+        probabilities that `x` belongs to each possible class.
+        The columns must be ordered such that these probabilities correspond to class 0,1,2,...
+        `pred_probs` should have been computed using 3 (or higher) fold cross-validation.
+
+    confident_joint : np.array (shape (K, K))
+        A K,K integer matrix of count(label=k, true_label=k). Estimates a confident subset of
+        the joint distribution of the noisy and true labels P_{labels,y}.
+        Each entry in the matrix contains the number of examples confidently
+        counted into every pair (label=j, true_label=k) classes.
+
+    multi_label : bool
+        If true, labels should be an iterable (e.g. list) of iterables, containing a
+        list of labels for each example, instead of just a single label.
+        The MAJOR DIFFERENCE in how this is calibrated versus single_label, is the total number of
+        errors considered is based on the number of labels, not the number of examples. So, the
+        calibrated confident_joint will sum to the number of total labels.
+        The multi-label setting supports classification tasks where an example has 1 or more labels.
+        Example of a multi-labeled `labels` input: [[0,1], [1], [0,2], [0,1,2], [0], [1], ...]
 
     Returns
     -------
@@ -434,16 +439,15 @@ def estimate_latent(
 
     Parameters
     ----------
-
-    labels : np.array
-        A discrete vector of noisy labels, i.e. some labels may be erroneous.
-        *Format requirements*: for dataset with K classes, labels must be in {0,1,...,K-1}.
-
     confident_joint : np.array (shape (K, K), type int)
         A K,K integer matrix of count(label=k, true_label=k). Estimates a confident subset
         of the joint distribution of the noisy and true labels P_{labels,y}.
         Each entry in the matrix contains the number of examples confidently
         counted into every pair (label=j, true_label=k) classes.
+
+    labels : np.array
+        A discrete vector of noisy labels, i.e. some labels may be erroneous.
+        *Format requirements*: for dataset with K classes, labels must be in {0,1,...,K-1}.
 
     py_method : str (Options: ["cnt", "eqn", "marginal", "marginal_ps"])
         `py` is shorthand for the `class proportions (a.k.a prior) of the true labels`
@@ -458,6 +462,7 @@ def estimate_latent(
 
     Returns
     ------
+    tuple
         A tuple containing (py, noise_matrix, inv_noise_matrix)."""
 
     # 'ps' is p(labels=k)
@@ -466,9 +471,9 @@ def estimate_latent(
     labels_class_counts = confident_joint.sum(axis=1).astype(float)
     # Number of training examples confidently counted into each true class
     true_labels_class_counts = confident_joint.sum(axis=0).astype(float)
-    # Confident Counts Estimator: p(label=k_s|true_label=k_y) ~ |label=k_s and true_label=k_y| / |true_label=k_y|
+    # p(label=k_s|true_label=k_y) ~ |label=k_s and true_label=k_y| / |true_label=k_y|
     noise_matrix = confident_joint / true_labels_class_counts
-    # Confident Counts Estimator: p(true_label=k_y|label=k_s) ~ |true_label=k_y and label=k_s| / |label=k_s|
+    # p(true_label=k_y|label=k_s) ~ |true_label=k_y and label=k_s| / |label=k_s|
     inv_noise_matrix = confident_joint.T / labels_class_counts
     # Compute the prior p(y), the latent (uncorrupted) class distribution.
     py = compute_py(
@@ -520,7 +525,6 @@ def estimate_py_and_noise_matrices_from_probabilities(
 
     Parameters
     ----------
-
     labels : np.array
         A discrete vector of noisy labels, i.e. some labels may be erroneous.
         *Format requirements*: for dataset with K classes, labels must be in {0,1,...,K-1}.
