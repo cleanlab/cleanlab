@@ -17,10 +17,10 @@
 
 """
 Methods to rank/order data by cleanlab's `label quality score`.
-Except for `order_label_issues`, which operates only on the subset of the data identified
-as potential label issues/errors, the methods in the `rank` module can be used on whichever subset
+Except for :py:func:`order_label_issues <cleanlab.rank.order_label_issues>`, which operates only on the subset of the data identified
+as potential label issues/errors, the methods in this module can be used on whichever subset
 of the dataset you choose (including the entire dataset) and provide a `label quality score` for
-every example. You can then do something like: `np.argsort(label_quality_score)` to obtain ranked
+every example. You can then do something like: ``np.argsort(label_quality_score)`` to obtain ranked
 indices of individual data.
 
 CAUTION: These label quality scores are computed based on `pred_probs` from your model that must be out-of-sample!
@@ -55,30 +55,31 @@ def order_label_issues(
 
     Parameters
     ----------
-    label_issues_mask : np.array (bool)
-      Contains True if the index of labels is an error, o.w. false
+    label_issues_mask : np.array
+      A boolean mask for the entire dataset where ``True`` represents a label
+      issue and ``False`` represents an example that is accurately labeled with
+      high confidence.
 
     labels : np.array
-      Labels in the same format expected by the `get_label_quality_scores()` method.
+      Labels in the same format expected by the :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>` function.
 
     pred_probs : np.array (shape (N, K))
-      Predicted-probabilities in the same format expected by the `get_label_quality_scores()` method.
+      Predicted-probabilities in the same format expected by the :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>` function.
 
-    rank_by : str ['normalized_margin', 'self_confidence', 'confidence_weighted_entropy']
-      Score by which to order label error indices (in increasing order), either:
-      'normalized_margin', 'self_confidence', or 'confidence_weighted_entropy'.
-      See `get_label_quality_scores()` documentation for description of these scores.
+    rank_by : str, optional
+      Score by which to order label error indices (in increasing order). See
+      the `method` argument of :py:func:`get_label_quality_scores
+      <cleanlab.rank.get_label_quality_scores>`.
 
-    rank_by_kwargs : dict
-      Optional keyword arguments to pass into `get_label_quality_scores()` method.
-      Accepted args include:
-      adjust_pred_probs : bool, default = False
+    rank_by_kwargs : dict, optional
+      Optional keyword arguments to pass into :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>` function.
+      Accepted args include `adjust_pred_probs`.
 
     Returns
     -------
-    label_issues_idx : np.array (int)
-      Return the index integers of the label issues, ordered by the label-quality scoring method
-      passed to rank_by.
+    label_issues_idx : np.array
+      Return an array of the indices of the label issues, ordered by the label-quality scoring method
+      passed to `rank_by`.
 
     """
 
@@ -111,6 +112,7 @@ def get_label_quality_scores(
     where lower scores indicate labels less likely to be correct.
 
     Score is between 0 and 1.
+
     1 - clean label (given label is likely correct).
     0 - dirty label (given label is likely incorrect).
 
@@ -118,32 +120,34 @@ def get_label_quality_scores(
     ----------
     labels : np.array
       A discrete vector of noisy labels, i.e. some labels may be erroneous.
-      *Format requirements*: for dataset with K classes, labels must be in {0,1,...,K-1}.
+      *Format requirements*: for dataset with K classes, labels must be in 0, 1, ..., K-1.
 
-    pred_probs : np.array (shape (N, K))
-      P(label=k|x) is a matrix with K model-predicted probabilities.
-      Each row of this matrix corresponds to an example x and contains the model-predicted
-      probabilities that x belongs to each possible class.
-      The columns must be ordered such that these probabilities correspond to class 0,1,2,...
+    pred_probs : np.array, optional
+      An array of shape ``(N, K)`` of model-predicted probabilities,
+      :math:`P(\\mathrm{label}=k \mid x)`. Each row of this matrix corresponds
+      to an example `x` and contains the model-predicted probabilities that
+      `x` belongs to each possible class, for each of the K classes. The
+      columns must be ordered such that these probabilities correspond to
+      class 0, 1, ..., K-1.
 
-      CAUTION: `pred_probs` from your model must be out-of-sample!
+      **Caution**: `pred_probs` from your model must be out-of-sample!
       You should never provide predictions on the same examples used to train the model,
       as these will be overfit and unsuitable for finding label-errors.
-      To obtain out-of-sample predicted probabilities for every datapoint in your dataset, you can use
-      :ref:`cross-validation <pred_probs_cross_val>`.
+      To obtain out-of-sample predicted probabilities for every datapoint in your dataset, you can use :ref:`cross-validation <pred_probs_cross_val>`.
       Alternatively it is ok if your model was trained on a separate dataset and you are only evaluating
-      labels in data that was previously held-out.
+      data that was previously held-out.
 
     method : {"self_confidence", "normalized_margin", "confidence_weighted_entropy"}, default="self_confidence"
       Label quality scoring method.
 
-      Letting `k := labels[i]` and `P := pred_probs[i]` denote the given label and predicted class-probabilities
-      for the `i`th datapoint, its score can either be:
-      'normalized_margin' := P[k] - max_{k' != k}[ P[k'] ]
-      'self_confidence' := P[k]
-      'confidence_weighted_entropy' := entropy(P) / self_confidence
+      Letting ``k = labels[i]`` and ``P = pred_probs[i]`` denote the given label and predicted class-probabilities
+      for datapoint *i*, its score can either be:
 
-      Let `C = {0,1,...,K}` denote the classification task's specified set of classes.
+      - ``'normalized_margin'``: ``P[k] - max_{k' != k}[ P[k'] ]``
+      - ``'self_confidence'``: ``P[k]``
+      - ``'confidence_weighted_entropy'``: ``entropy(P) / self_confidence``
+
+      Let ``C = {0, 1, ..., K}`` denote the classification task's specified set of classes.
 
       The normalized_margin score works better for identifying class conditional label errors,
       i.e. examples for which another label in C is appropriate but the given label is not.
@@ -152,29 +156,22 @@ def get_label_quality_scores(
       to bad examples that are: not from any of the classes in C, well-described by 2 or more labels in C,
       or generally just out-of-distribution (ie. anomalous outliers).
 
-      .. seealso::
-        :func:`self_confidence`
-        :func:`normalized_margin`
-        :func:`confidence_weighted_entropy`
-
-    adjust_pred_probs : bool, default = False
-      Account for class-imbalance in the label-quality scoring by adjusting predicted probabilities
+    adjust_pred_probs : bool, optional
+      Account for class imbalance in the label-quality scoring by adjusting predicted probabilities
       via subtraction of class confident thresholds and renormalization.
-      Set this = True if you prefer to account for class-imbalance.
-      See paper "Confident Learning: Estimating Uncertainty in Dataset Labels" by Northcutt et al.
-      https://arxiv.org/abs/1911.00068
+      Set this to ``True`` if you prefer to account for class-imbalance.
+      See `Northcutt et al., 2021 <https://jair.org/index.php/jair/article/view/12125>`_.
 
     Returns
     -------
-    label_quality_scores : np.array (float)
+    label_quality_scores : np.array
       Scores are between 0 and 1 where lower scores indicate labels less likely to be correct.
 
     See Also
     --------
-    self_confidence
-    normalized_margin
-    confidence_weighted_entropy
-    _subtract_confident_thresholds
+    get_self_confidence_for_each_label
+    get_normalized_margin_for_each_label
+    get_confidence_weighted_entropy_for_each_label
 
     """
 
@@ -221,7 +218,7 @@ def get_label_quality_ensemble_scores(
     method: str = "self_confidence",
     adjust_pred_probs: bool = False,
     weight_ensemble_members_by: str = "accuracy",
-    verbose: int = 1,
+    verbose: bool = True,
 ) -> np.array:
     """Returns label quality scores based on predictions from an ensemble of models.
 
@@ -231,45 +228,42 @@ def get_label_quality_ensemble_scores(
     Ensemble scoring requires a list of pred_probs from each model in the ensemble.
 
     For each pred_probs in list, compute label quality score.
-    Take the average of the scores with the chosen weighting scheme determined by weight_ensemble_members_by.
+    Take the average of the scores with the chosen weighting scheme determined by `weight_ensemble_members_by`.
 
-    Score is between 0 and 1.
-    1 - clean label (given label is likely correct).
-    0 - dirty label (given label is likely incorrect).
+    Score is between 0 and 1:
+
+    - 1 --- clean label (given label is likely correct).
+    - 0 --- dirty label (given label is likely incorrect).
 
     Parameters
     ----------
     labels : np.array
-      Labels in the same format expected by the `get_label_quality_scores()` method.
+      Labels in the same format expected by the :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>` function.
 
-    pred_probs_list : List of np.array (shape (N, K))
+    pred_probs_list : List[np.array]
       Each element in this list should be an array of pred_probs in the same format
-      expected by the `get_label_quality_scores()` method.
+      expected by the :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>` function.
       Each element of `pred_probs_list` corresponds to the predictions from one model for all examples.
 
     method : {"self_confidence", "normalized_margin", "confidence_weighted_entropy"}, default="self_confidence"
-      Label quality scoring method. Default is "self_confidence".
-      See `get_label_quality_scores()` for scenarios on when to use each method.
+      Label quality scoring method. See :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>`
+      for scenarios on when to use each method.
 
-      .. seealso::
-        :func:`self_confidence`
-        :func:`normalized_margin`
-        :func:`confidence_weighted_entropy`
-
-    adjust_pred_probs : bool, default = False
-      adjust_pred_probs in the same format expected by the `get_label_quality_scores()` method.
+    adjust_pred_probs : bool, optional
+      `adjust_pred_probs` in the same format expected by the :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>` function.
 
     weight_ensemble_members_by : {"uniform", "accuracy"}, default="accuracy"
       Weighting scheme used to aggregate scores from each model:
-      "uniform": Take the simple average of scores
-      "accuracy": Take weighted average of scores, weighted by model accuracy
 
-    verbose : int, default = 1
-      Set this = 0 to suppress all print statements.
+      - "uniform": take the simple average of scores
+      - "accuracy": take weighted average of scores, weighted by model accuracy
+
+    verbose : bool, default=True
+      Set to ``False`` to suppress all print statements.
 
     Returns
     -------
-    label_quality_scores : np.array (float)
+    label_quality_scores : np.array
 
     See Also
     --------
@@ -361,15 +355,15 @@ def get_self_confidence_for_each_label(
     Parameters
     ----------
     labels : np.array
-      Labels in the same format expected by the `get_label_quality_scores()` method.
+      Labels in the same format expected by the :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>` function.
 
-    pred_probs : np.array (shape (N, K))
-      Predicted-probabilities in the same format expected by the `get_label_quality_scores()` method.
+    pred_probs : np.array
+      Predicted-probabilities in the same format expected by the :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>` function.
 
     Returns
     -------
-    label_quality_scores : np.array (float)
-      Return the holdout probability that each example in pred_probs belongs to its
+    label_quality_scores : np.array
+      An array of holdout probabilities that each example in `pred_probs` belongs to its
       label.
 
     """
@@ -389,7 +383,7 @@ def get_normalized_margin_for_each_label(
     where lower scores indicate labels less likely to be correct.
 
     Letting k denote the given label for a datapoint, the normalized margin is
-    (p(label = k) - max(p(label != k))), i.e. the probability
+    ``(p(label = k) - max(p(label != k)))``, i.e. the probability
     of the given label minus the probability of the argmax label that is not
     the given label. This gives you an idea of how likely an example is BOTH
     its given label AND not another label, and therefore, scores its likelihood
@@ -400,20 +394,17 @@ def get_normalized_margin_for_each_label(
 
     Parameters
     ----------
-
     labels : np.array
-      Labels in the same format expected by the `get_label_quality_scores()` method.
+      Labels in the same format expected by the :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>` function.
 
-    pred_probs : np.array (shape (N, K))
-      Predicted-probabilities in the same format expected by the `get_label_quality_scores()` method.
+    pred_probs : np.array
+      Predicted-probabilities in the same format expected by the :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>` function.
 
     Returns
     -------
-    label_quality_scores : np.array (float)
-      Return a score (between 0 and 1) for each example of its likelihood of
-      being correctly labeled.
-      normalized_margin = prob_label - max_prob_not_label
-
+    label_quality_scores : np.array
+      An array of scores (between 0 and 1) for each example of its likelihood of
+      being correctly labeled. ``normalized_margin = prob_label - max_prob_not_label``
     """
 
     self_confidence = get_self_confidence_for_each_label(labels, pred_probs)
@@ -437,17 +428,16 @@ def get_confidence_weighted_entropy_for_each_label(
     Parameters
     ----------
     labels : np.array
-      Labels in the same format expected by the `get_label_quality_scores()` method.
+      Labels in the same format expected by the :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>` function.
 
-    pred_probs : np.array (shape (N, K))
-      Predicted-probabilities in the same format expected by the `get_label_quality_scores()` method.
+    pred_probs : np.array
+      Predicted-probabilities in the same format expected by the :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>` function.
 
     Returns
     -------
-    label_quality_scores : np.array (float)
-      Return a score (between 0 and 1) for each example of its likelihood of
+    label_quality_scores : np.array
+      An array of scores (between 0 and 1) for each example of its likelihood of
       being correctly labeled.
-
     """
 
     self_confidence = get_self_confidence_for_each_label(labels, pred_probs)
