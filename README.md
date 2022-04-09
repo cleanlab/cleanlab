@@ -15,10 +15,10 @@ model = sklearn.ensemble.RandomForestClassifier()  # any classifier
 pred_probs = sklearn.model_selection.cross_val_predict(model, data, labels, method="predict_proba")
 label_issues = cleanlab.filter.find_label_issues(labels, pred_probs, return_indices_ranked_by="self_confidence")
 
-# Train (and deploy) robust model with noisy data:
+# Train robust model with noisy data:
 cl = cleanlab.classification.CleanLearning(model)  # has same methods as your model
 cl.fit(data, labels)
-cl.predict(test_data)
+cl.predict(test_data)  # can be used just like your model
 ```
 
 Check out the: [documentation](https://docs.cleanlab.ai/), [examples](https://github.com/cleanlab/examples), and our [blog](https://cleanlab.ai/blog/).
@@ -82,6 +82,10 @@ Release notes for past versions are available [here](https://github.com/cleanlab
 3. **easy-to-use** - By default, `cleanlab` requires no hyper-parameters and can find label issues or train noise-robust models in one line of code.  
 4. **general** -  Works with any dataset and any model, e.g., Tensorflow, PyTorch, sklearn, xgboost, etc.
 
+![](https://github.com/cleanlab/assets/blob/master/cleanlab/label-errors-examples.png)
+Examples of incorrect [given labels](https://l7.curtisnorthcutt.com/label-errors) in image datasets found and corrected using `cleanlab`.
+
+
 ## Running `cleanlab`
 
 Get started [here](https://docs.cleanlab.ai/)!
@@ -109,7 +113,7 @@ Otherwise just wrap your custom model into a Python class that inherits the `skl
 from sklearn.base import BaseEstimator
 class YourFavoriteModel(BaseEstimator): # Inherits sklearn base classifier
     def __init__(self, ):
-        pass
+        pass  # ensure this re-initializes parameters for neural net models
     def fit(self, X, y, sample_weight=None):
         pass
     def predict(self, X):
@@ -136,6 +140,9 @@ More details are provided in documentation of [cleanlab.classification.CleanLear
 
 Note, some libraries exist to give you sklearn-compability for free. For PyTorch, check out the `skorch` Python library which will wrap your `pytorch` model into a sklearn-compatible model ([example](https://docs.cleanlab.ai/master/tutorials/image.html)). For Tensorflow/Keras, check out `scikeras` ([example](https://docs.cleanlab.ai/master/tutorials/text.html)). Many libraries also already offer a special scikit-learn API, for example: [XGBoost](https://xgboost.readthedocs.io/en/stable/python/python_api.html#module-xgboost.sklearn) or [LightGBM](https://lightgbm.readthedocs.io/en/latest/pythonapi/lightgbm.LGBMClassifier.html).
 </details>
+
+
+## Cool `cleanlab` applications
 
 
 ## Reproducing Results in [Confident Learning paper](https://arxiv.org/abs/1911.00068)
