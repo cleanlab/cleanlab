@@ -106,6 +106,7 @@ If you use a sklearn-compatible classifier, all `cleanlab` methods will work out
 <details><summary>
 It’s also easy to use your favorite non-sklearn-compatible model (<b>click to learn more</b>)
 </summary>
+<br/>
 
 There's nothing you need to do if your model already has `.fit()`, `.predict()`, and `.predict_proba()` methods. 
 Otherwise just wrap your custom model into a Python class that inherits the `sklearn.base.BaseEstimator`:
@@ -140,6 +141,8 @@ cl.predict(test_data)
 More details are provided in documentation of [cleanlab.classification.CleanLearning](https://github.com/cleanlab/cleanlab/blob/master/cleanlab/classification.py#L106).
 
 Note, some libraries exist to give you sklearn-compability for free. For PyTorch, check out the `skorch` Python library which will wrap your `pytorch` model into a sklearn-compatible model ([example](https://docs.cleanlab.ai/master/tutorials/image.html)). For Tensorflow/Keras, check out `scikeras` ([example](https://docs.cleanlab.ai/master/tutorials/text.html)). Many libraries also already offer a special scikit-learn API, for example: [XGBoost](https://xgboost.readthedocs.io/en/stable/python/python_api.html#module-xgboost.sklearn) or [LightGBM](https://lightgbm.readthedocs.io/en/latest/pythonapi/lightgbm.LGBMClassifier.html).
+
+<br/>
 </details>
 
 
@@ -149,6 +152,7 @@ Note, some libraries exist to give you sklearn-compability for free. For PyTorch
 Reproducing results in <a href="https://arxiv.org/abs/1911.00068">Confident Learning paper</a> 
 (<b>click to learn more</b>)
 </summary>
+<br/>
 
 For additional details, check out the: [confidentlearning-reproduce repository](https://github.com/cgnorthcutt/confidentlearning-reproduce).
 
@@ -178,6 +182,8 @@ Use `cleanlab` to identify \~50 label errors in the MNIST dataset: [examples/mni
 ![](https://raw.githubusercontent.com/cleanlab/assets/master/cleanlab/mnist_training_label_errors24_prune_by_noise_rate.png)
 
 Top 24 least-confident labels in the original MNIST **train** dataset, algorithmically identified via `cleanlab`. Examples are ordered left-right, top-down by increasing self-confidence (predicted probability that the **given** label is correct), denoted **conf** in teal. The most-likely correct label (with largest predicted probability) is in green. Overt label errors highlighted in red.
+
+<br/>
 </details>
 
 
@@ -185,6 +191,7 @@ Top 24 least-confident labels in the original MNIST **train** dataset, algorithm
 <code>cleanlab</code> performance across 4 data distributions and 9 classifiers 
 (<b>click to learn more</b>)
 </summary>
+<br/>
 
 `cleanlab` is a general tool that can learn with noisy labels regardless of dataset distribution or classifier type: [examples/classifier\_comparison](https://github.com/cleanlab/examples/blob/master/classifier_comparison.ipynb).
 
@@ -208,6 +215,9 @@ observed dataset."
 | label=1      | 0.22 | 0.87 | 0.24 | 0.02 |
 | label=2      | 0.12 | 0.04 | 0.64 | 0.38 |
 | label=3      | 0.11 | 0.08 | 0.05 | 0.54 |
+
+<br/>
+</details>
 
 <details><summary>
 ML research with <code>cleanlab</code> 
@@ -384,6 +394,8 @@ fraction_noise_in_unlabeled_class = inv_noise_matrix[pu_class][1 - pu_class]
 ```
 
 Now that you have `indices\_of\_label\_errors`, you can remove those label issues and train on clean data (or only remove some of the label issues and iteratively use confident learning / cleanlab to improve results).
+
+<br/>
 </details>
 
 ## Citation and Related Publications
