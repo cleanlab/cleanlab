@@ -6,9 +6,24 @@
 
 `cleanlab` automatically finds and fixes errors in ML datasets. This data-centric AI package facilitates **machine learning with messy, real-world data and labels**.
 
+```python
+# Example usage:
+
+model = sklearn.ensemble.RandomForestClassifier()  # any classifier
+
+# Find label issues in any data:
+pred_probs = sklearn.model_selection.cross_val_predict(model, data, labels, method="predict_proba")
+label_issues = cleanlab.filter.find_label_issues(labels, pred_probs, return_indices_ranked_by="self_confidence")
+
+# Train (and deploy) robust model with noisy data:
+cl = cleanlab.classification.CleanLearning(model)  # has same methods as your model
+cl.fit(data, labels)
+cl.predict(test_data)
+```
+
 Check out the: [documentation](https://docs.cleanlab.ai/), [examples](https://github.com/cleanlab/examples), and our [blog](https://cleanlab.ai/blog/).
 
-Click [here](https://docs.cleanlab.ai/master/tutorials/image.html) to run `cleanlab` on your own data in just 5min! We have 5min tutorials for classification with: [image](https://docs.cleanlab.ai/master/tutorials/image.html), [text](https://docs.cleanlab.ai/master/tutorials/text.html), [audio](https://docs.cleanlab.ai/master/tutorials/audio.html), and [tabular](https://docs.cleanlab.ai/master/tutorials/tabular.html) data.
+[Click here](https://docs.cleanlab.ai/master/tutorials/image.html) to run `cleanlab` on your own data in just 5min! We have 5min tutorials for classification with: [image](https://docs.cleanlab.ai/master/tutorials/image.html), [text](https://docs.cleanlab.ai/master/tutorials/text.html), [audio](https://docs.cleanlab.ai/master/tutorials/audio.html), and [tabular](https://docs.cleanlab.ai/master/tutorials/tabular.html) data.
 <!-- TODO:update links to v2.0 docs -->
 
 
@@ -59,14 +74,15 @@ Release notes for past versions are available [here](https://github.com/cleanlab
 
 ## So fresh, so `cleanlab`
 
-`cleanlab` `clean`s your data's `lab`els via state-of-the-art **confident learning** algorithms, published in this [paper](https://jair.org/index.php/jair/article/view/12125) | [blog](https://l7.curtisnorthcutt.com/confident-learning). See datasets cleaned with `cleanlab` at [labelerrors.com](https://labelerrors.com). This package helps you find all of the label issues lurking in your data and train more reliable ML models.
+`cleanlab` `clean`s your data's `lab`els via state-of-the-art **confident learning** algorithms, published in this [paper](https://jair.org/index.php/jair/article/view/12125) & [blog](https://l7.curtisnorthcutt.com/confident-learning). See datasets cleaned with `cleanlab` at [labelerrors.com](https://labelerrors.com). This package helps you find all of the label issues lurking in your data and train more reliable ML models.
 
 `cleanlab` is: 
 1. **backed-by-theory** - Has [provable guarantees](https://arxiv.org/abs/1911.00068) of exact noise estimation and label error finding in realistic cases where models make imperfect predictions.
 2. **fast** - Implementations are optimized and parallelized across CPU threads (e.g. < 1 second to find label issues in ImageNet with pre-computed probabilities).
-3. ** easy-to-use** - By default, `cleanlab` requires no hyper-parameters and can find label issues or train noise-robust models in one line of code.  
+3. **easy-to-use** - By default, `cleanlab` requires no hyper-parameters and can find label issues or train noise-robust models in one line of code.  
 4. **general** -  Works with any dataset and any model, e.g., Tensorflow, PyTorch, sklearn, xgboost, etc.
 
+## Running `cleanlab`
 
 Get started [here](https://docs.cleanlab.ai/)!
 
@@ -86,7 +102,7 @@ If you use a sklearn-compatible classifier, all `cleanlab` methods will work out
 It’s also easy to use your favorite non-sklearn-compatible model (<b>click to learn more</b>)
 </summary>
 
-There's nothing you need to do if your model already has `.fit()`, `.predict()`, and `.predict\_proba()` methods. 
+There's nothing you need to do if your model already has `.fit()`, `.predict()`, and `.predict_proba()` methods. 
 Otherwise just wrap your custom model into a Python class that inherits the `sklearn.base.BaseEstimator`:
 
 ``` python
@@ -116,7 +132,7 @@ cl.predict(test_data)
 
 #### Want to see a working example? [Here’s a compliant PyTorch MNIST CNN class](https://github.com/cleanlab/cleanlab/blob/master/cleanlab/experimental/mnist_pytorch.py)
 
-More details are provided in documentation of [cleanlab.classification.CleanLearning()](https://github.com/cleanlab/cleanlab/blob/master/cleanlab/classification.py#L106).
+More details are provided in documentation of [cleanlab.classification.CleanLearning](https://github.com/cleanlab/cleanlab/blob/master/cleanlab/classification.py#L106).
 
 Note, some libraries exist to give you sklearn-compability for free. For PyTorch, check out the `skorch` Python library which will wrap your `pytorch` model into a sklearn-compatible model ([example](https://docs.cleanlab.ai/master/tutorials/image.html)). For Tensorflow/Keras, check out `scikeras` ([example](https://docs.cleanlab.ai/master/tutorials/text.html)). Many libraries also already offer a special scikit-learn API, for example: [XGBoost](https://xgboost.readthedocs.io/en/stable/python/python_api.html#module-xgboost.sklearn) or [LightGBM](https://lightgbm.readthedocs.io/en/latest/pythonapi/lightgbm.LGBMClassifier.html).
 </details>
