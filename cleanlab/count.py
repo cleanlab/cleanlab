@@ -17,9 +17,9 @@
 """
 Methods for estimating latent structures used for confident learning, including:
 
-* Latent prior of the unobserved, error-less labels: `py`: :math:`p(y)`
-* Latent noisy channel (noise matrix) characterizing the flipping rates: `nm`: :math:`P(\\mathrm{given\\ label} \\mid \\mathrm{true\\ label})`
-* Latent inverse noise matrix characterizing the flipping process: `inv`: :math:`P(\\mathrm{true\\ label} \\mid \\mathrm{given\\ label})`
+* Latent prior of the unobserved, error-less labels: `py`: ``p(y)``
+* Latent noisy channel (noise matrix) characterizing the flipping rates: `nm`: ``P(given label | true label)``
+* Latent inverse noise matrix characterizing the flipping process: `inv`: ``P(true label | given label)``
 * Latent `confident_joint`, an un-normalized matrix that counts the confident subset of label errors under the joint distribution for true/given label
 """
 
@@ -69,7 +69,7 @@ def num_label_issues(
 
     pred_probs : np.array
       An array of shape ``(N, K)`` of model-predicted probabilities,
-      :math:`P(\\mathrm{label}=k \mid x)`. Each row of this matrix corresponds
+      ``P(label=k|x)``. Each row of this matrix corresponds
       to an example `x` and contains the model-predicted probabilities that
       `x` belongs to each possible class, for each of the K classes. The
       columns must be ordered such that these probabilities correspond to
@@ -78,9 +78,9 @@ def num_label_issues(
 
     confident_joint : np.array, optional
       An array of shape ``(K, K)`` representing the confident joint, the matrix used for identifying label issues, which
-      estimates a confident subset of the joint distribution of the noisy and true labels, :math:`P_{\\mathrm{noisy\\ label}, \\mathrm{true\\ label}}`.
-      Entry :math:`(j, k)` in the matrix is the number of examples confidently counted into the pair of :math:`(\\mathrm{noisy\\ label}=j, \\mathrm{true\\ label}=k)` classes.
-      The `confident_joint` can be computed using :py:func:`compute_confident_joint <cleanlab.count.compute_confident_joint>`.
+      estimates a confident subset of the joint distribution of the noisy and true labels, ``P_{noisy label, true label}``.
+      Entry ``(j, k)`` in the matrix is the number of examples confidently counted into the pair of ``(noisy label=j, true label=k)`` classes.
+      The `confident_joint` can be computed using :py:func:`count.compute_confident_joint <cleanlab.count.compute_confident_joint>`.
       If not provided, it is computed from the given (noisy) `labels` and `pred_probs`.
 
     Returns
@@ -113,11 +113,12 @@ def calibrate_confident_joint(confident_joint, labels, *, multi_label=False):
     Parameters
     ----------
 
-    confident_joint : np.array, optional
+    confident_joint : np.array
       An array of shape ``(K, K)`` representing the confident joint, the matrix used for identifying label issues, which
-      estimates a confident subset of the joint distribution of the noisy and true labels, :math:`P_{\\mathrm{noisy\\ label}, \\mathrm{true\\ label}}`.
-      Entry :math:`(j, k)` in the matrix is the number of examples confidently counted into the pair of :math:`(\\mathrm{noisy\\ label}=j, \\mathrm{true\\ label}=k)` classes.
-      The `confident_joint` can be computed using :py:func:`compute_confident_joint <cleanlab.count.compute_confident_joint>`.
+      estimates a confident subset of the joint distribution of the noisy and true labels, ``P_{noisy label, true label}``.
+      Entry ``(j, k)`` in the matrix is the number of examples confidently counted into the pair of ``(noisy label=j, true label=k)`` classes.
+      The `confident_joint` can be computed using :py:func:`count.compute_confident_joint <cleanlab.count.compute_confident_joint>`.
+      If not provided, it is computed from the given (noisy) `labels` and `pred_probs`.
 
     labels : np.array
       A discrete vector of noisy labels, i.e. some labels may be erroneous.
@@ -168,7 +169,7 @@ def estimate_joint(labels, pred_probs, *, confident_joint=None, multi_label=Fals
 
     pred_probs : np.array
       An array of shape ``(N, K)`` of model-predicted probabilities,
-      :math:`P(\\mathrm{label}=k \mid x)`. Each row of this matrix corresponds
+      ``P(label=k|x)``. Each row of this matrix corresponds
       to an example `x` and contains the model-predicted probabilities that
       `x` belongs to each possible class, for each of the K classes. The
       columns must be ordered such that these probabilities correspond to
@@ -177,9 +178,9 @@ def estimate_joint(labels, pred_probs, *, confident_joint=None, multi_label=Fals
 
     confident_joint : np.array, optional
       An array of shape ``(K, K)`` representing the confident joint, the matrix used for identifying label issues, which
-      estimates a confident subset of the joint distribution of the noisy and true labels, :math:`P_{\\mathrm{noisy\\ label}, \\mathrm{true\\ label}}`.
-      Entry :math:`(j, k)` in the matrix is the number of examples confidently counted into the pair of :math:`(\\mathrm{noisy\\ label}=j, \\mathrm{true\\ label}=k)` classes.
-      The `confident_joint` can be computed using :py:func:`compute_confident_joint <cleanlab.count.compute_confident_joint>`.
+      estimates a confident subset of the joint distribution of the noisy and true labels, ``P_{noisy label, true label}``.
+      Entry ``(j, k)`` in the matrix is the number of examples confidently counted into the pair of ``(noisy label=j, true label=k)`` classes.
+      The `confident_joint` can be computed using :py:func:`count.compute_confident_joint <cleanlab.count.compute_confident_joint>`.
       If not provided, it is computed from the given (noisy) `labels` and `pred_probs`.
 
     multi_label : bool, optional
@@ -328,7 +329,7 @@ def compute_confident_joint(
 
     pred_probs : np.array, optional
       An array of shape ``(N, K)`` of model-predicted probabilities,
-      :math:`P(\\mathrm{label}=k \mid x)`. Each row of this matrix corresponds
+      ``P(label=k|x)``. Each row of this matrix corresponds
       to an example `x` and contains the model-predicted probabilities that
       `x` belongs to each possible class, for each of the K classes. The
       columns must be ordered such that these probabilities correspond to
@@ -475,11 +476,12 @@ def estimate_latent(
 
     Parameters
     ----------
-    confident_joint : np.array, optional
+    confident_joint : np.array
       An array of shape ``(K, K)`` representing the confident joint, the matrix used for identifying label issues, which
-      estimates a confident subset of the joint distribution of the noisy and true labels, :math:`P_{\\mathrm{noisy\\ label}, \\mathrm{true\\ label}}`.
-      Entry :math:`(j, k)` in the matrix is the number of examples confidently counted into the pair of :math:`(\\mathrm{noisy\\ label}=j, \\mathrm{true\\ label}=k)` classes.
-      The `confident_joint` can be computed using :py:func:`compute_confident_joint <cleanlab.count.compute_confident_joint>`.
+      estimates a confident subset of the joint distribution of the noisy and true labels, ``P_{noisy label, true label}``.
+      Entry ``(j, k)`` in the matrix is the number of examples confidently counted into the pair of ``(noisy label=j, true label=k)`` classes.
+      The `confident_joint` can be computed using :py:func:`count.compute_confident_joint <cleanlab.count.compute_confident_joint>`.
+      If not provided, it is computed from the given (noisy) `labels` and `pred_probs`.
 
     labels : np.array
       An array of shape ``(N,)`` of noisy labels, i.e. some labels may be erroneous.
@@ -567,7 +569,7 @@ def estimate_py_and_noise_matrices_from_probabilities(
 
     pred_probs : np.array
       An array of shape ``(N, K)`` of model-predicted probabilities,
-      :math:`P(\\mathrm{label}=k \mid x)`. Each row of this matrix corresponds
+      ``P(label=k|x)``. Each row of this matrix corresponds
       to an example `x` and contains the model-predicted probabilities that
       `x` belongs to each possible class, for each of the K classes. The
       columns must be ordered such that these probabilities correspond to
@@ -1099,7 +1101,7 @@ def get_confident_thresholds(labels: np.array, pred_probs: np.array) -> np.array
 
     pred_probs : np.array
       An array of shape ``(N, K)`` of model-predicted probabilities,
-      :math:`P(\\mathrm{label}=k \mid x)`. Each row of this matrix corresponds
+      ``P(label=k|x)``. Each row of this matrix corresponds
       to an example `x` and contains the model-predicted probabilities that
       `x` belongs to each possible class, for each of the K classes. The
       columns must be ordered such that these probabilities correspond to

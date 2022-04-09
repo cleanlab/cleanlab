@@ -306,7 +306,7 @@ def find_label_issues(
 
     pred_probs : np.array, optional
       An array of shape ``(N, K)`` of model-predicted probabilities,
-      :math:`P(\\mathrm{label}=k \mid x)`. Each row of this matrix corresponds
+      ``P(label=k|x)``. Each row of this matrix corresponds
       to an example `x` and contains the model-predicted probabilities that
       `x` belongs to each possible class, for each of the K classes. The
       columns must be ordered such that these probabilities correspond to
@@ -321,8 +321,8 @@ def find_label_issues(
 
     confident_joint : np.array, optional
       An array of shape ``(K, K)`` representing the confident joint, the matrix used for identifying label issues, which
-      estimates a confident subset of the joint distribution of the noisy and true labels, :math:`P_{\\mathrm{noisy\\ label}, \\mathrm{true\\ label}}`.
-      Entry :math:`(j, k)` in the matrix is the number of examples confidently counted into the pair of :math:`(\\mathrm{noisy\\ label}=j, \\mathrm{true\\ label}=k)` classes.
+      estimates a confident subset of the joint distribution of the noisy and true labels, ``P_{noisy label, true label}``.
+      Entry ``(j, k)`` in the matrix is the number of examples confidently counted into the pair of ``(noisy label=j, true label=k)`` classes.
       The `confident_joint` can be computed using :py:func:`count.compute_confident_joint <cleanlab.count.compute_confident_joint>`.
       If not provided, it is computed from the given (noisy) `labels` and `pred_probs`.
 
@@ -358,7 +358,7 @@ def find_label_issues(
 
     frac_noise : float, default=1.0
       When ``frac_noise=1.0``, return all "confident" estimated noise indices.
-      Value in range :math:`(0, 1]` determine the fraction of noisy example
+      Value in range ``[0, 1)`` determine the fraction of noisy example
       indices to return based on the following formula for example class k.
       frac_noise * number_of_mislabeled_examples_in_class_k.
 
@@ -709,7 +709,7 @@ def find_predicted_neq_given(labels, pred_probs, *, multi_label=False):
 
     pred_probs : np.array, optional
       An array of shape ``(N, K)`` of model-predicted probabilities,
-      :math:`P(\\mathrm{label}=k \mid x)`. Each row of this matrix corresponds
+      ``P(label=k|x)``. Each row of this matrix corresponds
       to an example `x` and contains the model-predicted probabilities that
       `x` belongs to each possible class, for each of the K classes. The
       columns must be ordered such that these probabilities correspond to
@@ -764,7 +764,7 @@ def find_label_issues_using_argmax_confusion_matrix(
 
     pred_probs : np.array (shape (N, K))
         An array of shape ``(N, K)`` of model-predicted probabilities,
-        :math:`P(\\mathrm{label}=k \mid x)`. Each row of this matrix corresponds
+        ``P(label=k|x)``. Each row of this matrix corresponds
         to an example `x` and contains the model-predicted probabilities that
         `x` belongs to each possible class, for each of the K classes. The
         columns must be ordered such that these probabilities correspond to

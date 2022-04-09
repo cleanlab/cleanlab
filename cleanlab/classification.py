@@ -275,7 +275,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
 
         pred_probs : np.array, optional
           An array of shape ``(N, K)`` of model-predicted probabilities,
-          :math:`P(\\mathrm{label}=k \mid x)`. Each row of this matrix corresponds
+          ``P(label=k|x)``. Each row of this matrix corresponds
           to an example `x` and contains the model-predicted probabilities that
           `x` belongs to each possible class, for each of the K classes. The
           columns must be ordered such that these probabilities correspond to
@@ -302,15 +302,15 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
 
         noise_matrix : np.array, optional
           An array of shape ``(N, N)`` representing the conditional probability
-          matrix :math:`P(\\mathrm{label}=k_s \\mid \mathrm{true\\ label}=k_y)`, the
+          matrix ``P(label=k_s | true label=k_y)``, the
           fraction of examples in every class, labeled as every other class.
           Assumes columns of `noise_matrix` sum to 1.
 
         inverse_noise_matrix : np.array, optional
           An array of shape ``(N, N)`` representing the conditional probability
-          matrix :math:`P(\\mathrm{true\\ label}=k_y \\mid \mathrm{label}=k_s)`,
-          the estimated fraction observed examples in each class :math:`k_s`
-          that are mislabeled examples from every other class :math:`k_y`.
+          matrix ``P(true label=k_y | label=k_s)``,
+          the estimated fraction observed examples in each class ``k_s``
+          that are mislabeled examples from every other class ``k_y``,
           Assumes columns of `inverse_noise_matrix` sum to 1.
 
         label_issues_mask : np.array, optional
@@ -412,7 +412,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
 
     def predict_proba(self, *args, **kwargs):
         """Returns a vector of predicted probabilities for each example in X,
-        :math:`P(\\mathrm{true\\ label}=k)`.
+        ``P(true label=k)``.
 
         Parameters
         ----------

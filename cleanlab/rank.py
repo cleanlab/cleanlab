@@ -124,7 +124,7 @@ def get_label_quality_scores(
 
     pred_probs : np.array, optional
       An array of shape ``(N, K)`` of model-predicted probabilities,
-      :math:`P(\\mathrm{label}=k \mid x)`. Each row of this matrix corresponds
+      ``P(label=k|x)``. Each row of this matrix corresponds
       to an example `x` and contains the model-predicted probabilities that
       `x` belongs to each possible class, for each of the K classes. The
       columns must be ordered such that these probabilities correspond to
