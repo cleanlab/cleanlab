@@ -181,8 +181,6 @@ Top 24 least-confident labels in the original MNIST **train** dataset, algorithm
 </details>
 
 
-<details>
-`cleanlab` Performance across 4 Data Distributions and 9 Classifiers
 <details><summary>
 <code>cleanlab</code> performance across 4 data distributions and 9 classifiers 
 (<b>click to learn more</b>)
