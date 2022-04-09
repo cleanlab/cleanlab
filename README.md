@@ -41,7 +41,7 @@ Check out the: [documentation](https://docs.cleanlab.ai/), [examples](https://gi
 <p>
 <ul>
 <li> <b>March 2022 📖</b>  Documentation migrated to new website: <a href="https://docs.cleanlab.ai/">docs.cleanlab.ai</a> with quickstart tutorials for image/text/audio/tabular data.</li>
-<li> <b>Feb 2022 </b> APIs simplified to make cleanlab accessible for everybody not just ML researchers </li>  <!-- TODO: link migration guide -->
+<li> <b>Feb 2022 💻</b> APIs simplified to make cleanlab accessible for everybody not just ML researchers </li>  <!-- TODO: link migration guide -->
 </ul>
 </p>
 </details>
