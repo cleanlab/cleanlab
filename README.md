@@ -68,7 +68,7 @@ Check out the: [documentation](https://docs.cleanlab.ai/), [examples](https://gi
 </p>
 </details>
 
-Release notes for past versions are available [here](https://github.com/cleanlab/cleanlab/blob/master/cleanlab/version.py). Details behind certain updates are explained in our [blog](https://cleanlab.ai/blog/).
+Release notes for past versions are available [here](https://github.com/cleanlab/cleanlab/releases). Details behind certain updates are explained in our [blog](https://cleanlab.ai/blog/).
 <!-- TODO: link to 2.0 migration guide here -->
 
 
