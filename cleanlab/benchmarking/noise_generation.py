@@ -18,7 +18,7 @@
 """
 Helper methods that are useful for benchmarking cleanlab’s core algorithms.
 These methods introduce synthetic noise into the labels of a classification dataset.
-Specifically, provides methods for generating valid noise matrices (for which learning with noise is possible),
+Specifically, this module provides methods for generating valid noise matrices (for which learning with noise is possible),
 generating noisy labels given a noise matrix, generating valid noise matrices with a specific trace value, and more.
 """
 
@@ -28,10 +28,29 @@ import warnings
 
 
 def noise_matrix_is_valid(noise_matrix, py, *, verbose=False):
-    """Given a prior py = p(true_label=k), returns true if the given noise_matrix is a
+    """Given a prior `py` representing ``p(true_label=k)``, checks if the given `noise_matrix` is a
     learnable matrix. Learnability means that it is possible to achieve
     better than random performance, on average, for the amount of noise in
-    noise_matrix."""
+    `noise_matrix`.
+
+    Parameters
+    ----------
+
+    noise_matrix : np.array
+      An array of shape ``(K, K)`` representing the conditional probability
+      matrix ``P(label=k_s|true_label=k_y)`` containing the fraction of
+      examples in every class, labeled as every other class. Assumes columns of
+      `noise_matrix` sum to 1.
+
+    py : np.array
+      An array of shape ``(K,)`` representing the fraction (prior probability)
+      of each true class label, ``P(true_label = k)``.
+
+    Returns
+    -------
+    bool
+      Whether the noise matrix is a learnable matrix.
+    """
 
     # Number of classes
     K = len(py)
@@ -88,8 +107,8 @@ def noise_matrix_is_valid(noise_matrix, py, *, verbose=False):
 
 
 def generate_noisy_labels(true_labels, noise_matrix):
-    """Generates noisy labels (shape (N, 1)) from perfect labels y,
-    'exactly' yielding the provided noise_matrix between labels and y.
+    """Generates noisy `labels` from perfect labels `true_labels`,
+    "exactly" yielding the provided `noise_matrix` between `labels` and `true_labels`.
 
     Below we provide a for loop implementation of what this function does.
     We do not use this implementation as it is not a fast algorithm, but
@@ -98,14 +117,20 @@ def generate_noisy_labels(true_labels, noise_matrix):
     Parameters
     ----------
 
-    true_labels : np.array (shape (N, 1))
-        Perfect labels, without any noise. Contains K distinct natural number
-        classes, e.g. 0, 1,..., K-1
+    true_labels : np.array
+      An array of shape ``(N,)`` representing perfect labels, without any
+      noise. Contains K distinct natural number classes, 0, 1, ..., K-1.
 
-    noise_matrix : np.array of shape (K, K), K = number of classes
-        A conditional probability matrix of the form P(label=k_s|true_label=k_y) containing
-        the fraction of examples in every class, labeled as every other class.
-        Assumes columns of noise_matrix sum to 1.
+    noise_matrix : np.array
+      An array of shape ``(K, K)`` representing the conditional probability
+      matrix ``P(label=k_s|true_label=k_y)`` containing the fraction of
+      examples in every class, labeled as every other class. Assumes columns of
+      `noise_matrix` sum to 1.
+
+    Returns
+    -------
+    labels : np.array
+      An array of shape ``(N,)`` of noisy labels.
 
     Examples
     --------
@@ -178,61 +203,61 @@ def generate_noise_matrix_from_trace(
     seed=0,
     max_iter=10000,
 ):
-    """Generates a K x K noise matrix P(label=k_s|true_label=k_y) with trace
-    as the np.mean(np.diagonal(noise_matrix)).
+    """Generates a ``K x K`` noise matrix ``P(label=k_s|true_label=k_y)`` with
+    ``np.sum(np.diagonal(noise_matrix))`` equal to the given `trace`.
 
     Parameters
     ----------
 
     K : int
-      Creates a noise matrix of shape (K, K). Implies there are
+      Creates a noise matrix of shape ``(K, K)``. Implies there are
       K classes for learning with noisy labels.
 
-    trace : float (0.0, 1.0]
-      Sum of diagonal entries of np.array of random probabilities returned.
+    trace : float
+      Sum of diagonal entries of array of random probabilities returned.
 
-    max_trace_prob : float (0.0, 1.0]
+    max_trace_prob : float
       Maximum probability of any entry in the trace of the return matrix.
 
-    min_trace_prob : float [0.0, 1.0)
+    min_trace_prob : float
       Minimum probability of any entry in the trace of the return matrix.
 
-    max_noise_rate : float (0.0, 1.0]
+    max_noise_rate : float
       Maximum noise_rate (non-diagonal entry) in the returned np.array.
 
-    min_noise_rate : float [0.0, 1.0)
+    min_noise_rate : float
       Minimum noise_rate (non-diagonal entry) in the returned np.array.
 
-    valid_noise_matrix : bool
-      If True, returns a matrix having all necessary conditions for
-      learning with noisy labels. In particular, p(true_label=k)p(label=k) < p(true_label=k,label=k)
-      is satisfied. This requires that Trace > 1.
+    valid_noise_matrix : bool, default=True
+      If ``True``, returns a matrix having all necessary conditions for
+      learning with noisy labels. In particular, ``p(true_label=k)p(label=k) < p(true_label=k,label=k)``
+      is satisfied. This requires that ``trace > 1``.
 
-    py : np.array (shape (K, 1))
-      Fraction (prior probability) of each true class label, P(true_label = k).
-      REQUIRED when valid_noise_matrix == True.
+    py : np.array
+      An array of shape ``(K,)`` representing the fraction (prior probability) of each true class label, ``P(true_label = k)``.
+      This argument is **required** when ``valid_noise_matrix=True``.
 
     frac_zero_noise_rates : float
-      The fraction of the n*(n-1) noise rates
+      The fraction of the ``n*(n-1)`` noise rates
       that will be set to 0. Note that if you set a high trace, it may be
       impossible to also have a low fraction of zero noise rates without
-      forcing all non-"1" diagonal values. Instead, when this happens we only
-      guarantee to produce a noise matrix with frac_zero_noise_rates **or
-      higher**. The opposite occurs with a small trace.
+      forcing all non-1 diagonal values. Instead, when this happens we only
+      guarantee to produce a noise matrix with `frac_zero_noise_rates` *or
+      higher*. The opposite occurs with a small trace.
 
     seed : int
       Seeds the random number generator for numpy.
 
-    max_iter : int (default: 10000)
-      The max number of tries to produce a valid matrix before returning False.
+    max_iter : int, default=10000
+      The max number of tries to produce a valid matrix before returning ``None``.
 
     Returns
     -------
-    np.array (shape (K, K))
-      noise matrix P(label=k_s|true_label=k_y) with trace
-      as the np.sum(np.diagonal(noise_matrix)).
-      This a conditional probability matrix and a
-      left stochastic matrix."""
+    noise_matrix : np.array or None
+      An array of shape ``(K, K)`` representing the noise matrix ``P(label=k_s|true_label=k_y)`` with `trace`
+      equal to ``np.sum(np.diagonal(noise_matrix))``. This a conditional probability matrix and a
+      left stochastic matrix. Returns ``None`` if `max_iter` is exceeded.
+    """
 
     if valid_noise_matrix and trace <= 1:
         raise ValueError(
@@ -249,7 +274,7 @@ def generate_noise_matrix_from_trace(
         raise ValueError("K must be >= 2, but K = {}.".format(K))
 
     if max_iter < 1:
-        return False
+        return None
 
     np.random.seed(seed)
 
@@ -325,9 +350,9 @@ def generate_noise_matrix_from_trace(
             for row in rows:
                 noise_matrix[row][col] = noise_rates_col.pop()
         if not valid_noise_matrix or noise_matrix_is_valid(noise_matrix, py):
-            break
+            return noise_matrix
 
-    return noise_matrix
+    return None
 
 
 def generate_n_rand_probabilities_that_sum_to_m(
@@ -337,25 +362,27 @@ def generate_n_rand_probabilities_that_sum_to_m(
     max_prob=1.0,
     min_prob=0.0,
 ):
-    """When min_prob=0 and max_prob = 1.0, this method is deprecated.
-    Instead use np.random.dirichlet(np.ones(n))*m
+    """
+    Generates `n` random probabilities that sum to `m`.
 
-    Generates 'n' random probabilities that sum to 'm'.
+    When ``min_prob=0`` and ``max_prob = 1.0``, use
+    ``np.random.dirichlet(np.ones(n))*m`` instead.
 
     Parameters
     ----------
 
     n : int
-      Length of np.array of random probabilities to be returned.
+      Length of array of random probabilities to be returned.
 
     m : float
-      Sum of np.array of random probabilities that is returned.
+      Sum of array of random probabilities that is returned.
 
-    max_prob : float (0.0, 1.0] | Default value is 1.0
-      Maximum probability of any entry in the returned np.array.
+    max_prob : float, default=1.0
+      Maximum probability of any entry in the returned array. Must be between 0 and 1.
 
-    min_prob : float [0.0, 1.0) | Default value is 0.0
-      Minimum probability of any entry in the returned np.array."""
+    min_prob : float, default=0.0
+      Minimum probability of any entry in the returned array. Must be between 0 and 1.
+    """
 
     epsilon = 1e-6  # Imprecision allowed for inequalities with floats
 
@@ -431,9 +458,18 @@ def randomly_distribute_N_balls_into_K_bins(
     Parameters
     ----------
     N : int
+      Number of balls.
     K : int
+      Number of bins.
     max_balls_per_bin : int
-    min_balls_per_bin : int"""
+      Ensure that each bin contains at most `max_balls_per_bin` balls.
+    min_balls_per_bin : int
+      Ensure that each bin contains at least `min_balls_per_bin` balls.
+
+    Returns
+    -------
+    np.array
+    """
 
     if N == 0:
         return np.zeros(K, dtype=int)

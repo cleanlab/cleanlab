@@ -17,36 +17,37 @@
 """
 cleanlab can be used for multiclass (or multi-label) learning with noisy labels for any dataset and model.
 
-The CleanLearning class wraps around an instance of a
-classifier class. Your classifier must adhere to the sklearn template,
+The :py:class:`CleanLearning <cleanlab.classification.CleanLearning>` class wraps an instance of an
+sklearn classifier. The wrapped classifier must adhere to the `sklearn estimator API
+<https://scikit-learn.org/stable/developers/develop.html#rolling-your-own-estimator>`_,
 meaning it must define four functions:
 
-* ``clf.fit(X, y, sample_weight = None)``
+* ``clf.fit(X, y, sample_weight=None)``
 * ``clf.predict_proba(X)``
 * ``clf.predict(X)``
-* ``clf.score(X, y, sample_weight = None)``
+* ``clf.score(X, y, sample_weight=None)``
 
-where ``X`` (of length *n*) contains the data/examples, ``y`` (of length *n*)
-contains the contains targets formatted as ``0, 1, 2, ..., num_classes-1``, and
-``sample_weight`` (of length *n*) re-weights examples in the loss function while
-training.
+where `X` contains data, `y` contains labels (with elements in 0, 1, ..., K-1,
+where K is the number of classes), and `sample_weight` re-weights examples in
+the loss function while training.
 
-Furthermore, your estimator should be correctly clonable via
-`sklearn.base.clone`: cleanlab internally creates multiple instances of your
+Furthermore, the estimator should be correctly clonable via
+`sklearn.base.clone <https://scikit-learn.org/stable/modules/generated/sklearn.base.clone.html>`_:
+cleanlab internally creates multiple instances of the
 estimator, and if you e.g. manually wrap a PyTorch model, you must ensure that
-every call to your estimator's `__init__()` creates an independent instance of
+every call to the estimator's ``__init__()`` creates an independent instance of
 the model.
 
 Note
 ----
 There are two new notions of confidence in this package:
 
-1. Confident **examples** -- examples we are confident are labeled correctly
-We prune everything else. Comptuationally, this means keeping the examples
+1. Confident *examples* --- examples we are confident are labeled correctly.
+We prune everything else. Mathematically, this means keeping the examples
 with high probability of belong to their provided label class.
 
-2. Confident **errors** -- examples we are confident are labeled erroneously.
-We prune these. Comptuationally, this means pruning the examples with
+2. Confident *errors* --- examples we are confident are labeled erroneously.
+We prune these. Mathematically, this means pruning the examples with
 high probability of belong to a different class.
 
 Examples
@@ -58,49 +59,56 @@ Examples
 >>> # Estimate the predictions as if you had trained without label issues.
 >>> pred = cl.predict(X_test)
 
-The easiest way to use any model (Tensorflow, caffe2, PyTorch, etc.)
-with ``cleanlab`` is to wrap it in a class that inherits
-the ``sklearn.base.BaseEstimator``:
+If the model is not sklearn-compatible by default, it might be the case that
+standard packages can adapt the model. For example, you can adapt PyTorch
+models using `skorch <https://skorch.readthedocs.io/>`_ and adapt Keras models
+using `SkiKeras <https://www.adriangb.com/scikeras/>`_.
+
+If an open-source adapter doesn't already exist, you can manually wrap the
+model to be sklearn-compatible. This is made easy by inheriting from
+`sklearn.base.BaseEstimator
+<https://scikit-learn.org/stable/modules/generated/sklearn.base.BaseEstimator.html>`_:
 
 .. code:: python
 
     from sklearn.base import BaseEstimator
-    class YourModel(BaseEstimator): # Inherits sklearn base classifier
+
+    class YourModel(BaseEstimator):
         def __init__(self, ):
             pass
-        def fit(self, X, y, sample_weight = None):
+        def fit(self, X, y, sample_weight=None):
             pass
         def predict(self, X):
             pass
         def predict_proba(self, X):
             pass
-        def score(self, X, y, sample_weight = None):
+        def score(self, X, y, sample_weight=None):
             pass
 
 Note
 ----
 
-* `labels` - The given (maybe noisy) labels in the original dataset, which may have errors.
-* Class labels must be formatted as natural numbers: 0, 1, ..., num_classes-1
+* `labels` refers to the given labels in the original dataset, which may have errors
+* labels must be integers in 0, 1, ..., K-1, where K is the total number of classes
 
 Note
 ----
 
-Confident Learning is the state-of-the-art (Northcutt et al., 2021) for
+Confident learning is the state-of-the-art (`Northcutt et al., 2021 <https://jair.org/index.php/jair/article/view/12125>`_) for
 weak supervision, finding label issues in datasets, learning with noisy
-labels, uncertainty estimation, and more. It works with ANY classifier,
-including deep neural networks. See clf parameter.
+labels, uncertainty estimation, and more. It works with *any* classifier,
+including deep neural networks. See the `clf` parameter.
 
 Confident learning is a subfield of theory and algorithms of machine learning with noisy labels.
 Cleanlab achieves state-of-the-art performance of any open-sourced implementation of confident
 learning across a variety of tasks like multi-class classification, multi-label classification,
 and PU learning.
 
-Given any classifier having the predict_proba() method, an input feature
-matrix, `X`, and a discrete vector of noisy labels, `labels`, Confident Learning estimates the
-classifications that would be obtained if the `true_labels` had instead been provided
-to the classifier during training. `labels` denotes the noisy label instead of
-\\tilde(y) (used in confident learning paper), for ASCII encoding reasons.
+Given any classifier having the `predict_proba` method, an input feature
+matrix `X`, and a discrete vector of noisy labels `labels`, confident learning estimates the
+classifications that would be obtained if the *true labels* had instead been provided
+to the classifier during training. `labels` denotes the noisy labels instead of
+the :math:`\\tilde{y}` used in confident learning paper.
 """
 
 from sklearn.linear_model import LogisticRegression as LogReg
@@ -127,7 +135,8 @@ from cleanlab import filter
 
 
 class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
-    """CleanLearning = Machine Learning with cleaned data (even if with messy, error-prone data).
+    """
+    CleanLearning = Machine Learning with cleaned data (even when training on messy, error-ridden data).
 
     Automated and robust learning with noisy labels using any dataset and any model. This class
     trains a model `clf` with error-prone, noisy labels as if the model had been instead trained
@@ -136,41 +145,55 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
 
     Parameters
     ----------
-    clf : :obj:`sklearn.classifier` compliant class (e.g. skorch wraps around PyTorch)
-      See ``cleanlab.experimental`` for examples of sklearn wrappers, e.g. around PyTorch and FastText.
-      The clf object must have the following three functions defined:
-      1. clf.predict_proba(X) # Predicted probabilities
-      2. clf.predict(X) # Predict labels
-      3. clf.fit(X, y, sample_weight) # Train classifier
+    clf : estimator instance, optional
+      A classifier implementing the `sklearn estimator API
+      <https://scikit-learn.org/stable/developers/develop.html#rolling-your-own-estimator>`_,
+      defining the following functions:
+
+      * ``clf.fit(X, y, sample_weight=None)``
+      * ``clf.predict_proba(X)``
+      * ``clf.predict(X)``
+      * ``clf.score(X, y, sample_weight=None)``
+
+      See :py:mod:`cleanlab.experimental` for examples of sklearn wrappers,
+      e.g. around PyTorch and FastText.
+
+      If the model is not sklearn-compatible by default, it might be the case that
+      standard packages can adapt the model. For example, you can adapt PyTorch
+      models using `skorch <https://skorch.readthedocs.io/>`_ and adapt Keras models
+      using `SkiKeras <https://www.adriangb.com/scikeras/>`_.
+
       Stores the classifier used in Confident Learning.
-      Default classifier used is logistic regression.
+      Default classifier used is `sklearn.linear_model.LogisticRegression
+      <https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html>`_.
 
-    seed : :obj:`int`, default: None
+    seed : int, optional
       Set the default state of the random number generator used to split
-      the cross-validated folds. If None, uses np.random current random state.
+      the cross-validated folds. By default, uses `np.random` current random state.
 
-    cv_n_folds : :obj:`int`
+    cv_n_folds : int, default=5
       This class needs holdout predicted probabilities for every data example
       and if not provided, uses cross-validation to compute them.
-      cv_n_folds sets the number of cross-validation folds used to compute
-      out-of-sample probabilities for each example in X.
+      `cv_n_folds` sets the number of cross-validation folds used to compute
+      out-of-sample probabilities for each example in `X`.
 
-    converge_latent_estimates : :obj:`bool` (Default: False)
+    converge_latent_estimates : bool, optional
       If true, forces numerical consistency of latent estimates. Each is
       estimated independently, but they are related mathematically with closed
       form equivalences. This will iteratively enforce consistency.
 
-    pulearning : :obj:`int` (0 or 1, default: None)
+    pulearning : {None, 0, 1}, default=None
       Only works for 2 class datasets. Set to the integer of the class that is
-      perfectly labeled (certain no errors in that class).
+      perfectly labeled (you are certain that there are no errors in that class).
 
-    find_label_issues_kwargs : dict, default = {}
-      Optional keyword arguments to pass into `filter.find_label_issues()`.
-      Options that may especially impact accuracy include:
-      `filter_by`, `frac_noise`, `min_examples_per_class`
+    find_label_issues_kwargs : dict, optional
+      Keyword arguments to pass into :py:func:`filter.find_label_issues
+      <cleanlab.filter.find_label_issues>`. Options that may especially impact
+      accuracy include: `filter_by`, `frac_noise`, `min_examples_per_class`.
 
-    verbose : :obj:`int` (0 or 1, default: 1)
-      Controls how much output is printed. Set = 0 to suppress print statements.
+    verbose : bool, default=True
+      Controls how much output is printed. Set to ``False`` to suppress print
+      statements.
     """
 
     def __init__(
@@ -183,7 +206,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         converge_latent_estimates=False,
         pulearning=None,
         find_label_issues_kwargs={},
-        verbose=1,
+        verbose=True,
     ):
 
         if clf is None:
@@ -232,79 +255,91 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         clf_kwargs={},
         clf_final_kwargs={},
     ):
-        """This method trains the model `self.clf` with error-prone, noisy labels as if
+        """
+        Train the model `clf` with error-prone, noisy labels as if
         the model had been instead trained on a dataset with the correct labels.
-        It achieves this by: first training `clf` via cross-validation on the noisy data,
+        `fit` achieves this by first training `clf` via cross-validation on the noisy data,
         using the resulting predicted probabilities to identify label issues,
         pruning the data with label issues, and finally training `clf` on the remaining clean data.
 
         Parameters
         ----------
-        X : :obj:`np.array`
-          Input feature matrix (N, D), 2D numpy array
+        X : np.array
+          Input feature matrix of shape ``(N, ...)``, where N is the number of
+          examples. The classifier that this instance was initialized with,
+          `clf`, must be able to handle data with this shape.
 
-        labels : :obj:`np.array`
-          A discrete vector of noisy labels, i.e. some labels may be erroneous.
-          *Format requirements*: the labels must be in the set {0, 1, ..., num_classes-1}.
+        labels : np.array
+          An array of shape ``(N,)`` of noisy labels, i.e. some labels may be erroneous.
+          Elements must be in the set 0, 1, ..., K-1, where K is the number of classes.
 
-        pred_probs : :obj:`np.array` (shape (N, num_classes))
-          P(label=k|x) is a matrix with num_classes model-predicted probabilities.
-          Each row of this matrix corresponds to an example `x` and contains the model-predicted
-          probabilities that `x` belongs to each possible class.
-          The columns must be ordered such that these probabilities correspond to class 0,1,2,...
-          `pred_probs` should have been computed using 3 (or higher) fold cross-validation.
+        pred_probs : np.array, optional
+          An array of shape ``(N, K)`` of model-predicted probabilities,
+          ``P(label=k|x)``. Each row of this matrix corresponds
+          to an example `x` and contains the model-predicted probabilities that
+          `x` belongs to each possible class, for each of the K classes. The
+          columns must be ordered such that these probabilities correspond to
+          class 0, 1, ..., K-1. `pred_probs` should have been computed using 3 (or
+          higher) fold cross-validation.
 
           Note
           ----
-          If you are not sure, leave `pred_probs = None` (default) and it will be computed
-          for you using cross-validation with your model.
+          If you are not sure, leave ``pred_probs=None`` (the default) and it
+          will be computed for you using cross-validation with the model.
 
-        thresholds : :obj:`iterable` (list or np.array) of shape (num_classes, 1)  or (num_classes,)
-          P(label^=k|label=k). List of probabilities used to determine the cutoff
-          predicted probability necessary to consider an example as a given
-          class label.
-          Default is ``None``. These are computed for you automatically.
-          If an example has a predicted probability "greater" than
-          this threshold, it is counted as having true_label = k. This is
-          not used for pruning/filtering, only for estimating the noise rates using
-          confident counts. Values in list should be between 0 and 1.
+        thresholds : array_like, optional
+          An array of shape ``(K, 1)`` or ``(K,)`` of per-class threshold
+          probabilities, used to determine the cutoff probability necessary to
+          consider an example as a given class label (see `Northcutt et al.,
+          2021 <https://jair.org/index.php/jair/article/view/12125>`_, Section
+          3.1, Equation 2).
 
-        noise_matrix : :obj:`np.array` of shape (num_classes, num_classes)
-          A conditional probability matrix of the form P(label=k_s|true_label=k_y) containing
-          the fraction of examples in every class, labeled as every other class.
-          Assumes columns of noise_matrix sum to 1.
+          This is for advanced users only. If not specified, these are computed
+          for you automatically. If an example has a predicted probability
+          greater than this threshold, it is counted as having true_label =
+          k. This is not used for pruning/filtering, only for estimating the
+          noise rates using confident counts.
 
-        inverse_noise_matrix : :obj:`np.array` of shape (num_classes, num_classes)
-          A conditional probability matrix of the form P(true_label=k_y|label=k_s). Contains
-          the estimated fraction observed examples in each class k_s, that are
-          mislabeled examples from every other class k_y. If None, the
-          inverse_noise_matrix will be computed from pred_probs and labels.
-          Assumes columns of inverse_noise_matrix sum to 1.
+        noise_matrix : np.array, optional
+          An array of shape ``(N, N)`` representing the conditional probability
+          matrix ``P(label=k_s | true label=k_y)``, the
+          fraction of examples in every class, labeled as every other class.
+          Assumes columns of `noise_matrix` sum to 1.
 
-        label_issues_mask : np.array<bool>, default = None
+        inverse_noise_matrix : np.array, optional
+          An array of shape ``(N, N)`` representing the conditional probability
+          matrix ``P(true label=k_y | label=k_s)``,
+          the estimated fraction observed examples in each class ``k_s``
+          that are mislabeled examples from every other class ``k_y``,
+          Assumes columns of `inverse_noise_matrix` sum to 1.
+
+        label_issues_mask : np.array, optional
           A boolean mask for the entire dataset such as those returned by:
-          `CleanLearning.find_label_issues()` or `filter.find_label_issues()`.
-          If specified, examples corresponding to False entries will be pruned from the data before
-          training the `clf` model.
+          :py:meth:`CleanLearning.find_label_issues
+          <cleanlab.classification.CleanLearning.find_label_issues>` or
+          :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>`.
+          If specified, examples corresponding to ``False`` entries will be
+          pruned from the data before training the `clf` model.
           Providing this argument significantly reduces the time this method takes to run by
           skipping the slow cross validation training step necessary to pre-compute the boolean mask
-          of label issues
+          of label issues.
 
-        clf_kwargs : dict, default = {}
-          Optional keyword arguments to pass into `clf` fit() method.
+        clf_kwargs : dict, optional
+          Optional keyword arguments to pass into `clf`'s ``fit()`` method.
 
-        clf_final_kwargs : dict, default = {}
-          Optional extra keyword arguments to pass into the final `clf` fit() on the cleaned data
-          but not the `clf` fit() in each fold of cross-validation on the noisy data.
-          The final fit() will also receive `clf_kwargs`,
+        clf_final_kwargs : dict, optional
+          Optional extra keyword arguments to pass into the final `clf` ``fit()`` on the cleaned data
+          but not the `clf` ``fit()`` in each fold of cross-validation on the noisy data.
+          The final ``fit()`` will also receive `clf_kwargs`,
           but these may be overwritten by values in `clf_final_kwargs`.
-          This can be useful for training differently in the final fit()
+          This can be useful for training differently in the final ``fit()``
           than during cross-validation.
 
         Returns
         -------
         tuple
-          (label_issues_mask, sample_weight)"""
+          (`label_issues_mask`, `sample_weight`)
+        """
 
         clf_final_kwargs = {**clf_kwargs, **clf_final_kwargs}
         self.clf_final_kwargs = clf_final_kwargs
@@ -370,36 +405,36 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
 
         Parameters
         ----------
-        X : :obj:`np.array` of shape (n, m)
-          The test data as a feature matrix."""
+        X : np.array
+          An array of shape ``(N, ...)`` of test data."""
 
         return self.clf.predict(*args, **kwargs)
 
     def predict_proba(self, *args, **kwargs):
-        """Returns a vector of probabilities P(true_label=k)
-        for each example in X.
+        """Returns a vector of predicted probabilities for each example in X,
+        ``P(true label=k)``.
 
         Parameters
         ----------
-        X : :obj:`np.array` of shape (n, m)
-          The test data as a feature matrix."""
+        X : np.array
+          An array of shape ``(N, ...)`` of test data."""
 
         return self.clf.predict_proba(*args, **kwargs)
 
     def score(self, X, y, sample_weight=None):
-        """Returns the clf's score on a test set X with labels y.
-        Uses the model/clf's default scoring function.
+        """Returns the `clf`'s score on a test set `X` with labels `y`.
+        Uses the model's default scoring function.
 
         Parameters
         ----------
-        X : :obj:`np.array` of shape (n, m)
-          The test data as a feature matrix.
+        X : np.array
+          An array of shape ``(N, ...)`` of test data.
 
-        y : :obj:`np.array<int>` of shape (n,) or (n, 1)
-          The test classification labels as an array.
+        y : np.array
+          An array of shape ``(N,)`` or ``(N, 1)`` of test labels.
 
-        sample_weight : :obj:`np.array<float>` of shape (n,) or (n, 1)
-          Weights each example when computing the score / accuracy."""
+        sample_weight : np.array, optional
+          An array of shape ``(N,)`` or ``(N, 1)`` used to weight each example when computing the score."""
 
         if hasattr(self.clf, "score"):
 
@@ -426,27 +461,39 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         inverse_noise_matrix=None,
         clf_kwargs={},
     ):
-        """Runs cross-validation to get out-of-sample pred_probs from `clf`
-        and then calls `filter.find_label_issues(labels, pred_probs)` to find label issues.
-        The resulting label_issues_mask is saved in self.label_issues_mask and returned.
-        Kwargs for `filter.find_label_issues` must have already been specified
-        in the initialization of CleanLearning, not here.
+        """
+        Identifies potential label issues in the dataset using confident learning.
 
-        Unlike `filter.find_label_issues`, which requires `pred_probs`,
-        this method only requires a classifier and it can do the cross-validation training for you.
+        Runs cross-validation to get out-of-sample pred_probs from `clf`
+        and then calls :py:func:`filter.find_label_issues
+        <cleanlab.filter.find_label_issues>` to find label issues.
+        The resulting mask is cached internally and returned.
+        Kwargs for :py:func:`filter.find_label_issues
+        <cleanlab.filter.find_label_issues>` must have already been specified
+        in the initialization of this class, not here.
+
+        Unlike :py:func:`filter.find_label_issues
+        <cleanlab.filter.find_label_issues>`, which requires `pred_probs`,
+        this method only requires a classifier and it can do the cross-validation for you.
         Both methods return the same boolean mask that identifies which examples have label issues.
 
-        Note: This method computes the label issues from scratch, to access previously-computed
-        label issues from this CleanLearning instance, use `self.get_label_issues()`.
+        Note: this method computes the label issues from scratch. To access
+        previously-computed label issues from this :py:class:`CleanLearning
+        <cleanlab.classification.CleanLearning>` instance, use the
+        :py:meth:`get_label_issues
+        <cleanlab.classification.CleanLearning.get_label_issues>` method.
 
-        This is the method called to find label issues inside `CleanLearning.fit()`.
-        For descriptions of the arguments, see `CleanLearning.fit()` documentation.
+        This is the method called to find label issues inside
+        :py:meth:`CleanLearning.fit()
+        <cleanlab.classification.CleanLearning.fit>`. See there for
+        documentation for the arguments `pred_probs`, `thresholds`, etc.
 
         Returns
         -------
-        label_issues_mask : np.array<bool>
-          This method returns a boolean mask for the entire dataset where True represents
-          a label issue and False represents an example that is accurately labeled with high confidence.
+        label_issues_mask : np.array
+          A boolean mask for the entire dataset where ``True`` represents a
+          label issue and ``False`` represents an example that is accurately
+          labeled with high confidence.
         """
 
         if self.label_issues_mask is not None and self.verbose:
@@ -588,7 +635,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         return self.label_issues_mask
 
     def get_label_issues(self):
-        """Accessor. Returns `self.label_issues_mask` if previously already computed."""
+        """Accessor. Returns `label_issues_mask` if previously already computed."""
 
         if self.label_issues_mask is None:
             warnings.warn(
