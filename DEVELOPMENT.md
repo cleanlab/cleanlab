@@ -128,3 +128,5 @@ NumPy style are documented below:
   description. See, for example, the documentation for
   `cleanlab.classification.CleanLearning.fit()`.
 - **Optional arguments**: for the most part, just put `, optional` in the type.
+- **Multiple return types**: you can use "or" to separate types, e.g. `np.array
+  or None`.
