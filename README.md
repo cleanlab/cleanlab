@@ -150,7 +150,7 @@ Reproducing results in <a href="https://arxiv.org/abs/1911.00068">Confident Lear
 (<b>click to learn more</b>)
 </summary>
 
-For additional details, check out the [confidentlearning-reproduce repository](https://github.com/cgnorthcutt/confidentlearning-reproduce).
+For additional details, check out the: [confidentlearning-reproduce repository](https://github.com/cgnorthcutt/confidentlearning-reproduce).
 
 ### State of the Art Learning with Noisy Labels in CIFAR
 
@@ -178,6 +178,9 @@ Use `cleanlab` to identify \~50 label errors in the MNIST dataset: [examples/mni
 ![](https://raw.githubusercontent.com/cleanlab/assets/master/cleanlab/mnist_training_label_errors24_prune_by_noise_rate.png)
 
 Top 24 least-confident labels in the original MNIST **train** dataset, algorithmically identified via `cleanlab`. Examples are ordered left-right, top-down by increasing self-confidence (predicted probability that the **given** label is correct), denoted **conf** in teal. The most-likely correct label (with largest predicted probability) is in green. Overt label errors highlighted in red.
+</details>
+
+
 <details>
 `cleanlab` Performance across 4 Data Distributions and 9 Classifiers
 <details><summary>
