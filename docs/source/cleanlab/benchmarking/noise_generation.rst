@@ -1,7 +1,7 @@
 noise_generation
 ================
 
-.. automodule:: cleanlab.noise_generation
+.. automodule:: cleanlab.benchmarking.noise_generation
    :autosummary:
    :members:
    :undoc-members:

@@ -248,7 +248,7 @@ For additional details/notation, refer to [the Confident Learning paper](https:/
 
 ``` python
 # Generate a valid (necessary conditions for learnability are met) noise matrix for any trace > 1
-from cleanlab.noise_generation import generate_noise_matrix_from_trace
+from cleanlab.benchmarking.noise_generation import generate_noise_matrix_from_trace
 noise_matrix=generate_noise_matrix_from_trace(
     K=number_of_classes,
     trace=float_value_greater_than_1_and_leq_K,
@@ -257,7 +257,7 @@ noise_matrix=generate_noise_matrix_from_trace(
 )
 
 # Check if a noise matrix is valid (necessary conditions for learnability are met)
-from cleanlab.noise_generation import noise_matrix_is_valid
+from cleanlab.benchmarking.noise_generation import noise_matrix_is_valid
 is_valid=noise_matrix_is_valid(
     noise_matrix,
     prior_of_y_which_is_just_an_array_of_length_K,
@@ -268,7 +268,7 @@ For a given noise matrix, this example shows how to generate noisy labels. Metho
 
 ``` python
 # Generate noisy labels using the noise_marix. Guarantees exact amount of noise in labels.
-from cleanlab.noise_generation import generate_noisy_labels
+from cleanlab.benchmarking.noise_generation import generate_noisy_labels
 s_noisy_labels = generate_noisy_labels(y_hidden_actual_labels, noise_matrix)
 
 # This package is a full of other useful methods for learning with noisy labels.

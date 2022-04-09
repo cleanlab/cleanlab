@@ -16,8 +16,8 @@
 
 from cleanlab import count, filter
 from cleanlab.internal.latent_algebra import compute_inv_noise_matrix
-from cleanlab.noise_generation import generate_noise_matrix_from_trace
-from cleanlab.noise_generation import generate_noisy_labels
+from cleanlab.benchmarking.noise_generation import generate_noise_matrix_from_trace
+from cleanlab.benchmarking.noise_generation import generate_noisy_labels
 from cleanlab.internal.util import value_counts
 import numpy as np
 import scipy
