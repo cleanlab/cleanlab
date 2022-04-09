@@ -89,13 +89,10 @@ Examples of incorrect given labels in various image datasets [found and correcte
 
 ## Running `cleanlab`
 
-Get started [here](https://docs.cleanlab.ai/)!
-
-`cleanlab` can be run on Python 3.6+ and Linux, macOS, or Windows.
-
-Most users should install via `pip` or `conda` as described [here](https://docs.cleanlab.ai/).
-
-Developers who install bleeding-edge master branch version from `source` should refer to the corresponding [version of documentation](https://docs.cleanlab.ai/master/index.html).
+- Get started [here](https://docs.cleanlab.ai/)!
+- `cleanlab` can be run on Python 3.6+ and Linux, macOS, or Windows.
+- Most users should install via `pip` or `conda` as described [here](https://docs.cleanlab.ai/).
+- Developers who install bleeding-edge master branch version from `source` should refer to the corresponding [version of documentation](https://docs.cleanlab.ai/master/index.html).
 
 
 ## Use `cleanlab` with any model (Tensorflow, PyTorch, sklearn, xgboost, etc.)
@@ -223,6 +220,7 @@ observed dataset."
 ML research with <code>cleanlab</code> 
 (<b>click to learn more</b>)
 </summary>
+<br/>
 
 Researchers may find some components of this package useful for evaluating algorithms for ML with noisy labels.
 
@@ -233,9 +231,9 @@ Researchers may find some components of this package useful for evaluating algor
 3.  **cleanlab/noise\_generation.py** - Generate mathematically valid synthetic noise matrices.
 4.  **cleanlab/filter.py** - Finds the examples with label issues in a dataset.
 5.  **cleanlab/rank.py** - Rank every example in a dataset with various label quality scores.
+<!-- TODO: add datasets module -->
 
-Many methods have default parameters not covered here. Check out the
-method docstrings and our [full documentation](https://docs.cleanlab.ai/).
+Many methods have default parameters not covered here. Check out the [documentation for the master branch version](https://docs.cleanlab.ai/master/).
 
 For additional details/notation, refer to [the Confident Learning paper](https://jair.org/index.php/jair/article/view/12125).
 
@@ -339,9 +337,16 @@ joint = estimate_joint(
 )
 ```
 
-### PU learning with cleanlab:
+<br/>
+</details>
 
-Positive-Unlabeled learning (in which your data only contains a few positively labeled examples with the rest unlabeled) is just a special case of [CleanLearning](https://github.com/cleanlab/cleanlab/blob/master/cleanlab/classification.py#L106) when one of the classes has no error. `P` stands for the positive class and **is assumed to have zero label errors** and `U` stands for unlabeled data, but in practice, we just assume the `U` class is a noisy negative class that actually contains some positive examples. Thus, the goal of PU learning is to (1) estimate the proportion of negatively labeled examples that actually belong to the positive class (see`fraction\_noise\_in\_unlabeled\_class` in the last example), (2) find the errors (see last example), and (3) train on clean data (see first example below). `cleanlab` does all three, taking into account that there are no label errors in whichever class you specify as positive.
+<details><summary>
+Positive-Unlabeled learning with <code>cleanlab</code>
+(<b>click to learn more</b>)
+</summary>
+<br/>
+
+Positive-Unlabeled (PU) learning (in which your data only contains a few positively labeled examples with the rest unlabeled) is just a special case of [CleanLearning](https://github.com/cleanlab/cleanlab/blob/master/cleanlab/classification.py#L106) when one of the classes has no error. `P` stands for the positive class and **is assumed to have zero label errors** and `U` stands for unlabeled data, but in practice, we just assume the `U` class is a noisy negative class that actually contains some positive examples. Thus, the goal of PU learning is to (1) estimate the proportion of negatively labeled examples that actually belong to the positive class (see`fraction\_noise\_in\_unlabeled\_class` in the last example), (2) find the errors (see last example), and (3) train on clean data (see first example below). `cleanlab` does all three, taking into account that there are no label errors in whichever class you specify as positive.
 
 There are two ways to use `cleanlab` for PU learning. We'll look at each here.
 
