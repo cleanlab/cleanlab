@@ -81,9 +81,10 @@ Release notes for past versions are available [here](https://github.com/cleanlab
 2. **fast** - Implementations are optimized and parallelized across CPU threads (e.g. < 1 second to find label issues in ImageNet with pre-computed probabilities).
 3. **easy-to-use** - By default, `cleanlab` requires no hyper-parameters and can find label issues or train noise-robust models in one line of code.  
 4. **general** -  Works with any dataset and any model, e.g., Tensorflow, PyTorch, sklearn, xgboost, etc.
-
+<br/>
+<br/>
 ![](https://github.com/cleanlab/assets/blob/master/cleanlab/label-errors-examples.png)
-Examples of incorrect [given labels](https://l7.curtisnorthcutt.com/label-errors) in image datasets found and corrected using `cleanlab`.
+Examples of incorrect given labels in various image datasets [found and corrected](https://l7.curtisnorthcutt.com/label-errors) using `cleanlab`.
 
 
 ## Running `cleanlab`
