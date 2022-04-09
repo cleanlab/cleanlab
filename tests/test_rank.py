@@ -18,8 +18,8 @@ import numpy as np
 import pytest
 from cleanlab import rank
 from cleanlab.internal.label_quality_utils import _subtract_confident_thresholds
-from cleanlab.noise_generation import generate_noise_matrix_from_trace
-from cleanlab.noise_generation import generate_noisy_labels
+from cleanlab.benchmarking.noise_generation import generate_noise_matrix_from_trace
+from cleanlab.benchmarking.noise_generation import generate_noisy_labels
 from cleanlab import count
 
 

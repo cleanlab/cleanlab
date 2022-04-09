@@ -94,7 +94,7 @@ When the ``.fit()`` method is called, it automatically removes any examples iden
    cleanlab/filter
    cleanlab/rank
    cleanlab/count
-   cleanlab/noise_generation
+   cleanlab/benchmarking/index
    cleanlab/experimental/index
    cleanlab/internal/index
 
