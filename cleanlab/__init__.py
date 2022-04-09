@@ -4,4 +4,3 @@ from . import count
 from . import rank
 from . import filter
 from . import benchmarking
-from .internal import util
