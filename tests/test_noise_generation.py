@@ -171,29 +171,6 @@ def test_two_class_fraczero_high_valid():
     test_two_class_fraczero_high(True)
 
 
-def test_deprecated_warning(
-    verbose=False,
-    frac_zero_noise_rates=0,
-):
-    K = 3
-    with pytest.warns(DeprecationWarning):
-        nm = noise_generation.generate_noise_matrix(
-            K=K,
-            verbose=verbose,
-            frac_zero_noise_rates=frac_zero_noise_rates,
-        )
-    assert abs(nm.sum() - K) < 1e-4
-    assert all(abs(nm.sum(axis=0) - 1) < 1e-4)
-
-
-def test_deprecated_warning_verbose(verbose=True):
-    test_deprecated_warning(verbose)
-
-
-def test_deprecated_fraczero():
-    test_deprecated_warning(frac_zero_noise_rates=0.5)
-
-
 def test_gen_probs_sum_empty():
     f = noise_generation.generate_n_rand_probabilities_that_sum_to_m
     assert len(f(n=0, m=1)) == 0

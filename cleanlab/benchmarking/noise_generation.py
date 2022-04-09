@@ -16,9 +16,9 @@
 
 
 """
-Helper methods that are useful for benchmarking cleanlab’s core algorithms. 
+Helper methods that are useful for benchmarking cleanlab’s core algorithms.
 These methods introduce synthetic noise into the labels of a classification dataset.
-Specifically, provides methods for generating valid noise matrices (for which learning with noise is possible), 
+Specifically, provides methods for generating valid noise matrices (for which learning with noise is possible),
 generating noisy labels given a noise matrix, generating valid noise matrices with a specific trace value, and more.
 """
 
@@ -463,87 +463,3 @@ def randomly_distribute_N_balls_into_K_bins(
         while sum(arr) < N:
             arr[np.argmin(arr)] += 1
     return arr.astype(int)
-
-
-# Deprecated functions below
-
-
-def generate_noise_matrix(
-    K,
-    *,
-    max_noise_rate=1.0,
-    frac_zero_noise_rates=0.0,
-    verbose=False,
-):
-    """DEPRECATED - Use generate_noise_matrix_from_trace()
-
-    Generates a noise matrix by randomly assigning noise rates
-    up to max_noise_rate, then setting noise rates to
-    zero until P(label!=k|label=k) < 1 is satisfied. Additionally,
-    frac_zero_noise_rates are set to zero.
-
-    Parameters
-    ----------
-
-    K : int
-      Creates a noise matrix of shape (K, K). Implies there are
-      K classes for learning with noisy labels.
-
-    max_noise_rate : float
-      Smaller ---> easier learning problem (less noise)
-
-    frac_zero_noise_rates : float
-      Make problem more tractable by making a fraction of noise rates zero.
-      Larger --> Easier learning problem
-
-    verbose : bool
-      Print debugging output if set to True."""
-
-    warnings.warn(
-        "This method is deprecated. Use 'generate_noise_matrix_from_trace' " "instead.",
-        DeprecationWarning,
-    )
-
-    # Init noise matrix to be random values from (0, max_noise_rate)
-    # P(label=k|true_label=k')
-    noise_matrix = np.random.rand(K, K) * max_noise_rate
-
-    # Round all noise rates
-    noise_matrix = noise_matrix.round(2)
-
-    # Initialize all P(label=k|true_label=k) = 0
-    for i in range(K):
-        noise_matrix[i][i] = 0.0
-
-    # Compute sum for each column
-    col_sum = noise_matrix.sum(axis=0)
-
-    # For each column, randomly set noise rates to zero until P(label!=k|label=k) < 1.
-    for y in range(K):  # col
-        col = noise_matrix.T[y]
-        col_sum = np.sum(col)
-        while col_sum >= 1:
-            non_zero_indices = np.arange(K)[col != 0]
-            s = np.random.choice(non_zero_indices)
-            noise_matrix[s][y] = 0.0
-            col = noise_matrix.T[y]
-            col_sum = np.sum(col)
-
-    # Set frac_zero_noise_rates of the noise rates to 0 for increased
-    # tractability.
-    for s in range(K):
-        for y in range(K):
-            if np.random.rand() < frac_zero_noise_rates:
-                noise_matrix[s][y] = 0
-
-    # Compute sum for each column
-    col_sum = noise_matrix.sum(axis=0)
-
-    # Normalize each column such that P(label=k|true_label=k) = 1 - P(label!=k|label=k)
-    for i in range(K):
-        noise_matrix[i][i] = 1 - col_sum[i]
-
-    if verbose:
-        print("Average trace of noise matrix is", np.trace(noise_matrix) / float(K))
-
-    return noise_matrix
