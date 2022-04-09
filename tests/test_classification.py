@@ -24,8 +24,8 @@ import scipy
 import pytest
 import numpy as np
 from cleanlab.classification import CleanLearning
-from cleanlab.noise_generation import generate_noise_matrix_from_trace
-from cleanlab.noise_generation import generate_noisy_labels
+from cleanlab.benchmarking.noise_generation import generate_noise_matrix_from_trace
+from cleanlab.benchmarking.noise_generation import generate_noisy_labels
 from cleanlab.internal.latent_algebra import compute_inv_noise_matrix
 from cleanlab.count import compute_confident_joint, estimate_cv_predicted_probabilities
 

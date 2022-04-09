@@ -2,7 +2,7 @@
 # coding: utf-8
 
 import numpy as np
-from cleanlab import noise_generation
+from cleanlab.benchmarking import noise_generation
 import pytest
 
 seed = 0
