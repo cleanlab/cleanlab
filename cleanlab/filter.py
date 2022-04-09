@@ -282,6 +282,8 @@ def find_label_issues(
     verbose=False,
 ):
     """
+    Identifies potential label issues in the dataset using confident learning.
+
     Returns a boolean mask for the entire dataset where ``True`` represents
     a label issue and ``False`` represents an example that is confidently/accurately labeled.
 

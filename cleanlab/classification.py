@@ -462,6 +462,8 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         clf_kwargs={},
     ):
         """
+        Identifies potential label issues in the dataset using confident learning.
+
         Runs cross-validation to get out-of-sample pred_probs from `clf`
         and then calls :py:func:`filter.find_label_issues
         <cleanlab.filter.find_label_issues>` to find label issues.
