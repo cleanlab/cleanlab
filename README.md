@@ -23,11 +23,11 @@ Check out the: [documentation](https://docs.cleanlab.ai/), [examples](https://gi
 <!-- TODO:update links to v2.0 docs -->
 
 
-[![pypi](https://img.shields.io/pypi/v/cleanlab.svg)](https://pypi.org/pypi/cleanlab/) 
-[![os](https://img.shields.io/badge/platform-windows%20%7C%20macos%20%7C%20linux-lightgrey)](https://pypi.org/pypi/cleanlab/) 
-[![py\_versions](https://img.shields.io/badge/python-3.6%2B-blue)](https://pypi.org/pypi/cleanlab/) 
-[![build\_status](https://github.com/cleanlab/cleanlab/workflows/CI/badge.svg)](https://github.com/cleanlab/cleanlab/actions?query=workflow%3ACI) 
-[![coverage](https://codecov.io/gh/cleanlab/cleanlab/branch/master/graph/badge.svg)](https://app.codecov.io/gh/cleanlab/cleanlab) 
+[![pypi](https://img.shields.io/pypi/v/cleanlab.svg)](https://pypi.org/pypi/cleanlab/)
+[![os](https://img.shields.io/badge/platform-windows%20%7C%20macos%20%7C%20linux-lightgrey)](https://pypi.org/pypi/cleanlab/)
+[![py\_versions](https://img.shields.io/badge/python-3.6%2B-blue)](https://pypi.org/pypi/cleanlab/)
+[![build\_status](https://github.com/cleanlab/cleanlab/workflows/CI/badge.svg)](https://github.com/cleanlab/cleanlab/actions?query=workflow%3ACI)
+[![coverage](https://codecov.io/gh/cleanlab/cleanlab/branch/master/graph/badge.svg)](https://app.codecov.io/gh/cleanlab/cleanlab)
 [![Twitter](https://img.shields.io/twitter/follow/CleanlabAI?style=social)](https://twitter.com/CleanlabAI)
 
 -----
@@ -72,10 +72,10 @@ Release notes for past versions are available [here](https://github.com/cleanlab
 
 `cleanlab` `clean`s your data's `lab`els via state-of-the-art **confident learning** algorithms, published in this [paper](https://jair.org/index.php/jair/article/view/12125) & [blog](https://l7.curtisnorthcutt.com/confident-learning). See datasets cleaned with `cleanlab` at [labelerrors.com](https://labelerrors.com). This package helps you find all of the label issues lurking in your data and train more reliable ML models.
 
-`cleanlab` is: 
+`cleanlab` is:
 1. **backed-by-theory** - Has [provable guarantees](https://arxiv.org/abs/1911.00068) of exact noise estimation and label error finding in realistic cases where models make imperfect predictions.
 2. **fast** - Implementations are optimized and parallelized across CPU threads (e.g. < 1 second to find label issues in ImageNet with pre-computed probabilities).
-3. **easy-to-use** - By default, `cleanlab` requires no hyper-parameters and can find label issues or train noise-robust models in one line of code.  
+3. **easy-to-use** - By default, `cleanlab` requires no hyper-parameters and can find label issues or train noise-robust models in one line of code.
 4. **general** -  Works with any dataset and any model, e.g., Tensorflow, PyTorch, sklearn, xgboost, etc.
 <br/>
 
@@ -93,15 +93,15 @@ Examples of incorrect given labels in various image datasets [found and correcte
 
 ## Use `cleanlab` with any model (Tensorflow, PyTorch, sklearn, xgboost, etc.)
 
-All of the features of the `cleanlab` package work with **any model**. Yes, any model. Feel free to use scikit-learn, PyTorch, Tensorflow, Keras, JAX, HuggingFace, MXNet, XGBoost, etc. 
-If you use a sklearn-compatible classifier, all `cleanlab` methods will work out-of-the-box. 
+All of the features of the `cleanlab` package work with **any model**. Yes, any model. Feel free to use scikit-learn, PyTorch, Tensorflow, Keras, JAX, HuggingFace, MXNet, XGBoost, etc.
+If you use a sklearn-compatible classifier, all `cleanlab` methods will work out-of-the-box.
 
 <details><summary>
 It’s also easy to use your favorite non-sklearn-compatible model (<b>click to learn more</b>)
 </summary>
 <br/>
 
-There's nothing you need to do if your model already has `.fit()`, `.predict()`, and `.predict_proba()` methods. 
+There's nothing you need to do if your model already has `.fit()`, `.predict()`, and `.predict_proba()` methods.
 Otherwise just wrap your custom model into a Python class that inherits the `sklearn.base.BaseEstimator`:
 
 ``` python
@@ -119,7 +119,7 @@ class YourFavoriteModel(BaseEstimator): # Inherits sklearn base classifier
         pass
 ```
 
-This inheritance allows to apply a wide range of sklearn functionality like hyperparameter-optimization to your custom model. 
+This inheritance allows to apply a wide range of sklearn functionality like hyperparameter-optimization to your custom model.
 Now you can use your model with every method in `cleanlab`. Here's one example:
 
 ``` python
@@ -142,7 +142,7 @@ Note, some libraries exist to give you sklearn-compability for free. For PyTorch
 ## Cool `cleanlab` applications
 
 <details><summary>
-Reproducing results in <a href="https://arxiv.org/abs/1911.00068">Confident Learning paper</a> 
+Reproducing results in <a href="https://arxiv.org/abs/1911.00068">Confident Learning paper</a>
 (<b>click to learn more</b>)
 </summary>
 <br/>
@@ -181,7 +181,7 @@ Top 24 least-confident labels in the original MNIST **train** dataset, algorithm
 
 
 <details><summary>
-<code>cleanlab</code> performance across 4 data distributions and 9 classifiers 
+<code>cleanlab</code> performance across 4 data distributions and 9 classifiers
 (<b>click to learn more</b>)
 </summary>
 <br/>
@@ -213,7 +213,7 @@ observed dataset."
 </details>
 
 <details><summary>
-ML research with <code>cleanlab</code> 
+ML research with <code>cleanlab</code>
 (<b>click to learn more</b>)
 </summary>
 <br/>
