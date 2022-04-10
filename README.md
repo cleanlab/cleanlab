@@ -402,11 +402,11 @@ Now that you have `indices_of_label_errors`, you can remove those label issues a
 <br/>
 </details>
 
-## Citation and Related Publications
+## Citation and related publications
 
-cleanlab isn't just a github, it's based on peer-reviewed research. Here are the relevant papers to cite if you use this package:
+cleanlab is based on peer-reviewed research. Here are the relevant papers to cite if you use this package:
 
-The [confident learning paper](https://arxiv.org/abs/1911.00068):
+<details><summary><a href="https://arxiv.org/abs/1911.00068">Confident Learning (JAIR '21)</a> (<b>click to show bibtex</b>) </summary>
 
     @article{northcutt2021confidentlearning,
         title={Confident Learning: Estimating Uncertainty in Dataset Labels},
@@ -417,7 +417,9 @@ The [confident learning paper](https://arxiv.org/abs/1911.00068):
         year={2021}
     }
 
-If you use this package for binary classification or PU learning, please also cite the [rankpruning paper](https://arxiv.org/abs/1705.01936):
+</details>
+
+<details><summary><a href="https://arxiv.org/abs/1705.01936">Rank Pruning (UAI '17)</a> (<b>click to show bibtex</b>) </summary>
 
     @inproceedings{northcutt2017rankpruning,
         author={Northcutt, Curtis G. and Wu, Tailin and Chuang, Isaac L.},
@@ -431,13 +433,15 @@ If you use this package for binary classification or PU learning, please also ci
         publisher = {AUAI Press},
     }
 
-## Other Resources
+</details>
+
+## Other resources
 
   - [Blog post: Introduction to Confident Learning](https://l7.curtisnorthcutt.com/confident-learning)
   - [NeurIPS 2021 paper: Pervasive Label Errors in Test Sets Destabilize Machine Learning Benchmarks](https://arxiv.org/abs/2103.14749)
   - [Cleanlab Blog](https://cleanlab.ai/blog/)
 
-## Join our Community
+## Join our community
 
 Have ideas for the future of cleanlab? How are you using cleanlab? [Join the discussion](https://github.com/cleanlab/cleanlab/discussions) or [our Slack community](https://join.slack.com/t/cleanlab-community/shared_invite/zt-wpi8ocuf-O87JiSAvuvguytAUBiEwNQ).
 
