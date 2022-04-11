@@ -16,9 +16,7 @@
 
 
 """
-Supports dataset-level and class-level automated quality, including finding which classes should
-be merged with other classes in your dataset, which classes should be removed,
-and which classes tend to be annotated most/least correctly overall.
+Provides dataset-level and class-level overviews of issues in your dataset. If your task allows you to modify the classes in your dataset, this module can help you determine which classes to remove (see :py:func:`rank_classes_by_label_quality <cleanlab.dataset.rank_classes_by_label_quality>`) and which classes to merge (see :py:func:`find_overlapping_classes <cleanlab.dataset.find_overlapping_classes>`).
 """
 
 import numpy as np
@@ -36,9 +34,10 @@ def rank_classes_by_label_quality(
     confident_joint=None,
     multi_label=False,
 ):
-    """Returns a Pandas DataFrame with all classes and three overall class label quality scores
-     (details about each score are listed in the Returns parameter). By default, classes are ordered
-     by "Overall Label Noise Score" descending.
+    """
+    Returns a Pandas DataFrame with all classes and three overall class label quality scores
+    (details about each score are listed in the Returns parameter). By default, classes are ordered
+    by "Label Quality Score", ascending, so the most problematic classes are reported first.
 
     Score values are unnormalized and may tend to be very small. What matters is their relative
     ranking across the classes.
@@ -48,20 +47,22 @@ def rank_classes_by_label_quality(
     Returns
     -------
     pd.DataFrame
-        A Pandas DataFrame with cols "Class Index", "Overall Label Issues", "Inverse Label Issues",
-        "Overall Label Issues", "Inverse Label Noise Score", "Overall Label Quality Score" and a
-        description of each below. Noise scores are between 0 and 1, where 0 implies no label issues
-        in the class. The "Overall Label Quality Score" is also between 0 and 1 where 1 implies
+        A Pandas DataFrame with cols "Class Index", "Label Issues", "Inverse Label Issues",
+        "Label Issues", "Inverse Label Noise", "Label Quality Score",
+        with a description of each of these columns below.
+        The length of the DataFrame is ``num_classes`` (one row per class).
+        Noise scores are between 0 and 1, where 0 implies no label issues
+        in the class. The "Label Quality Score" is also between 0 and 1 where 1 implies
         perfect quality. Columns:
 
         * *Class Index*: The index of the class in 0, 1, ..., K-1.
-        * *Overall Label Issues*: ``count(given_label = k, true_label != k)``, estimated number of label issues in the class (usually the most accurate method).
+        * *Label Issues*: ``count(given_label = k, true_label != k)``, estimated number of label issues in the class (usually the most accurate method).
         * *Inverse Label Issues*: ``count(given_label != k, true_label = k)``, estimated number of times this class occurs in other classes in the dataset.
-        * *Overall Label Noise Score*: ``prob(true_label != k | given_label = k)``, estimated proportion of label issues in the class.
-        * *Inverse Label Noise Score*: ``prob(given_label != k | true_label = k)``, estimated proportion of times this class label occurs in other classes in the dataset.
-        * *Overall Label Quality Score*: ``p(given_label = k | true_label = k)``, how accurate the labels are in each class as a conditional prob ``p(given=k | true=k)``.
+        * *Label Noise*: ``prob(true_label != k | given_label = k)``, estimated proportion of label issues in the class. This is computed by taking the number of "Label Issues" in each class and dividing it by the total number of examples in each class.
+        * *Inverse Label Noise*: ``prob(given_label != k | true_label = k)``, estimated proportion of times this class label occurs in other classes in the dataset.
+        * *Label Quality Score*: ``p(true_label = k | given_label = k)``. This is the proportion of examples in the class that are labeled correctly, i.e. ``1 - label_noise``.
 
-        By default, the DataFrame is ordered by "Overall Label Noise Score" descending.
+        By default, the DataFrame is ordered by "Label Quality Score", ascending.
     """
 
     if joint is None:
@@ -80,17 +81,17 @@ def rank_classes_by_label_quality(
     df = pd.DataFrame(
         {
             "Class Index": np.arange(len(joint)),
-            "Overall Label Issues": (given_label_noise * num_examples).round().astype(int),
+            "Label Issues": (given_label_noise * num_examples).round().astype(int),
             "Inverse Label Issues": (true_label_noise * num_examples).round().astype(int),
-            "Overall Label Noise Score": given_conditional_noise,  # p(y!=k | s=k)
-            "Inverse Label Noise Score": true_conditional_noise,  # p(s!=k | y=k)
+            "Label Noise": given_conditional_noise,  # p(y!=k | s=k)
+            "Inverse Label Noise": true_conditional_noise,  # p(s!=k | y=k)
             # Below could equivalently be computed as: joint.diagonal() / joint.sum(axis=1)
-            "Overall Label Quality Score": 1 - given_conditional_noise,  # p(y=k | s=k)
+            "Label Quality Score": 1 - given_conditional_noise,  # p(y=k | s=k)
         }
     )
     if class_names is not None:
         df.insert(loc=0, column="Class Name", value=class_names)
-    return df.sort_values(by="Overall Label Noise Score", ascending=False)
+    return df.sort_values(by="Label Quality Score", ascending=True)
 
 
 def find_overlapping_classes(
@@ -187,6 +188,7 @@ def find_overlapping_classes(
     pd.DataFrame
         A Pandas DataFrame with columns "Class Index A", "Class Index B",
         "Num Overlapping Examples", "Joint Probability" and a description of each below.
+        Each row corresponds to a pair of classes.
 
         * *Class Index A*: the index of a class in 0, 1, ..., K-1.
         * *Class Index B*: the index of a different class (from Class A) in 0, 1, ..., K-1.
@@ -254,8 +256,8 @@ def overall_label_health_score(
     multi_label=False,
     verbose=True,
 ):
-    """Returns a single score/metric between 0 and 1 for the quality of all labels in a dataset.
-    Intuitively, the score is the average label consistency across all classes in the
+    """Returns a single score/metric between 0 and 1 for the overall quality of all labels in a dataset.
+    Intuitively, the score is the average correctness of the given labels across all classes in the
     dataset. So a score of 1 suggests your data is perfectly labeled and a score of 0.5 suggests
     that, on average across all classes, about half of the label may have issues. Thus, a higher
     score implies higher quality labels, with 1 implying labels that have no issues.
@@ -283,7 +285,7 @@ def overall_label_health_score(
         num_issues = (num_examples * (1 - joint_trace)).round().astype(int)
         print(
             f" * Overall, about {1 - joint_trace:.0%} ({num_issues:,} of the {num_examples:,}) "
-            f"labels in your dataset have issues.\n"
+            f"labels in your dataset potentially have issues.\n"
             f" ** The overall label health score for this dataset is: {joint_trace:.2f}."
         )
     return joint_trace
@@ -310,9 +312,13 @@ def health_summary(
 
     Returns
     -------
-    health_score : float
-        A score between 0 and 1, where 1 implies the dataset has all estimated perfect labels.
-        A score of 0.5 implies that, on average, half of the dataset's label have possible issues.
+    dict
+        A dictionary containing keys:
+
+        - ``"health_score"``, corresponding to :py:func:`overall_label_health_score <cleanlab.dataset.overall_label_health_score>`
+        - ``"joint"``, corresponding to :py:func:`estimate_joint <cleanlab.count.estimate_joint>`
+        - ``"classes_by_label_quality"``, corresponding to :py:func:`rank_classes_by_label_quality <cleanlab.dataset.rank_classes_by_label_quality>`
+        - ``"overlapping_classes"``, corresponding to :py:func:`find_overlapping_classes <cleanlab.dataset.find_overlapping_classes>`
     """
 
     if joint is None:
@@ -348,7 +354,7 @@ def health_summary(
     print("-" * 60, "\n", flush=True)
     print(df_class_label_quality)
 
-    df_class_label_quality = find_overlapping_classes(
+    df_overlapping_classes = find_overlapping_classes(
         labels=labels,
         pred_probs=pred_probs,
         asymmetric=asymmetric,
@@ -365,11 +371,16 @@ def health_summary(
         + "\n",
         flush=True,
     )
-    print(df_class_label_quality)
+    print(df_overlapping_classes)
     print()
     health_score = overall_label_health_score(labels=labels, pred_probs=pred_probs, verbose=True)
     print("\nGenerated with <3 from Cleanlab.")
-    return health_score
+    return {
+        "health_score": health_score,
+        "joint": estimate_joint,
+        "classes_by_label_quality": df_class_label_quality,
+        "overlapping_classes": df_overlapping_classes,
+    }
 
 
 def _get_num_examples(labels=None):
