@@ -14,15 +14,9 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
-
-"""Filter (previously in Cleanlab 1.0, this module was called Pruning)
-
-Contains methods for estimating the latent indices of all label issues.
-This code uses advanced multiprocessing to speed up computation.
-see: https://research.wmz.ninja/articles/2018/03/ (link continued below)
-on-sharing-large-arrays-when-using-pythons-multiprocessing.html
 """
-
+Methods to identify which examples have label issues.
+"""
 
 from sklearn.metrics import confusion_matrix
 from sklearn.preprocessing import MultiLabelBinarizer
@@ -235,7 +229,7 @@ def _self_confidence(args, _pred_probs):  # pragma: no cover
     return np.mean(_pred_probs[idx, l])
 
 
-def multiclass_crossval_predict(labels, pyx):
+def _multiclass_crossval_predict(labels, pyx):
     """Returns a numpy 2D array of one-hot encoded
     multiclass predictions. Each row in the array
     provides the predictions for a particular example.
@@ -285,129 +279,130 @@ def find_label_issues(
     num_to_remove_per_class=None,
     min_examples_per_class=1,
     n_jobs=None,
-    verbose=0,
+    verbose=False,
 ):
-    """By default, this method returns a boolean mask for the entire dataset where True represents
-    a label issue and False represents an example that is confidently/accurately labeled.
+    """
+    Identifies potential label issues in the dataset using confident learning.
 
-    You can return ONLY the indices of the label issues in your dataset, by setting
-    `return_indices_ranked_by` to a string value specifying which label quality score to order the label issues
-    (and corresponding indices) by.
+    Returns a boolean mask for the entire dataset where ``True`` represents
+    a label issue and ``False`` represents an example that is confidently/accurately labeled.
 
-    The number of indices returned is controlled by `frac_noise`, reduce its value to identify fewer label issues.
-    Tip: If you encounter the error 'pred_probs is not defined', try setting `n_jobs = 1`.
+    Instead of a mask, you can obtain *indices* of the label issues in your
+    dataset by setting `return_indices_ranked_by` to specify the label quality
+    score used to order the label issues.
 
-    WARNING! is a matrix with K model-predicted probabilities and num_to_remove_per_class parameters
-    are only supported when filter_by is either 'prune_by_noise_rate', 'prune_by_class', or 'both'.
-    They are not supported for methods 'confident_learning' or 'predicted_neq_given'. TODO.
+    The number of indices returned is controlled by `frac_noise`: reduce its
+    value to identify fewer label issues.
+
+    Tip: if you encounter the error "pred_probs is not defined", try setting
+    ``n_jobs=1``.
 
     Parameters
     ----------
 
     labels : np.array
       A discrete vector of noisy labels, i.e. some labels may be erroneous.
-      *Format requirements*: for dataset with K classes, labels must be in {0,1,...,K-1}.
+      *Format requirements*: for dataset with K classes, labels must be in 0, 1, ..., K-1.
 
-    pred_probs : np.array (shape (N, K))
-      P(label=k|x) is a matrix with K model-predicted probabilities.
-      Each row of this matrix corresponds to an example x and contains the model-predicted
-      probabilities that x belongs to each possible class.
-      The columns must be ordered such that these probabilities correspond to class 0,1,2,...
+    pred_probs : np.array, optional
+      An array of shape ``(N, K)`` of model-predicted probabilities,
+      ``P(label=k|x)``. Each row of this matrix corresponds
+      to an example `x` and contains the model-predicted probabilities that
+      `x` belongs to each possible class, for each of the K classes. The
+      columns must be ordered such that these probabilities correspond to
+      class 0, 1, ..., K-1.
 
-      CAUTION: `pred_probs` from your model must be out-of-sample!
+      **Caution**: `pred_probs` from your model must be out-of-sample!
       You should never provide predictions on the same examples used to train the model,
       as these will be overfit and unsuitable for finding label-errors.
-      To obtain out-of-sample predicted probabilities for every datapoint in your dataset, you can use cross-validation.
+      To obtain out-of-sample predicted probabilities for every datapoint in your dataset, you can use :ref:`cross-validation <pred_probs_cross_val>`.
       Alternatively it is ok if your model was trained on a separate dataset and you are only evaluating
-      labels in data that was previously held-out.
+      data that was previously held-out.
 
-    confident_joint : np.array (shape (K, K), type int), default = None
-      A K x K integer matrix used for identifying label issues, which
-      estimates a confident subset of the joint distribution of the noisy and true labels, P_{noisy_label,true_label}.
-      Entry (j,k) in the matrix is the number of examples confidently counted into the pair of (noisy_label=j, true_label=k) classes.
-      The `confident joint` can be computed using `count.compute_confident_joint`.
-      If None, it is computed from the given (noisy) `labels` and `pred_probs`.
+    confident_joint : np.array, optional
+      An array of shape ``(K, K)`` representing the confident joint, the matrix used for identifying label issues, which
+      estimates a confident subset of the joint distribution of the noisy and true labels, ``P_{noisy label, true label}``.
+      Entry ``(j, k)`` in the matrix is the number of examples confidently counted into the pair of ``(noisy label=j, true label=k)`` classes.
+      The `confident_joint` can be computed using :py:func:`count.compute_confident_joint <cleanlab.count.compute_confident_joint>`.
+      If not provided, it is computed from the given (noisy) `labels` and `pred_probs`.
 
-    filter_by : str, default: 'prune_by_noise_rate'
-      Possible Values: {'prune_by_class', 'prune_by_noise_rate', 'both',
-                        'confident_learning', 'predicted_neq_given'}
-      Method used for filtering/pruning out the label issues.
-      1. 'prune_by_noise_rate': works by removing examples with
-      *high probability* of being mislabeled for every non-diagonal in the confident joint
-      (see `prune_counts_matrix` in `filter.py`). These are the examples where (with high
-      confidence) the given label is unlikely to match the predicted label for the example.
-      2. 'prune_by_class': works by removing the examples with *smallest
-      probability* of belonging to their given class label for every class.
-      3. 'both': Removes only the examples that would be filtered by both (1) AND (2).
-      4. 'confident_learning': Returns the examples in the off-diagonals of the confident joint.
-      These are the examples that are confidently predicted to be a different label than their
-      given label.
-      5. 'predicted_neq_given': Find examples where the predicted class
-      (i.e. argmax of the predicted probabilities) does not match the given label.
+    filter_by : {'prune_by_class', 'prune_by_noise_rate', 'both', 'confident_learning', 'predicted_neq_given'}, default='prune_by_noise_rate'
 
-    return_indices_ranked_by : {:obj:`None`, :obj:`self_confidence`, :obj:`normalized_margin`, :obj:`confidence_weighted_entropy`}, default = None
-      If None, returns a boolean mask (true if example at index is label error)
-      If not None, returns an array of the label error indices
-      (instead of a bool mask) where error indices are ordered by the either:
-      ``'normalized_margin' := normalized margin (p(label = k) - max(p(label != k)))``
-      ``'self_confidence' := [pred_probs[i][labels[i]] for i in label_issues_idx]``
-      ``'confidence_weighted_entropy' := entropy(pred_probs) / self_confidence``
+      Method used for filtering/pruning out the label issues:
 
-    rank_by_kwargs : dict, default = {}
-      Optional keyword arguments to pass into scoring functions for ranking by label quality score
-      (see: `get_label_quality_scores()` in cleanlab/rank.py).
-      Accepted args include: `adjust_pred_probs` (bool, default = False)
+      - ``'prune_by_noise_rate'``: works by removing examples with *high probability* of being mislabeled for every non-diagonal in the confident joint (see `prune_counts_matrix` in `filter.py`). These are the examples where (with high confidence) the given label is unlikely to match the predicted label for the example.
+      - ``'prune_by_class'``: works by removing the examples with *smallest probability* of belonging to their given class label for every class.
+      - ``'both'``: Removes only the examples that would be filtered by both ``'prune_by_noise_rate'`` and ``'prune_by_class'``.
+      - ``'confident_learning'``: Returns the examples in the off-diagonals of the confident joint. These are the examples that are confidently predicted to be a different label than their given label.
+      - ``'predicted_neq_given'``: Find examples where the predicted class (i.e. argmax of the predicted probabilities) does not match the given label.
 
-    multi_label : bool, default = False
-      If true, labels should be an iterable (e.g. list) of iterables, containing a
+    return_indices_ranked_by : {None, 'self_confidence', 'normalized_margin', 'confidence_weighted_entropy'}, default=None
+      If ``None``, returns a boolean mask (``True`` if example at index is label error).
+      If not ``None``, returns an array of the label error indices
+      (instead of a boolean mask) where error indices are ordered:
+
+      - ``'normalized_margin'``: ``normalized margin (p(label = k) - max(p(label != k)))``
+      - ``'self_confidence'``: ``[pred_probs[i][labels[i]] for i in label_issues_idx]``
+      - ``'confidence_weighted_entropy'``: ``entropy(pred_probs) / self_confidence``
+
+    rank_by_kwargs : dict, optional
+      Optional keyword arguments to pass into scoring functions for ranking by
+      label quality score (see :py:func:`rank.get_label_quality_scores
+      <cleanlab.rank.get_label_quality_scores>`).
+
+    multi_label : bool, optional
+      If ``True``, labels should be an iterable (e.g. list) of iterables, containing a
       list of labels for each example, instead of just a single label.
       The multi-label setting supports classification tasks where an example has 1 or more labels.
-      Example of a multi-labeled `labels` input: [[0,1], [1], [0,2], [0,1,2], [0], [1], ...]
+      Example of a multi-labeled `labels` input: ``[[0,1], [1], [0,2], [0,1,2], [0], [1], ...]``.
 
-    frac_noise : float, default 1.0
-      When frac_noise = 1.0, return all "confident" estimated noise indices.
-      Value in range (0, 1] that determines the fraction of noisy example
+    frac_noise : float, default=1.0
+      When ``frac_noise=1.0``, return all "confident" estimated noise indices.
+      Value in range ``[0, 1)`` determine the fraction of noisy example
       indices to return based on the following formula for example class k.
-      frac_noise * number_of_mislabeled_examples_in_class_k, or equivalently
-      frac_noise * inverse_noise_rate_class_k * num_examples_with_s_equal_k
+      frac_noise * number_of_mislabeled_examples_in_class_k.
 
-    num_to_remove_per_class : list of int of length K (# of classes)
-      e.g. if K = 3, num_to_remove_per_class = [5, 0, 1] would return
-      the indices of the 5 most likely mislabeled examples in class labels = 0,
-      and the most likely mislabeled example in class labels = 1.
+    num_to_remove_per_class : array_like
+      An iterable of length K, the number of classes.
+      E.g. if K = 3, ``num_to_remove_per_class=[5, 0, 1]`` would return
+      the indices of the 5 most likely mislabeled examples in class 0,
+      and the most likely mislabeled example in class 2.
 
       Note
       ----
-      Only set this parameter if ``filter_by == 'prune_by_class'``
-      You may use with ``filter_by == 'prune_by_noise_rate'``, but
-      if ``num_to_remove_per_class == k``, then either k-1, k, or k+1
-      examples may be removed for any class. This is because noise rates
-      are floats, and rounding may cause a one-off. If you need exactly
-      'k' examples removed from every class, you should use ``'prune_by_class'``
+      Only set this parameter if ``filter_by='prune_by_class'``.
+      You may use with ``filter_by='prune_by_noise_rate'``, but
+      if ``num_to_remove_per_class=k``, then either k-1, k, or k+1
+      examples may be removed for any class due to rounding error. If you need
+      exactly 'k' examples removed from every class, you should use
+      ``filter_by='prune_by_class'``.
 
-    min_examples_per_class : int, default = 1
+    min_examples_per_class : int, default=1
       Minimum number of examples per class to avoid flagging as label issues.
       This is useful to avoid deleting too much data from one class
       when pruning noisy examples in datasets with rare classes.
 
-    n_jobs : int (Windows users may see a speed-up with n_jobs = 1)
-      Number of processing threads used by multiprocessing. Default None
-      sets to the number of processing threads on your CPU.
-      Set this to 1 to REMOVE parallel processing (if its causing issues).
+    n_jobs : optional
+      Number of processing threads used by multiprocessing. Default ``None``
+      sets to the number of cores on your CPU.
+      Set this to 1 to *disable* parallel processing (if its causing issues).
+      Windows users may see a speed-up with ``n_jobs=1``.
 
-    verbose : int, default = 0
-      If 0, no print statements. If 1, prints when multiprocessing happens.
+    verbose : optional
+      If ``True``, prints when multiprocessing happens.
 
     Returns
     -------
-    label_issues_mask : np.array<bool>
-      This method returns a boolean mask for the entire dataset where True represents
-      a label issue and False represents an example that is accurately labeled with high confidence.
+    label_issues : np.array
+      A boolean mask for the entire dataset where ``True`` represents a
+      label issue and ``False`` represents an example that is accurately
+      labeled with high confidence.
 
       Note
       ----
-      You can also return ONLY the indices of the label issues in your dataset, by setting
-      return_indices_ranked_by = {`self_confidence`, `normalized_margin`}."""
+      You can also return the *indices* of the label issues in your dataset by setting
+      `return_indices_ranked_by`.
+    """
 
     assert filter_by in [
         "prune_by_noise_rate",
@@ -427,6 +422,13 @@ def find_label_issues(
             "'predicted_neq_given'."
         )
         warnings.warn(warn_str)
+    if (num_to_remove_per_class is not None) and (
+        filter_by in ["confident_learning", "predicted_neq_given"]
+    ):
+        # TODO - add support for these two filters
+        raise ValueError(
+            "filter_by 'confident_learning' or 'predicted_neq_given' is not supported (yet) when setting 'num_to_remove_per_class'"
+        )
 
     # Set-up number of multiprocessing threads
     if n_jobs is None:
@@ -458,7 +460,7 @@ def find_label_issues(
         # Create `prune_count_matrix` with the number of examples to remove in each class and
         # leave at least min_examples_per_class examples per class.
         # `prune_count_matrix` is transposed relative to the confident_joint.
-        prune_count_matrix = keep_at_least_n_per_class(
+        prune_count_matrix = _keep_at_least_n_per_class(
             prune_count_matrix=confident_joint.T,
             n=min_examples_per_class,
             frac_noise=frac_noise,
@@ -568,7 +570,7 @@ def find_label_issues(
 
     # Remove label issues if given label == model prediction
     if multi_label:
-        pred = multiclass_crossval_predict(labels, pred_probs)
+        pred = _multiclass_crossval_predict(labels, pred_probs)
         labels = MultiLabelBinarizer().fit_transform(labels)
     else:
         pred = pred_probs.argmax(axis=1)
@@ -597,7 +599,7 @@ def find_label_issues(
     return label_issues_mask
 
 
-def keep_at_least_n_per_class(prune_count_matrix, n, *, frac_noise=1.0):
+def _keep_at_least_n_per_class(prune_count_matrix, n, *, frac_noise=1.0):
     """Make sure every class has at least n examples after removing noise.
     Functionally, increase each column, increases the diagonal term #(true_label=k,label=k)
     of prune_count_matrix until it is at least n, distributing the amount
@@ -658,13 +660,13 @@ def keep_at_least_n_per_class(prune_count_matrix, n, *, frac_noise=1.0):
     # Reduce (multiply) all noise rates (non-diagonal) by frac_noise and
     # increase diagonal by the total amount reduced in each column
     # to preserve column counts.
-    new_mat = reduce_prune_counts(new_mat, frac_noise)
+    new_mat = _reduce_prune_counts(new_mat, frac_noise)
 
     # These are counts, so return a matrix of ints.
     return round_preserving_row_totals(new_mat).astype(int)
 
 
-def reduce_prune_counts(prune_count_matrix, frac_noise=1.0):
+def _reduce_prune_counts(prune_count_matrix, frac_noise=1.0):
     """Reduce (multiply) all prune counts (non-diagonal) by frac_noise and
     increase diagonal by the total amount reduced in each column to
     preserve column counts.
@@ -697,29 +699,35 @@ def reduce_prune_counts(prune_count_matrix, frac_noise=1.0):
 
 def find_predicted_neq_given(labels, pred_probs, *, multi_label=False):
     """This is the simplest baseline approach. Just consider
-    anywhere argmax != labels as a label error.
+    anywhere ``argmax(pred_probs) != labels`` as a label error.
 
     Parameters
     ----------
     labels : np.array
-        A discrete vector of noisy labels, i.e. some labels may be erroneous.
-        *Format requirements*: for dataset with K classes, labels must be in {0,1,...,K-1}.
+      A discrete vector of noisy labels, i.e. some labels may be erroneous.
+      *Format requirements*: for dataset with K classes, labels must be in 0, 1, ..., K-1.
 
-    pred_probs : np.array (shape (N, K))
-        P(label=k|x) is a matrix with K model-predicted probabilities.
-        Each row of this matrix corresponds to an example `x` and contains the model-predicted
-        probabilities that `x` belongs to each possible class.
-        The columns must be ordered such that these probabilities correspond to class 0,1,2,...
-        `pred_probs` should have been computed using 3 (or higher) fold cross-validation.
+    pred_probs : np.array, optional
+      An array of shape ``(N, K)`` of model-predicted probabilities,
+      ``P(label=k|x)``. Each row of this matrix corresponds
+      to an example `x` and contains the model-predicted probabilities that
+      `x` belongs to each possible class, for each of the K classes. The
+      columns must be ordered such that these probabilities correspond to
+      class 0, 1, ..., K-1.
 
-    multi_label : bool
-        Set to True if labels is multi-label (list of lists, or np.array of np.array)
-        The multi-label setting supports classification tasks where an example has 1 or more labels.
-        Example of a multi-labeled `labels` input: [[0,1], [1], [0,2], [0,1,2], [0], [1], ...]
+    multi_label : bool, optional
+      If ``True``, labels should be an iterable (e.g. list) of iterables, containing a
+      list of labels for each example, instead of just a single label.
+      The multi-label setting supports classification tasks where an example has 1 or more labels.
+      Example of a multi-labeled `labels` input: ``[[0,1], [1], [0,2], [0,1,2], [0], [1], ...]``.
 
     Returns
     -------
-        A boolean mask whose True entries indicate indices of examples that have label issues."""
+    label_issues_mask : np.array
+      A boolean mask for the entire dataset where ``True`` represents a
+      label issue and ``False`` represents an example that is accurately
+      labeled with high confidence.
+    """
 
     assert len(pred_probs) == len(labels)
     if multi_label:
@@ -737,52 +745,47 @@ def find_label_issues_using_argmax_confusion_matrix(
     calibrate=True,
     filter_by="prune_by_noise_rate",
 ):
-    """This is a baseline approach. That uses the confusion matrix
-    of argmax(pred_probs) and labels as the confident joint and then uses cleanlab
+    """This is a baseline approach that uses the confusion matrix
+    of ``argmax(pred_probs)`` and labels as the confident joint and then uses cleanlab
     (confident learning) to find the label issues using this matrix.
 
-    The only difference between this and find_label_issues is that it uses the confusion matrix
-    based on the argmax and given label instead of using the confident joint from
-    `count.compute_confident_joint`.
-
-    This method does not support multi-label labels.
+    The only difference between this and :py:func:`find_label_issues
+    <cleanlab.filter.find_label_issues>` is that it uses the confusion matrix
+    based on the argmax and given label instead of using the confident joint
+    from :py:func:`count.compute_confident_joint
+    <cleanlab.count.compute_confident_joint>`.
 
     Parameters
     ----------
 
     labels : np.array
-        A discrete vector of noisy labels, i.e. some labels may be erroneous.
-        *Format requirements*: for dataset with K classes, labels must be in {0,1,...,K-1}.
+        An array of shape ``(N,)`` of noisy labels, i.e. some labels may be erroneous.
+        Elements must be in the set 0, 1, ..., K-1, where K is the number of classes.
 
     pred_probs : np.array (shape (N, K))
-        P(label=k|x) is a matrix with K model-predicted probabilities.
-        Each row of this matrix corresponds to an example `x` and contains the model-predicted
-        probabilities that `x` belongs to each possible class.
-        The columns must be ordered such that these probabilities correspond to class 0,1,2,...
-        `pred_probs` should have been computed using 3 (or higher) fold cross-validation.
+        An array of shape ``(N, K)`` of model-predicted probabilities,
+        ``P(label=k|x)``. Each row of this matrix corresponds
+        to an example `x` and contains the model-predicted probabilities that
+        `x` belongs to each possible class, for each of the K classes. The
+        columns must be ordered such that these probabilities correspond to
+        class 0, 1, ..., K-1. `pred_probs` should have been computed using 3 (or
+        higher) fold cross-validation.
 
-    calibrate : bool
-        Set to True to calibrate the confusion matrix created by pred != given labels.
+    calibrate : bool, default=True
+        Set to ``True`` to calibrate the confusion matrix created by ``pred != given labels``.
         This calibration adjusts the confusion matrix / confident joint so that the
-        prior(given noisy labels) is correct based on the original labels.
+        prior (given noisy labels) is correct based on the original labels.
 
-    filter_by : str (default: 'prune_by_noise_rate')
-        Possible Values: 'prune_by_class', 'prune_by_noise_rate', or 'both'.
-        Method used for pruning/filtering out the label issues:
-        1. 'prune_by_noise_rate': works by removing examples with
-        *high probability* of being mislabeled for every non-diagonal in the confident joint
-        (see `prune_counts_matrix` in `filter.py`). These are the examples where (with high
-        confidence) the given label is unlikely to match the predicted label.
-        2. 'prune_by_class': works by removing the examples with *smallest
-        probability* of belonging to their given class label for every class.
-        3. 'both': Finds the examples satisfying (1) AND (2) and
-        removes their set conjunction.
-        4. 'confident_learning': Find examples that are confidently labeled as a class
-        that's different from their given label while computing the confident joint.
+    filter_by : str, default='prune_by_noise_rate'
+        See `filter_by` argument of :py:func:`find_label_issues <cleanlab.filter.find_label_issues>`.
 
     Returns
     -------
-        A boolean mask whose True entries indicate indices of examples that have label issues."""
+    label_issues_mask : np.array
+      A boolean mask for the entire dataset where ``True`` represents a
+      label issue and ``False`` represents an example that is accurately
+      labeled with high confidence.
+    """
 
     assert len(pred_probs) == len(labels)
     confident_joint = confusion_matrix(np.argmax(pred_probs, axis=1), labels).T

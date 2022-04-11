@@ -28,6 +28,11 @@ jobs:
         with:
           python-version: "3.8"
 
+      - name: Setup Node
+        uses: actions/setup-node@v2
+        with:
+          node-version: '16'
+
       - name: Upgrade pip
         run: python3 -m pip install --upgrade pip
 
@@ -47,6 +52,9 @@ jobs:
 
       - name: Install dependencies
         run: python3 -m pip install -r docs/requirements.txt
+
+      - name: Install katex
+        run: npm install -g katex
 
       - name: Find and replace "%pip install cleanlab" with master branch in .ipynb files
         if: ${{ github.ref_type == 'branch' }}
@@ -135,3 +143,20 @@ jobs:
           publish_branch: master
           publish_dir: cleanlab-docs
           keep_files: true
+      - uses: actions/upload-artifact@v3
+        with:
+          name: docs-html
+          path: cleanlab-docs
+          retention-days: 1 # don't need this except in link checking step below
+  links:
+    needs: deploy
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/download-artifact@v3
+        with:
+          name: docs-html
+          path: cleanlab-docs
+      - uses: anishathalye/proof-html@v1
+        with:
+          directory: ./cleanlab-docs
+          external_only: true

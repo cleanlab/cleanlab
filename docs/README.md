@@ -1,6 +1,11 @@
 # Looking for `v1.0` of the `cleanlab` docs?
 
-Please refer to the `v1.0.1` documentation; the code for `v1.0` is identical to the code for `v1.0.1`.
+Please refer to the [`v1.0.1` documentation](https://docs.cleanlab.ai/v1.0.1/);
+the code for `v1.0` is identical to the code for `v1.0.1`.
+
+# Looking for rendered docs?
+
+See <https://docs.cleanlab.ai/> if you want to browse the documentation (including for past versions).
 
 # CI/CD for `cleanlab` docs
 
@@ -29,8 +34,6 @@ pip install -r docs/requirements.txt
 
 4. **[Optional]** [Create a new branch](https://www.atlassian.com/git/tutorials/using-branches), make your code changes, and then `git commit` them. **ONLY COMMITTED CHANGES WILL BE REFLECTED IN THE DOCS BUILD.**
 
-5. **[Optional]** If you do not want to execute any of the Jupyter Notebooks (i.e., the `.ipynb` files) during the docs build process, add the line `nbsphinx_execute = 'never'` under the `nbsphinx Configuration` section in the `conf.py` file. If you're contributing to the docs, this line must be removed before pushing it to the production repo.
-
 6. Build the docs with [`sphinx-multiversion`](https://holzhaus.github.io/sphinx-multiversion):
 
    * If you're building from a **branch** (usually the `master` branch):
@@ -47,7 +50,9 @@ pip install -r docs/requirements.txt
 
    Note: To also build docs for another branch or tag, run the above command again changing only the `YOUR_BRANCH_NAME` or `YOUR_TAG_NAME` placeholder.
 
-   After entering the above command, your terminal might output:
+   **Fast build**: Executing the Jupyter Notebooks (i.e., the `.ipynb` files) that make up some portion of the docs, such as the tutorials, takes a long time. If you want to skip rendering these, set the environment variable `SKIP_NOTEBOOKS=1`. You can either set this using `export SKIP_NOTEBOOKS=1` or do this inline with `SKIP_NOTEBOOKS=1 sphinx-multiversion ...`.
+
+   While building the docs, your terminal might output:
    * `unknown config value 'smv_branch_whitelist' in override, ignoring`, and
    * `unknown config value 'smv_tag_whitelist' in override, ignoring`.
 
@@ -108,7 +113,7 @@ cleanlab-docs
 
 3. In the `cleanlab-docs` repo, [configure GitHub Pages](https://docs.github.com/en/pages/getting-started-with-github-pages/creating-a-github-pages-site#creating-a-repository-for-your-site); under the **Source** section, select the `master` branch and `/(root)` folder. Take note of the URL where your site is published.
 
-4. [Generate SSH deploy key](https://github.com/peaceiris/actions-gh-pages#%EF%B8%8F-create-ssh-deploy-key) and add them to your repos as such:
+4. [Generate SSH deploy key](https://github.com/peaceiris/actions-gh-pages#user-content-️-create-ssh-deploy-key) and add them to your repos as such:
 
    * In the `cleanlab-docs` repo, go to **Settings > Deploy Keys > Add deploy key** and add your **public key** with the **Allow write access**
    * In the `cleanlab` repo, go to **Settings > Secrets > New repository secrets** and add your **private key** named `ACTIONS_DEPLOY_KEY`

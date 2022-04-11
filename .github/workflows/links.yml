@@ -1,0 +1,24 @@
+name: GitHub Markdown Links
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: '0 8 * * 6'
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - run: sudo apt-get update -y
+      - run: >-
+          sudo apt-get install -y
+          pandoc
+      - uses: actions/checkout@v2
+      - run: |
+          find . -name '*.html' -delete
+      - run: |
+          find . -name '*.md' -exec pandoc -i {} -o {}.html \;
+      - uses: anishathalye/proof-html@v1
+        with:
+          directory: .
+          check_favicon: false
+          empty_alt_ignore: true

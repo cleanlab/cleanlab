@@ -14,24 +14,19 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
-# Make sure python version is compatible with fasttext
-from cleanlab.internal.util import VersionWarning
+"""
+Text classification with FastText models that are compatible with cleanlab.
+This module allows you to easily find label issues in your text datasets.
 
-# fasttext only exists for these versions that are also compatible with cleanlab
-# if python_version.is_compatible():  # pragma: no cover
+You must first ``pip install fasttext``
+"""
+
 import time
 import os
 import copy
 import numpy as np
-
-# You need to install fasttext using pip for this library to work
+from sklearn.base import BaseEstimator
 from fasttext import train_supervised, load_model
-
-
-python_version = VersionWarning(
-    warning_str="fastText supports Python 3 versions (not python 2).",
-    list_of_compatible_versions=[3.4, 3.5, 3.6, 3.7, 3.8],
-)
 
 
 LABEL = "__label__"
@@ -100,9 +95,6 @@ def data_loader(
                 break
 
 
-from sklearn.base import BaseEstimator
-
-
 class FastTextClassifier(BaseEstimator):  # Inherits sklearn base classifier
     def __init__(
         self,
@@ -125,6 +117,7 @@ class FastTextClassifier(BaseEstimator):  # Inherits sklearn base classifier
         self.p_at_k = p_at_k
         self.batch_size = batch_size
         self.clf = None
+        self.labels = labels
 
         if labels is None:
             # Find all class labels across the train and test set (if provided)

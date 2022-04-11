@@ -14,19 +14,14 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
+"""
+Methods for estimating latent structures used for confident learning, including:
 
-# ## Latent Estimation
-#
-# Contains methods for estimating latent structures used for confident learning.
-# * The latent prior of the unobserved, error-less labels $y$:
-#     denoted $p(y)$ (latex) & '```py```' (code).
-# * The latent noisy channel (noise matrix) characterizing the flipping rates:
-#     denoted $P_{labels \vert y }$ (latex) & '```nm```' (code).
-# * The latent inverse noise matrix characterizing flipping process:
-#     denoted $P_{y \vert labels}$ (latex) & '```inv```' (code).
-# * The latent ```confident_joint```, an un-normalized counts matrix of
-#     counting a confident subset of the joint counts of label errors.
-
+* Latent prior of the unobserved, error-less labels: `py`: ``p(y)``
+* Latent noisy channel (noise matrix) characterizing the flipping rates: `nm`: ``P(given label | true label)``
+* Latent inverse noise matrix characterizing the flipping process: `inv`: ``P(true label | given label)``
+* Latent `confident_joint`, an un-normalized matrix that counts the confident subset of label errors under the joint distribution for true/given label
+"""
 
 from sklearn.linear_model import LogisticRegression as LogReg
 from sklearn.model_selection import StratifiedKFold
@@ -56,44 +51,43 @@ def num_label_issues(
 ):
     """Estimates the number of label issues in `labels`.
 
-    This method is **more accurate** than `sum(find_label_issues())` because its computed using only
-    the Trace(joint), ignoring all off-diagonals (used by `find_label_issues` and harder to
-    estimate). Here we sum over only diagonal elements in the joint (which have more data
+    This method is **more accurate** than ``sum(find_label_issues())`` because its computed using only
+    the trace of the confident joint, ignoring all off-diagonals (which are used by `find_label_issues` and are harder to
+    estimate). Here, we sum over only diagonal elements in the joint (which have more data
     are more constrained, and therefore easier to compute).
 
-    tl;dr - Use this method to get the most accurate estimate of number of label issues when you
+    TL;DR: use this method to get the most accurate estimate of number of label issues when you
     don't need the indices of the label issues. This is the canonical way to find errors
-    simply by combining a ranking/scoring function from `rank.py` with `num_label_issues()`.
+    by combining a ranking/scoring function from :py:mod:`cleanlab.rank` with `num_label_issues`.
 
     Parameters
     ----------
 
     labels : np.array
-        A discrete vector of noisy labels, i.e. some labels may be erroneous.
-        *Format requirements*: for dataset with K classes, labels must be in {0,1,...,K-1}.
+      An array of shape ``(N,)`` of noisy labels, i.e. some labels may be erroneous.
+      Elements must be in the set 0, 1, ..., K-1, where K is the number of classes.
 
-    pred_probs : np.array (shape (N, K))
-        P(label=k|x) is a matrix with K model-predicted probabilities.
-        Each row of this matrix corresponds to an example `x` and contains the model-predicted
-        probabilities that `x` belongs to each possible class.
-        The columns must be ordered such that these probabilities correspond to class 0,1,2,...
+    pred_probs : np.array
+      An array of shape ``(N, K)`` of model-predicted probabilities,
+      ``P(label=k|x)``. Each row of this matrix corresponds
+      to an example `x` and contains the model-predicted probabilities that
+      `x` belongs to each possible class, for each of the K classes. The
+      columns must be ordered such that these probabilities correspond to
+      class 0, 1, ..., K-1. `pred_probs` should have been computed using 3 (or
+      higher) fold cross-validation.
 
-        CAUTION: `pred_probs` from your model must be out-of-sample!
-        You should never provide predictions on the same examples used to train the model,
-        as these will be overfit and unsuitable for finding label-errors.
-        To obtain out-of-sample predicted probabilities for every datapoint in your dataset, you can use cross-validation.
-        Alternatively it is ok if your model was trained on a separate dataset and you are only evaluating
-        labels in data that was previously held-out.
-
-    confident_joint : np.array (shape (K, K), type int)
-        A K,K integer matrix of count(label=k, true_label=k). Estimates a confident subset of
-        the joint distribution of the noisy and true labels P_{labels,y}.
-        Each entry in the matrix contains the number of examples confidently
-        counted into every pair (label=j, true_label=k) classes.
+    confident_joint : np.array, optional
+      An array of shape ``(K, K)`` representing the confident joint, the matrix used for identifying label issues, which
+      estimates a confident subset of the joint distribution of the noisy and true labels, ``P_{noisy label, true label}``.
+      Entry ``(j, k)`` in the matrix is the number of examples confidently counted into the pair of ``(noisy label=j, true label=k)`` classes.
+      The `confident_joint` can be computed using :py:func:`count.compute_confident_joint <cleanlab.count.compute_confident_joint>`.
+      If not provided, it is computed from the given (noisy) `labels` and `pred_probs`.
 
     Returns
     -------
-        An integer estimate of the number of label issues."""
+    int
+      An estimate of the number of label issues.
+    """
 
     if confident_joint is None:
         confident_joint = compute_confident_joint(labels=labels, pred_probs=pred_probs)
@@ -106,11 +100,11 @@ def num_label_issues(
 
 
 def calibrate_confident_joint(confident_joint, labels, *, multi_label=False):
-    """Calibrates any confident joint estimate P(label=i, true_label=j) such that
-    np.sum(cj) == len(labels) and np.sum(cj, axis = 1) == np.bincount(labels).
+    """Calibrates any confident joint estimate ``P(label=i, true_label=j)`` such that
+    ``np.sum(cj) == len(labels)`` and ``np.sum(cj, axis = 1) == np.bincount(labels)``.
 
     In other words, this function forces the confident joint to have the
-    true noisy prior p(labels) (summed over columns for each row) and also
+    true noisy prior ``p(labels)`` (summed over columns for each row) and also
     forces the confident joint to add up to the total number of examples.
 
     This method makes the confident joint a valid counts estimate
@@ -119,30 +113,32 @@ def calibrate_confident_joint(confident_joint, labels, *, multi_label=False):
     Parameters
     ----------
 
-    confident_joint : np.array (shape (K, K))
-        A K,K integer matrix of count(label=k, true_label=k). Estimates a confident subset of
-        the joint distribution of the noisy and true labels P_{labels,y}.
-        Each entry in the matrix contains the number of examples confidently
-        counted into every pair (label=j, true_label=k) classes.
+    confident_joint : np.array
+      An array of shape ``(K, K)`` representing the confident joint, the matrix used for identifying label issues, which
+      estimates a confident subset of the joint distribution of the noisy and true labels, ``P_{noisy label, true label}``.
+      Entry ``(j, k)`` in the matrix is the number of examples confidently counted into the pair of ``(noisy label=j, true label=k)`` classes.
+      The `confident_joint` can be computed using :py:func:`count.compute_confident_joint <cleanlab.count.compute_confident_joint>`.
+      If not provided, it is computed from the given (noisy) `labels` and `pred_probs`.
 
     labels : np.array
-        A discrete vector of noisy labels, i.e. some labels may be erroneous.
-        *Format requirements*: for dataset with K classes, labels must be in {0,1,...,K-1}.
+      A discrete vector of noisy labels, i.e. some labels may be erroneous.
+      *Format requirements*: for dataset with K classes, labels must be in 0, 1, ..., K-1.
 
-    multi_label : bool
-        If true, labels should be an iterable (e.g. list) of iterables, containing a
-        list of labels for each example, instead of just a single label.
-        The MAJOR DIFFERENCE in how this is calibrated versus single_label, is the total number of
-        errors considered is based on the number of labels, not the number of examples. So, the
-        calibrated confident_joint will sum to the number of total labels.
-        The multi-label setting supports classification tasks where an example has 1 or more labels.
-        Example of a multi-labeled `labels` input: [[0,1], [1], [0,2], [0,1,2], [0], [1], ...]
-
+    multi_label : bool, optional
+      If ``True``, labels should be an iterable (e.g. list) of iterables, containing a
+      list of labels for each example, instead of just a single label.
+      The multi-label setting supports classification tasks where an example has 1 or more labels.
+      Example of a multi-labeled `labels` input: ``[[0,1], [1], [0,2], [0,1,2], [0], [1], ...]``.
+      The major difference in how this is calibrated versus single-label is that
+      the total number of errors considered is based on the number of labels,
+      not the number of examples. So, the calibrated `confident_joint` will sum
+      to the number of total labels.
 
     Returns
     -------
-        An np.array of shape (K, K) of type float representing a valid
-        estimate of the joint COUNTS of noisy and true labels.
+    calibrated_cj : np.array
+      An array of shape ``(K, K)`` of type float representing a valid
+      estimate of the joint *counts* of noisy and true labels.
     """
 
     if multi_label:
@@ -158,19 +154,46 @@ def calibrate_confident_joint(confident_joint, labels, *, multi_label=False):
     return round_preserving_row_totals(calibrated_cj)
 
 
-def estimate_joint(labels, pred_probs=None, *, confident_joint=None, multi_label=False):
-    """Estimates the joint distribution of label noise P(label=i, true_label=j) guaranteed to
-      * sum to 1
-      * np.sum(joint_estimate, axis = 1) == p(labels)
+def estimate_joint(labels, pred_probs, *, confident_joint=None, multi_label=False):
+    """
+    Estimates the joint distribution of label noise ``P(label=i, true_label=j)`` guaranteed to:
+
+    * Sum to 1
+    * Satisfy ``np.sum(joint_estimate, axis = 1) == p(labels)``
 
     Parameters
     ----------
-    See `cleanlab.count.calibrate_confident_joint` docstring.
+    labels : np.array
+      An array of shape ``(N,)`` of noisy labels, i.e. some labels may be erroneous.
+      Elements must be in the set 0, 1, ..., K-1, where K is the number of classes.
+
+    pred_probs : np.array
+      An array of shape ``(N, K)`` of model-predicted probabilities,
+      ``P(label=k|x)``. Each row of this matrix corresponds
+      to an example `x` and contains the model-predicted probabilities that
+      `x` belongs to each possible class, for each of the K classes. The
+      columns must be ordered such that these probabilities correspond to
+      class 0, 1, ..., K-1. `pred_probs` should have been computed using 3 (or
+      higher) fold cross-validation.
+
+    confident_joint : np.array, optional
+      An array of shape ``(K, K)`` representing the confident joint, the matrix used for identifying label issues, which
+      estimates a confident subset of the joint distribution of the noisy and true labels, ``P_{noisy label, true label}``.
+      Entry ``(j, k)`` in the matrix is the number of examples confidently counted into the pair of ``(noisy label=j, true label=k)`` classes.
+      The `confident_joint` can be computed using :py:func:`count.compute_confident_joint <cleanlab.count.compute_confident_joint>`.
+      If not provided, it is computed from the given (noisy) `labels` and `pred_probs`.
+
+    multi_label : bool, optional
+      If ``True``, labels should be an iterable (e.g. list) of iterables, containing a
+      list of labels for each example, instead of just a single label.
+      The multi-label setting supports classification tasks where an example has 1 or more labels.
+      Example of a multi-labeled `labels` input: ``[[0,1], [1], [0,2], [0,1,2], [0], [1], ...]``.
 
     Returns
     -------
-        An np.array of shape (K, K) of type float representing a valid
-        estimate of the true joint of noisy and true labels.
+    confident_joint : np.array
+      An array of shape ``(K, K)`` representing an
+      estimate of the true joint of noisy and true labels.
     """
 
     if confident_joint is None:
@@ -226,11 +249,11 @@ def _compute_confident_joint_multi_label(
         not used for filtering/pruning, only for estimating the noise rates using
         confident counts. This value should be between 0 and 1. Default is None.
 
-    calibrate : bool (default: True)
+    calibrate : bool, default = True
         Calibrates confident joint estimate P(label=i, true_label=j) such that
         np.sum(cj) == len(labels) and np.sum(cj, axis = 1) == np.bincount(labels).
 
-    return_indices_of_off_diagonals: bool
+    return_indices_of_off_diagonals: bool, default = False
         If true returns indices of examples that were counted in off-diagonals
         of confident joint as a baseline proxy for the label issues. This
         sometimes works as well as filter.find_label_issues(confident_joint)."""
@@ -278,20 +301,20 @@ def compute_confident_joint(
     multi_label=False,
     return_indices_of_off_diagonals=False,
 ):
-    """Estimates P(labels,y), the confident counts of the latent
+    """Estimates ``P(labels,y)``, the confident counts of the latent
     joint distribution of true and noisy labels
     using observed labels and predicted probabilities pred_probs.
 
     This estimate is called the confident joint.
 
-    When calibrate = True, this method returns an estimate of
+    When ``calibrate=True``, this method returns an estimate of
     the latent true joint counts of noisy and true labels.
 
-    Important! This function assumes that pred_probs are out-of-sample
-    holdout probabilities. This can be done with cross validation. If
+    Important: this function assumes that `pred_probs` are out-of-sample
+    holdout probabilities. This can be :ref:`done with cross validation <pred_probs_cross_val>`. If
     the probabilities are not computed out-of-sample, overfitting may occur.
 
-    This function estimates the joint of shape (K, K). This is the
+    This function estimates the joint of shape ``(K, K)``. This is the
     confident counts of examples in every class, labeled as every other class.
 
     Under certain conditions, estimates are exact, and in most
@@ -301,43 +324,56 @@ def compute_confident_joint(
     ----------
 
     labels : np.array
-        A discrete vector of noisy labels, i.e. some labels may be erroneous.
-        *Format requirements*: for dataset with K classes, labels must be in {0,1,...,K-1}.
+      An array of shape ``(N,)`` of noisy labels, i.e. some labels may be erroneous.
+      Elements must be in the set 0, 1, ..., K-1, where K is the number of classes.
 
-    pred_probs : np.array (shape (N, K))
-        P(label=k|x) is a matrix with K model-predicted probabilities.
-        Each row of this matrix corresponds to an example `x` and contains the model-predicted
-        probabilities that `x` belongs to each possible class.
-        The columns must be ordered such that these probabilities correspond to class 0,1,2,...
-        `pred_probs` must be out-of-sample and should have been computed using 3 (or higher) fold cross-validation.
+    pred_probs : np.array, optional
+      An array of shape ``(N, K)`` of model-predicted probabilities,
+      ``P(label=k|x)``. Each row of this matrix corresponds
+      to an example `x` and contains the model-predicted probabilities that
+      `x` belongs to each possible class, for each of the K classes. The
+      columns must be ordered such that these probabilities correspond to
+      class 0, 1, ..., K-1. `pred_probs` should have been computed using 3 (or
+      higher) fold cross-validation.
 
-    K : int (default: None)
-        Number of unique classes. Calculated as len(np.unique(labels)) when K == None
+    K : optional
+      Number of unique classes. Calculated as ``len(np.unique(labels))`` when ``K=None``.
 
-    thresholds : iterable (list or np.array) of shape (K, 1)  or (K,)
-        P(label^=k|label=k). If an example has a predicted probability "greater" than
-        this threshold, it is counted as having true_label = k. This is
-        not used for filtering/pruning, only for estimating the noise rates using
-        confident counts. This value should be between 0 and 1. Default is None.
+    thresholds : array_like, optional
+      An array of shape ``(K, 1)`` or ``(K,)`` of per-class threshold
+      probabilities, used to determine the cutoff probability necessary to
+      consider an example as a given class label (see `Northcutt et al.,
+      2021 <https://jair.org/index.php/jair/article/view/12125>`_, Section
+      3.1, Equation 2).
 
-    calibrate : bool (default: True)
-        Calibrates confident joint estimate P(label=i, true_label=j) such that
-        np.sum(cj) == len(labels) and np.sum(cj, axis = 1) == np.bincount(labels).
+      This is for advanced users only. If not specified, these are computed
+      for you automatically. If an example has a predicted probability
+      greater than this threshold, it is counted as having true_label =
+      k. This is not used for pruning/filtering, only for estimating the
+      noise rates using confident counts.
 
-    multi_label : bool
-        If true, labels should be an iterable (e.g. list) of iterables, containing a
-        list of labels for each example, instead of just a single label.
-        The multi-label setting supports classification tasks where an example has 1 or more labels.
-        Example of a multi-labeled `labels` input: [[0,1], [1], [0,2], [0,1,2], [0], [1], ...]
+    calibrate : bool, default=True
+        Calibrates confident joint estimate ``P(label=i, true_label=j)`` such that
+        ``np.sum(cj) == len(labels)`` and ``np.sum(cj, axis = 1) == np.bincount(labels)``.
 
-    return_indices_of_off_diagonals: bool
-        If true returns indices of examples that were counted in off-diagonals
-        of confident joint as a baseline proxy for the label issues. This
-        sometimes works as well as filter.find_label_issues(confident_joint).
+    multi_label : bool, optional
+      If ``True``, labels should be an iterable (e.g. list) of iterables, containing a
+      list of labels for each example, instead of just a single label.
+      The multi-label setting supports classification tasks where an example has 1 or more labels.
+      Example of a multi-labeled `labels` input: ``[[0,1], [1], [0,2], [0,1,2], [0], [1], ...]``.
+      The major difference in how this is calibrated versus single-label is that
+      the total number of errors considered is based on the number of labels,
+      not the number of examples. So, the calibrated `confident_joint` will sum
+      to the number of total labels.
+
+    return_indices_of_off_diagonals : bool, optional
+      If ``True``, returns indices of examples that were counted in off-diagonals
+      of confident joint as a baseline proxy for the label issues. This
+      sometimes works as well as ``filter.find_label_issues(confident_joint)``.
 
 
-    Examples
-    --------
+    Note
+    ----
 
     We provide a for-loop based simplification of the confident joint
     below. This implementation is not efficient, not used in practice, and
@@ -433,38 +469,39 @@ def estimate_latent(
     py_method="cnt",
     converge_latent_estimates=False,
 ):
-    """Computes the latent prior p(y), the noise matrix P(labels|y) and the
-    inverse noise matrix P(y|labels) from the `confident_joint` count(labels, y). The
-    `confident_joint` estimated by `compute_confident_joint`
+    """Computes the latent prior ``p(y)``, the noise matrix ``P(labels|y)`` and the
+    inverse noise matrix ``P(y|labels)`` from the `confident_joint` ``count(labels, y)``. The
+    `confident_joint` can be estimated by `compute_confident_joint <cleanlab.count.compute_confident_joint>`
     by counting confident examples.
 
     Parameters
     ----------
+    confident_joint : np.array
+      An array of shape ``(K, K)`` representing the confident joint, the matrix used for identifying label issues, which
+      estimates a confident subset of the joint distribution of the noisy and true labels, ``P_{noisy label, true label}``.
+      Entry ``(j, k)`` in the matrix is the number of examples confidently counted into the pair of ``(noisy label=j, true label=k)`` classes.
+      The `confident_joint` can be computed using :py:func:`count.compute_confident_joint <cleanlab.count.compute_confident_joint>`.
+      If not provided, it is computed from the given (noisy) `labels` and `pred_probs`.
 
     labels : np.array
-        A discrete vector of noisy labels, i.e. some labels may be erroneous.
-        *Format requirements*: for dataset with K classes, labels must be in {0,1,...,K-1}.
+      An array of shape ``(N,)`` of noisy labels, i.e. some labels may be erroneous.
+      Elements must be in the set 0, 1, ..., K-1, where K is the number of classes.
 
-    confident_joint : np.array (shape (K, K), type int)
-        A K,K integer matrix of count(label=k, true_label=k). Estimates a confident subset
-        of the joint distribution of the noisy and true labels P_{labels,y}.
-        Each entry in the matrix contains the number of examples confidently
-        counted into every pair (label=j, true_label=k) classes.
+    py_method : {"cnt", "eqn", "marginal", "marginal_ps"}, default="cnt"
+      `py` is shorthand for the "class proportions (a.k.a prior) of the true labels".
+      This method defines how to compute the latent prior ``p(true_label=k)``. Default is ``"cnt"``,
+      which works well even when the noise matrices are estimated poorly by using
+      the matrix diagonals instead of all the probabilities.
 
-    py_method : str (Options: ["cnt", "eqn", "marginal", "marginal_ps"])
-        `py` is shorthand for the `class proportions (a.k.a prior) of the true labels`
-        This method defines how to compute the latent prior p(true_label=k). Default is "cnt".
-        "cnt" works well even when the noise matrices are estimated poorly by using
-        the matrix diagonals instead of all the probabilities.
-
-    converge_latent_estimates : bool
-        If true, forces numerical consistency of estimates. Each is estimated
-        independently, but they are related mathematically with closed form
-        equivalences. This will iteratively make them mathematically consistent.
+    converge_latent_estimates : bool, optional
+      If ``True``, forces numerical consistency of estimates. Each is estimated
+      independently, but they are related mathematically with closed form
+      equivalences. This will iteratively make them mathematically consistent.
 
     Returns
     ------
-        A tuple containing (py, noise_matrix, inv_noise_matrix)."""
+    tuple
+      A tuple containing (py, noise_matrix, inv_noise_matrix)."""
 
     # 'ps' is p(labels=k)
     ps = value_counts(labels) / float(len(labels))
@@ -472,9 +509,9 @@ def estimate_latent(
     labels_class_counts = confident_joint.sum(axis=1).astype(float)
     # Number of training examples confidently counted into each true class
     true_labels_class_counts = confident_joint.sum(axis=0).astype(float)
-    # Confident Counts Estimator: p(label=k_s|true_label=k_y) ~ |label=k_s and true_label=k_y| / |true_label=k_y|
+    # p(label=k_s|true_label=k_y) ~ |label=k_s and true_label=k_y| / |true_label=k_y|
     noise_matrix = confident_joint / true_labels_class_counts
-    # Confident Counts Estimator: p(true_label=k_y|label=k_s) ~ |true_label=k_y and label=k_s| / |label=k_s|
+    # p(true_label=k_y|label=k_s) ~ |true_label=k_y and label=k_s| / |label=k_s|
     inv_noise_matrix = confident_joint.T / labels_class_counts
     # Compute the prior p(y), the latent (uncorrupted) class distribution.
     py = compute_py(
@@ -489,7 +526,7 @@ def estimate_latent(
     inv_noise_matrix = clip_noise_rates(inv_noise_matrix)
     # Make latent estimates mathematically agree in their algebraic relations.
     if converge_latent_estimates:
-        py, noise_matrix, inv_noise_matrix = converge_estimates(
+        py, noise_matrix, inv_noise_matrix = _converge_estimates(
             ps, py, noise_matrix, inv_noise_matrix
         )
         # Again clip py and noise rates into proper range [0,1)
@@ -510,57 +547,66 @@ def estimate_py_and_noise_matrices_from_probabilities(
     calibrate=True,
 ):
     """Computes the confident counts
-    estimate of latent variables py and the noise rates
-    using observed labels and predicted probabilities, pred_probs.
+    estimate of latent variables `py` and the noise rates
+    using observed labels and predicted probabilities, `pred_probs`.
 
-    Important! This function assumes that pred_probs are out-of-sample
-    holdout probabilities. This can be done with cross validation. If
+    Important: this function assumes that `pred_probs` are out-of-sample
+    holdout probabilities. This can be :ref:`done with cross validation <pred_probs_cross_val>`. If
     the probabilities are not computed out-of-sample, overfitting may occur.
 
-    This function estimates the noise_matrix of shape (K, K). This is the
+    This function estimates the `noise_matrix` of shape ``(K, K)``. This is the
     fraction of examples in every class, labeled as every other class. The
-    noise_matrix is a conditional probability matrix for P(label=k_s|true_label=k_y).
+    `noise_matrix` is a conditional probability matrix for ``P(label=k_s|true_label=k_y)``.
 
     Under certain conditions, estimates are exact, and in most
     conditions, estimates are within one percent of the actual noise rates.
 
     Parameters
     ----------
-
     labels : np.array
-        A discrete vector of noisy labels, i.e. some labels may be erroneous.
-        *Format requirements*: for dataset with K classes, labels must be in {0,1,...,K-1}.
+      An array of shape ``(N,)`` of noisy labels, i.e. some labels may be erroneous.
+      Elements must be in the set 0, 1, ..., K-1, where K is the number of classes.
 
-    pred_probs : np.array (shape (N, K))
-        P(label=k|x) is a matrix with K model-predicted probabilities.
-        Each row of this matrix corresponds to an example `x` and contains the model-predicted
-        probabilities that `x` belongs to each possible class.
-        The columns must be ordered such that these probabilities correspond to class 0,1,2,...
-        `pred_probs` should have been computed using 3 (or higher) fold cross-validation.
+    pred_probs : np.array
+      An array of shape ``(N, K)`` of model-predicted probabilities,
+      ``P(label=k|x)``. Each row of this matrix corresponds
+      to an example `x` and contains the model-predicted probabilities that
+      `x` belongs to each possible class, for each of the K classes. The
+      columns must be ordered such that these probabilities correspond to
+      class 0, 1, ..., K-1. `pred_probs` should have been computed using 3 (or
+      higher) fold cross-validation.
 
-    thresholds : iterable (list or np.array) of shape (K, 1)  or (K,)
-        P(label^=k|label=k). If an example has a predicted probability "greater" than
-        this threshold, it is counted as having true_label = k. This is
-        not used for filtering/pruning, only for estimating the noise rates using
-        confident counts. This value should be between 0 and 1. Default is None.
+    thresholds : array_like, optional
+      An array of shape ``(K, 1)`` or ``(K,)`` of per-class threshold
+      probabilities, used to determine the cutoff probability necessary to
+      consider an example as a given class label (see `Northcutt et al.,
+      2021 <https://jair.org/index.php/jair/article/view/12125>`_, Section
+      3.1, Equation 2).
 
-    converge_latent_estimates : bool
-        If true, forces numerical consistency of estimates. Each is estimated
-        independently, but they are related mathematically with closed form
-        equivalences. This will iteratively make them mathematically consistent.
+      This is for advanced users only. If not specified, these are computed
+      for you automatically. If an example has a predicted probability
+      greater than this threshold, it is counted as having true_label =
+      k. This is not used for pruning/filtering, only for estimating the
+      noise rates using confident counts.
 
-    py_method : str (Options: ["cnt", "eqn", "marginal", "marginal_ps"])
-        How to compute the latent prior p(true_label=k). Default is "cnt" as it often
-        works well even when the noise matrices are estimated poorly by using
-        the matrix diagonals instead of all the probabilities.
+    converge_latent_estimates : bool, optional
+      If ``True``, forces numerical consistency of estimates. Each is estimated
+      independently, but they are related mathematically with closed form
+      equivalences. This will iteratively make them mathematically consistent.
 
-    calibrate : bool (default: True)
-        Calibrates confident joint estimate P(label=i, true_label=j) such that
-        np.sum(cj) == len(labels) and np.sum(cj, axis = 1) == np.bincount(labels).
+    py_method : {"cnt", "eqn", "marginal", "marginal_ps"}, default="cnt"
+      How to compute the latent prior ``p(true_label=k)``. Default is ``"cnt"`` as it often
+      works well even when the noise matrices are estimated poorly by using
+      the matrix diagonals instead of all the probabilities.
+
+    calibrate : bool, default=True
+      Calibrates confident joint estimate ``P(label=i, true_label=j)`` such that
+      ``np.sum(cj) == len(labels)`` and ``np.sum(cj, axis = 1) == np.bincount(labels)``.
 
     Returns
     ------
-        py, noise_matrix, inverse_noise_matrix"""
+    tuple
+        A tuple of (py, noise_matrix, inverse_noise_matrix)."""
 
     confident_joint = compute_confident_joint(
         labels=labels,
@@ -589,18 +635,18 @@ def estimate_confident_joint_and_cv_pred_proba(
     calibrate=True,
     clf_kwargs={},
 ):
-    """Estimates P(labels,y), the confident counts of the latent
+    """Estimates ``P(labels, y)``, the confident counts of the latent
     joint distribution of true and noisy labels
-    using observed labels and predicted probabilities pred_probs.
+    using observed `labels` and predicted probabilities `pred_probs`.
 
-    The output of this function is a numpy array of shape (K, K).
+    The output of this function is an array of shape ``(K, K)``.
 
     Under certain conditions, estimates are exact, and in many
     conditions, estimates are within one percent of actual.
 
     Notes: There are two ways to compute the confident joint with pros/cons.
-    1. For each holdout set, we compute the confident joint, then sum them up.
-    2. Compute pred_proba for each fold, combine, compute the confident joint.
+    (1) For each holdout set, we compute the confident joint, then sum them up.
+    (2) Compute pred_proba for each fold, combine, compute the confident joint.
     (1) is more accurate because it correctly computes thresholds for each fold
     (2) is more accurate when you have only a little data because it computes
     the confident joint using all the probabilities. For example if you had 100
@@ -612,41 +658,52 @@ def estimate_confident_joint_and_cv_pred_proba(
     Parameters
     ----------
     X : np.array
-      Input feature matrix (N, D), 2D numpy array
+      Input feature matrix of shape ``(N, ...)``, where N is the number of
+      examples. The classifier that this instance was initialized with,
+      `clf`, must be able to handle data with this shape.
 
     labels : np.array
-        A discrete vector of noisy labels, i.e. some labels may be erroneous.
-        *Format requirements*: for dataset with K classes, labels must be in {0,1,...,K-1}.
+      An array of shape ``(N,)`` of noisy labels, i.e. some labels may be erroneous.
+      Elements must be in the set 0, 1, ..., K-1, where K is the number of classes.
 
-    clf : sklearn.classifier or equivalent
-        Default classifier used is logistic regression. Assumes clf
-        has predict_proba() and fit() defined.
+    clf : estimator instance, optional
+      A classifier implementing the `sklearn estimator API
+      <https://scikit-learn.org/stable/developers/develop.html#rolling-your-own-estimator>`_.
 
-    cv_n_folds : int
-        The number of cross-validation folds used to compute
-        out-of-sample probabilities for each example in X.
+    cv_n_folds : int, default=5
+      The number of cross-validation folds used to compute
+      out-of-sample probabilities for each example in `X`.
 
-    thresholds : iterable (list or np.array) of shape (K, 1)  or (K,)
-        P(label^=k|label=k). If an example has a predicted probability "greater" than
-        this threshold, it is counted as having true_label = k. This is
-        not used for filtering/pruning, only for estimating the noise rates using
-        confident counts. This value should be between 0 and 1. Default is None.
+    thresholds : array_like, optional
+      An array of shape ``(K, 1)`` or ``(K,)`` of per-class threshold
+      probabilities, used to determine the cutoff probability necessary to
+      consider an example as a given class label (see `Northcutt et al.,
+      2021 <https://jair.org/index.php/jair/article/view/12125>`_, Section
+      3.1, Equation 2).
 
-    seed : int (default = None)
+      This is for advanced users only. If not specified, these are computed
+      for you automatically. If an example has a predicted probability
+      greater than this threshold, it is counted as having true_label =
+      k. This is not used for pruning/filtering, only for estimating the
+      noise rates using confident counts.
+
+    seed : int, optional
         Set the default state of the random number generator used to split
         the cross-validated folds. If None, uses np.random current random state.
 
-    calibrate : bool (default: True)
-        Calibrates confident joint estimate P(label=i, true_label=j) such that
-        np.sum(cj) == len(labels) and np.sum(cj, axis = 1) == np.bincount(labels).
+    calibrate : bool, default=True
+        Calibrates confident joint estimate ``P(label=i, true_label=j)`` such that
+        ``np.sum(cj) == len(labels)`` and ``np.sum(cj, axis = 1) == np.bincount(labels)``.
 
-    clf_kwargs : dict, default = {}
-        Optional keyword arguments to pass into `clf` fit() method.
+    clf_kwargs : dict, optional
+      Optional keyword arguments to pass into `clf`'s ``fit()`` method.
+
 
     Returns
     ------
-        Tuple of two numpy array matrices in the form:
-        (joint counts matrix, predicted probability matrix)"""
+    tuple
+      Tuple of two numpy arrays in the form:
+      (joint counts matrix, predicted probability matrix)"""
 
     assert_inputs_are_valid(X, labels)
     # Number of classes
@@ -730,14 +787,14 @@ def estimate_py_noise_matrices_and_cv_pred_proba(
     clf_kwargs={},
 ):
     """This function computes the out-of-sample predicted
-    probability P(label=k|x) for every example x in X using cross
+    probability ``P(label=k|x)`` for every example x in `X` using cross
     validation while also computing the confident counts noise
     rates within each cross-validated subset and returning
     the average noise rate across all examples.
 
-    This function estimates the noise_matrix of shape (K, K). This is the
+    This function estimates the `noise_matrix` of shape ``(K, K)``. This is the
     fraction of examples in every class, labeled as every other class. The
-    noise_matrix is a conditional probability matrix for P(label=k_s|true_label=k_y).
+    `noise_matrix` is a conditional probability matrix for ``P(label=k_s|true_label=k_y)``.
 
     Under certain conditions, estimates are exact, and in most
     conditions, estimates are within one percent of the actual noise rates.
@@ -745,48 +802,57 @@ def estimate_py_noise_matrices_and_cv_pred_proba(
     Parameters
     ----------
     X : np.array
-      Input feature matrix (N, D), 2D numpy array
+      Input feature matrix of shape ``(N, ...)``, where N is the number of
+      examples. The classifier that this instance was initialized with,
+      `clf`, must be able to handle data with this shape.
 
     labels : np.array
-      A discrete vector of noisy labels, i.e. some labels may be erroneous.
-      *Format requirements*: for dataset with K classes, labels must be in {0,1,...,K-1}.
+      An array of shape ``(N,)`` of noisy labels, i.e. some labels may be erroneous.
+      Elements must be in the set 0, 1, ..., K-1, where K is the number of classes.
 
-    clf : sklearn.classifier or equivalent
-      Default classifier used is logistic regression. Assumes clf
-      has predict_proba() and fit() defined.
+    clf : estimator instance, optional
+      A classifier implementing the `sklearn estimator API
+      <https://scikit-learn.org/stable/developers/develop.html#rolling-your-own-estimator>`_.
 
-    cv_n_folds : int
+    cv_n_folds : int, default=5
       The number of cross-validation folds used to compute
-      out-of-sample probabilities for each example in X.
+      out-of-sample probabilities for each example in `X`.
 
-    thresholds : iterable (list or np.array) of shape (K, 1)  or (K,)
-      P(label^=k|label=k). If an example has a predicted probability "greater" than
-      this threshold, it is counted as having true_label = k. This is
-      not used for filtering/pruning, only for estimating the noise rates using
-      confident counts. This value should be between 0 and 1. Default is None.
+    thresholds : array_like, optional
+      An array of shape ``(K, 1)`` or ``(K,)`` of per-class threshold
+      probabilities, used to determine the cutoff probability necessary to
+      consider an example as a given class label (see `Northcutt et al.,
+      2021 <https://jair.org/index.php/jair/article/view/12125>`_, Section
+      3.1, Equation 2).
 
-    converge_latent_estimates : bool
-      If true, forces numerical consistency of estimates. Each is estimated
+      This is for advanced users only. If not specified, these are computed
+      for you automatically. If an example has a predicted probability
+      greater than this threshold, it is counted as having true_label =
+      k. This is not used for pruning/filtering, only for estimating the
+      noise rates using confident counts.
+
+    converge_latent_estimates : bool, optional
+      If ``True``, forces numerical consistency of estimates. Each is estimated
       independently, but they are related mathematically with closed form
       equivalences. This will iteratively make them mathematically consistent.
 
-    py_method : str (Options: ["cnt", "eqn", "marginal", "marginal_ps"])
-      How to compute the latent prior p(true_label=k). Default is "cnt" as it often
+    py_method : {"cnt", "eqn", "marginal", "marginal_ps"}, default="cnt"
+      How to compute the latent prior ``p(true_label=k)``. Default is ``"cnt"`` as it often
       works well even when the noise matrices are estimated poorly by using
       the matrix diagonals instead of all the probabilities.
 
-    seed : int (default = None)
+    seed : int, optional
       Set the default state of the random number generator used to split
-      the cross-validated folds. If None, uses np.random current random state.
+      the cross-validated folds. If ``None``, uses ``np.random`` current random state.
 
-    clf_kwargs : dict, default = {}
-      Optional keyword arguments to pass into `clf` fit() method.
+    clf_kwargs : dict, optional
+      Optional keyword arguments to pass into `clf`'s ``fit()`` method.
 
     Returns
     ------
-      Tuple of five numpy array matrices in the form:
-      (py, noise_matrix, inverse_noise_matrix,
-      joint count matrix i.e. confident joint, predicted probability matrix)"""
+    tuple
+      A tuple of five arrays (py, noise_matrix, inverse_noise_matrix, confident joint, predicted probability matrix).
+    """
 
     confident_joint, pred_probs = estimate_confident_joint_and_cv_pred_proba(
         X=X,
@@ -826,35 +892,36 @@ def estimate_cv_predicted_probabilities(
     ----------
 
     X : np.array
-      Input feature matrix (N, D), 2D numpy array
+      Input feature matrix of shape ``(N, ...)``, where N is the number of
+      examples. The classifier that this instance was initialized with,
+      `clf`, must be able to handle data with this shape.
 
-    labels : np.array or list of ints from [0,1,..,K-1]
-      A discrete vector of class labels which may or may not contain mislabeling.
-      *Format requirements*: for dataset with K classes, labels must be in {0,1,...,K-1}.
+    labels : np.array
+      An array of shape ``(N,)`` of noisy labels, i.e. some labels may be erroneous.
+      Elements must be in the set 0, 1, ..., K-1, where K is the number of classes.
 
-    clf : sklearn.classifier or equivalent
-      Default classifier used is logistic regression. Assumes clf
-      has predict_proba() and fit() defined.
+    clf : estimator instance, optional
+      A classifier implementing the `sklearn estimator API
+      <https://scikit-learn.org/stable/developers/develop.html#rolling-your-own-estimator>`_.
 
-    cv_n_folds : int
+    cv_n_folds : int, default=5
       The number of cross-validation folds used to compute
-      out-of-sample probabilities for each example in X.
+      out-of-sample probabilities for each example in `X`.
 
-    seed : int (default = None)
+    seed : int, optional
       Set the default state of the random number generator used to split
-      the cross-validated folds. If None, uses np.random current random state.
+      the cross-validated folds. If ``None``, uses ``np.random`` current random state.
 
-    clf_kwargs : dict, default = {}
-      Optional keyword arguments to pass into `clf` fit() method.
+    clf_kwargs : dict, optional
+      Optional keyword arguments to pass into `clf`'s ``fit()`` method.
 
     Returns
     --------
-    pred_probs : np.array (shape (N, K))
-        P(label=k|x) is a matrix with K model-predicted probabilities.
-        Each row of this matrix corresponds to an example `x` and contains the model-predicted
-        probabilities that `x` belongs to each possible class.
-        The columns must be ordered such that these probabilities correspond to class 0,1,2,...
-        `pred_probs` should have been computed using 3 (or higher) fold cross-validation."""
+    pred_probs : np.array
+      An array of shape ``(N, K)`` representing ``P(label=k|x)``, the model-predicted probabilities.
+      Each row of this matrix corresponds to an example `x` and contains the model-predicted
+      probabilities that `x` belongs to each possible class.
+    """
 
     return estimate_py_noise_matrices_and_cv_pred_proba(
         X=X,
@@ -877,9 +944,9 @@ def estimate_noise_matrices(
     seed=None,
     clf_kwargs={},
 ):
-    """Estimates the noise_matrix of shape (K, K). This is the
+    """Estimates the `noise_matrix` of shape ``(K, K)``. This is the
     fraction of examples in every class, labeled as every other class. The
-    noise_matrix is a conditional probability matrix for P(label=k_s|true_label=k_y).
+    `noise_matrix` is a conditional probability matrix for ``P(label=k_s|true_label=k_y)``.
 
     Under certain conditions, estimates are exact, and in most
     conditions, estimates are within one percent of the actual noise rates.
@@ -887,41 +954,51 @@ def estimate_noise_matrices(
     Parameters
     ----------
     X : np.array
-      Input feature matrix (N, D), 2D numpy array
+      Input feature matrix of shape ``(N, ...)``, where N is the number of
+      examples. The classifier that this instance was initialized with,
+      `clf`, must be able to handle data with this shape.
 
     labels : np.array
-        A discrete vector of noisy labels, i.e. some labels may be erroneous.
-        *Format requirements*: for dataset with K classes, labels must be in {0,1,...,K-1}.
+      An array of shape ``(N,)`` of noisy labels, i.e. some labels may be erroneous.
+      Elements must be in the set 0, 1, ..., K-1, where K is the number of classes.
 
-    clf : sklearn.classifier or equivalent
-      Default classifier used is logistic regression. Assumes clf
-      has predict_proba() and fit() defined.
+    clf : estimator instance, optional
+      A classifier implementing the `sklearn estimator API
+      <https://scikit-learn.org/stable/developers/develop.html#rolling-your-own-estimator>`_.
 
-    cv_n_folds : int
+    cv_n_folds : int, default=5
       The number of cross-validation folds used to compute
-      out-of-sample probabilities for each example in X.
+      out-of-sample probabilities for each example in `X`.
 
-    thresholds : iterable (list or np.array) of shape (K, 1)  or (K,)
-      P(label^=k|label). If an example has a predicted probability "greater" than
-      this threshold, it is counted as having true_label = k. This is
-      not used for filtering/pruning, only for estimating the noise rates using
-      confident counts. This value should be between 0 and 1. Default is None.
+    thresholds : array_like, optional
+      An array of shape ``(K, 1)`` or ``(K,)`` of per-class threshold
+      probabilities, used to determine the cutoff probability necessary to
+      consider an example as a given class label (see `Northcutt et al.,
+      2021 <https://jair.org/index.php/jair/article/view/12125>`_, Section
+      3.1, Equation 2).
 
-    converge_latent_estimates : bool
-      If true, forces numerical consistency of estimates. Each is estimated
+      This is for advanced users only. If not specified, these are computed
+      for you automatically. If an example has a predicted probability
+      greater than this threshold, it is counted as having true_label =
+      k. This is not used for pruning/filtering, only for estimating the
+      noise rates using confident counts.
+
+    converge_latent_estimates : bool, optional
+      If ``True``, forces numerical consistency of estimates. Each is estimated
       independently, but they are related mathematically with closed form
       equivalences. This will iteratively make them mathematically consistent.
 
-    seed : int (default = None)
-      Set the default state of the random number generator used to split
-      the cross-validated folds. If None, uses np.random current random state.
+    seed : int, optional
+        Set the default state of the random number generator used to split
+        the cross-validated folds. If None, uses np.random current random state.
 
-    clf_kwargs : dict, default = {}
-      Optional keyword arguments to pass into `clf` fit() method.
+    clf_kwargs : dict, optional
+      Optional keyword arguments to pass into `clf`'s ``fit()`` method.
 
     Returns
     ------
-        A two-item tuple containing (noise_matrix, inv_noise_matrix)."""
+    tuple
+      A tuple containing (noise_matrix, inv_noise_matrix)."""
 
     return estimate_py_noise_matrices_and_cv_pred_proba(
         X=X,
@@ -935,7 +1012,7 @@ def estimate_noise_matrices(
     )[1:-2]
 
 
-def converge_estimates(
+def _converge_estimates(
     ps,
     py,
     noise_matrix,
@@ -944,8 +1021,9 @@ def converge_estimates(
     inv_noise_matrix_iterations=5,
     noise_matrix_iterations=3,
 ):
-    """Computes py := P(true_label=k) and both noise_matrix and inverse_noise_matrix,
-    by numerically converging ps := P(labels=k), py, and the noise matrices.
+    """Updates py := P(true_label=k) and both `noise_matrix` and `inverse_noise_matrix`
+    to be numerically consistent with each other, by iteratively updating their estimates based on
+    the mathematical relationships between them.
 
     Forces numerical consistency of estimates. Each is estimated
     independently, but they are related mathematically with closed form
@@ -988,10 +1066,10 @@ def converge_estimates(
         inverse_noise_matrix will be computed from pred_probs and labels.
         Assumes columns of inverse_noise_matrix sum to 1.
 
-    inv_noise_matrix_iterations : int (Default: 5)
+    inv_noise_matrix_iterations : int, default = 5
         Number of times to converge inverse noise matrix with py and noise mat.
 
-    noise_matrix_iterations : int (Default: 3)
+    noise_matrix_iterations : int, default = 3
         Number of times to converge noise matrix with py and inverse noise mat.
 
     Returns
@@ -1018,20 +1096,22 @@ def get_confident_thresholds(labels: np.array, pred_probs: np.array) -> np.array
     Parameters
     ----------
     labels : np.array
-      A discrete vector of noisy labels, i.e. some labels may be erroneous.
-      *Format requirements*: for dataset with K classes, labels must be in {0,1,...,K-1}.
+      An array of shape ``(N,)`` of noisy labels, i.e. some labels may be erroneous.
+      Elements must be in the set 0, 1, ..., K-1, where K is the number of classes.
 
-    pred_probs : np.array (shape (N, K))
-      P(label=k|x) is a matrix with K model-predicted probabilities.
-      Each row of this matrix corresponds to an example x and contains the model-predicted
-      probabilities that x belongs to each possible class.
-      The columns must be ordered such that these probabilities correspond to class 0,1,2,...
-      `pred_probs` should have been computed using 3 (or higher) fold cross-validation.
+    pred_probs : np.array
+      An array of shape ``(N, K)`` of model-predicted probabilities,
+      ``P(label=k|x)``. Each row of this matrix corresponds
+      to an example `x` and contains the model-predicted probabilities that
+      `x` belongs to each possible class, for each of the K classes. The
+      columns must be ordered such that these probabilities correspond to
+      class 0, 1, ..., K-1. `pred_probs` should have been computed using 3 (or
+      higher) fold cross-validation.
 
     Returns
     -------
-    confident_thresholds : np.array (shape (K,))
-
+    confident_thresholds : np.array
+      An array of shape ``(K,)``.
     """
     confident_thresholds = np.array(
         [np.mean(pred_probs[:, k][labels == k]) for k in range(pred_probs.shape[1])]

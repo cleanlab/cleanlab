@@ -46,7 +46,7 @@ Check out the: [documentation](https://docs.cleanlab.ai/), [examples](https://gi
 <li> <b>Dec 2020 🎉</b>  <code>cleanlab</code> supports NeurIPS workshop paper <a href="https://securedata.lol/camera_ready/28.pdf">(Northcutt, Athalye, & Lin, 2020)</a>.</li>
 <li> <b>Dec 2020 🤖</b>  <code>cleanlab</code> supports <a href="https://github.com/cleanlab/cleanlab#pu-learning-with-cleanlab">PU learning</a>.</li>
 <li> <b>Feb 2020 🤖</b>  <code>cleanlab</code> now natively supports Mac, Linux, and Windows.</li>
-<li> <b>Feb 2020 🤖</b>  <code>cleanlab</code> now supports <a href="https://github.com/cleanlab/cleanlab/blob/master/cleanlab/coteaching.py">Co-Teaching</a> <a href="https://arxiv.org/abs/1804.06872">(Han et al., 2018)</a>.</li>
+<li> <b>Feb 2020 🤖</b>  <code>cleanlab</code> now supports <a href="https://github.com/cleanlab/cleanlab/blob/master/cleanlab/experimental/coteaching.py">Co-Teaching</a> <a href="https://arxiv.org/abs/1804.06872">(Han et al., 2018)</a>.</li>
 <li> <b>Jan 2020 🎉</b> <code>cleanlab</code> achieves state-of-the-art on CIFAR-10 with noisy labels. Code to reproduce:  <a href="https://github.com/cleanlab/examples/tree/master/cifar10">examples/cifar10</a>. This is a great place to see how to use cleanlab on real datasets (with predicted probabiliteis already precomputed for you).</li>
 </ul>
 </p>
@@ -136,9 +136,9 @@ cl = CleanLearning(clf=YourFavoriteModel())
 cl.fit(train_data, train_labels_with_errors)
 ```
 
-#### Want to see a working example? [Here’s a compliant PyTorch MNIST CNN class](https://github.com/cleanlab/cleanlab/blob/master/cleanlab/models/mnist_pytorch.py)
+#### Want to see a working example? [Here’s a compliant PyTorch MNIST CNN class](https://github.com/cleanlab/cleanlab/blob/master/cleanlab/experimental/mnist_pytorch.py)
 
-As you can see [here](https://github.com/cleanlab/cleanlab/blob/master/cleanlab/models/mnist_pytorch.py), technically you don’t actually need to inherit from `sklearn.base.BaseEstimator`, as you can just create a class that defines `.fit()`, `.predict()`, and `.predict\_proba()`, but inheriting makes downstream scikit-learn applications like hyper-parameter optimization work seamlessly. See [cleanlab.classification.CleanLearning()](https://github.com/cleanlab/cleanlab/blob/master/cleanlab/classification.py#L106) for a fully compliant model.
+As you can see [here](https://github.com/cleanlab/cleanlab/blob/master/cleanlab/experimental/mnist_pytorch.py), technically you don’t actually need to inherit from `sklearn.base.BaseEstimator`, as you can just create a class that defines `.fit()`, `.predict()`, and `.predict\_proba()`, but inheriting makes downstream scikit-learn applications like hyper-parameter optimization work seamlessly. See [cleanlab.classification.CleanLearning()](https://github.com/cleanlab/cleanlab/blob/master/cleanlab/classification.py#L106) for a fully compliant model.
 
 Note, some libraries exists to do this for you. For PyTorch, check out the `skorch` Python library which will wrap your `pytorch` model into a `scikit-learn` compliant model.
 
@@ -182,7 +182,7 @@ A step-by-step guide to reproduce these results is available [here](https://gith
 
 ![](https://raw.githubusercontent.com/cleanlab/assets/master/cleanlab/cifar10_benchmarks.png)
 
-Comparison of confident learning (CL), as implemented in `cleanlab`, versus seven recent methods for learning with noisy labels in CIFAR-10. Highlighted cells show CL robustness to sparsity. The five CL methods estimate label issues, remove them, then train on the cleaned data using [Co-Teaching](https://github.com/cleanlab/cleanlab/blob/master/cleanlab/coteaching.py).
+Comparison of confident learning (CL), as implemented in `cleanlab`, versus seven recent methods for learning with noisy labels in CIFAR-10. Highlighted cells show CL robustness to sparsity. The five CL methods estimate label issues, remove them, then train on the cleaned data using [Co-Teaching](https://github.com/cleanlab/cleanlab/blob/master/cleanlab/experimental/coteaching.py).
 
 Observe how cleanlab (i.e. the CL method) is robust to large sparsity in label noise whereas prior art tends to reduce in performance for increased sparsity, as shown by the red highlighted regions. This is important because real-world label noise is often sparse, e.g. a tiger is likely to be mislabeled as a lion, but not as most other classes like airplane, bathtub, and microwave.
 
@@ -248,7 +248,7 @@ For additional details/notation, refer to [the Confident Learning paper](https:/
 
 ``` python
 # Generate a valid (necessary conditions for learnability are met) noise matrix for any trace > 1
-from cleanlab.noise_generation import generate_noise_matrix_from_trace
+from cleanlab.benchmarking.noise_generation import generate_noise_matrix_from_trace
 noise_matrix=generate_noise_matrix_from_trace(
     K=number_of_classes,
     trace=float_value_greater_than_1_and_leq_K,
@@ -257,7 +257,7 @@ noise_matrix=generate_noise_matrix_from_trace(
 )
 
 # Check if a noise matrix is valid (necessary conditions for learnability are met)
-from cleanlab.noise_generation import noise_matrix_is_valid
+from cleanlab.benchmarking.noise_generation import noise_matrix_is_valid
 is_valid=noise_matrix_is_valid(
     noise_matrix,
     prior_of_y_which_is_just_an_array_of_length_K,
@@ -268,7 +268,7 @@ For a given noise matrix, this example shows how to generate noisy labels. Metho
 
 ``` python
 # Generate noisy labels using the noise_marix. Guarantees exact amount of noise in labels.
-from cleanlab.noise_generation import generate_noisy_labels
+from cleanlab.benchmarking.noise_generation import generate_noisy_labels
 s_noisy_labels = generate_noisy_labels(y_hidden_actual_labels, noise_matrix)
 
 # This package is a full of other useful methods for learning with noisy labels.

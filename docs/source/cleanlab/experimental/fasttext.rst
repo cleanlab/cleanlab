@@ -1,7 +1,7 @@
-cifar.cnn
-=========
+fasttext
+========
 
-.. automodule:: cleanlab.example_models.cifar_cnn
+.. automodule:: cleanlab.experimental.fasttext
    :autosummary:
    :members:
    :undoc-members:

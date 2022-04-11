@@ -8,5 +8,8 @@ indent_style = space
 trim_trailing_whitespace = true
 indent_size = 4
 
+[*.ipynb]
+insert_final_newline = false
+
 [*.{yml,yaml}]
 indent_size = 2

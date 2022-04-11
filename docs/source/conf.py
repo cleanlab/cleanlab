@@ -13,10 +13,9 @@
 import os
 import sys
 import datetime
+import shutil
 
 sys.path.insert(0, os.path.abspath("../../cleanlab"))
-# sys.path.insert(0, os.path.abspath("../cleanlab/example_models/"))
-# sys.path.insert(1, "./cleanlab/example_models")
 
 # -- Project information -----------------------------------------------------
 
@@ -39,6 +38,7 @@ extensions = [
     "sphinx_tabs.tabs",
     "sphinx_multiversion",
     "sphinx_copybutton",
+    "sphinxcontrib.katex",
 ]
 
 numpy_show_class_members = True
@@ -103,6 +103,12 @@ autodoc_default_options = {
 
 # Subclasses should show parent classes docstrings if they don't override them.
 autodoc_inherit_docstrings = True
+
+# -- Options for katex extension -------------------------------------------
+
+if os.getenv("CI") or shutil.which("katex") is not None:
+    # requires that the machine have `katex` installed: `npm install -g katex`
+    katex_prerender = True
 
 # -- Variables Setting ---------------------------------------------------
 
@@ -171,6 +177,8 @@ nbsphinx_prolog = (
 # Change this to "always" before running in the doc's CI/CD server
 if os.getenv("CI"):
     nbsphinx_execute = "always"
+if os.getenv("SKIP_NOTEBOOKS", "0") != "0":
+    nbsphinx_execute = "never"
 
 # -- Options for HTML output -------------------------------------------------
 
@@ -179,7 +187,7 @@ if os.getenv("CI"):
 #
 html_theme = "furo"
 html_favicon = (
-    "https://raw.githubusercontent.com/cleanlab/assets/master/cleanlab/cleanlab_logo_only.png"
+    "https://raw.githubusercontent.com/cleanlab/assets/a4483476d449f2f05a4c7cde329e72358099cc07/cleanlab/cleanlab_favicon.svg"
 )
 html_title = "cleanlab"
 html_logo = (
@@ -207,7 +215,7 @@ html_static_path = ["_static"]
 
 html_sidebars = {
     "**": [
-        "sidebar/brand.html",
+        "brand.html",
         "sidebar/search.html",
         "sidebar/scroll-start.html",
         "sidebar/navigation.html",
