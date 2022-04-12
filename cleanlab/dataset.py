@@ -315,7 +315,7 @@ def health_summary(
     dict
         A dictionary containing keys:
 
-        - ``"health_score"``, corresponding to :py:func:`overall_label_health_score <cleanlab.dataset.overall_label_health_score>`
+        - ``"overall_label_health_score"``, corresponding to :py:func:`overall_label_health_score <cleanlab.dataset.overall_label_health_score>`
         - ``"joint"``, corresponding to :py:func:`estimate_joint <cleanlab.count.estimate_joint>`
         - ``"classes_by_label_quality"``, corresponding to :py:func:`rank_classes_by_label_quality <cleanlab.dataset.rank_classes_by_label_quality>`
         - ``"overlapping_classes"``, corresponding to :py:func:`find_overlapping_classes <cleanlab.dataset.find_overlapping_classes>`
@@ -376,7 +376,7 @@ def health_summary(
     health_score = overall_label_health_score(labels=labels, pred_probs=pred_probs, verbose=True)
     print("\nGenerated with <3 from Cleanlab.")
     return {
-        "health_score": health_score,
+        "overall_label_health_score": health_score,
         "joint": joint,
         "classes_by_label_quality": df_class_label_quality,
         "overlapping_classes": df_overlapping_classes,
