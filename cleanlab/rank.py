@@ -440,12 +440,14 @@ def get_confidence_weighted_entropy_for_each_label(
       being correctly labeled.
     """
 
+    MIN_ALLOWED_RAW_SCORE = 1e-6 - 1  # lower-bound clipping threshold to prevent 0 in logarithm
     self_confidence = get_self_confidence_for_each_label(labels, pred_probs)
 
     # Divide entropy by self confidence
     label_quality_scores = get_normalized_entropy(**{"pred_probs": pred_probs}) / self_confidence
 
     # Rescale
+    label_quality_scores = np.clip(label_quality_scores, a_min=MIN_ALLOWED_RAW_SCORE, a_max=None)
     label_quality_scores = np.log(label_quality_scores + 1) / label_quality_scores
 
     return label_quality_scores
