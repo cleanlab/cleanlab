@@ -336,6 +336,9 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
           Examples identified to have label issues will be
           pruned from the data before training the final `clf` model.
 
+          Caution: If you provide `label_issues` without having previously called `self.find_label_issues()`,
+          e.g. as np.array, then some functionality like training with sample weights may be disabled.
+
         clf_kwargs : dict, optional
           Optional keyword arguments to pass into `clf`'s ``fit()`` method.
 
@@ -385,8 +388,11 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
                 inverse_noise_matrix=inverse_noise_matrix,
                 clf_kwargs=clf_kwargs,
             )
-        elif self.verbose:
-            print("Using provided label_issues instead of finding label issues.")
+        else:  # have to set some args that may not have been set if `self.find_label_issues()` wasn't called yet
+            if self.num_classes is None:
+                self.num_classes = len(np.unique(labels))
+            if self.verbose:
+                print("Using provided label_issues instead of finding label issues.")
 
         # label_issues always overwrites self.label_issues_df. Ensure it is properly formatted:
         self.label_issues_df = self._process_label_issues_arg(label_issues, labels)
@@ -406,10 +412,11 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
             print(f"Pruning {np.sum(self.label_issues_mask)} examples with label issues ...")
             print(f"Remaining clean data has {len(labels_cleaned)} examples.")
 
-        # Check if sample_weight in clf.fit()
+        # Check if sample_weight in args of clf.fit()
         if (
             "sample_weight" in inspect.getfullargspec(self.clf.fit).args
-            and "sample_weight" not in self.clf_kwargs
+            and "sample_weight" not in self.clf_final_kwargs
+            and self.noise_matrix is not None
         ):
             # Re-weight examples in the loss function for the final fitting
             # labels.t. the "apparent" original number of examples in each class
@@ -418,7 +425,6 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
                 print(
                     "Assigning sample weights for final training based on estimated label quality."
                 )
-
             sample_weight = np.ones(np.shape(labels_cleaned))  # length of pruned dataset
             for k in range(self.num_classes):
                 sample_weight_k = 1.0 / max(self.noise_matrix[k][k], 1e-3)  # clip sample weights
@@ -433,6 +439,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
             self.sample_weight = self.label_issues_df["sample_weight"]
             if self.verbose:
                 print("Fitting final model on the clean data ...")
+
             self.clf.fit(
                 x_cleaned,
                 labels_cleaned,
@@ -440,6 +447,16 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
                 **self.clf_final_kwargs,
             )
         else:
+            if (
+                "sample_weight" in inspect.getfullargspec(self.clf.fit).args
+                and "sample_weight" not in self.clf_final_kwargs
+                and self.noise_matrix is None
+            ):
+                print(
+                    "Cannot utilize sample weights for final training. To utilize must either specify noise_matrix "
+                    "or have previously called self.find_label_issues() instead of filter.find_label_issues()"
+                )
+
             if self.verbose:
                 print("Fitting final model on the clean data ...")
             # This is less accurate, but best we can do if no sample_weight.
@@ -578,7 +595,6 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
 
         self.clf_kwargs = clf_kwargs
         self._process_label_issues_kwargs(self.find_label_issues_kwargs)
-
         # self._process_label_issues_kwargs might set self.confident_joint. If so, we should use it.
         if self.confident_joint is not None:
             self.py, noise_matrix, inv_noise_matrix = estimate_latent(
@@ -643,7 +659,6 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
                     thresholds=thresholds,
                     converge_latent_estimates=self.converge_latent_estimates,
                 )
-
         # If needed, compute P(label=k|x), denoted pred_probs (the predicted probabilities)
         if pred_probs is None:
             if self.verbose:
@@ -660,7 +675,6 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
                 seed=self.seed,
                 clf_kwargs=self.clf_kwargs,
             )
-
         # if pulearning == the integer specifying the class without noise.
         if self.num_classes == 2 and self.pulearning is not None:  # pragma: no cover
             # pulearning = 1 (no error in 1 class) implies p(label=1|true_label=0) = 0
@@ -709,7 +723,8 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         """Clears non-sklearn attributes of this estimator to save space (in-place).
         This includes the DataFrame attribute that stored label issues which may be large for big datasets.
         You may want to call this method before deploying this model (i.e. if you just care about producing predictions).
-        After calling this method, certain attributes/functionality will no longer be available.
+        After calling this method, certain non-prediction-related attributes/functionality will no longer be available
+        (e.g. you cannot call `fit()` anymore).
         """
         if self.label_issues_df is None:
             print("self.label_issues_df is already empty")
