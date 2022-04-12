@@ -321,7 +321,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
           that are mislabeled examples from every other class ``k_y``,
           Assumes columns of `inverse_noise_matrix` sum to 1.
 
-        label_issues : pd.DataFrame or np.array, optional
+        label_issues : pd.DataFrame or np.array<bool> or np.array<int>, optional
           Specifies the label issues for each example in dataset.
           If pd.DataFrame, must be formatted as the one returned by:
           :py:meth:`CleanLearning.find_label_issues
@@ -389,40 +389,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
             print("Using provided label_issues instead of finding label issues.")
 
         # label_issues always overwrites self.label_issues_df. Ensure it is properly formatted:
-        if isinstance(label_issues, pd.DataFrame):
-            if "is_label_issue" not in label_issues.columns:
-                raise ValueError(
-                    "DataFrame label_issues must contain column: 'is_label_issue'. "
-                    "See CleanLearning.fit() documentation for label_issues column descriptions."
-                )
-            if len(label_issues) != len(labels):
-                raise ValueError("label_issues and labels must have same length")
-            if "given_label" in label_issues.columns and np.any(
-                label_issues["given_label"].values != labels
-            ):
-                raise ValueError("labels must match label_issues['given_label']")
-            self.label_issues_df = label_issues
-        elif isinstance(label_issues, np.ndarray):
-            if not label_issues.dtype in [np.dtype("bool"), np.dtype("int")]:
-                raise ValueError("If label_issues is numpy.array, dtype must be 'bool' or 'int'.")
-            if label_issues.dtype is np.dtype("bool") and label_issues.shape != labels.shape:
-                raise ValueError(
-                    "If label_issues is boolean numpy.array, must have same shape as labels"
-                )
-            if label_issues.dtype is np.dtype("int"):  # convert to boolean mask
-                if len(np.unique(label_issues)) != len(label_issues):
-                    raise ValueError(
-                        "If label_issues.dtype is 'int', must contain unique integer indices "
-                        "corresponding to examples with label issues such as output by: "
-                        "filter.find_label_issues(..., return_indices_ranked_by=...)"
-                    )
-                issue_indices = label_issues
-                label_issues = np.full(len(labels), False, dtype=bool)
-                if len(issue_indices) > 0:
-                    label_issues[issue_indices] = True
-            self.label_issues_df = pd.DataFrame({"is_label_issue": label_issues})
-        else:
-            raise ValueError("label_issues must be either pandas.DataFrame or numpy.array")
+        self.label_issues_df = self._process_label_issues_arg(label_issues, labels)
 
         if "label_quality" not in self.label_issues_df.columns and pred_probs is not None:
             if self.verbose:
@@ -452,13 +419,16 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
                     "Assigning sample weights for final training based on estimated label quality."
                 )
 
-            sample_weight = np.ones(np.shape(labels_cleaned))
+            sample_weight = np.ones(np.shape(labels_cleaned))  # length of pruned dataset
             for k in range(self.num_classes):
                 sample_weight_k = 1.0 / max(self.noise_matrix[k][k], 1e-3)  # clip sample weights
                 sample_weight[labels_cleaned == k] = sample_weight_k
 
-            sample_weight_expanded = np.zeros(len(labels))  # pad pruned examples with zero weight
+            sample_weight_expanded = np.zeros(
+                len(labels)
+            )  # pad pruned examples with zeros, length of original dataset
             sample_weight_expanded[x_mask] = sample_weight
+            # Store the sample weight for every example in the original, unfiltered dataset
             self.label_issues_df["sample_weight"] = sample_weight_expanded
             self.sample_weight = self.label_issues_df["sample_weight"]
             if self.verbose:
@@ -716,9 +686,8 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         self.label_issues_df = pd.DataFrame(
             {"is_label_issue": self.label_issues_mask, "label_quality": label_quality_scores}
         )
-        if pred_probs is not None:
-            self.label_issues_df["given_label"] = labels
-            self.label_issues_df["predicted_label"] = pred_probs.argmax(axis=1)
+        self.label_issues_df["given_label"] = labels
+        self.label_issues_df["predicted_label"] = pred_probs.argmax(axis=1)
         if self.verbose:
             print(f"Identified {np.sum(self.label_issues_mask)} examples with label issues.")
 
@@ -786,3 +755,40 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         if "confident_joint" in find_label_issues_kwargs:
             self.confident_joint = find_label_issues_kwargs["confident_joint"]
         self.find_label_issues_kwargs = find_label_issues_kwargs
+
+    def _process_label_issues_arg(self, label_issues, labels):
+        """Helper method to get the label_issues input arg into a formatted DataFrame."""
+        if isinstance(label_issues, pd.DataFrame):
+            if "is_label_issue" not in label_issues.columns:
+                raise ValueError(
+                    "DataFrame label_issues must contain column: 'is_label_issue'. "
+                    "See CleanLearning.fit() documentation for label_issues column descriptions."
+                )
+            if len(label_issues) != len(labels):
+                raise ValueError("label_issues and labels must have same length")
+            if "given_label" in label_issues.columns and np.any(
+                label_issues["given_label"].values != labels
+            ):
+                raise ValueError("labels must match label_issues['given_label']")
+            return label_issues
+        elif isinstance(label_issues, np.ndarray):
+            if not label_issues.dtype in [np.dtype("bool"), np.dtype("int")]:
+                raise ValueError("If label_issues is numpy.array, dtype must be 'bool' or 'int'.")
+            if label_issues.dtype is np.dtype("bool") and label_issues.shape != labels.shape:
+                raise ValueError(
+                    "If label_issues is boolean numpy.array, must have same shape as labels"
+                )
+            if label_issues.dtype is np.dtype("int"):  # convert to boolean mask
+                if len(np.unique(label_issues)) != len(label_issues):
+                    raise ValueError(
+                        "If label_issues.dtype is 'int', must contain unique integer indices "
+                        "corresponding to examples with label issues such as output by: "
+                        "filter.find_label_issues(..., return_indices_ranked_by=...)"
+                    )
+                issue_indices = label_issues
+                label_issues = np.full(len(labels), False, dtype=bool)
+                if len(issue_indices) > 0:
+                    label_issues[issue_indices] = True
+            return pd.DataFrame({"is_label_issue": label_issues})
+        else:
+            raise ValueError("label_issues must be either pandas.DataFrame or numpy.array")
