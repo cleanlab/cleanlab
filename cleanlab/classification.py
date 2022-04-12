@@ -528,6 +528,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         thresholds=None,
         noise_matrix=None,
         inverse_noise_matrix=None,
+        save_space=False,
         clf_kwargs={},
     ):
         """
@@ -545,6 +546,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         <cleanlab.filter.find_label_issues>`, which requires `pred_probs`,
         this method only requires a classifier and it can do the cross-validation for you.
         Both methods return the same boolean mask that identifies which examples have label issues.
+        This is the preferred method to use if you plan to subsequently invoke: `CleanLearning.fit()`.
 
         Note: this method computes the label issues from scratch. To access
         previously-computed label issues from this :py:class:`CleanLearning
@@ -557,6 +559,12 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         <cleanlab.classification.CleanLearning.fit>`. See there for
         documentation for the arguments `pred_probs`, `thresholds`, etc.
 
+        Parameters
+        ----------
+        save_space : bool, optional
+          If True, then returned `label_issues_df` will not be stored as attribute.
+          This means some other methods like `self.get_label_issues()` will no longer work.
+
         Returns
         -------
         label_issues_df : pd.DataFrame
@@ -565,7 +573,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
           See there for documentation regarding column definitions.
         """
 
-        if self.label_issues_df is not None and self.verbose:
+        if self.label_issues_df is not None and self.verbose and not save_space:
             print(
                 "Overwriting previously identified label issues stored at self.label_issues_df. "
                 "`self.get_label_issues()` will now return the newly identified label issues. "
@@ -689,7 +697,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
 
         if self.verbose:
             print("Using predicted probabilities to identify label issues ...")
-        self.label_issues_mask = filter.find_label_issues(
+        label_issues_mask = filter.find_label_issues(
             labels,
             pred_probs,
             **self.find_label_issues_kwargs,
@@ -697,15 +705,30 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         label_quality_scores = get_label_quality_scores(
             labels, pred_probs, **self.label_quality_scores_kwargs
         )
-        self.label_issues_df = pd.DataFrame(
-            {"is_label_issue": self.label_issues_mask, "label_quality": label_quality_scores}
+        label_issues_df = pd.DataFrame(
+            {"is_label_issue": label_issues_mask, "label_quality": label_quality_scores}
         )
-        self.label_issues_df["given_label"] = labels
-        self.label_issues_df["predicted_label"] = pred_probs.argmax(axis=1)
         if self.verbose:
-            print(f"Identified {np.sum(self.label_issues_mask)} examples with label issues.")
+            print(f"Identified {np.sum(label_issues_mask)} examples with label issues.")
 
-        return self.label_issues_df
+        predicted_labels = pred_probs.argmax(axis=1)
+        compressed_type = None
+        if self.num_classes < np.iinfo(np.dtype("int16")).max:
+            compressed_type = "int16"
+        elif self.num_classes < np.iinfo(np.dtype("int32")).max:
+            compressed_type = "int32"
+        if compressed_type is not None:
+            predicted_labels = predicted_labels.astype(compressed_type)
+        label_issues_df["given_label"] = labels
+        label_issues_df["predicted_label"] = predicted_labels
+
+        if not save_space:
+            self.label_issues_df = label_issues_df
+            self.label_issues_mask = label_issues_mask
+        elif self.verbose:
+            print("Not storing label_issues as attributes since save_space was specified.")
+
+        return label_issues_df
 
     def get_label_issues(self):
         """Accessor. Returns `label_issues_df` attribute if previously already computed.

@@ -198,16 +198,25 @@ def test_aux_inputs():
 
     # Verbose off
     cl = CleanLearning(
-        clf=LogisticRegression(multi_class="auto", solver="lbfgs", random_state=SEED),
+        clf=LogisticRegression(multi_class="auto", solver="lbfgs", random_state=SEED), verbose=0
     )
     cl.save_space()  # dummy call test
+
+    cl = CleanLearning(
+        clf=LogisticRegression(multi_class="auto", solver="lbfgs", random_state=SEED), verbose=0
+    )
+    cl.find_label_issues(
+        labels=data["true_labels_test"], pred_probs=pred_probs_test, save_space=True
+    )
+
     cl = CleanLearning(
         clf=LogisticRegression(multi_class="auto", solver="lbfgs", random_state=SEED), verbose=1
     )
 
     # Test with label_issues_mask input
     label_issues_mask = find_label_issues(
-        labels=data["true_labels_test"], pred_probs=pred_probs_test
+        labels=data["true_labels_test"],
+        pred_probs=pred_probs_test,
     )
     cl.fit(data["X_test"], data["true_labels_test"], label_issues=label_issues_mask)
     label_issues_df = cl.get_label_issues()
