@@ -5,16 +5,16 @@ cleanlab automatically finds and fixes errors in ML datasets. This data-centric 
 ```python
 # Example usage:
 
-model = sklearn.ensemble.RandomForestClassifier()  # any classifier
+model = sklearn.ensemble.RandomForestClassifier()  # Any classifier for your data. Yup, you can use sklearn/PyTorch/TensorFlow/XGBoost/etc.
+cl = cleanlab.classification.CleanLearning(model)  # CL wrapper has the same methods as your model.
 
-# Find label issues in any data:
-pred_probs = sklearn.model_selection.cross_val_predict(model, data, labels, method="predict_proba")
-label_issues = cleanlab.filter.find_label_issues(labels, pred_probs, return_indices_ranked_by="self_confidence")
+# Finding label issues in any data is trivial with cleanlab... its one line of code.
+label_issues = cl.find_label_issues(data, labels)
 
-# Train robust model with noisy data:
-cl = cleanlab.classification.CleanLearning(model)  # has same methods as your model
+# Can train a robust version of your model with noisy data:
 cl.fit(data, labels)
-cl.predict(test_data)  # can be used just like your model
+# Estimate the predictions you would have gotten by training with *no* label issues.
+cl.predict(test_data)
 ```
 
 Check out the: [documentation and tutorials](https://docs.cleanlab.ai/), [examples](https://github.com/cleanlab/examples), and our [blog](https://cleanlab.ai/blog/).
