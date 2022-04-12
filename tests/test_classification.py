@@ -199,7 +199,10 @@ def test_aux_inputs():
     # Verbose off
     cl = CleanLearning(
         clf=LogisticRegression(multi_class="auto", solver="lbfgs", random_state=SEED),
-        verbose=0,
+    )
+    cl.save_space()  # dummy call test
+    cl = CleanLearning(
+        clf=LogisticRegression(multi_class="auto", solver="lbfgs", random_state=SEED), verbose=1
     )
 
     # Test with label_issues_mask input
@@ -601,6 +604,7 @@ def test_cj_in_find_label_issues_kwargs(filter_by, seed):
                     "filter_by": "both",
                     "min_examples_per_class": 1,
                 },
+                verbose=1,
             )
         else:
             cl = CleanLearning(
@@ -609,6 +613,7 @@ def test_cj_in_find_label_issues_kwargs(filter_by, seed):
                     "filter_by": "both",
                     "min_examples_per_class": 1,
                 },
+                verbose=0,
             )
         label_issues_df = cl.find_label_issues(DATA["X_train"], labels=labels)
         label_issues_mask = label_issues_df["is_label_issue"].values

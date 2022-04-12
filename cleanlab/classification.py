@@ -726,7 +726,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         After calling this method, certain non-prediction-related attributes/functionality will no longer be available
         (e.g. you cannot call `fit()` anymore).
         """
-        if self.label_issues_df is None:
+        if self.label_issues_df is None and self.verbose:
             print("self.label_issues_df is already empty")
         self.label_issues_df = None
         self.sample_weight = None
@@ -744,7 +744,8 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         self.inverse_noise_matrix = None
         self.clf_kwargs = None
         self.clf_final_kwargs = None
-        print("Deleted non-sklearn attributes such as label_issues_df to save space.")
+        if self.verbose:
+            print("Deleted non-sklearn attributes such as label_issues_df to save space.")
 
     def _process_label_issues_kwargs(self, find_label_issues_kwargs):
         """Private helper function that is used to modify the arguments to passed to
