@@ -115,6 +115,7 @@ from sklearn.linear_model import LogisticRegression as LogReg
 from sklearn.metrics import accuracy_score
 from sklearn.base import BaseEstimator
 import numpy as np
+import pandas as pd
 import inspect
 import warnings
 from cleanlab.internal.util import (
@@ -131,7 +132,6 @@ from cleanlab.internal.latent_algebra import (
     compute_py_inv_noise_matrix,
     compute_noise_matrix_from_inverse,
 )
-from cleanlab.internal.util import try_import_pandas
 from cleanlab.rank import get_label_quality_scores
 from cleanlab import filter
 
@@ -215,7 +215,6 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         verbose=True,
     ):
 
-        try_import_pandas()
         if clf is None:
             # Use logistic regression if no classifier is provided.
             clf = LogReg(multi_class="auto", solver="lbfgs")
@@ -328,8 +327,8 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
           :py:meth:`CleanLearning.find_label_issues
           <cleanlab.classification.CleanLearning.find_label_issues>` or by this function.
           If np.array, must contain either boolean label_issues_mask as output by:
-          default :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>`, 
-          or integer indices as output by 
+          default :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>`,
+          or integer indices as output by
           :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>`
           with its `return_indices_ranked_by` argument specified.
           Providing this argument significantly reduces the time this method takes to run by
@@ -352,8 +351,8 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         -------
         self
             Fitted estimator that has all the same methods as any sklearn estimator.
-        After calling `fit()` this estimator also stores a few extra useful attributes, in particular 
-        `self.label_issues_df`: a pd.DataFrame in which each row represents an example from our dataset. 
+        After calling `fit()` this estimator also stores a few extra useful attributes, in particular
+        `self.label_issues_df`: a pd.DataFrame in which each row represents an example from our dataset.
         `self.label_issues_df` may contain the following columns:
 
           - "is_label_issue": boolean where ``True`` represents a
@@ -372,9 +371,6 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
             These sample weights were used in the final model training in `CleanLearning.fit()`.
             sample_weight column will only be present if sample weights were actually used.
         """
-
-        try_import_pandas()
-        import pandas as pd
 
         clf_final_kwargs = {**clf_kwargs, **clf_final_kwargs}
         self.clf_final_kwargs = clf_final_kwargs
@@ -395,27 +391,31 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         # label_issues always overwrites self.label_issues_df. Ensure it is properly formatted:
         if isinstance(label_issues, pd.DataFrame):
             if "is_label_issue" not in label_issues.columns:
-                raise ValueError("DataFrame label_issues must contain column: 'is_label_issue'. " 
-                                 "See CleanLearning.fit() documentation for label_issues column descriptions.")
+                raise ValueError(
+                    "DataFrame label_issues must contain column: 'is_label_issue'. "
+                    "See CleanLearning.fit() documentation for label_issues column descriptions."
+                )
             if len(label_issues) != len(labels):
                 raise ValueError("label_issues and labels must have same length")
-            if "given_label" in label_issues.columns and np.any(label_issues["given_label"].values != labels):
+            if "given_label" in label_issues.columns and np.any(
+                label_issues["given_label"].values != labels
+            ):
                 raise ValueError("labels must match label_issues['given_label']")
             self.label_issues_df = label_issues
         elif isinstance(label_issues, np.ndarray):
-            if not label_issues.dtype in [np.dtype('bool'), np.dtype('int')]:
-                raise ValueError(
-                    "If label_issues is numpy.array, dtype must be 'bool' or 'int'."
-                )
-            if label_issues.dtype is np.dtype('bool') and label_issues.shape != labels.shape:
+            if not label_issues.dtype in [np.dtype("bool"), np.dtype("int")]:
+                raise ValueError("If label_issues is numpy.array, dtype must be 'bool' or 'int'.")
+            if label_issues.dtype is np.dtype("bool") and label_issues.shape != labels.shape:
                 raise ValueError(
                     "If label_issues is boolean numpy.array, must have same shape as labels"
                 )
-            if label_issues.dtype is np.dtype('int'):  # convert to boolean mask
+            if label_issues.dtype is np.dtype("int"):  # convert to boolean mask
                 if len(np.unique(label_issues)) != len(label_issues):
-                    raise ValueError("If label_issues.dtype is 'int', must contain unique integer indices "
-                                     "corresponding to examples with label issues such as output by: "
-                                     "filter.find_label_issues(..., return_indices_ranked_by=...)")
+                    raise ValueError(
+                        "If label_issues.dtype is 'int', must contain unique integer indices "
+                        "corresponding to examples with label issues such as output by: "
+                        "filter.find_label_issues(..., return_indices_ranked_by=...)"
+                    )
                 issue_indices = label_issues
                 label_issues = np.full(len(labels), False, dtype=bool)
                 if len(issue_indices) > 0:
@@ -476,8 +476,10 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
             self.clf.fit(x_cleaned, labels_cleaned, **self.clf_final_kwargs)
 
         if self.verbose:
-            print("Label issues stored in `label_issues_df` DataFrame accessible via: self.get_label_issues(). "
-                  "Call self.save_space() to delete this potentially large DataFrame attribute.")
+            print(
+                "Label issues stored in `label_issues_df` DataFrame accessible via: self.get_label_issues(). "
+                "Call self.save_space() to delete this potentially large DataFrame attribute."
+            )
         return self
 
     def predict(self, *args, **kwargs):
@@ -575,9 +577,6 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         <cleanlab.classification.CleanLearning.fit>`.
           See there for documentation regarding column definitions.
         """
-
-        try_import_pandas()
-        import pandas as pd
 
         if self.label_issues_df is not None and self.verbose:
             print(
@@ -727,8 +726,8 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
 
     def get_label_issues(self):
         """Accessor. Returns `label_issues_df` attribute if previously already computed.
-           This pd.DataFrame describes the label issues identified for each datapoint,
-           column definitions are in documentation of CleanLearning.fit().
+        This pd.DataFrame describes the label issues identified for each datapoint,
+        column definitions are in documentation of CleanLearning.fit().
         """
 
         if self.label_issues_df is None:
@@ -739,9 +738,9 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
 
     def save_space(self):
         """Clears non-sklearn attributes of this estimator to save space (in-place).
-           This includes the DataFrame attribute that stored label issues which may be large for big datasets.
-           You may want to call this method before deploying this model (i.e. if you just care about producing predictions).
-           After calling this method, certain attributes/functionality will no longer be available.
+        This includes the DataFrame attribute that stored label issues which may be large for big datasets.
+        You may want to call this method before deploying this model (i.e. if you just care about producing predictions).
+        After calling this method, certain attributes/functionality will no longer be available.
         """
         if self.label_issues_df is None:
             print("self.label_issues_df is already empty")
