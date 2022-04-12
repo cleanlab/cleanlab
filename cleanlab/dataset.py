@@ -377,7 +377,7 @@ def health_summary(
     print("\nGenerated with <3 from Cleanlab.")
     return {
         "health_score": health_score,
-        "joint": estimate_joint,
+        "joint": joint,
         "classes_by_label_quality": df_class_label_quality,
         "overlapping_classes": df_overlapping_classes,
     }
