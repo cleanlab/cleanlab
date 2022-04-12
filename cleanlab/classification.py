@@ -716,7 +716,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         if self.num_classes < np.iinfo(np.dtype("int16")).max:
             compressed_type = "int16"
         elif self.num_classes < np.iinfo(np.dtype("int32")).max:
-            compressed_type = "int32"
+            compressed_type = "int32"  # pragma: no cover
         if compressed_type is not None:
             predicted_labels = predicted_labels.astype(compressed_type)
         label_issues_df["given_label"] = labels
@@ -726,7 +726,9 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
             self.label_issues_df = label_issues_df
             self.label_issues_mask = label_issues_mask
         elif self.verbose:
-            print("Not storing label_issues as attributes since save_space was specified.")
+            print(  # pragma: no cover
+                "Not storing label_issues as attributes since save_space was specified."
+            )
 
         return label_issues_df
 
@@ -750,7 +752,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         (e.g. you cannot call `fit()` anymore).
         """
         if self.label_issues_df is None and self.verbose:
-            print("self.label_issues_df is already empty")
+            print("self.label_issues_df is already empty")  # pragma: no cover
         self.label_issues_df = None
         self.sample_weight = None
         self.label_issues_mask = None
