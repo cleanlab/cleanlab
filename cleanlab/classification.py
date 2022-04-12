@@ -715,7 +715,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         compressed_type = None
         if self.num_classes < np.iinfo(np.dtype("int16")).max:
             compressed_type = "int16"
-        elif self.num_classes < np.iinfo(np.dtype("int32")).max:
+        elif self.num_classes < np.iinfo(np.dtype("int32")).max:  # pragma: no cover
             compressed_type = "int32"  # pragma: no cover
         if compressed_type is not None:
             predicted_labels = predicted_labels.astype(compressed_type)
