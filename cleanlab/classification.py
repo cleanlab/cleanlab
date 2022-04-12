@@ -349,21 +349,21 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         label_issues_df : pd.DataFrame
           DataFrame in which each row represents an example from our dataset. May contain the following columns:
 
-          "is_label_issue": boolean mask for the entire dataset where ``True`` represents a
-          label issue and ``False`` represents an example that is accurately
-          labeled with high confidence.
-          This column is equivalent to `label_issues_mask` output from `filter.find_label_issues()`.
+          - "is_label_issue": boolean where ``True`` represents a
+            label issue and ``False`` represents an example that is accurately
+            labeled with high confidence.
+            This column is equivalent to `label_issues_mask` output from `filter.find_label_issues()`.
 
-          "label_quality": Numeric score that measures the quality of each label
-          (how likely it is to be correct, with lower scores indicating potentially erroneous labels).
+          - "label_quality": numeric score that measures the quality of each label
+            (how likely it is to be correct, with lower scores indicating potentially erroneous labels).
 
-          "predicted_class": Integer indices corresponding the class predicted by trained `clf` model
-          (only present if `pred_probs` were provided as input or computed during label-issue-finding).
+          - "predicted_class": integer indices corresponding the class predicted by trained `clf` model
+            (only present if `pred_probs` were provided as input or computed during label-issue-finding).
 
-          "sample_weight": Numeric values corresponding to weights to assign each example
-          based on how trustworthy its label is.
-          These sample weights were used in the final model training in `CleanLearning.fit()`.
-          sample_weight column will only be present if sample weights were actually used.
+          - "sample_weight": numeric values corresponding to weights to assign each example
+            based on how trustworthy its label is.
+            These sample weights were used in the final model training in `CleanLearning.fit()`.
+            sample_weight column will only be present if sample weights were actually used.
         """
 
         clf_final_kwargs = {**clf_kwargs, **clf_final_kwargs}
