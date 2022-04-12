@@ -356,28 +356,21 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         `self.label_issues_df`: a pd.DataFrame in which each row represents an example from our dataset. 
         `self.label_issues_df` may contain the following columns:
 
-          * *is_label_issue*: boolean mask for the entire dataset where ``True`` represents a
-          label issue and ``False`` represents an example that is accurately
-          labeled with high confidence.
-          This column is equivalent to `label_issues_mask` output from `filter.find_label_issues()`.
-          * *label_quality*: Numeric score that measures the quality of each label
-          (how likely it is to be correct, with lower scores indicating potentially erroneous labels).
-          * *given_label*: Integer indices corresponding to the class label originally given for this example
-          (same as `labels` input). Included here for ease of comparison against `clf` predictions,  
-           only present if "predicted_label" column is present.
-          * *predicted_label*: Integer indices corresponding to the class predicted by trained `clf` model
-          Only present if `pred_probs` were provided as input or computed during label-issue-finding.
-          * *sample_weight*: Numeric values that were used to weight examples during
-          the final training of `clf` in `CleanLearning.fit()`.
-          sample_weight column will only be present if sample weights were actually used.
-          These weights are assigned to each example based on the class it belongs to,
-          i.e. there are only num_classes unique sample_weight values.
-          The sample weight for an example belonging to class k is computed as 1 / p(given_label = k | true_label = k).
-          This sample_weight normalizes the loss to effectively trick `clf` into learning with the distribution
-          of the true labels by accounting for the noisy data pruned out prior to training on cleaned data.
-          In other words, examples with label issues were removed, so this weights the data proportionally 
-          so that the classifier trains as if it had all the true labels,
-          not just the subset of cleaned data left after pruning out the label issues.
+          - "is_label_issue": boolean where ``True`` represents a
+            label issue and ``False`` represents an example that is accurately
+            labeled with high confidence.
+            This column is equivalent to `label_issues_mask` output from `filter.find_label_issues()`.
+
+          - "label_quality": numeric score that measures the quality of each label
+            (how likely it is to be correct, with lower scores indicating potentially erroneous labels).
+
+          - "predicted_class": integer indices corresponding the class predicted by trained `clf` model
+            (only present if `pred_probs` were provided as input or computed during label-issue-finding).
+
+          - "sample_weight": numeric values corresponding to weights to assign each example
+            based on how trustworthy its label is.
+            These sample weights were used in the final model training in `CleanLearning.fit()`.
+            sample_weight column will only be present if sample weights were actually used.
         """
 
         try_import_pandas()
