@@ -131,6 +131,8 @@ from cleanlab.internal.latent_algebra import (
     compute_py_inv_noise_matrix,
     compute_noise_matrix_from_inverse,
 )
+from cleanlab.internal.util import try_import_pandas
+from cleanlab.rank import get_label_quality_scores
 from cleanlab import filter
 
 
@@ -191,6 +193,9 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
       <cleanlab.filter.find_label_issues>`. Options that may especially impact
       accuracy include: `filter_by`, `frac_noise`, `min_examples_per_class`.
 
+    label_quality_scores_kwargs : dict, optional
+      Keyword arguments to pass into :py:func:`rank.get_label_quality_scores
+      <cleanlab.rank.get_label_quality_scores>`. Options include: `method`, `adjust_pred_probs`.
     verbose : bool, default=True
       Controls how much output is printed. Set to ``False`` to suppress print
       statements.
@@ -206,9 +211,11 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         converge_latent_estimates=False,
         pulearning=None,
         find_label_issues_kwargs={},
+        label_quality_scores_kwargs={},
         verbose=True,
     ):
 
+        try_import_pandas()
         if clf is None:
             # Use logistic regression if no classifier is provided.
             clf = LogReg(multi_class="auto", solver="lbfgs")
@@ -230,8 +237,9 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         self.converge_latent_estimates = converge_latent_estimates
         self.pulearning = pulearning
         self.find_label_issues_kwargs = find_label_issues_kwargs
+        self.label_quality_scores_kwargs = label_quality_scores_kwargs
         self.verbose = verbose
-        self.label_issues_mask = None
+        self.label_issues_df = None
         self.sample_weight = None
         self.confident_joint = None
         self.py = None
@@ -251,7 +259,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         thresholds=None,
         noise_matrix=None,
         inverse_noise_matrix=None,
-        label_issues_mask=None,
+        label_issues=None,
         clf_kwargs={},
         clf_final_kwargs={},
     ):
@@ -313,16 +321,17 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
           that are mislabeled examples from every other class ``k_y``,
           Assumes columns of `inverse_noise_matrix` sum to 1.
 
-        label_issues_mask : np.array, optional
-          A boolean mask for the entire dataset such as those returned by:
+        label_issues : pd.DataFrame or np.array, optional
+          Specifies the label issues for each example in dataset.
+          If DataFrame, must be formatted as the one returned by:
           :py:meth:`CleanLearning.find_label_issues
-          <cleanlab.classification.CleanLearning.find_label_issues>` or
+          <cleanlab.classification.CleanLearning.find_label_issues>` or by this function.
+          If np.array, must contain boolean label_issues_mask as output by:
           :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>`.
-          If specified, examples corresponding to ``False`` entries will be
+          If specified, examples identified to have label issues will be
           pruned from the data before training the `clf` model.
           Providing this argument significantly reduces the time this method takes to run by
-          skipping the slow cross validation training step necessary to pre-compute the boolean mask
-          of label issues.
+          skipping the slow cross-validation step necessary to find label issues.
 
         clf_kwargs : dict, optional
           Optional keyword arguments to pass into `clf`'s ``fit()`` method.
@@ -337,15 +346,34 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
 
         Returns
         -------
-        tuple
-          (`label_issues_mask`, `sample_weight`)
+        label_issues_df : pd.DataFrame
+          DataFrame in which each row represents an example from our dataset. May contain the following columns:
+
+          "is_label_issue": boolean mask for the entire dataset where ``True`` represents a
+          label issue and ``False`` represents an example that is accurately
+          labeled with high confidence.
+          This column is equivalent to `label_issues_mask` output from `filter.find_label_issues()`.
+
+          "label_quality": Numeric score that measures the quality of each label
+          (how likely it is to be correct, with lower scores indicating potentially erroneous labels).
+
+          "predicted_class": Integer indices corresponding the class predicted by trained `clf` model
+          (only present if `pred_probs` were provided as input or computed during label-issue-finding).
+
+          "sample_weight": Numeric values corresponding to weights to assign each example
+          based on how trustworthy its label is.
+          These sample weights were used in the final model training in `CleanLearning.fit()`.
+          sample_weight column will only be present if sample weights were actually used.
         """
+
+        try_import_pandas()
+        import pandas as pd
 
         clf_final_kwargs = {**clf_kwargs, **clf_final_kwargs}
         self.clf_final_kwargs = clf_final_kwargs
 
-        if label_issues_mask is None:
-            label_issues_mask = self.find_label_issues(
+        if label_issues is None:
+            label_issues = self.find_label_issues(
                 X,
                 labels,
                 pred_probs=pred_probs,
@@ -355,15 +383,41 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
                 clf_kwargs=clf_kwargs,
             )
         elif self.verbose:
-            print("Using provided label_issues_mask instead of finding label issues.")
+            print("Using provided label_issues instead of finding label issues.")
 
-        # Always overwrites `self.label_issues_mask` and ensures same length as `X` and `labels`.
-        self.label_issues_mask = label_issues_mask
-        x_mask = ~self.label_issues_mask
+        # label_issues always overwrites self.label_issues_df. Ensure it is properly formatted:
+        if isinstance(label_issues, pd.DataFrame):
+            if "is_label_issue" not in label_issues.columns:
+                raise ValueError("DataFrame label_issues must contain column: 'is_label_issue'")
+            if len(label_issues) != len(labels):
+                raise ValueError("label_issues and labels must have same length")
+            self.label_issues_df = label_issues
+        elif isinstance(label_issues, np.ndarray):
+            if label_issues.shape != labels.shape:
+                raise ValueError(
+                    "If it is numpy.array, label_issues must have same shape as labels"
+                )
+            if not ((label_issues == 0) | (label_issues == 1)).all():
+                raise ValueError(
+                    "If it is numpy.array, label_issues must contain True/False values."
+                )
+            self.label_issues_df = pd.DataFrame({"is_label_issue": label_issues})
+        else:
+            raise ValueError("label_issues must be either pandas.DataFrame or numpy.array")
+
+        if "label_quality" not in self.label_issues_df.columns and pred_probs is not None:
+            if self.verbose:
+                print("Computing label quality scores based on given pred_probs ...")
+            self.label_issues_df["label_quality"] = get_label_quality_scores(
+                labels, pred_probs, **self.label_quality_scores_kwargs
+            )
+
+        label_issues_mask = self.label_issues_df["is_label_issue"].values
+        x_mask = ~label_issues_mask
         x_cleaned = X[x_mask]
         labels_cleaned = labels[x_mask]
         if self.verbose:
-            print(f"Pruning {np.sum(self.label_issues_mask)} examples with label issues ...")
+            print(f"Pruning {np.sum(label_issues_mask)} examples with label issues ...")
             print(f"Remaining clean data has {len(labels_cleaned)} examples.")
 
         # Check if sample_weight in clf.fit()
@@ -379,17 +433,20 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
                     "Assigning sample weights for final training based on estimated label quality."
                 )
 
-            self.sample_weight = np.ones(np.shape(labels_cleaned))
+            sample_weight = np.ones(np.shape(labels_cleaned))
             for k in range(self.num_classes):
                 sample_weight_k = 1.0 / max(self.noise_matrix[k][k], 1e-3)  # clip sample weights
-                self.sample_weight[labels_cleaned == k] = sample_weight_k
+                sample_weight[labels_cleaned == k] = sample_weight_k
 
+            sample_weight_expanded = np.zeros(len(labels))  # pad pruned examples with zero weight
+            sample_weight_expanded[x_mask] = sample_weight
+            self.label_issues_df["sample_weight"] = sample_weight_expanded
             if self.verbose:
                 print("Fitting final model on the clean data ...")
             self.clf.fit(
                 x_cleaned,
                 labels_cleaned,
-                sample_weight=self.sample_weight,
+                sample_weight=sample_weight,
                 **self.clf_final_kwargs,
             )
         else:
@@ -398,7 +455,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
             # This is less accurate, but best we can do if no sample_weight.
             self.clf.fit(x_cleaned, labels_cleaned, **self.clf_final_kwargs)
 
-        return self.clf
+        return self.label_issues_df
 
     def predict(self, *args, **kwargs):
         """Returns a vector of predictions.
@@ -490,18 +547,21 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
 
         Returns
         -------
-        label_issues_mask : np.array
-          A boolean mask for the entire dataset where ``True`` represents a
-          label issue and ``False`` represents an example that is accurately
-          labeled with high confidence.
+        label_issues_df : pd.DataFrame
+          DataFrame with same format as the one returned by :py:meth:`CleanLearning.fit()
+        <cleanlab.classification.CleanLearning.fit>`.
+          See there for documentation regarding column definitions.
         """
 
-        if self.label_issues_mask is not None and self.verbose:
+        try_import_pandas()
+        import pandas as pd
+
+        if self.label_issues_df is not None and self.verbose:
             print(
-                "Overwriting previously identified label issues stored at self.label_issues_mask. "
+                "Overwriting previously identified label issues stored at self.label_issues_df. "
                 "`self.get_label_issues()` will now return the newly identified label issues. "
                 "If you already ran `self.find_label_issues()` and don't want to recompute, you"
-                "should pass the `label_issues_mask` in as a parameter to this function."
+                "should pass the `label_issues_df` in as a parameter to this function."
             )
 
         # Check inputs
@@ -623,26 +683,33 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
 
         if self.verbose:
             print("Using predicted probabilities to identify label issues ...")
-        # Get the boolean mask of the label issues
-        self.label_issues_mask = filter.find_label_issues(
+        label_issues_mask = filter.find_label_issues(
             labels,
             pred_probs,
             **self.find_label_issues_kwargs,
         )
+        label_quality_scores = get_label_quality_scores(
+            labels, pred_probs, **self.label_quality_scores_kwargs
+        )
+        self.label_issues_df = pd.DataFrame(
+            {"is_label_issue": label_issues_mask, "label_quality": label_quality_scores}
+        )
+        if pred_probs is not None:
+            self.label_issues_df["predicted_class"] = pred_probs.argmax(axis=1)
         if self.verbose:
-            print(f"Identified {np.sum(self.label_issues_mask)} examples with label issues.")
+            print(f"Identified {np.sum(label_issues_mask)} examples with label issues.")
 
-        return self.label_issues_mask
+        return self.label_issues_df
 
     def get_label_issues(self):
-        """Accessor. Returns `label_issues_mask` if previously already computed."""
+        """Accessor. Returns `label_issues_df` if previously already computed."""
 
-        if self.label_issues_mask is None:
+        if self.label_issues_df is None:
             warnings.warn(
                 "The label issues have not yet been computed. "
-                "Run self.find_label_issues() or self.fit() first."
+                "Run `self.find_label_issues()` or `self.fit()` first."
             )
-        return self.label_issues_mask
+        return self.label_issues_df
 
     def _process_label_issues_kwargs(self, find_label_issues_kwargs):
         """Private helper function that is used to modify the arguments to passed to
