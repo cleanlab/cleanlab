@@ -115,6 +115,7 @@ from sklearn.linear_model import LogisticRegression as LogReg
 from sklearn.metrics import accuracy_score
 from sklearn.base import BaseEstimator
 import numpy as np
+import pandas as pd
 import inspect
 import warnings
 from cleanlab.internal.util import (
@@ -131,7 +132,6 @@ from cleanlab.internal.latent_algebra import (
     compute_py_inv_noise_matrix,
     compute_noise_matrix_from_inverse,
 )
-from cleanlab.internal.util import try_import_pandas
 from cleanlab.rank import get_label_quality_scores
 from cleanlab import filter
 
@@ -366,9 +366,6 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
           sample_weight column will only be present if sample weights were actually used.
         """
 
-        try_import_pandas()
-        import pandas as pd
-
         clf_final_kwargs = {**clf_kwargs, **clf_final_kwargs}
         self.clf_final_kwargs = clf_final_kwargs
 
@@ -552,9 +549,6 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         <cleanlab.classification.CleanLearning.fit>`.
           See there for documentation regarding column definitions.
         """
-
-        try_import_pandas()
-        import pandas as pd
 
         if self.label_issues_df is not None and self.verbose:
             print(

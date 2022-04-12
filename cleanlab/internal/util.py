@@ -439,12 +439,3 @@ def print_joint_matrix(joint_matrix, round_places=2):
         short_title="p(labels,y)",
         round_places=round_places,
     )
-
-
-def try_import_pandas():
-    try:
-        import pandas
-    except Exception as e:
-        print(
-            "This functionality requires the `pandas` package. Install via: `pip install pandas>=1.0.0`"
-        )
