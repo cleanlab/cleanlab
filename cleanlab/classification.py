@@ -556,17 +556,21 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
 
         This is the method called to find label issues inside
         :py:meth:`CleanLearning.fit()
+        <cleanlab.classification.CleanLearning.fit>`. 
+        Most of the **Parameters** of this method are  
+        For info about the other parameters, see the docstring of :py:meth:`CleanLearning.fit()
         <cleanlab.classification.CleanLearning.fit>`.
 
-        Extra Parameters
-        ----------------
+        Parameters
+        ----------
         save_space : bool, optional
           If True, then returned `label_issues_df` will not be stored as attribute.
           This means some other methods like `self.get_label_issues()` will no longer work.
 
+
         For info about the other parameters, see the docstring of :py:meth:`CleanLearning.fit()
         <cleanlab.classification.CleanLearning.fit>`.
-
+        
         Returns
         -------
         label_issues_df : pd.DataFrame
