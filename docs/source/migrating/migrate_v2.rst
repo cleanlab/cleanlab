@@ -10,28 +10,28 @@ The full change-log is listed in the `v2.0.0. Release Notes <https://github.com/
 Method and class name changes
 -----------------------------
 
-| ``pruning.get_noise_indices(s, psx, prune_method, sorted_index_method, ...)``
+| **Old:** ``pruning.get_noise_indices(s, psx, prune_method, sorted_index_method, ...)``
 | --> 
-| ``filter.find_label_issues(labels, pred_probs, filter_by, return_indices_ranked_by, ...)``
+| **New:** ``filter.find_label_issues(labels, pred_probs, filter_by, return_indices_ranked_by, ...)``
 
 **Note:** ``inverse_noise_matrix`` is no longer a supported input argument, but ``confident_joint`` remains (you can easily convert between these two).
 
 
-| ``pruning.order_label_errors(label_errors_bool, psx, labels, sorted_index_method)``
+| **Old:** ``pruning.order_label_errors(label_errors_bool, psx, labels, sorted_index_method)``
 | --> 
-| ``rank.order_label_issues(label_issues_mask, labels, pred_probs, rank_by, ...)``
+| **New:** ``rank.order_label_issues(label_issues_mask, labels, pred_probs, rank_by, ...)``
 
 **Note:** You can now alternatively use ``rank.get_label_quality_score()`` to numerically score the labels instead of ranking them.
 
-| ``latent_estimation.num_label_errors(labels, psx, ...)`` 
+| **Old:** ``latent_estimation.num_label_errors(labels, psx, ...)`` 
 | --> 
-| ``count.num_label_issues(labels, pred_probs, ...)``
+| **New:** ``count.num_label_issues(labels, pred_probs, ...)``
 
 **Note:** This is the most accurate way to estimate the raw *number* of label errors in a dataset.
 
-| ``classification.LearningWithNoisyLabels(..., prune_method)``
+| **Old:** ``classification.LearningWithNoisyLabels(..., prune_method)``
 | -->
-| ``classification.CleanLearning(..., find_label_issues_kwargs)``
+| **New:** ``classification.CleanLearning(..., find_label_issues_kwargs)``
 
 **Note:** ``CleanLearning`` can now find label errors for you, neatly organizing them in a pandas.DataFrame as well as computing the required out-of-sample predicted probabilities. You just specify which classifier, we handle the cross-validation!
 
