@@ -1,27 +1,29 @@
 ![](https://raw.githubusercontent.com/cleanlab/assets/master/cleanlab/cleanlab_logo_open_source_transparent_optimized_size.png)
 
-cleanlab automatically finds and fixes errors in ML datasets. This data-centric AI package facilitates **machine learning with messy, real-world data and labels**.
+cleanlab automatically finds and fixes errors in any ML dataset. This data-centric AI package facilitates **machine learning with messy, real-world data** by providing \`**clean lab**'els during training.
 
 ```python
-# Example: Works with any classifier for your data. Yup, you can use sklearn/PyTorch/TensorFlow/XGBoost/etc.
-model = sklearn.ensemble.RandomForestClassifier()
 
-# CL wrapper has all the same methods as your model + more.
-cl = cleanlab.classification.CleanLearning(model)
+# Cleanlab works with **any classifier**. Yup, you can use sklearn/PyTorch/TensorFlow/XGBoost/etc.
+cl = cleanlab.classification.CleanLearning(sklearn.YourFavoriteClassifier())
 
-# Finding label issues in any data is trivial with cleanlab... its one line of code.
+# cleanlab finds data and label issues in **any dataset**... in ONE line of code!
 label_issues = cl.find_label_issues(data, labels)
 
-# Train a robust version of your model with noisy data.
+# cleanlab trains a robust version of your model that works more reliably with noisy data.
 cl.fit(data, labels)
 
-# Estimate the predictions you would have gotten by training with *no* label issues.
+# cleanlab estimates the predictions you would have gotten if you had trained with *no* label issues.
 cl.predict(test_data)
+
+# A true data-centric AI package, cleanlab provides class-level issues and overall data quality, for any dataset.
+cleanlab.dataset.health_summary(labels, confident_joint=cl.confident_joint)
 ```
 
-Check out the: [documentation and tutorials](https://docs.cleanlab.ai/), [examples](https://github.com/cleanlab/examples), and our [blog](https://cleanlab.ai/blog/).
+Get started with: [documentations](https://docs.cleanlab.ai/), [tutorials](https://docs.cleanlab.ai/master/tutorials/tabular.html), [examples](https://github.com/cleanlab/examples), and [blogs](https://cleanlab.ai/blog/).
 
-[Click here](https://docs.cleanlab.ai/master/tutorials/image.html) to run cleanlab on your own data in just 5 minutes! We have 5-minute tutorials for classification with: [image](https://docs.cleanlab.ai/master/tutorials/image.html), [text](https://docs.cleanlab.ai/master/tutorials/text.html), [audio](https://docs.cleanlab.ai/master/tutorials/audio.html), and [tabular](https://docs.cleanlab.ai/master/tutorials/tabular.html) data.
+ - [Click here](https://docs.cleanlab.ai/master/tutorials/image.html) to run cleanlab on your own data in just 5 minutes!
+ - Quickstart with 5-minute tutorials for classification with: [image](https://docs.cleanlab.ai/master/tutorials/image.html), [text](https://docs.cleanlab.ai/master/tutorials/text.html), [audio](https://docs.cleanlab.ai/master/tutorials/audio.html), and [tabular](https://docs.cleanlab.ai/master/tutorials/tabular.html) data.
 <!-- TODO:update links to v2.0 docs -->
 
 
@@ -68,9 +70,10 @@ Check out the: [documentation and tutorials](https://docs.cleanlab.ai/), [exampl
 
 Release notes for past versions are available [here](https://github.com/cleanlab/cleanlab/releases). Details behind certain updates are explained in our [blog](https://cleanlab.ai/blog/).
 
-Long-time cleanlab user? Here's a [guide](https://docs.cleanlab.ai/v2.0.0/migrating/migrate_v2.html) on how to migrate to the newest version.
-<!-- TODO: verify link is actually correct for v2.0 docs -->
+**Long-time cleanlab user?**
 
+* Here's a [guide](https://docs.cleanlab.ai/v2.0.0/migrating/migrate_v2.html) on how to migrate to cleanlab 2.0.0.
+<!-- TODO: verify link is actually correct for v2.0 docs -->
 
 ## So fresh, so cleanlab
 
@@ -78,10 +81,14 @@ cleanlab **clean**s your data's **lab**els via state-of-the-art *confident learn
 
 cleanlab is:
 
-1. **backed-by-theory** - Has [provable guarantees](https://arxiv.org/abs/1911.00068) of exact noise estimation and label error finding in realistic cases where models make imperfect predictions.
-2. **fast** - Implementations are optimized and parallelized across CPU threads (e.g. < 1 second to find label issues in ImageNet with pre-computed probabilities).
-3. **easy-to-use** - By default, cleanlab requires no hyper-parameters and can find label issues or train noise-robust models in one line of code.
-4. **general** -  Works with any dataset and any model, e.g., TensorFlow, PyTorch, sklearn, xgboost, etc.
+1. **backed by theory**
+   - with [provable guarantees](https://arxiv.org/abs/1911.00068) of exact noise estimation and label error finding in realistic cases with imperfect models.
+2. **fast**
+   - Code is optimized and parallel-threaded (< 1 second to find label issues in ImageNet with pre-computed probabilities).
+4. **easy-to-use** 
+   - Find label issues or train noise-robust models in one line of code. By default, cleanlab requires no hyper-parameters. 
+6. **general**
+   -  Works with **[any dataset](https://labelerrors.com/)** and **any model**, e.g., TensorFlow, PyTorch, sklearn, xgboost, etc.
 <br/>
 
 ![](https://raw.githubusercontent.com/cleanlab/assets/master/cleanlab/label-errors-examples.png)
@@ -90,18 +97,39 @@ Examples of incorrect given labels in various image datasets <a href="https://l7
 </p>
 
 
-## Running cleanlab
+## Run cleanlab
 
-- Get started [here](https://docs.cleanlab.ai/)!
-- cleanlab can be run on Python 3.6+ on Linux, macOS, or Windows.
-- Most users should install via `pip` or `conda` as described [here](https://docs.cleanlab.ai/).
-- Developers who install bleeding-edge master branch version from source should refer to the corresponding [version of documentation](https://docs.cleanlab.ai/master/index.html).
+
+cleanlab supports Linux, macOS, and Windows and runs on Python 3.6+.
+
+- Get started [here](https://docs.cleanlab.ai/)! Install via `pip` or `conda` as described [here](https://docs.cleanlab.ai/).
+- Developers who install the bleeding-edge master branch from source should refer to [this master version of documentation](https://docs.cleanlab.ai/master/index.html).
+
+<details><summary>
+cleanlab core package components
+(<b>click to learn more</b>)
+</summary>
+<br/>
+
+Many methods have default parameters not covered here. Check out the [documentation for the master branch version](https://docs.cleanlab.ai/master/)
+
+### cleanlab Core Package Components
+
+1.  **cleanlab/classification.py** - [CleanLearning()](https://github.com/cleanlab/cleanlab/blob/master/cleanlab/classification.py#L106) class for learning with noisy labels.
+2.  **cleanlab/count.py** - Estimates and fully characterizes all variants of label noise.
+3.  **cleanlab/filter.py** - Finds the examples with label issues in a dataset.
+4.  **cleanlab/rank.py** - Rank every example in a dataset with various label quality scores.
+5.  **cleanlab.dataset.py** - Provides dataset-level and class-level overviews of issues in your dataset.
+6.  **cleanlab/benchmarking/noise\_generation.py** - Generate noisy labels for benchmarking, reproduction, and ML research.
+
+<br/>
+</details>
 
 
 ## Use cleanlab with any model (TensorFlow, PyTorch, sklearn, xgboost, etc.)
 
-All of the features of the cleanlab package work with **any model**. Yes, any model. Feel free to use scikit-learn, PyTorch, Tensorflow, Keras, JAX, HuggingFace, MXNet, XGBoost, etc.
-If you use a sklearn-compatible classifier, all cleanlab methods will work out-of-the-box.
+All of the features of the cleanlab package work with **any dataset** and **any model**. Yes, any model: scikit-learn, PyTorch, Tensorflow, Keras, JAX, HuggingFace, MXNet, XGBoost, etc.
+If you use a sklearn-compatible classifier, cleanlab methods work out-of-the-box.
 
 <details><summary>
 It’s also easy to use your favorite non-sklearn-compatible model (<b>click to learn more</b>)
@@ -187,6 +215,7 @@ Top 24 least-confident labels in the original MNIST **train** dataset, algorithm
 </details>
 
 
+
 <details><summary>
 cleanlab performance across 4 data distributions and 9 classifiers
 (<b>click to learn more</b>)
@@ -220,25 +249,12 @@ observed dataset."
 </details>
 
 <details><summary>
-ML research with cleanlab
+ML research using cleanlab
 (<b>click to learn more</b>)
 </summary>
 <br/>
 
-Researchers may find some components of this package useful for evaluating algorithms for ML with noisy labels.
-
-### cleanlab Core Package Components
-
-1.  **cleanlab/classification.py** - [CleanLearning()](https://github.com/cleanlab/cleanlab/blob/master/cleanlab/classification.py#L106) class for learning with noisy labels.
-2.  **cleanlab/count.py** - Estimates and fully characterizes all variants of label noise.
-3.  **cleanlab/noise\_generation.py** - Generate mathematically valid synthetic noise matrices.
-4.  **cleanlab/filter.py** - Finds the examples with label issues in a dataset.
-5.  **cleanlab/rank.py** - Rank every example in a dataset with various label quality scores.
-6.  **cleanlab/dataset.py** - Summarize the overall types of label issues most common across your dataset.
-
-Many methods have default parameters not covered here. Check out the [documentation for the master branch version](https://docs.cleanlab.ai/master/).
-
-For additional details/notation, refer to [the Confident Learning paper](https://jair.org/index.php/jair/article/view/12125).
+Researchers may find some components of this package useful for evaluating algorithms for ML with noisy labels. For additional details/notation, refer to [the Confident Learning paper](https://jair.org/index.php/jair/article/view/12125).
 
 ### Methods to Standardize Research with Noisy Labels
 
@@ -273,7 +289,39 @@ s_noisy_labels = generate_noisy_labels(y_hidden_actual_labels, noise_matrix)
 # The tutorial stops here, but you don't have to. Inspect method docstrings for full docs.
 ```
 
-### Fully characterize label noise and uncertainty in your dataset.
+<br/>
+</details>
+
+
+<details><summary>
+cleanlab for advanced users
+(<b>click to learn more</b>)
+</summary>
+<br/>
+
+Many methods and their default parameters are not covered here. Check out the [documentation for the master branch version](https://docs.cleanlab.ai/master/) for the full suite of features supported by the cleanlab API.
+
+## Use any custom model's predicted probabilities to find label errors in 1 line of code
+
+pred_probs (num_examples x num_classes matrix of predicted probabilities) should already be computed on your own, with any classifier. pred_probs must be obtain in a holdout/out-of-sample manner (e.g. via cross-validation). 
+* cleanlab can do this for you via [`cleanlab.count.estimate_cv_predicted_probabilities`](https://docs.cleanlab.ai/master/cleanlab/count.html#cleanlab.count)]
+* Tutorial with more info: [[here](https://docs.cleanlab.ai/master/tutorials/pred_probs_cross_val.html)]
+* Example how to compute pred_probs for CIFAR-10 [[here](https://github.com/cleanlab/examples/tree/master/cifar10)]
+
+```python
+# label issues are ordered by likelihood of being an error. First index is most likely error.
+from cleanlab.filter import find_label_issues
+
+ordered_label_issues = find_label_issues(  # One line of code!
+    labels=numpy_array_of_noisy_labels,
+    pred_probs=numpy_array_of_predicted_probabilities,
+    return_indices_ranked_by='normalized_margin', # Orders label issues
+ )
+```
+
+Pre-computed **out-of-sample** predicted probabilities for CIFAR-10 train set are available: [here](https://github.com/cleanlab/examples/tree/master/cifar10#pre-computed-psx-for-every-noise--sparsity-condition).
+
+## Fully characterize label noise and uncertainty in your dataset.
 
 *s* denotes a random variable that represents the observed, noisy label and *y* denotes a random variable representing the hidden, actual labels. Both *s* and *y* take any of the m classes as values. The cleanlab package supports different levels of granularity for computation depending on the needs of the user. Because of this, we support multiple alternatives, all no more than a few lines, to estimate these latent distribution arrays, enabling the user to reduce computation time by only computing what they need to compute, as seen in the examples below.
 
@@ -283,7 +331,7 @@ The label flipping rates are denoted *P(s | y)*, the inverse rates are *P(y | s)
 
 Most of the methods in the **cleanlab** package start by first estimating the *confident\_joint*. You can learn more about this in the [confident learning paper](https://arxiv.org/abs/1911.00068).
 
-#### Option 1: Compute the confident joint and predicted probs first. Stop if that’s all you need.
+### Option 1: Compute the confident joint and predicted probs first. Stop if that’s all you need.
 
 ``` python
 from cleanlab.count import estimate_latent
@@ -304,7 +352,7 @@ est_py, est_nm, est_inv = estimate_latent(
 )
 ```
 
-#### Option 2: Estimate the latent distribution matrices in a single line of code.
+### Option 2: Estimate the latent distribution matrices in a single line of code.
 
 ``` python
 from cleanlab.count import estimate_py_noise_matrices_and_cv_pred_proba
@@ -314,7 +362,7 @@ est_py, est_nm, est_inv, confident_joint, pred_probs = estimate_py_noise_matrice
 )
 ```
 
-#### Option 3: Skip computing the predicted probabilities if you already have them.
+### Option 3: Skip computing the predicted probabilities if you already have them.
 
 ``` python
 # Already have pred_probs? (n x m matrix of predicted probabilities)
@@ -327,7 +375,7 @@ est_py, est_nm, est_inv, confident_joint = estimate_py_and_noise_matrices_from_p
 )
 ```
 
-### Completely characterize label noise in a dataset:
+## Completely characterize label noise in a dataset:
 
 The joint probability distribution of noisy and true labels, *P(s,y)*, completely characterizes label noise with a class-conditional *m x m* matrix.
 
@@ -390,7 +438,7 @@ cj = compute_confident_joint(s, pred_probs, thresholds=thresholds, )
 # We can use cj to find label errors like this:
 indices_of_label_issues = find_label_issues(s, pred_probs, confident_joint=cj, )
 
-# In addition to label issues, we can find the fraction of noise in the unlabeled class.
+# In addition to label issues, cleanlab can find the fraction of noise in the unlabeled class.
 # First we need the inv_noise_matrix which contains P(y|s) (proportion of mislabeling).
 _, _, inv_noise_matrix = estimate_latent(confident_joint=cj, labels=s, )
 # Because inv_noise_matrix contains P(y|s), p (y = anything | labels = pu_class) should be 0
@@ -441,17 +489,21 @@ cleanlab is based on peer-reviewed research. Here are the relevant papers to cit
 
 ## Other resources
 
-  - [Blog post: Introduction to Confident Learning](https://l7.curtisnorthcutt.com/confident-learning)
-  - [NeurIPS 2021 paper: Pervasive Label Errors in Test Sets Destabilize Machine Learning Benchmarks](https://arxiv.org/abs/2103.14749)
-  - [Cleanlab Blog](https://cleanlab.ai/blog/)
+- [Blog post: Introduction to Confident Learning](https://l7.curtisnorthcutt.com/confident-learning)
+
+- [NeurIPS 2021 paper: Pervasive Label Errors in Test Sets Destabilize Machine Learning Benchmarks](https://arxiv.org/abs/2103.14749)
+
+- [Cleanlab Blog](https://cleanlab.ai/blog/)
 
 ## Join our community
 
-Have ideas for the future of cleanlab? How are you using cleanlab? [Join the discussion](https://github.com/cleanlab/cleanlab/discussions) or [our Slack community](https://join.slack.com/t/cleanlab-community/shared_invite/zt-wpi8ocuf-O87JiSAvuvguytAUBiEwNQ).
+* The best place to learn is [our Slack community](https://join.slack.com/t/cleanlab-community/shared_invite/zt-wpi8ocuf-O87JiSAvuvguytAUBiEwNQ).
 
-Have code improvements for cleanlab? See the [development guide](DEVELOPMENT.md) and [submit a pull request](CONTRIBUTING.md).
+* Have ideas for the future of cleanlab? How are you using cleanlab? [Join the discussion](https://github.com/cleanlab/cleanlab/discussions).
 
-Have an issue with cleanlab? [Search existing issues](https://github.com/cleanlab/cleanlab/issues?q=is%3Aissue) or [submit a new issue](https://github.com/cleanlab/cleanlab/issues/new).
+* Have code improvements for cleanlab? See the [development guide](DEVELOPMENT.md) and [submit a pull request](CONTRIBUTING.md).
+
+* Have an issue with cleanlab? [Search existing issues](https://github.com/cleanlab/cleanlab/issues?q=is%3Aissue) or [submit a new issue](https://github.com/cleanlab/cleanlab/issues/new).
 
 
 ## License
