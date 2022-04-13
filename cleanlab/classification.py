@@ -544,7 +544,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
           Runs cross-validation to get out-of-sample pred_probs from `clf`
           and then calls :py:func:`filter.find_label_issues
           <cleanlab.filter.find_label_issues>` to find label issues.
-          The resulting mask is cached internally and returned.
+          These label issues are cached internally and returned in a pandas DataFrame.
           Kwargs for :py:func:`filter.find_label_issues
           <cleanlab.filter.find_label_issues>` must have already been specified
           in the initialization of this class, not here.
@@ -575,7 +575,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
             This means some other methods like `self.get_label_issues()` will no longer work.
 
 
-          For info about the other parameters, see the docstring of :py:meth:`CleanLearning.fit()
+          For info about the **other parameters**, see the docstring of :py:meth:`CleanLearning.fit()
           <cleanlab.classification.CleanLearning.fit>`.
 
           Returns
