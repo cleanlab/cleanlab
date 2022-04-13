@@ -112,10 +112,4 @@ When the :py:meth:`.fit() <cleanlab.classification.CleanLearning.fit>` method is
    :caption: Migrate
    :hidden:
 
-   test1
-
-.. toctree::
-   :hidden:
-
-   Migration Guide <migrating/migrate_v2>
-
+   Website <https://cleanlab.ai>
