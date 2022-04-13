@@ -36,6 +36,16 @@ __version__ = "1.0.1"
 #   - Moved to GitHub Actions CI
 #   - Significantly shrunk the clone size to a few MB from 100MB+
 
+# ---------------------------
+# | FUTURE FEATURES PLANNED |
+# ---------------------------
+
+#   - Extensions to regression
+#   - Extensions for object detection and segmentation tasks.
+#   - More functions for ranking data and data quality
+#   - Additional support for finding label errors and filtering out high/low quality data/labels.
+#   - Cleanlab Pro to automate cleaning: coming later this year for businesses and developers.
+
 # ----------------------------------
 # | PREVIOUS VERSION RELEASE NOTES |
 # ----------------------------------
