@@ -121,6 +121,7 @@ NumPy style are documented below:
 
      \sum_{0}^{n} 2n+1
   ```
+- **Pseudocode vs math**: prefer pseudocode in double backticks over LaTeX math.
 - **Bold vs italics**: Use italics when defining a term, and use bold sparingly
   for extra emphasis.
 - **Shapes**: Do not include shapes in the type of parameters, instead use
@@ -128,5 +129,10 @@ NumPy style are documented below:
   description. See, for example, the documentation for
   `cleanlab.classification.CleanLearning.fit()`.
 - **Optional arguments**: for the most part, just put `, optional` in the type.
-- **Multiple return types**: you can use "or" to separate types, e.g. `np.array
-  or None`.
+- **Type unions**: if a parameter or return type is something like "a numpy
+  array or None", you can use "or" to separate types, e.g. `np.array or None`,
+  and it'll be parsed correctly.
+- **Parameterized types**: Use [standard Python type
+  hints](https://docs.python.org/3/library/typing.html) for referring to
+  parameters and parameterized types in docs, e.g. `Iterable[int]` or
+  `list[float]`.
