@@ -769,8 +769,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         Accessor. Returns `label_issues_df` attribute if previously already computed.
         This pd.DataFrame describes the label issues identified for each example (as rows).
         For column definitions, see the documentation of
-        :py:meth:`CleanLearning.find_label_issues
-          <cleanlab.classification.CleanLearning.find_label_issues>`.
+        :py:meth:`CleanLearning.find_label_issues<cleanlab.classification.CleanLearning.find_label_issues>`.
 
         Returns
         -------
