@@ -363,8 +363,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
           `self.label_issues_df`: a pd.DataFrame accessible via
           :py:meth:`get_label_issues
           <cleanlab.classification.CleanLearning.get_label_issues>`
-          of similar format as the one returned by:
-          :py:meth:`CleanLearning.find_label_issues
+          of similar format as the one returned by: :py:meth:`CleanLearning.find_label_issues
             <cleanlab.classification.CleanLearning.find_label_issues>`.
           See documentation of :py:meth:`CleanLearning.find_label_issues
             <cleanlab.classification.CleanLearning.find_label_issues>`
