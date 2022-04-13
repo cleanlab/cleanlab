@@ -101,6 +101,12 @@ When the :py:meth:`.fit() <cleanlab.classification.CleanLearning.fit>` method is
    cleanlab/internal/index
 
 .. toctree::
+   :caption: Guides
+   :hidden:
+
+   Migrating to v2.0 <migrating/migrate_v2>
+
+.. toctree::
    :caption: Links
    :hidden:
 
@@ -108,10 +114,3 @@ When the :py:meth:`.fit() <cleanlab.classification.CleanLearning.fit>` method is
    GitHub <https://github.com/cleanlab/cleanlab>
    PyPI <https://pypi.org/project/cleanlab/>
    Conda <https://anaconda.org/Cleanlab/cleanlab>
-
-.. toctree::
-   :hidden:
-
-   Migrating to v2.0.0 <migrating/migrate_v2>
-
-
