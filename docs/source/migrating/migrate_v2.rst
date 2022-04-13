@@ -21,11 +21,13 @@ Method and class name changes
 | --> 
 | ``rank.order_label_issues(label_issues_mask, labels, pred_probs, rank_by, ...)``
 
+**Note:** You can now alternatively use ``rank.get_label_quality_score()`` to numerically score the labels instead of ranking them.
 
 | ``latent_estimation.num_label_errors(labels, psx, ...)`` 
 | --> 
 | ``count.num_label_issues(labels, pred_probs, ...)``
 
+**Note:** This is the most accurate way to estimate the raw *number* of label errors in a dataset.
 
 | ``classification.LearningWithNoisyLabels(..., prune_method)``
 | -->
