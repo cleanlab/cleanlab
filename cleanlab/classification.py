@@ -62,7 +62,7 @@ Examples
 If the model is not sklearn-compatible by default, it might be the case that
 standard packages can adapt the model. For example, you can adapt PyTorch
 models using `skorch <https://skorch.readthedocs.io/>`_ and adapt Keras models
-using `SkiKeras <https://www.adriangb.com/scikeras/>`_.
+using `SciKeras <https://www.adriangb.com/scikeras/>`_.
 
 If an open-source adapter doesn't already exist, you can manually wrap the
 model to be sklearn-compatible. This is made easy by inheriting from
@@ -164,7 +164,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
       If the model is not sklearn-compatible by default, it might be the case that
       standard packages can adapt the model. For example, you can adapt PyTorch
       models using `skorch <https://skorch.readthedocs.io/>`_ and adapt Keras models
-      using `SkiKeras <https://www.adriangb.com/scikeras/>`_.
+      using `SciKeras <https://www.adriangb.com/scikeras/>`_.
 
       Stores the classifier used in Confident Learning.
       Default classifier used is `sklearn.linear_model.LogisticRegression
@@ -365,11 +365,13 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
           of similar format as the one returned by: :py:meth:`CleanLearning.find_label_issues<cleanlab.classification.CleanLearning.find_label_issues>`.
           See documentation of :py:meth:`CleanLearning.find_label_issues<cleanlab.classification.CleanLearning.find_label_issues>`
           for column descriptions.
+          
+
           After calling ``self.fit()``, `self.label_issues_df` may also contain an extra column:
 
           * *sample_weight*: Numeric values that were used to weight examples during
-            the final training of ``clf`` in ``CleanLearning.fit()``.
-            sample_weight column will only be present if sample weights were actually used.
+            the final training of `clf` in ``CleanLearning.fit()``.
+            `sample_weight` column will only be present if sample weights were actually used.
             These weights are assigned to each example based on the class it belongs to,
             i.e. there are only num_classes unique sample_weight values.
             The sample weight for an example belonging to class k is computed as 1 / p(given_label = k | true_label = k).
