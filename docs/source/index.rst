@@ -75,6 +75,7 @@ When the :py:meth:`.fit() <cleanlab.classification.CleanLearning.fit>` method is
    :hidden:
 
    Quickstart <self>
+   Migrating to v2.0.0 <migrating/migrate_v2>
 
 .. toctree::
    :hidden:
