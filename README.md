@@ -69,6 +69,7 @@ Check out the: [documentation and tutorials](https://docs.cleanlab.ai/), [exampl
 Release notes for past versions are available [here](https://github.com/cleanlab/cleanlab/releases). Details behind certain updates are explained in our [blog](https://cleanlab.ai/blog/).
 
 <details><summary><b>How to migrate from past versions of cleanlab (click to learn more)</b> </summary>
+<br/>
 <!-- TODO:update links to v2.0 docs -->
 
 Module name changes:
@@ -91,7 +92,8 @@ CleanLearning can now find label errors for you (neatly organized in a pandas Da
 as well as computing out-of-sample predicted probabilities. 
 You just specify which classifier, we handle the cross-validation.
     
-<!-- TODO:add link to v2.0.0 Release Notes -->
+<!-- TODO: verify link to v2.0.0 Release Notes -->
+The full change-log is listed in the [v2.0.0. Release Notes](https://github.com/cleanlab/cleanlab/releases/tag/v2.0.0).
 </details>
 
 ## So fresh, so cleanlab
