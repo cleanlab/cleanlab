@@ -1,4 +1,4 @@
-![](https://raw.githubusercontent.com/cleanlab/assets/master/cleanlab/logo_w_opensource.png)
+![](https://raw.githubusercontent.com/cleanlab/assets/master/cleanlab/cleanlab_logo_open_source_transparent_optimized_size.png)
 
 cleanlab automatically finds and fixes errors in ML datasets. This data-centric AI package facilitates **machine learning with messy, real-world data and labels**.
 
