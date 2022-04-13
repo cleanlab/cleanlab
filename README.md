@@ -234,7 +234,7 @@ Researchers may find some components of this package useful for evaluating algor
 3.  **cleanlab/noise\_generation.py** - Generate mathematically valid synthetic noise matrices.
 4.  **cleanlab/filter.py** - Finds the examples with label issues in a dataset.
 5.  **cleanlab/rank.py** - Rank every example in a dataset with various label quality scores.
-<!-- TODO: add datasets module -->
+6.  **cleanlab/dataset.py** - Summarize the overall types of label issues most common across your dataset.
 
 Many methods have default parameters not covered here. Check out the [documentation for the master branch version](https://docs.cleanlab.ai/master/).
 
