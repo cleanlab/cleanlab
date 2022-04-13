@@ -91,7 +91,7 @@ def rank_classes_by_label_quality(
     )
     if class_names is not None:
         df.insert(loc=0, column="Class Name", value=class_names)
-    return df.sort_values(by="Label Quality Score", ascending=True)
+    return df.sort_values(by="Label Quality Score", ascending=True).reset_index(drop=True)
 
 
 def find_overlapping_classes(
@@ -117,14 +117,24 @@ def find_overlapping_classes(
 
     This method works by providing any one (and only one) of the following inputs:
 
-    1. `labels` and `pred_probs`, or
-    2. `joint`, or
-    3. `confident_joint`
+    1. ``labels`` and ``pred_probs``, or
+    2. ``joint``, or
+    3. ``confident_joint``
 
     Only provide **exactly one of the above input options**, do not provide a combination.
 
-    This method uses the joint distribution of noisy and true labels to compute ontological issues
-    via the approach published in `Northcutt et al., 2021 <https://jair.org/index.php/jair/article/view/12125>`_.
+    This method uses the joint distribution of noisy and true labels to compute ontological
+    issues via the approach published in `Northcutt et al.,
+    2021 <https://jair.org/index.php/jair/article/view/12125>`_.
+
+    Note
+    ----
+    The joint distribution of noisy and true labels is asymmetric, and therefore the joint
+    probability ``p(given="vehicle", true="truck") != p(true="truck", given="vehicle")``.
+    This is intuitive. Images of trucks (true label) are much more likely to be labeled as a car
+    (given label) than images of cars (true label) being frequently mislabeled as truck (given
+    label). cleanlab takes these differences into account for you automatically via the joint
+    distribution. If you do not want this behavior, simply set ``asymmetric=False``.
 
     This method measures how often the annotators confuse two classes.
     This method differs from just using a similarity matrix or confusion matrix. Instead, it works
@@ -243,7 +253,7 @@ def find_overlapping_classes(
         df.insert(
             loc=1, column="Class Name B", value=df["Class Index B"].apply(lambda x: class_names[x])
         )
-    return df.sort_values(by="Joint Probability", ascending=False)
+    return df.sort_values(by="Joint Probability", ascending=False).reset_index(drop=True)
 
 
 def overall_label_health_score(
@@ -285,7 +295,7 @@ def overall_label_health_score(
         num_issues = (num_examples * (1 - joint_trace)).round().astype(int)
         print(
             f" * Overall, about {1 - joint_trace:.0%} ({num_issues:,} of the {num_examples:,}) "
-            f"labels in your dataset potentially have issues.\n"
+            f"labels in your dataset have potential issues.\n"
             f" ** The overall label health score for this dataset is: {joint_trace:.2f}."
         )
     return joint_trace
