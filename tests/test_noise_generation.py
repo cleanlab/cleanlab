@@ -254,4 +254,4 @@ def test_max_iter():
         py=[0.1, 0.1, 0.8],
         max_iter=0,
     )
-    assert nm2 == False
+    assert nm2 is None

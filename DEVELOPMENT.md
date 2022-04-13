@@ -91,3 +91,42 @@ This repo uses [EditorConfig](https://editorconfig.org/) to keep code style
 consistent across editors and IDEs. You can install a plugin for your editor,
 and then your editor will automatically ensure that indentation and line
 endings match the project style.
+
+## Documentation style
+
+cleanlab uses [NumPy
+style](https://numpydoc.readthedocs.io/en/latest/format.html#docstring-standard)
+docstrings
+([example](https://www.sphinx-doc.org/en/master/usage/extensions/example_numpy.html)).
+
+Aspects that are not covered in the NumPy style or that are different from the
+NumPy style are documented below:
+
+- **Referring to the cleanlab package**: we refer to cleanlab without any
+  special formatting, so no `cleanlab`, just cleanlab.
+- **Cross-referencing**: when mentioning functions/classes/methods, always
+  [cross-reference](https://www.sphinx-doc.org/en/master/usage/restructuredtext/domains.html#cross-referencing-python-objects)
+  them to create a clickable link. Cross-referencing code from Jupyter
+  notebooks is not currently supported.
+- **Variable, module, function, and class names**: when not cross-references,
+  should be written between single back-ticks, like `` `pred_probs` ``. Such
+  names in Jupyter notebooks (Markdown) can be written between single
+  back-ticks as well.
+- **Math**: We support [LaTeX
+  math](https://sphinxcontrib-katex.readthedocs.io/en/v0.8.6/examples.html)
+  with the inline `` :math:`x+y` `` or the block:
+
+  ```
+  .. math::
+
+     \sum_{0}^{n} 2n+1
+  ```
+- **Bold vs italics**: Use italics when defining a term, and use bold sparingly
+  for extra emphasis.
+- **Shapes**: Do not include shapes in the type of parameters, instead use
+  `np.array` or `array_like` as the type and specify allowed shapes in the
+  description. See, for example, the documentation for
+  `cleanlab.classification.CleanLearning.fit()`.
+- **Optional arguments**: for the most part, just put `, optional` in the type.
+- **Multiple return types**: you can use "or" to separate types, e.g. `np.array
+  or None`.

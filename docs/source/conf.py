@@ -13,6 +13,7 @@
 import os
 import sys
 import datetime
+import shutil
 
 sys.path.insert(0, os.path.abspath("../../cleanlab"))
 
@@ -37,6 +38,7 @@ extensions = [
     "sphinx_tabs.tabs",
     "sphinx_multiversion",
     "sphinx_copybutton",
+    "sphinxcontrib.katex",
 ]
 
 numpy_show_class_members = True
@@ -101,6 +103,12 @@ autodoc_default_options = {
 
 # Subclasses should show parent classes docstrings if they don't override them.
 autodoc_inherit_docstrings = True
+
+# -- Options for katex extension -------------------------------------------
+
+if os.getenv("CI") or shutil.which("katex") is not None:
+    # requires that the machine have `katex` installed: `npm install -g katex`
+    katex_prerender = True
 
 # -- Variables Setting ---------------------------------------------------
 

@@ -185,13 +185,20 @@ def value_counts(x):
     where K is the number of unique entries in labels.
 
     Why this matters? Here is an example:
+
+    .. code:: python
+
         x = [np.random.randint(0,100) for i in range(100000)]
 
-    %timeit np.bincount(x)
-        --Result: 100 loops, best of 3: 3.9 ms per loop
+    .. code:: ipython3
 
-    %timeit np.unique(x, return_counts=True)[1]
-        --Result: 100 loops, best of 3: 7.47 ms per loop
+        %timeit np.bincount(x)
+        # Result: 100 loops, best of 3: 3.9 ms per loop
+
+    .. code:: ipython3
+
+        %timeit np.unique(x, return_counts=True)[1]
+        # Result: 100 loops, best of 3: 7.47 ms per loop
 
     Parameters
     ----------
