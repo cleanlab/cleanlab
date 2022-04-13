@@ -121,6 +121,7 @@ import warnings
 from cleanlab.internal.util import (
     assert_inputs_are_valid,
     value_counts,
+    compress_int_array,
 )
 from cleanlab.count import (
     estimate_py_noise_matrices_and_cv_pred_proba,
@@ -556,11 +557,9 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
 
         This is the method called to find label issues inside
         :py:meth:`CleanLearning.fit()
-        <cleanlab.classification.CleanLearning.fit>`. 
-        Most of the **Parameters** of this method are  
-        For info about the other parameters, see the docstring of :py:meth:`CleanLearning.fit()
-        <cleanlab.classification.CleanLearning.fit>`.
-
+        <cleanlab.classification.CleanLearning.fit>`
+        and they share mostly the same parameters.
+        
         Parameters
         ----------
         save_space : bool, optional
@@ -570,7 +569,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
 
         For info about the other parameters, see the docstring of :py:meth:`CleanLearning.fit()
         <cleanlab.classification.CleanLearning.fit>`.
-        
+
         Returns
         -------
         label_issues_df : pd.DataFrame
@@ -718,16 +717,9 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
             print(f"Identified {np.sum(label_issues_mask)} examples with label issues.")
 
         predicted_labels = pred_probs.argmax(axis=1)
-        compressed_type = None
-        if self.num_classes < np.iinfo(np.dtype("int16")).max:
-            compressed_type = "int16"
-        elif self.num_classes < np.iinfo(np.dtype("int32")).max:  # pragma: no cover
-            compressed_type = "int32"  # pragma: no cover
-        if compressed_type is not None:
-            predicted_labels = predicted_labels.astype(compressed_type)
-        label_issues_df["given_label"] = labels
-        label_issues_df["predicted_label"] = predicted_labels
-
+        label_issues_df["given_label"] = compress_int_array(labels, self.num_classes)
+        label_issues_df["predicted_label"] = compress_int_array(predicted_labels, self.num_classes)
+        
         if not save_space:
             self.label_issues_df = label_issues_df
             self.label_issues_mask = label_issues_mask
