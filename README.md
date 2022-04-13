@@ -68,33 +68,9 @@ Check out the: [documentation and tutorials](https://docs.cleanlab.ai/), [exampl
 
 Release notes for past versions are available [here](https://github.com/cleanlab/cleanlab/releases). Details behind certain updates are explained in our [blog](https://cleanlab.ai/blog/).
 
-<details><summary><b>How to migrate from past versions of cleanlab (click to learn more)</b> </summary>
-<br/>
-<!-- TODO:update links to v2.0 docs -->
+Long-time cleanlab user? Here's a [guide](https://docs.cleanlab.ai/v2.0.0/migrating/migrate_v2.html) on how to migrate to the newest version.
+<!-- TODO: verify link is actually correct for v2.0 docs -->
 
-Module name changes:
-* pruning.py --> filter.py
-* latent_estimation.py --> count.py
-* parent models/ --> experimental/
-
-New module created:
-* rank.py: moved all ranking and ordering functions from pruning.py/filter.py to here.
-This module contains methods to score the label quality of each example and rank your data
-by the quality of their labels.
-
-Method/class name changes:
-
-* pruning.get_noise_indices() --> filter.find_label_issues()
-* count.num_label_errors() --> count.num_label_issues()
-* LearningWithNoisyLabels() --> CleanLearning()
-
-CleanLearning can now find label errors for you (neatly organized in a pandas DataFrame) 
-as well as computing out-of-sample predicted probabilities. 
-You just specify which classifier, we handle the cross-validation.
-    
-<!-- TODO: verify link to v2.0.0 Release Notes -->
-The full change-log is listed in the [v2.0.0. Release Notes](https://github.com/cleanlab/cleanlab/releases/tag/v2.0.0).
-</details>
 
 ## So fresh, so cleanlab
 
