@@ -581,9 +581,10 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
           Returns
           -------
           pd.DataFrame
-            Unless `save_space` is specified, this DataFrame is also stored as
+            pandas DataFrame that is also stored as
             `self.label_issues_df` attribute accessible via
-            :py:meth:`get_label_issues<cleanlab.classification.CleanLearning.get_label_issues>`.
+            :py:meth:`get_label_issues<cleanlab.classification.CleanLearning.get_label_issues>` 
+            (unless `save_space` argument is specified). 
             Each row represents an example from our dataset and
             `label_issues_df` may contain the following columns:
 
