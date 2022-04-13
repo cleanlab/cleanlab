@@ -333,7 +333,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
           default :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>`,
           or integer indices as output by
           :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>`
-          with its ``return_indices_ranked_by`` argument specified.
+          with its `return_indices_ranked_by` argument specified.
           Providing this argument significantly reduces the time this method takes to run by
           skipping the slow cross-validation step necessary to find label issues.
           Examples identified to have label issues will be
@@ -357,33 +357,31 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
 
         Returns
         -------
-        self
-            Fitted estimator that has all the same methods as any sklearn estimator.
+        CleanLearning
+          ``self`` - Fitted estimator that has all the same methods as any sklearn estimator.
+          After calling ``self.fit()``, this estimator also stores a few extra useful attributes, in particular
+          `self.label_issues_df`: a pd.DataFrame accessible via
+          :py:meth:`self.get_label_issues
+            <cleanlab.classification.CleanLearning.get_label_issues>`
+          of similar format as the one returned by:
+          :py:meth:`CleanLearning.find_label_issues
+            <cleanlab.classification.CleanLearning.find_label_issues>`.
+          See documentation of :py:meth:`CleanLearning.find_label_issues
+            <cleanlab.classification.CleanLearning.find_label_issues>`
+          for column descriptions.
+          After calling ``self.fit()``, `self.label_issues_df` may also contain an extra column:
 
-
-        After calling ``self.fit()`` this estimator also stores a few extra useful attributes, in particular
-        `self.label_issues_df`: a pd.DataFrame accessible via
-        :py:meth:`self.get_label_issues
-          <cleanlab.classification.CleanLearning.get_label_issues>`
-        of similar format as the one returned by:
-        :py:meth:`CleanLearning.find_label_issues
-          <cleanlab.classification.CleanLearning.find_label_issues>`.
-        See documentation of :py:meth:`CleanLearning.find_label_issues
-          <cleanlab.classification.CleanLearning.find_label_issues>`
-        for column descriptions.
-        After calling ``self.fit()`` `self.label_issues_df` may also contain an extra column:
-
-        * *sample_weight*: Numeric values that were used to weight examples during
-          the final training of ``clf`` in ``CleanLearning.fit()``.
-          sample_weight column will only be present if sample weights were actually used.
-          These weights are assigned to each example based on the class it belongs to,
-          i.e. there are only num_classes unique sample_weight values.
-          The sample weight for an example belonging to class k is computed as 1 / p(given_label = k | true_label = k).
-          This sample_weight normalizes the loss to effectively trick `clf` into learning with the distribution
-          of the true labels by accounting for the noisy data pruned out prior to training on cleaned data.
-          In other words, examples with label issues were removed, so this weights the data proportionally
-          so that the classifier trains as if it had all the true labels,
-          not just the subset of cleaned data left after pruning out the label issues.
+          * *sample_weight*: Numeric values that were used to weight examples during
+            the final training of ``clf`` in ``CleanLearning.fit()``.
+            sample_weight column will only be present if sample weights were actually used.
+            These weights are assigned to each example based on the class it belongs to,
+            i.e. there are only num_classes unique sample_weight values.
+            The sample weight for an example belonging to class k is computed as 1 / p(given_label = k | true_label = k).
+            This sample_weight normalizes the loss to effectively trick `clf` into learning with the distribution
+            of the true labels by accounting for the noisy data pruned out prior to training on cleaned data.
+            In other words, examples with label issues were removed, so this weights the data proportionally
+            so that the classifier trains as if it had all the true labels,
+            not just the subset of cleaned data left after pruning out the label issues.
         """
 
         clf_final_kwargs = {**clf_kwargs, **clf_final_kwargs}
