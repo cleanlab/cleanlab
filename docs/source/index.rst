@@ -95,6 +95,7 @@ When the :py:meth:`.fit() <cleanlab.classification.CleanLearning.fit>` method is
    cleanlab/filter
    cleanlab/rank
    cleanlab/count
+   cleanlab/dataset
    cleanlab/benchmarking/index
    cleanlab/experimental/index
    cleanlab/internal/index
