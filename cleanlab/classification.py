@@ -586,8 +586,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
           pd.DataFrame
             Unless `save_space` is specified, this DataFrame is also stored as
             `self.label_issues_df` attribute accessible via
-            :py:meth:`get_label_issues
-          <cleanlab.classification.CleanLearning.get_label_issues>`.
+            :py:meth:`get_label_issues<cleanlab.classification.CleanLearning.get_label_issues>`.
             Each row represents an example from our dataset and
             `label_issues_df` may contain the following columns:
 
@@ -595,8 +594,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
             label issue and ``False`` represents an example that is accurately
             labeled with high confidence.
             This column is equivalent to `label_issues_mask` output from
-            :py:func:`filter.find_label_issues
-        <cleanlab.filter.find_label_issues>`.
+            :py:func:`filter.find_label_issues<cleanlab.filter.find_label_issues>`.
             * *label_quality*: Numeric score that measures the quality of each label
             (how likely it is to be correct, with lower scores indicating potentially erroneous labels).
             * *given_label*: Integer indices corresponding to the class label originally given for this example
@@ -605,14 +603,11 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
             * *predicted_label*: Integer indices corresponding to the class predicted by trained `clf` model
             Only present if ``pred_probs`` were provided as input or computed during label-issue-finding.
             * *sample_weight*: Numeric values used to weight examples during
-            the final training of `clf` in :py:meth:`CleanLearning.fit()
-          <cleanlab.classification.CleanLearning.fit>`.
+            the final training of `clf` in :py:meth:`CleanLearning.fit()<cleanlab.classification.CleanLearning.fit>`.
             This column not be present after `self.find_label_issues()` but may be added
-            after call to :py:meth:`CleanLearning.fit()
-          <cleanlab.classification.CleanLearning.fit>`.
+            after call to :py:meth:`CleanLearning.fit()<cleanlab.classification.CleanLearning.fit>`.
             For more precise definition of sample weights, see documentation of
-            :py:meth:`CleanLearning.fit()
-          <cleanlab.classification.CleanLearning.fit>`.
+            :py:meth:`CleanLearning.fit()<cleanlab.classification.CleanLearning.fit>`.
         """
 
         if self.label_issues_df is not None and self.verbose and not save_space:
