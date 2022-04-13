@@ -109,7 +109,9 @@ When the :py:meth:`.fit() <cleanlab.classification.CleanLearning.fit>` method is
    Conda <https://anaconda.org/Cleanlab/cleanlab>
 
 .. toctree::
-   :caption: Migrate
+   :caption: Migration Guides
    :hidden:
 
-   Website <https://cleanlab.ai>
+   Migrating to v2.0.0 <migrating/migrate_v2>
+
+
