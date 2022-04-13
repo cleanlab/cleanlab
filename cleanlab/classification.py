@@ -340,8 +340,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
           pruned from the data before training the final `clf` model.
 
           Caution: If you provide `label_issues` without having previously called
-          :py:meth:`self.find_label_issues
-          <cleanlab.classification.CleanLearning.find_label_issues>`,
+          :py:meth:`self.find_label_issues<cleanlab.classification.CleanLearning.find_label_issues>`,
           e.g. as a np.array, then some functionality like training with sample weights may be disabled.
 
         clf_kwargs : dict, optional
@@ -363,10 +362,8 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
           `self.label_issues_df`: a pd.DataFrame accessible via
           :py:meth:`get_label_issues
           <cleanlab.classification.CleanLearning.get_label_issues>`
-          of similar format as the one returned by: :py:meth:`CleanLearning.find_label_issues
-            <cleanlab.classification.CleanLearning.find_label_issues>`.
-          See documentation of :py:meth:`CleanLearning.find_label_issues
-            <cleanlab.classification.CleanLearning.find_label_issues>`
+          of similar format as the one returned by: :py:meth:`CleanLearning.find_label_issues<cleanlab.classification.CleanLearning.find_label_issues>`.
+          See documentation of :py:meth:`CleanLearning.find_label_issues<cleanlab.classification.CleanLearning.find_label_issues>`
           for column descriptions.
           After calling ``self.fit()``, `self.label_issues_df` may also contain an extra column:
 
@@ -590,24 +587,12 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
             Each row represents an example from our dataset and
             `label_issues_df` may contain the following columns:
 
-            * *is_label_issue*: boolean mask for the entire dataset where ``True`` represents a
-            label issue and ``False`` represents an example that is accurately
-            labeled with high confidence.
-            This column is equivalent to `label_issues_mask` output from
-            :py:func:`filter.find_label_issues<cleanlab.filter.find_label_issues>`.
-            * *label_quality*: Numeric score that measures the quality of each label
-            (how likely it is to be correct, with lower scores indicating potentially erroneous labels).
-            * *given_label*: Integer indices corresponding to the class label originally given for this example
-            (same as `labels` input). Included here for ease of comparison against `clf` predictions,
-             only present if "predicted_label" column is present.
-            * *predicted_label*: Integer indices corresponding to the class predicted by trained `clf` model
-            Only present if ``pred_probs`` were provided as input or computed during label-issue-finding.
-            * *sample_weight*: Numeric values used to weight examples during
-            the final training of `clf` in :py:meth:`CleanLearning.fit()<cleanlab.classification.CleanLearning.fit>`.
-            This column not be present after `self.find_label_issues()` but may be added
-            after call to :py:meth:`CleanLearning.fit()<cleanlab.classification.CleanLearning.fit>`.
-            For more precise definition of sample weights, see documentation of
-            :py:meth:`CleanLearning.fit()<cleanlab.classification.CleanLearning.fit>`.
+            * *is_label_issue*: boolean mask for the entire dataset where ``True`` represents a label issue and ``False`` represents an example that is accurately labeled with high confidence. This column is equivalent to `label_issues_mask` output from :py:func:`filter.find_label_issues<cleanlab.filter.find_label_issues>`.
+            * *label_quality*: Numeric score that measures the quality of each label (how likely it is to be correct, with lower scores indicating potentially erroneous labels).
+            * *given_label*: Integer indices corresponding to the class label originally given for this example (same as `labels` input). Included here for ease of comparison against `clf` predictions, only present if "predicted_label" column is present.
+            * *predicted_label*: Integer indices corresponding to the class predicted by trained `clf` model. Only present if ``pred_probs`` were provided as input or computed during label-issue-finding.
+            * *sample_weight*: Numeric values used to weight examples during the final training of `clf` in :py:meth:`CleanLearning.fit()<cleanlab.classification.CleanLearning.fit>`. This column not be present after `self.find_label_issues()` but may be added
+            after call to :py:meth:`CleanLearning.fit()<cleanlab.classification.CleanLearning.fit>`. For more precise definition of sample weights, see documentation of :py:meth:`CleanLearning.fit()<cleanlab.classification.CleanLearning.fit>`
         """
 
         if self.label_issues_df is not None and self.verbose and not save_space:
