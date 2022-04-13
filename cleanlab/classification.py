@@ -387,6 +387,12 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         self.clf_final_kwargs = clf_final_kwargs
 
         if label_issues is None:
+            if self.label_issues_df is not None and self.verbose:
+                print(
+                    "If you already ran self.find_label_issues() and don't want to recompute, you "
+                    "should pass the label_issues in as a parameter to this function next time."
+                )
+
             label_issues = self.find_label_issues(
                 X,
                 labels,
@@ -396,11 +402,16 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
                 inverse_noise_matrix=inverse_noise_matrix,
                 clf_kwargs=clf_kwargs,
             )
+
         else:  # have to set some args that may not have been set if `self.find_label_issues()` wasn't called yet
             if self.num_classes is None:
                 self.num_classes = len(np.unique(labels))
             if self.verbose:
                 print("Using provided label_issues instead of finding label issues.")
+                if self.label_issues_df is not None:
+                    print(
+                        "These will overwrite self.label_issues_df and will be returned by `self.get_label_issues()`."
+                    )
 
         # label_issues always overwrites self.label_issues_df. Ensure it is properly formatted:
         self.label_issues_df = self._process_label_issues_arg(label_issues, labels)
@@ -474,7 +485,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
 
         if self.verbose:
             print(
-                "Label issues stored in `label_issues_df` DataFrame accessible via: self.get_label_issues(). "
+                "Label issues stored in label_issues_df DataFrame accessible via: self.get_label_issues(). "
                 "Call self.save_space() to delete this potentially large DataFrame attribute."
             )
         return self
@@ -601,9 +612,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         if self.label_issues_df is not None and self.verbose and not save_space:
             print(
                 "Overwriting previously identified label issues stored at self.label_issues_df. "
-                "`self.get_label_issues()` will now return the newly identified label issues. "
-                "If you already ran `self.find_label_issues()` and don't want to recompute, you "
-                "should pass the `label_issues_df` in as a parameter to this function."
+                "self.get_label_issues() will now return the newly identified label issues. "
             )
 
         # Check inputs
@@ -621,7 +630,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         if len(labels) / self.num_classes < self.cv_n_folds:
             raise ValueError(
                 "Need more data from each class for cross-validation. "
-                "Try decreasing `cv_n_folds` (eg. to 2,3) in CleanLearning()"
+                "Try decreasing cv_n_folds (eg. to 2 or 3) in CleanLearning()"
             )
         # 'ps' is p(labels=k)
         self.ps = value_counts(labels) / float(len(labels))
