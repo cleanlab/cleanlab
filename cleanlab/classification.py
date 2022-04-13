@@ -692,13 +692,6 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
                     thresholds=thresholds,
                     converge_latent_estimates=self.converge_latent_estimates,
                 )
-        # If needed, compute the confident_joint (e.g. occurs if noise_matrix was given)
-        if self.confident_joint is None:
-            self.confident_joint = compute_confident_joint(
-                labels=labels,
-                pred_probs=pred_probs,
-                thresholds=thresholds,
-            )
         # If needed, compute P(label=k|x), denoted pred_probs (the predicted probabilities)
         if pred_probs is None:
             if self.verbose:
@@ -714,6 +707,13 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
                 cv_n_folds=self.cv_n_folds,
                 seed=self.seed,
                 clf_kwargs=self.clf_kwargs,
+            )
+        # If needed, compute the confident_joint (e.g. occurs if noise_matrix was given)
+        if self.confident_joint is None:
+            self.confident_joint = compute_confident_joint(
+                labels=labels,
+                pred_probs=pred_probs,
+                thresholds=thresholds,
             )
         # if pulearning == the integer specifying the class without noise.
         if self.num_classes == 2 and self.pulearning is not None:  # pragma: no cover
