@@ -34,10 +34,10 @@ Check out the: [documentation and tutorials](https://docs.cleanlab.ai/), [exampl
 
 -----
 
-<!-- TODO: News (2022) section add: 2.0 released -->
 <details><summary><b>News! (2022) </b> -- cleanlab made accessible for everybody, not just ML researchers (<b>click to learn more</b>) </summary>
 <p>
 <ul>
+<li> <b>April 2022 📖</b> cleanlab 2.0.0 released! Lays foundations for this library to grow into a general-purpose data-centric AI toolkit. </li>
 <li> <b>March 2022 📖</b>  Documentation migrated to new website: <a href="https://docs.cleanlab.ai/">docs.cleanlab.ai</a> with quickstart tutorials for image/text/audio/tabular data.</li>
 <li> <b>Feb 2022 💻</b> APIs simplified to make cleanlab accessible for everybody, not just ML researchers </li>  <!-- TODO: link migration guide -->
 </ul>
@@ -67,8 +67,32 @@ Check out the: [documentation and tutorials](https://docs.cleanlab.ai/), [exampl
 </details>
 
 Release notes for past versions are available [here](https://github.com/cleanlab/cleanlab/releases). Details behind certain updates are explained in our [blog](https://cleanlab.ai/blog/).
-<!-- TODO: link to 2.0 migration guide here -->
 
+<details><summary><b>How to migrate from past versions of cleanlab (click to learn more)</b> </summary>
+<!-- TODO:update links to v2.0 docs -->
+
+Module name changes:
+* pruning.py --> filter.py
+* latent_estimation.py --> count.py
+* parent models/ --> experimental/
+
+New module created:
+* rank.py: moved all ranking and ordering functions from pruning.py/filter.py to here.
+This module contains methods to score the label quality of each example and rank your data
+by the quality of their labels.
+
+Method/class name changes:
+
+* pruning.get_noise_indices() --> filter.find_label_issues()
+* count.num_label_errors() --> count.num_label_issues()
+* LearningWithNoisyLabels() --> CleanLearning()
+
+CleanLearning can now find label errors for you (neatly organized in a pandas DataFrame) 
+as well as computing out-of-sample predicted probabilities. 
+You just specify which classifier, we handle the cross-validation.
+    
+<!-- TODO:add link to v2.0.0 Release Notes -->
+</details>
 
 ## So fresh, so cleanlab
 
