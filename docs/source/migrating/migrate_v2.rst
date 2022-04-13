@@ -1,5 +1,5 @@
-How to migrate from versions <= 1.0.1 to >= 2.0.0
-=================================================
+How to migrate to 2.0.0 from versions pre 1.0.1 
+===============================================
 
 If you previously used older versions of cleanlab, 
 this migration guide can help you update your existing code to work with v2.0.0 in no time!
@@ -9,19 +9,23 @@ The full change-log is listed in the `v2.0.0. Release Notes <https://github.com/
 
 Method and class name changes
 -----------------------------
+
 | ``pruning.get_noise_indices(s, psx, prune_method, sorted_index_method, ...)``
 | --> 
 | ``filter.find_label_issues(labels, pred_probs, filter_by, return_indices_ranked_by, ...)``
 
-**Note:** `inverse_noise_matrix` is no longer a supported input argument, but `confident_joint` remains (you can easily convert between these two).
+**Note:** ``inverse_noise_matrix`` is no longer a supported input argument, but ``confident_joint`` remains (you can easily convert between these two).
+
 
 | ``pruning.order_label_errors(label_errors_bool, psx, labels, sorted_index_method)``
 | --> 
 | ``rank.order_label_issues(label_issues_mask, labels, pred_probs, rank_by, ...)``
 
+
 | ``latent_estimation.num_label_errors(labels, psx, ...)`` 
 | --> 
 | ``count.num_label_issues(labels, pred_probs, ...)``
+
 
 | ``classification.LearningWithNoisyLabels(..., prune_method)``
 | -->
