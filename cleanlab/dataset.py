@@ -159,8 +159,8 @@ def find_overlapping_classes(
     asymmetric : bool, optional
       If ``asymmetric=True``, includes both pairs (class1, class2) and (class2, class1). Use this
       for finding "is a" relationships where for example "class1 is a class2".
-      If `asymmetric==False`, the pair (class1, class2) will only be returned once and order is
-      arbitrary (internally this is just summing score(class1, class2) + score(class2, class1)).
+      If ``asymmetric=False``, the pair (class1, class2) will only be returned once and order is
+      arbitrary (internally this is just summing ``score(class1, class2) + score(class2, class1))``.
 
     class_names : Iterable[str]
         A list or other iterable of the string class names. The list should be in the order that
