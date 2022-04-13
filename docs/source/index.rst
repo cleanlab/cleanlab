@@ -101,6 +101,12 @@ When the :py:meth:`.fit() <cleanlab.classification.CleanLearning.fit>` method is
    cleanlab/internal/index
 
 .. toctree::
+   :caption: Guides
+   :hidden:
+
+   Migrating to v2.0 <migrating/migrate_v2>
+
+.. toctree::
    :caption: Links
    :hidden:
 
