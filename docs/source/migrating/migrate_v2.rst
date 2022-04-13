@@ -2,25 +2,30 @@ How to migrate from versions <= 1.0.1 to >= 2.0.0
 =================================================
 
 If you previously used older versions of cleanlab, 
-this migration guide can help you update your existing code in no time! 
+this migration guide can help you update your existing code to work with v2.0.0 in no time!
 Below we outline the major updates and code substitutions to be aware of. 
 The full change-log is listed in the `v2.0.0. Release Notes <https://github.com/cleanlab/cleanlab/releases/tag/v2.0.0>`_.
 
 
 Method and class name changes
 -----------------------------
-
-``pruning.get_noise_indices(s, psx, prune_method, sorted_index_method, ...)`` --> ``filter.find_label_issues(labels, pred_probs, filter_by, return_indices_ranked_by, ...)``
+| ``pruning.get_noise_indices(s, psx, prune_method, sorted_index_method, ...)``
+| --> 
+| ``filter.find_label_issues(labels, pred_probs, filter_by, return_indices_ranked_by, ...)``
 
 **Note:** `inverse_noise_matrix` is no longer a supported input argument, but `confident_joint` remains (you can easily convert between these two).
 
-``pruning.order_label_errors(label_errors_bool, psx, labels, sorted_index_method)``
---> 
-``rank.order_label_issues(label_issues_mask, labels, pred_probs, rank_by, ...)``
+| ``pruning.order_label_errors(label_errors_bool, psx, labels, sorted_index_method)``
+| --> 
+| ``rank.order_label_issues(label_issues_mask, labels, pred_probs, rank_by, ...)``
 
-``latent_estimation.num_label_errors(labels, psx, ...)`` --> `count.num_label_issues(labels, pred_probs, ...)``
+| ``latent_estimation.num_label_errors(labels, psx, ...)`` 
+| --> 
+| ``count.num_label_issues(labels, pred_probs, ...)``
 
-``classification.LearningWithNoisyLabels(..., prune_method)`` --> ``classification.CleanLearning(..., find_label_issues_kwargs)``
+| ``classification.LearningWithNoisyLabels(..., prune_method)``
+| -->
+| ``classification.CleanLearning(..., find_label_issues_kwargs)``
 
 **Note:** ``CleanLearning`` can now find label errors for you, neatly organizing them in a pandas.DataFrame as well as computing the required out-of-sample predicted probabilities. You just specify which classifier, we handle the cross-validation!
 
@@ -42,7 +47,7 @@ New modules
 
 ``rank.py`` : Moved all ranking and ordering functions from ``pruning.py`` and ``filter.py`` to here. This module contains methods to score the label quality of each example and rank your data by the quality of their labels.
 
-``internal/`` : Moved all advanced code and utility methods in this folder, including the ``latent_algebra.py`` module. Researchers may find useful functions in here.
+``internal/`` : Moved all advanced code and utility methods in this folder, including the old ``latent_algebra.py`` module. Researchers may find useful functions in here.
 
 
 Common argument and variable name changes
@@ -52,5 +57,5 @@ Common argument and variable name changes
 
 ``psx`` --> ``pred_probs``  (predicted probabilities output by trained classifier)
 
-``label_error`` --> ``label_issue``  (labels which are likely to be wrong)
+``label_error`` --> ``label_issue``  (a label that is likely to be wrong)
 
