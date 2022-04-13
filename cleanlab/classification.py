@@ -591,8 +591,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
             * *label_quality*: Numeric score that measures the quality of each label (how likely it is to be correct, with lower scores indicating potentially erroneous labels).
             * *given_label*: Integer indices corresponding to the class label originally given for this example (same as `labels` input). Included here for ease of comparison against `clf` predictions, only present if "predicted_label" column is present.
             * *predicted_label*: Integer indices corresponding to the class predicted by trained `clf` model. Only present if ``pred_probs`` were provided as input or computed during label-issue-finding.
-            * *sample_weight*: Numeric values used to weight examples during the final training of `clf` in :py:meth:`CleanLearning.fit()<cleanlab.classification.CleanLearning.fit>`. This column not be present after `self.find_label_issues()` but may be added
-            after call to :py:meth:`CleanLearning.fit()<cleanlab.classification.CleanLearning.fit>`. For more precise definition of sample weights, see documentation of :py:meth:`CleanLearning.fit()<cleanlab.classification.CleanLearning.fit>`
+            * *sample_weight*: Numeric values used to weight examples during the final training of `clf` in :py:meth:`CleanLearning.fit()<cleanlab.classification.CleanLearning.fit>`. This column not be present after `self.find_label_issues()` but may be added after call to :py:meth:`CleanLearning.fit()<cleanlab.classification.CleanLearning.fit>`. For more precise definition of sample weights, see documentation of :py:meth:`CleanLearning.fit()<cleanlab.classification.CleanLearning.fit>`
         """
 
         if self.label_issues_df is not None and self.verbose and not save_space:
