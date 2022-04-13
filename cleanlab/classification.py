@@ -581,12 +581,12 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
           Returns
           -------
           pd.DataFrame
-            pandas DataFrame that is also stored as
+            pandas DataFrame of label issues for each example. 
+            Unless `save_space` argument is specified, same DataFrame is also stored as
             `self.label_issues_df` attribute accessible via
-            :py:meth:`get_label_issues<cleanlab.classification.CleanLearning.get_label_issues>` 
-            (unless `save_space` argument is specified). 
+            :py:meth:`get_label_issues<cleanlab.classification.CleanLearning.get_label_issues>`. 
             Each row represents an example from our dataset and
-            `label_issues_df` may contain the following columns:
+            the DataFrame may contain the following columns:
 
             * *is_label_issue*: boolean mask for the entire dataset where ``True`` represents a label issue and ``False`` represents an example that is accurately labeled with high confidence. This column is equivalent to `label_issues_mask` output from :py:func:`filter.find_label_issues<cleanlab.filter.find_label_issues>`.
             * *label_quality*: Numeric score that measures the quality of each label (how likely it is to be correct, with lower scores indicating potentially erroneous labels).
