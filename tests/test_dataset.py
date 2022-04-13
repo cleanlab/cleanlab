@@ -18,7 +18,13 @@ import requests
 import pytest
 import io
 import numpy as np
-from cleanlab import dataset
+from cleanlab.dataset import (
+    health_summary,
+    find_overlapping_classes,
+    rank_classes_by_label_quality,
+    overall_label_health_score,
+)
+from cleanlab.count import estimate_joint
 
 cifar100 = [
     "apple",
@@ -412,10 +418,9 @@ urls = {
 }
 
 
-@pytest.mark.parametrize("dataset_name", ["mnist", "caltech256", "cifar100", "imdb"])
-def test_real_datasets(dataset_name):
-    print("\n" + dataset_name.capitalize() + "\n")
-    class_names = eval(dataset_name)
+def _get_pred_probs_labels_from_labelerrors_datasets(dataset_name):
+    """Helper function to load data from the labelerrors.com datasets."""
+
     labels_url, pred_probs_url = urls[dataset_name]
     response = requests.get(pred_probs_url)
     response.raise_for_status()
@@ -423,4 +428,62 @@ def test_real_datasets(dataset_name):
     response = requests.get(labels_url)
     response.raise_for_status()
     labels = np.load(io.BytesIO(response.content), allow_pickle=True)
-    dataset.health_summary(pred_probs=pred_probs, labels=labels, class_names=class_names)
+    return pred_probs, labels
+
+
+@pytest.mark.parametrize("dataset_name", ["mnist", "caltech256", "cifar100", "imdb"])
+def test_real_datasets(dataset_name):
+    print("\n" + dataset_name.capitalize() + "\n")
+    class_names = eval(dataset_name)
+    pred_probs, labels = _get_pred_probs_labels_from_labelerrors_datasets(dataset_name)
+    # if this runs without issue no all four datasets, the test passes
+    _ = health_summary(pred_probs=pred_probs, labels=labels, class_names=class_names)
+
+
+@pytest.mark.parametrize("asymmetric", [True, False])
+@pytest.mark.parametrize("dataset_name", ["mnist", "imdb"])
+def test_symmetry_df_size(asymmetric, dataset_name):
+    pred_probs, labels = _get_pred_probs_labels_from_labelerrors_datasets(dataset_name)
+    joint = estimate_joint(labels=labels, pred_probs=pred_probs)
+    num_classes = pred_probs.shape[1]
+    df = find_overlapping_classes(
+        joint=joint,
+        asymmetric=asymmetric,
+        class_names=eval(dataset_name),
+        num_examples=len(labels),
+    )
+    if asymmetric:
+        assert len(df) == num_classes**2 - num_classes
+    else:  # symmetric
+        assert len(df) == (num_classes**2 - num_classes) / 2
+
+        # Second test for symmetric
+        # check that the row, col value returned is actually the sum from the joint.
+        sum_0_1 = joint[0, 1] + joint[1, 0]
+        df_0_1 = df[(df["Class Index A"] == 0) & (df["Class Index B"] == 1)]["Joint Probability"]
+        assert sum_0_1 - df_0_1.values[0] < 1e-8  # Check two floats are equal
+
+
+@pytest.mark.parametrize("use_num_examples", [True, False])
+@pytest.mark.parametrize("use_labels", [True, False])
+@pytest.mark.parametrize(
+    "func", [find_overlapping_classes, rank_classes_by_label_quality, overall_label_health_score]
+)
+def test_value_error_missing_num_examples_with_joint(use_num_examples, use_labels, func):
+    dataset_name = "imdb"
+    pred_probs, labels = _get_pred_probs_labels_from_labelerrors_datasets(dataset_name)
+    joint = estimate_joint(labels=labels, pred_probs=pred_probs)
+    if use_num_examples is False and use_labels is False:  # can't infer num_examples. Throw error!
+        with pytest.raises(ValueError) as e:
+            df = func(
+                labels=labels if use_labels else None,
+                joint=joint,
+                num_examples=len(labels) if use_num_examples else None,
+            )
+    else:  # at least one of use_num_examples and use_labels must be True. Can infer num_examples.
+        # If this runs without error, the test passes.
+        df = func(
+            labels=labels if use_labels else None,
+            joint=joint,
+            num_examples=len(labels) if use_num_examples else None,
+        )
