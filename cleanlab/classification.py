@@ -358,6 +358,8 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         -------
         CleanLearning
           ``self`` - Fitted estimator that has all the same methods as any sklearn estimator.
+          
+          
           After calling ``self.fit()``, this estimator also stores a few extra useful attributes, in particular
           `self.label_issues_df`: a pd.DataFrame accessible via
           :py:meth:`get_label_issues
@@ -365,8 +367,6 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
           of similar format as the one returned by: :py:meth:`CleanLearning.find_label_issues<cleanlab.classification.CleanLearning.find_label_issues>`.
           See documentation of :py:meth:`CleanLearning.find_label_issues<cleanlab.classification.CleanLearning.find_label_issues>`
           for column descriptions.
-          
-
           After calling ``self.fit()``, `self.label_issues_df` may also contain an extra column:
 
           * *sample_weight*: Numeric values that were used to weight examples during
