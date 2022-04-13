@@ -53,6 +53,8 @@ New modules
 
 ``rank.py`` : Moved all ranking and ordering functions from ``pruning.py`` and ``filter.py`` to here. This module contains methods to score the label quality of each example and rank your data by the quality of their labels.
 
+``dataset.py`` : New methods to print summaries of overall types of label issues most common in a dataset.
+
 ``internal/`` : Moved all advanced code and utility methods in this folder, including the old ``latent_algebra.py`` module. Researchers may find useful functions in here.
 
 
