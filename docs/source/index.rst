@@ -107,3 +107,5 @@ When the :py:meth:`.fit() <cleanlab.classification.CleanLearning.fit>` method is
    GitHub <https://github.com/cleanlab/cleanlab>
    PyPI <https://pypi.org/project/cleanlab/>
    Conda <https://anaconda.org/Cleanlab/cleanlab>
+
+Migration Guide
