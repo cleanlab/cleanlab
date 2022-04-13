@@ -128,6 +128,7 @@ from cleanlab.count import (
     estimate_py_and_noise_matrices_from_probabilities,
     estimate_cv_predicted_probabilities,
     estimate_latent,
+    compute_confident_joint,
 )
 from cleanlab.internal.latent_algebra import (
     compute_py_inv_noise_matrix,
@@ -691,6 +692,13 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
                     thresholds=thresholds,
                     converge_latent_estimates=self.converge_latent_estimates,
                 )
+        # If needed, compute the confident_joint (e.g. occurs if noise_matrix was given)
+        if self.confident_joint is None:
+            self.confident_joint = compute_confident_joint(
+                labels=labels,
+                pred_probs=pred_probs,
+                thresholds=thresholds,
+            )
         # If needed, compute P(label=k|x), denoted pred_probs (the predicted probabilities)
         if pred_probs is None:
             if self.verbose:
