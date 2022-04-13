@@ -23,12 +23,13 @@ from numpy.random import multivariate_normal
 import scipy
 import pytest
 import numpy as np
+import pandas as pd
 from cleanlab.classification import CleanLearning
 from cleanlab.benchmarking.noise_generation import generate_noise_matrix_from_trace
 from cleanlab.benchmarking.noise_generation import generate_noisy_labels
 from cleanlab.internal.latent_algebra import compute_inv_noise_matrix
 from cleanlab.count import compute_confident_joint, estimate_cv_predicted_probabilities
-
+from cleanlab.filter import find_label_issues
 
 SEED = 1
 
@@ -164,31 +165,87 @@ def test_aux_inputs():
         find_label_issues_kwargs=find_label_issues_kwargs,
         verbose=1,
     )
-    label_issues_mask = cl.find_label_issues(data["X_train"], data["labels"], clf_kwargs={})
-    assert (label_issues_mask == cl.get_label_issues()).all()
+    label_issues_df = cl.find_label_issues(data["X_train"], data["labels"], clf_kwargs={})
+    assert isinstance(label_issues_df, pd.DataFrame)
+    FIND_OUTPUT_COLUMNS = ["is_label_issue", "label_quality", "given_label", "predicted_label"]
+    assert list(label_issues_df.columns) == FIND_OUTPUT_COLUMNS
+    assert label_issues_df.equals(cl.get_label_issues())
     cl.fit(
         data["X_train"],
         data["labels"],
-        label_issues_mask=label_issues_mask,
+        label_issues=label_issues_df,
         clf_kwargs={},
         clf_final_kwargs={},
     )
+    label_issues_df = cl.get_label_issues()
+    assert isinstance(label_issues_df, pd.DataFrame)
+    assert list(label_issues_df.columns) == (FIND_OUTPUT_COLUMNS + ["sample_weight"])
     score = cl.score(data["X_test"], data["true_labels_test"])
-    # Test cl find_label_issues with pred_prob input
-    pred_probs_test = cl.predict_proba(data["X_test"])
-    label_issues_mask_test = cl.find_label_issues(
-        X=None, labels=data["true_labels_test"], pred_probs=pred_probs_test
-    )
 
     # Test a second fit
     cl.fit(data["X_train"], data["labels"])
 
+    # Test cl.find_label_issues with pred_prob input
+    pred_probs_test = cl.predict_proba(data["X_test"])
+    label_issues_df = cl.find_label_issues(
+        X=None, labels=data["true_labels_test"], pred_probs=pred_probs_test
+    )
+    assert isinstance(label_issues_df, pd.DataFrame)
+    assert list(label_issues_df.columns) == FIND_OUTPUT_COLUMNS
+    assert label_issues_df.equals(cl.get_label_issues())
+    cl.save_space()
+    assert cl.label_issues_df is None
+
     # Verbose off
     cl = CleanLearning(
-        clf=LogisticRegression(multi_class="auto", solver="lbfgs", random_state=SEED),
-        verbose=0,
+        clf=LogisticRegression(multi_class="auto", solver="lbfgs", random_state=SEED), verbose=0
     )
-    cl.fit(data["X_train"], data["labels"])
+    cl.save_space()  # dummy call test
+
+    cl = CleanLearning(
+        clf=LogisticRegression(multi_class="auto", solver="lbfgs", random_state=SEED), verbose=0
+    )
+    cl.find_label_issues(
+        labels=data["true_labels_test"], pred_probs=pred_probs_test, save_space=True
+    )
+
+    cl = CleanLearning(
+        clf=LogisticRegression(multi_class="auto", solver="lbfgs", random_state=SEED), verbose=1
+    )
+
+    # Test with label_issues_mask input
+    label_issues_mask = find_label_issues(
+        labels=data["true_labels_test"],
+        pred_probs=pred_probs_test,
+    )
+    cl.fit(data["X_test"], data["true_labels_test"], label_issues=label_issues_mask)
+    label_issues_df = cl.get_label_issues()
+    assert isinstance(label_issues_df, pd.DataFrame)
+    assert set(label_issues_df.columns).issubset(FIND_OUTPUT_COLUMNS)
+
+    # Test with label_issues_indices input
+    label_issues_indices = find_label_issues(
+        labels=data["true_labels_test"],
+        pred_probs=pred_probs_test,
+        return_indices_ranked_by="confidence_weighted_entropy",
+    )
+    cl.fit(data["X_test"], data["true_labels_test"], label_issues=label_issues_indices)
+    label_issues_df2 = cl.get_label_issues().copy()
+    assert isinstance(label_issues_df2, pd.DataFrame)
+    assert set(label_issues_df2.columns).issubset(FIND_OUTPUT_COLUMNS)
+    assert label_issues_df2["is_label_issue"].equals(label_issues_df["is_label_issue"])
+
+    # Test fit() with pred_prob input:
+    cl.fit(
+        data["X_test"],
+        data["true_labels_test"],
+        pred_probs=pred_probs_test,
+        label_issues=label_issues_mask,
+    )
+    label_issues_df = cl.get_label_issues()
+    assert isinstance(label_issues_df, pd.DataFrame)
+    assert set(label_issues_df.columns).issubset(FIND_OUTPUT_COLUMNS)
+    assert "label_quality" in label_issues_df.columns
 
 
 def test_raise_error_no_clf_fit():
@@ -556,6 +613,7 @@ def test_cj_in_find_label_issues_kwargs(filter_by, seed):
                     "filter_by": "both",
                     "min_examples_per_class": 1,
                 },
+                verbose=1,
             )
         else:
             cl = CleanLearning(
@@ -564,8 +622,10 @@ def test_cj_in_find_label_issues_kwargs(filter_by, seed):
                     "filter_by": "both",
                     "min_examples_per_class": 1,
                 },
+                verbose=0,
             )
-        label_issues_mask = cl.find_label_issues(DATA["X_train"], labels=labels)
+        label_issues_df = cl.find_label_issues(DATA["X_train"], labels=labels)
+        label_issues_mask = label_issues_df["is_label_issue"].values
         # Check if the noise matrix was computed based on the passed in confident joint
         cj_reconstruct = (cl.inverse_noise_matrix * np.bincount(DATA["labels"])).T.astype(int)
         np.all(cl.confident_joint == cj_reconstruct)

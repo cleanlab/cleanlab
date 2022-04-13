@@ -56,7 +56,7 @@ def _subtract_confident_thresholds(labels: np.array, pred_probs: np.array) -> np
     return pred_probs_adj
 
 
-def get_normalized_entropy(pred_probs: np.array) -> np.array:
+def get_normalized_entropy(pred_probs: np.array, min_allowed_prob=1e-6) -> np.array:
     """Returns the normalized entropy of pred_probs.
 
     Normalized entropy is between 0 and 1. Higher values of entropy indicate higher uncertainty in the model's prediction of the correct label.
@@ -76,6 +76,9 @@ def get_normalized_entropy(pred_probs: np.array) -> np.array:
       The columns must be ordered such that these probabilities correspond to class 0,1,2,...
       `pred_probs` should have been computed using 3 (or higher) fold cross-validation.
 
+    min_allowed_prob : float, default=1e-6
+      Minimum allowed probability value. Entries of `pred_probs` below this value will be clipped to this value.
+      Ensures entropy remains well-behaved even when `pred_probs` contains zeros.
     Returns
     -------
     entropy : np.array (float)
@@ -85,4 +88,5 @@ def get_normalized_entropy(pred_probs: np.array) -> np.array:
     num_classes = pred_probs.shape[1]
 
     # Note that dividing by log(num_classes) changes the base of the log which rescales entropy to 0-1 range
-    return -np.sum(pred_probs * np.log(pred_probs), axis=1) / np.log(num_classes)
+    clipped_pred_probs = np.clip(pred_probs, a_min=min_allowed_prob, a_max=None)
+    return -np.sum(pred_probs * np.log(clipped_pred_probs), axis=1) / np.log(num_classes)

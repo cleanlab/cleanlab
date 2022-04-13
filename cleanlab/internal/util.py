@@ -439,3 +439,14 @@ def print_joint_matrix(joint_matrix, round_places=2):
         short_title="p(labels,y)",
         round_places=round_places,
     )
+
+def compress_int_array(int_array, num_possible_values):
+    """Compresses dtype of np.array<int> if num_possible_values is small enough."""
+    compressed_type = None
+    if num_possible_values < np.iinfo(np.dtype("int16")).max:
+        compressed_type = "int16"
+    elif num_possible_values < np.iinfo(np.dtype("int32")).max:  # pragma: no cover
+        compressed_type = "int32"  # pragma: no cover
+    if compressed_type is not None:
+        int_array = int_array.astype(compressed_type)
+    return int_array
