@@ -84,8 +84,8 @@ When the :py:meth:`.fit() <cleanlab.classification.CleanLearning.fit>` method is
    tutorials/text
    tutorials/tabular
    tutorials/audio
-   tutorials/pred_probs_cross_val
    tutorials/indepth_overview
+   tutorials/pred_probs_cross_val
 
 .. toctree::
    :caption: API Reference
