@@ -60,7 +60,7 @@ Get started with: [documentations](https://docs.cleanlab.ai/), [tutorials](https
 <p>
 <ul>
 <li> <b>Dec 2020 🎉</b>  cleanlab supports NeurIPS workshop paper <a href="https://securedata.lol/camera_ready/28.pdf">(Northcutt, Athalye, & Lin, 2020)</a>.</li>
-<li> <b>Dec 2020 🤖</b>  cleanlab supports <a href="https://github.com/cleanlab/cleanlab#pu-learning-with-cleanlab">PU learning</a>.</li>
+<li> <b>Dec 2020 🤖</b>  cleanlab supports <a href="https://github.com/cleanlab/cleanlab/blob/master/cleanlab/classification.py#L214">PU learning</a>.</li>
 <li> <b>Feb 2020 🤖</b>  cleanlab now natively supports Mac, Linux, and Windows.</li>
 <li> <b>Feb 2020 🤖</b>  cleanlab now supports <a href="https://github.com/cleanlab/cleanlab/blob/master/cleanlab/experimental/coteaching.py">Co-Teaching</a> <a href="https://arxiv.org/abs/1804.06872">(Han et al., 2018)</a>.</li>
 <li> <b>Jan 2020 🎉</b> cleanlab achieves state-of-the-art on CIFAR-10 with noisy labels. Code to reproduce:  <a href="https://github.com/cleanlab/examples/tree/master/cifar10">examples/cifar10</a>. This is a great place to see how to use cleanlab on real datasets (with predicted probabiliteis already precomputed for you).</li>
@@ -72,8 +72,8 @@ Release notes for past versions are available [here](https://github.com/cleanlab
 
 **Long-time cleanlab user?**
 
-* Here's a [guide](https://docs.cleanlab.ai/v2.0.0/migrating/migrate_v2.html) on how to migrate to cleanlab 2.0.0.
-<!-- TODO: verify link is actually correct for v2.0 docs -->
+* Here's a [guide](https://docs.cleanlab.ai/master/migrating/migrate_v2.html) on how to migrate to cleanlab 2.0.0.
+<!-- TODO: update link post 2.0 tag. probably change to https://docs.cleanlab.ai/v2.0.0/migrating/migrate_v2.html -->
 
 ## So fresh, so cleanlab
 
@@ -85,8 +85,8 @@ cleanlab is:
    - with [provable guarantees](https://arxiv.org/abs/1911.00068) of exact noise estimation and label error finding in realistic cases with imperfect models.
 2. **fast**
    - Code is optimized and parallel-threaded (< 1 second to find label issues in ImageNet with pre-computed probabilities).
-4. **easy-to-use** 
-   - Find label issues or train noise-robust models in one line of code. By default, cleanlab requires no hyper-parameters. 
+4. **easy-to-use**
+   - Find label issues or train noise-robust models in one line of code. By default, cleanlab requires no hyper-parameters.
 6. **general**
    -  Works with **[any dataset](https://labelerrors.com/)** and **any model**, e.g., TensorFlow, PyTorch, sklearn, xgboost, etc.
 <br/>
@@ -303,8 +303,8 @@ Many methods and their default parameters are not covered here. Check out the [d
 
 ## Use any custom model's predicted probabilities to find label errors in 1 line of code
 
-pred_probs (num_examples x num_classes matrix of predicted probabilities) should already be computed on your own, with any classifier. pred_probs must be obtain in a holdout/out-of-sample manner (e.g. via cross-validation). 
-* cleanlab can do this for you via [`cleanlab.count.estimate_cv_predicted_probabilities`](https://docs.cleanlab.ai/master/cleanlab/count.html#cleanlab.count)]
+pred_probs (num_examples x num_classes matrix of predicted probabilities) should already be computed on your own, with any classifier. pred_probs must be obtain in a holdout/out-of-sample manner (e.g. via cross-validation).
+* cleanlab can do this for you via [`cleanlab.count.estimate_cv_predicted_probabilities`](https://docs.cleanlab.ai/master/cleanlab/count.html)]
 * Tutorial with more info: [[here](https://docs.cleanlab.ai/master/tutorials/pred_probs_cross_val.html)]
 * Example how to compute pred_probs for CIFAR-10 [[here](https://github.com/cleanlab/examples/tree/master/cifar10)]
 
