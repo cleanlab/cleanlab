@@ -370,10 +370,10 @@ def confusion_matrix(true, pred):
 
 def print_square_matrix(
     matrix,
-    left_name="labels",
+    left_name="s",
     top_name="y",
     title=" A square matrix",
-    short_title="labels,y",
+    short_title="s,y",
     round_places=2,
 ):
     """Pretty prints a matrix.
@@ -413,8 +413,8 @@ def print_noise_matrix(noise_matrix, round_places=2):
     """Pretty prints the noise matrix."""
     print_square_matrix(
         noise_matrix,
-        title=" Noise Matrix (aka Noisy Channel) P(labels|y)",
-        short_title="p(labels|y)",
+        title=" Noise Matrix (aka Noisy Channel) P(given_label|true_label)",
+        short_title="p(s|y)",
         round_places=round_places,
     )
 
@@ -424,9 +424,9 @@ def print_inverse_noise_matrix(inverse_noise_matrix, round_places=2):
     print_square_matrix(
         inverse_noise_matrix,
         left_name="y",
-        top_name="labels",
-        title=" Inverse Noise Matrix P(y|labels)",
-        short_title="p(y|labels)",
+        top_name="s",
+        title=" Inverse Noise Matrix P(true_label|given_label)",
+        short_title="p(y|s)",
         round_places=round_places,
     )
 
@@ -435,8 +435,8 @@ def print_joint_matrix(joint_matrix, round_places=2):
     """Pretty prints the joint label noise matrix."""
     print_square_matrix(
         joint_matrix,
-        title=" Joint Label Noise Distribution Matrix P(labels,y)",
-        short_title="p(labels,y)",
+        title=" Joint Label Noise Distribution Matrix P(given_label, true_label)",
+        short_title="p(s,y)",
         round_places=round_places,
     )
 
