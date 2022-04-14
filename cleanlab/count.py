@@ -606,7 +606,7 @@ def estimate_py_and_noise_matrices_from_probabilities(
     Returns
     ------
     tuple
-        A tuple of (py, noise_matrix, inverse_noise_matrix)."""
+        A tuple of (py, noise_matrix, inverse_noise_matrix, confident_joint)."""
 
     confident_joint = compute_confident_joint(
         labels=labels,
