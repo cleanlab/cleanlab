@@ -214,7 +214,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         pulearning=None,
         find_label_issues_kwargs={},
         label_quality_scores_kwargs={},
-        verbose=True,
+        verbose=False,
     ):
 
         if clf is None:
@@ -392,7 +392,6 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
                     "If you already ran self.find_label_issues() and don't want to recompute, you "
                     "should pass the label_issues in as a parameter to this function next time."
                 )
-
             label_issues = self.find_label_issues(
                 X,
                 labels,
@@ -403,14 +402,15 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
                 clf_kwargs=clf_kwargs,
             )
 
-        else:  # have to set some args that may not have been set if `self.find_label_issues()` wasn't called yet
+        else:  # set args that may not have been set if `self.find_label_issues()` wasn't called yet
             if self.num_classes is None:
                 self.num_classes = len(np.unique(labels))
             if self.verbose:
                 print("Using provided label_issues instead of finding label issues.")
                 if self.label_issues_df is not None:
                     print(
-                        "These will overwrite self.label_issues_df and will be returned by `self.get_label_issues()`."
+                        "These will overwrite self.label_issues_df and will be returned by "
+                        "`self.get_label_issues()`. "
                     )
 
         # label_issues always overwrites self.label_issues_df. Ensure it is properly formatted:
@@ -609,12 +609,6 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
           * *sample_weight*: Numeric values used to weight examples during the final training of `clf` in :py:meth:`CleanLearning.fit()<cleanlab.classification.CleanLearning.fit>`. This column not be present after `self.find_label_issues()` but may be added after call to :py:meth:`CleanLearning.fit()<cleanlab.classification.CleanLearning.fit>`. For more precise definition of sample weights, see documentation of :py:meth:`CleanLearning.fit()<cleanlab.classification.CleanLearning.fit>`
         """
 
-        if self.label_issues_df is not None and self.verbose and not save_space:
-            print(
-                "Overwriting previously identified label issues stored at self.label_issues_df. "
-                "self.get_label_issues() will now return the newly identified label issues. "
-            )
-
         # Check inputs
         allow_empty_X = False if pred_probs is None else True
         assert_inputs_are_valid(X, labels, pred_probs, allow_empty_X=allow_empty_X)
@@ -757,6 +751,11 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         label_issues_df["predicted_label"] = compress_int_array(predicted_labels, self.num_classes)
 
         if not save_space:
+            if self.label_issues_df is not None and self.verbose:
+                print(
+                    "Overwriting previously identified label issues stored at self.label_issues_df. "
+                    "self.get_label_issues() will now return the newly identified label issues. "
+                )
             self.label_issues_df = label_issues_df
             self.label_issues_mask = label_issues_df[
                 "is_label_issue"
