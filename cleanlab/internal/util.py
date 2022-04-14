@@ -440,6 +440,7 @@ def print_joint_matrix(joint_matrix, round_places=2):
         round_places=round_places,
     )
 
+
 def compress_int_array(int_array, num_possible_values):
     """Compresses dtype of np.array<int> if num_possible_values is small enough."""
     compressed_type = None
