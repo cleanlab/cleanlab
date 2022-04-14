@@ -198,6 +198,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
     label_quality_scores_kwargs : dict, optional
       Keyword arguments to pass into :py:func:`rank.get_label_quality_scores
       <cleanlab.rank.get_label_quality_scores>`. Options include: `method`, `adjust_pred_probs`.
+
     verbose : bool, default=True
       Controls how much output is printed. Set to ``False`` to suppress print
       statements.
@@ -323,14 +324,14 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
           that are mislabeled examples from every other class ``k_y``,
           Assumes columns of `inverse_noise_matrix` sum to 1.
 
-        label_issues : pd.DataFrame or np.array<bool> or np.array<int>, optional
+        label_issues : pd.DataFrame or np.array, optional
           Specifies the label issues for each example in dataset.
-          If pd.DataFrame, must be formatted as the one returned by:
+          If ``pd.DataFrame``, must be formatted as the one returned by:
           :py:meth:`CleanLearning.find_label_issues
           <cleanlab.classification.CleanLearning.find_label_issues>` or
           :py:meth:`CleanLearning.get_label_issues
           <cleanlab.classification.CleanLearning.get_label_issues>`.
-          If np.array, must contain either boolean label_issues_mask as output by:
+          If ``np.array``, must contain either boolean `label_issues_mask` as output by:
           default :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>`,
           or integer indices as output by
           :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>`
@@ -342,7 +343,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
 
           Caution: If you provide `label_issues` without having previously called
           :py:meth:`self.find_label_issues<cleanlab.classification.CleanLearning.find_label_issues>`,
-          e.g. as a np.array, then some functionality like training with sample weights may be disabled.
+          e.g. as a ``np.array``, then some functionality like training with sample weights may be disabled.
 
         clf_kwargs : dict, optional
           Optional keyword arguments to pass into `clf`'s ``fit()`` method.
@@ -362,7 +363,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
 
 
           After calling ``self.fit()``, this estimator also stores a few extra useful attributes, in particular
-          `self.label_issues_df`: a pd.DataFrame accessible via
+          `self.label_issues_df`: a ``pd.DataFrame`` accessible via
           :py:meth:`get_label_issues
           <cleanlab.classification.CleanLearning.get_label_issues>`
           of similar format as the one returned by: :py:meth:`CleanLearning.find_label_issues<cleanlab.classification.CleanLearning.find_label_issues>`.
@@ -375,7 +376,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
             `sample_weight` column will only be present if sample weights were actually used.
             These weights are assigned to each example based on the class it belongs to,
             i.e. there are only num_classes unique sample_weight values.
-            The sample weight for an example belonging to class k is computed as 1 / p(given_label = k | true_label = k).
+            The sample weight for an example belonging to class k is computed as ``1 / p(given_label = k | true_label = k)``.
             This sample_weight normalizes the loss to effectively trick `clf` into learning with the distribution
             of the true labels by accounting for the noisy data pruned out prior to training on cleaned data.
             In other words, examples with label issues were removed, so this weights the data proportionally
@@ -770,7 +771,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
     def get_label_issues(self):
         """
         Accessor. Returns `label_issues_df` attribute if previously already computed.
-        This pd.DataFrame describes the label issues identified for each example
+        This ``pd.DataFrame`` describes the label issues identified for each example
         (each row corresponds to an example).
         For column definitions, see the documentation of
         :py:meth:`CleanLearning.find_label_issues<cleanlab.classification.CleanLearning.find_label_issues>`.
