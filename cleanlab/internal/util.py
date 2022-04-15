@@ -451,3 +451,13 @@ def compress_int_array(int_array, num_possible_values):
     if compressed_type is not None:
         int_array = int_array.astype(compressed_type)
     return int_array
+
+
+def smart_display_dataframe(df):  # pragma: no cover
+    """Display a pandas dataframe if in a jupyter notebook, otherwise print it to console."""
+    try:
+        from IPython.display import display
+
+        display(df)
+    except:
+        print(df)

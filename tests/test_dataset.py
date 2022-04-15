@@ -437,7 +437,12 @@ def test_real_datasets(dataset_name):
     class_names = eval(dataset_name)
     pred_probs, labels = _get_pred_probs_labels_from_labelerrors_datasets(dataset_name)
     # if this runs without issue no all four datasets, the test passes
-    _ = health_summary(pred_probs=pred_probs, labels=labels, class_names=class_names)
+    _ = health_summary(
+        pred_probs=pred_probs,
+        labels=labels,
+        class_names=class_names,
+        verbose=dataset_name != "mnist",  # test out verbose=False on one of the datasets.
+    )
 
 
 @pytest.mark.parametrize("asymmetric", [True, False])
