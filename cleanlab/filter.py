@@ -627,11 +627,12 @@ def _keep_at_least_n_per_class(prune_count_matrix, n, *, frac_noise=1.0):
       label issues to return is dependent on the `filter_by` method used. It works by reducing the
       size of the off-diagonals of the `prune_count_matrix` of given labels and true labels
       proportionally by `frac_noise` prior to estimating label issues with each method.
+      When frac_noise=1.0, return all "confident" estimated noise indices (recommended).
 
     Returns
     -------
     prune_count_matrix : np.array of shape (K, K), K = number of classes
-        Number of examples to remove from each class, for every other class.
+        This the same as the confident_joint, but has been transposed and the counts are adjusted.
     """
 
     prune_count_matrix_diagonal = np.diagonal(prune_count_matrix)
@@ -685,6 +686,7 @@ def _reduce_prune_counts(prune_count_matrix, frac_noise=1.0):
       label issues to return is dependent on the `filter_by` method used. It works by reducing the
       size of the off-diagonals of the `prune_count_matrix` of given labels and true labels
       proportionally by `frac_noise` prior to estimating label issues with each method.
+      When frac_noise=1.0, return all "confident" estimated noise indices (recommended).
     """
 
     new_mat = prune_count_matrix * frac_noise
