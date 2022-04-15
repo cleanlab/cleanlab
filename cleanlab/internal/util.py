@@ -69,7 +69,6 @@ def remove_noise_from_class(noise_matrix, class_without_noise):
 
     Parameters
     ----------
-
     noise_matrix : np.array of shape (K, K), K = number of classes
         A conditional probability matrix of the form P(label=k_s|true_label=k_y) containing
         the fraction of examples in every class, labeled as every other class.
@@ -105,7 +104,6 @@ def clip_noise_rates(noise_matrix):
 
     Parameters
     ----------
-
     noise_matrix : np.array of shape (K, K), K = number of classes
         A conditional probability matrix containing the fraction of
         examples in every class, labeled as every other class.
@@ -141,7 +139,6 @@ def clip_values(x, low=0.0, high=1.0, new_sum=None):
 
     Parameters
     ----------
-
     x : np.array
         An array / list of values to be clipped.
 
@@ -156,7 +153,6 @@ def clip_values(x, low=0.0, high=1.0, new_sum=None):
 
     Returns
     -------
-
     x : np.array
         A list of clipped values, summing to the same sum as x."""
 
@@ -202,7 +198,6 @@ def value_counts(x):
 
     Parameters
     ----------
-
     x : list or np.array (one dimensional)
         A list of discrete objects, like lists or strings, for
         example, class labels 'y' when training a classifier.
