@@ -35,7 +35,6 @@ def noise_matrix_is_valid(noise_matrix, py, *, verbose=False):
 
     Parameters
     ----------
-
     noise_matrix : np.array
       An array of shape ``(K, K)`` representing the conditional probability
       matrix ``P(label=k_s|true_label=k_y)`` containing the fraction of
@@ -116,7 +115,6 @@ def generate_noisy_labels(true_labels, noise_matrix):
 
     Parameters
     ----------
-
     true_labels : np.array
       An array of shape ``(N,)`` representing perfect labels, without any
       noise. Contains K distinct natural number classes, 0, 1, ..., K-1.
@@ -208,7 +206,6 @@ def generate_noise_matrix_from_trace(
 
     Parameters
     ----------
-
     K : int
       Creates a noise matrix of shape ``(K, K)``. Implies there are
       K classes for learning with noisy labels.
@@ -370,7 +367,6 @@ def generate_n_rand_probabilities_that_sum_to_m(
 
     Parameters
     ----------
-
     n : int
       Length of array of random probabilities to be returned.
 

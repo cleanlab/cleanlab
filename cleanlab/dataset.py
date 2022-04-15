@@ -57,9 +57,9 @@ def rank_classes_by_label_quality(
 
         * *Class Index*: The index of the class in 0, 1, ..., K-1.
         * *Label Issues*: ``count(given_label = k, true_label != k)``, estimated number of label issues in the class (usually the most accurate method).
-        * *Inverse Label Issues*: ``count(given_label != k, true_label = k)``, estimated number of times this class occurs in other classes in the dataset.
-        * *Label Noise*: ``prob(true_label != k | given_label = k)``, estimated proportion of label issues in the class. This is computed by taking the number of "Label Issues" in each class and dividing it by the total number of examples in each class.
-        * *Inverse Label Noise*: ``prob(given_label != k | true_label = k)``, estimated proportion of times this class label occurs in other classes in the dataset.
+        * *Inverse Label Issues*: ``count(given_label != k, true_label = k)``, estimated number of times an example with the given class label label occurs in each of the other classes in the dataset.
+        * *Label Noise*: ``prob(true_label != k | given_label = k)``, estimated proportion of label issues in the class. This is computed by taking the number of examples with "Label Issues" in the the given class and dividing it by the total number of examples in that class.
+        * *Inverse Label Noise*: ``prob(given_label != k | true_label = k)``, estimated proportion of times an example with the given class label label occurs in each of the other classes in the dataset.
         * *Label Quality Score*: ``p(true_label = k | given_label = k)``. This is the proportion of examples in the class that are labeled correctly, i.e. ``1 - label_noise``.
 
         By default, the DataFrame is ordered by "Label Quality Score", ascending.

@@ -49,7 +49,7 @@ def num_label_issues(
     pred_probs,
     confident_joint=None,
 ):
-    """Estimates the number of label issues in `labels`.
+    """Estimates the number of label issues in the `labels` of a dataset.
 
     This method is **more accurate** than ``sum(find_label_issues())`` because its computed using only
     the trace of the confident joint, ignoring all off-diagonals (which are used by `find_label_issues` and are harder to
@@ -57,12 +57,16 @@ def num_label_issues(
     are more constrained, and therefore easier to compute).
 
     TL;DR: use this method to get the most accurate estimate of number of label issues when you
-    don't need the indices of the label issues. This is the canonical way to find errors
-    by combining a ranking/scoring function from :py:mod:`cleanlab.rank` with `num_label_issues`.
+    don't need the indices of the label issues.
+
+    You can use this method to label issues by using `num_label_issues` as the cutoff threshold
+    used with ranking/scoring functions from :py:mod:`cleanlab.rank` with `num_label_issues`. There
+    are two cases when you should use this approach instead of :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>`:
+      1. As we add more label and data quality scoring functions in :py:mod:`cleanlab.rank`, this approach will always work.
+      2. If you have a custom score to rank your data by label quality and you just need to know the cut-off of likely label issues.
 
     Parameters
     ----------
-
     labels : np.array
       An array of shape ``(N,)`` of noisy labels, i.e. some labels may be erroneous.
       Elements must be in the set 0, 1, ..., K-1, where K is the number of classes.
@@ -112,7 +116,6 @@ def calibrate_confident_joint(confident_joint, labels, *, multi_label=False):
 
     Parameters
     ----------
-
     confident_joint : np.array
       An array of shape ``(K, K)`` representing the confident joint, the matrix used for identifying label issues, which
       estimates a confident subset of the joint distribution of the noisy and true labels, ``P_{noisy label, true label}``.
@@ -322,7 +325,6 @@ def compute_confident_joint(
 
     Parameters
     ----------
-
     labels : np.array
       An array of shape ``(N,)`` of noisy labels, i.e. some labels may be erroneous.
       Elements must be in the set 0, 1, ..., K-1, where K is the number of classes.
@@ -890,7 +892,6 @@ def estimate_cv_predicted_probabilities(
 
     Parameters
     ----------
-
     X : np.array
       Input feature matrix of shape ``(N, ...)``, where N is the number of
       examples. The classifier that this instance was initialized with,
@@ -1047,7 +1048,6 @@ def _converge_estimates(
 
     Parameters
     ----------
-
     ps : np.array (shape (K, ) or (1, K))
         The fraction (prior probability) of each observed, NOISY class P(labels = k).
 

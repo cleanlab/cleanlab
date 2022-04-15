@@ -292,14 +292,13 @@ def find_label_issues(
     score used to order the label issues.
 
     The number of indices returned is controlled by `frac_noise`: reduce its
-    value to identify fewer label issues.
+    value to identify fewer label issues. If you aren't sure, leave this set to 1.0.
 
     Tip: if you encounter the error "pred_probs is not defined", try setting
     ``n_jobs=1``.
 
     Parameters
     ----------
-
     labels : np.array
       A discrete vector of noisy labels, i.e. some labels may be erroneous.
       *Format requirements*: for dataset with K classes, labels must be in 0, 1, ..., K-1.
@@ -357,9 +356,14 @@ def find_label_issues(
       Example of a multi-labeled `labels` input: ``[[0,1], [1], [0,2], [0,1,2], [0], [1], ...]``.
 
     frac_noise : float, default=1.0
-      When ``frac_noise=1.0``, return all "confident" estimated noise indices.
-      Value in range ``[0, 1)`` determine the fraction of noisy example
-      indices to return based on the following formula for example class k.
+      Used to only return the "top" ``frac_noise * num_label_issues``. The choice of which "top"
+      label issues to return is dependent on the `filter_by` method used. It works by reducing the
+      size of the off-diagonals of the `joint` distribution of given labels and true labels
+      proportionally by `frac_noise` prior to estimating label issues with each method.
+      This parameter only applies for `filter_by=both`, `filter_by=prune_by_class`, and
+      `filter_by=prune_by_noise_rate` methods and currently is unused by other methods.
+      When ``frac_noise=1.0``, return all "confident" estimated noise indices (recommended).
+
       frac_noise * number_of_mislabeled_examples_in_class_k.
 
     num_to_remove_per_class : array_like
@@ -611,7 +615,6 @@ def _keep_at_least_n_per_class(prune_count_matrix, n, *, frac_noise=1.0):
 
     Parameters
     ----------
-
     prune_count_matrix : np.array of shape (K, K), K = number of classes
         A counts of mislabeled examples in every class. For this function.
         NOTE prune_count_matrix is transposed relative to confident_joint.
@@ -619,18 +622,17 @@ def _keep_at_least_n_per_class(prune_count_matrix, n, *, frac_noise=1.0):
     n : int
         Number of examples to make sure are left in each class.
 
-    frac_noise : float
-        When frac_noise = 1.0, return all estimated noise indices.
-        Value in range (0, 1] that determines the fraction of noisy example
-        indices to return based on the following formula for example class k.
-        frac_noise * number_of_mislabeled_examples_in_class_k, or
-        frac_noise * inverse_noise_rate_class_k * num_examples_s_equal_k
+    frac_noise : float, default=1.0
+      Used to only return the "top" ``frac_noise * num_label_issues``. The choice of which "top"
+      label issues to return is dependent on the `filter_by` method used. It works by reducing the
+      size of the off-diagonals of the `prune_count_matrix` of given labels and true labels
+      proportionally by `frac_noise` prior to estimating label issues with each method.
 
     Returns
     -------
-
     prune_count_matrix : np.array of shape (K, K), K = number of classes
-        Number of examples to remove from each class, for every other class."""
+        Number of examples to remove from each class, for every other class.
+    """
 
     prune_count_matrix_diagonal = np.diagonal(prune_count_matrix)
 
@@ -673,18 +675,17 @@ def _reduce_prune_counts(prune_count_matrix, frac_noise=1.0):
 
     Parameters
     ----------
-
     prune_count_matrix : np.array of shape (K, K), K = number of classes
         A counts of mislabeled examples in every class. For this function, it
         does not matter what the rows or columns are, but the diagonal terms
         reflect the number of correctly labeled examples.
 
     frac_noise : float
-        When frac_noise = 1.0, return all estimated noise indices.
-        Value in range (0, 1] that determines the fraction of noisy example
-        indices to return based on the following formula for example class k.
-        frac_noise * number_of_mislabeled_examples_in_class_k, or
-        frac_noise * inverse_noise_rate_class_k * num_examples_s_equal_k."""
+      Used to only return the "top" ``frac_noise * num_label_issues``. The choice of which "top"
+      label issues to return is dependent on the `filter_by` method used. It works by reducing the
+      size of the off-diagonals of the `prune_count_matrix` of given labels and true labels
+      proportionally by `frac_noise` prior to estimating label issues with each method.
+    """
 
     new_mat = prune_count_matrix * frac_noise
     np.fill_diagonal(new_mat, prune_count_matrix.diagonal())
@@ -698,8 +699,7 @@ def _reduce_prune_counts(prune_count_matrix, frac_noise=1.0):
 
 
 def find_predicted_neq_given(labels, pred_probs, *, multi_label=False):
-    """This is the simplest baseline approach. Just consider
-    anywhere ``argmax(pred_probs) != labels`` as a label error.
+    """A simple baseline approach that considers ``argmax(pred_probs) != labels`` as a label error.
 
     Parameters
     ----------
@@ -757,7 +757,6 @@ def find_label_issues_using_argmax_confusion_matrix(
 
     Parameters
     ----------
-
     labels : np.array
         An array of shape ``(N,)`` of noisy labels, i.e. some labels may be erroneous.
         Elements must be in the set 0, 1, ..., K-1, where K is the number of classes.

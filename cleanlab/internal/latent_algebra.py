@@ -35,7 +35,6 @@ def compute_ps_py_inv_noise_matrix(labels, noise_matrix):
 
     Parameters
     ----------
-
     labels : np.array
           A discrete vector of noisy labels, i.e. some labels may be erroneous.
           *Format requirements*: for dataset with K classes, labels must be in {0,1,...,K-1}.
@@ -57,7 +56,6 @@ def compute_py_inv_noise_matrix(ps, noise_matrix):
 
     Parameters
     ----------
-
     ps : np.array (shape (K, ) or (1, K))
         The fraction (prior probability) of each observed, NOISY class P(labels = k).
 
@@ -84,7 +82,6 @@ def compute_inv_noise_matrix(py, noise_matrix, *, ps=None):
 
     Parameters
     ----------
-
     py : np.array (shape (K, 1))
         The fraction (prior probability) of each TRUE class label, P(true_label = k)
 
@@ -205,7 +202,6 @@ def compute_py(
 
     Parameters
     ----------
-
     ps : np.array (shape (K, ) or (1, K))
         The fraction (prior probability) of each observed, noisy label, P(labels = k)
 
@@ -231,7 +227,6 @@ def compute_py(
 
     Returns
     -------
-
     py : np.array (shape (K, ) or (1, K))
         The fraction (prior probability) of each TRUE class label, P(true_label = k)."""
 
@@ -280,7 +275,6 @@ def compute_pyx(pred_probs, noise_matrix, inverse_noise_matrix):
 
     Parameters
     ----------
-
     pred_probs : np.array (shape (N, K))
         P(label=k|x) is a matrix with K model-predicted probabilities.
         Each row of this matrix corresponds to an example `x` and contains the model-predicted
@@ -302,7 +296,6 @@ def compute_pyx(pred_probs, noise_matrix, inverse_noise_matrix):
 
     Returns
     -------
-
     pyx : np.array (shape (N, K))
         P(true_label=k|x) is a matrix with K model-predicted probabilities.
         Each row of this matrix corresponds to an example `x` and contains the model-predicted
