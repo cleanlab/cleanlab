@@ -7,8 +7,10 @@ Below we outline the major updates and code substitutions to be aware of.
 The full change-log is listed in the `v2.0.0. Release Notes <https://github.com/cleanlab/cleanlab/releases/tag/v2.0.0>`_.
 
 
-Method and class name changes
------------------------------
+Function and class name changes
+-------------------------------
+
+This section covers the most commonly-used functionality from Cleanlab 1.0.
 
 | **Old:** ``pruning.get_noise_indices(s, psx, prune_method, sorted_index_method, ...)``
 | -->
@@ -44,25 +46,42 @@ Note: :py:class:`CleanLearning <cleanlab.classification.CleanLearning>` can now 
 Module name changes
 -------------------
 
+Reorganized modules:
+
 - ``cleanlab.pruning`` --> :py:mod:`cleanlab.filter`
 - ``cleanlab.latent_estimation`` --> :py:mod:`cleanlab.count`
-- ``cleanlab.models`` --> :py:mod:`cleanlab.experimental`
+- ``cleanlab.noise_generation`` --> :py:mod:`cleanlab.benchmarking.noise_generation`
+- ``cleanlab.baseline_methods`` --> incorporated into :py:mod:`cleanlab.filter`
 
-Note: The ``cleanlab.coteaching`` module has also been moved into :py:mod:`cleanlab.experimental.coteaching`.
+Internal and experimental functionality, marked as such and not guaranteed to be stable between releases:
+
+- ``cleanlab.models`` --> :py:mod:`cleanlab.experimental`
+- ``cleanlab.coteaching`` --> :py:mod:`cleanlab.experimental.coteaching`
+- ``cleanlab.latent_algebra`` --> :py:mod:`cleanlab.internal.latent_algebra`
+- ``cleanlab.util`` --> :py:mod:`cleanlab.internal.util`
 
 
 New modules
 -----------
 
-- :py:mod:`cleanlab.rank` : Moved all ranking and ordering functions from ``cleanlab.pruning`` and ``cleanlab.filter`` to here. This module contains methods to score the label quality of each example and rank your data by the quality of their labels.
 - :py:mod:`cleanlab.dataset` : New methods to print summaries of overall types of label issues most common in a dataset.
-- :py:mod:`cleanlab.internal` : Moved all advanced code and utility methods to this module, including the old ``cleanlab.latent_algebra`` module. Researchers may find useful functions in here.
+- :py:mod:`cleanlab.rank` : Moved all ranking and ordering functions from ``cleanlab.pruning`` to here. This module contains methods to score the label quality of each example and rank your data by the quality of their labels.
+- :py:mod:`cleanlab.internal` and :py:mod:`cleanlab.experimental`: Moved all advanced code and utility methods to this module, including the old ``cleanlab.latent_algebra`` module. Researchers may find useful functions in here.
+
+
+Removed modules
+---------------
+
+- ``cleanlab.polyplex``
 
 
 Common argument and variable name changes
 -----------------------------------------
 
+Here are some common name and terminology changes in Cleanlab 2.0:
+
 - ``s`` --> ``labels``  (the given labels in the data, which are potentially noisy)
 - ``psx`` --> ``pred_probs``  (predicted probabilities output by trained classifier)
 - ``label_error`` --> ``label_issue``  (a label that is likely to be wrong)
 
+See the documentation for individual functions for details on how argument names changed.
