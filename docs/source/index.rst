@@ -71,6 +71,23 @@ When the :py:meth:`.fit() <cleanlab.classification.CleanLearning.fit>` method is
    cl = CleanLearning(clf=clf)
    cl.fit(X=X, labels=labels)
 
+
+4. Fix dataset-level issues and dataset curation
+------------------------------------------------
+
+cleanlab's :py:mod:`dataset <cleanlab.dataset>` module helps you find and deal with issues at the dataset-level level with:
+
+- :py:mod:`dataset.find_overlapping_classes <cleanlab.dataset.find_overlapping_classes>` (which classes to merge)
+- :py:mod:`dataset.rank_classes_by_label_quality <cleanlab.dataset.rank_classes_by_label_quality>` (which classes to remove/keep)
+- :py:mod:`dataset.overall_label_health_score <cleanlab.dataset.overall_label_health_score>` (track dataset quality progress as you make adjustments)
+
+View all dataset health and label quality information in one line of code with :py:meth:`dataset.health_summary() <cleanlab.dataset.health_summary>`. Check out the dataset tutorial for more examples.
+
+.. code-block:: python
+
+   cleanlab.dataset.health_summary(labels, pred_probs, class_names=class_names)
+
+
 .. toctree::
    :hidden:
 
@@ -80,11 +97,11 @@ When the :py:meth:`.fit() <cleanlab.classification.CleanLearning.fit>` method is
    :hidden:
    :caption: Tutorials
 
+   tutorials/indepth_overview
    tutorials/image
    tutorials/text
    tutorials/tabular
    tutorials/audio
-   tutorials/indepth_overview
    tutorials/pred_probs_cross_val
 
 .. toctree::
