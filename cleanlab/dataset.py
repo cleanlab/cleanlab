@@ -311,6 +311,7 @@ def health_summary(
     joint=None,
     confident_joint=None,
     multi_label=False,
+    verbose=True,
 ):
     """Prints a health summary of your datasets including results for useful statistics like:
 
@@ -330,6 +331,7 @@ def health_summary(
         - ``"classes_by_label_quality"``, corresponding to :py:func:`rank_classes_by_label_quality <cleanlab.dataset.rank_classes_by_label_quality>`
         - ``"overlapping_classes"``, corresponding to :py:func:`find_overlapping_classes <cleanlab.dataset.find_overlapping_classes>`
     """
+    from cleanlab.internal.util import smart_display_dataframe
 
     if joint is None:
         joint = estimate_joint(
@@ -341,15 +343,20 @@ def health_summary(
     if num_examples is None:
         num_examples = _get_num_examples(labels=labels)
 
-    print(
-        "*" * 56
-        + "\n"
-        + "Generating a Cleanlab Dataset Health Summary\n"
-        + f" for your dataset with {num_examples:,} examples and {len(joint):,} classes.\n"
-        + "Note, Cleanlab is not a medical doctor... yet.\n"
-        + "*" * 56
-        + "\n",
-    )
+    if verbose:
+        longest_line = (
+            f"|   for your dataset with {num_examples:,} examples "
+            f"and {len(joint):,} classes.  |\n"
+        )
+        print(
+            "-" * (len(longest_line) - 1)
+            + "\n"
+            + f"|  Generating a Cleanlab Dataset Health Summary{' ' * (len(longest_line) - 49)}|\n"
+            + longest_line
+            + f"|  Note, Cleanlab is not a medical doctor... yet.{' ' * (len(longest_line) - 51)}|\n"
+            + "-" * (len(longest_line) - 1)
+            + "\n",
+        )
 
     df_class_label_quality = rank_classes_by_label_quality(
         labels=labels,
@@ -360,9 +367,10 @@ def health_summary(
         confident_joint=confident_joint,
         multi_label=multi_label,
     )
-    print("Overall Class Quality and Noise across your dataset (below)")
-    print("-" * 60, "\n", flush=True)
-    print(df_class_label_quality)
+    if verbose:
+        print("Overall Class Quality and Noise across your dataset (below)")
+        print("-" * 60, "\n", flush=True)
+        smart_display_dataframe(df_class_label_quality)
 
     df_overlapping_classes = find_overlapping_classes(
         labels=labels,
@@ -374,17 +382,28 @@ def health_summary(
         confident_joint=confident_joint,
         multi_label=multi_label,
     )
-    print(
-        "\nClass Overlap. In some cases, you may want to merge classes in the top rows (below)"
-        + "\n"
-        + "-" * 83
-        + "\n",
-        flush=True,
+    if verbose:
+        print(
+            "\nClass Overlap. In some cases, you may want to merge classes in the top rows (below)"
+            + "\n"
+            + "-" * 83
+            + "\n",
+            flush=True,
+        )
+        smart_display_dataframe(df_overlapping_classes)
+        print()
+
+    health_score = overall_label_health_score(
+        labels=labels,
+        pred_probs=pred_probs,
+        num_examples=num_examples,
+        joint=joint,
+        confident_joint=confident_joint,
+        multi_label=multi_label,
+        verbose=verbose,
     )
-    print(df_overlapping_classes)
-    print()
-    health_score = overall_label_health_score(labels=labels, pred_probs=pred_probs, verbose=True)
-    print("\nGenerated with <3 from Cleanlab.")
+    if verbose:
+        print("\nGenerated with <3 from Cleanlab.\n")
     return {
         "overall_label_health_score": health_score,
         "joint": joint,

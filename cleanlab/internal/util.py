@@ -451,3 +451,20 @@ def compress_int_array(int_array, num_possible_values):
     if compressed_type is not None:
         int_array = int_array.astype(compressed_type)
     return int_array
+
+
+def smart_display_dataframe(df):
+    """Display a pandas dataframe if in a jupyter notebook, otherwise print it to console."""
+    try:
+        from IPython.display import display
+
+        # no exception, let's determine if we are running inside a jupyter notebook
+        shell = get_ipython().__class__.__name__
+        if shell == "ZMQInteractiveShell":
+            display(df)  # Jupyter notebook or qtconsole
+        elif shell == "TerminalInteractiveShell":
+            print(df)  # terminal, not notebook
+        else:
+            print(df)  # something else, but not notebook
+    except:  # pragma: no cover
+        print(df)
