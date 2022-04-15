@@ -458,13 +458,6 @@ def smart_display_dataframe(df):  # pragma: no cover
     try:
         from IPython.display import display
 
-        # no exception, let's determine if we are running inside a jupyter notebook
-        shell = get_ipython().__class__.__name__
-        if shell == "ZMQInteractiveShell":
-            display(df)  # Jupyter notebook or qtconsole
-        elif shell == "TerminalInteractiveShell":
-            print(df)  # terminal, not notebook
-        else:
-            print(df)  # something else, but not notebook
-    except:  # pragma: no cover
+        display(df)
+    except:
         print(df)
