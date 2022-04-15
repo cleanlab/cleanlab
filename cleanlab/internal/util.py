@@ -453,7 +453,7 @@ def compress_int_array(int_array, num_possible_values):
     return int_array
 
 
-def smart_display_dataframe(df):
+def smart_display_dataframe(df):  # pragma: no cover
     """Display a pandas dataframe if in a jupyter notebook, otherwise print it to console."""
     try:
         from IPython.display import display
