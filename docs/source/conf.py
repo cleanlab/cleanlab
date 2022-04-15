@@ -186,9 +186,7 @@ if os.getenv("SKIP_NOTEBOOKS", "0") != "0":
 # a list of builtin themes.
 #
 html_theme = "furo"
-html_favicon = (
-    "https://raw.githubusercontent.com/cleanlab/assets/a4483476d449f2f05a4c7cde329e72358099cc07/cleanlab/cleanlab_favicon.svg"
-)
+html_favicon = "https://raw.githubusercontent.com/cleanlab/assets/a4483476d449f2f05a4c7cde329e72358099cc07/cleanlab/cleanlab_favicon.svg"
 html_title = "cleanlab"
 html_logo = (
     "https://raw.githubusercontent.com/cleanlab/assets/master/cleanlab/cleanlab_logo_only.png"
