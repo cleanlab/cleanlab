@@ -171,7 +171,7 @@ nbsphinx_prolog = (
     + """/cleanlab-docs/blob/master/"""
     + GITHUB_REF_NAME
     + """/{{ docname|e }}" target="_blank">
-                <img src="https://colab.research.google.com/img/colab_favicon_256px.png" alt="Google Colab Logo" style="width:40px;height:40px;vertical-align:middle">
+                <img src="https://colab.research.google.com/img/colab_favicon_256px.png" alt="" style="width:40px;height:40px;vertical-align:middle">
                 <span style="vertical-align:middle">Run in Google Colab</span>
                 </a>
             </p>
