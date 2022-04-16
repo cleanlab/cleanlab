@@ -42,6 +42,14 @@ def rank_classes_by_label_quality(
     Score values are unnormalized and may tend to be very small. What matters is their relative
     ranking across the classes.
 
+    This method works by providing any one (and only one) of the following inputs:
+
+    1. ``labels`` and ``pred_probs``, or
+    2. ``joint`` and ``num_examples``, or
+    3. ``confident_joint``
+
+    Only provide **exactly one of the above input options**, do not provide a combination.
+
     **Parameters**: For parameter info, see the docstring of :py:func:`find_overlapping_classes <cleanlab.dataset.find_overlapping_classes>`.
 
     Returns
@@ -118,7 +126,7 @@ def find_overlapping_classes(
     This method works by providing any one (and only one) of the following inputs:
 
     1. ``labels`` and ``pred_probs``, or
-    2. ``joint``, or
+    2. ``joint`` and ``num_examples``, or
     3. ``confident_joint``
 
     Only provide **exactly one of the above input options**, do not provide a combination.
@@ -272,6 +280,14 @@ def overall_label_health_score(
     that, on average across all classes, about half of the label may have issues. Thus, a higher
     score implies higher quality labels, with 1 implying labels that have no issues.
 
+    This method works by providing any one (and only one) of the following inputs:
+
+    1. ``labels`` and ``pred_probs``, or
+    2. ``joint`` and ``num_examples``, or
+    3. ``confident_joint``
+
+    Only provide **exactly one of the above input options**, do not provide a combination.
+
     **Parameters**: For parameter info, see the docstring of :py:func:`find_overlapping_classes <cleanlab.dataset.find_overlapping_classes>`.
 
     Returns
@@ -318,6 +334,14 @@ def health_summary(
     * The classes with the most and least label issues
     * Classes that overlap and could potentially be merged
     * Overall data label quality health score statistics for your dataset
+
+    This method works by providing any one (and only one) of the following inputs:
+
+    1. ``labels`` and ``pred_probs``, or
+    2. ``joint`` and ``num_examples``, or
+    3. ``confident_joint``
+
+    Only provide **exactly one of the above input options**, do not provide a combination.
 
     **Parameters**: For parameter info, see the docstring of :py:func:`find_overlapping_classes <cleanlab.dataset.find_overlapping_classes>`.
 
