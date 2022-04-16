@@ -135,7 +135,7 @@ jobs:
           cp docs/source/_templates/redirect-to-stable.html cleanlab-docs/index.html
 
       - name: Deploy
-        if: ${{ github.ref == 'refs/heads/master' }}
+        if: ${{ (github.ref == 'refs/heads/master') || (github.ref_type == 'tag') }}
         uses: peaceiris/actions-gh-pages@v3
         with:
           deploy_key: ${{ secrets.ACTIONS_DEPLOY_KEY }}
