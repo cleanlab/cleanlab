@@ -97,11 +97,11 @@ View all dataset health and label quality information in one line of code with :
    :hidden:
    :caption: Tutorials
 
+   tutorials/indepth_overview
    tutorials/image
    tutorials/text
    tutorials/tabular
    tutorials/audio
-   tutorials/indepth_overview
    tutorials/dataset_health
    tutorials/pred_probs_cross_val
 
