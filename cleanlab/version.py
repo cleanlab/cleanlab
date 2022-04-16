@@ -15,12 +15,24 @@
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
 
-__version__ = "1.0.1"
+__version__ = "2.0.0"
 
 
-# ----------------------------------------
-# | CURRENT STABLE VERSION RELEASE NOTES |
-# ----------------------------------------
+# 2.0.0 - "Data-centric AI Ready". Complete re-architecture of cleanlab API.
+#
+#   For users (+ sometimes developers):
+#   - All spects of API have changed (methods, parameters, 
+#   - Added new dataset module for dealing with dataset-level issues
+#   - CleanLearning now handles most cleanlab tasks in one line of code.
+#   - Several new workflows possible with rank, count, and filter modules
+#
+#   For developers:
+#   - You'll need to reclone.
+#   - Extensive support available at https://docs.cleanlab.ai
+
+# ----------------------------------
+# | PREVIOUS VERSION RELEASE NOTES |
+# ----------------------------------
 
 # 1.0.1 - Launch sphinx docs for Cleanlab 1.0 (in preparation for Cleanlab 2.0). Mostly superficial.
 #
@@ -35,10 +47,6 @@ __version__ = "1.0.1"
 #   For developers:
 #   - Moved to GitHub Actions CI
 #   - Significantly shrunk the clone size to a few MB from 100MB+
-
-# ----------------------------------
-# | PREVIOUS VERSION RELEASE NOTES |
-# ----------------------------------
 
 # 1.0 - cleanlab official 1.0 (beta) release!
 #   - Added Amazon Reviews NLP to cleanlab/examples
