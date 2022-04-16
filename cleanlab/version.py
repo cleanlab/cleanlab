@@ -18,6 +18,18 @@
 __version__ = "2.0.0"
 
 
+# 2.0.0 - "Data-centric AI Ready". Complete re-architecture of cleanlab API.
+#
+#   For users (+ sometimes developers):
+#   - All spects of API have changed (methods, parameters, 
+#   - Added new dataset module for dealing with dataset-level issues
+#   - CleanLearning now handles most cleanlab tasks in one line of code.
+#   - Several new workflows possible with rank, count, and filter modules
+#
+#   For developers:
+#   - You'll need to reclone.
+#   - Extensive support available at https://docs.cleanlab.ai
+
 # ----------------------------------
 # | PREVIOUS VERSION RELEASE NOTES |
 # ----------------------------------
