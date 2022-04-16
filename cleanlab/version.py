@@ -15,12 +15,12 @@
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
 
-__version__ = "1.0.1"
+__version__ = "2.0.0"
 
 
-# ----------------------------------------
-# | CURRENT STABLE VERSION RELEASE NOTES |
-# ----------------------------------------
+# ----------------------------------
+# | PREVIOUS VERSION RELEASE NOTES |
+# ----------------------------------
 
 # 1.0.1 - Launch sphinx docs for Cleanlab 1.0 (in preparation for Cleanlab 2.0). Mostly superficial.
 #
@@ -35,10 +35,6 @@ __version__ = "1.0.1"
 #   For developers:
 #   - Moved to GitHub Actions CI
 #   - Significantly shrunk the clone size to a few MB from 100MB+
-
-# ----------------------------------
-# | PREVIOUS VERSION RELEASE NOTES |
-# ----------------------------------
 
 # 1.0 - cleanlab official 1.0 (beta) release!
 #   - Added Amazon Reviews NLP to cleanlab/examples
