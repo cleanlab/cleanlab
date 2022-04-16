@@ -100,6 +100,7 @@ The example below shows how to view all dataset-level issues in one line of code
    tutorials/text
    tutorials/tabular
    tutorials/audio
+   tutorials/dataset_health
    tutorials/pred_probs_cross_val
 
 .. toctree::
