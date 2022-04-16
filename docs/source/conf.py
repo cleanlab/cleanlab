@@ -149,6 +149,7 @@ nbsphinx_prolog = (
 
         .output_area {
             max-height: 300px;
+            overflow: auto;
         }
 
         .dataframe {
