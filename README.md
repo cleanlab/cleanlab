@@ -22,7 +22,7 @@ cleanlab.dataset.health_summary(labels, confident_joint=cl.confident_joint)
 
 Get started with: [documentation](https://docs.cleanlab.ai/), [tutorials](https://docs.cleanlab.ai/v2.0.0/tutorials/image.html), [examples](https://github.com/cleanlab/examples), and [blogs](https://cleanlab.ai/blog/).
 
- - [Click here](https://docs.cleanlab.ai/v2.0.0/tutorials/image.html) to run cleanlab on your own data in just 5 minutes!
+ - [Learn how to](https://docs.cleanlab.ai/v2.0.0/tutorials/index) run cleanlab on your own data in just 5 minutes!
  - Quickstart with 5-minute tutorials for classification with: [image](https://docs.cleanlab.ai/v2.0.0/tutorials/image.html), [text](https://docs.cleanlab.ai/v2.0.0/tutorials/text.html), [audio](https://docs.cleanlab.ai/v2.0.0/tutorials/audio.html), and [tabular](https://docs.cleanlab.ai/v2.0.0/tutorials/tabular.html) data.
 
 
@@ -62,7 +62,7 @@ Get started with: [documentation](https://docs.cleanlab.ai/), [tutorials](https:
 <li> <b>Dec 2020 🤖</b>  cleanlab supports <a href="https://github.com/cleanlab/cleanlab/blob/master/cleanlab/classification.py#L214">PU learning</a>.</li>
 <li> <b>Feb 2020 🤖</b>  cleanlab now natively supports Mac, Linux, and Windows.</li>
 <li> <b>Feb 2020 🤖</b>  cleanlab now supports <a href="https://github.com/cleanlab/cleanlab/blob/master/cleanlab/experimental/coteaching.py">Co-Teaching</a> <a href="https://arxiv.org/abs/1804.06872">(Han et al., 2018)</a>.</li>
-<li> <b>Jan 2020 🎉</b> cleanlab achieves state-of-the-art on CIFAR-10 with noisy labels. Code to reproduce:  <a href="https://github.com/cleanlab/examples/tree/master/cifar10">examples/cifar10</a>. This is a great place to see how to use cleanlab on real datasets (with predicted probabilities from trained model already precomputed for you).</li>
+<li> <b>Jan 2020 🎉</b> cleanlab achieves state-of-the-art on CIFAR-10 with noisy labels. Code to reproduce:  <a href="https://github.com/cleanlab/examples/tree/master/contrib/v1/cifar10">examples/cifar10</a>. This is a great place to see how to use cleanlab on real datasets (with predicted probabilities from trained model already precomputed for you).</li>
 </ul>
 </p>
 </details>
@@ -184,7 +184,7 @@ For additional details, check out the: [confidentlearning-reproduce repository](
 
 ### State of the Art Learning with Noisy Labels in CIFAR
 
-A step-by-step guide to reproduce these results is available [here](https://github.com/cleanlab/examples/tree/master/cifar10). This guide is also a good tutorial for using cleanlab on any large dataset. You'll need to `git clone`
+A step-by-step guide to reproduce these results is available [here](https://github.com/cleanlab/examples/tree/master/contrib/v1/cifar10). This guide is also a good tutorial for using cleanlab on any large dataset. You'll need to `git clone`
 [confidentlearning-reproduce](https://github.com/cgnorthcutt/confidentlearning-reproduce) which contains the data and files needed to reproduce the CIFAR-10 results.
 
 ![](https://raw.githubusercontent.com/cleanlab/assets/master/cleanlab/cifar10_benchmarks.png)
@@ -195,7 +195,7 @@ Observe how cleanlab (i.e. the CL method) is robust to large sparsity in label n
 
 ### Find label issues in ImageNet
 
-Use cleanlab to identify \~100,000 label errors in the 2012 ILSVRC ImageNet training dataset: [examples/imagenet](https://github.com/cleanlab/examples/tree/master/imagenet).
+Use cleanlab to identify \~100,000 label errors in the 2012 ILSVRC ImageNet training dataset: [examples/imagenet](https://github.com/cleanlab/examples/tree/master/contrib/v1/imagenet).
 
 ![](https://raw.githubusercontent.com/cleanlab/assets/master/cleanlab/imagenet_train_label_errors_32.jpg)
 
@@ -203,7 +203,7 @@ Label issues in ImageNet train set found via cleanlab. Label Errors are boxed in
 
 ### Find Label Errors in MNIST
 
-Use cleanlab to identify \~50 label errors in the MNIST dataset: [examples/mnist](https://github.com/cleanlab/examples/tree/master/mnist).
+Use cleanlab to identify \~50 label errors in the MNIST dataset: [examples/mnist](https://github.com/cleanlab/examples/tree/master/contrib/v1/mnist).
 
 ![](https://raw.githubusercontent.com/cleanlab/assets/master/cleanlab/mnist_training_label_errors24_prune_by_noise_rate.png)
 
@@ -304,7 +304,7 @@ Many methods and their default parameters are not covered here. Check out the [d
 pred_probs (num_examples x num_classes matrix of predicted probabilities) should already be computed on your own, with any classifier. pred_probs must be obtain in a holdout/out-of-sample manner (e.g. via cross-validation).
 * cleanlab can do this for you via [`cleanlab.count.estimate_cv_predicted_probabilities`](https://docs.cleanlab.ai/master/cleanlab/count.html)]
 * Tutorial with more info: [[here](https://docs.cleanlab.ai/master/tutorials/pred_probs_cross_val.html)]
-* Example how to compute pred_probs for CIFAR-10 [[here](https://github.com/cleanlab/examples/tree/master/cifar10)]
+* Examples how to compute pred_probs with: [[CNN image classifier (PyTorch)](https://docs.cleanlab.ai/v2.0.0/tutorials/image.html)], [[NN text classifier (TensorFlow)](https://docs.cleanlab.ai/v2.0.0/tutorials/text.html)]
 
 ```python
 # label issues are ordered by likelihood of being an error. First index is most likely error.
@@ -317,7 +317,7 @@ ordered_label_issues = find_label_issues(  # One line of code!
  )
 ```
 
-Pre-computed **out-of-sample** predicted probabilities for CIFAR-10 train set are available: [here](https://github.com/cleanlab/examples/tree/master/cifar10#pre-computed-psx-for-every-noise--sparsity-condition).
+Pre-computed **out-of-sample** predicted probabilities for CIFAR-10 train set are available: [here](https://github.com/cleanlab/examples/tree/master/contrib/v1/cifar10#pre-computed-psx-for-every-noise--sparsity-condition).
 
 ## Fully characterize label noise and uncertainty in your dataset.
 
