@@ -20,11 +20,10 @@ cl.predict(test_data)
 cleanlab.dataset.health_summary(labels, confident_joint=cl.confident_joint)
 ```
 
-Get started with: [documentations](https://docs.cleanlab.ai/), [tutorials](https://docs.cleanlab.ai/master/tutorials/tabular.html), [examples](https://github.com/cleanlab/examples), and [blogs](https://cleanlab.ai/blog/).
+Get started with: [documentation](https://docs.cleanlab.ai/), [tutorials](https://docs.cleanlab.ai/v2.0.0/tutorials/image.html), [examples](https://github.com/cleanlab/examples), and [blogs](https://cleanlab.ai/blog/).
 
- - [Click here](https://docs.cleanlab.ai/master/tutorials/image.html) to run cleanlab on your own data in just 5 minutes!
- - Quickstart with 5-minute tutorials for classification with: [image](https://docs.cleanlab.ai/master/tutorials/image.html), [text](https://docs.cleanlab.ai/master/tutorials/text.html), [audio](https://docs.cleanlab.ai/master/tutorials/audio.html), and [tabular](https://docs.cleanlab.ai/master/tutorials/tabular.html) data.
-<!-- TODO:update links to v2.0 docs -->
+ - [Click here](https://docs.cleanlab.ai/v2.0.0/tutorials/image.html) to run cleanlab on your own data in just 5 minutes!
+ - Quickstart with 5-minute tutorials for classification with: [image](https://docs.cleanlab.ai/v2.0.0/tutorials/image.html), [text](https://docs.cleanlab.ai/v2.0.0/tutorials/text.html), [audio](https://docs.cleanlab.ai/v2.0.0/tutorials/audio.html), and [tabular](https://docs.cleanlab.ai/v2.0.0/tutorials/tabular.html) data.
 
 
 [![pypi](https://img.shields.io/pypi/v/cleanlab.svg)](https://pypi.org/pypi/cleanlab/)
@@ -41,7 +40,7 @@ Get started with: [documentations](https://docs.cleanlab.ai/), [tutorials](https
 <ul>
 <li> <b>April 2022 📖</b> cleanlab 2.0.0 released! Lays foundations for this library to grow into a general-purpose data-centric AI toolkit. </li>
 <li> <b>March 2022 📖</b>  Documentation migrated to new website: <a href="https://docs.cleanlab.ai/">docs.cleanlab.ai</a> with quickstart tutorials for image/text/audio/tabular data.</li>
-<li> <b>Feb 2022 💻</b> APIs simplified to make cleanlab accessible for everybody, not just ML researchers </li>  <!-- TODO: link migration guide -->
+<li> <b>Feb 2022 💻</b> APIs <a href="https://docs.cleanlab.ai/master/migrating/migrate_v2.html">simplified</a> to make cleanlab accessible for everybody, not just ML researchers </li>
 </ul>
 </p>
 </details>
@@ -63,7 +62,7 @@ Get started with: [documentations](https://docs.cleanlab.ai/), [tutorials](https
 <li> <b>Dec 2020 🤖</b>  cleanlab supports <a href="https://github.com/cleanlab/cleanlab/blob/master/cleanlab/classification.py#L214">PU learning</a>.</li>
 <li> <b>Feb 2020 🤖</b>  cleanlab now natively supports Mac, Linux, and Windows.</li>
 <li> <b>Feb 2020 🤖</b>  cleanlab now supports <a href="https://github.com/cleanlab/cleanlab/blob/master/cleanlab/experimental/coteaching.py">Co-Teaching</a> <a href="https://arxiv.org/abs/1804.06872">(Han et al., 2018)</a>.</li>
-<li> <b>Jan 2020 🎉</b> cleanlab achieves state-of-the-art on CIFAR-10 with noisy labels. Code to reproduce:  <a href="https://github.com/cleanlab/examples/tree/master/cifar10">examples/cifar10</a>. This is a great place to see how to use cleanlab on real datasets (with predicted probabiliteis already precomputed for you).</li>
+<li> <b>Jan 2020 🎉</b> cleanlab achieves state-of-the-art on CIFAR-10 with noisy labels. Code to reproduce:  <a href="https://github.com/cleanlab/examples/tree/master/cifar10">examples/cifar10</a>. This is a great place to see how to use cleanlab on real datasets (with predicted probabilities from trained model already precomputed for you).</li>
 </ul>
 </p>
 </details>
@@ -72,8 +71,7 @@ Release notes for past versions are available [here](https://github.com/cleanlab
 
 **Long-time cleanlab user?**
 
-* Here's a [guide](https://docs.cleanlab.ai/master/migrating/migrate_v2.html) on how to migrate to cleanlab 2.0.0.
-<!-- TODO: update link post 2.0 tag. probably change to https://docs.cleanlab.ai/v2.0.0/migrating/migrate_v2.html -->
+* Here's a [guide](https://docs.cleanlab.ai/v2.0.0/migrating/migrate_v2.html) on how to migrate to cleanlab 2.0.0.
 
 ## So fresh, so cleanlab
 
