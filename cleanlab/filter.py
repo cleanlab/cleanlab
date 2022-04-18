@@ -516,7 +516,7 @@ def find_label_issues(
                     min_examples_per_class,
                 ),
             ) as p:
-                if verbose:
+                if verbose:  # pragma: no cover
                     print("Parallel processing label issues by class.")
                 sys.stdout.flush()
                 if big_dataset and tqdm_exists:
@@ -548,7 +548,7 @@ def find_label_issues(
                     min_examples_per_class,
                 ),
             ) as p:
-                if verbose:
+                if verbose:  # pragma: no cover
                     print("Parallel processing label issues by noise rate.")
                 sys.stdout.flush()
                 if big_dataset and tqdm_exists:
