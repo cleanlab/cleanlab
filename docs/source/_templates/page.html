@@ -29,7 +29,7 @@
             <p class="admonition-title">Warning</p>
             <p>This version of the documentation corresponds to the master branch of <code class="docutils literal notranslate"><span class="pre">cleanlab</span></code> source code from <a href="https://github.com/cleanlab/cleanlab/">GitHub</a>. To see the documentation for the latest <code class="docutils literal notranslate"><span class="pre">pip</span></code>-installed version, click <a href="{{ DOCS_SITE_URL }}">here</a>.</p>
             </div>`;
-        } else if (!path_arr.includes(version_number)) {
+        } else if (!path_arr.includes(version_number) && !path_arr.includes("stable")) {
             document.getElementById("doc_ver_warning").innerHTML =
             `<div class="admonition warning">
             <p class="admonition-title">Warning</p>

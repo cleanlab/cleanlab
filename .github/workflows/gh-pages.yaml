@@ -3,7 +3,7 @@ name: GitHub Pages
 on:
   push:
     branches:
-      - '**'
+      - "**"
 
   release:
     types: [published]
@@ -16,7 +16,7 @@ jobs:
     concurrency:
       group: ${{ github.workflow }}-${{ github.ref }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
@@ -31,7 +31,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v2
         with:
-          node-version: '16'
+          node-version: "16"
 
       - name: Upgrade pip
         run: python3 -m pip install --upgrade pip
@@ -100,6 +100,10 @@ jobs:
           repo: cleanlab
           excludes: prerelease, draft
 
+      - name: Create latest_release.txt file
+        if: ${{ steps.stable_release.outcome == 'success' }}
+        run: echo ${{ steps.stable_release.outputs.release }} > cleanlab-docs/latest_release.txt
+
       - name: Find and replace "placeholder_version_number" in verisioning.js
         if: ${{ steps.stable_release.outcome == 'success' }}
         uses: jacobtomlinson/gha-find-replace@v2
@@ -124,15 +128,12 @@ jobs:
         uses: jacobtomlinson/gha-find-replace@v2
         with:
           find: "stable_url"
-          replace: ${{ env.DOCS_SITE_URL }}${{ steps.stable_release.outputs.release }}/index.html
+          replace: ${{ env.DOCS_SITE_URL }}stable/index.html
           include: "docs/source/_templates/redirect-to-stable.html"
 
-      - name: Copy redirecting HTML file to cleanlab-docs/ and cleanlab-docs/stable
+      - name: Copy redirecting HTML file to cleanlab-docs/
         if: ${{ github.ref_type == 'tag' }}
-        run: |
-          mkdir cleanlab-docs/stable
-          cp docs/source/_templates/redirect-to-stable.html cleanlab-docs/stable/index.html
-          cp docs/source/_templates/redirect-to-stable.html cleanlab-docs/index.html
+        run: cp docs/source/_templates/redirect-to-stable.html cleanlab-docs/index.html
 
       - name: Deploy
         if: ${{ (github.ref == 'refs/heads/master') || (github.ref_type == 'tag') }}
@@ -143,11 +144,14 @@ jobs:
           publish_branch: master
           publish_dir: cleanlab-docs
           keep_files: true
+          exclude_assets: ""
+
       - uses: actions/upload-artifact@v3
         with:
           name: docs-html
           path: cleanlab-docs
           retention-days: 1 # don't need this except in link checking step below
+
   links:
     needs: deploy
     runs-on: ubuntu-20.04
