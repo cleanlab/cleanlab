@@ -16,7 +16,7 @@ cl.fit(data, labels)
 # cleanlab estimates the predictions you would have gotten if you had trained with *no* label issues.
 cl.predict(test_data)
 
-# A true data-centric AI package, cleanlab provides class-level issues and overall data quality, for any dataset.
+# A true data-centric AI package, cleanlab quantifies class-level issues and overall data quality, for any dataset.
 cleanlab.dataset.health_summary(labels, confident_joint=cl.confident_joint)
 ```
 
@@ -75,7 +75,7 @@ Release notes for past versions are available [here](https://github.com/cleanlab
 
 ## So fresh, so cleanlab
 
-cleanlab **clean**s your data's **lab**els via state-of-the-art *confident learning* algorithms, published in this [paper](https://jair.org/index.php/jair/article/view/12125) and [blog](https://l7.curtisnorthcutt.com/confident-learning). See datasets cleaned with cleanlab at [labelerrors.com](https://labelerrors.com). This package helps you to find all the label issues lurking in your data and to train more reliable ML models.
+cleanlab **clean**s your data's **lab**els via state-of-the-art *confident learning* algorithms, published in this [paper](https://jair.org/index.php/jair/article/view/12125) and [blog](https://l7.curtisnorthcutt.com/confident-learning). See datasets cleaned with cleanlab at [labelerrors.com](https://labelerrors.com). This package helps you find all the label issues lurking in your data and train more reliable ML models.
 
 cleanlab is:
 
@@ -426,7 +426,7 @@ thresholds = np.asarray([np.mean(pred_probs[:, k][s == k]) for k in range(K)])
 thresholds[pu_class] = 1.0
 ```
 
-Now you can use cleanlab however you were before. Just be sure to pass in this thresholds as a parameter wherever it applies. For example:
+Now you can use cleanlab however you were before. Just be sure to pass in `thresholds` as a parameter wherever it applies. For example:
 
 ``` python
 # Uncertainty quantification (characterize the label noise
