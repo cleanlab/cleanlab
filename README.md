@@ -22,7 +22,7 @@ cleanlab.dataset.health_summary(labels, confident_joint=cl.confident_joint)
 
 Get started with: [documentation](https://docs.cleanlab.ai/), [tutorials](https://docs.cleanlab.ai/v2.0.0/tutorials/image.html), [examples](https://github.com/cleanlab/examples), and [blogs](https://cleanlab.ai/blog/).
 
- - [Learn how to](https://docs.cleanlab.ai/v2.0.0/tutorials/index) run cleanlab on your own data in just 5 minutes!
+ - [Learn how to](https://docs.cleanlab.ai/v2.0.0/index.html) run cleanlab on your own data in just 5 minutes!
  - Quickstart with 5-minute tutorials for classification with: [image](https://docs.cleanlab.ai/v2.0.0/tutorials/image.html), [text](https://docs.cleanlab.ai/v2.0.0/tutorials/text.html), [audio](https://docs.cleanlab.ai/v2.0.0/tutorials/audio.html), and [tabular](https://docs.cleanlab.ai/v2.0.0/tutorials/tabular.html) data.
 
 
