@@ -96,9 +96,9 @@ setup(
 """
 Curtis G. Northcutt notes on how to perform pypi upload:
 
-1. python setup.py check -r -s
+1. python setup.py check -m -s
 2. rm -rf dist build
-3. python setup.py sdist bdist_wheel --universal
+3. python setup.py sdist bdist_wheel
 4. twine check dist/*
 5. python3 -m twine upload dist/*
 
