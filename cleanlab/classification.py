@@ -663,7 +663,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
             if pred_probs is None:
                 if self.verbose:
                     print(
-                        "Computing out of sample predicted probabilites via "
+                        "Computing out of sample predicted probabilities via "
                         f"{self.cv_n_folds}-fold cross validation. May take a while ..."
                     )
                 (
@@ -700,7 +700,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         if pred_probs is None:
             if self.verbose:
                 print(
-                    "Computing out of sample predicted probabilites via "
+                    "Computing out of sample predicted probabilities via "
                     f"{self.cv_n_folds}-fold cross validation. May take a while ..."
                 )
 
