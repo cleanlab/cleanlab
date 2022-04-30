@@ -44,9 +44,7 @@ class MultiInputKerasClassifier(KerasClassifier):
     def _get_tf_input(self, ids, train_input):
         indexed_input_ids = np.array(tf.gather(train_input["input_ids"], indices=ids))
 
-        indexed_attention_mask = np.array(
-            tf.gather(train_input["attention_mask"], indices=ids)
-        )
+        indexed_attention_mask = np.array(tf.gather(train_input["attention_mask"], indices=ids))
 
         return np.hstack([indexed_input_ids, indexed_attention_mask])
 
