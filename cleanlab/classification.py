@@ -263,6 +263,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         noise_matrix=None,
         inverse_noise_matrix=None,
         label_issues=None,
+        sample_weight=None,
         clf_kwargs={},
         clf_final_kwargs={},
     ):
@@ -344,6 +345,9 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
           Caution: If you provide `label_issues` without having previously called
           :py:meth:`self.find_label_issues<cleanlab.classification.CleanLearning.find_label_issues>`,
           e.g. as a ``np.array``, then some functionality like training with sample weights may be disabled.
+
+        sample_weight : array-like of shape (n_samples,), optional
+          Array of weights that are assigned to individual samples. If not provided, then each sample is given unit weight.
 
         clf_kwargs : dict, optional
           Optional keyword arguments to pass into `clf`'s ``fit()`` method.
@@ -428,13 +432,15 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         x_mask = ~self.label_issues_mask
         x_cleaned = X[x_mask]
         labels_cleaned = labels[x_mask]
+        if sample_weight is not None:
+            sample_weight = sample_weight[x_mask]
         if self.verbose:
             print(f"Pruning {np.sum(self.label_issues_mask)} examples with label issues ...")
             print(f"Remaining clean data has {len(labels_cleaned)} examples.")
 
         # Check if sample_weight in args of clf.fit()
         if (
-            "sample_weight" in inspect.getfullargspec(self.clf.fit).args
+            sample_weight is None
             and "sample_weight" not in self.clf_final_kwargs
             and self.noise_matrix is not None
         ):
@@ -468,9 +474,19 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
                 sample_weight=sample_weight,
                 **self.clf_final_kwargs,
             )
+        elif sample_weight is not None:
+            if self.verbose:
+                print("Fitting final model on the clean data with custom sample_weight...")
+
+            self.clf.fit(
+                x_cleaned,
+                labels_cleaned,
+                sample_weight=sample_weight,
+                **self.clf_final_kwargs,
+            )
         else:
             if (
-                "sample_weight" in inspect.getfullargspec(self.clf.fit).args
+                sample_weight is None
                 and "sample_weight" not in self.clf_final_kwargs
                 and self.noise_matrix is None
             ):
