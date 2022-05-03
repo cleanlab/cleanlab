@@ -391,6 +391,19 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         clf_final_kwargs = {**clf_kwargs, **clf_final_kwargs}
         self.clf_final_kwargs = clf_final_kwargs
 
+        if "sample_weight" in clf_kwargs:
+            raise ValueError(
+                "sample_weight should be provided directly to fit() rather than as clf_kwargs"
+            )  # prevent there being multiple ways to pass in sample_weight
+
+        if sample_weight is not None:
+            if "sample_weight" not in inspect.getfullargspec(self.clf.fit).args:
+                raise ValueError(
+                    "sample_weight must be a supported fit() argument for your model in order to be specified here"
+                )
+            else:
+                clf_kwargs["sample_weight"] = sample_weight
+
         if label_issues is None:
             if self.label_issues_df is not None and self.verbose:
                 print(
@@ -432,61 +445,72 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         x_mask = ~self.label_issues_mask
         x_cleaned = X[x_mask]
         labels_cleaned = labels[x_mask]
-        if sample_weight is not None:
-            sample_weight = sample_weight[x_mask]
         if self.verbose:
             print(f"Pruning {np.sum(self.label_issues_mask)} examples with label issues ...")
             print(f"Remaining clean data has {len(labels_cleaned)} examples.")
 
-        # Check if sample_weight in args of clf.fit()
-        if (
-            sample_weight is None
-            and "sample_weight" not in self.clf_final_kwargs
-            and self.noise_matrix is not None
-        ):
-            # Re-weight examples in the loss function for the final fitting
-            # labels.t. the "apparent" original number of examples in each class
-            # is preserved, even though the pruned sets may differ.
-            if self.verbose:
-                print(
-                    "Assigning sample weights for final training based on estimated label quality."
+        if sample_weight is None and self.noise_matrix is not None:
+            # Check if sample_weight in args of clf.fit()
+
+            if (
+                "sample_weight" in inspect.getfullargspec(self.clf.fit).args
+                and "sample_weight" not in self.clf_final_kwargs
+            ):
+                # Re-weight examples in the loss function for the final fitting
+                # labels.t. the "apparent" original number of examples in each class
+                # is preserved, even though the pruned sets may differ.
+                if self.verbose:
+                    print(
+                        "Assigning sample weights for final training based on estimated label quality."
+                    )
+                sample_weight = np.ones(np.shape(labels_cleaned))  # length of pruned dataset
+                for k in range(self.num_classes):
+                    sample_weight_k = 1.0 / max(
+                        self.noise_matrix[k][k], 1e-3
+                    )  # clip sample weights
+                    sample_weight[labels_cleaned == k] = sample_weight_k
+
+                sample_weight_expanded = np.zeros(
+                    len(labels)
+                )  # pad pruned examples with zeros, length of original dataset
+                sample_weight_expanded[x_mask] = sample_weight
+                # Store the sample weight for every example in the original, unfiltered dataset
+                self.label_issues_df["sample_weight"] = sample_weight_expanded
+                self.sample_weight = self.label_issues_df[
+                    "sample_weight"
+                ]  # pointer to here to avoid duplication
+                if self.verbose:
+                    print("Fitting final model on the clean data ...")
+
+                self.clf.fit(
+                    x_cleaned,
+                    labels_cleaned,
+                    sample_weight=sample_weight,
+                    **self.clf_final_kwargs,
                 )
-            sample_weight = np.ones(np.shape(labels_cleaned))  # length of pruned dataset
-            for k in range(self.num_classes):
-                sample_weight_k = 1.0 / max(self.noise_matrix[k][k], 1e-3)  # clip sample weights
-                sample_weight[labels_cleaned == k] = sample_weight_k
+            else:
+                self.clf.fit(
+                    x_cleaned,
+                    labels_cleaned,
+                    **self.clf_final_kwargs,
+                )
 
-            sample_weight_expanded = np.zeros(
-                len(labels)
-            )  # pad pruned examples with zeros, length of original dataset
-            sample_weight_expanded[x_mask] = sample_weight
-            # Store the sample weight for every example in the original, unfiltered dataset
-            self.label_issues_df["sample_weight"] = sample_weight_expanded
-            self.sample_weight = self.label_issues_df[
-                "sample_weight"
-            ]  # pointer to here to avoid duplication
-            if self.verbose:
-                print("Fitting final model on the clean data ...")
+        elif sample_weight is not None and "sample_weight" not in self.clf_final_kwargs:
+            sample_weight = sample_weight[x_mask]
 
-            self.clf.fit(
-                x_cleaned,
-                labels_cleaned,
-                sample_weight=sample_weight,
-                **self.clf_final_kwargs,
-            )
-        elif sample_weight is not None:
             if self.verbose:
                 print("Fitting final model on the clean data with custom sample_weight...")
 
+            clf_final_kwargs["sample_weight"] = sample_weight
+
             self.clf.fit(
                 x_cleaned,
                 labels_cleaned,
-                sample_weight=sample_weight,
                 **self.clf_final_kwargs,
             )
         else:
             if (
-                sample_weight is None
+                "sample_weight" in inspect.getfullargspec(self.clf.fit).args
                 and "sample_weight" not in self.clf_final_kwargs
                 and self.noise_matrix is None
             ):
