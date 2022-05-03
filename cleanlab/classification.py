@@ -449,12 +449,13 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
             print(f"Pruning {np.sum(self.label_issues_mask)} examples with label issues ...")
             print(f"Remaining clean data has {len(labels_cleaned)} examples.")
 
-        if sample_weight is None and self.noise_matrix is not None:
+        if sample_weight is None:
             # Check if sample_weight in args of clf.fit()
 
             if (
                 "sample_weight" in inspect.getfullargspec(self.clf.fit).args
                 and "sample_weight" not in self.clf_final_kwargs
+                and self.noise_matrix is not None
             ):
                 # Re-weight examples in the loss function for the final fitting
                 # labels.t. the "apparent" original number of examples in each class
