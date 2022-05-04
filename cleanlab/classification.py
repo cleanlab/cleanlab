@@ -465,23 +465,23 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
                     print(
                         "Assigning sample weights for final training based on estimated label quality."
                     )
-                sample_weight_default = np.ones(np.shape(labels_cleaned))  # length of pruned dataset
+                sample_weight_auto = np.ones(np.shape(labels_cleaned))
                 for k in range(self.num_classes):
                     sample_weight_k = 1.0 / max(
                         self.noise_matrix[k][k], 1e-3
                     )  # clip sample weights
-                    sample_weight_default[labels_cleaned == k] = sample_weight_k
+                    sample_weight_auto[labels_cleaned == k] = sample_weight_k
 
                 sample_weight_expanded = np.zeros(
                     len(labels)
                 )  # pad pruned examples with zeros, length of original dataset
-                sample_weight_expanded[x_mask] = sample_weight_default
+                sample_weight_expanded[x_mask] = sample_weight_auto
                 # Store the sample weight for every example in the original, unfiltered dataset
                 self.label_issues_df["sample_weight"] = sample_weight_expanded
                 self.sample_weight = self.label_issues_df[
                     "sample_weight"
                 ]  # pointer to here to avoid duplication
-                self.clf_final_kwargs["sample_weight"] = sample_weight_default
+                self.clf_final_kwargs["sample_weight"] = sample_weight_auto
                 if self.verbose:
                     print("Fitting final model on the clean data ...")
             else:
