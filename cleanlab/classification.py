@@ -480,33 +480,16 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
                 self.sample_weight = self.label_issues_df[
                     "sample_weight"
                 ]  # pointer to here to avoid duplication
-                if self.verbose:
-                    print("Fitting final model on the clean data ...")
+                self.clf_final_kwargs["sample_weight"] = self.sample_weight
 
-                self.clf.fit(
-                    x_cleaned,
-                    labels_cleaned,
-                    sample_weight=sample_weight,
-                    **self.clf_final_kwargs,
-                )
-            else:
-                self.clf.fit(
-                    x_cleaned,
-                    labels_cleaned,
-                    **self.clf_final_kwargs,
-                )
+            if self.verbose:
+                print("Fitting final model on the clean data ...")
 
         elif sample_weight is not None and "sample_weight" not in self.clf_final_kwargs:
             clf_final_kwargs["sample_weight"] = sample_weight[x_mask]
-
             if self.verbose:
                 print("Fitting final model on the clean data with custom sample_weight...")
 
-            self.clf.fit(
-                x_cleaned,
-                labels_cleaned,
-                **self.clf_final_kwargs,
-            )
         else:
             if (
                 "sample_weight" in inspect.getfullargspec(self.clf.fit).args
@@ -524,8 +507,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
                 else:
                     print("Fitting final model on the clean data ...")
 
-            # This may be less accurate, but best we can do if no sample_weight.
-            self.clf.fit(x_cleaned, labels_cleaned, **self.clf_final_kwargs)
+        self.clf.fit(x_cleaned, labels_cleaned, **self.clf_final_kwargs)
 
         if self.verbose:
             print(
