@@ -388,9 +388,8 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
             so that the classifier trains as if it had all the true labels,
             not just the subset of cleaned data left after pruning out the label issues.
         """
-
-        clf_final_kwargs = {**clf_kwargs, **clf_final_kwargs}
-        self.clf_final_kwargs = clf_final_kwargs
+        clf_kwargs = {**clf_kwargs}
+        self.clf_final_kwargs = {**clf_kwargs, **clf_final_kwargs}
 
         if "sample_weight" in clf_kwargs:
             raise ValueError(
@@ -502,7 +501,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
                         print("Fitting final model on the clean data ...")
 
         elif sample_weight is not None and "sample_weight" not in self.clf_final_kwargs:
-            clf_final_kwargs["sample_weight"] = sample_weight[x_mask]
+            self.clf_final_kwargs["sample_weight"] = sample_weight[x_mask]
             if self.verbose:
                 print("Fitting final model on the clean data with custom sample_weight...")
 
