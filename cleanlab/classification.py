@@ -388,21 +388,19 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
             so that the classifier trains as if it had all the true labels,
             not just the subset of cleaned data left after pruning out the label issues.
         """
-        clf_kwargs = {**clf_kwargs}
+
         self.clf_final_kwargs = {**clf_kwargs, **clf_final_kwargs}
 
         if "sample_weight" in clf_kwargs:
             raise ValueError(
-                "sample_weight should be provided directly to fit() rather than in clf_kwargs"
-            )  # prevent there being multiple ways to pass in sample_weight
+                "sample_weight should be provided directly in fit() or in clf_final_kwargs rather than in clf_kwargs"
+            )
 
         if sample_weight is not None:
             if "sample_weight" not in inspect.getfullargspec(self.clf.fit).args:
                 raise ValueError(
                     "sample_weight must be a supported fit() argument for your model in order to be specified here"
                 )
-            else:
-                clf_kwargs["sample_weight"] = sample_weight
 
         if label_issues is None:
             if self.label_issues_df is not None and self.verbose:
