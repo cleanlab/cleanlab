@@ -37,7 +37,12 @@ setup(
     long_description_content_type="text/markdown",
     description="The standard package for data-centric AI, machine learning with label errors, "
     "and automatically finding and fixing dataset issues in Python.",
-    url="https://github.com/cleanlab/cleanlab",
+    url="https://cleanlab.ai",
+    project_urls={
+        "Documentation": "https://docs.cleanlab.ai",
+        "Bug Tracker": "https://github.com/cleanlab/cleanlab/issues",
+        "Source Code": "https://github.com/cleanlab/cleanlab"
+    },
     author="Cleanlab, Inc.",
     author_email="team@cleanlab.ai",
     # See https://pypi.python.org/pypi?%3Aaction=list_classifiers
