@@ -347,7 +347,8 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
           e.g. as a ``np.array``, then some functionality like training with sample weights may be disabled.
 
         sample_weight : array-like of shape (n_samples,), optional
-          Array of weights that are assigned to individual samples. If not provided, then each sample is given unit weight.
+          Array of weights that are assigned to individual samples.
+          If not provided, samples may still be weighted by the estimated noise in the class they are labeled as.
 
         clf_kwargs : dict, optional
           Optional keyword arguments to pass into `clf`'s ``fit()`` method.
@@ -388,9 +389,12 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
             not just the subset of cleaned data left after pruning out the label issues.
         """
 
+        clf_final_kwargs = {**clf_kwargs, **clf_final_kwargs}
+        self.clf_final_kwargs = clf_final_kwargs
+
         if "sample_weight" in clf_kwargs:
             raise ValueError(
-                "sample_weight should be provided directly to fit() rather than as clf_kwargs"
+                "sample_weight should be provided directly to fit() rather than in clf_kwargs"
             )  # prevent there being multiple ways to pass in sample_weight
 
         if sample_weight is not None:
@@ -400,9 +404,6 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
                 )
             else:
                 clf_kwargs["sample_weight"] = sample_weight
-
-        clf_final_kwargs = {**clf_kwargs, **clf_final_kwargs}
-        self.clf_final_kwargs = clf_final_kwargs
 
         if label_issues is None:
             if self.label_issues_df is not None and self.verbose:
@@ -464,17 +465,17 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
                     print(
                         "Assigning sample weights for final training based on estimated label quality."
                     )
-                sample_weight = np.ones(np.shape(labels_cleaned))  # length of pruned dataset
+                sample_weight_default = np.ones(np.shape(labels_cleaned))  # length of pruned dataset
                 for k in range(self.num_classes):
                     sample_weight_k = 1.0 / max(
                         self.noise_matrix[k][k], 1e-3
                     )  # clip sample weights
-                    sample_weight[labels_cleaned == k] = sample_weight_k
+                    sample_weight_default[labels_cleaned == k] = sample_weight_k
 
                 sample_weight_expanded = np.zeros(
                     len(labels)
                 )  # pad pruned examples with zeros, length of original dataset
-                sample_weight_expanded[x_mask] = sample_weight
+                sample_weight_expanded[x_mask] = sample_weight_default
                 # Store the sample weight for every example in the original, unfiltered dataset
                 self.label_issues_df["sample_weight"] = sample_weight_expanded
                 self.sample_weight = self.label_issues_df[
