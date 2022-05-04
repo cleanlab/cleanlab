@@ -23,7 +23,10 @@ exclude_lines =
     raise NotImplementedError
     raise ValueError
     warnings.warn
-
+    
+    # Use print(f"...") for printing out non-pure strings:
+    print("
+    
     # Don't complain if non-runnable code isn't run:
     if 0:
     if __name__ == .__main__.:
