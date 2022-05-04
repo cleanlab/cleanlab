@@ -388,9 +388,6 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
             not just the subset of cleaned data left after pruning out the label issues.
         """
 
-        clf_final_kwargs = {**clf_kwargs, **clf_final_kwargs}
-        self.clf_final_kwargs = clf_final_kwargs
-
         if "sample_weight" in clf_kwargs:
             raise ValueError(
                 "sample_weight should be provided directly to fit() rather than as clf_kwargs"
@@ -403,6 +400,9 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
                 )
             else:
                 clf_kwargs["sample_weight"] = sample_weight
+
+        clf_final_kwargs = {**clf_kwargs, **clf_final_kwargs}
+        self.clf_final_kwargs = clf_final_kwargs
 
         if label_issues is None:
             if self.label_issues_df is not None and self.verbose:
@@ -458,7 +458,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
                 and self.noise_matrix is not None
             ):
                 # Re-weight examples in the loss function for the final fitting
-                # labels.t. the "apparent" original number of examples in each class
+                # such that the "apparent" original number of examples in each class
                 # is preserved, even though the pruned sets may differ.
                 if self.verbose:
                     print(
@@ -497,12 +497,10 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
                 )
 
         elif sample_weight is not None and "sample_weight" not in self.clf_final_kwargs:
-            sample_weight = sample_weight[x_mask]
+            clf_final_kwargs["sample_weight"] = sample_weight[x_mask]
 
             if self.verbose:
                 print("Fitting final model on the clean data with custom sample_weight...")
-
-            clf_final_kwargs["sample_weight"] = sample_weight
 
             self.clf.fit(
                 x_cleaned,
@@ -521,8 +519,12 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
                 )
 
             if self.verbose:
-                print("Fitting final model on the clean data ...")
-            # This is less accurate, but best we can do if no sample_weight.
+                if "sample_weight" in self.clf_final_kwargs
+                    print("Fitting final model on the clean data with custom sample_weight...")
+                else:
+                    print("Fitting final model on the clean data ...")
+
+            # This may be less accurate, but best we can do if no sample_weight.
             self.clf.fit(x_cleaned, labels_cleaned, **self.clf_final_kwargs)
 
         if self.verbose:
