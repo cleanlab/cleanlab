@@ -247,6 +247,17 @@ def test_aux_inputs():
     assert set(label_issues_df.columns).issubset(FIND_OUTPUT_COLUMNS)
     assert "label_quality" in label_issues_df.columns
 
+    # Test with sample_weight input:
+    cl = CleanLearning(
+        clf=LogisticRegression(multi_class="auto", solver="lbfgs", random_state=SEED), verbose=1
+    )
+    cl.fit(data["X_test"], data["true_labels_test"], sample_weight=np.random.randn(len(labels)))
+    cl.fit(
+        data["X_test"],
+        data["true_labels_test"],
+        label_issues=cl.get_label_issues(),
+        sample_weight=np.random.randn(len(labels))
+    )
 
 def test_raise_error_no_clf_fit():
     class struct(object):
