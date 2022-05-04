@@ -519,7 +519,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
                 )
 
             if self.verbose:
-                if "sample_weight" in self.clf_final_kwargs
+                if "sample_weight" in self.clf_final_kwargs:
                     print("Fitting final model on the clean data with custom sample_weight...")
                 else:
                     print("Fitting final model on the clean data ...")
