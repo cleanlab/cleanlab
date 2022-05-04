@@ -378,8 +378,8 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
 
           * *sample_weight*: Numeric values that were used to weight examples during
             the final training of `clf` in ``CleanLearning.fit()``.
-            `sample_weight` column will only be present if sample weights were actually used.
-            These weights are assigned to each example based on the class it belongs to,
+            `sample_weight` column will only be present if automatic sample weights were actually used.
+            These automatic weights are assigned to each example based on the class it belongs to,
             i.e. there are only num_classes unique sample_weight values.
             The sample weight for an example belonging to class k is computed as ``1 / p(given_label = k | true_label = k)``.
             This sample_weight normalizes the loss to effectively trick `clf` into learning with the distribution
@@ -481,7 +481,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
                 self.sample_weight = self.label_issues_df[
                     "sample_weight"
                 ]  # pointer to here to avoid duplication
-                self.clf_final_kwargs["sample_weight"] = self.sample_weight
+                self.clf_final_kwargs["sample_weight"] = sample_weight_default
                 if self.verbose:
                     print("Fitting final model on the clean data ...")
             else:
