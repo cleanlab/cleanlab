@@ -481,9 +481,24 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
                     "sample_weight"
                 ]  # pointer to here to avoid duplication
                 self.clf_final_kwargs["sample_weight"] = self.sample_weight
+                if self.verbose:
+                    print("Fitting final model on the clean data ...")
+            else:
+                if (
+                    "sample_weight" in inspect.getfullargspec(self.clf.fit).args
+                    and "sample_weight" not in self.clf_final_kwargs
+                    and self.noise_matrix is None
+                ):
+                    print(
+                        "Cannot utilize sample weights for final training. To utilize must either specify noise_matrix "
+                        "or have previously called self.find_label_issues() instead of filter.find_label_issues()"
+                    )
 
-            if self.verbose:
-                print("Fitting final model on the clean data ...")
+                if self.verbose:
+                    if "sample_weight" in self.clf_final_kwargs:
+                        print("Fitting final model on the clean data with custom sample_weight...")
+                    else:
+                        print("Fitting final model on the clean data ...")
 
         elif sample_weight is not None and "sample_weight" not in self.clf_final_kwargs:
             clf_final_kwargs["sample_weight"] = sample_weight[x_mask]
@@ -491,16 +506,6 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
                 print("Fitting final model on the clean data with custom sample_weight...")
 
         else:
-            if (
-                "sample_weight" in inspect.getfullargspec(self.clf.fit).args
-                and "sample_weight" not in self.clf_final_kwargs
-                and self.noise_matrix is None
-            ):
-                print(
-                    "Cannot utilize sample weights for final training. To utilize must either specify noise_matrix "
-                    "or have previously called self.find_label_issues() instead of filter.find_label_issues()"
-                )
-
             if self.verbose:
                 if "sample_weight" in self.clf_final_kwargs:
                     print("Fitting final model on the clean data with custom sample_weight...")
