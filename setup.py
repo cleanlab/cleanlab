@@ -41,7 +41,7 @@ setup(
     project_urls={
         "Documentation": "https://docs.cleanlab.ai",
         "Bug Tracker": "https://github.com/cleanlab/cleanlab/issues",
-        "Source Code": "https://github.com/cleanlab/cleanlab"
+        "Source Code": "https://github.com/cleanlab/cleanlab",
     },
     author="Cleanlab, Inc.",
     author_email="team@cleanlab.ai",
