@@ -251,7 +251,11 @@ def test_aux_inputs():
     cl = CleanLearning(
         clf=LogisticRegression(multi_class="auto", solver="lbfgs", random_state=SEED), verbose=1
     )
-    cl.fit(data["X_test"], data["true_labels_test"], sample_weight=np.random.randn(len(data["true_labels_test"])))
+    cl.fit(
+        data["X_test"],
+        data["true_labels_test"],
+        sample_weight=np.random.randn(len(data["true_labels_test"])),
+    )
     cl.fit(
         data["X_test"],
         data["true_labels_test"],
