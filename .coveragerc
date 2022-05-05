@@ -25,7 +25,7 @@ exclude_lines =
     warnings.warn
     
     # Use print(f"...") for printing out non-pure strings:
-    print("
+    print(\"
     
     # Don't complain if non-runnable code isn't run:
     if 0:
