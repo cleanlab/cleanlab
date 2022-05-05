@@ -492,7 +492,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
                         "or have previously called self.find_label_issues() instead of filter.find_label_issues()"
                     )
 
-                if self.verbose:
+                if self.verbose:  # pragma: no cover
                     if "sample_weight" in self.clf_final_kwargs:
                         print("Fitting final model on the clean data with custom sample_weight...")
                     else:
