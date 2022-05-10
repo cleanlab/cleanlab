@@ -218,6 +218,7 @@ def get_label_quality_ensemble_scores(
     method: str = "self_confidence",
     adjust_pred_probs: bool = False,
     weight_ensemble_members_by: str = "accuracy",
+    custom_weights: np.array = None,
     verbose: bool = True,
 ) -> np.array:
     """Returns label quality scores based on predictions from an ensemble of models.
@@ -252,11 +253,15 @@ def get_label_quality_ensemble_scores(
     adjust_pred_probs : bool, optional
       `adjust_pred_probs` in the same format expected by the :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>` function.
 
-    weight_ensemble_members_by : {"uniform", "accuracy"}, default="accuracy"
+    weight_ensemble_members_by : {"uniform", "accuracy", "custom"}, default="accuracy"
       Weighting scheme used to aggregate scores from each model:
 
       - "uniform": take the simple average of scores
       - "accuracy": take weighted average of scores, weighted by model accuracy
+      - "custom": take weighted average of scores using custom weights that the user passes to the custom_weights parameter.
+
+    custom_weights : np.array, default=None
+      Weights used to aggregate scores from each model if weight_ensemble_members_by="custom".
 
     verbose : bool, default=True
       Set to ``False`` to suppress all print statements.
@@ -284,6 +289,12 @@ def get_label_quality_ensemble_scores(
             pred_probs_list only has one element.
             Consider using get_label_quality_scores() if you only have a single array of pred_probs.
             """
+        )
+
+    # Raise a warning if user passed custom_weights array but did not choose weight_ensemble_members_by="custom"
+    if custom_weights is not None and weight_ensemble_members_by != "custom":
+        warnings.warn(
+            f"Ignoring custom_weights because the chosen weighting scheme for ensemble is: {weight_ensemble_members_by}"
         )
 
     # Generate scores for each model's pred_probs
@@ -326,11 +337,25 @@ def get_label_quality_ensemble_scores(
         # Aggregate scores with weighted average
         label_quality_scores = (scores_ensemble * weights).sum(axis=1)
 
+    elif weight_ensemble_members_by == "custom":
+
+        # Check custom_weights for errors
+        assert (
+            custom_weights is not None
+        ), "custom_weights is None! Please pass a valid custom_weights."
+
+        assert len(custom_weights) == len(
+            pred_probs_list
+        ), "Size of custom_weights needs to match the first dimension of pred_probs_list."
+
+        # Aggregate scores with custom weights
+        label_quality_scores = (scores_ensemble * custom_weights).sum(axis=1)
+
     else:
         raise ValueError(
             f"""
             {weight_ensemble_members_by} is not a valid weighting method for weight_ensemble_members_by!
-            Please choose a valid weight_ensemble_members_by: uniform, accuracy
+            Please choose a valid weight_ensemble_members_by: uniform, accuracy, custom
             """
         )
 
