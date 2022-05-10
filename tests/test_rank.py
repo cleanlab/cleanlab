@@ -268,6 +268,52 @@ def test_bad_weight_ensemble_members_by_parameter_error():
         )
 
 
+def test_custom_weights():
+    with pytest.raises(AssertionError) as e:
+
+        labels = data["labels"]
+        pred_probs = data["pred_probs"]
+
+        # baseline scenario where all the pred_probs are the same in the ensemble list
+        num_repeat = 3
+        pred_probs_list = list(np.repeat([pred_probs], num_repeat, axis=0))
+
+        # baseline scenario where custom_weights are uniform
+        custom_weights = np.ones(num_repeat) / 3
+
+        scores_custom_weights = rank.get_label_quality_ensemble_scores(
+            labels,
+            pred_probs_list,
+            weight_ensemble_members_by="custom",
+            custom_weights=custom_weights,  # this should raise AssertionError
+        )
+
+        scores_uniform_weights = rank.get_label_quality_ensemble_scores(
+            labels, pred_probs_list, weight_ensemble_members_by="uniform"
+        )
+
+        # if custom_weights are uniform, then it should be the same as using weight_ensemble_members_by="uniform"
+        assert (scores_custom_weights == scores_uniform_weights).all()
+
+
+def test_bad_custom_weights_error():
+    with pytest.raises(AssertionError) as e:
+
+        labels = data["labels"]
+        pred_probs = data["pred_probs"]
+
+        # baseline scenario where all the pred_probs are the same in the ensemble list
+        num_repeat = 3
+        pred_probs_list = list(np.repeat([pred_probs], num_repeat, axis=0))
+
+        _ = rank.get_label_quality_ensemble_scores(
+            labels,
+            pred_probs_list,
+            weight_ensemble_members_by="custom",
+            custom_weights=None,  # this should raise AssertionError
+        )
+
+
 def test_bad_pred_probs_list_parameter_error():
     with pytest.raises(AssertionError) as e:
 

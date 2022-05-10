@@ -344,10 +344,6 @@ def get_label_quality_ensemble_scores(
             custom_weights is not None
         ), "custom_weights is None! Please pass a valid custom_weights."
 
-        assert len(custom_weights) == len(
-            pred_probs_list
-        ), "Size of custom_weights needs to match the first dimension of pred_probs_list."
-
         # Aggregate scores with custom weights
         label_quality_scores = (scores_ensemble * custom_weights).sum(axis=1)
 
