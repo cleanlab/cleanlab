@@ -262,6 +262,7 @@ def get_label_quality_ensemble_scores(
 
     custom_weights : np.array, default=None
       Weights used to aggregate scores from each model if weight_ensemble_members_by="custom".
+      Length of this array must match the number of models: len(pred_probs_list).
 
     verbose : bool, default=True
       Set to ``False`` to suppress all print statements.
@@ -291,10 +292,12 @@ def get_label_quality_ensemble_scores(
             """
         )
 
-    # Raise a warning if user passed custom_weights array but did not choose weight_ensemble_members_by="custom"
+    # Raise ValueError if user passed custom_weights array but did not choose weight_ensemble_members_by="custom"
     if custom_weights is not None and weight_ensemble_members_by != "custom":
-        warnings.warn(
-            f"Ignoring custom_weights because the chosen weighting scheme for ensemble is: {weight_ensemble_members_by}"
+        raise ValueError(
+            f"""
+            custom_weights provided but weight_ensemble_members_by is not "custom"!
+            """
         )
 
     # Generate scores for each model's pred_probs
@@ -343,6 +346,10 @@ def get_label_quality_ensemble_scores(
         assert (
             custom_weights is not None
         ), "custom_weights is None! Please pass a valid custom_weights."
+
+        assert len(custom_weights) == len(
+            pred_probs_list
+        ), "Length of custom_weights array must match the number of models: len(pred_probs_list)."
 
         # Aggregate scores with custom weights
         label_quality_scores = (scores_ensemble * custom_weights).sum(axis=1)

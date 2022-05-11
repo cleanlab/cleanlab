@@ -297,20 +297,42 @@ def test_custom_weights():
 
 
 def test_bad_custom_weights_error():
+
+    labels = data["labels"]
+    pred_probs = data["pred_probs"]
+
+    # baseline scenario where all the pred_probs are the same in the ensemble list
+    num_repeat = 3
+    pred_probs_list = list(np.repeat([pred_probs], num_repeat, axis=0))
+
+    # baseline scenario where custom_weights are uniform
+    custom_weights = np.ones(num_repeat) / 3
+
     with pytest.raises(AssertionError) as e:
-
-        labels = data["labels"]
-        pred_probs = data["pred_probs"]
-
-        # baseline scenario where all the pred_probs are the same in the ensemble list
-        num_repeat = 3
-        pred_probs_list = list(np.repeat([pred_probs], num_repeat, axis=0))
 
         _ = rank.get_label_quality_ensemble_scores(
             labels,
             pred_probs_list,
             weight_ensemble_members_by="custom",
-            custom_weights=None,  # this should raise AssertionError
+            custom_weights=None,  # this should raise AssertionError because custom_weights is None
+        )
+
+    with pytest.raises(AssertionError) as e:
+        _ = rank.get_label_quality_ensemble_scores(
+            labels,
+            pred_probs_list,
+            weight_ensemble_members_by="custom",
+            custom_weights=custom_weights[
+                1:
+            ],  # this should raise AssertionError because length of custom_weights don't match len(pred_probs_list)
+        )
+
+    with pytest.raises(ValueError) as e:
+        _ = rank.get_label_quality_ensemble_scores(
+            labels,
+            pred_probs_list,
+            weight_ensemble_members_by="accuracy",  # this should raise ValueError because custom_weights array is provided
+            custom_weights=custom_weights,
         )
 
 
