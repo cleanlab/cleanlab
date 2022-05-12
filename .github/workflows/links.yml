@@ -22,3 +22,5 @@ jobs:
           directory: .
           check_favicon: false
           empty_alt_ignore: true
+          url_ignore_re: |
+            ^https:\/\/docs\.github\.com\/
