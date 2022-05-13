@@ -43,7 +43,7 @@ setup(
         "Bug Tracker": "https://github.com/cleanlab/cleanlab/issues",
         "Source Code": "https://github.com/cleanlab/cleanlab",
     },
-    author="Cleanlab, Inc.",
+    author="Cleanlab Inc.",
     author_email="team@cleanlab.ai",
     # See https://pypi.python.org/pypi?%3Aaction=list_classifiers
     classifiers=[
