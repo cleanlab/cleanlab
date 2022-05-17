@@ -125,7 +125,7 @@ def calibrate_confident_joint(confident_joint, labels, *, multi_label=False):
 
     labels : np.array
       A discrete vector of noisy labels, i.e. some labels may be erroneous.
-      *Format requirements*: for dataset with K classes, labels must be in 0, 1, ..., K-1.
+      *Format*: for dataset with K classes, labels must be in 0, 1, ..., K-1.
 
     multi_label : bool, optional
       If ``True``, labels should be an iterable (e.g. list) of iterables, containing a
@@ -143,11 +143,11 @@ def calibrate_confident_joint(confident_joint, labels, *, multi_label=False):
       An array of shape ``(K, K)`` of type float representing a valid
       estimate of the joint *counts* of noisy and true labels.
     """
-
+    num_classes = confident_joint.shape[0]
     if multi_label:
-        label_counts = value_counts([x for lst in labels for x in lst])
+        label_counts = value_counts([x for lst in labels for x in lst])  # TODO:FIXME
     else:
-        label_counts = value_counts(labels)
+        label_counts = value_counts(labels, num_classes)
     # Calibrate confident joint to have correct p(labels) prior on noisy labels.
     calibrated_cj = (confident_joint.T / confident_joint.sum(axis=1) * label_counts).T
     # Calibrate confident joint to sum to:
@@ -198,6 +198,12 @@ def estimate_joint(labels, pred_probs, *, confident_joint=None, multi_label=Fals
       An array of shape ``(K, K)`` representing an
       estimate of the true joint of noisy and true labels.
     """
+    num_classes = pred_probs.shape[1]
+    num_unique_labels = len(np.unique(labels))
+    if num_classes > num_unique_labels:
+        warnings.warn(
+            f"pred_probs indicates {num_classes} classes but only {num_unique_labels} unique labels observed"
+        )
 
     if confident_joint is None:
         calibrated_cj = compute_confident_joint(
@@ -262,7 +268,7 @@ def _compute_confident_joint_multi_label(
         sometimes works as well as filter.find_label_issues(confident_joint)."""
 
     # Compute unique number of classes K by flattening labels (list of lists)
-    K = len(np.unique([i for lst in labels for i in lst]))
+    K = len(np.unique([i for lst in labels for i in lst]))  # TODO:FIXME when num_classes specified
     # Compute thresholds = p(label=k | k in set of given labels)
     k_in_l = np.array([[k in lst for lst in labels] for k in range(K)])
     if thresholds is None:
@@ -335,11 +341,8 @@ def compute_confident_joint(
       to an example `x` and contains the model-predicted probabilities that
       `x` belongs to each possible class, for each of the K classes. The
       columns must be ordered such that these probabilities correspond to
-      class 0, 1, ..., K-1. `pred_probs` should have been computed using 3 (or
-      higher) fold cross-validation.
-
-    K : optional
-      Number of unique classes. Calculated as ``len(np.unique(labels))`` when ``K=None``.
+      class 0, 1, ..., K-1. Number of classes K is set to number of columns in ``pred_probs``.
+      ``pred_probs`` should be out-of-sample predictions (eg. produced via cross-validation).
 
     thresholds : array_like, optional
       An array of shape ``(K, 1)`` or ``(K,)`` of per-class threshold
@@ -420,13 +423,25 @@ def compute_confident_joint(
     labels = np.asarray(labels)
 
     # Find the number of unique classes
-    num_classes = len(np.unique(labels))
+    num_classes = pred_probs.shape[1]
+    num_unique_labels = len(np.unique(labels))
+    if num_unique_labels > num_classes:
+        raise ValueError(
+            f"pred_probs only has {num_classes} columns, but labels has {num_unique_labels} unique values"
+        )
+
+    if num_classes > num_unique_labels:
+        print(
+            f"CAUTION: pred_probs has {num_classes} columns, but labels only has {num_unique_labels} unique values"
+        )
 
     # Estimate the probability thresholds for confident counting
     if thresholds is None:
-        # P(we predict the given noisy label is k | given noisy label is k)
-        thresholds = [np.mean(pred_probs[:, k][labels == k]) for k in range(num_classes)]
-    thresholds = np.asarray(thresholds)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            # P(we predict the given noisy label is k | given noisy label is k)
+            thresholds = [np.mean(pred_probs[:, k][labels == k]) for k in range(num_classes)]
+    thresholds = np.asarray(thresholds)  # may have nan entries if more classes than unique labels
 
     # Compute confident joint (vectorized for speed).
 
@@ -449,12 +464,13 @@ def compute_confident_joint(
     # true_labels_confident omits meaningless all-False rows
     true_labels_confident = true_label_guess[at_least_one_confident]
     labels_confident = labels[at_least_one_confident]
-    confident_joint = confusion_matrix(true_labels_confident, labels_confident).T
+    confident_joint = confusion_matrix(
+        true_labels_confident, labels_confident, labels=np.arange(num_classes)
+    ).T
     # Guarantee at least one correctly labeled example is represented in every class
     np.fill_diagonal(confident_joint, confident_joint.diagonal().clip(min=1))
     if calibrate:
         confident_joint = calibrate_confident_joint(confident_joint, labels)
-
     if return_indices_of_off_diagonals:
         true_labels_neq_given_labels = true_labels_confident != labels_confident
         indices = np.arange(len(labels))[at_least_one_confident][true_labels_neq_given_labels]

@@ -175,10 +175,10 @@ def clip_values(x, low=0.0, high=1.0, new_sum=None):
     return x
 
 
-def value_counts(x):
+def value_counts(x, K=None):
     """Returns an np.array of shape (K, 1), with the
     value counts for every unique item in the labels list/array,
-    where K is the number of unique entries in labels.
+    where K is the number of unique entries in labels x (if None).
 
     Why this matters? Here is an example:
 
@@ -201,14 +201,28 @@ def value_counts(x):
     x : list or np.array (one dimensional)
         A list of discrete objects, like lists or strings, for
         example, class labels 'y' when training a classifier.
-        e.g. ["dog","dog","cat"] or [1,2,0,1,1,0,2]"""
-    try:
-        return x.value_counts()
-    except:
-        if type(x[0]) is int and (np.array(x) >= 0).all():
-            return np.bincount(x)
-        else:
-            return np.unique(x, return_counts=True)[1]
+        e.g. ["dog","dog","cat"] or [1,2,0,1,1,0,2].
+    K : int, optional
+        Specifies number of classes. If None, it is set as ``len(unique(x))``.
+    """
+    if K is None or K == len(np.unique(x)):
+        try:
+            return x.value_counts()
+        except:
+            if type(x[0]) is int and (np.array(x) >= 0).all():
+                return np.bincount(x)
+            else:
+                return np.unique(x, return_counts=True)[1]
+    else:  # not every class is present in x
+        try:
+            return x.value_counts().reindex(range(K), fill_value=0)
+        except:
+            if type(x[0]) is int and (np.array(x) >= 0).all():
+                return np.bincount(x, minlength=K)
+            else:
+                return np.concatenate(
+                    [np.unique(x, return_counts=True)[1], np.zeros(K - len(np.unique(x)))]
+                )
 
 
 def round_preserving_sum(iterable):

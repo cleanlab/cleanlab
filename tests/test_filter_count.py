@@ -229,6 +229,25 @@ def test_compute_confident_joint():
     # Check that confident joint is correct shape
     assert np.shape(cj) == (data["m"], data["m"])
 
+    # Add extra class which does not appear in labels:
+    pred_probs_extra = np.concatenate([data["pred_probs"], np.zeros((data["n"], 1))], axis=1)
+    cj_extra = count.compute_confident_joint(
+        labels=data["labels"],
+        pred_probs=pred_probs_extra,
+    )
+    assert cj_extra.shape[0] == cj.shape[0] + 1
+    assert cj_extra.shape[1] == cj.shape[1] + 1
+    assert np.all(cj == cj_extra[:-1, :-1])
+
+    try:  # mismatch between pred_probs and num_classes
+        cj_fail = count.compute_confident_joint(
+            labels=data["labels"],
+            pred_probs=data["pred_probs"][:, :-1],
+        )
+        assert False
+    except Exception as e:
+        assert "unique values" in str(e)
+
 
 def test_estimate_latent_py_method():
     for py_method in ["cnt", "eqn", "marginal"]:
