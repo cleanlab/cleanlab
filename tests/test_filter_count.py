@@ -245,8 +245,8 @@ def test_compute_confident_joint():
         labels=labels_miss,
         pred_probs=data["pred_probs"],
     )
-    assert np.all(cj_miss[0,1:] == 0)
-    assert np.all(cj_miss[1:,0] == 0)
+    assert np.all(cj_miss[0, 1:] == 0)
+    assert np.all(cj_miss[1:, 0] == 0)
 
     try:  # pred_probs with less columns than unique values in labels
         cj_fail = count.compute_confident_joint(
