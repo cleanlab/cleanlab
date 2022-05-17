@@ -145,7 +145,7 @@ def calibrate_confident_joint(confident_joint, labels, *, multi_label=False):
     """
     num_classes = confident_joint.shape[0]
     if multi_label:
-        label_counts = value_counts([x for lst in labels for x in lst])  # TODO:FIXME
+        label_counts = value_counts([x for lst in labels for x in lst])
     else:
         label_counts = value_counts(labels, num_classes)
     # Calibrate confident joint to have correct p(labels) prior on noisy labels.
@@ -268,7 +268,7 @@ def _compute_confident_joint_multi_label(
         sometimes works as well as filter.find_label_issues(confident_joint)."""
 
     # Compute unique number of classes K by flattening labels (list of lists)
-    K = len(np.unique([i for lst in labels for i in lst]))  # TODO:FIXME when num_classes specified
+    K = pred_probs.shape[1]
     # Compute thresholds = p(label=k | k in set of given labels)
     k_in_l = np.array([[k in lst for lst in labels] for k in range(K)])
     if thresholds is None:

@@ -52,8 +52,11 @@ def test_pu_f1():
 
 
 def test_value_counts_str():
-    r = util.value_counts(["a", "b", "a"])
+    x = ["a", "b", "a"]
+    r = util.value_counts(x)
     assert all(np.array([2, 1]) - r < 1e-4)
+    r2 = util.value_counts(x, 3)
+    assert all(np.array([2, 1, 0]) - r2 < 1e-4)
 
 
 def test_pu_remove_noise():
