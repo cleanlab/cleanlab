@@ -239,7 +239,16 @@ def test_compute_confident_joint():
     assert cj_extra.shape[1] == cj.shape[1] + 1
     assert np.all(cj == cj_extra[:-1, :-1])
 
-    try:  # mismatch between pred_probs and num_classes
+    # Missing class 0 in labels:
+    labels_miss = np.array([l if l > 0 else 1 for l in data["labels"]])
+    cj_miss = count.compute_confident_joint(
+        labels=labels_miss,
+        pred_probs=data["pred_probs"],
+    )
+    assert np.all(cj_miss[0,1:] == 0)
+    assert np.all(cj_miss[1:,0] == 0)
+
+    try:  # pred_probs with less columns than unique values in labels
         cj_fail = count.compute_confident_joint(
             labels=data["labels"],
             pred_probs=data["pred_probs"][:, :-1],
