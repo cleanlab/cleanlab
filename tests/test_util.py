@@ -59,6 +59,15 @@ def test_value_counts_str():
     assert all(np.array([2, 1, 0]) - r2 < 1e-4)
 
 
+def test_value_counts_int():
+    x = [2, 2, 1, 0, 2]
+    r = util.value_counts(x)
+    assert all(np.array([1, 1, 2]) - r < 1e-4)
+    r2 = util.value_counts(x, 4)
+    assert all(np.array([1, 1, 2, 0]) - r2 < 1e-4)
+    assert all(np.array([1, 0, 2]) - util.value_counts([2, 2, 0], 3) < 1e-4)
+
+
 def test_pu_remove_noise():
     nm = np.array(
         [
