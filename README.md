@@ -20,10 +20,11 @@ cl.predict(test_data)
 cleanlab.dataset.health_summary(labels, confident_joint=cl.confident_joint)
 ```
 
-Get started with: [documentation](https://docs.cleanlab.ai/), [tutorials](https://docs.cleanlab.ai/v2.0.0/tutorials/image.html), [examples](https://github.com/cleanlab/examples), and [blogs](https://cleanlab.ai/blog/).
+Get started with: [documentation](https://docs.cleanlab.ai/), [tutorials](https://docs.cleanlab.ai/stable/tutorials/image.html), [examples](https://github.com/cleanlab/examples), and [blogs](https://cleanlab.ai/blog/).
 
-- Learn [how to run](https://docs.cleanlab.ai/v2.0.0/tutorials/index) cleanlab on your own data in just 5 minutes!
-- Quickstart with 5-minute tutorials for classification with: [image](https://docs.cleanlab.ai/v2.0.0/tutorials/image.html), [text](https://docs.cleanlab.ai/v2.0.0/tutorials/text.html), [audio](https://docs.cleanlab.ai/v2.0.0/tutorials/audio.html), and [tabular](https://docs.cleanlab.ai/v2.0.0/tutorials/tabular.html) data.
+ - [Learn how to](https://docs.cleanlab.ai/stable/tutorials/index) run cleanlab on your own data in just 5 minutes!
+ - Quickstart with 5-minute tutorials for classification with: [image](https://docs.cleanlab.ai/stable/tutorials/image.html), [text](https://docs.cleanlab.ai/stable/tutorials/text.html), [audio](https://docs.cleanlab.ai/stable/tutorials/audio.html), and [tabular](https://docs.cleanlab.ai/stable/tutorials/tabular.html) data.
+
 
 [![pypi](https://img.shields.io/pypi/v/cleanlab.svg)](https://pypi.org/pypi/cleanlab/)
 [![os](https://img.shields.io/badge/platform-noarch-lightgrey)](https://pypi.org/pypi/cleanlab/)
@@ -298,7 +299,7 @@ Many methods and their default parameters are not covered here. Check out the [d
 pred_probs (num_examples x num_classes matrix of predicted probabilities) should already be computed on your own, with any classifier. pred_probs must be obtained in a holdout/out-of-sample manner (e.g. via cross-validation).
 * cleanlab can do this for you via [`cleanlab.count.estimate_cv_predicted_probabilities`](https://docs.cleanlab.ai/master/cleanlab/count.html)]
 * Tutorial with more info: [[here](https://docs.cleanlab.ai/master/tutorials/pred_probs_cross_val.html)]
-* Examples how to compute pred_probs with: [[CNN image classifier (PyTorch)](https://docs.cleanlab.ai/v2.0.0/tutorials/image.html)], [[NN text classifier (TensorFlow)](https://docs.cleanlab.ai/v2.0.0/tutorials/text.html)]
+* Examples how to compute pred_probs with: [[CNN image classifier (PyTorch)](https://docs.cleanlab.ai/stable/tutorials/image.html)], [[NN text classifier (TensorFlow)](https://docs.cleanlab.ai/stable/tutorials/text.html)]
 
 ```python
 # label issues are ordered by likelihood of being an error. First index is most likely error.
@@ -496,6 +497,8 @@ cleanlab is based on peer-reviewed research. Here are the relevant papers to cit
 * Have code improvements for cleanlab? See the [development guide](DEVELOPMENT.md) and [submit a pull request](CONTRIBUTING.md).
 
 * Have an issue with cleanlab? [Search existing issues](https://github.com/cleanlab/cleanlab/issues?q=is%3Aissue) or [submit a new issue](https://github.com/cleanlab/cleanlab/issues/new).
+
+* Need professional help with cleanlab? Set up a 20-minute 1:1 session with our Co-founder and Chief Scientist, Jonas Mueller, via [Cal](https://cal.com/jonas-mueller-ndevin/20min).
 
 ## License
 
