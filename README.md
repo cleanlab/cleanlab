@@ -498,7 +498,7 @@ cleanlab is based on peer-reviewed research. Here are the relevant papers to cit
 
 * Have an issue with cleanlab? [Search existing issues](https://github.com/cleanlab/cleanlab/issues?q=is%3Aissue) or [submit a new issue](https://github.com/cleanlab/cleanlab/issues/new).
 
-* Need professional help with cleanlab? Set up a 20-minute 1:1 session with our Co-founder and Chief Scientist, Jonas Mueller, via [Cal](https://cal.com/jonas-mueller-ndevin/20min).
+* Need professional help with cleanlab? Set up a 20-minute 1:1 session with one of our core developers, Jonas Mueller, via [Cal](https://cal.com/jonas-mueller-ndevin/20min).
 
 ## License
 
