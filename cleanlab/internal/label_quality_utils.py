@@ -20,7 +20,11 @@ import numpy as np
 from cleanlab.count import get_confident_thresholds
 
 
-def _subtract_confident_thresholds(labels: np.array, pred_probs: np.array) -> np.array:
+def _subtract_confident_thresholds(
+    labels: np.array,
+    pred_probs: np.array,
+    multi_label: bool = False,
+) -> np.array:
     """Returns adjusted predicted probabilities by subtracting the class confident thresholds and renormalizing.
 
     The confident class threshold for a class j is the expected (average) "self-confidence" for class j.
@@ -35,6 +39,19 @@ def _subtract_confident_thresholds(labels: np.array, pred_probs: np.array) -> np
     pred_probs : np.array (shape (N, K))
       Predicted-probabilities in the same format expected by the `cleanlab.count.get_confident_thresholds()` method.
 
+    multi_label : bool, optional
+      multi_label in the same format expected by the `cleanlab.count.get_confident_thresholds()` method.
+
+    multi_label : bool, optional
+      If ``True``, labels should be an iterable (e.g. list) of iterables, containing a
+      list of labels for each example, instead of just a single label.
+      The multi-label setting supports classification tasks where an example has 1 or more labels.
+      Example of a multi-labeled `labels` input: ``[[0,1], [1], [0,2], [0,1,2], [0], [1], ...]``.
+      The major difference in how this is calibrated versus single-label is that
+      the total number of errors considered is based on the number of labels,
+      not the number of examples. So, the calibrated `confident_joint` will sum
+      to the number of total labels.
+
     Returns
     -------
     pred_probs_adj : np.array (float)
@@ -42,12 +59,13 @@ def _subtract_confident_thresholds(labels: np.array, pred_probs: np.array) -> np
     """
 
     # Get expected (average) self-confidence for each class
-    confident_thresholds = get_confident_thresholds(labels, pred_probs)
+    # TODO: Test this for multi-label
+    confident_thresholds = get_confident_thresholds(labels, pred_probs, multi_label=multi_label)
 
     # Subtract the class confident thresholds
     pred_probs_adj = pred_probs - confident_thresholds
 
-    # Renormalize by shifting data to take care of negative values from the subtraction
+    # Re-normalize by shifting data to take care of negative values from the subtraction
     pred_probs_adj += confident_thresholds.max()
     pred_probs_adj /= pred_probs_adj.sum(axis=1)[
         :, None

@@ -263,16 +263,15 @@ def _compute_confident_joint_multi_label(
 
     # Compute unique number of classes K by flattening labels (list of lists)
     K = len(np.unique([i for lst in labels for i in lst]))
-    # Compute thresholds = p(label=k | k in set of given labels)
-    k_in_l = np.array([[k in lst for lst in labels] for k in range(K)])
     if thresholds is None:
         # the avg probability of class given that the label is represented.
-        thresholds = [np.mean(pred_probs[:, k][k_in_l[k]]) for k in range(K)]
+        thresholds = get_confident_thresholds(labels, pred_probs, multi_label=True)
     # Create mask for every example if for each class, prob >= threshold
     pred_probs_bool = pred_probs >= thresholds
 
     # Compute confident joint
     # (no need to avoid collisions for multi-label, double counting is okay!)
+    k_in_l = np.array([[k in lst for lst in labels] for k in range(K)])
     confident_joint = np.array([pred_probs_bool[k_in_l[k]].sum(axis=0) for k in range(K)])
     # Guarantee at least one correctly labeled example is represented in every class
     np.fill_diagonal(confident_joint, confident_joint.diagonal().clip(min=1))
@@ -425,7 +424,7 @@ def compute_confident_joint(
     # Estimate the probability thresholds for confident counting
     if thresholds is None:
         # P(we predict the given noisy label is k | given noisy label is k)
-        thresholds = [np.mean(pred_probs[:, k][labels == k]) for k in range(num_classes)]
+        thresholds = get_confident_thresholds(labels, pred_probs, multi_label=multi_label)
     thresholds = np.asarray(thresholds)
 
     # Compute confident joint (vectorized for speed).
@@ -1088,7 +1087,11 @@ def _converge_estimates(
     return py, noise_matrix, inverse_noise_matrix
 
 
-def get_confident_thresholds(labels: np.array, pred_probs: np.array) -> np.array:
+def get_confident_thresholds(
+    labels: np.array,
+    pred_probs: np.array,
+    multi_label: bool = False,
+) -> np.array:
     """Returns expected (average) "self-confidence" for each class.
 
     The confident class threshold for a class j is the expected (average) "self-confidence" for class j.
@@ -1108,12 +1111,31 @@ def get_confident_thresholds(labels: np.array, pred_probs: np.array) -> np.array
       class 0, 1, ..., K-1. `pred_probs` should have been computed using 3 (or
       higher) fold cross-validation.
 
+    multi_label : bool, optional
+      If ``True``, labels should be an iterable (e.g. list) of iterables, containing a
+      list of labels for each example, instead of just a single label.
+      The multi-label setting supports classification tasks where an example has 1 or more labels.
+      Example of a multi-labeled `labels` input: ``[[0,1], [1], [0,2], [0,1,2], [0], [1], ...]``.
+      The major difference in how this is calibrated versus single-label is that
+      the total number of errors considered is based on the number of labels,
+      not the number of examples. So, the calibrated `confident_joint` will sum
+      to the number of total labels.
+
     Returns
     -------
     confident_thresholds : np.array
       An array of shape ``(K,)``.
     """
-    confident_thresholds = np.array(
-        [np.mean(pred_probs[:, k][labels == k]) for k in range(pred_probs.shape[1])]
-    )
+
+    if multi_label:
+        # Compute unique number of classes K by flattening labels (list of lists)
+        K = len(np.unique([i for lst in labels for i in lst]))
+        # Compute thresholds = p(label=k | k in set of given labels)
+        k_in_l = np.array([[k in lst for lst in labels] for k in range(K)])
+        # The avg probability of class given that the label is represented.
+        confident_thresholds = [np.mean(pred_probs[:, k][k_in_l[k]]) for k in range(K)]
+    else:
+        confident_thresholds = np.array(
+            [np.mean(pred_probs[:, k][labels == k]) for k in range(pred_probs.shape[1])]
+        )
     return confident_thresholds
