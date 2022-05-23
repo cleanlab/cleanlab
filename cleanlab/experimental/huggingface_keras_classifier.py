@@ -1,6 +1,8 @@
 """
-A Scikeras classifier (adapted for huggingface models) which
+A Scikeras classifier (adapted for fine-tuning HuggingFace pretrained Transformer models) which
 can be used for finding label issues in any text datasets.
+This code has been tested using: scikeras version 0.8.0, tensorflow version 2.8.0, sklearn version 1.0.2,
+numpy version 1.21.6, and transformers version 4.19.2
 """
 
 from typing import Dict
@@ -14,9 +16,12 @@ class HuggingfaceKerasClassifier(KerasClassifier):
     def __init__(self, train_input: Dict, seq_len: int, **kwargs):
         """
         Basic scikeras/scikeras does not directly provide the option of having
-        a multi-input model, i.e the input must be in the form (num_samples, feature_size). However, you can work around this problem by
-        adding the `feature_encoder` property to the class which extends
-        Scikitlearn's BaseEstimator.
+        a multi-input model, i.e the input must be in the form (num_samples, feature_size).
+        In our case, the multiple inputs are:
+        - token ids (input_ids);
+        - indices specifying what tokens to attend to (attention_mask).
+        Here we work around the aforementioned problem by adding the `feature_encoder` property to our class
+        which extends Scikit-learn's BaseEstimator.
 
         Example of use:
 
@@ -40,7 +45,8 @@ class HuggingfaceKerasClassifier(KerasClassifier):
         * `` ``
         * ``lnl = CleanLearning(clf=model, cv_n_folds=3)``
         * ``lnl.fit(training_ids, train_labels, clf_kwargs={'validation_data': val_dataset})``
-        * ``lnl.score(test_ids, test_labels)``
+        * ``predictions = lnl.predict(test_input = test_input)``
+        * ``print('Accuracy on test data: ', (predictions == test_y).sum() / len(test_y))``
 
         References:
         - https://towardsdatascience.com/scikeras-tutorial-a-multi-input-multi-output-wrapper-for-capsnet-hyperparameter-tuning-with-keras-3127690f7f28
@@ -66,7 +72,7 @@ class HuggingfaceKerasClassifier(KerasClassifier):
     def split_input(self, X):
         splitted_X = [
             X[:, : self.seq_len],  # input_ids
-            X[:, self.seq_len :],  # attention_mask
+            X[:, self.seq_len:],  # attention_mask
         ]
         return splitted_X
 
@@ -101,29 +107,53 @@ class HuggingfaceKerasClassifier(KerasClassifier):
         X = self._get_tf_input(ids, self.train_input)
         return super().fit(X, y, sample_weight=sample_weight, **kwargs)
 
-    def predict_proba(self, ids, **kwargs):
+    def predict_proba(self, ids=None, test_input=None, **kwargs):
         """
-        Returns class probability estimates for the given data.
+        Returns class probability estimates for a particular set of examples.
         Parameters
         ----------
-        ids : array-like of shape (n_samples,)
-            Ids of training samples to be used to train the model.
+        ids: optional array-like of shape (n_samples,).
+            Indices of training examples for which to produce predictions.
+            One of `ids` or `test_input` must be provided.
+        test_input: optional Dict or pandas Dataframe.
+            Tokenized test data for which to produce predictions.
+            Must be of the same format as `train_input`.
+            One of `ids` or `test_input` must be provided.
         **kwargs : Dict[str, Any]
-            Extra arguments to route to Tensorflow ``Model.predict``.
+            Additional arguments to route to Tensorflow ``Model.predict``.
         """
 
-        X = self._get_tf_input(ids, self.train_input)
+        if ids is not None and test_input is not None:
+            raise ValueError("One of ids or test_input must be None")
+        if ids is not None:
+            X = self._get_tf_input(ids, self.train_input)
+        elif test_input is not None:
+            X = self._get_tf_input(np.arange(len(test_input['input_ids'])), test_input)  
+        else:
+            raise ValueError("Both ids and test_input cannot be None")
         return super().predict_proba(X, **kwargs)
 
-    def predict(self, ids, **kwargs):
+    def predict(self, ids=None, test_input=None, **kwargs):
         """
-        Returns predictions for the given data.
+        Returns predictions for a particular set of examples.
         Parameters
         ----------
-        ids : array-like of shape (n_samples,)
-            Ids of training samples to be used to train the model.
+        ids : array-like of shape (n_samples,).
+            Indices of training examples for which to produce predictions.
+                    One of `ids` or `test_input` must be provided.
+        test_input: optional Dict or pandas Dataframe.
+            Tokenized test data for which to produce predictions.
+            Must be of the same format as `train_input`.
+            One of `ids` or `test_input` must be provided.
         **kwargs : Dict[str, Any]
-            Extra arguments to route to Tensorflow `Model.predict`.
+            Additional arguments to route to Tensorflow `Model.predict`.
         """
-        X = self._get_tf_input(ids, self.train_input)
+        if ids is not None and test_input is not None:
+            raise ValueError("One of ids or test_input must be None")
+        if ids is not None:
+            X = self._get_tf_input(ids, self.train_input)
+        elif test_input is not None:
+            X = self._get_tf_input(np.arange(len(test_input['input_ids'])), test_input)  
+        else:
+            raise ValueError("Both ids and test_input cannot be None")
         return super().predict(X, **kwargs)
