@@ -305,7 +305,7 @@ def get_label_quality_ensemble_scores(
     # This weighting scheme performs search of T for "best" log loss
     if weight_ensemble_members_by == "log_loss_search":
 
-        T = [1e-4, 1e-3, 1e-2, 1e-1, 1e0, 1e1, 1e2, 2e2]  # make this a parameter
+        T = [1e-4, 1e-3, 1e-2, 1e-1, 1e0, 1e1, 1e2, 2e2]  # make this a parameter in function
 
         pred_probs_avg_log_loss_weighted = None  # average pred_probs weighted by exp(t * -log_loss)
         neg_log_loss_weights = None  # weights using exp(t * -log_loss)
