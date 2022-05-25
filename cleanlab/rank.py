@@ -220,6 +220,7 @@ def get_label_quality_ensemble_scores(
     adjust_pred_probs: bool = False,
     weight_ensemble_members_by: str = "accuracy",
     custom_weights: np.array = None,
+    log_loss_search_T_values: List[float] = [1e-4, 1e-3, 1e-2, 1e-1, 1e0, 1e1, 1e2, 2e2],
     verbose: bool = True,
 ) -> np.array:
     """Returns label quality scores based on predictions from an ensemble of models.
@@ -266,6 +267,9 @@ def get_label_quality_ensemble_scores(
       Weights used to aggregate scores from each model if weight_ensemble_members_by="custom".
       Length of this array must match the number of models: len(pred_probs_list).
 
+    log_loss_search_T_values : List, default=[1e-4, 1e-3, 1e-2, 1e-1, 1e0, 1e1, 1e2, 2e2]
+      List of t values used if weight_ensemble_members_by="log_loss_search".
+
     verbose : bool, default=True
       Set to ``False`` to suppress all print statements.
 
@@ -305,14 +309,12 @@ def get_label_quality_ensemble_scores(
     # This weighting scheme performs search of T for "best" log loss
     if weight_ensemble_members_by == "log_loss_search":
 
-        T = [1e-4, 1e-3, 1e-2, 1e-1, 1e0, 1e1, 1e2, 2e2]  # make this a parameter in function
-
         pred_probs_avg_log_loss_weighted = None  # average pred_probs weighted by exp(t * -log_loss)
         neg_log_loss_weights = None  # weights using exp(t * -log_loss)
         best_eval_log_loss = float("inf")  # initial value
         best_t = None
 
-        for t in T:
+        for t in log_loss_search_T_values:
 
             neg_log_loss_list = []
 
