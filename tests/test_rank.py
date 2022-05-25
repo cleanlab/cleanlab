@@ -215,7 +215,7 @@ def test__subtract_confident_thresholds():
     ],
 )
 @pytest.mark.parametrize("adjust_pred_probs", [False, True])
-@pytest.mark.parametrize("weight_ensemble_members_by", ["uniform", "accuracy"])
+@pytest.mark.parametrize("weight_ensemble_members_by", ["uniform", "accuracy", "log_loss_search"])
 def test_ensemble_scoring_func(method, adjust_pred_probs, weight_ensemble_members_by):
 
     labels = data["labels"]
