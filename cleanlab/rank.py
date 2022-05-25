@@ -309,9 +309,10 @@ def get_label_quality_ensemble_scores(
     # This weighting scheme performs search of t in log_loss_search_T_values for "best" log loss
     if weight_ensemble_members_by == "log_loss_search":
 
-        pred_probs_avg_log_loss_weighted = None  # average pred_probs weighted by exp(t * -log_loss)
-        neg_log_loss_weights = None  # weights using exp(t * -log_loss)
-        best_eval_log_loss = float("inf")  # initial value
+        # Initialize
+        pred_probs_avg_log_loss_weighted = None
+        neg_log_loss_weights = None
+        best_eval_log_loss = float("inf")
 
         for t in log_loss_search_T_values:
 
