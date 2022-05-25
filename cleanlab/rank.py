@@ -39,6 +39,7 @@ from cleanlab.internal.label_quality_utils import (
     _subtract_confident_thresholds,
     get_normalized_entropy,
 )
+from sklearn.metrics import log_loss
 
 
 def order_label_issues(
@@ -253,11 +254,12 @@ def get_label_quality_ensemble_scores(
     adjust_pred_probs : bool, optional
       `adjust_pred_probs` in the same format expected by the :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>` function.
 
-    weight_ensemble_members_by : {"uniform", "accuracy", "custom"}, default="accuracy"
+    weight_ensemble_members_by : {"uniform", "accuracy", "log_loss_search", "custom"}, default="accuracy"
       Weighting scheme used to aggregate scores from each model:
 
       - "uniform": take the simple average of scores
       - "accuracy": take weighted average of scores, weighted by model accuracy
+      - "log_loss_search": take weighted average of scores, weighted by negative log loss
       - "custom": take weighted average of scores using custom weights that the user passes to the custom_weights parameter.
 
     custom_weights : np.array, default=None
@@ -300,6 +302,43 @@ def get_label_quality_ensemble_scores(
             """
         )
 
+    # This weighting scheme performs search of T for "best" log loss
+    if weight_ensemble_members_by == "log_loss_search":
+
+        T = [1e-4, 1e-3, 1e-2, 1e-1, 1e0, 1e1, 1e2, 2e2]  # make this a parameter
+
+        pred_probs_avg_log_loss_weighted = None  # average pred_probs weighted by exp(t * -log_loss)
+        neg_log_loss_weights = None  # weights using exp(t * -log_loss)
+        best_eval_log_loss = float("inf")  # initial value
+        best_t = None
+
+        for t in T:
+
+            neg_log_loss_list = []
+
+            # pred_probs for each model
+            for pred_probs in pred_probs_list:
+                neg_log_loss = np.exp(t * (-log_loss(labels, pred_probs)))
+                neg_log_loss_list.append(neg_log_loss)
+
+            # weights using negative log loss
+            neg_log_loss_weights_temp = np.array(neg_log_loss_list) / sum(neg_log_loss_list)
+
+            # weighted average using negative log loss
+            pred_probs_avg_log_loss_weighted_temp = sum(
+                [neg_log_loss_weights_temp[i] * p for i, p in enumerate(pred_probs_list)]
+            )
+
+            # evaluate log loss with this weighted average pred_probs
+            eval_log_loss = log_loss(labels, pred_probs_avg_log_loss_weighted_temp)
+
+            # check if eval_log_loss is the best so far (lower the better)
+            if best_eval_log_loss > eval_log_loss:
+                best_eval_log_loss = eval_log_loss
+                best_t = t
+                pred_probs_avg_log_loss_weighted = pred_probs_avg_log_loss_weighted_temp.copy()
+                neg_log_loss_weights = neg_log_loss_weights_temp.copy()
+
     # Generate scores for each model's pred_probs
     scores_list = []
     accuracy_list = []
@@ -332,10 +371,16 @@ def get_label_quality_ensemble_scores(
     elif weight_ensemble_members_by == "accuracy":
         weights = np.array(accuracy_list) / sum(accuracy_list)  # Weight by relative accuracy
         if verbose:
-            print("Ensemble members will be weighted by: their relative accuracy")
+            print("Ensemble members will be weighted by their relative accuracy")
             for i, acc in enumerate(accuracy_list):
                 print(f"  Model {i} accuracy : {acc}")
                 print(f"  Model {i} weights  : {weights[i]}")
+
+        # Aggregate scores with weighted average
+        label_quality_scores = (scores_ensemble * weights).sum(axis=1)
+
+    elif weight_ensemble_members_by == "log_loss_search":
+        weights = neg_log_loss_weights  # Weight by exp(t * -log_loss) where t is found by searching set of T
 
         # Aggregate scores with weighted average
         label_quality_scores = (scores_ensemble * weights).sum(axis=1)
