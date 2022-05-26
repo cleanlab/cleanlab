@@ -284,6 +284,8 @@ def get_label_quality_ensemble_scores(
 
     """
 
+    MIN_ALLOWED = 1e-6  # lower-bound clipping threshold to prevents 0 in logs and division
+
     # Check pred_probs_list for errors
     assert isinstance(
         pred_probs_list, list
@@ -321,7 +323,10 @@ def get_label_quality_ensemble_scores(
 
             # pred_probs for each model
             for pred_probs in pred_probs_list:
-                neg_log_loss = np.exp(t * (-log_loss(labels, pred_probs)))
+                pred_probs_clipped = np.clip(
+                    pred_probs, a_min=MIN_ALLOWED, a_max=None
+                )  # lower-bound clipping threshold to prevents 0 in logs when calculating log loss
+                neg_log_loss = np.exp(t * (-log_loss(labels, pred_probs_clipped)))
                 neg_log_loss_list.append(neg_log_loss)
 
             # weights using negative log loss
