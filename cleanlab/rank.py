@@ -39,6 +39,7 @@ from cleanlab.internal.label_quality_utils import (
     _subtract_confident_thresholds,
     get_normalized_entropy,
 )
+from sklearn.metrics import log_loss
 
 
 def order_label_issues(
@@ -219,6 +220,7 @@ def get_label_quality_ensemble_scores(
     adjust_pred_probs: bool = False,
     weight_ensemble_members_by: str = "accuracy",
     custom_weights: np.array = None,
+    log_loss_search_T_values: List[float] = [1e-4, 1e-3, 1e-2, 1e-1, 1e0, 1e1, 1e2, 2e2],
     verbose: bool = True,
 ) -> np.array:
     """Returns label quality scores based on predictions from an ensemble of models.
@@ -253,16 +255,21 @@ def get_label_quality_ensemble_scores(
     adjust_pred_probs : bool, optional
       `adjust_pred_probs` in the same format expected by the :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>` function.
 
-    weight_ensemble_members_by : {"uniform", "accuracy", "custom"}, default="accuracy"
+    weight_ensemble_members_by : {"uniform", "accuracy", "log_loss_search", "custom"}, default="accuracy"
       Weighting scheme used to aggregate scores from each model:
 
-      - "uniform": take the simple average of scores
-      - "accuracy": take weighted average of scores, weighted by model accuracy
-      - "custom": take weighted average of scores using custom weights that the user passes to the custom_weights parameter.
+      - "uniform": Take the simple average of scores.
+      - "accuracy": Take weighted average of scores, weighted by model accuracy.
+      - "log_loss_search": Take weighted average of scores, weighted by exp(t * -log_loss) where t is selected from log_loss_search_T_values parameter and log_loss is the log-loss between a model's pred_probs and the given labels.
+      - "custom": Take weighted average of scores using custom weights that the user passes to the custom_weights parameter.
 
     custom_weights : np.array, default=None
       Weights used to aggregate scores from each model if weight_ensemble_members_by="custom".
       Length of this array must match the number of models: len(pred_probs_list).
+
+    log_loss_search_T_values : List, default=[1e-4, 1e-3, 1e-2, 1e-1, 1e0, 1e1, 1e2, 2e2]
+      List of t values considered if weight_ensemble_members_by="log_loss_search".
+      We will choose the value of t that leads to weights which produce the best log-loss when used to form a weighted average of pred_probs from the models.
 
     verbose : bool, default=True
       Set to ``False`` to suppress all print statements.
@@ -276,6 +283,8 @@ def get_label_quality_ensemble_scores(
     get_label_quality_scores
 
     """
+
+    MIN_ALLOWED = 1e-6  # lower-bound clipping threshold to prevents 0 in logs and division
 
     # Check pred_probs_list for errors
     assert isinstance(
@@ -299,6 +308,46 @@ def get_label_quality_ensemble_scores(
             custom_weights provided but weight_ensemble_members_by is not "custom"!
             """
         )
+
+    # This weighting scheme performs search of t in log_loss_search_T_values for "best" log loss
+    if weight_ensemble_members_by == "log_loss_search":
+
+        # Initialize variables for log loss search
+        pred_probs_avg_log_loss_weighted = None
+        neg_log_loss_weights = None
+        best_eval_log_loss = float("inf")
+
+        for t in log_loss_search_T_values:
+
+            neg_log_loss_list = []
+
+            # pred_probs for each model
+            for pred_probs in pred_probs_list:
+
+                pred_probs_clipped = np.clip(
+                    pred_probs, a_min=MIN_ALLOWED, a_max=None
+                )  # lower-bound clipping threshold to prevents 0 in logs when calculating log loss
+                pred_probs_clipped /= pred_probs_clipped.sum(axis=1)[:, np.newaxis]  # renormalize
+
+                neg_log_loss = np.exp(t * (-log_loss(labels, pred_probs_clipped)))
+                neg_log_loss_list.append(neg_log_loss)
+
+            # weights using negative log loss
+            neg_log_loss_weights_temp = np.array(neg_log_loss_list) / sum(neg_log_loss_list)
+
+            # weighted average using negative log loss
+            pred_probs_avg_log_loss_weighted_temp = sum(
+                [neg_log_loss_weights_temp[i] * p for i, p in enumerate(pred_probs_list)]
+            )
+
+            # evaluate log loss with this weighted average pred_probs
+            eval_log_loss = log_loss(labels, pred_probs_avg_log_loss_weighted_temp)
+
+            # check if eval_log_loss is the best so far (lower the better)
+            if best_eval_log_loss > eval_log_loss:
+                best_eval_log_loss = eval_log_loss
+                pred_probs_avg_log_loss_weighted = pred_probs_avg_log_loss_weighted_temp.copy()
+                neg_log_loss_weights = neg_log_loss_weights_temp.copy()
 
     # Generate scores for each model's pred_probs
     scores_list = []
@@ -332,10 +381,22 @@ def get_label_quality_ensemble_scores(
     elif weight_ensemble_members_by == "accuracy":
         weights = np.array(accuracy_list) / sum(accuracy_list)  # Weight by relative accuracy
         if verbose:
-            print("Ensemble members will be weighted by: their relative accuracy")
+            print("Ensemble members will be weighted by their relative accuracy")
             for i, acc in enumerate(accuracy_list):
                 print(f"  Model {i} accuracy : {acc}")
-                print(f"  Model {i} weights  : {weights[i]}")
+                print(f"  Model {i} weight   : {weights[i]}")
+
+        # Aggregate scores with weighted average
+        label_quality_scores = (scores_ensemble * weights).sum(axis=1)
+
+    elif weight_ensemble_members_by == "log_loss_search":
+        weights = neg_log_loss_weights  # Weight by exp(t * -log_loss) where t is found by searching through log_loss_search_T_values
+        if verbose:
+            print(
+                "Ensemble members will be weighted by log-loss between their predicted probabilities and given labels"
+            )
+            for i, weight in enumerate(weights):
+                print(f"  Model {i} weight   : {weight}")
 
         # Aggregate scores with weighted average
         label_quality_scores = (scores_ensemble * weights).sum(axis=1)
