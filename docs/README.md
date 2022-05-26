@@ -134,7 +134,7 @@ GitHub Actions automatically builds and deploys the docs' build artifacts when [
 
 On rare occasions, you may want to update the docs without deleting and recreating the release tag, for example, when you want to fix a typo in the docs, but you've already deployed your tag to PyPI or Conda. This can be done by manually adding specific docs' build artifacts to the `cleanlab/cleanlab-docs` repo. These steps are for users who have `push` permission to `cleanlab/cleanlab` and `cleanlab/cleanlab-docs` repo.
 
-1. If you haven't already done so, [clone](https://docs.github.com/en/get-started/quickstart/fork-a-repo#cloning-your-forked-repository) the `cleanlab/cleanlab` repo.
+1. If you haven't already done so, [clone](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) the `cleanlab/cleanlab` repo.
 
 2. [Create and checkout a new branch](https://git-scm.com/docs/git-checkout).
 
@@ -154,7 +154,7 @@ On rare occasions, you may want to update the docs without deleting and recreati
 
 10. Identify the files you would like to replace, i.e., the corresponding files creating the pages on [docs.cleanlab.ai](https://docs.cleanlab.ai).
 
-11. Replace these files in [github.com/cleanlab/cleanlab-docs](https://www.github.com/cleanlab/cleanlab-docs) by uploading the new ones to the `cleanlab/cleanlab-docs` repo.
+11. Replace these files in [github.com/cleanlab/cleanlab-docs](https://www.github.com/cleanlab/cleanlab-docs) by uploading the new ones to the corresponding version folder in the `master` branch of the `cleanlab/cleanlab-docs` repo.
 
 > :warning: Any build artifacts manually added to `cleanlab/cleanlab-docs` that do not live in the `master` branch of the `cleanlab/cleanlab` repo will be lost in future versions of cleanlab docs. So any edit made in the v2.0.0 docs which you also want to have in the v2.0.1, v2.0.2, etc. docs needs to be introduced as a PR to the `cleanlab/cleanlab` repo as well.
 
