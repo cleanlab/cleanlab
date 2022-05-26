@@ -260,7 +260,7 @@ def get_label_quality_ensemble_scores(
 
       - "uniform": take the simple average of scores
       - "accuracy": take weighted average of scores, weighted by model accuracy
-      - "log_loss_search": take weighted average of scores, weighted by exp(t * -log_loss) where t is selected from log_loss_search_T_values parameter.
+      - "log_loss_search": take weighted average of scores, weighted by exp(t * -log_loss) where t is selected from log_loss_search_T_values parameter and log_loss is the log-loss between a model's pred_probs and the given labels.
       - "custom": take weighted average of scores using custom weights that the user passes to the custom_weights parameter.
 
     custom_weights : np.array, default=None
@@ -268,7 +268,8 @@ def get_label_quality_ensemble_scores(
       Length of this array must match the number of models: len(pred_probs_list).
 
     log_loss_search_T_values : List, default=[1e-4, 1e-3, 1e-2, 1e-1, 1e0, 1e1, 1e2, 2e2]
-      List of t values used if weight_ensemble_members_by="log_loss_search".
+      List of t values considered if weight_ensemble_members_by="log_loss_search".
+      We will choose the value of t that leads to weights which produce the best log-loss when used to form a weighted average of pred_probs from the models.
 
     verbose : bool, default=True
       Set to ``False`` to suppress all print statements.
@@ -375,13 +376,17 @@ def get_label_quality_ensemble_scores(
             print("Ensemble members will be weighted by their relative accuracy")
             for i, acc in enumerate(accuracy_list):
                 print(f"  Model {i} accuracy : {acc}")
-                print(f"  Model {i} weights  : {weights[i]}")
+                print(f"  Model {i} weight   : {weights[i]}")
 
         # Aggregate scores with weighted average
         label_quality_scores = (scores_ensemble * weights).sum(axis=1)
 
     elif weight_ensemble_members_by == "log_loss_search":
         weights = neg_log_loss_weights  # Weight by exp(t * -log_loss) where t is found by searching set of T
+        if verbose:
+            print("Ensemble members will be weighted by exp(t * -log_loss)")
+            for i, weight in enumerate(weights):
+                print(f"  Model {i} weight   : {weight}")
 
         # Aggregate scores with weighted average
         label_quality_scores = (scores_ensemble * weights).sum(axis=1)
