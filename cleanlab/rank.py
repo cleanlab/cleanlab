@@ -258,10 +258,10 @@ def get_label_quality_ensemble_scores(
     weight_ensemble_members_by : {"uniform", "accuracy", "log_loss_search", "custom"}, default="accuracy"
       Weighting scheme used to aggregate scores from each model:
 
-      - "uniform": take the simple average of scores
-      - "accuracy": take weighted average of scores, weighted by model accuracy
-      - "log_loss_search": take weighted average of scores, weighted by exp(t * -log_loss) where t is selected from log_loss_search_T_values parameter and log_loss is the log-loss between a model's pred_probs and the given labels.
-      - "custom": take weighted average of scores using custom weights that the user passes to the custom_weights parameter.
+      - "uniform": Take the simple average of scores.
+      - "accuracy": Take weighted average of scores, weighted by model accuracy.
+      - "log_loss_search": Take weighted average of scores, weighted by exp(t * -log_loss) where t is selected from log_loss_search_T_values parameter and log_loss is the log-loss between a model's pred_probs and the given labels.
+      - "custom": Take weighted average of scores using custom weights that the user passes to the custom_weights parameter.
 
     custom_weights : np.array, default=None
       Weights used to aggregate scores from each model if weight_ensemble_members_by="custom".
