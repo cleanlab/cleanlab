@@ -323,9 +323,12 @@ def get_label_quality_ensemble_scores(
 
             # pred_probs for each model
             for pred_probs in pred_probs_list:
+
                 pred_probs_clipped = np.clip(
                     pred_probs, a_min=MIN_ALLOWED, a_max=None
                 )  # lower-bound clipping threshold to prevents 0 in logs when calculating log loss
+                pred_probs_clipped /= pred_probs_clipped.sum(axis=1)[:, np.newaxis]  # renormalize
+
                 neg_log_loss = np.exp(t * (-log_loss(labels, pred_probs_clipped)))
                 neg_log_loss_list.append(neg_log_loss)
 
@@ -389,7 +392,9 @@ def get_label_quality_ensemble_scores(
     elif weight_ensemble_members_by == "log_loss_search":
         weights = neg_log_loss_weights  # Weight by exp(t * -log_loss) where t is found by searching set of T
         if verbose:
-            print("Ensemble members will be weighted by log-loss between their predicted probabilities and given labels")
+            print(
+                "Ensemble members will be weighted by log-loss between their predicted probabilities and given labels"
+            )
             for i, weight in enumerate(weights):
                 print(f"  Model {i} weight   : {weight}")
 
