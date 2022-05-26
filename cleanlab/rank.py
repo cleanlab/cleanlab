@@ -384,7 +384,7 @@ def get_label_quality_ensemble_scores(
     elif weight_ensemble_members_by == "log_loss_search":
         weights = neg_log_loss_weights  # Weight by exp(t * -log_loss) where t is found by searching set of T
         if verbose:
-            print("Ensemble members will be weighted by exp(t * -log_loss)")
+            print("Ensemble members will be weighted by log-loss between their predicted probabilities and given labels")
             for i, weight in enumerate(weights):
                 print(f"  Model {i} weight   : {weight}")
 
