@@ -128,6 +128,36 @@ cleanlab-docs
 
 7. Navigate to the URL where your GitHub Pages site is published in step 3. The default URL should have the format *https://repository_owner.github.io/cleanlab-docs/*.
 
+# Manually adding build artifacts to the `cleanlab-docs` repo
+
+GitHub Actions automatically builds and deploys the docs' build artifacts when [triggered](#cicd-for-cleanlab-docs). If you delete and recreate a release tag, the docs for this tag will be rebuilt and redeployed, hence overwriting the existing artifacts with the new ones.
+
+On rare occasions, you may want to update the docs without deleting and recreating the release tag, for example, when you want to fix a typo in the docs, but you've already deployed your tag to PyPI or Conda. This can be done by manually adding specific docs' build artifacts to the `cleanlab/cleanlab-docs` repo. These steps are for users who have `push` permission to `cleanlab/cleanlab` and `cleanlab/cleanlab-docs` repo.
+
+1. If you haven't already done so, [clone](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) the `cleanlab/cleanlab` repo.
+
+2. [Create and checkout a new branch](https://git-scm.com/docs/git-checkout).
+
+3. Make the necessary code changes.
+
+4. Perform [git add](https://git-scm.com/docs/git-add) and [git commit](https://git-scm.com/docs/git-commit) for the changes.
+
+5. [git push](https://git-scm.com/docs/git-push) to the `cleanlab/cleanlab` repo. As this is pushed from a non-`master` branch,  GitHub Actions will only build but not deploy the docs' build artifacts.
+
+6. Navigate to [github.com/cleanlab/cleanlab](https://www.github.com/cleanlab/cleanlab) in your browser, select the "Actions" tab, under "Workflow", click "GitHub Pages", then select the workflow that was triggered by the previous step.
+
+7. Ensure that the workflow has completed running.
+
+8. Scroll to the bottom of the page, under "Artifacts", click "docs-html" to download the docs' build artifacts.
+
+9. Unzip "docs-html.zip" and open the "docs-html" folder.
+
+10. Identify the files you would like to replace, i.e., the corresponding files creating the pages on [docs.cleanlab.ai](https://docs.cleanlab.ai).
+
+11. Replace these files in [github.com/cleanlab/cleanlab-docs](https://www.github.com/cleanlab/cleanlab-docs) by uploading the new ones to the corresponding version folder in the `master` branch of the `cleanlab/cleanlab-docs` repo.
+
+> :warning: Any build artifacts manually added to `cleanlab/cleanlab-docs` that do not live in the `master` branch of the `cleanlab/cleanlab` repo will be lost in future versions of cleanlab docs. So any edit made in the v2.0.0 docs which you also want to have in the v2.0.1, v2.0.2, etc. docs needs to be introduced as a PR to the `cleanlab/cleanlab` repo as well.
+
 # Behind-the-scenes of the GitHub Pages workflow
 
 We've configured GitHub Actions to run the GitHub Pages workflow (gh-pages.yaml) to build and deploy our docs' static files. Here's a breakdown of what this workflow does in the background:
