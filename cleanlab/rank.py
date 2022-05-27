@@ -545,7 +545,7 @@ def get_confidence_weighted_entropy_for_each_label(
 
 
 def get_knn_distance_ood_scores(
-    query_features: np.array, nbrs: NearestNeighbors, k: int
+    features: np.array, nbrs: NearestNeighbors, k: int = 10
 ) -> np.array:
     """Returns the KNN distance out-of-distribution (OOD) score for each datapoint.
 
@@ -553,8 +553,8 @@ def get_knn_distance_ood_scores(
 
     Parameters
     ----------
-    query_features : np.array
-      Feature matrix of shape ``(N, ...)``, where N is the number of datapoints.
+    features : np.array
+      Feature matrix of shape (N, M), where N is the number of datapoints and M is the number of features.
       This is the "query set" of features for each datapoint which are used for nearest neighbor search.
 
     nbrs : sklearn.neighbors.NearestNeighbors
@@ -562,7 +562,7 @@ def get_knn_distance_ood_scores(
       Note that the distance metric and n_neighbors is specified when instantiating this class.
       See: https://scikit-learn.org/stable/modules/neighbors.html
 
-    k : int
+    k : int, default=10
       Number of neighbors to use when calculating average distance to neighbors.
       This value k needs to be less than or equal to max_k which is the n_neighbors used when fitting instantiated NearestNeighbors class object.
 
@@ -581,8 +581,8 @@ def get_knn_distance_ood_scores(
 
     # Get distances to k-nearest neighbors
     # Note that the nbrs object contains the specification of distance metric and n_neighbors (k value)
-    # If our query set (query_features) matches the training set used to fit nbrs, the nearest neighbor of each point is the point itself, at a distance of zero.
-    distances, _ = nbrs.kneighbors(query_features)
+    # If our query set of features matches the training set used to fit nbrs, the nearest neighbor of each point is the point itself, at a distance of zero.
+    distances, _ = nbrs.kneighbors(features)
 
     # Calculate average distance to k-nearest neighbors
     avg_nbrs_distances = distances[:, :k].mean(axis=1)
