@@ -415,6 +415,14 @@ def test_get_knn_distance_ood_scores():
     idx_max_score = np.argsort(knn_distance_ood_score)[-1]
     assert idx_max_score == (X_test_with_ood.shape[0] - 1)
 
+    # Get KNN distance as OOD score without passing k
+    # By default k=min(10, max_k) is used where max_k is extracted from the given nbrs
+    knn_distance_ood_score = rank.get_knn_distance_ood_scores(features=X_test_with_ood, nbrs=nbrs)
+
+    # Index of the datapoint with max ood score should correspond to the last element of X_test_with_ood
+    idx_max_score = np.argsort(knn_distance_ood_score)[-1]
+    assert idx_max_score == (X_test_with_ood.shape[0] - 1)
+
 
 def test_bad_k_for_get_knn_distance_ood_scores():
 
