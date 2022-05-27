@@ -408,7 +408,7 @@ def test_get_knn_distance_ood_scores():
     # Get KNN distance as OOD score
     k = 5
     knn_distance_ood_score = rank.get_knn_distance_ood_scores(
-        query_features=X_test_with_ood, nbrs=nbrs, k=k
+        features=X_test_with_ood, nbrs=nbrs, k=k
     )
 
     # Index of the datapoint with max ood score should correspond to the last element of X_test_with_ood
@@ -432,5 +432,5 @@ def test_bad_k_for_get_knn_distance_ood_scores():
 
     with pytest.raises(AssertionError) as e:
         _ = rank.get_knn_distance_ood_scores(
-            query_features=X_test_with_ood, nbrs=nbrs, k=10  # this should throw an assertion error
+            features=X_test_with_ood, nbrs=nbrs, k=10  # this should throw an assertion error
         )
