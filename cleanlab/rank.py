@@ -40,6 +40,7 @@ from cleanlab.internal.label_quality_utils import (
     get_normalized_entropy,
 )
 from sklearn.metrics import log_loss
+from sklearn.neighbors import NearestNeighbors
 
 
 def order_label_issues(
@@ -541,3 +542,49 @@ def get_confidence_weighted_entropy_for_each_label(
     label_quality_scores = np.log(label_quality_scores + 1) / clipped_scores
 
     return label_quality_scores
+
+
+def get_knn_distance_ood_scores(
+    query_features: np.array, nbrs: NearestNeighbors, k: int
+) -> np.array:
+    """Returns the KNN distance out-of-distribution (OOD) score for each datapoint.
+
+    This is a function to compute OOD scores where higher scores indicate the datapoint is more likely to be OOD.
+
+    Parameters
+    ----------
+    query_features : np.array
+      Feature matrix of shape ``(N, ...)``, where N is the number of datapoints.
+      This is the "query set" of features for each datapoint which are used for nearest neighbor search.
+
+    nbrs : sklearn.neighbors.NearestNeighbors
+      Instantiated NearestNeighbors class object that's been fitted on a dataset in the same feature space.
+      Note that the distance metric and n_neighbors is specified when instantiating this class.
+      See: https://scikit-learn.org/stable/modules/neighbors.html
+
+    k : int
+      Number of neighbors to use when calculating average distance to neighbors.
+      This value k needs to be less than or equal to max_k which is the n_neighbors used when fitting instantiated NearestNeighbors class object.
+
+    Returns
+    -------
+    avg_nbrs_distances : np.array
+      Average distance to k-nearest neighbors for each datapoint which is used as a score for OOD detection.
+    """
+
+    # number of neighbors specified when fitting instantiated NearestNeighbors class object
+    max_k = nbrs.n_neighbors
+
+    assert (
+        k <= max_k
+    ), f"Chosen k={k} cannot be greater than n_neighbors={max_k} which was used when fitting NearestNeighbors object!"
+
+    # Get distances to k-nearest neighbors
+    # Note that the nbrs object contains the specification of distance metric and n_neighbors (k value)
+    # If our query set (query_features) matches the training set used to fit nbrs, the nearest neighbor of each point is the point itself, at a distance of zero.
+    distances, _ = nbrs.kneighbors(query_features)
+
+    # Calculate average distance to k-nearest neighbors
+    avg_nbrs_distances = distances[:, :k].mean(axis=1)
+
+    return avg_nbrs_distances
