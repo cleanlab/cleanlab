@@ -403,7 +403,7 @@ def test_get_knn_distance_ood_scores():
     X_test_with_ood = np.vstack([X_test, X_ood])
 
     # Fit nearest neighbors on X_train
-    nbrs = NearestNeighbors(n_neighbors=5, algorithm="ball_tree").fit(X_train)
+    nbrs = NearestNeighbors(n_neighbors=5).fit(X_train)
 
     # Get KNN distance as OOD score
     k = 5
@@ -428,7 +428,7 @@ def test_bad_k_for_get_knn_distance_ood_scores():
     X_test_with_ood = np.vstack([X_test, X_ood])
 
     # Fit nearest neighbors on X_train
-    nbrs = NearestNeighbors(n_neighbors=5, algorithm="ball_tree").fit(X_train)
+    nbrs = NearestNeighbors(n_neighbors=5).fit(X_train)
 
     with pytest.raises(AssertionError) as e:
         _ = rank.get_knn_distance_ood_scores(
