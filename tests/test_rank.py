@@ -21,6 +21,7 @@ from cleanlab.internal.label_quality_utils import _subtract_confident_thresholds
 from cleanlab.benchmarking.noise_generation import generate_noise_matrix_from_trace
 from cleanlab.benchmarking.noise_generation import generate_noisy_labels
 from cleanlab import count
+from sklearn.neighbors import NearestNeighbors
 
 
 def make_data(
@@ -388,3 +389,56 @@ def test_unsupported_method_for_adjust_pred_probs():
         method = "confidence_weighted_entropy"
 
         _ = rank.get_label_quality_scores(labels, pred_probs, adjust_pred_probs=True, method=method)
+
+
+def test_get_knn_distance_ood_scores():
+
+    X_train = data["X_train"]
+    X_test = data["X_test"]
+
+    # Create OOD datapoint
+    X_ood = np.array([[999999999.0, 999999999.0]])
+
+    # Add OOD datapoint to X_test
+    X_test_with_ood = np.vstack([X_test, X_ood])
+
+    # Fit nearest neighbors on X_train
+    nbrs = NearestNeighbors(n_neighbors=5).fit(X_train)
+
+    # Get KNN distance as OOD score
+    k = 5
+    knn_distance_ood_score = rank.get_knn_distance_ood_scores(
+        features=X_test_with_ood, nbrs=nbrs, k=k
+    )
+
+    # Index of the datapoint with max ood score should correspond to the last element of X_test_with_ood
+    idx_max_score = np.argsort(knn_distance_ood_score)[-1]
+    assert idx_max_score == (X_test_with_ood.shape[0] - 1)
+
+    # Get KNN distance as OOD score without passing k
+    # By default k=min(10, max_k) is used where max_k is extracted from the given nbrs
+    knn_distance_ood_score = rank.get_knn_distance_ood_scores(features=X_test_with_ood, nbrs=nbrs)
+
+    # Index of the datapoint with max ood score should correspond to the last element of X_test_with_ood
+    idx_max_score = np.argsort(knn_distance_ood_score)[-1]
+    assert idx_max_score == (X_test_with_ood.shape[0] - 1)
+
+
+def test_bad_k_for_get_knn_distance_ood_scores():
+
+    X_train = data["X_train"]
+    X_test = data["X_test"]
+
+    # Create OOD datapoint
+    X_ood = np.array([[999999999.0, 999999999.0]])
+
+    # Add OOD datapoint to X_test
+    X_test_with_ood = np.vstack([X_test, X_ood])
+
+    # Fit nearest neighbors on X_train
+    nbrs = NearestNeighbors(n_neighbors=5).fit(X_train)
+
+    with pytest.raises(AssertionError) as e:
+        _ = rank.get_knn_distance_ood_scores(
+            features=X_test_with_ood, nbrs=nbrs, k=10  # this should throw an assertion error
+        )
