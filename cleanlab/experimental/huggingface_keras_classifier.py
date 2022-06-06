@@ -72,7 +72,7 @@ class HuggingfaceKerasClassifier(KerasClassifier):
     def split_input(self, X):
         splitted_X = [
             X[:, : self.seq_len],  # input_ids
-            X[:, self.seq_len:],  # attention_mask
+            X[:, self.seq_len :],  # attention_mask
         ]
         return splitted_X
 
@@ -128,7 +128,7 @@ class HuggingfaceKerasClassifier(KerasClassifier):
         if ids is not None:
             X = self._get_tf_input(ids, self.train_input)
         elif test_input is not None:
-            X = self._get_tf_input(np.arange(len(test_input['input_ids'])), test_input)  
+            X = self._get_tf_input(np.arange(len(test_input["input_ids"])), test_input)
         else:
             raise ValueError("Both ids and test_input cannot be None")
         return super().predict_proba(X, **kwargs)
@@ -153,7 +153,7 @@ class HuggingfaceKerasClassifier(KerasClassifier):
         if ids is not None:
             X = self._get_tf_input(ids, self.train_input)
         elif test_input is not None:
-            X = self._get_tf_input(np.arange(len(test_input['input_ids'])), test_input)  
+            X = self._get_tf_input(np.arange(len(test_input["input_ids"])), test_input)
         else:
             raise ValueError("Both ids and test_input cannot be None")
         return super().predict(X, **kwargs)
