@@ -33,12 +33,14 @@ labels in data that was previously held-out.
 
 
 import numpy as np
-from typing import List
+from typing import List, Union, Tuple
 import warnings
 from cleanlab.internal.label_quality_utils import (
     _subtract_confident_thresholds,
     get_normalized_entropy,
 )
+from cleanlab.dataset import overall_label_health_score, rank_classes_by_label_quality
+import pandas as pd
 from sklearn.metrics import log_loss
 from sklearn.neighbors import NearestNeighbors
 
@@ -425,6 +427,133 @@ def get_label_quality_ensemble_scores(
         )
 
     return label_quality_scores
+
+
+def get_worst_class(labels, pred_probs):
+    ranked_noisy_classes = rank_classes_by_label_quality(labels, pred_probs).query(
+        "`Label Quality Score` < 1.0"
+    )
+    return ranked_noisy_classes["Class Index"][0] if len(ranked_noisy_classes) > 0 else np.nan
+
+
+def get_label_quality_scores_multiannotator(
+    labels_multiannotator: pd.DataFrame,
+    pred_probs: np.array,
+    *,
+    consensus_method: Union[str, List[str]] = "majority",
+    return_annotator_stats: bool = False,
+    kwargs: dict = {},
+) -> Union[pd.DataFrame, Tuple[pd.DataFrame, pd.DataFrame]]:
+    """Returns label quality scores for each example for each annotator.
+
+    This function computes the label quality scores for each example
+    for each annotator in a given classification dataset.
+
+    The score is between 0 and 1; lower scores
+    indicate labels less likely to be correct. For example:
+
+    1 - clean label (the given label is likely correct).
+    0 - dirty label (the given label is unlikely correct).
+
+    Parameters
+    ----------
+    labels_multiannotator : pd.DataFrame
+        2D pandas DataFrame of multiple given labels for each example with shape (N, M),
+        where N is the number of examples and M is the number of annotators.
+        labels_multiannotator[n][m] = given label for n-th example by m-th annotator.
+        For a dataset with K classes, the given labels must be an integer in 0, 1, ..., K-1 or
+        np.nan if not annotated. Column names should correspond to the annotators' ID.
+
+    pred_probs : np.array
+        An array of shape ``(N, K)`` of model-predicted probabilities,
+        ``P(label=k|x)``. Each row of this matrix corresponds
+        to an example `x` and contains the model-predicted probabilities that
+        `x` belongs to each possible class, for each of the K classes. The
+        columns must be ordered such that these probabilities correspond to
+        class 0, 1, ..., K-1.
+
+        **Caution**: `pred_probs` from your model must be out-of-sample!
+        You should never provide predictions on the same examples used to train the model,
+        as these will be overfit and unsuitable for finding label-errors.
+        To obtain out-of-sample predicted probabilities for every datapoint in your dataset, you can use :ref:`cross-validation <pred_probs_cross_val>`.
+        Alternatively it is ok if your model was trained on a separate dataset and you are only evaluating
+        data that was previously held-out.
+
+    consensus_method : str or List[str]
+        Describing which algorithm to reach the consensus label.
+        If a List is passed, then the 0th element of List is the method used to produce
+        consensus_label, quality_of_consensus, annotator_agreement (may or may not be affected by this argument).
+        The 1st, 2nd, 3rd, etc. elements of this List are output as extra columns in the returned DF with names formatted as:
+        consensus_label_SUFFIX, quality_of_consensus_SUFFIX
+        where SUFFIX = the str element of this list.
+
+    kwargs : Same additional arguments as for get_label_quality_scores().
+
+    Returns
+    -------
+    df : pandas DataFrame in which each row corresponds to one example, with columns:
+                quality_annotator_1, quality_annotator_2, ..., quality_annotator_M, annotator_agreement, consensus_label, quality_of_consensus
+            (Here _1, _2, ..., _M suffixes may be replaced column names used to describe annotators in `labels` input)
+    """
+
+    # Compute the overall label health score for each annotator (part of annotator_stats)
+    overall_label_health_score_df = labels_multiannotator.apply(
+        overall_label_health_score, args=[pred_probs], verbose=False
+    )
+
+    # Compute the number of labels labeled/annotated by each annotator (part of annotator_stats)
+    num_labeled = labels_multiannotator.count()
+
+    # Find the worst labeled class for each annotator (part of annotator_stats)
+    worst_class = labels_multiannotator.apply(get_worst_class, args=[pred_probs])
+
+    # Create annotator_stats DataFrame from its columns
+    annotator_stats = pd.DataFrame(
+        {
+            "overall_quality": overall_label_health_score_df,
+            "num_labeled": num_labeled,
+            "worst_class": worst_class,
+        }
+    )
+
+    # Compute the label quality scores for each annotators' labels
+    label_quality_scores_multiannotator = labels_multiannotator.apply(
+        get_label_quality_scores, args=[pred_probs], **kwargs
+    )
+
+    # Prefix column name referring to the annotators' label quality scores
+    label_quality_scores_multiannotator = label_quality_scores_multiannotator.add_prefix(
+        "quality_of_"
+    )
+
+    # Compute the consensus_labels
+    # TODO: deal with ties, conditional based on consensus_method, consensus_method can be a List[str], add dawid-skene
+    consensus_labels = labels_multiannotator.mode(axis=1)
+
+    # Compute the fraction of annotator disagreeing with the consensus labels
+    # i.e. 1 - fraction of annotator agreeing with the consensus labels
+    annotator_disagreement = labels_multiannotator.assign(consensus_label=consensus_labels).apply(
+        lambda s: 1.0 - s[:-1].value_counts(normalize=True)[s["consensus_label"]],
+        axis=1,
+    )
+
+    # Compute the label quality scores of the consensus labels
+    quality_of_consensus = get_label_quality_scores(
+        consensus_labels.to_numpy(), pred_probs, **kwargs
+    )
+
+    # Concatenate additional columns to the label_quality_scores_multiannotator DataFrame
+    (
+        label_quality_scores_multiannotator["consensus_label"],
+        label_quality_scores_multiannotator["annotator_disagreement"],
+        label_quality_scores_multiannotator["quality_of_consensus"],
+    ) = (consensus_labels, annotator_disagreement, quality_of_consensus)
+
+    return (
+        (label_quality_scores_multiannotator, annotator_stats)
+        if return_annotator_stats
+        else label_quality_scores_multiannotator
+    )
 
 
 def get_self_confidence_for_each_label(
