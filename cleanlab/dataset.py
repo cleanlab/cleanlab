@@ -64,11 +64,11 @@ def rank_classes_by_label_quality(
         perfect quality. Columns:
 
         * *Class Index*: The index of the class in 0, 1, ..., K-1.
-        * *Label Issues*: ``count(given_label = k, true_label != k)``, estimated number of label issues in the class (usually the most accurate method).
+        * *Label Issues*: ``count(given_label = k, true_label != k)``, estimated number of examples in the dataset that are labeled as class k but should have a different label.
         * *Inverse Label Issues*: ``count(given_label != k, true_label = k)``, estimated number of examples in the dataset that should actually be labeled as class k but have been given another label.
-        * *Label Noise*: ``prob(true_label != k | given_label = k)``, estimated proportion of label issues in the class. This is computed by taking the number of examples with "Label Issues" in the given class and dividing it by the total number of examples in that class.
+        * *Label Noise*: ``prob(true_label != k | given_label = k)``, estimated proportion of examples in the dataset that are labeled as class k but should have a different label. For each class k: this is computed by dividing the number of examples with "Label Issues" that were labeled as class k by the total number of examples labeled as class k.
         * *Inverse Label Noise*: ``prob(given_label != k | true_label = k)``, estimated proportion of examples in the dataset that should actually be labeled as class k but have been given another label.
-        * *Label Quality Score*: ``p(true_label = k | given_label = k)``. This is the proportion of examples in the class that are labeled correctly, i.e. ``1 - label_noise``.
+        * *Label Quality Score*: ``p(true_label = k | given_label = k)``. This is the proportion of examples with given label k that have been labeled correctly, i.e. ``1 - label_noise``.
 
         By default, the DataFrame is ordered by "Label Quality Score", ascending.
     """
@@ -113,7 +113,7 @@ def find_overlapping_classes(
     confident_joint=None,
     multi_label=False,
 ):
-    """Returns the classes that are often confused by machine learning model or data labelers.
+    """Returns the classes that are often confused by the data labelers.
     Consider merging the top pairs of classes returned by this method each into a single class.
     If the dataset is labeled by human annotators, consider clearly defining the
     difference between the classes prior to having annotators label the data.
@@ -144,10 +144,9 @@ def find_overlapping_classes(
     label). cleanlab takes these differences into account for you automatically via the joint
     distribution. If you do not want this behavior, simply set ``asymmetric=False``.
 
-    This method measures how often the annotators confuse two classes.
-    This method differs from just using a similarity matrix or confusion matrix. Instead, it works
-    even if the model that generated `pred_probs` in more confident in some classes than others
-    and has heterogeneity in average confidence across classes.
+    This method estimates how often the annotators confuse two classes.
+    This differs from just using a similarity matrix or confusion matrix, as these summarize characteristics of the predictive model rather than the data labelers (i.e. annotators).
+    Instead, this method works even if the model that generated `pred_probs` tends to be more confident in some classes than others.
 
     Parameters
     ----------
@@ -165,10 +164,11 @@ def find_overlapping_classes(
       higher) fold cross-validation.
 
     asymmetric : bool, optional
-      If ``asymmetric=True``, includes both pairs (class1, class2) and (class2, class1). Use this
-      for finding "is a" relationships where for example "class1 is a class2".
-      If ``asymmetric=False``, the pair (class1, class2) will only be returned once and order is
-      arbitrary (internally this is just summing ``score(class1, class2) + score(class2, class1))``.
+      If ``asymmetric=True``, returns separate estimates for both pairs (class1, class2) and (class2, class1). Use this
+      for finding "is a" relationships where for example "class1 is a class2". 
+      In this case, num overlapping examples counts the number of examples that have been labeled as class1 which should actually have been labeled as class2.
+      If ``asymmetric=False``, the pair (class1, class2) will only be returned once with an arbitrary order. 
+      In this case, their estimated score is the sum: ``score(class1, class2) + score(class2, class1))``.
 
     class_names : Iterable[str]
         A list or other iterable of the string class names. The list should be in the order that
@@ -176,7 +176,7 @@ def find_overlapping_classes(
         ``class_names = ['dog', 'cat']``.
 
     num_examples : int or None, optional
-        The number of examples in the datasets, i.e. ``len(labels)``. You only need to provide this if
+        The number of examples in the dataset, i.e. ``len(labels)``. You only need to provide this if
         you use this function with the joint, e.g. ``find_overlapping_classes(joint=joint)``, otherwise
         this is automatically computed via ``sum(confident_joint)`` or ``len(labels)``.
 
@@ -274,11 +274,11 @@ def overall_label_health_score(
     multi_label=False,
     verbose=True,
 ):
-    """Returns a single score/metric between 0 and 1 for the overall quality of all labels in a dataset.
-    Intuitively, the score is the average correctness of the given labels across all classes in the
+    """Returns a single score between 0 and 1 measuring the overall quality of all labels in a dataset.
+    Intuitively, the score is the average correctness of the given labels across all examples in the
     dataset. So a score of 1 suggests your data is perfectly labeled and a score of 0.5 suggests
-    that, on average across all classes, about half of the label may have issues. Thus, a higher
-    score implies higher quality labels, with 1 implying labels that have no issues.
+    half of the examples in the dataset may be incorrectly labeled. Thus, a higher
+    score implies a higher quality dataset.
 
     This method works by providing any one (and only one) of the following inputs:
 
@@ -293,8 +293,8 @@ def overall_label_health_score(
     Returns
     -------
     health_score : float
-        A score between 0 and 1 where 1 implies the dataset has all estimated perfect labels.
-        A score of 0.5 implies that, on average, half of the dataset's label have estimated issues.
+        A score between 0 and 1, where 1 implies all labels in the dataset are estimated to be correct.
+        A score of 0.5 implies that half of the dataset's labels are estimated to have issues.
     """
 
     if joint is None:
@@ -329,7 +329,7 @@ def health_summary(
     multi_label=False,
     verbose=True,
 ):
-    """Prints a health summary of your datasets including results for useful statistics like:
+    """Prints a health summary of your datasets including useful statistics like:
 
     * The classes with the most and least label issues
     * Classes that overlap and could potentially be merged
@@ -348,7 +348,7 @@ def health_summary(
     Returns
     -------
     dict
-        A dictionary containing keys:
+        A dictionary containing keys (see the corresponding functions' documentation to understand the values):
 
         - ``"overall_label_health_score"``, corresponding to :py:func:`overall_label_health_score <cleanlab.dataset.overall_label_health_score>`
         - ``"joint"``, corresponding to :py:func:`estimate_joint <cleanlab.count.estimate_joint>`
