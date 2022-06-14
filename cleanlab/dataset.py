@@ -113,7 +113,7 @@ def find_overlapping_classes(
     confident_joint=None,
     multi_label=False,
 ):
-    """Returns the classes that are often confused by the data labelers.
+    """Returns the pairs of classes that are often mislabeled as one another.
     Consider merging the top pairs of classes returned by this method each into a single class.
     If the dataset is labeled by human annotators, consider clearly defining the
     difference between the classes prior to having annotators label the data.
@@ -145,7 +145,8 @@ def find_overlapping_classes(
     distribution. If you do not want this behavior, simply set ``asymmetric=False``.
 
     This method estimates how often the annotators confuse two classes.
-    This differs from just using a similarity matrix or confusion matrix, as these summarize characteristics of the predictive model rather than the data labelers (i.e. annotators).
+    This differs from just using a similarity matrix or confusion matrix,
+    as these summarize characteristics of the predictive model rather than the data labelers (i.e. annotators).
     Instead, this method works even if the model that generated `pred_probs` tends to be more confident in some classes than others.
 
     Parameters
