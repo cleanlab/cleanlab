@@ -702,7 +702,7 @@ def estimate_confident_joint_and_cv_pred_proba(
 
     assert_inputs_are_valid(X, labels)
     # Number of classes
-    K = len(np.unique(labels))
+    num_classes = len(np.unique(labels))
 
     # Ensure labels are of type np.array()
     labels = np.asarray(labels)
@@ -713,7 +713,7 @@ def estimate_confident_joint_and_cv_pred_proba(
     kf = StratifiedKFold(n_splits=cv_n_folds, shuffle=True, random_state=seed)
 
     # Initialize pred_probs array
-    pred_probs = np.zeros((len(labels), K))
+    pred_probs = np.zeros(shape=(len(labels), num_classes))
 
     # Split X and labels into "cv_n_folds" stratified folds.
     for k, (cv_train_idx, cv_holdout_idx) in enumerate(kf.split(X, labels)):
@@ -726,8 +726,8 @@ def estimate_confident_joint_and_cv_pred_proba(
         # Ensure no missing classes in training set.
         train_cv_classes = set(s_train_cv)
         all_classes = set(
-            range(K)
-        )  # TODO: more efficient if committed to labels 0,...,K, else use this: set(labels)
+            range(num_classes)
+        )  # TODO: more efficient if committed to labels 0,...,num_classes, else use: set(labels)
         missing_class_inds = (
             {}
         )  # keys = which classes are missing, values = index of holdout data from this class that we duplicated
@@ -758,7 +758,7 @@ def estimate_confident_joint_and_cv_pred_proba(
 
         pred_probs[cv_holdout_idx] = pred_probs_cv
 
-    # Compute the confident counts, a K x K matrix for all pairs of labels.
+    # Compute the confident counts, a num_classes x num_classes matrix for all pairs of labels.
     confident_joint = compute_confident_joint(
         labels=labels,
         pred_probs=pred_probs,  # P(labels = k|x)
@@ -1122,12 +1122,12 @@ def get_confident_thresholds(
     """
 
     if multi_label:
-        # Compute unique number of classes K by flattening labels (list of lists)
-        K = len(np.unique([i for lst in labels for i in lst]))
+        # [0, 1, 2, ... num_classes - 1] Assumes all classses are represented in labels
+        unique_classes = range(np.shape(pred_probs)[1])
         # Compute thresholds = p(label=k | k in set of given labels)
-        k_in_l = np.array([[k in lst for lst in labels] for k in range(K)])
+        k_in_l = np.array([[k in lst for lst in labels] for k in unique_classes])
         # The avg probability of class given that the label is represented.
-        confident_thresholds = [np.mean(pred_probs[:, k][k_in_l[k]]) for k in range(K)]
+        confident_thresholds = [np.mean(pred_probs[:, k][k_in_l[k]]) for k in unique_classes]
     else:
         confident_thresholds = np.array(
             [np.mean(pred_probs[:, k][labels == k]) for k in range(pred_probs.shape[1])]
