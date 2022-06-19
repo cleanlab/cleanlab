@@ -262,7 +262,7 @@ def _compute_confident_joint_multi_label(
         sometimes works as well as filter.find_label_issues(confident_joint)."""
 
     # [0, 1, 2, ... num_classes - 1] Assumes all classses are represented in labels
-    unique_classes = range(np.shape(pred_probs)[1])
+    unique_classes = range(pred_probs.shape[1])
     if thresholds is None:
         # the avg probability of class given that the label is represented.
         thresholds = get_confident_thresholds(labels, pred_probs, multi_label=True)
@@ -1095,6 +1095,8 @@ def get_confident_thresholds(
     labels : np.array
       An array of shape ``(N,)`` of noisy labels, i.e. some labels may be erroneous.
       Elements must be in the set 0, 1, ..., K-1, where K is the number of classes.
+      All unique labels should be present, such that:
+      len(set(k for l in labels for k in l)) == pred_probs.shape[1]
 
     pred_probs : np.array
       An array of shape ``(N, K)`` of model-predicted probabilities,
@@ -1123,7 +1125,7 @@ def get_confident_thresholds(
 
     if multi_label:
         # [0, 1, 2, ... num_classes - 1] Assumes all classses are represented in labels
-        unique_classes = range(np.shape(pred_probs)[1])
+        unique_classes = range(pred_probs.shape[1])
         # Compute thresholds = p(label=k | k in set of given labels)
         k_in_l = np.array([[k in lst for lst in labels] for k in unique_classes])
         # The avg probability of class given that the label is represented.
