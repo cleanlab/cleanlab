@@ -337,9 +337,6 @@ def compute_confident_joint(
       class 0, 1, ..., K-1. `pred_probs` should have been computed using 3 (or
       higher) fold cross-validation.
 
-    K : optional
-      Number of unique classes. Calculated as ``len(np.unique(labels))`` when ``K=None``.
-
     thresholds : array_like, optional
       An array of shape ``(K, 1)`` or ``(K,)`` of per-class threshold
       probabilities, used to determine the cutoff probability necessary to
@@ -417,9 +414,6 @@ def compute_confident_joint(
 
     # labels needs to be a numpy array
     labels = np.asarray(labels)
-
-    # Find the number of unique classes
-    num_classes = len(np.unique(labels))
 
     # Estimate the probability thresholds for confident counting
     if thresholds is None:
