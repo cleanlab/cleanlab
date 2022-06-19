@@ -11,5 +11,5 @@ Please be as detailed as possible in your question.
 We will answer questions posted here, but you will likely get an answer faster
 by posting in our Slack Community:
 
-https://join.slack.com/t/cleanlab-community/shared_invite/zt-wpi8ocuf-O87JiSAvuvguytAUBiEwNQ
+https://join.slack.com/t/cleanlab-community/shared_invite/zt-17lszn4hv-gg2FhZPXYfljq_l01uo92g
 -->
