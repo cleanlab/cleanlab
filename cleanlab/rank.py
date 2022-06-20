@@ -123,6 +123,8 @@ def get_label_quality_scores(
     labels : np.array
       A discrete vector of noisy labels, i.e. some labels may be erroneous.
       *Format requirements*: for dataset with K classes, labels must be in 0, 1, ..., K-1.
+      All the classes (0, 1, ..., and K-1) MUST be present in ``labels``, such that: len(set(labels)) == pred_probs.shape[1]
+      Assumes single-labeled labels, e.g. format: np.array([1,0,2,1,1,0...])
 
     pred_probs : np.array, optional
       An array of shape ``(N, K)`` of model-predicted probabilities,

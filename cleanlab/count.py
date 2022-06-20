@@ -126,6 +126,9 @@ def calibrate_confident_joint(confident_joint, labels, *, multi_label=False):
     labels : np.array
       A discrete vector of noisy labels, i.e. some labels may be erroneous.
       *Format requirements*: for dataset with K classes, labels must be in 0, 1, ..., K-1.
+      All the classes (0, 1, ..., and K-1) MUST be present in ``labels``, such that:
+      len(set(labels)) == pred_probs.shape[1] for single-labeled labels, e.g. [1,0,2,1,1,0...]
+      len(set(k for l in labels for k in l)) == pred_probs.shape[1] for multi_label, e.g. [[1,2],[1],[0],..]
 
     multi_label : bool, optional
       If ``True``, labels should be an iterable (e.g. list) of iterables, containing a
@@ -169,6 +172,9 @@ def estimate_joint(labels, pred_probs, *, confident_joint=None, multi_label=Fals
     labels : np.array
       An array of shape ``(N,)`` of noisy labels, i.e. some labels may be erroneous.
       Elements must be in the set 0, 1, ..., K-1, where K is the number of classes.
+      All the classes (0, 1, ..., and K-1) MUST be present in ``labels``, such that:
+      len(set(labels)) == pred_probs.shape[1] for single-labeled labels, e.g. [1,0,2,1,1,0...]
+      len(set(k for l in labels for k in l)) == pred_probs.shape[1] for multi_label, e.g. [[1,2],[1],[0],..]
 
     pred_probs : np.array
       An array of shape ``(N, K)`` of model-predicted probabilities,
