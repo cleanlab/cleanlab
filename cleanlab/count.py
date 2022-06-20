@@ -68,7 +68,7 @@ def num_label_issues(
     Parameters
     ----------
     labels : np.array
-      An array of shape ``(N, )`` of noisy labels, i.e. some labels may be erroneous.
+      An array of shape ``(N,)`` of noisy labels, i.e. some labels may be erroneous.
       Elements must be in the set 0, 1, ..., K-1, where K is the number of classes.
 
     pred_probs : np.array
@@ -167,7 +167,7 @@ def estimate_joint(labels, pred_probs, *, confident_joint=None, multi_label=Fals
     Parameters
     ----------
     labels : np.array
-      An array of shape ``(N, )`` of noisy labels, i.e. some labels may be erroneous.
+      An array of shape ``(N,)`` of noisy labels, i.e. some labels may be erroneous.
       Elements must be in the set 0, 1, ..., K-1, where K is the number of classes.
 
     pred_probs : np.array
@@ -326,7 +326,7 @@ def compute_confident_joint(
     Parameters
     ----------
     labels : np.array
-      An array of shape ``(N, )`` of noisy labels, i.e. some labels may be erroneous.
+      An array of shape ``(N,)`` of noisy labels, i.e. some labels may be erroneous.
       Elements must be in the set 0, 1, ..., K-1, where K is the number of classes.
 
     pred_probs : np.array, optional
@@ -480,7 +480,7 @@ def estimate_latent(
       If not provided, it is computed from the given (noisy) `labels` and `pred_probs`.
 
     labels : np.array
-      An array of shape ``(N, )`` of noisy labels, i.e. some labels may be erroneous.
+      An array of shape ``(N,)`` of noisy labels, i.e. some labels may be erroneous.
       Elements must be in the set 0, 1, ..., K-1, where K is the number of classes.
 
     py_method : {"cnt", "eqn", "marginal", "marginal_ps"}, default="cnt"
@@ -560,7 +560,7 @@ def estimate_py_and_noise_matrices_from_probabilities(
     Parameters
     ----------
     labels : np.array
-      An array of shape ``(N, )`` of noisy labels, i.e. some labels may be erroneous.
+      An array of shape ``(N,)`` of noisy labels, i.e. some labels may be erroneous.
       Elements must be in the set 0, 1, ..., K-1, where K is the number of classes.
 
     pred_probs : np.array
@@ -659,7 +659,7 @@ def estimate_confident_joint_and_cv_pred_proba(
       `clf`, must be able to handle data with this shape.
 
     labels : np.array
-      An array of shape ``(N, )`` of noisy labels, i.e. some labels may be erroneous.
+      An array of shape ``(N,)`` of noisy labels, i.e. some labels may be erroneous.
       Elements must be in the set 0, 1, ..., K-1, where K is the number of classes.
 
     clf : estimator instance, optional
@@ -803,7 +803,7 @@ def estimate_py_noise_matrices_and_cv_pred_proba(
       `clf`, must be able to handle data with this shape.
 
     labels : np.array
-      An array of shape ``(N, )`` of noisy labels, i.e. some labels may be erroneous.
+      An array of shape ``(N,)`` of noisy labels, i.e. some labels may be erroneous.
       Elements must be in the set 0, 1, ..., K-1, where K is the number of classes.
 
     clf : estimator instance, optional
@@ -892,7 +892,7 @@ def estimate_cv_predicted_probabilities(
       `clf`, must be able to handle data with this shape.
 
     labels : np.array
-      An array of shape ``(N, )`` of noisy labels, i.e. some labels may be erroneous.
+      An array of shape ``(N,)`` of noisy labels, i.e. some labels may be erroneous.
       Elements must be in the set 0, 1, ..., K-1, where K is the number of classes.
 
     clf : estimator instance, optional
@@ -954,7 +954,7 @@ def estimate_noise_matrices(
       `clf`, must be able to handle data with this shape.
 
     labels : np.array
-      An array of shape ``(N, )`` of noisy labels, i.e. some labels may be erroneous.
+      An array of shape ``(N,)`` of noisy labels, i.e. some labels may be erroneous.
       Elements must be in the set 0, 1, ..., K-1, where K is the number of classes.
 
     clf : estimator instance, optional
@@ -1094,7 +1094,7 @@ def get_confident_thresholds(
     Parameters
     ----------
     labels : np.array
-      An array of shape ``(N, )`` of noisy labels, i.e. some labels may be erroneous.
+      An array of shape ``(N,)`` of noisy labels, i.e. some labels may be erroneous.
       Elements must be in the set 0, 1, ..., K-1, where K is the number of classes.
       All the classes (0, 1, ..., and K-1) MUST be present in ``labels``, such that:
       len(set(k for l in labels for k in l)) == pred_probs.shape[1]
