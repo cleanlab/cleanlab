@@ -261,19 +261,19 @@ def _compute_confident_joint_multi_label(
         of confident joint as a baseline proxy for the label issues. This
         sometimes works as well as filter.find_label_issues(confident_joint)."""
 
-    # Compute unique number of classes K by flattening labels (list of lists)
-    K = len(np.unique([i for lst in labels for i in lst]))
-    # Compute thresholds = p(label=k | k in set of given labels)
-    k_in_l = np.array([[k in lst for lst in labels] for k in range(K)])
+    # [0, 1, 2, ... num_classes - 1] Assumes all classes are represented in labels
+    unique_classes = range(pred_probs.shape[1])
     if thresholds is None:
         # the avg probability of class given that the label is represented.
-        thresholds = [np.mean(pred_probs[:, k][k_in_l[k]]) for k in range(K)]
+        thresholds = get_confident_thresholds(labels, pred_probs, multi_label=True)
     # Create mask for every example if for each class, prob >= threshold
     pred_probs_bool = pred_probs >= thresholds
 
     # Compute confident joint
     # (no need to avoid collisions for multi-label, double counting is okay!)
-    confident_joint = np.array([pred_probs_bool[k_in_l[k]].sum(axis=0) for k in range(K)])
+    k_in_l = np.array([[k in lst for lst in labels] for k in unique_classes])
+    # Get # of examples with given label k where prob >= threshold for each (true) label k
+    confident_joint = np.array([pred_probs_bool[k_in_l[k]].sum(axis=0) for k in unique_classes])
     # Guarantee at least one correctly labeled example is represented in every class
     np.fill_diagonal(confident_joint, confident_joint.diagonal().clip(min=1))
     if calibrate:
@@ -281,13 +281,13 @@ def _compute_confident_joint_multi_label(
     if return_indices_of_off_diagonals:
         # Todo add more tests and consider refactoring for efficiency (combine with confident_joint)
         # Convert boolean mask of k_in_l to indices of examples that include class k in the labels
-        indices_k_in_l = [np.arange(len(labels))[k_in_l[k]] for k in range(K)]
+        indices_k_in_l = [np.arange(len(labels))[k_in_l[k]] for k in unique_classes]
         # Find boolean mask where the thresholds exceed for non-given class, for each class k
         issues_mask = [
-            np.any(np.delete(pred_probs_bool, k, axis=1)[k_in_l[k]], axis=1) for k in range(K)
+            np.any(np.delete(pred_probs_bool, k, axis=1)[k_in_l[k]], axis=1) for k in unique_classes
         ]
         # Map boolean mask to the indices of the examples, for each class k
-        indices_of_issues = [indices_k_in_l[k][issues_mask[k]] for k in range(K)]
+        indices_of_issues = [indices_k_in_l[k][issues_mask[k]] for k in unique_classes]
         # Combine error indices for each class k into a single set of all the indices of errors
         indices_of_issues = np.asarray(list(set([z for lst in indices_of_issues for z in lst])))
         return confident_joint, sorted(indices_of_issues)
@@ -337,9 +337,6 @@ def compute_confident_joint(
       columns must be ordered such that these probabilities correspond to
       class 0, 1, ..., K-1. `pred_probs` should have been computed using 3 (or
       higher) fold cross-validation.
-
-    K : optional
-      Number of unique classes. Calculated as ``len(np.unique(labels))`` when ``K=None``.
 
     thresholds : array_like, optional
       An array of shape ``(K, 1)`` or ``(K,)`` of per-class threshold
@@ -419,13 +416,10 @@ def compute_confident_joint(
     # labels needs to be a numpy array
     labels = np.asarray(labels)
 
-    # Find the number of unique classes
-    num_classes = len(np.unique(labels))
-
     # Estimate the probability thresholds for confident counting
     if thresholds is None:
         # P(we predict the given noisy label is k | given noisy label is k)
-        thresholds = [np.mean(pred_probs[:, k][labels == k]) for k in range(num_classes)]
+        thresholds = get_confident_thresholds(labels, pred_probs, multi_label=multi_label)
     thresholds = np.asarray(thresholds)
 
     # Compute confident joint (vectorized for speed).
@@ -709,7 +703,7 @@ def estimate_confident_joint_and_cv_pred_proba(
 
     assert_inputs_are_valid(X, labels)
     # Number of classes
-    K = len(np.unique(labels))
+    num_classes = len(np.unique(labels))
 
     # Ensure labels are of type np.array()
     labels = np.asarray(labels)
@@ -720,7 +714,7 @@ def estimate_confident_joint_and_cv_pred_proba(
     kf = StratifiedKFold(n_splits=cv_n_folds, shuffle=True, random_state=seed)
 
     # Initialize pred_probs array
-    pred_probs = np.zeros((len(labels), K))
+    pred_probs = np.zeros(shape=(len(labels), num_classes))
 
     # Split X and labels into "cv_n_folds" stratified folds.
     for k, (cv_train_idx, cv_holdout_idx) in enumerate(kf.split(X, labels)):
@@ -733,8 +727,8 @@ def estimate_confident_joint_and_cv_pred_proba(
         # Ensure no missing classes in training set.
         train_cv_classes = set(s_train_cv)
         all_classes = set(
-            range(K)
-        )  # TODO: more efficient if committed to labels 0,...,K, else use this: set(labels)
+            range(num_classes)
+        )  # TODO: more efficient if committed to labels 0,...,num_classes, else use: set(labels)
         missing_class_inds = (
             {}
         )  # keys = which classes are missing, values = index of holdout data from this class that we duplicated
@@ -765,7 +759,7 @@ def estimate_confident_joint_and_cv_pred_proba(
 
         pred_probs[cv_holdout_idx] = pred_probs_cv
 
-    # Compute the confident counts, a K x K matrix for all pairs of labels.
+    # Compute the confident counts, a num_classes x num_classes matrix for all pairs of labels.
     confident_joint = compute_confident_joint(
         labels=labels,
         pred_probs=pred_probs,  # P(labels = k|x)
@@ -1088,7 +1082,11 @@ def _converge_estimates(
     return py, noise_matrix, inverse_noise_matrix
 
 
-def get_confident_thresholds(labels: np.array, pred_probs: np.array) -> np.array:
+def get_confident_thresholds(
+    labels: np.array,
+    pred_probs: np.array,
+    multi_label: bool = False,
+) -> np.array:
     """Returns expected (average) "self-confidence" for each class.
 
     The confident class threshold for a class j is the expected (average) "self-confidence" for class j.
@@ -1098,6 +1096,8 @@ def get_confident_thresholds(labels: np.array, pred_probs: np.array) -> np.array
     labels : np.array
       An array of shape ``(N,)`` of noisy labels, i.e. some labels may be erroneous.
       Elements must be in the set 0, 1, ..., K-1, where K is the number of classes.
+      All the classes (0, 1, ..., and K-1) MUST be present in ``labels``, such that:
+      len(set(k for l in labels for k in l)) == pred_probs.shape[1]
 
     pred_probs : np.array
       An array of shape ``(N, K)`` of model-predicted probabilities,
@@ -1108,12 +1108,32 @@ def get_confident_thresholds(labels: np.array, pred_probs: np.array) -> np.array
       class 0, 1, ..., K-1. `pred_probs` should have been computed using 3 (or
       higher) fold cross-validation.
 
+    multi_label : bool, optional
+      If ``True``, labels should be an iterable (e.g. list) of iterables, containing a
+      list of labels for each example, instead of just a single label.
+      Assumes all classes in pred_probs.shape[1] are represented in labels.
+      The multi-label setting supports classification tasks where an example has 1 or more labels.
+      Example of a multi-labeled `labels` input: ``[[0,1], [1], [0,2], [0,1,2], [0], [1], ...]``.
+      The major difference in how this is calibrated versus single-label is that
+      the total number of errors considered is based on the number of labels,
+      not the number of examples. So, the calibrated `confident_joint` will sum
+      to the number of total labels.
+
     Returns
     -------
     confident_thresholds : np.array
-      An array of shape ``(K,)``.
+      An array of shape ``(num_classes, )``.
     """
-    confident_thresholds = np.array(
-        [np.mean(pred_probs[:, k][labels == k]) for k in range(pred_probs.shape[1])]
-    )
+
+    if multi_label:
+        # [0, 1, 2, ... num_classes - 1]
+        unique_classes = range(pred_probs.shape[1])  # Assumes all classes are represented in labels
+        # Compute thresholds = p(label=k | k in set of given labels)
+        k_in_l = np.array([[k in lst for lst in labels] for k in unique_classes])
+        # The avg probability of class given that the label is represented.
+        confident_thresholds = [np.mean(pred_probs[:, k][k_in_l[k]]) for k in unique_classes]
+    else:
+        confident_thresholds = np.array(
+            [np.mean(pred_probs[:, k][labels == k]) for k in range(pred_probs.shape[1])]
+        )
     return confident_thresholds
