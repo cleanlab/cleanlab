@@ -141,7 +141,7 @@ NumPy style are documented below:
 - **Shapes**: Do not include shapes in the type of parameters, instead use
   `np.array` or `array_like` as the type and specify allowed shapes in the
   description. See, for example, the documentation for
-  `cleanlab.classification.CleanLearning.fit()`.
+  `cleanlab.classification.CleanLearning.fit()`. Format for 1D shape: `(N,1)`
 - **Optional arguments**: for the most part, just put `, optional` in the type.
 - **Type unions**: if a parameter or return type is something like "a numpy
   array or None", you can use "or" to separate types, e.g. `np.array or None`,
@@ -150,3 +150,10 @@ NumPy style are documented below:
   hints](https://docs.python.org/3/library/typing.html) for referring to
   parameters and parameterized types in docs, e.g. `Iterable[int]` or
   `list[float]`.
+
+### Common variable names used in documentation
+
+- `N` - the number of examples/datapoints in a dataset.
+  - `num_examples` may also be used when additional clarity is needed.
+- `K` - the number of classes (unique labels) for a dataset.
+  - `num_classes` may also be used when additional clarity is needed.
