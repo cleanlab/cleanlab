@@ -116,7 +116,7 @@ def generate_noisy_labels(true_labels, noise_matrix):
     Parameters
     ----------
     true_labels : np.array
-      An array of shape ``(N,)`` representing perfect labels, without any
+      An array of shape ``(N, )`` representing perfect labels, without any
       noise. Contains K distinct natural number classes, 0, 1, ..., K-1.
 
     noise_matrix : np.array
@@ -128,7 +128,7 @@ def generate_noisy_labels(true_labels, noise_matrix):
     Returns
     -------
     labels : np.array
-      An array of shape ``(N,)`` of noisy labels.
+      An array of shape ``(N, )`` of noisy labels.
 
     Examples
     --------

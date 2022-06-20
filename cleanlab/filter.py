@@ -760,7 +760,7 @@ def find_label_issues_using_argmax_confusion_matrix(
     Parameters
     ----------
     labels : np.array
-        An array of shape ``(N,)`` of noisy labels, i.e. some labels may be erroneous.
+        An array of shape ``(N, )`` of noisy labels, i.e. some labels may be erroneous.
         Elements must be in the set 0, 1, ..., K-1, where K is the number of classes.
 
     pred_probs : np.array (shape (N, K))

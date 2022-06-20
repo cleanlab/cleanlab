@@ -68,7 +68,7 @@ def num_label_issues(
     Parameters
     ----------
     labels : np.array
-      An array of shape ``(N,)`` of noisy labels, i.e. some labels may be erroneous.
+      An array of shape ``(N, )`` of noisy labels, i.e. some labels may be erroneous.
       Elements must be in the set 0, 1, ..., K-1, where K is the number of classes.
 
     pred_probs : np.array
@@ -167,7 +167,7 @@ def estimate_joint(labels, pred_probs, *, confident_joint=None, multi_label=Fals
     Parameters
     ----------
     labels : np.array
-      An array of shape ``(N,)`` of noisy labels, i.e. some labels may be erroneous.
+      An array of shape ``(N, )`` of noisy labels, i.e. some labels may be erroneous.
       Elements must be in the set 0, 1, ..., K-1, where K is the number of classes.
 
     pred_probs : np.array
@@ -261,7 +261,7 @@ def _compute_confident_joint_multi_label(
         of confident joint as a baseline proxy for the label issues. This
         sometimes works as well as filter.find_label_issues(confident_joint)."""
 
-    # [0, 1, 2, ... num_classes - 1] Assumes all classses are represented in labels
+    # [0, 1, 2, ... num_classes - 1] Assumes all classes are represented in labels
     unique_classes = range(pred_probs.shape[1])
     if thresholds is None:
         # the avg probability of class given that the label is represented.
@@ -272,6 +272,7 @@ def _compute_confident_joint_multi_label(
     # Compute confident joint
     # (no need to avoid collisions for multi-label, double counting is okay!)
     k_in_l = np.array([[k in lst for lst in labels] for k in unique_classes])
+    # Get # of examples with given label k where prob >= threshold for each (true) label k
     confident_joint = np.array([pred_probs_bool[k_in_l[k]].sum(axis=0) for k in unique_classes])
     # Guarantee at least one correctly labeled example is represented in every class
     np.fill_diagonal(confident_joint, confident_joint.diagonal().clip(min=1))
@@ -325,7 +326,7 @@ def compute_confident_joint(
     Parameters
     ----------
     labels : np.array
-      An array of shape ``(N,)`` of noisy labels, i.e. some labels may be erroneous.
+      An array of shape ``(N, )`` of noisy labels, i.e. some labels may be erroneous.
       Elements must be in the set 0, 1, ..., K-1, where K is the number of classes.
 
     pred_probs : np.array, optional
@@ -479,7 +480,7 @@ def estimate_latent(
       If not provided, it is computed from the given (noisy) `labels` and `pred_probs`.
 
     labels : np.array
-      An array of shape ``(N,)`` of noisy labels, i.e. some labels may be erroneous.
+      An array of shape ``(N, )`` of noisy labels, i.e. some labels may be erroneous.
       Elements must be in the set 0, 1, ..., K-1, where K is the number of classes.
 
     py_method : {"cnt", "eqn", "marginal", "marginal_ps"}, default="cnt"
@@ -559,7 +560,7 @@ def estimate_py_and_noise_matrices_from_probabilities(
     Parameters
     ----------
     labels : np.array
-      An array of shape ``(N,)`` of noisy labels, i.e. some labels may be erroneous.
+      An array of shape ``(N, )`` of noisy labels, i.e. some labels may be erroneous.
       Elements must be in the set 0, 1, ..., K-1, where K is the number of classes.
 
     pred_probs : np.array
@@ -658,7 +659,7 @@ def estimate_confident_joint_and_cv_pred_proba(
       `clf`, must be able to handle data with this shape.
 
     labels : np.array
-      An array of shape ``(N,)`` of noisy labels, i.e. some labels may be erroneous.
+      An array of shape ``(N, )`` of noisy labels, i.e. some labels may be erroneous.
       Elements must be in the set 0, 1, ..., K-1, where K is the number of classes.
 
     clf : estimator instance, optional
@@ -802,7 +803,7 @@ def estimate_py_noise_matrices_and_cv_pred_proba(
       `clf`, must be able to handle data with this shape.
 
     labels : np.array
-      An array of shape ``(N,)`` of noisy labels, i.e. some labels may be erroneous.
+      An array of shape ``(N, )`` of noisy labels, i.e. some labels may be erroneous.
       Elements must be in the set 0, 1, ..., K-1, where K is the number of classes.
 
     clf : estimator instance, optional
@@ -891,7 +892,7 @@ def estimate_cv_predicted_probabilities(
       `clf`, must be able to handle data with this shape.
 
     labels : np.array
-      An array of shape ``(N,)`` of noisy labels, i.e. some labels may be erroneous.
+      An array of shape ``(N, )`` of noisy labels, i.e. some labels may be erroneous.
       Elements must be in the set 0, 1, ..., K-1, where K is the number of classes.
 
     clf : estimator instance, optional
@@ -953,7 +954,7 @@ def estimate_noise_matrices(
       `clf`, must be able to handle data with this shape.
 
     labels : np.array
-      An array of shape ``(N,)`` of noisy labels, i.e. some labels may be erroneous.
+      An array of shape ``(N, )`` of noisy labels, i.e. some labels may be erroneous.
       Elements must be in the set 0, 1, ..., K-1, where K is the number of classes.
 
     clf : estimator instance, optional
@@ -1093,7 +1094,7 @@ def get_confident_thresholds(
     Parameters
     ----------
     labels : np.array
-      An array of shape ``(N,)`` of noisy labels, i.e. some labels may be erroneous.
+      An array of shape ``(N, )`` of noisy labels, i.e. some labels may be erroneous.
       Elements must be in the set 0, 1, ..., K-1, where K is the number of classes.
       All unique labels should be present, such that:
       len(set(k for l in labels for k in l)) == pred_probs.shape[1]
@@ -1110,6 +1111,7 @@ def get_confident_thresholds(
     multi_label : bool, optional
       If ``True``, labels should be an iterable (e.g. list) of iterables, containing a
       list of labels for each example, instead of just a single label.
+      Assumes all classes in pred_probs.shape[1] are represented in labels.
       The multi-label setting supports classification tasks where an example has 1 or more labels.
       Example of a multi-labeled `labels` input: ``[[0,1], [1], [0,2], [0,1,2], [0], [1], ...]``.
       The major difference in how this is calibrated versus single-label is that
@@ -1120,12 +1122,12 @@ def get_confident_thresholds(
     Returns
     -------
     confident_thresholds : np.array
-      An array of shape ``(K,)``.
+      An array of shape ``(num_classes, )``.
     """
 
     if multi_label:
-        # [0, 1, 2, ... num_classes - 1] Assumes all classses are represented in labels
-        unique_classes = range(pred_probs.shape[1])
+        # [0, 1, 2, ... num_classes - 1]
+        unique_classes = range(pred_probs.shape[1])  # Assumes all classes are represented in labels
         # Compute thresholds = p(label=k | k in set of given labels)
         k_in_l = np.array([[k in lst for lst in labels] for k in unique_classes])
         # The avg probability of class given that the label is represented.

@@ -40,9 +40,6 @@ def _subtract_confident_thresholds(
       Predicted-probabilities in the same format expected by the `cleanlab.count.get_confident_thresholds()` method.
 
     multi_label : bool, optional
-      multi_label in the same format expected by the `cleanlab.count.get_confident_thresholds()` method.
-
-    multi_label : bool, optional
       If ``True``, labels should be an iterable (e.g. list) of iterables, containing a
       list of labels for each example, instead of just a single label.
       The multi-label setting supports classification tasks where an example has 1 or more labels.

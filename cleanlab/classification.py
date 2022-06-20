@@ -282,7 +282,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
           `clf`, must be able to handle data with this shape.
 
         labels : np.array
-          An array of shape ``(N,)`` of noisy labels, i.e. some labels may be erroneous.
+          An array of shape ``(N, )`` of noisy labels, i.e. some labels may be erroneous.
           Elements must be in the set 0, 1, ..., K-1, where K is the number of classes.
 
         pred_probs : np.array, optional
@@ -550,10 +550,10 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
           An array of shape ``(N, ...)`` of test data.
 
         y : np.array
-          An array of shape ``(N,)`` or ``(N, 1)`` of test labels.
+          An array of shape ``(N, )`` or ``(N, 1)`` of test labels.
 
         sample_weight : np.array, optional
-          An array of shape ``(N,)`` or ``(N, 1)`` used to weight each example when computing the score."""
+          An array of shape ``(N, )`` or ``(N, 1)`` used to weight each example when computing the score."""
 
         if hasattr(self.clf, "score"):
 
