@@ -92,7 +92,6 @@ setup(
     install_requires=[
         "numpy>=1.11.3",
         "scikit-learn>=0.18",
-        "scipy>=1.1.0",
         "tqdm>=4.53.0",
         "pandas>=1.0.0",
     ],
