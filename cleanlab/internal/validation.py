@@ -34,17 +34,26 @@ def assert_valid_inputs(X, y, pred_probs=None):
     if not allow_empty_X:
         assert_nonempty_input(X)
         try:
-            _ = len(X)
+            n = len(X)
+            len_supported = True
         except:
-            raise TypeError("len(X) must be supported operation for input features object.")
+            len_supported = False
+        if not len_supported:
+            try:
+                n = X.shape[0]
+                shape_supported = True
+            except:
+                shape_supported = False
+        if (not len_supported) and (not shape_supported):
+            raise TypeError("Features object X must support either: len(X) or X.shape[0]")
 
-        if len(X) != len(y):
-            raise ValueError("len(X) must match length of labels.")
+        if n != len(y):
+            raise ValueError("length of X must match length of labels.")
 
-        if len(X) < 2:
-            raise ValueError("len(X) must be at least 2.")
+        if n < 2:
+            raise ValueError("length of X must be at least 2.")
 
-        assert_indexing_works(X)
+        assert_indexing_works(X, length_X=n)
 
     if pred_probs is not None:
         if not isinstance(pred_probs, (np.ndarray, np.generic)):
@@ -75,10 +84,13 @@ def assert_nonempty_input(X):
         raise ValueError("X cannot be None.")
 
 
-def assert_indexing_works(X, idx=None):
+def assert_indexing_works(X, idx=None, length_X=None):
     """Ensures we can do list-based indexing into X and y"""
     if idx is None:
-        idx = [0, len(X) - 1]
+        if length_X is None:
+            length_X = 2
+
+        idx = [0, length_X - 1]
     try:
         if isinstance(X, (pd.DataFrame, pd.Series)):
             _ = X.iloc[idx]
