@@ -59,7 +59,7 @@ def assert_valid_inputs(X, y, pred_probs=None):
 
 
 def assert_valid_class_labels(y):
-    """ Check that labels is zero-indexed (first label is 0) and all classes present"""
+    """Check that labels is zero-indexed (first label is 0) and all classes present"""
     if y.ndim != 1:
         raise ValueError("labels must by 1D numpy array.")
 
@@ -76,13 +76,13 @@ def assert_nonempty_input(X):
 
 
 def assert_indexing_works(X, idx=None):
-    """ Ensures we can do list-based indexing into X and y"""
+    """Ensures we can do list-based indexing into X and y"""
     if idx is None:
-        idx = [0, len(X)-1]
+        idx = [0, len(X) - 1]
     try:
         if isinstance(X, (pd.DataFrame, pd.Series)):
             _ = X.iloc[idx]
-        else:   
+        else:
             _ = X[idx]
     except:
         msg = "Features object X must support list-based indexing; i.e. one of these must work: \n"
@@ -104,6 +104,8 @@ def labels_to_array(y):
         try:
             y = np.array(y)
         except:
-            raise ValueError("List of labels must be convertable to 1D numpy array via: np.array(labels)")
-    
+            raise ValueError(
+                "List of labels must be convertable to 1D numpy array via: np.array(labels)"
+            )
+
     return y

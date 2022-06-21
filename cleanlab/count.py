@@ -735,7 +735,10 @@ def estimate_confident_joint_and_cv_pred_proba(
         clf_copy = sklearn.base.clone(clf)
 
         # Select the training and holdout cross-validated sets.
-        s_train_cv, s_holdout_cv = labels[cv_train_idx], labels[cv_holdout_idx]  # labels are always np.array
+        s_train_cv, s_holdout_cv = (
+            labels[cv_train_idx],
+            labels[cv_holdout_idx],
+        )  # labels are always np.array
         if isinstance(X, (pd.DataFrame, pd.Series)):
             X_train_cv, X_holdout_cv = X.iloc[cv_train_idx], X.iloc[cv_holdout_idx]
         else:
@@ -759,7 +762,9 @@ def estimate_confident_joint_and_cv_pred_proba(
                 holdout_inds = np.where(s_holdout_cv == missing_class)[0]
                 # Duplicate one instance of missing_class from holdout data to the training data:
                 dup_ind = holdout_inds[0]
-                s_train_cv = np.append(s_train_cv, s_holdout_cv[dup_ind])  # labels are always np.array
+                s_train_cv = np.append(
+                    s_train_cv, s_holdout_cv[dup_ind]
+                )  # labels are always np.array
                 if isinstance(X, np.ndarray):
                     X_train_cv = np.vstack([X_train_cv, X_holdout_cv[dup_ind]])
                 else:
@@ -775,9 +780,8 @@ def estimate_confident_joint_and_cv_pred_proba(
                         raise TypeError("Features object X must support: X.append(X[i])")
                 missing_class_inds[missing_class] = dup_ind
 
-            if isinstance(X, (pd.DataFrame, pd.Series)): 
+            if isinstance(X, (pd.DataFrame, pd.Series)):
                 X_train_cv = X_train_cv.reset_index(inplace=True, drop=True)
-
 
         # Fit classifier clf to training set, predict on holdout set, and update pred_probs.
         clf_copy.fit(X_train_cv, s_train_cv, **clf_kwargs)
