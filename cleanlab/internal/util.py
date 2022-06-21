@@ -20,44 +20,6 @@
 # #### Contains ancillary helper functions used throughout this package.
 
 import numpy as np
-from sklearn.utils import check_X_y
-
-
-def assert_inputs_are_valid(X, s, pred_probs=None, allow_empty_X=False):  # pragma: no cover
-    """Checks that X, labels, and pred_probs are correctly formatted"""
-
-    if pred_probs is not None:
-        if not isinstance(pred_probs, (np.ndarray, np.generic)):
-            raise TypeError("pred_probs should be a numpy array.")
-        if len(pred_probs) != len(s):
-            raise ValueError("pred_probs and labels must have same length.")
-        # Check for valid probabilities.
-        if (pred_probs < 0).any() or (pred_probs > 1).any():
-            raise ValueError("Values in pred_probs must be between 0 and 1.")
-
-    if not isinstance(s, (np.ndarray, np.generic)):
-        raise TypeError("labels should be a numpy array.")
-
-    # Check that labels is zero-indexed (first label is 0).
-    unique_classes = np.unique(s)
-    if all(unique_classes != np.arange(len(unique_classes))):
-        msg = "cleanlab requires zero-indexed labels (0,1,2,..,m-1), but in "
-        msg += "your case: np.unique(labels) = {}".format(str(unique_classes))
-        raise TypeError(msg)
-
-    if not allow_empty_X:
-        if X is None:
-            raise ValueError("X cannot be None.")
-
-        check_X_y(
-            X,
-            s,
-            accept_sparse=True,
-            dtype=None,
-            force_all_finite=False,
-            ensure_2d=False,
-            allow_nd=True,
-        )
 
 
 def remove_noise_from_class(noise_matrix, class_without_noise):

@@ -119,7 +119,6 @@ import pandas as pd
 import inspect
 import warnings
 from cleanlab.internal.util import (
-    assert_inputs_are_valid,
     value_counts,
     compress_int_array,
 )
@@ -134,6 +133,7 @@ from cleanlab.internal.latent_algebra import (
     compute_py_inv_noise_matrix,
     compute_noise_matrix_from_inverse,
 )
+from cleanlab.internal.validation import assert_valid_inputs
 from cleanlab.rank import get_label_quality_scores
 from cleanlab import filter
 
@@ -276,12 +276,12 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
 
         Parameters
         ----------
-        X : np.array
+        X : np.array or pd.DataFrame
           Input feature matrix of shape ``(N, ...)``, where N is the number of
           examples. The classifier that this instance was initialized with,
-          `clf`, must be able to handle data with this shape.
+          ``clf``, must be able to fit() and predict() data with this format.
 
-        labels : np.array
+        labels : np.array or pd.Series
           An array of shape ``(N,)`` of noisy labels, i.e. some labels may be erroneous.
           Elements must be in the set 0, 1, ..., K-1, where K is the number of classes.
 
@@ -419,6 +419,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
             )
 
         else:  # set args that may not have been set if `self.find_label_issues()` wasn't called yet
+            assert_valid_inputs(X, labels, pred_probs)
             if self.num_classes is None:
                 self.num_classes = len(np.unique(labels))
             if self.verbose:
@@ -639,8 +640,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         """
 
         # Check inputs
-        allow_empty_X = False if pred_probs is None else True
-        assert_inputs_are_valid(X, labels, pred_probs, allow_empty_X=allow_empty_X)
+        assert_valid_inputs(X, labels, pred_probs)
         if noise_matrix is not None and np.trace(noise_matrix) <= 1:
             t = np.round(np.trace(noise_matrix), 2)
             raise ValueError("Trace(noise_matrix) is {}, but must exceed 1.".format(t))

@@ -28,6 +28,7 @@ from sklearn.model_selection import StratifiedKFold
 from sklearn.metrics import confusion_matrix
 import sklearn.base
 import numpy as np
+import pandas as pd
 import warnings
 
 from cleanlab.internal.util import (
@@ -35,12 +36,15 @@ from cleanlab.internal.util import (
     clip_values,
     clip_noise_rates,
     round_preserving_row_totals,
-    assert_inputs_are_valid,
 )
 from cleanlab.internal.latent_algebra import (
     compute_inv_noise_matrix,
     compute_py,
     compute_noise_matrix_from_inverse,
+)
+from cleanlab.internal.validation import (
+    assert_valid_inputs,
+    labels_to_array,
 )
 
 
@@ -664,12 +668,12 @@ def estimate_confident_joint_and_cv_pred_proba(
 
     Parameters
     ----------
-    X : np.array
+    X : np.array or pd.DataFrame
       Input feature matrix of shape ``(N, ...)``, where N is the number of
       examples. The classifier that this instance was initialized with,
-      `clf`, must be able to handle data with this shape.
+          ``clf``, must be able to fit() and predict() data with this format.
 
-    labels : np.array
+    labels : np.array or pd.Series
       An array of shape ``(N,)`` of noisy labels, i.e. some labels may be erroneous.
       Elements must be in the set 0, 1, ..., K-1, where K is the number of classes.
 
@@ -712,12 +716,11 @@ def estimate_confident_joint_and_cv_pred_proba(
       Tuple of two numpy arrays in the form:
       (joint counts matrix, predicted probability matrix)"""
 
-    assert_inputs_are_valid(X, labels)
+    assert_valid_inputs(X, labels)
+    labels = labels_to_array(labels)
+
     # Number of classes
     num_classes = len(np.unique(labels))
-
-    # Ensure labels are of type np.array()
-    labels = np.asarray(labels)
 
     # Create cross-validation object for out-of-sample predicted probabilities.
     # CV folds preserve the fraction of noisy positive and
@@ -732,8 +735,11 @@ def estimate_confident_joint_and_cv_pred_proba(
         clf_copy = sklearn.base.clone(clf)
 
         # Select the training and holdout cross-validated sets.
-        X_train_cv, X_holdout_cv = X[cv_train_idx], X[cv_holdout_idx]
-        s_train_cv, s_holdout_cv = labels[cv_train_idx], labels[cv_holdout_idx]
+        s_train_cv, s_holdout_cv = labels[cv_train_idx], labels[cv_holdout_idx]  # labels are always np.array
+        if isinstance(X, (pd.DataFrame, pd.Series)):
+            X_train_cv, X_holdout_cv = X.iloc[cv_train_idx], X.iloc[cv_holdout_idx]
+        else:
+            X_train_cv, X_holdout_cv = X[cv_train_idx], X[cv_holdout_idx]
 
         # Ensure no missing classes in training set.
         train_cv_classes = set(s_train_cv)
@@ -753,9 +759,25 @@ def estimate_confident_joint_and_cv_pred_proba(
                 holdout_inds = np.where(s_holdout_cv == missing_class)[0]
                 # Duplicate one instance of missing_class from holdout data to the training data:
                 dup_ind = holdout_inds[0]
-                s_train_cv = np.append(s_train_cv, s_holdout_cv[dup_ind])
-                X_train_cv = np.vstack([X_train_cv, X_holdout_cv[dup_ind]])
+                s_train_cv = np.append(s_train_cv, s_holdout_cv[dup_ind])  # labels are always np.array
+                if isinstance(X, np.ndarray):
+                    X_train_cv = np.vstack([X_train_cv, X_holdout_cv[dup_ind]])
+                else:
+                    try:
+                        if isinstance(X, pd.DataFrame):
+                            X_extra = X_holdout_cv.iloc[dup_ind]
+                        elif isinstance(X, pd.Series):
+                            X_extra = pd.Series(X_holdout_cv.iloc[dup_ind])
+                        else:
+                            X_extra = X_holdout_cv[dup_ind]
+                        X_train_cv = X_train_cv.append(X_extra)
+                    except:
+                        raise TypeError("Features object X must support: X.append(X[i])")
                 missing_class_inds[missing_class] = dup_ind
+
+            if isinstance(X, (pd.DataFrame, pd.Series)): 
+                X_train_cv = X_train_cv.reset_index(inplace=True, drop=True)
+
 
         # Fit classifier clf to training set, predict on holdout set, and update pred_probs.
         clf_copy.fit(X_train_cv, s_train_cv, **clf_kwargs)
