@@ -93,7 +93,7 @@ def assert_indexing_works(X, idx=None, length_X=None):
     """
     if idx is None:
         if length_X is None:
-            length_X = 2
+            length_X = 2  # pragma: no cover
 
         idx = [0, length_X - 1]
     try:

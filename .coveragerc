@@ -15,10 +15,10 @@ exclude_lines =
     def __repr__
     if self\.debug
 
-    # Don't complain if tests don't hit defensive assertion code:
-    raise AssertionError
-    raise NotImplementedError
-    raise ValueError
+    # Don't complain if tests don't hit defensive assertion / error-reporting code:
+    raise
+    except
+    assert
     warnings.warn
     
     # Use print(f"...") for printing out non-pure strings:

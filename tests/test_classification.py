@@ -575,7 +575,7 @@ class ReshapingLogisticRegression(BaseEstimator):
         self.clf = LogisticRegression()
 
     def fit(self, X, y):
-        y = np.asarray(y)
+        y = np.asarray(y).flatten()
         self.clf.fit(make_2d(X), y)
 
     def predict(self, X):
@@ -625,6 +625,13 @@ def test_1D_formats():
     cl.predict(X_series)
     cl.predict_proba(X_series)
     cl.score(X_series, labels)
+    # Repeat with DataFrame labels:
+    labels_df = pd.DataFrame({"colname": labels})
+    cl = CleanLearning(clf=ReshapingLogisticRegression())
+    cl.fit(X, labels_df)
+    cl.predict(X)
+    cl.predict_proba(X)
+    cl.score(X, labels)
     # Repeat with list labels:
     labels_list = list(labels)
     cl = CleanLearning(clf=ReshapingLogisticRegression())

@@ -895,6 +895,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         Helper method to get the label_issues input arg into a formatted DataFrame.
         """
 
+        labels = labels_to_array(labels)
         if isinstance(label_issues, pd.DataFrame):
             if "is_label_issue" not in label_issues.columns:
                 raise ValueError(
