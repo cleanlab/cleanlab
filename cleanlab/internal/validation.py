@@ -106,18 +106,16 @@ def assert_indexing_works(X, idx=None, length_X=None):
 def labels_to_array(y):
     """Converts different types of label objects to 1D numpy array and checks validity"""
     if isinstance(y, pd.Series):
-        y = y.values
+        return y.values
     elif isinstance(y, pd.DataFrame):
         y = y.values
         if y.shape[1] != 1:
             raise ValueError("labels must be one dimensional.")
-        y = y.flatten()
-    elif isinstance(y, list):
+        return y.flatten()
+    else:  # y is list, np.array, or some other tuple-like object
         try:
-            y = np.array(y)
+            return np.asarray(y)
         except:
             raise ValueError(
                 "List of labels must be convertable to 1D numpy array via: np.array(labels)"
             )
-
-    return y
