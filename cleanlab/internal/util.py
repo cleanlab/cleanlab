@@ -416,16 +416,23 @@ def compress_int_array(int_array, num_possible_values):
 def subset_labels(labels, boolean_mask):
     """Extracts subset of labels where mask is True"""
     try:  # filtering labels as if it is array or DataFrame
-        labels_cleaned = labels[x_mask]
-        labels_subsetted = True
+        return labels[x_mask]
     except:
-        labels_subsetted = False
-        if not labels_subsetted:
-            try:  # filtering labels as if it is list
-                labels_cleaned = [l for idx, l in enumerate(labels) if x_mask[idx]]
-            except:
-                raise TypeError("labels must be 1D np.array, list, or pd.Series.")
-    return labels_cleaned
+        try:  # filtering labels as if it is list
+            return [l for idx, l in enumerate(labels) if x_mask[idx]]
+        except:
+            raise TypeError("labels must be 1D np.array, list, or pd.Series.")
+
+
+def csr_vstack(a, b):
+    """Takes in 2 csr_matrices and appends the second one to the bottom of the first one.
+    Alternative to scipy.sparse.vstack.
+    """
+    a.data = np.hstack((a.data, b.data))
+    a.indices = np.hstack((a.indices, b.indices))
+    a.indptr = np.hstack((a.indptr, (b.indptr + a.nnz)[1:]))
+    a._shape = (a.shape[0] + b.shape[0], b.shape[1])
+    return a
 
 
 def smart_display_dataframe(df):  # pragma: no cover

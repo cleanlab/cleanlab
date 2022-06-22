@@ -36,6 +36,7 @@ from cleanlab.internal.util import (
     clip_values,
     clip_noise_rates,
     round_preserving_row_totals,
+    csr_vstack,
 )
 from cleanlab.internal.latent_algebra import (
     compute_inv_noise_matrix,
@@ -775,9 +776,15 @@ def estimate_confident_joint_and_cv_pred_proba(
                             X_extra = pd.Series(X_holdout_cv.iloc[dup_ind])
                         else:
                             X_extra = X_holdout_cv[dup_ind]
+                    except:
+                        raise TypeError("Data features X must support: X[i].")
+                    try:
                         X_train_cv = X_train_cv.append(X_extra)
                     except:
-                        raise TypeError("Data features X must support: X.append(X[i])")
+                        try:  # append for sparse matrix
+                            X_train_cv = csr_vstack(X_train_cv, X_extra)
+                        except:
+                            raise TypeError("Data features X must support: X.append(X[i])")
                 missing_class_inds[missing_class] = dup_ind
 
             if isinstance(X, (pd.DataFrame, pd.Series)):

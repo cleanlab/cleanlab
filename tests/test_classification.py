@@ -144,8 +144,9 @@ def test_cl(data):
 
 
 @pytest.mark.filterwarnings("ignore::UserWarning")
-def test_rare_label():
-    data = make_rare_label(DATA)
+@pytest.mark.parametrize("data", [DATA, SPARSE_DATA])
+def test_rare_label(data):
+    data = make_rare_label(data)
     test_cl(data)
 
 
