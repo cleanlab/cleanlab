@@ -277,8 +277,11 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         Parameters
         ----------
         X : np.array or pd.DataFrame
-          Input feature matrix of shape ``(N, ...)``, where N is the number of
-          examples. The classifier that this instance was initialized with,
+          Data features (i.e. training inputs), typically an array of shape ``(N, ...)``,
+          where N is the number of examples. Sparse matrices are supported.
+          If not an array or DataFrame, then ``X`` must support list-based indexing:
+          ``X[index_list]`` to select a subset of training examples.
+          The classifier that this instance was initialized with,
           ``clf``, must be able to fit() and predict() data with this format.
 
         labels : np.array or pd.Series

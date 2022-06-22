@@ -34,26 +34,28 @@ def assert_valid_inputs(X, y, pred_probs=None):
     if not allow_empty_X:
         assert_nonempty_input(X)
         try:
-            n = len(X)
+            num_examples = len(X)
             len_supported = True
         except:
             len_supported = False
         if not len_supported:
             try:
-                n = X.shape[0]
+                num_examples = X.shape[0]
                 shape_supported = True
             except:
                 shape_supported = False
         if (not len_supported) and (not shape_supported):
-            raise TypeError("Features object X must support either: len(X) or X.shape[0]")
+            raise TypeError("Data features X must support either: len(X) or X.shape[0]")
 
-        if n != len(y):
-            raise ValueError("length of X must match length of labels.")
+        if num_examples != len(y):
+            raise ValueError(
+                f"X and labels must be same length, but X is length {num_examples} and labels is length {len(y)}."
+            )
 
-        if n < 2:
-            raise ValueError("length of X must be at least 2.")
+        if num_examples < 2:
+            raise ValueError("Length of X (i.e. number of examples) must be at least 2.")
 
-        assert_indexing_works(X, length_X=n)
+        assert_indexing_works(X, length_X=num_examples)
 
     if pred_probs is not None:
         if not isinstance(pred_probs, (np.ndarray, np.generic)):
@@ -81,11 +83,14 @@ def assert_valid_class_labels(y):
 
 def assert_nonempty_input(X):
     if X is None:
-        raise ValueError("X cannot be None.")
+        raise ValueError("Data features X cannot be None. Currently X is None.")
 
 
 def assert_indexing_works(X, idx=None, length_X=None):
-    """Ensures we can do list-based indexing into X and y"""
+    """Ensures we can do list-based indexing into ``X`` and ``y``.
+    length_X is argument passed in since sparse matrix ``X``
+    does not support: ``len(X)``.
+    """
     if idx is None:
         if length_X is None:
             length_X = 2
@@ -97,7 +102,7 @@ def assert_indexing_works(X, idx=None, length_X=None):
         else:
             _ = X[idx]
     except:
-        msg = "Features object X must support list-based indexing; i.e. one of these must work: \n"
+        msg = "Data features X must support list-based indexing; i.e. one of these must work: \n"
         msg += "1)  X[index_list] where say index_list = [0,1,3,10], or \n"
         msg += "2)  X.iloc[index_list] if X is pandas DataFrame."
         raise TypeError(msg)

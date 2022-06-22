@@ -764,11 +764,11 @@ def estimate_confident_joint_and_cv_pred_proba(
                 dup_ind = holdout_inds[0]
                 s_train_cv = np.append(
                     s_train_cv, s_holdout_cv[dup_ind]
-                )  # labels are always np.array
+                )  # labels are always np.array so don't have to consider .iloc
                 if isinstance(X, np.ndarray):
                     X_train_cv = np.vstack([X_train_cv, X_holdout_cv[dup_ind]])
                 else:
-                    try:
+                    try:  # extract single example to add to training set
                         if isinstance(X, pd.DataFrame):
                             X_extra = X_holdout_cv.iloc[dup_ind]
                         elif isinstance(X, pd.Series):
@@ -777,7 +777,7 @@ def estimate_confident_joint_and_cv_pred_proba(
                             X_extra = X_holdout_cv[dup_ind]
                         X_train_cv = X_train_cv.append(X_extra)
                     except:
-                        raise TypeError("Features object X must support: X.append(X[i])")
+                        raise TypeError("Data features X must support: X.append(X[i])")
                 missing_class_inds[missing_class] = dup_ind
 
             if isinstance(X, (pd.DataFrame, pd.Series)):
