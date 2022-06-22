@@ -400,14 +400,32 @@ def print_joint_matrix(joint_matrix, round_places=2):
 
 def compress_int_array(int_array, num_possible_values):
     """Compresses dtype of np.array<int> if num_possible_values is small enough."""
-    compressed_type = None
-    if num_possible_values < np.iinfo(np.dtype("int16")).max:
-        compressed_type = "int16"
-    elif num_possible_values < np.iinfo(np.dtype("int32")).max:  # pragma: no cover
-        compressed_type = "int32"  # pragma: no cover
-    if compressed_type is not None:
-        int_array = int_array.astype(compressed_type)
-    return int_array
+    try:
+        compressed_type = None
+        if num_possible_values < np.iinfo(np.dtype("int16")).max:
+            compressed_type = "int16"
+        elif num_possible_values < np.iinfo(np.dtype("int32")).max:  # pragma: no cover
+            compressed_type = "int32"  # pragma: no cover
+        if compressed_type is not None:
+            int_array = int_array.astype(compressed_type)
+        return int_array
+    except:  # int_array may not even be numpy array, keep as is then
+        return int_array
+
+
+def subset_labels(labels, boolean_mask):
+    """Extracts subset of labels where mask is True"""
+    try:  # filtering labels as if it is array or DataFrame
+        labels_cleaned = labels[x_mask]
+        labels_subsetted = True
+    except:
+        labels_subsetted = False
+        if not labels_subsetted:
+            try:  # filtering labels as if it is list
+                labels_cleaned = [l for idx, l in enumerate(labels) if x_mask[idx]]
+            except:
+                raise TypeError("labels must be 1D np.array, list, or pd.Series.")
+    return labels_cleaned
 
 
 def smart_display_dataframe(df):  # pragma: no cover

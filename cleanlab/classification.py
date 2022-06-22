@@ -118,6 +118,9 @@ import numpy as np
 import pandas as pd
 import inspect
 import warnings
+
+from cleanlab.rank import get_label_quality_scores
+from cleanlab import filter
 from cleanlab.internal.util import (
     value_counts,
     compress_int_array,
@@ -133,9 +136,10 @@ from cleanlab.internal.latent_algebra import (
     compute_py_inv_noise_matrix,
     compute_noise_matrix_from_inverse,
 )
-from cleanlab.internal.validation import assert_valid_inputs
-from cleanlab.rank import get_label_quality_scores
-from cleanlab import filter
+from cleanlab.internal.validation import (
+    assert_valid_inputs,
+    labels_to_array,
+)
 
 
 class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
@@ -446,7 +450,17 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         self.label_issues_mask = self.label_issues_df["is_label_issue"].values
         x_mask = ~self.label_issues_mask
         x_cleaned = X[x_mask]
-        labels_cleaned = labels[x_mask]
+        try:  # filtering labels as if it were array
+            labels_cleaned = labels[x_mask]
+            labels_subsetted = True
+        except:
+            labels_subsetted = False
+        if not labels_subsetted:
+            try:  # filtering labels as if it were list
+                labels_cleaned = [l for idx, l in enumerate(labels) if x_mask[idx]]
+            except:
+                raise TypeError("labels must be 1D np.array, list, or pd.Series.")
+
         if self.verbose:
             print(f"Pruning {np.sum(self.label_issues_mask)} examples with label issues ...")
             print(f"Remaining clean data has {len(labels_cleaned)} examples.")
@@ -762,6 +776,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
             self.confident_joint[self.pulearning][1 - self.pulearning] = 0
             self.confident_joint[1 - self.pulearning][1 - self.pulearning] = 1
 
+        labels = labels_to_array(labels)
         if self.verbose:
             print("Using predicted probabilities to identify label issues ...")
         label_issues_mask = filter.find_label_issues(
