@@ -613,6 +613,7 @@ def test_dimN(N):
     cl.score(X, labels)
 
 
+@pytest.mark.filterwarnings("ignore::UserWarning")
 def test_1D_formats():
     X, labels = dimN_data(1)
     X_series = pd.Series(X)
@@ -623,6 +624,16 @@ def test_1D_formats():
     cl = CleanLearning(clf=ReshapingLogisticRegression())
     # just make sure we don't crash...
     cl.fit(X_series, labels_series)
+    cl.predict(X_series)
+    cl.predict_proba(X_series)
+    cl.score(X_series, labels)
+    # Repeat with rare labels:
+    labels_rare = deepcopy(labels)
+    class0_inds = np.where(labels_rare == 0)[0]
+    class0_inds_remove = class0_inds[1:]
+    labels_rare[class0_inds_remove] = 1
+    cl = CleanLearning(clf=ReshapingLogisticRegression())
+    cl.fit(X_series, labels_rare)
     cl.predict(X_series)
     cl.predict_proba(X_series)
     cl.score(X_series, labels)
