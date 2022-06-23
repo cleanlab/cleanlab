@@ -37,6 +37,7 @@ from cleanlab.internal.util import (
     clip_noise_rates,
     round_preserving_row_totals,
     csr_vstack,
+    append_extra_datapoint,
 )
 from cleanlab.internal.latent_algebra import (
     compute_inv_noise_matrix,
@@ -747,12 +748,10 @@ def estimate_confident_joint_and_cv_pred_proba(
 
         # Ensure no missing classes in training set.
         train_cv_classes = set(s_train_cv)
-        all_classes = set(
-            range(num_classes)
-        )  # TODO: more efficient if committed to labels 0,...,num_classes, else use: set(labels)
-        missing_class_inds = (
-            {}
-        )  # keys = which classes are missing, values = index of holdout data from this class that we duplicated
+        all_classes = set(range(num_classes))
+        # TODO: more efficient if committed to labels 0,...,num_classes, else use: set(labels)
+        # dict with keys: which classes missing, values: index of holdout data from this class that is duplicated:
+        missing_class_inds = {}
         if len(train_cv_classes) != len(all_classes):
             missing_classes = all_classes.difference(train_cv_classes)
             warnings.warn(
@@ -763,32 +762,12 @@ def estimate_confident_joint_and_cv_pred_proba(
                 holdout_inds = np.where(s_holdout_cv == missing_class)[0]
                 # Duplicate one instance of missing_class from holdout data to the training data:
                 dup_ind = holdout_inds[0]
-                s_train_cv = np.append(
-                    s_train_cv, s_holdout_cv[dup_ind]
-                )  # labels are always np.array so don't have to consider .iloc
-                if isinstance(X, np.ndarray):
-                    X_train_cv = np.vstack([X_train_cv, X_holdout_cv[dup_ind]])
-                else:
-                    try:  # extract single example to add to training set
-                        if isinstance(X, pd.DataFrame):
-                            X_extra = X_holdout_cv.iloc[dup_ind]
-                        elif isinstance(X, pd.Series):
-                            X_extra = pd.Series(X_holdout_cv.iloc[dup_ind])
-                        else:
-                            X_extra = X_holdout_cv[dup_ind]
-                    except:
-                        raise TypeError("Data features X must support: X[i].")
-                    try:
-                        X_train_cv = X_train_cv.append(X_extra)
-                    except:
-                        try:  # append for sparse matrix
-                            X_train_cv = csr_vstack(X_train_cv, X_extra)
-                        except:
-                            raise TypeError("Data features X must support: X.append(X[i])")
+                s_train_cv = np.append(s_train_cv, s_holdout_cv[dup_ind])
+                # labels are always np.array so don't have to consider .iloc above
+                X_train_cv = append_extra_datapoint(
+                    to_data=X_train_cv, from_data=X_holdout_cv, index=dup_ind
+                )
                 missing_class_inds[missing_class] = dup_ind
-
-            if isinstance(X, (pd.DataFrame, pd.Series)):
-                X_train_cv = X_train_cv.reset_index(inplace=True, drop=True)
 
         # Fit classifier clf to training set, predict on holdout set, and update pred_probs.
         clf_copy.fit(X_train_cv, s_train_cv, **clf_kwargs)

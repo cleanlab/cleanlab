@@ -20,6 +20,7 @@
 # #### Contains ancillary helper functions used throughout this package.
 
 import numpy as np
+import pandas as pd
 
 
 def remove_noise_from_class(noise_matrix, class_without_noise):
@@ -433,6 +434,39 @@ def csr_vstack(a, b):
     a.indptr = np.hstack((a.indptr, (b.indptr + a.nnz)[1:]))
     a._shape = (a.shape[0] + b.shape[0], b.shape[1])
     return a
+
+
+def append_extra_datapoint(to_data, from_data, index):
+    """Appends an extra datapoint to the data object ``to_data``.
+    This datapoint is taken from the data object ``from_data`` at the corresponding index.
+    """
+    if not (type(from_data) is type(to_data)):
+        raise ValueError("Cannot append datapoint from different type of data object.")
+
+    if isinstance(to_data, np.ndarray):
+        to_data = np.vstack([to_data, from_data[index]])
+    else:
+        try:  # extract single example to add to training set
+            if isinstance(from_data, pd.DataFrame):
+                X_extra = from_data.iloc[index]
+            elif isinstance(from_data, pd.Series):
+                X_extra = pd.Series(from_data.iloc[index])
+            else:
+                X_extra = from_data[index]
+        except:
+            raise TypeError("Data features X must support: X[i].")
+        try:
+            to_data = to_data.append(X_extra)
+        except:
+            try:  # append for sparse matrix
+                to_data = csr_vstack(to_data, X_extra)
+            except:
+                raise TypeError("Data features X must support: X.append(X[i])")
+
+    if isinstance(to_data, (pd.DataFrame, pd.Series)):
+        to_data.reset_index(inplace=True, drop=True)
+
+    return to_data
 
 
 def smart_display_dataframe(df):  # pragma: no cover
