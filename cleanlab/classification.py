@@ -124,6 +124,7 @@ from cleanlab import filter
 from cleanlab.internal.util import (
     value_counts,
     compress_int_array,
+    subset_X_y,
 )
 from cleanlab.count import (
     estimate_py_noise_matrices_and_cv_pred_proba,
@@ -449,18 +450,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
 
         self.label_issues_mask = self.label_issues_df["is_label_issue"].values
         x_mask = ~self.label_issues_mask
-        x_cleaned = X[x_mask]
-        try:  # filtering labels as if it were array
-            labels_cleaned = labels[x_mask]
-            labels_subsetted = True
-        except:
-            labels_subsetted = False
-        if not labels_subsetted:
-            try:  # filtering labels as if it were list
-                labels_cleaned = [l for idx, l in enumerate(labels) if x_mask[idx]]
-            except:
-                raise TypeError("labels must be 1D np.array, list, or pd.Series.")
-
+        x_cleaned, labels_cleaned = subset_X_y(X, labels, x_mask)
         if self.verbose:
             print(f"Pruning {np.sum(self.label_issues_mask)} examples with label issues ...")
             print(f"Remaining clean data has {len(labels_cleaned)} examples.")

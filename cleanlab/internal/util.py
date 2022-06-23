@@ -414,15 +414,39 @@ def compress_int_array(int_array, num_possible_values):
         return int_array
 
 
-def subset_labels(labels, boolean_mask):
+def subset_X_y(X, labels, mask):
+    """Extracts subset of features/labels where mask is True"""
+    labels = subset_labels(labels, mask)
+    try:
+        X = X[mask]
+    except:
+        raise TypeError("Data features X must be subsettable with boolean mask: X[mask]")
+    return X, labels
+
+
+def subset_labels(labels, mask):
     """Extracts subset of labels where mask is True"""
     try:  # filtering labels as if it is array or DataFrame
-        return labels[x_mask]
+        return labels[mask]
     except:
         try:  # filtering labels as if it is list
-            return [l for idx, l in enumerate(labels) if x_mask[idx]]
+            return [l for idx, l in enumerate(labels) if mask[idx]]
         except:
             raise TypeError("labels must be 1D np.array, list, or pd.Series.")
+
+
+"""
+try:  # filtering labels as if it were array
+            labels_cleaned = labels[x_mask]
+            labels_subsetted = True
+        except:
+            labels_subsetted = False
+        if not labels_subsetted:
+            try:  # filtering labels as if it were list
+                labels_cleaned = [l for idx, l in enumerate(labels) if x_mask[idx]]
+            except:
+                raise TypeError("labels must be 1D np.array, list, or pd.Series.")
+"""
 
 
 def csr_vstack(a, b):
