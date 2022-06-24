@@ -429,7 +429,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         else:  # set args that may not have been set if `self.find_label_issues()` wasn't called yet
             assert_valid_inputs(X, labels, pred_probs)
             if self.num_classes is None:
-                self.num_classes = len(np.unique(labels))
+                self.num_classes = pred_probs.shape[1]
             if self.verbose:
                 print("Using provided label_issues instead of finding label issues.")
                 if self.label_issues_df is not None:
@@ -656,7 +656,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
             raise ValueError("Trace(inverse_noise_matrix) is {}. Must exceed 1.".format(t))
 
         # Number of classes
-        self.num_classes = len(np.unique(labels))
+        self.num_classes = pred_probs.shape[1]
         if len(labels) / self.num_classes < self.cv_n_folds:
             raise ValueError(
                 "Need more data from each class for cross-validation. "
