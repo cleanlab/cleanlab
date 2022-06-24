@@ -138,9 +138,15 @@ def test_cl(data):
     cl = CleanLearning(
         clf=LogisticRegression(multi_class="auto", solver="lbfgs", random_state=SEED)
     )
+    X_train_og = deepcopy(data["X_train"])
     cl.fit(data["X_train"], data["labels"])
     score = cl.score(data["X_test"], data["true_labels_test"])
     print(score)
+    # ensure data has not been altered:
+    if isinstance(X_train_og, np.ndarray):
+        assert (data["X_train"] == X_train_og).all()
+    elif isinstance(X_train_og, pd.DataFrame):
+        assert data["X_train"].equals(X_train_og)
 
 
 @pytest.mark.filterwarnings("ignore::UserWarning")

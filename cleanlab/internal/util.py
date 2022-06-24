@@ -414,6 +414,20 @@ def compress_int_array(int_array, num_possible_values):
         return int_array
 
 
+def train_val_split(X, labels, train_idx, holdout_idx):
+    """Splits data into training/validation sets based on given indices"""
+    labels_train, labels_holdout = (
+        labels[train_idx],
+        labels[holdout_idx],
+    )  # labels are always np.array
+    if isinstance(X, (pd.DataFrame, pd.Series)):
+        X_train, X_holdout = X.iloc[train_idx], X.iloc[holdout_idx]
+    else:
+        X_train, X_holdout = X[train_idx], X[holdout_idx]
+
+    return X_train, X_holdout, labels_train, labels_holdout
+
+
 def subset_X_y(X, labels, mask):
     """Extracts subset of features/labels where mask is True"""
     labels = subset_labels(labels, mask)
@@ -435,23 +449,9 @@ def subset_labels(labels, mask):
             raise TypeError("labels must be 1D np.array, list, or pd.Series.")
 
 
-"""
-try:  # filtering labels as if it were array
-            labels_cleaned = labels[x_mask]
-            labels_subsetted = True
-        except:
-            labels_subsetted = False
-        if not labels_subsetted:
-            try:  # filtering labels as if it were list
-                labels_cleaned = [l for idx, l in enumerate(labels) if x_mask[idx]]
-            except:
-                raise TypeError("labels must be 1D np.array, list, or pd.Series.")
-"""
-
-
 def csr_vstack(a, b):
     """Takes in 2 csr_matrices and appends the second one to the bottom of the first one.
-    Alternative to scipy.sparse.vstack.
+    Alternative to scipy.sparse.vstack. Returns a sparse matrix.
     """
     a.data = np.hstack((a.data, b.data))
     a.indices = np.hstack((a.indices, b.indices))
@@ -463,6 +463,7 @@ def csr_vstack(a, b):
 def append_extra_datapoint(to_data, from_data, index):
     """Appends an extra datapoint to the data object ``to_data``.
     This datapoint is taken from the data object ``from_data`` at the corresponding index.
+    One place this could be useful is ensuring no missing classes after train/validation split.
     """
     if not (type(from_data) is type(to_data)):
         raise ValueError("Cannot append datapoint from different type of data object.")
@@ -493,20 +494,36 @@ def append_extra_datapoint(to_data, from_data, index):
     return to_data
 
 
-    def get_num_classes(labels, multi_label=None):
-        """Finds the number of unique classes for both single-labeled
-        and multi-labeled labels. If multi_label is set to None (default)
-        this method will infer if multi_label is True or False based on
-        the format of labels.
-        This allows for a more general form of multiclass labels that looks
-        like this: [1, [1,2], [0], [0, 1], 2, 1]"""
+def get_num_classes(labels=None, pred_probs=None, label_matrix=None, multi_label=None):
+    """Determines the number of classes based on information considered in a
+    canonical ordering. label_matrix can be: noise_matrix, inverse_noise_matrix,
+    or any other K x K matrix where K = number of classes.
+    """
+    if pred_probs is not None:  # pred_probs is number 1 source of truth
+        return pred_probs.shape[1]
 
-        if multi_label is None:
-            multi_label = any(isinstance(l, list) for l in labels)
-        if multi_label:
-            return len(set(l for grp in labels for l in list(grp)))
+    if label_matrix is not None:  # matrix dimension is number 2 source of truth
+        if label_matrix.shape[0] != label_matrix.shape[1]:
+            raise ValueError(f"label matrix must be K x K, not {label_matrix.shape}")
         else:
-            return len(set(labels))
+            return label_matrix.shape[0]
+
+    return num_unique_classes(labels, multi_label=multi_label)
+
+
+def num_unique_classes(labels, multi_label=None):
+    """Finds the number of unique classes for both single-labeled
+    and multi-labeled labels. If multi_label is set to None (default)
+    this method will infer if multi_label is True or False based on
+    the format of labels.
+    This allows for a more general form of multiclass labels that looks
+    like this: [1, [1,2], [0], [0, 1], 2, 1]"""
+    if multi_label is None:
+        multi_label = any(isinstance(l, list) for l in labels)
+    if multi_label:
+        return len(set(l for grp in labels for l in list(grp)))
+    else:
+        return len(set(labels))
 
 
 def smart_display_dataframe(df):  # pragma: no cover

@@ -38,6 +38,7 @@ from cleanlab.internal.util import (
     round_preserving_row_totals,
     csr_vstack,
     append_extra_datapoint,
+    train_val_split,
 )
 from cleanlab.internal.latent_algebra import (
     compute_inv_noise_matrix,
@@ -737,19 +738,13 @@ def estimate_confident_joint_and_cv_pred_proba(
         clf_copy = sklearn.base.clone(clf)
 
         # Select the training and holdout cross-validated sets.
-        s_train_cv, s_holdout_cv = (
-            labels[cv_train_idx],
-            labels[cv_holdout_idx],
-        )  # labels are always np.array
-        if isinstance(X, (pd.DataFrame, pd.Series)):
-            X_train_cv, X_holdout_cv = X.iloc[cv_train_idx], X.iloc[cv_holdout_idx]
-        else:
-            X_train_cv, X_holdout_cv = X[cv_train_idx], X[cv_holdout_idx]
+        X_train_cv, X_holdout_cv, s_train_cv, s_holdout_cv = train_val_split(
+            X, labels, cv_train_idx, cv_holdout_idx
+        )
 
         # Ensure no missing classes in training set.
         train_cv_classes = set(s_train_cv)
         all_classes = set(range(num_classes))
-        # TODO: more efficient if committed to labels 0,...,num_classes, else use: set(labels)
         # dict with keys: which classes missing, values: index of holdout data from this class that is duplicated:
         missing_class_inds = {}
         if len(train_cv_classes) != len(all_classes):
@@ -759,15 +754,15 @@ def estimate_confident_joint_and_cv_pred_proba(
                 f"because these classes do not have enough data for proper cross-validation: {missing_classes}."
             )
             for missing_class in missing_classes:
-                holdout_inds = np.where(s_holdout_cv == missing_class)[0]
                 # Duplicate one instance of missing_class from holdout data to the training data:
-                dup_ind = holdout_inds[0]
-                s_train_cv = np.append(s_train_cv, s_holdout_cv[dup_ind])
+                holdout_inds = np.where(s_holdout_cv == missing_class)[0]
+                dup_idx = holdout_inds[0]
+                s_train_cv = np.append(s_train_cv, s_holdout_cv[dup_idx])
                 # labels are always np.array so don't have to consider .iloc above
                 X_train_cv = append_extra_datapoint(
-                    to_data=X_train_cv, from_data=X_holdout_cv, index=dup_ind
+                    to_data=X_train_cv, from_data=X_holdout_cv, index=dup_idx
                 )
-                missing_class_inds[missing_class] = dup_ind
+                missing_class_inds[missing_class] = dup_idx
 
         # Fit classifier clf to training set, predict on holdout set, and update pred_probs.
         clf_copy.fit(X_train_cv, s_train_cv, **clf_kwargs)
@@ -777,8 +772,8 @@ def estimate_confident_joint_and_cv_pred_proba(
         for missing_class in missing_class_inds:
             dummy_pred = np.zeros(pred_probs_cv[0].shape)
             dummy_pred[missing_class] = 1.0  # predict given label with full confidence
-            dup_ind = missing_class_inds[missing_class]
-            pred_probs_cv[dup_ind] = dummy_pred
+            dup_idx = missing_class_inds[missing_class]
+            pred_probs_cv[dup_idx] = dummy_pred
 
         pred_probs[cv_holdout_idx] = pred_probs_cv
 

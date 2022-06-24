@@ -52,9 +52,6 @@ def assert_valid_inputs(X, y, pred_probs=None):
                 f"X and labels must be same length, but X is length {num_examples} and labels is length {len(y)}."
             )
 
-        if num_examples < 2:
-            raise ValueError("Length of X (i.e. number of examples) must be at least 2.")
-
         assert_indexing_works(X, length_X=num_examples)
 
     if pred_probs is not None:
@@ -75,6 +72,9 @@ def assert_valid_class_labels(y):
         raise ValueError("labels must by 1D numpy array.")
 
     unique_classes = np.unique(y)
+    if len(unique_classes) < 2:
+        raise ValueEror("Labels must contain at least 2 classes.")
+
     if all(unique_classes != np.arange(len(unique_classes))):
         msg = "cleanlab requires zero-indexed labels (0,1,2,..,K-1), but in "
         msg += "your case: np.unique(labels) = {}".format(str(unique_classes))
@@ -89,7 +89,8 @@ def assert_nonempty_input(X):
 def assert_indexing_works(X, idx=None, length_X=None):
     """Ensures we can do list-based indexing into ``X`` and ``y``.
     length_X is argument passed in since sparse matrix ``X``
-    does not support: ``len(X)``.
+    does not support: ``len(X)`` and we want this method to work for sparse ``X``
+    (in addition to many other types of ``X``).
     """
     if idx is None:
         if length_X is None:
