@@ -236,12 +236,12 @@ def compute_py(
         warnings.warn(w)
 
     if py_method == "marginal" and true_labels_class_counts is None:
-        err = (
+        msg = (
             'py_method == "marginal" requires true_labels_class_counts, '
             "but true_labels_class_counts is None. "
         )
-        err += " Provide parameter true_labels_class_counts."
-        raise ValueError(err)
+        msg += " Provide parameter true_labels_class_counts."
+        raise ValueError(msg)
 
     if py_method == "cnt":
         # Computing py this way avoids dividing by zero noise rates.

@@ -118,10 +118,14 @@ import numpy as np
 import pandas as pd
 import inspect
 import warnings
+
+from cleanlab.rank import get_label_quality_scores
+from cleanlab import filter
 from cleanlab.internal.util import (
-    assert_inputs_are_valid,
     value_counts,
     compress_int_array,
+    subset_X_y,
+    get_num_classes,
 )
 from cleanlab.count import (
     estimate_py_noise_matrices_and_cv_pred_proba,
@@ -134,8 +138,10 @@ from cleanlab.internal.latent_algebra import (
     compute_py_inv_noise_matrix,
     compute_noise_matrix_from_inverse,
 )
-from cleanlab.rank import get_label_quality_scores
-from cleanlab import filter
+from cleanlab.internal.validation import (
+    assert_valid_inputs,
+    labels_to_array,
+)
 
 
 class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
@@ -276,12 +282,15 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
 
         Parameters
         ----------
-        X : np.array
-          Input feature matrix of shape ``(N, ...)``, where N is the number of
-          examples. The classifier that this instance was initialized with,
-          `clf`, must be able to handle data with this shape.
+        X : np.array or pd.DataFrame
+          Data features (i.e. training inputs for ML), typically an array of shape ``(N, ...)``,
+          where N is the number of examples. Sparse matrices are supported.
+          If not an array or DataFrame, then ``X`` must support list-based indexing:
+          ``X[index_list]`` to select a subset of training examples.
+          The classifier that this instance was initialized with,
+          ``clf``, must be able to fit() and predict() data with this format.
 
-        labels : np.array
+        labels : np.array or pd.Series
           An array of shape ``(N,)`` of noisy labels, i.e. some labels may be erroneous.
           Elements must be in the set 0, 1, ..., K-1, where K is the number of classes.
 
@@ -313,13 +322,13 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
           noise rates using confident counts.
 
         noise_matrix : np.array, optional
-          An array of shape ``(N, N)`` representing the conditional probability
+          An array of shape ``(K, K)`` representing the conditional probability
           matrix ``P(label=k_s | true label=k_y)``, the
           fraction of examples in every class, labeled as every other class.
           Assumes columns of `noise_matrix` sum to 1.
 
         inverse_noise_matrix : np.array, optional
-          An array of shape ``(N, N)`` representing the conditional probability
+          An array of shape ``(K, K)`` representing the conditional probability
           matrix ``P(true label=k_y | label=k_s)``,
           the estimated fraction observed examples in each class ``k_s``
           that are mislabeled examples from every other class ``k_y``,
@@ -419,8 +428,13 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
             )
 
         else:  # set args that may not have been set if `self.find_label_issues()` wasn't called yet
+            assert_valid_inputs(X, labels, pred_probs)
             if self.num_classes is None:
-                self.num_classes = len(np.unique(labels))
+                if noise_matrix is not None:
+                    label_matrix = noise_matrix
+                else:
+                    label_matrix = inverse_noise_matrix
+                self.num_classes = get_num_classes(labels, pred_probs, label_matrix)
             if self.verbose:
                 print("Using provided label_issues instead of finding label issues.")
                 if self.label_issues_df is not None:
@@ -441,15 +455,13 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
 
         self.label_issues_mask = self.label_issues_df["is_label_issue"].values
         x_mask = ~self.label_issues_mask
-        x_cleaned = X[x_mask]
-        labels_cleaned = labels[x_mask]
+        x_cleaned, labels_cleaned = subset_X_y(X, labels, x_mask)
         if self.verbose:
             print(f"Pruning {np.sum(self.label_issues_mask)} examples with label issues ...")
             print(f"Remaining clean data has {len(labels_cleaned)} examples.")
 
         if sample_weight is None:
             # Check if sample_weight in args of clf.fit()
-
             if (
                 "sample_weight" in inspect.getfullargspec(self.clf.fit).args
                 and "sample_weight" not in self.clf_final_kwargs
@@ -639,8 +651,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         """
 
         # Check inputs
-        allow_empty_X = False if pred_probs is None else True
-        assert_inputs_are_valid(X, labels, pred_probs, allow_empty_X=allow_empty_X)
+        assert_valid_inputs(X, labels, pred_probs)
         if noise_matrix is not None and np.trace(noise_matrix) <= 1:
             t = np.round(np.trace(noise_matrix), 2)
             raise ValueError("Trace(noise_matrix) is {}, but must exceed 1.".format(t))
@@ -648,8 +659,11 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
             t = np.round(np.trace(inverse_noise_matrix), 2)
             raise ValueError("Trace(inverse_noise_matrix) is {}. Must exceed 1.".format(t))
 
-        # Number of classes
-        self.num_classes = len(np.unique(labels))
+        if noise_matrix is not None:
+            label_matrix = noise_matrix
+        else:
+            label_matrix = inverse_noise_matrix
+        self.num_classes = get_num_classes(labels, pred_probs, label_matrix)
         if len(labels) / self.num_classes < self.cv_n_folds:
             raise ValueError(
                 "Need more data from each class for cross-validation. "
@@ -759,6 +773,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
             self.confident_joint[self.pulearning][1 - self.pulearning] = 0
             self.confident_joint[1 - self.pulearning][1 - self.pulearning] = 1
 
+        labels = labels_to_array(labels)
         if self.verbose:
             print("Using predicted probabilities to identify label issues ...")
         label_issues_mask = filter.find_label_issues(
@@ -877,6 +892,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         Helper method to get the label_issues input arg into a formatted DataFrame.
         """
 
+        labels = labels_to_array(labels)
         if isinstance(label_issues, pd.DataFrame):
             if "is_label_issue" not in label_issues.columns:
                 raise ValueError(

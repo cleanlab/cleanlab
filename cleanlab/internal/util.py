@@ -20,44 +20,7 @@
 # #### Contains ancillary helper functions used throughout this package.
 
 import numpy as np
-from sklearn.utils import check_X_y
-
-
-def assert_inputs_are_valid(X, s, pred_probs=None, allow_empty_X=False):  # pragma: no cover
-    """Checks that X, labels, and pred_probs are correctly formatted"""
-
-    if pred_probs is not None:
-        if not isinstance(pred_probs, (np.ndarray, np.generic)):
-            raise TypeError("pred_probs should be a numpy array.")
-        if len(pred_probs) != len(s):
-            raise ValueError("pred_probs and labels must have same length.")
-        # Check for valid probabilities.
-        if (pred_probs < 0).any() or (pred_probs > 1).any():
-            raise ValueError("Values in pred_probs must be between 0 and 1.")
-
-    if not isinstance(s, (np.ndarray, np.generic)):
-        raise TypeError("labels should be a numpy array.")
-
-    # Check that labels is zero-indexed (first label is 0).
-    unique_classes = np.unique(s)
-    if all(unique_classes != np.arange(len(unique_classes))):
-        msg = "cleanlab requires zero-indexed labels (0,1,2,..,m-1), but in "
-        msg += "your case: np.unique(labels) = {}".format(str(unique_classes))
-        raise TypeError(msg)
-
-    if not allow_empty_X:
-        if X is None:
-            raise ValueError("X cannot be None.")
-
-        check_X_y(
-            X,
-            s,
-            accept_sparse=True,
-            dtype=None,
-            force_all_finite=False,
-            ensure_2d=False,
-            allow_nd=True,
-        )
+import pandas as pd
 
 
 def remove_noise_from_class(noise_matrix, class_without_noise):
@@ -438,14 +401,129 @@ def print_joint_matrix(joint_matrix, round_places=2):
 
 def compress_int_array(int_array, num_possible_values):
     """Compresses dtype of np.array<int> if num_possible_values is small enough."""
-    compressed_type = None
-    if num_possible_values < np.iinfo(np.dtype("int16")).max:
-        compressed_type = "int16"
-    elif num_possible_values < np.iinfo(np.dtype("int32")).max:  # pragma: no cover
-        compressed_type = "int32"  # pragma: no cover
-    if compressed_type is not None:
-        int_array = int_array.astype(compressed_type)
-    return int_array
+    try:
+        compressed_type = None
+        if num_possible_values < np.iinfo(np.dtype("int16")).max:
+            compressed_type = "int16"
+        elif num_possible_values < np.iinfo(np.dtype("int32")).max:  # pragma: no cover
+            compressed_type = "int32"  # pragma: no cover
+        if compressed_type is not None:
+            int_array = int_array.astype(compressed_type)
+        return int_array
+    except:  # int_array may not even be numpy array, keep as is then
+        return int_array
+
+
+def train_val_split(X, labels, train_idx, holdout_idx):
+    """Splits data into training/validation sets based on given indices"""
+    labels_train, labels_holdout = (
+        labels[train_idx],
+        labels[holdout_idx],
+    )  # labels are always np.array
+    if isinstance(X, (pd.DataFrame, pd.Series)):
+        X_train, X_holdout = X.iloc[train_idx], X.iloc[holdout_idx]
+    else:
+        X_train, X_holdout = X[train_idx], X[holdout_idx]
+
+    return X_train, X_holdout, labels_train, labels_holdout
+
+
+def subset_X_y(X, labels, mask):
+    """Extracts subset of features/labels where mask is True"""
+    labels = subset_labels(labels, mask)
+    try:
+        X = X[mask]
+    except:
+        raise TypeError("Data features X must be subsettable with boolean mask: X[mask]")
+    return X, labels
+
+
+def subset_labels(labels, mask):
+    """Extracts subset of labels where mask is True"""
+    try:  # filtering labels as if it is array or DataFrame
+        return labels[mask]
+    except:
+        try:  # filtering labels as if it is list
+            return [l for idx, l in enumerate(labels) if mask[idx]]
+        except:
+            raise TypeError("labels must be 1D np.array, list, or pd.Series.")
+
+
+def csr_vstack(a, b):
+    """Takes in 2 csr_matrices and appends the second one to the bottom of the first one.
+    Alternative to scipy.sparse.vstack. Returns a sparse matrix.
+    """
+    a.data = np.hstack((a.data, b.data))
+    a.indices = np.hstack((a.indices, b.indices))
+    a.indptr = np.hstack((a.indptr, (b.indptr + a.nnz)[1:]))
+    a._shape = (a.shape[0] + b.shape[0], b.shape[1])
+    return a
+
+
+def append_extra_datapoint(to_data, from_data, index):
+    """Appends an extra datapoint to the data object ``to_data``.
+    This datapoint is taken from the data object ``from_data`` at the corresponding index.
+    One place this could be useful is ensuring no missing classes after train/validation split.
+    """
+    if not (type(from_data) is type(to_data)):
+        raise ValueError("Cannot append datapoint from different type of data object.")
+
+    if isinstance(to_data, np.ndarray):
+        to_data = np.vstack([to_data, from_data[index]])
+    else:
+        try:  # extract single example to add to training set
+            if isinstance(from_data, pd.DataFrame):
+                X_extra = from_data.iloc[index]
+            elif isinstance(from_data, pd.Series):
+                X_extra = pd.Series(from_data.iloc[index])
+            else:
+                X_extra = from_data[index]
+        except:
+            raise TypeError("Data features X must support: X[i].")
+        try:
+            to_data = to_data.append(X_extra)
+        except:
+            try:  # append for sparse matrix
+                to_data = csr_vstack(to_data, X_extra)
+            except:
+                raise TypeError("Data features X must support: X.append(X[i])")
+
+    if isinstance(to_data, (pd.DataFrame, pd.Series)):
+        to_data.reset_index(inplace=True, drop=True)
+
+    return to_data
+
+
+def get_num_classes(labels=None, pred_probs=None, label_matrix=None, multi_label=None):
+    """Determines the number of classes based on information considered in a
+    canonical ordering. label_matrix can be: noise_matrix, inverse_noise_matrix,
+    or any other K x K matrix where K = number of classes.
+    """
+    if pred_probs is not None:  # pred_probs is number 1 source of truth
+        return pred_probs.shape[1]
+
+    if label_matrix is not None:  # matrix dimension is number 2 source of truth
+        if label_matrix.shape[0] != label_matrix.shape[1]:
+            raise ValueError(f"label matrix must be K x K, not {label_matrix.shape}")
+        else:
+            return label_matrix.shape[0]
+
+    return num_unique_classes(labels, multi_label=multi_label)
+
+
+def num_unique_classes(labels, multi_label=None):
+    """Finds the number of unique classes for both single-labeled
+    and multi-labeled labels. If multi_label is set to None (default)
+    this method will infer if multi_label is True or False based on
+    the format of labels.
+    This allows for a more general form of multiclass labels that looks
+    like this: [1, [1,2], [0], [0, 1], 2, 1]"""
+    if multi_label is None:
+        multi_label = any(isinstance(l, list) for l in labels)
+    if multi_label:
+        return len(set(l for grp in labels for l in list(grp)))
+    else:
+        return len(set(labels))
 
 
 def smart_display_dataframe(df):  # pragma: no cover

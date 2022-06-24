@@ -35,13 +35,16 @@ SEED = 1
 
 
 def make_data(
-    sparse,
+    format="numpy",
     means=[[3, 2], [7, 7], [0, 8]],
     covs=[[[5, -1.5], [-1.5, 1]], [[1, 0.5], [0.5, 4]], [[5, 1], [1, 5]]],
     sizes=[100, 50, 50],
     avg_trace=0.8,
     seed=SEED,  # set to None for non-reproducible randomness
 ):
+    """format specifies what X (and y) looks like, one of:
+    'numpy', 'sparse', 'dataframe', or 'series'.
+    """
     np.random.seed(seed=seed)
 
     K = len(means)  # number of classes
@@ -62,9 +65,21 @@ def make_data(
     X_test = np.vstack(test_data)
     true_labels_test = np.hstack(test_labels)
 
-    if sparse:
+    if format == "sparse":
         X_train = scipy.sparse.csr_matrix(X_train)
         X_test = scipy.sparse.csr_matrix(X_test)
+    elif format == "dataframe":
+        X_train = pd.DataFrame(X_train)
+        X_test = pd.DataFrame(X_test)
+        # true_labels_train = list(true_labels_train)
+        # true_labels_test = list(true_labels_test)
+    elif format == "series":
+        X_train = pd.Series(X_train[:, 0])
+        X_test = pd.Series(X_test[:, 0])
+        # true_labels_train = pd.Series(true_labels_train)
+        # true_labels_test = pd.Series(true_labels_test)
+    elif format != "numpy":
+        raise ValueError("invalid value specified for: `format`.")
 
     # Compute p(true_label=k)
     py = np.bincount(true_labels_train) / float(len(true_labels_train))
@@ -107,29 +122,42 @@ def make_rare_label(data):
     return data
 
 
-DATA = make_data(sparse=False, seed=SEED)
-SPARSE_DATA = make_data(sparse=False, seed=SEED)
+DATA = make_data(format="numpy", seed=SEED)
+SPARSE_DATA = make_data(format="sparse", seed=SEED)
+DATAFRAME_DATA = make_data(format="dataframe", seed=SEED)
+SERIES_DATA = make_data(format="series", seed=SEED)  # special case not checked in most tests
+DATA_FORMATS = {
+    "numpy": DATA,
+    "sparse": SPARSE_DATA,
+    "dataframe": DATAFRAME_DATA,
+}
 
 
-@pytest.mark.parametrize("data", [DATA, SPARSE_DATA])
+@pytest.mark.parametrize("data", list(DATA_FORMATS.values()))
 def test_cl(data):
     cl = CleanLearning(
         clf=LogisticRegression(multi_class="auto", solver="lbfgs", random_state=SEED)
     )
+    X_train_og = deepcopy(data["X_train"])
     cl.fit(data["X_train"], data["labels"])
     score = cl.score(data["X_test"], data["true_labels_test"])
     print(score)
-    # Check that this runs without error.
+    # ensure data has not been altered:
+    if isinstance(X_train_og, np.ndarray):
+        assert (data["X_train"] == X_train_og).all()
+    elif isinstance(X_train_og, pd.DataFrame):
+        assert data["X_train"].equals(X_train_og)
 
 
 @pytest.mark.filterwarnings("ignore::UserWarning")
-def test_rare_label():
-    data = make_rare_label(DATA)
+@pytest.mark.parametrize("data", list(DATA_FORMATS.values()))
+def test_rare_label(data):
+    data = make_rare_label(data)
     test_cl(data)
 
 
 def test_invalid_inputs():
-    data = make_data(sparse=False, sizes=[1, 1, 1])
+    data = make_data(sizes=[1, 1, 1])
     try:
         test_cl(data)
     except Exception as e:
@@ -151,6 +179,7 @@ def test_invalid_inputs():
         raise Exception("expected test to raise Exception")
 
 
+@pytest.mark.filterwarnings("ignore::UserWarning")
 def test_aux_inputs():
     data = DATA
     K = len(np.unique(data["labels"]))
@@ -348,13 +377,13 @@ def test_clf_fit_inm():
             cl.fit(X=np.arange(3), labels=np.array([0, 0, 1]), inverse_noise_matrix=inm)
 
 
-@pytest.mark.parametrize("sparse", [True, False])
+@pytest.mark.parametrize("format", list(DATA_FORMATS.keys()))
 def test_fit_with_nm(
-    sparse,
+    format,
     seed=SEED,
     used_by_another_test=False,
 ):
-    data = SPARSE_DATA if sparse else DATA
+    data = DATA_FORMATS[format]
     cl = CleanLearning(
         seed=seed,
     )
@@ -377,13 +406,13 @@ def test_fit_with_nm(
         assert score < score_nm + 1e-4
 
 
-@pytest.mark.parametrize("sparse", [True, False])
+@pytest.mark.parametrize("format", list(DATA_FORMATS.keys()))
 def test_fit_with_inm(
-    sparse,
+    format,
     seed=SEED,
     used_by_another_test=False,
 ):
-    data = SPARSE_DATA if sparse else DATA
+    data = DATA_FORMATS[format]
     cl = CleanLearning(
         seed=seed,
     )
@@ -410,9 +439,9 @@ def test_fit_with_inm(
         assert score < score_inm + 1e-4
 
 
-@pytest.mark.parametrize("sparse", [True, False])
-def test_clf_fit_nm_inm(sparse):
-    data = SPARSE_DATA if sparse else DATA
+@pytest.mark.parametrize("format", list(DATA_FORMATS.keys()))
+def test_clf_fit_nm_inm(format):
+    data = DATA_FORMATS[format]
     cl = CleanLearning(seed=SEED)
     nm = data["noise_matrix"]
     inm = compute_inv_noise_matrix(
@@ -438,9 +467,9 @@ def test_clf_fit_nm_inm(sparse):
     assert score < score_nm_inm + 1e-4
 
 
-@pytest.mark.parametrize("sparse", [True, False])
-def test_pred_and_pred_proba(sparse):
-    data = SPARSE_DATA if sparse else DATA
+@pytest.mark.parametrize("format", list(DATA_FORMATS.keys()))
+def test_pred_and_pred_proba(format):
+    data = DATA_FORMATS[format]
     cl = CleanLearning()
     cl.fit(data["X_train"], data["labels"])
     n = np.shape(data["true_labels_test"])[0]
@@ -452,9 +481,9 @@ def test_pred_and_pred_proba(sparse):
     assert np.shape(probs) == (n, m)
 
 
-@pytest.mark.parametrize("sparse", [True, False])
-def test_score(sparse):
-    data = SPARSE_DATA if sparse else DATA
+@pytest.mark.parametrize("format", list(DATA_FORMATS.keys()))
+def test_score(format):
+    data = DATA_FORMATS[format]
     phrase = "cleanlab is dope"
 
     class Struct:
@@ -475,9 +504,9 @@ def test_score(sparse):
     assert score == phrase
 
 
-@pytest.mark.parametrize("sparse", [True, False])
-def test_no_score(sparse):
-    data = SPARSE_DATA if sparse else DATA
+@pytest.mark.parametrize("format", list(DATA_FORMATS.keys()))
+def test_no_score(format):
+    data = DATA_FORMATS[format]
 
     class Struct:
         def fit(self):
@@ -494,9 +523,10 @@ def test_no_score(sparse):
     assert abs(score - 1) < 1e-6
 
 
-@pytest.mark.parametrize("sparse", [True, False])
-def test_no_fit_sample_weight(sparse):
-    data = SPARSE_DATA if sparse else DATA
+@pytest.mark.filterwarnings("ignore::UserWarning")
+@pytest.mark.parametrize("format", list(DATA_FORMATS.keys()))
+def test_no_fit_sample_weight(format):
+    data = DATA_FORMATS[format]
 
     class Struct:
         def fit(self, X, y):
@@ -521,9 +551,10 @@ def test_no_fit_sample_weight(sparse):
     # If we make it here, without any error:
 
 
-@pytest.mark.parametrize("sparse", [True, False])
-def test_fit_pred_probs(sparse):
-    data = SPARSE_DATA if sparse else DATA
+@pytest.mark.filterwarnings("ignore::UserWarning")
+@pytest.mark.parametrize("format", list(DATA_FORMATS.keys()))
+def test_fit_pred_probs(format):
+    data = DATA_FORMATS[format]
 
     cl = CleanLearning()
     pred_probs = estimate_cv_predicted_probabilities(
@@ -542,6 +573,7 @@ def test_fit_pred_probs(sparse):
 
 
 def make_2d(X):
+    X = np.asarray(X)
     return X.reshape(X.shape[0], -1)
 
 
@@ -550,6 +582,7 @@ class ReshapingLogisticRegression(BaseEstimator):
         self.clf = LogisticRegression()
 
     def fit(self, X, y):
+        y = np.asarray(y).flatten()
         self.clf.fit(make_2d(X), y)
 
     def predict(self, X):
@@ -562,10 +595,7 @@ class ReshapingLogisticRegression(BaseEstimator):
         return self.clf.score(make_2d(X), y, sample_weight=sample_weight)
 
 
-@pytest.mark.filterwarnings("ignore::RuntimeWarning")
-@pytest.mark.parametrize("N", [1, 2, 3, 4])
-def test_dimN(N):
-    cl = CleanLearning(clf=ReshapingLogisticRegression())
+def dimN_data(N):
     size = [100] + [3 for _ in range(N - 1)]
     X = np.random.normal(size=size)
     labels = np.random.randint(0, 4, size=100)
@@ -574,8 +604,56 @@ def test_dimN(N):
     labels[11:20] = 1
     labels[21:30] = 2
     labels[31:40] = 3
+    return X, labels
+
+
+@pytest.mark.filterwarnings("ignore::RuntimeWarning")
+@pytest.mark.parametrize("N", [1, 3, 4])
+def test_dimN(N):
+    X, labels = dimN_data(N)
+    cl = CleanLearning(clf=ReshapingLogisticRegression())
     # just make sure we don't crash...
     cl.fit(X, labels)
+    cl.predict(X)
+    cl.predict_proba(X)
+    cl.score(X, labels)
+
+
+@pytest.mark.filterwarnings("ignore::UserWarning")
+def test_1D_formats():
+    X, labels = dimN_data(1)
+    X_series = pd.Series(X)
+    labels_series = pd.Series(labels)
+    idx = list(np.random.choice(len(labels), size=len(labels), replace=False))
+    X_series.index = idx
+    labels_series.index = idx
+    cl = CleanLearning(clf=ReshapingLogisticRegression())
+    # just make sure we don't crash...
+    cl.fit(X_series, labels_series)
+    cl.predict(X_series)
+    cl.predict_proba(X_series)
+    cl.score(X_series, labels)
+    # Repeat with rare labels:
+    labels_rare = deepcopy(labels)
+    class0_inds = np.where(labels_rare == 0)[0]
+    class0_inds_remove = class0_inds[1:]
+    labels_rare[class0_inds_remove] = 1
+    cl = CleanLearning(clf=ReshapingLogisticRegression())
+    cl.fit(X_series, labels_rare)
+    cl.predict(X_series)
+    cl.predict_proba(X_series)
+    cl.score(X_series, labels)
+    # Repeat with DataFrame labels:
+    labels_df = pd.DataFrame({"colname": labels})
+    cl = CleanLearning(clf=ReshapingLogisticRegression())
+    cl.fit(X, labels_df)
+    cl.predict(X)
+    cl.predict_proba(X)
+    cl.score(X, labels)
+    # Repeat with list labels:
+    labels_list = list(labels)
+    cl = CleanLearning(clf=ReshapingLogisticRegression())
+    cl.fit(X, labels_list)
     cl.predict(X)
     cl.predict_proba(X)
     cl.score(X, labels)
