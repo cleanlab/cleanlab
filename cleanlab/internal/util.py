@@ -493,6 +493,22 @@ def append_extra_datapoint(to_data, from_data, index):
     return to_data
 
 
+    def get_num_classes(labels, multi_label=None):
+        """Finds the number of unique classes for both single-labeled
+        and multi-labeled labels. If multi_label is set to None (default)
+        this method will infer if multi_label is True or False based on
+        the format of labels.
+        This allows for a more general form of multiclass labels that looks
+        like this: [1, [1,2], [0], [0, 1], 2, 1]"""
+
+        if multi_label is None:
+            multi_label = any(isinstance(l, list) for l in labels)
+        if multi_label:
+            return len(set(l for grp in labels for l in list(grp)))
+        else:
+            return len(set(labels))
+
+
 def smart_display_dataframe(df):  # pragma: no cover
     """Display a pandas dataframe if in a jupyter notebook, otherwise print it to console."""
     try:
