@@ -32,7 +32,14 @@ pip install -r docs/requirements.txt
 
 3. Install [Pandoc](https://pandoc.org/installing.html).
 
-4. **[Optional]** [Create a new branch](https://www.atlassian.com/git/tutorials/using-branches), make your code changes, and then `git commit` them. **ONLY COMMITTED CHANGES WILL BE REFLECTED IN THE DOCS BUILD.**
+4. Install [wget](https://www.gnu.org/software/wget/) if using MacOS.
+```
+ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install) # install brew"
+brew install wget # install wget using brew
+```
+
+
+5. **[Optional]** [Create a new branch](https://www.atlassian.com/git/tutorials/using-branches), make your code changes, and then `git commit` them. **ONLY COMMITTED CHANGES WILL BE REFLECTED IN THE DOCS BUILD.**
 
 6. Build the docs with [`sphinx-multiversion`](https://holzhaus.github.io/sphinx-multiversion):
 
