@@ -714,8 +714,8 @@ def estimate_confident_joint_and_cv_pred_proba(
       Optional keyword arguments to pass into `clf`'s ``fit()`` method.
 
     validation_func : callable, optional
-      Optional callable function that takes two arguments, `X_val`, `y_val`. 
-      Specifies how to map the validation data split in the cross validation 
+      Optional callable function that takes two arguments, `X_val`, `y_val`.
+      Specifies how to map the validation data split in the cross validation
       step into the appropriate format to pass into `clf`'s ``fit()`` method.
 
     Returns
@@ -876,7 +876,7 @@ def estimate_py_noise_matrices_and_cv_pred_proba(
 
     validation_func : callable, optional
       Optional callable function that takes two arguments, `X_val`, `y_val`.
-      Specifies how to map the validation data split in the cross validation 
+      Specifies how to map the validation data split in the cross validation
       step into the appropriate format to pass into `clf`'s ``fit()`` method.
 
     Returns
@@ -949,7 +949,7 @@ def estimate_cv_predicted_probabilities(
 
     validation_func : callable, optional
       Optional callable function that takes two arguments, `X_val`, `y_val`.
-      Specifies how to map the validation data split in the cross validation 
+      Specifies how to map the validation data split in the cross validation
       step into the appropriate format to pass into `clf`'s ``fit()`` method.
 
     Returns
@@ -1036,7 +1036,7 @@ def estimate_noise_matrices(
 
     validation_func : callable, optional
       Optional callable function that takes two arguments, `X_val`, `y_val`.
-      Specifies how to map the validation data split in the cross validation 
+      Specifies how to map the validation data split in the cross validation
       step into the appropriate format to pass into `clf`'s ``fit()`` method.
 
     Returns

@@ -293,6 +293,30 @@ def test_aux_inputs():
     )
 
 
+class LogisticRegressionWithValidationData(LogisticRegression):
+    def fit(self, X, y, X_val=None, y_val=None):
+        super().fit(X, y)
+
+        # Final fit() call does not use validation data
+        # Checks to prevent arg missing error
+        if X_val is not None or y_val is not None:
+            print(self.score(X_val, y_val))
+
+
+def val_func(X_val, y_val):
+    return {"X_val": X_val, "y_val": y_val}
+
+
+def test_validation_data():
+    data = DATA
+    cl = CleanLearning(clf=LogisticRegressionWithValidationData())
+    cl.fit(
+        data["X_train"],
+        data["labels"],
+        validation_func=val_func,
+    )
+
+
 def test_raise_error_no_clf_fit():
     class struct(object):
         def predict(self):

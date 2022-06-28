@@ -373,7 +373,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
 
         validation_func : callable, optional
           Optional callable function that takes two arguments, `X_val`, `y_val`.
-          Specifies how to map the validation data split in the cross validation 
+          Specifies how to map the validation data split in the cross validation
           step into the appropriate format to pass into `clf`'s ``fit()`` method.
 
         Returns
