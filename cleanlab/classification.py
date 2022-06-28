@@ -272,6 +272,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         sample_weight=None,
         clf_kwargs={},
         clf_final_kwargs={},
+        validation_func=None,
     ):
         """
         Train the model `clf` with error-prone, noisy labels as if
@@ -370,6 +371,11 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
           This can be useful for training differently in the final ``fit()``
           than during cross-validation.
 
+        validation_func : callable, optional
+          Optional callable function that takes two arguments, `X_val`, `y_val`.
+          Specifies how to map the validation data split in the cross validation 
+          step into the appropriate format to pass into `clf`'s ``fit()`` method.
+
         Returns
         -------
         CleanLearning
@@ -425,6 +431,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
                 noise_matrix=noise_matrix,
                 inverse_noise_matrix=inverse_noise_matrix,
                 clf_kwargs=clf_kwargs,
+                validation_func=validation_func,
             )
 
         else:  # set args that may not have been set if `self.find_label_issues()` wasn't called yet
@@ -592,6 +599,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         inverse_noise_matrix=None,
         save_space=False,
         clf_kwargs={},
+        validation_func=None,
     ):
         """
         Identifies potential label issues in the dataset using confident learning.
@@ -723,6 +731,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
                     converge_latent_estimates=self.converge_latent_estimates,
                     seed=self.seed,
                     clf_kwargs=self.clf_kwargs,
+                    validation_func=validation_func,
                 )
             else:  # pred_probs is provided by user (assumed holdout probabilities)
                 if self.verbose:
@@ -753,6 +762,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
                 cv_n_folds=self.cv_n_folds,
                 seed=self.seed,
                 clf_kwargs=self.clf_kwargs,
+                validation_func=validation_func,
             )
         # If needed, compute the confident_joint (e.g. occurs if noise_matrix was given)
         if self.confident_joint is None:

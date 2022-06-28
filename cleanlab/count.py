@@ -648,6 +648,7 @@ def estimate_confident_joint_and_cv_pred_proba(
     seed=None,
     calibrate=True,
     clf_kwargs={},
+    validation_func=None,
 ):
     """Estimates ``P(labels, y)``, the confident counts of the latent
     joint distribution of true and noisy labels
@@ -712,6 +713,10 @@ def estimate_confident_joint_and_cv_pred_proba(
     clf_kwargs : dict, optional
       Optional keyword arguments to pass into `clf`'s ``fit()`` method.
 
+    validation_func : callable, optional
+      Optional callable function that takes two arguments, `X_val`, `y_val`. 
+      Specifies how to map the validation data split in the cross validation 
+      step into the appropriate format to pass into `clf`'s ``fit()`` method.
 
     Returns
     ------
@@ -764,8 +769,14 @@ def estimate_confident_joint_and_cv_pred_proba(
                 )
                 missing_class_inds[missing_class] = dup_idx
 
+        # Map validation data into appropriate format to pass into classifier clf
+        if validation_func is None:
+            validation_kwargs = {}
+        elif callable(validation_func):
+            validation_kwargs = validation_func(X_holdout_cv, s_holdout_cv)
+
         # Fit classifier clf to training set, predict on holdout set, and update pred_probs.
-        clf_copy.fit(X_train_cv, s_train_cv, **clf_kwargs)
+        clf_copy.fit(X_train_cv, s_train_cv, **clf_kwargs, **validation_kwargs)
         pred_probs_cv = clf_copy.predict_proba(X_holdout_cv)  # P(labels = k|x) # [:,1]
 
         # Replace predictions for duplicated indices with dummy predictions:
@@ -799,6 +810,7 @@ def estimate_py_noise_matrices_and_cv_pred_proba(
     py_method="cnt",
     seed=None,
     clf_kwargs={},
+    validation_func=None,
 ):
     """This function computes the out-of-sample predicted
     probability ``P(label=k|x)`` for every example x in `X` using cross
@@ -862,6 +874,11 @@ def estimate_py_noise_matrices_and_cv_pred_proba(
     clf_kwargs : dict, optional
       Optional keyword arguments to pass into `clf`'s ``fit()`` method.
 
+    validation_func : callable, optional
+      Optional callable function that takes two arguments, `X_val`, `y_val`.
+      Specifies how to map the validation data split in the cross validation 
+      step into the appropriate format to pass into `clf`'s ``fit()`` method.
+
     Returns
     ------
     tuple
@@ -876,6 +893,7 @@ def estimate_py_noise_matrices_and_cv_pred_proba(
         thresholds=thresholds,
         seed=seed,
         clf_kwargs=clf_kwargs,
+        validation_func=validation_func,
     )
 
     py, noise_matrix, inv_noise_matrix = estimate_latent(
@@ -896,6 +914,7 @@ def estimate_cv_predicted_probabilities(
     cv_n_folds=5,
     seed=None,
     clf_kwargs={},
+    validation_func=None,
 ):
     """This function computes the out-of-sample predicted
     probability [P(label=k|x)] for every example in X using cross
@@ -928,6 +947,11 @@ def estimate_cv_predicted_probabilities(
     clf_kwargs : dict, optional
       Optional keyword arguments to pass into `clf`'s ``fit()`` method.
 
+    validation_func : callable, optional
+      Optional callable function that takes two arguments, `X_val`, `y_val`.
+      Specifies how to map the validation data split in the cross validation 
+      step into the appropriate format to pass into `clf`'s ``fit()`` method.
+
     Returns
     --------
     pred_probs : np.array
@@ -943,6 +967,7 @@ def estimate_cv_predicted_probabilities(
         cv_n_folds=cv_n_folds,
         seed=seed,
         clf_kwargs=clf_kwargs,
+        validation_func=validation_func,
     )[-1]
 
 
@@ -956,6 +981,7 @@ def estimate_noise_matrices(
     converge_latent_estimates=True,
     seed=None,
     clf_kwargs={},
+    validation_func=None,
 ):
     """Estimates the `noise_matrix` of shape ``(K, K)``. This is the
     fraction of examples in every class, labeled as every other class. The
@@ -1008,6 +1034,11 @@ def estimate_noise_matrices(
     clf_kwargs : dict, optional
       Optional keyword arguments to pass into `clf`'s ``fit()`` method.
 
+    validation_func : callable, optional
+      Optional callable function that takes two arguments, `X_val`, `y_val`.
+      Specifies how to map the validation data split in the cross validation 
+      step into the appropriate format to pass into `clf`'s ``fit()`` method.
+
     Returns
     ------
     tuple
@@ -1022,6 +1053,7 @@ def estimate_noise_matrices(
         converge_latent_estimates=converge_latent_estimates,
         seed=seed,
         clf_kwargs=clf_kwargs,
+        validation_func=validation_func,
     )[1:-2]
 
 
