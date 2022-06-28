@@ -32,10 +32,10 @@ pip install -r docs/requirements.txt
 
 3. Install [Pandoc](https://pandoc.org/installing.html).
 
-4. Install [wget](https://www.gnu.org/software/wget/) if using MacOS.
+4. Install [wget](https://www.gnu.org/software/wget/) with brew if using MacOS.
 ```
-ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install) # install brew"
-brew install wget # install wget using brew
+ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+brew install wget
 ```
 
 
