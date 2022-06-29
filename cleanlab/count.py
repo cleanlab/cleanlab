@@ -714,9 +714,8 @@ def estimate_confident_joint_and_cv_pred_proba(
       Optional keyword arguments to pass into `clf`'s ``fit()`` method.
 
     validation_func : callable, optional
-      Optional callable function that takes two arguments, `X_val`, `y_val`.
-      Specifies how to map the validation data split in the cross validation
-      step into the appropriate format to pass into `clf`'s ``fit()`` method.
+      Specifies how to map the validation data split in cross-validation as input for ``clf.fit()``.
+      For details, see the documentation of :py:meth:`CleanLearning.fit<cleanlab.classification.CleanLearning.fit>`
 
     Returns
     ------
@@ -774,6 +773,8 @@ def estimate_confident_joint_and_cv_pred_proba(
             validation_kwargs = {}
         elif callable(validation_func):
             validation_kwargs = validation_func(X_holdout_cv, s_holdout_cv)
+        else:
+            raise TypeError("validation_func must be callable function with args: X_val, y_val")
 
         # Fit classifier clf to training set, predict on holdout set, and update pred_probs.
         clf_copy.fit(X_train_cv, s_train_cv, **clf_kwargs, **validation_kwargs)
@@ -875,9 +876,8 @@ def estimate_py_noise_matrices_and_cv_pred_proba(
       Optional keyword arguments to pass into `clf`'s ``fit()`` method.
 
     validation_func : callable, optional
-      Optional callable function that takes two arguments, `X_val`, `y_val`.
-      Specifies how to map the validation data split in the cross validation
-      step into the appropriate format to pass into `clf`'s ``fit()`` method.
+      Specifies how to map the validation data split in cross-validation as input for ``clf.fit()``.
+      For details, see the documentation of :py:meth:`CleanLearning.fit<cleanlab.classification.CleanLearning.fit>`
 
     Returns
     ------
@@ -948,9 +948,8 @@ def estimate_cv_predicted_probabilities(
       Optional keyword arguments to pass into `clf`'s ``fit()`` method.
 
     validation_func : callable, optional
-      Optional callable function that takes two arguments, `X_val`, `y_val`.
-      Specifies how to map the validation data split in the cross validation
-      step into the appropriate format to pass into `clf`'s ``fit()`` method.
+      Specifies how to map the validation data split in cross-validation as input for ``clf.fit()``.
+      For details, see the documentation of :py:meth:`CleanLearning.fit<cleanlab.classification.CleanLearning.fit>`
 
     Returns
     --------
@@ -1035,9 +1034,8 @@ def estimate_noise_matrices(
       Optional keyword arguments to pass into `clf`'s ``fit()`` method.
 
     validation_func : callable, optional
-      Optional callable function that takes two arguments, `X_val`, `y_val`.
-      Specifies how to map the validation data split in the cross validation
-      step into the appropriate format to pass into `clf`'s ``fit()`` method.
+      Specifies how to map the validation data split in cross-validation as input for ``clf.fit()``.
+      For details, see the documentation of :py:meth:`CleanLearning.fit<cleanlab.classification.CleanLearning.fit>`
 
     Returns
     ------

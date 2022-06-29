@@ -372,9 +372,20 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
           than during cross-validation.
 
         validation_func : callable, optional
-          Optional callable function that takes two arguments, `X_val`, `y_val`.
-          Specifies how to map the validation data split in the cross validation
-          step into the appropriate format to pass into `clf`'s ``fit()`` method.
+          Optional callable function that takes two arguments, `X_val`, `y_val`, and returns a dict
+          of keyword arguments passed into to `clf.fit()` which may be functions of the validation
+          data in each cross-validation fold. Specifies how to map the validation data split in each
+          cross-validation fold into the appropriate format to pass into `clf`'s ``fit()`` method.
+          e.g. if your model's ``fit()`` method is call using `clf.fit(X, y, X_validation, y_validation)`,
+          then you could set `validation_func = f` where
+          `def f(X_val, y_val): return {"X_validation": X_val, "y_validation": y_val}`
+
+          Note that `validation_func` will be ignored in the final call to `clf.fit()` on the
+          cleaned subset of the data. This argument is only for allowing `clf` to access the
+          validation data in each cross-validation fold (eg. for early-stopping or hyperparameter-selection
+          purposes). If you want to pass in validation data even in the final training of `clf.fit()`
+          on the cleaned data subset, you should explicitly pass in that data yourself
+          (eg. via `clf_final_kwargs` or `clf_kwargs`).
 
         Returns
         -------
