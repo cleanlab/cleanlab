@@ -272,6 +272,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         sample_weight=None,
         clf_kwargs={},
         clf_final_kwargs={},
+        validation_func=None,
     ):
         """
         Train the model `clf` with error-prone, noisy labels as if
@@ -370,6 +371,22 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
           This can be useful for training differently in the final ``fit()``
           than during cross-validation.
 
+        validation_func : callable, optional
+          Optional callable function that takes two arguments, `X_val`, `y_val`, and returns a dict
+          of keyword arguments passed into to `clf.fit()` which may be functions of the validation
+          data in each cross-validation fold. Specifies how to map the validation data split in each
+          cross-validation fold into the appropriate format to pass into `clf`'s ``fit()`` method.
+          e.g. if your model's ``fit()`` method is call using `clf.fit(X, y, X_validation, y_validation)`,
+          then you could set `validation_func = f` where
+          `def f(X_val, y_val): return {"X_validation": X_val, "y_validation": y_val}`
+
+          Note that `validation_func` will be ignored in the final call to `clf.fit()` on the
+          cleaned subset of the data. This argument is only for allowing `clf` to access the
+          validation data in each cross-validation fold (eg. for early-stopping or hyperparameter-selection
+          purposes). If you want to pass in validation data even in the final training of `clf.fit()`
+          on the cleaned data subset, you should explicitly pass in that data yourself
+          (eg. via `clf_final_kwargs` or `clf_kwargs`).
+
         Returns
         -------
         CleanLearning
@@ -425,6 +442,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
                 noise_matrix=noise_matrix,
                 inverse_noise_matrix=inverse_noise_matrix,
                 clf_kwargs=clf_kwargs,
+                validation_func=validation_func,
             )
 
         else:  # set args that may not have been set if `self.find_label_issues()` wasn't called yet
@@ -592,6 +610,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         inverse_noise_matrix=None,
         save_space=False,
         clf_kwargs={},
+        validation_func=None,
     ):
         """
         Identifies potential label issues in the dataset using confident learning.
@@ -723,6 +742,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
                     converge_latent_estimates=self.converge_latent_estimates,
                     seed=self.seed,
                     clf_kwargs=self.clf_kwargs,
+                    validation_func=validation_func,
                 )
             else:  # pred_probs is provided by user (assumed holdout probabilities)
                 if self.verbose:
@@ -753,6 +773,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
                 cv_n_folds=self.cv_n_folds,
                 seed=self.seed,
                 clf_kwargs=self.clf_kwargs,
+                validation_func=validation_func,
             )
         # If needed, compute the confident_joint (e.g. occurs if noise_matrix was given)
         if self.confident_joint is None:
