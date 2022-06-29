@@ -470,26 +470,19 @@ def append_extra_datapoint(to_data, from_data, index):
 
     if isinstance(to_data, np.ndarray):
         to_data = np.vstack([to_data, from_data[index]])
-    else:
-        try:  # extract single example to add to training set
-            if isinstance(from_data, pd.DataFrame):
-                X_extra = from_data.iloc[index]
-            elif isinstance(from_data, pd.Series):
-                X_extra = pd.Series(from_data.iloc[index])
-            else:
-                X_extra = from_data[index]
-        except:
-            raise TypeError("Data features X must support: X[i].")
-        try:
-            to_data = to_data.append(X_extra)
-        except:
-            try:  # append for sparse matrix
-                to_data = csr_vstack(to_data, X_extra)
-            except:
-                raise TypeError("Data features X must support: X.append(X[i])")
-
-    if isinstance(to_data, (pd.DataFrame, pd.Series)):
+    elif isinstance(from_data, (pd.DataFrame, pd.Series)):
+        X_extra = from_data.iloc[[index]]
+        to_data = pd.concat([to_data, X_extra])
         to_data.reset_index(inplace=True, drop=True)
+    else:
+        try:
+            X_extra = from_data[index]
+            try:
+                to_data = to_data.append(X_extra)
+            except:  # special append for sparse matrix
+                to_data = csr_vstack(to_data, X_extra)
+        except:
+            raise TypeError("Data features X must support: X.append(X[i])")
 
     return to_data
 

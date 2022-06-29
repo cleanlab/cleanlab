@@ -33,14 +33,16 @@ labels in data that was previously held-out.
 
 
 import numpy as np
+from sklearn.metrics import log_loss
+from sklearn.neighbors import NearestNeighbors
 from typing import List
 import warnings
+
+from cleanlab.internal.validation import assert_valid_inputs
 from cleanlab.internal.label_quality_utils import (
     _subtract_confident_thresholds,
     get_normalized_entropy,
 )
-from sklearn.metrics import log_loss
-from sklearn.neighbors import NearestNeighbors
 
 
 def order_label_issues(
@@ -85,7 +87,7 @@ def order_label_issues(
 
     """
 
-    assert len(pred_probs) == len(labels)
+    assert_valid_inputs(X=None, y=labels, pred_probs=pred_probs, multi_label=False)
 
     # Convert bool mask to index mask
     label_issues_idx = np.arange(len(labels))[label_issues_mask]
@@ -178,6 +180,8 @@ def get_label_quality_scores(
     get_confidence_weighted_entropy_for_each_label
 
     """
+
+    assert_valid_inputs(X=None, y=labels, pred_probs=pred_probs, multi_label=False)
 
     # Available scoring functions to choose from
     scoring_funcs = {
@@ -303,6 +307,9 @@ def get_label_quality_ensemble_scores(
             Consider using get_label_quality_scores() if you only have a single array of pred_probs.
             """
         )
+
+    for pred_probs in pred_probs_list:
+        assert_valid_inputs(X=None, y=labels, pred_probs=pred_probs, multi_label=False)
 
     # Raise ValueError if user passed custom_weights array but did not choose weight_ensemble_members_by="custom"
     if custom_weights is not None and weight_ensemble_members_by != "custom":
