@@ -23,21 +23,45 @@ def _get_label_quality_scores_with_NA(
 def compute_multiannotator_stats(
     labels_multiannotator,
     pred_probs,
-    label_quality_scores_multiannotator=None,
-):
+    # label_quality_scores_multiannotator=None, # is this still needed? it is never called in the functioned
+) -> pd.DataFrame:
+    """Returns overall statistics about each annotator.
+
+    Parameters
+    ----------
+    labels_multiannotator : pd.DataFrame
+        2D pandas DataFrame of multiple given labels for each example with shape (N, M),
+        where N is the number of examples and M is the number of annotators.
+        For more details, labels in the same format expected by the :py:func:`get_label_quality_scores_multiannotator <cleanlab.multiannotator.get_label_quality_scores_multiannotator>`.
+
+    pred_probs : np.array
+        An array of shape ``(N, K)`` of model-predicted probabilities, ``P(label=k|x)``.
+        For details, predicted probabilities in the same format expected by the :py:func:`get_label_quality_scores_multiannotator <cleanlab.multiannotator.get_label_quality_scores_multiannotator>`.
+
+    Returns
+    -------
+    annotator_stats : pd.DataFrame
+        pandas DataFrame in which each row corresponds to one annotator (the row IDs correspond to annotator IDs), with columns:
+        - ``overall_quality``: overall quality of a given annotator's labels
+        - ``num_labeled``: number of examples annotated by a given annotator
+        - ``worst_class``: the class that is most frequently mislabeled by a given annotator
+    """
+
     # TODO: compute agreement_with_consensus
-    # Compute the overall label health score for each annotator
     overall_label_health_score_df = labels_multiannotator.apply(
-        overall_label_health_score, args=[pred_probs], verbose=False
+        lambda s: overall_label_health_score(
+            s[pd.notna(s)].astype("int32"), pred_probs[pd.notna(s)], verbose=False
+        )
     )
 
     # Compute the number of labels labeled/annotated by each annotator
     num_labeled = labels_multiannotator.count()
 
     # Find the worst labeled class for each annotator
-    worst_class = labels_multiannotator.apply(_get_worst_class, args=[pred_probs])
-
-    #
+    # worst_class = labels_multiannotator.apply(_get_worst_class, args=[pred_probs])
+    worst_class = labels_multiannotator.apply(
+        lambda s: _get_worst_class(s[pd.notna(s)].astype("int32"), pred_probs[pd.notna(s)])
+    )
 
     # Create multi-annotator stats DataFrame from its columns
     return pd.DataFrame(
@@ -67,6 +91,7 @@ def get_label_quality_scores_multiannotator(
     indicate labels less likely to be correct. For example:
     1 - clean label (the given label is likely correct).
     0 - dirty label (the given label is unlikely correct).
+
     Parameters
     ----------
     labels_multiannotator : pd.DataFrame
@@ -75,6 +100,7 @@ def get_label_quality_scores_multiannotator(
         labels_multiannotator[n][m] = given label for n-th example by m-th annotator.
         For a dataset with K classes, the given labels must be an integer in 0, 1, ..., K-1 or
         np.nan if this annotator did not label a particular example. Column names should correspond to the annotators' ID.
+
     pred_probs : np.array
         An array of shape ``(N, K)`` of model-predicted probabilities,
         ``P(label=k|x)``. Each row of this matrix corresponds
@@ -88,6 +114,7 @@ def get_label_quality_scores_multiannotator(
         To obtain out-of-sample predicted probabilities for every datapoint in your dataset, you can use :ref:`cross-validation <pred_probs_cross_val>`.
         Alternatively it is ok if your model was trained on a separate dataset and you are only evaluating
         data that was previously held-out.
+
     consensus_method : str or List[str]
         For each example, which method should be used to aggregate labels from multiple annotators into a single consensus label.
         Options include:
@@ -97,14 +124,19 @@ def get_label_quality_scores_multiannotator(
         The 1st, 2nd, 3rd, etc. elements of this List are output as extra columns in the returned ``pandas DataFrame`` with names formatted as:
         consensus_label_SUFFIX, quality_of_consensus_SUFFIX
         where SUFFIX = the str element of this list, which must correspond to a valid method for computing consensus labels.
+
     quality_method : str or List[str]
         TODO (not added to arg list yet - potential addition based on use case)
+
     return_annotator_stats : bool = False
         TODO
+
     verbose : bool = True
         If ``verbose`` is set to ``True``, the full ``annotator_stats`` DataFrame is printed out during the execution of this function.
+
     kwargs : dict
         Keyword arguments to pass into ``get_label_quality_scores()``.
+
     Returns
     -------
     label_quality_score_multiannotator : pandas.DataFrame
@@ -116,8 +148,10 @@ def get_label_quality_scores_multiannotator(
         - ``quality_of_consensus``: label quality score that quantifies how likely the consensus_label is correct,
           calculated using weighted product of `label_quality_score` of `consensus_labels` and `annotator_agreement`
         Here annotator_1, annotator_2, ..., annotator_M suffixes may be replaced column names in ``labels_multiannotator`` DataFrame used to ID the annotators.
+
     annotator_stats : pandas.DataFrame
-        TODO
+        Returns overall statistics about each annotator.
+        For details, see the documentation of :py:func:`compute_multiannotator_stats<cleanlab.multiannotator.compute_multiannotator_stats>`
     """
 
     consensus_methods = ["majority"]
@@ -193,18 +227,16 @@ def get_label_quality_scores_multiannotator(
         label_quality_scores_multiannotator["quality_of_consensus"],
     ) = (consensus_labels, num_annotations, annotator_agreement, quality_of_consensus)
 
-    # annotator_stats = compute_multiannotator_stats(labels_multiannotator, pred_probs)
+    annotator_stats = compute_multiannotator_stats(labels_multiannotator, pred_probs)
 
-    # if verbose:
-    #     print(
-    #         "Here are various overall statistics about the annotators (column names are defined in documentation):"
-    #     )
-    #     print(annotator_stats.to_string())
+    if verbose:
+        print(
+            "Here are various overall statistics about the annotators (column names are defined in documentation):"
+        )
+        print(annotator_stats.to_string())
 
-    # return (
-    #     (label_quality_scores_multiannotator, annotator_stats)
-    #     if return_annotator_stats
-    #     else label_quality_scores_multiannotator
-    # )
-
-    return label_quality_scores_multiannotator
+    return (
+        (label_quality_scores_multiannotator, annotator_stats)
+        if return_annotator_stats
+        else label_quality_scores_multiannotator
+    )
