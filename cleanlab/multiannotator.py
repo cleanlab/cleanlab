@@ -20,9 +20,63 @@ def _get_label_quality_scores_with_NA(
     return label_quality_scores
 
 
+def get_consensus_labels(
+    labels_multiannotator: pd.DataFrame,
+    pred_probs: np.array,
+    method: str = "majority",
+) -> np.array:
+    """Returns consensus labels aggregated from multiple annotators, determined by method specified.
+
+    Parameters
+    ----------
+    labels_multiannotator : pd.DataFrame
+        2D pandas DataFrame of multiple given labels for each example with shape (N, M),
+        where N is the number of examples and M is the number of annotators.
+        For more details, labels in the same format expected by the :py:func:`get_label_quality_scores_multiannotator <cleanlab.multiannotator.get_label_quality_scores_multiannotator>`.
+
+    pred_probs : np.array
+        An array of shape ``(N, K)`` of model-predicted probabilities, ``P(label=k|x)``.
+        For details, predicted probabilities in the same format expected by the :py:func:`get_label_quality_scores_multiannotator <cleanlab.multiannotator.get_label_quality_scores_multiannotator>`.
+
+    method : str (Options: ["majority"])
+        The method used to aggregate labels from multiple annotators into a single consensus label. Default is by using the majority vote.
+        Options include:
+        - ``"majority"``: means consensus labels are reached via a simple majority vote among annotators, with ties broken via ``pred_probs``.
+
+    Returns
+    -------
+    consensus_labels: np.array
+        An array of shape ``(N,)`` with the consensus labels aggregated from all annotators.
+    """
+    valid_methods = ["majority"]
+
+    if method == "majority":
+        mode_labels_multiannotator = labels_multiannotator.mode(axis=1)
+        consensus_labels = []
+        for i in range(len(mode_labels_multiannotator)):
+            consensus_labels.append(
+                int(
+                    mode_labels_multiannotator.iloc[i][
+                        pred_probs[i][
+                            mode_labels_multiannotator.iloc[i].dropna().astype(int).to_numpy()
+                        ].argmax()
+                    ]
+                )
+            )
+    else:
+        raise ValueError(
+            f"""
+            {method} is not a method for determining a consensus!
+            Please choose a valid method: {valid_methods}
+            """
+        )
+
+    return np.array(consensus_labels)
+
+
 def compute_multiannotator_stats(
-    labels_multiannotator,
-    pred_probs,
+    labels_multiannotator: pd.DataFrame,
+    pred_probs: np.array,
     # label_quality_scores_multiannotator=None, # is this still needed? it is never called in the functioned
 ) -> pd.DataFrame:
     """Returns overall statistics about each annotator.
@@ -149,7 +203,7 @@ def get_label_quality_scores_multiannotator(
           calculated using weighted product of `label_quality_score` of `consensus_labels` and `annotator_agreement`
         Here annotator_1, annotator_2, ..., annotator_M suffixes may be replaced column names in ``labels_multiannotator`` DataFrame used to ID the annotators.
 
-    annotator_stats : pandas.DataFrame
+    annotator_stats : pandas.DataFrame, optional (returned if `return_annotator_stats=True`)
         Returns overall statistics about each annotator.
         For details, see the documentation of :py:func:`compute_multiannotator_stats<cleanlab.multiannotator.compute_multiannotator_stats>`
     """
@@ -174,6 +228,13 @@ def get_label_quality_scores_multiannotator(
         )
 
     # Raise error if labels_multiannotator has <= 1 column
+    if len(labels_multiannotator.columns) <= 1:
+        raise ValueError(
+            """
+                labels_multiannotator must have more than one column.
+                If there is only one annotator, use cleanlab.rank.get_label_quality_scores instead
+            """
+        )
 
     # Raise error if labels_multiannotator only has 1 set of labels
 
@@ -194,18 +255,11 @@ def get_label_quality_scores_multiannotator(
 
     # Compute the consensus_labels
     # TODO: conditional based on consensus_method, consensus_method can be a List[str], add dawid-skene
-    mode_labels_multiannotator = labels_multiannotator.mode(axis=1)
-    consensus_labels = []
-    for i in range(len(mode_labels_multiannotator)):
-        consensus_labels.append(
-            int(
-                mode_labels_multiannotator.iloc[i][
-                    pred_probs[i][
-                        mode_labels_multiannotator.iloc[i].dropna().astype(int).to_numpy()
-                    ].argmax()
-                ]
-            )
-        )
+    consensus_labels = get_consensus_labels(
+        labels_multiannotator=labels_multiannotator,
+        pred_probs=pred_probs,
+        method=consensus_method,
+    )
 
     # Compute the fraction of annotator agreeing with the consensus labels
     annotator_agreement = labels_multiannotator.assign(consensus_label=consensus_labels).apply(
