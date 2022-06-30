@@ -4,9 +4,26 @@ from cleanlab.rank import get_label_quality_scores
 from cleanlab.dataset import overall_label_health_score, _get_worst_class
 import pandas as pd
 
+# new functions - unsure where to place them yet
+def _get_label_quality_scores_with_NA(
+    labels: pd.Series,
+    pred_probs: np.array,
+    kwargs: dict = {},
+) -> pd.Series:
+    label_quality_scores_subset = get_label_quality_scores(
+        labels=labels[pd.notna(labels)],
+        pred_probs=pred_probs[pd.notna(labels)],
+        **kwargs,
+    )
+    label_quality_scores = pd.Series(np.nan, index=np.arange(len(labels)))
+    label_quality_scores[pd.notna(labels)] = label_quality_scores_subset
+    return label_quality_scores
+
 
 def compute_multiannotator_stats(
-    labels_multiannotator, pred_probs, label_quality_scores_multiannotator
+    labels_multiannotator,
+    pred_probs,
+    label_quality_scores_multiannotator=None,
 ):
     # TODO: compute agreement_with_consensus
     # Compute the overall label health score for each annotator
@@ -80,6 +97,8 @@ def get_label_quality_scores_multiannotator(
         The 1st, 2nd, 3rd, etc. elements of this List are output as extra columns in the returned ``pandas DataFrame`` with names formatted as:
         consensus_label_SUFFIX, quality_of_consensus_SUFFIX
         where SUFFIX = the str element of this list, which must correspond to a valid method for computing consensus labels.
+    quality_method : str or List[str]
+        TODO (not added to arg list yet - potential addition based on use case)
     return_annotator_stats : bool = False
         TODO
     verbose : bool = True
@@ -130,12 +149,12 @@ def get_label_quality_scores_multiannotator(
 
     # Compute the label quality scores for each annotators' labels
     label_quality_scores_multiannotator = labels_multiannotator.apply(
-        get_label_quality_scores, args=[pred_probs], **kwargs
+        _get_label_quality_scores_with_NA, args=[pred_probs], **kwargs
     )
 
     # Prefix column name referring to the annotators' label quality scores
     label_quality_scores_multiannotator = label_quality_scores_multiannotator.add_prefix(
-        "quality_of_"
+        "quality_annotator_"
     )
 
     # Compute the consensus_labels
@@ -154,13 +173,8 @@ def get_label_quality_scores_multiannotator(
         )
 
     # Compute the fraction of annotator disagreeing with the consensus labels
-    # annotator_disagreement = labels_multiannotator.assign(consensus_labels=consensus_labels).apply(
-    #     lambda s: 1.0 - s[:-1].value_counts(normalize=True)[s["consensus_labels"]],
-    #     axis=1,
-    # )
-
-    annotator_disagreement = labels_multiannotator.assign(consensus_labels=consensus_labels).apply(
-        lambda s: np.mean(s != s["consensus_labels"]),
+    annotator_disagreement = labels_multiannotator.assign(consensus_label=consensus_labels).apply(
+        lambda s: np.mean(s.drop("consensus_label") != s["consensus_label"]),
         axis=1,
     )
 
@@ -176,16 +190,18 @@ def get_label_quality_scores_multiannotator(
         label_quality_scores_multiannotator["quality_of_consensus"],
     ) = (consensus_labels, annotator_disagreement, quality_of_consensus)
 
-    annotator_stats = compute_multiannotator_stats(labels_multiannotator, pred_probs)
+    # annotator_stats = compute_multiannotator_stats(labels_multiannotator, pred_probs)
 
-    if verbose:
-        print(
-            "Here are various overall statistics about the annotators (column names are defined in documentation):"
-        )
-        print(annotator_stats.to_string())
+    # if verbose:
+    #     print(
+    #         "Here are various overall statistics about the annotators (column names are defined in documentation):"
+    #     )
+    #     print(annotator_stats.to_string())
 
-    return (
-        (label_quality_scores_multiannotator, annotator_stats)
-        if return_annotator_stats
-        else label_quality_scores_multiannotator
-    )
+    # return (
+    #     (label_quality_scores_multiannotator, annotator_stats)
+    #     if return_annotator_stats
+    #     else label_quality_scores_multiannotator
+    # )
+
+    return label_quality_scores_multiannotator

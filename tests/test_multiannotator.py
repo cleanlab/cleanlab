@@ -1,3 +1,4 @@
+from hashlib import sha3_224
 import numpy as np
 import pytest
 from cleanlab import rank
@@ -5,6 +6,7 @@ from cleanlab.internal.label_quality_utils import _subtract_confident_thresholds
 from cleanlab.benchmarking.noise_generation import generate_noise_matrix_from_trace
 from cleanlab.benchmarking.noise_generation import generate_noisy_labels
 from cleanlab import count
+from cleanlab.multiannotator import get_label_quality_scores_multiannotator
 import pandas as pd
 
 
@@ -13,6 +15,7 @@ def make_data(
     covs=[[[5, -1.5], [-1.5, 1]], [[1, 0.5], [0.5, 4]], [[5, 1], [1, 5]]],
     sizes=[80, 40, 40],
     avg_trace=0.8,
+    num_annotators=5,
     seed=1,  # set to None for non-reproducible randomness
 ):
     np.random.seed(seed=seed)
@@ -49,21 +52,31 @@ def make_data(
         seed=seed,
     )
 
-    # Generate our noisy labels using the noise_matrix.
-    s = generate_noisy_labels(true_labels_train, noise_matrix)
-    ps = np.bincount(s) / float(len(s))
+    # Generate our noisy labels using the noise_matrix for specified number of annotators.
+    s = pd.DataFrame(
+        np.vstack(
+            [generate_noisy_labels(true_labels_train, noise_matrix) for _ in range(num_annotators)]
+        ).transpose()
+    )
+
+    # Each annotator only labels approximately 75% of the dataset
+    # (unlabeled points represented with NaN)
+    s = s.apply(lambda x: x.mask(np.random.random(n) < 0.25)).astype("Int32")
+
+    # s = generate_noisy_labels(true_labels_train, noise_matrix) # one annotator
+    # ps = np.bincount(s) / float(len(s))
 
     # Compute inverse noise matrix
-    inv = count.compute_inv_noise_matrix(py, noise_matrix, ps=ps)
+    # inv = count.compute_inv_noise_matrix(py, noise_matrix, ps=ps)
 
     # Estimate pred_probs
     latent = count.estimate_py_noise_matrices_and_cv_pred_proba(
         X=X_train,
-        labels=s,
+        labels=true_labels_train,
         cv_n_folds=3,
     )
 
-    label_errors_mask = s != true_labels_train
+    # label_errors_mask = s != true_labels_train
 
     return {
         "X_train": X_train,
@@ -71,11 +84,11 @@ def make_data(
         "X_test": X_test,
         "true_labels_test": true_labels_test,
         "labels": s,
-        "label_errors_mask": label_errors_mask,
-        "ps": ps,
+        # "label_errors_mask": label_errors_mask,
+        # "ps": ps,
         "py": py,
         "noise_matrix": noise_matrix,
-        "inverse_noise_matrix": inv,
+        # "inverse_noise_matrix": inv,
         "est_py": latent[0],
         "est_nm": latent[1],
         "est_inv": latent[2],
@@ -104,4 +117,4 @@ def test_label_quality_scores_multiannotator():
     labels = data["labels"]
     pred_probs = data["pred_probs"]
 
-    rank.get_label_quality_scores_multiannotator()
+    get_label_quality_scores_multiannotator(labels, pred_probs)
