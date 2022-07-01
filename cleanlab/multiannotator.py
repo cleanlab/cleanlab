@@ -4,7 +4,7 @@ from cleanlab.rank import get_label_quality_scores
 from cleanlab.dataset import overall_label_health_score, _get_worst_class
 import pandas as pd
 
-# new functions - unsure where to place them yet
+# TODO: unsure where to place this function? should it go to cleanlab.rank or stay here
 def _get_label_quality_scores_with_NA(
     labels: pd.Series,
     pred_probs: np.array,
@@ -48,21 +48,18 @@ def get_consensus_labels(
     consensus_labels: np.array
         An array of shape ``(N,)`` with the consensus labels aggregated from all annotators.
     """
+
     valid_methods = ["majority"]
+    consensus_labels = np.empty(len(labels_multiannotator), dtype="int32")
 
     if method == "majority":
         mode_labels_multiannotator = labels_multiannotator.mode(axis=1)
-        consensus_labels = []
         for i in range(len(mode_labels_multiannotator)):
-            consensus_labels.append(
-                int(
-                    mode_labels_multiannotator.iloc[i][
-                        pred_probs[i][
-                            mode_labels_multiannotator.iloc[i].dropna().astype(int).to_numpy()
-                        ].argmax()
-                    ]
-                )
-            )
+            consensus_labels[i] = mode_labels_multiannotator.iloc[i][
+                pred_probs[
+                    i, mode_labels_multiannotator.iloc[i].dropna().astype(int).to_numpy()
+                ].argmax()
+            ]
     else:
         raise ValueError(
             f"""
@@ -71,7 +68,76 @@ def get_consensus_labels(
             """
         )
 
-    return np.array(consensus_labels)
+    return consensus_labels
+
+
+def get_annotator_agreement(
+    labels_multiannotator: pd.DataFrame,
+    consensus_labels: np.array,
+) -> np.array:
+    """Returns the fractions of annotators that agree with the consensus labels. Note that the
+    fraction for each example only considers the annotators that labeled that particular example.
+
+    Parameters
+    ----------
+    labels_multiannotator : pd.DataFrame
+        2D pandas DataFrame of multiple given labels for each example with shape (N, M),
+        where N is the number of examples and M is the number of annotators.
+        For more details, labels in the same format expected by the :py:func:`get_label_quality_scores_multiannotator <cleanlab.multiannotator.get_label_quality_scores_multiannotator>`.
+
+    consensus_labels : np.array
+        An array of shape ``(N,)`` with the consensus labels aggregated from all annotators.
+
+    Returns
+    -------
+    annotator_agreement : np.array
+        An array of shape ``(N,)`` with the fraction of annotators that agree with each consensus label.
+    """
+    return (
+        labels_multiannotator.assign(consensus_label=consensus_labels)
+        .apply(
+            lambda s: np.mean(s.drop("consensus_label") == s["consensus_label"]),
+            axis=1,
+        )
+        .to_numpy()
+    )
+
+
+def get_quality_of_consensus(
+    consensus_labels: np.array,
+    pred_probs: np.array,
+    num_annotations: np.array,
+    annotator_agreement: np.array,
+    kwargs: dict = {},
+) -> np.array:
+    """Return scores representing quality of the consensus label for each example,
+    calculated using weighted product of `label_quality_score` of `consensus_labels` and `annotator_agreement`
+
+    Parameters
+    ----------
+    consensus_labels : np.array
+        An array of shape ``(N,)`` with the consensus labels aggregated from all annotators.
+
+    pred_probs : np.array
+        An array of shape ``(N, K)`` of model-predicted probabilities, ``P(label=k|x)``.
+        For details, predicted probabilities in the same format expected by the :py:func:`get_label_quality_scores_multiannotator <cleanlab.multiannotator.get_label_quality_scores_multiannotator>`.
+
+    num_annotations : np.array
+        An array of shape ``(N,)`` with the number of annotators that have labeled each example.
+
+    annotator_agreement : np.array
+        An array of shape ``(N,)`` with the fraction of annotators that agree with each consensus label.
+
+    Returns
+    -------
+    quality_of_consensus : np.array
+        An array of shape ``(N,)`` with the quality score of the consensus.
+        TODO: better explanation of this
+    """
+    lqs_consensus_labels = get_label_quality_scores(consensus_labels, pred_probs, **kwargs)
+    frac = pred_probs[range(len(consensus_labels)), (consensus_labels)] / num_annotations
+    quality_of_consensus = frac * lqs_consensus_labels + (1 - frac) * annotator_agreement
+    return quality_of_consensus
 
 
 def compute_multiannotator_stats(
@@ -101,7 +167,7 @@ def compute_multiannotator_stats(
         - ``worst_class``: the class that is most frequently mislabeled by a given annotator
     """
 
-    # TODO: compute agreement_with_consensus
+    # Compute overall quality of each annotator's labels
     overall_label_health_score_df = labels_multiannotator.apply(
         lambda s: overall_label_health_score(
             s[pd.notna(s)].astype("int32"), pred_probs[pd.notna(s)], verbose=False
@@ -112,7 +178,6 @@ def compute_multiannotator_stats(
     num_labeled = labels_multiannotator.count()
 
     # Find the worst labeled class for each annotator
-    # worst_class = labels_multiannotator.apply(_get_worst_class, args=[pred_probs])
     worst_class = labels_multiannotator.apply(
         lambda s: _get_worst_class(s[pd.notna(s)].astype("int32"), pred_probs[pd.notna(s)])
     )
@@ -198,9 +263,8 @@ def get_label_quality_scores_multiannotator(
         - ``quality_of_annotator_1``, ``quality_of_annotator_2``, ..., ``quality_of_annotator_M``: the label quality score for the labels provided by annotator M (is ``NaN`` for examples which this annotator did not label).
         - ``consensus_labels``: the single label that is best for each example (you can control how it is derived from all annotators' labels via the argument: ``consensus_method``)
         - ``num_annotations``: the number of annotators that have labeled each example.
-        - ``annotator_agreement``: the fraction of annotators that agree with the label chosen by the majority of the annotators (only considering those annotators that labeled a particular example).
-        - ``quality_of_consensus``: label quality score that quantifies how likely the consensus_label is correct,
-          calculated using weighted product of `label_quality_score` of `consensus_labels` and `annotator_agreement`
+        - ``annotator_agreement``: the fraction of annotators that agree with the consensus label (only consider the annotators that labeled that particular example).
+        - ``quality_of_consensus``: label quality score for consensus label, calculated using weighted product of `label_quality_score` of `consensus_labels` and `annotator_agreement`
         Here annotator_1, annotator_2, ..., annotator_M suffixes may be replaced column names in ``labels_multiannotator`` DataFrame used to ID the annotators.
 
     annotator_stats : pandas.DataFrame, optional (returned if `return_annotator_stats=True`)
@@ -241,7 +305,7 @@ def get_label_quality_scores_multiannotator(
     # Raise warning if no examples with 2 or more annotators agree
 
     # Count number of non-NaN values for each example
-    num_annotations = labels_multiannotator.count(axis=1)
+    num_annotations = labels_multiannotator.count(axis=1).to_numpy()
 
     # Compute the label quality scores for each annotators' labels
     label_quality_scores_multiannotator = labels_multiannotator.apply(
@@ -253,6 +317,8 @@ def get_label_quality_scores_multiannotator(
         "quality_annotator_"
     )
 
+    # TODO: make below available for different methods
+
     # Compute the consensus_labels
     # TODO: conditional based on consensus_method, consensus_method can be a List[str], add dawid-skene
     consensus_labels = get_consensus_labels(
@@ -262,24 +328,27 @@ def get_label_quality_scores_multiannotator(
     )
 
     # Compute the fraction of annotator agreeing with the consensus labels
-    annotator_agreement = labels_multiannotator.assign(consensus_label=consensus_labels).apply(
-        lambda s: np.mean(s.drop("consensus_label") == s["consensus_label"]),
-        axis=1,
+    annotator_agreement = get_annotator_agreement(
+        labels_multiannotator=labels_multiannotator,
+        consensus_labels=consensus_labels,
     )
 
     # Compute the label quality scores of the consensus labels
-    lqs_of_consensus = get_label_quality_scores(consensus_labels, pred_probs, **kwargs)
-    frac = pred_probs[range(len(consensus_labels)), (consensus_labels)] / num_annotations
-    # quality_of_consensus = frac * lqs_of_consensus + (1 - frac) * (1 - annotator_disagreement)
-    quality_of_consensus = frac * lqs_of_consensus + (1 - frac) * annotator_agreement
+    quality_of_consensus = get_quality_of_consensus(
+        consensus_labels=consensus_labels,
+        pred_probs=pred_probs,
+        num_annotations=num_annotations,
+        annotator_agreement=annotator_agreement,
+        **kwargs,
+    )
 
     # Concatenate additional columns to the label_quality_scores_multiannotator DataFrame
     (
-        label_quality_scores_multiannotator["consensus_label"],
         label_quality_scores_multiannotator["num_annotations"],
         label_quality_scores_multiannotator["annotator_agreement"],
+        label_quality_scores_multiannotator["consensus_label"],
         label_quality_scores_multiannotator["quality_of_consensus"],
-    ) = (consensus_labels, num_annotations, annotator_agreement, quality_of_consensus)
+    ) = (num_annotations, annotator_agreement, consensus_labels, quality_of_consensus)
 
     annotator_stats = compute_multiannotator_stats(labels_multiannotator, pred_probs)
 
