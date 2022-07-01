@@ -53,6 +53,7 @@ def get_consensus_labels(
     valid_methods = ["majority"]
     consensus_labels = np.empty(len(labels_multiannotator), dtype="int32")
 
+    # TODO: is there a more efficient/elegant way to do this?
     if method == "majority":
         mode_labels_multiannotator = labels_multiannotator.mode(axis=1)
         for i in range(len(mode_labels_multiannotator)):
@@ -104,6 +105,7 @@ def get_annotator_agreement(
     )
 
 
+# TODO: add other ways to the get quality score (methods that can be passed to get_label_quality_score)
 def get_quality_of_consensus(
     consensus_labels: np.array,
     pred_probs: np.array,
@@ -365,7 +367,7 @@ def get_label_quality_scores_multiannotator(
     if labels_multiannotator.apply(
         lambda s: np.array_equal(s.dropna().unique(), s.dropna()), axis=1
     ).all():
-        warnings.warn("""Annotators do not agree on any example. Check input data.""")
+        warnings.warn("Annotators do not agree on any example. Check input data.")
 
     # Compute the label quality scores for each annotators' labels
     label_quality_scores_multiannotator = labels_multiannotator.apply(

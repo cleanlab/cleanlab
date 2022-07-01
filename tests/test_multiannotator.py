@@ -103,7 +103,7 @@ data = make_data()
 
 
 # TODO: fix this test to work with NaN values - also unsure if this test should sit in this file
-# this does not work - randomly deleting data will break it (put in another file?)
+# logic of current test does not work - randomly deleting data will break it (put in another file?)
 # def test_get_worst_class():
 
 #     labels = data["labels"][0]  # only test on first column
@@ -116,26 +116,6 @@ data = make_data()
 #         )
 #         == data["noise_matrix"].diagonal().argmax()
 #     )
-
-
-# def test_get_consensus_labels():
-#     pass
-
-
-# def test_get_annotator_agreement():
-#     pass
-
-
-# def test_get_quality_of_consensus():
-#     pass
-
-
-# def test_compute_consensus_stats():
-#     pass
-
-
-# def test_compute_multiannotator_stats():
-#     pass
 
 
 def test_label_quality_scores_multiannotator():
