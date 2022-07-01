@@ -1,7 +1,6 @@
-from hashlib import sha3_224
 import numpy as np
 import pytest
-from cleanlab import rank
+from cleanlab import dataset
 from cleanlab.internal.label_quality_utils import _subtract_confident_thresholds
 from cleanlab.benchmarking.noise_generation import generate_noise_matrix_from_trace
 from cleanlab.benchmarking.noise_generation import generate_noisy_labels
@@ -86,16 +85,16 @@ def make_data(
         "labels": s,
         # "label_errors_mask": label_errors_mask,
         # "ps": ps,
-        "py": py,
+        # "py": py,
         "noise_matrix": noise_matrix,
         # "inverse_noise_matrix": inv,
-        "est_py": latent[0],
-        "est_nm": latent[1],
-        "est_inv": latent[2],
-        "cj": latent[3],
+        # "est_py": latent[0],
+        # "est_nm": latent[1],
+        # "est_inv": latent[2],
+        # "cj": latent[3],
         "pred_probs": latent[4],
-        "m": m,
-        "n": n,
+        # "m": m,
+        # "n": n,
     }
 
 
@@ -104,13 +103,39 @@ data = make_data()
 
 
 # TODO: fix this test to work with NaN values - also unsure if this test should sit in this file
+# this does not work - randomly deleting data will break it (put in another file?)
 # def test_get_worst_class():
 
-#     labels = data["labels"]
+#     labels = data["labels"][0]  # only test on first column
 #     pred_probs = data["pred_probs"]
 
 #     # Assert that the worst class index should be the class with the highest noise
-#     assert rank.get_worst_class(labels, pred_probs) == data["noise_matrix"].diagonal().argmax()
+#     assert (
+#         dataset._get_worst_class(
+#             labels[pd.notna(labels)].astype("int32"), pred_probs[pd.notna(labels)]
+#         )
+#         == data["noise_matrix"].diagonal().argmax()
+#     )
+
+
+# def test_get_consensus_labels():
+#     pass
+
+
+# def test_get_annotator_agreement():
+#     pass
+
+
+# def test_get_quality_of_consensus():
+#     pass
+
+
+# def test_compute_consensus_stats():
+#     pass
+
+
+# def test_compute_multiannotator_stats():
+#     pass
 
 
 def test_label_quality_scores_multiannotator():
@@ -118,4 +143,11 @@ def test_label_quality_scores_multiannotator():
     labels = data["labels"]
     pred_probs = data["pred_probs"]
 
-    get_label_quality_scores_multiannotator(labels, pred_probs)
+    lqs_multiannotator = get_label_quality_scores_multiannotator(labels, pred_probs)
+    assert isinstance(lqs_multiannotator, pd.DataFrame)
+
+    # test returning annotator stats
+    lqs_annotatorstats = get_label_quality_scores_multiannotator(
+        labels, pred_probs, return_annotator_stats=True
+    )
+    assert isinstance(lqs_annotatorstats, tuple)

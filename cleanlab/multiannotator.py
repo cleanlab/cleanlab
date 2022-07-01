@@ -1,8 +1,9 @@
 import numpy as np
+import pandas as pd
 from typing import List, Union, Tuple
 from cleanlab.rank import get_label_quality_scores
 from cleanlab.dataset import overall_label_health_score, _get_worst_class
-import pandas as pd
+import warnings
 
 # TODO: unsure where to place this function? should it go to cleanlab.rank or stay here
 def _get_label_quality_scores_with_NA(
@@ -308,7 +309,7 @@ def get_label_quality_scores_multiannotator(
         TODO (not added to arg list yet - potential addition based on use case)
 
     return_annotator_stats : bool = False
-        TODO
+        Boolean to specify if `annotator_stats` is returned.
 
     verbose : bool = True
         If ``verbose`` is set to ``True``, the full ``annotator_stats`` DataFrame is printed out during the execution of this function.
@@ -332,26 +333,39 @@ def get_label_quality_scores_multiannotator(
         For details, see the documentation of :py:func:`compute_multiannotator_stats<cleanlab.multiannotator.compute_multiannotator_stats>`
     """
 
-    # Raise error if labels_multiannotator has np.NaN rows
+    # Raise error if labels_multiannotator has NaN rows
     if labels_multiannotator.isna().all(axis=1).any():
+        raise ValueError("labels_multiannotator cannot have rows with all np.NaN.")
+
+    # Raise error if labels_multiannotator has NaN columns
+    if labels_multiannotator.isna().all().any():
+        nan_columns = list(
+            labels_multiannotator.columns[labels_multiannotator.isna().all() == True]
+        )
         raise ValueError(
-            f"""
-                labels_multiannotator cannot have rows with all np.NaN.
-            """
+            f"""labels_multiannotator cannot have columns with all np.NaN.
+            Annotators {nan_columns} did not label any examples."""
         )
 
     # Raise error if labels_multiannotator has <= 1 column
     if len(labels_multiannotator.columns) <= 1:
         raise ValueError(
-            """
-                labels_multiannotator must have more than one column.
-                If there is only one annotator, use cleanlab.rank.get_label_quality_scores instead
-            """
+            """labels_multiannotator must have more than one column. 
+            If there is only one annotator, use cleanlab.rank.get_label_quality_scores instead"""
         )
 
-    # Raise error if labels_multiannotator only has 1 set of labels
+    # Raise error if labels_multiannotator only has 1 set of labels per example
+    if labels_multiannotator.apply(lambda s: len(s.dropna()) == 1, axis=1).all():
+        raise ValueError(
+            """Each example only has one label, collapse the labels into a 1-D array and use
+            cleanlab.rank.get_label_quality_scores instead"""
+        )
 
     # Raise warning if no examples with 2 or more annotators agree
+    if labels_multiannotator.apply(
+        lambda s: np.array_equal(s.dropna().unique(), s.dropna()), axis=1
+    ).all():
+        warnings.warn("""Annotators do not agree on any example. Check input data.""")
 
     # Compute the label quality scores for each annotators' labels
     label_quality_scores_multiannotator = labels_multiannotator.apply(
