@@ -21,7 +21,10 @@ Except for :py:func:`order_label_issues <cleanlab.rank.order_label_issues>`, whi
 as potential label issues/errors, the methods in this module can be used on whichever subset
 of the dataset you choose (including the entire dataset) and provide a `label quality score` for
 every example. You can then do something like: ``np.argsort(label_quality_score)`` to obtain ranked
-indices of individual data.
+indices of individual datapoints based on their quality.
+
+Note: multi-label classification is not supported by most methods in this module,
+each example must belong to a single class, e.g. format: ``labels = np.array([1,0,2,1,1,0...])``.
 
 CAUTION: These label quality scores are computed based on `pred_probs` from your model that must be out-of-sample!
 You should never provide predictions on the same examples used to train the model,
@@ -448,8 +451,8 @@ def get_self_confidence_for_each_label(
     The self-confidence is the holdout probability that an example belongs to
     its given class label.
 
-    Self-confidence works better for finding out-of-distribution (OOD) examples, weird examples, bad examples,
-    multi-label, and other types of label errors.
+    Self-confidence can work better than normalized-margin for detecting label errors due to out-of-distribution (OOD) or weird examples
+    vs. label errors in which labels for random examples have been replaced by other classes.
 
     Parameters
     ----------
@@ -489,7 +492,7 @@ def get_normalized_margin_for_each_label(
     of being a good label or a label error.
 
     Normalized margin works better for finding class conditional label errors where
-    there is another label in the class that is better than the given label.
+    there is another label in the set of classes that is clearly better than the given label.
 
     Parameters
     ----------

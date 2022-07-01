@@ -21,7 +21,6 @@ Checks to ensure valid inputs for various methods.
 import warnings
 import numpy as np
 import pandas as pd
-from sklearn.utils import check_X_y
 
 
 def assert_valid_inputs(X, y, pred_probs=None, multi_label=False):
@@ -61,8 +60,10 @@ def assert_valid_inputs(X, y, pred_probs=None, multi_label=False):
             raise TypeError("pred_probs must be a numpy array.")
         if len(pred_probs) != len(y):
             raise ValueError("pred_probs and labels must have same length.")
+        if len(pred_probs.shape) != 2:
+            raise ValueError("pred_probs array must have shape: num_examples x num_classes.")
         # Check for valid probabilities.
-        if (pred_probs < 0).any() or (pred_probs > 1).any():
+        if (np.min(pred_probs) < 0) or (np.max(pred_probs) > 1):
             raise ValueError("Values in pred_probs must be between 0 and 1.")
         if X is not None:
             warnings.warn("When X and pred_probs are both provided, former may be ignored.")
