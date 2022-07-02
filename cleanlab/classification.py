@@ -205,7 +205,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
       Keyword arguments to pass into :py:func:`rank.get_label_quality_scores
       <cleanlab.rank.get_label_quality_scores>`. Options include: `method`, `adjust_pred_probs`.
 
-    verbose : bool, default=True
+    verbose : bool, default=False
       Controls how much output is printed. Set to ``False`` to suppress print
       statements.
     """
@@ -512,31 +512,31 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
                 if self.verbose:
                     print("Fitting final model on the clean data ...")
             else:
-                if (
-                    "sample_weight" in inspect.getfullargspec(self.clf.fit).args
-                    and "sample_weight" not in self.clf_final_kwargs
-                    and self.noise_matrix is None
-                ):
-                    print(
-                        "Cannot utilize sample weights for final training. To utilize must either specify noise_matrix "
-                        "or have previously called self.find_label_issues() instead of filter.find_label_issues()"
-                    )
-
-                if self.verbose:  # pragma: no cover
+                if self.verbose:
                     if "sample_weight" in self.clf_final_kwargs:
-                        print("Fitting final model on the clean data with custom sample_weight...")
+                        print("Fitting final model on the clean data with custom sample_weight ...")
                     else:
+                        if (
+                            "sample_weight" in inspect.getfullargspec(self.clf.fit).args
+                            and self.noise_matrix is None
+                        ):
+                            print(
+                                "Cannot utilize sample weights for final training! "
+                                "Why this matters: during final training, sample weights help account for the amount of removed data in each class. "
+                                "This helps ensure the correct class prior for the learned model. "
+                                "To use sample weights, you need to either provide the noise_matrix or have previously called self.find_label_issues() instead of filter.find_label_issues() which computes them for you."
+                            )
                         print("Fitting final model on the clean data ...")
 
         elif sample_weight is not None and "sample_weight" not in self.clf_final_kwargs:
             self.clf_final_kwargs["sample_weight"] = sample_weight[x_mask]
             if self.verbose:
-                print("Fitting final model on the clean data with custom sample_weight...")
+                print("Fitting final model on the clean data with custom sample_weight ...")
 
         else:  # pragma: no cover
             if self.verbose:
                 if "sample_weight" in self.clf_final_kwargs:
-                    print("Fitting final model on the clean data with custom sample_weight...")
+                    print("Fitting final model on the clean data with custom sample_weight ...")
                 else:
                     print("Fitting final model on the clean data ...")
 

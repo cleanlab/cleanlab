@@ -21,7 +21,10 @@ Except for :py:func:`order_label_issues <cleanlab.rank.order_label_issues>`, whi
 as potential label issues/errors, the methods in this module can be used on whichever subset
 of the dataset you choose (including the entire dataset) and provide a `label quality score` for
 every example. You can then do something like: ``np.argsort(label_quality_score)`` to obtain ranked
-indices of individual data.
+indices of individual datapoints based on their quality.
+
+Note: multi-label classification is not supported by most methods in this module,
+each example must belong to a single class, e.g. format: ``labels = np.array([1,0,2,1,1,0...])``.
 
 CAUTION: These label quality scores are computed based on `pred_probs` from your model that must be out-of-sample!
 You should never provide predictions on the same examples used to train the model,
@@ -33,14 +36,16 @@ labels in data that was previously held-out.
 
 
 import numpy as np
+from sklearn.metrics import log_loss
+from sklearn.neighbors import NearestNeighbors
 from typing import List
 import warnings
+
+from cleanlab.internal.validation import assert_valid_inputs
 from cleanlab.internal.label_quality_utils import (
     _subtract_confident_thresholds,
     get_normalized_entropy,
 )
-from sklearn.metrics import log_loss
-from sklearn.neighbors import NearestNeighbors
 
 
 def order_label_issues(
@@ -85,7 +90,7 @@ def order_label_issues(
 
     """
 
-    assert len(pred_probs) == len(labels)
+    assert_valid_inputs(X=None, y=labels, pred_probs=pred_probs, multi_label=False)
 
     # Convert bool mask to index mask
     label_issues_idx = np.arange(len(labels))[label_issues_mask]
@@ -178,6 +183,8 @@ def get_label_quality_scores(
     get_confidence_weighted_entropy_for_each_label
 
     """
+
+    assert_valid_inputs(X=None, y=labels, pred_probs=pred_probs, multi_label=False)
 
     # Available scoring functions to choose from
     scoring_funcs = {
@@ -303,6 +310,9 @@ def get_label_quality_ensemble_scores(
             Consider using get_label_quality_scores() if you only have a single array of pred_probs.
             """
         )
+
+    for pred_probs in pred_probs_list:
+        assert_valid_inputs(X=None, y=labels, pred_probs=pred_probs, multi_label=False)
 
     # Raise ValueError if user passed custom_weights array but did not choose weight_ensemble_members_by="custom"
     if custom_weights is not None and weight_ensemble_members_by != "custom":
@@ -441,8 +451,8 @@ def get_self_confidence_for_each_label(
     The self-confidence is the holdout probability that an example belongs to
     its given class label.
 
-    Self-confidence works better for finding out-of-distribution (OOD) examples, weird examples, bad examples,
-    multi-label, and other types of label errors.
+    Self-confidence can work better than normalized-margin for detecting label errors due to out-of-distribution (OOD) or weird examples
+    vs. label errors in which labels for random examples have been replaced by other classes.
 
     Parameters
     ----------
@@ -482,7 +492,7 @@ def get_normalized_margin_for_each_label(
     of being a good label or a label error.
 
     Normalized margin works better for finding class conditional label errors where
-    there is another label in the class that is better than the given label.
+    there is another label in the set of classes that is clearly better than the given label.
 
     Parameters
     ----------

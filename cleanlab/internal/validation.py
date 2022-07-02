@@ -21,15 +21,16 @@ Checks to ensure valid inputs for various methods.
 import warnings
 import numpy as np
 import pandas as pd
-from sklearn.utils import check_X_y
 
 
-def assert_valid_inputs(X, y, pred_probs=None):
+def assert_valid_inputs(X, y, pred_probs=None, multi_label=False):
     """Checks that X, labels, and pred_probs are correctly formatted"""
     if not isinstance(y, (list, np.ndarray, np.generic, pd.Series, pd.DataFrame)):
         raise TypeError("labels should be a numpy array or pandas Series.")
-    y = labels_to_array(y)
-    assert_valid_class_labels(y)
+    if not multi_label:
+        y = labels_to_array(y)
+        assert_valid_class_labels(y)
+
     allow_empty_X = False if pred_probs is None else True
     if not allow_empty_X:
         assert_nonempty_input(X)
@@ -59,15 +60,19 @@ def assert_valid_inputs(X, y, pred_probs=None):
             raise TypeError("pred_probs must be a numpy array.")
         if len(pred_probs) != len(y):
             raise ValueError("pred_probs and labels must have same length.")
+        if len(pred_probs.shape) != 2:
+            raise ValueError("pred_probs array must have shape: num_examples x num_classes.")
         # Check for valid probabilities.
-        if (pred_probs < 0).any() or (pred_probs > 1).any():
+        if (np.min(pred_probs) < 0) or (np.max(pred_probs) > 1):
             raise ValueError("Values in pred_probs must be between 0 and 1.")
         if X is not None:
             warnings.warn("When X and pred_probs are both provided, former may be ignored.")
 
 
 def assert_valid_class_labels(y):
-    """Check that labels is zero-indexed (first label is 0) and all classes present"""
+    """Check that labels is zero-indexed (first label is 0) and all classes present.
+    Assumes labels is 1D numpy array (not multi-label).
+    """
     if y.ndim != 1:
         raise ValueError("labels must by 1D numpy array.")
 
@@ -75,7 +80,7 @@ def assert_valid_class_labels(y):
     if len(unique_classes) < 2:
         raise ValueEror("Labels must contain at least 2 classes.")
 
-    if all(unique_classes != np.arange(len(unique_classes))):
+    if any(unique_classes != np.arange(len(unique_classes))):
         msg = "cleanlab requires zero-indexed labels (0,1,2,..,K-1), but in "
         msg += "your case: np.unique(labels) = {}".format(str(unique_classes))
         raise TypeError(msg)

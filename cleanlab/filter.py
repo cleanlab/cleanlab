@@ -18,27 +18,27 @@
 Methods to identify which examples have label issues.
 """
 
+import numpy as np
 from sklearn.metrics import confusion_matrix
 from sklearn.preprocessing import MultiLabelBinarizer
 import multiprocessing
 from multiprocessing.sharedctypes import RawArray
 import sys
+import warnings
 
+from cleanlab.count import calibrate_confident_joint
 from cleanlab.rank import order_label_issues
+from cleanlab.internal.validation import assert_valid_inputs
 from cleanlab.internal.util import (
     value_counts,
     round_preserving_row_totals,
     onehot2int,
     int2onehot,
 )
-import numpy as np
-import warnings
 
 # tqdm is a module used to print time-to-complete when multiprocessing is used.
 # This module is not necessary, and therefore is not a package dependency, but
 # when installed it improves user experience for large datasets.
-from cleanlab.count import calibrate_confident_joint
-
 try:
     import tqdm
 
@@ -48,222 +48,6 @@ except ImportError as e:  # pragma: no cover
 
     w = """To see estimated completion times for methods in cleanlab.filter, "pip install tqdm"."""
     warnings.warn(w)
-
-# Globals to be shared across threads in multiprocessing
-mp_params = {}  # parameters passed to multiprocessing helper functions
-
-
-# Multiprocessing Helper functions
-
-
-def _to_np_array(mp_arr, dtype="int32", shape=None):  # pragma: no cover
-    """multipropecessing Helper function to convert a multiprocessing
-    RawArray to a numpy array."""
-    arr = np.frombuffer(mp_arr, dtype=dtype)
-    if shape is None:
-        return arr
-    return arr.reshape(shape)
-
-
-def _init(
-    __labels,
-    __label_counts,
-    __prune_count_matrix,
-    __pcm_shape,
-    __pred_probs,
-    __pred_probs_shape,
-    __multi_label,
-    __min_examples_per_class,
-):  # pragma: no cover
-    """Shares memory objects across child processes.
-    ASSUMES none of these will be changed by child processes!"""
-
-    mp_params["labels"] = __labels
-    mp_params["label_counts"] = __label_counts
-    mp_params["prune_count_matrix"] = __prune_count_matrix
-    mp_params["pcm_shape"] = __pcm_shape
-    mp_params["pred_probs"] = __pred_probs
-    mp_params["pred_probs_shape"] = __pred_probs_shape
-    mp_params["multi_label"] = __multi_label
-    mp_params["min_examples_per_class"] = __min_examples_per_class
-
-
-def _get_shared_data():  # pragma: no cover
-    """multiprocessing helper function to extract numpy arrays from
-    shared RawArray types used to shared data across process."""
-
-    label_counts = _to_np_array(mp_params["label_counts"])
-    prune_count_matrix = _to_np_array(
-        mp_arr=mp_params["prune_count_matrix"],
-        shape=mp_params["pcm_shape"],
-    )
-    pred_probs = _to_np_array(
-        mp_arr=mp_params["pred_probs"],
-        dtype="float32",
-        shape=mp_params["pred_probs_shape"],
-    )
-    min_examples_per_class = mp_params["min_examples_per_class"]
-    multi_label = mp_params["multi_label"]
-    if multi_label:  # Shared data is passed as one-hot encoded matrix
-        labels = onehot2int(
-            _to_np_array(
-                mp_arr=mp_params["labels"],
-                shape=(pred_probs.shape[0], pred_probs.shape[1]),
-            )
-        )
-    else:
-        labels = _to_np_array(mp_params["labels"])
-    return (
-        labels,
-        label_counts,
-        prune_count_matrix,
-        pred_probs,
-        multi_label,
-        min_examples_per_class,
-    )
-
-
-def _prune_by_class(k, args=None):
-    """multiprocessing Helper function for find_label_issues()
-    that assumes globals and produces a mask for class k for each example by
-    removing the examples with *smallest probability* of
-    belonging to their given class label.
-
-    Parameters
-    ----------
-    k : int (between 0 and num classes - 1)
-      The class of interest."""
-
-    if args:  # Single processing - params are passed in
-        (
-            labels,
-            label_counts,
-            prune_count_matrix,
-            pred_probs,
-            multi_label,
-            min_examples_per_class,
-        ) = args
-    else:  # Multiprocessing - data is shared across sub-processes
-        (
-            labels,
-            label_counts,
-            prune_count_matrix,
-            pred_probs,
-            multi_label,
-            min_examples_per_class,
-        ) = _get_shared_data()
-
-    if label_counts[k] > min_examples_per_class:  # No prune if not at least min_examples_per_class
-        num_issues = label_counts[k] - prune_count_matrix[k][k]
-        # Get return_indices_ranked_by of the smallest prob of class k for examples with noisy label k
-        label_filter = np.array([k in lst for lst in labels]) if multi_label else labels == k
-        class_probs = pred_probs[:, k]
-        rank = np.partition(class_probs[label_filter], num_issues)[num_issues]
-        return label_filter & (class_probs < rank)
-    else:
-        warnings.warn(
-            f"May not flag all label issues in class: {k}, it has too few examples (see argument: `min_examples_per_class`)"
-        )
-        return np.zeros(len(labels), dtype=bool)
-
-
-def _prune_by_count(k, args=None):
-    """multiprocessing Helper function for find_label_issues() that assumes
-    globals and produces a mask for class k for each example by
-    removing the example with noisy label k having *largest margin*,
-    where
-    margin of example := prob of given label - max prob of non-given labels
-
-    Parameters
-    ----------
-    k : int (between 0 and num classes - 1)
-      The true_label class of interest."""
-
-    if args:  # Single processing - params are passed in
-        (
-            labels,
-            label_counts,
-            prune_count_matrix,
-            pred_probs,
-            multi_label,
-            min_examples_per_class,
-        ) = args
-    else:  # Multiprocessing - data is shared across sub-processes
-        (
-            labels,
-            label_counts,
-            prune_count_matrix,
-            pred_probs,
-            multi_label,
-            min_examples_per_class,
-        ) = _get_shared_data()
-
-    label_issues_mask = np.zeros(len(pred_probs), dtype=bool)
-    pred_probs_k = pred_probs[:, k]
-    K = len(label_counts)
-    if label_counts[k] <= min_examples_per_class:  # No prune if not at least min_examples_per_class
-        warnings.warn(
-            f"May not flag all label issues in class: {k}, it has too few examples (see `min_examples_per_class` argument)"
-        )
-        return np.zeros(len(labels), dtype=bool)
-    for j in range(K):  # j is true label index (k is noisy label index)
-        num2prune = prune_count_matrix[j][k]
-        # Only prune for noise rates, not diagonal entries
-        if k != j and num2prune > 0:
-            # num2prune's largest p(true class k) - p(noisy class k)
-            # for x with true label j
-            margin = pred_probs[:, j] - pred_probs_k
-            label_filter = np.array([k in lst for lst in labels]) if multi_label else labels == k
-            cut = -np.partition(-margin[label_filter], num2prune - 1)[num2prune - 1]
-            label_issues_mask = label_issues_mask | (label_filter & (margin >= cut))
-    return label_issues_mask
-
-
-def _self_confidence(args, _pred_probs):  # pragma: no cover
-    """multiprocessing Helper function for find_label_issues() that assumes
-    global pred_probs and computes the self-confidence (prob of given label)
-    for an example (row in pred_probs) given the example index idx
-    and its label l.
-    np.mean(pred_probs[]) enables this code to work for multi-class l."""
-    (idx, l) = args
-    return np.mean(_pred_probs[idx, l])
-
-
-def _multiclass_crossval_predict(labels, pyx):
-    """Returns a numpy 2D array of one-hot encoded
-    multiclass predictions. Each row in the array
-    provides the predictions for a particular example.
-    The boundary condition used to threshold predictions
-    is computed by maximizing the F1 ROC curve.
-
-    Parameters
-    ----------
-    labels : list of lists (length N)
-      These are multiclass labels. Each list in the list contains all the
-      labels for that example.
-
-    pyx : np.array (shape (N, K))
-        P(label=k|x) is a matrix with K model-predicted probabilities.
-        Each row of this matrix corresponds to an example `x` and contains the model-predicted
-        probabilities that `x` belongs to each possible class.
-        The columns must be ordered such that these probabilities correspond to class 0,1,2,...
-        `pred_probs` should have been computed using 3 (or higher) fold cross-validation."""
-
-    from sklearn.metrics import f1_score
-
-    boundaries = np.arange(0.05, 0.9, 0.05)
-    labels_one_hot = MultiLabelBinarizer().fit_transform(labels)
-    f1s = [
-        f1_score(
-            labels_one_hot,
-            (pyx > boundary).astype(np.uint8),
-            average="micro",
-        )
-        for boundary in boundaries
-    ]
-    boundary = boundaries[np.argmax(f1s)]
-    pred = (pyx > boundary).astype(np.uint8)
-    return pred
 
 
 def find_label_issues(
@@ -419,7 +203,7 @@ def find_label_issues(
         "confident_learning",
         "predicted_neq_given",
     ]  # TODO: change default to confident_learning ?
-    assert len(labels) == len(pred_probs)
+    assert_valid_inputs(X=None, y=labels, pred_probs=pred_probs, multi_label=multi_label)
     if filter_by in ["confident_learning", "predicted_neq_given"] and (
         frac_noise != 1.0 or num_to_remove_per_class is not None
     ):
@@ -710,22 +494,13 @@ def find_predicted_neq_given(labels, pred_probs, *, multi_label=False):
     Parameters
     ----------
     labels : np.array
-      A discrete vector of noisy labels, i.e. some labels may be erroneous.
-      *Format requirements*: for dataset with K classes, labels must be in 0, 1, ..., K-1.
+      Labels in the same format expected by the :py:func:`find_label_issues <cleanlab.filter.find_label_issues>` function.
 
-    pred_probs : np.array, optional
-      An array of shape ``(N, K)`` of model-predicted probabilities,
-      ``P(label=k|x)``. Each row of this matrix corresponds
-      to an example `x` and contains the model-predicted probabilities that
-      `x` belongs to each possible class, for each of the K classes. The
-      columns must be ordered such that these probabilities correspond to
-      class 0, 1, ..., K-1.
+    pred_probs : np.array
+      Predicted-probabilities in the same format expected by the :py:func:`find_label_issues <cleanlab.filter.find_label_issues>` function.
 
     multi_label : bool, optional
-      If ``True``, labels should be an iterable (e.g. list) of iterables, containing a
-      list of labels for each example, instead of just a single label.
-      The multi-label setting supports classification tasks where an example has 1 or more labels.
-      Example of a multi-labeled `labels` input: ``[[0,1], [1], [0,2], [0,1,2], [0], [1], ...]``.
+      Whether each example may have multiple labels or not (see documentation for the :py:func:`find_label_issues <cleanlab.filter.find_label_issues>` function).
 
     Returns
     -------
@@ -735,7 +510,7 @@ def find_predicted_neq_given(labels, pred_probs, *, multi_label=False):
       labeled with high confidence.
     """
 
-    assert len(pred_probs) == len(labels)
+    assert_valid_inputs(X=None, y=labels, pred_probs=pred_probs, multi_label=multi_label)
     if multi_label:
         # TODO: This needs to be tested.
         return np.array(
@@ -792,7 +567,7 @@ def find_label_issues_using_argmax_confusion_matrix(
       labeled with high confidence.
     """
 
-    assert len(pred_probs) == len(labels)
+    assert_valid_inputs(X=None, y=labels, pred_probs=pred_probs, multi_label=False)
     confident_joint = confusion_matrix(np.argmax(pred_probs, axis=1), labels).T
     if calibrate:
         confident_joint = calibrate_confident_joint(confident_joint, labels)
@@ -802,3 +577,218 @@ def find_label_issues_using_argmax_confusion_matrix(
         confident_joint=confident_joint,
         filter_by=filter_by,
     )
+
+
+# Multiprocessing helper functions:
+
+mp_params = {}  # Globals to be shared across threads in multiprocessing
+
+
+def _to_np_array(mp_arr, dtype="int32", shape=None):  # pragma: no cover
+    """multipropecessing Helper function to convert a multiprocessing
+    RawArray to a numpy array."""
+    arr = np.frombuffer(mp_arr, dtype=dtype)
+    if shape is None:
+        return arr
+    return arr.reshape(shape)
+
+
+def _init(
+    __labels,
+    __label_counts,
+    __prune_count_matrix,
+    __pcm_shape,
+    __pred_probs,
+    __pred_probs_shape,
+    __multi_label,
+    __min_examples_per_class,
+):  # pragma: no cover
+    """Shares memory objects across child processes.
+    ASSUMES none of these will be changed by child processes!"""
+
+    mp_params["labels"] = __labels
+    mp_params["label_counts"] = __label_counts
+    mp_params["prune_count_matrix"] = __prune_count_matrix
+    mp_params["pcm_shape"] = __pcm_shape
+    mp_params["pred_probs"] = __pred_probs
+    mp_params["pred_probs_shape"] = __pred_probs_shape
+    mp_params["multi_label"] = __multi_label
+    mp_params["min_examples_per_class"] = __min_examples_per_class
+
+
+def _get_shared_data():  # pragma: no cover
+    """multiprocessing helper function to extract numpy arrays from
+    shared RawArray types used to shared data across process."""
+
+    label_counts = _to_np_array(mp_params["label_counts"])
+    prune_count_matrix = _to_np_array(
+        mp_arr=mp_params["prune_count_matrix"],
+        shape=mp_params["pcm_shape"],
+    )
+    pred_probs = _to_np_array(
+        mp_arr=mp_params["pred_probs"],
+        dtype="float32",
+        shape=mp_params["pred_probs_shape"],
+    )
+    min_examples_per_class = mp_params["min_examples_per_class"]
+    multi_label = mp_params["multi_label"]
+    if multi_label:  # Shared data is passed as one-hot encoded matrix
+        labels = onehot2int(
+            _to_np_array(
+                mp_arr=mp_params["labels"],
+                shape=(pred_probs.shape[0], pred_probs.shape[1]),
+            )
+        )
+    else:
+        labels = _to_np_array(mp_params["labels"])
+    return (
+        labels,
+        label_counts,
+        prune_count_matrix,
+        pred_probs,
+        multi_label,
+        min_examples_per_class,
+    )
+
+
+def _prune_by_class(k, args=None):
+    """multiprocessing Helper function for find_label_issues()
+    that assumes globals and produces a mask for class k for each example by
+    removing the examples with *smallest probability* of
+    belonging to their given class label.
+
+    Parameters
+    ----------
+    k : int (between 0 and num classes - 1)
+      The class of interest."""
+
+    if args:  # Single processing - params are passed in
+        (
+            labels,
+            label_counts,
+            prune_count_matrix,
+            pred_probs,
+            multi_label,
+            min_examples_per_class,
+        ) = args
+    else:  # Multiprocessing - data is shared across sub-processes
+        (
+            labels,
+            label_counts,
+            prune_count_matrix,
+            pred_probs,
+            multi_label,
+            min_examples_per_class,
+        ) = _get_shared_data()
+
+    if label_counts[k] > min_examples_per_class:  # No prune if not at least min_examples_per_class
+        num_issues = label_counts[k] - prune_count_matrix[k][k]
+        # Get return_indices_ranked_by of the smallest prob of class k for examples with noisy label k
+        label_filter = np.array([k in lst for lst in labels]) if multi_label else labels == k
+        class_probs = pred_probs[:, k]
+        rank = np.partition(class_probs[label_filter], num_issues)[num_issues]
+        return label_filter & (class_probs < rank)
+    else:
+        warnings.warn(
+            f"May not flag all label issues in class: {k}, it has too few examples (see argument: `min_examples_per_class`)"
+        )
+        return np.zeros(len(labels), dtype=bool)
+
+
+def _prune_by_count(k, args=None):
+    """multiprocessing Helper function for find_label_issues() that assumes
+    globals and produces a mask for class k for each example by
+    removing the example with noisy label k having *largest margin*,
+    where
+    margin of example := prob of given label - max prob of non-given labels
+
+    Parameters
+    ----------
+    k : int (between 0 and num classes - 1)
+      The true_label class of interest."""
+
+    if args:  # Single processing - params are passed in
+        (
+            labels,
+            label_counts,
+            prune_count_matrix,
+            pred_probs,
+            multi_label,
+            min_examples_per_class,
+        ) = args
+    else:  # Multiprocessing - data is shared across sub-processes
+        (
+            labels,
+            label_counts,
+            prune_count_matrix,
+            pred_probs,
+            multi_label,
+            min_examples_per_class,
+        ) = _get_shared_data()
+
+    label_issues_mask = np.zeros(len(pred_probs), dtype=bool)
+    pred_probs_k = pred_probs[:, k]
+    K = len(label_counts)
+    if label_counts[k] <= min_examples_per_class:  # No prune if not at least min_examples_per_class
+        warnings.warn(
+            f"May not flag all label issues in class: {k}, it has too few examples (see `min_examples_per_class` argument)"
+        )
+        return np.zeros(len(labels), dtype=bool)
+    for j in range(K):  # j is true label index (k is noisy label index)
+        num2prune = prune_count_matrix[j][k]
+        # Only prune for noise rates, not diagonal entries
+        if k != j and num2prune > 0:
+            # num2prune's largest p(true class k) - p(noisy class k)
+            # for x with true label j
+            margin = pred_probs[:, j] - pred_probs_k
+            label_filter = np.array([k in lst for lst in labels]) if multi_label else labels == k
+            cut = -np.partition(-margin[label_filter], num2prune - 1)[num2prune - 1]
+            label_issues_mask = label_issues_mask | (label_filter & (margin >= cut))
+    return label_issues_mask
+
+
+def _self_confidence(args, _pred_probs):  # pragma: no cover
+    """multiprocessing Helper function for find_label_issues() that assumes
+    global pred_probs and computes the self-confidence (prob of given label)
+    for an example (row in pred_probs) given the example index idx
+    and its label l.
+    np.mean(pred_probs[]) enables this code to work for multi-class l."""
+    (idx, l) = args
+    return np.mean(_pred_probs[idx, l])
+
+
+def _multiclass_crossval_predict(labels, pyx):
+    """Returns a numpy 2D array of one-hot encoded
+    multiclass predictions. Each row in the array
+    provides the predictions for a particular example.
+    The boundary condition used to threshold predictions
+    is computed by maximizing the F1 ROC curve.
+
+    Parameters
+    ----------
+    labels : list of lists (length N)
+      These are multiclass labels. Each list in the list contains all the
+      labels for that example.
+
+    pyx : np.array (shape (N, K))
+        P(label=k|x) is a matrix with K model-predicted probabilities.
+        Each row of this matrix corresponds to an example `x` and contains the model-predicted
+        probabilities that `x` belongs to each possible class.
+        The columns must be ordered such that these probabilities correspond to class 0,1,2,...
+        `pred_probs` should have been computed using 3 (or higher) fold cross-validation."""
+
+    from sklearn.metrics import f1_score
+
+    boundaries = np.arange(0.05, 0.9, 0.05)
+    labels_one_hot = MultiLabelBinarizer().fit_transform(labels)
+    f1s = [
+        f1_score(
+            labels_one_hot,
+            (pyx > boundary).astype(np.uint8),
+            average="micro",
+        )
+        for boundary in boundaries
+    ]
+    boundary = boundaries[np.argmax(f1s)]
+    pred = (pyx > boundary).astype(np.uint8)
+    return pred
