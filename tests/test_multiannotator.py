@@ -1,11 +1,11 @@
 import numpy as np
 import pytest
+from copy import deepcopy
 from cleanlab import dataset
-from cleanlab.internal.label_quality_utils import _subtract_confident_thresholds
 from cleanlab.benchmarking.noise_generation import generate_noise_matrix_from_trace
 from cleanlab.benchmarking.noise_generation import generate_noisy_labels
 from cleanlab import count
-from cleanlab.multiannotator import get_label_quality_scores_multiannotator
+from cleanlab.multiannotator import get_label_quality_multiannotator
 import pandas as pd
 
 
@@ -14,7 +14,7 @@ def make_data(
     covs=[[[5, -1.5], [-1.5, 1]], [[1, 0.5], [0.5, 4]], [[5, 1], [1, 5]]],
     sizes=[80, 40, 40],
     avg_trace=0.8,
-    num_annotators=5,
+    num_annotators=50,
     seed=1,  # set to None for non-reproducible randomness
 ):
     np.random.seed(seed=seed)
@@ -58,9 +58,10 @@ def make_data(
         ).transpose()
     )
 
-    # Each annotator only labels approximately 75% of the dataset
+    # Each annotator only labels approximately 20% of the dataset
     # (unlabeled points represented with NaN)
-    s = s.apply(lambda x: x.mask(np.random.random(n) < 0.25)).astype("Int32")
+    s = s.apply(lambda x: x.mask(np.random.random(n) < 0.8)).astype("Int32")
+    s.dropna(axis=1, how="all", inplace=True)
 
     # s = generate_noisy_labels(true_labels_train, noise_matrix) # one annotator
     # ps = np.bincount(s) / float(len(s))
@@ -77,12 +78,14 @@ def make_data(
 
     # label_errors_mask = s != true_labels_train
 
+    row_NA_check = pd.notna(s).any(axis=1)
+
     return {
-        "X_train": X_train,
-        "true_labels_train": true_labels_train,
-        "X_test": X_test,
-        "true_labels_test": true_labels_test,
-        "labels": s,
+        "X_train": X_train[row_NA_check],
+        "true_labels_train": true_labels_train[row_NA_check],
+        "X_test": X_test[row_NA_check],
+        "true_labels_test": true_labels_test[row_NA_check],
+        "labels": s[row_NA_check].reset_index(drop=True),
         # "label_errors_mask": label_errors_mask,
         # "ps": ps,
         # "py": py,
@@ -92,7 +95,7 @@ def make_data(
         # "est_nm": latent[1],
         # "est_inv": latent[2],
         # "cj": latent[3],
-        "pred_probs": latent[4],
+        "pred_probs": latent[4][row_NA_check],
         # "m": m,
         # "n": n,
     }
@@ -123,11 +126,32 @@ def test_label_quality_scores_multiannotator():
     labels = data["labels"]
     pred_probs = data["pred_probs"]
 
-    lqs_multiannotator = get_label_quality_scores_multiannotator(labels, pred_probs)
+    lqs_multiannotator = get_label_quality_multiannotator(labels, pred_probs)
     assert isinstance(lqs_multiannotator, pd.DataFrame)
 
+    # test verbose=False
+    lqs_multiannotator = get_label_quality_multiannotator(labels, pred_probs, verbose=False)
+    assert isinstance(lqs_multiannotator, pd.DataFrame)
+
+    # test passing a list into consensus_method
+    # TODO: change list items after adding more options
+    lqs_multiannotator = get_label_quality_multiannotator(
+        labels, pred_probs, consensus_method=["majority", "majority"]
+    )
+
     # test returning annotator stats
-    lqs_annotatorstats = get_label_quality_scores_multiannotator(
+    lqs_annotatorstats = get_label_quality_multiannotator(
         labels, pred_probs, return_annotator_stats=True
     )
     assert isinstance(lqs_annotatorstats, tuple)
+
+    # test error catching when labels_multiannotator has NaN columns
+    labels_NA = deepcopy(labels)
+    labels_NA[0] = pd.NA
+
+    try:
+        lqs_annotatorstats = get_label_quality_multiannotator(
+            labels_NA, pred_probs, return_annotator_stats=True
+        )
+    except ValueError as e:
+        assert "cannot have columns with all NaN" in str(e)

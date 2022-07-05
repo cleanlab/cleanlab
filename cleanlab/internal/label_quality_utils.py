@@ -17,6 +17,8 @@
 """Helper functions for computing label quality scores"""
 
 import numpy as np
+import pandas as pd
+from cleanlab import rank
 from cleanlab.count import get_confident_thresholds
 
 
@@ -105,3 +107,24 @@ def get_normalized_entropy(pred_probs: np.array, min_allowed_prob=1e-6) -> np.ar
     # Note that dividing by log(num_classes) changes the base of the log which rescales entropy to 0-1 range
     clipped_pred_probs = np.clip(pred_probs, a_min=min_allowed_prob, a_max=None)
     return -np.sum(pred_probs * np.log(clipped_pred_probs), axis=1) / np.log(num_classes)
+
+
+def _get_label_quality_scores_with_NA(
+    labels: pd.Series,
+    pred_probs: np.array,
+    kwargs: dict = {},
+) -> pd.Series:
+    """Returns label quality scores for each datapoint.
+    Same functionality as ``get_label_quality_scores`` with additional support for
+    datasets with NaN values.
+
+    For more info about parameters and returns, see the docstring of :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>`.
+    """
+    label_quality_scores_subset = rank.get_label_quality_scores(
+        labels=labels[pd.notna(labels)].astype("int32"),
+        pred_probs=pred_probs[pd.notna(labels)],
+        **kwargs,
+    )
+    label_quality_scores = pd.Series(np.nan, index=np.arange(len(labels)))
+    label_quality_scores[pd.notna(labels)] = label_quality_scores_subset
+    return label_quality_scores
