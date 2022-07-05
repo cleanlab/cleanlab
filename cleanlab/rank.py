@@ -557,7 +557,7 @@ def get_confidence_weighted_entropy_for_each_label(
 
 
 def get_knn_distance_ood_scores(
-    features: np.array, nbrs: NearestNeighbors, k: int = None
+    features: np.array, nbrs: NearestNeighbors = None, k: int = None
 ) -> np.array:
     """Returns the KNN distance out-of-distribution (OOD) score for each datapoint.
 
@@ -572,6 +572,7 @@ def get_knn_distance_ood_scores(
     nbrs : sklearn.neighbors.NearestNeighbors
       Instantiated NearestNeighbors class object that's been fitted on a dataset in the same feature space.
       Note that the distance metric and n_neighbors is specified when instantiating this class.
+      If nbrs=None, then by default nbrs=sklearn.neighbors.NearestNeighbors(n_neighbors=10, metric="cosine").fit(features)
       See: https://scikit-learn.org/stable/modules/neighbors.html
 
     k : int, default=None
@@ -584,6 +585,9 @@ def get_knn_distance_ood_scores(
     avg_nbrs_distances : np.array
       Average distance to k-nearest neighbors for each datapoint which is used as a score for OOD detection.
     """
+    # if nbrs is not provided, then use default KNN classifier (k=10)
+    if nbrs is None:
+        nbrs = NearestNeighbors(n_neighbors=10, metric="cosine").fit(features)
 
     # number of neighbors specified when fitting instantiated NearestNeighbors class object
     max_k = nbrs.n_neighbors
