@@ -556,12 +556,10 @@ def get_confidence_weighted_entropy_for_each_label(
     return label_quality_scores
 
 
-def get_knn_distance_ood_scores(
-    features: np.array, nbrs: NearestNeighbors = None, k: int = 10
-) -> np.array:
-    """Returns the KNN distance out-of-distribution (OOD) score for each datapoint.
+def get_outlier_scores(features: np.array, knn: NearestNeighbors = None, k: int = 10) -> np.array:
+    """Returns the KNN distance outlier score for each datapoint.
 
-    This is a function to compute OOD scores where higher scores indicate the datapoint is more likely to be OOD.
+    This is a function to compute outlier scores where higher scores indicate the datapoint is more likely to be an outlier.
 
     Parameters
     ----------
@@ -569,28 +567,28 @@ def get_knn_distance_ood_scores(
       Feature matrix of shape (N, M), where N is the number of datapoints and M is the number of features.
       This is the "query set" of features for each datapoint which are used for nearest neighbor search.
 
-    nbrs : sklearn.neighbors.NearestNeighbors
+    knn : sklearn.neighbors.NearestNeighbors
       Instantiated NearestNeighbors class object that's been fitted on a dataset in the same feature space.
       Note that the distance metric and n_neighbors is specified when instantiating this class.
-      If nbrs=None, then by default nbrs=sklearn.neighbors.NearestNeighbors(n_neighbors=k, metric="cosine").fit(features)
+      If knn=None, then by default knn=sklearn.neighbors.NearestNeighbors(n_neighbors=k, metric="cosine").fit(features)
       See: https://scikit-learn.org/stable/modules/neighbors.html
 
     k : int, default=None Number of neighbors to use when calculating average distance to neighbors. This value k
     needs to be less than or equal to max_k which is the n_neighbors used when fitting instantiated NearestNeighbors
-    class object. If k=None, then by default k=min(10, max_k) is used where max_k is extracted from the given nbrs.
-    If nbrs is not provided, then by default k=10.
+    class object. If k=None, then by default k=min(10, max_k) is used where max_k is extracted from the given knn.
+    If knn is not provided, then by default k=10.
 
     Returns
     -------
-    avg_nbrs_distances : np.array
-      Average distance to k-nearest neighbors for each datapoint which is used as a score for OOD detection.
+    avg_knn_distances : np.array
+      Average distance to k-nearest neighbors for each datapoint which is used as a score for outlier detection.
     """
-    # if nbrs is not provided, then use default KNN classifier
-    if nbrs is None:
-        nbrs = NearestNeighbors(n_neighbors=k, metric="cosine").fit(features)
+    # if knn is not provided, then use default KNN classifier
+    if knn is None:
+        knn = NearestNeighbors(n_neighbors=k, metric="cosine").fit(features)
 
     # number of neighbors specified when fitting instantiated NearestNeighbors class object
-    max_k = nbrs.n_neighbors
+    max_k = knn.n_neighbors
 
     # if k provided is too high, use max number of nearest neighbors
     if k > max_k:
@@ -600,12 +598,12 @@ def get_knn_distance_ood_scores(
             f"NearestNeighbors object! Value of k changed to k={max_k}."
         )
 
-    # Get distances to k-nearest neighbors Note that the nbrs object contains the specification of distance metric
-    # and n_neighbors (k value) If our query set of features matches the training set used to fit nbrs, the nearest
+    # Get distances to k-nearest neighbors Note that the knn object contains the specification of distance metric
+    # and n_neighbors (k value) If our query set of features matches the training set used to fit knn, the nearest
     # neighbor of each point is the point itself, at a distance of zero.
-    distances, _ = nbrs.kneighbors(features)
+    distances, _ = knn.kneighbors(features)
 
     # Calculate average distance to k-nearest neighbors
-    avg_nbrs_distances = distances[:, :k].mean(axis=1)
+    avg_knn_distances = distances[:, :k].mean(axis=1)
 
-    return avg_nbrs_distances
+    return avg_knn_distances

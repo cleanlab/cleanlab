@@ -22,6 +22,7 @@ from cleanlab.benchmarking.noise_generation import generate_noise_matrix_from_tr
 from cleanlab.benchmarking.noise_generation import generate_noisy_labels
 from cleanlab import count
 from sklearn.neighbors import NearestNeighbors
+import warnings
 
 
 def make_data(
@@ -381,7 +382,7 @@ def test_unsupported_method_for_adjust_pred_probs():
         _ = rank.get_label_quality_scores(labels, pred_probs, adjust_pred_probs=True, method=method)
 
 
-def test_get_knn_distance_ood_scores():
+def test_get_outlier_scores():
     X_train = data["X_train"]
     X_test = data["X_test"]
 
@@ -392,47 +393,26 @@ def test_get_knn_distance_ood_scores():
     X_test_with_ood = np.vstack([X_test, X_ood])
 
     # Fit nearest neighbors on X_train
-    nbrs = NearestNeighbors(n_neighbors=5).fit(X_train)
+    knn = NearestNeighbors(n_neighbors=5).fit(X_train)
 
     # Get KNN distance as OOD score
     k = 5
-    knn_distance_ood_score = rank.get_knn_distance_ood_scores(
-        features=X_test_with_ood, nbrs=nbrs, k=k
-    )
+    knn_distance_ood_score = rank.get_outlier_scores(features=X_test_with_ood, knn=knn, k=k)
 
     # Index of the datapoint with max ood score should correspond to the last element of X_test_with_ood
     idx_max_score = np.argsort(knn_distance_ood_score)[-1]
     assert idx_max_score == (X_test_with_ood.shape[0] - 1)
 
     # Get KNN distance as OOD score without passing k
-    # By default k=min(10, max_k) is used where max_k is extracted from the given nbrs
-    knn_distance_ood_score = rank.get_knn_distance_ood_scores(features=X_test_with_ood, nbrs=nbrs)
+    # By default k=min(10, max_k) is used where max_k is extracted from the given knn
+    knn_distance_ood_score = rank.get_outlier_scores(features=X_test_with_ood, knn=knn)
 
     # Index of the datapoint with max ood score should correspond to the last element of X_test_with_ood
     idx_max_score = np.argsort(knn_distance_ood_score)[-1]
     assert idx_max_score == (X_test_with_ood.shape[0] - 1)
 
 
-def test_bad_k_for_get_knn_distance_ood_scores():
-    X_train = data["X_train"]
-    X_test = data["X_test"]
-
-    # Create OOD datapoint
-    X_ood = np.array([[999999999.0, 999999999.0]])
-
-    # Add OOD datapoint to X_test
-    X_test_with_ood = np.vstack([X_test, X_ood])
-
-    # Fit nearest neighbors on X_train
-    nbrs = NearestNeighbors(n_neighbors=5).fit(X_train)
-
-    with pytest.raises(AssertionError) as e:
-        _ = rank.get_knn_distance_ood_scores(
-            features=X_test_with_ood, nbrs=nbrs, k=10  # this should throw an assertion error
-        )
-
-
-def test_default_k_and_model_knn_distance_odd_scores():
+def test_default_k_and_model_get_outlier_scores():
     # Testing using 'None' as classifier param and correct setting of default k as max_k
 
     # Create dataset with OOD datapoint
@@ -442,25 +422,30 @@ def test_default_k_and_model_knn_distance_odd_scores():
 
     instantiated_k = 10
 
-    # Create NN classifiers with small k and fit on data
-    nbrs = NearestNeighbors(n_neighbors=instantiated_k, metric="cosine").fit(X_with_ood)
+    # Create NN classifiers with small instantiated k and fit on data
+    knn = NearestNeighbors(n_neighbors=instantiated_k, metric="cosine").fit(X_with_ood)
 
-    avg_nbrs_distances = rank.get_knn_distance_ood_scores(
+    avg_knn_distances_default_model = rank.get_outlier_scores(
         features=X_with_ood,
-        nbrs=nbrs,
-        k=25,  # this should throw warn, k should be set to instantiated_k
+        k=instantiated_k,  # this should use default classifier (same as above) and k = instantiated_k
     )
 
-    avg_nbrs_distances_default_model = rank.get_knn_distance_ood_scores(
-        features=X_with_ood,
-        k=instantiated_k  # # this should use default classifier (same as above) and using k
-        # set to instantiated_k
-    )
-
-    avg_nbrs_distances_default_k = rank.get_knn_distance_ood_scores(
+    avg_knn_distances_default_k = rank.get_outlier_scores(
         features=X_with_ood  # default k should be set to 10 == instantiated_k
     )
 
-    # Score sums should be equal because the two classifiers used have identical params and fit
-    assert avg_nbrs_distances.sum() == avg_nbrs_distances_default_model.sum()
-    assert avg_nbrs_distances_default_k.sum() == avg_nbrs_distances.sum()
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+        # Trigger a warning.
+        avg_knn_distances = rank.get_outlier_scores(
+            features=X_with_ood,
+            knn=knn,
+            k=25,  # this should throw warn, k should be set to instantiated_k
+        )
+
+        assert len(w) == 1
+        assert "Value of k changed" in str(w[-1].message)
+
+    # Score sums should be equal because the three classifiers used have identical params and fit
+    assert avg_knn_distances.sum() == avg_knn_distances_default_model.sum()
+    assert avg_knn_distances_default_k.sum() == avg_knn_distances.sum()
