@@ -441,14 +441,14 @@ def test_default_model_knn_distance_odd_scores():
     X_with_ood = np.vstack([X, X_ood])
 
     # Create NN classifiers (regular/default) and fit on data
-    nbrs = NearestNeighbors(n_neighbors=10, metric="cosine").fit(X_with_ood)
+    nbrs = NearestNeighbors(n_neighbors=15, metric="cosine").fit(X_with_ood)
 
     avg_nbrs_distances = rank.get_knn_distance_ood_scores(
         features=X_with_ood, nbrs=nbrs, k=10  # this should use above classifier
     )
     avg_nbrs_distances_default = rank.get_knn_distance_ood_scores(
-        features=X_with_ood, k=10  # this should use default classifier (same as above)
+        features=X_with_ood, k=15  # this should use default classifier (same as above)
     )
 
-    # Scores should be equal because the two classifiers used have identical params and fit
-    assert avg_nbrs_distances == avg_nbrs_distances_default
+    # Score sums should be equal because the two classifiers used have identical params and fit
+    assert avg_nbrs_distances.sum() == avg_nbrs_distances_default.sum()
