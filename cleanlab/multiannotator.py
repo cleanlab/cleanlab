@@ -242,10 +242,22 @@ def get_multiannotator_stats(
         - ``worst_class``: the class that is most frequently mislabeled by a given annotator
     """
 
+    def try_overall_label_health_score(labels, pred_probs):
+        try:
+            return overall_label_health_score(labels, pred_probs, verbose=False)
+        except:
+            return np.NaN
+
+    def try_get_worst_class(labels, pred_probs):
+        try:
+            return _get_worst_class(labels, pred_probs)
+        except:
+            return np.NaN
+
     # Compute overall quality of each annotator's labels
     overall_label_health_score_df = labels_multiannotator.apply(
-        lambda s: overall_label_health_score(
-            s[pd.notna(s)].astype("int32"), pred_probs[pd.notna(s)], verbose=False
+        lambda s: try_overall_label_health_score(
+            s[pd.notna(s)].astype("int32"), pred_probs[pd.notna(s)]
         )
     )
 
@@ -254,7 +266,7 @@ def get_multiannotator_stats(
 
     # Find the worst labeled class for each annotator
     worst_class = labels_multiannotator.apply(
-        lambda s: _get_worst_class(s[pd.notna(s)].astype("int32"), pred_probs[pd.notna(s)])
+        lambda s: try_get_worst_class(s[pd.notna(s)].astype("int32"), pred_probs[pd.notna(s)])
     )
 
     # Create multi-annotator stats DataFrame from its columns

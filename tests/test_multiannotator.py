@@ -139,6 +139,13 @@ def test_label_quality_scores_multiannotator():
         labels, pred_probs, consensus_method=["majority", "majority"]
     )
 
+    # test different quality_methods
+    lqs_multiannotator = get_label_quality_multiannotator(labels, pred_probs, quality_method="lqs")
+
+    lqs_multiannotator = get_label_quality_multiannotator(
+        labels, pred_probs, quality_method="accuracy"
+    )
+
     # test returning annotator stats
     lqs_annotatorstats = get_label_quality_multiannotator(
         labels, pred_probs, return_annotator_stats=True
