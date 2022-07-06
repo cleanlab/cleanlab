@@ -592,7 +592,7 @@ def get_knn_distance_ood_scores(
         nbrs = NearestNeighbors(n_neighbors=n_neighbors, metric="cosine").fit(features)
 
     # number of neighbors specified when fitting instantiated NearestNeighbors class object
-    max_k = nbrs.n_neighbors
+    max_k = nbrs.n_neighbors if nbrs else 10
 
     # if k is not provided, then use default
     if k is None:
