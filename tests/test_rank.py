@@ -415,7 +415,7 @@ def test_get_outlier_scores():
 def test_default_k_and_model_get_outlier_scores():
     # Testing using 'None' as model param and correct setting of default k as max_k
 
-    # Create dataset with OOD datapoint
+    # Create dataset with OOD example
     X = data["X_test"]
     X_ood = np.array([[999999999.0, 999999999.0]])
     X_with_ood = np.vstack([X, X_ood])

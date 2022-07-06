@@ -554,16 +554,22 @@ def get_confidence_weighted_entropy_for_each_label(
     return label_quality_scores
 
 
-def get_outlier_scores(features: np.array, knn: NearestNeighbors = None, k: int = 10) -> np.array:
-    """Returns the KNN distance outlier score for each datapoint.
+def get_outlier_scores(
+    features: np.ndarray, knn: NearestNeighbors = None, k: int = 10
+) -> np.ndarray:
+    """Returns the KNN distance outlier score for each example.
 
-    This is a function to compute outlier scores where higher scores indicate the datapoint is more likely to be an outlier.
+    Returns an outlier score for each example based on its feature values, where higher scores indicate examples more
+    likely to be outliers. The score is based on the average distance between the example and its
+    K nearest neighbors in the dataset (in feature space).
 
     Parameters
     ----------
-    features : np.array
-      Feature matrix of shape ``(N, M)``, where N is the number of datapoints and M is the number of features.
-      This is the "query set" of features for each datapoint which are used for nearest neighbor search.
+    features : np.ndarray
+      Feature matrix of shape ``(N, M)``, where N is the number of examples and M is the number of features.
+      Feature array of shape (N, M), where N is the number of examples and M is the number of features used to represent each example
+      All features should be numeric. For unstructured data (eg. images, text, categorical values, ...), you should provide
+      vector embeddings to represent each example (e.g. extracted from some pretrained neural network).
 
     knn : sklearn.neighbors.NearestNeighbors
       Instantiated ``NearestNeighbors`` class object that's been fitted on a dataset in the same feature space.
@@ -582,12 +588,15 @@ def get_outlier_scores(features: np.array, knn: NearestNeighbors = None, k: int 
 
     Returns
     -------
-    avg_knn_distances : np.array
-      Average distance to k-nearest neighbors for each datapoint which is used as a score for outlier detection.
+    avg_knn_distances : np.ndarray
+      Average distance to k-nearest neighbors for each example which is used as a score for outlier detection.
     """
     # if knn is not provided, then use default KNN as estimator
     if knn is None:
         knn = NearestNeighbors(n_neighbors=k, metric="cosine").fit(features)
+
+    if np.array_equal(knn.__dict__["_fit_X"], features):
+        features = None  # features should be None in knn.kneighbors(features) to avoid counting duplicate data points
 
     # number of neighbors specified when fitting instantiated NearestNeighbors class object
     max_k = knn.n_neighbors
