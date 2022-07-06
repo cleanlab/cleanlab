@@ -21,10 +21,10 @@ from cleanlab.count import get_confident_thresholds
 
 
 def _subtract_confident_thresholds(
-    labels: np.array,
-    pred_probs: np.array,
+    labels: np.ndarray,
+    pred_probs: np.ndarray,
     multi_label: bool = False,
-) -> np.array:
+) -> np.ndarray:
     """Returns adjusted predicted probabilities by subtracting the class confident thresholds and renormalizing.
 
     The confident class threshold for a class j is the expected (average) "self-confidence" for class j.
@@ -71,7 +71,7 @@ def _subtract_confident_thresholds(
     return pred_probs_adj
 
 
-def get_normalized_entropy(pred_probs: np.array, min_allowed_prob=1e-6) -> np.array:
+def get_normalized_entropy(pred_probs: np.ndarray, min_allowed_prob: float = 1e-6) -> np.ndarray:
     """Returns the normalized entropy of pred_probs.
 
     Normalized entropy is between 0 and 1. Higher values of entropy indicate higher uncertainty in the model's prediction of the correct label.

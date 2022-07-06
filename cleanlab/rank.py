@@ -49,13 +49,13 @@ from cleanlab.internal.label_quality_utils import (
 
 
 def order_label_issues(
-    label_issues_mask: np.array,
-    labels: np.array,
-    pred_probs: np.array,
+    label_issues_mask: np.ndarray,
+    labels: np.ndarray,
+    pred_probs: np.ndarray,
     *,
     rank_by: str = "self_confidence",
     rank_by_kwargs: dict = {},
-) -> np.array:
+) -> np.ndarray:
     """Sorts label issues by label quality score.
 
     Default label quality score is "self_confidence".
@@ -107,12 +107,12 @@ def order_label_issues(
 
 
 def get_label_quality_scores(
-    labels: np.array,
-    pred_probs: np.array,
+    labels: np.ndarray,
+    pred_probs: np.ndarray,
     *,
     method: str = "self_confidence",
     adjust_pred_probs: bool = False,
-) -> np.array:
+) -> np.ndarray:
     """Returns label quality scores for each datapoint.
 
     This is a function to compute label-quality scores for classification datasets,
@@ -223,16 +223,16 @@ def get_label_quality_scores(
 
 
 def get_label_quality_ensemble_scores(
-    labels: np.array,
-    pred_probs_list: List[np.array],
+    labels: np.ndarray,
+    pred_probs_list: List[np.ndarray],
     *,
     method: str = "self_confidence",
     adjust_pred_probs: bool = False,
     weight_ensemble_members_by: str = "accuracy",
-    custom_weights: np.array = None,
+    custom_weights: np.ndarray = None,
     log_loss_search_T_values: List[float] = [1e-4, 1e-3, 1e-2, 1e-1, 1e0, 1e1, 1e2, 2e2],
     verbose: bool = True,
-) -> np.array:
+) -> np.ndarray:
     """Returns label quality scores based on predictions from an ensemble of models.
 
     This is a function to compute label-quality scores for classification datasets,
@@ -352,14 +352,13 @@ def get_label_quality_ensemble_scores(
             pred_probs_avg_log_loss_weighted_temp = sum(
                 [neg_log_loss_weights_temp[i] * p for i, p in enumerate(pred_probs_list)]
             )
-
             # evaluate log loss with this weighted average pred_probs
             eval_log_loss = log_loss(labels, pred_probs_avg_log_loss_weighted_temp)
 
             # check if eval_log_loss is the best so far (lower the better)
             if best_eval_log_loss > eval_log_loss:
                 best_eval_log_loss = eval_log_loss
-                pred_probs_avg_log_loss_weighted = pred_probs_avg_log_loss_weighted_temp.copy()
+                pred_probs_avg_log_loss_weighted = pred_probs_avg_log_loss_weighted_temp
                 neg_log_loss_weights = neg_log_loss_weights_temp.copy()
 
     # Generate scores for each model's pred_probs
@@ -403,6 +402,7 @@ def get_label_quality_ensemble_scores(
         label_quality_scores = (scores_ensemble * weights).sum(axis=1)
 
     elif weight_ensemble_members_by == "log_loss_search":
+        assert neg_log_loss_weights is not None
         weights = neg_log_loss_weights  # Weight by exp(t * -log_loss) where t is found by searching through log_loss_search_T_values
         if verbose:
             print(
@@ -440,9 +440,9 @@ def get_label_quality_ensemble_scores(
 
 
 def get_self_confidence_for_each_label(
-    labels: np.array,
-    pred_probs: np.array,
-) -> np.array:
+    labels: np.ndarray,
+    pred_probs: np.ndarray,
+) -> np.ndarray:
     """Returns the self-confidence label-quality score for each datapoint.
 
     This is a function to compute label-quality scores for classification datasets,
@@ -476,9 +476,9 @@ def get_self_confidence_for_each_label(
 
 
 def get_normalized_margin_for_each_label(
-    labels: np.array,
-    pred_probs: np.array,
-) -> np.array:
+    labels: np.ndarray,
+    pred_probs: np.ndarray,
+) -> np.ndarray:
     """Returns the "normalized margin" label-quality score for each datapoint.
 
     This is a function to compute label-quality scores for classification datasets,
@@ -518,8 +518,8 @@ def get_normalized_margin_for_each_label(
 
 
 def get_confidence_weighted_entropy_for_each_label(
-    labels: np.array, pred_probs: np.array
-) -> np.array:
+    labels: np.ndarray, pred_probs: np.ndarray
+) -> np.ndarray:
     """Returns the "confidence weighted entropy" label-quality score for each datapoint.
 
     This is a function to compute label-quality scores for classification datasets,
@@ -547,7 +547,7 @@ def get_confidence_weighted_entropy_for_each_label(
     self_confidence = np.clip(self_confidence, a_min=MIN_ALLOWED, a_max=None)
 
     # Divide entropy by self confidence
-    label_quality_scores = get_normalized_entropy(**{"pred_probs": pred_probs}) / self_confidence
+    label_quality_scores = get_normalized_entropy(pred_probs) / self_confidence
 
     # Rescale
     clipped_scores = np.clip(label_quality_scores, a_min=MIN_ALLOWED, a_max=None)
@@ -557,8 +557,8 @@ def get_confidence_weighted_entropy_for_each_label(
 
 
 def get_knn_distance_ood_scores(
-    features: np.array, nbrs: NearestNeighbors, k: int = None
-) -> np.array:
+    features: np.ndarray, nbrs: NearestNeighbors, k: int = None
+) -> np.ndarray:
     """Returns the KNN distance out-of-distribution (OOD) score for each datapoint.
 
     This is a function to compute OOD scores where higher scores indicate the datapoint is more likely to be OOD.
