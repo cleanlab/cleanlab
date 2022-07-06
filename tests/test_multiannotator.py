@@ -143,7 +143,7 @@ def test_label_quality_scores_multiannotator():
     lqs_multiannotator = get_label_quality_multiannotator(labels, pred_probs, quality_method="lqs")
 
     lqs_multiannotator = get_label_quality_multiannotator(
-        labels, pred_probs, quality_method="accuracy"
+        labels, pred_probs, quality_method="agreement"
     )
 
     # test returning annotator stats
