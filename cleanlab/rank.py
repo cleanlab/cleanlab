@@ -557,7 +557,7 @@ def get_confidence_weighted_entropy_for_each_label(
 
 
 def get_knn_distance_ood_scores(
-    features: np.array, nbrs: NearestNeighbors = None, k: int = None
+    features: np.array, nbrs: NearestNeighbors = None, k: int = 10
 ) -> np.array:
     """Returns the KNN distance out-of-distribution (OOD) score for each datapoint.
 
@@ -575,11 +575,10 @@ def get_knn_distance_ood_scores(
       If nbrs=None, then by default nbrs=sklearn.neighbors.NearestNeighbors(n_neighbors=k, metric="cosine").fit(features)
       See: https://scikit-learn.org/stable/modules/neighbors.html
 
-    k : int, default=None
-      Number of neighbors to use when calculating average distance to neighbors.
-      This value k needs to be less than or equal to max_k which is the n_neighbors used when fitting instantiated NearestNeighbors class object.
-      If k=None, then by default k=min(10, max_k) is used where max_k is extracted from the given nbrs.
-      If nbrs is not provided, then by default k=10.
+    k : int, default=None Number of neighbors to use when calculating average distance to neighbors. This value k
+    needs to be less than or equal to max_k which is the n_neighbors used when fitting instantiated NearestNeighbors
+    class object. If k=None, then by default k=min(10, max_k) is used where max_k is extracted from the given nbrs.
+    If nbrs is not provided, then by default k=10.
 
     Returns
     -------
@@ -588,23 +587,22 @@ def get_knn_distance_ood_scores(
     """
     # if nbrs is not provided, then use default KNN classifier
     if nbrs is None:
-        n_neighbors = k if k is not None else 10
-        nbrs = NearestNeighbors(n_neighbors=n_neighbors, metric="cosine").fit(features)
+        nbrs = NearestNeighbors(n_neighbors=k, metric="cosine").fit(features)
 
     # number of neighbors specified when fitting instantiated NearestNeighbors class object
-    max_k = nbrs.n_neighbors if nbrs else 10
+    max_k = nbrs.n_neighbors
 
-    # if k is not provided, then use default
-    if k is None:
-        k = min(10, max_k)
+    # if k provided is too high, use max number of nearest neighbors
+    if k > max_k:
+        k = max_k
+        warnings.warn(
+            f"Chosen k={k} cannot be greater than n_neighbors={max_k} which was used when fitting "
+            f"NearestNeighbors object! Value of k changed to k={max_k}."
+        )
 
-    assert (
-        k <= max_k
-    ), f"Chosen k={k} cannot be greater than n_neighbors={max_k} which was used when fitting NearestNeighbors object!"
-
-    # Get distances to k-nearest neighbors
-    # Note that the nbrs object contains the specification of distance metric and n_neighbors (k value)
-    # If our query set of features matches the training set used to fit nbrs, the nearest neighbor of each point is the point itself, at a distance of zero.
+    # Get distances to k-nearest neighbors Note that the nbrs object contains the specification of distance metric
+    # and n_neighbors (k value) If our query set of features matches the training set used to fit nbrs, the nearest
+    # neighbor of each point is the point itself, at a distance of zero.
     distances, _ = nbrs.kneighbors(features)
 
     # Calculate average distance to k-nearest neighbors

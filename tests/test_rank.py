@@ -325,9 +325,7 @@ def test_wrong_length_custom_weights_error():
             labels,
             pred_probs_list,
             weight_ensemble_members_by="custom",
-            custom_weights=custom_weights[
-                           1:
-                           ],
+            custom_weights=custom_weights[1:],
             # this should raise AssertionError because length of custom_weights don't match len(pred_probs_list)
         )
 
@@ -434,21 +432,35 @@ def test_bad_k_for_get_knn_distance_ood_scores():
         )
 
 
-def test_default_model_knn_distance_odd_scores():
+def test_default_k_and_model_knn_distance_odd_scores():
+    # Testing using 'None' as classifier param and correct setting of default k as max_k
+
     # Create dataset with OOD datapoint
     X = data["X_test"]
     X_ood = np.array([[999999999.0, 999999999.0]])
     X_with_ood = np.vstack([X, X_ood])
 
-    # Create NN classifiers (regular/default) and fit on data
-    nbrs = NearestNeighbors(n_neighbors=15, metric="cosine").fit(X_with_ood)
+    instantiated_k = 10
+
+    # Create NN classifiers with small k and fit on data
+    nbrs = NearestNeighbors(n_neighbors=instantiated_k, metric="cosine").fit(X_with_ood)
 
     avg_nbrs_distances = rank.get_knn_distance_ood_scores(
-        features=X_with_ood, nbrs=nbrs, k=15  # this should use above classifier
+        features=X_with_ood,
+        nbrs=nbrs,
+        k=25,  # this should throw warn, k should be set to instantiated_k
     )
-    avg_nbrs_distances_default = rank.get_knn_distance_ood_scores(
-        features=X_with_ood, k=15  # this should use default classifier (same as above)
+
+    avg_nbrs_distances_default_model = rank.get_knn_distance_ood_scores(
+        features=X_with_ood,
+        k=instantiated_k  # # this should use default classifier (same as above) and using k
+        # set to instantiated_k
+    )
+
+    avg_nbrs_distances_default_k = rank.get_knn_distance_ood_scores(
+        features=X_with_ood  # default k should be set to 10 == instantiated_k
     )
 
     # Score sums should be equal because the two classifiers used have identical params and fit
-    assert avg_nbrs_distances.sum() == avg_nbrs_distances_default.sum()
+    assert avg_nbrs_distances.sum() == avg_nbrs_distances_default_model.sum()
+    assert avg_nbrs_distances_default_k.sum() == avg_nbrs_distances.sum()
