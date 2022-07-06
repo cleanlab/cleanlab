@@ -444,7 +444,7 @@ def test_default_model_knn_distance_odd_scores():
     nbrs = NearestNeighbors(n_neighbors=15, metric="cosine").fit(X_with_ood)
 
     avg_nbrs_distances = rank.get_knn_distance_ood_scores(
-        features=X_with_ood, nbrs=nbrs, k=10  # this should use above classifier
+        features=X_with_ood, nbrs=nbrs, k=15  # this should use above classifier
     )
     avg_nbrs_distances_default = rank.get_knn_distance_ood_scores(
         features=X_with_ood, k=15  # this should use default classifier (same as above)
