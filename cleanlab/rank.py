@@ -572,25 +572,22 @@ def get_knn_distance_ood_scores(
     nbrs : sklearn.neighbors.NearestNeighbors
       Instantiated NearestNeighbors class object that's been fitted on a dataset in the same feature space.
       Note that the distance metric and n_neighbors is specified when instantiating this class.
-      If nbrs=None, then by default nbrs=sklearn.neighbors.NearestNeighbors(n_neighbors=10, metric="cosine").fit(features)
+      If nbrs=None, then by default nbrs=sklearn.neighbors.NearestNeighbors(n_neighbors=k, metric="cosine").fit(features)
       See: https://scikit-learn.org/stable/modules/neighbors.html
 
     k : int, default=None
       Number of neighbors to use when calculating average distance to neighbors.
       This value k needs to be less than or equal to max_k which is the n_neighbors used when fitting instantiated NearestNeighbors class object.
       If k=None, then by default k=min(10, max_k) is used where max_k is extracted from the given nbrs.
+      If nbrs is not provided, then by default k=10.
 
     Returns
     -------
     avg_nbrs_distances : np.array
       Average distance to k-nearest neighbors for each datapoint which is used as a score for OOD detection.
     """
-    # if nbrs is not provided, then use default KNN classifier (k=10)
-    if nbrs is None:
-        nbrs = NearestNeighbors(n_neighbors=10, metric="cosine").fit(features)
-
     # number of neighbors specified when fitting instantiated NearestNeighbors class object
-    max_k = nbrs.n_neighbors
+    max_k = nbrs.n_neighbors if nbrs else 10
 
     # if k is not provided, then use default
     if k is None:
@@ -599,6 +596,10 @@ def get_knn_distance_ood_scores(
     assert (
         k <= max_k
     ), f"Chosen k={k} cannot be greater than n_neighbors={max_k} which was used when fitting NearestNeighbors object!"
+
+    # if nbrs is not provided, then use default KNN classifier
+    if nbrs is None:
+        nbrs = NearestNeighbors(n_neighbors=k, metric="cosine").fit(features)
 
     # Get distances to k-nearest neighbors
     # Note that the nbrs object contains the specification of distance metric and n_neighbors (k value)
