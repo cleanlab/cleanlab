@@ -562,19 +562,23 @@ def get_outlier_scores(features: np.array, knn: NearestNeighbors = None, k: int 
     Parameters
     ----------
     features : np.array
-      Feature matrix of shape (N, M), where N is the number of datapoints and M is the number of features.
+      Feature matrix of shape ``(N, M)``, where N is the number of datapoints and M is the number of features.
       This is the "query set" of features for each datapoint which are used for nearest neighbor search.
 
     knn : sklearn.neighbors.NearestNeighbors
       Instantiated ``NearestNeighbors`` class object that's been fitted on a dataset in the same feature space.
       Note that the distance metric and n_neighbors is specified when instantiating this class.
-      If knn=None, then by default knn=sklearn.neighbors.NearestNeighbors(n_neighbors=k, metric="cosine").fit(features)
+      You can also pass in a subclass of ``sklearn.neighbors.NearestNeighbors`` which allows you to use faster
+      approximate neighbor libraries as long as you wrap them behind the same sklearn API.
+      If ``knn = None``, then by default ``knn = sklearn.neighbors.NearestNeighbors(n_neighbors=k, metric="cosine").fit(features)``
       See: https://scikit-learn.org/stable/modules/neighbors.html
 
-    k : int, default=None Number of neighbors to use when calculating average distance to neighbors. This value k
-    needs to be less than or equal to max_k which is the n_neighbors used when fitting instantiated NearestNeighbors
-    class object. If k=None, then by default k=min(10, max_k) is used where max_k is extracted from the given knn.
-    If knn is not provided, then by default k=10.
+    k : int, default=10
+      Number of neighbors to use when calculating outlier score (average distance to neighbors). If an existing ``knn``
+      object is provided, you can still specify that outlier score should use a different value of ``k`` than originally
+      used in the ``knn``, as long as your specified value of ``k`` is smaller than the one originally used.
+      If k is larger, then by default ``k = n_neighbors`` where ``n_neighbors`` is defined in the ``knn``.
+      If k is not provided, then by default ``k = 10``.
 
     Returns
     -------

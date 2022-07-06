@@ -411,7 +411,7 @@ def test_get_outlier_scores():
     assert idx_max_score == (X_test_with_ood.shape[0] - 1)
 
 
-@pytest.mark.filterwarnings('ignore::UserWarning')
+@pytest.mark.filterwarnings("ignore::UserWarning")
 def test_default_k_and_model_get_outlier_scores():
     # Testing using 'None' as model param and correct setting of default k as max_k
 
