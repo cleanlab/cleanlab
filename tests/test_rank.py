@@ -22,7 +22,6 @@ from cleanlab.benchmarking.noise_generation import generate_noise_matrix_from_tr
 from cleanlab.benchmarking.noise_generation import generate_noisy_labels
 from cleanlab import count
 from sklearn.neighbors import NearestNeighbors
-import warnings
 
 
 def make_data(
@@ -412,8 +411,9 @@ def test_get_outlier_scores():
     assert idx_max_score == (X_test_with_ood.shape[0] - 1)
 
 
+@pytest.mark.filterwarnings('ignore::UserWarning')
 def test_default_k_and_model_get_outlier_scores():
-    # Testing using 'None' as classifier param and correct setting of default k as max_k
+    # Testing using 'None' as model param and correct setting of default k as max_k
 
     # Create dataset with OOD datapoint
     X = data["X_test"]
@@ -422,30 +422,45 @@ def test_default_k_and_model_get_outlier_scores():
 
     instantiated_k = 10
 
-    # Create NN classifiers with small instantiated k and fit on data
+    # Create NN class object with small instantiated k and fit on data
     knn = NearestNeighbors(n_neighbors=instantiated_k, metric="cosine").fit(X_with_ood)
 
     avg_knn_distances_default_model = rank.get_outlier_scores(
         features=X_with_ood,
-        k=instantiated_k,  # this should use default classifier (same as above) and k = instantiated_k
+        k=instantiated_k,  # this should use default estimator (same as above) and k = instantiated_k
     )
 
     avg_knn_distances_default_k = rank.get_outlier_scores(
         features=X_with_ood  # default k should be set to 10 == instantiated_k
     )
 
-    with warnings.catch_warnings(record=True) as w:
-        warnings.simplefilter("always")
-        # Trigger a warning.
-        avg_knn_distances = rank.get_outlier_scores(
-            features=X_with_ood,
-            knn=knn,
-            k=25,  # this should throw warn, k should be set to instantiated_k
-        )
+    avg_knn_distances = rank.get_outlier_scores(
+        features=X_with_ood,
+        knn=knn,
+        k=25,  # this should throw user warn, k should be set to instantiated_k
+    )
 
-        assert len(w) == 1
-        assert "Value of k changed" in str(w[-1].message)
-
-    # Score sums should be equal because the three classifiers used have identical params and fit
+    # Score sums should be equal because the three estimators used have identical params and fit
     assert avg_knn_distances.sum() == avg_knn_distances_default_model.sum()
     assert avg_knn_distances_default_k.sum() == avg_knn_distances.sum()
+
+    avg_knn_distances_large_k = rank.get_outlier_scores(
+        features=X_with_ood,
+        k=25,  # this should use default estimator and k = 25
+    )
+
+    avg_knn_distances_tiny_k = rank.get_outlier_scores(
+        features=X_with_ood,
+        knn=knn,
+        k=1,  # this should use knn estimator and k = 1
+    )
+
+    avg_knn_distances_tiny_k_default = rank.get_outlier_scores(
+        features=X_with_ood,
+        k=1,  # this should use default estimator and k = 1
+    )
+
+    # Score sums should be different because k = user param for estimators and k != 10.
+    assert avg_knn_distances_tiny_k.sum() != avg_knn_distances.sum()
+    assert avg_knn_distances_large_k.sum() != avg_knn_distances.sum()
+    assert avg_knn_distances_tiny_k_default.sum() != avg_knn_distances_default_model.sum()

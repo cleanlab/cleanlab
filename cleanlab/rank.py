@@ -34,7 +34,6 @@ Alternatively it is ok if your model was trained on a separate dataset and you a
 labels in data that was previously held-out.
 """
 
-
 import numpy as np
 from sklearn.metrics import log_loss
 from sklearn.neighbors import NearestNeighbors
@@ -336,7 +335,6 @@ def get_label_quality_ensemble_scores(
 
             # pred_probs for each model
             for pred_probs in pred_probs_list:
-
                 pred_probs_clipped = np.clip(
                     pred_probs, a_min=MIN_ALLOWED, a_max=None
                 )  # lower-bound clipping threshold to prevents 0 in logs when calculating log loss
@@ -568,7 +566,7 @@ def get_outlier_scores(features: np.array, knn: NearestNeighbors = None, k: int 
       This is the "query set" of features for each datapoint which are used for nearest neighbor search.
 
     knn : sklearn.neighbors.NearestNeighbors
-      Instantiated NearestNeighbors class object that's been fitted on a dataset in the same feature space.
+      Instantiated ``NearestNeighbors`` class object that's been fitted on a dataset in the same feature space.
       Note that the distance metric and n_neighbors is specified when instantiating this class.
       If knn=None, then by default knn=sklearn.neighbors.NearestNeighbors(n_neighbors=k, metric="cosine").fit(features)
       See: https://scikit-learn.org/stable/modules/neighbors.html
@@ -583,7 +581,7 @@ def get_outlier_scores(features: np.array, knn: NearestNeighbors = None, k: int 
     avg_knn_distances : np.array
       Average distance to k-nearest neighbors for each datapoint which is used as a score for outlier detection.
     """
-    # if knn is not provided, then use default KNN classifier
+    # if knn is not provided, then use default KNN as estimator
     if knn is None:
         knn = NearestNeighbors(n_neighbors=k, metric="cosine").fit(features)
 
@@ -595,7 +593,8 @@ def get_outlier_scores(features: np.array, knn: NearestNeighbors = None, k: int 
         k = max_k
         warnings.warn(
             f"Chosen k={k} cannot be greater than n_neighbors={max_k} which was used when fitting "
-            f"NearestNeighbors object! Value of k changed to k={max_k}."
+            f"NearestNeighbors object! Value of k changed to k={max_k}.",
+            UserWarning,
         )
 
     # Get distances to k-nearest neighbors Note that the knn object contains the specification of distance metric
