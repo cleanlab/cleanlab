@@ -144,7 +144,6 @@ def test_bad_rank_by_parameter_error():
 )
 @pytest.mark.parametrize("adjust_pred_probs", [False, True])
 def test_order_label_issues_using_scoring_func_ranking(scoring_method_func, adjust_pred_probs):
-
     # test all scoring methods with the scoring function
 
     method, scoring_func = scoring_method_func
@@ -218,7 +217,6 @@ def test__subtract_confident_thresholds():
 @pytest.mark.parametrize("adjust_pred_probs", [False, True])
 @pytest.mark.parametrize("weight_ensemble_members_by", ["uniform", "accuracy", "log_loss_search"])
 def test_ensemble_scoring_func(method, adjust_pred_probs, weight_ensemble_members_by):
-
     labels = data["labels"]
     pred_probs = data["pred_probs"]
 
@@ -226,7 +224,6 @@ def test_ensemble_scoring_func(method, adjust_pred_probs, weight_ensemble_member
     # do not run the test below if the method does not support adjust_pred_probs
     # confidence_weighted_entropy scoring method does not support adjust_pred_probs
     if not (adjust_pred_probs == True and method == "confidence_weighted_entropy"):
-
         # baseline scenario where all the pred_probs are the same in the ensemble list
         num_repeat = 3
         pred_probs_list = list(np.repeat([pred_probs], num_repeat, axis=0))
@@ -254,7 +251,6 @@ def test_ensemble_scoring_func(method, adjust_pred_probs, weight_ensemble_member
 
 def test_bad_weight_ensemble_members_by_parameter_error():
     with pytest.raises(ValueError) as e:
-
         labels = data["labels"]
         pred_probs = data["pred_probs"]
 
@@ -271,7 +267,6 @@ def test_bad_weight_ensemble_members_by_parameter_error():
 
 def test_custom_weights():
     with pytest.raises(AssertionError) as e:
-
         labels = data["labels"]
         pred_probs = data["pred_probs"]
 
@@ -298,7 +293,6 @@ def test_custom_weights():
 
 
 def test_empty_custom_weights_error():
-
     labels = data["labels"]
     pred_probs = data["pred_probs"]
 
@@ -316,7 +310,6 @@ def test_empty_custom_weights_error():
 
 
 def test_wrong_length_custom_weights_error():
-
     labels = data["labels"]
     pred_probs = data["pred_probs"]
 
@@ -333,13 +326,13 @@ def test_wrong_length_custom_weights_error():
             pred_probs_list,
             weight_ensemble_members_by="custom",
             custom_weights=custom_weights[
-                1:
-            ],  # this should raise AssertionError because length of custom_weights don't match len(pred_probs_list)
+                           1:
+                           ],
+            # this should raise AssertionError because length of custom_weights don't match len(pred_probs_list)
         )
 
 
 def test_wrong_weight_ensemble_members_by_for_custom_weights_error():
-
     labels = data["labels"]
     pred_probs = data["pred_probs"]
 
@@ -354,14 +347,14 @@ def test_wrong_weight_ensemble_members_by_for_custom_weights_error():
         _ = rank.get_label_quality_ensemble_scores(
             labels,
             pred_probs_list,
-            weight_ensemble_members_by="accuracy",  # this should raise ValueError because custom_weights array is provided
+            weight_ensemble_members_by="accuracy",
+            # this should raise ValueError because custom_weights array is provided
             custom_weights=custom_weights,
         )
 
 
 def test_bad_pred_probs_list_parameter_error():
     with pytest.raises(AssertionError) as e:
-
         labels = data["labels"]
         pred_probs = data["pred_probs"]
 
@@ -380,7 +373,6 @@ def test_bad_pred_probs_list_parameter_error():
 
 def test_unsupported_method_for_adjust_pred_probs():
     with pytest.raises(ValueError) as e:
-
         labels = data["labels"]
         pred_probs = data["pred_probs"]
 
@@ -392,7 +384,6 @@ def test_unsupported_method_for_adjust_pred_probs():
 
 
 def test_get_knn_distance_ood_scores():
-
     X_train = data["X_train"]
     X_test = data["X_test"]
 
@@ -425,7 +416,6 @@ def test_get_knn_distance_ood_scores():
 
 
 def test_bad_k_for_get_knn_distance_ood_scores():
-
     X_train = data["X_train"]
     X_test = data["X_test"]
 
@@ -442,3 +432,23 @@ def test_bad_k_for_get_knn_distance_ood_scores():
         _ = rank.get_knn_distance_ood_scores(
             features=X_test_with_ood, nbrs=nbrs, k=10  # this should throw an assertion error
         )
+
+
+def test_default_model_knn_distance_odd_scores():
+    # Create dataset with OOD datapoint
+    X = data["X_test"]
+    X_ood = np.array([[999999999.0, 999999999.0]])
+    X_with_ood = np.vstack([X, X_ood])
+
+    # Create NN classifiers (regular/default) and fit on data
+    nbrs = NearestNeighbors(n_neighbors=10, metric="cosine").fit(X_with_ood)
+
+    avg_nbrs_distances = rank.get_knn_distance_ood_scores(
+        features=X_with_ood, nbrs=nbrs, k=10  # this should use above classifier
+    )
+    avg_nbrs_distances_default = rank.get_knn_distance_ood_scores(
+        features=X_with_ood, k=10  # this should use default classifier (same as above)
+    )
+
+    # Scores should be equal because the two classifiers used have identical params and fit
+    assert avg_nbrs_distances == avg_nbrs_distances_default
