@@ -9,9 +9,9 @@ import warnings
 
 def _get_consensus_label(
     labels_multiannotator: pd.DataFrame,
-    pred_probs: np.array,
+    pred_probs: np.ndarray,
     consensus_method: str,
-) -> np.array:
+) -> np.ndarray:
     """Returns consensus labels aggregated from multiple annotators, determined by method specified.
 
     Parameters
@@ -21,7 +21,7 @@ def _get_consensus_label(
         where N is the number of examples and M is the number of annotators.
         For more details, labels in the same format expected by the :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>`.
 
-    pred_probs : np.array
+    pred_probs : np.ndarray
         An array of shape ``(N, K)`` of model-predicted probabilities, ``P(label=k|x)``.
         For details, predicted probabilities in the same format expected by the :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>`.
 
@@ -31,7 +31,7 @@ def _get_consensus_label(
 
     Returns
     -------
-    consensus_label: np.array
+    consensus_label: np.ndarray
         An array of shape ``(N,)`` with the consensus labels aggregated from all annotators.
     """
 
@@ -60,8 +60,8 @@ def _get_consensus_label(
 
 def _get_annotator_agreement(
     labels_multiannotator: pd.DataFrame,
-    consensus_label: np.array,
-) -> np.array:
+    consensus_label: np.ndarray,
+) -> np.ndarray:
     """Returns the fractions of annotators that agree with the consensus labels. Note that the
     fraction for each example only considers the annotators that labeled that particular example.
 
@@ -72,12 +72,12 @@ def _get_annotator_agreement(
         where N is the number of examples and M is the number of annotators.
         For more details, labels in the same format expected by the :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>`.
 
-    consensus_label : np.array
+    consensus_label : np.ndarray
         An array of shape ``(N,)`` with the consensus labels aggregated from all annotators.
 
     Returns
     -------
-    annotator_agreement : np.array
+    annotator_agreement : np.ndarray
         An array of shape ``(N,)`` with the fraction of annotators that agree with each consensus label.
     """
     return (
@@ -92,29 +92,29 @@ def _get_annotator_agreement(
 
 # TODO: add other ways to the get quality score
 def _get_quality_of_consensus(
-    consensus_label: np.array,
-    pred_probs: np.array,
-    num_annotations: np.array,
-    annotator_agreement: np.array,
+    consensus_label: np.ndarray,
+    pred_probs: np.ndarray,
+    num_annotations: np.ndarray,
+    annotator_agreement: np.ndarray,
     quality_method: str,
     kwargs: dict = {},
-) -> np.array:
+) -> np.ndarray:
     """Return scores representing quality of the consensus label for each example,
     calculated using weighted product of `label_quality_score` of `consensus_label` and `annotator_agreement`
 
     Parameters
     ----------
-    consensus_label : np.array
+    consensus_label : np.ndarray
         An array of shape ``(N,)`` with the consensus labels aggregated from all annotators.
 
-    pred_probs : np.array
+    pred_probs : np.ndarray
         An array of shape ``(N, K)`` of model-predicted probabilities, ``P(label=k|x)``.
         For details, predicted probabilities in the same format expected by the :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>`.
 
-    num_annotations : np.array
+    num_annotations : np.ndarray
         An array of shape ``(N,)`` with the number of annotators that have labeled each example.
 
-    annotator_agreement : np.array
+    annotator_agreement : np.ndarray
         An array of shape ``(N,)`` with the fraction of annotators that agree with each consensus label.
 
     quality_method : str
@@ -123,7 +123,7 @@ def _get_quality_of_consensus(
 
     Returns
     -------
-    quality_of_consensus : np.array
+    quality_of_consensus : np.ndarray
         An array of shape ``(N,)`` with the quality score of the consensus.
         TODO: better explanation of this
     """
@@ -150,8 +150,8 @@ def _get_quality_of_consensus(
 
 def _get_consensus_stats(
     labels_multiannotator: pd.DataFrame,
-    pred_probs: np.array,
-    num_annotations: np.array,
+    pred_probs: np.ndarray,
+    num_annotations: np.ndarray,
     consensus_method: str,
     quality_method: str,
     kwargs: dict = {},
@@ -165,11 +165,11 @@ def _get_consensus_stats(
         where N is the number of examples and M is the number of annotators.
         For more details, labels in the same format expected by the :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>`.
 
-    pred_probs : np.array
+    pred_probs : np.ndarray
         An array of shape ``(N, K)`` of model-predicted probabilities, ``P(label=k|x)``.
         For details, predicted probabilities in the same format expected by the :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>`.
 
-    num_annotations : np.array
+    num_annotations : np.ndarray
         An array of shape ``(N,)`` with the number of annotators that have labeled each example.
 
     consensus_method : str (Options: ["majority"])
@@ -217,8 +217,8 @@ def _get_consensus_stats(
 # TODO: update this method once multi-annotator functionality is finalized
 def get_multiannotator_stats(
     labels_multiannotator: pd.DataFrame,
-    pred_probs: np.array,
-    consensus_label: np.array,
+    pred_probs: np.ndarray,
+    consensus_label: np.ndarray,
     quality_method: str,
 ) -> pd.DataFrame:
     """Returns overall statistics about each annotator.
@@ -230,11 +230,11 @@ def get_multiannotator_stats(
         where N is the number of examples and M is the number of annotators.
         For more details, labels in the same format expected by the :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>`.
 
-    pred_probs : np.array
+    pred_probs : np.ndarray
         An array of shape ``(N, K)`` of model-predicted probabilities, ``P(label=k|x)``.
         For details, predicted probabilities in the same format expected by the :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>`.
 
-    consensus_label : np.array
+    consensus_label : np.ndarray
         An array of shape ``(N,)`` with the consensus labels aggregated from all annotators.
 
     quality_method : str
@@ -297,7 +297,7 @@ def get_multiannotator_stats(
 
 def get_label_quality_multiannotator(
     labels_multiannotator: pd.DataFrame,
-    pred_probs: np.array,
+    pred_probs: np.ndarray,
     *,
     consensus_method: Union[str, List[str]] = "majority",
     quality_method: str = "auto",
@@ -324,7 +324,7 @@ def get_label_quality_multiannotator(
         For a dataset with K classes, each given label must be an integer in 0, 1, ..., K-1 or
         NaN if this annotator did not label a particular example. Column names should correspond to the annotators' ID.
 
-    pred_probs : np.array
+    pred_probs : np.ndarray
         An array of shape ``(N, K)`` of model-predicted probabilities.
         Predicted probabilities in the same format expected by the :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>`.
 
