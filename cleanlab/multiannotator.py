@@ -218,7 +218,8 @@ def _get_consensus_stats(
 def get_multiannotator_stats(
     labels_multiannotator: pd.DataFrame,
     pred_probs: np.array,
-    # label_quality_scores_multiannotator=None, # is this still needed? it is never called in the function
+    consensus_label: np.array,
+    quality_method: str,
 ) -> pd.DataFrame:
     """Returns overall statistics about each annotator.
 
@@ -233,12 +234,20 @@ def get_multiannotator_stats(
         An array of shape ``(N, K)`` of model-predicted probabilities, ``P(label=k|x)``.
         For details, predicted probabilities in the same format expected by the :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>`.
 
+    consensus_label : np.array
+        An array of shape ``(N,)`` with the consensus labels aggregated from all annotators.
+
+    quality_method : str
+        Specifies the method used to calculate the quality of the consensus label.
+        For valid quality methods, view :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>`
+
     Returns
     -------
     annotator_stats : pd.DataFrame
         pandas DataFrame in which each row corresponds to one annotator (the row IDs correspond to annotator IDs), with columns:
         - ``overall_quality``: overall quality of a given annotator's labels
         - ``num_labeled``: number of examples annotated by a given annotator
+        - ``agreement_with_consensus``: fraction of examples where a given annotator agrees with the consensus label
         - ``worst_class``: the class that is most frequently mislabeled by a given annotator
     """
 
@@ -261,8 +270,14 @@ def get_multiannotator_stats(
         )
     )
 
-    # Compute the number of labels labeled/annotated by each annotator
+    # Compute the number of labels labeled/ by each annotator
     num_labeled = labels_multiannotator.count()
+
+    # Compute the fraction of labels annotated by each annotator that agrees with the consensus label
+    agreement_with_consensus = labels_multiannotator.apply(
+        lambda s: np.mean(s[pd.notna(s)] == consensus_label[pd.notna(s)]),
+        axis=0,
+    ).to_numpy()
 
     # Find the worst labeled class for each annotator
     worst_class = labels_multiannotator.apply(
@@ -274,6 +289,7 @@ def get_multiannotator_stats(
         {
             "overall_quality": overall_label_health_score_df,
             "num_labeled": num_labeled,
+            "agreement_with_consensus": agreement_with_consensus,
             "worst_class": worst_class,
         }
     )
@@ -453,7 +469,12 @@ def get_label_quality_multiannotator(
     )
 
     if verbose or return_annotator_stats:
-        annotator_stats = get_multiannotator_stats(labels_multiannotator, pred_probs)
+        annotator_stats = get_multiannotator_stats(
+            labels_multiannotator=labels_multiannotator,
+            pred_probs=pred_probs,
+            consensus_label=consensus_label,
+            quality_method=quality_method,
+        )
 
     if verbose:
         print(
