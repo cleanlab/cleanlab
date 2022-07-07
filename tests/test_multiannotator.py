@@ -58,6 +58,9 @@ def make_data(
         ).transpose()
     )
 
+    # column of labels without NaNs to test _get_worst_class
+    complete_labels = deepcopy(s)
+
     # Each annotator only labels approximately 20% of the dataset
     # (unlabeled points represented with NaN)
     s = s.apply(lambda x: x.mask(np.random.random(n) < 0.8)).astype("Int32")
@@ -86,6 +89,7 @@ def make_data(
         "X_test": X_test[row_NA_check],
         "true_labels_test": true_labels_test[row_NA_check],
         "labels": s[row_NA_check].reset_index(drop=True),
+        "complete_labels": complete_labels,
         # "label_errors_mask": label_errors_mask,
         # "ps": ps,
         # "py": py,
@@ -107,22 +111,15 @@ data = make_data()
 
 # TODO: fix this test to work with NaN values - also unsure if this test should sit in this file
 # logic of current test does not work - randomly deleting data will break it (put in another file?)
-# def test_get_worst_class():
+def test_get_worst_class():
+    labels = data["complete_labels"][0]  # only testing on first column
+    pred_probs = data["pred_probs"]
 
-#     labels = data["labels"][0]  # only test on first column
-#     pred_probs = data["pred_probs"]
-
-#     # Assert that the worst class index should be the class with the highest noise
-#     assert (
-#         dataset._get_worst_class(
-#             labels[pd.notna(labels)].astype("int32"), pred_probs[pd.notna(labels)]
-#         )
-#         == data["noise_matrix"].diagonal().argmax()
-#     )
+    # Assert that the worst class index should be the class with the highest noise
+    assert dataset._get_worst_class(labels, pred_probs) == data["noise_matrix"].diagonal().argmax()
 
 
 def test_label_quality_scores_multiannotator():
-
     labels = data["labels"]
     pred_probs = data["pred_probs"]
 

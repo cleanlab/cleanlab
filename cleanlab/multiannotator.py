@@ -452,7 +452,8 @@ def get_label_quality_multiannotator(
         columns=new_index
     )
 
-    annotator_stats = get_multiannotator_stats(labels_multiannotator, pred_probs)
+    if verbose or return_annotator_stats:
+        annotator_stats = get_multiannotator_stats(labels_multiannotator, pred_probs)
 
     if verbose:
         print(

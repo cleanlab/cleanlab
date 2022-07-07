@@ -104,8 +104,7 @@ def rank_classes_by_label_quality(
 
 def _get_worst_class(labels, pred_probs):
     """Returns the class with the lowest *Label Quality Score*, i.e. the most problematic class.
-    If all classes have a Label Quality Score of 1.0 (all classes have no issues), this function will
-    return NaN.
+    If all classes have a Label Quality Score of 1.0 (all classes have no issues), this function will return NaN.
 
     **Parameters**: For parameter info, see the docstring of :py:func:`find_overlapping_classes <cleanlab.dataset.find_overlapping_classes>`.
 
