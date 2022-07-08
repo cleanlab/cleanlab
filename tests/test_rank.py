@@ -435,7 +435,7 @@ def test_default_k_and_model_get_outlier_scores():
     )
 
     avg_knn_distances = rank.get_outlier_scores(
-        features=X_with_ood,
+        features=None,
         knn=knn,
         k=25,  # this should throw user warn, k should be set to instantiated_k
     )
@@ -450,7 +450,7 @@ def test_default_k_and_model_get_outlier_scores():
     )
 
     avg_knn_distances_tiny_k = rank.get_outlier_scores(
-        features=X_with_ood,
+        features=None,
         knn=knn,
         k=1,  # this should use knn estimator and k = 1
     )

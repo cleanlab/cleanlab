@@ -566,8 +566,7 @@ def get_outlier_scores(
     Parameters
     ----------
     features : np.ndarray
-      Feature matrix of shape ``(N, M)``, where N is the number of examples and M is the number of features.
-      Feature array of shape (N, M), where N is the number of examples and M is the number of features used to represent each example
+      Feature array of shape ``(N, M)``, where N is the number of examples and M is the number of features used to represent each example.
       All features should be numeric. For unstructured data (eg. images, text, categorical values, ...), you should provide
       vector embeddings to represent each example (e.g. extracted from some pretrained neural network).
 
@@ -576,7 +575,10 @@ def get_outlier_scores(
       Note that the distance metric and n_neighbors is specified when instantiating this class.
       You can also pass in a subclass of ``sklearn.neighbors.NearestNeighbors`` which allows you to use faster
       approximate neighbor libraries as long as you wrap them behind the same sklearn API.
+      If you specify ``knn`` here and wish to find outliers in the same data you already passed into ``knn.fit(features)``, you should specify ``features = None`` here if your ``knn.kneighbors(None)``
+      returns the distances to the datapoints it was ``fit()`` on.
       If ``knn = None``, then by default ``knn = sklearn.neighbors.NearestNeighbors(n_neighbors=k, metric="cosine").fit(features)``
+
       See: https://scikit-learn.org/stable/modules/neighbors.html
 
     k : int, default=10
@@ -594,8 +596,6 @@ def get_outlier_scores(
     # if knn is not provided, then use default KNN as estimator
     if knn is None:
         knn = NearestNeighbors(n_neighbors=k, metric="cosine").fit(features)
-
-    if np.array_equal(knn.__dict__["_fit_X"], features):
         features = None  # features should be None in knn.kneighbors(features) to avoid counting duplicate data points
 
     # number of neighbors specified when fitting instantiated NearestNeighbors class object
