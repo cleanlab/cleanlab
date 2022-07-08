@@ -165,7 +165,7 @@ def _get_quality_of_consensus(
             empirical_label_distribution * np.log(clipped_pred_probs), axis=1
         ) / np.log(num_classes)
         normalized_entropy = get_normalized_entropy(pred_probs=pred_probs)
-        quality_of_consensus = 1 / (1 + (np.exp(soft_cross_entropy - normalized_entropy)))
+        quality_of_consensus = np.exp(-(soft_cross_entropy - normalized_entropy + 1))
     else:
         raise ValueError(
             f"""
