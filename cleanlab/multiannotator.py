@@ -1,8 +1,11 @@
 import numpy as np
 import pandas as pd
 from typing import List, Union, Tuple
-from cleanlab.rank import get_label_quality_scores
-from cleanlab.internal.label_quality_utils import _get_label_quality_scores_with_NA
+from cleanlab.rank import get_label_quality_scores, get_self_confidence_for_each_label
+from cleanlab.internal.label_quality_utils import (
+    _get_label_quality_scores_with_NA,
+    get_normalized_entropy,
+)
 from cleanlab.dataset import overall_label_health_score, _get_worst_class
 import warnings
 
@@ -35,7 +38,7 @@ def _get_consensus_label(
         An array of shape ``(N,)`` with the consensus labels aggregated from all annotators.
     """
 
-    valid_methods = ["majority"]
+    valid_methods = ["majority", "dawid_skene"]
     consensus_label = np.empty(len(labels_multiannotator), dtype="int32")
 
     # TODO: is there a more efficient/elegant way to do this?
@@ -47,6 +50,12 @@ def _get_consensus_label(
                     i, mode_labels_multiannotator.iloc[i].dropna().astype(int).to_numpy()
                 ].argmax()
             ]
+    elif consensus_method == "dawid_skene":
+        from crowdkit.aggregation import DawidSkene
+
+        labels_multiannotator_stacked = labels_multiannotator.stack().reset_index()
+        labels_multiannotator_stacked.columns = ["task", "worker", "label"]
+        consensus_label = DawidSkene().fit_predict(labels_multiannotator_stacked.astype("int64"))
     else:
         raise ValueError(
             f"""
@@ -92,6 +101,7 @@ def _get_annotator_agreement(
 
 # TODO: add other ways to the get quality score
 def _get_quality_of_consensus(
+    labels_multiannotator: pd.DataFrame,
     consensus_label: np.ndarray,
     pred_probs: np.ndarray,
     num_annotations: np.ndarray,
@@ -104,6 +114,11 @@ def _get_quality_of_consensus(
 
     Parameters
     ----------
+    labels_multiannotator : pd.DataFrame
+        2D pandas DataFrame of multiple given labels for each example with shape (N, M),
+        where N is the number of examples and M is the number of annotators.
+        For more details, labels in the same format expected by the :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>`.
+
     consensus_label : np.ndarray
         An array of shape ``(N,)`` with the consensus labels aggregated from all annotators.
 
@@ -127,7 +142,7 @@ def _get_quality_of_consensus(
         An array of shape ``(N,)`` with the quality score of the consensus.
         TODO: better explanation of this
     """
-    valid_methods = ["auto", "lqs", "agreement"]
+    valid_methods = ["auto", "lqs", "agreement", "active_label_cleaning"]
 
     if quality_method == "auto":
         lqs_consensus_label = get_label_quality_scores(consensus_label, pred_probs, **kwargs)
@@ -137,6 +152,20 @@ def _get_quality_of_consensus(
         quality_of_consensus = get_label_quality_scores(consensus_label, pred_probs, **kwargs)
     elif quality_method == "agreement":
         quality_of_consensus = annotator_agreement
+    elif quality_method == "active_label_cleaning":
+        num_classes = pred_probs.shape[1]
+        empirical_label_distribution = np.vstack(
+            labels_multiannotator.apply(
+                lambda s: np.bincount(s.dropna(), minlength=num_classes) / len(s.dropna()),
+                axis=1,
+            )
+        )
+        clipped_pred_probs = np.clip(pred_probs, a_min=1e-6, a_max=None)
+        soft_cross_entropy = -np.sum(
+            empirical_label_distribution * np.log(clipped_pred_probs), axis=1
+        ) / np.log(num_classes)
+        normalized_entropy = get_normalized_entropy(pred_probs=pred_probs)
+        quality_of_consensus = 1 / (1 + (np.exp(soft_cross_entropy - normalized_entropy)))
     else:
         raise ValueError(
             f"""
@@ -188,28 +217,50 @@ def _get_consensus_stats(
     tuple
         A tuple of (consensus_label, annotator_agreement, quality_of_consensus).
     """
-    # Compute consensus label using method specified
-    consensus_label = _get_consensus_label(
-        labels_multiannotator=labels_multiannotator,
-        pred_probs=pred_probs,
-        consensus_method=consensus_method,
-    )
 
-    # Compute the fraction of annotator agreeing with the consensus labels
-    annotator_agreement = _get_annotator_agreement(
-        labels_multiannotator=labels_multiannotator,
-        consensus_label=consensus_label,
-    )
+    if consensus_method == "dawid_skene":
+        from crowdkit.aggregation import DawidSkene
 
-    # Compute the label quality scores of the consensus labels
-    quality_of_consensus = _get_quality_of_consensus(
-        consensus_label=consensus_label,
-        pred_probs=pred_probs,
-        num_annotations=num_annotations,
-        annotator_agreement=annotator_agreement,
-        quality_method=quality_method,
-        **kwargs,
-    )
+        labels_multiannotator_stacked = labels_multiannotator.stack().reset_index()
+        labels_multiannotator_stacked.columns = ["task", "worker", "label"]
+        DS = DawidSkene().fit(labels_multiannotator_stacked.astype("int64"))
+
+        consensus_label = DS.labels_.values
+        pred_probs_DS = DS.probas_.values
+
+        annotator_agreement = _get_annotator_agreement(
+            labels_multiannotator=labels_multiannotator,
+            consensus_label=consensus_label,
+        )
+
+        quality_of_consensus = get_self_confidence_for_each_label(
+            np.array(consensus_label), pred_probs_DS
+        )
+
+    else:
+        # Compute consensus label using method specified
+        consensus_label = _get_consensus_label(
+            labels_multiannotator=labels_multiannotator,
+            pred_probs=pred_probs,
+            consensus_method=consensus_method,
+        )
+
+        # Compute the fraction of annotator agreeing with the consensus labels
+        annotator_agreement = _get_annotator_agreement(
+            labels_multiannotator=labels_multiannotator,
+            consensus_label=consensus_label,
+        )
+
+        # Compute the label quality scores of the consensus labels
+        quality_of_consensus = _get_quality_of_consensus(
+            labels_multiannotator=labels_multiannotator,
+            consensus_label=consensus_label,
+            pred_probs=pred_probs,
+            num_annotations=num_annotations,
+            annotator_agreement=annotator_agreement,
+            quality_method=quality_method,
+            **kwargs,
+        )
 
     return (consensus_label, annotator_agreement, quality_of_consensus)
 
@@ -219,7 +270,7 @@ def get_multiannotator_stats(
     labels_multiannotator: pd.DataFrame,
     pred_probs: np.ndarray,
     consensus_label: np.ndarray,
-    quality_method: str,
+    quality_method: str = "auto",
 ) -> pd.DataFrame:
     """Returns overall statistics about each annotator.
 
@@ -255,12 +306,18 @@ def get_multiannotator_stats(
         try:
             return overall_label_health_score(labels, pred_probs, verbose=False)
         except:
+            warnings.warn(
+                "some overall_quality scores displayed as NaN due to missing class labels"
+            )
             return np.NaN
 
     def try_get_worst_class(labels, pred_probs):
         try:
             return _get_worst_class(labels, pred_probs)
         except:
+            warnings.warn(
+                "worst_class labels for some annotators are NaN due to missing class labels"
+            )
             return np.NaN
 
     # Compute overall quality of each annotator's labels
