@@ -32,6 +32,19 @@ jobs:
       - name: Test with coverage
         run: pytest --verbose --cov=cleanlab/ --cov-config .coveragerc --cov-report=xml
       - uses: codecov/codecov-action@v2
+  typecheck:
+    name: Type check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install .  # install dependencies
+          pip install -r requirements-dev.txt  # install development dependencies and type stubs
+      - name: Type check
+        run: mypy --install-types --non-interactive cleanlab
   fmt:
     name: Format
     runs-on: ubuntu-latest

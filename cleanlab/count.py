@@ -1131,10 +1131,10 @@ def _converge_estimates(
 
 
 def get_confident_thresholds(
-    labels: np.array,
-    pred_probs: np.array,
+    labels: np.ndarray,
+    pred_probs: np.ndarray,
     multi_label: bool = False,
-) -> np.array:
+) -> np.ndarray:
     """Returns expected (average) "self-confidence" for each class.
 
     The confident class threshold for a class j is the expected (average) "self-confidence" for class j.
@@ -1181,7 +1181,9 @@ def get_confident_thresholds(
         # Compute thresholds = p(label=k | k in set of given labels)
         k_in_l = np.array([[k in lst for lst in labels] for k in unique_classes])
         # The avg probability of class given that the label is represented.
-        confident_thresholds = [np.mean(pred_probs[:, k][k_in_l[k]]) for k in unique_classes]
+        confident_thresholds = np.array(
+            [np.mean(pred_probs[:, k][k_in_l[k]]) for k in unique_classes]
+        )
     else:
         confident_thresholds = np.array(
             [np.mean(pred_probs[:, k][labels == k]) for k in range(pred_probs.shape[1])]
