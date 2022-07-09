@@ -464,3 +464,19 @@ def test_default_k_and_model_get_outlier_scores():
     assert avg_knn_distances_tiny_k.sum() != avg_knn_distances.sum()
     assert avg_knn_distances_large_k.sum() != avg_knn_distances.sum()
     assert avg_knn_distances_tiny_k_default.sum() != avg_knn_distances_default_model.sum()
+
+    # Test that when knn is None ValueError raised if passed in k > len(features)
+    try:
+        rank.get_outlier_scores(
+            features=X_with_ood,
+            knn=None,
+            k=len(X_with_ood) + 1,  # this should throw ValueError, k ! > len(features)
+        )
+    except Exception as e:
+        assert "nearest neighbors" in str(e)
+        with pytest.raises(ValueError) as e:
+            rank.get_outlier_scores(
+                features=X_with_ood,
+                knn=None,
+                k=len(X_with_ood) + 1,  # this should throw ValueError, k ! > len(features)
+            )

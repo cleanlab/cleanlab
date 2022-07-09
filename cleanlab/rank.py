@@ -570,7 +570,7 @@ def get_outlier_scores(
       All features should be numeric. For unstructured data (eg. images, text, categorical values, ...), you should provide
       vector embeddings to represent each example (e.g. extracted from some pretrained neural network).
 
-    knn : sklearn.neighbors.NearestNeighbors
+    knn : sklearn.neighbors.NearestNeighbors, default = None
       Instantiated ``NearestNeighbors`` class object that's been fitted on a dataset in the same feature space.
       Note that the distance metric and n_neighbors is specified when instantiating this class.
       You can also pass in a subclass of ``sklearn.neighbors.NearestNeighbors`` which allows you to use faster
@@ -595,6 +595,11 @@ def get_outlier_scores(
     """
     # if knn is not provided, then use default KNN as estimator
     if knn is None:
+        # Make sure number of neighbors is less than number of example for estimator.
+        if k > len(features):
+            raise ValueError(
+                f"Number of nearest neighbors k={k} cannot exceed the number of examples N={len(features)} passed into the estimator (knn)."
+            )
         knn = NearestNeighbors(n_neighbors=k, metric="cosine").fit(features)
         features = None  # features should be None in knn.kneighbors(features) to avoid counting duplicate data points
 
