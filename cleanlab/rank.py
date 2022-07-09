@@ -156,7 +156,7 @@ def get_label_quality_scores(
       - ``'self_confidence'``: ``P[k]``
       - ``'confidence_weighted_entropy'``: ``entropy(P) / self_confidence``
 
-      Let ``C = {0, 1, ..., K}`` denote the classification task's specified set of classes.
+      Let ``C = {0, 1, ..., K}`` denote the specified set of classes for our classification task.
 
       The normalized_margin score works better for identifying class conditional label errors,
       i.e. examples for which another label in C is appropriate but the given label is not.

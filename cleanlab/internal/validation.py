@@ -67,6 +67,14 @@ def assert_valid_inputs(X, y, pred_probs=None, multi_label=False):
             raise ValueError("Values in pred_probs must be between 0 and 1.")
         if X is not None:
             warnings.warn("When X and pred_probs are both provided, former may be ignored.")
+        if not multi_label:  # TODO: can remove this clause once missing classes are supported
+            num_unique_labels = len(np.unique(y))
+            if num_unique_labels != pred_probs.shape[1]:
+                raise ValueError(
+                    "All classes in (0,1,2,...,K-1) must be present in labels "
+                    f"with K = pred_probs.shape[1] = {pred_probs.shape[1]} in your case, "
+                    f"but your labels only contain {num_unique_labels} unique values."
+                )
 
 
 def assert_valid_class_labels(y):
@@ -78,11 +86,12 @@ def assert_valid_class_labels(y):
 
     unique_classes = np.unique(y)
     if len(unique_classes) < 2:
-        raise ValueEror("Labels must contain at least 2 classes.")
+        raise ValueError("Labels must contain at least 2 classes.")
 
-    if any(unique_classes != np.arange(len(unique_classes))):
-        msg = "cleanlab requires zero-indexed labels (0,1,2,..,K-1), but in "
-        msg += "your case: np.unique(labels) = {}".format(str(unique_classes))
+    if (unique_classes != np.arange(len(unique_classes))).any():
+        msg = "cleanlab requires zero-indexed integer labels (0,1,2,..,K-1), but in "
+        msg += "your case: np.unique(labels) = {}. ".format(str(unique_classes))
+        msg += "Every class in (0,1,2,..,K-1) must be present in labels as well."
         raise TypeError(msg)
 
 
@@ -128,5 +137,5 @@ def labels_to_array(y):
             return np.asarray(y)
         except:
             raise ValueError(
-                "List of labels must be convertable to 1D numpy array via: np.array(labels)"
+                "List of labels must be convertable to 1D numpy array via: np.array(labels)."
             )

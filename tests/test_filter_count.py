@@ -473,3 +473,27 @@ def test_issue_158():
     assert not np.any(np.isnan(py))
     assert not np.any(np.isnan(noise_matrix))
     assert not np.any(np.isnan(inv_noise_matrix))
+
+
+def test_toofew_classes():
+    try:
+        labels = np.array([0, 0])
+        pred_probs = np.array([[0.3, 0.7], [0.2, 0.8]])
+        issues = filter.find_label_issues(labels, pred_probs)
+        assert False
+    except ValueError as e:
+        assert "must contain at least 2 classes" in str(e)
+    else:
+        raise Exception("expected test to raise ValueError")
+
+
+def test_missing_classes():  # TODO: can remove this test once missing classes are supported
+    try:
+        labels = np.array([0, 0, 1, 1])
+        pred_probs = np.array([[0.1, 0.7, 0.2], [0.1, 0.8, 0.1], [0.7, 0.2, 0.1], [0.8, 0.1, 0.1]])
+        issues = filter.find_label_issues(labels, pred_probs)
+        assert False
+    except ValueError as e:
+        assert "All classes" in str(e)
+    else:
+        raise Exception("expected test to raise ValueError")

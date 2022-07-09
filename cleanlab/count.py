@@ -39,6 +39,7 @@ from cleanlab.internal.util import (
     csr_vstack,
     append_extra_datapoint,
     train_val_split,
+    get_num_classes,
 )
 from cleanlab.internal.latent_algebra import (
     compute_inv_noise_matrix,
@@ -276,8 +277,8 @@ def _compute_confident_joint_multi_label(
         of confident joint as a baseline proxy for the label issues. This
         sometimes works as well as filter.find_label_issues(confident_joint)."""
 
-    # [0, 1, 2, ... num_classes - 1] Assumes all classes are represented in labels
-    unique_classes = range(pred_probs.shape[1])
+    # Assumes all classes are represented in labels: [0, 1, 2, ... num_classes - 1]
+    unique_classes = range(get_num_classes(labels=labels, pred_probs=pred_probs))
     if thresholds is None:
         # the avg probability of class given that the label is represented.
         thresholds = get_confident_thresholds(labels, pred_probs, multi_label=True)
@@ -679,7 +680,8 @@ def estimate_confident_joint_and_cv_pred_proba(
 
     labels : np.array or pd.Series
       An array of shape ``(N,)`` of noisy labels, i.e. some labels may be erroneous.
-      Elements must be in the set 0, 1, ..., K-1, where K is the number of classes.
+      Elements must be in (0, 1, ..., K-1) where K is the number of classes,
+      and all classes must be present at least once.
 
     clf : estimator instance, optional
       A classifier implementing the `sklearn estimator API
@@ -725,9 +727,9 @@ def estimate_confident_joint_and_cv_pred_proba(
 
     assert_valid_inputs(X, labels)
     labels = labels_to_array(labels)
-
-    # Number of classes
-    num_classes = len(np.unique(labels))
+    num_classes = get_num_classes(
+        labels=labels
+    )  # This method definitely only works if all classes are present.
 
     # Create cross-validation object for out-of-sample predicted probabilities.
     # CV folds preserve the fraction of noisy positive and
@@ -1176,8 +1178,10 @@ def get_confident_thresholds(
     """
 
     if multi_label:
-        # [0, 1, 2, ... num_classes - 1]
-        unique_classes = range(pred_probs.shape[1])  # Assumes all classes are represented in labels
+        # Assumes all classes are represented in labels: [0, 1, 2, ... num_classes - 1]
+        unique_classes = range(
+            get_num_classes(labels=labels, pred_probs=pred_probs, multi_label=multi_label)
+        )
         # Compute thresholds = p(label=k | k in set of given labels)
         k_in_l = np.array([[k in lst for lst in labels] for k in unique_classes])
         # The avg probability of class given that the label is represented.
