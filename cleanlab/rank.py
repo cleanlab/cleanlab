@@ -38,6 +38,7 @@ import numpy as np
 from sklearn.metrics import log_loss
 from sklearn.neighbors import NearestNeighbors
 from typing import List
+from typing import Optional
 import warnings
 
 from cleanlab.internal.validation import assert_valid_inputs
@@ -555,7 +556,7 @@ def get_confidence_weighted_entropy_for_each_label(
 
 
 def get_outlier_scores(
-    features: np.ndarray, knn: NearestNeighbors = None, k: int = 10
+    features: Optional[np.ndarray] = None, knn: Optional[NearestNeighbors] = None, k: int = 10
 ) -> np.ndarray:
     """Returns the KNN distance outlier score for each example.
 
@@ -595,6 +596,12 @@ def get_outlier_scores(
     """
     # if knn is not provided, then use default KNN as estimator
     if knn is None:
+        # Make sure both knn and features are not None
+        if features is None:
+            raise TypeError(
+                f"Both knn and features arguments cannot be None at the same time. Not enough information to compute outlier scores."
+            )
+
         # Make sure number of neighbors is less than number of example for estimator.
         if k > len(features):
             raise ValueError(

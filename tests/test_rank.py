@@ -480,3 +480,33 @@ def test_default_k_and_model_get_outlier_scores():
                 knn=None,
                 k=len(X_with_ood) + 1,  # this should throw ValueError, k ! > len(features)
             )
+
+
+def test_not_enough_info_get_outlier_scores():
+    # Testing calling function with not enough information to calculate outlier scores
+    try:
+        rank.get_outlier_scores(
+            features=None,
+            knn=None,
+            k=15,  # this should throw TypeError because knn=None and features=None
+        )
+    except Exception as e:
+        assert "Both knn and features arguments" in str(e)
+        with pytest.raises(TypeError) as e:
+            rank.get_outlier_scores(
+                features=None,
+                knn=None,
+                k=15,  # this should throw TypeError because knn=None and features=None
+            )
+    try:
+        rank.get_outlier_scores(
+            features=None,
+            knn=None,  # this should throw TypeError because knn=None and features=None
+        )
+    except Exception as e:
+        assert "Both knn and features arguments" in str(e)
+        with pytest.raises(TypeError) as e:
+            rank.get_outlier_scores(
+                features=None,
+                knn=None,  # this should throw TypeError because knn=None and features=None
+            )
