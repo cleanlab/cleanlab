@@ -492,7 +492,7 @@ def test_not_enough_info_get_outlier_scores():
         )
     except Exception as e:
         assert "Both knn and features arguments" in str(e)
-        with pytest.raises(TypeError) as e:
+        with pytest.raises(ValueError) as e:
             rank.get_outlier_scores(
                 features=None,
                 knn=None,
@@ -505,7 +505,7 @@ def test_not_enough_info_get_outlier_scores():
         )
     except Exception as e:
         assert "Both knn and features arguments" in str(e)
-        with pytest.raises(TypeError) as e:
+        with pytest.raises(ValueError) as e:
             rank.get_outlier_scores(
                 features=None,
                 knn=None,  # this should throw TypeError because knn=None and features=None

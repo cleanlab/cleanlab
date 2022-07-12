@@ -598,7 +598,7 @@ def get_outlier_scores(
     if knn is None:
         # Make sure both knn and features are not None
         if features is None:
-            raise TypeError(
+            raise ValueError(
                 f"Both knn and features arguments cannot be None at the same time. Not enough information to compute outlier scores."
             )
 
