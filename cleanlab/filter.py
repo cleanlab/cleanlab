@@ -34,6 +34,7 @@ from cleanlab.internal.util import (
     round_preserving_row_totals,
     onehot2int,
     int2onehot,
+    get_num_classes,
 )
 
 # tqdm is a module used to print time-to-complete when multiprocessing is used.
@@ -233,8 +234,10 @@ def find_label_issues(
         label_counts = value_counts([i for lst in labels for i in lst])
     else:
         label_counts = value_counts(labels)
-    # Number of classes labels
-    K = len(pred_probs.T)
+    # Number of classes
+    K = get_num_classes(
+        labels=labels, pred_probs=pred_probs, label_matrix=confident_joint, multi_label=multi_label
+    )
     # Boolean set to true if dataset is large
     big_dataset = K * len(labels) > 1e8
     # Ensure labels are of type np.array()

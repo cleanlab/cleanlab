@@ -123,18 +123,10 @@ def clip_values(x, low=0.0, high=1.0, new_sum=None):
         """Clip a into range [low,high]"""
         return min(max(a, low), high)
 
-    # Vectorize clip_range for efficiency with np.arrays.
-    vectorized_clip = np.vectorize(clip_range)
-
-    # Store previous sum
-    prev_sum = sum(x) if new_sum is None else new_sum
-
-    # Clip all values (efficiently).
-    x = vectorized_clip(x)
-
-    # Re-normalized values to sum to previous sum.
-    x = x * prev_sum / float(sum(x))
-
+    vectorized_clip = np.vectorize(clip_range)  # Vectorize clip_range for efficiency with np.arrays
+    prev_sum = sum(x) if new_sum is None else new_sum  # Store previous sum
+    x = vectorized_clip(x)  # Clip all values (efficiently)
+    x = x * prev_sum / float(sum(x))  # Re-normalized values to sum to previous sum
     return x
 
 
@@ -489,7 +481,7 @@ def append_extra_datapoint(to_data, from_data, index):
 
 def get_num_classes(labels=None, pred_probs=None, label_matrix=None, multi_label=None):
     """Determines the number of classes based on information considered in a
-    canonical ordering. label_matrix can be: noise_matrix, inverse_noise_matrix,
+    canonical ordering. label_matrix can be: noise_matrix, inverse_noise_matrix, confident_joint,
     or any other K x K matrix where K = number of classes.
     """
     if pred_probs is not None:  # pred_probs is number 1 source of truth
@@ -500,6 +492,9 @@ def get_num_classes(labels=None, pred_probs=None, label_matrix=None, multi_label
             raise ValueError(f"label matrix must be K x K, not {label_matrix.shape}")
         else:
             return label_matrix.shape[0]
+
+    if labels is None:
+        raise ValueError("Cannot determine number of classes from None input")
 
     return num_unique_classes(labels, multi_label=multi_label)
 

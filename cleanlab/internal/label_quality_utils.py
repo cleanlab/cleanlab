@@ -85,11 +85,8 @@ def get_normalized_entropy(pred_probs: np.ndarray, min_allowed_prob: float = 1e-
     Parameters
     ----------
     pred_probs : np.array (shape (N, K))
-      P(label=k|x) is a matrix with K model-predicted probabilities.
       Each row of this matrix corresponds to an example x and contains the model-predicted
-      probabilities that x belongs to each possible class.
-      The columns must be ordered such that these probabilities correspond to class 0,1,2,...
-      `pred_probs` should have been computed using 3 (or higher) fold cross-validation.
+      probabilities that x belongs to each possible class: P(label=k|x)
 
     min_allowed_prob : float, default=1e-6
       Minimum allowed probability value. Entries of `pred_probs` below this value will be clipped to this value.
@@ -97,7 +94,7 @@ def get_normalized_entropy(pred_probs: np.ndarray, min_allowed_prob: float = 1e-
     Returns
     -------
     entropy : np.array (float)
-
+      Each element is the normalized entropy of the corresponding row of ``pred_probs``.
     """
 
     num_classes = pred_probs.shape[1]
