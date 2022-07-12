@@ -142,7 +142,7 @@ def _get_quality_of_consensus(
         An array of shape ``(N,)`` with the quality score of the consensus.
         TODO: better explanation of this
     """
-    valid_methods = ["auto", "lqs", "agreement", "active_label_cleaning"]
+    valid_methods = ["auto", "lqs", "agreement", "active_label_cleaning", "bayes"]
 
     if quality_method == "auto":
         lqs_consensus_label = get_label_quality_scores(consensus_label, pred_probs, **kwargs)
@@ -166,6 +166,25 @@ def _get_quality_of_consensus(
         ) / np.log(num_classes)
         normalized_entropy = get_normalized_entropy(pred_probs=pred_probs)
         quality_of_consensus = np.exp(-(soft_cross_entropy - normalized_entropy + 1))
+    elif quality_method == "bayes":
+        num_classes = pred_probs.shape[1]
+        T = num_classes  # hyperparameter
+        prod_annotators = np.vstack(
+            labels_multiannotator.apply(
+                lambda s: np.array(
+                    [
+                        np.sum(np.log(np.where(s.dropna() == i, (num_classes - 1) / T, 1 / T)))
+                        for i in range(num_classes)
+                    ]
+                ),
+                axis=1,
+            )
+        )
+        posterior = np.exp(np.log(pred_probs) + prod_annotators)
+        normalized_posterior = posterior / np.sum(posterior, axis=1).reshape(len(posterior), 1)
+        quality_of_consensus = get_label_quality_scores(
+            consensus_label, normalized_posterior, **kwargs
+        )
     else:
         raise ValueError(
             f"""
