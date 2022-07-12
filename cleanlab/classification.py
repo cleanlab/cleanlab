@@ -356,7 +356,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
           :py:meth:`self.find_label_issues<cleanlab.classification.CleanLearning.find_label_issues>`,
           e.g. as a ``np.array``, then some functionality like training with sample weights may be disabled.
 
-        sample_weight : array-like of shape (n_samples,), optional
+        sample_weight : array-like of shape (N,), optional
           Array of weights that are assigned to individual samples.
           If not provided, samples may still be weighted by the estimated noise in the class they are labeled as.
 
