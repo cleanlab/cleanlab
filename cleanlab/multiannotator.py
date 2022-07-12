@@ -39,17 +39,21 @@ def _get_consensus_label(
     """
 
     valid_methods = ["majority", "dawid_skene"]
-    consensus_label = np.empty(len(labels_multiannotator), dtype="int32")
 
     # TODO: is there a more efficient/elegant way to do this?
     if consensus_method == "majority":
+        consensus_label = np.empty(len(labels_multiannotator), dtype="int32")
         mode_labels_multiannotator = labels_multiannotator.mode(axis=1)
         for i in range(len(mode_labels_multiannotator)):
-            consensus_label[i] = mode_labels_multiannotator.iloc[i][
-                pred_probs[
-                    i, mode_labels_multiannotator.iloc[i].dropna().astype(int).to_numpy()
-                ].argmax()
-            ]
+            label_mode = mode_labels_multiannotator.iloc[i].dropna().astype(int).to_numpy()
+            if len(label_mode) == 1:
+                consensus_label[i] = label_mode[0]
+            else:  # breaking ties using pred_probs
+                consensus_label[i] = mode_labels_multiannotator.iloc[i][
+                    pred_probs[
+                        i, mode_labels_multiannotator.iloc[i].dropna().astype(int).to_numpy()
+                    ].argmax()
+                ]
     elif consensus_method == "dawid_skene":
         from crowdkit.aggregation import DawidSkene
 
