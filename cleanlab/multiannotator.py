@@ -342,7 +342,7 @@ def get_multiannotator_stats(
     )
 
     # Create multi-annotator stats DataFrame from its columns
-    return pd.DataFrame(
+    annotator_stats = pd.DataFrame(
         {
             "overall_quality": overall_label_health_score_df,
             "num_labeled": num_labeled,
@@ -351,6 +351,8 @@ def get_multiannotator_stats(
         }
     )
 
+    return annotator_stats.sort_values(by=["overall_quality", "agreement_with_consensus"])
+
 
 def get_label_quality_multiannotator(
     labels_multiannotator: pd.DataFrame,
@@ -358,7 +360,7 @@ def get_label_quality_multiannotator(
     *,
     consensus_method: Union[str, List[str]] = "majority",
     quality_method: str = "auto",
-    return_annotator_stats: bool = False,
+    return_annotator_stats: bool = False,  # sort by lowest overall_quality first
     verbose: bool = True,
     kwargs: dict = {},
 ) -> Union[pd.DataFrame, Tuple[pd.DataFrame, pd.DataFrame]]:
