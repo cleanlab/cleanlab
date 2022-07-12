@@ -1174,14 +1174,13 @@ def get_confident_thresholds(
     Returns
     -------
     confident_thresholds : np.array
-      An array of shape ``(num_classes, )``.
-    """
+      An array of shape ``(num_classes, )``."""
 
+    # Assumes all classes are represented in labels: [0, 1, 2, ... num_classes - 1]
+    unique_classes = range(
+        get_num_classes(labels=labels, pred_probs=pred_probs, multi_label=multi_label)
+    )
     if multi_label:
-        # Assumes all classes are represented in labels: [0, 1, 2, ... num_classes - 1]
-        unique_classes = range(
-            get_num_classes(labels=labels, pred_probs=pred_probs, multi_label=multi_label)
-        )
         # Compute thresholds = p(label=k | k in set of given labels)
         k_in_l = np.array([[k in lst for lst in labels] for k in unique_classes])
         # The avg probability of class given that the label is represented.
@@ -1190,6 +1189,6 @@ def get_confident_thresholds(
         )
     else:
         confident_thresholds = np.array(
-            [np.mean(pred_probs[:, k][labels == k]) for k in range(pred_probs.shape[1])]
+            [np.mean(pred_probs[:, k][labels == k]) for k in unique_classes]
         )
     return confident_thresholds
