@@ -561,11 +561,9 @@ def get_outlier_scores(
     k: int = 10,
     t: int = 1,
 ) -> np.ndarray:
-    """Returns the KNN distance outlier score for each example.
-
-    Returns an outlier score for each example based on its feature values, where higher scores indicate examples more
-    likely to be outliers. The score is based on the average distance between the example and its
-    K nearest neighbors in the dataset (in feature space).
+    """Returns an outlier score for each example based on its feature values. Scores lie in [0,1] with smaller values indicating examples
+    that are less typical under the dataset distribution (values near 0 indicate outliers).
+    The score is based on the average distance between the example and its K nearest neighbors in the dataset (in feature space).
 
     Parameters
     ----------
@@ -575,7 +573,7 @@ def get_outlier_scores(
       vector embeddings to represent each example (e.g. extracted from some pretrained neural network).
 
     knn : sklearn.neighbors.NearestNeighbors, default = None
-      Instantiated ``NearestNeighbors`` class object that's been fitted on a dataset in the same feature space.
+      Instantiated ``NearestNeighbors`` object that's been fitted on a dataset in the same feature space.
       Note that the distance metric and n_neighbors is specified when instantiating this class.
       You can also pass in a subclass of ``sklearn.neighbors.NearestNeighbors`` which allows you to use faster
       approximate neighbor libraries as long as you wrap them behind the same sklearn API.
@@ -593,12 +591,15 @@ def get_outlier_scores(
       If k is not provided, then by default ``k = 10``.
 
     t : int, default=1
-      Parameter controlling magnitude of similarity score transformation. Transformation is ``exp(-x*t)`` where ``x`` is the average distance to k-nearest neighbors.
+      Controls transformation of distances between examples into similarity scores that lie in [0,1]. The transformation
+      applied is exp(-x*t) where x is the average distance to k-nearest neighbors. If you find your scores are all too
+      close to 1, consider increasing t, although the relative scores of examples will still have the same ranking across the dataset.
 
     Returns
     -------
-    avg_knn_distances : np.ndarray
-      Similarity score for each example where score shows likeleyhood example is not an outlier. Smaller scores mean example more likeley to be an outlier. Similarity score is a transformation of each example's average distance to k-nearest neighbors.
+    outlier_scores : np.ndarray
+      Score for each example that roughly corresponds to the likelihood this example stems from the same distribution as
+      the dataset features (i.e. is not an outlier).
     """
     # if knn is not provided, then use default KNN as estimator
     if knn is None:
@@ -616,7 +617,7 @@ def get_outlier_scores(
         knn = NearestNeighbors(n_neighbors=k, metric="cosine").fit(features)
         features = None  # features should be None in knn.kneighbors(features) to avoid counting duplicate data points
 
-    # number of neighbors specified when fitting instantiated NearestNeighbors class object
+    # number of neighbors specified when fitting instantiated NearestNeighbors object
     max_k = knn.n_neighbors
 
     # if k provided is too high, use max number of nearest neighbors
@@ -637,5 +638,5 @@ def get_outlier_scores(
     avg_knn_distances = distances[:, :k].mean(axis=1)
 
     # Global rescale outlier_scores to range 0-1 with 0 = most concerning
-    distance_to_score = np.exp(-1 * avg_knn_distances * t)
-    return distance_to_score
+    outlier_scores = np.exp(-1 * avg_knn_distances * t)
+    return outlier_scores
