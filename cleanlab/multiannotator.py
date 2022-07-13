@@ -172,19 +172,21 @@ def _get_quality_of_consensus(
         quality_of_consensus = np.exp(-(soft_cross_entropy - normalized_entropy + 1))
     elif quality_method == "bayes":
         num_classes = pred_probs.shape[1]
-        T = num_classes  # hyperparameter
-        prod_annotators = np.vstack(
+        T = num_classes * 100  # hyperparameter
+        prod_annotator_likelihood = np.vstack(
             labels_multiannotator.apply(
                 lambda s: np.array(
                     [
-                        np.sum(np.log(np.where(s.dropna() == i, (num_classes - 1) / T, 1 / T)))
+                        np.sum(
+                            np.log(np.where(s.dropna() == i, 1 - ((num_classes - 1) / T), 1 / T))
+                        )
                         for i in range(num_classes)
                     ]
                 ),
                 axis=1,
             )
         )
-        posterior = np.exp(np.log(pred_probs) + prod_annotators)
+        posterior = np.exp(np.log(pred_probs) + prod_annotator_likelihood)
         normalized_posterior = posterior / np.sum(posterior, axis=1).reshape(len(posterior), 1)
         quality_of_consensus = get_label_quality_scores(
             consensus_label, normalized_posterior, **kwargs
