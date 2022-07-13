@@ -556,7 +556,10 @@ def get_confidence_weighted_entropy_for_each_label(
 
 
 def get_outlier_scores(
-    features: Optional[np.ndarray] = None, knn: Optional[NearestNeighbors] = None, k: int = 10
+    features: Optional[np.ndarray] = None,
+    knn: Optional[NearestNeighbors] = None,
+    k: int = 10,
+    t: int = 1,
 ) -> np.ndarray:
     """Returns the KNN distance outlier score for each example.
 
@@ -589,10 +592,13 @@ def get_outlier_scores(
       If k is larger, then by default ``k = n_neighbors`` where ``n_neighbors`` is defined in the ``knn``.
       If k is not provided, then by default ``k = 10``.
 
+    t : int, default=1
+      Parameter controlling magnitude of similarity score transformation. Transformation is ``exp(-x*t)`` where ``x`` is the average distance to k-nearest neighbors.
+
     Returns
     -------
     avg_knn_distances : np.ndarray
-      Average distance to k-nearest neighbors for each example which is used as a score for outlier detection.
+      Similarity score for each example where score shows likeleyhood example is not an outlier. Smaller scores mean example more likeley to be an outlier. Similarity score is a transformation of each example's average distance to k-nearest neighbors.
     """
     # if knn is not provided, then use default KNN as estimator
     if knn is None:
@@ -630,4 +636,6 @@ def get_outlier_scores(
     # Calculate average distance to k-nearest neighbors
     avg_knn_distances = distances[:, :k].mean(axis=1)
 
-    return avg_knn_distances
+    # Global rescale outlier_scores to range 0-1 with 0 = most concerning
+    distance_to_score = np.exp(-1 * avg_knn_distances * t)
+    return distance_to_score
