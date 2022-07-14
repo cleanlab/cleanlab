@@ -398,6 +398,9 @@ def test_get_outlier_scores():
     k = 5
     knn_distance_to_score = rank.get_outlier_scores(features=X_test_with_ood, knn=knn, k=k)
 
+    # Checking that X_ood has the smallest outlier score among all the datapoints
+    assert np.min(knn_distance_to_score) == knn_distance_to_score[-1]
+
     # Index of the datapoint with max ood score should correspond to the first element of X_test_with_ood
     idx_max_score = np.argsort(knn_distance_to_score)[0]
     assert idx_max_score == (X_test_with_ood.shape[0] - 1)
@@ -408,6 +411,7 @@ def test_get_outlier_scores():
     # Index of the datapoint with max outlier score should correspond to the first element of X_test_with_ood
     idx_max_score = np.argsort(knn_distance_to_score)[0]
     assert idx_max_score == (X_test_with_ood.shape[0] - 1)
+    assert np.min(knn_distance_to_score) == knn_distance_to_score[-1]
 
     # Get KNN distance as outlier score passing k and t > 1
     large_t_knn_distance_to_score = rank.get_outlier_scores(
@@ -417,6 +421,7 @@ def test_get_outlier_scores():
     # Index of the datapoint with max ood score should correspond to the first element of X_test_with_ood
     idx_max_score = np.argsort(large_t_knn_distance_to_score)[0]
     assert idx_max_score == (X_test_with_ood.shape[0] - 1)
+    assert np.min(large_t_knn_distance_to_score) == large_t_knn_distance_to_score[-1]
 
     # Get KNN distance as outlier score passing k and t < 1
     small_t_knn_distance_to_score = rank.get_outlier_scores(
@@ -426,6 +431,7 @@ def test_get_outlier_scores():
     # Index of the datapoint with max ood score should correspond to the first element of X_test_with_ood
     idx_max_score = np.argsort(small_t_knn_distance_to_score)[0]
     assert idx_max_score == (X_test_with_ood.shape[0] - 1)
+    assert np.min(small_t_knn_distance_to_score) == small_t_knn_distance_to_score[-1]
     assert np.sum(small_t_knn_distance_to_score) >= np.sum(large_t_knn_distance_to_score)
 
 
@@ -502,20 +508,6 @@ def test_default_k_and_model_get_outlier_scores():
 
 def test_not_enough_info_get_outlier_scores():
     # Testing calling function with not enough information to calculate outlier scores
-    try:
-        rank.get_outlier_scores(
-            features=None,
-            knn=None,
-            k=15,  # this should throw TypeError because knn=None and features=None
-        )
-    except Exception as e:
-        assert "Both knn and features arguments" in str(e)
-        with pytest.raises(ValueError) as e:
-            rank.get_outlier_scores(
-                features=None,
-                knn=None,
-                k=15,  # this should throw TypeError because knn=None and features=None
-            )
     try:
         rank.get_outlier_scores(
             features=None,
