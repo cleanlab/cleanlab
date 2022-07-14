@@ -144,7 +144,6 @@ def test_bad_rank_by_parameter_error():
 )
 @pytest.mark.parametrize("adjust_pred_probs", [False, True])
 def test_order_label_issues_using_scoring_func_ranking(scoring_method_func, adjust_pred_probs):
-
     # test all scoring methods with the scoring function
 
     method, scoring_func = scoring_method_func
@@ -218,7 +217,6 @@ def test__subtract_confident_thresholds():
 @pytest.mark.parametrize("adjust_pred_probs", [False, True])
 @pytest.mark.parametrize("weight_ensemble_members_by", ["uniform", "accuracy", "log_loss_search"])
 def test_ensemble_scoring_func(method, adjust_pred_probs, weight_ensemble_members_by):
-
     labels = data["labels"]
     pred_probs = data["pred_probs"]
 
@@ -226,7 +224,6 @@ def test_ensemble_scoring_func(method, adjust_pred_probs, weight_ensemble_member
     # do not run the test below if the method does not support adjust_pred_probs
     # confidence_weighted_entropy scoring method does not support adjust_pred_probs
     if not (adjust_pred_probs == True and method == "confidence_weighted_entropy"):
-
         # baseline scenario where all the pred_probs are the same in the ensemble list
         num_repeat = 3
         pred_probs_list = list(np.repeat([pred_probs], num_repeat, axis=0))
@@ -254,7 +251,6 @@ def test_ensemble_scoring_func(method, adjust_pred_probs, weight_ensemble_member
 
 def test_bad_weight_ensemble_members_by_parameter_error():
     with pytest.raises(ValueError) as e:
-
         labels = data["labels"]
         pred_probs = data["pred_probs"]
 
@@ -271,7 +267,6 @@ def test_bad_weight_ensemble_members_by_parameter_error():
 
 def test_custom_weights():
     with pytest.raises(AssertionError) as e:
-
         labels = data["labels"]
         pred_probs = data["pred_probs"]
 
@@ -298,7 +293,6 @@ def test_custom_weights():
 
 
 def test_empty_custom_weights_error():
-
     labels = data["labels"]
     pred_probs = data["pred_probs"]
 
@@ -316,7 +310,6 @@ def test_empty_custom_weights_error():
 
 
 def test_wrong_length_custom_weights_error():
-
     labels = data["labels"]
     pred_probs = data["pred_probs"]
 
@@ -332,14 +325,12 @@ def test_wrong_length_custom_weights_error():
             labels,
             pred_probs_list,
             weight_ensemble_members_by="custom",
-            custom_weights=custom_weights[
-                1:
-            ],  # this should raise AssertionError because length of custom_weights don't match len(pred_probs_list)
+            custom_weights=custom_weights[1:],
+            # this should raise AssertionError because length of custom_weights don't match len(pred_probs_list)
         )
 
 
 def test_wrong_weight_ensemble_members_by_for_custom_weights_error():
-
     labels = data["labels"]
     pred_probs = data["pred_probs"]
 
@@ -354,14 +345,14 @@ def test_wrong_weight_ensemble_members_by_for_custom_weights_error():
         _ = rank.get_label_quality_ensemble_scores(
             labels,
             pred_probs_list,
-            weight_ensemble_members_by="accuracy",  # this should raise ValueError because custom_weights array is provided
+            weight_ensemble_members_by="accuracy",
+            # this should raise ValueError because custom_weights array is provided
             custom_weights=custom_weights,
         )
 
 
 def test_bad_pred_probs_list_parameter_error():
     with pytest.raises(AssertionError) as e:
-
         labels = data["labels"]
         pred_probs = data["pred_probs"]
 
@@ -380,7 +371,6 @@ def test_bad_pred_probs_list_parameter_error():
 
 def test_unsupported_method_for_adjust_pred_probs():
     with pytest.raises(ValueError) as e:
-
         labels = data["labels"]
         pred_probs = data["pred_probs"]
 
@@ -391,8 +381,7 @@ def test_unsupported_method_for_adjust_pred_probs():
         _ = rank.get_label_quality_scores(labels, pred_probs, adjust_pred_probs=True, method=method)
 
 
-def test_get_knn_distance_ood_scores():
-
+def test_get_outlier_scores():
     X_train = data["X_train"]
     X_test = data["X_test"]
 
@@ -403,42 +392,121 @@ def test_get_knn_distance_ood_scores():
     X_test_with_ood = np.vstack([X_test, X_ood])
 
     # Fit nearest neighbors on X_train
-    nbrs = NearestNeighbors(n_neighbors=5).fit(X_train)
+    knn = NearestNeighbors(n_neighbors=5).fit(X_train)
 
-    # Get KNN distance as OOD score
+    # Get KNN distance as outlier score
     k = 5
-    knn_distance_ood_score = rank.get_knn_distance_ood_scores(
-        features=X_test_with_ood, nbrs=nbrs, k=k
+    knn_distance_to_score = rank.get_outlier_scores(features=X_test_with_ood, knn=knn, k=k)
+
+    # Checking that X_ood has the smallest outlier score among all the datapoints
+    assert np.argmin(knn_distance_to_score) == (knn_distance_to_score.shape[0] - 1)
+
+    # Get KNN distance as outlier score without passing k
+    # By default k=10 is used or k = n_neighbors when k > n_neighbors extracted from the knn
+    knn_distance_to_score = rank.get_outlier_scores(features=X_test_with_ood, knn=knn)
+    # Checking that X_ood has the smallest outlier score among all the datapoints
+    assert np.argmin(knn_distance_to_score) == (knn_distance_to_score.shape[0] - 1)
+
+    # Get KNN distance as outlier score passing k and t > 1
+    large_t_knn_distance_to_score = rank.get_outlier_scores(
+        features=X_test_with_ood, knn=knn, k=k, t=5
     )
 
-    # Index of the datapoint with max ood score should correspond to the last element of X_test_with_ood
-    idx_max_score = np.argsort(knn_distance_ood_score)[-1]
-    assert idx_max_score == (X_test_with_ood.shape[0] - 1)
+    # Checking that X_ood has the smallest outlier score among all the datapoints
+    assert np.argmin(large_t_knn_distance_to_score) == (large_t_knn_distance_to_score.shape[0] - 1)
 
-    # Get KNN distance as OOD score without passing k
-    # By default k=min(10, max_k) is used where max_k is extracted from the given nbrs
-    knn_distance_ood_score = rank.get_knn_distance_ood_scores(features=X_test_with_ood, nbrs=nbrs)
+    # Get KNN distance as outlier score passing k and t < 1
+    small_t_knn_distance_to_score = rank.get_outlier_scores(
+        features=X_test_with_ood, knn=knn, k=k, t=0.002
+    )
 
-    # Index of the datapoint with max ood score should correspond to the last element of X_test_with_ood
-    idx_max_score = np.argsort(knn_distance_ood_score)[-1]
-    assert idx_max_score == (X_test_with_ood.shape[0] - 1)
+    # Checking that X_ood has the smallest outlier score among all the datapoints
+    assert np.argmin(small_t_knn_distance_to_score) == (small_t_knn_distance_to_score.shape[0] - 1)
+    assert np.sum(small_t_knn_distance_to_score) >= np.sum(large_t_knn_distance_to_score)
 
 
-def test_bad_k_for_get_knn_distance_ood_scores():
+@pytest.mark.filterwarnings("ignore::UserWarning")
+def test_default_k_and_model_get_outlier_scores():
+    # Testing using 'None' as model param and correct setting of default k as max_k
 
-    X_train = data["X_train"]
-    X_test = data["X_test"]
-
-    # Create OOD datapoint
+    # Create dataset with OOD example
+    X = data["X_test"]
     X_ood = np.array([[999999999.0, 999999999.0]])
+    X_with_ood = np.vstack([X, X_ood])
 
-    # Add OOD datapoint to X_test
-    X_test_with_ood = np.vstack([X_test, X_ood])
+    instantiated_k = 10
 
-    # Fit nearest neighbors on X_train
-    nbrs = NearestNeighbors(n_neighbors=5).fit(X_train)
+    # Create NN class object with small instantiated k and fit on data
+    knn = NearestNeighbors(n_neighbors=instantiated_k, metric="cosine").fit(X_with_ood)
 
-    with pytest.raises(AssertionError) as e:
-        _ = rank.get_knn_distance_ood_scores(
-            features=X_test_with_ood, nbrs=nbrs, k=10  # this should throw an assertion error
+    avg_knn_distances_default_model = rank.get_outlier_scores(
+        features=X_with_ood,
+        k=instantiated_k,  # this should use default estimator (same as above) and k = instantiated_k
+    )
+
+    avg_knn_distances_default_k = rank.get_outlier_scores(
+        features=X_with_ood  # default k should be set to 10 == instantiated_k
+    )
+
+    avg_knn_distances = rank.get_outlier_scores(
+        features=None,
+        knn=knn,
+        k=25,  # this should throw user warn, k should be set to instantiated_k
+    )
+
+    # Score sums should be equal because the three estimators used have identical params and fit
+    assert avg_knn_distances.sum() == avg_knn_distances_default_model.sum()
+    assert avg_knn_distances_default_k.sum() == avg_knn_distances.sum()
+
+    avg_knn_distances_large_k = rank.get_outlier_scores(
+        features=X_with_ood,
+        k=25,  # this should use default estimator and k = 25
+    )
+
+    avg_knn_distances_tiny_k = rank.get_outlier_scores(
+        features=None,
+        knn=knn,
+        k=1,  # this should use knn estimator and k = 1
+    )
+
+    avg_knn_distances_tiny_k_default = rank.get_outlier_scores(
+        features=X_with_ood,
+        k=1,  # this should use default estimator and k = 1
+    )
+
+    # Score sums should be different because k = user param for estimators and k != 10.
+    assert avg_knn_distances_tiny_k.sum() != avg_knn_distances.sum()
+    assert avg_knn_distances_large_k.sum() != avg_knn_distances.sum()
+    assert avg_knn_distances_tiny_k_default.sum() != avg_knn_distances_default_model.sum()
+
+    # Test that when knn is None ValueError raised if passed in k > len(features)
+    try:
+        rank.get_outlier_scores(
+            features=X_with_ood,
+            knn=None,
+            k=len(X_with_ood) + 1,  # this should throw ValueError, k ! > len(features)
         )
+    except Exception as e:
+        assert "nearest neighbors" in str(e)
+        with pytest.raises(ValueError) as e:
+            rank.get_outlier_scores(
+                features=X_with_ood,
+                knn=None,
+                k=len(X_with_ood) + 1,  # this should throw ValueError, k ! > len(features)
+            )
+
+
+def test_not_enough_info_get_outlier_scores():
+    # Testing calling function with not enough information to calculate outlier scores
+    try:
+        rank.get_outlier_scores(
+            features=None,
+            knn=None,  # this should throw TypeError because knn=None and features=None
+        )
+    except Exception as e:
+        assert "Both knn and features arguments" in str(e)
+        with pytest.raises(ValueError) as e:
+            rank.get_outlier_scores(
+                features=None,
+                knn=None,  # this should throw TypeError because knn=None and features=None
+            )

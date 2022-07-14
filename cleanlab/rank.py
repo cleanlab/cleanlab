@@ -34,11 +34,11 @@ Alternatively it is ok if your model was trained on a separate dataset and you a
 labels in data that was previously held-out.
 """
 
-
 import numpy as np
 from sklearn.metrics import log_loss
 from sklearn.neighbors import NearestNeighbors
 from typing import List
+from typing import Optional
 import warnings
 
 from cleanlab.internal.validation import assert_valid_inputs
@@ -336,7 +336,6 @@ def get_label_quality_ensemble_scores(
 
             # pred_probs for each model
             for pred_probs in pred_probs_list:
-
                 pred_probs_clipped = np.clip(
                     pred_probs, a_min=MIN_ALLOWED, a_max=None
                 )  # lower-bound clipping threshold to prevents 0 in logs when calculating log loss
@@ -556,52 +555,88 @@ def get_confidence_weighted_entropy_for_each_label(
     return label_quality_scores
 
 
-def get_knn_distance_ood_scores(
-    features: np.ndarray, nbrs: NearestNeighbors, k: int = None
+def get_outlier_scores(
+    features: Optional[np.ndarray] = None,
+    knn: Optional[NearestNeighbors] = None,
+    k: int = 10,
+    t: int = 1,
 ) -> np.ndarray:
-    """Returns the KNN distance out-of-distribution (OOD) score for each datapoint.
-
-    This is a function to compute OOD scores where higher scores indicate the datapoint is more likely to be OOD.
+    """Returns an outlier score for each example based on its feature values. Scores lie in [0,1] with smaller values indicating examples
+    that are less typical under the dataset distribution (values near 0 indicate outliers).
+    The score is based on the average distance between the example and its K nearest neighbors in the dataset (in feature space).
 
     Parameters
     ----------
-    features : np.array
-      Feature matrix of shape (N, M), where N is the number of datapoints and M is the number of features.
-      This is the "query set" of features for each datapoint which are used for nearest neighbor search.
+    features : np.ndarray
+      Feature array of shape ``(N, M)``, where N is the number of examples and M is the number of features used to represent each example.
+      All features should be numeric. For unstructured data (eg. images, text, categorical values, ...), you should provide
+      vector embeddings to represent each example (e.g. extracted from some pretrained neural network).
 
-    nbrs : sklearn.neighbors.NearestNeighbors
-      Instantiated NearestNeighbors class object that's been fitted on a dataset in the same feature space.
+    knn : sklearn.neighbors.NearestNeighbors, default = None
+      Instantiated ``NearestNeighbors`` object that's been fitted on a dataset in the same feature space.
       Note that the distance metric and n_neighbors is specified when instantiating this class.
+      You can also pass in a subclass of ``sklearn.neighbors.NearestNeighbors`` which allows you to use faster
+      approximate neighbor libraries as long as you wrap them behind the same sklearn API.
+      If you specify ``knn`` here and wish to find outliers in the same data you already passed into ``knn.fit(features)``, you should specify ``features = None`` here if your ``knn.kneighbors(None)``
+      returns the distances to the datapoints it was ``fit()`` on.
+      If ``knn = None``, then by default ``knn = sklearn.neighbors.NearestNeighbors(n_neighbors=k, metric="cosine").fit(features)``
+
       See: https://scikit-learn.org/stable/modules/neighbors.html
 
-    k : int, default=None
-      Number of neighbors to use when calculating average distance to neighbors.
-      This value k needs to be less than or equal to max_k which is the n_neighbors used when fitting instantiated NearestNeighbors class object.
-      If k=None, then by default k=min(10, max_k) is used where max_k is extracted from the given nbrs.
+    k : int, default=10
+      Number of neighbors to use when calculating outlier score (average distance to neighbors). If an existing ``knn``
+      object is provided, you can still specify that outlier score should use a different value of ``k`` than originally
+      used in the ``knn``, as long as your specified value of ``k`` is smaller than the one originally used.
+      If k is larger, then by default ``k = n_neighbors`` where ``n_neighbors`` is defined in the ``knn``.
+      If k is not provided, then by default ``k = 10``.
+
+    t : int, default=1
+      Controls transformation of distances between examples into similarity scores that lie in [0,1]. The transformation
+      applied is exp(-x*t) where x is the average distance to k-nearest neighbors. If you find your scores are all too
+      close to 1, consider increasing t, although the relative scores of examples will still have the same ranking across the dataset.
 
     Returns
     -------
-    avg_nbrs_distances : np.array
-      Average distance to k-nearest neighbors for each datapoint which is used as a score for OOD detection.
+    outlier_scores : np.ndarray
+      Score for each example that roughly corresponds to the likelihood this example stems from the same distribution as
+      the dataset features (i.e. is not an outlier).
     """
+    # if knn is not provided, then use default KNN as estimator
+    if knn is None:
+        # Make sure both knn and features are not None
+        if features is None:
+            raise ValueError(
+                f"Both knn and features arguments cannot be None at the same time. Not enough information to compute outlier scores."
+            )
 
-    # number of neighbors specified when fitting instantiated NearestNeighbors class object
-    max_k = nbrs.n_neighbors
+        # Make sure number of neighbors is less than number of example for estimator.
+        if k > len(features):
+            raise ValueError(
+                f"Number of nearest neighbors k={k} cannot exceed the number of examples N={len(features)} passed into the estimator (knn)."
+            )
+        knn = NearestNeighbors(n_neighbors=k, metric="cosine").fit(features)
+        features = None  # features should be None in knn.kneighbors(features) to avoid counting duplicate data points
 
-    # if k is not provided, then use default
-    if k is None:
-        k = min(10, max_k)
+    # number of neighbors specified when fitting instantiated NearestNeighbors object
+    max_k = knn.n_neighbors
 
-    assert (
-        k <= max_k
-    ), f"Chosen k={k} cannot be greater than n_neighbors={max_k} which was used when fitting NearestNeighbors object!"
+    # if k provided is too high, use max number of nearest neighbors
+    if k > max_k:
+        k = max_k
+        warnings.warn(
+            f"Chosen k={k} cannot be greater than n_neighbors={max_k} which was used when fitting "
+            f"NearestNeighbors object! Value of k changed to k={max_k}.",
+            UserWarning,
+        )
 
-    # Get distances to k-nearest neighbors
-    # Note that the nbrs object contains the specification of distance metric and n_neighbors (k value)
-    # If our query set of features matches the training set used to fit nbrs, the nearest neighbor of each point is the point itself, at a distance of zero.
-    distances, _ = nbrs.kneighbors(features)
+    # Get distances to k-nearest neighbors Note that the knn object contains the specification of distance metric
+    # and n_neighbors (k value) If our query set of features matches the training set used to fit knn, the nearest
+    # neighbor of each point is the point itself, at a distance of zero.
+    distances, _ = knn.kneighbors(features)
 
     # Calculate average distance to k-nearest neighbors
-    avg_nbrs_distances = distances[:, :k].mean(axis=1)
+    avg_knn_distances = distances[:, :k].mean(axis=1)
 
-    return avg_nbrs_distances
+    # Global rescale outlier_scores to range 0-1 with 0 = most concerning
+    outlier_scores = np.exp(-1 * avg_knn_distances * t)
+    return outlier_scores
