@@ -399,39 +399,29 @@ def test_get_outlier_scores():
     knn_distance_to_score = rank.get_outlier_scores(features=X_test_with_ood, knn=knn, k=k)
 
     # Checking that X_ood has the smallest outlier score among all the datapoints
-    assert np.min(knn_distance_to_score) == knn_distance_to_score[-1]
-
-    # Index of the datapoint with max ood score should correspond to the first element of X_test_with_ood
-    idx_max_score = np.argsort(knn_distance_to_score)[0]
-    assert idx_max_score == (X_test_with_ood.shape[0] - 1)
+    assert np.argmin(knn_distance_to_score) == (knn_distance_to_score.shape[0] - 1)
 
     # Get KNN distance as outlier score without passing k
     # By default k=10 is used or k = n_neighbors when k > n_neighbors extracted from the knn
     knn_distance_to_score = rank.get_outlier_scores(features=X_test_with_ood, knn=knn)
-    # Index of the datapoint with max outlier score should correspond to the first element of X_test_with_ood
-    idx_max_score = np.argsort(knn_distance_to_score)[0]
-    assert idx_max_score == (X_test_with_ood.shape[0] - 1)
-    assert np.min(knn_distance_to_score) == knn_distance_to_score[-1]
+    # Checking that X_ood has the smallest outlier score among all the datapoints
+    assert np.argmin(knn_distance_to_score) == (knn_distance_to_score.shape[0] - 1)
 
     # Get KNN distance as outlier score passing k and t > 1
     large_t_knn_distance_to_score = rank.get_outlier_scores(
         features=X_test_with_ood, knn=knn, k=k, t=5
     )
 
-    # Index of the datapoint with max ood score should correspond to the first element of X_test_with_ood
-    idx_max_score = np.argsort(large_t_knn_distance_to_score)[0]
-    assert idx_max_score == (X_test_with_ood.shape[0] - 1)
-    assert np.min(large_t_knn_distance_to_score) == large_t_knn_distance_to_score[-1]
+    # Checking that X_ood has the smallest outlier score among all the datapoints
+    assert np.argmin(large_t_knn_distance_to_score) == (large_t_knn_distance_to_score.shape[0] - 1)
 
     # Get KNN distance as outlier score passing k and t < 1
     small_t_knn_distance_to_score = rank.get_outlier_scores(
         features=X_test_with_ood, knn=knn, k=k, t=0.002
     )
 
-    # Index of the datapoint with max ood score should correspond to the first element of X_test_with_ood
-    idx_max_score = np.argsort(small_t_knn_distance_to_score)[0]
-    assert idx_max_score == (X_test_with_ood.shape[0] - 1)
-    assert np.min(small_t_knn_distance_to_score) == small_t_knn_distance_to_score[-1]
+    # Checking that X_ood has the smallest outlier score among all the datapoints
+    assert np.argmin(small_t_knn_distance_to_score) == (small_t_knn_distance_to_score.shape[0] - 1)
     assert np.sum(small_t_knn_distance_to_score) >= np.sum(large_t_knn_distance_to_score)
 
 
