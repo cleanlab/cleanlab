@@ -148,6 +148,8 @@ def _get_quality_of_consensus(
     """
     valid_methods = ["auto", "lqs", "agreement", "active_label_cleaning", "bayes"]
 
+    post_pred_probs = pred_probs  # posterior pred_probs = prior pred_probs unless updated otherwise
+
     if quality_method == "auto":
         lqs_consensus_label = get_label_quality_scores(consensus_label, pred_probs, **kwargs)
         frac = pred_probs[range(len(consensus_label)), (consensus_label)] / num_annotations
@@ -194,8 +196,11 @@ def _get_quality_of_consensus(
                 axis=1,
             )
         )
-        posterior = np.exp(np.log(pred_probs) + prod_annotator_likelihood)
+        # posterior = np.exp(np.log(pred_probs) + prod_annotator_likelihood)
+        log_posterior = np.log(pred_probs) + prod_annotator_likelihood
+        posterior = np.exp(log_posterior - log_posterior.max(axis=1).reshape(len(log_posterior), 1))
         normalized_posterior = posterior / np.sum(posterior, axis=1).reshape(len(posterior), 1)
+        post_pred_probs = normalized_posterior
         quality_of_consensus = get_label_quality_scores(
             consensus_label, normalized_posterior, **kwargs
         )
@@ -207,7 +212,7 @@ def _get_quality_of_consensus(
             """
         )
 
-    return quality_of_consensus
+    return quality_of_consensus, post_pred_probs
 
 
 def _get_consensus_stats(
@@ -251,6 +256,7 @@ def _get_consensus_stats(
         A tuple of (consensus_label, annotator_agreement, quality_of_consensus).
     """
 
+    # TODO: update this - currently a hacky way to get DS to work
     if consensus_method == "dawid_skene":
         from crowdkit.aggregation import DawidSkene
 
@@ -270,6 +276,8 @@ def _get_consensus_stats(
             np.array(consensus_label), pred_probs_DS
         )
 
+        post_pred_probs = pred_probs_DS
+
     else:
         # Compute consensus label using method specified
         consensus_label = _get_consensus_label(
@@ -285,7 +293,7 @@ def _get_consensus_stats(
         )
 
         # Compute the label quality scores of the consensus labels
-        quality_of_consensus = _get_quality_of_consensus(
+        quality_of_consensus, post_pred_probs = _get_quality_of_consensus(
             labels_multiannotator=labels_multiannotator,
             consensus_label=consensus_label,
             pred_probs=pred_probs,
@@ -295,7 +303,7 @@ def _get_consensus_stats(
             **kwargs,
         )
 
-    return (consensus_label, annotator_agreement, quality_of_consensus)
+    return (consensus_label, annotator_agreement, quality_of_consensus, post_pred_probs)
 
 
 # TODO: update this method once multi-annotator functionality is finalized
@@ -509,7 +517,12 @@ def get_label_quality_multiannotator(
     label_quality_scores_multiannotator["num_annotations"] = num_annotations
 
     # Compute consensus labels, annotator agreement and quality of consensus
-    consensus_label, annotator_agreement, quality_of_consensus = _get_consensus_stats(
+    (
+        consensus_label,
+        annotator_agreement,
+        quality_of_consensus,
+        post_pred_probs,
+    ) = _get_consensus_stats(
         labels_multiannotator=labels_multiannotator,
         pred_probs=pred_probs,
         num_annotations=num_annotations,
@@ -533,7 +546,7 @@ def get_label_quality_multiannotator(
     # compute consensus stats for alternative consensus methods (if provided)
     if isinstance(consensus_method, list) and len(consensus_method) > 1:
         for alt_consensus_method in consensus_method[1:]:
-            consensus_label_alt, _, quality_of_consensus_alt, = _get_consensus_stats(
+            consensus_label_alt, _, quality_of_consensus_alt, _ = _get_consensus_stats(
                 labels_multiannotator=labels_multiannotator,
                 pred_probs=pred_probs,
                 num_annotations=num_annotations,
@@ -563,7 +576,7 @@ def get_label_quality_multiannotator(
     if verbose or return_annotator_stats:
         annotator_stats = get_multiannotator_stats(
             labels_multiannotator=labels_multiannotator,
-            pred_probs=pred_probs,
+            pred_probs=post_pred_probs,
             consensus_label=consensus_label,
             quality_method=quality_method,
         )
