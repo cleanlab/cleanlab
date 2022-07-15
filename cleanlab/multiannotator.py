@@ -278,6 +278,27 @@ def _get_consensus_stats(
 
         post_pred_probs = pred_probs_DS
 
+    elif consensus_method == "GLAD":
+        from crowdkit.aggregation import GLAD
+
+        labels_multiannotator_stacked = labels_multiannotator.stack().reset_index()
+        labels_multiannotator_stacked.columns = ["task", "worker", "label"]
+        G = GLAD().fit(labels_multiannotator_stacked.astype("int64"))
+
+        consensus_label = G.labels_.values
+        pred_probs_DS = G.probas_.values
+
+        annotator_agreement = _get_annotator_agreement(
+            labels_multiannotator=labels_multiannotator,
+            consensus_label=consensus_label,
+        )
+
+        quality_of_consensus = get_self_confidence_for_each_label(
+            np.array(consensus_label), pred_probs_DS
+        )
+
+        post_pred_probs = pred_probs_DS
+
     else:
         # Compute consensus label using method specified
         consensus_label = _get_consensus_label(
