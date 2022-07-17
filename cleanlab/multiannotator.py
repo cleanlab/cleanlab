@@ -327,6 +327,71 @@ def _get_consensus_stats(
     return (consensus_label, annotator_agreement, quality_of_consensus, post_pred_probs)
 
 
+def _get_annotator_quality(
+    labels_multiannotator: pd.DataFrame,
+    pred_probs: np.ndarray,
+    consensus_label: np.ndarray,
+    quality_method: str = "auto",
+) -> pd.DataFrame:
+    """Returns annotator quality score for each annotator.
+
+    Parameters
+    ----------
+    labels_multiannotator : pd.DataFrame
+        2D pandas DataFrame of multiple given labels for each example with shape (N, M),
+        where N is the number of examples and M is the number of annotators.
+        For more details, labels in the same format expected by the :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>`.
+
+    pred_probs : np.ndarray
+        An array of shape ``(N, K)`` of model-predicted probabilities, ``P(label=k|x)``.
+        For details, predicted probabilities in the same format expected by the :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>`.
+
+    consensus_label : np.ndarray
+        An array of shape ``(N,)`` with the consensus labels aggregated from all annotators.
+
+    quality_method : str
+        Specifies the method used to calculate the quality of the consensus label.
+        For valid quality methods, view :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>`
+
+    Returns
+    -------
+    overall_annotator_quality : pd.DataFrame
+        Overall quality of a given annotator's labels
+    """
+
+    valid_methods = ["auto", "lqs", "agreement", "active_label_cleaning", "bayes"]
+
+    def try_overall_label_health_score(labels, pred_probs):
+        try:
+            return overall_label_health_score(labels, pred_probs, verbose=False)
+        except:
+            warnings.warn(
+                "some overall_quality scores displayed as NaN due to missing class labels"
+            )
+            return np.NaN
+
+    if quality_method in ["auto", "lqs", "active_label_cleaning", "bayes"]:
+        overall_annotator_quality = labels_multiannotator.apply(
+            lambda s: try_overall_label_health_score(
+                s[pd.notna(s)].astype("int32"), pred_probs[pd.notna(s)]
+            )
+        )
+    elif quality_method == "agreement":
+        overall_annotator_quality = labels_multiannotator.apply(
+            lambda s: np.mean(s[pd.notna(s)] == consensus_label[pd.notna(s)]),
+            axis=0,
+        ).to_numpy()
+    else:
+        raise ValueError(
+            f"""
+            {quality_method} is not a valid quality method!
+            Please choose a valid consensus_method: {valid_methods}
+            """
+        )
+
+    return overall_annotator_quality
+
+
 # TODO: update this method once multi-annotator functionality is finalized
 def get_multiannotator_stats(
     labels_multiannotator: pd.DataFrame,
@@ -364,15 +429,6 @@ def get_multiannotator_stats(
         - ``worst_class``: the class that is most frequently mislabeled by a given annotator
     """
 
-    def try_overall_label_health_score(labels, pred_probs):
-        try:
-            return overall_label_health_score(labels, pred_probs, verbose=False)
-        except:
-            warnings.warn(
-                "some overall_quality scores displayed as NaN due to missing class labels"
-            )
-            return np.NaN
-
     def try_get_worst_class(labels, pred_probs):
         try:
             return _get_worst_class(labels, pred_probs)
@@ -383,10 +439,11 @@ def get_multiannotator_stats(
             return np.NaN
 
     # Compute overall quality of each annotator's labels
-    overall_label_health_score_df = labels_multiannotator.apply(
-        lambda s: try_overall_label_health_score(
-            s[pd.notna(s)].astype("int32"), pred_probs[pd.notna(s)]
-        )
+    overall_label_health_score_df = _get_annotator_quality(
+        labels_multiannotator=labels_multiannotator,
+        pred_probs=pred_probs,
+        consensus_label=consensus_label,
+        quality_method=quality_method,
     )
 
     # Compute the number of labels labeled/ by each annotator
