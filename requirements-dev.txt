@@ -9,3 +9,5 @@ requests
 scipy
 torch
 torchvision
+skorch
+tensorflow

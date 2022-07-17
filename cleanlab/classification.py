@@ -375,7 +375,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
           Optional callable function that takes two arguments, `X_val`, `y_val`, and returns a dict
           of keyword arguments passed into to ``clf.fit()`` which may be functions of the validation
           data in each cross-validation fold. Specifies how to map the validation data split in each
-          cross-validation fold into the appropriate format to pass into `clf`'s ``fit()`` method, assuming 
+          cross-validation fold into the appropriate format to pass into `clf`'s ``fit()`` method, assuming
           ``clf.fit()`` can utilize validation data if it is appropriately passed in (eg. for early-stopping).
           Eg. if your model's ``fit()`` method is called using ``clf.fit(X, y, X_validation, y_validation)``,
           then you could set ``validation_func = f`` where
