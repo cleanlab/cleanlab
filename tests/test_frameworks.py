@@ -25,6 +25,7 @@ import warnings
 # pytest.mark.filterwarnings is unable to catch filterbuffers library DeprecationWarning
 warnings.filterwarnings(action="ignore", category=DeprecationWarning)
 
+import sys
 from copy import deepcopy
 import random
 import tensorflow as tf
@@ -36,14 +37,10 @@ import pandas as pd
 from cleanlab.classification import CleanLearning
 from cleanlab.experimental.keras import KerasWrapper
 
-SEED = 1
-np.random.seed(SEED)
-random.seed(SEED)
-tf.random.set_seed(SEED)
-torch.manual_seed(SEED)
-torch.backends.cudnn.deterministic = True
-torch.backends.cudnn.benchmark = False
-torch.cuda.manual_seed_all(SEED)
+
+def python_version_ok():  # tensorflow and torch do not play nice with older Python
+    version = sys.version_info
+    return (version.major >= 3) and (version.minor >= 7)
 
 
 def dataset_w_errors():
@@ -86,10 +83,22 @@ def make_rare_label(data):
     return data
 
 
+SEED = 1
+np.random.seed(SEED)
+random.seed(SEED)
+if python_version_ok():
+    tf.random.set_seed(SEED)
+    tf.keras.utils.set_random_seed(SEED)
+    torch.manual_seed(SEED)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+    torch.cuda.manual_seed_all(SEED)
+
 DATA = dataset_w_errors()
 DATA_RARE_LABEL = make_rare_label(DATA)
 
 
+@pytest.mark.skipif("not python_version_ok()", reason="need at least python 3.7")
 @pytest.mark.parametrize("batch_size", [1, 32])
 def test_tensorflow(batch_size, data=DATA, hidden_units=128):
     dataset_tf = tf.data.Dataset.from_tensor_slices((data["X"], data["y"])).batch(batch_size)
@@ -123,6 +132,7 @@ def test_tensorflow(batch_size, data=DATA, hidden_units=128):
     assert issue_indices == data["error_indices"]
 
 
+@pytest.mark.skipif("not python_version_ok()", reason="need at least python 3.7")
 @pytest.mark.parametrize("batch_size", [1, 32])
 @pytest.mark.filterwarnings("ignore")
 def test_tensorflow_rarelabel(batch_size, data=DATA_RARE_LABEL, hidden_units=8):
@@ -142,6 +152,7 @@ def test_tensorflow_rarelabel(batch_size, data=DATA_RARE_LABEL, hidden_units=8):
     preds = cl.predict(dataset_tf)
 
 
+@pytest.mark.skipif("not python_version_ok()", reason="need at least python 3.7")
 def test_torch(data=DATA, hidden_units=128):
     dataset = torch.utils.data.TensorDataset(
         torch.from_numpy(data["X"]).float(), torch.from_numpy(data["y"])
@@ -177,6 +188,7 @@ def test_torch(data=DATA, hidden_units=128):
     assert issue_indices == data["error_indices"]
 
 
+@pytest.mark.skipif("not python_version_ok()", reason="need at least python 3.7")
 @pytest.mark.filterwarnings("ignore")
 def test_torch_rarelabel(data=DATA_RARE_LABEL, hidden_units=8):
     dataset = torch.utils.data.TensorDataset(

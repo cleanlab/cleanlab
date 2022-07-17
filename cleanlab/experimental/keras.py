@@ -20,7 +20,9 @@ This is a good example to reference for making your own bespoke neural network c
 
 You must have Tensorflow installed: https://www.tensorflow.org/install
 
-Tip: To call fit() on a Tensorflow Dataset object, the Dataset must already be batched.
+Note: Tensorflow is only compatible with Python versions >= 3.7: https://www.tensorflow.org/install/pip#software_requirements
+
+Tip: To call ``fit()`` on a Tensorflow Dataset object with a Keras model, the Dataset should already be batched.
 """
 
 import tensorflow as tf
