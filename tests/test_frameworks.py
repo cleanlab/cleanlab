@@ -40,7 +40,6 @@ SEED = 1
 np.random.seed(SEED)
 random.seed(SEED)
 tf.random.set_seed(SEED)
-tf.keras.utils.set_random_seed(SEED)
 torch.manual_seed(SEED)
 torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False
