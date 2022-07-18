@@ -26,6 +26,7 @@ import warnings
 warnings.filterwarnings(action="ignore", category=DeprecationWarning)
 
 import sys
+import os
 from copy import deepcopy
 import random
 import tensorflow as tf
@@ -58,6 +59,14 @@ def dataset_w_errors():
     error_indices = [n - 3, n - 2, n - 1, n, n + 1, n + 2]
     for idx in error_indices:
         y[idx] = 1 - y[idx]  # Flip label
+
+    if os.name == "nt":  # running on Windows
+        # numpy converts to int32 instead of int64 on Windows, incompatible with neural nets
+        # https://github.com/numpy/numpy/issues/17640
+        X = np.int64(X)
+        y = np.int64(y)
+        y_og = np.int64(y_og)
+        os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"  # suppress tensorflow complaints on Windows
 
     return {
         "X": X,
