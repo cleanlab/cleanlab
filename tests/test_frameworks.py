@@ -29,11 +29,16 @@ import sys
 import os
 from copy import deepcopy
 import random
+import numpy as np
+import pandas as pd
+
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"  # suppress TF warnings on some systems
+if os.name == "nt":  # check if we are on Windows
+    os.environ["CUDA_VISIBLE_DEVICES"] = "-1"  # ensure tensorflows runs on CPU
+
 import tensorflow as tf
 import torch
 import skorch
-import numpy as np
-import pandas as pd
 
 from cleanlab.classification import CleanLearning
 from cleanlab.experimental.keras import KerasWrapper
@@ -94,7 +99,6 @@ def make_rare_label(data):
 SEED = 1
 np.random.seed(SEED)
 random.seed(SEED)
-os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"  # suppress TF warnings on some systems
 if python_version_ok():
     tf.random.set_seed(SEED)
     tf.keras.utils.set_random_seed(SEED)
@@ -103,8 +107,6 @@ if python_version_ok():
     torch.backends.cudnn.benchmark = False
     torch.cuda.manual_seed_all(SEED)
 
-if os.name == "nt":  # check we are on Windows
-    os.environ["CUDA_VISIBLE_DEVICES"] = "-1"  # ensure tensorflows runs on CPU
 
 DATA = dataset_w_errors()
 DATA_RARE_LABEL = make_rare_label(DATA)
@@ -132,7 +134,7 @@ def test_tensorflow(batch_size, data=DATA, hidden_units=128):
     )
     preds_base = model.predict_proba(dataset_tf)
 
-    # Test Cleanlearning performs well:
+    # Test CleanLearning performs well:
     cl = CleanLearning(model)
     cl.fit(dataset_tf, data["y"], clf_kwargs={"epochs": 10}, clf_final_kwargs={"epochs": 15})
 
