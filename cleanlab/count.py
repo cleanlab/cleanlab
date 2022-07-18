@@ -259,7 +259,7 @@ def _compute_confident_joint_multi_label(
         P(label=k|x) is a matrix with K model-predicted probabilities.
         Each row of this matrix corresponds to an example `x` and contains the model-predicted
         probabilities that `x` belongs to each possible class.
-        The columns must be ordered such that these probabilities correspond to class 0,1,2,...
+        The columns must be ordered such that these probabilities correspond to class 0, 1, ..., K-1.
         `pred_probs` must be out-of-sample (ideally should have been computed using 3+ fold cross-validation).
 
     thresholds : iterable (list or np.array) of shape (K, 1)  or (K,)
