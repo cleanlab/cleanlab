@@ -66,7 +66,6 @@ def dataset_w_errors():
         X = np.int64(X)
         y = np.int64(y)
         y_og = np.int64(y_og)
-        os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"  # suppress tensorflow complaints on Windows
 
     return {
         "X": X,
@@ -95,6 +94,7 @@ def make_rare_label(data):
 SEED = 1
 np.random.seed(SEED)
 random.seed(SEED)
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"  # suppress TF warnings on some systems
 if python_version_ok():
     tf.random.set_seed(SEED)
     tf.keras.utils.set_random_seed(SEED)
@@ -102,6 +102,9 @@ if python_version_ok():
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
     torch.cuda.manual_seed_all(SEED)
+
+if os.name == "nt":  # check we are on Windows
+    os.environ["CUDA_VISIBLE_DEVICES"] = "-1"  # ensure tensorflows runs on CPU
 
 DATA = dataset_w_errors()
 DATA_RARE_LABEL = make_rare_label(DATA)
