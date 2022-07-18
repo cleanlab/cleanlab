@@ -192,7 +192,7 @@ def test_torch(data=DATA, hidden_units=128):
     # Test Cleanlearning performs well:
     net = skorch.NeuralNet(TorchNetwork, criterion=torch.nn.CrossEntropyLoss)
     cl = CleanLearning(net)
-    cl.fit(dataset, data["y"], clf_kwargs={"epochs": 30}, clf_final_kwargs={"epochs": 40})
+    cl.fit(dataset, data["y"], clf_kwargs={"epochs": 30}, clf_final_kwargs={"epochs": 50})
 
     preds = cl.predict(dataset).argmax(axis=1)
     err = np.sum(preds != data["y_og"]) / len(data["y_og"])
