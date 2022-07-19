@@ -68,7 +68,7 @@ def dataset_w_errors():
     if os.name == "nt":  # running on Windows
         # numpy converts to int32 instead of int64 on Windows, incompatible with neural nets
         # https://github.com/numpy/numpy/issues/17640
-        X = np.int64(X)
+        X = np.float64(X)
         y = np.int64(y)
         y_og = np.int64(y_og)
 
@@ -140,10 +140,9 @@ def test_tensorflow(batch_size, data=DATA, hidden_units=128):
 
     preds = cl.predict(dataset_tf)
     err = np.sum(preds != data["y_og"]) / len(data["y_og"])
-    assert err < 1e-3
-
     issue_indices = list(cl.label_issues_df[cl.label_issues_df["is_label_issue"]].index.values)
     assert issue_indices == data["error_indices"]
+    assert err < 1e-3
 
 
 @pytest.mark.skipif("not python_version_ok()", reason="need at least python 3.7")
@@ -185,21 +184,21 @@ def test_torch(data=DATA, hidden_units=128):
             return self.layers(X)
 
     # Test base model works:
-    net = skorch.NeuralNet(TorchNetwork, criterion=torch.nn.CrossEntropyLoss)
+    skorch_config = {"criterion": torch.nn.CrossEntropyLoss, "optimizer": torch.optim.Adam}
+    net = skorch.NeuralNet(TorchNetwork, **skorch_config)
     net.fit(dataset, data["y"], epochs=2)
     preds_base = net.predict(dataset)
 
     # Test Cleanlearning performs well:
-    net = skorch.NeuralNet(TorchNetwork, criterion=torch.nn.CrossEntropyLoss)
+    net = skorch.NeuralNet(TorchNetwork, **skorch_config)
     cl = CleanLearning(net)
-    cl.fit(dataset, data["y"], clf_kwargs={"epochs": 30}, clf_final_kwargs={"epochs": 50})
+    cl.fit(dataset, data["y"], clf_kwargs={"epochs": 30}, clf_final_kwargs={"epochs": 60})
 
     preds = cl.predict(dataset).argmax(axis=1)
     err = np.sum(preds != data["y_og"]) / len(data["y_og"])
-    assert err < 1e-3
-
     issue_indices = list(cl.label_issues_df[cl.label_issues_df["is_label_issue"]].index.values)
     assert issue_indices == data["error_indices"]
+    assert err < 1e-3
 
 
 @pytest.mark.skipif("not python_version_ok()", reason="need at least python 3.7")

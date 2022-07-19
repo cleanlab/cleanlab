@@ -498,17 +498,18 @@ def extract_indices_tf(X, idx):
     import tensorflow
 
     idx = np.asarray(idx)
-    reshuffle_reset = False
-    if hasattr(X, "_reshuffle_each_iteration"):
-        if X._reshuffle_each_iteration:
-            X._reshuffle_each_iteration = False
-            reshuffle_reset = True
 
     og_batch_size = None
     if hasattr(X, "_batch_size"):
         if int(X._batch_size) > 1:
             og_batch_size = int(X._batch_size)
             X = X.unbatch()
+
+    reshuffle_reset = False
+    if hasattr(X, "_reshuffle_each_iteration"):
+        if X._reshuffle_each_iteration:
+            X._reshuffle_each_iteration = False
+            reshuffle_reset = True
 
     # Create index,value pairs in the dataset (adds extra indices that werent there before)
     X = X.enumerate()
@@ -525,13 +526,14 @@ def extract_indices_tf(X, idx):
 
     # Filter the dataset, then drop the added indices
     X_subset = X.filter(hash_table_filter).map(lambda idx, value: value)
+
+    if og_batch_size is not None:  # reset batch size to original value
+        X_subset = X_subset.batch(og_batch_size)
+
     if reshuffle_reset:
         X._reshuffle_each_iteration = True
         if hasattr(X_subset, "_reshuffle_each_iteration"):
             X_subset._reshuffle_each_iteration = True
-
-    if og_batch_size is not None:  # reset batch size to original value
-        X_subset = X_subset.batch(og_batch_size)
 
     return X_subset
 
