@@ -12,8 +12,8 @@ import warnings
 
 def _get_consensus_label(
     labels_multiannotator: pd.DataFrame,
-    pred_probs: np.ndarray,
-    consensus_method: str,
+    pred_probs: np.ndarray = None,
+    consensus_method: str = "majority",
 ) -> np.ndarray:
     """Returns consensus labels aggregated from multiple annotators, determined by method specified.
 
@@ -40,26 +40,92 @@ def _get_consensus_label(
 
     valid_methods = ["majority", "dawid_skene"]
 
-    # TODO: is there a more efficient/elegant way to do this?
     if consensus_method == "majority":
-        consensus_label = np.empty(len(labels_multiannotator), dtype="int32")
+        consensus_label = np.full(len(labels_multiannotator), np.nan)
         mode_labels_multiannotator = labels_multiannotator.mode(axis=1)
-        for i in range(len(mode_labels_multiannotator)):
-            label_mode = mode_labels_multiannotator.iloc[i].dropna().astype(int).to_numpy()
+
+        nontied_idx = []
+        tied_idx = dict()
+
+        # obtaining consensus using annotator majority vote
+        for idx in range(len(mode_labels_multiannotator)):
+            label_mode = mode_labels_multiannotator.iloc[idx].dropna().astype(int).to_numpy()
             if len(label_mode) == 1:
-                consensus_label[i] = label_mode[0]
-            else:  # breaking ties using pred_probs
-                consensus_label[i] = mode_labels_multiannotator.iloc[i][
-                    pred_probs[
-                        i, mode_labels_multiannotator.iloc[i].dropna().astype(int).to_numpy()
-                    ].argmax()
-                ]
+                consensus_label[idx] = label_mode[0]
+                nontied_idx.append(idx)
+            else:
+                tied_idx[idx] = label_mode
+
+        # tiebreak 1: using pred_probs (if provided)
+        if len(tied_idx) > 0 and pred_probs is not None:
+            for idx, label_mode in tied_idx.copy().items():
+                max_pred_probs = np.where(
+                    pred_probs[idx, label_mode] == pred_probs[idx, label_mode].max()
+                )[0]
+                if len(max_pred_probs) == 1:
+                    consensus_label[idx] = label_mode[max_pred_probs[0]]
+                    del tied_idx[idx]
+                else:
+                    tied_idx[idx] = label_mode[max_pred_probs]
+
+        # tiebreak 2: using empirical class frequencies
+        if len(tied_idx) > 0:
+            class_frequencies = (
+                labels_multiannotator.apply(lambda s: s.value_counts(), axis=1).sum().values
+            )
+            for idx, label_mode in tied_idx.copy().items():
+                max_frequency = np.where(
+                    class_frequencies[label_mode] == class_frequencies[label_mode].max()
+                )[0]
+                if len(max_frequency) == 1:
+                    consensus_label[idx] = label_mode[max_frequency[0]]
+                    del tied_idx[idx]
+                else:
+                    tied_idx[idx] = label_mode[max_frequency]
+
+        # tiebreak 3: using initial annotator quality scores
+        if len(tied_idx) > 0:
+            nontied_consensus_label = consensus_label[nontied_idx]
+            nontied_labels_multiannotator = labels_multiannotator.iloc[nontied_idx]
+            annotator_agreement_with_consensus = nontied_labels_multiannotator.apply(
+                lambda s: np.mean(s[pd.notna(s)] == nontied_consensus_label[pd.notna(s)]),
+                axis=0,
+            ).to_numpy()
+            for idx, label_mode in tied_idx.copy().items():
+                label_quality_score = np.array(
+                    [
+                        np.mean(
+                            annotator_agreement_with_consensus[
+                                labels_multiannotator.iloc[idx][
+                                    labels_multiannotator.iloc[idx] == label
+                                ].index.values
+                            ]
+                        )
+                        for label in label_mode
+                    ]
+                )
+                max_score = np.where(label_quality_score == label_quality_score.max())[0]
+                if len(max_score) == 1:
+                    consensus_label[idx] = label_mode[max_score[0]]
+                    del tied_idx[idx]
+                else:
+                    tied_idx[idx] = label_mode[max_score]
+
+        # if still tied, break by random selection
+        if len(tied_idx) > 0:
+            warnings.warn(
+                f"breaking ties of examples {list(tied_idx.keys())} by random selection, you may want to set seed for reproducability"
+            )
+            for idx, label_mode in tied_idx.items():
+                consensus_label[idx] = np.random.choice(label_mode)
+
     elif consensus_method == "dawid_skene":
         from crowdkit.aggregation import DawidSkene
 
         labels_multiannotator_stacked = labels_multiannotator.stack().reset_index()
         labels_multiannotator_stacked.columns = ["task", "worker", "label"]
         consensus_label = DawidSkene().fit_predict(labels_multiannotator_stacked.astype("int64"))
+
     else:
         raise ValueError(
             f"""
@@ -68,7 +134,7 @@ def _get_consensus_label(
             """
         )
 
-    return consensus_label
+    return consensus_label.astype("int64")
 
 
 def _get_annotator_agreement(
@@ -104,6 +170,7 @@ def _get_annotator_agreement(
 
 
 # TODO: add other ways to the get quality score
+# TODO: ranked_quality is a temp variable used in benchmarking - should remove after benchmarking
 def _get_quality_of_consensus(
     labels_multiannotator: pd.DataFrame,
     consensus_label: np.ndarray,
@@ -154,10 +221,13 @@ def _get_quality_of_consensus(
         lqs_consensus_label = get_label_quality_scores(consensus_label, pred_probs, **kwargs)
         frac = pred_probs[range(len(consensus_label)), (consensus_label)] / num_annotations
         quality_of_consensus = frac * lqs_consensus_label + (1 - frac) * annotator_agreement
+        ranked_quality = quality_of_consensus
     elif quality_method == "lqs":
         quality_of_consensus = get_label_quality_scores(consensus_label, pred_probs, **kwargs)
+        ranked_quality = quality_of_consensus
     elif quality_method == "agreement":
         quality_of_consensus = annotator_agreement
+        ranked_quality = quality_of_consensus
     elif quality_method == "active_label_cleaning":
         num_classes = pred_probs.shape[1]
         empirical_label_distribution = np.vstack(
@@ -172,6 +242,7 @@ def _get_quality_of_consensus(
         ) / np.log(num_classes)
         normalized_entropy = get_normalized_entropy(pred_probs=pred_probs)
         quality_of_consensus = np.exp(-(soft_cross_entropy - normalized_entropy + 1))
+        ranked_quality = -(soft_cross_entropy - normalized_entropy)
     elif quality_method == "bayes":
         num_classes = pred_probs.shape[1]
         # T = num_classes * 100  # hyperparameter
@@ -196,7 +267,6 @@ def _get_quality_of_consensus(
                 axis=1,
             )
         )
-        # posterior = np.exp(np.log(pred_probs) + prod_annotator_likelihood)
         log_posterior = np.log(pred_probs) + prod_annotator_likelihood
         posterior = np.exp(log_posterior - log_posterior.max(axis=1).reshape(len(log_posterior), 1))
         normalized_posterior = posterior / np.sum(posterior, axis=1).reshape(len(posterior), 1)
@@ -204,6 +274,7 @@ def _get_quality_of_consensus(
         quality_of_consensus = get_label_quality_scores(
             consensus_label, normalized_posterior, **kwargs
         )
+        ranked_quality = np.array([log_posterior[i, l] for i, l in enumerate(consensus_label)])
     else:
         raise ValueError(
             f"""
@@ -212,7 +283,7 @@ def _get_quality_of_consensus(
             """
         )
 
-    return quality_of_consensus, post_pred_probs
+    return quality_of_consensus, post_pred_probs, ranked_quality
 
 
 def _get_consensus_stats(
@@ -272,11 +343,21 @@ def _get_consensus_stats(
             consensus_label=consensus_label,
         )
 
+        # TEMP: for benckmarking purposes
+        majority_consensus_label = _get_consensus_label(
+            labels_multiannotator=labels_multiannotator,
+            pred_probs=pred_probs,
+            consensus_method="majority",
+        )
+
         quality_of_consensus = get_self_confidence_for_each_label(
-            np.array(consensus_label), pred_probs_DS
+            majority_consensus_label, pred_probs_DS
         )
 
         post_pred_probs = pred_probs_DS
+        ranked_quality = np.array(
+            [DS.ranked_quality_.values[i, l] for i, l in enumerate(majority_consensus_label)]
+        )
 
     elif consensus_method == "GLAD":
         from crowdkit.aggregation import GLAD
@@ -293,11 +374,19 @@ def _get_consensus_stats(
             consensus_label=consensus_label,
         )
 
+        # TEMP: for benckmarking purposes
+        majority_consensus_label = _get_consensus_label(
+            labels_multiannotator=labels_multiannotator,
+            pred_probs=pred_probs,
+            consensus_method="majority",
+        )
+
         quality_of_consensus = get_self_confidence_for_each_label(
-            np.array(consensus_label), pred_probs_DS
+            majority_consensus_label, pred_probs_DS
         )
 
         post_pred_probs = pred_probs_DS
+        ranked_quality = quality_of_consensus
 
     else:
         # Compute consensus label using method specified
@@ -314,7 +403,7 @@ def _get_consensus_stats(
         )
 
         # Compute the label quality scores of the consensus labels
-        quality_of_consensus, post_pred_probs = _get_quality_of_consensus(
+        quality_of_consensus, post_pred_probs, ranked_quality = _get_quality_of_consensus(
             labels_multiannotator=labels_multiannotator,
             consensus_label=consensus_label,
             pred_probs=pred_probs,
@@ -324,7 +413,13 @@ def _get_consensus_stats(
             **kwargs,
         )
 
-    return (consensus_label, annotator_agreement, quality_of_consensus, post_pred_probs)
+    return (
+        consensus_label,
+        annotator_agreement,
+        quality_of_consensus,
+        post_pred_probs,
+        ranked_quality,
+    )
 
 
 def _get_annotator_quality(
@@ -355,7 +450,7 @@ def _get_annotator_quality(
 
     Returns
     -------
-    overall_annotator_quality : pd.DataFrame
+    overall_annotator_quality : np.ndarray
         Overall quality of a given annotator's labels
     """
 
@@ -375,7 +470,7 @@ def _get_annotator_quality(
             lambda s: try_overall_label_health_score(
                 s[pd.notna(s)].astype("int32"), pred_probs[pd.notna(s)]
             )
-        )
+        ).to_numpy()
     elif quality_method == "agreement":
         overall_annotator_quality = labels_multiannotator.apply(
             lambda s: np.mean(s[pd.notna(s)] == consensus_label[pd.notna(s)]),
@@ -600,6 +695,7 @@ def get_label_quality_multiannotator(
         annotator_agreement,
         quality_of_consensus,
         post_pred_probs,
+        ranked_quality,
     ) = _get_consensus_stats(
         labels_multiannotator=labels_multiannotator,
         pred_probs=pred_probs,
@@ -615,10 +711,12 @@ def get_label_quality_multiannotator(
         label_quality_scores_multiannotator["annotator_agreement"],
         label_quality_scores_multiannotator["consensus_label"],
         label_quality_scores_multiannotator["quality_of_consensus"],
+        label_quality_scores_multiannotator["ranked_quality"],
     ) = (
         annotator_agreement,
         consensus_label,
         quality_of_consensus,
+        ranked_quality,
     )
 
     # compute consensus stats for alternative consensus methods (if provided)
