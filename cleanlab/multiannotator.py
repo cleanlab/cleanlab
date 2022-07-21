@@ -547,17 +547,19 @@ def get_multiannotator_stats(
         complete_index = [
             (i, j)
             for i in DS.errors_.index.get_level_values(0).unique()
-            for j in DS.errors_.index.get_level_values(1).unique()
+            for j in sorted(DS.errors_.index.get_level_values(1).unique())
         ]
-        errors = DS.errors_.reindex(complete_index).sort_index()
+        errors = DS.errors_.reindex(complete_index)
         missing_idx = errors[errors.isna().all(axis=1) == True].index
-        avg_annotator_error = DS.errors_.groupby(["label"]).mean().sort_index()
+        avg_annotator_error = DS.errors_.groupby(["label"]).mean()
 
         for w, l in missing_idx:
             errors.loc[w, l] = avg_annotator_error.loc[l]
 
         overall_label_health_score_df = (
-            errors.groupby("worker").apply(lambda x: np.mean(np.diag(x))).to_numpy()
+            errors.groupby("worker")
+            .apply(lambda x: np.mean(np.diag(x)))[labels_multiannotator.columns]
+            .to_numpy()
         )
 
     elif quality_method == "glad":
@@ -570,17 +572,19 @@ def get_multiannotator_stats(
         complete_index = [
             (i, j)
             for i in G.errors_.index.get_level_values(0).unique()
-            for j in G.errors_.index.get_level_values(1).unique()
+            for j in sorted(DS.errors_.index.get_level_values(1).unique())
         ]
         errors = G.errors_.reindex(complete_index)
         missing_idx = errors[errors.isna().all(axis=1) == True].index
-        avg_annotator_error = G.errors_.groupby(["label"]).mean().sort_index()
+        avg_annotator_error = G.errors_.groupby(["label"]).mean()
 
         for w, l in missing_idx:
             errors.loc[w, l] = avg_annotator_error.loc[l]
 
         overall_label_health_score_df = (
-            errors.groupby("worker").apply(lambda x: np.mean(np.diag(x))).to_numpy()
+            errors.groupby("worker")
+            .apply(lambda x: np.mean(np.diag(x)))[labels_multiannotator.columns]
+            .to_numpy()
         )
 
     else:
