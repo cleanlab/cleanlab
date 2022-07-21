@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 from typing import List, Union, Tuple
-from cleanlab.rank import get_label_quality_scores, get_self_confidence_for_each_label
+from cleanlab.rank import get_label_quality_scores
 from cleanlab.internal.label_quality_utils import (
     _get_label_quality_scores_with_NA,
     get_normalized_entropy,
@@ -353,8 +353,8 @@ def _get_consensus_stats(
             consensus_method="majority",
         )
 
-        quality_of_consensus = get_self_confidence_for_each_label(
-            majority_consensus_label, pred_probs_DS
+        quality_of_consensus = get_label_quality_scores(
+            majority_consensus_label, pred_probs_DS, **kwargs
         )
 
         post_pred_probs = pred_probs_DS
@@ -384,8 +384,8 @@ def _get_consensus_stats(
             consensus_method="majority",
         )
 
-        quality_of_consensus = get_self_confidence_for_each_label(
-            majority_consensus_label, pred_probs_DS
+        quality_of_consensus = get_label_quality_scores(
+            majority_consensus_label, pred_probs_DS, **kwargs
         )
 
         post_pred_probs = pred_probs_DS
@@ -537,12 +537,59 @@ def get_multiannotator_stats(
             return np.NaN
 
     # Compute overall quality of each annotator's labels
-    overall_label_health_score_df = _get_annotator_quality(
-        labels_multiannotator=labels_multiannotator,
-        pred_probs=pred_probs,
-        consensus_label=consensus_label,
-        quality_method=quality_method,
-    )
+    if quality_method == "dawid_skene":
+        from crowdkit.aggregation import DawidSkene
+
+        labels_multiannotator_stacked = labels_multiannotator.stack().reset_index()
+        labels_multiannotator_stacked.columns = ["task", "worker", "label"]
+        DS = DawidSkene().fit(labels_multiannotator_stacked.astype("int64"))
+
+        complete_index = [
+            (i, j)
+            for i in range(DS.errors_.index.get_level_values(0).max() + 1)
+            for j in range(DS.errors_.index.get_level_values(1).max() + 1)
+        ]
+        errors = DS.errors_.reindex(complete_index)
+        missing_idx = errors[errors.isna().all(axis=1) == True].index
+        avg_annotator_error = DS.errors_.groupby(["label"]).mean().sort_index()
+
+        for w, l in missing_idx:
+            errors.loc[w, l] = avg_annotator_error.loc[l]
+
+        overall_label_health_score_df = (
+            errors.groupby("worker").apply(lambda x: np.mean(np.diag(x))).to_numpy()
+        )
+
+    elif quality_method == "glad":
+        from crowdkit.aggregation import GLAD
+
+        labels_multiannotator_stacked = labels_multiannotator.stack().reset_index()
+        labels_multiannotator_stacked.columns = ["task", "worker", "label"]
+        G = GLAD().fit(labels_multiannotator_stacked.astype("int64"))
+
+        complete_index = [
+            (i, j)
+            for i in range(G.errors_.index.get_level_values(0).max() + 1)
+            for j in range(G.errors_.index.get_level_values(1).max() + 1)
+        ]
+        errors = G.errors_.reindex(complete_index)
+        missing_idx = errors[errors.isna().all(axis=1) == True].index
+        avg_annotator_error = G.errors_.groupby(["label"]).mean().sort_index()
+
+        for w, l in missing_idx:
+            errors.loc[w, l] = avg_annotator_error.loc[l]
+
+        overall_label_health_score_df = (
+            errors.groupby("worker").apply(lambda x: np.mean(np.diag(x))).to_numpy()
+        )
+
+    else:
+        overall_label_health_score_df = _get_annotator_quality(
+            labels_multiannotator=labels_multiannotator,
+            pred_probs=pred_probs,
+            consensus_label=consensus_label,
+            quality_method=quality_method,
+        )
 
     # Compute the number of labels labeled/ by each annotator
     num_labeled = labels_multiannotator.count()
@@ -756,6 +803,11 @@ def get_label_quality_multiannotator(
     )
 
     if verbose or return_annotator_stats:
+        if consensus_method == "dawid_skene":
+            quality_method = "dawid_skene"
+        if consensus_method == "glad":
+            quality_method = "glad"
+
         annotator_stats = get_multiannotator_stats(
             labels_multiannotator=labels_multiannotator,
             pred_probs=post_pred_probs,
