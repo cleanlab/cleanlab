@@ -18,12 +18,19 @@
 Checks to ensure valid inputs for various methods.
 """
 
+from typing import Any, List, Optional
 import warnings
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 
 
-def assert_valid_inputs(X, y, pred_probs=None, multi_label=False):
+def assert_valid_inputs(
+    X: npt.NDArray,
+    y: npt.NDArray,
+    pred_probs: Optional[npt.NDArray] = None,
+    multi_label: bool = False,
+) -> None:
     """Checks that X, labels, and pred_probs are correctly formatted"""
     if not isinstance(y, (list, np.ndarray, np.generic, pd.Series, pd.DataFrame)):
         raise TypeError("labels should be a numpy array or pandas Series.")
@@ -77,7 +84,7 @@ def assert_valid_inputs(X, y, pred_probs=None, multi_label=False):
                 )
 
 
-def assert_valid_class_labels(y):
+def assert_valid_class_labels(y: npt.NDArray) -> None:
     """Check that labels is zero-indexed (first label is 0) and all classes present.
     Assumes labels is 1D numpy array (not multi-label).
     """
@@ -95,12 +102,14 @@ def assert_valid_class_labels(y):
         raise TypeError(msg)
 
 
-def assert_nonempty_input(X):
+def assert_nonempty_input(X: Optional[npt.NDArray]) -> None:
     if X is None:
         raise ValueError("Data features X cannot be None. Currently X is None.")
 
 
-def assert_indexing_works(X, idx=None, length_X=None):
+def assert_indexing_works(
+    X: npt.NDArray, idx: Optional[List[int]] = None, length_X: Optional[int] = None
+) -> None:
     """Ensures we can do list-based indexing into ``X`` and ``y``.
     length_X is argument passed in since sparse matrix ``X``
     does not support: ``len(X)`` and we want this method to work for sparse ``X``
@@ -123,7 +132,7 @@ def assert_indexing_works(X, idx=None, length_X=None):
         raise TypeError(msg)
 
 
-def labels_to_array(y):
+def labels_to_array(y: npt.NDArray) -> Any:
     """Converts different types of label objects to 1D numpy array and checks validity"""
     if isinstance(y, pd.Series):
         return y.values
