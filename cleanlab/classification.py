@@ -27,16 +27,17 @@ meaning it must define four functions:
 * ``clf.predict(X)``
 * ``clf.score(X, y, sample_weight=None)``
 
-where `X` contains data, `y` contains labels (with elements in 0, 1, ..., K-1,
-where K is the number of classes), and `sample_weight` re-weights examples in
-the loss function while training.
+where `X` contains data (i.e. features), `y` contains labels (with elements in 0, 1, ..., K-1,
+where K is the number of classes). The first index of `X` and of `y` should correspond to the different examples in the dataset,
+such that ``len(X) = len(y) = N`` (sample-size). Here `sample_weight` re-weights examples in
+the loss function while training (supporting `sample_weight` in your classifier is recommended but optional).
 
-Furthermore, the estimator should be correctly clonable via
+Furthermore, your estimator should be correctly clonable via
 `sklearn.base.clone <https://scikit-learn.org/stable/modules/generated/sklearn.base.clone.html>`_:
 cleanlab internally creates multiple instances of the
 estimator, and if you e.g. manually wrap a PyTorch model, you must ensure that
 every call to the estimator's ``__init__()`` creates an independent instance of
-the model.
+the model (for sklearn compatibility, the weights of neural network models should typically be initialized inside of ``clf.fit()``).
 
 Note
 ----
@@ -356,7 +357,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
           :py:meth:`self.find_label_issues<cleanlab.classification.CleanLearning.find_label_issues>`,
           e.g. as a ``np.array``, then some functionality like training with sample weights may be disabled.
 
-        sample_weight : array-like of shape (n_samples,), optional
+        sample_weight : array-like of shape (N,), optional
           Array of weights that are assigned to individual samples.
           If not provided, samples may still be weighted by the estimated noise in the class they are labeled as.
 
@@ -666,7 +667,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
           * *label_quality*: Numeric score that measures the quality of each label (how likely it is to be correct, with lower scores indicating potentially erroneous labels).
           * *given_label*: Integer indices corresponding to the class label originally given for this example (same as `labels` input). Included here for ease of comparison against `clf` predictions, only present if "predicted_label" column is present.
           * *predicted_label*: Integer indices corresponding to the class predicted by trained `clf` model. Only present if ``pred_probs`` were provided as input or computed during label-issue-finding.
-          * *sample_weight*: Numeric values used to weight examples during the final training of `clf` in :py:meth:`CleanLearning.fit()<cleanlab.classification.CleanLearning.fit>`. This column not be present after `self.find_label_issues()` but may be added after call to :py:meth:`CleanLearning.fit()<cleanlab.classification.CleanLearning.fit>`. For more precise definition of sample weights, see documentation of :py:meth:`CleanLearning.fit()<cleanlab.classification.CleanLearning.fit>`
+          * *sample_weight*: Numeric values used to weight examples during the final training of `clf` in :py:meth:`CleanLearning.fit()<cleanlab.classification.CleanLearning.fit>`. This column may not be present after `self.find_label_issues()` but may be added after call to :py:meth:`CleanLearning.fit()<cleanlab.classification.CleanLearning.fit>`. For more precise definition of sample weights, see documentation of :py:meth:`CleanLearning.fit()<cleanlab.classification.CleanLearning.fit>`
         """
 
         # Check inputs
