@@ -10,8 +10,8 @@ from cleanlab.dataset import overall_label_health_score, _get_worst_class
 import warnings
 
 
-def _get_consensus_label(
-    labels_multiannotator: pd.DataFrame,
+def get_consensus_label(
+    labels_multiannotator: pd.DataFrame or np.ndarray,
     pred_probs: np.ndarray = None,
     consensus_method: str = "majority",
 ) -> np.ndarray:
@@ -37,6 +37,9 @@ def _get_consensus_label(
     consensus_label: np.ndarray
         An array of shape ``(N,)`` with the consensus labels aggregated from all annotators.
     """
+
+    if isinstance(labels_multiannotator, np.ndarray):
+        labels_multiannotator = pd.DataFrame(labels_multiannotator)
 
     valid_methods = ["majority", "dawid_skene"]
 
@@ -344,7 +347,7 @@ def _get_consensus_stats(
         )
 
         # TEMP: for benckmarking purposes
-        majority_consensus_label = _get_consensus_label(
+        majority_consensus_label = get_consensus_label(
             labels_multiannotator=labels_multiannotator,
             pred_probs=pred_probs,
             consensus_method="majority",
@@ -375,7 +378,7 @@ def _get_consensus_stats(
         )
 
         # TEMP: for benckmarking purposes
-        majority_consensus_label = _get_consensus_label(
+        majority_consensus_label = get_consensus_label(
             labels_multiannotator=labels_multiannotator,
             pred_probs=pred_probs,
             consensus_method="majority",
@@ -390,7 +393,7 @@ def _get_consensus_stats(
 
     else:
         # Compute consensus label using method specified
-        consensus_label = _get_consensus_label(
+        consensus_label = get_consensus_label(
             labels_multiannotator=labels_multiannotator,
             pred_probs=pred_probs,
             consensus_method=consensus_method,
@@ -569,7 +572,7 @@ def get_multiannotator_stats(
 
 
 def get_label_quality_multiannotator(
-    labels_multiannotator: pd.DataFrame,
+    labels_multiannotator: pd.DataFrame or np.ndarray,
     pred_probs: np.ndarray,
     *,
     consensus_method: Union[str, List[str]] = "majority",
@@ -642,6 +645,9 @@ def get_label_quality_multiannotator(
         Returns overall statistics about each annotator.
         For details, see the documentation of :py:func:`get_multiannotator_stats<cleanlab.multiannotator.get_multiannotator_stats>`
     """
+
+    if isinstance(labels_multiannotator, np.ndarray):
+        labels_multiannotator = pd.DataFrame(labels_multiannotator)
 
     # Raise error if labels_multiannotator has NaN rows
     if labels_multiannotator.isna().all(axis=1).any():
