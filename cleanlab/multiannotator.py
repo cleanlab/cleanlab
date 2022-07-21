@@ -127,7 +127,7 @@ def get_consensus_label(
 
         labels_multiannotator_stacked = labels_multiannotator.stack().reset_index()
         labels_multiannotator_stacked.columns = ["task", "worker", "label"]
-        consensus_label = DawidSkene().fit_predict(labels_multiannotator_stacked.astype("int64"))
+        consensus_label = DawidSkene().fit_predict(labels_multiannotator_stacked)
 
     else:
         raise ValueError(
@@ -336,7 +336,7 @@ def _get_consensus_stats(
 
         labels_multiannotator_stacked = labels_multiannotator.stack().reset_index()
         labels_multiannotator_stacked.columns = ["task", "worker", "label"]
-        DS = DawidSkene().fit(labels_multiannotator_stacked.astype("int64"))
+        DS = DawidSkene().fit(labels_multiannotator_stacked)
 
         consensus_label = DS.labels_.values
         pred_probs_DS = DS.probas_.values
@@ -367,7 +367,7 @@ def _get_consensus_stats(
 
         labels_multiannotator_stacked = labels_multiannotator.stack().reset_index()
         labels_multiannotator_stacked.columns = ["task", "worker", "label"]
-        G = GLAD().fit(labels_multiannotator_stacked.astype("int64"))
+        G = GLAD().fit(labels_multiannotator_stacked)
 
         consensus_label = G.labels_.values
         pred_probs_DS = G.probas_.values
@@ -542,14 +542,14 @@ def get_multiannotator_stats(
 
         labels_multiannotator_stacked = labels_multiannotator.stack().reset_index()
         labels_multiannotator_stacked.columns = ["task", "worker", "label"]
-        DS = DawidSkene().fit(labels_multiannotator_stacked.astype("int64"))
+        DS = DawidSkene().fit(labels_multiannotator_stacked)
 
         complete_index = [
             (i, j)
-            for i in range(DS.errors_.index.get_level_values(0).max() + 1)
-            for j in range(DS.errors_.index.get_level_values(1).max() + 1)
+            for i in DS.errors_.index.get_level_values(0).unique()
+            for j in DS.errors_.index.get_level_values(1).unique()
         ]
-        errors = DS.errors_.reindex(complete_index)
+        errors = DS.errors_.reindex(complete_index).sort_index()
         missing_idx = errors[errors.isna().all(axis=1) == True].index
         avg_annotator_error = DS.errors_.groupby(["label"]).mean().sort_index()
 
@@ -565,12 +565,12 @@ def get_multiannotator_stats(
 
         labels_multiannotator_stacked = labels_multiannotator.stack().reset_index()
         labels_multiannotator_stacked.columns = ["task", "worker", "label"]
-        G = GLAD().fit(labels_multiannotator_stacked.astype("int64"))
+        G = GLAD().fit(labels_multiannotator_stacked)
 
         complete_index = [
             (i, j)
-            for i in range(G.errors_.index.get_level_values(0).max() + 1)
-            for j in range(G.errors_.index.get_level_values(1).max() + 1)
+            for i in G.errors_.index.get_level_values(0).unique()
+            for j in G.errors_.index.get_level_values(1).unique()
         ]
         errors = G.errors_.reindex(complete_index)
         missing_idx = errors[errors.isna().all(axis=1) == True].index

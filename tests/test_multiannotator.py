@@ -63,7 +63,7 @@ def make_data(
 
     # Each annotator only labels approximately 20% of the dataset
     # (unlabeled points represented with NaN)
-    s = s.apply(lambda x: x.mask(np.random.random(n) < 0.8)).astype("Int32")
+    s = s.apply(lambda x: x.mask(np.random.random(n) < 0.8))
     s.dropna(axis=1, how="all", inplace=True)
 
     # s = generate_noisy_labels(true_labels_train, noise_matrix) # one annotator
