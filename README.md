@@ -32,7 +32,7 @@ Get started with: [documentation](https://docs.cleanlab.ai/), [tutorials](https:
 [![build\_status](https://github.com/cleanlab/cleanlab/workflows/CI/badge.svg)](https://github.com/cleanlab/cleanlab/actions?query=workflow%3ACI)
 [![coverage](https://codecov.io/gh/cleanlab/cleanlab/branch/master/graph/badge.svg)](https://app.codecov.io/gh/cleanlab/cleanlab)
 [![docs](https://img.shields.io/static/v1?logo=github&style=flat&color=pink&label=docs&message=cleanlab)](https://docs.cleanlab.ai/)
-[![Slack Community](https://img.shields.io/static/v1?logo=slack&style=flat&color=white&label=slack&message=community)](https://join.slack.com/t/cleanlab-community/shared_invite/zt-17lszn4hv-gg2FhZPXYfljq_l01uo92g)
+[![Slack Community](https://img.shields.io/static/v1?logo=slack&style=flat&color=white&label=slack&message=community)](https://cleanlab.ai/slack)
 [![Twitter](https://img.shields.io/twitter/follow/CleanlabAI?style=social)](https://twitter.com/CleanlabAI)
 
 -----
@@ -490,7 +490,7 @@ cleanlab is based on peer-reviewed research. Here are the relevant papers to cit
 
 ## Join our community
 
-* The best place to learn is [our Slack community](https://join.slack.com/t/cleanlab-community/shared_invite/zt-17lszn4hv-gg2FhZPXYfljq_l01uo92g).
+* The best place to learn is [our Slack community](https://cleanlab.ai/slack).
 
 * Have ideas for the future of cleanlab? How are you using cleanlab? [Join the discussion](https://github.com/cleanlab/cleanlab/discussions).
 
@@ -499,7 +499,7 @@ cleanlab is based on peer-reviewed research. Here are the relevant papers to cit
 * Have an issue with cleanlab? [Search existing issues](https://github.com/cleanlab/cleanlab/issues?q=is%3Aissue) or [submit a new issue](https://github.com/cleanlab/cleanlab/issues/new).
 
 * Need professional help with cleanlab? 
-Join our [\#help Slack channel](https://join.slack.com/t/cleanlab-community/shared_invite/zt-17lszn4hv-gg2FhZPXYfljq_l01uo92g) and message one of our core developers, Jonas Mueller, or schedule a meeting via email: team@cleanlab.ai
+Join our [\#help Slack channel](https://cleanlab.ai/slack) and message one of our core developers, Jonas Mueller, or schedule a meeting via email: team@cleanlab.ai
 
 ## License
 
