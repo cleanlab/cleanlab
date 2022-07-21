@@ -381,6 +381,7 @@ def test_unsupported_method_for_adjust_pred_probs():
         _ = rank.get_label_quality_scores(labels, pred_probs, adjust_pred_probs=True, method=method)
 
 
+@pytest.mark.filterwarnings("ignore::UserWarning")
 def test_get_outlier_scores():
     X_train = data["X_train"]
     X_test = data["X_test"]
