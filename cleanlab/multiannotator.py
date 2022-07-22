@@ -216,7 +216,15 @@ def _get_quality_of_consensus(
         An array of shape ``(N,)`` with the quality score of the consensus.
         TODO: better explanation of this
     """
-    valid_methods = ["auto", "lqs", "agreement", "active_label_cleaning", "bayes"]
+    valid_methods = [
+        "auto",
+        "lqs",
+        "agreement",
+        "active_label_cleaning",
+        "bayes_constant",
+        "bayes_avg",
+        "bayes_DS",
+    ]
 
     post_pred_probs = pred_probs  # posterior pred_probs = prior pred_probs unless updated otherwise
 
@@ -246,30 +254,34 @@ def _get_quality_of_consensus(
         normalized_entropy = get_normalized_entropy(pred_probs=pred_probs)
         quality_of_consensus = np.exp(-(soft_cross_entropy - normalized_entropy + 1))
         ranked_quality = -(soft_cross_entropy - normalized_entropy)
-    elif quality_method == "bayes":
+
+    elif quality_method == "bayes_constant":
+        # likelihood = probability that any annotator annotates any example correctly
+        def compute_likelihood(example, true_label, likelihood):
+            return np.sum(
+                np.log(
+                    [
+                        likelihood if annotator_label == true_label else (1 - likelihood)
+                        for annotator_label in example.dropna()
+                    ]
+                )
+            )
+
         num_classes = pred_probs.shape[1]
-        # T = num_classes * 100  # hyperparameter
-        likelihood_right_label = np.mean(annotator_agreement)
+        likelihood = np.mean(annotator_agreement)
+
         prod_annotator_likelihood = np.vstack(
             labels_multiannotator.apply(
                 lambda s: np.array(
                     [
-                        np.sum(
-                            # np.log(np.where(s.dropna() == i, 1 - ((num_classes - 1) / T), 1 / T))
-                            np.log(
-                                np.where(
-                                    s.dropna() == i,
-                                    likelihood_right_label,
-                                    1 - likelihood_right_label,
-                                )
-                            )
-                        )
-                        for i in range(num_classes)
+                        compute_likelihood(s, true_label, likelihood)
+                        for true_label in range(num_classes)
                     ]
                 ),
                 axis=1,
             )
         )
+
         log_posterior = np.log(pred_probs) + prod_annotator_likelihood
         posterior = np.exp(log_posterior - log_posterior.max(axis=1).reshape(len(log_posterior), 1))
         normalized_posterior = posterior / np.sum(posterior, axis=1).reshape(len(posterior), 1)
@@ -278,6 +290,100 @@ def _get_quality_of_consensus(
             consensus_label, normalized_posterior, **kwargs
         )
         ranked_quality = np.array([log_posterior[i, l] for i, l in enumerate(consensus_label)])
+
+    elif quality_method == "bayes_avg":
+        from crowdkit.aggregation import DawidSkene
+
+        def compute_likelihood(example, true_label, likelihood):
+            return np.sum(
+                np.log(
+                    [
+                        likelihood.loc[annotator_label][true_label]
+                        for annotator_label in example.dropna()
+                    ]
+                )
+            )
+
+        labels_multiannotator_stacked = labels_multiannotator.stack().reset_index()
+        labels_multiannotator_stacked.columns = ["task", "worker", "label"]
+        DS = DawidSkene().fit(labels_multiannotator_stacked)
+
+        avg_annotator_likelihood = DS.errors_.groupby(["label"]).mean()
+
+        num_classes = pred_probs.shape[1]
+        prod_annotator_likelihood = np.vstack(
+            labels_multiannotator.apply(
+                lambda s: np.array(
+                    [
+                        compute_likelihood(s, true_label, avg_annotator_likelihood)
+                        for true_label in range(num_classes)
+                    ]
+                ),
+                axis=1,
+            )
+        )
+
+        log_posterior = np.log(pred_probs) + prod_annotator_likelihood
+        posterior = np.exp(log_posterior - log_posterior.max(axis=1).reshape(len(log_posterior), 1))
+        normalized_posterior = posterior / np.sum(posterior, axis=1).reshape(len(posterior), 1)
+        post_pred_probs = normalized_posterior
+        quality_of_consensus = get_label_quality_scores(
+            consensus_label, normalized_posterior, **kwargs
+        )
+        ranked_quality = np.array([log_posterior[i, l] for i, l in enumerate(consensus_label)])
+
+    elif quality_method == "bayes_DS":
+        from crowdkit.aggregation import DawidSkene
+
+        def compute_likelihood(example, true_label, likelihood):
+            example = example.dropna()
+            return np.sum(
+                np.log(
+                    [
+                        likelihood.loc[(annotator, annotator_label)][true_label]
+                        for annotator, annotator_label in zip(example.index, example)
+                    ]
+                )
+            )
+
+        labels_multiannotator_stacked = labels_multiannotator.stack().reset_index()
+        labels_multiannotator_stacked.columns = ["task", "worker", "label"]
+        DS = DawidSkene().fit(labels_multiannotator_stacked)
+
+        complete_index = [
+            (i, j)
+            for i in DS.errors_.index.get_level_values(0).unique()
+            for j in sorted(DS.errors_.index.get_level_values(1).unique())
+        ]
+        likelihood = DS.errors_.reindex(complete_index)
+        missing_idx = likelihood[likelihood.isna().all(axis=1) == True].index
+        avg_annotator_likelihood = DS.errors_.groupby(["label"]).mean()
+
+        for w, l in missing_idx:
+            likelihood.loc[w, l] = avg_annotator_likelihood.loc[l]
+
+        num_classes = pred_probs.shape[1]
+        prod_annotator_likelihood = np.vstack(
+            labels_multiannotator.apply(
+                lambda s: np.array(
+                    [
+                        compute_likelihood(s, true_label, likelihood)
+                        for true_label in range(num_classes)
+                    ]
+                ),
+                axis=1,
+            )
+        )
+
+        log_posterior = np.log(pred_probs) + prod_annotator_likelihood
+        posterior = np.exp(log_posterior - log_posterior.max(axis=1).reshape(len(log_posterior), 1))
+        normalized_posterior = posterior / np.sum(posterior, axis=1).reshape(len(posterior), 1)
+        post_pred_probs = normalized_posterior
+        quality_of_consensus = get_label_quality_scores(
+            consensus_label, normalized_posterior, **kwargs
+        )
+        ranked_quality = np.array([log_posterior[i, l] for i, l in enumerate(consensus_label)])
+
     else:
         raise ValueError(
             f"""
@@ -457,7 +563,15 @@ def _get_annotator_quality(
         Overall quality of a given annotator's labels
     """
 
-    valid_methods = ["auto", "lqs", "agreement", "active_label_cleaning", "bayes"]
+    valid_methods = [
+        "auto",
+        "lqs",
+        "agreement",
+        "active_label_cleaning",
+        "bayes_constant",
+        "bayes_avg",
+        "bayes_DS",
+    ]
 
     def try_overall_label_health_score(labels, pred_probs):
         try:
@@ -468,7 +582,14 @@ def _get_annotator_quality(
             )
             return np.NaN
 
-    if quality_method in ["auto", "lqs", "active_label_cleaning", "bayes"]:
+    if quality_method in [
+        "auto",
+        "lqs",
+        "active_label_cleaning",
+        "bayes_constant",
+        "bayes_avg",
+        "bayes_DS",
+    ]:
         overall_annotator_quality = labels_multiannotator.apply(
             lambda s: try_overall_label_health_score(
                 s[pd.notna(s)].astype("int32"), pred_probs[pd.notna(s)]
