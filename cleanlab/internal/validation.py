@@ -25,7 +25,7 @@ import pandas as pd
 
 
 def assert_valid_inputs(
-    X: np.ndarray,
+    X: Any,
     y: np.ndarray,
     pred_probs: Optional[np.ndarray] = None,
     multi_label: bool = False,
@@ -101,13 +101,13 @@ def assert_valid_class_labels(y: np.ndarray) -> None:
         raise TypeError(msg)
 
 
-def assert_nonempty_input(X: Optional[np.ndarray]) -> None:
+def assert_nonempty_input(X: Any) -> None:
     if X is None:
         raise ValueError("Data features X cannot be None. Currently X is None.")
 
 
 def assert_indexing_works(
-    X: np.ndarray, idx: Optional[List[int]] = None, length_X: Optional[int] = None
+    X: Any, idx: Optional[List[int]] = None, length_X: Optional[int] = None
 ) -> None:
     """Ensures we can do list-based indexing into ``X`` and ``y``.
     length_X is argument passed in since sparse matrix ``X``
