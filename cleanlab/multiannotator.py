@@ -535,6 +535,8 @@ def _get_annotator_quality(
     labels_multiannotator: pd.DataFrame,
     pred_probs: np.ndarray,
     consensus_label: np.ndarray,
+    num_annotations: np.ndarray,
+    annotator_agreement: np.ndarray,
     quality_method: str = "auto",
 ) -> pd.DataFrame:
     """Returns annotator quality score for each annotator.
@@ -552,6 +554,12 @@ def _get_annotator_quality(
 
     consensus_label : np.ndarray
         An array of shape ``(N,)`` with the consensus labels aggregated from all annotators.
+
+    num_annotations : np.ndarray
+        An array of shape ``(N,)`` with the number of annotators that have labeled each example.
+
+    annotator_agreement : np.ndarray
+        An array of shape ``(N,)`` with the fraction of annotators that agree with each consensus label.
 
     quality_method : str
         Specifies the method used to calculate the quality of the consensus label.
@@ -583,7 +591,6 @@ def _get_annotator_quality(
             return np.NaN
 
     if quality_method in [
-        "auto",
         "lqs",
         "active_label_cleaning",
         "bayes_constant",
@@ -594,6 +601,14 @@ def _get_annotator_quality(
             lambda s: try_overall_label_health_score(
                 s[pd.notna(s)].astype("int32"), pred_probs[pd.notna(s)]
             )
+        ).to_numpy()
+    elif quality_method == "auto":
+        overall_annotator_quality = labels_multiannotator.apply(
+            lambda s: np.average(
+                s[pd.notna(s)] == consensus_label[pd.notna(s)],
+                weights=np.sqrt(num_annotations[pd.notna(s)]) * annotator_agreement[pd.notna(s)],
+            ),
+            axis=0,
         ).to_numpy()
     elif quality_method == "agreement":
         overall_annotator_quality = labels_multiannotator.apply(
@@ -616,6 +631,8 @@ def get_multiannotator_stats(
     labels_multiannotator: pd.DataFrame,
     pred_probs: np.ndarray,
     consensus_label: np.ndarray,
+    num_annotations: np.ndarray,
+    annotator_agreement: np.ndarray,
     quality_method: str = "auto",
 ) -> pd.DataFrame:
     """Returns overall statistics about each annotator.
@@ -633,6 +650,12 @@ def get_multiannotator_stats(
 
     consensus_label : np.ndarray
         An array of shape ``(N,)`` with the consensus labels aggregated from all annotators.
+
+    num_annotations : np.ndarray
+        An array of shape ``(N,)`` with the number of annotators that have labeled each example.
+
+    annotator_agreement : np.ndarray
+        An array of shape ``(N,)`` with the fraction of annotators that agree with each consensus label.
 
     quality_method : str
         Specifies the method used to calculate the quality of the consensus label.
@@ -713,6 +736,8 @@ def get_multiannotator_stats(
             labels_multiannotator=labels_multiannotator,
             pred_probs=pred_probs,
             consensus_label=consensus_label,
+            num_annotations=num_annotations,
+            annotator_agreement=annotator_agreement,
             quality_method=quality_method,
         )
 
@@ -937,6 +962,8 @@ def get_label_quality_multiannotator(
             labels_multiannotator=labels_multiannotator,
             pred_probs=post_pred_probs,
             consensus_label=consensus_label,
+            num_annotations=num_annotations,
+            annotator_agreement=annotator_agreement,
             quality_method=quality_method,
         )
 
