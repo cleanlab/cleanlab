@@ -20,7 +20,7 @@ cl.predict(test_data)
 cleanlab.dataset.health_summary(labels, confident_joint=cl.confident_joint)
 ```
 
-Get started with: [documentation](https://docs.cleanlab.ai/), [tutorials](https://docs.cleanlab.ai/stable/tutorials/image.html), [examples](https://github.com/cleanlab/examples), and [blogs](https://cleanlab.ai/blog/).
+Get started with: [documentation](https://docs.cleanlab.ai/), [tutorials](https://docs.cleanlab.ai/v2.0.0/tutorials/image.html), [examples](https://github.com/cleanlab/examples), and [blogs](https://cleanlab.ai/blog/).
 
  - Learn how to run cleanlab on your own data in just 5 minutes for classification with: [image](https://docs.cleanlab.ai/stable/tutorials/image.html), [text](https://docs.cleanlab.ai/stable/tutorials/text.html), [audio](https://docs.cleanlab.ai/stable/tutorials/audio.html), and [tabular](https://docs.cleanlab.ai/stable/tutorials/tabular.html) data.
 
