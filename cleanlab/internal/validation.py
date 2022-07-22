@@ -18,7 +18,7 @@
 Checks to ensure valid inputs for various methods.
 """
 
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Union
 import warnings
 import numpy as np
 import pandas as pd
@@ -26,7 +26,7 @@ import pandas as pd
 
 def assert_valid_inputs(
     X: Any,
-    y: np.ndarray,
+    y: Union[list, np.ndarray, pd.Series, pd.DataFrame],
     pred_probs: Optional[np.ndarray] = None,
     multi_label: bool = False,
 ) -> None:
@@ -88,7 +88,7 @@ def assert_valid_class_labels(y: np.ndarray) -> None:
     Assumes labels is 1D numpy array (not multi-label).
     """
     if y.ndim != 1:
-        raise ValueError("labels must by 1D numpy array.")
+        raise ValueError("labels must be 1D numpy array.")
 
     unique_classes = np.unique(y)
     if len(unique_classes) < 2:
@@ -131,10 +131,21 @@ def assert_indexing_works(
         raise TypeError(msg)
 
 
-def labels_to_array(y: np.ndarray) -> Any:
-    """Converts different types of label objects to 1D numpy array and checks validity"""
+def labels_to_array(y: Union[list, np.ndarray, pd.Series, pd.DataFrame]) -> np.ndarray:
+    """Converts different types of label objects to 1D numpy array and checks validity
+
+    Parameters
+    ----------
+    y : Union[list, np.ndarray, pd.Series, pd.DataFrame]
+        Labels to convert to 1D numpy array. Can be a list, numpy array, pandas Series, or pandas DataFrame.
+
+    Returns
+    -------
+    np.ndarray
+        1D numpy array of labels.
+    """
     if isinstance(y, pd.Series):
-        return y.values
+        return np.asarray(y.values)
     elif isinstance(y, pd.DataFrame):
         y = y.values
         if y.shape[1] != 1:
