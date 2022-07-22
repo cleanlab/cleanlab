@@ -18,6 +18,7 @@
 Checks to ensure valid inputs for various methods.
 """
 
+from cleanlab.typing import LabelLike, DatasetLike
 from typing import Any, List, Optional, Union
 import warnings
 import numpy as np
@@ -25,8 +26,8 @@ import pandas as pd
 
 
 def assert_valid_inputs(
-    X: Any,
-    y: Union[list, np.ndarray, pd.Series, pd.DataFrame],
+    X: DatasetLike,
+    y: LabelLike,
     pred_probs: Optional[np.ndarray] = None,
     multi_label: bool = False,
 ) -> None:
@@ -107,7 +108,7 @@ def assert_nonempty_input(X: Any) -> None:
 
 
 def assert_indexing_works(
-    X: Any, idx: Optional[List[int]] = None, length_X: Optional[int] = None
+    X: DatasetLike, idx: Optional[List[int]] = None, length_X: Optional[int] = None
 ) -> None:
     """Ensures we can do list-based indexing into ``X`` and ``y``.
     length_X is argument passed in since sparse matrix ``X``
@@ -131,12 +132,12 @@ def assert_indexing_works(
         raise TypeError(msg)
 
 
-def labels_to_array(y: Union[list, np.ndarray, np.generic, pd.Series, pd.DataFrame]) -> np.ndarray:
+def labels_to_array(y: Union[LabelLike, np.generic]) -> np.ndarray:
     """Converts different types of label objects to 1D numpy array and checks validity
 
     Parameters
     ----------
-    y : Union[list, np.ndarray, pd.Series, pd.DataFrame]
+    y : Union[LabelLike, np.generic]
         Labels to convert to 1D numpy array. Can be a list, numpy array, pandas Series, or pandas DataFrame.
 
     Returns
