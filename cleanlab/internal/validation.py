@@ -131,7 +131,7 @@ def assert_indexing_works(
         raise TypeError(msg)
 
 
-def labels_to_array(y: Union[list, np.ndarray, pd.Series, pd.DataFrame]) -> np.ndarray:
+def labels_to_array(y: Union[list, np.ndarray, np.generic, pd.Series, pd.DataFrame]) -> np.ndarray:
     """Converts different types of label objects to 1D numpy array and checks validity
 
     Parameters
