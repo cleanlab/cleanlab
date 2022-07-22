@@ -21,7 +21,6 @@ Checks to ensure valid inputs for various methods.
 from typing import Any, List, Optional
 import warnings
 import numpy as np
-import numpy.typing as npt
 import pandas as pd
 
 
