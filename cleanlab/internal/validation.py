@@ -26,9 +26,9 @@ import pandas as pd
 
 
 def assert_valid_inputs(
-    X: npt.NDArray,
-    y: npt.NDArray,
-    pred_probs: Optional[npt.NDArray] = None,
+    X: np.ndarray,
+    y: np.ndarray,
+    pred_probs: Optional[np.ndarray] = None,
     multi_label: bool = False,
 ) -> None:
     """Checks that X, labels, and pred_probs are correctly formatted"""
@@ -84,7 +84,7 @@ def assert_valid_inputs(
                 )
 
 
-def assert_valid_class_labels(y: npt.NDArray) -> None:
+def assert_valid_class_labels(y: np.ndarray) -> None:
     """Check that labels is zero-indexed (first label is 0) and all classes present.
     Assumes labels is 1D numpy array (not multi-label).
     """
@@ -102,13 +102,13 @@ def assert_valid_class_labels(y: npt.NDArray) -> None:
         raise TypeError(msg)
 
 
-def assert_nonempty_input(X: Optional[npt.NDArray]) -> None:
+def assert_nonempty_input(X: Optional[np.ndarray]) -> None:
     if X is None:
         raise ValueError("Data features X cannot be None. Currently X is None.")
 
 
 def assert_indexing_works(
-    X: npt.NDArray, idx: Optional[List[int]] = None, length_X: Optional[int] = None
+    X: np.ndarray, idx: Optional[List[int]] = None, length_X: Optional[int] = None
 ) -> None:
     """Ensures we can do list-based indexing into ``X`` and ``y``.
     length_X is argument passed in since sparse matrix ``X``
@@ -132,7 +132,7 @@ def assert_indexing_works(
         raise TypeError(msg)
 
 
-def labels_to_array(y: npt.NDArray) -> Any:
+def labels_to_array(y: np.ndarray) -> Any:
     """Converts different types of label objects to 1D numpy array and checks validity"""
     if isinstance(y, pd.Series):
         return y.values
