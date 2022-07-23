@@ -204,7 +204,7 @@ We've configured GitHub Actions to run the GitHub Pages workflow (gh-pages.yaml)
 
 1. Make sure to clear all Cell outputs before you `git commit` a tutorial. The outputs of cells should never be tracked in git, these outputs are automatically constructed for displaying on docs.cleanlab.ai during the CI which executes all notebooks in the folder **docs/source/**.
 
-2. For cells which contain code that should **not** be executed during CI, make sure the cell-type is Markdown and use proper syntax to make contents look like code. 
+2. For cells which contain code that should **not** be executed during CI, make sure the cell-type is Markdown and use proper syntax to make contents look like code.
 
 3. To suppress certain Jupyter cells that should not be shown on docs.cleanlab.ai web version of tutorial:
 ```
@@ -225,5 +225,14 @@ This includes cells that install dependencies and cells that run tests to verify
 ```
 instead of containing your own virtualenv in there.
 
-5. When adding dependencies to a tutorial, add a comment in hidden cell not displayed on docs.cleanlab.ai which states which version of dependencies you used.
+5. When adding dependencies to a tutorial:
+   - Make sure to update **docs/requirements.txt** which lists all extra dependencies installed during CI to build the docs.
+   - Add a comment in hidden cell not displayed on docs.cleanlab.ai which states which version of dependencies you used. 
 
+6. Don't forget to update **docs/source/index.rst** and **docs/source/tutorials/index.rst** to ensure your tutorial is linked from the main documentation.
+
+## API Documentation
+
+1. Verify your new docstrings adhere to our [documentation format guidelines](https://github.com/cleanlab/cleanlab/blob/master/DEVELOPMENT.md#documentation-style)
+
+2. To ensure documentation for new source code files is linked from the main page, don't forget to update: **docs/source/index.rst**
