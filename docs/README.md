@@ -224,3 +224,6 @@ This includes cells that install dependencies and cells that run tests to verify
   }
 ```
 instead of containing your own virtualenv in there.
+
+5. When adding dependencies to a tutorial, add a comment in hidden cell not displayed on docs.cleanlab.ai which states which version of dependencies you used.
+
