@@ -37,7 +37,7 @@ labels in data that was previously held-out.
 import numpy as np
 from sklearn.metrics import log_loss
 from sklearn.neighbors import NearestNeighbors
-from typing import List, Optional, Union
+from typing import List, Optional, Union, Tuple
 import warnings
 
 from cleanlab.internal.validation import assert_valid_inputs
@@ -560,7 +560,7 @@ def get_outlier_scores(
     k: Optional[int] = None,
     t: int = 1,
     return_estimator: bool = False,
-) -> Union[np.ndarray, tuple[np.ndarray, NearestNeighbors]]:
+) -> Union[np.ndarray, Tuple[np.ndarray, NearestNeighbors]]:
     """Returns an outlier score for each example based on its feature values. Scores lie in [0,1] with smaller values indicating examples
     that are less typical under the dataset distribution (values near 0 indicate outliers).
     The score is based on the average distance between the example and its K nearest neighbors in the dataset (in feature space).
