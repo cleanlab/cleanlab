@@ -37,8 +37,7 @@ labels in data that was previously held-out.
 import numpy as np
 from sklearn.metrics import log_loss
 from sklearn.neighbors import NearestNeighbors
-from typing import List
-from typing import Optional
+from typing import List, Optional, Union
 import warnings
 
 from cleanlab.internal.validation import assert_valid_inputs
@@ -560,7 +559,8 @@ def get_outlier_scores(
     knn: Optional[NearestNeighbors] = None,
     k: Optional[int] = None,
     t: int = 1,
-) -> np.ndarray:
+    return_estimator: bool = False,
+) -> Union[np.ndarray, tuple[np.ndarray, NearestNeighbors]]:
     """Returns an outlier score for each example based on its feature values. Scores lie in [0,1] with smaller values indicating examples
     that are less typical under the dataset distribution (values near 0 indicate outliers).
     The score is based on the average distance between the example and its K nearest neighbors in the dataset (in feature space).
@@ -597,11 +597,16 @@ def get_outlier_scores(
       If you find your scores are all too close to 1, consider increasing `t`,
       although the relative scores of examples will still have the same ranking across the dataset.
 
+    return_estimator : bool, default = False
+      Whether the `knn` Estimator object should also be returned (eg. so it can be applied on future data).
+      If True, this function returns a tuple `(outlier_scores, knn)`.
     Returns
     -------
     outlier_scores : np.ndarray
       Score for each example that roughly corresponds to the likelihood this example stems from the same distribution as
       the dataset features (i.e. is not an outlier).
+      If ``return_estimator = True``, then a tuple is returned
+      whose first element is array of `outlier_scores` and second is a `knn` Estimator object.
     """
     DEFAULT_K = 10
     if knn is None:  # setup default KNN estimator
@@ -640,4 +645,7 @@ def get_outlier_scores(
 
     # Map outlier_scores to range 0-1 with 0 = most concerning
     outlier_scores = np.exp(-1 * avg_knn_distances * t)
-    return outlier_scores
+    if return_estimator:
+        return (outlier_scores, knn)
+    else:
+        return outlier_scores
