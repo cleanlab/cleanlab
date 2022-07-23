@@ -197,3 +197,30 @@ We've configured GitHub Actions to run the GitHub Pages workflow (gh-pages.yaml)
 ## Deploy the static files
 
 12. Deploy `cleanlab-docs/` folder to the `cleanlab/cleanlab-docs` repo's `master branch`.
+
+# Tips for editing docs
+
+## Tutorials
+
+1. Make sure to clear all Cell outputs before you `git commit` a tutorial. The outputs of cells should never be tracked in git, these outputs are automatically constructed for displaying on docs.cleanlab.ai during the CI which executes all notebooks in the folder **docs/source/**.
+
+2. For cells which contain code that should **not** be executed during CI, make sure the cell-type is Markdown and use proper syntax to make contents look like code. 
+
+3. To suppress certain Jupyter cells that should not be shown on docs.cleanlab.ai web version of tutorial:
+```
+"metadata": {
+    "nbsphinx": "hidden"
+   }
+```
+This includes cells that install dependencies and cells that run tests to verify the notebook has executed correctly.
+
+4. If developing Notebook in virtualenv, make sure at the end to change the end of the raw .ipynb file to have the following:
+```
+"metadata": {
+  "kernelspec": {
+   "display_name": "Python 3 (ipykernel)",
+   "language": "python",
+   "name": "python3"
+  }
+```
+instead of containing your own virtualenv in there.
