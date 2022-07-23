@@ -230,3 +230,9 @@ instead of containing your own virtualenv in there.
    - Add a comment in hidden cell not displayed on docs.cleanlab.ai which states which version of dependencies you used. 
 
 6. Don't forget to update **docs/source/index.rst** and **docs/source/tutorials/index.rst** to ensure your tutorial is linked from the main documentation.
+
+## API Documentation
+
+1. Verify your new docstrings adhere to our [documentation format guidelines](https://github.com/cleanlab/cleanlab/blob/master/DEVELOPMENT.md#documentation-style)
+
+2. To ensure documentation for new source code files is linked from the main page, don't forget to update: **docs/source/index.rst**
