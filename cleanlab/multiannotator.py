@@ -224,6 +224,8 @@ def _get_quality_of_consensus(
         "bayes_constant",
         "bayes_avg",
         "bayes_DS",
+        "bayes_anno_avg",
+        "bayes_anno_weighted",
     ]
 
     post_pred_probs = pred_probs  # posterior pred_probs = prior pred_probs unless updated otherwise
@@ -368,6 +370,99 @@ def _get_quality_of_consensus(
                 lambda s: np.array(
                     [
                         compute_likelihood(s, true_label, likelihood)
+                        for true_label in range(num_classes)
+                    ]
+                ),
+                axis=1,
+            )
+        )
+
+        log_posterior = np.log(pred_probs) + prod_annotator_likelihood
+        posterior = np.exp(log_posterior - log_posterior.max(axis=1).reshape(len(log_posterior), 1))
+        normalized_posterior = posterior / np.sum(posterior, axis=1).reshape(len(posterior), 1)
+        post_pred_probs = normalized_posterior
+        quality_of_consensus = get_label_quality_scores(
+            consensus_label, normalized_posterior, **kwargs
+        )
+        ranked_quality = np.array([log_posterior[i, l] for i, l in enumerate(consensus_label)])
+
+    elif quality_method == "bayes_anno_avg":
+
+        def compute_likelihood(example, true_label, likelihood):
+            example = example.dropna()
+            return np.sum(
+                np.log(
+                    [
+                        likelihood.loc[annotator]
+                        if annotator_label == true_label
+                        else 1 - likelihood.loc[annotator]
+                        for annotator, annotator_label in zip(example.index, example)
+                    ]
+                )
+            )
+
+        annotator_agreement_with_consensus = labels_multiannotator.apply(
+            lambda s: np.mean(s[pd.notna(s)] == consensus_label[pd.notna(s)]),
+            axis=0,
+        )
+
+        num_classes = pred_probs.shape[1]
+        prod_annotator_likelihood = np.vstack(
+            labels_multiannotator.apply(
+                lambda s: np.array(
+                    [
+                        compute_likelihood(s, true_label, annotator_agreement_with_consensus)
+                        for true_label in range(num_classes)
+                    ]
+                ),
+                axis=1,
+            )
+        )
+
+        log_posterior = np.log(pred_probs) + prod_annotator_likelihood
+        posterior = np.exp(log_posterior - log_posterior.max(axis=1).reshape(len(log_posterior), 1))
+        normalized_posterior = posterior / np.sum(posterior, axis=1).reshape(len(posterior), 1)
+        post_pred_probs = normalized_posterior
+        quality_of_consensus = get_label_quality_scores(
+            consensus_label, normalized_posterior, **kwargs
+        )
+        ranked_quality = np.array([log_posterior[i, l] for i, l in enumerate(consensus_label)])
+
+    elif quality_method == "bayes_anno_weighted":
+
+        def get_annotator_agreement_weighted(labels_subset, num_annotations_subset, annotator_id):
+            agreement_frac = labels_subset.apply(
+                lambda s: np.mean(s[pd.notna(s)].drop(annotator_id) == s[annotator_id]), axis=1
+            )
+            np.nan_to_num(agreement_frac, copy=False, nan=0)
+            weighted_avg = np.average(agreement_frac, weights=num_annotations_subset - 1)
+            return weighted_avg
+
+        def compute_likelihood(example, true_label, likelihood):
+            example = example.dropna()
+            return np.sum(
+                np.log(
+                    [
+                        likelihood.loc[annotator]
+                        if annotator_label == true_label
+                        else 1 - likelihood.loc[annotator]
+                        for annotator, annotator_label in zip(example.index, example)
+                    ]
+                )
+            )
+
+        annotator_agreement_weighted = labels_multiannotator.apply(
+            lambda s: get_annotator_agreement_weighted(
+                labels_multiannotator[pd.notna(s)], num_annotations[pd.notna(s)], s.name
+            )
+        )
+
+        num_classes = pred_probs.shape[1]
+        prod_annotator_likelihood = np.vstack(
+            labels_multiannotator.apply(
+                lambda s: np.array(
+                    [
+                        compute_likelihood(s, true_label, annotator_agreement_weighted)
                         for true_label in range(num_classes)
                     ]
                 ),
@@ -579,6 +674,8 @@ def _get_annotator_quality(
         "bayes_constant",
         "bayes_avg",
         "bayes_DS",
+        "bayes_anno_avg",
+        "bayes_anno_weighted",
     ]
 
     def try_overall_label_health_score(labels, pred_probs):
@@ -596,6 +693,8 @@ def _get_annotator_quality(
         "bayes_constant",
         "bayes_avg",
         "bayes_DS",
+        "bayes_anno_avg",
+        "bayes_anno_weighted",
     ]:
         overall_annotator_quality = labels_multiannotator.apply(
             lambda s: try_overall_label_health_score(
