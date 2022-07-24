@@ -644,7 +644,7 @@ def get_outlier_scores(
     avg_knn_distances = distances[:, :k].mean(axis=1)
 
     # Map outlier_scores to range 0-1 with 0 = most concerning
-    outlier_scores = np.exp(-1 * avg_knn_distances * t)
+    outlier_scores: np.ndarray = np.exp(-1 * avg_knn_distances * t)
     if return_estimator:
         return (outlier_scores, knn)
     else:
