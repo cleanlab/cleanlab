@@ -263,7 +263,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
     def fit(
         self,
         X,
-        labels,
+        y,
         *,
         pred_probs=None,
         thresholds=None,
@@ -274,6 +274,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         clf_kwargs={},
         clf_final_kwargs={},
         validation_func=None,
+        labels=None,
     ):
         """
         Train the model `clf` with error-prone, noisy labels as if
@@ -292,7 +293,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
           The classifier that this instance was initialized with,
           ``clf``, must be able to fit() and predict() data with this format.
 
-        labels : np.array or pd.Series
+        y : np.array or pd.Series
           An array of shape ``(N,)`` of noisy labels, i.e. some labels may be erroneous.
           Elements must be in the set 0, 1, ..., K-1, where K is the number of classes.
 
@@ -416,6 +417,17 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
             not just the subset of cleaned data left after pruning out the label issues.
         """
 
+        if y is not None and labels is not None:
+            raise TypeError(
+                "CleanLearning.fit() received both `y` and `labels` arguments. "
+                "`labels` is deprecated, so please use `y` instead."
+            )
+        elif labels is not None:
+            warnings.warn("labels is deprecated; use y", DeprecationWarning, 2)
+            y = labels
+        elif y is None:
+            raise TypeError("CleanLearning.fit() missing `y` argument.")
+
         self.clf_final_kwargs = {**clf_kwargs, **clf_final_kwargs}
 
         if "sample_weight" in clf_kwargs:
@@ -437,7 +449,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
                 )
             label_issues = self.find_label_issues(
                 X,
-                labels,
+                y,
                 pred_probs=pred_probs,
                 thresholds=thresholds,
                 noise_matrix=noise_matrix,
@@ -447,13 +459,13 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
             )
 
         else:  # set args that may not have been set if `self.find_label_issues()` wasn't called yet
-            assert_valid_inputs(X, labels, pred_probs)
+            assert_valid_inputs(X, y, pred_probs)
             if self.num_classes is None:
                 if noise_matrix is not None:
                     label_matrix = noise_matrix
                 else:
                     label_matrix = inverse_noise_matrix
-                self.num_classes = get_num_classes(labels, pred_probs, label_matrix)
+                self.num_classes = get_num_classes(y, pred_probs, label_matrix)
             if self.verbose:
                 print("Using provided label_issues instead of finding label issues.")
                 if self.label_issues_df is not None:
@@ -463,18 +475,18 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
                     )
 
         # label_issues always overwrites self.label_issues_df. Ensure it is properly formatted:
-        self.label_issues_df = self._process_label_issues_arg(label_issues, labels)
+        self.label_issues_df = self._process_label_issues_arg(label_issues, y)
 
         if "label_quality" not in self.label_issues_df.columns and pred_probs is not None:
             if self.verbose:
                 print("Computing label quality scores based on given pred_probs ...")
             self.label_issues_df["label_quality"] = get_label_quality_scores(
-                labels, pred_probs, **self.label_quality_scores_kwargs
+                y, pred_probs, **self.label_quality_scores_kwargs
             )
 
         self.label_issues_mask = self.label_issues_df["is_label_issue"].values
         x_mask = ~self.label_issues_mask
-        x_cleaned, labels_cleaned = subset_X_y(X, labels, x_mask)
+        x_cleaned, labels_cleaned = subset_X_y(X, y, x_mask)
         if self.verbose:
             print(f"Pruning {np.sum(self.label_issues_mask)} examples with label issues ...")
             print(f"Remaining clean data has {len(labels_cleaned)} examples.")
@@ -501,7 +513,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
                     sample_weight_auto[labels_cleaned == k] = sample_weight_k
 
                 sample_weight_expanded = np.zeros(
-                    len(labels)
+                    len(y)
                 )  # pad pruned examples with zeros, length of original dataset
                 sample_weight_expanded[x_mask] = sample_weight_auto
                 # Store the sample weight for every example in the original, unfiltered dataset

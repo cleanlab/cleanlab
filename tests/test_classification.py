@@ -634,13 +634,13 @@ def dimN_data(N):
 @pytest.mark.filterwarnings("ignore::RuntimeWarning")
 @pytest.mark.parametrize("N", [1, 3, 4])
 def test_dimN(N):
-    X, labels = dimN_data(N)
+    X, y = dimN_data(N)
     cl = CleanLearning(clf=ReshapingLogisticRegression())
     # just make sure we don't crash...
-    cl.fit(X, labels)
+    cl.fit(X, y)
     cl.predict(X)
     cl.predict_proba(X)
-    cl.score(X, labels)
+    cl.score(X, y)
 
 
 @pytest.mark.filterwarnings("ignore::UserWarning")
