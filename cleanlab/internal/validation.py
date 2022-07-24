@@ -122,9 +122,9 @@ def assert_indexing_works(
         idx = [0, length_X - 1]
     try:
         if isinstance(X, (pd.DataFrame, pd.Series)):
-            _ = X.iloc[idx]
+            _ = X.iloc[idx]  # type: ignore
         else:
-            _ = X[idx]
+            _ = X[idx]  # type: ignore
     except:
         msg = "Data features X must support list-based indexing; i.e. one of these must work: \n"
         msg += "1)  X[index_list] where say index_list = [0,1,3,10], or \n"
