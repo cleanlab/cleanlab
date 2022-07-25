@@ -259,11 +259,13 @@ def _get_quality_of_consensus(
 
     elif quality_method == "bayes_constant":
         # likelihood = probability that any annotator annotates any example correctly
-        def compute_likelihood(example, true_label, likelihood):
+        def compute_likelihood(example, true_label, likelihood, num_classes):
             return np.sum(
                 np.log(
                     [
-                        likelihood if annotator_label == true_label else (1 - likelihood)
+                        likelihood
+                        if annotator_label == true_label
+                        else (1 - likelihood) / (num_classes - 1)
                         for annotator_label in example.dropna()
                     ]
                 )
@@ -276,7 +278,7 @@ def _get_quality_of_consensus(
             labels_multiannotator.apply(
                 lambda s: np.array(
                     [
-                        compute_likelihood(s, true_label, likelihood)
+                        compute_likelihood(s, true_label, likelihood, num_classes)
                         for true_label in range(num_classes)
                     ]
                 ),
@@ -388,14 +390,14 @@ def _get_quality_of_consensus(
 
     elif quality_method == "bayes_anno_avg":
 
-        def compute_likelihood(example, true_label, likelihood):
+        def compute_likelihood(example, true_label, likelihood, num_classes):
             example = example.dropna()
             return np.sum(
                 np.log(
                     [
                         likelihood.loc[annotator]
                         if annotator_label == true_label
-                        else 1 - likelihood.loc[annotator]
+                        else (1 - likelihood.loc[annotator]) / (num_classes - 1)
                         for annotator, annotator_label in zip(example.index, example)
                     ]
                 )
@@ -411,7 +413,9 @@ def _get_quality_of_consensus(
             labels_multiannotator.apply(
                 lambda s: np.array(
                     [
-                        compute_likelihood(s, true_label, annotator_agreement_with_consensus)
+                        compute_likelihood(
+                            s, true_label, annotator_agreement_with_consensus, num_classes
+                        )
                         for true_label in range(num_classes)
                     ]
                 ),
@@ -438,14 +442,14 @@ def _get_quality_of_consensus(
             weighted_avg = np.average(agreement_frac, weights=num_annotations_subset - 1)
             return weighted_avg
 
-        def compute_likelihood(example, true_label, likelihood):
+        def compute_likelihood(example, true_label, likelihood, num_classes):
             example = example.dropna()
             return np.sum(
                 np.log(
                     [
                         likelihood.loc[annotator]
                         if annotator_label == true_label
-                        else 1 - likelihood.loc[annotator]
+                        else (1 - likelihood.loc[annotator]) / (num_classes - 1)
                         for annotator, annotator_label in zip(example.index, example)
                     ]
                 )
@@ -462,7 +466,7 @@ def _get_quality_of_consensus(
             labels_multiannotator.apply(
                 lambda s: np.array(
                     [
-                        compute_likelihood(s, true_label, annotator_agreement_weighted)
+                        compute_likelihood(s, true_label, annotator_agreement_weighted, num_classes)
                         for true_label in range(num_classes)
                     ]
                 ),
