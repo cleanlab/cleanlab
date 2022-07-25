@@ -20,9 +20,9 @@ cl.predict(test_data)
 cleanlab.dataset.health_summary(labels, confident_joint=cl.confident_joint)
 ```
 
-Get started with: [documentation](https://docs.cleanlab.ai/), [tutorials](https://docs.cleanlab.ai/stable/tutorials/image.html), [examples](https://github.com/cleanlab/examples), and [blogs](https://cleanlab.ai/blog/).
+Get started with: [documentation](https://docs.cleanlab.ai/), [tutorials](https://docs.cleanlab.ai/v2.0.0/tutorials/image.html), [examples](https://github.com/cleanlab/examples), and [blogs](https://cleanlab.ai/blog/).
 
- - Learn how to run cleanlab on your own data in just 5 minutes for classification with: [image](https://docs.cleanlab.ai/stable/tutorials/image.html), [text](https://docs.cleanlab.ai/stable/tutorials/text.html), [audio](https://docs.cleanlab.ai/stable/tutorials/audio.html), and [tabular](https://docs.cleanlab.ai/stable/tutorials/tabular.html) data.
+ - Learn how to run cleanlab on your own data in just 5 minutes for classification with: [image](https://docs.cleanlab.ai/v2.0.0/tutorials/image.html), [text](https://docs.cleanlab.ai/v2.0.0/tutorials/text.html), [audio](https://docs.cleanlab.ai/v2.0.0/tutorials/audio.html), and [tabular](https://docs.cleanlab.ai/v2.0.0/tutorials/tabular.html) data.
 
 
 [![pypi](https://img.shields.io/pypi/v/cleanlab.svg)](https://pypi.org/pypi/cleanlab/)
@@ -164,7 +164,7 @@ cl.predict(test_data)
 
 More details are provided in documentation of [cleanlab.classification.CleanLearning](https://github.com/cleanlab/cleanlab/blob/master/cleanlab/classification.py#L141).
 
-Note, some libraries exist to give you sklearn-compatibility for free. For PyTorch, check out the [skorch](https://skorch.readthedocs.io/) Python library which will wrap your PyTorch model into a sklearn-compatible model ([example](https://docs.cleanlab.ai/master/tutorials/image.html)). For TensorFlow/Keras, check out [SciKeras](https://www.adriangb.com/scikeras/) ([example](https://docs.cleanlab.ai/master/tutorials/text.html)). Many libraries also already offer a special scikit-learn API, for example: [XGBoost](https://xgboost.readthedocs.io/en/stable/python/python_api.html#module-xgboost.sklearn) or [LightGBM](https://lightgbm.readthedocs.io/en/latest/pythonapi/lightgbm.LGBMClassifier.html).
+Note, some libraries exist to give you sklearn-compatibility for free. For PyTorch, check out the [skorch](https://skorch.readthedocs.io/) Python library which will wrap your PyTorch model into a sklearn-compatible model ([example](https://docs.cleanlab.ai/v2.0.0/tutorials/image.html)). For TensorFlow/Keras, check out [SciKeras](https://www.adriangb.com/scikeras/) ([example](https://docs.cleanlab.ai/v2.0.0/tutorials/text.html)). Many libraries also already offer a special scikit-learn API, for example: [XGBoost](https://xgboost.readthedocs.io/en/stable/python/python_api.html#module-xgboost.sklearn) or [LightGBM](https://lightgbm.readthedocs.io/en/latest/pythonapi/lightgbm.LGBMClassifier.html).
 
 <br/>
 </details>
@@ -297,8 +297,8 @@ Many methods and their default parameters are not covered here. Check out the [d
 
 pred_probs (num_examples x num_classes matrix of predicted probabilities) should already be computed on your own, with any classifier. pred_probs must be obtained in a holdout/out-of-sample manner (e.g. via cross-validation).
 * cleanlab can do this for you via [`cleanlab.count.estimate_cv_predicted_probabilities`](https://docs.cleanlab.ai/master/cleanlab/count.html)]
-* Tutorial with more info: [[here](https://docs.cleanlab.ai/master/tutorials/pred_probs_cross_val.html)]
-* Examples how to compute pred_probs with: [[CNN image classifier (PyTorch)](https://docs.cleanlab.ai/stable/tutorials/image.html)], [[NN text classifier (TensorFlow)](https://docs.cleanlab.ai/stable/tutorials/text.html)]
+* Tutorial with more info: [[here](https://docs.cleanlab.ai/v2.0.0/tutorials/pred_probs_cross_val.html)]
+* Examples how to compute pred_probs with: [[CNN image classifier (PyTorch)](https://docs.cleanlab.ai/v2.0.0/tutorials/image.html)], [[NN text classifier (TensorFlow)](https://docs.cleanlab.ai/v2.0.0/tutorials/text.html)]
 
 ```python
 # label issues are ordered by likelihood of being an error. First index is most likely error.
