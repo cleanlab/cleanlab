@@ -297,6 +297,10 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
           An array of shape ``(N,)`` of noisy labels, i.e. some labels may be erroneous.
           Elements must be in the set 0, 1, ..., K-1, where K is the number of classes.
 
+          Note
+          ----
+          This argument was previously called ``labels`` in some previous versions of cleanlab.
+
         pred_probs : np.array, optional
           An array of shape ``(N, K)`` of model-predicted probabilities,
           ``P(label=k|x)``. Each row of this matrix corresponds
@@ -388,6 +392,15 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
           purposes). If you want to pass in validation data even in the final training of `clf.fit()`
           on the cleaned data subset, you should explicitly pass in that data yourself
           (eg. via `clf_final_kwargs` or `clf_kwargs`).
+
+        labels : np.array or pd.Series
+          An array of shape ``(N,)`` of noisy labels, i.e. some labels may be erroneous.
+          Elements must be in the set 0, 1, ..., K-1, where K is the number of classes.
+
+          Note
+          ----
+
+          This argument is kept for API backwards compatibility. You should use now use `y` instead.
 
         Returns
         -------
