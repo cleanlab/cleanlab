@@ -113,9 +113,18 @@ DATA_RARE_LABEL = make_rare_label(DATA)
 
 
 @pytest.mark.skipif("not python_version_ok()", reason="need at least python 3.7")
-@pytest.mark.parametrize("batch_size", [1, 32])
-def test_tensorflow(batch_size, data=DATA, hidden_units=128):
-    dataset_tf = tf.data.Dataset.from_tensor_slices((data["X"], data["y"])).batch(batch_size)
+@pytest.mark.parametrize("batch_size,shuffle_config", [(1, 0), (32, 0), (32, 1), (32, 2)])
+def test_tensorflow(batch_size, shuffle_config, data=DATA, hidden_units=128):
+    dataset_tf = tf.data.Dataset.from_tensor_slices((data["X"], data["y"]))
+    if shuffle_config == 0:
+        dataset_shuffled = dataset_tf.shuffle(buffer_size=len(data["X"]))
+    elif shuffle_config == 1:
+        dataset_shuffled = dataset_tf.shuffle(buffer_size=60)
+    else:
+        dataset_shuffled = dataset_tf  # no shuffling of dataset
+
+    dataset_og_order = dataset_tf.batch(batch_size)
+    dataset_tf = dataset_shuffled.batch(batch_size)
 
     model = KerasWrapper(
         [
@@ -138,7 +147,7 @@ def test_tensorflow(batch_size, data=DATA, hidden_units=128):
     cl = CleanLearning(model)
     cl.fit(dataset_tf, data["y"], clf_kwargs={"epochs": 10}, clf_final_kwargs={"epochs": 15})
 
-    preds = cl.predict(dataset_tf)
+    preds = cl.predict(dataset_og_order)
     err = np.sum(preds != data["y_og"]) / len(data["y_og"])
     issue_indices = list(cl.label_issues_df[cl.label_issues_df["is_label_issue"]].index.values)
     assert issue_indices == data["error_indices"]
