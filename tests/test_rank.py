@@ -444,9 +444,11 @@ def test_default_k_and_model_get_outlier_scores():
         k=instantiated_k,  # this should use default estimator (same as above) and k = instantiated_k
     )
 
-    avg_knn_distances_default_k = rank.get_outlier_scores(
-        features=X_with_ood  # default k should be set to 10 == instantiated_k
+    avg_knn_distances_default_k, knn2 = rank.get_outlier_scores(
+        features=X_with_ood,  # default k should be set to 10 == instantiated_k
+        return_estimator=True,
     )
+    assert isinstance(knn2, type(knn))
 
     avg_knn_distances = rank.get_outlier_scores(
         features=None,
