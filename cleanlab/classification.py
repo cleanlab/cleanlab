@@ -89,7 +89,7 @@ model to be sklearn-compatible. This is made easy by inheriting from
 Note
 ----
 
-* `labels` refers to the given labels in the original dataset, which may have errors
+* `y` refers to the given labels in the original dataset, which may have errors
 * labels must be integers in 0, 1, ..., K-1, where K is the total number of classes
 
 Note
@@ -106,9 +106,9 @@ learning across a variety of tasks like multi-class classification, multi-label 
 and PU learning.
 
 Given any classifier having the `predict_proba` method, an input feature
-matrix `X`, and a discrete vector of noisy labels `labels`, confident learning estimates the
+matrix `X`, and a discrete vector of noisy labels `y`, confident learning estimates the
 classifications that would be obtained if the *true labels* had instead been provided
-to the classifier during training. `labels` denotes the noisy labels instead of
+to the classifier during training. `y` denotes the noisy labels instead of
 the :math:`\\tilde{y}` used in confident learning paper.
 """
 
