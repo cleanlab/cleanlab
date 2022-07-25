@@ -427,6 +427,14 @@ def train_val_split(X, labels, train_idx, holdout_idx):
         except Exception:
             pass
     if not split_completed:
+        # TODO: remove this code for testing on Windows:
+        import tensorflow
+
+        bool_tf = isinstance(X, tensorflow.data.Dataset)
+        if bool_tf:
+            X_train = extract_indices_tf(X, train_idx, allow_shuffle=True)
+            X_holdout = extract_indices_tf(X, holdout_idx, allow_shuffle=False)
+            split_completed = True
         try:  # check if X is tensorflow Dataset object using lazy import
             import tensorflow
 
