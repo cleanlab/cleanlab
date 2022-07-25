@@ -263,7 +263,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
     def fit(
         self,
         X,
-        y,
+        y=None,
         *,
         pred_probs=None,
         thresholds=None,
@@ -435,11 +435,15 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
                 "CleanLearning.fit() received both `y` and `labels` arguments. "
                 "`labels` is deprecated, so please use `y` instead."
             )
-        elif labels is not None:
-            warnings.warn("labels is deprecated; use y", DeprecationWarning, 2)
+        if labels is not None:
+            warnings.warn(
+                "Argument `labels` is deprecated and will be removed in future versions, pass the labels via argument `y` instead.",
+                DeprecationWarning,
+                2,
+            )
             y = labels
-        elif y is None:
-            raise TypeError("CleanLearning.fit() missing `y` argument.")
+        if y is None:
+            raise TypeError("CleanLearning.fit() missing positional argument `y` argument.")
 
         self.clf_final_kwargs = {**clf_kwargs, **clf_final_kwargs}
 
