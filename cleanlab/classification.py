@@ -263,7 +263,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
     def fit(
         self,
         X,
-        labels,
+        labels=None,
         *,
         pred_probs=None,
         thresholds=None,
@@ -274,6 +274,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         clf_kwargs={},
         clf_final_kwargs={},
         validation_func=None,
+        y=None,
     ):
         """
         Train the model `clf` with error-prone, noisy labels as if
@@ -388,6 +389,9 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
           on the cleaned data subset, you should explicitly pass in that data yourself
           (eg. via `clf_final_kwargs` or `clf_kwargs`).
 
+        y: np.array or pd.Series, optional
+          Alternative argument that can be specified instead of `labels`. Specifying `y` has the same effect as specifying `labels`, and is offered as an alternative for compatibility with sklearn.
+
         Returns
         -------
         CleanLearning
@@ -415,6 +419,13 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
             so that the classifier trains as if it had all the true labels,
             not just the subset of cleaned data left after pruning out the label issues.
         """
+
+        if labels is not None and y is not None:
+            raise ValueError("You must specify either `labels` or `y`, but not both.")
+        if y is not None:
+            labels = y
+        if labels is None:
+            raise ValueError("You must specify `labels`.")
 
         self.clf_final_kwargs = {**clf_kwargs, **clf_final_kwargs}
 
