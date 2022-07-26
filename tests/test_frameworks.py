@@ -107,32 +107,8 @@ if python_version_ok():
     torch.backends.cudnn.benchmark = False
     torch.cuda.manual_seed_all(SEED)
 
-
 DATA = dataset_w_errors()
 DATA_RARE_LABEL = make_rare_label(DATA)
-
-
-@pytest.mark.skipif("not python_version_ok()", reason="need at least python 3.7")
-def test_windows_tensorflow(data=DATA, hidden_units=128):  # TODO: remove
-    dataset_tf = tf.data.Dataset.from_tensor_slices((data["X"], data["y"]))
-    dataset_shuffled = dataset_tf.shuffle(buffer_size=len(data["X"]))
-    dataset_og_order = dataset_tf.batch(32)
-    dataset_tf = dataset_shuffled.batch(32)
-    model = KerasWrapper(
-        [
-            tf.keras.layers.Dense(
-                hidden_units, input_shape=[data["num_features"]], activation="relu"
-            ),
-            tf.keras.layers.Dense(data["num_classes"]),
-        ],
-    )
-    # Test base model works:
-    model.fit(
-        X=dataset_tf,
-        y=data["y"],
-        epochs=2,
-    )
-    preds_base = model.predict_proba(dataset_tf)
 
 
 @pytest.mark.skipif("not python_version_ok()", reason="need at least python 3.7")
