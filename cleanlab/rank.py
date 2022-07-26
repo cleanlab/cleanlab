@@ -37,8 +37,7 @@ labels in data that was previously held-out.
 import numpy as np
 from sklearn.metrics import log_loss
 from sklearn.neighbors import NearestNeighbors
-from typing import List
-from typing import Optional
+from typing import List, Optional, Union, Tuple
 import warnings
 
 from cleanlab.internal.validation import assert_valid_inputs
@@ -156,7 +155,7 @@ def get_label_quality_scores(
       - ``'self_confidence'``: ``P[k]``
       - ``'confidence_weighted_entropy'``: ``entropy(P) / self_confidence``
 
-      Let ``C = {0, 1, ..., K}`` denote the specified set of classes for our classification task.
+      Let ``C = {0, 1, ..., K-1}`` denote the specified set of classes for our classification task.
 
       The normalized_margin score works better for identifying class conditional label errors,
       i.e. examples for which another label in C is appropriate but the given label is not.
@@ -558,9 +557,10 @@ def get_confidence_weighted_entropy_for_each_label(
 def get_outlier_scores(
     features: Optional[np.ndarray] = None,
     knn: Optional[NearestNeighbors] = None,
-    k: int = 10,
+    k: Optional[int] = None,
     t: int = 1,
-) -> np.ndarray:
+    return_estimator: bool = False,
+) -> Union[np.ndarray, Tuple[np.ndarray, NearestNeighbors]]:
     """Returns an outlier score for each example based on its feature values. Scores lie in [0,1] with smaller values indicating examples
     that are less typical under the dataset distribution (values near 0 indicate outliers).
     The score is based on the average distance between the example and its K nearest neighbors in the dataset (in feature space).
@@ -583,51 +583,57 @@ def get_outlier_scores(
 
       See: https://scikit-learn.org/stable/modules/neighbors.html
 
-    k : int, default=10
-      Number of neighbors to use when calculating outlier score (average distance to neighbors). If an existing ``knn``
-      object is provided, you can still specify that outlier score should use a different value of ``k`` than originally
-      used in the ``knn``, as long as your specified value of ``k`` is smaller than the one originally used.
-      If k is larger, then by default ``k = n_neighbors`` where ``n_neighbors`` is defined in the ``knn``.
-      If k is not provided, then by default ``k = 10``.
+    k : int, default=None
+      Optional number of neighbors to use when calculating outlier score (average distance to neighbors).
+      If `k` is not provided, then by default ``k = knn.n_neighbors`` or ``k = 10`` if ``knn is None``.
+      If an existing ``knn`` object is provided, you can still specify that outlier scores should use
+      a different value of `k` than originally used in the ``knn``,
+      as long as your specified value of `k` is smaller than the value originally used in ``knn``.
 
     t : int, default=1
-      Controls transformation of distances between examples into similarity scores that lie in [0,1]. The transformation
-      applied is exp(-x*t) where x is the average distance to k-nearest neighbors. If you find your scores are all too
-      close to 1, consider increasing t, although the relative scores of examples will still have the same ranking across the dataset.
+      Optional hyperparameter only for advanced users.
+      Controls transformation of distances between examples into similarity scores that lie in [0,1].
+      The transformation applied to distances `x` is `exp(-x*t)`.
+      If you find your scores are all too close to 1, consider increasing `t`,
+      although the relative scores of examples will still have the same ranking across the dataset.
 
+    return_estimator : bool, default = False
+      Whether the `knn` Estimator object should also be returned (eg. so it can be applied on future data).
+      If True, this function returns a tuple `(outlier_scores, knn)`.
     Returns
     -------
     outlier_scores : np.ndarray
       Score for each example that roughly corresponds to the likelihood this example stems from the same distribution as
       the dataset features (i.e. is not an outlier).
+      If ``return_estimator = True``, then a tuple is returned
+      whose first element is array of `outlier_scores` and second is a `knn` Estimator object.
     """
-    # if knn is not provided, then use default KNN as estimator
-    if knn is None:
+    DEFAULT_K = 10
+    if knn is None:  # setup default KNN estimator
         # Make sure both knn and features are not None
         if features is None:
             raise ValueError(
                 f"Both knn and features arguments cannot be None at the same time. Not enough information to compute outlier scores."
             )
-
-        # Make sure number of neighbors is less than number of example for estimator.
-        if k > len(features):
+        if k is None:
+            k = DEFAULT_K  # use default when knn and k are both None
+        if k > len(features):  # Ensure number of neighbors less than number of examples
             raise ValueError(
                 f"Number of nearest neighbors k={k} cannot exceed the number of examples N={len(features)} passed into the estimator (knn)."
             )
         knn = NearestNeighbors(n_neighbors=k, metric="cosine").fit(features)
         features = None  # features should be None in knn.kneighbors(features) to avoid counting duplicate data points
+    elif k is None:
+        k = knn.n_neighbors
 
-    # number of neighbors specified when fitting instantiated NearestNeighbors object
-    max_k = knn.n_neighbors
-
-    # if k provided is too high, use max number of nearest neighbors
-    if k > max_k:
-        k = max_k
+    max_k = knn.n_neighbors  # number of neighbors previously used in NearestNeighbors object
+    if k > max_k:  # if k provided is too high, use max possible number of nearest neighbors
         warnings.warn(
             f"Chosen k={k} cannot be greater than n_neighbors={max_k} which was used when fitting "
             f"NearestNeighbors object! Value of k changed to k={max_k}.",
             UserWarning,
         )
+        k = max_k
 
     # Get distances to k-nearest neighbors Note that the knn object contains the specification of distance metric
     # and n_neighbors (k value) If our query set of features matches the training set used to fit knn, the nearest
@@ -637,6 +643,9 @@ def get_outlier_scores(
     # Calculate average distance to k-nearest neighbors
     avg_knn_distances = distances[:, :k].mean(axis=1)
 
-    # Global rescale outlier_scores to range 0-1 with 0 = most concerning
-    outlier_scores = np.exp(-1 * avg_knn_distances * t)
-    return outlier_scores
+    # Map outlier_scores to range 0-1 with 0 = most concerning
+    outlier_scores: np.ndarray = np.exp(-1 * avg_knn_distances * t)
+    if return_estimator:
+        return (outlier_scores, knn)
+    else:
+        return outlier_scores

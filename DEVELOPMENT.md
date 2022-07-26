@@ -79,10 +79,14 @@ Finally execute the bash script:
 examples/run_all_notebooks.sh
 ```
 
+
 ## Documentation
 
 You can build the docs from your local cleanlab version by following [these
 instructions](docs/README.md#build-the-cleanlab-docs-locally).
+
+If editing existing docs or adding new tutorials, please first read through our [guidelines](https://github.com/cleanlab/cleanlab/tree/master/docs#tips-for-editing-docs).
+
 
 ## Code style
 
@@ -151,9 +155,13 @@ NumPy style are documented below:
   parameters and parameterized types in docs, e.g. `Iterable[int]` or
   `list[float]`.
 
-### Common variable names used in documentation
+### Common variable names / terminology used throughout codebase
 
 - `N` - the number of examples/datapoints in a dataset.
   - `num_examples` may also be used when additional clarity is needed.
 - `K` - the number of classes (unique labels) for a dataset.
   - `num_classes` may also be used when additional clarity is needed.
+- `labels` - a label for each example, length should be N (sample-size of dataset)
+- `classes` - set of possible labels for any one example, length should be K (number of possible categories in classification problem)
+
+Try to adhere to this standardized terminology unless you have good reason not to! 

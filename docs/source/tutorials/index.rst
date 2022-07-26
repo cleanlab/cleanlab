@@ -12,4 +12,5 @@ Tutorials
    audio
    dataset_health
    pred_probs_cross_val
+   outliers
    faq
