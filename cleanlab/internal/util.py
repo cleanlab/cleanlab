@@ -492,13 +492,21 @@ def subset_data(X, mask):
 
 
 def extract_indices_tf(X, idx, allow_shuffle):
-    """X must be tensorflow.data.Dataset, idx = array of integer indices to extract from the dataset.
-    Returns subset of examples in the dataset X that correspond to these indices.
-    allow_shuffle : bool
-      Whether or not shuffling of this data is allowed (eg. must turn off shuffling for validation data).
+    """Extracts subset of tensorflow dataset corresponding to examples at particular indices.
+
+    Args:
+      X : ``tensorflow.data.Dataset``
+
+      idx : array_like of integer indices corresponding to examples to keep in the dataset.
+        Returns subset of examples in the dataset X that correspond to these indices.
+
+      allow_shuffle : bool
+        Whether or not shuffling of this data is allowed (eg. must turn off shuffling for validation data).
+
     Note: this code only works on Datasets in which:
-    - ``shuffle()`` has been called before ``batch()``,
-    - no other order-destroying operation (eg. ``repeat()``) has been applied.
+    * ``shuffle()`` has been called before ``batch()``,
+    * no other order-destroying operation (eg. ``repeat()``) has been applied.
+
     Indices are extracted from the original version of Dataset (before shuffle was called rather than in shuffled order).
     """
     import tensorflow

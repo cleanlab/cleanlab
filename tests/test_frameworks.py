@@ -115,12 +115,12 @@ DATA_RARE_LABEL = make_rare_label(DATA)
 @pytest.mark.parametrize("batch_size,shuffle_config", [(1, 0), (32, 0), (32, 1), (32, 2)])
 def test_tensorflow(batch_size, shuffle_config, data=DATA, hidden_units=128):
     dataset_tf = tf.data.Dataset.from_tensor_slices((data["X"], data["y"]))
-    if shuffle_config == 0:
+    if shuffle_config == 0:  # proper shuffling for SGD
         dataset_shuffled = dataset_tf.shuffle(buffer_size=len(data["X"]))
-    elif shuffle_config == 1:
+    elif shuffle_config == 1:  # shuffling for datasets that don't fit in memory
         dataset_shuffled = dataset_tf.shuffle(buffer_size=60)
     else:
-        dataset_shuffled = dataset_tf  # no shuffling of dataset
+        dataset_shuffled = dataset_tf  # no shuffling
 
     dataset_og_order = dataset_tf.batch(batch_size)
     dataset_tf = dataset_shuffled.batch(batch_size)

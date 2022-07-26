@@ -15,14 +15,19 @@
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
 """
-A wrapper class that you can use to easily make any Keras model compatible with cleanlab and sklearn. 
-This is a good example to reference for making your own bespoke neural network compatible with cleanlab.
+A wrapper class you can use to make any Keras model compatible with cleanlab and sklearn.
+Most of the instance methods of this class are the same as the ones for any Keras model, 
+see the Keras documentation for details.
+
+This is a good example of making any bespoke neural network compatible with cleanlab.
 
 You must have Tensorflow installed: https://www.tensorflow.org/install
 
 Note: Tensorflow is only compatible with Python versions >= 3.7: https://www.tensorflow.org/install/pip#software_requirements
 
-Tip: To call ``fit()`` on a Tensorflow Dataset object with a Keras model, the Dataset should already be batched.
+Tips:
+* If this class lacks certain functionality, you can alternatively try scikeras: https://github.com/adriangb/scikeras 
+* To call ``fit()`` on a Tensorflow Dataset object with a Keras model, the Dataset should already be batched.
 """
 
 import tensorflow as tf
@@ -30,8 +35,10 @@ import numpy as np
 
 
 class KerasWrapper:
-    """KerasWrapper is instantiated in the same way as a tf.keras.models.Sequential object, except for extra argument:
-    compile_kwargs: dict of args to pass into ``model.compile()``
+    """
+    KerasWrapper is instantiated in the same way as a ``tf.keras.models.Sequential`` object,
+    except for extra argument:
+    * *compile_kwargs*: dict of args to pass into ``model.compile()``
     """
 
     def __init__(
@@ -57,7 +64,7 @@ class KerasWrapper:
         self.net.fit(X, **kwargs)
 
     def predict_proba(self, X, apply_softmax=True, **kwargs):
-        """If apply_softmax is True, we assume your network only outputs logits not probabilities"""
+        """Set `apply_softmax` to True to indicate your network only outputs logits not probabilities"""
         if self.net is None:
             raise ValueError("must call fit() before predict()")
         pred_probs = self.net.predict(X, **kwargs)
