@@ -483,6 +483,65 @@ def _get_quality_of_consensus(
         )
         ranked_quality = np.array([log_posterior[i, l] for i, l in enumerate(consensus_label)])
 
+    elif quality_method == "bayes_model_acc":
+        from sklearn.isotonic import IsotonicRegression
+
+        def compute_likelihood(example, true_label, likelihood, num_classes):
+            example = example.dropna()
+            return np.sum(
+                np.log(
+                    [
+                        likelihood.loc[annotator]
+                        if annotator_label == true_label
+                        else (1 - likelihood.loc[annotator]) / (num_classes - 1)
+                        for annotator, annotator_label in zip(example.index, example)
+                    ]
+                )
+            )
+
+        num_classes = pred_probs.shape[1]
+
+        annotator_accuracy = labels_multiannotator.apply(
+            lambda s: np.mean(s[pd.notna(s)] == consensus_label[pd.notna(s)]),
+            axis=0,
+        )
+
+        threshold = np.unique(pred_probs.max(axis=1))
+        model_accuracy = np.full(len(threshold), np.nan)
+
+        for i in range(len(threshold)):
+            subset_mask = pred_probs.max(axis=1) >= threshold[i]
+            model_accuracy[i] = np.mean(
+                pred_probs.argmax(axis=1)[subset_mask] == consensus_label[subset_mask]
+            )
+
+        ir = IsotonicRegression(y_min=(1 / num_classes), y_max=(1 - 1e-4), out_of_bounds="clip")
+        model_accuracy_isotonic = ir.fit_transform(threshold, model_accuracy)
+
+        annotator_likelihood = annotator_accuracy.apply(
+            lambda s: model_accuracy_isotonic[np.argmin(np.abs(s - model_accuracy_isotonic))]
+        )
+
+        num_classes = pred_probs.shape[1]
+        prod_annotator_likelihood = np.vstack(
+            labels_multiannotator.apply(
+                lambda s: np.array(
+                    [
+                        compute_likelihood(s, true_label, annotator_likelihood, num_classes)
+                        for true_label in range(num_classes)
+                    ]
+                ),
+                axis=1,
+            )
+        )
+
+        log_posterior = np.log(pred_probs) + prod_annotator_likelihood
+        posterior = np.exp(log_posterior - log_posterior.max(axis=1).reshape(len(log_posterior), 1))
+        normalized_posterior = posterior / np.sum(posterior, axis=1).reshape(len(posterior), 1)
+        post_pred_probs = normalized_posterior
+        quality_of_consensus = get_label_quality_scores(consensus_label, normalized_posterior)
+        ranked_quality = np.array([log_posterior[i, l] for i, l in enumerate(consensus_label)])
+
     else:
         raise ValueError(
             f"""
@@ -680,6 +739,7 @@ def _get_annotator_quality(
         "bayes_DS",
         "bayes_anno_avg",
         "bayes_anno_weighted",
+        "bayes_model_acc",
     ]
 
     def try_overall_label_health_score(labels, pred_probs):
@@ -699,6 +759,7 @@ def _get_annotator_quality(
         "bayes_DS",
         "bayes_anno_avg",
         "bayes_anno_weighted",
+        "bayes_model_acc",
     ]:
         overall_annotator_quality = labels_multiannotator.apply(
             lambda s: try_overall_label_health_score(
