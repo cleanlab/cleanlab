@@ -24,4 +24,3 @@ fasttext==0.9.2
 timm==0.6.5
 torch==1.11.0
 requests==2.28.0
-pathlib==1.0.1
