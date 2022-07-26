@@ -512,6 +512,7 @@ def extract_indices_tf(X, idx, allow_shuffle):
     import tensorflow
 
     idx = np.asarray(idx)
+    idx = np.int64(idx)  # needed for Windows (reconsider if necessary in the future)
 
     og_batch_size = None
     if hasattr(X, "_batch_size"):
@@ -525,6 +526,7 @@ def extract_indices_tf(X, idx, allow_shuffle):
     # Create index,value pairs in the dataset (adds extra indices that werent there before)
     X = X.enumerate()
     keys_tensor = tensorflow.constant(idx)
+    # keys_tensor = tensorflow.cast(keys_tensor, tensorflow.int64)  # TODO: remove needed for Windows
     vals_tensor = tensorflow.ones_like(keys_tensor)  # Ones will be casted to True
     table = tensorflow.lookup.StaticHashTable(
         tensorflow.lookup.KeyValueTensorInitializer(keys_tensor, vals_tensor), default_value=0
