@@ -146,7 +146,8 @@ def labels_to_array(y: Union[LabelLike, np.generic]) -> np.ndarray:
         1D numpy array of labels.
     """
     if isinstance(y, pd.Series):
-        return np.asarray(y.values)
+        y_series: np.ndarray = y.to_numpy()
+        return y_series
     elif isinstance(y, pd.DataFrame):
         y = y.values
         if y.shape[1] != 1:
