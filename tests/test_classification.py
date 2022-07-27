@@ -492,6 +492,29 @@ def test_clf_fit_nm_inm(format):
 
 
 @pytest.mark.parametrize("format", list(DATA_FORMATS.keys()))
+def test_clf_fit_y_alias(format):
+    data = DATA_FORMATS[format]
+    cl = CleanLearning(seed=SEED)
+
+    # Valid signature
+    cl.fit(data["X_train"], data["labels"])
+
+    # Valid signature for labels/y alias
+    cl.fit(data["X_train"], labels=data["labels"])
+    cl.fit(data["X_train"], y=data["labels"])
+    cl.fit(X=data["X_train"], labels=data["labels"])
+    cl.fit(X=data["X_train"], y=data["labels"])
+
+    # Invalid signatures
+    with pytest.raises(ValueError):
+        cl.fit(data["X_train"])
+    with pytest.raises(ValueError):
+        cl.fit(data["X_train"], data["labels"], y=data["labels"])
+    with pytest.raises(ValueError):
+        cl.fit(X=data["X_train"], labels=data["labels"], y=data["labels"])
+
+
+@pytest.mark.parametrize("format", list(DATA_FORMATS.keys()))
 def test_pred_and_pred_proba(format):
     data = DATA_FORMATS[format]
     cl = CleanLearning()

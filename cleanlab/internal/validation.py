@@ -18,12 +18,19 @@
 Checks to ensure valid inputs for various methods.
 """
 
+from cleanlab.typing import LabelLike, DatasetLike
+from typing import Any, List, Optional, Union
 import warnings
 import numpy as np
 import pandas as pd
 
 
-def assert_valid_inputs(X, y, pred_probs=None, multi_label=False):
+def assert_valid_inputs(
+    X: DatasetLike,
+    y: LabelLike,
+    pred_probs: Optional[np.ndarray] = None,
+    multi_label: bool = False,
+) -> None:
     """Checks that X, labels, and pred_probs are correctly formatted"""
     if not isinstance(y, (list, np.ndarray, np.generic, pd.Series, pd.DataFrame)):
         raise TypeError("labels should be a numpy array or pandas Series.")
@@ -87,12 +94,12 @@ def assert_valid_inputs(X, y, pred_probs=None, multi_label=False):
                 )
 
 
-def assert_valid_class_labels(y):
+def assert_valid_class_labels(y: np.ndarray) -> None:
     """Check that labels is zero-indexed (first label is 0) and all classes present.
     Assumes labels is 1D numpy array (not multi-label).
     """
     if y.ndim != 1:
-        raise ValueError("labels must by 1D numpy array.")
+        raise ValueError("labels must be 1D numpy array.")
 
     unique_classes = np.unique(y)
     if len(unique_classes) < 2:
@@ -105,12 +112,14 @@ def assert_valid_class_labels(y):
         raise TypeError(msg)
 
 
-def assert_nonempty_input(X):
+def assert_nonempty_input(X: Any) -> None:
     if X is None:
         raise ValueError("Data features X cannot be None. Currently X is None.")
 
 
-def assert_indexing_works(X, idx=None, length_X=None):
+def assert_indexing_works(
+    X: DatasetLike, idx: Optional[List[int]] = None, length_X: Optional[int] = None
+) -> None:
     """Ensures we can do list-based indexing into ``X`` and ``y``.
     length_X is argument passed in since sparse matrix ``X``
     does not support: ``len(X)`` and we want this method to work for sparse ``X``
@@ -125,30 +134,28 @@ def assert_indexing_works(X, idx=None, length_X=None):
     is_indexed = False
     try:
         if isinstance(X, (pd.DataFrame, pd.Series)):
-            _ = X.iloc[idx]
+            _ = X.iloc[idx]  # type: ignore[call-overload]
             is_indexed = True
     except Exception:
         pass
     if not is_indexed:
         try:  # check if X is pytorch Dataset object using lazy import
             import torch
-
             if isinstance(X, torch.utils.data.Dataset):  # special indexing for pytorch Dataset
-                _ = torch.utils.data.Subset(X, idx)
+                _ = torch.utils.data.Subset(X, idx)  # type: ignore[call-overload]
                 is_indexed = True
         except Exception:
             pass
     if not is_indexed:
         try:  # check if X is tensorflow Dataset object using lazy import
             import tensorflow as tf
-
             if isinstance(X, tf.data.Dataset):
-                is_indexed = True  # skip check for tensorflow Dataset (compute-intensive)
+                is_indexed = True  # skip check for tensorflow Dataset (too compute-intensive)
         except Exception:
             pass
     if not is_indexed:
         try:
-            _ = X[idx]
+            _ = X[idx]  # type: ignore[call-overload]
         except Exception:
             msg = (
                 "Data features X must support list-based indexing; i.e. one of these must work: \n"
@@ -158,10 +165,22 @@ def assert_indexing_works(X, idx=None, length_X=None):
             raise TypeError(msg)
 
 
-def labels_to_array(y):
-    """Converts different types of label objects to 1D numpy array and checks validity"""
+def labels_to_array(y: Union[LabelLike, np.generic]) -> np.ndarray:
+    """Converts different types of label objects to 1D numpy array and checks validity
+
+    Parameters
+    ----------
+    y : Union[LabelLike, np.generic]
+        Labels to convert to 1D numpy array. Can be a list, numpy array, pandas Series, or pandas DataFrame.
+
+    Returns
+    -------
+    np.ndarray
+        1D numpy array of labels.
+    """
     if isinstance(y, pd.Series):
-        return y.values
+        y_series: np.ndarray = y.to_numpy()
+        return y_series
     elif isinstance(y, pd.DataFrame):
         y = y.values
         if y.shape[1] != 1:

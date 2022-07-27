@@ -263,7 +263,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
     def fit(
         self,
         X,
-        labels,
+        labels=None,
         *,
         pred_probs=None,
         thresholds=None,
@@ -274,6 +274,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         clf_kwargs={},
         clf_final_kwargs={},
         validation_func=None,
+        y=None,
     ):
         """
           Train the model `clf` with error-prone, noisy labels as if
@@ -431,10 +432,16 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
           ----
           If ``CleanLearning.fit()`` does not work for your data/model, you can run the same procedure yourself:
           * Utilize :ref:`cross-validation <pred_probs_cross_val>` to get out-of-sample `pred_probs` for each example.
-          * Call :py:func:`filter.find_label_issues
-        <cleanlab.filter.find_label_issues>` with `pred_probs`.
+          * Call :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` with `pred_probs`.
           * Filter the examples with detected issues and train your model on the remaining data.
         """
+
+        if labels is not None and y is not None:
+            raise ValueError("You must specify either `labels` or `y`, but not both.")
+        if y is not None:
+            labels = y
+        if labels is None:
+            raise ValueError("You must specify `labels`.")
 
         self.clf_final_kwargs = {**clf_kwargs, **clf_final_kwargs}
 
