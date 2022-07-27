@@ -939,6 +939,7 @@ def get_label_quality_multiannotator(
     consensus_method: Union[str, List[str]] = "majority",
     quality_method: str = "auto",
     return_annotator_stats: bool = False,  # sort by lowest overall_quality first
+    return_post_pred_probs: bool = False,  # TODO: remove after benchmarking
     verbose: bool = True,
     kwargs: dict = {},
 ) -> Union[pd.DataFrame, Tuple[pd.DataFrame, pd.DataFrame]]:
@@ -1137,8 +1138,15 @@ def get_label_quality_multiannotator(
         )
         print(annotator_stats.to_string())
 
-    return (
-        (label_quality_scores_multiannotator, annotator_stats)
-        if return_annotator_stats
-        else label_quality_scores_multiannotator
-    )
+    if return_annotator_stats and return_post_pred_probs:
+        return (label_quality_scores_multiannotator, annotator_stats, post_pred_probs)
+    elif return_annotator_stats:
+        return (label_quality_scores_multiannotator, annotator_stats)
+    else:
+        return label_quality_scores_multiannotator
+
+    # return (
+    #     (label_quality_scores_multiannotator, annotator_stats)
+    #     if return_annotator_stats
+    #     else label_quality_scores_multiannotator
+    # )
