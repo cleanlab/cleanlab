@@ -141,6 +141,7 @@ def assert_indexing_works(
     if not is_indexed:
         try:  # check if X is pytorch Dataset object using lazy import
             import torch
+
             if isinstance(X, torch.utils.data.Dataset):  # special indexing for pytorch Dataset
                 _ = torch.utils.data.Subset(X, idx)  # type: ignore[call-overload]
                 is_indexed = True
@@ -149,6 +150,7 @@ def assert_indexing_works(
     if not is_indexed:
         try:  # check if X is tensorflow Dataset object using lazy import
             import tensorflow as tf
+
             if isinstance(X, tf.data.Dataset):
                 is_indexed = True  # skip check for tensorflow Dataset (too compute-intensive)
         except Exception:
