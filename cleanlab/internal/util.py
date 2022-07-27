@@ -592,7 +592,8 @@ def is_torch_dataset(X):
         if isinstance(X, torch.utils.data.Dataset):
             return True
     except Exception:
-        return False  # assumes this cannot be torch dataset if torch cannot be imported
+        pass
+    return False  # assumes this cannot be torch dataset if torch cannot be imported
 
 
 def is_tensorflow_dataset(X):
@@ -602,7 +603,8 @@ def is_tensorflow_dataset(X):
         if isinstance(X, tensorflow.data.Dataset):
             return True
     except Exception:
-        return False  # assumes this cannot be torch dataset if torch cannot be imported
+        pass
+    return False  # assumes this cannot be tensorflow dataset if tensorflow cannot be imported
 
 
 def csr_vstack(a, b):

@@ -285,10 +285,10 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
 
         Parameters
         ----------
-        X : np.ndarray or dataset_like
+        X : np.ndarray or DatasetLike
           Data features (i.e. training inputs for ML), typically an array of shape ``(N, ...)``,
           where N is the number of examples.
-          Supported `dataset_like` types beyond ``np.ndarray`` include:
+          Supported `DatasetLike` types beyond ``np.ndarray`` include:
           ``pd.DataFrame``, ``scipy.sparse.csr_matrix``, ``torch.utils.data.Dataset``, ``tensorflow.data.Dataset``,
           or any dataset object ``X`` that supports list-based indexing:
           ``X[index_list]`` to select a subset of training examples.
@@ -304,7 +304,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         labels : array_like
           An array of shape ``(N,)`` of noisy labels, i.e. some labels may be erroneous.
           Elements must be in the set 0, 1, ..., K-1, where K is the number of classes.
-          Supported `array_like` types include: ``np.ndarray`` or ``pd.Series``.
+          Supported `array_like` types include: ``np.ndarray``, ``pd.Series``, or ``list``.
 
         pred_probs : np.ndarray, optional
           An array of shape ``(N, K)`` of model-predicted probabilities,
@@ -366,8 +366,9 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
           :py:meth:`self.find_label_issues<cleanlab.classification.CleanLearning.find_label_issues>`,
           e.g. as a ``np.ndarray``, then some functionality like training with sample weights may be disabled.
 
-        sample_weight : array_like of shape (n_samples,), optional
-          Array of weights that are assigned to individual samples.
+        sample_weight : array_like, optional
+          Array of weights with shape ``(N,)`` that are assigned to individual samples,
+          assuming total number of examples in dataset is `N`.
           If not provided, samples may still be weighted by the estimated noise in the class they are labeled as.
 
         clf_kwargs : dict, optional
@@ -397,6 +398,11 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
           purposes). If you want to pass in validation data even in the final training call to ``clf.fit()``
           on the cleaned data subset, you should explicitly pass in that data yourself
           (eg. via `clf_final_kwargs` or `clf_kwargs`).
+
+        y: array_like, optional
+          Alternative argument that can be specified instead of `labels`.
+          Specifying `y` has the same effect as specifying `labels`,
+          and is offered as an alternative for compatibility with sklearn.
 
         Returns
         -------
