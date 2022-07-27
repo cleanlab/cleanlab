@@ -10,6 +10,25 @@ from cleanlab.dataset import overall_label_health_score, _get_worst_class
 import warnings
 
 
+def convert_long_to_wide_dataset(
+    labels_multiannotator_long: pd.DataFrame,
+) -> pd.DataFrame:
+    """Converts a wide format dataset to long format which is suitable for passing into
+    :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>`.
+
+    Dataframe must contain three columns named:
+    1. ``task`` representing each example labeled by the annotators
+    2. ``annotator`` representing each annotator
+    3. ``label`` representing the label given by an annotator for the corresponding task
+    """
+    labels_multiannotator = labels_multiannotator_long.pivot(
+        index="task", columns="annotator", values="label"
+    )
+    labels_multiannotator.index.name = None
+    labels_multiannotator.columns.name = None
+    return labels_multiannotator
+
+
 def get_consensus_label(
     labels_multiannotator: pd.DataFrame or np.ndarray,
     pred_probs: np.ndarray = None,
