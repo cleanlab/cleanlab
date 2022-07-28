@@ -40,6 +40,8 @@ from cleanlab.internal.util import (
     append_extra_datapoint,
     train_val_split,
     get_num_classes,
+    is_torch_dataset,
+    is_tensorflow_dataset,
 )
 from cleanlab.internal.latent_algebra import (
     compute_inv_noise_matrix,
@@ -740,35 +742,47 @@ def estimate_confident_joint_and_cv_pred_proba(
     pred_probs = np.zeros(shape=(len(labels), num_classes))
 
     # Split X and labels into "cv_n_folds" stratified folds.
-    for k, (cv_train_idx, cv_holdout_idx) in enumerate(kf.split(X, labels)):
-        clf_copy = sklearn.base.clone(clf)
+    # CV indices only require labels: https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.StratifiedKFold.html
+    # Only split based on labels because X may have various formats:
+    for k, (cv_train_idx, cv_holdout_idx) in enumerate(kf.split(X=labels, y=labels)):
+        try:
+            clf_copy = sklearn.base.clone(clf)  # fresh untrained copy of the model
+        except Exception:
+            raise ValueError(
+                "`clf` must be clonable via: sklearn.base.clone(clf). "
+                "You can either implement instance method `clf.get_params()` to produce a fresh untrained copy of this model, "
+                "or you can implement the cross-validation outside of cleanlab "
+                "and pass in the obtained `pred_probs` to skip cleanlab's internal cross-validation"
+            )
 
         # Select the training and holdout cross-validated sets.
         X_train_cv, X_holdout_cv, s_train_cv, s_holdout_cv = train_val_split(
             X, labels, cv_train_idx, cv_holdout_idx
         )
 
-        # Ensure no missing classes in training set.
-        train_cv_classes = set(s_train_cv)
-        all_classes = set(range(num_classes))
         # dict with keys: which classes missing, values: index of holdout data from this class that is duplicated:
         missing_class_inds = {}
-        if len(train_cv_classes) != len(all_classes):
-            missing_classes = all_classes.difference(train_cv_classes)
-            warnings.warn(
-                "Duplicated some data across multiple folds to ensure training does not fail "
-                f"because these classes do not have enough data for proper cross-validation: {missing_classes}."
-            )
-            for missing_class in missing_classes:
-                # Duplicate one instance of missing_class from holdout data to the training data:
-                holdout_inds = np.where(s_holdout_cv == missing_class)[0]
-                dup_idx = holdout_inds[0]
-                s_train_cv = np.append(s_train_cv, s_holdout_cv[dup_idx])
-                # labels are always np.array so don't have to consider .iloc above
-                X_train_cv = append_extra_datapoint(
-                    to_data=X_train_cv, from_data=X_holdout_cv, index=dup_idx
+        is_tf_or_torch_dataset = is_torch_dataset(X) or is_tensorflow_dataset(X)
+        if not is_tf_or_torch_dataset:
+            # Ensure no missing classes in training set.
+            train_cv_classes = set(s_train_cv)
+            all_classes = set(range(num_classes))
+            if len(train_cv_classes) != len(all_classes):
+                missing_classes = all_classes.difference(train_cv_classes)
+                warnings.warn(
+                    "Duplicated some data across multiple folds to ensure training does not fail "
+                    f"because these classes do not have enough data for proper cross-validation: {missing_classes}."
                 )
-                missing_class_inds[missing_class] = dup_idx
+                for missing_class in missing_classes:
+                    # Duplicate one instance of missing_class from holdout data to the training data:
+                    holdout_inds = np.where(s_holdout_cv == missing_class)[0]
+                    dup_idx = holdout_inds[0]
+                    s_train_cv = np.append(s_train_cv, s_holdout_cv[dup_idx])
+                    # labels are always np.array so don't have to consider .iloc above
+                    X_train_cv = append_extra_datapoint(
+                        to_data=X_train_cv, from_data=X_holdout_cv, index=dup_idx
+                    )
+                    missing_class_inds[missing_class] = dup_idx
 
         # Map validation data into appropriate format to pass into classifier clf
         if validation_func is None:

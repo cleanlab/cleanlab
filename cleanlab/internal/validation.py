@@ -38,7 +38,17 @@ def assert_valid_inputs(
         y = labels_to_array(y)
         assert_valid_class_labels(y)
 
-    allow_empty_X = False if pred_probs is None else True
+    allow_empty_X = True
+    if pred_probs is None:
+        allow_empty_X = False
+    try:
+        import tensorflow
+
+        if isinstance(X, tensorflow.data.Dataset):
+            allow_empty_X = True  # length of X may differ due to batch-size used in tf Dataset, so don't check it
+    except Exception:
+        pass
+
     if not allow_empty_X:
         assert_nonempty_input(X)
         try:
@@ -120,16 +130,41 @@ def assert_indexing_works(
             length_X = 2  # pragma: no cover
 
         idx = [0, length_X - 1]
+
+    is_indexed = False
     try:
         if isinstance(X, (pd.DataFrame, pd.Series)):
             _ = X.iloc[idx]  # type: ignore[call-overload]
-        else:
+            is_indexed = True
+    except Exception:
+        pass
+    if not is_indexed:
+        try:  # check if X is pytorch Dataset object using lazy import
+            import torch
+
+            if isinstance(X, torch.utils.data.Dataset):  # special indexing for pytorch Dataset
+                _ = torch.utils.data.Subset(X, idx)  # type: ignore[call-overload]
+                is_indexed = True
+        except Exception:
+            pass
+    if not is_indexed:
+        try:  # check if X is tensorflow Dataset object using lazy import
+            import tensorflow as tf
+
+            if isinstance(X, tf.data.Dataset):
+                is_indexed = True  # skip check for tensorflow Dataset (too compute-intensive)
+        except Exception:
+            pass
+    if not is_indexed:
+        try:
             _ = X[idx]  # type: ignore[call-overload]
-    except:
-        msg = "Data features X must support list-based indexing; i.e. one of these must work: \n"
-        msg += "1)  X[index_list] where say index_list = [0,1,3,10], or \n"
-        msg += "2)  X.iloc[index_list] if X is pandas DataFrame."
-        raise TypeError(msg)
+        except Exception:
+            msg = (
+                "Data features X must support list-based indexing; i.e. one of these must work: \n"
+            )
+            msg += "1)  X[index_list] where say index_list = [0,1,3,10], or \n"
+            msg += "2)  X.iloc[index_list] if X is pandas DataFrame."
+            raise TypeError(msg)
 
 
 def labels_to_array(y: Union[LabelLike, np.generic]) -> np.ndarray:

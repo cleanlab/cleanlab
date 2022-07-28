@@ -27,6 +27,11 @@ jobs:
           python-version: ${{ matrix.python }}
       - name: Install development dependencies
         run: pip install -r requirements-dev.txt
+      - name: Overwrite tensorflow version on Windows
+        if: matrix.os == 'windows-latest'
+        run: |
+          pip uninstall -y tensorflow
+          pip install tensorflow-cpu
       - name: Install cleanlab
         run: pip install -e .
       - name: Test with coverage

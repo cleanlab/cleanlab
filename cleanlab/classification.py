@@ -285,31 +285,39 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
 
         Parameters
         ----------
-        X : np.array or pd.DataFrame
+        X : np.ndarray or DatasetLike
           Data features (i.e. training inputs for ML), typically an array of shape ``(N, ...)``,
-          where N is the number of examples. Sparse matrices are supported.
-          If not an array or DataFrame, then ``X`` must support list-based indexing:
+          where N is the number of examples.
+          Supported `DatasetLike` types beyond ``np.ndarray`` include:
+          ``pd.DataFrame``, ``scipy.sparse.csr_matrix``, ``torch.utils.data.Dataset``, ``tensorflow.data.Dataset``,
+          or any dataset object ``X`` that supports list-based indexing:
           ``X[index_list]`` to select a subset of training examples.
           The classifier that this instance was initialized with,
-          ``clf``, must be able to fit() and predict() data with this format.
+          ``clf``, must be able to fit() and predict() data of this format.
 
-        labels : np.array or pd.Series
+          Note
+          ----
+          If providing `X` as a ``tensorflow.data.Dataset``,
+          make sure ``shuffle()`` has been called before ``batch()`` (if shuffling)
+          and no other order-destroying operation (eg. ``repeat()``) has been applied.
+
+        labels : array_like
           An array of shape ``(N,)`` of noisy labels, i.e. some labels may be erroneous.
           Elements must be in the set 0, 1, ..., K-1, where K is the number of classes.
+          Supported `array_like` types include: ``np.ndarray``, ``pd.Series``, or ``list``.
 
-        pred_probs : np.array, optional
+        pred_probs : np.ndarray, optional
           An array of shape ``(N, K)`` of model-predicted probabilities,
           ``P(label=k|x)``. Each row of this matrix corresponds
           to an example `x` and contains the model-predicted probabilities that
           `x` belongs to each possible class, for each of the K classes. The
-          columns must be ordered such that these probabilities correspond to
-          class 0, 1, ..., K-1. `pred_probs` should have been computed using 3 (or
-          higher) fold cross-validation.
+          columns must be ordered such that these probabilities correspond to class 0, 1, ..., K-1.
+          `pred_probs` should be :ref:`out-of-sample, eg. computed via cross-validation <pred_probs_cross_val>`.
 
           Note
           ----
           If you are not sure, leave ``pred_probs=None`` (the default) and it
-          will be computed for you using cross-validation with the model.
+          will be computed for you using cross-validation with the provided model.
 
         thresholds : array_like, optional
           An array of shape ``(K, 1)`` or ``(K,)`` of per-class threshold
@@ -324,27 +332,27 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
           k. This is not used for pruning/filtering, only for estimating the
           noise rates using confident counts.
 
-        noise_matrix : np.array, optional
+        noise_matrix : np.ndarray, optional
           An array of shape ``(K, K)`` representing the conditional probability
           matrix ``P(label=k_s | true label=k_y)``, the
           fraction of examples in every class, labeled as every other class.
           Assumes columns of `noise_matrix` sum to 1.
 
-        inverse_noise_matrix : np.array, optional
+        inverse_noise_matrix : np.ndarray, optional
           An array of shape ``(K, K)`` representing the conditional probability
           matrix ``P(true label=k_y | label=k_s)``,
           the estimated fraction observed examples in each class ``k_s``
           that are mislabeled examples from every other class ``k_y``,
           Assumes columns of `inverse_noise_matrix` sum to 1.
 
-        label_issues : pd.DataFrame or np.array, optional
+        label_issues : pd.DataFrame or np.ndarray, optional
           Specifies the label issues for each example in dataset.
           If ``pd.DataFrame``, must be formatted as the one returned by:
           :py:meth:`CleanLearning.find_label_issues
           <cleanlab.classification.CleanLearning.find_label_issues>` or
           :py:meth:`CleanLearning.get_label_issues
           <cleanlab.classification.CleanLearning.get_label_issues>`.
-          If ``np.array``, must contain either boolean `label_issues_mask` as output by:
+          If ``np.ndarray``, must contain either boolean `label_issues_mask` as output by:
           default :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>`,
           or integer indices as output by
           :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>`
@@ -356,10 +364,11 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
 
           Caution: If you provide `label_issues` without having previously called
           :py:meth:`self.find_label_issues<cleanlab.classification.CleanLearning.find_label_issues>`,
-          e.g. as a ``np.array``, then some functionality like training with sample weights may be disabled.
+          e.g. as a ``np.ndarray``, then some functionality like training with sample weights may be disabled.
 
-        sample_weight : array-like of shape (N,), optional
-          Array of weights that are assigned to individual samples.
+        sample_weight : array_like, optional
+          Array of weights with shape ``(N,)`` that are assigned to individual samples,
+          assuming total number of examples in dataset is `N`.
           If not provided, samples may still be weighted by the estimated noise in the class they are labeled as.
 
         clf_kwargs : dict, optional
@@ -375,36 +384,42 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
 
         validation_func : callable, optional
           Optional callable function that takes two arguments, `X_val`, `y_val`, and returns a dict
-          of keyword arguments passed into to `clf.fit()` which may be functions of the validation
+          of keyword arguments passed into to ``clf.fit()`` which may be functions of the validation
           data in each cross-validation fold. Specifies how to map the validation data split in each
-          cross-validation fold into the appropriate format to pass into `clf`'s ``fit()`` method.
-          e.g. if your model's ``fit()`` method is call using `clf.fit(X, y, X_validation, y_validation)`,
-          then you could set `validation_func = f` where
-          `def f(X_val, y_val): return {"X_validation": X_val, "y_validation": y_val}`
+          cross-validation fold into the appropriate format to pass into `clf`'s ``fit()`` method, assuming
+          ``clf.fit()`` can utilize validation data if it is appropriately passed in (eg. for early-stopping).
+          Eg. if your model's ``fit()`` method is called using ``clf.fit(X, y, X_validation, y_validation)``,
+          then you could set ``validation_func = f`` where
+          ``def f(X_val, y_val): return {"X_validation": X_val, "y_validation": y_val}``
 
           Note that `validation_func` will be ignored in the final call to `clf.fit()` on the
           cleaned subset of the data. This argument is only for allowing `clf` to access the
           validation data in each cross-validation fold (eg. for early-stopping or hyperparameter-selection
-          purposes). If you want to pass in validation data even in the final training of `clf.fit()`
+          purposes). If you want to pass in validation data even in the final training call to ``clf.fit()``
           on the cleaned data subset, you should explicitly pass in that data yourself
           (eg. via `clf_final_kwargs` or `clf_kwargs`).
 
-        y: np.array or pd.Series, optional
-          Alternative argument that can be specified instead of `labels`. Specifying `y` has the same effect as specifying `labels`, and is offered as an alternative for compatibility with sklearn.
+        y: array_like, optional
+          Alternative argument that can be specified instead of `labels`.
+          Specifying `y` has the same effect as specifying `labels`,
+          and is offered as an alternative for compatibility with sklearn.
 
         Returns
         -------
-        CleanLearning
-          ``self`` - Fitted estimator that has all the same methods as any sklearn estimator.
+        self : CleanLearning
+          Fitted estimator that has all the same methods as any sklearn estimator.
 
 
-          After calling ``self.fit()``, this estimator also stores a few extra useful attributes, in particular
-          `self.label_issues_df`: a ``pd.DataFrame`` accessible via
+          After calling ``self.fit()``, this estimator also stores extra attributes such as:
+
+          * *self.label_issues_df*: a ``pd.DataFrame`` accessible via
           :py:meth:`get_label_issues
           <cleanlab.classification.CleanLearning.get_label_issues>`
           of similar format as the one returned by: :py:meth:`CleanLearning.find_label_issues<cleanlab.classification.CleanLearning.find_label_issues>`.
           See documentation of :py:meth:`CleanLearning.find_label_issues<cleanlab.classification.CleanLearning.find_label_issues>`
           for column descriptions.
+
+
           After calling ``self.fit()``, `self.label_issues_df` may also contain an extra column:
 
           * *sample_weight*: Numeric values that were used to weight examples during
@@ -418,6 +433,13 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
             In other words, examples with label issues were removed, so this weights the data proportionally
             so that the classifier trains as if it had all the true labels,
             not just the subset of cleaned data left after pruning out the label issues.
+
+        Note
+        ----
+        If ``CleanLearning.fit()`` does not work for your data/model, you can run the same procedure yourself:
+        * Utilize :ref:`cross-validation <pred_probs_cross_val>` to get out-of-sample `pred_probs` for each example.
+        * Call :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` with `pred_probs`.
+        * Filter the examples with detected issues and train your model on the remaining data.
         """
 
         if labels is not None and y is not None:
@@ -566,7 +588,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
 
         Parameters
         ----------
-        X : np.array
+        X : np.ndarray
           An array of shape ``(N, ...)`` of test data."""
 
         return self.clf.predict(*args, **kwargs)
@@ -577,7 +599,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
 
         Parameters
         ----------
-        X : np.array
+        X : np.ndarray
           An array of shape ``(N, ...)`` of test data."""
 
         return self.clf.predict_proba(*args, **kwargs)
@@ -588,13 +610,13 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
 
         Parameters
         ----------
-        X : np.array
+        X : np.ndarray
           An array of shape ``(N, ...)`` of test data.
 
-        y : np.array
+        y : np.ndarray
           An array of shape ``(N,)`` or ``(N, 1)`` of test labels.
 
-        sample_weight : np.array, optional
+        sample_weight : np.ndarray, optional
           An array of shape ``(N,)`` or ``(N, 1)`` used to weight each example when computing the score."""
 
         if hasattr(self.clf, "score"):

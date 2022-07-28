@@ -159,7 +159,7 @@ def value_counts(x):
         e.g. ["dog","dog","cat"] or [1,2,0,1,1,0,2]"""
     try:
         return x.value_counts()
-    except:
+    except Exception:
         if type(x[0]) is int and (np.array(x) >= 0).all():
             return np.bincount(x)
         else:
@@ -402,7 +402,7 @@ def compress_int_array(int_array, num_possible_values):
         if compressed_type is not None:
             int_array = int_array.astype(compressed_type)
         return int_array
-    except:  # int_array may not even be numpy array, keep as is then
+    except Exception:  # int_array may not even be numpy array, keep as is then
         return int_array
 
 
@@ -412,10 +412,39 @@ def train_val_split(X, labels, train_idx, holdout_idx):
         labels[train_idx],
         labels[holdout_idx],
     )  # labels are always np.array
+    split_completed = False
     if isinstance(X, (pd.DataFrame, pd.Series)):
         X_train, X_holdout = X.iloc[train_idx], X.iloc[holdout_idx]
-    else:
-        X_train, X_holdout = X[train_idx], X[holdout_idx]
+        split_completed = True
+    if not split_completed:
+        try:  # check if X is pytorch Dataset object using lazy import
+            import torch
+
+            if isinstance(X, torch.utils.data.Dataset):  # special splitting for pytorch Dataset
+                X_train = torch.utils.data.Subset(X, train_idx)
+                X_holdout = torch.utils.data.Subset(X, holdout_idx)
+                split_completed = True
+        except Exception:
+            pass
+    if not split_completed:
+        try:  # check if X is tensorflow Dataset object using lazy import
+            import tensorflow
+
+            if isinstance(X, tensorflow.data.Dataset):  # special splitting for tensorflow Dataset
+                X_train = extract_indices_tf(X, train_idx, allow_shuffle=True)
+                X_holdout = extract_indices_tf(X, holdout_idx, allow_shuffle=False)
+                split_completed = True
+        except Exception:
+            pass
+    if not split_completed:
+        try:
+            X_train, X_holdout = X[train_idx], X[holdout_idx]
+        except Exception:
+            raise ValueError(
+                "Cleanlab cannot split this form of dataset (required for cross-validation). "
+                "Try a different data format, "
+                "or implement the cross-validation yourself and instead provide out-of-sample `pred_probs`"
+            )
 
     return X_train, X_holdout, labels_train, labels_holdout
 
@@ -423,10 +452,7 @@ def train_val_split(X, labels, train_idx, holdout_idx):
 def subset_X_y(X, labels, mask):
     """Extracts subset of features/labels where mask is True"""
     labels = subset_labels(labels, mask)
-    try:
-        X = X[mask]
-    except:
-        raise TypeError("Data features X must be subsettable with boolean mask: X[mask]")
+    X = subset_data(X, mask)
     return X, labels
 
 
@@ -434,11 +460,151 @@ def subset_labels(labels, mask):
     """Extracts subset of labels where mask is True"""
     try:  # filtering labels as if it is array or DataFrame
         return labels[mask]
-    except:
+    except Exception:
         try:  # filtering labels as if it is list
             return [l for idx, l in enumerate(labels) if mask[idx]]
-        except:
+        except Exception:
             raise TypeError("labels must be 1D np.array, list, or pd.Series.")
+
+
+def subset_data(X, mask):
+    """Extracts subset of data examples where mask (np.array) is True"""
+    try:
+        import torch
+
+        if isinstance(X, torch.utils.data.Dataset):
+            mask_idx = np.nonzero(mask)[0]
+            return torch.utils.data.Subset(X, mask_idx)
+    except Exception:
+        pass
+    try:
+        import tensorflow
+
+        if isinstance(X, tensorflow.data.Dataset):  # special splitting for tensorflow Dataset
+            mask_idx = np.nonzero(mask)[0]
+            return extract_indices_tf(X, mask_idx, allow_shuffle=True)
+    except Exception:
+        pass
+    try:
+        return X[mask]
+    except Exception:
+        raise TypeError("Data features X must be subsettable with boolean mask array: X[mask]")
+
+
+def extract_indices_tf(X, idx, allow_shuffle):
+    """Extracts subset of tensorflow dataset corresponding to examples at particular indices.
+
+    Args:
+      X : ``tensorflow.data.Dataset``
+
+      idx : array_like of integer indices corresponding to examples to keep in the dataset.
+        Returns subset of examples in the dataset X that correspond to these indices.
+
+      allow_shuffle : bool
+        Whether or not shuffling of this data is allowed (eg. must turn off shuffling for validation data).
+
+    Note: this code only works on Datasets in which:
+    * ``shuffle()`` has been called before ``batch()``,
+    * no other order-destroying operation (eg. ``repeat()``) has been applied.
+
+    Indices are extracted from the original version of Dataset (before shuffle was called rather than in shuffled order).
+    """
+    import tensorflow
+
+    idx = np.asarray(idx)
+    idx = np.int64(idx)  # needed for Windows (reconsider if necessary in the future)
+
+    og_batch_size = None
+    if hasattr(X, "_batch_size"):
+        og_batch_size = int(X._batch_size)
+        X = X.unbatch()
+
+    unshuffled_X, buffer_size = unshuffle_tensorflow_dataset(X)
+    if unshuffled_X is not None:
+        X = unshuffled_X
+
+    # Create index,value pairs in the dataset (adds extra indices that werent there before)
+    X = X.enumerate()
+    keys_tensor = tensorflow.constant(idx)
+    vals_tensor = tensorflow.ones_like(keys_tensor)  # Ones will be casted to True
+    table = tensorflow.lookup.StaticHashTable(
+        tensorflow.lookup.KeyValueTensorInitializer(keys_tensor, vals_tensor), default_value=0
+    )  # If index not in table, return 0
+
+    def hash_table_filter(index, value):
+        table_value = table.lookup(index)  # 1 if index in arr, else 0
+        index_in_arr = tensorflow.cast(table_value, tensorflow.bool)  # 1 -> True, 0 -> False
+        return index_in_arr
+
+    # Filter the dataset, then drop the added indices
+    X_subset = X.filter(hash_table_filter).map(lambda idx, value: value)
+
+    if (unshuffled_X is not None) and allow_shuffle:
+        X_subset = X_subset.shuffle(buffer_size=buffer_size)
+
+    if og_batch_size is not None:  # reset batch size to original value
+        X_subset = X_subset.batch(og_batch_size)
+
+    return X_subset
+
+
+def unshuffle_tensorflow_dataset(X):
+    """Applies iterative inverse transformations to dataset to get version before ShuffleDataset was created.
+    If no ShuffleDataset is in the transformation-history of this dataset, returns None.
+
+    Parameters
+    ----------
+    X : a tensorflow Dataset that may have been created via series of transformations, one being shuffle.
+
+    Returns
+    -------
+    Tuple (pre_X, buffer_size) where:
+      pre_X : Dataset that was previously transformed to get ShuffleDataset (or None),
+      buffer_size : int `buffer_size` previously used in ShuffleDataset,
+        or ``len(pre_X)`` if buffer_size cannot be determined, or None if no ShuffleDataset found.
+    """
+    try:
+        import tensorflow
+        from tensorflow.python.data.ops.dataset_ops import ShuffleDataset
+
+        X_inputs = [X]
+        while len(X_inputs) == 1:
+            pre_X = X_inputs[0]
+            if isinstance(pre_X, ShuffleDataset):
+                buffer_size = len(pre_X)
+                if hasattr(pre_X, "_buffer_size"):
+                    buffer_size = pre_X._buffer_size.numpy()
+                X_inputs = (
+                    pre_X._inputs()
+                )  # get the dataset that was transformed to create the ShuffleDataset
+                if len(X_inputs) == 1:
+                    return (X_inputs[0], buffer_size)
+            X_inputs = pre_X._inputs()  # returns list of input datasets used to create X
+    except Exception:
+        pass
+    return (None, None)
+
+
+def is_torch_dataset(X):
+    try:
+        import torch
+
+        if isinstance(X, torch.utils.data.Dataset):
+            return True
+    except Exception:
+        pass
+    return False  # assumes this cannot be torch dataset if torch cannot be imported
+
+
+def is_tensorflow_dataset(X):
+    try:
+        import tensorflow
+
+        if isinstance(X, tensorflow.data.Dataset):
+            return True
+    except Exception:
+        pass
+    return False  # assumes this cannot be tensorflow dataset if tensorflow cannot be imported
 
 
 def csr_vstack(a, b):
@@ -461,22 +627,20 @@ def append_extra_datapoint(to_data, from_data, index):
         raise ValueError("Cannot append datapoint from different type of data object.")
 
     if isinstance(to_data, np.ndarray):
-        to_data = np.vstack([to_data, from_data[index]])
+        return np.vstack([to_data, from_data[index]])
     elif isinstance(from_data, (pd.DataFrame, pd.Series)):
         X_extra = from_data.iloc[[index]]
         to_data = pd.concat([to_data, X_extra])
-        to_data.reset_index(inplace=True, drop=True)
+        return to_data.reset_index(drop=True)
     else:
         try:
             X_extra = from_data[index]
             try:
-                to_data = to_data.append(X_extra)
-            except:  # special append for sparse matrix
-                to_data = csr_vstack(to_data, X_extra)
-        except:
+                return to_data.append(X_extra)
+            except Exception:  # special append for sparse matrix
+                return csr_vstack(to_data, X_extra)
+        except Exception:
             raise TypeError("Data features X must support: X.append(X[i])")
-
-    return to_data
 
 
 def get_num_classes(labels=None, pred_probs=None, label_matrix=None, multi_label=None):
@@ -520,5 +684,5 @@ def smart_display_dataframe(df):  # pragma: no cover
         from IPython.display import display
 
         display(df)
-    except:
+    except Exception:
         print(df)
