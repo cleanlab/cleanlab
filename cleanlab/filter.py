@@ -55,14 +55,14 @@ def find_label_issues(
     labels,
     pred_probs,
     *,
-    confident_joint=None,
-    filter_by="prune_by_noise_rate",
     return_indices_ranked_by=None,
     rank_by_kwargs={},
-    multi_label=False,
+    filter_by="prune_by_noise_rate",
     frac_noise=1.0,
     num_to_remove_per_class=None,
     min_examples_per_class=1,
+    multi_label=False,
+    confident_joint=None,
     n_jobs=None,
     verbose=False,
 ):
@@ -72,9 +72,10 @@ def find_label_issues(
     Returns a boolean mask for the entire dataset where ``True`` represents
     a label issue and ``False`` represents an example that is confidently/accurately labeled.
 
-    Instead of a mask, you can obtain *indices* of the label issues in your
-    dataset by setting `return_indices_ranked_by` to specify the label quality
-    score used to order the label issues.
+    Instead of a mask, you can obtain indices of the label issues in your dataset
+    (sorted by their severity) by specifying the `return_indices_ranked_by` argument.
+    This determines which label quality score is used to quantify severity,
+    and is useful to view only the top-`J` most severe issues in your dataset.
 
     The number of indices returned is controlled by `frac_noise`: reduce its
     value to identify fewer label issues. If you aren't sure, leave this set to 1.0.
@@ -107,27 +108,10 @@ def find_label_issues(
       Alternatively it is ok if your model was trained on a separate dataset and you are only evaluating
       data that was previously held-out.
 
-    confident_joint : np.array, optional
-      An array of shape ``(K, K)`` representing the confident joint, the matrix used for identifying label issues, which
-      estimates a confident subset of the joint distribution of the noisy and true labels, ``P_{noisy label, true label}``.
-      Entry ``(j, k)`` in the matrix is the number of examples confidently counted into the pair of ``(noisy label=j, true label=k)`` classes.
-      The `confident_joint` can be computed using :py:func:`count.compute_confident_joint <cleanlab.count.compute_confident_joint>`.
-      If not provided, it is computed from the given (noisy) `labels` and `pred_probs`.
-
-    filter_by : {'prune_by_class', 'prune_by_noise_rate', 'both', 'confident_learning', 'predicted_neq_given'}, default='prune_by_noise_rate'
-
-      Method used for filtering/pruning out the label issues:
-
-      - ``'prune_by_noise_rate'``: works by removing examples with *high probability* of being mislabeled for every non-diagonal in the confident joint (see `prune_counts_matrix` in `filter.py`). These are the examples where (with high confidence) the given label is unlikely to match the predicted label for the example.
-      - ``'prune_by_class'``: works by removing the examples with *smallest probability* of belonging to their given class label for every class.
-      - ``'both'``: Removes only the examples that would be filtered by both ``'prune_by_noise_rate'`` and ``'prune_by_class'``.
-      - ``'confident_learning'``: Returns the examples in the off-diagonals of the confident joint. These are the examples that are confidently predicted to be a different label than their given label.
-      - ``'predicted_neq_given'``: Find examples where the predicted class (i.e. argmax of the predicted probabilities) does not match the given label.
-
     return_indices_ranked_by : {None, 'self_confidence', 'normalized_margin', 'confidence_weighted_entropy'}, default=None
-      If ``None``, returns a boolean mask (``True`` if example at index is label error).
-      If not ``None``, returns an array of the label error indices
-      (instead of a boolean mask) where error indices are ordered:
+      If ``None``, this function returns a boolean mask (``True`` if example at index is label error).
+      If not ``None``, this function returns a sorted array of indices of examples with label issues
+      (instead of a boolean mask). Indices are sorted by label quality score which can be one of:
 
       - ``'normalized_margin'``: ``normalized margin (p(label = k) - max(p(label != k)))``
       - ``'self_confidence'``: ``[pred_probs[i][labels[i]] for i in label_issues_idx]``
@@ -138,11 +122,14 @@ def find_label_issues(
       label quality score (see :py:func:`rank.get_label_quality_scores
       <cleanlab.rank.get_label_quality_scores>`).
 
-    multi_label : bool, optional
-      If ``True``, labels should be an iterable (e.g. list) of iterables, containing a
-      list of labels for each example, instead of just a single label.
-      The multi-label setting supports classification tasks where an example has 1 or more labels.
-      Example of a multi-labeled `labels` input: ``[[0,1], [1], [0,2], [0,1,2], [0], [1], ...]``.
+    filter_by : {'prune_by_class', 'prune_by_noise_rate', 'both', 'confident_learning', 'predicted_neq_given'}, default='prune_by_noise_rate'
+      Method to determine which examples are flagged as having label issue, so you can filter/prune them from the dataset. Options:
+
+      - ``'prune_by_noise_rate'``: filters examples with *high probability* of being mislabeled for every non-diagonal in the confident joint (see `prune_counts_matrix` in `filter.py`). These are the examples where (with high confidence) the given label is unlikely to match the predicted label for the example.
+      - ``'prune_by_class'``: filters the examples with *smallest probability* of belonging to their given class label for every class.
+      - ``'both'``: filters only those examples that would be filtered by both ``'prune_by_noise_rate'`` and ``'prune_by_class'``.
+      - ``'confident_learning'``: filters the examples counted as part of the off-diagonals of the confident joint. These are the examples that are confidently predicted to be a different label than their given label.
+      - ``'predicted_neq_given'``: filters examples for which the predicted class (i.e. argmax of the predicted probabilities) does not match the given label.
 
     frac_noise : float, default=1.0
       Used to only return the "top" ``frac_noise * num_label_issues``. The choice of which "top"
@@ -174,6 +161,19 @@ def find_label_issues(
       Minimum number of examples per class to avoid flagging as label issues.
       This is useful to avoid deleting too much data from one class
       when pruning noisy examples in datasets with rare classes.
+
+    multi_label : bool, optional
+      If ``True``, labels should be an iterable (e.g. list) of iterables, containing a
+      list of labels for each example, instead of just a single label.
+      The multi-label setting supports classification tasks where an example has 1 or more labels.
+      Example of a multi-labeled `labels` input: ``[[0,1], [1], [0,2], [0,1,2], [0], [1], ...]``.
+
+    confident_joint : np.array, optional
+      An array of shape ``(K, K)`` representing the confident joint, the matrix used for identifying label issues, which
+      estimates a confident subset of the joint distribution of the noisy and true labels, ``P_{noisy label, true label}``.
+      Entry ``(j, k)`` in the matrix is the number of examples confidently counted into the pair of ``(noisy label=j, true label=k)`` classes.
+      The `confident_joint` can be computed using :py:func:`count.compute_confident_joint <cleanlab.count.compute_confident_joint>`.
+      If not provided, it is computed from the given (noisy) `labels` and `pred_probs`.
 
     n_jobs : optional
       Number of processing threads used by multiprocessing. Default ``None``
