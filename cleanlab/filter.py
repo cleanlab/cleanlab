@@ -58,10 +58,10 @@ def find_label_issues(
     return_indices_ranked_by=None,
     rank_by_kwargs={},
     filter_by="prune_by_noise_rate",
+    multi_label=False,
     frac_noise=1.0,
     num_to_remove_per_class=None,
     min_examples_per_class=1,
-    multi_label=False,
     confident_joint=None,
     n_jobs=None,
     verbose=False,
@@ -132,6 +132,12 @@ def find_label_issues(
       - ``'confident_learning'``: filters the examples counted as part of the off-diagonals of the confident joint. These are the examples that are confidently predicted to be a different label than their given label.
       - ``'predicted_neq_given'``: filters examples for which the predicted class (i.e. argmax of the predicted probabilities) does not match the given label.
 
+    multi_label : bool, optional
+      If ``True``, labels should be an iterable (e.g. list) of iterables, containing a
+      list of labels for each example, instead of just a single label.
+      The multi-label setting supports classification tasks where an example has 1 or more labels.
+      Example of a multi-labeled `labels` input: ``[[0,1], [1], [0,2], [0,1,2], [0], [1], ...]``.
+
     frac_noise : float, default=1.0
       Used to only return the "top" ``frac_noise * num_label_issues``. The choice of which "top"
       label issues to return is dependent on the `filter_by` method used. It works by reducing the
@@ -162,12 +168,6 @@ def find_label_issues(
       Minimum number of examples per class to avoid flagging as label issues.
       This is useful to avoid deleting too much data from one class
       when pruning noisy examples in datasets with rare classes.
-
-    multi_label : bool, optional
-      If ``True``, labels should be an iterable (e.g. list) of iterables, containing a
-      list of labels for each example, instead of just a single label.
-      The multi-label setting supports classification tasks where an example has 1 or more labels.
-      Example of a multi-labeled `labels` input: ``[[0,1], [1], [0,2], [0,1,2], [0], [1], ...]``.
 
     confident_joint : np.array, optional
       An array of shape ``(K, K)`` representing the confident joint, the matrix used for identifying label issues, which
