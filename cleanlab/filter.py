@@ -109,6 +109,7 @@ def find_label_issues(
       data that was previously held-out.
 
     return_indices_ranked_by : {None, 'self_confidence', 'normalized_margin', 'confidence_weighted_entropy'}, default=None
+      Determines what is returned by this method: either a boolean mask or list of indices np.ndarray.
       If ``None``, this function returns a boolean mask (``True`` if example at index is label error).
       If not ``None``, this function returns a sorted array of indices of examples with label issues
       (instead of a boolean mask). Indices are sorted by label quality score which can be one of:
