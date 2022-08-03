@@ -67,17 +67,17 @@ def find_label_issues(
     verbose=False,
 ):
     """
-    Identifies potential label issues in the dataset using confident learning.
+    Identifies potentially bad labels in a dataset (with `N` examples) using confident learning.
 
     Returns a boolean mask for the entire dataset where ``True`` represents
-    a label issue and ``False`` represents an example that is confidently/accurately labeled.
+    an example identified with a label issue and ``False`` represents an example that is confidently/accurately labeled.
 
     Instead of a mask, you can obtain indices of the label issues in your dataset
     (sorted by their severity) by specifying the `return_indices_ranked_by` argument.
     This determines which label quality score is used to quantify severity,
     and is useful to view only the top-`J` most severe issues in your dataset.
 
-    The number of indices returned is controlled by `frac_noise`: reduce its
+    The number of indices returned as issues is controlled by `frac_noise`: reduce its
     value to identify fewer label issues. If you aren't sure, leave this set to 1.0.
 
     Tip: if you encounter the error "pred_probs is not defined", try setting
@@ -86,7 +86,7 @@ def find_label_issues(
     Parameters
     ----------
     labels : np.array
-      A discrete vector of noisy labels, i.e. some labels may be erroneous.
+      A discrete (length `N`) vector of noisy labels, i.e. some labels may be erroneous.
       *Format requirements*: for dataset with K classes, labels must be in 0, 1, ..., K-1.
       All the classes (0, 1, ..., and K-1) MUST be present in ``labels``, such that:
       ``len(set(labels)) == pred_probs.shape[1]`` for standard multi-class classification with single-labeled data (e.g. ``labels =  [1,0,2,1,1,0...]``).
