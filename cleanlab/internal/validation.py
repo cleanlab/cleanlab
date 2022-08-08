@@ -107,12 +107,12 @@ def assert_valid_class_labels(
     if y.ndim != 1:
         raise ValueError("labels must be 1D numpy array.")
 
-    unique_classes = np.unique(y)
-    if len(unique_classes) < 2:
-        raise ValueError("Labels must contain at least 2 classes.")
-
-    # TODO: remove allow_missing_classes check once supported
+    # TODO: can remove this clause once missing classes are supported
     if not allow_missing_classes:
+        unique_classes = np.unique(y)
+        if len(unique_classes) < 2:
+            raise ValueError("Labels must contain at least 2 classes.")
+
         if (unique_classes != np.arange(len(unique_classes))).any():
             msg = "cleanlab requires zero-indexed integer labels (0,1,2,..,K-1), but in "
             msg += "your case: np.unique(labels) = {}. ".format(str(unique_classes))
