@@ -30,6 +30,7 @@ def assert_valid_inputs(
     y: LabelLike,
     pred_probs: Optional[np.ndarray] = None,
     multi_label: bool = False,
+    allow_missing_classes: bool = False,
 ) -> None:
     """Checks that X, labels, and pred_probs are correctly formatted"""
     if not isinstance(y, (list, np.ndarray, np.generic, pd.Series, pd.DataFrame)):
@@ -84,7 +85,8 @@ def assert_valid_inputs(
             raise ValueError("Values in pred_probs must be between 0 and 1.")
         if X is not None:
             warnings.warn("When X and pred_probs are both provided, former may be ignored.")
-        if not multi_label:  # TODO: can remove this clause once missing classes are supported
+        # TODO: can remove this clause once missing classes are supported
+        if not allow_missing_classes and not multi_label:
             num_unique_labels = len(np.unique(y))
             if num_unique_labels != pred_probs.shape[1]:
                 raise ValueError(
