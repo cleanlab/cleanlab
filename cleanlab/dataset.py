@@ -102,6 +102,22 @@ def rank_classes_by_label_quality(
     return df.sort_values(by="Label Quality Score", ascending=True).reset_index(drop=True)
 
 
+def _get_worst_class(labels, pred_probs):
+    """Returns the class with the lowest *Label Quality Score*, i.e. the most problematic class.
+    If all classes have a Label Quality Score of 1.0 (all classes have no issues), this function will return NaN.
+    **Parameters**: For parameter info, see the docstring of :py:func:`find_overlapping_classes <cleanlab.dataset.find_overlapping_classes>`.
+    Returns
+    -------
+    int
+        The index representing the class with the lowest *Label Quality Score*, returns NaN if
+        all classes do not have issues.
+    """
+    ranked_noisy_classes = rank_classes_by_label_quality(labels, pred_probs).query(
+        "`Label Quality Score` < 1.0"
+    )
+    return ranked_noisy_classes["Class Index"][0] if len(ranked_noisy_classes) > 0 else np.nan
+
+
 def find_overlapping_classes(
     labels=None,
     pred_probs=None,
