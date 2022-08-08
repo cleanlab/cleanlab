@@ -25,6 +25,7 @@ import numpy as np
 import pandas as pd
 
 
+# TODO: remove allow_missing_classes once supported
 def assert_valid_inputs(
     X: DatasetLike,
     y: LabelLike,
@@ -37,7 +38,7 @@ def assert_valid_inputs(
         raise TypeError("labels should be a numpy array or pandas Series.")
     if not multi_label:
         y = labels_to_array(y)
-        assert_valid_class_labels(y)
+        assert_valid_class_labels(y=y, allow_missing_classes=allow_missing_classes)
 
     allow_empty_X = True
     if pred_probs is None:
@@ -96,7 +97,10 @@ def assert_valid_inputs(
                 )
 
 
-def assert_valid_class_labels(y: np.ndarray) -> None:
+def assert_valid_class_labels(
+    y: np.ndarray,
+    allow_missing_classes: bool = False,
+) -> None:
     """Check that labels is zero-indexed (first label is 0) and all classes present.
     Assumes labels is 1D numpy array (not multi-label).
     """
@@ -107,11 +111,13 @@ def assert_valid_class_labels(y: np.ndarray) -> None:
     if len(unique_classes) < 2:
         raise ValueError("Labels must contain at least 2 classes.")
 
-    if (unique_classes != np.arange(len(unique_classes))).any():
-        msg = "cleanlab requires zero-indexed integer labels (0,1,2,..,K-1), but in "
-        msg += "your case: np.unique(labels) = {}. ".format(str(unique_classes))
-        msg += "Every class in (0,1,2,..,K-1) must be present in labels as well."
-        raise TypeError(msg)
+    # TODO: remove allow_missing_classes check once supported
+    if not allow_missing_classes:
+        if (unique_classes != np.arange(len(unique_classes))).any():
+            msg = "cleanlab requires zero-indexed integer labels (0,1,2,..,K-1), but in "
+            msg += "your case: np.unique(labels) = {}. ".format(str(unique_classes))
+            msg += "Every class in (0,1,2,..,K-1) must be present in labels as well."
+            raise TypeError(msg)
 
 
 def assert_nonempty_input(X: Any) -> None:
