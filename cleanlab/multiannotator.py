@@ -183,7 +183,25 @@ def _get_annotator_agreement(
 def _get_annotator_agreement_with_annotators(
     labels_multiannotator: pd.DataFrame,
     num_annotations: np.ndarray,
-):
+) -> np.ndarray:
+    """Returns the average agreement of each annotators with other annotatos that label the same examples.
+
+    Parameters
+    ----------
+    labels_multiannotator : pd.DataFrame
+        2D pandas DataFrame of multiple given labels for each example with shape (N, M),
+        where N is the number of examples and M is the number of annotators.
+        For more details, labels in the same format expected by the :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>`.
+    consensus_label : np.ndarray
+        An array of shape ``(N,)`` with the consensus labels aggregated from all annotators.
+
+    Returns
+    -------
+    annotator_agreement : np.ndarray
+        An array of shape ``(M,)`` where M is the number of annotators, with the agreement of each annotator with other
+        annotators that labeled the same examples.
+    """
+
     def get_single_annotator_agreement(
         labels_multiannotator: pd.DataFrame,
         num_annotations: np.ndarray,
@@ -210,18 +228,45 @@ def _get_annotator_agreement_with_annotators(
 def _get_post_pred_probs(
     labels_multiannotator: pd.DataFrame,
     consensus_label: np.ndarray,
-    pred_probs: np.ndarray,
+    prior_pred_probs: np.ndarray,
     num_annotations: np.ndarray,
     annotator_agreement: np.ndarray,
     quality_method: str,
-):
+) -> np.ndarray:
+    """Return the posterior predicted probabilites of each example given a specified quality method.
+
+    Parameters
+    ----------
+    labels_multiannotator : pd.DataFrame
+        2D pandas DataFrame of multiple given labels for each example with shape (N, M),
+        where N is the number of examples and M is the number of annotators.
+        For more details, labels in the same format expected by the :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>`.
+    consensus_label : np.ndarray
+        An array of shape ``(N,)`` with the consensus labels aggregated from all annotators.
+    prior_pred_probs : np.ndarray
+        TODO: more detailed explanation that this is the model pred_probs
+        An array of shape ``(N, K)`` of posterior predicted probabilities, ``P(label=k|x)``.
+        For details, predicted probabilities in the same format expected by the :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>`.
+    num_annotations : np.ndarray
+        An array of shape ``(N,)`` with the number of annotators that have labeled each example.
+    annotator_agreement : np.ndarray
+        An array of shape ``(N,)`` with the fraction of annotators that agree with each consensus label.
+    quality_method : str
+        Specifies the method used to calculate the quality of the consensus label.
+        For valid quality methods, view :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>`
+
+    Returns
+    -------
+    post_pred_probs : np.ndarray
+        An array of shape ``(N, K)`` with the posterior predicted probabilities.
+    """
     valid_methods = [
         "auto",
         "agreement",
     ]
 
     if quality_method == "auto":
-        num_classes = get_num_classes(pred_probs=pred_probs)
+        num_classes = get_num_classes(pred_probs=prior_pred_probs)
         likelihood = np.mean(
             annotator_agreement[num_annotations != 1]
         )  # likelihood that any annotator will annotate the consensus label for any example
@@ -241,20 +286,20 @@ def _get_post_pred_probs(
         # compute model weight
         mask = num_annotations != 1
         consensus_label_subset = consensus_label[mask]
-        pred_probs_subset = pred_probs[mask]
+        prior_pred_probs_subset = prior_pred_probs[mask]
 
-        model_error = np.mean(np.argmax(pred_probs_subset, axis=1) != consensus_label_subset)
+        model_error = np.mean(np.argmax(prior_pred_probs_subset, axis=1) != consensus_label_subset)
         model_weight = (1 - (model_error / most_likely_class_error)) * np.sqrt(
             np.mean(num_annotations)
         )
 
         # compute weighted average
-        post_pred_probs = np.full(pred_probs.shape, np.nan)
+        post_pred_probs = np.full(prior_pred_probs.shape, np.nan)
         for i in range(len(labels_multiannotator)):
             example = labels_multiannotator.iloc[i].dropna()
             post_pred_probs[i] = [
                 np.average(
-                    [pred_probs[i, true_label]]
+                    [prior_pred_probs[i, true_label]]
                     + [
                         likelihood
                         if annotator_label == true_label
@@ -397,7 +442,7 @@ def _get_consensus_stats(
     post_pred_probs = _get_post_pred_probs(
         labels_multiannotator=labels_multiannotator,
         consensus_label=consensus_label,
-        pred_probs=pred_probs,
+        prior_pred_probs=pred_probs,
         num_annotations=num_annotations,
         annotator_agreement=annotator_agreement,
         quality_method=quality_method,
