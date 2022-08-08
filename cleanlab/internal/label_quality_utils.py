@@ -116,11 +116,12 @@ def _get_label_quality_scores_with_NA(
     datasets with NaN values.
     For more info about parameters and returns, see the docstring of :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>`.
     """
+    mask = pd.notna(labels)
     label_quality_scores_subset = rank.get_label_quality_scores(
-        labels=labels[pd.notna(labels)].astype("int32"),
-        pred_probs=pred_probs[pd.notna(labels)],
+        labels=labels[mask].astype("int64"),
+        pred_probs=pred_probs[mask],
         **kwargs,
     )
     label_quality_scores = pd.Series(np.nan, index=np.arange(len(labels)))
-    label_quality_scores[pd.notna(labels)] = label_quality_scores_subset
+    label_quality_scores[mask] = label_quality_scores_subset
     return label_quality_scores
