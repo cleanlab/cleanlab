@@ -11,7 +11,7 @@ import warnings
 def convert_long_to_wide_dataset(
     labels_multiannotator_long: pd.DataFrame,
 ) -> pd.DataFrame:
-    """Converts a wide format dataset to long format which is suitable for passing into
+    """Converts a long format dataset to wide format which is suitable for passing into
     :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>`.
     Dataframe must contain three columns named:
     1. ``task`` representing each example labeled by the annotators
@@ -22,13 +22,18 @@ def convert_long_to_wide_dataset(
     ----------
     labels_multiannotator_long : pd.DataFrame
         pandas DataFrame in long format with three columns named ``task``, ``annotator`` and ``label``
+
+    Returns
+    -------
+    labels_multiannotator_wide : pd.DataFrame
+        pandas DataFrame of the proper format to be passed as ``labels_multiannotator`` for the other ``cleanlab.multiannotator`` functions.
     """
-    labels_multiannotator = labels_multiannotator_long.pivot(
+    labels_multiannotator_wide = labels_multiannotator_long.pivot(
         index="task", columns="annotator", values="label"
     )
-    labels_multiannotator.index.name = None
-    labels_multiannotator.columns.name = None
-    return labels_multiannotator
+    labels_multiannotator_wide.index.name = None
+    labels_multiannotator_wide.columns.name = None
+    return labels_multiannotator_wide
 
 
 def get_consensus_label(
@@ -36,7 +41,7 @@ def get_consensus_label(
     pred_probs: np.ndarray = None,
     consensus_method: str = "majority",
 ) -> np.ndarray:
-    """Returns consensus labels aggregated from multiple annotators, determined by method specified.
+    """Returns a single consensus label for each example, aggregated from the labels given by multiple annotators.
 
     Parameters
     ----------
