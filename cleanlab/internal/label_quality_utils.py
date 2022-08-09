@@ -33,10 +33,10 @@ def _subtract_confident_thresholds(
 
     Parameters
     ----------
-    labels : np.array
+    labels : np.ndarray
       Labels in the same format expected by the `cleanlab.count.get_confident_thresholds()` method.
 
-    pred_probs : np.array (shape (N, K))
+    pred_probs : np.ndarray (shape (N, K))
       Predicted-probabilities in the same format expected by the `cleanlab.count.get_confident_thresholds()` method.
 
     multi_label : bool, optional
@@ -51,7 +51,7 @@ def _subtract_confident_thresholds(
 
     Returns
     -------
-    pred_probs_adj : np.array (float)
+    pred_probs_adj : np.ndarray (float)
       Adjusted pred_probs.
     """
 
@@ -84,7 +84,7 @@ def get_normalized_entropy(pred_probs: np.ndarray, min_allowed_prob: float = 1e-
 
     Parameters
     ----------
-    pred_probs : np.array (shape (N, K))
+    pred_probs : np.ndarray (shape (N, K))
       Each row of this matrix corresponds to an example x and contains the model-predicted
       probabilities that x belongs to each possible class: P(label=k|x)
 
@@ -93,7 +93,7 @@ def get_normalized_entropy(pred_probs: np.ndarray, min_allowed_prob: float = 1e-
       Ensures entropy remains well-behaved even when `pred_probs` contains zeros.
     Returns
     -------
-    entropy : np.array (float)
+    entropy : np.ndarray (float)
       Each element is the normalized entropy of the corresponding row of ``pred_probs``.
     """
 

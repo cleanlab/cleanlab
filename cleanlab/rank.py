@@ -24,7 +24,7 @@ every example. You can then do something like: ``np.argsort(label_quality_score)
 indices of individual datapoints based on their quality.
 
 Note: multi-label classification is not supported by most methods in this module,
-each example must belong to a single class, e.g. format: ``labels = np.array([1,0,2,1,1,0...])``.
+each example must belong to a single class, e.g. format: ``labels = np.ndarray([1,0,2,1,1,0...])``.
 
 CAUTION: These label quality scores are computed based on `pred_probs` from your model that must be out-of-sample!
 You should never provide predictions on the same examples used to train the model,
@@ -61,15 +61,15 @@ def order_label_issues(
 
     Parameters
     ----------
-    label_issues_mask : np.array
+    label_issues_mask : np.ndarray
       A boolean mask for the entire dataset where ``True`` represents a label
       issue and ``False`` represents an example that is accurately labeled with
       high confidence.
 
-    labels : np.array
+    labels : np.ndarray
       Labels in the same format expected by the :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>` function.
 
-    pred_probs : np.array (shape (N, K))
+    pred_probs : np.ndarray (shape (N, K))
       Predicted-probabilities in the same format expected by the :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>` function.
 
     rank_by : str, optional
@@ -83,7 +83,7 @@ def order_label_issues(
 
     Returns
     -------
-    label_issues_idx : np.array
+    label_issues_idx : np.ndarray
       Return an array of the indices of the label issues, ordered by the label-quality scoring method
       passed to `rank_by`.
 
@@ -124,13 +124,13 @@ def get_label_quality_scores(
 
     Parameters
     ----------
-    labels : np.array
+    labels : np.ndarray
       A discrete vector of noisy labels, i.e. some labels may be erroneous.
       *Format requirements*: for dataset with K classes, labels must be in 0, 1, ..., K-1.
       All the classes (0, 1, ..., and K-1) MUST be present in ``labels``, such that: ``len(set(labels)) == pred_probs.shape[1]``
-      Note: multi-label classification is not supported by this method, each example must belong to a single class, e.g. format: ``labels = np.array([1,0,2,1,1,0...])``.
+      Note: multi-label classification is not supported by this method, each example must belong to a single class, e.g. format: ``labels = np.ndarray([1,0,2,1,1,0...])``.
 
-    pred_probs : np.array, optional
+    pred_probs : np.ndarray, optional
       An array of shape ``(N, K)`` of model-predicted probabilities,
       ``P(label=k|x)``. Each row of this matrix corresponds
       to an example `x` and contains the model-predicted probabilities that
@@ -172,7 +172,7 @@ def get_label_quality_scores(
 
     Returns
     -------
-    label_quality_scores : np.array
+    label_quality_scores : np.ndarray
       Scores are between 0 and 1 where lower scores indicate labels less likely to be correct.
 
     See Also
@@ -251,10 +251,10 @@ def get_label_quality_ensemble_scores(
 
     Parameters
     ----------
-    labels : np.array
+    labels : np.ndarray
       Labels in the same format expected by the :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>` function.
 
-    pred_probs_list : List[np.array]
+    pred_probs_list : List[np.ndarray]
       Each element in this list should be an array of pred_probs in the same format
       expected by the :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>` function.
       Each element of `pred_probs_list` corresponds to the predictions from one model for all examples.
@@ -274,7 +274,7 @@ def get_label_quality_ensemble_scores(
       - "log_loss_search": Take weighted average of scores, weighted by exp(t * -log_loss) where t is selected from log_loss_search_T_values parameter and log_loss is the log-loss between a model's pred_probs and the given labels.
       - "custom": Take weighted average of scores using custom weights that the user passes to the custom_weights parameter.
 
-    custom_weights : np.array, default=None
+    custom_weights : np.ndarray, default=None
       Weights used to aggregate scores from each model if weight_ensemble_members_by="custom".
       Length of this array must match the number of models: len(pred_probs_list).
 
@@ -287,7 +287,7 @@ def get_label_quality_ensemble_scores(
 
     Returns
     -------
-    label_quality_scores : np.array
+    label_quality_scores : np.ndarray
 
     See Also
     --------
@@ -456,15 +456,15 @@ def get_self_confidence_for_each_label(
 
     Parameters
     ----------
-    labels : np.array
+    labels : np.ndarray
       Labels in the same format expected by the :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>` function.
 
-    pred_probs : np.array
+    pred_probs : np.ndarray
       Predicted-probabilities in the same format expected by the :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>` function.
 
     Returns
     -------
-    label_quality_scores : np.array
+    label_quality_scores : np.ndarray
       An array of holdout probabilities that each example in `pred_probs` belongs to its
       label.
 
@@ -496,15 +496,15 @@ def get_normalized_margin_for_each_label(
 
     Parameters
     ----------
-    labels : np.array
+    labels : np.ndarray
       Labels in the same format expected by the :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>` function.
 
-    pred_probs : np.array
+    pred_probs : np.ndarray
       Predicted-probabilities in the same format expected by the :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>` function.
 
     Returns
     -------
-    label_quality_scores : np.array
+    label_quality_scores : np.ndarray
       An array of scores (between 0 and 1) for each example of its likelihood of
       being correctly labeled. ``normalized_margin = prob_label - max_prob_not_label``
     """
@@ -529,15 +529,15 @@ def get_confidence_weighted_entropy_for_each_label(
 
     Parameters
     ----------
-    labels : np.array
+    labels : np.ndarray
       Labels in the same format expected by the :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>` function.
 
-    pred_probs : np.array
+    pred_probs : np.ndarray
       Predicted-probabilities in the same format expected by the :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>` function.
 
     Returns
     -------
-    label_quality_scores : np.array
+    label_quality_scores : np.ndarray
       An array of scores (between 0 and 1) for each example of its likelihood of
       being correctly labeled.
     """

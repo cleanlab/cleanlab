@@ -190,10 +190,10 @@ def labels_to_array(y: Union[LabelLike, np.generic]) -> np.ndarray:
         if y.shape[1] != 1:
             raise ValueError("labels must be one dimensional.")
         return y.flatten()
-    else:  # y is list, np.array, or some other tuple-like object
+    else:  # y is list, np.ndarray, or some other tuple-like object
         try:
             return np.asarray(y)
         except:
             raise ValueError(
-                "List of labels must be convertable to 1D numpy array via: np.array(labels)."
+                "List of labels must be convertable to 1D numpy array via: np.ndarray(labels)."
             )
