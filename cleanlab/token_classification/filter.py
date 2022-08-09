@@ -6,7 +6,7 @@ def find_label_issues(labels, pred_probs, return_indices_ranked_by='self_confide
     pred_probs_flatten = [pred for pred_prob in pred_probs for pred in pred_prob] 
     pred_probs_flatten = np.array(pred_probs_flatten) 
     
-    issues = find_label_issues_main(labels, pred_probs, return_indices_ranked_by=return_indices_ranked_by) 
+    issues = find_label_issues_main(labels_flatten, pred_probs_flatten, return_indices_ranked_by=return_indices_ranked_by) 
     
     lengths = [len(label) for label in labels] 
     mapping = [[(i, j) for j in range(length)] for i, length in enumerate(lengths)] 
