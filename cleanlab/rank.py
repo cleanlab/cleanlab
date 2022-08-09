@@ -183,6 +183,7 @@ def get_label_quality_scores(
 
     """
 
+    # TODO: remove allow_missing_classes once supported
     assert_valid_inputs(
         X=None, y=labels, pred_probs=pred_probs, multi_label=False, allow_missing_classes=True
     )
