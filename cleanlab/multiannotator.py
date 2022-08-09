@@ -216,9 +216,12 @@ def _get_annotator_agreement_with_annotators(
             lambda s: np.mean(s[pd.notna(s)].drop(annotator_id) == s[annotator_id]), axis=1
         )
         np.nan_to_num(annotator_agreement_per_example, copy=False, nan=0)
-        annotator_agreement = np.average(
-            annotator_agreement_per_example, weights=num_annotations - 1
-        )
+        try:
+            annotator_agreement = np.average(
+                annotator_agreement_per_example, weights=num_annotations - 1
+            )
+        except:
+            annotator_agreement = np.NaN
         return annotator_agreement
 
     annotator_agreement_with_annotators = labels_multiannotator.apply(
@@ -226,6 +229,17 @@ def _get_annotator_agreement_with_annotators(
             labels_multiannotator[pd.notna(s)], num_annotations[pd.notna(s)], s.name
         )
     )
+
+    # impute average annotator accuracy for any annotator that do not overlap with other annotators
+    mask = annotator_agreement_with_annotators.isna()
+    if np.sum(mask) > 0:
+        print(
+            f"Annotator(s) {annotator_agreement_with_annotators[mask].index.values} did not annotate any examples that overlap with other annotators, \
+            \nusing the average annotator agreeement among other annotators as this annotator's agreement."
+        )
+
+        avg_annotator_agreement = np.mean(annotator_agreement_with_annotators[~mask])
+        annotator_agreement_with_annotators[mask] = avg_annotator_agreement
 
     return annotator_agreement_with_annotators.to_numpy()
 
