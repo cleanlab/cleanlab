@@ -533,10 +533,21 @@ def _get_annotator_quality(
         consensus_label_subset = consensus_label[mask]
         quality_of_consensus_subset = quality_of_consensus[mask]
 
+        def get_single_annotator_quality(s, consensus_label_subset, quality_of_consensus_subset):
+            annotator_mask = pd.notna(s)
+            try:
+                annotator_quality = np.average(
+                    s[annotator_mask] == consensus_label_subset[annotator_mask],
+                    weights=quality_of_consensus_subset[annotator_mask],
+                )
+            except:  # if annotator does not overlap with other annotators, return NaN as annotator quality score
+                annotator_quality = np.NaN
+
+            return annotator_quality
+
         annotator_quality = labels_multiannotator_subset.apply(
-            lambda s: np.average(
-                s[pd.notna(s)] == consensus_label_subset[pd.notna(s)],
-                weights=quality_of_consensus_subset[pd.notna(s)],
+            lambda s: get_single_annotator_quality(
+                s, consensus_label_subset, quality_of_consensus_subset
             ),
             axis=0,
         )
