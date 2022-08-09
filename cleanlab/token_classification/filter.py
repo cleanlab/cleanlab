@@ -1,3 +1,4 @@
+import numpy as np 
 from cleanlab.filter import find_label_issues as find_label_issues_main 
 
 def find_label_issues(labels, pred_probs, return_indices_ranked_by='self_confidence'): 
