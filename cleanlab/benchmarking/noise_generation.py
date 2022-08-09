@@ -35,13 +35,13 @@ def noise_matrix_is_valid(noise_matrix, py, *, verbose=False):
 
     Parameters
     ----------
-    noise_matrix : np.array
+    noise_matrix : np.ndarray
       An array of shape ``(K, K)`` representing the conditional probability
       matrix ``P(label=k_s|true_label=k_y)`` containing the fraction of
       examples in every class, labeled as every other class. Assumes columns of
       `noise_matrix` sum to 1.
 
-    py : np.array
+    py : np.ndarray
       An array of shape ``(K,)`` representing the fraction (prior probability)
       of each true class label, ``P(true_label = k)``.
 
@@ -115,11 +115,11 @@ def generate_noisy_labels(true_labels, noise_matrix):
 
     Parameters
     ----------
-    true_labels : np.array
+    true_labels : np.ndarray
       An array of shape ``(N,)`` representing perfect labels, without any
       noise. Contains K distinct natural number classes, 0, 1, ..., K-1.
 
-    noise_matrix : np.array
+    noise_matrix : np.ndarray
       An array of shape ``(K, K)`` representing the conditional probability
       matrix ``P(label=k_s|true_label=k_y)`` containing the fraction of
       examples in every class, labeled as every other class. Assumes columns of
@@ -127,7 +127,7 @@ def generate_noisy_labels(true_labels, noise_matrix):
 
     Returns
     -------
-    labels : np.array
+    labels : np.ndarray
       An array of shape ``(N,)`` of noisy labels.
 
     Examples
@@ -137,7 +137,7 @@ def generate_noisy_labels(true_labels, noise_matrix):
 
         # Generate labels
         count_joint = (noise_matrix * py * len(y)).round().astype(int)
-        labels = np.array(y)
+        labels = np.ndarray(y)
         for k_s in range(K):
             for k_y in range(K):
                 if k_s != k_y:
@@ -220,17 +220,17 @@ def generate_noise_matrix_from_trace(
       Minimum probability of any entry in the trace of the return matrix.
 
     max_noise_rate : float
-      Maximum noise_rate (non-diagonal entry) in the returned np.array.
+      Maximum noise_rate (non-diagonal entry) in the returned np.ndarray.
 
     min_noise_rate : float
-      Minimum noise_rate (non-diagonal entry) in the returned np.array.
+      Minimum noise_rate (non-diagonal entry) in the returned np.ndarray.
 
     valid_noise_matrix : bool, default=True
       If ``True``, returns a matrix having all necessary conditions for
       learning with noisy labels. In particular, ``p(true_label=k)p(label=k) < p(true_label=k,label=k)``
       is satisfied. This requires that ``trace > 1``.
 
-    py : np.array
+    py : np.ndarray
       An array of shape ``(K,)`` representing the fraction (prior probability) of each true class label, ``P(true_label = k)``.
       This argument is **required** when ``valid_noise_matrix=True``.
 
@@ -250,7 +250,7 @@ def generate_noise_matrix_from_trace(
 
     Returns
     -------
-    noise_matrix : np.array or None
+    noise_matrix : np.ndarray or None
       An array of shape ``(K, K)`` representing the noise matrix ``P(label=k_s|true_label=k_y)`` with `trace`
       equal to ``np.sum(np.diagonal(noise_matrix))``. This a conditional probability matrix and a
       left stochastic matrix. Returns ``None`` if `max_iter` is exceeded.
