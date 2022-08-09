@@ -102,8 +102,8 @@ def assert_valid_class_labels(
     allow_missing_classes: bool = False,
 ) -> None:
     """Check that labels is properly formatted, i.e. a 1D array that is
-       zero-indexed (first label is 0) and all classes present (if ``allow_missing_classes is False``).
-       Assumes labels is 1D numpy array (not multi-label).
+    zero-indexed (first label is 0) and all classes present (if ``allow_missing_classes is False``).
+    Assumes labels is 1D numpy array (not multi-label).
     """
     if y.ndim != 1:
         raise ValueError("labels must be 1D numpy array.")
