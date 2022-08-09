@@ -123,7 +123,9 @@ def clip_values(x, low=0.0, high=1.0, new_sum=None):
         """Clip a into range [low,high]"""
         return min(max(a, low), high)
 
-    vectorized_clip = np.vectorize(clip_range)  # Vectorize clip_range for efficiency with np.ndarrays
+    vectorized_clip = np.vectorize(
+        clip_range
+    )  # Vectorize clip_range for efficiency with np.ndarrays
     prev_sum = sum(x) if new_sum is None else new_sum  # Store previous sum
     x = vectorized_clip(x)  # Clip all values (efficiently)
     x = x * prev_sum / float(sum(x))  # Re-normalized values to sum to previous sum
