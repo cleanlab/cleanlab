@@ -108,7 +108,7 @@ def get_normalized_entropy(pred_probs: np.ndarray, min_allowed_prob: float = 1e-
 
 def _get_label_quality_scores_with_NA(
     labels: pd.Series,
-    pred_probs: np.array,
+    pred_probs: np.ndarray,
     kwargs: dict = {},
 ) -> pd.Series:
     """Returns label quality scores for each datapoint.
