@@ -5,6 +5,7 @@ from cleanlab import dataset
 from cleanlab.benchmarking.noise_generation import generate_noise_matrix_from_trace
 from cleanlab.benchmarking.noise_generation import generate_noisy_labels
 from cleanlab import count
+from cleanlab.internal.validation import labels_to_array
 from cleanlab.multiannotator import (
     get_label_quality_multiannotator,
     convert_long_to_wide_dataset,
@@ -162,9 +163,25 @@ def test_label_quality_scores_multiannotator():
         assert "cannot have columns with all NaN" in str(e)
 
 
+@pytest.mark.filterwarnings("ignore::UserWarning")
 def test_get_consensus_label():
     labels = data["labels"]
 
     # getting consensus labels without pred_probs
+    consensus_label = get_consensus_label(labels)
+
+    # making synthetic data to test tiebreaks of get_consensus_label
     # also testing pssing labels as np.ndarray
-    consensus_label = get_consensus_label(np.array(labels))
+    labels_tiebreaks = np.array([[1, 2, 0], [1, 1, 0], [1, 0, 0], [2, 2, 2], [1, 2, 0], [1, 2, 0]])
+    pred_probs_tiebreaks = np.array(
+        [
+            [0.4, 0.4, 0.2],
+            [0.3, 0.6, 0.1],
+            [0.75, 0.2, 0.05],
+            [0.1, 0.4, 0.5],
+            [0.2, 0.4, 0.4],
+            [0.2, 0.4, 0.4],
+        ]
+    )
+
+    consensus_label = get_consensus_label(labels_tiebreaks, pred_probs_tiebreaks)
