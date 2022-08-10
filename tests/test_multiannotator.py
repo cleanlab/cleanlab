@@ -5,7 +5,11 @@ from cleanlab import dataset
 from cleanlab.benchmarking.noise_generation import generate_noise_matrix_from_trace
 from cleanlab.benchmarking.noise_generation import generate_noisy_labels
 from cleanlab import count
-from cleanlab.multiannotator import get_label_quality_multiannotator
+from cleanlab.multiannotator import (
+    get_label_quality_multiannotator,
+    convert_long_to_wide_dataset,
+    get_consensus_label,
+)
 import pandas as pd
 
 
@@ -87,8 +91,23 @@ def make_data(
     }
 
 
+def make_data_long(data):
+    data_long = data.stack().reset_index()
+    data_long.columns = ["task", "annotator", "label"]
+
+    return data_long
+
+
 # Global to be used by all test methods. Only compute this once for speed.
 data = make_data()
+
+
+def test_convert_long_to_wide():
+    labels_long = make_data_long(data["labels"])
+    labels_wide = convert_long_to_wide_dataset(labels_long)
+
+    assert isinstance(labels_wide, pd.DataFrame)
+    # TODO: might add a test to see if the wide dataframe actually contains the right info
 
 
 # TODO: update this test to work with NaN values - randomly deleting data will make assertion invalid
@@ -118,8 +137,9 @@ def test_label_quality_scores_multiannotator():
     )
 
     # test different quality_methods
+    # also testing passing labels as np.ndarray
     lqs_multiannotator = get_label_quality_multiannotator(
-        labels, pred_probs, quality_method="agreement"
+        np.array(labels), pred_probs, quality_method="agreement"
     )
 
     # test returning annotator stats
@@ -140,3 +160,11 @@ def test_label_quality_scores_multiannotator():
         )
     except ValueError as e:
         assert "cannot have columns with all NaN" in str(e)
+
+
+def test_get_consensus_label():
+    labels = data["labels"]
+
+    # getting consensus labels without pred_probs
+    # also testing pssing labels as np.ndarray
+    consensus_label = get_consensus_label(np.array(labels))
