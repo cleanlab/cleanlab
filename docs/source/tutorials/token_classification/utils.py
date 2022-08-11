@@ -1,5 +1,6 @@
 import string 
 import numpy as np 
+import os 
 
 def get_sentence(words): 
     sentence = ''
@@ -19,10 +20,53 @@ def filter_sentence(sentences, condition=None, return_mask=True):
         return sentences, mask 
     else: 
         return sentences 
+    
+    
+def create_folds(sentences, k=10, path='folds/', seed=0): 
+    np.random.seed(seed) 
+    indicies = [i for i in range(len(sentences))] 
+    np.random.shuffle(indicies) 
+    partitions = [[sentences[index] for index in indicies[i::k]] for i in range(k)] 
+    
+    if os.path.exists(path): 
+        print("'%s' already exists, skipping..." % path) 
+    else: 
+        os.system('mkdir folds') 
+        for i in range(k): 
+            os.system('mkdir folds/fold%d' % i) 
+
+        def write_sentences_to_file(sentences, path): 
+            for sentence in sentences: 
+                for line in sentence: 
+                    path.write(line) 
+                path.write('\n')     
+
+        for i in range(k): 
+            train = open('folds/fold%d/train.txt' % i, "a") 
+            test = open('folds/fold%d/test.txt' % i, "a") 
+            for j in range(k): 
+                write_sentences_to_file(partitions[j], test if i == j else train) 
+            train.close() 
+            test.close() 
+        
+    indicies = [[index for index in indicies[i::k]] for i in range(k)] 
+    return indicies 
 
 def mapping(entities, maps): 
     f = lambda x: maps[x] 
     return list(map(f, entities)) 
+
+def merge_probs(probs, maps): 
+    old_classes = probs.shape[1] 
+    probs_merged = np.zeros([len(probs), np.max(maps)+1]) 
+    
+    for i in range(old_classes): 
+        if maps[i] >= 0: 
+            probs_merged[:, maps[i]] += probs[:, i] 
+    if -1 in maps: 
+        row_sums = probs_merged.sum(axis=1) 
+        probs_merged /= row_sums[:, np.newaxis] 
+    return probs_merged 
 
 def get_probs(sentence, pipe, maps=None): 
     def softmax(logit): 
@@ -35,13 +79,7 @@ def get_probs(sentence, pipe, maps=None):
     
     if not maps: 
         return probs 
-    
-    old_classes = probs.shape[1] 
-    probs_merged = np.zeros([len(probs), np.max(maps)+1]) 
-    
-    for i in range(old_classes): 
-        probs_merged[:, maps[i]] += probs[:, i] 
-    return probs_merged 
+    return merge_pros(probs, maps) 
 
 def get_pred_probs_and_labels(scores, tokens, given_token, given_label, weighted=False): 
     i, j = 0, 0 
@@ -77,14 +115,10 @@ def get_pred_probs_and_labels(scores, tokens, given_token, given_label, weighted
 def to_dict(nl): 
     return {str(i): l for i, l in enumerate(nl)} 
 
-def to_nl(d): 
-    return [d[str(i)] for i in range(len(d))] 
-
-def get_mapping(nl): 
-    lengths = [len(l) for l in nl] 
-    mapping = [[(i, j) for j in range(length)] for i, length in enumerate(lengths)] 
-    mapping = [index for indicies in mapping for index in indicies] 
-    return mapping 
+def read_npz(filepath): 
+    data = dict(np.load(filepath)) 
+    data = [data[str(i)] for i in range(len(data))] 
+    return data 
 
 def frequent_words(issues, words, labels, pred_probs, exclude=[]): 
     count = {} 
@@ -128,4 +162,3 @@ def search_token(token, issues, mapping, words):
     indicies = list(set(indicies)) 
     indicies.sort() 
     return indicies 
-        
