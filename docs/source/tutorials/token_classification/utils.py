@@ -1,6 +1,7 @@
 import string 
 import numpy as np 
 import os 
+from termcolor import colored 
 
 def get_sentence(words): 
     sentence = ''
@@ -51,6 +52,17 @@ def create_folds(sentences, k=10, path='folds/', seed=0):
         
     indicies = [[index for index in indicies[i::k]] for i in range(k)] 
     return indicies 
+
+def modified(given_words, sentence_tokens): 
+    for word, token in zip(given_words, sentence_tokens): 
+        if ''.join(word) != ''.join(token): 
+            return True  
+    return False 
+
+def process_token(token, replace=[('#', '')]): 
+    for old, new in replace: 
+        token = token.replace(old, new) 
+    return token 
 
 def mapping(entities, maps): 
     f = lambda x: maps[x] 
@@ -120,23 +132,52 @@ def read_npz(filepath):
     data = [data[str(i)] for i in range(len(data))] 
     return data 
 
-def frequent_words(issues, words, labels, pred_probs, exclude=[]): 
-    count = {} 
-    n = pred_probs.shape[1] 
-    predictions = np.argmax(pred_probs, axis=1) 
+def color_sentence(sentence, word): 
+    start_idx = sentence.index(word) 
+    before, after = sentence[:start_idx], sentence[start_idx + len(word):]
+    return '%s%s%s' % (before, colored(word, 'red'), after) 
+
+
+def show_issues(issues, labels, pred_probs, given_words, sentences, 
+                top=10, entities=None, exclude=[]): 
+    if not entities: 
+        entities = ['O', 'MISC', 'PER', 'ORG', 'LOC'] 
+    def show_issue(issue): 
+        i, j = issue 
+        issue_label = labels[i][j] 
+        predicted_label = np.argmax(pred_probs[i][j]) 
+        issue_word = given_words[i][j] 
+        issue_sentence = color_sentence(sentences[i], issue_word) 
+        return issue_sentence, (issue_label, predicted_label)  
+    
+    shown = 0 
     for issue in issues: 
-        word, label, pred = words[issue], labels[issue], predictions[issue] 
+        sentence, (given, predicted) = show_issue(issue) 
+        if (given, predicted) in exclude: 
+            continue 
+        print('%d. %s' % (shown+1, sentence)) 
+        print('Given label: %s, predicted label: %s\n' % (entities[given], entities[predicted])) 
+        shown += 1 
+        if shown == top: 
+            break 
+
+def common_token_issues(issues, given_words, labels, pred_probs, entities, 
+                        top=10, exclude=[], verbose=True): 
+    n = pred_probs[0].shape[1] 
+    count = {} 
+    for issue in issues: 
+        i, j = issue 
+        word = given_words[i][j] 
+        label = labels[i][j] 
+        pred = pred_probs[i][j].argmax() 
         if word not in count: 
             count[word] = np.zeros([n, n], dtype=int) 
         if (label, pred) not in exclude: 
             count[word][label][pred] += 1 
-    return count 
-
-def show_frequent_issues(count, entities, top=10, verbose=False): 
     words = [word for word in count.keys()] 
     n = count[words[0]].shape[0] 
     freq = [np.sum(count[word]) for word in words] 
-    rank = np.argsort(freq)[::-1][:10] 
+    rank = np.argsort(freq)[::-1][:top] 
     
     for r in rank: 
         word = words[r] 
@@ -153,12 +194,49 @@ def show_frequent_issues(count, entities, top=10, verbose=False):
                       (entities[i], entities[j], matrix[i][j])) 
         print() 
         
-def search_token(token, issues, mapping, words): 
-    indicies = [] 
+def search_token(token, issues, labels, pred_probs, given_words, sentences, entities): 
+    d = {} 
     for issue in issues: 
-        i, j = mapping[issue] 
-        if words[i][j] == token: 
-            indicies.append(i) 
-    indicies = list(set(indicies)) 
+        i, j = issue 
+        if given_words[i][j].lower() == token.lower(): 
+            if i not in d.keys(): 
+                d[i] = [] 
+            given = entities[labels[i][j]] 
+            pred = entities[pred_probs[i][j].argmax()] 
+            d[i].append((j, given, pred)) 
+    indicies = list(d.keys()) 
     indicies.sort() 
-    return indicies 
+    
+    def get_mapping(sentence, tokens): 
+        i, indicies = 0, [] 
+        for token in tokens: 
+            indicies.append(sentence[i:].index(token) + i) 
+            i += len(token) 
+        return indicies 
+    
+    for index in indicies: 
+        mapping = get_mapping(sentences[index], given_words[index]) 
+        info = sorted(d[index], key=lambda x: x[0]) 
+        mapped_indicies = [mapping[j] for j, _, _ in info] 
+        s = 'Sentence %d: ' % index 
+        i = 0 
+        for mapped_index in mapped_indicies: 
+            s += sentences[index][i:mapped_index] 
+            s += colored(token, 'red') 
+            i = mapped_index + len(token) 
+        s += sentences[index][i:] 
+        print(s) 
+        for _, given, pred in info: 
+            print('Given label: %s, predicted label: %s\n' % (given, pred)) 
+    return d 
+
+def show_sentence_issues(scores, token_scores, pred_probs, given_words, sentences, given_labels, entities, top=10): 
+    ranking = np.argsort(scores) 
+    for r in ranking[:top]: 
+        print('Sentence %d: score=%.6f' % (r, scores[r])) 
+        issue_index = np.argmin(token_scores[r]) 
+        issue_word = given_words[r][issue_index] 
+        print(color_sentence(sentences[r], issue_word)) 
+        given_label = given_labels[r][issue_index] 
+        suggested_label = np.argmax(pred_probs[r][issue_index]) 
+        print('Given label: %s, suggested label: %s\n' % (entities[given_label], entities[suggested_label])) 
