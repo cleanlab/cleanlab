@@ -17,11 +17,16 @@
 import numpy as np
 import pytest
 from cleanlab import rank
-from cleanlab.internal.label_quality_utils import _subtract_confident_thresholds
+from cleanlab.count import get_confident_thresholds
+from cleanlab.internal.label_quality_utils import (
+    _subtract_confident_thresholds,
+    get_normalized_entropy,
+)
 from cleanlab.benchmarking.noise_generation import generate_noise_matrix_from_trace
 from cleanlab.benchmarking.noise_generation import generate_noisy_labels
 from cleanlab import count
 from sklearn.neighbors import NearestNeighbors
+from sklearn.linear_model import LogisticRegression as LogReg
 
 
 def make_data(
@@ -515,8 +520,149 @@ def test_not_enough_info_get_outlier_scores():
 
 
 def test_ood_scores():
-    # TODO
-    ood_scores = rank.get_ood_scores(
-        pred_probs=data["pred_probs"],
+    # Create and add OOD datapoint to test set
+    X = data["X_test"]
+    X_ood = np.array([[999999999.0, 999999999.0]])
+    X_with_ood = np.vstack([X, X_ood])
+
+    y = data["true_labels_test"]
+    y_with_ood = np.hstack([y, data["true_labels_train"][1]])
+
+    # Fit Logistic Regression model on X_train and estimate pred_probs
+    logreg = LogReg(multi_class="auto", solver="lbfgs")
+    logreg.fit(data["X_train"], data["true_labels_train"])
+    pred_probs = logreg.predict_proba(X_with_ood)
+
+    print("pred_probs shape: ", pred_probs.shape)
+
+    ### Test non-adjusted OOD score logic
+    ood_scores_entropy, confident_thresholds_entropy = rank.get_ood_scores(
+        pred_probs=pred_probs,
+        adjust_pred_probs=False,
+        return_thresholds=True,
     )
-    assert ood_scores.shape[0] == data["pred_probs"].shape[0]
+
+    # adjust pred probs should be False by default
+    ood_scores_least_confidence, confident_thresholds_least_confidence = rank.get_ood_scores(
+        pred_probs=pred_probs,
+        return_thresholds=True,
+        method="least_confidence",
+    )
+
+    # test confident_thresholds is not calculated
+    assert confident_thresholds_entropy == 0
+    assert confident_thresholds_least_confidence == 0
+
+    # test OOD datapoint has the lowest OOD score
+    assert ood_scores_least_confidence.argmin() == len(ood_scores_least_confidence) - 1
+    assert ood_scores_entropy.argmin() == len(ood_scores_entropy) - 1
+
+    # check OOD scores calculated correctly
+    assert (get_normalized_entropy(pred_probs) == ood_scores_entropy).all()
+    assert (1.0 - pred_probs.max(axis=1) == ood_scores_least_confidence).all()
+
+    ### Test adjusted OOD score logic
+    ood_scores_adj_entropy, confident_thresholds_adj_entropy = rank.get_ood_scores(
+        pred_probs=pred_probs,
+        labels=y_with_ood,
+        adjust_pred_probs=True,
+        return_thresholds=True,
+        method="entropy",
+    )
+
+    (
+        ood_scores_adj_least_confidence,
+        confident_thresholds_adj_least_confidence,
+    ) = rank.get_ood_scores(
+        pred_probs=pred_probs,
+        labels=y_with_ood,
+        adjust_pred_probs=True,
+        return_thresholds=True,
+        method="least_confidence",
+    )
+
+    # test confident thresholds calculated correctly
+    confident_thresholds = get_confident_thresholds(
+        labels=y_with_ood, pred_probs=pred_probs, multi_label=False
+    )
+
+    assert (confident_thresholds == confident_thresholds_adj_entropy).all()
+    assert (confident_thresholds_adj_least_confidence == confident_thresholds_adj_entropy).all()
+
+    # check adjusted OOD scores different from non adjust OOD scores
+    assert not (ood_scores_adj_entropy == ood_scores_entropy).all()
+    assert not (ood_scores_adj_least_confidence == ood_scores_least_confidence).all()
+
+    # TODO fix example dataset to this test to identify ood example
+    # # test OOD datapoint has the lowest confidence threshold with adjusted scores
+    # assert ood_scores_adj_entropy.argmin() == len(ood_scores_adj_entropy) - 1
+    # assert ood_scores_adj_least_confidence.argmin() == len(ood_scores_adj_least_confidence) - 1
+
+    ### Test pre-calculated confident thresholds logic
+    ood_scores_2, confident_thresholds_2 = rank.get_ood_scores(
+        pred_probs=pred_probs,
+        confident_thresholds=confident_thresholds,
+        adjust_pred_probs=True,
+        return_thresholds=True,
+    )
+
+    assert (confident_thresholds_2 == confident_thresholds).all()
+    assert (ood_scores_2 == ood_scores_adj_entropy).all()
+
+
+@pytest.mark.filterwarnings("ignore::UserWarning")
+def test_wrong_info_get_ood_scores():
+    # Test calling function with not enough information to calculate ood scores
+    try:
+        rank.get_ood_scores(
+            pred_probs=data["pred_probs"],
+            labels=None,
+            adjust_pred_probs=True,  # this should throw ValueError because knn=None and features=None
+        )
+    except Exception as e:
+        assert "Cannot calculate adjust_pred_probs without labels" in str(e)
+        with pytest.raises(ValueError) as e:
+            rank.get_ood_scores(
+                pred_probs=data["pred_probs"],
+                labels=None,
+                adjust_pred_probs=True,  # this should throw ValueError because knn=None and features=None
+            )
+
+    # Test calling function with not enough information to calculate ood scores
+    try:
+        rank.get_ood_scores(
+            pred_probs=data["pred_probs"],
+            adjust_pred_probs=True,  # this should throw ValueError because knn=None and features=None
+        )
+    except Exception as e:
+        assert "Cannot calculate adjust_pred_probs without labels" in str(e)
+        with pytest.raises(ValueError) as e:
+            rank.get_ood_scores(
+                pred_probs=data["pred_probs"],
+                adjust_pred_probs=True,  # this should throw ValueError because not enough data provided
+            )
+
+    # Test calling function with not a real method
+    try:
+        rank.get_ood_scores(
+            pred_probs=data["pred_probs"],
+            labels=data["labels"],
+            adjust_pred_probs=True,
+            method="not_a_real_method",  # this should throw ValueError because method not real method
+        )
+    except Exception as e:
+        assert "not a valid OOD scoring" in str(e)
+        with pytest.raises(ValueError) as e:
+            rank.get_ood_scores(
+                pred_probs=data["pred_probs"],
+                labels=data["labels"],
+                adjust_pred_probs=True,
+                method="not_a_real_method",  # this should throw ValueError because method not real method
+            )
+
+    # Test calling function with too much information to calculate ood scores
+    rank.get_ood_scores(
+        pred_probs=data["pred_probs"],
+        labels=data["labels"],
+        adjust_pred_probs=False,  # this should user warning because provided info is not used
+    )

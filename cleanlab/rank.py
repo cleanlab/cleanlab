@@ -656,7 +656,8 @@ def get_outlier_scores(
 
 
 def get_ood_scores(
-    pred_probs: np.ndarray, *,
+    pred_probs: np.ndarray,
+    *,
     labels: Optional[np.ndarray] = None,
     confident_thresholds: Optional[np.ndarray] = None,
     adjust_pred_probs: bool = False,
@@ -724,9 +725,7 @@ def get_ood_scores(
                     f"Cannot calculate adjust_pred_probs without labels. Either pass in labels parameter or set "
                     f"adjusted_pred_probs = False. "
                 )
-            confident_thresholds = get_confident_thresholds(
-                labels, pred_probs, multi_label=False
-            )
+            confident_thresholds = get_confident_thresholds(labels, pred_probs, multi_label=False)
         else:
             confident_thresholds = 0
 
@@ -742,7 +741,7 @@ def get_ood_scores(
     else:
         raise ValueError(
             f"""
-            {method} is not a valid ood scoring method!
+            {method} is not a valid OOD scoring method!
             Please choose a valid scoring_method: {valid_methods}
             """
         )
