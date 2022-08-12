@@ -708,6 +708,15 @@ def get_ood_scores(
         "self_confidence",
     ]
 
+    # Might be a better place to put this warning
+    if (confident_thresholds is not None or labels is not None) and not adjusted_pred_probs:
+        warnings.warn(
+            f"OOD scores are not adjusted with confident thresholds. If scores need to be adjusted set adjusted_pred_probs = True. Otherwise passing in confident_thresholds and/or labels does not change score calculation.",
+            UserWarning,
+        )
+
+    # TODO warn about both thresholds and labels passed in
+
     if confident_thresholds is None:
         if adjusted_pred_probs:
             if labels is None:
