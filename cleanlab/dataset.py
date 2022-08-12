@@ -151,7 +151,7 @@ def find_overlapping_classes(
 
     Parameters
     ----------
-    labels : np.array, optional
+    labels : np.ndarray, optional
       An array of shape ``(N,)`` of noisy labels, i.e. some labels may be erroneous.
       Elements must be in the set 0, 1, ..., K-1, where K is the number of classes.
       All the classes (0, 1, ..., and K-1) MUST be present in ``labels``, such that
@@ -159,7 +159,7 @@ def find_overlapping_classes(
       For multi-label classification where each example can belong to multiple classes(e.g. ``labels = [[1,2],[1],[0],..]``),
       your labels should instead satisfy: ``len(set(k for l in labels for k in l)) == pred_probs.shape[1])``.
 
-    pred_probs : np.array, optional
+    pred_probs : np.ndarray, optional
       An array of shape ``(N, K)`` of model-predicted probabilities,
       ``P(label=k|x)``. Each row of this matrix corresponds
       to an example `x` and contains the model-predicted probabilities that
@@ -185,7 +185,7 @@ def find_overlapping_classes(
         you use this function with the joint, e.g. ``find_overlapping_classes(joint=joint)``, otherwise
         this is automatically computed via ``sum(confident_joint)`` or ``len(labels)``.
 
-    joint : np.array, optional
+    joint : np.ndarray, optional
         An array of shape ``(K, K)``, where K is the number of classes,
         representing the estimated joint distribution of the noisy labels and
         true labels. The sum of all entries in this matrix must be 1 (valid
@@ -193,7 +193,7 @@ def find_overlapping_classes(
         probability of a true label and a noisy label, i.e. ``p(noisy_label=i, true_label=j)``.
         **Important**. If you input the joint, you must also input `num_examples`.
 
-    confident_joint : np.array, optional
+    confident_joint : np.ndarray, optional
       An array of shape ``(K, K)`` representing the confident joint, the matrix used for identifying label issues, which
       estimates a confident subset of the joint distribution of the noisy and true labels, ``P_{noisy label, true label}``.
       Entry ``(j, k)`` in the matrix is the number of examples confidently counted into the pair of ``(noisy label=j, true label=k)`` classes.
@@ -226,8 +226,8 @@ def find_overlapping_classes(
 
         Parameters
         ----------
-        matrix : np.array<float>
-            Any valid np.array 2-d dimensional matrix.
+        matrix : np.ndarray<float>
+            Any valid np.ndarray 2-d dimensional matrix.
 
         Returns
         -------

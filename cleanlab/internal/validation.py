@@ -25,18 +25,20 @@ import numpy as np
 import pandas as pd
 
 
+# TODO: remove allow_missing_classes once supported
 def assert_valid_inputs(
     X: DatasetLike,
     y: LabelLike,
     pred_probs: Optional[np.ndarray] = None,
     multi_label: bool = False,
+    allow_missing_classes: bool = False,
 ) -> None:
     """Checks that X, labels, and pred_probs are correctly formatted"""
     if not isinstance(y, (list, np.ndarray, np.generic, pd.Series, pd.DataFrame)):
         raise TypeError("labels should be a numpy array or pandas Series.")
     if not multi_label:
         y = labels_to_array(y)
-        assert_valid_class_labels(y)
+        assert_valid_class_labels(y=y, allow_missing_classes=allow_missing_classes)
 
     allow_empty_X = True
     if pred_probs is None:
@@ -84,7 +86,8 @@ def assert_valid_inputs(
             raise ValueError("Values in pred_probs must be between 0 and 1.")
         if X is not None:
             warnings.warn("When X and pred_probs are both provided, former may be ignored.")
-        if not multi_label:  # TODO: can remove this clause once missing classes are supported
+        # TODO: can remove this clause once missing classes are supported
+        if not allow_missing_classes and not multi_label:
             num_unique_labels = len(np.unique(y))
             if num_unique_labels != pred_probs.shape[1]:
                 raise ValueError(
@@ -94,22 +97,28 @@ def assert_valid_inputs(
                 )
 
 
-def assert_valid_class_labels(y: np.ndarray) -> None:
-    """Check that labels is zero-indexed (first label is 0) and all classes present.
+def assert_valid_class_labels(
+    y: np.ndarray,
+    allow_missing_classes: bool = False,
+) -> None:
+    """Check that labels is properly formatted, i.e. a 1D array that is
+    zero-indexed (first label is 0) and all classes present (if ``allow_missing_classes is False``).
     Assumes labels is 1D numpy array (not multi-label).
     """
     if y.ndim != 1:
         raise ValueError("labels must be 1D numpy array.")
 
-    unique_classes = np.unique(y)
-    if len(unique_classes) < 2:
-        raise ValueError("Labels must contain at least 2 classes.")
+    # TODO: can remove this clause once missing classes are supported
+    if not allow_missing_classes:
+        unique_classes = np.unique(y)
+        if len(unique_classes) < 2:
+            raise ValueError("Labels must contain at least 2 classes.")
 
-    if (unique_classes != np.arange(len(unique_classes))).any():
-        msg = "cleanlab requires zero-indexed integer labels (0,1,2,..,K-1), but in "
-        msg += "your case: np.unique(labels) = {}. ".format(str(unique_classes))
-        msg += "Every class in (0,1,2,..,K-1) must be present in labels as well."
-        raise TypeError(msg)
+        if (unique_classes != np.arange(len(unique_classes))).any():
+            msg = "cleanlab requires zero-indexed integer labels (0,1,2,..,K-1), but in "
+            msg += "your case: np.unique(labels) = {}. ".format(str(unique_classes))
+            msg += "Every class in (0,1,2,..,K-1) must be present in labels as well."
+            raise TypeError(msg)
 
 
 def assert_nonempty_input(X: Any) -> None:
@@ -188,10 +197,10 @@ def labels_to_array(y: Union[LabelLike, np.generic]) -> np.ndarray:
         if y.shape[1] != 1:
             raise ValueError("labels must be one dimensional.")
         return y.flatten()
-    else:  # y is list, np.array, or some other tuple-like object
+    else:  # y is list, np.ndarray, or some other tuple-like object
         try:
             return np.asarray(y)
         except:
             raise ValueError(
-                "List of labels must be convertable to 1D numpy array via: np.array(labels)."
+                "List of labels must be convertable to 1D numpy array via: np.ndarray(labels)."
             )
