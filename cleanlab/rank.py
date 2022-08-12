@@ -40,6 +40,7 @@ from sklearn.neighbors import NearestNeighbors
 from typing import List, Optional, Union, Tuple
 import warnings
 
+from cleanlab.count import get_confident_thresholds
 from cleanlab.internal.validation import assert_valid_inputs
 from cleanlab.internal.label_quality_utils import (
     _subtract_confident_thresholds,
@@ -652,3 +653,97 @@ def get_outlier_scores(
         return (outlier_scores, knn)
     else:
         return outlier_scores
+
+
+def get_ood_scores(
+    pred_probs: np.array,
+    confident_thresholds: Optional[np.ndarray] = None,
+    labels: Optional[np.ndarray] = None,
+    adjusted_pred_probs: bool = False,
+    scoring_method: str = "entropy",
+    t: int = 1,
+    return_thresholds: bool = False,
+) -> Union[np.ndarray, Tuple[np.ndarray, NearestNeighbors]]:
+    """Returns an OOD score for each example based on it pred_prob values. Scores lie in [0,1] with smaller values indicating examples
+    that are less typical under the dataset distribution (values near 0 indicate outliers).
+    TODO: what is the score based on.
+
+    Parameters
+    ----------
+    pred_probs : np.ndarray
+      TODO
+
+    confident_thresholds : np.ndarray, default = None
+      TODO
+    labels : np.ndarray, default = None
+      TODO
+
+    adjusted_pred_probs : bool, default = False
+      TODO
+
+    scoring_method : bool, default = False
+      TODO
+
+    t : int, default=1
+      Optional hyperparameter only for advanced users.
+      Controls transformation of distances between examples into similarity scores that lie in [0,1].
+      The transformation applied to distances `x` is `exp(-x*t)`.
+      If you find your scores are all too close to 1, consider increasing `t`,
+      although the relative scores of examples will still have the same ranking across the dataset.
+
+    return_thresholds : bool, default = False
+      Whether the `confident_thresholds` array should also be returned.
+      If True, this function returns a tuple `(ood_scores, confident_thresholds)`.
+    Returns
+    -------
+    ood_scores : np.ndarray
+      Score for each example that roughly corresponds to the likelihood this example stems from the same distribution as
+      the dataset features (i.e. is not an outlier).
+      If ``return_thresholds = True``, then a tuple is returned
+      whose first element is array of `ood_scores` and second is an np.ndarray of `confident_thresholds`.
+    """
+
+    valid_methods = [
+        "entropy",
+        "self_confidence",
+    ]
+
+    if confident_thresholds is None:
+        if adjusted_pred_probs:
+            if labels is None:
+                raise ValueError(
+                    f"Cannot calculate adjusted_pred_probs without labels. Either pass in labels parameter or set adjusted_pred_probs = False."
+                )
+            confident_thresholds = get_confident_thresholds(
+                labels, pred_probs, multi_label=False
+            )  # should we support multi_label?
+        else:
+            confident_thresholds = 0
+
+    if adjusted_pred_probs:
+        pred_probs = pred_probs - confident_thresholds
+        pred_probs += confident_thresholds.max()
+        pred_probs /= pred_probs.sum(axis=1)[:, None]
+
+    if scoring_method == "entropy":
+        ood_scores = get_normalized_entropy(pred_probs)
+    elif scoring_method == "self_confidence":
+        ood_scores = 1.0 - pred_probs.max(axis=1)
+    else:
+        raise ValueError(
+            f"""
+            {scoring_method} is not a valid ood scoring method!
+            Please choose a valid scoring_method: {valid_methods}
+            """
+        )
+
+    # Map ood_scores to range 0-1 with 0 = most concerning
+    ood_scores: np.ndarray = np.exp(-1 * ood_scores * t)
+
+    if return_thresholds:
+        return (
+            ood_scores,
+            confident_thresholds,
+        )  # what happens if confident_thresholds = 0 (uncalculated and unpassed)
+    else:
+        return ood_scores

@@ -512,3 +512,11 @@ def test_not_enough_info_get_outlier_scores():
                 features=None,
                 knn=None,  # this should throw TypeError because knn=None and features=None
             )
+
+
+def test_ood_scores():
+    # TODO
+    ood_scores = rank.get_ood_scores(
+        pred_probs=data["pred_probs"],
+    )
+    assert ood_scores.shape[0] == data["pred_probs"].shape[0]
