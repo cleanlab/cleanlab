@@ -257,7 +257,7 @@ def _get_post_pred_probs_and_weights(
     Parameters
     ----------
     labels_multiannotator : pd.DataFrame
-        2D pandas DataFrame of multiple given labels for each example with shape (N, M),
+        2D pandas DataFrame of multiple given labels for each example with shape ``(N, M)``,
         where N is the number of examples and M is the number of annotators.
         For more details, labels in the same format expected by the :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>`.
     consensus_label : np.ndarray
@@ -280,10 +280,12 @@ def _get_post_pred_probs_and_weights(
         An array of shape ``(N, K)`` with the posterior predicted probabilities.
 
     model_weight : float
-    TODO
+        float specifying the model weight used in weighted averages,
+        None if model weight is not used to compute quality scores
 
     annotator_weight : np.ndarray
-    TODO
+        An array of shape ``(M,)`` where M is the number of annotators, specifying the annotator weights used in weighted averages,
+        None if annotator weights are not used to compute quality scores
     """
     valid_methods = [
         "auto",
@@ -546,30 +548,6 @@ def _get_annotator_quality(
     ]
 
     if quality_method == "auto":
-        # mask = num_annotations != 1
-        # labels_multiannotator_subset = labels_multiannotator[mask]
-        # consensus_label_subset = consensus_label[mask]
-        # quality_of_consensus_subset = quality_of_consensus[mask]
-
-        # def get_single_annotator_quality(s, consensus_label_subset, quality_of_consensus_subset):
-        #     annotator_mask = pd.notna(s)
-        #     try:
-        #         annotator_quality = np.average(
-        #             s[annotator_mask] == consensus_label_subset[annotator_mask],
-        #             weights=quality_of_consensus_subset[annotator_mask],
-        #         )
-        #     except:  # if annotator does not overlap with other annotators, return NaN as annotator quality score
-        #         annotator_quality = np.NaN
-
-        #     return annotator_quality
-
-        # annotator_quality = labels_multiannotator_subset.apply(
-        #     lambda s: get_single_annotator_quality(
-        #         s, consensus_label_subset, quality_of_consensus_subset
-        #     ),
-        #     axis=0,
-        # )
-
         annotator_lqs = labels_multiannotator.apply(
             lambda s: np.mean(
                 get_label_quality_scores(s[pd.notna(s)].astype("int64"), pred_probs[pd.notna(s)])
@@ -821,7 +799,6 @@ def get_label_quality_multiannotator(
     label_quality_scores_multiannotator["num_annotations"] = num_annotations
 
     # Compute consensus labels, annotator agreement and quality of consensus
-    # TODO: are we still allowing list of consensus methods?
     (
         consensus_label,
         annotator_agreement,
