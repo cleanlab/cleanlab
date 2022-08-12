@@ -244,7 +244,7 @@ def _get_annotator_agreement_with_annotators(
     return annotator_agreement_with_annotators.to_numpy()
 
 
-def _get_post_pred_probs(
+def _get_post_pred_probs_and_weights(
     labels_multiannotator: pd.DataFrame,
     consensus_label: np.ndarray,
     prior_pred_probs: np.ndarray,
@@ -278,11 +278,22 @@ def _get_post_pred_probs(
     -------
     post_pred_probs : np.ndarray
         An array of shape ``(N, K)`` with the posterior predicted probabilities.
+
+    model_weight : float
+    TODO
+
+    annotator_weight : np.ndarray
+    TODO
     """
     valid_methods = [
         "auto",
         "agreement",
     ]
+
+    # setting dummy variables for model and annotator weights that will be returned
+    # only relevant for quality_method == auto, return None for all other methods
+    return_model_weight = None
+    return_annotator_weight = None
 
     if quality_method == "auto":
         num_classes = get_num_classes(pred_probs=prior_pred_probs)
@@ -332,6 +343,9 @@ def _get_post_pred_probs(
                 for true_label in range(num_classes)
             ]
 
+        return_model_weight = model_weight
+        return_annotator_weight = adjusted_annotator_agreement
+
     elif quality_method == "agreement":
         label_counts = labels_multiannotator.apply(lambda s: s.value_counts(), axis=1)
         label_counts = np.nan_to_num(label_counts, nan=0)
@@ -345,7 +359,7 @@ def _get_post_pred_probs(
             """
         )
 
-    return post_pred_probs
+    return post_pred_probs, return_model_weight, return_annotator_weight
 
 
 def _get_quality_of_consensus(
@@ -458,7 +472,7 @@ def _get_consensus_stats(
     )
 
     # compute posterior predicted probabilites
-    post_pred_probs = _get_post_pred_probs(
+    post_pred_probs, model_weight, annotator_weight = _get_post_pred_probs_and_weights(
         labels_multiannotator=labels_multiannotator,
         consensus_label=consensus_label,
         prior_pred_probs=pred_probs,
@@ -483,6 +497,8 @@ def _get_consensus_stats(
         annotator_agreement,
         quality_of_consensus,
         post_pred_probs,
+        model_weight,
+        annotator_weight,
     )
 
 
@@ -492,6 +508,8 @@ def _get_annotator_quality(
     consensus_label: np.ndarray,
     num_annotations: np.ndarray,
     annotator_agreement: np.ndarray,
+    model_weight: np.ndarray,
+    annotator_weight: np.ndarray,
     quality_of_consensus: np.ndarray,
     quality_method: str = "auto",
 ) -> pd.DataFrame:
@@ -528,29 +546,50 @@ def _get_annotator_quality(
     ]
 
     if quality_method == "auto":
+        # mask = num_annotations != 1
+        # labels_multiannotator_subset = labels_multiannotator[mask]
+        # consensus_label_subset = consensus_label[mask]
+        # quality_of_consensus_subset = quality_of_consensus[mask]
+
+        # def get_single_annotator_quality(s, consensus_label_subset, quality_of_consensus_subset):
+        #     annotator_mask = pd.notna(s)
+        #     try:
+        #         annotator_quality = np.average(
+        #             s[annotator_mask] == consensus_label_subset[annotator_mask],
+        #             weights=quality_of_consensus_subset[annotator_mask],
+        #         )
+        #     except:  # if annotator does not overlap with other annotators, return NaN as annotator quality score
+        #         annotator_quality = np.NaN
+
+        #     return annotator_quality
+
+        # annotator_quality = labels_multiannotator_subset.apply(
+        #     lambda s: get_single_annotator_quality(
+        #         s, consensus_label_subset, quality_of_consensus_subset
+        #     ),
+        #     axis=0,
+        # )
+
+        annotator_lqs = labels_multiannotator.apply(
+            lambda s: np.mean(
+                get_label_quality_scores(s[pd.notna(s)].astype("int64"), pred_probs[pd.notna(s)])
+            )
+        )
+
         mask = num_annotations != 1
         labels_multiannotator_subset = labels_multiannotator[mask]
         consensus_label_subset = consensus_label[mask]
-        quality_of_consensus_subset = quality_of_consensus[mask]
 
-        def get_single_annotator_quality(s, consensus_label_subset, quality_of_consensus_subset):
-            annotator_mask = pd.notna(s)
-            try:
-                annotator_quality = np.average(
-                    s[annotator_mask] == consensus_label_subset[annotator_mask],
-                    weights=quality_of_consensus_subset[annotator_mask],
-                )
-            except:  # if annotator does not overlap with other annotators, return NaN as annotator quality score
-                annotator_quality = np.NaN
-
-            return annotator_quality
-
-        annotator_quality = labels_multiannotator_subset.apply(
-            lambda s: get_single_annotator_quality(
-                s, consensus_label_subset, quality_of_consensus_subset
-            ),
+        annotator_agreement = labels_multiannotator_subset.apply(
+            lambda s: np.mean(s[pd.notna(s)] == consensus_label_subset[pd.notna(s)]),
             axis=0,
         )
+
+        avg_num_annotations_frac = np.mean(num_annotations) / len(annotator_weight)
+        annotator_weight_adjusted = np.sum(annotator_weight) * avg_num_annotations_frac
+
+        w = model_weight / (model_weight + annotator_weight_adjusted)
+        annotator_quality = w * annotator_lqs + (1 - w) * annotator_agreement
 
     elif quality_method == "agreement":
         mask = num_annotations != 1
@@ -579,6 +618,8 @@ def get_annotator_stats(
     consensus_label: np.ndarray,
     num_annotations: np.ndarray,
     annotator_agreement: np.ndarray,
+    model_weight: np.ndarray,
+    annotator_weight: np.ndarray,
     quality_of_consensus: np.ndarray,
     quality_method: str = "auto",
 ) -> pd.DataFrame:
@@ -628,6 +669,8 @@ def get_annotator_stats(
         consensus_label=consensus_label,
         num_annotations=num_annotations,
         annotator_agreement=annotator_agreement,
+        model_weight=model_weight,
+        annotator_weight=annotator_weight,
         quality_of_consensus=quality_of_consensus,
         quality_method=quality_method,
     )
@@ -667,7 +710,6 @@ def get_label_quality_multiannotator(
     consensus_method: Union[str, List[str]] = "majority",
     quality_method: str = "auto",
     return_annotator_stats: bool = False,  # sort by lowest overall_quality first
-    return_post_pred_probs: bool = False,  # TODO: remove after benchmarking
     verbose: bool = True,
     kwargs: dict = {},
 ) -> Union[pd.DataFrame, Tuple[pd.DataFrame, pd.DataFrame]]:
@@ -785,6 +827,8 @@ def get_label_quality_multiannotator(
         annotator_agreement,
         quality_of_consensus,
         post_pred_probs,
+        model_weight,
+        annotator_weight,
     ) = _get_consensus_stats(
         labels_multiannotator=labels_multiannotator,
         pred_probs=pred_probs,
@@ -809,7 +853,7 @@ def get_label_quality_multiannotator(
     # compute consensus stats for alternative consensus methods (if provided)
     if isinstance(consensus_method, list) and len(consensus_method) > 1:
         for alt_consensus_method in consensus_method[1:]:
-            consensus_label_alt, _, quality_of_consensus_alt, _ = _get_consensus_stats(
+            consensus_label_alt, _, quality_of_consensus_alt, _, _, _ = _get_consensus_stats(
                 labels_multiannotator=labels_multiannotator,
                 pred_probs=pred_probs,
                 num_annotations=num_annotations,
@@ -842,6 +886,8 @@ def get_label_quality_multiannotator(
             consensus_label=consensus_label,
             num_annotations=num_annotations,
             annotator_agreement=annotator_agreement,
+            model_weight=model_weight,
+            annotator_weight=annotator_weight,
             quality_of_consensus=quality_of_consensus,
             quality_method=quality_method,
         )
