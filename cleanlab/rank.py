@@ -656,44 +656,44 @@ def get_outlier_scores(
 
 
 def get_ood_scores(
-    pred_probs: np.array,
-    confident_thresholds: Optional[np.ndarray] = None,
+    pred_probs: np.ndarray, *,
     labels: Optional[np.ndarray] = None,
-    adjusted_pred_probs: bool = False,
-    scoring_method: str = "entropy",
-    t: int = 1,
+    confident_thresholds: Optional[np.ndarray] = None,
+    adjust_pred_probs: bool = False,
+    method: str = "entropy",
     return_thresholds: bool = False,
-) -> Union[np.ndarray, Tuple[np.ndarray, NearestNeighbors]]:
-    """Returns an OOD score for each example based on it pred_prob values. Scores lie in [0,1] with smaller values indicating examples
+) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
+    """Returns an OOD (out of distribution) score for each example based on it pred_prob values. Scores lie in [0,1] with smaller values indicating examples
     that are less typical under the dataset distribution (values near 0 indicate outliers).
-    TODO: what is the score based on.
 
     Parameters
     ----------
     pred_probs : np.ndarray
-      TODO
+      Predicted-probabilities in the same format expected by the :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>` function.
 
     confident_thresholds : np.ndarray, default = None
-      TODO
+      An array of shape ``(K, )`` where K is the number of classes.
+      Confident threshold for a class j is the expected (average) "self-confidence" for that class.
+
     labels : np.ndarray, default = None
-      TODO
+      Labels in the same format expected by the :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>` function.
 
-    adjusted_pred_probs : bool, default = False
-      TODO
+    adjust_pred_probs : bool, default = False
+      `adjust_pred_probs` in the same format expected by the :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>` function.
 
-    scoring_method : bool, default = False
-      TODO
+    method : {"entropy", "least_confidence"}, default="entropy"
+      OOD scoring method.
 
-    t : int, default=1
-      Optional hyperparameter only for advanced users.
-      Controls transformation of distances between examples into similarity scores that lie in [0,1].
-      The transformation applied to distances `x` is `exp(-x*t)`.
-      If you find your scores are all too close to 1, consider increasing `t`,
-      although the relative scores of examples will still have the same ranking across the dataset.
+      Letting ``P = pred_probs[i]`` denote the given predicted class-probabilities
+      for datapoint *i*, its score can either be:
+
+      - ``'entropy'``: ``- sum_{j} P[j] * log(P[j])``
+      - ``'least_confidence'``: ``1 - max(P)``
 
     return_thresholds : bool, default = False
       Whether the `confident_thresholds` array should also be returned.
       If True, this function returns a tuple `(ood_scores, confident_thresholds)`.
+
     Returns
     -------
     ood_scores : np.ndarray
@@ -705,49 +705,47 @@ def get_ood_scores(
 
     valid_methods = [
         "entropy",
-        "self_confidence",
+        "least_confidence",
     ]
 
     # Might be a better place to put this warning
-    if (confident_thresholds is not None or labels is not None) and not adjusted_pred_probs:
+    if (confident_thresholds is not None or labels is not None) and not adjust_pred_probs:
         warnings.warn(
-            f"OOD scores are not adjusted with confident thresholds. If scores need to be adjusted set adjusted_pred_probs = True. Otherwise passing in confident_thresholds and/or labels does not change score calculation.",
+            f"OOD scores are not adjusted with confident thresholds. If scores need to be adjusted set "
+            f"adjusted_pred_probs = True. Otherwise passing in confident_thresholds and/or labels does not change "
+            f"score calculation.",
             UserWarning,
         )
 
-    # TODO warn about both thresholds and labels passed in
-
     if confident_thresholds is None:
-        if adjusted_pred_probs:
+        if adjust_pred_probs:
             if labels is None:
                 raise ValueError(
-                    f"Cannot calculate adjusted_pred_probs without labels. Either pass in labels parameter or set adjusted_pred_probs = False."
+                    f"Cannot calculate adjust_pred_probs without labels. Either pass in labels parameter or set "
+                    f"adjusted_pred_probs = False. "
                 )
             confident_thresholds = get_confident_thresholds(
                 labels, pred_probs, multi_label=False
-            )  # should we support multi_label?
+            )
         else:
             confident_thresholds = 0
 
-    if adjusted_pred_probs:
+    if adjust_pred_probs:
         pred_probs = pred_probs - confident_thresholds
         pred_probs += confident_thresholds.max()
         pred_probs /= pred_probs.sum(axis=1)[:, None]
 
-    if scoring_method == "entropy":
+    if method == "entropy":
         ood_scores = get_normalized_entropy(pred_probs)
-    elif scoring_method == "self_confidence":
+    elif method == "least_confidence":
         ood_scores = 1.0 - pred_probs.max(axis=1)
     else:
         raise ValueError(
             f"""
-            {scoring_method} is not a valid ood scoring method!
+            {method} is not a valid ood scoring method!
             Please choose a valid scoring_method: {valid_methods}
             """
         )
-
-    # Map ood_scores to range 0-1 with 0 = most concerning
-    ood_scores: np.ndarray = np.exp(-1 * ood_scores * t)
 
     if return_thresholds:
         return (
