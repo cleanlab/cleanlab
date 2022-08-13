@@ -134,7 +134,7 @@ def test_label_quality_scores_multiannotator():
     # test passing a list into consensus_method
     # TODO: change list items after adding more options
     lqs_multiannotator = get_label_quality_multiannotator(
-        labels, pred_probs, consensus_method=["majority", "majority"]
+        labels, pred_probs, consensus_method=["majority_vote", "majority_vote"]
     )
 
     # test different quality_methods
@@ -147,9 +147,9 @@ def test_label_quality_scores_multiannotator():
     lqs_annotatorstats = get_label_quality_multiannotator(
         labels, pred_probs, return_annotator_stats=True
     )
-    assert isinstance(lqs_annotatorstats, tuple)
-    assert isinstance(lqs_annotatorstats[0], pd.DataFrame)
-    assert isinstance(lqs_annotatorstats[1], pd.DataFrame)
+    assert isinstance(lqs_annotatorstats, dict)
+    assert isinstance(lqs_annotatorstats["label_quality_multiannotator"], pd.DataFrame)
+    assert isinstance(lqs_annotatorstats["annotator_stats"], pd.DataFrame)
 
     # test error catching when labels_multiannotator has NaN columns
     labels_NA = deepcopy(labels)
