@@ -888,12 +888,12 @@ def get_label_quality_multiannotator(
             "detailed_label_quality": detailed_label_quality,
             "annotator_stats": annotator_stats,
         }
-    if return_detailed_quality:
+    elif return_detailed_quality:
         return {
             "label_quality_multiannotator": label_quality_multiannotator,
             "detailed_label_quality": detailed_label_quality,
         }
-    if return_annotator_stats:
+    elif return_annotator_stats:
         return {
             "label_quality_multiannotator": label_quality_multiannotator,
             "annotator_stats": annotator_stats,
