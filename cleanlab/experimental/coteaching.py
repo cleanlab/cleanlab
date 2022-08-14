@@ -53,7 +53,7 @@ def loss_coteaching(
     y_2 : Tensor array
       Output logits from model 2
 
-    t : np.array
+    t : np.ndarray
       List of Noisy Labels (t means targets)
 
     forget_rate : float
@@ -141,7 +141,7 @@ def train(
     optimizer2 : PyTorch torch.optim.Adam
     args : parser.parse_args() object
         Must contain num_iter_per_epoch, print_freq, and epochs
-    forget_rate_schedule : np.array of length number of epochs
+    forget_rate_schedule : np.ndarray of length number of epochs
         Tells Co-Teaching loss what fraction of examples to forget about.
     class_weights : Tensor array, shape (Number of classes x 1), Default: None
       A np.torch.tensor list of length number of classes with weights

@@ -32,7 +32,7 @@ def remove_noise_from_class(noise_matrix, class_without_noise):
 
     Parameters
     ----------
-    noise_matrix : np.array of shape (K, K), K = number of classes
+    noise_matrix : np.ndarray of shape (K, K), K = number of classes
         A conditional probability matrix of the form P(label=k_s|true_label=k_y) containing
         the fraction of examples in every class, labeled as every other class.
         Assumes columns of noise_matrix sum to 1.
@@ -67,7 +67,7 @@ def clip_noise_rates(noise_matrix):
 
     Parameters
     ----------
-    noise_matrix : np.array of shape (K, K), K = number of classes
+    noise_matrix : np.ndarray of shape (K, K), K = number of classes
         A conditional probability matrix containing the fraction of
         examples in every class, labeled as every other class.
         Diagonal terms are not noise rates, but are consistency P(label=k|true_label=k)
@@ -78,7 +78,7 @@ def clip_noise_rates(noise_matrix):
         into proper range [0,1)"""
         return min(max(noise_rate, 0.0), 0.9999)
 
-    # Vectorize clip_noise_rate_range for efficiency with np.arrays.
+    # Vectorize clip_noise_rate_range for efficiency with np.ndarrays.
     vectorized_clip = np.vectorize(clip_noise_rate_range)
 
     # Preserve because diagonal entries are not noise rates.
@@ -102,7 +102,7 @@ def clip_values(x, low=0.0, high=1.0, new_sum=None):
 
     Parameters
     ----------
-    x : np.array
+    x : np.ndarray
         An array / list of values to be clipped.
 
     low : float
@@ -116,14 +116,16 @@ def clip_values(x, low=0.0, high=1.0, new_sum=None):
 
     Returns
     -------
-    x : np.array
+    x : np.ndarray
         A list of clipped values, summing to the same sum as x."""
 
     def clip_range(a, low=low, high=high):
         """Clip a into range [low,high]"""
         return min(max(a, low), high)
 
-    vectorized_clip = np.vectorize(clip_range)  # Vectorize clip_range for efficiency with np.arrays
+    vectorized_clip = np.vectorize(
+        clip_range
+    )  # Vectorize clip_range for efficiency with np.ndarrays
     prev_sum = sum(x) if new_sum is None else new_sum  # Store previous sum
     x = vectorized_clip(x)  # Clip all values (efficiently)
     x = x * prev_sum / float(sum(x))  # Re-normalized values to sum to previous sum
@@ -131,7 +133,7 @@ def clip_values(x, low=0.0, high=1.0, new_sum=None):
 
 
 def value_counts(x):
-    """Returns an np.array of shape (K, 1), with the
+    """Returns an np.ndarray of shape (K, 1), with the
     value counts for every unique item in the labels list/array,
     where K is the number of unique entries in labels.
 
@@ -153,7 +155,7 @@ def value_counts(x):
 
     Parameters
     ----------
-    x : list or np.array (one dimensional)
+    x : list or np.ndarray (one dimensional)
         A list of discrete objects, like lists or strings, for
         example, class labels 'y' when training a classifier.
         e.g. ["dog","dog","cat"] or [1,2,0,1,1,0,2]"""
@@ -176,12 +178,12 @@ def round_preserving_sum(iterable):
 
     Parameters
     -----------
-    iterable : list<float> or np.array<float>
+    iterable : list<float> or np.ndarray<float>
         An iterable of floats
 
     Returns
     -------
-    list<int> or np.array<int>
+    list<int> or np.ndarray<int>
         The iterable rounded to int, preserving sum."""
 
     floats = np.asarray(iterable, dtype=float)
@@ -204,16 +206,16 @@ def round_preserving_sum(iterable):
 def round_preserving_row_totals(confident_joint):
     """Rounds confident_joint cj to type int
     while preserving the totals of reach row.
-    Assumes that cj is a 2D np.array of type float.
+    Assumes that cj is a 2D np.ndarray of type float.
 
     Parameters
     ----------
-    confident_joint : 2D np.array<float> of shape (K, K)
+    confident_joint : 2D np.ndarray<float> of shape (K, K)
         See compute_confident_joint docstring for details.
 
     Returns
     -------
-    confident_joint : 2D np.array<int> of shape (K,K)
+    confident_joint : 2D np.ndarray<int> of shape (K,K)
         Rounded to int while preserving row totals."""
 
     return np.apply_along_axis(
@@ -243,7 +245,7 @@ def onehot2int(onehot_matrix):
 
     Parameters
     ----------
-    onehot_matrix: 2D np.array of 0s and 1s
+    onehot_matrix: 2D np.ndarray of 0s and 1s
       A one hot encoded matrix representation of multi-labels.
 
     Returns
@@ -260,10 +262,10 @@ def estimate_pu_f1(s, prob_s_eq_1):
 
     Parameters
     ----------
-    s : iterable (list or np.array)
+    s : iterable (list or np.ndarray)
       Binary label (whether each element is labeled or not) in pu learning.
 
-    prob_s_eq_1 : iterable (list or np.array)
+    prob_s_eq_1 : iterable (list or np.ndarray)
       The probability, for each example, whether it has label=1 P(label=1|x)
 
     Output (float)
@@ -290,17 +292,17 @@ def confusion_matrix(true, pred):
 
     Parameters
     ----------
-    true : np.array 1d
+    true : np.ndarray 1d
       Contains labels.
       Assumes true and pred contains the same set of distinct labels.
 
-    pred : np.array 1d
+    pred : np.ndarray 1d
       A discrete vector of noisy labels, i.e. some labels may be erroneous.
       *Format requirements*: for dataset with K classes, labels must be in {0,1,...,K-1}.
 
     Returns
     -------
-    confusion_matrix : np.array (2D)
+    confusion_matrix : np.ndarray (2D)
       matrix of confusion counts with true on rows and pred on columns."""
 
     assert len(true) == len(pred)
@@ -330,7 +332,7 @@ def print_square_matrix(
 
     Parameters
     ----------
-    matrix : np.array
+    matrix : np.ndarray
         the matrix to be printed
     left_name : str
         the name of the variable on the left of the matrix
@@ -392,7 +394,7 @@ def print_joint_matrix(joint_matrix, round_places=2):
 
 
 def compress_int_array(int_array, num_possible_values):
-    """Compresses dtype of np.array<int> if num_possible_values is small enough."""
+    """Compresses dtype of np.ndarray<int> if num_possible_values is small enough."""
     try:
         compressed_type = None
         if num_possible_values < np.iinfo(np.dtype("int16")).max:
@@ -411,7 +413,7 @@ def train_val_split(X, labels, train_idx, holdout_idx):
     labels_train, labels_holdout = (
         labels[train_idx],
         labels[holdout_idx],
-    )  # labels are always np.array
+    )  # labels are always np.ndarray
     split_completed = False
     if isinstance(X, (pd.DataFrame, pd.Series)):
         X_train, X_holdout = X.iloc[train_idx], X.iloc[holdout_idx]
@@ -464,11 +466,11 @@ def subset_labels(labels, mask):
         try:  # filtering labels as if it is list
             return [l for idx, l in enumerate(labels) if mask[idx]]
         except Exception:
-            raise TypeError("labels must be 1D np.array, list, or pd.Series.")
+            raise TypeError("labels must be 1D np.ndarray, list, or pd.Series.")
 
 
 def subset_data(X, mask):
-    """Extracts subset of data examples where mask (np.array) is True"""
+    """Extracts subset of data examples where mask (np.ndarray) is True"""
     try:
         import torch
 

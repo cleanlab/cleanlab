@@ -85,7 +85,7 @@ def find_label_issues(
 
     Parameters
     ----------
-    labels : np.array
+    labels : np.ndarray
       A discrete (length `N`) vector of noisy labels, i.e. some labels may be erroneous.
       *Format requirements*: for dataset with K classes, labels must be in 0, 1, ..., K-1.
       All the classes (0, 1, ..., and K-1) MUST be present in ``labels``, such that:
@@ -93,7 +93,7 @@ def find_label_issues(
       For multi-label classification where each example can belong to multiple classes(e.g. ``labels = [[1,2],[1],[0],..]``),
       your labels should instead satisfy: ``len(set(k for l in labels for k in l)) == pred_probs.shape[1])``.
 
-    pred_probs : np.array, optional
+    pred_probs : np.ndarray, optional
       An array of shape ``(N, K)`` of model-predicted probabilities,
       ``P(label=k|x)``. Each row of this matrix corresponds
       to an example `x` and contains the model-predicted probabilities that
@@ -169,7 +169,7 @@ def find_label_issues(
       This is useful to avoid deleting too much data from one class
       when pruning noisy examples in datasets with rare classes.
 
-    confident_joint : np.array, optional
+    confident_joint : np.ndarray, optional
       An array of shape ``(K, K)`` representing the confident joint, the matrix used for identifying label issues, which
       estimates a confident subset of the joint distribution of the noisy and true labels, ``P_{noisy label, true label}``.
       Entry ``(j, k)`` in the matrix is the number of examples confidently counted into the pair of ``(noisy label=j, true label=k)`` classes.
@@ -187,7 +187,7 @@ def find_label_issues(
 
     Returns
     -------
-    label_issues : np.array
+    label_issues : np.ndarray
       A boolean mask for the entire dataset where ``True`` represents a
       label issue and ``False`` represents an example that is accurately
       labeled with high confidence.
@@ -241,7 +241,7 @@ def find_label_issues(
     )
     # Boolean set to true if dataset is large
     big_dataset = K * len(labels) > 1e8
-    # Ensure labels are of type np.array()
+    # Ensure labels are of type np.ndarray()
     labels = np.asarray(labels)
     if confident_joint is None or filter_by == "confident_learning":
         from cleanlab.count import compute_confident_joint
@@ -407,7 +407,7 @@ def _keep_at_least_n_per_class(prune_count_matrix, n, *, frac_noise=1.0):
 
     Parameters
     ----------
-    prune_count_matrix : np.array of shape (K, K), K = number of classes
+    prune_count_matrix : np.ndarray of shape (K, K), K = number of classes
         A counts of mislabeled examples in every class. For this function.
         NOTE prune_count_matrix is transposed relative to confident_joint.
 
@@ -423,7 +423,7 @@ def _keep_at_least_n_per_class(prune_count_matrix, n, *, frac_noise=1.0):
 
     Returns
     -------
-    prune_count_matrix : np.array of shape (K, K), K = number of classes
+    prune_count_matrix : np.ndarray of shape (K, K), K = number of classes
         This the same as the confident_joint, but has been transposed and the counts are adjusted.
     """
 
@@ -468,7 +468,7 @@ def _reduce_prune_counts(prune_count_matrix, frac_noise=1.0):
 
     Parameters
     ----------
-    prune_count_matrix : np.array of shape (K, K), K = number of classes
+    prune_count_matrix : np.ndarray of shape (K, K), K = number of classes
         A counts of mislabeled examples in every class. For this function, it
         does not matter what the rows or columns are, but the diagonal terms
         reflect the number of correctly labeled examples.
@@ -497,10 +497,10 @@ def find_predicted_neq_given(labels, pred_probs, *, multi_label=False):
 
     Parameters
     ----------
-    labels : np.array
+    labels : np.ndarray
       Labels in the same format expected by the :py:func:`find_label_issues <cleanlab.filter.find_label_issues>` function.
 
-    pred_probs : np.array
+    pred_probs : np.ndarray
       Predicted-probabilities in the same format expected by the :py:func:`find_label_issues <cleanlab.filter.find_label_issues>` function.
 
     multi_label : bool, optional
@@ -508,7 +508,7 @@ def find_predicted_neq_given(labels, pred_probs, *, multi_label=False):
 
     Returns
     -------
-    label_issues_mask : np.array
+    label_issues_mask : np.ndarray
       A boolean mask for the entire dataset where ``True`` represents a
       label issue and ``False`` represents an example that is accurately
       labeled with high confidence.
@@ -542,11 +542,11 @@ def find_label_issues_using_argmax_confusion_matrix(
 
     Parameters
     ----------
-    labels : np.array
+    labels : np.ndarray
         An array of shape ``(N,)`` of noisy labels, i.e. some labels may be erroneous.
         Elements must be in the set 0, 1, ..., K-1, where K is the number of classes.
 
-    pred_probs : np.array (shape (N, K))
+    pred_probs : np.ndarray (shape (N, K))
         An array of shape ``(N, K)`` of model-predicted probabilities,
         ``P(label=k|x)``. Each row of this matrix corresponds
         to an example `x` and contains the model-predicted probabilities that
@@ -565,7 +565,7 @@ def find_label_issues_using_argmax_confusion_matrix(
 
     Returns
     -------
-    label_issues_mask : np.array
+    label_issues_mask : np.ndarray
       A boolean mask for the entire dataset where ``True`` represents a
       label issue and ``False`` represents an example that is accurately
       labeled with high confidence.
@@ -774,7 +774,7 @@ def _multiclass_crossval_predict(labels, pyx):
       These are multiclass labels. Each list in the list contains all the
       labels for that example.
 
-    pyx : np.array (shape (N, K))
+    pyx : np.ndarray (shape (N, K))
         P(label=k|x) is a matrix with K model-predicted probabilities.
         Each row of this matrix corresponds to an example `x` and contains the model-predicted
         probabilities that `x` belongs to each possible class.

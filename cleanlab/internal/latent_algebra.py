@@ -35,11 +35,11 @@ def compute_ps_py_inv_noise_matrix(labels, noise_matrix):
 
     Parameters
     ----------
-    labels : np.array
+    labels : np.ndarray
           A discrete vector of noisy labels, i.e. some labels may be erroneous.
           *Format requirements*: for dataset with K classes, labels must be in {0,1,...,K-1}.
 
-    noise_matrix : np.array of shape (K, K), K = number of classes
+    noise_matrix : np.ndarray of shape (K, K), K = number of classes
         A conditional probability matrix of the form P(label=k_s|true_label=k_y) containing
         the fraction of examples in every class, labeled as every other class.
         Assumes columns of noise_matrix sum to 1."""
@@ -56,10 +56,10 @@ def compute_py_inv_noise_matrix(ps, noise_matrix):
 
     Parameters
     ----------
-    ps : np.array (shape (K, ) or (1, K))
+    ps : np.ndarray (shape (K, ) or (1, K))
         The fraction (prior probability) of each observed, NOISY class P(labels = k).
 
-    noise_matrix : np.array of shape (K, K), K = number of classes
+    noise_matrix : np.ndarray of shape (K, K), K = number of classes
         A conditional probability matrix of the form P(label=k_s|true_label=k_y) containing
         the fraction of examples in every class, labeled as every other class.
         Assumes columns of noise_matrix sum to 1."""
@@ -82,15 +82,15 @@ def compute_inv_noise_matrix(py, noise_matrix, *, ps=None):
 
     Parameters
     ----------
-    py : np.array (shape (K, 1))
+    py : np.ndarray (shape (K, 1))
         The fraction (prior probability) of each TRUE class label, P(true_label = k)
 
-    noise_matrix : np.array of shape (K, K), K = number of classes
+    noise_matrix : np.ndarray of shape (K, K), K = number of classes
         A conditional probability matrix of the form P(label=k_s|true_label=k_y) containing
         the fraction of examples in every class, labeled as every other class.
         Assumes columns of noise_matrix sum to 1.
 
-    ps : np.array (shape (K, 1))
+    ps : np.ndarray (shape (K, 1))
         The fraction (prior probability) of each NOISY given label, P(labels = k).
         ps is easily computable from py and should only be provided if it has
         already been precomputed, to increase code efficiency.
@@ -133,24 +133,24 @@ def compute_noise_matrix_from_inverse(ps, inverse_noise_matrix, *, py=None):
 
     Parameters
     ----------
-    py : np.array (shape (K, 1))
+    py : np.ndarray (shape (K, 1))
         The fraction (prior probability) of each TRUE class label, P(true_label = k)
 
-    inverse_noise_matrix : np.array of shape (K, K), K = number of classes
+    inverse_noise_matrix : np.ndarray of shape (K, K), K = number of classes
         A conditional probability matrix of the form P(true_label=k_y|label=k_s) representing
         the estimated fraction observed examples in each class k_s, that are
         mislabeled examples from every other class k_y. If None, the
         inverse_noise_matrix will be computed from pred_probs and labels.
         Assumes columns of inverse_noise_matrix sum to 1.
 
-    ps : np.array (shape (K, 1))
+    ps : np.ndarray (shape (K, 1))
         The fraction (prior probability) of each observed NOISY label, P(labels = k).
         ps is easily computable from py and should only be provided if it has
         already been precomputed, to increase code efficiency.
 
     Returns
     -------
-    noise_matrix : np.array of shape (K, K), K = number of classes
+    noise_matrix : np.ndarray of shape (K, K), K = number of classes
         A conditional probability matrix of the form P(label=k_s|true_label=k_y) containing
         the fraction of examples in every class, labeled as every other class.
         Columns of noise_matrix sum to 1.
@@ -202,15 +202,15 @@ def compute_py(
 
     Parameters
     ----------
-    ps : np.array (shape (K, ) or (1, K))
+    ps : np.ndarray (shape (K, ) or (1, K))
         The fraction (prior probability) of each observed, noisy label, P(labels = k)
 
-    noise_matrix : np.array of shape (K, K), K = number of classes
+    noise_matrix : np.ndarray of shape (K, K), K = number of classes
         A conditional probability matrix of the form P(label=k_s|true_label=k_y) containing
         the fraction of examples in every class, labeled as every other class.
         Assumes columns of noise_matrix sum to 1.
 
-    inverse_noise_matrix : np.array of shape (K, K), K = number of classes
+    inverse_noise_matrix : np.ndarray of shape (K, K), K = number of classes
         A conditional probability matrix of the form P(true_label=k_y|label=k_s) representing
         the estimated fraction observed examples in each class k_s, that are
         mislabeled examples from every other class k_y. If None, the
@@ -222,16 +222,16 @@ def compute_py(
         works well even when the noise matrices are estimated poorly by using
         the matrix diagonals instead of all the probabilities.
 
-    true_labels_class_counts : np.array (shape (K, ) or (1, K))
+    true_labels_class_counts : np.ndarray (shape (K, ) or (1, K))
         The marginal counts of the confident joint (like cj.sum(axis = 0))
 
     Returns
     -------
-    py : np.array (shape (K, ) or (1, K))
+    py : np.ndarray (shape (K, ) or (1, K))
         The fraction (prior probability) of each TRUE class label, P(true_label = k)."""
 
     if len(np.shape(ps)) > 2 or (len(np.shape(ps)) == 2 and np.shape(ps)[0] != 1):
-        w = "Input parameter np.array ps has shape " + str(np.shape(ps))
+        w = "Input parameter np.ndarray ps has shape " + str(np.shape(ps))
         w += ", but shape should be (K, ) or (1, K)"
         warnings.warn(w)
 
@@ -275,19 +275,19 @@ def compute_pyx(pred_probs, noise_matrix, inverse_noise_matrix):
 
     Parameters
     ----------
-    pred_probs : np.array (shape (N, K))
+    pred_probs : np.ndarray (shape (N, K))
         P(label=k|x) is a matrix with K model-predicted probabilities.
         Each row of this matrix corresponds to an example `x` and contains the model-predicted
         probabilities that `x` belongs to each possible class.
         The columns must be ordered such that these probabilities correspond to class 0,1,2,...
         `pred_probs` should have been computed using 3 (or higher) fold cross-validation.
 
-    noise_matrix : np.array of shape (K, K), K = number of classes
+    noise_matrix : np.ndarray of shape (K, K), K = number of classes
         A conditional probability matrix of the form P(label=k_s|true_label=k_y) containing
         the fraction of examples in every class, labeled as every other class.
         Assumes columns of noise_matrix sum to 1.
 
-    inverse_noise_matrix : np.array of shape (K, K), K = number of classes
+    inverse_noise_matrix : np.ndarray of shape (K, K), K = number of classes
         A conditional probability matrix of the form P(true_label=k_y|label=k_s) representing
         the estimated fraction observed examples in each class k_s, that are
         mislabeled examples from every other class k_y. If None, the
@@ -296,7 +296,7 @@ def compute_pyx(pred_probs, noise_matrix, inverse_noise_matrix):
 
     Returns
     -------
-    pyx : np.array (shape (N, K))
+    pyx : np.ndarray (shape (N, K))
         P(true_label=k|x) is a matrix with K model-predicted probabilities.
         Each row of this matrix corresponds to an example `x` and contains the model-predicted
         probabilities that `x` belongs to each possible class.
@@ -305,7 +305,7 @@ def compute_pyx(pred_probs, noise_matrix, inverse_noise_matrix):
 
     if len(np.shape(pred_probs)) != 2:
         raise ValueError(
-            "Input parameter np.array 'pred_probs' has shape "
+            "Input parameter np.ndarray 'pred_probs' has shape "
             + str(np.shape(pred_probs))
             + ", but shape should be (N, K)"
         )
