@@ -785,75 +785,111 @@ def get_label_quality_multiannotator(
     # Count number of non-NaN values for each example
     num_annotations = labels_multiannotator.count(axis=1).to_numpy()
 
-    # Compute consensus labels, annotator agreement and quality of consensus
-    consensus_label = get_majority_vote_label(
-        labels_multiannotator=labels_multiannotator,
-        pred_probs=pred_probs,
-    )
+    if not isinstance(consensus_method, list):
+        consensus_method = [consensus_method]
 
-    (
-        annotator_agreement,
-        quality_of_consensus,
-        post_pred_probs,
-        model_weight,
-        annotator_weight,
-    ) = _get_consensus_stats(
-        labels_multiannotator=labels_multiannotator,
-        pred_probs=pred_probs,
-        num_annotations=num_annotations,
-        consensus_label=consensus_label,
-        quality_method=quality_method,
-        **kwargs,
-    )
-
-    label_quality_multiannotator = pd.DataFrame(
-        {
-            "num_annotations": num_annotations,
-            "annotator_agreement": annotator_agreement,
-            "consensus_label": consensus_label,
-            "quality_of_consensus": quality_of_consensus,
-        }
-    )
-
-    # compute consensus stats for alternative consensus methods (if provided)
-    # if isinstance(consensus_method, list) and len(consensus_method) > 1:
-    #     for alt_consensus_method in consensus_method[1:]:
-    #         consensus_label_alt, _, quality_of_consensus_alt, _, _, _ = _get_consensus_stats(
-    #             labels_multiannotator=labels_multiannotator,
-    #             pred_probs=pred_probs,
-    #             num_annotations=num_annotations,
-    #             consensus_method=alt_consensus_method,
-    #             quality_method=quality_method,
-    #             **kwargs,
-    #         )
-
-    #         (
-    #             label_quality_multiannotator[f"consensus_label_{alt_consensus_method}"],
-    #             label_quality_multiannotator[f"quality_of_consensus_{alt_consensus_method}"],
-    #         ) = (
-    #             consensus_label_alt,
-    #             quality_of_consensus_alt,
-    #         )
-
-    if return_detailed_quality:
-        # Compute the label quality scores for each annotators' labels
-        detailed_label_quality = labels_multiannotator.apply(
-            _get_label_quality_scores_with_NA, args=[pred_probs], **kwargs
-        )
-        detailed_label_quality = detailed_label_quality.add_prefix("quality_annotator_")
-
-    if verbose or return_annotator_stats:
-        annotator_stats = get_annotator_stats(
+    if "best_quality" in consensus_method or "majority_vote" in consensus_method:
+        majority_vote_label = get_majority_vote_label(
             labels_multiannotator=labels_multiannotator,
-            pred_probs=post_pred_probs,
-            consensus_label=consensus_label,
-            num_annotations=num_annotations,
-            annotator_agreement=annotator_agreement,
-            model_weight=model_weight,
-            annotator_weight=annotator_weight,
-            quality_of_consensus=quality_of_consensus,
-            quality_method=quality_method,
+            pred_probs=pred_probs,
         )
+        (
+            MV_annotator_agreement,
+            MV_quality_of_consensus,
+            MV_post_pred_probs,
+            MV_model_weight,
+            MV_annotator_weight,
+        ) = _get_consensus_stats(
+            labels_multiannotator=labels_multiannotator,
+            pred_probs=pred_probs,
+            num_annotations=num_annotations,
+            consensus_label=majority_vote_label,
+            quality_method=quality_method,
+            **kwargs,
+        )
+
+    label_quality_multiannotator = pd.DataFrame({"num_annotations": num_annotations})
+    valid_methods = ["majority_vote", "best_quality"]
+    main_method = True
+
+    for curr_method in consensus_method:
+        # geting consensus label and stats
+        if curr_method == "majority_vote":
+            consensus_label = majority_vote_label
+            annotator_agreement = MV_annotator_agreement
+            quality_of_consensus = MV_quality_of_consensus
+            post_pred_probs = MV_post_pred_probs
+            model_weight = MV_model_weight
+            annotator_weight = MV_annotator_weight
+        elif curr_method == "best_quality":
+            # TODO: can't just take argmax, need a method to break ties
+            consensus_label = np.argmax(MV_post_pred_probs, axis=1)
+            (
+                annotator_agreement,
+                quality_of_consensus,
+                post_pred_probs,
+                model_weight,
+                annotator_weight,
+            ) = _get_consensus_stats(
+                labels_multiannotator=labels_multiannotator,
+                pred_probs=pred_probs,
+                num_annotations=num_annotations,
+                consensus_label=consensus_label,
+                quality_method=quality_method,
+                **kwargs,
+            )
+        else:
+            raise ValueError(
+                f"""
+                {quality_method} is not a valid consensus method!
+                Please choose a valid consensus_method: {valid_methods}
+                """
+            )
+
+        # saving stats into dataframe, computing additional stats if specified
+        if main_method:
+            (
+                label_quality_multiannotator["consensus_label"],
+                label_quality_multiannotator["annotator_agreement"],
+                label_quality_multiannotator["quality_of_consensus"],
+            ) = (
+                consensus_label,
+                annotator_agreement,
+                quality_of_consensus,
+            )
+
+            if return_detailed_quality:
+                # Compute the label quality scores for each annotators' labels
+                detailed_label_quality = labels_multiannotator.apply(
+                    _get_label_quality_scores_with_NA, args=[pred_probs], **kwargs
+                )
+                detailed_label_quality = detailed_label_quality.add_prefix("quality_annotator_")
+
+            if verbose or return_annotator_stats:
+                annotator_stats = get_annotator_stats(
+                    labels_multiannotator=labels_multiannotator,
+                    pred_probs=post_pred_probs,
+                    consensus_label=consensus_label,
+                    num_annotations=num_annotations,
+                    annotator_agreement=annotator_agreement,
+                    model_weight=model_weight,
+                    annotator_weight=annotator_weight,
+                    quality_of_consensus=quality_of_consensus,
+                    quality_method=quality_method,
+                )
+
+            main_method = False
+
+        else:
+            (
+                label_quality_multiannotator[f"consensus_label_{curr_method}"],
+                label_quality_multiannotator[f"annotator_agreement_{curr_method}"],
+                label_quality_multiannotator[f"quality_of_consensus_{curr_method}"],
+            ) = (
+                consensus_label,
+                annotator_agreement,
+                quality_of_consensus,
+            )
 
     if verbose:
         print(
@@ -879,71 +915,3 @@ def get_label_quality_multiannotator(
         }
     else:
         return label_quality_multiannotator
-
-
-def get_improved_consensus_label(
-    labels_multiannotator: pd.DataFrame or np.ndarray,
-    pred_probs: np.ndarray,
-    label_quality_multiannotator: pd.DataFrame = None,
-):
-    """TODO: docsting"""
-
-    # if label_quality_multiannotator is passed in, obtained information from computed columns
-    if label_quality_multiannotator is not None:
-        consensus_label = label_quality_multiannotator["consensus_label"]
-        num_annotations = label_quality_multiannotator["num_annotations"]
-        annotator_agreement = label_quality_multiannotator["annotator_agreement"]
-    # otherwise, recompute original consensus labels and relevant statistics
-    else:
-        consensus_label = get_consensus_label(
-            labels_multiannotator=labels_multiannotator,
-            pred_probs=pred_probs,
-        )
-        num_annotations = labels_multiannotator.count(axis=1).to_numpy()
-        annotator_agreement = _get_annotator_agreement(
-            labels_multiannotator=labels_multiannotator,
-            consensus_label=consensus_label,
-        )
-
-    # get improved consensus labels
-    improved_pred_probs, _, _ = _get_post_pred_probs_and_weights(
-        labels_multiannotator=labels_multiannotator,
-        consensus_label=consensus_label,
-        prior_pred_probs=pred_probs,
-        num_annotations=num_annotations,
-        annotator_agreement=annotator_agreement,
-    )
-
-    improved_consensus_label = np.argmax(improved_pred_probs, axis=1)
-
-    # get statistics for improved consensus labels
-    improved_annotator_agreement = _get_annotator_agreement(
-        labels_multiannotator=labels_multiannotator,
-        consensus_label=improved_consensus_label,
-    )
-
-    improved_post_pred_probs, _, _ = _get_post_pred_probs_and_weights(
-        labels_multiannotator=labels_multiannotator,
-        consensus_label=improved_consensus_label,
-        prior_pred_probs=improved_pred_probs,
-        num_annotations=num_annotations,
-        annotator_agreement=improved_annotator_agreement,
-    )
-
-    improved_quality_of_consensus = _get_quality_of_consensus(
-        labels_multiannotator=labels_multiannotator,
-        consensus_label=improved_consensus_label,
-        pred_probs=improved_post_pred_probs,
-        num_annotations=num_annotations,
-        annotator_agreement=improved_annotator_agreement,
-    )
-
-    improved_label_quality = pd.DataFrame(
-        {
-            "improved_consensus_label": improved_consensus_label,
-            "improved_annotator_agreement": improved_annotator_agreement,
-            "improved_quality_of_consensus": improved_quality_of_consensus,
-        }
-    )
-
-    return improved_label_quality
