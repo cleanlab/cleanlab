@@ -9,7 +9,7 @@ from cleanlab.internal.validation import labels_to_array
 from cleanlab.multiannotator import (
     get_label_quality_multiannotator,
     convert_long_to_wide_dataset,
-    get_consensus_label,
+    get_majority_vote_label,
 )
 import pandas as pd
 
@@ -134,7 +134,7 @@ def test_label_quality_scores_multiannotator():
     # test passing a list into consensus_method
     # TODO: change list items after adding more options
     lqs_multiannotator = get_label_quality_multiannotator(
-        labels, pred_probs, consensus_method=["majority_vote", "majority_vote"]
+        labels, pred_probs, consensus_method=["majority_vote", "best_quality"]
     )
 
     # test different quality_methods
@@ -168,7 +168,7 @@ def test_get_consensus_label():
     labels = data["labels"]
 
     # getting consensus labels without pred_probs
-    consensus_label = get_consensus_label(labels)
+    consensus_label = get_majority_vote_label(labels)
 
     # making synthetic data to test tiebreaks of get_consensus_label
     # also testing pssing labels as np.ndarray
@@ -184,4 +184,4 @@ def test_get_consensus_label():
         ]
     )
 
-    consensus_label = get_consensus_label(labels_tiebreaks, pred_probs_tiebreaks)
+    consensus_label = get_majority_vote_label(labels_tiebreaks, pred_probs_tiebreaks)

@@ -680,7 +680,7 @@ def get_label_quality_multiannotator(
     labels_multiannotator: pd.DataFrame or np.ndarray,
     pred_probs: np.ndarray,
     *,
-    consensus_method: Union[str, List[str]] = "majority_vote",
+    consensus_method: Union[str, List[str]] = "best_quality",
     quality_method: str = "auto",
     return_detailed_quality: bool = False,
     return_annotator_stats: bool = False,  # sort by lowest overall_quality first
