@@ -719,19 +719,14 @@ def get_ood_scores(
         )
 
     if adjust_pred_probs:
-        adjusted_values = _subtract_confident_thresholds(
-            labels,
-            pred_probs,
-            confident_thresholds,
-            multi_label=False,
-            return_thresholds=return_thresholds,
-        )
-
-        if return_thresholds:
-            pred_probs = adjusted_values[0]
-            confident_thresholds = adjusted_values[1]
-        else:
-            pred_probs = adjusted_values
+        if confident_thresholds is None:
+            if labels is None:
+                raise ValueError(
+                    f"Cannot calculate adjust_pred_probs without labels. Either pass in labels parameter or set "
+                    f"adjusted_pred_probs = False. "
+                )
+            confident_thresholds = get_confident_thresholds(labels, pred_probs, multi_label=False)
+        pred_probs = _subtract_confident_thresholds(None, pred_probs, confident_thresholds)
 
     if method == "entropy":
         ood_scores = get_normalized_entropy(pred_probs)

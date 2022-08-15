@@ -609,7 +609,7 @@ def test_wrong_info_get_ood_scores():
             adjust_pred_probs=True,  # this should throw ValueError because knn=None and features=None
         )
     except Exception as e:
-        assert "Cannot calculate confident_thresholds without labels" in str(e)
+        assert "Cannot calculate adjust_pred_probs without labels" in str(e)
         with pytest.raises(ValueError) as e:
             rank.get_ood_scores(
                 pred_probs=data["pred_probs"],
@@ -624,7 +624,7 @@ def test_wrong_info_get_ood_scores():
             adjust_pred_probs=True,  # this should throw ValueError because knn=None and features=None
         )
     except Exception as e:
-        assert "Cannot calculate confident_thresholds without labels" in str(e)
+        assert "Cannot calculate adjust_pred_probs without labels" in str(e)
         with pytest.raises(ValueError) as e:
             rank.get_ood_scores(
                 pred_probs=data["pred_probs"],
