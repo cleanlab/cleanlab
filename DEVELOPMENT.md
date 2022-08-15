@@ -63,12 +63,12 @@ which you can open with your web browser.
 
 ### Type checking
 
-Cleanlab uses [mypy](https://mypy.readthedocs.io/en/stable/) typing. Type checking happens automatically during CI but can be tested locally.
+Cleanlab uses [mypy](https://mypy.readthedocs.io/en/stable/) typing. Type checking happens automatically during CI but can be run locally.
 
-**Check typing in files:**
+**Check typing in all files:**
 
 ```
-$ mypy <filename or foldername>
+$ mypy cleanlab
 ```
 
 ### Examples
@@ -103,12 +103,6 @@ If editing existing docs or adding new tutorials, please first read through our 
 
 cleanlab follows the [Black](https://black.readthedocs.io/) code style. This is
 enforced by CI, so please format your code before submitting a pull request.
-
-**Reformat files to Black code style:**
-
-```
-$ black <filename or foldername>
-```
 
 ### Pre-commit hook
 
