@@ -356,7 +356,7 @@ def _get_quality_of_consensus(
     num_annotations: np.ndarray,
     annotator_agreement: np.ndarray,
     quality_method: str = "auto",
-    kwargs: dict = {},
+    label_quality_score_kwargs: dict = {},
 ) -> np.ndarray:
     """Return scores representing quality of the consensus label for each example,
     calculated using weighted product of `label_quality_score` of `consensus_label` and `annotator_agreement`
@@ -393,7 +393,9 @@ def _get_quality_of_consensus(
     ]
 
     if quality_method == "auto":
-        quality_of_consensus = get_label_quality_scores(consensus_label, pred_probs, **kwargs)
+        quality_of_consensus = get_label_quality_scores(
+            consensus_label, pred_probs, **label_quality_score_kwargs
+        )
 
     elif quality_method == "agreement":
         quality_of_consensus = annotator_agreement
@@ -415,7 +417,7 @@ def _get_consensus_stats(
     num_annotations: np.ndarray,
     consensus_label: np.ndarray,
     quality_method: str = "auto",
-    kwargs: dict = {},
+    label_quality_score_kwargs: dict = {},
 ) -> tuple:
     """Returns a tuple containing the consensus labels, annotator agreement scores, and quality of consensus
 
@@ -469,7 +471,7 @@ def _get_consensus_stats(
         num_annotations=num_annotations,
         annotator_agreement=annotator_agreement,
         quality_method=quality_method,
-        **kwargs,
+        **label_quality_score_kwargs,
     )
 
     return (
@@ -683,7 +685,7 @@ def get_label_quality_multiannotator(
     return_detailed_quality: bool = False,
     return_annotator_stats: bool = False,  # sort by lowest overall_quality first
     verbose: bool = True,
-    kwargs: dict = {},
+    label_quality_score_kwargs: dict = {},
 ) -> Union[pd.DataFrame, Tuple[pd.DataFrame, pd.DataFrame]]:
     """Returns label quality scores for each example for each annotator.
     This function is for multiclass classification datasets where examples have been labeled by
@@ -727,7 +729,7 @@ def get_label_quality_multiannotator(
         Boolean to specify if `annotator_stats` is returned.
     verbose : bool, default = True
         If ``verbose`` is set to ``True``, the full ``annotator_stats`` DataFrame is printed out during the execution of this function.
-    kwargs : dict, optional
+    label_quality_score_kwargs : dict, optional
         Keyword arguments to pass into ``get_label_quality_scores()``.
 
     Returns
@@ -806,7 +808,7 @@ def get_label_quality_multiannotator(
             num_annotations=num_annotations,
             consensus_label=majority_vote_label,
             quality_method=quality_method,
-            **kwargs,
+            **label_quality_score_kwargs,
         )
 
     label_quality_multiannotator = pd.DataFrame({"num_annotations": num_annotations})
@@ -837,7 +839,7 @@ def get_label_quality_multiannotator(
                 num_annotations=num_annotations,
                 consensus_label=consensus_label,
                 quality_method=quality_method,
-                **kwargs,
+                **label_quality_score_kwargs,
             )
         else:
             raise ValueError(
@@ -862,7 +864,9 @@ def get_label_quality_multiannotator(
             if return_detailed_quality:
                 # Compute the label quality scores for each annotators' labels
                 detailed_label_quality = labels_multiannotator.apply(
-                    _get_label_quality_scores_with_NA, args=[pred_probs], **kwargs
+                    _get_label_quality_scores_with_NA,
+                    args=[pred_probs],
+                    **label_quality_score_kwargs,
                 )
                 detailed_label_quality = detailed_label_quality.add_prefix("quality_annotator_")
 
