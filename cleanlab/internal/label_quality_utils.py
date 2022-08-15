@@ -56,15 +56,16 @@ def _subtract_confident_thresholds(
 
     # Get expected (average) self-confidence for each class
     # TODO: Test this for multi-label
-
-    if labels is None and confident_thresholds is None:
-        raise ValueError(
-            f"Cannot calculate confident_thresholds without labels. Pass in either labels or already calculated "
-            f"confident_thresholds parameter. "
-        )
-
     if confident_thresholds is None:
-        confident_thresholds = get_confident_thresholds(labels, pred_probs, multi_label=multi_label)
+        if labels is None:
+            raise ValueError(
+                f"Cannot calculate confident_thresholds without labels. Pass in either labels or already calculated "
+                f"confident_thresholds parameter. "
+            )
+        else:
+            confident_thresholds = get_confident_thresholds(
+                labels, pred_probs, multi_label=multi_label
+            )
 
     # Subtract the class confident thresholds
     pred_probs_adj = pred_probs - confident_thresholds

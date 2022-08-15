@@ -663,7 +663,7 @@ def get_ood_scores(
     adjust_pred_probs: bool = False,
     method: str = "entropy",
     return_thresholds: bool = False,
-) -> Union[np.ndarray, Tuple[np.ndarray, Optional[np.ndarray]]]:
+) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
     """Returns an OOD (out of distribution) score for each example based on it pred_prob values. Scores lie in [0,1] with smaller values indicating examples
     that are less typical under the dataset distribution (values near 0 indicate outliers).
 
@@ -719,25 +719,15 @@ def get_ood_scores(
 
     if adjust_pred_probs:
         if confident_thresholds is None:
-            if labels is not None:
-                assert labels is not None
-                confident_thresholds = get_confident_thresholds(
-                    labels, pred_probs, multi_label=False
-                )
-            else:
+            if labels is None:
                 raise ValueError(
                     f"Cannot calculate adjust_pred_probs without labels. Either pass in labels parameter or set "
                     f"adjusted_pred_probs = False. "
                 )
-            # if labels is None:
-            #     raise ValueError(
-            #         f"Cannot calculate adjust_pred_probs without labels. Either pass in labels parameter or set "
-            #         f"adjusted_pred_probs = False. "
-            #     )
-            # else:
-            #     confident_thresholds = get_confident_thresholds(
-            #         labels, pred_probs, multi_label=False
-            #     )
+            else:
+                confident_thresholds = get_confident_thresholds(
+                    labels, pred_probs, multi_label=False
+                )
 
         pred_probs = _subtract_confident_thresholds(None, pred_probs, confident_thresholds)
 
@@ -754,9 +744,16 @@ def get_ood_scores(
         )
 
     if return_thresholds:
-        return (
-            ood_scores,
-            confident_thresholds,
-        )
+        if confident_thresholds is None:
+            warnings.warn(
+                f"No confident_thresholds calculated but return_thresholds=True. Returning OOD scores only.",
+                UserWarning,
+            )
+            return ood_scores
+        else:
+            return (
+                ood_scores,
+                confident_thresholds,
+            )
     else:
         return ood_scores

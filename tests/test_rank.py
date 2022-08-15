@@ -534,22 +534,16 @@ def test_ood_scores():
     pred_probs = logreg.predict_proba(X_with_ood)
 
     ### Test non-adjusted OOD score logic
-    ood_scores_entropy, confident_thresholds_entropy = rank.get_ood_scores(
+    ood_scores_entropy = rank.get_ood_scores(
         pred_probs=pred_probs,
         adjust_pred_probs=False,
-        return_thresholds=True,
     )
 
     # adjust pred probs should be False by default
-    ood_scores_least_confidence, confident_thresholds_least_confidence = rank.get_ood_scores(
+    ood_scores_least_confidence = rank.get_ood_scores(
         pred_probs=pred_probs,
-        return_thresholds=True,
         method="least_confidence",
     )
-
-    # test confident_thresholds is not calculated
-    assert confident_thresholds_entropy is None
-    assert confident_thresholds_least_confidence is None
 
     # check OOD scores calculated correctly
     assert (get_normalized_entropy(pred_probs) == ood_scores_entropy).all()
@@ -654,4 +648,12 @@ def test_wrong_info_get_ood_scores():
         pred_probs=data["pred_probs"],
         labels=data["labels"],
         adjust_pred_probs=False,  # this should user warning because provided info is not used
+    )
+
+    # Test calling function and expecting confident threshold return when none were calculated
+    rank.get_ood_scores(
+        pred_probs=data["pred_probs"],
+        labels=data["labels"],
+        adjust_pred_probs=False,
+        return_thresholds=True,  # this should user warning because no confident thresholds are returned
     )
