@@ -40,7 +40,7 @@ def get_majority_vote_label(
     labels_multiannotator: pd.DataFrame or np.ndarray,
     pred_probs: np.ndarray = None,
 ) -> np.ndarray:
-    """Returns a single consensus label for each example, aggregated from the labels given by multiple annotators.
+    """Returns the majority vote label for each example, aggregated from the labels given by multiple annotators.
 
     Parameters
     ----------
@@ -55,7 +55,7 @@ def get_majority_vote_label(
     Returns
     -------
     consensus_label: np.ndarray
-        An array of shape ``(N,)`` with the consensus labels aggregated from all annotators.
+        An array of shape ``(N,)`` with the majority vote label aggregated from all annotators.
     """
 
     if isinstance(labels_multiannotator, np.ndarray):
@@ -710,6 +710,7 @@ def get_label_quality_multiannotator(
         Specifies the method used to aggregate labels from multiple annotators into a single consensus label.
         Options include:
         - ``majority_vote``: means consensus labels are reached via a simple majority vote among annotators, with ties broken via ``pred_probs``.
+        - ``best_quality``: TODO
         A List may be passed if you want to consider multiple methods for producing consensus labels.
         If a List is passed, then the 0th element of List is the method used to produce columns "consensus_label", "quality_of_consensus", "annotator_agreement" in the returned DataFrame.
         The 1st, 2nd, 3rd, etc. elements of this List are output as extra columns in the returned ``pandas DataFrame`` with names formatted as:
