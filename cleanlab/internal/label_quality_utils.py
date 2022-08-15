@@ -15,16 +15,18 @@
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
 """Helper functions for computing label quality scores"""
-
 import numpy as np
+from typing import Optional, Tuple, Union
 from cleanlab.count import get_confident_thresholds
 
 
 def _subtract_confident_thresholds(
-    labels: np.ndarray,
-    pred_probs: np.ndarray,
+    labels: Optional[np.ndarray] = None,
+    pred_probs: Optional[np.ndarray] = None,
+    confident_thresholds: Optional[np.array] = None,
+    return_thresholds: bool = False,
     multi_label: bool = False,
-) -> np.ndarray:
+) -> Union[np.ndarray, Tuple[np.ndarray, Optional[np.ndarray]]]:
     """Returns adjusted predicted probabilities by subtracting the class confident thresholds and renormalizing.
 
     The confident class threshold for a class j is the expected (average) "self-confidence" for class j.
@@ -39,6 +41,10 @@ def _subtract_confident_thresholds(
     pred_probs : np.ndarray (shape (N, K))
       Predicted-probabilities in the same format expected by the `cleanlab.count.get_confident_thresholds()` method.
 
+    confident_thresholds : np.ndarray (shape (K,))
+      Pre-calculated confident thresholds. If passed in, function will subtract these thresholds instead of calculating
+      confident_thresholds from the given labels and pred_probs.
+
     multi_label : bool, optional
       If ``True``, labels should be an iterable (e.g. list) of iterables, containing a
       list of labels for each example, instead of just a single label.
@@ -49,15 +55,32 @@ def _subtract_confident_thresholds(
       not the number of examples. So, the calibrated `confident_joint` will sum
       to the number of total labels.
 
+    return_thresholds : bool, default = False
+      Whether the `confident_thresholds` array should also be returned.
+      If True, this function returns a tuple `(pred_probs_adj, confident_thresholds)`.
+
     Returns
     -------
     pred_probs_adj : np.ndarray (float)
       Adjusted pred_probs.
+      If ``return_thresholds = True``, then a tuple is returned
+      whose first element is array of `ood_scores` and second is an np.ndarray of `confident_thresholds`.
     """
 
     # Get expected (average) self-confidence for each class
     # TODO: Test this for multi-label
-    confident_thresholds = get_confident_thresholds(labels, pred_probs, multi_label=multi_label)
+
+    if pred_probs is None:
+        raise ValueError(f"pred_probs cannot be None for this function.")
+
+    if labels is None and confident_thresholds is None:
+        raise ValueError(
+            f"Cannot calculate confident_thresholds without labels. Pass in either labels or already calculated "
+            f"confident_thresholds parameter. "
+        )
+
+    if confident_thresholds is None:
+        confident_thresholds = get_confident_thresholds(labels, pred_probs, multi_label=multi_label)
 
     # Subtract the class confident thresholds
     pred_probs_adj = pred_probs - confident_thresholds
@@ -68,7 +91,13 @@ def _subtract_confident_thresholds(
         :, None
     ]  # The [:, None] adds a dimension to make the /= operator work for broadcasting.
 
-    return pred_probs_adj
+    if return_thresholds:
+        return (
+            pred_probs_adj,
+            confident_thresholds,
+        )
+    else:
+        return pred_probs_adj
 
 
 def get_normalized_entropy(pred_probs: np.ndarray, min_allowed_prob: float = 1e-6) -> np.ndarray:

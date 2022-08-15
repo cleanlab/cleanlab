@@ -663,7 +663,7 @@ def get_ood_scores(
     adjust_pred_probs: bool = False,
     method: str = "entropy",
     return_thresholds: bool = False,
-) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
+) -> Union[np.ndarray, Tuple[np.ndarray, Optional[np.ndarray]]]:
     """Returns an OOD (out of distribution) score for each example based on it pred_prob values. Scores lie in [0,1] with smaller values indicating examples
     that are less typical under the dataset distribution (values near 0 indicate outliers).
 
@@ -718,21 +718,23 @@ def get_ood_scores(
             UserWarning,
         )
 
-    if confident_thresholds is None:
-        if adjust_pred_probs:
-            if labels is None:
-                raise ValueError(
-                    f"Cannot calculate adjust_pred_probs without labels. Either pass in labels parameter or set "
-                    f"adjusted_pred_probs = False. "
-                )
-            confident_thresholds = get_confident_thresholds(labels, pred_probs, multi_label=False)
-        else:
-            confident_thresholds = 0
-
     if adjust_pred_probs:
-        pred_probs = pred_probs - confident_thresholds
-        pred_probs += confident_thresholds.max()
-        pred_probs /= pred_probs.sum(axis=1)[:, None]
+        if return_thresholds:
+            pred_probs, confident_thresholds = _subtract_confident_thresholds(
+                labels,
+                pred_probs,
+                confident_thresholds,
+                multi_label=False,
+                return_thresholds=return_thresholds,
+            )
+        else:
+            pred_probs = confident_thresholds = _subtract_confident_thresholds(
+                labels,
+                pred_probs,
+                confident_thresholds,
+                multi_label=False,
+                return_thresholds=return_thresholds,
+            )
 
     if method == "entropy":
         ood_scores = get_normalized_entropy(pred_probs)
@@ -750,6 +752,6 @@ def get_ood_scores(
         return (
             ood_scores,
             confident_thresholds,
-        )  # what happens if confident_thresholds = 0 (uncalculated and unpassed)
+        )
     else:
         return ood_scores

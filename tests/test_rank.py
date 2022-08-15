@@ -533,8 +533,6 @@ def test_ood_scores():
     logreg.fit(data["X_train"], data["true_labels_train"])
     pred_probs = logreg.predict_proba(X_with_ood)
 
-    print("pred_probs shape: ", pred_probs.shape)
-
     ### Test non-adjusted OOD score logic
     ood_scores_entropy, confident_thresholds_entropy = rank.get_ood_scores(
         pred_probs=pred_probs,
@@ -550,12 +548,8 @@ def test_ood_scores():
     )
 
     # test confident_thresholds is not calculated
-    assert confident_thresholds_entropy == 0
-    assert confident_thresholds_least_confidence == 0
-
-    # test OOD datapoint has the lowest OOD score
-    assert ood_scores_least_confidence.argmin() == len(ood_scores_least_confidence) - 1
-    assert ood_scores_entropy.argmin() == len(ood_scores_entropy) - 1
+    assert confident_thresholds_entropy is None
+    assert confident_thresholds_least_confidence is None
 
     # check OOD scores calculated correctly
     assert (get_normalized_entropy(pred_probs) == ood_scores_entropy).all()
@@ -593,11 +587,6 @@ def test_ood_scores():
     assert not (ood_scores_adj_entropy == ood_scores_entropy).all()
     assert not (ood_scores_adj_least_confidence == ood_scores_least_confidence).all()
 
-    # TODO fix example dataset to this test to identify ood example
-    # # test OOD datapoint has the lowest confidence threshold with adjusted scores
-    # assert ood_scores_adj_entropy.argmin() == len(ood_scores_adj_entropy) - 1
-    # assert ood_scores_adj_least_confidence.argmin() == len(ood_scores_adj_least_confidence) - 1
-
     ### Test pre-calculated confident thresholds logic
     ood_scores_2, confident_thresholds_2 = rank.get_ood_scores(
         pred_probs=pred_probs,
@@ -620,7 +609,7 @@ def test_wrong_info_get_ood_scores():
             adjust_pred_probs=True,  # this should throw ValueError because knn=None and features=None
         )
     except Exception as e:
-        assert "Cannot calculate adjust_pred_probs without labels" in str(e)
+        assert "Cannot calculate confident_thresholds without labels" in str(e)
         with pytest.raises(ValueError) as e:
             rank.get_ood_scores(
                 pred_probs=data["pred_probs"],
@@ -635,7 +624,7 @@ def test_wrong_info_get_ood_scores():
             adjust_pred_probs=True,  # this should throw ValueError because knn=None and features=None
         )
     except Exception as e:
-        assert "Cannot calculate adjust_pred_probs without labels" in str(e)
+        assert "Cannot calculate confident_thresholds without labels" in str(e)
         with pytest.raises(ValueError) as e:
             rank.get_ood_scores(
                 pred_probs=data["pred_probs"],
