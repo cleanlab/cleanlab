@@ -133,9 +133,9 @@ def test_label_quality_scores_multiannotator():
         np.array(labels), pred_probs, quality_method="agreement"
     )
 
-    # test returning annotator stats
+    # test returning detailed and annotator stats
     lqs_annotatorstats = get_label_quality_multiannotator(
-        labels, pred_probs, return_annotator_stats=True
+        labels, pred_probs, return_detailed_quality=True, return_annotator_stats=True
     )
     assert isinstance(lqs_annotatorstats, dict)
     assert isinstance(lqs_annotatorstats["label_quality_multiannotator"], pd.DataFrame)

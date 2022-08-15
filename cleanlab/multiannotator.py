@@ -3,7 +3,6 @@ import pandas as pd
 from typing import List, Union, Tuple
 from cleanlab.rank import get_label_quality_scores
 from cleanlab.internal.util import get_num_classes
-from cleanlab.internal.label_quality_utils import _get_label_quality_scores_with_NA
 import warnings
 
 
@@ -348,8 +347,7 @@ def _get_post_pred_probs_and_weights(
     return post_pred_probs, return_model_weight, return_annotator_weight
 
 
-def _get_quality_of_consensus(
-    labels_multiannotator: pd.DataFrame,
+def _get_consensus_quality_score(
     consensus_label: np.ndarray,
     pred_probs: np.ndarray,
     num_annotations: np.ndarray,
@@ -381,7 +379,7 @@ def _get_quality_of_consensus(
 
     Returns
     -------
-    quality_of_consensus : np.ndarray
+    consensus_quality_score : np.ndarray
         An array of shape ``(N,)`` with the quality score of the consensus.
     """
 
@@ -391,12 +389,12 @@ def _get_quality_of_consensus(
     ]
 
     if quality_method == "auto":
-        quality_of_consensus = get_label_quality_scores(
+        consensus_quality_score = get_label_quality_scores(
             consensus_label, pred_probs, **label_quality_score_kwargs
         )
 
     elif quality_method == "agreement":
-        quality_of_consensus = annotator_agreement
+        consensus_quality_score = annotator_agreement
 
     else:
         raise ValueError(
@@ -406,7 +404,29 @@ def _get_quality_of_consensus(
             """
         )
 
-    return quality_of_consensus
+    return consensus_quality_score
+
+
+def _get_annotator_label_quality_score(
+    annotator_label: pd.Series,
+    pred_probs: np.ndarray,
+    label_quality_score_kwargs: dict = {},
+) -> pd.Series:
+    """Returns quality scores for each datapoint.
+    Very similar functionality as ``_get_consensus_quality_score`` with additional support for annotator labels that contain NaN values.
+    For more info about parameters and returns, see the docstring of :py:func:`_get_consensus_quality_score <cleanlab.multiannotator._get_consensus_quality_score>`.
+    """
+    mask = pd.notna(annotator_label)
+
+    annotator_label_quality_score_subset = get_label_quality_scores(
+        labels=annotator_label[mask].astype("int64"),
+        pred_probs=pred_probs[mask],
+        **label_quality_score_kwargs,
+    )
+
+    annotator_label_quality_score = pd.Series(np.nan, index=np.arange(len(annotator_label)))
+    annotator_label_quality_score[mask] = annotator_label_quality_score_subset
+    return annotator_label_quality_score
 
 
 def _get_consensus_stats(
@@ -441,7 +461,7 @@ def _get_consensus_stats(
     Returns
     ------
     tuple
-        A tuple of (consensus_label, annotator_agreement, quality_of_consensus, post_pred_probs).
+        A tuple of (consensus_label, annotator_agreement, consensus_quality_score, post_pred_probs).
     """
 
     # compute the fraction of annotator agreeing with the consensus labels
@@ -461,8 +481,7 @@ def _get_consensus_stats(
     )
 
     # compute quality of the consensus labels
-    quality_of_consensus = _get_quality_of_consensus(
-        labels_multiannotator=labels_multiannotator,
+    consensus_quality_score = _get_consensus_quality_score(
         consensus_label=consensus_label,
         pred_probs=post_pred_probs,
         num_annotations=num_annotations,
@@ -473,7 +492,7 @@ def _get_consensus_stats(
 
     return (
         annotator_agreement,
-        quality_of_consensus,
+        consensus_quality_score,
         post_pred_probs,
         model_weight,
         annotator_weight,
@@ -488,7 +507,6 @@ def _get_annotator_quality(
     annotator_agreement: np.ndarray,
     model_weight: np.ndarray,
     annotator_weight: np.ndarray,
-    quality_of_consensus: np.ndarray,
     quality_method: str = "auto",
 ) -> pd.DataFrame:
     """Returns annotator quality score for each annotator.
@@ -514,8 +532,6 @@ def _get_annotator_quality(
     annotator_weight : np.ndarray
         An array of shape ``(M,)`` where M is the number of annotators, specifying the annotator weights used in weighted averages,
         None if annotator weights are not used to compute quality scores
-    quality_of_consensus : np.ndarray
-        An array of shape ``(N,)`` with the quality score of the consensus.
     quality_method : str, default = "auto" (Options: ["auto", "agreement"])
         Specifies the method used to calculate the quality of the annotators.
         For valid quality methods, view :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>`
@@ -582,7 +598,7 @@ def _get_annotator_stats(
     annotator_agreement: np.ndarray,
     model_weight: np.ndarray,
     annotator_weight: np.ndarray,
-    quality_of_consensus: np.ndarray,
+    consensus_quality_score: np.ndarray,
     quality_method: str = "auto",
 ) -> pd.DataFrame:
     """Returns a dictionary containing overall statistics about each annotator.
@@ -608,7 +624,7 @@ def _get_annotator_stats(
     annotator_weight : np.ndarray
         An array of shape ``(M,)`` where M is the number of annotators, specifying the annotator weights used in weighted averages,
         None if annotator weights are not used to compute quality scores
-    quality_of_consensus : np.ndarray
+    consensus_quality_score : np.ndarray
         An array of shape ``(N,)`` with the quality score of the consensus.
     quality_method : str, default = "auto" (Options: ["auto", "agreement"])
         Specifies the method used to calculate the quality of the consensus label.
@@ -629,7 +645,6 @@ def _get_annotator_stats(
         annotator_agreement=annotator_agreement,
         model_weight=model_weight,
         annotator_weight=annotator_weight,
-        quality_of_consensus=quality_of_consensus,
         quality_method=quality_method,
     )
 
@@ -700,9 +715,9 @@ def get_label_quality_multiannotator(
         - ``majority_vote``: means consensus labels are reached via a simple majority vote among annotators, with ties broken via ``pred_probs``.
         - ``best_quality``: TODO
         A List may be passed if you want to consider multiple methods for producing consensus labels.
-        If a List is passed, then the 0th element of List is the method used to produce columns "consensus_label", "quality_of_consensus", "annotator_agreement" in the returned DataFrame.
+        If a List is passed, then the 0th element of List is the method used to produce columns "consensus_label", "consensus_quality_score", "annotator_agreement" in the returned DataFrame.
         The 1st, 2nd, 3rd, etc. elements of this List are output as extra columns in the returned ``pandas DataFrame`` with names formatted as:
-        consensus_label_SUFFIX, quality_of_consensus_SUFFIX
+        consensus_label_SUFFIX, consensus_quality_score_SUFFIX
         where SUFFIX = the str element of this list, which must correspond to a valid method for computing consensus labels.
     quality_method : str, default = "auto"
         Specifies the method used to calculate the quality of the consensus label.
@@ -725,7 +740,7 @@ def get_label_quality_multiannotator(
         - ``num_annotations``: the number of annotators that have labeled each example.
         - ``consensus_label``: the single label that is best for each example (you can control how it is derived from all annotators' labels via the argument: ``consensus_method``)
         - ``annotator_agreement``: the fraction of annotators that agree with the consensus label (only consider the annotators that labeled that particular example).
-        - ``quality_of_consensus``: label quality score for consensus label, calculated using weighted product of `label_quality_score` of `consensus_label` and `annotator_agreement`
+        - ``consensus_quality_score``: label quality score for consensus label, calculated using weighted product of `label_quality_score` of `consensus_label` and `annotator_agreement`
     detailed_label_quality : pandas.DataFrame, optional (returned if `return_detailed_quality=True`)
         Returns a pandas DataFrame with columns ``quality_annotator_1``, ``quality_annotator_2``, ..., ``quality_annotator_M`` where each entry is
         the label quality score for the labels provided by each annotator (is ``NaN`` for examples which this annotator did not label).
@@ -791,7 +806,7 @@ def get_label_quality_multiannotator(
         )
         (
             MV_annotator_agreement,
-            MV_quality_of_consensus,
+            MV_consensus_quality_score,
             MV_post_pred_probs,
             MV_model_weight,
             MV_annotator_weight,
@@ -813,7 +828,7 @@ def get_label_quality_multiannotator(
         if curr_method == "majority_vote":
             consensus_label = majority_vote_label
             annotator_agreement = MV_annotator_agreement
-            quality_of_consensus = MV_quality_of_consensus
+            consensus_quality_score = MV_consensus_quality_score
             post_pred_probs = MV_post_pred_probs
             model_weight = MV_model_weight
             annotator_weight = MV_annotator_weight
@@ -822,7 +837,7 @@ def get_label_quality_multiannotator(
             consensus_label = np.argmax(MV_post_pred_probs, axis=1)
             (
                 annotator_agreement,
-                quality_of_consensus,
+                consensus_quality_score,
                 post_pred_probs,
                 model_weight,
                 annotator_weight,
@@ -847,18 +862,18 @@ def get_label_quality_multiannotator(
             (
                 label_quality_multiannotator["consensus_label"],
                 label_quality_multiannotator["annotator_agreement"],
-                label_quality_multiannotator["quality_of_consensus"],
+                label_quality_multiannotator["consensus_quality_score"],
             ) = (
                 consensus_label,
                 annotator_agreement,
-                quality_of_consensus,
+                consensus_quality_score,
             )
 
             if return_detailed_quality:
                 # Compute the label quality scores for each annotators' labels
                 detailed_label_quality = labels_multiannotator.apply(
-                    _get_label_quality_scores_with_NA,
-                    args=[pred_probs],
+                    _get_annotator_label_quality_score,
+                    pred_probs=post_pred_probs,
                     **label_quality_score_kwargs,
                 )
                 detailed_label_quality = detailed_label_quality.add_prefix("quality_annotator_")
@@ -872,7 +887,7 @@ def get_label_quality_multiannotator(
                     annotator_agreement=annotator_agreement,
                     model_weight=model_weight,
                     annotator_weight=annotator_weight,
-                    quality_of_consensus=quality_of_consensus,
+                    consensus_quality_score=consensus_quality_score,
                     quality_method=quality_method,
                 )
 
@@ -882,11 +897,11 @@ def get_label_quality_multiannotator(
             (
                 label_quality_multiannotator[f"consensus_label_{curr_method}"],
                 label_quality_multiannotator[f"annotator_agreement_{curr_method}"],
-                label_quality_multiannotator[f"quality_of_consensus_{curr_method}"],
+                label_quality_multiannotator[f"consensus_quality_score_{curr_method}"],
             ) = (
                 consensus_label,
                 annotator_agreement,
-                quality_of_consensus,
+                consensus_quality_score,
             )
 
     if verbose:
