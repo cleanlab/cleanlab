@@ -104,7 +104,7 @@ If editing existing docs or adding new tutorials, please first read through our 
 cleanlab follows the [Black](https://black.readthedocs.io/) code style. This is
 enforced by CI, so please format your code before submitting a pull request.
 
-**Reformat files to black code style:**
+**Reformat files to Black code style:**
 
 ```
 $ black <filename or foldername>
