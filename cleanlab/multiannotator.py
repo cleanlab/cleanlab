@@ -358,8 +358,7 @@ def _get_quality_of_consensus(
     quality_method: str = "auto",
     label_quality_score_kwargs: dict = {},
 ) -> np.ndarray:
-    """Return scores representing quality of the consensus label for each example,
-    calculated using weighted product of `label_quality_score` of `consensus_label` and `annotator_agreement`
+    """Return scores representing quality of the consensus label for each example.
 
     Parameters
     ----------
@@ -432,13 +431,12 @@ def _get_consensus_stats(
         For details, predicted probabilities in the same format expected by the :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>`.
     num_annotations : np.ndarray
         An array of shape ``(N,)`` with the number of annotators that have labeled each example.
-    consensus_method : str, default = "majority_vote" (Options: ["majority_vote"])
-        The method used to aggregate labels from multiple annotators into a single consensus label. Default is by using the majority vote.
-        For valid consensus methods, view :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>`
+    consensus_label : np.ndarray
+        An array of shape ``(N,)`` with the consensus labels aggregated from all annotators.
     quality_method : str, default = "auto" (Options: ["auto", "agreement"])
         Specifies the method used to calculate the quality of the consensus label.
         For valid quality methods, view :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>`
-    kwargs : dict, optional
+    label_quality_score_kwargs : dict, optional
         Keyword arguments to pass into ``get_label_quality_scores()``.
 
     Returns
@@ -525,8 +523,8 @@ def _get_annotator_quality(
 
     Returns
     -------
-    overall_annotator_quality : np.ndarray
-        Overall quality of a given annotator's labels
+    annotator_quality : np.ndarray
+        Quality scores of a given annotator's labels
     """
 
     valid_methods = [
@@ -577,7 +575,7 @@ def _get_annotator_quality(
     return annotator_quality
 
 
-def get_annotator_stats(
+def _get_annotator_stats(
     labels_multiannotator: pd.DataFrame,
     pred_probs: np.ndarray,
     consensus_label: np.ndarray,
@@ -588,7 +586,7 @@ def get_annotator_stats(
     quality_of_consensus: np.ndarray,
     quality_method: str = "auto",
 ) -> pd.DataFrame:
-    """Returns overall statistics about each annotator.
+    """Returns a dictionary containing overall statistics about each annotator.
 
     Parameters
     ----------
@@ -620,11 +618,8 @@ def get_annotator_stats(
     Returns
     -------
     annotator_stats : pd.DataFrame
-        pandas DataFrame in which each row corresponds to one annotator (the row IDs correspond to annotator IDs), with columns:
-        - ``annotator_quality``: overall quality of a given annotator's labels
-        - ``num_labeled``: number of examples annotated by a given annotator
-        - ``agreement_with_consensus``: fraction of examples where a given annotator agrees with the consensus label
-        - ``worst_class``: the class that is most frequently mislabeled by a given annotator
+        Returns overall statistics about each annotator.
+        For details, see the documentation of :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>`.
     """
 
     def try_get_worst_class(labels, pred_probs):
@@ -736,15 +731,22 @@ def get_label_quality_multiannotator(
     -------
     label_quality_multiannotator : pandas.DataFrame
         pandas DataFrame in which each row corresponds to one example, with columns:
-        - ``quality_of_annotator_1``, ``quality_of_annotator_2``, ..., ``quality_of_annotator_M``: the label quality score for the labels provided by annotator M (is ``NaN`` for examples which this annotator did not label).
-        - ``consensus_label``: the single label that is best for each example (you can control how it is derived from all annotators' labels via the argument: ``consensus_method``)
         - ``num_annotations``: the number of annotators that have labeled each example.
+        - ``consensus_label``: the single label that is best for each example (you can control how it is derived from all annotators' labels via the argument: ``consensus_method``)
         - ``annotator_agreement``: the fraction of annotators that agree with the consensus label (only consider the annotators that labeled that particular example).
         - ``quality_of_consensus``: label quality score for consensus label, calculated using weighted product of `label_quality_score` of `consensus_label` and `annotator_agreement`
-        Here annotator_1, annotator_2, ..., annotator_M suffixes may be replaced column names in ``labels_multiannotator`` DataFrame used to ID the annotators.
+    detailed_label_quality : pandas.DataFrame, optional (returned if `return_detailed_quality=True`)
+        Returns a pandas DataFrame with columns ``quality_annotator_1``, ``quality_annotator_2``, ..., ``quality_annotator_M`` where each entry is
+        the label quality score for the labels provided by each annotator (is ``NaN`` for examples which this annotator did not label).
     annotator_stats : pandas.DataFrame, optional (returned if `return_annotator_stats=True`)
         Returns overall statistics about each annotator.
-        For details, see the documentation of :py:func:`get_multiannotator_stats<cleanlab.multiannotator.get_multiannotator_stats>`
+        pandas DataFrame in which each row corresponds to one annotator (the row IDs correspond to annotator IDs), with columns:
+        - ``annotator_quality``: overall quality of a given annotator's labels
+        - ``num_labeled``: number of examples annotated by a given annotator
+        - ``agreement_with_consensus``: fraction of examples where a given annotator agrees with the consensus label
+        - ``worst_class``: the class that is most frequently mislabeled by a given annotator
+
+    Note: by default, ``label_quality_multiannotator`` is return as a pandas DataFrame, however if more than one DataFrame is returned, they will be returned as DataFrames in a dictionary
     """
 
     if isinstance(labels_multiannotator, np.ndarray):
@@ -871,7 +873,7 @@ def get_label_quality_multiannotator(
                 detailed_label_quality = detailed_label_quality.add_prefix("quality_annotator_")
 
             if verbose or return_annotator_stats:
-                annotator_stats = get_annotator_stats(
+                annotator_stats = _get_annotator_stats(
                     labels_multiannotator=labels_multiannotator,
                     pred_probs=post_pred_probs,
                     consensus_label=consensus_label,
