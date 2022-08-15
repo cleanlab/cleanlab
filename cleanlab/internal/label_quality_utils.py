@@ -21,7 +21,7 @@ from cleanlab.count import get_confident_thresholds
 
 
 def _subtract_confident_thresholds(
-    labels: np.ndarray,
+    labels: Optional[np.ndarray],
     pred_probs: np.ndarray,
     confident_thresholds: Optional[np.ndarray] = None,
     return_thresholds: bool = False,
@@ -34,6 +34,7 @@ def _subtract_confident_thresholds(
     ----------
     labels : np.ndarray
       Labels in the same format expected by the `cleanlab.count.get_confident_thresholds()` method.
+      If labels is None, confident_thresholds needs to be passed in as it will not be calculated.
     pred_probs : np.ndarray (shape (N, K))
       Predicted-probabilities in the same format expected by the `cleanlab.count.get_confident_thresholds()` method.
     confident_thresholds : np.ndarray (shape (K,))
