@@ -720,6 +720,7 @@ def get_ood_scores(
     if adjust_pred_probs:
         if confident_thresholds is None:
             if labels is not None:
+                assert labels is not None
                 confident_thresholds = get_confident_thresholds(
                     labels, pred_probs, multi_label=False
                 )
