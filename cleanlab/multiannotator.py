@@ -4,7 +4,6 @@ from typing import List, Union, Tuple
 from cleanlab.rank import get_label_quality_scores
 from cleanlab.internal.util import get_num_classes
 from cleanlab.internal.label_quality_utils import _get_label_quality_scores_with_NA
-from cleanlab.dataset import _get_worst_class
 import warnings
 
 
@@ -622,15 +621,6 @@ def _get_annotator_stats(
         For details, see the documentation of :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>`.
     """
 
-    def try_get_worst_class(labels, pred_probs):
-        try:
-            return _get_worst_class(labels, pred_probs)
-        except:
-            warnings.warn(
-                "worst_class labels for some annotators are NaN due to missing class labels"
-            )
-            return np.NaN
-
     annotator_quality = _get_annotator_quality(
         labels_multiannotator=labels_multiannotator,
         pred_probs=pred_probs,
@@ -654,9 +644,10 @@ def _get_annotator_stats(
     ).to_numpy()
 
     # Find the worst labeled class for each annotator
+    # TODO: potentially have to do tiebreaking here
     worst_class = labels_multiannotator.apply(
-        lambda s: try_get_worst_class(s[pd.notna(s)], pred_probs[pd.notna(s)])
-    )
+        lambda s: (s[pd.notna(s)] == consensus_label[pd.notna(s)]).groupby(s).mean().idxmin()
+    ).astype("int64")
 
     # Create multi-annotator stats DataFrame from its columns
     annotator_stats = pd.DataFrame(

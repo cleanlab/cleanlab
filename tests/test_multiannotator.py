@@ -1,7 +1,6 @@
 import numpy as np
 import pytest
 from copy import deepcopy
-from cleanlab import dataset
 from cleanlab.benchmarking.noise_generation import generate_noise_matrix_from_trace
 from cleanlab.benchmarking.noise_generation import generate_noisy_labels
 from cleanlab import count
@@ -109,15 +108,6 @@ def test_convert_long_to_wide():
 
     assert isinstance(labels_wide, pd.DataFrame)
     # TODO: might add a test to see if the wide dataframe actually contains the right info
-
-
-# TODO: update this test to work with NaN values - randomly deleting data will make assertion invalid
-def test_get_worst_class():
-    labels = data["complete_labels"][0]  # only testing on first column
-    pred_probs = data["pred_probs"]
-
-    # Assert that the worst class index should be the class with the highest noise
-    assert dataset._get_worst_class(labels, pred_probs) == data["noise_matrix"].diagonal().argmax()
 
 
 def test_label_quality_scores_multiannotator():
