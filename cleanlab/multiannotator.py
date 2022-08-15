@@ -598,7 +598,6 @@ def _get_annotator_stats(
     annotator_agreement: np.ndarray,
     model_weight: np.ndarray,
     annotator_weight: np.ndarray,
-    consensus_quality_score: np.ndarray,
     quality_method: str = "auto",
 ) -> pd.DataFrame:
     """Returns a dictionary containing overall statistics about each annotator.
@@ -887,7 +886,6 @@ def get_label_quality_multiannotator(
                     annotator_agreement=annotator_agreement,
                     model_weight=model_weight,
                     annotator_weight=annotator_weight,
-                    consensus_quality_score=consensus_quality_score,
                     quality_method=quality_method,
                 )
 
