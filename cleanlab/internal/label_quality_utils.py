@@ -16,7 +16,7 @@
 
 """Helper functions for computing label quality scores"""
 import numpy as np
-from typing import Optional, Tuple, Union
+from typing import Optional
 from cleanlab.count import get_confident_thresholds
 
 

@@ -709,7 +709,6 @@ def get_ood_scores(
         "least_confidence",
     ]
 
-    # Might be a better place to put this warning
     if (confident_thresholds is not None or labels is not None) and not adjust_pred_probs:
         warnings.warn(
             f"OOD scores are not adjusted with confident thresholds. If scores need to be adjusted set "
@@ -720,15 +719,25 @@ def get_ood_scores(
 
     if adjust_pred_probs:
         if confident_thresholds is None:
-            if labels is None:
+            if labels is not None:
+                confident_thresholds = get_confident_thresholds(
+                    labels, pred_probs, multi_label=False
+                )
+            else:
                 raise ValueError(
                     f"Cannot calculate adjust_pred_probs without labels. Either pass in labels parameter or set "
                     f"adjusted_pred_probs = False. "
                 )
-            else:
-                confident_thresholds = get_confident_thresholds(
-                    labels, pred_probs, multi_label=False
-                )
+            # if labels is None:
+            #     raise ValueError(
+            #         f"Cannot calculate adjust_pred_probs without labels. Either pass in labels parameter or set "
+            #         f"adjusted_pred_probs = False. "
+            #     )
+            # else:
+            #     confident_thresholds = get_confident_thresholds(
+            #         labels, pred_probs, multi_label=False
+            #     )
+
         pred_probs = _subtract_confident_thresholds(None, pred_probs, confident_thresholds)
 
     if method == "entropy":
