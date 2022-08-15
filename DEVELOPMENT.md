@@ -63,7 +63,7 @@ which you can open with your web browser.
 
 ### Type checking
 
-Cleanlab uses [mypy](https://mypy.readthedocs.io/en/stable/) typing. Type checking happens automatically during CI but can be tested locally with
+Cleanlab uses [mypy](https://mypy.readthedocs.io/en/stable/) typing. Type checking happens automatically during CI but can be tested locally.
 
 **Check typing in files:**
 
