@@ -107,7 +107,15 @@ def test_convert_long_to_wide():
     labels_wide = convert_long_to_wide_dataset(labels_long)
 
     assert isinstance(labels_wide, pd.DataFrame)
-    # TODO: might add a test to see if the wide dataframe actually contains the right info
+
+    # ensures labels_long contains all the non-NaN values of labels_wide
+    assert labels_wide.count(axis=1).sum() == len(labels_long)
+
+    # checks one index to make sure data is consistent acrros both dataframes
+    example_long = labels_long[labels_long["task"] == 0].sort_values("annotator")
+    example_wide = labels_wide.iloc[0].dropna()
+    assert all(example_long["annotator"] == example_wide.index)
+    assert all(example_long["label"].reset_index(drop=True) == example_wide.reset_index(drop=True))
 
 
 def test_label_quality_scores_multiannotator():
@@ -116,10 +124,13 @@ def test_label_quality_scores_multiannotator():
 
     lqs_multiannotator = get_label_quality_multiannotator(labels, pred_probs)
     assert isinstance(lqs_multiannotator, pd.DataFrame)
+    assert set(
+        ["num_annotations", "consensus_label", "annotator_agreement", "consensus_quality_score"]
+    ).issubset(lqs_multiannotator.columns)
+    assert len(lqs_multiannotator) == len(labels)
 
     # test verbose=False
     lqs_multiannotator = get_label_quality_multiannotator(labels, pred_probs, verbose=False)
-    assert isinstance(lqs_multiannotator, pd.DataFrame)
 
     # test passing a list into consensus_method
     # TODO: change list items after adding more options
@@ -133,18 +144,43 @@ def test_label_quality_scores_multiannotator():
         np.array(labels), pred_probs, quality_method="agreement"
     )
 
-    # test returning detailed and annotator stats
-    lqs_annotatorstats = get_label_quality_multiannotator(
+    # test returning annotator_stats
+    multiannotator_dict = get_label_quality_multiannotator(
+        labels, pred_probs, return_annotator_stats=True
+    )
+
+    annotator_stats = multiannotator_dict["annotator_stats"]
+    assert isinstance(annotator_stats, pd.DataFrame)
+    assert set(
+        ["annotator_quality", "num_labeled", "agreement_with_consensus", "worst_class"]
+    ).issubset(annotator_stats.columns)
+    assert len(annotator_stats) == labels.shape[1]
+
+    # test returning detailed_label_quality
+    multiannotator_dict = get_label_quality_multiannotator(
+        labels, pred_probs, return_detailed_quality=True
+    )
+    detailed_label_quality = multiannotator_dict["detailed_label_quality"]
+    assert detailed_label_quality.shape == labels.shape
+
+    # test return detailed and annotator stats
+    multiannotator_dict = get_label_quality_multiannotator(
         labels, pred_probs, return_detailed_quality=True, return_annotator_stats=True
     )
-    assert isinstance(lqs_annotatorstats, dict)
-    assert isinstance(lqs_annotatorstats["label_quality_multiannotator"], pd.DataFrame)
-    assert isinstance(lqs_annotatorstats["annotator_stats"], pd.DataFrame)
+    assert isinstance(multiannotator_dict, dict)
+    assert len(multiannotator_dict) == 3
+
+    # test incorrect consensus_method
+    try:
+        lqs_annotatorstats = get_label_quality_multiannotator(
+            labels, pred_probs, consensus_method="fake_method"
+        )
+    except ValueError as e:
+        assert "not a valid consensus method" in str(e)
 
     # test error catching when labels_multiannotator has NaN columns
     labels_NA = deepcopy(labels)
     labels_NA[0] = pd.NA
-
     try:
         lqs_annotatorstats = get_label_quality_multiannotator(
             labels_NA, pred_probs, return_annotator_stats=True
@@ -175,3 +211,35 @@ def test_get_consensus_label():
     )
 
     consensus_label = get_majority_vote_label(labels_tiebreaks, pred_probs_tiebreaks)
+
+
+def test_impute_nonoverlaping_annotators():
+    labels = data["labels"]
+
+    # getting consensus labels without pred_probs
+    consensus_label = get_majority_vote_label(labels)
+
+    # making synthetic data to test tiebreaks of get_consensus_label
+    # also testing pssing labels as np.ndarray
+    labels = np.array(
+        [
+            [1, np.NaN, np.NaN],
+            [np.NaN, 1, 0],
+            [np.NaN, 0, 0],
+            [np.NaN, 2, 2],
+            [np.NaN, 2, 0],
+            [np.NaN, 2, 0],
+        ]
+    )
+    pred_probs = np.array(
+        [
+            [0.4, 0.4, 0.2],
+            [0.3, 0.6, 0.1],
+            [0.75, 0.2, 0.05],
+            [0.1, 0.4, 0.5],
+            [0.2, 0.4, 0.4],
+            [0.2, 0.4, 0.4],
+        ]
+    )
+
+    consensus_label = get_label_quality_multiannotator(labels, pred_probs)
