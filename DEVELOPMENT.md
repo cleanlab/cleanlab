@@ -60,6 +60,17 @@ $ pytest --cov=cleanlab/ --cov-config .coveragerc --cov-report=html
 The coverage report will be available in `coverage_html_report/index.html`,
 which you can open with your web browser.
 
+
+### Type checking
+
+Cleanlab uses [mypy](https://mypy.readthedocs.io/en/stable/) typing. Type checking happens automatically during CI but can be run locally.
+
+**Check typing in all files:**
+
+```
+$ mypy cleanlab
+```
+
 ### Examples
 
 You can check that the [examples](https://github.com/cleanlab/examples) still
@@ -164,4 +175,4 @@ NumPy style are documented below:
 - `labels` - a label for each example, length should be N (sample-size of dataset)
 - `classes` - set of possible labels for any one example, length should be K (number of possible categories in classification problem)
 
-Try to adhere to this standardized terminology unless you have good reason not to! 
+Try to adhere to this standardized terminology unless you have good reason not to!
