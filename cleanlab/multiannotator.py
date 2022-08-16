@@ -20,8 +20,9 @@ def get_label_quality_multiannotator(
     """Returns label quality scores for each example and for each annotator.
     This function is for multiclass classification datasets where examples have been labeled by
     multiple annotators (not necessarily the same number of annotators per example).
-    It computes quality scores for each annotator's labels and other useful values like how
-    confident we are that the current consensus label is actually correct.
+    It computes one consensus label for each example that best accounts for the labels chosen by each
+    annotator (and their quality), as well as a score for how confident we are that this consensus label is actually correct.
+    It also computes the the quality scores for each annotator's individual labels, and the quality of each annotator.
     The score is between 0 and 1; lower scores
     indicate labels less likely to be correct. For example:
     1 - clean label (the given label is likely correct).
