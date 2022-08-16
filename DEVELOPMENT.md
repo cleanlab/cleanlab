@@ -150,7 +150,7 @@ NumPy style are documented below:
 
      \sum_{0}^{n} 2n+1
   ```
-- **Pseudocode vs math**: prefer pseudocode in double backticks over LaTeX math.
+- **Pseudocode vs math**: Prefer pseudocode in double backticks over LaTeX math.
 - **Bold vs italics**: Use italics when defining a term, and use bold sparingly
   for extra emphasis.
 - **Shapes**: Do not include shapes in the type of parameters, instead use
