@@ -4,7 +4,6 @@ from copy import deepcopy
 from cleanlab.benchmarking.noise_generation import generate_noise_matrix_from_trace
 from cleanlab.benchmarking.noise_generation import generate_noisy_labels
 from cleanlab import count
-from cleanlab.internal.validation import labels_to_array
 from cleanlab.multiannotator import (
     get_label_quality_multiannotator,
     convert_long_to_wide_dataset,
@@ -122,38 +121,24 @@ def test_label_quality_scores_multiannotator():
     labels = data["labels"]
     pred_probs = data["pred_probs"]
 
-    lqs_multiannotator = get_label_quality_multiannotator(labels, pred_probs)
-    assert isinstance(lqs_multiannotator, pd.DataFrame)
-    assert len(lqs_multiannotator) == len(labels)
-    assert all(lqs_multiannotator["num_annotations"] > 0)
-    assert set(lqs_multiannotator["consensus_label"]).issubset(np.unique(labels))
+    multiannotator_dict = get_label_quality_multiannotator(labels, pred_probs)
+    assert isinstance(multiannotator_dict, dict)
+    assert len(multiannotator_dict) == 3
+
+    label_quality_multiannotator = multiannotator_dict["label_quality_multiannotator"]
+    assert isinstance(label_quality_multiannotator, pd.DataFrame)
+    assert len(label_quality_multiannotator) == len(labels)
+    assert all(label_quality_multiannotator["num_annotations"] > 0)
+    assert set(label_quality_multiannotator["consensus_label"]).issubset(np.unique(labels))
     assert all(
-        (lqs_multiannotator["annotator_agreement"] >= 0)
-        & (lqs_multiannotator["annotator_agreement"] <= 1)
+        (label_quality_multiannotator["annotator_agreement"] >= 0)
+        & (label_quality_multiannotator["annotator_agreement"] <= 1)
     )
     assert all(
-        (lqs_multiannotator["consensus_quality_score"] >= 0)
-        & (lqs_multiannotator["consensus_quality_score"] <= 1)
+        (label_quality_multiannotator["consensus_quality_score"] >= 0)
+        & (label_quality_multiannotator["consensus_quality_score"] <= 1)
     )
 
-    # test verbose=False
-    lqs_multiannotator = get_label_quality_multiannotator(labels, pred_probs, verbose=False)
-
-    # test passing a list into consensus_method
-    lqs_multiannotator = get_label_quality_multiannotator(
-        labels, pred_probs, consensus_method=["majority_vote", "best_quality"]
-    )
-
-    # test different quality_methods
-    # also testing passing labels as np.ndarray
-    lqs_multiannotator = get_label_quality_multiannotator(
-        np.array(labels), pred_probs, quality_method="agreement"
-    )
-
-    # test returning annotator_stats
-    multiannotator_dict = get_label_quality_multiannotator(
-        labels, pred_probs, return_annotator_stats=True
-    )
     annotator_stats = multiannotator_dict["annotator_stats"]
     assert isinstance(annotator_stats, pd.DataFrame)
     assert len(annotator_stats) == labels.shape[1]
@@ -167,19 +152,48 @@ def test_label_quality_scores_multiannotator():
     )
     assert set(annotator_stats["worst_class"]).issubset(np.unique(labels))
 
-    # test returning detailed_label_quality
-    multiannotator_dict = get_label_quality_multiannotator(
-        labels, pred_probs, return_detailed_quality=True
-    )
     detailed_label_quality = multiannotator_dict["detailed_label_quality"]
     assert detailed_label_quality.shape == labels.shape
 
-    # test return detailed and annotator stats
+    # test verbose=False
+    multiannotator_dict = get_label_quality_multiannotator(labels, pred_probs, verbose=False)
+
+    # test passing a list into consensus_method
     multiannotator_dict = get_label_quality_multiannotator(
-        labels, pred_probs, return_detailed_quality=True, return_annotator_stats=True
+        labels, pred_probs, consensus_method=["majority_vote", "best_quality"]
+    )
+
+    # test different quality_methods
+    # also testing passing labels as np.ndarray
+    multiannotator_dict = get_label_quality_multiannotator(
+        np.array(labels), pred_probs, quality_method="agreement"
+    )
+
+    # test returning annotator_stats
+    multiannotator_dict = get_label_quality_multiannotator(
+        labels, pred_probs, return_annotator_stats=False
     )
     assert isinstance(multiannotator_dict, dict)
-    assert len(multiannotator_dict) == 3
+    assert len(multiannotator_dict) == 2
+    assert isinstance(multiannotator_dict["label_quality_multiannotator"], pd.DataFrame)
+    assert isinstance(multiannotator_dict["detailed_label_quality"], pd.DataFrame)
+
+    # test returning detailed_label_quality
+    multiannotator_dict = get_label_quality_multiannotator(
+        labels, pred_probs, return_detailed_quality=False
+    )
+    assert isinstance(multiannotator_dict, dict)
+    assert len(multiannotator_dict) == 2
+    assert isinstance(multiannotator_dict["label_quality_multiannotator"], pd.DataFrame)
+    assert isinstance(multiannotator_dict["annotator_stats"], pd.DataFrame)
+
+    # test return detailed and annotator stats
+    multiannotator_dict = get_label_quality_multiannotator(
+        labels, pred_probs, return_detailed_quality=False, return_annotator_stats=False
+    )
+    assert isinstance(multiannotator_dict, dict)
+    assert len(multiannotator_dict) == 1
+    assert isinstance(multiannotator_dict["label_quality_multiannotator"], pd.DataFrame)
 
     # test incorrect consensus_method
     try:
