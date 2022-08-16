@@ -690,7 +690,7 @@ def _get_post_pred_probs_and_weights(
         prior_pred_probs_subset = prior_pred_probs[mask]
 
         model_error = np.mean(np.argmax(prior_pred_probs_subset, axis=1) != consensus_label_subset)
-        model_weight = (1 - (model_error / most_likely_class_error)) * np.sqrt(
+        model_weight = np.max([(1 - (model_error / most_likely_class_error)), 0]) * np.sqrt(
             np.mean(num_annotations)
         )
 
