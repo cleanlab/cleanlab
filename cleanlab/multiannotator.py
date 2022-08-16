@@ -89,11 +89,11 @@ def get_majority_vote_label(
     # tiebreak 2: using empirical class frequencies
     if len(tied_idx) > 0:
         class_frequencies = (
-            labels_multiannotator.apply(lambda s: s.value_counts(), axis=1).sum().values
+            labels_multiannotator.apply(lambda s: s.value_counts(), axis=1).sum().to_numpy()
         )
         for idx, label_mode in tied_idx.copy().items():
             max_frequency = np.where(
-                class_frequencies[label_mode] == class_frequencies[label_mode].max()
+                class_frequencies[label_mode] == np.max(class_frequencies[label_mode])
             )[0]
             if len(max_frequency) == 1:
                 majority_vote_label[idx] = label_mode[max_frequency[0]]
