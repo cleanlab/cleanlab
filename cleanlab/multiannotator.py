@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from typing import List, Union, Tuple
+from typing import List, Dict, Any, Union, Tuple, Optional
 from cleanlab.rank import get_label_quality_scores
 from cleanlab.internal.util import get_num_classes
 import warnings
@@ -35,7 +35,7 @@ def convert_long_to_wide_dataset(
 
 
 def get_majority_vote_label(
-    labels_multiannotator: pd.DataFrame or np.ndarray,
+    labels_multiannotator: Union[pd.DataFrame, np.ndarray],
     pred_probs: np.ndarray = None,
 ) -> np.ndarray:
     """Returns the majority vote label for each example, aggregated from the labels given by multiple annotators.
@@ -75,10 +75,10 @@ def get_majority_vote_label(
             tied_idx[idx] = label_mode
 
     # tiebreak 1: using pred_probs (if provided)
-    if len(tied_idx) > 0 and pred_probs is not None:
+    if pred_probs is not None and len(tied_idx) > 0:
         for idx, label_mode in tied_idx.copy().items():
             max_pred_probs = np.where(
-                pred_probs[idx, label_mode] == pred_probs[idx, label_mode].max()
+                pred_probs[idx, label_mode] == np.max(pred_probs[idx, label_mode])
             )[0]
             if len(max_pred_probs) == 1:
                 majority_vote_label[idx] = label_mode[max_pred_probs[0]]
@@ -193,7 +193,7 @@ def _get_annotator_agreement_with_annotators(
     def get_single_annotator_agreement(
         labels_multiannotator: pd.DataFrame,
         num_annotations: np.ndarray,
-        annotator_id: int or str,  # TODO: unknown type, index?
+        annotator_id: Union[int, str],  # TODO: unknown type, index?
     ):
         annotator_agreement_per_example = labels_multiannotator.apply(
             lambda s: np.mean(s[pd.notna(s)].drop(annotator_id) == s[annotator_id]), axis=1
@@ -234,7 +234,7 @@ def _get_post_pred_probs_and_weights(
     num_annotations: np.ndarray,
     annotator_agreement: np.ndarray,
     quality_method: str = "auto",
-) -> np.ndarray:
+) -> Tuple[np.ndarray, Any, Any]:
     """Return the posterior predicted probabilites of each example given a specified quality method.
 
     Parameters
@@ -332,7 +332,7 @@ def _get_post_pred_probs_and_weights(
         return_annotator_weight = adjusted_annotator_agreement
 
     elif quality_method == "agreement":
-        label_counts = labels_multiannotator.apply(lambda s: s.value_counts(), axis=1)
+        label_counts = labels_multiannotator.apply(lambda s: s.value_counts(), axis=1).to_numpy()
         label_counts = np.nan_to_num(label_counts, nan=0)
         post_pred_probs = label_counts / num_annotations.reshape(-1, 1)
 
@@ -411,7 +411,7 @@ def _get_annotator_label_quality_score(
     annotator_label: pd.Series,
     pred_probs: np.ndarray,
     label_quality_score_kwargs: dict = {},
-) -> pd.Series:
+) -> np.ndarray:
     """Returns quality scores for each datapoint.
     Very similar functionality as ``_get_consensus_quality_score`` with additional support for annotator labels that contain NaN values.
     For more info about parameters and returns, see the docstring of :py:func:`_get_consensus_quality_score <cleanlab.multiannotator._get_consensus_quality_score>`.
@@ -419,12 +419,12 @@ def _get_annotator_label_quality_score(
     mask = pd.notna(annotator_label)
 
     annotator_label_quality_score_subset = get_label_quality_scores(
-        labels=annotator_label[mask].astype("int64"),
+        labels=annotator_label[mask].to_numpy().astype("int64"),
         pred_probs=pred_probs[mask],
         **label_quality_score_kwargs,
     )
 
-    annotator_label_quality_score = pd.Series(np.nan, index=np.arange(len(annotator_label)))
+    annotator_label_quality_score = np.full(len(annotator_label), np.nan)
     annotator_label_quality_score[mask] = annotator_label_quality_score_subset
     return annotator_label_quality_score
 
@@ -677,7 +677,7 @@ def _get_annotator_stats(
 
 
 def get_label_quality_multiannotator(
-    labels_multiannotator: pd.DataFrame or np.ndarray,
+    labels_multiannotator: Union[pd.DataFrame, np.ndarray],
     pred_probs: np.ndarray,
     *,
     consensus_method: Union[str, List[str]] = "best_quality",
@@ -686,7 +686,7 @@ def get_label_quality_multiannotator(
     return_annotator_stats: bool = False,  # sort by lowest overall_quality first
     verbose: bool = True,
     label_quality_score_kwargs: dict = {},
-) -> Union[pd.DataFrame, Tuple[pd.DataFrame, pd.DataFrame]]:
+) -> Union[pd.DataFrame, Dict[str, pd.DataFrame]]:
     """Returns label quality scores for each example for each annotator.
     This function is for multiclass classification datasets where examples have been labeled by
     multiple annotators (not necessarily the same number of annotators per example).
