@@ -1,6 +1,7 @@
 import string 
 import numpy as np 
 import os 
+import pandas as pd 
 from termcolor import colored 
 
 def get_sentence(words): 
@@ -138,33 +139,82 @@ def color_sentence(sentence, word):
     return '%s%s%s' % (before, colored(word, 'red'), after) 
 
 
-def show_issues(issues, labels, pred_probs, given_words, sentences, 
-                top=10, entities=None, exclude=[]): 
-    if not entities: 
-        entities = ['O', 'MISC', 'PER', 'ORG', 'LOC'] 
-    def show_issue(issue): 
-        i, j = issue 
-        issue_label = labels[i][j] 
-        predicted_label = np.argmax(pred_probs[i][j]) 
-        issue_word = given_words[i][j] 
-        issue_sentence = color_sentence(sentences[i], issue_word) 
-        return issue_sentence, (issue_label, predicted_label)  
-    
+def display_issues(issues, given_words, *, 
+                   pred_probs=None, 
+                   given_labels=None, 
+                   exclude=[], 
+                   class_names=None, 
+                   top=20): 
     shown = 0 
+    is_tuple = type(issues[0]) == tuple  
+    
     for issue in issues: 
-        sentence, (given, predicted) = show_issue(issue) 
-        if (given, predicted) in exclude: 
-            continue 
-        print('%d. %s' % (shown+1, sentence)) 
-        print('Given label: %s, predicted label: %s\n' % (entities[given], entities[predicted])) 
-        shown += 1 
+        if is_tuple: 
+            i, j = issue 
+            sentence = get_sentence(given_words[i]) 
+            word = given_words[i][j] 
+            
+            if pred_probs: 
+                prediction = pred_probs[i][j].argmax() 
+                if class_names: 
+                    prediction = class_names[prediction] 
+            if given_labels: 
+                given = given_labels[i][j] 
+                if class_names: 
+                    given = class_names[given] 
+            if pred_probs and given_labels: 
+                if (given, prediction) in exclude: 
+                    continue 
+            
+            shown += 1 
+            print('Sentence %d, token %d: \n%s' % (i, j, color_sentence(sentence, word))) 
+            if given_labels and not pred_probs: 
+                print('Given label: %s\n' % str(given)) 
+            elif not given_labels and pred_probs: 
+                print('Predicted label: %s\n' % str(prediction)) 
+            elif given_labels and pred_probs: 
+                print('Given label: %s, predicted label: %s\n' % (str(given), str(prediction))) 
+            else: 
+                print() 
+        else: 
+            shown += 1 
+            sentence = get_sentence(given_words[issue]) 
+            print('Sentence %d: %s\n' % (issue, sentence)) 
         if shown == top: 
             break 
 
-def common_token_issues(issues, given_words, labels, pred_probs, entities, 
-                        top=10, exclude=[], verbose=True): 
-    n = pred_probs[0].shape[1] 
+def common_label_issues(issues, given_words, *, 
+                        labels=None, 
+                        pred_probs=None, 
+                        class_names=None, 
+                        top=10, 
+                        exclude=[], 
+                        verbose=True): 
     count = {} 
+    if not labels or not pred_probs: 
+        for issue in issues: 
+            i, j = issue 
+            word = given_words[i][j] 
+            if word not in count: 
+                count[word] = 0 
+            count[word] += 1 
+            
+        words = [word for word in count.keys()] 
+        freq = [count[word] for word in words] 
+        rank = np.argsort(freq)[::-1][:top] 
+        
+        for r in rank: 
+            print("Token '%s' is potentially mislabeled %d times throughout the dataset\n" % (words[r], freq[r])) 
+            
+        info = [[word, f] for word, f in zip(words, freq)] 
+        info = sorted(info, key=lambda x: x[1], reverse=True) 
+        return pd.DataFrame(info, columns=['token', 'num_label_issues']) 
+    
+    if not class_names: 
+        print("Classes will be printed in terms of their integer index since `class_names` was not provided. ") 
+        print("Specify this argument to see the string names of each class. \n") 
+        
+    n = pred_probs[0].shape[1] 
     for issue in issues: 
         i, j = issue 
         word = given_words[i][j] 
@@ -175,68 +225,55 @@ def common_token_issues(issues, given_words, labels, pred_probs, entities,
         if (label, pred) not in exclude: 
             count[word][label][pred] += 1 
     words = [word for word in count.keys()] 
-    n = count[words[0]].shape[0] 
     freq = [np.sum(count[word]) for word in words] 
     rank = np.argsort(freq)[::-1][:top] 
     
     for r in rank: 
-        word = words[r] 
-        matrix = count[word] 
-        most_frequent = np.argsort(matrix.flatten())[::-1] 
-        print("'%s' is mislabeled %d times" % (word, freq[r])) 
+        matrix = count[words[r]] 
+        most_frequent = np.argsort(count[words[r]].flatten())[::-1] 
+        print("Token '%s' is potentially mislabeled %d times throughout the dataset" % (words[r], freq[r])) 
         if verbose: 
-            print('-----------------------------') 
+            print('---------------------------------------------------------------------------------------') 
             for f in most_frequent: 
                 i, j = f // n, f % n 
                 if matrix[i][j] == 0: 
                     break 
-                print('labeled as %s, but predicted as %s %d times' % 
-                      (entities[i], entities[j], matrix[i][j])) 
+                if class_names: 
+                    print('labeled as class `%s` but predicted to actually be class `%s` %d times' % (class_names[i], class_names[j], matrix[i][j])) 
+                else: 
+                    print('labeled as class %d but predicted to actually be class %d %d times' % (i, j, matrix[i][j])) 
         print() 
-        
-def search_token(token, issues, labels, pred_probs, given_words, sentences, entities): 
-    d = {} 
+    info = [] 
+    for word in words: 
+        for i in range(n): 
+            for j in range(n): 
+                num = count[word][i][j] 
+                if num > 0: 
+                    if not class_names: 
+                        info.append([word, i, j, num]) 
+                    else: 
+                        info.append([word, class_names[i], class_names[j], num]) 
+    info = sorted(info, key=lambda x: x[3], reverse=True) 
+    return pd.DataFrame(info, columns=['token', 'given_label', 'predicted_label', 'num_label_issues']) 
+    
+
+def filter_by_token(token, issues, given_words): 
+    returned_issues = [] 
     for issue in issues: 
         i, j = issue 
-        if given_words[i][j].lower() == token.lower(): 
-            if i not in d.keys(): 
-                d[i] = [] 
-            given = entities[labels[i][j]] 
-            pred = entities[pred_probs[i][j].argmax()] 
-            d[i].append((j, given, pred)) 
-    indicies = list(d.keys()) 
-    indicies.sort() 
-    
-    def get_mapping(sentence, tokens): 
-        i, indicies = 0, [] 
-        for token in tokens: 
-            indicies.append(sentence[i:].index(token) + i) 
-            i += len(token) 
-        return indicies 
-    
-    for index in indicies: 
-        mapping = get_mapping(sentences[index], given_words[index]) 
-        info = sorted(d[index], key=lambda x: x[0]) 
-        mapped_indicies = [mapping[j] for j, _, _ in info] 
-        s = 'Sentence %d: ' % index 
-        i = 0 
-        for mapped_index in mapped_indicies: 
-            s += sentences[index][i:mapped_index] 
-            s += colored(token, 'red') 
-            i = mapped_index + len(token) 
-        s += sentences[index][i:] 
-        print(s) 
-        for _, given, pred in info: 
-            print('Given label: %s, predicted label: %s\n' % (given, pred)) 
-    return d 
+        if token.lower() == given_words[i][j].lower(): 
+            returned_issues.append(issue) 
+    return returned_issues 
 
-def show_sentence_issues(scores, token_scores, pred_probs, given_words, sentences, given_labels, entities, top=10): 
-    ranking = np.argsort(scores) 
-    for r in ranking[:top]: 
-        print('Sentence %d: score=%.6f' % (r, scores[r])) 
-        issue_index = np.argmin(token_scores[r]) 
-        issue_word = given_words[r][issue_index] 
-        print(color_sentence(sentences[r], issue_word)) 
-        given_label = given_labels[r][issue_index] 
-        suggested_label = np.argmax(pred_probs[r][issue_index]) 
-        print('Given label: %s, suggested label: %s\n' % (entities[given_label], entities[suggested_label])) 
+
+def issues_from_scores(sentence_scores, token_scores, threshold=0.2): 
+    ranking = np.argsort(sentence_scores) 
+    cutoff = 0 
+    while sentence_scores[ranking[cutoff]] < threshold and cutoff < len(ranking): 
+        cutoff += 1 
+    ranking = ranking[:cutoff] 
+    if not token_scores: 
+        return list(ranking) 
+    else: 
+        return [(r, token_scores[r].argmin()) for r in ranking] 
+    
