@@ -17,7 +17,7 @@ def get_label_quality_multiannotator(
     verbose: bool = True,
     label_quality_score_kwargs: dict = {},
 ) -> Union[pd.DataFrame, Dict[str, pd.DataFrame]]:
-    """Returns label quality scores for each example for each annotator.
+    """Returns label quality scores for each example and for each annotator.
     This function is for multiclass classification datasets where examples have been labeled by
     multiple annotators (not necessarily the same number of annotators per example).
     It computes quality scores for each annotator's labels and other useful values like how
@@ -29,7 +29,7 @@ def get_label_quality_multiannotator(
 
     Parameters
     ----------
-    labels_multiannotator : pd.DataFrame
+    labels_multiannotator : pd.DataFrame of np.ndarray
         2D pandas DataFrame or array of multiple given labels for each example with shape (N, M),
         where N is the number of examples and M is the number of annotators.
         labels_multiannotator[n][m] = given label for n-th example by m-th annotator.

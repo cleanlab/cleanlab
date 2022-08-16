@@ -17,8 +17,6 @@
 """Helper functions for computing label quality scores"""
 
 import numpy as np
-import pandas as pd
-from cleanlab import rank
 from cleanlab.count import get_confident_thresholds
 
 

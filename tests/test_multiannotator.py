@@ -124,16 +124,22 @@ def test_label_quality_scores_multiannotator():
 
     lqs_multiannotator = get_label_quality_multiannotator(labels, pred_probs)
     assert isinstance(lqs_multiannotator, pd.DataFrame)
-    assert set(
-        ["num_annotations", "consensus_label", "annotator_agreement", "consensus_quality_score"]
-    ).issubset(lqs_multiannotator.columns)
     assert len(lqs_multiannotator) == len(labels)
+    assert all(lqs_multiannotator["num_annotations"] > 0)
+    assert set(lqs_multiannotator["consensus_label"]).issubset(np.unique(labels))
+    assert all(
+        (lqs_multiannotator["annotator_agreement"] >= 0)
+        & (lqs_multiannotator["annotator_agreement"] <= 1)
+    )
+    assert all(
+        (lqs_multiannotator["consensus_quality_score"] >= 0)
+        & (lqs_multiannotator["consensus_quality_score"] <= 1)
+    )
 
     # test verbose=False
     lqs_multiannotator = get_label_quality_multiannotator(labels, pred_probs, verbose=False)
 
     # test passing a list into consensus_method
-    # TODO: change list items after adding more options
     lqs_multiannotator = get_label_quality_multiannotator(
         labels, pred_probs, consensus_method=["majority_vote", "best_quality"]
     )
@@ -148,13 +154,18 @@ def test_label_quality_scores_multiannotator():
     multiannotator_dict = get_label_quality_multiannotator(
         labels, pred_probs, return_annotator_stats=True
     )
-
     annotator_stats = multiannotator_dict["annotator_stats"]
     assert isinstance(annotator_stats, pd.DataFrame)
-    assert set(
-        ["annotator_quality", "num_labeled", "agreement_with_consensus", "worst_class"]
-    ).issubset(annotator_stats.columns)
     assert len(annotator_stats) == labels.shape[1]
+    assert all(
+        (annotator_stats["annotator_quality"] >= 0) & (annotator_stats["annotator_quality"] <= 1)
+    )
+    assert all(annotator_stats["num_labeled"] > 0)
+    assert all(
+        (annotator_stats["agreement_with_consensus"] >= 0)
+        & (annotator_stats["agreement_with_consensus"] <= 1)
+    )
+    assert set(annotator_stats["worst_class"]).issubset(np.unique(labels))
 
     # test returning detailed_label_quality
     multiannotator_dict = get_label_quality_multiannotator(
