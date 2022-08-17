@@ -195,6 +195,12 @@ def test_label_quality_scores_multiannotator():
     assert len(multiannotator_dict) == 1
     assert isinstance(multiannotator_dict["label_quality_multiannotator"], pd.DataFrame)
 
+    # test non-numeric annotator names
+    labels_string_names = labels.add_prefix("anno_")
+    multiannotator_dict = get_label_quality_multiannotator(
+        labels_string_names, pred_probs, return_detailed_quality=False
+    )
+
     # test incorrect consensus_method
     try:
         lqs_annotatorstats = get_label_quality_multiannotator(
