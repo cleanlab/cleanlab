@@ -3,9 +3,12 @@ import numpy as np
 from cleanlab.rank import get_label_quality_scores as main_get_label_quality_scores
 
 
-def get_label_quality_scores(labels: list, pred_probs:list, *, 
-    tokens: list = None, 
-    token_scoring_method: str = "self_confidence",                
+def get_label_quality_scores(
+    labels: list,
+    pred_probs: list,
+    *,
+    tokens: list = None,
+    token_scoring_method: str = "self_confidence",
     sentence_scoring_method: str = "min",
     param: float = 0.04,
     return_scores_per_token: bool = True,
@@ -19,14 +22,14 @@ def get_label_quality_scores(labels: list, pred_probs:list, *,
 
     1 - clean label (given label is likely correct).
     0 - dirty label (given label is likely incorrect).
-    
+
     If `return_scores_per_token` is set to True, also return label score per token
 
     Parameters
     ----------
     labels: list
         noisy token labels in nested list format, such that `labels[i]` is a list of token labels of the i'th
-        sentence. For datasets with `K` classes, each label must be in 0, 1, ..., K-1. All classes must be present. 
+        sentence. For datasets with `K` classes, each label must be in 0, 1, ..., K-1. All classes must be present.
 
     pred_probs: list
         list of np.arrays, such that `pred_probs[i]` is the model-predicted probabilities for the tokens in
@@ -63,13 +66,15 @@ def get_label_quality_scores(labels: list, pred_probs:list, *,
         least one label issue.
 
     token_info: list
-        Returns only if `return_scores_per_token=True`. A list of pandas.Series, such that token_info[i] contains the 
+        Returns only if `return_scores_per_token=True`. A list of pandas.Series, such that token_info[i] contains the
         token scores for the i'th sentence. If tokens are provided, the series is indexed by the tokens.
 
     ----------
     """
     methods = ["min", "softmin"]
-    assert sentence_scoring_method in methods, "Select from the following methods:\n%s" % "\n".join(methods)
+    assert sentence_scoring_method in methods, "Select from the following methods:\n%s" % "\n".join(
+        methods
+    )
 
     labels_flatten = np.array([l for label in labels for l in label])
     pred_probs_flatten = np.array([p for pred_prob in pred_probs for p in pred_prob])
@@ -83,7 +88,7 @@ def get_label_quality_scores(labels: list, pred_probs:list, *,
         return [[next(i) for _ in range(length)] for length in sentence_length]
 
     token_scores = main_get_label_quality_scores(
-        labels=labels_flatten, pred_probs=pred_probs_flatten, method=token_scoring_method 
+        labels=labels_flatten, pred_probs=pred_probs_flatten, method=token_scoring_method
     )
     scores_nl = nested_list(token_scores, sentence_length)
 
