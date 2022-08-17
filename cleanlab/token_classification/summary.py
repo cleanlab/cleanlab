@@ -1,5 +1,6 @@
 import numpy as np 
 import pandas as pd 
+from cleanlab.internal.token_classification_utils import * 
 
 def display_issues(issues, given_words, *, 
                    pred_probs=None, 
@@ -8,7 +9,7 @@ def display_issues(issues, given_words, *,
                    class_names=None, 
                    top=20): 
     shown = 0 
-    is_tuple = type(issues[0]) == tuple  
+    is_tuple = type(issues[0]) == tuple 
     
     for issue in issues: 
         if is_tuple: 
