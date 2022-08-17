@@ -39,20 +39,6 @@ def modified(given_words, sentence_tokens):
     return False 
 
 
-def get_probs(sentence, pipe, maps=None): 
-    def softmax(logit): 
-        return np.exp(logit) / np.sum(np.exp(logit)) 
-    
-    forward = pipe.forward(pipe.preprocess(sentence)) 
-    logits = forward['logits'][0].numpy() 
-    probs = np.array([softmax(logit) for logit in logits]) 
-    probs = probs[1:-1] 
-    
-    if not maps: 
-        return probs 
-    return merge_pros(probs, maps) 
-
-
 def get_pred_probs(scores, tokens, given_token, weighted=False): 
     i, j = 0, 0 
     pred_probs = [] 
