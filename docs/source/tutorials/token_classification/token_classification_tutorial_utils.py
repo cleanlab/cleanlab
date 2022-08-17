@@ -72,9 +72,3 @@ def get_pred_probs(scores, tokens, given_token, weighted=False):
 
 def to_dict(nl): 
     return {str(i): l for i, l in enumerate(nl)} 
-
-
-def read_npz(filepath): 
-    data = dict(np.load(filepath)) 
-    data = [data[str(i)] for i in range(len(data))] 
-    return data 
