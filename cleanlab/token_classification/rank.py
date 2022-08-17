@@ -4,6 +4,27 @@ from cleanlab.rank import get_label_quality_scores as main_get_label_quality_sco
 
 
 def softmin_sentence_score(token_scores, temperature=0.05, **kwargs):
+    """ 
+    sentence scoring using the "softmin" scoring method. 
+    
+    Parameters 
+    ---------- 
+    token_scores: list 
+        token scores in nested list format, where `token_scores[i]` is a list of token scores of the i'th 
+        sentence 
+        
+    temperate: int, default=0.05 
+        temperature of the softmax function 
+        
+    **kwargs: dict 
+        dictionary for additional arguments 
+        
+    Returns 
+    --------- 
+    sentence_scores: np.array 
+        np.array of shape `(N, )`, where `N` is the number of sentences. Contains score for each sentence. 
+    
+    """ 
     softmax = lambda scores: np.exp(scores / temperature) / np.sum(np.exp(scores / temperature))
     fun = lambda scores: np.dot(scores, softmax(1 - np.array(scores)))
     sentence_scores = list(map(fun, token_scores))
@@ -18,7 +39,8 @@ def get_label_quality_scores(labels: list, pred_probs:list, *,
     sentence_score_kwargs: dict = {}, 
     token_score_kwargs: dict = {}, 
 ):
-    """Returns overall quality scores for the labels in each sentence (as well as for the individual tokens' labels) 
+    """
+    Returns overall quality scores for the labels in each sentence (as well as for the individual tokens' labels) 
 
     This is a function to compute label-quality scores for token classification datasets, where lower scores
     indicate labels less likely to be correct.
@@ -114,6 +136,30 @@ def get_label_quality_scores(labels: list, pred_probs:list, *,
 
 
 def issues_from_scores(sentence_scores, token_scores, threshold=0.1): 
+    """ 
+    Converts output from `get_label_quality_score` to list of issues. Only includes issues with label quality score 
+    lower than `threshold`. Issues are sorted by token label quality score in ascending order. 
+    
+    Parameters 
+    ---------- 
+    sentence_scores: np.array 
+        np.array of shape `(N, )`, where `N` is the number of sentences. 
+        
+    token_scores: list 
+        token scores in nested list, such that `token_scores[i]` contains the tokens scores for the i'th sentence 
+    
+    threshold: int, default=0.1 
+        tokens (or sentences, if `token_scores` is not provided) with quality scores above the threshold are not 
+        included in the result. 
+        
+    Returns 
+    --------- 
+    issues: list 
+        list of tuples `(i, j)`, which indicates the j'th token of the i'th sentence, sorted by token label quality 
+        score. If `token_scores` is not provided, returns list of indices of sentences with label quality score below 
+        threshold. 
+        
+    """ 
     if token_scores: 
         issues = [] 
         for sentence_index, scores in enumerate(token_scores): 
@@ -130,6 +176,5 @@ def issues_from_scores(sentence_scores, token_scores, threshold=0.1):
         cutoff = 0 
         while sentence_scores[ranking[cutoff]] < threshold and cutoff < len(ranking): 
             cutoff += 1 
-        ranking = ranking[:cutoff] 
-        return [(r, token_scores[r].argmin()) for r in ranking] 
+        return ranking[:cutoff] 
     
