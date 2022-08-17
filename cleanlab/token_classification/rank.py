@@ -26,7 +26,7 @@ def get_label_quality_scores(labels: list, pred_probs:list, *,
     ----------
     labels: list
         noisy token labels in nested list format, such that `labels[i]` is a list of token labels of the i'th
-        sentence. Same format requirements as `cleanlab.rank.get_label_quality_scores`.
+        sentence. For datasets with `K` classes, each label must be in 0, 1, ..., K-1. All classes must be present. 
 
     pred_probs: list
         list of np.arrays, such that `pred_probs[i]` is the model-predicted probabilities for the tokens in
