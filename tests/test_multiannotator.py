@@ -203,7 +203,7 @@ def test_label_quality_scores_multiannotator():
 
     # test incorrect consensus_method
     try:
-        lqs_annotatorstats = get_label_quality_multiannotator(
+        multiannotator_dict = get_label_quality_multiannotator(
             labels, pred_probs, consensus_method="fake_method"
         )
     except ValueError as e:
@@ -213,7 +213,7 @@ def test_label_quality_scores_multiannotator():
     labels_NA = deepcopy(labels)
     labels_NA[0] = pd.NA
     try:
-        lqs_annotatorstats = get_label_quality_multiannotator(
+        multiannotator_dict = get_label_quality_multiannotator(
             labels_NA, pred_probs, return_annotator_stats=True
         )
     except ValueError as e:
@@ -228,7 +228,7 @@ def test_get_consensus_label():
     consensus_label = get_majority_vote_label(labels)
 
     # making synthetic data to test tiebreaks of get_consensus_label
-    # also testing pssing labels as np.ndarray
+    # also testing passing labels as np.ndarray
     labels_tiebreaks = np.array([[1, 2, 0], [1, 1, 0], [1, 0, 0], [2, 2, 2], [1, 2, 0], [1, 2, 0]])
     pred_probs_tiebreaks = np.array(
         [
@@ -245,13 +245,6 @@ def test_get_consensus_label():
 
 
 def test_impute_nonoverlaping_annotators():
-    labels = data["labels"]
-
-    # getting consensus labels without pred_probs
-    consensus_label = get_majority_vote_label(labels)
-
-    # making synthetic data to test tiebreaks of get_consensus_label
-    # also testing pssing labels as np.ndarray
     labels = np.array(
         [
             [1, np.NaN, np.NaN],
@@ -273,4 +266,4 @@ def test_impute_nonoverlaping_annotators():
         ]
     )
 
-    consensus_label = get_label_quality_multiannotator(labels, pred_probs)
+    multiannotator_dict = get_label_quality_multiannotator(labels, pred_probs)
