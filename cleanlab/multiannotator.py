@@ -165,9 +165,18 @@ def get_label_quality_multiannotator(
             post_pred_probs = MV_post_pred_probs
             model_weight = MV_model_weight
             annotator_weight = MV_annotator_weight
+
         elif curr_method == "best_quality":
-            # TODO: can't just take argmax, need a method to break ties
-            consensus_label = np.argmax(MV_post_pred_probs, axis=1)
+            consensus_label = np.full(len(majority_vote_label), np.nan)
+            for i in range(len(consensus_label)):
+                max_pred_probs_ind = np.where(
+                    MV_post_pred_probs[i] == np.max(MV_post_pred_probs[i])
+                )[0]
+                if len(max_pred_probs_ind) == 1:
+                    consensus_label[i] = max_pred_probs_ind[0]
+                else:
+                    consensus_label[i] = majority_vote_label[i]
+            consensus_label = consensus_label.astype("int64")  # convert all label types to int
             (
                 annotator_agreement,
                 consensus_quality_score,
@@ -182,6 +191,7 @@ def get_label_quality_multiannotator(
                 quality_method=quality_method,
                 **label_quality_score_kwargs,
             )
+
         else:
             raise ValueError(
                 f"""
@@ -220,6 +230,7 @@ def get_label_quality_multiannotator(
                     annotator_agreement=annotator_agreement,
                     model_weight=model_weight,
                     annotator_weight=annotator_weight,
+                    consensus_quality_score=consensus_quality_score,
                     quality_method=quality_method,
                 )
 
@@ -448,6 +459,7 @@ def _get_annotator_stats(
     annotator_agreement: np.ndarray,
     model_weight: np.ndarray,
     annotator_weight: np.ndarray,
+    consensus_quality_score: np.ndarray,
     quality_method: str = "auto",
 ) -> pd.DataFrame:
     """Returns a dictionary containing overall statistics about each annotator.
@@ -508,10 +520,11 @@ def _get_annotator_stats(
     ).to_numpy()
 
     # Find the worst labeled class for each annotator
-    # TODO: potentially have to do tiebreaking here
-    worst_class = labels_multiannotator.apply(
-        lambda s: (s[pd.notna(s)] == consensus_label[pd.notna(s)]).groupby(s).mean().idxmin()
-    ).astype("int64")
+    worst_class = _get_annotator_worst_class(
+        labels_multiannotator=labels_multiannotator,
+        consensus_label=consensus_label,
+        consensus_quality_score=consensus_quality_score,
+    )
 
     # Create multi-annotator stats DataFrame from its columns
     annotator_stats = pd.DataFrame(
@@ -904,6 +917,71 @@ def _get_annotator_quality(
         )
 
     return annotator_quality
+
+
+def _get_annotator_worst_class(
+    labels_multiannotator: pd.DataFrame,
+    consensus_label: np.ndarray,
+    consensus_quality_score: np.ndarray,
+) -> np.ndarray:
+    """Returns the class which each annotator makes the most errors in.
+
+    Parameters
+    ----------
+    labels_multiannotator : pd.DataFrame
+        2D pandas DataFrame of multiple given labels for each example with shape (N, M),
+        where N is the number of examples and M is the number of annotators.
+        For more details, labels in the same format expected by the :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>`.
+    consensus_label : np.ndarray
+        An array of shape ``(N,)`` with the consensus labels aggregated from all annotators.
+    consensus_quality_score : np.ndarray
+        An array of shape ``(N,)`` with the quality score of the consensus.
+
+    Returns
+    -------
+    worst_class : np.ndarray
+        The class that is most frequently mislabeled by a given annotator
+    """
+
+    def get_single_annotator_worst_class(s, consensus_quality_score):
+        mask = pd.notna(s)
+        class_accuracies = (s[mask] == consensus_label[mask]).groupby(s).mean()
+        accuracy_min_idx = class_accuracies[class_accuracies == class_accuracies.min()].index.values
+
+        if len(accuracy_min_idx) == 1:
+            return accuracy_min_idx[0]
+
+        # tiebreak 1: class counts
+        class_count = s[mask].groupby(s).count()[accuracy_min_idx]
+        count_max_idx = class_count[class_count == class_count.max()].index.values
+
+        if len(count_max_idx) == 1:
+            return count_max_idx[0]
+
+        # tiebreak 2: consensus quality scores
+        avg_consensus_quality = (
+            pd.DataFrame(
+                {"annotator_label": s, "consensus_quality_score": consensus_quality_score}
+            )[mask]
+            .groupby("annotator_label")
+            .mean()["consensus_quality_score"][count_max_idx]
+        )
+        quality_max_ind = avg_consensus_quality[
+            avg_consensus_quality == avg_consensus_quality.max()
+        ].index.values
+
+        # return first item even if there are ties - no better methods to tiebreak
+        return quality_max_ind[0]
+
+    worst_class = (
+        labels_multiannotator.apply(
+            lambda s: get_single_annotator_worst_class(s, consensus_quality_score)
+        )
+        .to_numpy()
+        .astype("int64")
+    )
+
+    return worst_class
 
 
 def convert_long_to_wide_dataset(
