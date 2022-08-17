@@ -11,9 +11,9 @@ def get_label_quality_multiannotator(
     pred_probs: np.ndarray,
     *,
     consensus_method: Union[str, List[str]] = "best_quality",
-    quality_method: str = "auto",
+    quality_method: str = "crowdlab",
     return_detailed_quality: bool = True,
-    return_annotator_stats: bool = True,  # sort by lowest overall_quality first
+    return_annotator_stats: bool = True,
     verbose: bool = False,
     label_quality_score_kwargs: dict = {},
 ) -> Dict[str, pd.DataFrame]:
@@ -42,17 +42,17 @@ def get_label_quality_multiannotator(
     consensus_method : str or List[str], default = "majority_vote"
         Specifies the method used to aggregate labels from multiple annotators into a single consensus label.
         Options include:
-        - ``majority_vote``: means consensus labels are reached via a simple majority vote among annotators, with ties broken via ``pred_probs``.
-        - ``best_quality``: TODO
+        - ``majority_vote``: consensus obtained using a simple majority vote among annotators, with ties broken via ``pred_probs``.
+        - ``best_quality``: consensus obtained by selecting the label with highest label quality (quality determined by method specified in ``quality_method``)
         A List may be passed if you want to consider multiple methods for producing consensus labels.
         If a List is passed, then the 0th element of List is the method used to produce columns "consensus_label", "consensus_quality_score", "annotator_agreement" in the returned DataFrame.
         The 1st, 2nd, 3rd, etc. elements of this List are output as extra columns in the returned ``pandas DataFrame`` with names formatted as:
         consensus_label_SUFFIX, consensus_quality_score_SUFFIX
         where SUFFIX = the str element of this list, which must correspond to a valid method for computing consensus labels.
-    quality_method : str, default = "auto"
+    quality_method : str, default = "crowdlab"
         Specifies the method used to calculate the quality of the consensus label.
         Options include:
-        - ``auto``: TODO: CL computed score
+        - ``crowdlab``: an emsemble method that weighs both the annotators' labels as well as the model's prediction
         - ``agreement``: the fraction of annotators that agree with the consensus label
     return_detailed_quality: bool, default = True
         Boolean to specify if `detailed_label_quality` is returned.
@@ -80,7 +80,7 @@ def get_label_quality_multiannotator(
             the label quality score for the labels provided by each annotator (is ``NaN`` for examples which this annotator did not label).
 
         ``annotator_stats`` : pandas.DataFrame (returned if `return_annotator_stats=True`)
-            Returns overall statistics about each annotator.
+            Returns overall statistics about each annotator, sorted by lowest annotator_quality first.
             pandas DataFrame in which each row corresponds to one annotator (the row IDs correspond to annotator IDs), with columns:
             - ``annotator_quality``: overall quality of a given annotator's labels
             - ``num_labeled``: number of examples annotated by a given annotator
@@ -386,7 +386,7 @@ def _get_consensus_stats(
     pred_probs: np.ndarray,
     num_annotations: np.ndarray,
     consensus_label: np.ndarray,
-    quality_method: str = "auto",
+    quality_method: str = "crowdlab",
     label_quality_score_kwargs: dict = {},
 ) -> tuple:
     """Returns a tuple containing the consensus labels, annotator agreement scores, and quality of consensus
@@ -404,7 +404,7 @@ def _get_consensus_stats(
         An array of shape ``(N,)`` with the number of annotators that have labeled each example.
     consensus_label : np.ndarray
         An array of shape ``(N,)`` with the consensus labels aggregated from all annotators.
-    quality_method : str, default = "auto" (Options: ["auto", "agreement"])
+    quality_method : str, default = "crowdlab" (Options: ["crowdlab", "agreement"])
         Specifies the method used to calculate the quality of the consensus label.
         For valid quality methods, view :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>`
     label_quality_score_kwargs : dict, optional
@@ -460,7 +460,7 @@ def _get_annotator_stats(
     model_weight: np.ndarray,
     annotator_weight: np.ndarray,
     consensus_quality_score: np.ndarray,
-    quality_method: str = "auto",
+    quality_method: str = "crowdlab",
 ) -> pd.DataFrame:
     """Returns a dictionary containing overall statistics about each annotator.
 
@@ -487,7 +487,7 @@ def _get_annotator_stats(
         None if annotator weights are not used to compute quality scores
     consensus_quality_score : np.ndarray
         An array of shape ``(N,)`` with the quality score of the consensus.
-    quality_method : str, default = "auto" (Options: ["auto", "agreement"])
+    quality_method : str, default = "crowdlab" (Options: ["crowdlab", "agreement"])
         Specifies the method used to calculate the quality of the consensus label.
         For valid quality methods, view :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>`
 
@@ -592,7 +592,7 @@ def _get_annotator_agreement_with_annotators(
     def get_single_annotator_agreement(
         labels_multiannotator: pd.DataFrame,
         num_annotations: np.ndarray,
-        annotator_id: Union[int, str],  # TODO: unknown type, index?
+        annotator_id: Union[int, str],
     ):
         annotator_agreement_per_example = labels_multiannotator.apply(
             lambda s: np.mean(s[pd.notna(s)].drop(annotator_id) == s[annotator_id]), axis=1
@@ -632,7 +632,7 @@ def _get_post_pred_probs_and_weights(
     prior_pred_probs: np.ndarray,
     num_annotations: np.ndarray,
     annotator_agreement: np.ndarray,
-    quality_method: str = "auto",
+    quality_method: str = "crowdlab",
 ) -> Tuple[np.ndarray, Any, Any]:
     """Return the posterior predicted probabilites of each example given a specified quality method.
 
@@ -645,14 +645,13 @@ def _get_post_pred_probs_and_weights(
     consensus_label : np.ndarray
         An array of shape ``(N,)`` with the consensus labels aggregated from all annotators.
     prior_pred_probs : np.ndarray
-        TODO: more detailed explanation that this is the model pred_probs
-        An array of shape ``(N, K)`` of posterior predicted probabilities, ``P(label=k|x)``.
+        An array of shape ``(N, K)`` of prior predicted probabilities, ``P(label=k|x)``, usually the out-of-sample predicted probability computed by a model.
         For details, predicted probabilities in the same format expected by the :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>`.
     num_annotations : np.ndarray
         An array of shape ``(N,)`` with the number of annotators that have labeled each example.
     annotator_agreement : np.ndarray
         An array of shape ``(N,)`` with the fraction of annotators that agree with each consensus label.
-    quality_method : str, default = "auto" (Options: ["auto", "agreement"])
+    quality_method : str, default = "crowdlab" (Options: ["crowdlab", "agreement"])
         Specifies the method used to calculate the quality of the consensus label.
         For valid quality methods, view :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>`
 
@@ -670,16 +669,16 @@ def _get_post_pred_probs_and_weights(
         None if annotator weights are not used to compute quality scores
     """
     valid_methods = [
-        "auto",
+        "crowdlab",
         "agreement",
     ]
 
     # setting dummy variables for model and annotator weights that will be returned
-    # only relevant for quality_method == auto, return None for all other methods
+    # only relevant for quality_method == crowdlab, return None for all other methods
     return_model_weight = None
     return_annotator_weight = None
 
-    if quality_method == "auto":
+    if quality_method == "crowdlab":
         num_classes = get_num_classes(pred_probs=prior_pred_probs)
         likelihood = np.mean(
             annotator_agreement[num_annotations != 1]
@@ -751,7 +750,7 @@ def _get_consensus_quality_score(
     pred_probs: np.ndarray,
     num_annotations: np.ndarray,
     annotator_agreement: np.ndarray,
-    quality_method: str = "auto",
+    quality_method: str = "crowdlab",
     label_quality_score_kwargs: dict = {},
 ) -> np.ndarray:
     """Return scores representing quality of the consensus label for each example.
@@ -766,13 +765,13 @@ def _get_consensus_quality_score(
         An array of shape ``(N,)`` with the consensus labels aggregated from all annotators.
     pred_probs : np.ndarray
         An array of shape ``(N, K)`` of posterior predicted probabilities, ``P(label=k|x)``.
-        TODO: specify that we are using post_pred_probs here
+        Posterior
         For details, predicted probabilities in the same format expected by the :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>`.
     num_annotations : np.ndarray
         An array of shape ``(N,)`` with the number of annotators that have labeled each example.
     annotator_agreement : np.ndarray
         An array of shape ``(N,)`` with the fraction of annotators that agree with each consensus label.
-    quality_method : str, default = "auto" (Options: ["auto", "agreement"])
+    quality_method : str, default = "crowdlab" (Options: ["crowdlab", "agreement"])
         Specifies the method used to calculate the quality of the consensus label.
         For valid quality methods, view :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>`
 
@@ -783,11 +782,11 @@ def _get_consensus_quality_score(
     """
 
     valid_methods = [
-        "auto",
+        "crowdlab",
         "agreement",
     ]
 
-    if quality_method == "auto":
+    if quality_method == "crowdlab":
         consensus_quality_score = get_label_quality_scores(
             consensus_label, pred_probs, **label_quality_score_kwargs
         )
@@ -836,7 +835,7 @@ def _get_annotator_quality(
     annotator_agreement: np.ndarray,
     model_weight: np.ndarray,
     annotator_weight: np.ndarray,
-    quality_method: str = "auto",
+    quality_method: str = "crowdlab",
 ) -> pd.DataFrame:
     """Returns annotator quality score for each annotator.
 
@@ -861,7 +860,7 @@ def _get_annotator_quality(
     annotator_weight : np.ndarray
         An array of shape ``(M,)`` where M is the number of annotators, specifying the annotator weights used in weighted averages,
         None if annotator weights are not used to compute quality scores
-    quality_method : str, default = "auto" (Options: ["auto", "agreement"])
+    quality_method : str, default = "crowdlab" (Options: ["crowdlab", "agreement"])
         Specifies the method used to calculate the quality of the annotators.
         For valid quality methods, view :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>`
 
@@ -872,11 +871,11 @@ def _get_annotator_quality(
     """
 
     valid_methods = [
-        "auto",
+        "crowdlab",
         "agreement",
     ]
 
-    if quality_method == "auto":
+    if quality_method == "crowdlab":
         annotator_lqs = labels_multiannotator.apply(
             lambda s: np.mean(
                 get_label_quality_scores(s[pd.notna(s)].astype("int64"), pred_probs[pd.notna(s)])
