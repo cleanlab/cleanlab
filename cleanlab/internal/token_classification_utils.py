@@ -1,5 +1,6 @@
 import string 
 import numpy as np 
+from termcolor import colored
 
 
 def get_sentence(words): 
