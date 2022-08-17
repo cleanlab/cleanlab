@@ -3,14 +3,22 @@ import numpy as np
 from cleanlab.rank import get_label_quality_scores as main_get_label_quality_scores
 
 
+def softmin_sentence_score(token_scores, temperature=0.05, **kwargs):
+    softmax = lambda scores: np.exp(scores / temperature) / np.sum(np.exp(scores / temperature))
+    fun = lambda scores: np.dot(scores, softmax(1 - np.array(scores)))
+    sentence_scores = list(map(fun, token_scores))
+    return np.array(sentence_scores)
+
+
 def get_label_quality_scores(labels: list, pred_probs:list, *, 
     tokens: list = None, 
-    token_scoring_method: str = "self_confidence",                
-    sentence_scoring_method: str = "min",
-    param: float = 0.04,
+    token_score_method: str = "self_confidence",                
+    sentence_score_method: str = "min",
     return_scores_per_token: bool = True,
+    sentence_score_kwargs: dict = {}, 
+    token_score_kwargs: dict = {}, 
 ):
-    """Returns label quality scores for each sentence
+    """Returns overall quality scores for the labels in each sentence (as well as for the individual tokens' labels) 
 
     This is a function to compute label-quality scores for token classification datasets, where lower scores
     indicate labels less likely to be correct.
@@ -33,8 +41,12 @@ def get_label_quality_scores(labels: list, pred_probs:list, *,
         the i'th sentence, and has shape `(N, K)`. Each row of the matrix corresponds to a token `t` and contains
         the model-predicted probabilities that `t` belongs to each possible class, for each of the K classes. The
         columns must be ordered such that the probabilities correspond to class 0, 1, ..., K-1.
+        
+    tokens: list, optinal, default=None
+        tokens in nested list format, such that `tokens[i]` is a list of tokens for the i'th sentence. See return value
+        `token_info` for more info.
 
-    sentence_scoring_method: {"min", "softmin"}, default="min"
+    sentence_score_method: {"min", "softmin"}, default="min"
         sentence scoring method to aggregate token scores.
 
         - `min`: sentence score = minimum token label score of the sentence
@@ -43,15 +55,11 @@ def get_label_quality_scores(labels: list, pred_probs:list, *,
         method approaches to `min`. This method is the "softer" version of `min`, which adds some minor weights to
         other scores.
 
-    token_scoring_method: {"self_confidence", "normalized_margin", "confidence_weighted_entropy"}, default="self_confidence"
+    token_score_method: {"self_confidence", "normalized_margin", "confidence_weighted_entropy"}, default="self_confidence"
         label quality scoring method. See `cleanlab.rank.get_label_quality_scores` for more info.
 
     param: float, default=0.04
-        temperature of softmax. If sentence_scoring_method == "min", `param` is ignored.
-
-    tokens: list, optinal, default=None
-        tokens in nested list format, such that `tokens[i]` is a list of tokens for the i'th sentence. See return value
-        `token_info` for more info.
+        temperature of softmax. If sentence_score_method == "min", `param` is ignored.
 
     return_scores_per_token: bool, default=True
         If set to True, returns additional token information. See return value `token_info` for more info.
@@ -69,13 +77,12 @@ def get_label_quality_scores(labels: list, pred_probs:list, *,
     ----------
     """
     methods = ["min", "softmin"]
-    assert sentence_scoring_method in methods, "Select from the following methods:\n%s" % "\n".join(methods)
+    assert sentence_score_method in methods, "Select from the following methods:\n%s" % "\n".join(methods)
 
     labels_flatten = np.array([l for label in labels for l in label])
     pred_probs_flatten = np.array([p for pred_prob in pred_probs for p in pred_prob])
     n, m = pred_probs_flatten.shape
-
-    # TODO: maybe move this to a helper in the module? may be helpful for users
+    
     sentence_length = [len(label) for label in labels]
 
     def nested_list(x, length):
@@ -83,19 +90,18 @@ def get_label_quality_scores(labels: list, pred_probs:list, *,
         return [[next(i) for _ in range(length)] for length in sentence_length]
 
     token_scores = main_get_label_quality_scores(
-        labels=labels_flatten, pred_probs=pred_probs_flatten, method=token_scoring_method 
+        labels=labels_flatten, pred_probs=pred_probs_flatten, method=token_score_method 
     )
     scores_nl = nested_list(token_scores, sentence_length)
 
-    if sentence_scoring_method == "min":
-        fun = lambda scores: np.min(scores)
+    if sentence_score_method == "min":
+        fun = lambda scores: np.min(scores) 
+        sentence_scores = list(map(fun, scores_nl)) 
+        sentence_scores = np.array(sentence_scores) 
 
-    elif sentence_scoring_method == "softmin":
-        softmax = lambda scores: np.exp(scores / param) / np.sum(np.exp(scores / param))
-        fun = lambda scores: np.dot(scores, softmax(1 - np.array(scores)))
-
-    sentence_scores = list(map(fun, scores_nl))
-    sentence_scores = np.array(sentence_scores)
+    elif sentence_score_method == "softmin":
+        temperature = sentence_score_kwargs["temperature"] if "temperature" in sentence_score_kwargs else 0.05 
+        sentence_scores = softmin_sentence_score(scores_nl, temperature=temperature) 
 
     if not return_scores_per_token:
         return sentence_scores
@@ -126,3 +132,4 @@ def issues_from_scores(sentence_scores, token_scores, threshold=0.1):
             cutoff += 1 
         ranking = ranking[:cutoff] 
         return [(r, token_scores[r].argmin()) for r in ranking] 
+    
