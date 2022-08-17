@@ -53,10 +53,10 @@ def get_probs(sentence, pipe, maps=None):
     return merge_pros(probs, maps) 
 
 
-def get_pred_probs_and_labels(scores, tokens, given_token, given_label, weighted=False): 
+def get_pred_probs(scores, tokens, given_token, weighted=False): 
     i, j = 0, 0 
-    pred_probs, labels = [], [] 
-    for token, label in zip(given_token, given_label): 
+    pred_probs = [] 
+    for token in given_token: 
         i_new, j_new = i, j 
         acc = 0 
         
@@ -80,9 +80,8 @@ def get_pred_probs_and_labels(scores, tokens, given_token, given_label, weighted
         i, j = i_new, j_new 
         
         pred_probs.append(probs) 
-        labels.append(label)
         
-    return np.array(pred_probs), labels 
+    return np.array(pred_probs) 
 
 
 def to_dict(nl): 
