@@ -709,7 +709,8 @@ def _get_post_pred_probs_and_weights(
         # compute weighted average
         post_pred_probs = np.full(prior_pred_probs.shape, np.nan)
         for i in range(len(labels_multiannotator)):
-            example = labels_multiannotator.iloc[i].dropna()
+            example_mask = labels_multiannotator.iloc[i].notna()
+            example = labels_multiannotator.iloc[i][example_mask]
             post_pred_probs[i] = [
                 np.average(
                     [prior_pred_probs[i, true_label]]
@@ -720,7 +721,7 @@ def _get_post_pred_probs_and_weights(
                         for annotator_label in example
                     ],
                     weights=np.concatenate(
-                        ([model_weight], adjusted_annotator_agreement[example.index])
+                        ([model_weight], adjusted_annotator_agreement[example_mask])
                     ),
                 )
                 for true_label in range(num_classes)
