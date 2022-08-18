@@ -168,7 +168,6 @@ def get_label_quality_multiannotator(
 
         elif curr_method == "best_quality":
             consensus_label = np.full(len(majority_vote_label), np.nan)
-            print(MV_post_pred_probs)
             for i in range(len(consensus_label)):
                 max_pred_probs_ind = np.where(
                     MV_post_pred_probs[i] == np.max(MV_post_pred_probs[i])
@@ -209,15 +208,15 @@ def get_label_quality_multiannotator(
                 label_quality["annotator_agreement"],
             ) = (
                 consensus_label,
-                annotator_agreement,
                 consensus_quality_score,
+                annotator_agreement,
             )
 
             label_quality = label_quality.reindex(
                 columns=[
                     "consensus_label",
-                    "annotator_agreement",
                     "consensus_quality_score",
+                    "annotator_agreement",
                     "num_annotations",
                 ]
             )
