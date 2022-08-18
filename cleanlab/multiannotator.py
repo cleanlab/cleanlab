@@ -168,6 +168,7 @@ def get_label_quality_multiannotator(
 
         elif curr_method == "best_quality":
             consensus_label = np.full(len(majority_vote_label), np.nan)
+            print(MV_post_pred_probs)
             for i in range(len(consensus_label)):
                 max_pred_probs_ind = np.where(
                     MV_post_pred_probs[i] == np.max(MV_post_pred_probs[i])
@@ -740,8 +741,11 @@ def _get_post_pred_probs_and_weights(
         return_annotator_weight = adjusted_annotator_agreement
 
     elif quality_method == "agreement":
-        label_counts = labels_multiannotator.apply(lambda s: s.value_counts(), axis=1).to_numpy()
-        label_counts = np.nan_to_num(label_counts, nan=0)
+        label_counts = (
+            labels_multiannotator.apply(lambda s: s.value_counts(), axis=1)
+            .fillna(value=0)
+            .to_numpy()
+        )
         post_pred_probs = label_counts / num_annotations.reshape(-1, 1)
 
     else:
