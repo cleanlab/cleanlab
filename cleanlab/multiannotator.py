@@ -68,7 +68,7 @@ def get_label_quality_multiannotator(
     dict
 
     dictionary containing up to 3 pandas DataFrame with keys as below:
-        ``label_quality_multiannotator`` : pandas.DataFrame
+        ``label_quality`` : pandas.DataFrame
             pandas DataFrame in which each row corresponds to one example, with columns:
             - ``num_annotations``: the number of annotators that have labeled each example.
             - ``consensus_label``: the single label that is best for each example (you can control how it is derived from all annotators' labels via the argument: ``consensus_method``)
@@ -83,7 +83,7 @@ def get_label_quality_multiannotator(
             Returns overall statistics about each annotator, sorted by lowest annotator_quality first.
             pandas DataFrame in which each row corresponds to one annotator (the row IDs correspond to annotator IDs), with columns:
             - ``annotator_quality``: overall quality of a given annotator's labels
-            - ``num_labeled``: number of examples annotated by a given annotator
+            - ``num_examples_labeled``: number of examples annotated by a given annotator
             - ``agreement_with_consensus``: fraction of examples where a given annotator agrees with the consensus label
             - ``worst_class``: the class that is most frequently mislabeled by a given annotator
     """
@@ -152,7 +152,7 @@ def get_label_quality_multiannotator(
             **label_quality_score_kwargs,
         )
 
-    label_quality_multiannotator = pd.DataFrame({"num_annotations": num_annotations})
+    label_quality = pd.DataFrame({"num_annotations": num_annotations})
     valid_methods = ["majority_vote", "best_quality"]
     main_method = True
 
@@ -203,13 +203,22 @@ def get_label_quality_multiannotator(
         # saving stats into dataframe, computing additional stats if specified
         if main_method:
             (
-                label_quality_multiannotator["consensus_label"],
-                label_quality_multiannotator["annotator_agreement"],
-                label_quality_multiannotator["consensus_quality_score"],
+                label_quality["consensus_label"],
+                label_quality["consensus_quality_score"],
+                label_quality["annotator_agreement"],
             ) = (
                 consensus_label,
                 annotator_agreement,
                 consensus_quality_score,
+            )
+
+            label_quality = label_quality.reindex(
+                columns=[
+                    "consensus_label",
+                    "annotator_agreement",
+                    "consensus_quality_score",
+                    "num_annotations",
+                ]
             )
 
             if return_detailed_quality:
@@ -238,13 +247,13 @@ def get_label_quality_multiannotator(
 
         else:
             (
-                label_quality_multiannotator[f"consensus_label_{curr_method}"],
-                label_quality_multiannotator[f"annotator_agreement_{curr_method}"],
-                label_quality_multiannotator[f"consensus_quality_score_{curr_method}"],
+                label_quality[f"consensus_label_{curr_method}"],
+                label_quality[f"consensus_quality_score_{curr_method}"],
+                label_quality[f"annotator_agreement_{curr_method}"],
             ) = (
                 consensus_label,
-                annotator_agreement,
                 consensus_quality_score,
+                annotator_agreement,
             )
 
     if verbose:
@@ -255,23 +264,23 @@ def get_label_quality_multiannotator(
 
     if return_detailed_quality and return_annotator_stats:
         return {
-            "label_quality_multiannotator": label_quality_multiannotator,
+            "label_quality": label_quality,
             "detailed_label_quality": detailed_label_quality,
             "annotator_stats": annotator_stats,
         }
     elif return_detailed_quality:
         return {
-            "label_quality_multiannotator": label_quality_multiannotator,
+            "label_quality": label_quality,
             "detailed_label_quality": detailed_label_quality,
         }
     elif return_annotator_stats:
         return {
-            "label_quality_multiannotator": label_quality_multiannotator,
+            "label_quality": label_quality,
             "annotator_stats": annotator_stats,
         }
     else:
         return {
-            "label_quality_multiannotator": label_quality_multiannotator,
+            "label_quality": label_quality,
         }
 
 
@@ -510,7 +519,7 @@ def _get_annotator_stats(
     )
 
     # Compute the number of labels labeled/ by each annotator
-    num_labeled = labels_multiannotator.count()
+    num_examples_labeled = labels_multiannotator.count()
 
     # Compute the fraction of labels annotated by each annotator that agrees with the consensus label
     # TODO: check if we should drop singleton labels here
@@ -530,9 +539,9 @@ def _get_annotator_stats(
     annotator_stats = pd.DataFrame(
         {
             "annotator_quality": annotator_quality,
-            "num_labeled": num_labeled,
             "agreement_with_consensus": agreement_with_consensus,
             "worst_class": worst_class,
+            "num_examples_labeled": num_examples_labeled,
         }
     )
 

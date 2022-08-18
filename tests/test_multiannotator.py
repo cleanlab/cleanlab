@@ -125,7 +125,7 @@ def test_label_quality_scores_multiannotator():
     assert isinstance(multiannotator_dict, dict)
     assert len(multiannotator_dict) == 3
 
-    label_quality_multiannotator = multiannotator_dict["label_quality_multiannotator"]
+    label_quality_multiannotator = multiannotator_dict["label_quality"]
     assert isinstance(label_quality_multiannotator, pd.DataFrame)
     assert len(label_quality_multiannotator) == len(labels)
     assert all(label_quality_multiannotator["num_annotations"] > 0)
@@ -145,7 +145,7 @@ def test_label_quality_scores_multiannotator():
     assert all(
         (annotator_stats["annotator_quality"] >= 0) & (annotator_stats["annotator_quality"] <= 1)
     )
-    assert all(annotator_stats["num_labeled"] > 0)
+    assert all(annotator_stats["num_examples_labeled"] > 0)
     assert all(
         (annotator_stats["agreement_with_consensus"] >= 0)
         & (annotator_stats["agreement_with_consensus"] <= 1)
@@ -175,7 +175,7 @@ def test_label_quality_scores_multiannotator():
     )
     assert isinstance(multiannotator_dict, dict)
     assert len(multiannotator_dict) == 2
-    assert isinstance(multiannotator_dict["label_quality_multiannotator"], pd.DataFrame)
+    assert isinstance(multiannotator_dict["label_quality"], pd.DataFrame)
     assert isinstance(multiannotator_dict["detailed_label_quality"], pd.DataFrame)
 
     # test returning detailed_label_quality
@@ -184,7 +184,7 @@ def test_label_quality_scores_multiannotator():
     )
     assert isinstance(multiannotator_dict, dict)
     assert len(multiannotator_dict) == 2
-    assert isinstance(multiannotator_dict["label_quality_multiannotator"], pd.DataFrame)
+    assert isinstance(multiannotator_dict["label_quality"], pd.DataFrame)
     assert isinstance(multiannotator_dict["annotator_stats"], pd.DataFrame)
 
     # test return detailed and annotator stats
@@ -193,7 +193,7 @@ def test_label_quality_scores_multiannotator():
     )
     assert isinstance(multiannotator_dict, dict)
     assert len(multiannotator_dict) == 1
-    assert isinstance(multiannotator_dict["label_quality_multiannotator"], pd.DataFrame)
+    assert isinstance(multiannotator_dict["label_quality"], pd.DataFrame)
 
     # test non-numeric annotator names
     labels_string_names = labels.add_prefix("anno_")
