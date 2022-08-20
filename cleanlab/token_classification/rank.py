@@ -7,7 +7,7 @@ from typing import Optional, Union, Tuple
 def softmin_sentence_score(
     token_scores: list, 
     temperature: float = 0.05, 
-    **kwargs: dict = {} 
+    **kwargs: dict 
 ) -> np.ndarray:
     """ 
     sentence scoring using the "softmin" scoring method. 
