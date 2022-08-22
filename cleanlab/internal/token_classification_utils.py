@@ -19,17 +19,18 @@ def get_sentence(words: list) -> str:
         sentence formed by list of word-level tokens
 
     """
-    sentence = ''
+    sentence = ""
     for word in words:
-        if word not in string.punctuation or word in ['-', '(']:
-            word = ' ' + word
+        if word not in string.punctuation or word in ["-", "("]:
+            word = " " + word
         sentence += word
-    sentence = sentence.replace(" '", "'").replace('( ', '(').strip()
+    sentence = sentence.replace(" '", "'").replace("( ", "(").strip()
     return sentence
 
 
-def filter_sentence(sentences: list, condition: Optional[Callable] = None, return_mask: bool = True
-                    ) -> Union[Tuple[list, list], list]:
+def filter_sentence(
+    sentences: list, condition: Optional[Callable] = None, return_mask: bool = True
+) -> Union[Tuple[list, list], list]:
     """
     Filter sentence based on some condition, and returns filter mask
 
@@ -54,7 +55,7 @@ def filter_sentence(sentences: list, condition: Optional[Callable] = None, retur
 
     """
     if not condition:
-        condition = lambda sentence: len(sentence) > 1 and '#' not in sentence
+        condition = lambda sentence: len(sentence) > 1 and "#" not in sentence
     mask = list(map(condition, sentences))
     sentences = [sentence for m, sentence in zip(mask, sentences) if m]
     if return_mask:
@@ -63,7 +64,7 @@ def filter_sentence(sentences: list, condition: Optional[Callable] = None, retur
         return sentences
 
 
-def process_token(token: str, replace: list = [('#', '')]) -> str:
+def process_token(token: str, replace: list = [("#", "")]) -> str:
     """
     Replaces special characters in the tokens
 
@@ -159,5 +160,5 @@ def color_sentence(sentence: str, word: str) -> str:
 
     """
     start_idx = sentence.index(word)
-    before, after = sentence[:start_idx], sentence[start_idx + len(word):]
-    return '%s%s%s' % (before, colored(word, 'red'), after)
+    before, after = sentence[:start_idx], sentence[start_idx + len(word) :]
+    return "%s%s%s" % (before, colored(word, "red"), after)
