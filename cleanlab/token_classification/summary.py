@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 from cleanlab.internal.token_classification_utils import *
-from typing import Optional, Union, Tuple, Dict
+from typing import Optional, Union, Tuple, Dict, Any
 
 
 def display_issues(
@@ -155,7 +155,7 @@ def common_label_issues(
         token, ordered by the number of label issues in descending order.
 
     """
-    count: Dict[str, Union[int, np.ndarray]] = {}
+    count: Dict[str, Any] = {}
     if not labels or not pred_probs:
         for issue in issues:
             i, j = issue
