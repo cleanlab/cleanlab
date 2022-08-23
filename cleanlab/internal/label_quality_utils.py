@@ -23,8 +23,8 @@ from cleanlab.count import get_confident_thresholds
 def _subtract_confident_thresholds(
     labels: Optional[np.ndarray],
     pred_probs: np.ndarray,
-    confident_thresholds: Optional[np.ndarray] = None,
     multi_label: bool = False,
+    confident_thresholds: Optional[np.ndarray] = None,
 ) -> np.ndarray:
     """Returns adjusted predicted probabilities by subtracting the class confident thresholds and renormalizing.
     The confident class threshold for a class j is the expected (average) "self-confidence" for class j.

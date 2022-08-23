@@ -729,7 +729,9 @@ def get_ood_scores(
                     labels, pred_probs, multi_label=False
                 )
 
-        pred_probs = _subtract_confident_thresholds(None, pred_probs, confident_thresholds)
+        pred_probs = _subtract_confident_thresholds(
+            None, pred_probs, multi_label=False, confident_thresholds=confident_thresholds
+        )
 
     if method == "entropy":
         ood_scores = get_normalized_entropy(pred_probs)
