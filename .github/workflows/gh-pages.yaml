@@ -104,7 +104,7 @@ jobs:
         if: ${{ steps.stable_release.outcome == 'success' }}
         run: echo ${{ steps.stable_release.outputs.release }} > cleanlab-docs/latest_release.txt
 
-      - name: Find and replace "placeholder_version_number" in verisioning.js
+      - name: Find and replace "placeholder_version_number" in versioning.js
         if: ${{ steps.stable_release.outcome == 'success' }}
         uses: jacobtomlinson/gha-find-replace@v2
         with:
@@ -112,7 +112,7 @@ jobs:
           replace: ${{ steps.stable_release.outputs.release }}
           include: "docs/source/_templates/versioning.js"
 
-      - name: Find and replace "placeholder_commit_hash" in verisioning.js
+      - name: Find and replace "placeholder_commit_hash" in versioning.js
         uses: jacobtomlinson/gha-find-replace@v2
         with:
           find: "placeholder_commit_hash"
