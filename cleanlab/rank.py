@@ -725,6 +725,7 @@ def get_ood_scores(
                     f"adjusted_pred_probs = False. "
                 )
             else:
+                assert_valid_inputs(X=None, y=labels, pred_probs=pred_probs, multi_label=False)
                 confident_thresholds = get_confident_thresholds(
                     labels, pred_probs, multi_label=False
                 )
