@@ -660,7 +660,7 @@ def get_ood_scores(
     *,
     labels: Optional[np.ndarray] = None,
     confident_thresholds: Optional[np.ndarray] = None,
-    adjust_pred_probs: bool = False,
+    adjust_pred_probs: bool = True,
     method: str = "entropy",
     return_thresholds: bool = False,
 ) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:

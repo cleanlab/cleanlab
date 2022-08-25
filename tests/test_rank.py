@@ -543,6 +543,7 @@ def test_ood_scores():
     ood_scores_least_confidence = rank.get_ood_scores(
         pred_probs=pred_probs,
         method="least_confidence",
+        adjust_pred_probs=False,
     )
 
     # check OOD scores calculated correctly
