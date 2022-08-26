@@ -650,11 +650,3 @@ def test_wrong_info_get_ood_scores():
         labels=data["labels"],
         adjust_pred_probs=False,  # this should user warning because provided info is not used
     )
-
-    # Test calling function and expecting confident threshold return when none were calculated
-    rank.get_ood_scores(
-        pred_probs=data["pred_probs"],
-        labels=data["labels"],
-        adjust_pred_probs=False,
-        return_thresholds=True,  # this should user warning because no confident thresholds are returned
-    )

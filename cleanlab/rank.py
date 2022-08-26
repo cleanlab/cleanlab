@@ -701,7 +701,7 @@ def get_ood_scores(
       Score for each example that roughly corresponds to the likelihood this example stems from the same distribution as
       the dataset features (i.e. is not an outlier).
       If ``return_thresholds = True``, then a tuple is returned
-      whose first element is array of `ood_scores` and second is an np.ndarray of `confident_thresholds`.
+      whose first element is array of `ood_scores` and second is an np.ndarray of `confident_thresholds` or None is 'confident_thresholds' is not calculated.
     """
 
     valid_methods = [
@@ -747,16 +747,9 @@ def get_ood_scores(
         )
 
     if return_thresholds:
-        if confident_thresholds is None:
-            warnings.warn(
-                f"No confident_thresholds calculated but return_thresholds=True. Returning OOD scores only.",
-                UserWarning,
-            )
-            return ood_scores
-        else:
-            return (
-                ood_scores,
-                confident_thresholds,
-            )
+        return (
+            ood_scores,
+            confident_thresholds,
+        )
     else:
         return ood_scores
