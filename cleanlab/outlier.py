@@ -17,6 +17,7 @@
 """
 Class to identify which examples are out of distribution.
 """
+import warnings
 from typing import Optional
 import numpy as np
 from cleanlab.rank import get_ood_scores, get_outlier_scores
@@ -100,8 +101,7 @@ class OutOfDistribution:
         if pred_probs is not None:
             if self.confident_thresholds is None and self.params["adjust_pred_probs"]:
                 raise ValueError(
-                    f"OOD Object needs to be fit on pred_probs with param adjust_pred_probs=True first. Call fit() or "
-                    f"fit_scores() before this function. "
+                    f"OOD Object needs to be fit on features first. Call fit() or fit_scores() before this function."
                 )
             else:
                 params = self._get_params(self.OOD_PARAMS)  # get params specific to outliers
@@ -188,6 +188,11 @@ class OutOfDistribution:
                 **self._get_params(self.OOD_PARAMS),
                 return_thresholds=True,
             )
+            if confident_thresholds is None:
+                warnings.warn(
+                    f"Object not fit with confident_thresholds since adjust_pred_probs=False and no "
+                    f"confident_thresholds were calculated.",
+                    UserWarning,
+                )
             self.confident_thresholds = confident_thresholds
-
         return scores

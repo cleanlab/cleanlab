@@ -144,6 +144,7 @@ def test_wrong_info_assert_valid_inputs():
     # TODO: DO WE NEED TO TESTING: _assert_valid_inputs() asserts correct errors in score?
 
 
+@pytest.mark.filterwarnings("ignore::UserWarning")
 def test_wrong_info_fit_ood():
     features = data["X_train"]
     pred_probs = data["pred_probs"]
@@ -188,10 +189,7 @@ def test_wrong_info_fit_ood():
     try:
         OOD.score(pred_probs=pred_probs)
     except Exception as e:
-        assert (
-            "OOD Object needs to be fit on pred_probs with param adjust_pred_probs=True first."
-            in str(e)
-        )
+        assert "OOD Object needs to be fit on features first." in str(e)
         with pytest.raises(ValueError) as e:
             OOD.score(pred_probs=pred_probs)
 
@@ -201,10 +199,7 @@ def test_wrong_info_fit_ood():
     try:
         OOD_outlier.score(pred_probs=pred_probs)
     except Exception as e:
-        assert (
-            "OOD Object needs to be fit on pred_probs with param adjust_pred_probs=True first."
-            in str(e)
-        )
+        assert "OOD Object needs to be fit on features first." in str(e)
         with pytest.raises(ValueError) as e:
             OOD_outlier.score(pred_probs=pred_probs)
 
@@ -217,16 +212,12 @@ def test_wrong_info_fit_ood():
         with pytest.raises(ValueError) as e:
             OOD_ood.score(features=features)
 
-    # # TODO FIX THIS! get_ood_thresholds returns 1-2 variables this does not work
-    # # TESTING: calling ood after fitting but without adjust_pred_probs
-    # OOD_ood = OutOfDistribution()\
-    # OOD_ood.fit(pred_probs=pred_probs, params={"adjust_pred_probs": False})
-    # try:
-    #     OOD_ood.score(features=features)
-    # except Exception as e:
-    #     assert "OOD Object needs to be fit on pred_probs with param adjust_pred_probs=True first." in str(e)
-    #     with pytest.raises(ValueError) as e:
-    #         OOD_ood.score(features=features)
+    # TESTING: calling ood after fitting but without adjust_pred_probs
+    OOD_ood = OutOfDistribution()
+
+    #  This should throw warning since no confident_thresholds calculated
+    OOD_ood.fit(pred_probs=pred_probs, params={"adjust_pred_probs": False})
+    OOD_ood.score(pred_probs=pred_probs)  # This should be ok since we are not adjusting
 
 
 def test_params_logic():
