@@ -414,7 +414,7 @@ def test_not_enough_info_get_ood_features_scores():
             )
 
 
-def test_ood_scores():
+def test_ood_predictions_scores():
     # Create and add OOD datapoint to test set
     X = data["X_test"]
     X_ood = np.array([[999999999.0, 999999999.0]])
@@ -429,24 +429,27 @@ def test_ood_scores():
     pred_probs = logreg.predict_proba(X_with_ood)
 
     ### Test non-adjusted OOD score logic
-    ood_scores_entropy = outlier._get_ood_predictions_scores(
+    ood_predictions_scores_entropy = outlier._get_ood_predictions_scores(
         pred_probs=pred_probs,
         adjust_pred_probs=False,
     )
 
     # adjust pred probs should be False by default
-    ood_scores_least_confidence = outlier._get_ood_predictions_scores(
+    ood_predictions_scores_least_confidence = outlier._get_ood_predictions_scores(
         pred_probs=pred_probs,
         method="least_confidence",
         adjust_pred_probs=False,
     )
 
     # check OOD scores calculated correctly
-    assert (get_normalized_entropy(pred_probs) == ood_scores_entropy).all()
-    assert (1.0 - pred_probs.max(axis=1) == ood_scores_least_confidence).all()
+    assert (get_normalized_entropy(pred_probs) == ood_predictions_scores_entropy).all()
+    assert (1.0 - pred_probs.max(axis=1) == ood_predictions_scores_least_confidence).all()
 
     ### Test adjusted OOD score logic
-    ood_scores_adj_entropy, confident_thresholds_adj_entropy = outlier._get_ood_predictions_scores(
+    (
+        ood_predictions_scores_adj_entropy,
+        confident_thresholds_adj_entropy,
+    ) = outlier._get_ood_predictions_scores(
         pred_probs=pred_probs,
         labels=y_with_ood,
         adjust_pred_probs=True,
@@ -455,7 +458,7 @@ def test_ood_scores():
     )
 
     (
-        ood_scores_adj_least_confidence,
+        ood_predictions_scores_adj_least_confidence,
         confident_thresholds_adj_least_confidence,
     ) = outlier._get_ood_predictions_scores(
         pred_probs=pred_probs,
@@ -474,11 +477,13 @@ def test_ood_scores():
     assert (confident_thresholds_adj_least_confidence == confident_thresholds_adj_entropy).all()
 
     # check adjusted OOD scores different from non adjust OOD scores
-    assert not (ood_scores_adj_entropy == ood_scores_entropy).all()
-    assert not (ood_scores_adj_least_confidence == ood_scores_least_confidence).all()
+    assert not (ood_predictions_scores_adj_entropy == ood_predictions_scores_entropy).all()
+    assert not (
+        ood_predictions_scores_adj_least_confidence == ood_predictions_scores_least_confidence
+    ).all()
 
     ### Test pre-calculated confident thresholds logic
-    ood_scores_2, confident_thresholds_2 = outlier._get_ood_predictions_scores(
+    ood_predictions_scores_2, confident_thresholds_2 = outlier._get_ood_predictions_scores(
         pred_probs=pred_probs,
         confident_thresholds=confident_thresholds,
         adjust_pred_probs=True,
@@ -486,7 +491,7 @@ def test_ood_scores():
     )
 
     assert (confident_thresholds_2 == confident_thresholds).all()
-    assert (ood_scores_2 == ood_scores_adj_entropy).all()
+    assert (ood_predictions_scores_2 == ood_predictions_scores_adj_entropy).all()
 
 
 @pytest.mark.filterwarnings("ignore::UserWarning")
