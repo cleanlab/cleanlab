@@ -56,7 +56,7 @@ class OutOfDistribution:
         labels: Optional[np.ndarray] = None,
         params: dict = None,
         verbose: bool = True,
-    ):
+    ) -> np.ndarray:
         """
         Fits an estimator and returns out-of-distribution scores following optional parameters specified in `params`.
         Scores lie in [0,1] with smaller values indicating examples that are less typical under the dataset
@@ -148,7 +148,7 @@ class OutOfDistribution:
 
     def score(
         self, *, features: Optional[np.ndarray] = None, pred_probs: Optional[np.ndarray] = None
-    ):
+    ) -> np.ndarray:
         """
         Uses fitted estimator and passed in `features` or `pred_probs` to calculate out-of-distribution scores with
         optional params passed in during ''fit()''. Scores lie in [0,1] with smaller values indicating examples that
