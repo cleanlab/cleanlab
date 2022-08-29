@@ -14,9 +14,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
-"""
-Class to identify which examples are out of distribution.
-"""
+
 import warnings
 import numpy as np
 from cleanlab.count import get_confident_thresholds
@@ -30,6 +28,12 @@ from cleanlab.internal.validation import assert_valid_inputs
 
 
 class OutOfDistribution:
+    """
+    OutOfDistribution = Out of distribution detection for classification examples using intermediate feature
+    embeddings or pred_probs. Each example is given an out-of-distribution score. Scores lie in [0,1] with smaller
+    values indicating examples that are less typical under the dataset distribution (values near 0 indicate outliers).
+    """
+
     OUTLIER_PARAMS = {"k", "t"}
     OOD_PARAMS = {"labels", "adjust_pred_probs", "method"}
     DEFAULT_PARAM_DICT = {
@@ -53,7 +57,45 @@ class OutOfDistribution:
         params: dict = None,
         verbose: bool = True,
     ):
+        """
+        Fits an estimator and returns out-of-distribution scores following optional parameters specified in `params`.
+        Scores lie in [0,1] with smaller values indicating examples that are less typical under the dataset
+        distribution (values near 0 indicate outliers). Exactly one of `features` or `pred_probs` needs to be passed
+        in to calculate scores.
 
+        If `features` are passed in a `NearestNeighbors` object is fit. For details, `features` and `params` in the
+        same format expected by :py:func:`_get_outlier_scores <cleanlab.outlier._get_outlier_scores>`.
+        If `pred_probs` and 'labels' are passed in a `confident_thresholds` np.ndarray is fit. For details,
+        `pred_probs`, `labels` and `params` in the same format expected by :py:func:`_get_ood_scores
+        <cleanlab.outlier._get_ood_scores>`.
+
+        Parameters
+        ----------
+        features : np.ndarray, optional
+          Feature array of shape ``(N, M)``, where N is the number of examples and M is the number of features used to represent each example.
+          For details, `features` in the same format expected by the :py:func:`_get_outlier_scores <cleanlab.outlier._get_outlier_scores>` function.
+
+        pred_probs : np.ndarray, optional
+          An array of shape ``(N, K)`` of model-predicted probabilities.
+          `pred_probs` in the same format expected by the :py:func:`_get_ood_scores <cleanlab.outlier._get_ood_scores>` function.
+
+        labels : np.ndarray, optional
+          `labels` in the same format expected by the :py:func:`_get_ood_scores <cleanlab.outlier._get_ood_scores>` function.
+
+        params : bool, default = False Optional keyword arguments to pass into :py:func:`_get_ood_scores
+          <cleanlab.outlier._get_ood_scores>` method if `features` are also passed in or :py:func:`_get_ood_scores
+          <cleanlab.outlier._get_ood_scores>` method if `pred_probs` passed in instead.
+
+        verbose : bool, default = True
+          Set to ``False`` to suppress all print statements.
+
+        Returns
+        -------
+        scores : np.ndarray
+          If `features` are passed in, `outlier_scores` are returned. For details see return of :py:func:`_get_outlier_scores <cleanlab.outlier._get_outlier_scores>` function.
+          If `pred_probs` are passed in, `ood_scores` are returned. For details see return of :py:func:`_get_ood_scores <cleanlab.outlier._get_ood_scores>` function.
+
+        """
         scores = self._shared_fit(
             features=features, pred_probs=pred_probs, labels=labels, params=params, verbose=verbose
         )
@@ -69,6 +111,37 @@ class OutOfDistribution:
         params: dict = None,
         verbose: bool = True,
     ):
+        """
+        Fits an estimator following optional parameters specified in `params`. One of `features` or `pred_probs`
+        needs to be passed in to fit object.
+
+        If `features` are passed in a `NearestNeighbors` object is fit. For details, `features` and `params` in the
+        same format expected by :py:func:`_get_outlier_scores <cleanlab.outlier._get_outlier_scores>`.
+        If `pred_probs` and 'labels' are passed in a `confident_thresholds` np.ndarray is fit. For details,
+        `pred_probs`, `labels` and `params` in the same format expected by :py:func:`_get_ood_scores
+        <cleanlab.outlier._get_ood_scores>`.
+
+        Parameters
+        ----------
+        features : np.ndarray, optional
+          Feature array of shape ``(N, M)``, where N is the number of examples and M is the number of features used to represent each example.
+          For details, `features` in the same format expected by the :py:func:`_get_outlier_scores <cleanlab.outlier._get_outlier_scores>` function.
+
+        pred_probs : np.ndarray, optional
+          An array of shape ``(N, K)`` of model-predicted probabilities.
+          `pred_probs` in the same format expected by the :py:func:`_get_ood_scores <cleanlab.outlier._get_ood_scores>` function.
+
+        labels : np.ndarray, optional
+          `labels` in the same format expected by the :py:func:`_get_ood_scores <cleanlab.outlier._get_ood_scores>` function.
+
+        params : bool, default = False Optional keyword arguments to pass into :py:func:`_get_ood_scores
+          <cleanlab.outlier._get_ood_scores>` method if `features` are also passed in or :py:func:`_get_ood_scores
+          <cleanlab.outlier._get_ood_scores>` method if `pred_probs` passed in instead.
+
+        verbose : bool, default = True
+          Set to ``False`` to suppress all print statements.
+
+        """
         _ = self._shared_fit(
             features=features, pred_probs=pred_probs, labels=labels, params=params, verbose=verbose
         )
@@ -76,7 +149,34 @@ class OutOfDistribution:
     def score(
         self, *, features: Optional[np.ndarray] = None, pred_probs: Optional[np.ndarray] = None
     ):
+        """
+        Uses fitted estimator and passed in `features` or `pred_probs` to calculate out-of-distribution scores with
+        optional params passed in during ''fit()''. Scores lie in [0,1] with smaller values indicating examples that
+        are less typical under the dataset distribution (values near 0 indicate outliers). Exactly one of `features`
+        or `pred_probs` needs to be passed in to calculate scores.
 
+        If `features` are passed, outlier score for each example based on its feature values is returned.  For
+        details see  :py:func:`_get_outlier_scores <cleanlab.outlier._get_outlier_scores>`.
+        If `pred_probs` are passed in out of distribution score for each exampel based on its `pred_prob` values is returned. For
+        details, see :py:func:`_get_ood_scores <cleanlab.outlier._get_ood_scores>`.
+
+        Parameters
+        ----------
+        features : np.ndarray, optional
+          Feature array of shape ``(N, M)``, where N is the number of examples and M is the number of features used to represent each example.
+          For details, `features` in the same format expected by the :py:func:`_get_outlier_scores <cleanlab.outlier._get_outlier_scores>` function.
+
+        pred_probs : np.ndarray, optional
+          An array of shape ``(N, K)`` of model-predicted probabilities.
+          `pred_probs` in the same format expected by the :py:func:`_get_ood_scores <cleanlab.outlier._get_ood_scores>` function.
+
+        Returns
+        -------
+        scores : np.ndarray
+          If `features` are passed in, `outlier_scores` are returned. For details see return of :py:func:`_get_outlier_scores <cleanlab.outlier._get_outlier_scores>` function.
+          If `pred_probs` are passed in, `ood_scores` are returned. For details see return of :py:func:`_get_ood_scores <cleanlab.outlier._get_ood_scores>` function.
+
+        """
         self._assert_valid_inputs(features, pred_probs)
 
         if features is not None:
@@ -104,15 +204,24 @@ class OutOfDistribution:
 
         return scores
 
-    def _get_params(self, param_keys):
+    def _get_params(self, param_keys) -> dict:
+        """
+        Helper method to get function specific dictionary of parameters (i.e. only those in param_keys).
+        """
         return {k: v for k, v in self.params.items() if k in param_keys}
 
-    def _get_invalid_params(self, params, param_keys):
+    def _get_invalid_params(self, params, param_keys) -> list:
+        """
+        Helper method to get list of parameters in param that are not in param_keys.
+        """
         if params is None:
             return []
         return list(set(params.keys()).difference(set(param_keys)))
 
     def _assert_valid_inputs(self, features, pred_probs):
+        """
+        Helper method to check features and pred_prob inputs are valid. Throws error if not.
+        """
         if features is None and pred_probs is None:
             raise ValueError(
                 f"Not enough information to compute scores. Pass in either features or pred_probs."
@@ -137,7 +246,12 @@ class OutOfDistribution:
         labels: Optional[np.ndarray] = None,
         params: dict = None,
         verbose: bool = True,
-    ):
+    ) -> np.ndarray:
+        """
+        Shared fit functionality between `fit()` and `fit_score()`.
+        For details, refer to :py:func:`fit <cleanlab.outlier.OutOfDistribution.fit>`
+        or :py:func:`fit_score <cleanlab.outlier.OutOfDistribution.fit_score>`.
+        """
         # Assert valid inputs and params
         self._assert_valid_inputs(features, pred_probs)
 
@@ -211,7 +325,8 @@ def _get_outlier_scores(
       Note that the distance metric and n_neighbors is specified when instantiating this class.
       You can also pass in a subclass of ``sklearn.neighbors.NearestNeighbors`` which allows you to use faster
       approximate neighbor libraries as long as you wrap them behind the same sklearn API.
-      If you specify ``knn`` here and wish to find outliers in the same data you already passed into ``knn.fit(features)``, you should specify ``features = None`` here if your ``knn.kneighbors(None)``
+      If you specify ``knn`` here and wish to find outliers in the same data you already passed into ``knn.fit(features)``,
+      you should specify ``features = None`` here if your ``knn.kneighbors(None)``
       returns the distances to the datapoints it was ``fit()`` on.
       If ``knn = None``, then by default ``knn = sklearn.neighbors.NearestNeighbors(n_neighbors=k, metric="cosine").fit(features)``
 
@@ -234,6 +349,7 @@ def _get_outlier_scores(
     return_estimator : bool, default = False
       Whether the `knn` Estimator object should also be returned (eg. so it can be applied on future data).
       If True, this function returns a tuple `(outlier_scores, knn)`.
+
     Returns
     -------
     outlier_scores : np.ndarray
@@ -293,24 +409,42 @@ def _get_ood_scores(
     adjust_pred_probs: bool = True,
     method: str = "entropy",
     return_thresholds: bool = False,
-) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
+) -> Union[np.ndarray, Tuple[np.ndarray, Optional[np.ndarray]]]:
     """Returns an OOD (out of distribution) score for each example based on it pred_prob values. Scores lie in [0,1] with smaller values indicating examples
     that are less typical under the dataset distribution (values near 0 indicate outliers).
 
     Parameters
     ----------
     pred_probs : np.ndarray
-      Predicted-probabilities in the same format expected by the :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>` function.
+      An array of shape ``(N, K)`` of model-predicted probabilities,
+      ``P(label=k|x)``. Each row of this matrix corresponds
+      to an example `x` and contains the model-predicted probabilities that
+      `x` belongs to each possible class, for each of the K classes. The
+      columns must be ordered such that these probabilities correspond to
+      class 0, 1, ..., K-1.
+
+      **Caution**: `pred_probs` from your model must be out-of-sample!
+      You should never provide predictions on the same examples used to train the model,
+      as these will be overfit and unsuitable for finding label-errors.
+      To obtain out-of-sample predicted probabilities for every datapoint in your dataset, you can use :ref:`cross-validation <pred_probs_cross_val>`.
+      Alternatively it is ok if your model was trained on a separate dataset and you are only evaluating
+      data that was previously held-out.
 
     confident_thresholds : np.ndarray, default = None
       An array of shape ``(K, )`` where K is the number of classes.
       Confident threshold for a class j is the expected (average) "self-confidence" for that class.
 
-    labels : np.ndarray, default = None
-      Labels in the same format expected by the :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>` function.
+    labels : np.ndarray, optional
+      A discrete vector of noisy labels, i.e. some labels may be erroneous.
+      *Format requirements*: for dataset with K classes, labels must be in 0, 1, ..., K-1.
+      All the classes (0, 1, ..., and K-1) MUST be present in ``labels``, such that: ``len(set(labels)) == pred_probs.shape[1]``
+      Note: multi-label classification is not supported by this method, each example must belong to a single class, e.g. format: ``labels = np.ndarray([1,0,2,1,1,0...])``.
 
-    adjust_pred_probs : bool, default = False
-      `adjust_pred_probs` in the same format expected by the :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>` function.
+    adjust_pred_probs : bool, True
+      Account for class imbalance in the label-quality scoring by adjusting predicted probabilities
+      via subtraction of class confident thresholds and renormalization.
+      Set this to ``False`` if you prefer to skip accounting for class-imbalance.
+      See `Northcutt et al., 2021 <https://jair.org/index.php/jair/article/view/12125>`_.
 
     method : {"entropy", "least_confidence"}, default="entropy"
       OOD scoring method.
