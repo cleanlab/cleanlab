@@ -64,27 +64,27 @@ class OutOfDistribution:
         in to calculate scores.
 
         If `features` are passed in a `NearestNeighbors` object is fit. For details, `features` and `params` in the
-        same format expected by :py:func:`_get_outlier_scores <cleanlab.outlier._get_outlier_scores>`.
+        same format expected by :py:func:`_get_ood_features_scores <cleanlab.outlier._get_ood_features_scores>`.
         If `pred_probs` and 'labels' are passed in a `confident_thresholds` np.ndarray is fit. For details,
-        `pred_probs`, `labels` and `params` in the same format expected by :py:func:`_get_ood_scores
-        <cleanlab.outlier._get_ood_scores>`.
+        `pred_probs`, `labels` and `params` in the same format expected by :py:func:`_get_ood_predictions_scores
+        <cleanlab.outlier._get_ood_predictions_scores>`.
 
         Parameters
         ----------
         features : np.ndarray, optional
           Feature array of shape ``(N, M)``, where N is the number of examples and M is the number of features used to represent each example.
-          For details, `features` in the same format expected by the :py:func:`_get_outlier_scores <cleanlab.outlier._get_outlier_scores>` function.
+          For details, `features` in the same format expected by the :py:func:`_get_ood_features_scores <cleanlab.outlier._get_ood_features_scores>` function.
 
         pred_probs : np.ndarray, optional
           An array of shape ``(N, K)`` of model-predicted probabilities.
-          `pred_probs` in the same format expected by the :py:func:`_get_ood_scores <cleanlab.outlier._get_ood_scores>` function.
+          `pred_probs` in the same format expected by the :py:func:`_get_ood_predictions_scores <cleanlab.outlier._get_ood_predictions_scores>` function.
 
         labels : np.ndarray, optional
-          `labels` in the same format expected by the :py:func:`_get_ood_scores <cleanlab.outlier._get_ood_scores>` function.
+          `labels` in the same format expected by the :py:func:`_get_ood_predictions_scores <cleanlab.outlier._get_ood_predictions_scores>` function.
 
-        params : bool, default = False Optional keyword arguments to pass into :py:func:`_get_ood_scores
-          <cleanlab.outlier._get_ood_scores>` method if `features` are also passed in or :py:func:`_get_ood_scores
-          <cleanlab.outlier._get_ood_scores>` method if `pred_probs` passed in instead.
+        params : bool, default = False Optional keyword arguments to pass into :py:func:`_get_ood_predictions_scores
+          <cleanlab.outlier._get_ood_predictions_scores>` method if `features` are also passed in or :py:func:`_get_ood_predictions_scores
+          <cleanlab.outlier._get_ood_predictions_scores>` method if `pred_probs` passed in instead.
 
         verbose : bool, default = True
           Set to ``False`` to suppress all print statements.
@@ -92,8 +92,8 @@ class OutOfDistribution:
         Returns
         -------
         scores : np.ndarray
-          If `features` are passed in, `outlier_scores` are returned. For details see return of :py:func:`_get_outlier_scores <cleanlab.outlier._get_outlier_scores>` function.
-          If `pred_probs` are passed in, `ood_scores` are returned. For details see return of :py:func:`_get_ood_scores <cleanlab.outlier._get_ood_scores>` function.
+          If `features` are passed in, `outlier_scores` are returned. For details see return of :py:func:`_get_ood_features_scores <cleanlab.outlier._get_ood_features_scores>` function.
+          If `pred_probs` are passed in, `ood_scores` are returned. For details see return of :py:func:`_get_ood_predictions_scores <cleanlab.outlier._get_ood_predictions_scores>` function.
 
         """
         scores = self._shared_fit(
@@ -116,27 +116,27 @@ class OutOfDistribution:
         needs to be passed in to fit object.
 
         If `features` are passed in a `NearestNeighbors` object is fit. For details, `features` and `params` in the
-        same format expected by :py:func:`_get_outlier_scores <cleanlab.outlier._get_outlier_scores>`.
+        same format expected by :py:func:`_get_ood_features_scores <cleanlab.outlier._get_ood_features_scores>`.
         If `pred_probs` and 'labels' are passed in a `confident_thresholds` np.ndarray is fit. For details,
-        `pred_probs`, `labels` and `params` in the same format expected by :py:func:`_get_ood_scores
-        <cleanlab.outlier._get_ood_scores>`.
+        `pred_probs`, `labels` and `params` in the same format expected by :py:func:`_get_ood_predictions_scores
+        <cleanlab.outlier._get_ood_predictions_scores>`.
 
         Parameters
         ----------
         features : np.ndarray, optional
           Feature array of shape ``(N, M)``, where N is the number of examples and M is the number of features used to represent each example.
-          For details, `features` in the same format expected by the :py:func:`_get_outlier_scores <cleanlab.outlier._get_outlier_scores>` function.
+          For details, `features` in the same format expected by the :py:func:`_get_ood_features_scores <cleanlab.outlier._get_ood_features_scores>` function.
 
         pred_probs : np.ndarray, optional
           An array of shape ``(N, K)`` of model-predicted probabilities.
-          `pred_probs` in the same format expected by the :py:func:`_get_ood_scores <cleanlab.outlier._get_ood_scores>` function.
+          `pred_probs` in the same format expected by the :py:func:`_get_ood_predictions_scores <cleanlab.outlier._get_ood_predictions_scores>` function.
 
         labels : np.ndarray, optional
-          `labels` in the same format expected by the :py:func:`_get_ood_scores <cleanlab.outlier._get_ood_scores>` function.
+          `labels` in the same format expected by the :py:func:`_get_ood_predictions_scores <cleanlab.outlier._get_ood_predictions_scores>` function.
 
-        params : bool, default = False Optional keyword arguments to pass into :py:func:`_get_ood_scores
-          <cleanlab.outlier._get_ood_scores>` method if `features` are also passed in or :py:func:`_get_ood_scores
-          <cleanlab.outlier._get_ood_scores>` method if `pred_probs` passed in instead.
+        params : bool, default = False Optional keyword arguments to pass into :py:func:`_get_ood_predictions_scores
+          <cleanlab.outlier._get_ood_predictions_scores>` method if `features` are also passed in or :py:func:`_get_ood_predictions_scores
+          <cleanlab.outlier._get_ood_predictions_scores>` method if `pred_probs` passed in instead.
 
         verbose : bool, default = True
           Set to ``False`` to suppress all print statements.
@@ -156,25 +156,25 @@ class OutOfDistribution:
         or `pred_probs` needs to be passed in to calculate scores.
 
         If `features` are passed, outlier score for each example based on its feature values is returned.  For
-        details see  :py:func:`_get_outlier_scores <cleanlab.outlier._get_outlier_scores>`.
+        details see  :py:func:`_get_ood_features_scores <cleanlab.outlier._get_ood_features_scores>`.
         If `pred_probs` are passed in out of distribution score for each exampel based on its `pred_prob` values is returned. For
-        details, see :py:func:`_get_ood_scores <cleanlab.outlier._get_ood_scores>`.
+        details, see :py:func:`_get_ood_predictions_scores <cleanlab.outlier._get_ood_predictions_scores>`.
 
         Parameters
         ----------
         features : np.ndarray, optional
           Feature array of shape ``(N, M)``, where N is the number of examples and M is the number of features used to represent each example.
-          For details, `features` in the same format expected by the :py:func:`_get_outlier_scores <cleanlab.outlier._get_outlier_scores>` function.
+          For details, `features` in the same format expected by the :py:func:`_get_ood_features_scores <cleanlab.outlier._get_ood_features_scores>` function.
 
         pred_probs : np.ndarray, optional
           An array of shape ``(N, K)`` of model-predicted probabilities.
-          `pred_probs` in the same format expected by the :py:func:`_get_ood_scores <cleanlab.outlier._get_ood_scores>` function.
+          `pred_probs` in the same format expected by the :py:func:`_get_ood_predictions_scores <cleanlab.outlier._get_ood_predictions_scores>` function.
 
         Returns
         -------
         scores : np.ndarray
-          If `features` are passed in, `outlier_scores` are returned. For details see return of :py:func:`_get_outlier_scores <cleanlab.outlier._get_outlier_scores>` function.
-          If `pred_probs` are passed in, `ood_scores` are returned. For details see return of :py:func:`_get_ood_scores <cleanlab.outlier._get_ood_scores>` function.
+          If `features` are passed in, `outlier_scores` are returned. For details see return of :py:func:`_get_ood_features_scores <cleanlab.outlier._get_ood_features_scores>` function.
+          If `pred_probs` are passed in, `ood_scores` are returned. For details see return of :py:func:`_get_ood_predictions_scores <cleanlab.outlier._get_ood_predictions_scores>` function.
 
         """
         self._assert_valid_inputs(features, pred_probs)
@@ -186,7 +186,9 @@ class OutOfDistribution:
                 )
             else:
                 params = self._get_params(self.OUTLIER_PARAMS)  # get params specific to outliers
-                scores = _get_outlier_scores(features, self.knn, **params, return_estimator=False)
+                scores = _get_ood_features_scores(
+                    features, self.knn, **params, return_estimator=False
+                )
 
         if pred_probs is not None:
             if self.confident_thresholds is None and self.params["adjust_pred_probs"]:
@@ -195,7 +197,7 @@ class OutOfDistribution:
                 )
             else:
                 params = self._get_params(self.OOD_PARAMS)  # get params specific to outliers
-                scores = _get_ood_scores(
+                scores = _get_ood_predictions_scores(
                     pred_probs,
                     confident_thresholds=self.confident_thresholds,
                     **params,
@@ -273,7 +275,7 @@ class OutOfDistribution:
             # get outlier scores
             if verbose:
                 print("Fitting OOD object based on provided features ...")
-            scores, knn = _get_outlier_scores(
+            scores, knn = _get_ood_features_scores(
                 features, **self._get_params(self.OUTLIER_PARAMS), return_estimator=True
             )
             self.knn = knn  # save estimator
@@ -289,7 +291,7 @@ class OutOfDistribution:
             # get ood scores
             if verbose:
                 print("Fitting OOD object based on provided pred_probs ...")
-            scores, confident_thresholds = _get_ood_scores(
+            scores, confident_thresholds = _get_ood_predictions_scores(
                 pred_probs,
                 labels=labels,
                 **self._get_params(self.OOD_PARAMS),
@@ -305,7 +307,7 @@ class OutOfDistribution:
         return scores
 
 
-def _get_outlier_scores(
+def _get_ood_features_scores(
     features: Optional[np.ndarray] = None,
     knn: Optional[NearestNeighbors] = None,
     k: Optional[int] = None,
@@ -404,7 +406,7 @@ def _get_outlier_scores(
         return outlier_scores
 
 
-def _get_ood_scores(
+def _get_ood_predictions_scores(
     pred_probs: np.ndarray,
     *,
     labels: Optional[np.ndarray] = None,

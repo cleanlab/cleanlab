@@ -281,7 +281,7 @@ def test_class_public_func():
     assert np.sum(ood_score_fs) - np.sum(ood_score) < 1  # scores are similar
 
 
-def test_get_outlier_scores():
+def test_get_ood_features_scores():
     X_train = data["X_train"]
     X_test = data["X_test"]
 
@@ -296,19 +296,19 @@ def test_get_outlier_scores():
 
     # Get KNN distance as outlier score
     k = 5
-    knn_distance_to_score = outlier._get_outlier_scores(features=X_test_with_ood, knn=knn, k=k)
+    knn_distance_to_score = outlier._get_ood_features_scores(features=X_test_with_ood, knn=knn, k=k)
 
     # Checking that X_ood has the smallest outlier score among all the datapoints
     assert np.argmin(knn_distance_to_score) == (knn_distance_to_score.shape[0] - 1)
 
     # Get KNN distance as outlier score without passing k
     # By default k=10 is used or k = n_neighbors when k > n_neighbors extracted from the knn
-    knn_distance_to_score = outlier._get_outlier_scores(features=X_test_with_ood, knn=knn)
+    knn_distance_to_score = outlier._get_ood_features_scores(features=X_test_with_ood, knn=knn)
     # Checking that X_ood has the smallest outlier score among all the datapoints
     assert np.argmin(knn_distance_to_score) == (knn_distance_to_score.shape[0] - 1)
 
     # Get KNN distance as outlier score passing k and t > 1
-    large_t_knn_distance_to_score = outlier._get_outlier_scores(
+    large_t_knn_distance_to_score = outlier._get_ood_features_scores(
         features=X_test_with_ood, knn=knn, k=k, t=5
     )
 
@@ -316,7 +316,7 @@ def test_get_outlier_scores():
     assert np.argmin(large_t_knn_distance_to_score) == (large_t_knn_distance_to_score.shape[0] - 1)
 
     # Get KNN distance as outlier score passing k and t < 1
-    small_t_knn_distance_to_score = outlier._get_outlier_scores(
+    small_t_knn_distance_to_score = outlier._get_ood_features_scores(
         features=X_test_with_ood, knn=knn, k=k, t=0.002
     )
 
@@ -326,7 +326,7 @@ def test_get_outlier_scores():
 
 
 @pytest.mark.filterwarnings("ignore::UserWarning")
-def test_default_k_and_model_get_outlier_scores():
+def test_default_k_and_model_get_ood_features_scores():
     # Testing using 'None' as model param and correct setting of default k as max_k
 
     # Create dataset with OOD example
@@ -339,18 +339,18 @@ def test_default_k_and_model_get_outlier_scores():
     # Create NN class object with small instantiated k and fit on data
     knn = NearestNeighbors(n_neighbors=instantiated_k, metric="cosine").fit(X_with_ood)
 
-    avg_knn_distances_default_model = outlier._get_outlier_scores(
+    avg_knn_distances_default_model = outlier._get_ood_features_scores(
         features=X_with_ood,
         k=instantiated_k,  # this should use default estimator (same as above) and k = instantiated_k
     )
 
-    avg_knn_distances_default_k, knn2 = outlier._get_outlier_scores(
+    avg_knn_distances_default_k, knn2 = outlier._get_ood_features_scores(
         features=X_with_ood,  # default k should be set to 10 == instantiated_k
         return_estimator=True,
     )
     assert isinstance(knn2, type(knn))
 
-    avg_knn_distances = outlier._get_outlier_scores(
+    avg_knn_distances = outlier._get_ood_features_scores(
         features=None,
         knn=knn,
         k=25,  # this should throw user warn, k should be set to instantiated_k
@@ -360,18 +360,18 @@ def test_default_k_and_model_get_outlier_scores():
     assert avg_knn_distances.sum() == avg_knn_distances_default_model.sum()
     assert avg_knn_distances_default_k.sum() == avg_knn_distances.sum()
 
-    avg_knn_distances_large_k = outlier._get_outlier_scores(
+    avg_knn_distances_large_k = outlier._get_ood_features_scores(
         features=X_with_ood,
         k=25,  # this should use default estimator and k = 25
     )
 
-    avg_knn_distances_tiny_k = outlier._get_outlier_scores(
+    avg_knn_distances_tiny_k = outlier._get_ood_features_scores(
         features=None,
         knn=knn,
         k=1,  # this should use knn estimator and k = 1
     )
 
-    avg_knn_distances_tiny_k_default = outlier._get_outlier_scores(
+    avg_knn_distances_tiny_k_default = outlier._get_ood_features_scores(
         features=X_with_ood,
         k=1,  # this should use default estimator and k = 1
     )
@@ -383,7 +383,7 @@ def test_default_k_and_model_get_outlier_scores():
 
     # Test that when knn is None ValueError raised if passed in k > len(features)
     try:
-        outlier._get_outlier_scores(
+        outlier._get_ood_features_scores(
             features=X_with_ood,
             knn=None,
             k=len(X_with_ood) + 1,  # this should throw ValueError, k ! > len(features)
@@ -391,24 +391,24 @@ def test_default_k_and_model_get_outlier_scores():
     except Exception as e:
         assert "nearest neighbors" in str(e)
         with pytest.raises(ValueError) as e:
-            outlier._get_outlier_scores(
+            outlier._get_ood_features_scores(
                 features=X_with_ood,
                 knn=None,
                 k=len(X_with_ood) + 1,  # this should throw ValueError, k ! > len(features)
             )
 
 
-def test_not_enough_info_get_outlier_scores():
+def test_not_enough_info_get_ood_features_scores():
     # Testing calling function with not enough information to calculate outlier scores
     try:
-        outlier._get_outlier_scores(
+        outlier._get_ood_features_scores(
             features=None,
             knn=None,  # this should throw TypeError because knn=None and features=None
         )
     except Exception as e:
         assert "Both knn and features arguments" in str(e)
         with pytest.raises(ValueError) as e:
-            outlier._get_outlier_scores(
+            outlier._get_ood_features_scores(
                 features=None,
                 knn=None,  # this should throw TypeError because knn=None and features=None
             )
@@ -429,13 +429,13 @@ def test_ood_scores():
     pred_probs = logreg.predict_proba(X_with_ood)
 
     ### Test non-adjusted OOD score logic
-    ood_scores_entropy = outlier._get_ood_scores(
+    ood_scores_entropy = outlier._get_ood_predictions_scores(
         pred_probs=pred_probs,
         adjust_pred_probs=False,
     )
 
     # adjust pred probs should be False by default
-    ood_scores_least_confidence = outlier._get_ood_scores(
+    ood_scores_least_confidence = outlier._get_ood_predictions_scores(
         pred_probs=pred_probs,
         method="least_confidence",
         adjust_pred_probs=False,
@@ -446,7 +446,7 @@ def test_ood_scores():
     assert (1.0 - pred_probs.max(axis=1) == ood_scores_least_confidence).all()
 
     ### Test adjusted OOD score logic
-    ood_scores_adj_entropy, confident_thresholds_adj_entropy = outlier._get_ood_scores(
+    ood_scores_adj_entropy, confident_thresholds_adj_entropy = outlier._get_ood_predictions_scores(
         pred_probs=pred_probs,
         labels=y_with_ood,
         adjust_pred_probs=True,
@@ -457,7 +457,7 @@ def test_ood_scores():
     (
         ood_scores_adj_least_confidence,
         confident_thresholds_adj_least_confidence,
-    ) = outlier._get_ood_scores(
+    ) = outlier._get_ood_predictions_scores(
         pred_probs=pred_probs,
         labels=y_with_ood,
         adjust_pred_probs=True,
@@ -478,7 +478,7 @@ def test_ood_scores():
     assert not (ood_scores_adj_least_confidence == ood_scores_least_confidence).all()
 
     ### Test pre-calculated confident thresholds logic
-    ood_scores_2, confident_thresholds_2 = outlier._get_ood_scores(
+    ood_scores_2, confident_thresholds_2 = outlier._get_ood_predictions_scores(
         pred_probs=pred_probs,
         confident_thresholds=confident_thresholds,
         adjust_pred_probs=True,
@@ -490,10 +490,10 @@ def test_ood_scores():
 
 
 @pytest.mark.filterwarnings("ignore::UserWarning")
-def test_wrong_info_get_ood_scores():
+def test_wrong_info_get_ood_predictions_scores():
     # Test calling function with not enough information to calculate ood scores
     try:
-        outlier._get_ood_scores(
+        outlier._get_ood_predictions_scores(
             pred_probs=data["pred_probs"],
             labels=None,
             adjust_pred_probs=True,  # this should throw ValueError because knn=None and features=None
@@ -501,7 +501,7 @@ def test_wrong_info_get_ood_scores():
     except Exception as e:
         assert "Cannot calculate adjust_pred_probs without labels" in str(e)
         with pytest.raises(ValueError) as e:
-            outlier._get_ood_scores(
+            outlier._get_ood_predictions_scores(
                 pred_probs=data["pred_probs"],
                 labels=None,
                 adjust_pred_probs=True,  # this should throw ValueError because knn=None and features=None
@@ -509,21 +509,21 @@ def test_wrong_info_get_ood_scores():
 
     # Test calling function with not enough information to calculate ood scores
     try:
-        outlier._get_ood_scores(
+        outlier._get_ood_predictions_scores(
             pred_probs=data["pred_probs"],
             adjust_pred_probs=True,  # this should throw ValueError because knn=None and features=None
         )
     except Exception as e:
         assert "Cannot calculate adjust_pred_probs without labels" in str(e)
         with pytest.raises(ValueError) as e:
-            outlier._get_ood_scores(
+            outlier._get_ood_predictions_scores(
                 pred_probs=data["pred_probs"],
                 adjust_pred_probs=True,  # this should throw ValueError because not enough data provided
             )
 
     # Test calling function with not a real method
     try:
-        outlier._get_ood_scores(
+        outlier._get_ood_predictions_scores(
             pred_probs=data["pred_probs"],
             labels=data["labels"],
             adjust_pred_probs=True,
@@ -532,7 +532,7 @@ def test_wrong_info_get_ood_scores():
     except Exception as e:
         assert "not a valid OOD scoring" in str(e)
         with pytest.raises(ValueError) as e:
-            outlier._get_ood_scores(
+            outlier._get_ood_predictions_scores(
                 pred_probs=data["pred_probs"],
                 labels=data["labels"],
                 adjust_pred_probs=True,
@@ -540,7 +540,7 @@ def test_wrong_info_get_ood_scores():
             )
 
     # Test calling function with too much information to calculate ood scores
-    outlier._get_ood_scores(
+    outlier._get_ood_predictions_scores(
         pred_probs=data["pred_probs"],
         labels=data["labels"],
         adjust_pred_probs=False,  # this should user warning because provided info is not used
