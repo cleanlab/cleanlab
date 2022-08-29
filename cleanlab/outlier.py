@@ -30,8 +30,8 @@ from cleanlab.internal.validation import assert_valid_inputs
 
 
 class OutOfDistribution:
-    OUTLIER_PARAMS = tuple(("k", "t"))
-    OOD_PARAMS = tuple(("labels", "adjust_pred_probs", "method"))
+    OUTLIER_PARAMS = {"k", "t"}
+    OOD_PARAMS = {"labels", "adjust_pred_probs", "method"}
     DEFAULT_PARAM_DICT = {
         "k": None,  # outlier param
         "t": 1,  # outlier param
