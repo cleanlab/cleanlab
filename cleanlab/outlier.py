@@ -202,6 +202,9 @@ class OutOfDistribution:
                     return_thresholds=False,
                 )
 
+        # TODO: How to fix this typing issue without assert? _get_[...]_scores should always return np.ndarray
+        #  since return_estimator and return_thresholds are False.
+        assert isinstance(scores, np.ndarray)
         return scores
 
     def _get_params(self, param_keys) -> dict:
