@@ -693,23 +693,27 @@ def _get_post_pred_probs_and_weights(
             annotator_agreement[num_annotations != 1]
         )  # likelihood that any annotator will annotate the consensus label for any example
 
+        # subsetting the dataset to only includes examples with more than one annotation
+        mask = num_annotations != 1
+        consensus_label_subset = consensus_label[mask]
+        prior_pred_probs_subset = prior_pred_probs[mask]
+
+        # compute most likely class error
+        most_likely_class_error = np.mean(
+            consensus_label_subset
+            != np.argmax(np.bincount(consensus_label_subset, minlength=num_classes))
+        )
+
         # compute adjusted annotator agreement (used as annotator weights)
         annotator_agreement_with_annotators = _get_annotator_agreement_with_annotators(
             labels_multiannotator, num_annotations
         )
         annotator_error = 1 - annotator_agreement_with_annotators
-        most_likely_class_error = np.mean(
-            consensus_label != np.argmax(np.bincount(consensus_label, minlength=num_classes))
-        )
         adjusted_annotator_agreement = np.clip(
             1 - (annotator_error / most_likely_class_error), a_min=0, a_max=None
         )
 
         # compute model weight
-        mask = num_annotations != 1
-        consensus_label_subset = consensus_label[mask]
-        prior_pred_probs_subset = prior_pred_probs[mask]
-
         model_error = np.mean(np.argmax(prior_pred_probs_subset, axis=1) != consensus_label_subset)
         model_weight = np.max([(1 - (model_error / most_likely_class_error)), 0]) * np.sqrt(
             np.mean(num_annotations)
