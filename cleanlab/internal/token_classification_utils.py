@@ -1,16 +1,16 @@
 import string
 import numpy as np
 from termcolor import colored
-from typing import Union, Optional, Callable, Tuple
+from typing import List, Union, Optional, Callable, Tuple
 
 
-def get_sentence(words: list) -> str:
+def get_sentence(words: List[str]) -> str:
     """
     Get sentence formed by a list of words with minor processing for readability
 
     Parameters
     ----------
-    words: list
+    words: List[str]
         list of word-level tokens
 
     Returns
@@ -29,14 +29,14 @@ def get_sentence(words: list) -> str:
 
 
 def filter_sentence(
-    sentences: list, condition: Optional[Callable] = None, return_mask: bool = True
+    sentences: List[str], condition: Optional[Callable] = None, return_mask: bool = True
 ) -> Union[Tuple[list, list], list]:
     """
     Filter sentence based on some condition, and returns filter mask
 
     Parameters
     ----------
-        sentences: list
+        sentences: List[str]
             list of sentences
 
         condition: Callable
@@ -47,7 +47,7 @@ def filter_sentence(
 
     Returns
     ---------
-        sentences: list
+        sentences: List[str]
             list of sentences filtered
 
         mask: if `return_mask`, also returns a mask such that `mask[i] == True` if the i'th sentence is included in the
@@ -64,7 +64,7 @@ def filter_sentence(
         return sentences
 
 
-def process_token(token: str, replace: list = [("#", "")]) -> str:
+def process_token(token: str, replace: List[Tuple[str, str]] = [("#", "")]) -> str:
     """
     Replaces special characters in the tokens
 
