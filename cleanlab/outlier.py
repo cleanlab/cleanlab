@@ -251,9 +251,7 @@ class OutOfDistribution:
                 )
             else:
                 params = self._get_params(self.OUTLIER_PARAMS)  # get params specific to outliers
-                scores = _get_ood_features_scores(
-                    features, self.knn, **params, return_estimator=False
-                )
+                scores, _ = _get_ood_features_scores(features, self.knn, **params)
 
         if pred_probs is not None:
             if self.confident_thresholds is None and self.params["adjust_pred_probs"]:
@@ -262,16 +260,12 @@ class OutOfDistribution:
                 )
             else:
                 params = self._get_params(self.OOD_PARAMS)  # get params specific to outliers
-                scores = _get_ood_predictions_scores(
+                scores, _ = _get_ood_predictions_scores(
                     pred_probs,
                     confident_thresholds=self.confident_thresholds,
                     **params,
-                    return_thresholds=False,
                 )
 
-        # TODO: How to fix this typing issue without assert? _get_[...]_scores should always return np.ndarray
-        #  since return_estimator and return_thresholds are False.
-        assert isinstance(scores, np.ndarray)
         return scores
 
     def _get_params(self, param_keys) -> dict:
@@ -341,7 +335,7 @@ class OutOfDistribution:
             if verbose:
                 print("Fitting OOD object based on provided features ...")
             scores, knn = _get_ood_features_scores(
-                features, **self._get_params(self.OUTLIER_PARAMS), return_estimator=True
+                features, **self._get_params(self.OUTLIER_PARAMS)
             )
             self.knn = knn  # save estimator
 
@@ -360,7 +354,6 @@ class OutOfDistribution:
                 pred_probs,
                 labels=labels,
                 **self._get_params(self.OOD_PARAMS),
-                return_thresholds=True,
             )
             if confident_thresholds is None:
                 warnings.warn(
@@ -377,8 +370,7 @@ def _get_ood_features_scores(
     knn: Optional[NearestNeighbors] = None,
     k: Optional[int] = None,
     t: int = 1,
-    return_estimator: bool = False,
-) -> Union[np.ndarray, Tuple[np.ndarray, NearestNeighbors]]:
+) -> Tuple[np.ndarray, Optional[NearestNeighbors]]:
     """Returns an outlier score for each example based on its feature values.
 
     Parameters
@@ -398,15 +390,10 @@ def _get_ood_features_scores(
       Controls transformation of distances between examples into similarity scores that lie in [0,1].
       For details, `t` in the same format expected by the :py:func:`fit <cleanlab.outlier.OutOfDistribution.fit>` function.
 
-    return_estimator : bool, default = False
-      Whether the `knn` Estimator object should also be returned (eg. so it can be applied on future data).
-      If True, this function returns a tuple `(ood_features_scores, knn)`.
-
     Returns
     -------
-    ood_features_scores : np.ndarray
-      If ``return_estimator = True``, then a tuple is returned
-      whose first element is array of `ood_features_scores` and second is a `knn` Estimator object.
+    ood_features_scores : Tuple[np.ndarray, Optional[NearestNeighbors]]
+      Return a tuple whose first element is array of `ood_features_scores` and second is a `knn` Estimator object.
     """
     DEFAULT_K = 10
     if knn is None:  # setup default KNN estimator
@@ -445,10 +432,7 @@ def _get_ood_features_scores(
 
     # Map ood_features_scores to range 0-1 with 0 = most concerning
     ood_features_scores: np.ndarray = np.exp(-1 * avg_knn_distances * t)
-    if return_estimator:
-        return (ood_features_scores, knn)
-    else:
-        return ood_features_scores
+    return (ood_features_scores, knn)
 
 
 def _get_ood_predictions_scores(
@@ -458,7 +442,6 @@ def _get_ood_predictions_scores(
     confident_thresholds: Optional[np.ndarray] = None,
     adjust_pred_probs: bool = True,
     method: str = "entropy",
-    return_thresholds: bool = False,
 ) -> Union[np.ndarray, Tuple[np.ndarray, Optional[np.ndarray]]]:
     """Returns an OOD (out of distribution) score for each example based on it pred_prob values.
 
@@ -485,9 +468,8 @@ def _get_ood_predictions_scores(
 
     Returns
     -------
-    ood_predictions_scores : np.ndarray
-      If ``return_thresholds = True``, then a tuple is returned
-      whose first element is array of `ood_predictions_scores` and second is an np.ndarray of `confident_thresholds` or None is 'confident_thresholds' is not calculated.
+    ood_predictions_scores : Tuple[np.ndarray, Optional[np.ndarray]]
+      Returns a tuple. First element is array of `ood_predictions_scores` and second is an np.ndarray of `confident_thresholds` or None is 'confident_thresholds' is not calculated.
     """
 
     valid_methods = [
@@ -532,10 +514,7 @@ def _get_ood_predictions_scores(
             """
         )
 
-    if return_thresholds:
-        return (
-            ood_predictions_scores,
-            confident_thresholds,
-        )
-    else:
-        return ood_predictions_scores
+    return (
+        ood_predictions_scores,
+        confident_thresholds,
+    )

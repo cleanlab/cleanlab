@@ -296,19 +296,21 @@ def test_get_ood_features_scores():
 
     # Get KNN distance as outlier score
     k = 5
-    knn_distance_to_score = outlier._get_ood_features_scores(features=X_test_with_ood, knn=knn, k=k)
+    knn_distance_to_score, _ = outlier._get_ood_features_scores(
+        features=X_test_with_ood, knn=knn, k=k
+    )
 
     # Checking that X_ood has the smallest outlier score among all the datapoints
     assert np.argmin(knn_distance_to_score) == (knn_distance_to_score.shape[0] - 1)
 
     # Get KNN distance as outlier score without passing k
     # By default k=10 is used or k = n_neighbors when k > n_neighbors extracted from the knn
-    knn_distance_to_score = outlier._get_ood_features_scores(features=X_test_with_ood, knn=knn)
+    knn_distance_to_score, _ = outlier._get_ood_features_scores(features=X_test_with_ood, knn=knn)
     # Checking that X_ood has the smallest outlier score among all the datapoints
     assert np.argmin(knn_distance_to_score) == (knn_distance_to_score.shape[0] - 1)
 
     # Get KNN distance as outlier score passing k and t > 1
-    large_t_knn_distance_to_score = outlier._get_ood_features_scores(
+    large_t_knn_distance_to_score, _ = outlier._get_ood_features_scores(
         features=X_test_with_ood, knn=knn, k=k, t=5
     )
 
@@ -316,7 +318,7 @@ def test_get_ood_features_scores():
     assert np.argmin(large_t_knn_distance_to_score) == (large_t_knn_distance_to_score.shape[0] - 1)
 
     # Get KNN distance as outlier score passing k and t < 1
-    small_t_knn_distance_to_score = outlier._get_ood_features_scores(
+    small_t_knn_distance_to_score, _ = outlier._get_ood_features_scores(
         features=X_test_with_ood, knn=knn, k=k, t=0.002
     )
 
@@ -339,18 +341,17 @@ def test_default_k_and_model_get_ood_features_scores():
     # Create NN class object with small instantiated k and fit on data
     knn = NearestNeighbors(n_neighbors=instantiated_k, metric="cosine").fit(X_with_ood)
 
-    avg_knn_distances_default_model = outlier._get_ood_features_scores(
+    avg_knn_distances_default_model, _ = outlier._get_ood_features_scores(
         features=X_with_ood,
         k=instantiated_k,  # this should use default estimator (same as above) and k = instantiated_k
     )
 
     avg_knn_distances_default_k, knn2 = outlier._get_ood_features_scores(
         features=X_with_ood,  # default k should be set to 10 == instantiated_k
-        return_estimator=True,
     )
     assert isinstance(knn2, type(knn))
 
-    avg_knn_distances = outlier._get_ood_features_scores(
+    avg_knn_distances, _ = outlier._get_ood_features_scores(
         features=None,
         knn=knn,
         k=25,  # this should throw user warn, k should be set to instantiated_k
@@ -360,18 +361,18 @@ def test_default_k_and_model_get_ood_features_scores():
     assert avg_knn_distances.sum() == avg_knn_distances_default_model.sum()
     assert avg_knn_distances_default_k.sum() == avg_knn_distances.sum()
 
-    avg_knn_distances_large_k = outlier._get_ood_features_scores(
+    avg_knn_distances_large_k, _ = outlier._get_ood_features_scores(
         features=X_with_ood,
         k=25,  # this should use default estimator and k = 25
     )
 
-    avg_knn_distances_tiny_k = outlier._get_ood_features_scores(
+    avg_knn_distances_tiny_k, _ = outlier._get_ood_features_scores(
         features=None,
         knn=knn,
         k=1,  # this should use knn estimator and k = 1
     )
 
-    avg_knn_distances_tiny_k_default = outlier._get_ood_features_scores(
+    avg_knn_distances_tiny_k_default, _ = outlier._get_ood_features_scores(
         features=X_with_ood,
         k=1,  # this should use default estimator and k = 1
     )
@@ -429,13 +430,13 @@ def test_ood_predictions_scores():
     pred_probs = logreg.predict_proba(X_with_ood)
 
     ### Test non-adjusted OOD score logic
-    ood_predictions_scores_entropy = outlier._get_ood_predictions_scores(
+    ood_predictions_scores_entropy, _ = outlier._get_ood_predictions_scores(
         pred_probs=pred_probs,
         adjust_pred_probs=False,
     )
 
     # adjust pred probs should be False by default
-    ood_predictions_scores_least_confidence = outlier._get_ood_predictions_scores(
+    ood_predictions_scores_least_confidence, _ = outlier._get_ood_predictions_scores(
         pred_probs=pred_probs,
         method="least_confidence",
         adjust_pred_probs=False,
@@ -453,7 +454,6 @@ def test_ood_predictions_scores():
         pred_probs=pred_probs,
         labels=y_with_ood,
         adjust_pred_probs=True,
-        return_thresholds=True,
         method="entropy",
     )
 
@@ -464,7 +464,6 @@ def test_ood_predictions_scores():
         pred_probs=pred_probs,
         labels=y_with_ood,
         adjust_pred_probs=True,
-        return_thresholds=True,
         method="least_confidence",
     )
 
@@ -487,7 +486,6 @@ def test_ood_predictions_scores():
         pred_probs=pred_probs,
         confident_thresholds=confident_thresholds,
         adjust_pred_probs=True,
-        return_thresholds=True,
     )
 
     assert (confident_thresholds_2 == confident_thresholds).all()
