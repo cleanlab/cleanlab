@@ -246,6 +246,13 @@ def test_class_public_func():
     labels = data["true_labels_test"]
 
     #### TESTING FIT:
+
+    # Test fitting OOD object without labels and adjust_pred_probs=False
+    OOD_ood = OutOfDistribution()
+    OOD_ood.fit(pred_probs=data["pred_probs"], labels=None, params={"adjust_pred_probs": False})
+    assert OOD_ood.params["adjust_pred_probs"] is False
+
+    # Testing regular fit
     OOD_ood = OutOfDistribution()
     OOD_ood.fit(pred_probs=pred_probs, labels=labels)
 
@@ -279,6 +286,25 @@ def test_class_public_func():
 
     assert np.sum(outlier_score_fs) - np.sum(outlier_score) < 1  # scores are similar
     assert np.sum(ood_score_fs) - np.sum(ood_score) < 1  # scores are similar
+
+    #### TESTING PASS IN OTHER KNN
+    knn1 = NearestNeighbors(n_neighbors=7, metric="cosine")
+    knn2 = NearestNeighbors(n_neighbors=17, metric="cosine")
+
+    OOD_knn1 = OutOfDistribution()
+    OOD_knn2 = OutOfDistribution()
+    OOD_knn0 = OutOfDistribution()
+
+    scores_knn0 = OOD_knn0.fit_score(features=features)
+    scores_knn1 = OOD_knn1.fit_score(features=features, knn=knn1)
+    scores_knn2 = OOD_knn2.fit_score(features=features, knn=knn2)
+
+    assert np.sum(scores_knn0) != np.sum(scores_knn1) and np.sum(scores_knn0) != np.sum(scores_knn2)
+    assert (
+        OOD_knn1.knn.n_neighbors == 7
+        and OOD_knn2.knn.n_neighbors == 17
+        and OOD_knn0.knn.n_neighbors == 10
+    )
 
 
 def test_get_ood_features_scores():

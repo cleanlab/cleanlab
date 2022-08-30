@@ -19,6 +19,7 @@ import warnings
 import numpy as np
 from cleanlab.count import get_confident_thresholds
 from sklearn.neighbors import NearestNeighbors
+from sklearn.exceptions import NotFittedError
 from typing import Optional, Union, Tuple
 from cleanlab.internal.label_quality_utils import (
     _subtract_confident_thresholds,
@@ -74,6 +75,7 @@ class OutOfDistribution:
         self,
         *,
         features: Optional[np.ndarray] = None,
+        knn: Optional[NearestNeighbors] = None,
         pred_probs: Optional[np.ndarray] = None,
         labels: Optional[np.ndarray] = None,
         params: dict = None,
@@ -94,6 +96,9 @@ class OutOfDistribution:
         features : np.ndarray, optional
           Feature array of shape ``(N, M)``, where N is the number of examples and M is the number of features used to represent each example.
           For details, `features` in the same format expected by the :py:func:`fit <cleanlab.outlier.OutOfDistribution.fit>` function.
+
+        knn : sklearn.neighbors.NearestNeighbors, default = None
+          For details on 'knn` see :py:class:`OutOfDistribution <cleanlab.outlier.OutOfDistribution>`
 
         pred_probs : np.ndarray, optional
           An array of shape ``(N, K)`` of model-predicted probabilities.
@@ -118,7 +123,12 @@ class OutOfDistribution:
 
         """
         scores = self._shared_fit(
-            features=features, pred_probs=pred_probs, labels=labels, params=params, verbose=verbose
+            features=features,
+            knn=knn,
+            pred_probs=pred_probs,
+            labels=labels,
+            params=params,
+            verbose=verbose,
         )
 
         return scores
@@ -127,6 +137,7 @@ class OutOfDistribution:
         self,
         *,
         features: Optional[np.ndarray] = None,
+        knn: Optional[NearestNeighbors] = None,
         pred_probs: Optional[np.ndarray] = None,
         labels: Optional[np.ndarray] = None,
         params: dict = None,
@@ -148,6 +159,9 @@ class OutOfDistribution:
           Feature array of shape ``(N, M)``, where N is the number of examples and M is the number of features used to represent each example.
           All features should be numeric. For unstructured data (eg. images, text, categorical values, ...), you should provide
           vector embeddings to represent each example (e.g. extracted from some pretrained neural network).
+
+        knn : sklearn.neighbors.NearestNeighbors, default = None
+          For details on 'knn` see :py:class:`OutOfDistribution <cleanlab.outlier.OutOfDistribution>`
 
         pred_probs : np.ndarray, optional
            An array of shape ``(N, K)`` of model-predicted probabilities,
@@ -187,11 +201,11 @@ class OutOfDistribution:
                   If you find your scores are all too close to 1, consider increasing `t`,
                   although the relative scores of examples will still have the same ranking across the dataset.
 
-          If `pred_probs` is passed in, `params` could contian following keys:
+          If `pred_probs` is passed in, `params` could contain following keys:
             *  adjust_pred_probs : bool, True
                   Account for class imbalance in the label-quality scoring by adjusting predicted probabilities
                   via subtraction of class confident thresholds and renormalization.
-                  Set this to ``False`` if you prefer to skip accounting for class-imbalance.
+                  Set this to ``False`` if you prefer to skip accounting for class-imbalance. You do not have to pass in `labels` in that case.
                   See `Northcutt et al., 2021 <https://jair.org/index.php/jair/article/view/12125>`_.
             *  method : {"entropy", "least_confidence"}, default="entropy"
                   OOD scoring method.
@@ -207,7 +221,12 @@ class OutOfDistribution:
 
         """
         _ = self._shared_fit(
-            features=features, pred_probs=pred_probs, labels=labels, params=params, verbose=verbose
+            features=features,
+            knn=knn,
+            pred_probs=pred_probs,
+            labels=labels,
+            params=params,
+            verbose=verbose,
         )
 
     def score(
@@ -274,15 +293,20 @@ class OutOfDistribution:
         """
         return {k: v for k, v in self.params.items() if k in param_keys}
 
-    def _get_invalid_params(self, params, param_keys) -> list:
+    @staticmethod
+    def _assert_valid_params(params, param_keys, fit_with):
         """
-        Helper method to get list of parameters in param that are not in param_keys.
+        Helper method to check passed in params valid and get list of parameters in param that are not in param_keys.
         """
-        if params is None:
-            return []
-        return list(set(params.keys()).difference(set(param_keys)))
+        if params is not None:
+            ood_params = list(set(params.keys()).difference(set(param_keys)))
+            if len(ood_params) > 0:
+                raise ValueError(
+                    f"If fit with {fit_with}, passed in params dict can only contain {param_keys}. Remove {ood_params} from params dict."
+                )
 
-    def _assert_valid_inputs(self, features, pred_probs):
+    @staticmethod
+    def _assert_valid_inputs(features, pred_probs):
         """
         Helper method to check features and pred_prob inputs are valid. Throws error if not.
         """
@@ -306,6 +330,7 @@ class OutOfDistribution:
         self,
         *,
         features: Optional[np.ndarray] = None,
+        knn: Optional[NearestNeighbors] = None,
         pred_probs: Optional[np.ndarray] = None,
         labels: Optional[np.ndarray] = None,
         params: dict = None,
@@ -326,26 +351,19 @@ class OutOfDistribution:
 
         if features is not None:
             # raise Error if they passed in invalid params keys for using features.
-            ood_params = self._get_invalid_params(params, self.OUTLIER_PARAMS)
-            if len(ood_params) > 0:
-                raise ValueError(
-                    f"If fit with features, passed in params dict can only contain {self.OUTLIER_PARAMS}. Remove {ood_params} from params dict."
-                )
+            self._assert_valid_params(params, self.OUTLIER_PARAMS, "features")
+
             # get outlier scores
             if verbose:
                 print("Fitting OOD object based on provided features ...")
             scores, knn = _get_ood_features_scores(
-                features, **self._get_params(self.OUTLIER_PARAMS)
+                features, knn=knn, **self._get_params(self.OUTLIER_PARAMS)
             )
             self.knn = knn  # save estimator
 
         if pred_probs is not None:
             # raise Error if they passed in invalid params keys for using pred_probs.
-            outlier_params = self._get_invalid_params(params, self.OOD_PARAMS)
-            if len(outlier_params) > 0:
-                raise ValueError(
-                    f"If fit with pred_probs, passed in params dict can only contain {self.OOD_PARAMS}. Remove {outlier_params} from params dict."
-                )
+            self._assert_valid_params(params, self.OOD_PARAMS, "pred_probs")
 
             # get ood scores
             if verbose:
@@ -371,7 +389,8 @@ def _get_ood_features_scores(
     k: Optional[int] = None,
     t: int = 1,
 ) -> Tuple[np.ndarray, Optional[NearestNeighbors]]:
-    """Returns an outlier score for each example based on its feature values.
+    """Returns an outlier score for each example based on its feature values which is computed inversely proportional
+    to the average distance between this example and its K nearest neighbors (in feature space).
 
     Parameters
     ----------
@@ -421,6 +440,12 @@ def _get_ood_features_scores(
             UserWarning,
         )
         k = max_k
+
+    # Fit knn estimator on the features if a non-fitted estimator is passed in
+    try:
+        knn.kneighbors(features)
+    except NotFittedError as e:
+        knn.fit(features)
 
     # Get distances to k-nearest neighbors Note that the knn object contains the specification of distance metric
     # and n_neighbors (k value) If our query set of features matches the training set used to fit knn, the nearest
