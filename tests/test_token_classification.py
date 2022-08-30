@@ -66,8 +66,10 @@ def test_process_token():
 
 
 def test_mapping():
-    mapped = mapping(labels[0], maps=maps)
-    assert mapped == [0, 0]
+    test_cases = [(l, expected) for l, expected in zip(labels, [[0, 0], [1, 1, 1], [0]])]
+    for l, expected in test_cases:
+        mapped = mapping(l, maps)
+        assert mapped == expected
 
 
 def test_merge_probs():
