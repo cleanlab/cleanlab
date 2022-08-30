@@ -66,7 +66,7 @@ def filter_sentence(
 
 def process_token(token: str, replace: List[Tuple[str, str]] = [("#", "")]) -> str:
     """
-    Replaces special characters in the tokens
+    Replaces special characters in the tokens.
 
     Parameters
     ----------
@@ -80,10 +80,17 @@ def process_token(token: str, replace: List[Tuple[str, str]] = [("#", "")]) -> s
     ---------
         token: str
             processed token whose special character has been replaced
+
+    Note
+    ----
+        Only applies to characters in the original input token.
     """
-    for old, new in replace:
-        token = token.replace(old, new)
-    return token
+    replace_dict = {re.escape(k): v for (k, v) in replace}
+    pattern = "|".join(replace_dict.keys())
+    compiled_pattern = re.compile(pattern)
+    replacement = lambda match: replace_dict[re.escape(match.group(0))]
+    new_token = compiled_pattern.sub(replacement, token)
+    return new_token
 
 
 def mapping(entities: list, maps: list) -> list:

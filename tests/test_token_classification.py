@@ -47,8 +47,13 @@ def test_filter_sentence():
 
 
 def test_process_token():
-    processed = process_token("Cleanlab", [("C", "a")])
-    assert processed == "aleanlab"
+    test_cases = [
+        ("Cleanlab", [("C", "a")], "aleanlab"),
+        ("Cleanlab", [("C", "a"), ("a", "C")], "aleCnlCb"),
+    ]
+    for token, replacements, expected in test_cases:
+        processed = process_token(token, replacements)
+        assert processed == expected
 
 
 def test_mapping():
