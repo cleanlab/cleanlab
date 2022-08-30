@@ -46,6 +46,14 @@ def test_filter_sentence():
     assert filtered_sentences == ["Hello World"]
     assert mask == [True, False, False]
 
+    len_condition = lambda x: len(x) > 1
+    filtered_sentences, mask = filter_sentence(sentences, len_condition)
+    assert filtered_sentences == ["Hello World", "#I love Cleanlab"]
+
+    special_character_condition = lambda x: "#" not in x
+    filtered_sentences, mask = filter_sentence(sentences, special_character_condition)
+    assert filtered_sentences == ["Hello World", "A"]
+
 
 def test_process_token():
     test_cases = [
