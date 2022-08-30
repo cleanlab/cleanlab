@@ -21,7 +21,7 @@ import warnings
 
 warnings.filterwarnings("ignore")
 words = [["Hello", "World"], ["#I", "love", "Cleanlab"], ["A"]]
-sentences = list(map(get_sentence, words))
+sentences = ["Hello World", "#I love Cleanlab", "A"]
 
 pred_probs = [
     np.array([[0.9, 0.1, 0], [0.6, 0.2, 0.2]]),
@@ -37,7 +37,8 @@ class_names = ["A", "B", "C", "D"]
 
 
 def test_get_sentence():
-    assert get_sentence(words[0]) == "Hello World"
+    actual_sentences = list(map(get_sentence, words))
+    assert actual_sentences == sentences
 
 
 def test_filter_sentence():

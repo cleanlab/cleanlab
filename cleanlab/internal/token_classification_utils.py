@@ -1,3 +1,4 @@
+import re
 import string
 import numpy as np
 from termcolor import colored
