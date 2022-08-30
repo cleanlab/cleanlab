@@ -4,7 +4,6 @@ Tutorials
 .. toctree::
    :maxdepth: 1
 
-
    indepth_overview
    image
    text
@@ -13,4 +12,5 @@ Tutorials
    dataset_health
    pred_probs_cross_val
    outliers
+   multiannotator
    faq

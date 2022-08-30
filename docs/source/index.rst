@@ -103,6 +103,7 @@ The example below shows how to view all dataset-level issues in one line of code
    tutorials/dataset_health
    tutorials/pred_probs_cross_val
    tutorials/outliers
+   tutorials/multiannotator
    tutorials/faq
 
 .. toctree::
