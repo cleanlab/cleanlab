@@ -5,3 +5,4 @@ from . import rank
 from . import filter
 from . import benchmarking
 from . import dataset
+from . import multiannotator
