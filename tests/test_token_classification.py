@@ -14,7 +14,6 @@ from cleanlab.token_classification.summary import (
     filter_by_token,
 )
 import numpy as np
-import pandas as pd
 import pytest
 
 import warnings
