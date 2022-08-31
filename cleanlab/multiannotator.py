@@ -591,6 +591,8 @@ def _get_annotator_agreement_with_annotators(
         For more details, labels in the same format expected by the :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>`.
     consensus_label : np.ndarray
         An array of shape ``(N,)`` with the consensus labels aggregated from all annotators.
+    verbose : bool, default = True
+        Certain warnings and notes will be printed if ``verbose`` is set to ``True``.
 
     Returns
     -------
@@ -666,6 +668,8 @@ def _get_post_pred_probs_and_weights(
     quality_method : str, default = "crowdlab" (Options: ["crowdlab", "agreement"])
         Specifies the method used to calculate the quality of the consensus label.
         For valid quality methods, view :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>`
+    verbose : bool, default = True
+        Certain warnings and notes will be printed if ``verbose`` is set to ``True``.
 
     Returns
     -------
