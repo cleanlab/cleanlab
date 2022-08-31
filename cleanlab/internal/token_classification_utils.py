@@ -1,6 +1,7 @@
 import re
 import string
 import numpy as np
+from numpy.typing import NDArray
 from termcolor import colored
 from typing import List, Union, Optional, Callable, Tuple
 
@@ -30,8 +31,10 @@ def get_sentence(words: List[str]) -> str:
 
 
 def filter_sentence(
-    sentences: List[str], condition: Optional[Callable] = None, return_mask: bool = True
-) -> Union[Tuple[list, list], list]:
+    sentences: List[str],
+    condition: Optional[Callable[[str], bool]] = None,
+    return_mask: bool = True,
+) -> Union[Tuple[List[str], List[bool]], List[str]]:
     """
     Filter sentence based on some condition, and returns filter mask
 
@@ -40,7 +43,7 @@ def filter_sentence(
         sentences: List[str]
             list of sentences
 
-        condition: Callable
+        condition: Optional[Callable[[str], bool]]
             sentence filtering condition
 
         return_mask: bool
@@ -94,21 +97,21 @@ def process_token(token: str, replace: List[Tuple[str, str]] = [("#", "")]) -> s
     return processed_token
 
 
-def mapping(entities: list, maps: list) -> list:
+def mapping(entities: List[int], maps: List[int]) -> List[int]:
     """
     Map a list of entities to its corresponding entities
 
     Parameters
     ----------
-        entities: list
+        entities: List[int]
             a list of given entities
 
-        maps:
+        maps: List[int]
             a list of mapped entities, such that the i'th indexed token should be mapped to `maps[i]`
 
     Returns
     ---------
-        mapped_entities:
+        mapped_entities: List[int]
             a list of mapped entities
 
     Examples
@@ -124,13 +127,13 @@ def mapping(entities: list, maps: list) -> list:
     return list(map(f, entities))
 
 
-def merge_probs(probs: np.ndarray, maps: List[int]) -> np.ndarray:
+def merge_probs(probs: NDArray[np.float64], maps: List[int]) -> NDArray[np.float64]:
     """
     Merges model-predictive probabilities with desired mapping
 
     Parameters
     ----------
-        probs: np.array
+        probs: NDArray[np.float64]
             np.array of shape `(N, K)`, where N is the number of tokens, and K is the number of classes for the model
 
         maps: List[int]
@@ -140,13 +143,14 @@ def merge_probs(probs: np.ndarray, maps: List[int]) -> np.ndarray:
 
     Returns
     ---------
-        probs_merged: np.array
+        probs_merged: NDArray[np.float64]
             np.array of shape `(N, K')`, where K' is the number of new classes. Probablities are merged and
             re-normalized if necessary.
 
     """
     old_classes = probs.shape[1]
-    probs_merged = np.zeros([len(probs), np.max(maps) + 1])
+    map_size = np.max(maps) + 1  # type: ignore
+    probs_merged = np.zeros([len(probs), map_size], dtype=probs.dtype.type)
 
     for i in range(old_classes):
         if maps[i] >= 0:
