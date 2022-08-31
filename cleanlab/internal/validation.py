@@ -33,7 +33,7 @@ def assert_valid_inputs(
     multi_label: bool = False,
     allow_missing_classes: bool = False,
 ) -> None:
-    """Checks that X, labels, and pred_probs are correctly formatted"""
+    """Checks that ``X``, ``labels``, ``pred_probs`` are correctly formatted."""
     if not isinstance(y, (list, np.ndarray, np.generic, pd.Series, pd.DataFrame)):
         raise TypeError("labels should be a numpy array or pandas Series.")
     if not multi_label:
@@ -101,9 +101,9 @@ def assert_valid_class_labels(
     y: np.ndarray,
     allow_missing_classes: bool = False,
 ) -> None:
-    """Check that labels is properly formatted, i.e. a 1D array that is
-    zero-indexed (first label is 0) and all classes present (if ``allow_missing_classes is False``).
-    Assumes labels is 1D numpy array (not multi-label).
+    """Checks that ``labels`` is properly formatted, i.e. a 1D array that is
+    zero-indexed (first label is 0) with all classes present (if ``allow_missing_classes is False``).
+    Assumes ``labels`` is a 1D numpy array (not multi-label).
     """
     if y.ndim != 1:
         raise ValueError("labels must be 1D numpy array.")
@@ -122,6 +122,7 @@ def assert_valid_class_labels(
 
 
 def assert_nonempty_input(X: Any) -> None:
+    """Ensures input is not None."""
     if X is None:
         raise ValueError("Data features X cannot be None. Currently X is None.")
 
@@ -130,7 +131,7 @@ def assert_indexing_works(
     X: DatasetLike, idx: Optional[List[int]] = None, length_X: Optional[int] = None
 ) -> None:
     """Ensures we can do list-based indexing into ``X`` and ``y``.
-    length_X is argument passed in since sparse matrix ``X``
+    ``length_X`` is an optional argument since sparse matrix ``X``
     does not support: ``len(X)`` and we want this method to work for sparse ``X``
     (in addition to many other types of ``X``).
     """
@@ -177,7 +178,7 @@ def assert_indexing_works(
 
 
 def labels_to_array(y: Union[LabelLike, np.generic]) -> np.ndarray:
-    """Converts different types of label objects to 1D numpy array and checks validity
+    """Converts different types of label objects to 1D numpy array and checks their validity.
 
     Parameters
     ----------
