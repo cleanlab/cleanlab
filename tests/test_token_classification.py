@@ -41,7 +41,7 @@ def test_get_sentence():
     assert actual_sentences == sentences
 
 
-def test_filter_sentence():
+def test_filter_sentence_with_mask():
     filtered_sentences, mask = filter_sentence(sentences)
     assert filtered_sentences == ["Hello World"]
     assert mask == [True, False, False]
@@ -49,10 +49,17 @@ def test_filter_sentence():
     len_condition = lambda x: len(x) > 1
     filtered_sentences, mask = filter_sentence(sentences, len_condition)
     assert filtered_sentences == ["Hello World", "#I love Cleanlab"]
+    assert mask == [True, True, False]
 
     special_character_condition = lambda x: "#" not in x
     filtered_sentences, mask = filter_sentence(sentences, special_character_condition)
     assert filtered_sentences == ["Hello World", "A"]
+    assert mask == [True, False, True]
+
+
+def test_filter_sentence_without_mask():
+    filtered_sentences = filter_sentence(sentences, return_mask=False)
+    assert filtered_sentences == ["Hello World"]
 
 
 def test_process_token():
