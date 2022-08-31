@@ -714,12 +714,12 @@ def _get_post_pred_probs_and_weights(
         )
         annotator_error = 1 - annotator_agreement_with_annotators
         adjusted_annotator_agreement = np.clip(
-            1 - (annotator_error / most_likely_class_error), a_min=0, a_max=None
+            1 - (annotator_error / most_likely_class_error), a_min=1e-6, a_max=None
         )
 
         # compute model weight
         model_error = np.mean(np.argmax(prior_pred_probs_subset, axis=1) != consensus_label_subset)
-        model_weight = np.max([(1 - (model_error / most_likely_class_error)), 0]) * np.sqrt(
+        model_weight = np.max([(1 - (model_error / most_likely_class_error)), 1e-6]) * np.sqrt(
             np.mean(num_annotations)
         )
 
