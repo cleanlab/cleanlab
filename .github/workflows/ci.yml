@@ -52,7 +52,7 @@ jobs:
         run: mypy --install-types --non-interactive cleanlab
       - name: Strict type check
         run: |
-          mypy --install-types --non-interactive --strict {cleanlab/internal/token_classification_utils.py,}
+          mypy --install-types --non-interactive --strict cleanlab/internal/token_classification_utils.py
   fmt:
     name: Format
     runs-on: ubuntu-latest
