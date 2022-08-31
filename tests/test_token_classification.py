@@ -40,6 +40,13 @@ def test_get_sentence():
     actual_sentences = list(map(get_sentence, words))
     assert actual_sentences == sentences
 
+    # Test with allowed special characters
+    words_separated_by_hyphen = ["Heading", "-", "Title"]
+    assert get_sentence(words_separated_by_hyphen) == "Heading - Title"
+
+    words_within_parentheses = ["Some", "reason", "(", "Explanation", ")"]
+    assert get_sentence(words_within_parentheses) == "Some reason (Explanation)"
+
 
 def test_filter_sentence_with_mask():
     filtered_sentences, mask = filter_sentence(sentences)
