@@ -36,9 +36,9 @@ class OutOfDistribution:
 
     Parameters
     ----------
-    params : dict, default = None
+    params : dict, default = {}
      Optional keyword arguments to that change how estimator is fit. Effect of arguments passed in depends on if
-     `OutOfDistribution` object is fit on `features` or `pred_probs`.
+     `OutOfDistribution` estimator will be on `features` or `pred_probs`.
 
      If `features` is passed in during ``fit()``, `params` could contain following keys:
        *  knn: sklearn.neighbors.NearestNeighbors, default = None
@@ -97,8 +97,7 @@ class OutOfDistribution:
     def __init__(self, params: dict = {}):
         self._assert_valid_params(params, self.DEFAULT_PARAM_DICT)
         self.params = self.DEFAULT_PARAM_DICT
-        if params is not None:
-            self.params = {**self.params, **params}
+        self.params = {**self.params, **params}
 
     def fit_score(
         self,
@@ -129,7 +128,7 @@ class OutOfDistribution:
           For details, `pred_probs` in the same format expected by the :py:func:`fit <cleanlab.outlier.OutOfDistribution.fit>` function.
 
         labels : np.ndarray, optional
-          A discrete vector of noisy labels, i.e. some labels may be erroneous of shape ``(N,)``.
+          A discrete vector of given labels for the data of shape ``(N,)``.
           For details, `labels` in the same format expected by the :py:func:`fit <cleanlab.outlier.OutOfDistribution.fit>` function.
 
         params : bool, default = False
@@ -167,7 +166,7 @@ class OutOfDistribution:
         verbose: bool = True,
     ):
         """
-        Fits an estimator following optional parameters specified during object initialization. One of `features` or `pred_probs`
+        Fits an estimator following optional parameters specified during OOD estimator initialization. One of `features` or `pred_probs`
         needs to be passed in to fit estimator object.
 
         If `features` are passed in a `NearestNeighbors` object is fit. For details on the object see
@@ -199,9 +198,10 @@ class OutOfDistribution:
           data that was previously held-out.
 
         labels : np.ndarray, optional
-          A discrete vector of noisy labels, i.e. some labels may be erroneous of shape ``(N,)``.
+          A discrete vector of given labels for the data of shape ``(N,)``.
           *Format requirements*: for dataset with K classes, labels must be in 0, 1, ..., K-1.
           All the classes (0, 1, ..., and K-1) MUST be present in ``labels``, such that: ``len(set(labels)) == pred_probs.shape[1]``
+          If `params["adjust_confident_thresholds"]` is set to ``False`` during OOD estimator initialization, you do not have to pass in `labels`.
           Note: multi-label classification is not supported by this method, each example must belong to a single class, e.g. format: ``labels = np.ndarray([1,0,2,1,1,0...])``.
 
         verbose : bool, default = True
@@ -220,7 +220,7 @@ class OutOfDistribution:
     ) -> np.ndarray:
         """
         Uses fitted estimator and passed in `features` or `pred_probs` to calculate out-of-distribution scores with
-        optional params passed in during object initialization. Score for each example that roughly corresponds to the
+        optional params passed in during OOD estimator initialization. Score for each example that roughly corresponds to the
         likelihood this example stems from the same distribution as the dataset features (i.e. is not an outlier).
         Scores lie in [0,1] with smaller values indicating examples that are less typical under the dataset distribution
         (values near 0 indicate outliers).
@@ -253,7 +253,7 @@ class OutOfDistribution:
         if features is not None:
             if self.params["knn"] is None:
                 raise ValueError(
-                    f"OOD Object needs to be fit on features first. Call fit() or fit_scores() before this function."
+                    f"OOD estimator needs to be fit on features first. Call `fit()` or `fit_scores()` before this function."
                 )
             else:
                 scores, _ = _get_ood_features_scores(
@@ -263,7 +263,7 @@ class OutOfDistribution:
         if pred_probs is not None:
             if self.params["confident_thresholds"] is None and self.params["adjust_pred_probs"]:
                 raise ValueError(
-                    f"OOD Object needs to be fit on features first. Call fit() or fit_scores() before this function."
+                    f"OOD estimator needs to be fit on pred_probs first since params['adjust_pred_probs']=True. Call `fit()` or `fit_scores()` before this function."
                 )
             else:
                 scores, _ = _get_ood_predictions_scores(
@@ -283,7 +283,7 @@ class OutOfDistribution:
         """
         Helper method to check passed in params valid and get list of parameters in param that are not in param_keys.
         """
-        if params is not None:
+        if len(params) > 0:
             wrong_params = list(set(params.keys()).difference(set(param_keys)))
             if len(wrong_params) > 0:
                 raise ValueError(
@@ -302,7 +302,7 @@ class OutOfDistribution:
 
         if features is not None and pred_probs is not None:
             raise ValueError(
-                f"Cannot fit to object to both features and pred_probs. Pass in either one or the other."
+                f"Cannot fit to OOD Estimator to both features and pred_probs. Pass in either one or the other."
             )
 
         if features is not None and len(features.shape) != 2:
@@ -332,13 +332,13 @@ class OutOfDistribution:
             if self.params["knn"] is not None:
                 # No fitting twice if knn object already fit
                 warnings.warn(
-                    f"Skipping fit. Object already fit on knn estimator.",
+                    f"A KNN estimator has previously already been fit, call score() to apply it to data, or create a new OutOfDistribution object to fit a different estimator.",
                     UserWarning,
                 )
             else:
                 # Get ood features scores
                 if verbose:
-                    print("Fitting OOD object based on provided features ...")
+                    print("Fitting OOD estimator based on provided features ...")
                 scores, knn = _get_ood_features_scores(
                     features, **self._get_params(self.OUTLIER_PARAMS)
                 )
@@ -348,13 +348,13 @@ class OutOfDistribution:
             if self.params["confident_thresholds"] is not None:
                 # No fitting twice if confident_thresholds object already fit
                 warnings.warn(
-                    f"Skipping fit. Object already fit with confident thresholds.",
+                    f"Confident thresholds have previously already been fit, call score() to apply them to data, or create a new OutOfDistribution object to fit a different estimator.",
                     UserWarning,
                 )
             else:
                 # Get ood predictions scores
                 if verbose:
-                    print("Fitting OOD object based on provided pred_probs ...")
+                    print("Fitting OOD estimator based on provided pred_probs ...")
                 scores, confident_thresholds = _get_ood_predictions_scores(
                     pred_probs,
                     labels=labels,
@@ -362,7 +362,7 @@ class OutOfDistribution:
                 )
                 if confident_thresholds is None:
                     warnings.warn(
-                        f"Object not fit with confident_thresholds since adjust_pred_probs=False and no "
+                        f"OOD estimator not fit with confident_thresholds since adjust_pred_probs=False and no "
                         f"confident_thresholds were calculated.",
                         UserWarning,
                     )
@@ -387,15 +387,15 @@ def _get_ood_features_scores(
       For details, `features` in the same format expected by the :py:func:`fit <cleanlab.outlier.OutOfDistribution.fit>` function.
 
     knn : sklearn.neighbors.NearestNeighbors, default = None
-       For details on 'knn` see :py:class:`OutOfDistribution <cleanlab.outlier.OutOfDistribution>`.
+      For details, see key `knn` in the params dict arg of :py:class:`OutOfDistribution <cleanlab.outlier.OutOfDistribution>`.
 
     k : int, default=None
       Optional number of neighbors to use when calculating outlier score (average distance to neighbors).
-      For details, `k` in the same format expected by the :py:func:`fit <cleanlab.outlier.OutOfDistribution.fit>` function.
+      For details, see key `k` in the params dict arg of :py:class:`OutOfDistribution <cleanlab.outlier.OutOfDistribution>`.
 
     t : int, default=1
       Controls transformation of distances between examples into similarity scores that lie in [0,1].
-      For details, `t` in the same format expected by the :py:func:`fit <cleanlab.outlier.OutOfDistribution.fit>` function.
+      For details, see key `t` in the params dict arg of :py:class:`OutOfDistribution <cleanlab.outlier.OutOfDistribution>`.
 
     Returns
     -------
@@ -466,14 +466,14 @@ def _get_ood_predictions_scores(
       `pred_probs` in the same format expected by the :py:func:`fit <cleanlab.outlier.OutOfDistribution.fit>` function.
 
     confident_thresholds : np.ndarray, default = None
-      For details on 'confindent_thresholds` see :py:class:`OutOfDistribution <cleanlab.outlier.OutOfDistribution>`.
+      For details, see key `confident_thresholds` in the params dict arg of :py:class:`OutOfDistribution <cleanlab.outlier.OutOfDistribution>`.
 
     labels : np.ndarray, optional
       `labels` in the same format expected by the :py:func:`fit <cleanlab.outlier.OutOfDistribution.fit>` function.
 
     adjust_pred_probs : bool, True
       Account for class imbalance in the label-quality scoring.
-      For details, see `adjust_pred_probs` in :py:func:`fit <cleanlab.outlier.OutOfDistribution.fit>` function.
+      For details, see key `adjust_pred_probs` in the params dict arg of :py:class:`OutOfDistribution <cleanlab.outlier.OutOfDistribution>`.
 
     method : {"entropy", "least_confidence"}, default="entropy"
       OOD scoring method.
