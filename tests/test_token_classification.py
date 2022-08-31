@@ -93,6 +93,35 @@ def test_merge_probs():
     assert np.allclose(expected, merged_probs)
 
 
+def test_merge_probs_with_normalization():
+    # Ignore probabilities for class/entity 0
+    norm_maps = [-1, 1, 0, 1]
+    merged_probs = merge_probs(pred_probs[0], norm_maps)
+    expected = np.array([[0.0, 1.0], [0.5, 0.5]])
+    assert np.allclose(expected, merged_probs)
+
+    merged_probs = merge_probs(pred_probs[1], norm_maps)
+    expected = np.array([[1.0, 0.0], [1 / 9, 8 / 9], [1 / 9, 8 / 9]])
+    assert np.allclose(expected, merged_probs)
+
+    merged_probs = merge_probs(pred_probs[2], norm_maps)
+    expected = np.array([[8 / 9, 1 / 9]])
+
+    # Ignore probabilities for class/entity 1
+    norm_maps = [0, -1, 0, 1]
+    merged_probs = merge_probs(pred_probs[0], norm_maps)
+    expected = np.array([[1.0, 0.0], [1.0, 0.0]])
+    assert np.allclose(expected, merged_probs)
+
+    merged_probs = merge_probs(pred_probs[1], norm_maps)
+    expected = np.array([[1.0, 0.0], [1.0, 0.0], [1.0, 0.0]])
+    assert np.allclose(expected, merged_probs)
+
+    merged_probs = merge_probs(pred_probs[2], norm_maps)
+    expected = np.array([[1.0, 0.0]])
+    assert np.allclose(expected, merged_probs)
+
+
 def test_color_sentence():
     colored = color_sentence(sentences[0], words[0][1])
     assert colored == "Hello \x1b[31mWorld\x1b[0m"
