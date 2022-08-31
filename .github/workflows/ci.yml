@@ -50,9 +50,6 @@ jobs:
           pip install -r requirements-dev.txt  # install development dependencies and type stubs
       - name: Type check
         run: mypy --install-types --non-interactive cleanlab
-      - name: Strict type check
-        run: |
-          mypy --install-types --non-interactive --strict cleanlab/internal/token_classification_utils.py
   fmt:
     name: Format
     runs-on: ubuntu-latest
