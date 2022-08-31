@@ -16,7 +16,7 @@ def get_sentence(words: List[str]) -> str:
 
     Returns
     ----------
-    sentences: string
+    sentence: string
         sentence formed by list of word-level tokens
 
     """
@@ -67,19 +67,19 @@ def filter_sentence(
 
 def process_token(token: str, replace: List[Tuple[str, str]] = [("#", "")]) -> str:
     """
-    Replaces special characters in the tokens.
+    Replaces special characters in the tokens
 
     Parameters
     ----------
         token: str
             token which potentially contains special characters
 
-        replace: list
+        replace: List[Tuple[str, str]]
             list of tuples `(s1, s2)`, where all occurances of s1 are replaced by s2
 
     Returns
     ---------
-        token: str
+        processed_token: str
             processed token whose special character has been replaced
 
     Note
@@ -90,8 +90,8 @@ def process_token(token: str, replace: List[Tuple[str, str]] = [("#", "")]) -> s
     pattern = "|".join(replace_dict.keys())
     compiled_pattern = re.compile(pattern)
     replacement = lambda match: replace_dict[re.escape(match.group(0))]
-    new_token = compiled_pattern.sub(replacement, token)
-    return new_token
+    processed_token = compiled_pattern.sub(replacement, token)
+    return processed_token
 
 
 def mapping(entities: list, maps: list) -> list:
@@ -111,21 +111,29 @@ def mapping(entities: list, maps: list) -> list:
         mapped_entities:
             a list of mapped entities
 
+    Examples
+    --------
+        >>> unique_identities = [0, 1, 2, 3, 4]  # ["O", "B-PER", "I-PER", "B-LOC", "I-LOC"]
+        >>> maps = [0, 1, 1, 2, 2]  # ["O", "PER", "PER", "LOC", "LOC"]
+        >>> mapping(unique_identities, maps)
+        [0, 1, 1, 2, 2]  # ["O", "PER", "PER", "LOC", "LOC"]
+        >>> mapping([0, 0, 4, 4, 3, 4, 0, 2], maps)
+        [0, 0, 2, 2, 2, 2, 0, 1]  # ["O", "O", "LOC", "LOC", "LOC", "LOC", "O", "PER"]
     """
     f = lambda x: maps[x]
     return list(map(f, entities))
 
 
-def merge_probs(probs: np.ndarray, maps: list) -> np.ndarray:
+def merge_probs(probs: np.ndarray, maps: List[int]) -> np.ndarray:
     """
-    Merges model-predictive probabilities with desied mapping
+    Merges model-predictive probabilities with desired mapping
 
     Parameters
     ----------
         probs: np.array
             np.array of shape `(N, K)`, where N is the number of tokens, and K is the number of classes for the model
 
-        maps: list
+        maps: List[int]
             a list of mapped index, such that the probability of the token being in the i'th class is mapped to the
             `maps[i]` index. If `maps[i] == -1`, the i'th column of `probs` is ignored. If `np.any(maps == -1)`, the
             returned probability is re-normalized.
