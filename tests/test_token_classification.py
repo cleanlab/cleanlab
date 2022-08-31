@@ -84,6 +84,14 @@ def test_merge_probs():
     expected = np.array([[0.9, 0.1], [0.8, 0.2]])
     assert np.allclose(expected, merged_probs)
 
+    merged_probs = merge_probs(pred_probs[1], maps)
+    expected = np.array([[1.0, 0.0], [0.2, 0.8], [0.2, 0.8]])
+    assert np.allclose(expected, merged_probs)
+
+    merged_probs = merge_probs(pred_probs[2], maps)
+    expected = np.array([[0.9, 0.1]])
+    assert np.allclose(expected, merged_probs)
+
 
 def test_color_sentence():
     colored = color_sentence(sentences[0], words[0][1])
