@@ -118,7 +118,7 @@ def test_issues_from_scores(label_quality_scores):
     issues = issues_from_scores(sentence_scores, token_info)
     assert len(issues) == 1
     assert issues[0] == (1, 0)
-    issues_without = issues_from_scores(sentence_scores, token_scores=None)
+    issues_without = issues_from_scores(sentence_scores)
     assert len(issues_without) == 1
     assert issues_without[0] == 1
 

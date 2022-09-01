@@ -125,7 +125,7 @@ def get_label_quality_scores(
 
 
 def issues_from_scores(
-    sentence_scores: np.ndarray, token_scores: list, threshold: float = 0.1
+    sentence_scores: np.ndarray, token_scores: Optional[list] = None, threshold: float = 0.1
 ) -> Union[list, np.ndarray]:
     """
     Converts output from `get_label_quality_score` to list of issues. Only includes issues with label quality score
@@ -136,7 +136,7 @@ def issues_from_scores(
     sentence_scores: np.array
         np.array of shape `(N, )`, where `N` is the number of sentences.
 
-    token_scores: list
+    token_scores: list, optional, default=None
         token scores in nested list, such that `token_scores[i]` contains the tokens scores for the i'th sentence
 
     threshold: int, default=0.1
