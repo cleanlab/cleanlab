@@ -1,12 +1,10 @@
 import pandas as pd
 import numpy as np
 from cleanlab.rank import get_label_quality_scores as main_get_label_quality_scores
-from typing import Optional, Union, Tuple
+from typing import List, Optional, Union, Tuple
 
 
-def softmin_sentence_score(
-    token_scores: list, temperature: float = 0.05, **kwargs: dict
-) -> np.ndarray:
+def softmin_sentence_score(token_scores: List[np.ndarray], temperature: float = 0.05) -> np.ndarray:
     """
     sentence scoring using the "softmin" scoring method.
 
@@ -16,11 +14,8 @@ def softmin_sentence_score(
         token scores in nested list format, where `token_scores[i]` is a list of token scores of the i'th
         sentence
 
-    temperate: int, default=0.05
+    temperature: float, default=0.05
         temperature of the softmax function
-
-    **kwargs: dict
-        dictionary for additional arguments
 
     Returns
     ---------
@@ -30,8 +25,14 @@ def softmin_sentence_score(
     """
     if temperature == 0:
         return np.array([np.min(scores) for scores in token_scores])
-    softmax = lambda scores: np.exp(scores / temperature) / np.sum(np.exp(scores / temperature))
-    fun = lambda scores: np.dot(scores, softmax(1 - np.array(scores)))
+
+    def softmax(scores: np.ndarray) -> np.ndarray:
+        exp_scores = np.exp(scores / temperature)
+        return exp_scores / np.sum(exp_scores)
+
+    def fun(scores: np.ndarray) -> float:
+        return np.dot(scores, softmax(1 - np.array(scores)))
+
     sentence_scores = list(map(fun, token_scores))
     return np.array(sentence_scores)
 
