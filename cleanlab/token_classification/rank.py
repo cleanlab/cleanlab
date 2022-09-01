@@ -46,7 +46,6 @@ def get_label_quality_scores(
     tokens: Optional[list] = None,
     token_score_method: str = "self_confidence",
     sentence_score_method: str = "min",
-    return_scores_per_token: bool = True,
     sentence_score_kwargs: dict = {},
     token_score_kwargs: dict = {},
 ) -> Union[np.ndarray, Tuple[np.ndarray, list]]:
@@ -58,7 +57,6 @@ def get_label_quality_scores(
     1 - clean label (given label is likely correct).
     0 - dirty label (given label is likely incorrect).
 
-    If `return_scores_per_token` is set to True, also return label score per token
     Parameters
     ----------
     labels: list
@@ -84,15 +82,13 @@ def get_label_quality_scores(
         label quality scoring method. See `cleanlab.rank.get_label_quality_scores` for more info.
     param: float, default=0.04
         temperature of softmax. If sentence_score_method == "min", `param` is ignored.
-    return_scores_per_token: bool, default=True
-        If set to True, returns additional token information. See return value `token_info` for more info.
     Returns
     ----------
     sentence_scores: np.array
         A vector of sentence scores between 0 and 1, where lower scores indicate sentence is more likely to contain at
         least one label issue.
     token_info: list
-        Returns only if `return_scores_per_token=True`. A list of pandas.Series, such that token_info[i] contains the
+        A list of pandas.Series, such that token_info[i] contains the
         token scores for the i'th sentence. If tokens are provided, the series is indexed by the tokens.
     ----------
     """
@@ -118,11 +114,8 @@ def get_label_quality_scores(
 
     if sentence_score_method == "min":
         sentence_scores = np.array(list(map(np.min, scores_nl)))
-
     elif sentence_score_method == "softmin":
-        temperature = (
-            sentence_score_kwargs["temperature"] if "temperature" in sentence_score_kwargs else 0.05
-        )
+        temperature = sentence_score_kwargs.get("temperature", 0.05)
         sentence_scores = softmin_sentence_score(scores_nl, temperature=temperature)
 
     if not return_scores_per_token:
