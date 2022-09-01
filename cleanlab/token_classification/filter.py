@@ -5,7 +5,7 @@ from typing import List, Tuple
 
 def find_label_issues(
     labels: List[List[int]],
-    pred_probs: List[np.ndarray],  # type: ignore[type-arg]
+    pred_probs: List[np.ndarray],
     return_indices_ranked_by: str = "self_confidence",
 ) -> List[Tuple[int, int]]:
     """Returns issues identified by cleanlab
@@ -18,7 +18,7 @@ def find_label_issues(
         noisy token labels in nested list format, such that `labels[i]` is a list of token labels of the i'th
         sentence. For datasets with `K` classes, each label must be in 0, 1, ..., K-1. All classes must be present.
 
-    pred_probs: List[np.ndarray]
+    pred_probs:
         list of np.arrays, such that `pred_probs[i]` is the model-predicted probabilities for the tokens in
         the i'th sentence, and has shape `(N, K)`. Each row of the matrix corresponds to a token `t` and contains
         the model-predicted probabilities that `t` belongs to each possible class, for each of the K classes. The
@@ -39,7 +39,7 @@ def find_label_issues(
 
     issues_main = find_label_issues_main(
         labels_flatten, pred_probs_flatten, return_indices_ranked_by=return_indices_ranked_by
-    )  # type: ignore[no-untyped-call]
+    )
 
     lengths = [len(label) for label in labels]
     mapping = [[(i, j) for j in range(length)] for i, length in enumerate(lengths)]
