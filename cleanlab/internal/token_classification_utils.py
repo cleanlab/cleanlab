@@ -126,15 +126,13 @@ def mapping(entities: List[int], maps: List[int]) -> List[int]:
     return list(map(f, entities))
 
 
-def merge_probs(
-    probs: np.ndarray[Any, np.dtype[np.float64]], maps: List[int]
-) -> np.ndarray[Any, np.dtype[np.float64]]:
+def merge_probs(probs: np.ndarray, maps: List[int]) -> np.ndarray:  # type: ignore[type-arg]
     """
     Merges model-predictive probabilities with desired mapping
 
     Parameters
     ----------
-        probs: np.ndarray[Any, np.dtype(np.float64)]
+        probs: np.ndarray
             np.array of shape `(N, K)`, where N is the number of tokens, and K is the number of classes for the model
 
         maps: List[int]
@@ -144,7 +142,7 @@ def merge_probs(
 
     Returns
     ---------
-        probs_merged: np.ndarray[Any, np.dtype(np.float64)]
+        probs_merged: np.ndarray
             np.array of shape `(N, K')`, where K' is the number of new classes. Probablities are merged and
             re-normalized if necessary.
 
