@@ -2,7 +2,7 @@ import re
 import string
 import numpy as np
 from termcolor import colored
-from typing import Any, List, Union, Optional, Callable, Tuple
+from typing import List, Optional, Callable, Tuple
 
 
 def get_sentence(words: List[str]) -> str:
@@ -120,13 +120,13 @@ def mapping(entities: List[int], maps: List[int]) -> List[int]:
     return list(map(f, entities))
 
 
-def merge_probs(probs: np.ndarray, maps: List[int]) -> np.ndarray:  # type: ignore[type-arg]
+def merge_probs(probs: np.ndarray, maps: List[int]) -> np.ndarray:
     """
     Merges model-predictive probabilities with desired mapping
 
     Parameters
     ----------
-        probs: np.ndarray
+        probs:
             np.array of shape `(N, K)`, where N is the number of tokens, and K is the number of classes for the model
 
         maps: List[int]
@@ -142,7 +142,7 @@ def merge_probs(probs: np.ndarray, maps: List[int]) -> np.ndarray:  # type: igno
 
     """
     old_classes = probs.shape[1]
-    map_size = np.max(maps) + 1  # type: ignore
+    map_size = np.max(maps) + 1
     probs_merged = np.zeros([len(probs), map_size], dtype=probs.dtype.type)
 
     for i in range(old_classes):
