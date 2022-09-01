@@ -32,8 +32,7 @@ def get_sentence(words: List[str]) -> str:
 def filter_sentence(
     sentences: List[str],
     condition: Optional[Callable[[str], bool]] = None,
-    return_mask: bool = True,
-) -> Union[Tuple[List[str], List[bool]], List[str]]:
+) -> Tuple[List[str], List[bool]]:
     """
     Filter sentence based on some condition, and returns filter mask
 
@@ -45,26 +44,21 @@ def filter_sentence(
         condition: Optional[Callable[[str], bool]]
             sentence filtering condition
 
-        return_mask: bool
-            if set to True, also returns mask
-
     Returns
     ---------
         sentences: List[str]
             list of sentences filtered
 
-        mask: if `return_mask`, also returns a mask such that `mask[i] == True` if the i'th sentence is included in the
-        filtered sentence, otherwise `mask[i] == False`
+        mask: List[bool]
+            boolean mask such that `mask[i] == True` if the i'th sentence is included in the
+            filtered sentence, otherwise `mask[i] == False`
 
     """
     if not condition:
         condition = lambda sentence: len(sentence) > 1 and "#" not in sentence
     mask = list(map(condition, sentences))
     sentences = [sentence for m, sentence in zip(mask, sentences) if m]
-    if return_mask:
-        return sentences, mask
-    else:
-        return sentences
+    return sentences, mask
 
 
 def process_token(token: str, replace: List[Tuple[str, str]] = [("#", "")]) -> str:

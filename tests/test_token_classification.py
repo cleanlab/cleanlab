@@ -47,25 +47,18 @@ def test_get_sentence():
     assert get_sentence(words_within_parentheses) == "Some reason (Explanation)"
 
 
-def test_filter_sentence_with_mask():
+def test_filter_sentence():
     filtered_sentences, mask = filter_sentence(sentences)
     assert filtered_sentences == ["Hello World"]
     assert mask == [True, False, False]
 
-    len_condition = lambda x: len(x) > 1
-    filtered_sentences, mask = filter_sentence(sentences, len_condition)
+    filtered_sentences, mask = filter_sentence(sentences, lambda x: len(x) > 1)
     assert filtered_sentences == ["Hello World", "#I love Cleanlab"]
     assert mask == [True, True, False]
 
-    special_character_condition = lambda x: "#" not in x
-    filtered_sentences, mask = filter_sentence(sentences, special_character_condition)
+    filtered_sentences, mask = filter_sentence(sentences, lambda x: "#" not in x)
     assert filtered_sentences == ["Hello World", "A"]
     assert mask == [True, False, True]
-
-
-def test_filter_sentence_without_mask():
-    filtered_sentences = filter_sentence(sentences, return_mask=False)
-    assert filtered_sentences == ["Hello World"]
 
 
 def test_process_token():
