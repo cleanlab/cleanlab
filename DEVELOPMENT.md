@@ -102,7 +102,9 @@ If editing existing docs or adding new tutorials, please first read through our 
 ## Code style
 
 cleanlab follows the [Black](https://black.readthedocs.io/) code style. This is
-enforced by CI, so please format your code before submitting a pull request.
+enforced by CI, so please format your code by invoking `black` before submitting a pull request.
+
+Please do not use `import *` in any files, instead you should always import the specific functions that you need from a module.
 
 ### Pre-commit hook
 
