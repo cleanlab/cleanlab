@@ -47,7 +47,6 @@ def get_label_quality_scores(
     token_score_method: str = "self_confidence",
     sentence_score_method: str = "min",
     sentence_score_kwargs: dict = {},
-    token_score_kwargs: dict = {},
 ) -> Union[np.ndarray, Tuple[np.ndarray, list]]:
     """
     Returns overall quality scores for the labels in each sentence (as well as for the individual tokens' labels)
@@ -68,7 +67,7 @@ def get_label_quality_scores(
         the model-predicted probabilities that `t` belongs to each possible class, for each of the K classes. The
         columns must be ordered such that the probabilities correspond to class 0, 1, ..., K-1.
 
-    tokens: list, optinal, default=None
+    tokens: list, optional, default=None
         tokens in nested list format, such that `tokens[i]` is a list of tokens for the i'th sentence. See return value
         `token_info` for more info.
     sentence_score_method: {"min", "softmin"}, default="min"
@@ -80,8 +79,9 @@ def get_label_quality_scores(
         other scores.
     token_score_method: {"self_confidence", "normalized_margin", "confidence_weighted_entropy"}, default="self_confidence"
         label quality scoring method. See `cleanlab.rank.get_label_quality_scores` for more info.
-    param: float, default=0.04
-        temperature of softmax. If sentence_score_method == "min", `param` is ignored.
+    sentence_score_kwargs: dict, optional, default={}
+        keyword arguments for `sentence_score_method`. Supports keyword arguments when `sentence_score_method` is "softmin".
+        See `cleanlab.token_classification.rank.softmin_sentence_score` for more info.
     Returns
     ----------
     sentence_scores: np.array
@@ -99,11 +99,10 @@ def get_label_quality_scores(
 
     labels_flatten = np.array([l for label in labels for l in label])
     pred_probs_flatten = np.array([p for pred_prob in pred_probs for p in pred_prob])
-    n, m = pred_probs_flatten.shape
 
     sentence_length = [len(label) for label in labels]
 
-    def nested_list(x, length):
+    def nested_list(x, sentence_length):
         i = iter(x)
         return [[next(i) for _ in range(length)] for length in sentence_length]
 
@@ -117,9 +116,6 @@ def get_label_quality_scores(
     elif sentence_score_method == "softmin":
         temperature = sentence_score_kwargs.get("temperature", 0.05)
         sentence_scores = softmin_sentence_score(scores_nl, temperature=temperature)
-
-    if not return_scores_per_token:
-        return sentence_scores
 
     if tokens:
         token_info = [pd.Series(scores, index=token) for scores, token in zip(scores_nl, tokens)]
