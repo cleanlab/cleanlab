@@ -491,7 +491,7 @@ cleanlab is based on peer-reviewed research. Here are the relevant papers to cit
 
 * The best place to learn is [our Slack community](https://cleanlab.ai/slack).
 
-* Have ideas for the future of cleanlab? How are you using cleanlab? [Join the discussion](https://github.com/cleanlab/cleanlab/discussions).
+* Have ideas for the future of cleanlab? How are you using cleanlab? [Join the discussion](https://github.com/cleanlab/cleanlab/discussions) and check out [our active/planned Projects and what we could use your help with](https://github.com/cleanlab/cleanlab/projects).
 
 * Have code improvements for cleanlab? See the [development guide](DEVELOPMENT.md) and [submit a pull request](CONTRIBUTING.md).
 
