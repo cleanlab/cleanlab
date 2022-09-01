@@ -76,22 +76,27 @@ def test_find_label_issues():
     assert issues[0] == (1, 0)
 
 
-sentence_scores, token_info = get_label_quality_scores(labels, pred_probs)
+@pytest.fixture(name="label_quality_scores")
+def fixture_label_quality_scores():
+    sentence_scores, token_info = get_label_quality_scores(labels, pred_probs)
+    return sentence_scores, token_info
 
 
-def test_get_label_quality_scores():
+def test_get_label_quality_scores(label_quality_scores):
+    sentence_scores, token_info = label_quality_scores
     assert len(sentence_scores) == 3
     assert np.allclose(sentence_scores, [0.6, 0, 0.8])
     assert len(token_info) == 3
     assert np.allclose(token_info[0], [0.9, 0.6])
-    sentence_scores_softmin, token_info_softmin = get_label_quality_scores(
+    sentence_scores_softmin, _ = get_label_quality_scores(
         labels, pred_probs, sentence_score_method="softmin", tokens=words
     )
     assert len(sentence_scores_softmin) == 3
     assert np.allclose(sentence_scores_softmin, [0.600741787, 1.8005624e-7, 0.8])
 
 
-def test_issues_from_scores():
+def test_issues_from_scores(label_quality_scores):
+    sentence_scores, token_info = label_quality_scores
     issues = issues_from_scores(sentence_scores, token_info)
     assert len(issues) == 1
     assert issues[0] == (1, 0)
