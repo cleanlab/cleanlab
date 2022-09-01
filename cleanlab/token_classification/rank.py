@@ -28,6 +28,8 @@ def softmin_sentence_score(
         np.array of shape `(N, )`, where `N` is the number of sentences. Contains score for each sentence.
 
     """
+    if temperature == 0:
+        return np.array([np.min(scores) for scores in token_scores])
     softmax = lambda scores: np.exp(scores / temperature) / np.sum(np.exp(scores / temperature))
     fun = lambda scores: np.dot(scores, softmax(1 - np.array(scores)))
     sentence_scores = list(map(fun, token_scores))
