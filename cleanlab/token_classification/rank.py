@@ -113,7 +113,8 @@ def get_label_quality_scores(
 
     if sentence_score_method == "min":
         sentence_scores = np.array(list(map(np.min, scores_nl)))
-    elif sentence_score_method == "softmin":
+    else:
+        assert sentence_score_method == "softmin"
         temperature = sentence_score_kwargs.get("temperature", 0.05)
         sentence_scores = softmin_sentence_score(scores_nl, temperature=temperature)
 
