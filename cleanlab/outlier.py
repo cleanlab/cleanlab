@@ -516,10 +516,11 @@ def _get_ood_predictions_scores(
             None, pred_probs, multi_label=False, confident_thresholds=confident_thresholds
         )
 
+    # Scores are flipped so ood scores are closer to 0. Scores reflect confidence example is in-distribution.
     if method == "entropy":
-        ood_predictions_scores = get_normalized_entropy(pred_probs)
+        ood_predictions_scores = 1.0 - get_normalized_entropy(pred_probs)
     elif method == "least_confidence":
-        ood_predictions_scores = 1.0 - pred_probs.max(axis=1)
+        ood_predictions_scores = pred_probs.max(axis=1)
     else:
         raise ValueError(
             f"""

@@ -124,7 +124,7 @@ def test_class_wrong_info_assert_valid_inputs():
     try:
         OOD.fit(features=features, pred_probs=pred_probs)
     except Exception as e:
-        assert "Cannot fit to object to both features and pred_probs" in str(e)
+        assert "Cannot fit to OOD Estimator to both features and pred_probs" in str(e)
         with pytest.raises(ValueError) as e:
             OOD.fit(features=features, pred_probs=pred_probs)
 
@@ -168,14 +168,14 @@ def test_class_wrong_info_fit_ood():
     try:
         OOD.score(features=features)
     except Exception as e:
-        assert "OOD Object needs to be fit on features first." in str(e)
+        assert "OOD estimator needs to be fit on features first" in str(e)
         with pytest.raises(ValueError) as e:
             OOD.score(features=features)
 
     try:
         OOD.score(pred_probs=pred_probs)
     except Exception as e:
-        assert "OOD Object needs to be fit on features first." in str(e)
+        assert "OOD estimator needs to be fit on pred_probs first" in str(e)
         with pytest.raises(ValueError) as e:
             OOD.score(pred_probs=pred_probs)
 
@@ -185,7 +185,7 @@ def test_class_wrong_info_fit_ood():
     try:
         OOD_outlier.score(pred_probs=pred_probs)
     except Exception as e:
-        assert "OOD Object needs to be fit on features first." in str(e)
+        assert "OOD estimator needs to be fit on pred_probs first" in str(e)
         with pytest.raises(ValueError) as e:
             OOD_outlier.score(pred_probs=pred_probs)
 
@@ -194,7 +194,7 @@ def test_class_wrong_info_fit_ood():
     try:
         OOD_ood.score(features=features)
     except Exception as e:
-        assert "OOD Object needs to be fit on features first." in str(e)
+        assert "OOD estimator needs to be fit on features first" in str(e)
         with pytest.raises(ValueError) as e:
             OOD_ood.score(features=features)
 
@@ -479,8 +479,8 @@ def test_ood_predictions_scores():
     )
 
     # check OOD scores calculated correctly
-    assert (get_normalized_entropy(pred_probs) == ood_predictions_scores_entropy).all()
-    assert (1.0 - pred_probs.max(axis=1) == ood_predictions_scores_least_confidence).all()
+    assert (1.0 - get_normalized_entropy(pred_probs) == ood_predictions_scores_entropy).all()
+    assert (pred_probs.max(axis=1) == ood_predictions_scores_least_confidence).all()
 
     ### Test adjusted OOD score logic
     (
