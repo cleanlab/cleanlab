@@ -136,7 +136,7 @@ def merge_probs(probs: np.ndarray, maps: List[int]) -> np.ndarray:
 
     Returns
     ---------
-        probs_merged: np.ndarray
+        probs_merged:
             np.array of shape `(N, K')`, where K' is the number of new classes. Probablities are merged and
             re-normalized if necessary.
 
