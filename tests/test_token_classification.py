@@ -112,6 +112,12 @@ def test_get_label_quality_scores(label_quality_scores):
     assert len(sentence_scores_softmin) == 3
     assert np.allclose(sentence_scores_softmin, [0.600741787, 1.8005624e-7, 0.8])
 
+    with pytest.raises(AssertionError) as excinfo:
+        get_label_quality_scores(
+            labels, pred_probs, sentence_score_method="unsupported_method", tokens=words
+        )
+    assert "Select from the following methods:" in str(excinfo.value)
+
 
 def test_issues_from_scores(label_quality_scores):
     sentence_scores, token_info = label_quality_scores
