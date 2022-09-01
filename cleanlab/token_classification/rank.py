@@ -21,10 +21,12 @@ def softmin_sentence_score(token_scores: List[np.ndarray], temperature: float = 
     ---------
     sentence_scores: np.array
         np.array of shape `(N, )`, where `N` is the number of sentences. Contains score for each sentence.
-
     """
     if temperature == 0:
         return np.array([np.min(scores) for scores in token_scores])
+
+    if temperature == np.inf:
+        return np.array([np.mean(scores) for scores in token_scores])
 
     def softmax(scores: np.ndarray) -> np.ndarray:
         exp_scores = np.exp(scores / temperature)
