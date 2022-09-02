@@ -362,8 +362,8 @@ class OutOfDistribution:
                 )
                 if confident_thresholds is None:
                     warnings.warn(
-                        f"OOD estimator not fit with confident_thresholds since adjust_pred_probs=False and no "
-                        f"confident_thresholds were calculated.",
+                        f"No estimates need to be be fit under the provided params, so you could directly call "
+                        f"score() as an alternative.",
                         UserWarning,
                     )
                 else:
