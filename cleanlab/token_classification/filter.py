@@ -4,8 +4,8 @@ from typing import List, Tuple
 
 
 def find_label_issues(
-    labels: List[List[int]],
-    pred_probs: List[np.ndarray],
+    labels: list,
+    pred_probs: list,
     return_indices_ranked_by: str = "self_confidence",
 ) -> List[Tuple[int, int]]:
     """Returns issues identified by cleanlab
@@ -14,7 +14,7 @@ def find_label_issues(
 
     Parameters
     ----------
-    labels: List[List[int]]
+    labels:
         noisy token labels in nested list format, such that `labels[i]` is a list of token labels of the i'th
         sentence. For datasets with `K` classes, each label must be in 0, 1, ..., K-1. All classes must be present.
 
@@ -30,7 +30,7 @@ def find_label_issues(
 
     Returns
     ----------
-    issues: List[Tuple[int, int]]
+    issues:
         a list containing all potential issues identified by cleanlab, such that each element is a tuple (i, j), which
         corresponds to the j'th token of the i'th sentence.
     """
