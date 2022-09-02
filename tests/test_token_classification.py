@@ -14,14 +14,13 @@ from cleanlab.token_classification.summary import (
     filter_by_token,
 )
 import numpy as np
-import pandas as pd
 import pytest
 
 import warnings
 
 warnings.filterwarnings("ignore")
 words = [["Hello", "World"], ["#I", "love", "Cleanlab"], ["A"]]
-sentences = list(map(get_sentence, words))
+sentences = ["Hello World", "#I love Cleanlab", "A"]
 
 pred_probs = [
     np.array([[0.9, 0.1, 0], [0.6, 0.2, 0.2]]),
@@ -37,7 +36,15 @@ class_names = ["A", "B", "C", "D"]
 
 
 def test_get_sentence():
-    assert get_sentence(words[0]) == "Hello World"
+    actual_sentences = list(map(get_sentence, words))
+    assert actual_sentences == sentences
+
+    # Test with allowed special characters
+    words_separated_by_hyphen = ["Heading", "-", "Title"]
+    assert get_sentence(words_separated_by_hyphen) == "Heading - Title"
+
+    words_within_parentheses = ["Some", "reason", "(", "Explanation", ")"]
+    assert get_sentence(words_within_parentheses) == "Some reason (Explanation)"
 
 
 def test_filter_sentence():
@@ -45,20 +52,72 @@ def test_filter_sentence():
     assert filtered_sentences == ["Hello World"]
     assert mask == [True, False, False]
 
+    filtered_sentences, mask = filter_sentence(sentences, lambda x: len(x) > 1)
+    assert filtered_sentences == ["Hello World", "#I love Cleanlab"]
+    assert mask == [True, True, False]
+
+    filtered_sentences, mask = filter_sentence(sentences, lambda x: "#" not in x)
+    assert filtered_sentences == ["Hello World", "A"]
+    assert mask == [True, False, True]
+
 
 def test_process_token():
-    processed = process_token("Cleanlab", [("C", "a")])
-    assert processed == "aleanlab"
+    test_cases = [
+        ("Cleanlab", [("C", "a")], "aleanlab"),
+        ("Cleanlab", [("C", "a"), ("a", "C")], "aleCnlCb"),
+    ]
+    for token, replacements, expected in test_cases:
+        processed = process_token(token, replacements)
+        assert processed == expected
 
 
 def test_mapping():
-    mapped = mapping(labels[0], maps=maps)
-    assert mapped == [0, 0]
+    test_cases = [(l, expected) for l, expected in zip(labels, [[0, 0], [1, 1, 1], [0]])]
+    for l, expected in test_cases:
+        mapped = mapping(l, maps)
+        assert mapped == expected
 
 
 def test_merge_probs():
     merged_probs = merge_probs(pred_probs[0], maps)
     expected = np.array([[0.9, 0.1], [0.8, 0.2]])
+    assert np.allclose(expected, merged_probs)
+
+    merged_probs = merge_probs(pred_probs[1], maps)
+    expected = np.array([[1.0, 0.0], [0.2, 0.8], [0.2, 0.8]])
+    assert np.allclose(expected, merged_probs)
+
+    merged_probs = merge_probs(pred_probs[2], maps)
+    expected = np.array([[0.9, 0.1]])
+    assert np.allclose(expected, merged_probs)
+
+
+def test_merge_probs_with_normalization():
+    # Ignore probabilities for class/entity 0
+    norm_maps = [-1, 1, 0, 1]
+    merged_probs = merge_probs(pred_probs[0], norm_maps)
+    expected = np.array([[0.0, 1.0], [0.5, 0.5]])
+    assert np.allclose(expected, merged_probs)
+
+    merged_probs = merge_probs(pred_probs[1], norm_maps)
+    expected = np.array([[1.0, 0.0], [1 / 9, 8 / 9], [1 / 9, 8 / 9]])
+    assert np.allclose(expected, merged_probs)
+
+    merged_probs = merge_probs(pred_probs[2], norm_maps)
+    expected = np.array([[8 / 9, 1 / 9]])
+
+    # Ignore probabilities for class/entity 1
+    norm_maps = [0, -1, 0, 1]
+    merged_probs = merge_probs(pred_probs[0], norm_maps)
+    expected = np.array([[1.0, 0.0], [1.0, 0.0]])
+    assert np.allclose(expected, merged_probs)
+
+    merged_probs = merge_probs(pred_probs[1], norm_maps)
+    expected = np.array([[1.0, 0.0], [1.0, 0.0], [1.0, 0.0]])
+    assert np.allclose(expected, merged_probs)
+
+    merged_probs = merge_probs(pred_probs[2], norm_maps)
+    expected = np.array([[1.0, 0.0]])
     assert np.allclose(expected, merged_probs)
 
 
