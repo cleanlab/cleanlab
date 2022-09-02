@@ -1,16 +1,17 @@
 import numpy as np
 import pandas as pd
 from cleanlab.internal.token_classification_utils import get_sentence, color_sentence
+from typing import List, Optional, Tuple, Dict, Any
 
 
 def display_issues(
     issues: list,
-    given_words: list,
+    given_words: List[List[str]],
     *,
     pred_probs: Optional[list] = None,
     given_labels: Optional[list] = None,
-    exclude: list = [],
-    class_names: Optional[list] = None,
+    exclude: List[Tuple[int, int]] = [],
+    class_names: Optional[List[str]] = None,
     top: int = 20
 ) -> None:
     """
@@ -19,29 +20,29 @@ def display_issues(
 
     Parameters
     ----------
-    issues: list
+    issues:
         list of tuples `(i, j)`, which represents the j'th token of the i'th sentence.
 
-    given_words: list
+    given_words:
         tokens in a nested-list format, such that `given_words[i]` contains the words of the i'th sentence from
         the original file.
 
-    pred_probs: list, default=None
+    pred_probs:
         list of model-predicted probability, such that `pred_probs[i]` contains the model-predicted probability of
         the tokens in the i'th sentence, and has shape `(N, K)`, where `N` is the number of given tokens of the i'th
         sentence, and `K` is the number of classes predicted by the model. If provided, also displays the predicted
         label of the token.
 
-    given_labels: list, default=None
+    given_labels:
         list of given labels, such that `given_labels[i]` is a list containing the given labels of the tokens in the
         i'th sentence, and has length equal to the number of given tokens of the i'th sentence. If provided, also
         displays the given label of the token.
 
-    exclude: list, default=[]
+    exclude:
         list of given/predicted label swaps to be excluded. For example, if `exclude=[(0, 1), (1, 0)]`, swaps between
         class 0 and 1 are not displayed.
 
-    class_names: list, default=None
+    class_names:
         name of classes. If not provided, display the integer index for predicted and given labels.
 
     top: int, default=20
