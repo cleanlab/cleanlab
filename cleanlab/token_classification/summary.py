@@ -56,7 +56,7 @@ def display_issues(
         print("Specify this argument to see the string names of each class. \n")
 
     shown = 0
-    is_tuple = type(issues[0]) == tuple
+    is_tuple = isinstance(issues[0], tuple)
 
     for issue in issues:
         if is_tuple:
