@@ -1,7 +1,6 @@
 import numpy as np
 import pandas as pd
-from cleanlab.internal.token_classification_utils import *
-from typing import Optional, Union, Tuple, Dict, Any
+from cleanlab.internal.token_classification_utils import get_sentence, color_sentence
 
 
 def display_issues(
