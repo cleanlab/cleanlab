@@ -477,7 +477,7 @@ def _get_ood_predictions_scores(
 
     method : {"entropy", "least_confidence"}, default="entropy"
       OOD scoring method.
-      For details see `method` in :py:func:`fit <cleanlab.outlier.OutOfDistribution.fit>` function.
+      For details see key `method` in the params dict arg of :py:class:`OutOfDistribution <cleanlab.outlier.OutOfDistribution>`.
 
 
     Returns
@@ -494,7 +494,7 @@ def _get_ood_predictions_scores(
     if (confident_thresholds is not None or labels is not None) and not adjust_pred_probs:
         warnings.warn(
             f"OOD scores are not adjusted with confident thresholds. If scores need to be adjusted set "
-            f"adjusted_pred_probs = True. Otherwise passing in confident_thresholds and/or labels does not change "
+            f"params['adjusted_pred_probs'] = True. Otherwise passing in confident_thresholds and/or labels does not change "
             f"score calculation.",
             UserWarning,
         )
@@ -504,7 +504,7 @@ def _get_ood_predictions_scores(
             if labels is None:
                 raise ValueError(
                     f"Cannot calculate adjust_pred_probs without labels. Either pass in labels parameter or set "
-                    f"adjusted_pred_probs = False. "
+                    f"params['adjusted_pred_probs'] = False. "
                 )
             else:
                 assert_valid_inputs(X=None, y=labels, pred_probs=pred_probs, multi_label=False)
