@@ -168,6 +168,12 @@ def test_display_issues():
         issues, words, pred_probs=pred_probs, given_labels=labels, class_names=class_names
     )
 
+    exclude = [(1, 2)]  # Occurs in first token of second sentence "#I"
+    display_issues(issues, words, pred_probs=pred_probs, given_labels=labels, exclude=exclude)
+
+    top = 1
+    display_issues(issues, words, pred_probs=pred_probs, given_labels=labels, top=top)
+
     issues_sentence_only = [i for i, _ in issues]
     display_issues(issues_sentence_only, words)
 
