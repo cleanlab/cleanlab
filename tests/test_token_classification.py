@@ -133,8 +133,15 @@ def test_color_sentence():
 issues = find_label_issues(labels, pred_probs)
 
 
+@pytest.mark.parametrize(
+    "test_labels",
+    [labels, [np.array(l) for l in labels]],
+    ids=["list labels", "np.array labels"],
+)
 @pytest.mark.filterwarnings("ignore::DeprecationWarning")
-def test_find_label_issues():
+def test_find_label_issues(test_labels):
+    issues = find_label_issues(test_labels, pred_probs)
+    assert isinstance(issues, list)
     assert len(issues) == 1
     assert issues[0] == (1, 0)
 
