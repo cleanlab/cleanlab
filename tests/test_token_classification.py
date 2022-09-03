@@ -7,7 +7,11 @@ from cleanlab.internal.token_classification_utils import (
     color_sentence,
 )
 from cleanlab.token_classification.filter import find_label_issues
-from cleanlab.token_classification.rank import get_label_quality_scores, issues_from_scores
+from cleanlab.token_classification.rank import (
+    get_label_quality_scores,
+    issues_from_scores,
+    softmin_sentence_score,
+)
 from cleanlab.token_classification.summary import (
     display_issues,
     common_label_issues,
@@ -135,26 +139,51 @@ def test_find_label_issues():
     assert issues[0] == (1, 0)
 
 
-sentence_scores, token_info = get_label_quality_scores(labels, pred_probs)
+def test_softmin_sentence_score():
+    token_scores = [[0.9, 0.6], [0.0, 0.8, 0.8], [0.8]]
+    sentence_scores = softmin_sentence_score(token_scores)
+    assert isinstance(sentence_scores, np.ndarray)
+    assert np.allclose(sentence_scores, [0.60074, 1.8e-07, 0.8])
+
+    # Temperature limits
+    sentence_scores = softmin_sentence_score(token_scores, temperature=0)
+    assert np.allclose(sentence_scores, [0.6, 0.0, 0.8])
+
+    sentence_scores = softmin_sentence_score(token_scores, temperature=np.inf)
+    assert np.allclose(sentence_scores, [0.75, 1.6 / 3, 0.8])
 
 
-def test_get_label_quality_scores():
+@pytest.fixture(name="label_quality_scores")
+def fixture_label_quality_scores():
+    sentence_scores, token_info = get_label_quality_scores(labels, pred_probs)
+    return sentence_scores, token_info
+
+
+def test_get_label_quality_scores(label_quality_scores):
+    sentence_scores, token_info = label_quality_scores
     assert len(sentence_scores) == 3
     assert np.allclose(sentence_scores, [0.6, 0, 0.8])
     assert len(token_info) == 3
     assert np.allclose(token_info[0], [0.9, 0.6])
-    sentence_scores_softmin, token_info_softmin = get_label_quality_scores(
+    sentence_scores_softmin, _ = get_label_quality_scores(
         labels, pred_probs, sentence_score_method="softmin", tokens=words
     )
     assert len(sentence_scores_softmin) == 3
     assert np.allclose(sentence_scores_softmin, [0.600741787, 1.8005624e-7, 0.8])
 
+    with pytest.raises(AssertionError) as excinfo:
+        get_label_quality_scores(
+            labels, pred_probs, sentence_score_method="unsupported_method", tokens=words
+        )
+    assert "Select from the following methods:" in str(excinfo.value)
 
-def test_issues_from_scores():
+
+def test_issues_from_scores(label_quality_scores):
+    sentence_scores, token_info = label_quality_scores
     issues = issues_from_scores(sentence_scores, token_info)
     assert len(issues) == 1
     assert issues[0] == (1, 0)
-    issues_without = issues_from_scores(sentence_scores, token_scores=None)
+    issues_without = issues_from_scores(sentence_scores)
     assert len(issues_without) == 1
     assert issues_without[0] == 1
 
