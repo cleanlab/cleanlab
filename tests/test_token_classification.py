@@ -122,7 +122,8 @@ def test_merge_probs_with_normalization():
 
 
 def test_color_sentence():
-    colored = color_sentence(sentences[0], words[0][1])
+
+    colored = color_sentence("World", words[0])
     assert colored == "Hello \x1b[31mWorld\x1b[0m"
 
 
