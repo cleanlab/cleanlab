@@ -104,7 +104,9 @@ If editing existing docs or adding new tutorials, please first read through our 
 cleanlab follows the [Black](https://black.readthedocs.io/) code style. This is
 enforced by CI, so please format your code by invoking `black` before submitting a pull request.
 
-Please do not use `import *` in any files, instead you should always import the specific functions that you need from a module.
+Generally aim to follow the [PEP-8 coding style](https://peps.python.org/pep-0008/). 
+Please do not use wildcard `import *` in any files, instead you should always import the specific functions that you need from a module.
+
 
 ### Pre-commit hook
 
