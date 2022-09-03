@@ -11,7 +11,7 @@ our best to incorporate your feedback or code into cleanlab.
 
 For some [ideas on useful contributions](https://github.com/cleanlab/cleanlab/wiki#ideas-for-contributing-to-cleanlab), look for [Issues](https://github.com/cleanlab/cleanlab/issues) or [Projects](https://github.com/cleanlab/cleanlab/projects) with the "good first issue" tag. Join our [Slack Community](https://cleanlab.ai/slack) to discuss other ideas!
 
-Detailed contributing instructions can be found in in the [Development Guide](DEVELOPMENT.md).
+Detailed contributing instructions can be found in in the [Development Guide](DEVELOPMENT.md), please read this carefully!
  
 
 ## Feature Requests
