@@ -61,7 +61,6 @@ def display_issues(
     for issue in issues:
         if is_tuple:
             i, j = issue
-            sentence = get_sentence(given_words[i])
             word = given_words[i][j]
 
             if pred_probs:
@@ -78,7 +77,7 @@ def display_issues(
                 given = class_names[given]
 
             shown += 1
-            print("Sentence %d, token %d: \n%s" % (i, j, color_sentence(sentence, word)))
+            print("Sentence %d, token %d: \n%s" % (i, j, color_sentence(word, given_words[i])))
             if given_labels and not pred_probs:
                 print("Given label: %s\n" % str(given))
             elif not given_labels and pred_probs:
