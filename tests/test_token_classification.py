@@ -121,10 +121,36 @@ def test_merge_probs_with_normalization():
     assert np.allclose(expected, merged_probs)
 
 
-def test_color_sentence():
+# Color boundaries
+C_L, C_R = "\x1b[31m", "\x1b[0m"
 
-    colored = color_sentence("World", words[0])
-    assert colored == "Hello \x1b[31mWorld\x1b[0m"
+
+@pytest.mark.parametrize(
+    "sentence,word,expected",
+    [
+        ("Hello World", "World", f"Hello {C_L}World{C_R}"),
+        ("If you and I were to meet", "I", f"If you and {C_L}I{C_R} were to meet"),
+        ("If you and I were to meet", "If you and I", f"{C_L}If you and I{C_R} were to meet"),
+        ("If you and I were to meet", "If you and I w", f"{C_L}If you and I w{C_R}ere to meet"),
+        ("I think I know this", "I", f"{C_L}I{C_R} think {C_L}I{C_R} know this"),
+        ("A good reason for a test", "a", f"A good reason for {C_L}a{C_R} test"),
+        ("ab ab a b ab", "ab a", f"ab {C_L}ab a{C_R} b ab"),
+        ("ab ab ab ab", "ab a", f"{C_L}ab a{C_R}b {C_L}ab a{C_R}b"),
+    ],
+    ids=[
+        "single_word",
+        "ignore_subwords",
+        "multi-token_match",
+        "substring_replacement",
+        "multiple_matches",
+        "case_sensitive",
+        "only_word_boundary",
+        "non_overlapping_substrings",
+    ],
+)
+def test_color_sentence(sentence, word, expected):
+    colored = color_sentence(sentence, word)
+    assert colored == expected
 
 
 issues = find_label_issues(labels, pred_probs)

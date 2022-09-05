@@ -154,36 +154,28 @@ def merge_probs(probs: np.ndarray, maps: List[int]) -> np.ndarray:
     return probs_merged
 
 
-def color_sentence(word: str, tokens: List[str]) -> str:
+def color_sentence(sentence: str, word: str) -> str:
     """
-    Searches for a given token in a list of tokens representing a sentence and returns the sentence where the given token is colored red
+    Searches for a given token in the sentence and returns the sentence where the given token is colored red
 
     Parameters
     ----------
-        word:
-            keyword to find in `tokens`. Assumes the word exists in the list of tokens.
+        sentence:
+            a sentence where the word is searched
 
-        tokens:
-            list of tokens that form the sentence.
+        word:
+            keyword to find in `sentence`. Assumes the word exists in the sentence.
     Returns
     ---------
         colored_sentence:
-            `sentence` where the first occurance of the word is colored red, using `termcolor.colored`
+            `sentence` where the every occurance of the word is colored red, using `termcolor.colored`
 
     """
-    sentence = get_sentence(tokens)
-
-    idx = -1
-    for i, token in enumerate(tokens):
-        if token == word:
-            idx = i
-            break
-
-    if idx == -1:  # not found
-        start_idx = sentence.index(word)
-        before, after = sentence[:start_idx], sentence[start_idx + len(word) :]
-
-    else:
-        before, after = get_sentence(tokens[:idx]), get_sentence(tokens[idx + 1 :])
-
-    return get_sentence([before, colored(word, "red"), after])
+    colored_word = colored(word, "red")
+    colored_sentence, number_of_substitions = re.subn(
+        r"\b{}\b".format(word), colored_word, sentence
+    )
+    if number_of_substitions > 0:
+        # Use basic string manipulation if regex fails
+        colored_sentence = sentence.replace(word, colored_word)
+    return colored_sentence
