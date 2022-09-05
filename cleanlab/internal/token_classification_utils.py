@@ -160,18 +160,22 @@ def color_sentence(sentence: str, word: str) -> str:
 
     Parameters
     ----------
-        sentence: str
+        sentence:
             a sentence where the word is searched
 
-        word: str
-            keyword to find in `sentence`. Assumes the word exists in token
-
+        word:
+            keyword to find in `sentence`. Assumes the word exists in the sentence.
     Returns
     ---------
-        colored_sentence: str
-            `sentence` where the first occurance of the word is colored red, using `termcolor.colored`
+        colored_sentence:
+            `sentence` where the every occurance of the word is colored red, using `termcolor.colored`
 
     """
-    start_idx = sentence.index(word)
-    before, after = sentence[:start_idx], sentence[start_idx + len(word) :]
-    return "%s%s%s" % (before, colored(word, "red"), after)
+    colored_word = colored(word, "red")
+    colored_sentence, number_of_substitions = re.subn(
+        r"\b{}\b".format(word), colored_word, sentence
+    )
+    if number_of_substitions == 0:
+        # Use basic string manipulation if regex fails
+        colored_sentence = sentence.replace(word, colored_word)
+    return colored_sentence
