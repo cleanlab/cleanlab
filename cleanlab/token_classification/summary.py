@@ -1,17 +1,17 @@
 import numpy as np
 import pandas as pd
-from cleanlab.internal.token_classification_utils import *
-from typing import Optional, Union, Tuple, Dict, Any
+from cleanlab.internal.token_classification_utils import get_sentence, color_sentence
+from typing import List, Optional, Tuple, Dict, Any
 
 
 def display_issues(
     issues: list,
-    given_words: list,
+    given_words: List[List[str]],
     *,
     pred_probs: Optional[list] = None,
     given_labels: Optional[list] = None,
-    exclude: list = [],
-    class_names: Optional[list] = None,
+    exclude: List[Tuple[int, int]] = [],
+    class_names: Optional[List[str]] = None,
     top: int = 20
 ) -> None:
     """
@@ -20,29 +20,29 @@ def display_issues(
 
     Parameters
     ----------
-    issues: list
+    issues:
         list of tuples `(i, j)`, which represents the j'th token of the i'th sentence.
 
-    given_words: list
+    given_words:
         tokens in a nested-list format, such that `given_words[i]` contains the words of the i'th sentence from
         the original file.
 
-    pred_probs: list, default=None
+    pred_probs:
         list of model-predicted probability, such that `pred_probs[i]` contains the model-predicted probability of
         the tokens in the i'th sentence, and has shape `(N, K)`, where `N` is the number of given tokens of the i'th
         sentence, and `K` is the number of classes predicted by the model. If provided, also displays the predicted
         label of the token.
 
-    given_labels: list, default=None
+    given_labels:
         list of given labels, such that `given_labels[i]` is a list containing the given labels of the tokens in the
         i'th sentence, and has length equal to the number of given tokens of the i'th sentence. If provided, also
         displays the given label of the token.
 
-    exclude: list, default=[]
+    exclude:
         list of given/predicted label swaps to be excluded. For example, if `exclude=[(0, 1), (1, 0)]`, swaps between
         class 0 and 1 are not displayed.
 
-    class_names: list, default=None
+    class_names:
         name of classes. If not provided, display the integer index for predicted and given labels.
 
     top: int, default=20
@@ -56,7 +56,7 @@ def display_issues(
         print("Specify this argument to see the string names of each class. \n")
 
     shown = 0
-    is_tuple = type(issues[0]) == tuple
+    is_tuple = isinstance(issues[0], tuple)
 
     for issue in issues:
         if is_tuple:
@@ -99,14 +99,14 @@ def display_issues(
 
 
 def common_label_issues(
-    issues: list,
-    given_words: list,
+    issues: List[Tuple[int, int]],
+    given_words: List[List[str]],
     *,
     labels: Optional[list] = None,
     pred_probs: Optional[list] = None,
-    class_names: Optional[list] = None,
+    class_names: Optional[List[str]] = None,
     top: int = 10,
-    exclude: list = [],
+    exclude: List[Tuple[int, int]] = [],
     verbose: bool = True
 ) -> pd.DataFrame:
     """
@@ -114,40 +114,40 @@ def common_label_issues(
 
     Parameters
     ----------
-    issues: list
+    issues:
         list of tuples `(i, j)`, which represents the j'th token of the i'th sentence.
 
-    given_words: list
+    given_words:
         tokens in a nested-list format, such that `given_words[i]` contains the words of the i'th sentence from
         the original file.
 
-    labels: list
+    labels:
         list of given labels, such that `labels[i]` is a list containing the given labels of the tokens in the i'th
     sentence, and has length equal to the number of given tokens of the i'th sentence. If provided, also
     displays the given label of the token.
 
-    pred_probs: list
+    pred_probs:
         list of model-predicted probability, such that `pred_probs[i]` contains the model-predicted probability of
     the tokens in the i'th sentence, and has shape `(N, K)`, where `N` is the number of given tokens of the i'th
     sentence, and `K` is the number of classes predicted by the model. If both `labels` and `pred_probs` are
     provided, also evaluate each type of given/predicted label swap.
 
-    class_names: list, default=None
+    class_names:
         name of classes. If not provided, display the integer index for predicted and given labels.
 
-    top: int, default=10
+    top:
         maximum number of outputs to be printed.
 
-    exclude: list, default=[]
+    exclude:
         list of given/predicted label swaps to be excluded. For example, if `exclude=[(0, 1), (1, 0)]`, swaps between
         class 0 and 1 are not displayed.
 
-    verbose: bool, default=True
+    verbose:
         if set to True, also display each type of given/predicted label swap for each token.
 
     Returns
     ---------
-    df: pandas.DataFrame
+    df:
         if both `labels` and `pred_probs` are provided, return a data frame with columns ['token', 'given_label',
         'predicted_label', 'num_label_issues'], and each row contains the information for a specific token and
         given/predicted label swap, ordered by the number of label issues in descending order. Otherwise, return
@@ -240,25 +240,27 @@ def common_label_issues(
     )
 
 
-def filter_by_token(token: str, issues: list, given_words: list) -> list:
+def filter_by_token(
+    token: str, issues: List[Tuple[int, int]], given_words: List[List[str]]
+) -> List[Tuple[int, int]]:
     """
     Searches a specific token within all issue tokens
 
     Parameters
     ----------
-        token: string
+        token:
             the specific token the user is looking for
 
-        issues: list
+        issues:
             list of tuples `(i, j)`, which represents the j'th token of the i'th sentence.
 
-        given_words: list
+        given_words:
             tokens in a nested-list format, such that `given_words[i]` contains the words of the i'th sentence from
         the original file.
 
     Returns
     ----------
-    returned_issues: list
+    returned_issues:
         list of tuples `(i, j)`, which represents the j'th token of the i'th sentence.
 
     """

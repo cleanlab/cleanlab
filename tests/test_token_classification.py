@@ -18,6 +18,7 @@ from cleanlab.token_classification.summary import (
     filter_by_token,
 )
 import numpy as np
+import pandas as pd
 import pytest
 
 import warnings
@@ -231,16 +232,54 @@ def test_display_issues():
         issues, words, pred_probs=pred_probs, given_labels=labels, class_names=class_names
     )
 
+    exclude = [(1, 2)]  # Occurs in first token of second sentence "#I"
+    display_issues(issues, words, pred_probs=pred_probs, given_labels=labels, exclude=exclude)
+
+    top = 1
+    display_issues(issues, words, pred_probs=pred_probs, given_labels=labels, top=top)
+
     issues_sentence_only = [i for i, _ in issues]
     display_issues(issues_sentence_only, words)
 
 
-def test_common_label_issues():
-    common_label_issues(issues, words)
-    common_label_issues(
-        issues, words, labels=labels, pred_probs=pred_probs, class_names=class_names
-    )
+TEST_KWARGS = {"labels": labels, "pred_probs": pred_probs, "class_names": class_names}
 
 
-def test_filter_by_token():
-    filter_by_token("Hello", issues, words)
+@pytest.mark.parametrize(
+    "test_issues",
+    [issues, issues + [(1, 0)]],
+    ids=["default issues", "augmented issues"],
+)
+@pytest.mark.parametrize(
+    "test_kwargs",
+    [
+        {},
+        TEST_KWARGS,
+        {**TEST_KWARGS, "top": 1},
+        {**TEST_KWARGS, "exclude": [(1, 2)]},
+        {**TEST_KWARGS, "verbose": False},
+    ],
+    ids=["no kwargs", "labels+pred_probs+class_names", "...+top", "...+exclude", "...+no verbose"],
+)
+def test_common_label_issues(test_issues, test_kwargs):
+    df = common_label_issues(test_issues, words, **test_kwargs)
+    assert isinstance(df, pd.DataFrame)
+
+    columns = df.columns.tolist()
+    for col in ["token", "num_label_issues"]:
+        assert col in columns
+    if test_kwargs:
+        for col in ["given_label", "predicted_label"]:
+            assert col in columns
+
+
+@pytest.mark.parametrize(
+    "test_token,expected_issues",
+    [
+        ("Hello", []),
+        ("#I", [(1, 0)]),
+    ],
+)
+def test_filter_by_token(test_token, expected_issues):
+    returned_issues = filter_by_token(test_token, issues, words)
+    assert returned_issues == expected_issues
