@@ -141,6 +141,11 @@ C_L, C_R = "\x1b[31m", "\x1b[0m"
         ("A good reason for a test", "a", f"A good reason for {C_L}a{C_R} test"),
         ("ab ab a b ab", "ab a", f"ab {C_L}ab a{C_R} b ab"),
         ("ab ab ab ab", "ab a", f"{C_L}ab a{C_R}b {C_L}ab a{C_R}b"),
+        (
+            "Alan John Percivale (A.j.p.) Taylor died",
+            "(",
+            f"Alan John Percivale {C_L}({C_R}A.j.p.) Taylor died",
+        ),
     ],
     ids=[
         "single_word",
@@ -151,6 +156,7 @@ C_L, C_R = "\x1b[31m", "\x1b[0m"
         "case_sensitive",
         "only_word_boundary",
         "non_overlapping_substrings",
+        "issue_403-escape_special_regex_characters",
     ],
 )
 def test_color_sentence(sentence, word, expected):
