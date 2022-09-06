@@ -230,7 +230,8 @@ instead of containing your own virtualenv in there. CI will FAIL if you instead 
 
 5. When adding dependencies to a tutorial:
    - Make sure to update **docs/requirements.txt** which lists all extra dependencies installed during CI to build the docs.
-   - Add a comment in hidden cell not displayed on docs.cleanlab.ai stating which version of dependencies you used. 
+   - Add a comment in hidden cell not displayed on docs.cleanlab.ai stating which version of dependencies you used.
+   - Think carefully whether each dependency is really necessary and if its future versions will be stable / compatible with future versions of existing dependencies.
 
 6. Don't forget to update **docs/source/index.rst** and **docs/source/tutorials/index.rst** to ensure your tutorial properly linked. Otherwise it will not appear on docs.cleanlab.ai!
 
