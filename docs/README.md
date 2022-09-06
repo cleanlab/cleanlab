@@ -198,9 +198,12 @@ We've configured GitHub Actions to run the GitHub Pages workflow (gh-pages.yaml)
 
 12. Deploy `cleanlab-docs/` folder to the `cleanlab/cleanlab-docs` repo's `master branch`.
 
-# Tips for editing docs
+
+# Tips for editing docs/tutorials
 
 ## Tutorials
+
+Each tutorial is a Jupyter notebook (unexecuted .ipynb file) that will be executed during CI for the version displayed at docs.cleanlab.ai using [nbsphinx](https://github.com/cleanlab/cleanlab/blob/31c939ff9aa487e9670b1a0f3f711a1d78448a91/docs/source/conf.py). Some basic [linting](https://github.com/cleanlab/cleanlab/blob/master/.ci/nblint.py) is also applied to ensure proper notebook formatting such as no trailing newlines at the end of cells. Here are some tips when adding a new tutorial notebook:
 
 1. Make sure to clear all Cell outputs before you `git commit` a tutorial. The outputs of cells should never be tracked in git, these outputs are automatically constructed for displaying on docs.cleanlab.ai during the CI which executes all notebooks in the folder **docs/source/**.
 
@@ -212,7 +215,7 @@ We've configured GitHub Actions to run the GitHub Pages workflow (gh-pages.yaml)
     "nbsphinx": "hidden"
    }
 ```
-This includes cells that install dependencies and cells that run tests to verify the notebook has executed correctly.
+This includes cells that install dependencies and cells that run tests to verify the notebook has executed correctly. These cells will still be visible when the notebook is run in Colab or locally in Jupyter, so make sure to add a comment explaining their purpose at the top.
 
 4. If developing Notebook in virtualenv, make sure at the end to change the end of the raw .ipynb file to have the following:
 ```
@@ -223,13 +226,21 @@ This includes cells that install dependencies and cells that run tests to verify
    "name": "python3"
   }
 ```
-instead of containing your own virtualenv in there.
+instead of containing your own virtualenv in there. CI will FAIL if you instead list your own virtualenv here!
 
 5. When adding dependencies to a tutorial:
    - Make sure to update **docs/requirements.txt** which lists all extra dependencies installed during CI to build the docs.
-   - Add a comment in hidden cell not displayed on docs.cleanlab.ai which states which version of dependencies you used. 
+   - Add a comment in hidden cell not displayed on docs.cleanlab.ai stating which version of dependencies you used.
+   - Think carefully whether each dependency is really necessary and if its future versions will be stable / compatible with future versions of existing dependencies.
 
-6. Don't forget to update **docs/source/index.rst** and **docs/source/tutorials/index.rst** to ensure your tutorial is linked from the main documentation.
+6. Don't forget to update **docs/source/index.rst** and **docs/source/tutorials/index.rst** to ensure your tutorial properly linked. Otherwise it will not appear on docs.cleanlab.ai!
+
+7. Ask yourself: 
+- How can I make this tutorial run faster without sacrificing educational value?  Perhaps use smaller subsample of the dataset, smaller/pretrained model, etc.
+- What sections of this tutorial are least vital?  Consider creating a separate [Examples](https://github.com/cleanlab/examples) notebook that features those.
+
+All of our tutorials are quickstart guides that should run quite fast. Longer/comprehensive notebooks are better added in [Examples](https://github.com/cleanlab/examples).
+
 
 ## API Documentation
 
