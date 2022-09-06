@@ -173,7 +173,7 @@ def color_sentence(sentence: str, word: str) -> str:
     """
     colored_word = colored(word, "red")
     colored_sentence, number_of_substitions = re.subn(
-        r"\b{}\b".format(word), colored_word, sentence
+        r"\b{}\b".format(re.escape(word)), colored_word, sentence
     )
     if number_of_substitions == 0:
         # Use basic string manipulation if regex fails
