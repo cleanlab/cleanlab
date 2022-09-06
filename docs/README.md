@@ -234,6 +234,12 @@ instead of containing your own virtualenv in there. CI will FAIL if you instead 
 
 6. Don't forget to update **docs/source/index.rst** and **docs/source/tutorials/index.rst** to ensure your tutorial properly linked. Otherwise it will not appear on docs.cleanlab.ai!
 
+7. Ask yourself: 
+- How can I make this tutorial run faster without sacrificing educational value?  Perhaps use smaller subsample of the dataset, smaller/pretrained model, etc.
+- What sections of this tutorial are least vital?  Consider creating a separate [Examples](https://github.com/cleanlab/examples) notebook that features those.
+
+All of our tutorials are quickstart guides that should run quite fast. Longer/comprehensive notebooks are better added in [Examples](https://github.com/cleanlab/examples).
+
 
 ## API Documentation
 
