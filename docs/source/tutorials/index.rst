@@ -13,4 +13,5 @@ Tutorials
    pred_probs_cross_val
    outliers
    multiannotator
+   token_classification
    faq
