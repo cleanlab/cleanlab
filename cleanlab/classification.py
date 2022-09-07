@@ -313,6 +313,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
           `x` belongs to each possible class, for each of the K classes. The
           columns must be ordered such that these probabilities correspond to class 0, 1, ..., K-1.
           `pred_probs` should be :ref:`out-of-sample, eg. computed via cross-validation <pred_probs_cross_val>`.
+          If provided, `pred_probs` will be used to find label issues rather than the ``clf`` classifier.
 
           Note
           ----
