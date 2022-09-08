@@ -14,6 +14,9 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
+"""
+Methods for finding out-of-distribution examples in a dataset via scores that quantify how atypical each example is compared to the others. 
+"""
 
 import warnings
 import numpy as np
