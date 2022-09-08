@@ -1,9 +1,35 @@
+# Copyright (C) 2017-2022  Cleanlab Inc.
+# This file is part of cleanlab.
+#
+# cleanlab is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published
+# by the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# cleanlab is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
+
+"""
+Methods for analysis of classification data labeled by multiple annotators, including computation of: 
+
+* A consensus label for each example that aggregates the individual annotations more accurately than alternative aggregation via majority-vote or other algorithms used in crowdsourcing.
+* A quality score for each consensus label which measures our confidence that this label is correct.
+* An analogous label quality score for each individual label chosen by one annotator for a particular example.
+* An overall quality score for each annotator which measures our confidence in the overall correctness of labels obtained from this annotator.
+"""
+
+import warnings
 import numpy as np
 import pandas as pd
 from typing import List, Dict, Any, Union, Tuple, Optional
+
 from cleanlab.rank import get_label_quality_scores
 from cleanlab.internal.util import get_num_classes
-import warnings
 
 
 def get_label_quality_multiannotator(
