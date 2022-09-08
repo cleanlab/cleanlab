@@ -94,6 +94,7 @@ setup(
         "scikit-learn>=0.18",
         "tqdm>=4.53.0",
         "pandas>=1.0.0",
+        "termcolor>=1.1.0",
     ],
 )
 
