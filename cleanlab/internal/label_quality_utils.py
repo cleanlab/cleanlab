@@ -14,9 +14,13 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
-"""Helper functions for computing label quality scores"""
+"""
+Helper methods used internally for computing label quality scores
+"""
+
 import numpy as np
 from typing import Optional
+
 from cleanlab.count import get_confident_thresholds
 
 
