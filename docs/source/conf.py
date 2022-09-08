@@ -39,6 +39,7 @@ extensions = [
     "sphinx_multiversion",
     "sphinx_copybutton",
     "sphinxcontrib.katex",
+    "sphinx_autodoc_typehints",
 ]
 
 numpy_show_class_members = True
