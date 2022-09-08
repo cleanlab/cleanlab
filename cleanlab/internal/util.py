@@ -14,10 +14,9 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
-
-# ## Confident Learning Utilities
-#
-# #### Contains ancillary helper functions used throughout this package.
+"""
+Ancillary helper methods used internally throughout this package; mostly related to Confident Learning algorithms.
+"""
 
 import numpy as np
 import pandas as pd
