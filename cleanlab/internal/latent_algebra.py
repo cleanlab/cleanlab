@@ -15,19 +15,18 @@
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
 
-# ## Latent Algebra
-#
-# #### Contains mathematical functions relating the latent terms,
-# $p(labels), P_{labels \vert y}, P_{y \vert labels}, p(true_labels)$, etc. together.
-# For every function here, if the inputs are exact, the output is guaranteed
-# to be exact. Every function herein is the computational equivalent of a
-# mathematical equation having a closed, exact form. If the inputs are
-# inexact, the error will of course propagate.
+"""
+Contains mathematical functions relating the latent terms,
+P(given_label), P(given_label | true_label), P(true_label | given_label), P(true_label), etc. together.
+For every function here, if the inputs are exact, the output is guaranteed to be exact. 
+Every function herein is the computational equivalent of a mathematical equation having a closed, exact form. 
+If the inputs are inexact, the error will of course propagate.
+"""
 
+import warnings
 import numpy as np
 
 from cleanlab.internal.util import value_counts, clip_values, clip_noise_rates
-import warnings
 
 
 def compute_ps_py_inv_noise_matrix(labels, noise_matrix):
