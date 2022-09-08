@@ -232,6 +232,8 @@ def find_label_issues(
 
     # Number of examples in each class of labels
     if multi_label:
+        #recursively call find_label_issues with multilabel false
+
         label_counts = value_counts([i for lst in labels for i in lst])
     else:
         label_counts = value_counts(labels)
