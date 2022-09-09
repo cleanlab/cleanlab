@@ -42,6 +42,7 @@ Get started with: [documentation](https://docs.cleanlab.ai/), [tutorials](https:
 <li> <b>April 2022 📖</b> cleanlab 2.0.0 released! Lays foundations for this library to grow into a general-purpose data-centric AI toolkit. </li>
 <li> <b>March 2022 📖</b>  Documentation migrated to new website: <a href="https://docs.cleanlab.ai/">docs.cleanlab.ai</a> with quickstart tutorials for image/text/audio/tabular data.</li>
 <li> <b>Feb 2022 💻</b> <a href="https://docs.cleanlab.ai/master/migrating/migrate_v2.html">APIs simplified</a> to make cleanlab accessible for everybody, not just ML researchers </li>
+<li> <b>Long-time cleanlab user?</b> Here's <a href="https://docs.cleanlab.ai/stable/migrating/migrate_v2.html">how to migrate</a> to cleanlab versions >= 2.0.0. </li>
 </ul>
 </p>
 </details>
@@ -70,9 +71,6 @@ Get started with: [documentation](https://docs.cleanlab.ai/), [tutorials](https:
 
 Release notes for past versions are available [here](https://github.com/cleanlab/cleanlab/releases). Details behind certain updates are explained in our [blog](https://cleanlab.ai/blog/).
 
-**Long-time cleanlab user?**
-
-* Here's a [guide](https://docs.cleanlab.ai/stable/migrating/migrate_v2.html) on how to migrate to cleanlab 2.0.0.
 
 ## So fresh, so cleanlab
 
