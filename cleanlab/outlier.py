@@ -37,13 +37,11 @@ class OutOfDistribution:
     Each example's OOD score lies in [0,1] with smaller values indicating examples that are less typical under the data distribution.
     OOD scores may be estimated from either: feature embeddings or predicted probabilities from a trained classifier.
 
-    :ivar params: initial value: {}, Optional keyword arguments to control how this estimator is fit.
-
     Parameters
     ----------
     params : dict, default = {}
      Optional keyword arguments to control how this estimator is fit. Effect of arguments passed in depends on if
-     `OutOfDistribution` estimator will rely on `features` or `pred_probs`.
+     `OutOfDistribution` estimator will rely on `features` or `pred_probs`. These are stored as an instance attribute `self.params`.
 
      If `features` is passed in during ``fit()``, `params` could contain following keys:
        *  knn: sklearn.neighbors.NearestNeighbors, default = None
