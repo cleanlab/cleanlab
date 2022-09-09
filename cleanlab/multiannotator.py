@@ -62,12 +62,12 @@ def get_label_quality_multiannotator(
     labels_multiannotator : pd.DataFrame of np.ndarray
         2D pandas DataFrame or array of multiple given labels for each example with shape ``(N, M)``,
         where N is the number of examples and M is the number of annotators.
-        ``labels_multiannotator[n][m]`` = given label for n-th example by m-th annotator.
+        ``labels_multiannotator[n][m]`` = label for n-th example given by m-th annotator.
 
         For a dataset with K classes, each given label must be an integer in 0, 1, ..., K-1 or
-        NaN if this annotator did not label a particular example. Column names should correspond to the annotators' ID.
+        NaN if this annotator did not label a particular example. If pd.DataFrame, column names should correspond to each annotator's ID.
     pred_probs : np.ndarray
-        An array of shape ``(N, K)`` of model-predicted probabilities.
+        An array of shape ``(N, K)`` of predicted class probabilities from a trained classifier model.
         Predicted probabilities in the same format expected by the :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>`.
     consensus_method : str or List[str], default = "majority_vote"
         Specifies the method used to aggregate labels from multiple annotators into a single consensus label.
