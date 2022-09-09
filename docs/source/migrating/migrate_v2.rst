@@ -1,10 +1,10 @@
-How to migrate to 2.0.0 from versions pre 1.0.1
-===============================================
+How to migrate to versions >= 2.0.0 from pre 1.0.1
+==================================================
 
 If you previously used older versions of cleanlab,
-this migration guide can help you update your existing code to work with v2.0.0 in no time!
+this guide helps update your existing code to work with versions >= 2.0.0 in no time!
 Below we outline the major updates and code substitutions to be aware of.
-The full change-log is listed in the `v2.0.0. Release Notes <https://github.com/cleanlab/cleanlab/releases/tag/v2.0.0>`_.
+A detailed API change-log is listed in the `v2.0.0. Release Notes <https://github.com/cleanlab/cleanlab/releases/tag/v2.0.0>`_.
 
 
 Function and class name changes
