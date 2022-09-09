@@ -234,9 +234,7 @@ def test_display_issues():
     display_issues(issues, words, labels=labels)
     display_issues(issues, words, pred_probs=pred_probs)
     display_issues(issues, words, pred_probs=pred_probs, labels=labels)
-    display_issues(
-        issues, words, pred_probs=pred_probs, labels=labels, class_names=class_names
-    )
+    display_issues(issues, words, pred_probs=pred_probs, labels=labels, class_names=class_names)
 
     exclude = [(1, 2)]  # Occurs in first token of second sentence "#I"
     display_issues(issues, words, pred_probs=pred_probs, labels=labels, exclude=exclude)
