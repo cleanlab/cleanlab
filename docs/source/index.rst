@@ -127,7 +127,7 @@ The example below shows how to view all dataset-level issues in one line of code
    :caption: Guides
    :hidden:
 
-   Migrating to v2.0 <migrating/migrate_v2>
+   Migrating to v2.x <migrating/migrate_v2>
 
 .. toctree::
    :caption: Links
