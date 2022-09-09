@@ -61,7 +61,7 @@ class OutOfDistribution:
        *  t : int, default=1
              Optional hyperparameter only for advanced users.
              Controls transformation of distances between examples into similarity scores that lie in [0,1].
-             The transformation applied to distances `x` is `exp(-x*t)`.
+             The transformation applied to distances `x` is ``exp(-x*t)``.
              If you find your scores are all too close to 1, consider increasing `t`,
              although the relative scores of examples will still have the same ranking across the dataset.
 
@@ -69,7 +69,7 @@ class OutOfDistribution:
        *  confident_thresholds: np.ndarray, default = None
              An array of shape ``(K, )`` where K is the number of classes.
              Confident threshold for a class j is the expected (average) "self-confidence" for that class.
-             If you specify ``confident_thresholds`` here, there is no need to later call ``fit()`` before calling ``score()``.
+             If you specify `confident_thresholds` here, there is no need to later call ``fit()`` before calling ``score()``.
        *  adjust_pred_probs : bool, True
              If True, account for class imbalance by adjusting predicted probabilities
              via subtraction of class confident thresholds and renormalization.
@@ -116,7 +116,7 @@ class OutOfDistribution:
         in to calculate scores.
 
         If `features` are passed in a ``NearestNeighbors`` object is fit. If `pred_probs` and 'labels' are passed in a
-        ``confident_thresholds`` np.ndarray is fit. For details see :py:func:`fit
+        `confident_thresholds` ``np.ndarray`` is fit. For details see :py:func:`fit
         <cleanlab.outlier.OutOfDistribution.fit>`.
 
         Parameters
@@ -169,7 +169,7 @@ class OutOfDistribution:
         One of `features` or `pred_probs` must be specified.
 
         If `features` are passed in, a ``NearestNeighbors`` object is fit.
-        If `pred_probs` and 'labels' are passed in, a ``confident_thresholds`` np.ndarray is fit.
+        If `pred_probs` and 'labels' are passed in, a `confident_thresholds` ``np.ndarray`` is fit.
         For details see :py:class:`OutOfDistribution <cleanlab.outlier.OutOfDistribution>` documentation.
 
         Parameters
