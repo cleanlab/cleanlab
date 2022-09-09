@@ -6,3 +6,4 @@ outlier
    :members:
    :undoc-members:
    :show-inheritance:
+   :no-undoc-members:
