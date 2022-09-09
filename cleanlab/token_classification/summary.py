@@ -9,7 +9,7 @@ def display_issues(
     given_words: List[List[str]],
     *,
     pred_probs: Optional[list] = None,
-    given_labels: Optional[list] = None,
+    labels: Optional[list] = None,
     exclude: List[Tuple[int, int]] = [],
     class_names: Optional[List[str]] = None,
     top: int = 20
@@ -33,8 +33,8 @@ def display_issues(
         sentence, and `K` is the number of classes predicted by the model. If provided, also displays the predicted
         label of the token.
 
-    given_labels:
-        list of given labels, such that `given_labels[i]` is a list containing the given labels of the tokens in the
+    labels:
+        list of given labels, such that `labels[i]` is a list containing the given labels of the tokens in the
         i'th sentence, and has length equal to the number of given tokens of the i'th sentence. If provided, also
         displays the given label of the token.
 
@@ -66,24 +66,24 @@ def display_issues(
 
             if pred_probs:
                 prediction = pred_probs[i][j].argmax()
-            if given_labels:
-                given = given_labels[i][j]
-            if pred_probs and given_labels:
+            if labels:
+                given = labels[i][j]
+            if pred_probs and labels:
                 if (given, prediction) in exclude:
                     continue
 
             if pred_probs and class_names:
                 prediction = class_names[prediction]
-            if given_labels and class_names:
+            if labels and class_names:
                 given = class_names[given]
 
             shown += 1
             print("Sentence %d, token %d: \n%s" % (i, j, color_sentence(sentence, word)))
-            if given_labels and not pred_probs:
+            if labels and not pred_probs:
                 print("Given label: %s\n" % str(given))
-            elif not given_labels and pred_probs:
+            elif not labels and pred_probs:
                 print("Predicted label according to provided pred_probs: %s\n" % str(prediction))
-            elif given_labels and pred_probs:
+            elif labels and pred_probs:
                 print(
                     "Given label: %s, predicted label according to provided pred_probs: %s\n"
                     % (str(given), str(prediction))
