@@ -4,6 +4,6 @@ outlier
 .. automodule:: cleanlab.outlier
    :autosummary:
    :members:
-   :undoc-members:
    :show-inheritance:
    :no-undoc-members:
+   :exclude-members: DEFAULT_PARAM_DICT, OOD_PARAMS, OUTLIER_PARAMS
