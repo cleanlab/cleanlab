@@ -527,6 +527,20 @@ def test_ood_predictions_scores():
     assert (confident_thresholds_2 == confident_thresholds).all()
     assert (ood_predictions_scores_2 == ood_predictions_scores_adj_entropy).all()
 
+    # test using labels list type works
+    y_with_ood_list = y_with_ood.tolist()
+    (
+        ood_predictions_scores_adj_entropy_list,
+        confident_thresholds_adj_entropy_list,
+    ) = outlier._get_ood_predictions_scores(
+        pred_probs=pred_probs,
+        labels=y_with_ood_list,
+        adjust_pred_probs=True,
+        method="entropy",
+    )
+
+    assert (confident_thresholds_adj_entropy_list == confident_thresholds_adj_entropy).all()
+
 
 @pytest.mark.filterwarnings("ignore::UserWarning")
 def test_wrong_info_get_ood_predictions_scores():
