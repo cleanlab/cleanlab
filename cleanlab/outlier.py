@@ -15,7 +15,7 @@
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
 """
-Methods for finding out-of-distribution examples in a dataset via scores that quantify how atypical each example is compared to the others. 
+Methods for finding out-of-distribution examples in a dataset via scores that quantify how atypical each example is compared to the others.
 """
 
 import warnings
@@ -36,6 +36,8 @@ class OutOfDistribution:
     Provides scores to detect Out Of Distribution (OOD) examples that are outliers in a dataset.
     Each example's OOD score lies in [0,1] with smaller values indicating examples that are less typical under the data distribution.
     OOD scores may be estimated from either: feature embeddings or predicted probabilities from a trained classifier.
+
+    :ivar params: initial value: {}, Optional keyword arguments to control how this estimator is fit.
 
     Parameters
     ----------
