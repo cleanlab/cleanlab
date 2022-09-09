@@ -1058,7 +1058,7 @@ def convert_long_to_wide_dataset(
 
     #. ``task`` representing each example labeled by the annotators
     #. ``annotator`` representing each annotator
-    #. ``label`` representing the label given by an annotator for the corresponding task
+    #. ``label`` representing the label given by an annotator for the corresponding task (i.e. example)
 
     Parameters
     ----------
