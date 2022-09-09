@@ -2,6 +2,10 @@ outlier
 ==============
 
 .. automodule:: cleanlab.outlier
+
+   .. autoattribute:: params
+        :annotation:
+     
    :autosummary:
    :members: params
    :show-inheritance:
