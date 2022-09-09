@@ -99,7 +99,8 @@ def get_label_quality_multiannotator(
     Returns
     -------
     dict
-        dictionary containing up to 3 pandas DataFrame with keys as below:
+        Dictionary containing up to 3 pandas DataFrame with keys as below:
+
         ``label_quality`` : pandas.DataFrame
             pandas DataFrame in which each row corresponds to one example, with columns:
 
@@ -115,6 +116,7 @@ def get_label_quality_multiannotator(
         ``annotator_stats`` : pandas.DataFrame (returned if `return_annotator_stats=True`)
             Returns overall statistics about each annotator, sorted by lowest annotator_quality first.
             pandas DataFrame in which each row corresponds to one annotator (the row IDs correspond to annotator IDs), with columns:
+
             * ``annotator_quality``: overall quality of a given annotator's labels
             * ``num_examples_labeled``: number of examples annotated by a given annotator
             * ``agreement_with_consensus``: fraction of examples where a given annotator agrees with the consensus label
@@ -333,6 +335,12 @@ def get_majority_vote_label(
     -------
     consensus_label: np.ndarray
         An array of shape ``(N,)`` with the majority vote label aggregated from all annotators.
+
+        In the event of majority vote ties, ties are broken in the following order:
+        using the model ``pred_probs`` (if provided) and selecting the class with highest predicted probability,
+        using the empirical class frequencies and selecting the class with highest frequency,
+        using an initial annotator quality score and selecting the class that has been labeled by annotators with higher quality,
+        and lastly by random selection
     """
 
     if isinstance(labels_multiannotator, np.ndarray):
@@ -823,7 +831,6 @@ def _get_consensus_quality_score(
         An array of shape ``(N,)`` with the consensus labels aggregated from all annotators.
     pred_probs : np.ndarray
         An array of shape ``(N, K)`` of posterior predicted probabilities, ``P(label=k|x)``.
-        Posterior
         For details, predicted probabilities in the same format expected by the :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>`.
     num_annotations : np.ndarray
         An array of shape ``(N,)`` with the number of annotators that have labeled each example.
@@ -1046,10 +1053,12 @@ def convert_long_to_wide_dataset(
 ) -> pd.DataFrame:
     """Converts a long format dataset to wide format which is suitable for passing into
     :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>`.
+
     Dataframe must contain three columns named:
-    1. ``task`` representing each example labeled by the annotators
-    2. ``annotator`` representing each annotator
-    3. ``label`` representing the label given by an annotator for the corresponding task
+
+    * ``task`` representing each example labeled by the annotators
+    * ``annotator`` representing each annotator
+    * ``label`` representing the label given by an annotator for the corresponding task
 
     Parameters
     ----------
