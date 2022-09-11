@@ -231,18 +231,16 @@ def test_issues_from_scores(label_quality_scores):
 
 def test_display_issues():
     display_issues(issues, words)
-    display_issues(issues, words, given_labels=labels)
+    display_issues(issues, words, labels=labels)
     display_issues(issues, words, pred_probs=pred_probs)
-    display_issues(issues, words, pred_probs=pred_probs, given_labels=labels)
-    display_issues(
-        issues, words, pred_probs=pred_probs, given_labels=labels, class_names=class_names
-    )
+    display_issues(issues, words, pred_probs=pred_probs, labels=labels)
+    display_issues(issues, words, pred_probs=pred_probs, labels=labels, class_names=class_names)
 
     exclude = [(1, 2)]  # Occurs in first token of second sentence "#I"
-    display_issues(issues, words, pred_probs=pred_probs, given_labels=labels, exclude=exclude)
+    display_issues(issues, words, pred_probs=pred_probs, labels=labels, exclude=exclude)
 
     top = 1
-    display_issues(issues, words, pred_probs=pred_probs, given_labels=labels, top=top)
+    display_issues(issues, words, pred_probs=pred_probs, labels=labels, top=top)
 
     issues_sentence_only = [i for i, _ in issues]
     display_issues(issues_sentence_only, words)

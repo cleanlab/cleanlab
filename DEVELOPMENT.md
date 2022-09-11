@@ -180,3 +180,16 @@ NumPy style are documented below:
 - `classes` - set of possible labels for any one example, length should be K (number of possible categories in classification problem)
 
 Try to adhere to this standardized terminology unless you have good reason not to!
+
+### Relative Link Formatting Instructions
+
+Use relative linking to connect information between docs and jupyter notebooks, and make sure links will remain valid in the future as new cleanlab versions are released! Sphinx/html works with relative paths so try to specify relative paths if necessary. For specific situations:
+
+- Link another function from within a source code docstring: ``:py:func:`function_name <cleanlab.file.function_name>` ``
+- Link another class from within a source code docstring: ``:py:class:`class_name <cleanlab.file.class_name>` ``
+- Link a tutorial notebook from within a source code docstring: ``:ref:`notebook_name <notebook_name>` ``
+- Link a function from within a tutorial notebook: `[function_name](../cleanlab/file.rst#cleanlab.file.function_name)`
+- Link a specific section of a notebook from within the notebook: `[section title](#section-title)`
+- Link a different tutorial notebook from within a tutorial notebook: `[another notebook](another_notebook.html)`. (Note this only works when the other notebook is in same folder as this notebook, otherwise may need to try relative path)
+- Link another specific section of different notebook from within a tutorial notebook: `[another notebook section title](another_notebook.html#another-notebook-section-title)`
+- Linking examples notebooks from inside tutorial notebooks can be simply done by linking global url of the example notebook in master branch of github.com/cleanlab/examples/
