@@ -41,16 +41,21 @@ Setting `return_indices_ranked_by` in this function instructs cleanlab to return
 
 .. code-block:: python
 
-   from cleanlab.filter import find_label_issues
+    from cleanlab.classification import CleanLearning
+    from cleanlab.filter import find_label_issues
+    
+    # Option 1 - sklearn-compatible models - just provide the data and labels ツ
+    issues_df = CleanLearning(clf=sklearnCompatibleModel).find_label_issues(data, labels)
 
-   ordered_label_issues = find_label_issues(
-       labels=labels,
-       pred_probs=pred_probs,
-       return_indices_ranked_by='self_confidence',
-   )
+    # Option 2 - ANY ML model - just provide the model's predicted probabilities
+    ordered_label_issues = find_label_issues(
+        labels=labels,
+        pred_probs=pred_probs,  # out-of-sample predicted probabilities from any model
+        return_indices_ranked_by='self_confidence',
+    )
 
 .. important::
-   The predicted probabilities, ``pred_probs``, from your model **must be out-of-sample**! You should never provide predictions on the same data points used to train the model as these predictions are overfit and  unsuitable for finding label errors. To compute out-of-sample predicted probabilities for your entire dataset, you can use :ref:`cross-validation <pred_probs_cross_val>`.
+   The predicted probabilities, ``pred_probs``, from your model **must be out-of-sample**. Never provide predictions on the same data points used to train the model -- these predictions are overfit and unsuitable for finding label errors. Details on how to compute out-of-sample predicted probabilities for your entire dataset are :ref:`here <pred_probs_cross_val>`.
 
 ..
    TODO - include the url for tf and torch beginner tutorials
@@ -67,9 +72,11 @@ When the :py:meth:`.fit() <cleanlab.classification.CleanLearning.fit>` method is
    from sklearn.linear_model import LogisticRegression
    from cleanlab.classification import CleanLearning
 
-   clf = LogisticRegression() # any classifier implementing the sklearn API
-   cl = CleanLearning(clf=clf)
-   cl.fit(X=X, labels=labels)
+   # Train an ML model with noisy labels - 3 lines of code
+   cl = CleanLearning(clf=LogisticRegression())  # any sklearn-compatible classifier
+   cl.fit(X=train_data, labels=labels)
+   # Estimate the predictions you would have gotten if you trained with error-free labels.
+   predictions = cl.predict(test_data)
 
 
 4. Dataset curation: fix dataset-level issues 
