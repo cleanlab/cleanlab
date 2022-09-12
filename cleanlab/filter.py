@@ -65,6 +65,7 @@ def find_label_issues(
     confident_joint=None,
     n_jobs=None,
     verbose=False,
+    **kwargs{},
 ):
     """
     Identifies potentially bad labels in a dataset (with `N` examples) using confident learning.
@@ -133,8 +134,7 @@ def find_label_issues(
       - ``'predicted_neq_given'``: filters examples for which the predicted class (i.e. argmax of the predicted probabilities) does not match the given label.
 
     multi_label : bool, optional
-      If ``True``, labels should be an iterable (e.g. list) of iterables, containing a
-      list of labels for each example, instead of just a single label.
+      If ``True``, labels should be an a list of binary classifier's outputs.
       The multi-label setting supports classification tasks where an example has 1 or more labels.
       Example of a multi-labeled `labels` input: ``[[0,1], [1], [0,2], [0,1,2], [0], [1], ...]``.
 
@@ -175,6 +175,7 @@ def find_label_issues(
       Entry ``(j, k)`` in the matrix is the number of examples confidently counted into the pair of ``(noisy label=j, true label=k)`` classes.
       The `confident_joint` can be computed using :py:func:`count.compute_confident_joint <cleanlab.count.compute_confident_joint>`.
       If not provided, it is computed from the given (noisy) `labels` and `pred_probs`.
+      # Add doc here for multi-label
 
     n_jobs : optional
       Number of processing threads used by multiprocessing. Default ``None``
@@ -232,8 +233,7 @@ def find_label_issues(
 
     # Number of examples in each class of labels
     if multi_label:
-        # recursively call find_label_issues with multilabel false
-
+        #recursively call find_label_issues
         label_counts = value_counts([i for lst in labels for i in lst])
     else:
         label_counts = value_counts(labels)
@@ -247,7 +247,7 @@ def find_label_issues(
     labels = np.asarray(labels)
     if confident_joint is None or filter_by == "confident_learning":
         from cleanlab.count import compute_confident_joint
-
+        # kx2x2
         confident_joint, cl_error_indices = compute_confident_joint(
             labels=labels,
             pred_probs=pred_probs,
@@ -385,6 +385,10 @@ def find_label_issues(
         print("Number of label issues found: {}".format(sum(label_issues_mask)))
 
     # TODO: run count.num_label_issues() and adjust the total issues found here to match
+    if kwargs['multi_label_verbose_return']:
+        return array
+    else:
+        return np.union1d(array)
     if return_indices_ranked_by is not None:
         er = order_label_issues(
             label_issues_mask=label_issues_mask,
