@@ -28,7 +28,7 @@ from cleanlab.internal.label_quality_utils import (
     _subtract_confident_thresholds,
     get_normalized_entropy,
 )
-from cleanlab.internal.validation import assert_valid_inputs
+from cleanlab.internal.validation import assert_valid_inputs, labels_to_array
 
 
 class OutOfDistribution:
@@ -504,8 +504,7 @@ def _get_ood_predictions_scores(
                     f"params['adjusted_pred_probs'] = False. "
                 )
             else:
-                if isinstance(labels, list):
-                    labels = np.array(labels)
+                labels = labels_to_array(labels)
                 assert_valid_inputs(X=None, y=labels, pred_probs=pred_probs, multi_label=False)
                 confident_thresholds = get_confident_thresholds(
                     labels, pred_probs, multi_label=False
