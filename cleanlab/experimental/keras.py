@@ -32,20 +32,69 @@ Tips:
 
 import tensorflow as tf
 import numpy as np
+from typing import Callable
 
 
-class KerasWrapper:
+class KerasWrapperModel:
+    def __init__(
+        self,
+        model: Callable,
+        model_kwargs: dict = {},
+        compile_kwargs: dict = {
+            "loss": tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
+        },
+    ):
+        self.model = model
+        self.model_kwargs = model_kwargs
+        self.compile_kwargs = compile_kwargs
+        self.net = None
+
+    def get_params(self, deep=True):
+        return {
+            "model": self.model,
+            "model_kwargs": self.model_kwargs,
+            "compile_kwargs": self.compile_kwargs,
+        }
+
+    def fit(self, X, y=None, **kwargs):
+        """Note that ``X`` dataset object must already contain the labels as is required for standard Keras fit.
+        You can provide the labels again here as argument ``y`` to be compatible with sklearn, but they are ignored.
+        """
+        self.net = self.model(**self.model_kwargs)
+        self.net.compile(**self.compile_kwargs)
+        self.net.fit(X, **kwargs)
+
+    def predict_proba(self, X, apply_softmax=True, **kwargs):
+        """Set `apply_softmax` to True to indicate your network only outputs logits not probabilities"""
+        if self.net is None:
+            raise ValueError("must call fit() before predict()")
+        pred_probs = self.net.predict(X, **kwargs)
+        if apply_softmax:
+            pred_probs = tf.nn.softmax(pred_probs, axis=1)
+        return pred_probs
+
+    def predict(self, X, **kwargs):
+        pred_probs = self.predict_proba(X, **kwargs)
+        return np.argmax(pred_probs, axis=1)
+
+    def summary(self, **kwargs):
+        self.net.summary(**kwargs)
+
+
+class KerasWrapperSequential:
     """
-    KerasWrapper is instantiated in the same way as a ``tf.keras.models.Sequential`` object,
+    KerasWrapperSequential is instantiated in the same way as a ``tf.keras.models.Sequential`` object,
     except for extra argument:
     * *compile_kwargs*: dict of args to pass into ``model.compile()``
     """
 
     def __init__(
         self,
-        layers=None,
-        name=None,
-        compile_kwargs={"loss": tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)},
+        layers: list = None,
+        name: str = None,
+        compile_kwargs: dict = {
+            "loss": tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
+        },
     ):
         self.layers = layers
         self.name = name
@@ -53,7 +102,11 @@ class KerasWrapper:
         self.net = None
 
     def get_params(self, deep=True):
-        return {"layers": self.layers, "name": self.name, "compile_kwargs": self.compile_kwargs}
+        return {
+            "layers": self.layers,
+            "name": self.name,
+            "compile_kwargs": self.compile_kwargs,
+        }
 
     def fit(self, X, y=None, **kwargs):
         """Note that ``X`` dataset object must already contain the labels as is required for standard Keras fit.

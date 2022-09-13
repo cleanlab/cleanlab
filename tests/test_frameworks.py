@@ -41,7 +41,7 @@ import torch
 import skorch
 
 from cleanlab.classification import CleanLearning
-from cleanlab.experimental.keras import KerasWrapper
+from cleanlab.experimental.keras import KerasWrapperSequential, KerasWrapperModel
 
 
 def python_version_ok():  # tensorflow and torch do not play nice with older Python
@@ -113,7 +113,7 @@ DATA_RARE_LABEL = make_rare_label(DATA)
 
 @pytest.mark.skipif("not python_version_ok()", reason="need at least python 3.7")
 @pytest.mark.parametrize("batch_size,shuffle_config", [(1, 0), (32, 0), (32, 1), (32, 2)])
-def test_tensorflow(batch_size, shuffle_config, data=DATA, hidden_units=128):
+def test_tensorflow_sequential(batch_size, shuffle_config, data=DATA, hidden_units=128):
     dataset_tf = tf.data.Dataset.from_tensor_slices((data["X"], data["y"]))
     if shuffle_config == 0:  # proper shuffling for SGD
         dataset_shuffled = dataset_tf.shuffle(buffer_size=len(data["X"]))
@@ -125,7 +125,7 @@ def test_tensorflow(batch_size, shuffle_config, data=DATA, hidden_units=128):
     dataset_og_order = dataset_tf.batch(batch_size)
     dataset_tf = dataset_shuffled.batch(batch_size)
 
-    model = KerasWrapper(
+    model = KerasWrapperSequential(
         [
             tf.keras.layers.Dense(
                 hidden_units, input_shape=[data["num_features"]], activation="relu"
@@ -154,12 +154,59 @@ def test_tensorflow(batch_size, shuffle_config, data=DATA, hidden_units=128):
 
 
 @pytest.mark.skipif("not python_version_ok()", reason="need at least python 3.7")
+@pytest.mark.parametrize("batch_size,shuffle_config", [(1, 0), (32, 0), (32, 1), (32, 2)])
+def test_tensorflow_functional(batch_size, shuffle_config, data=DATA, hidden_units=128):
+    dataset_tf = tf.data.Dataset.from_tensor_slices((data["X"], data["y"]))
+    if shuffle_config == 0:  # proper shuffling for SGD
+        dataset_shuffled = dataset_tf.shuffle(buffer_size=len(data["X"]))
+    elif shuffle_config == 1:  # shuffling for datasets that don't fit in memory
+        dataset_shuffled = dataset_tf.shuffle(buffer_size=60)
+    else:
+        dataset_shuffled = dataset_tf  # no shuffling
+
+    dataset_og_order = dataset_tf.batch(batch_size)
+    dataset_tf = dataset_shuffled.batch(batch_size)
+
+    def make_model(num_features, num_classes):
+        inputs = tf.keras.Input(shape=(num_features,))
+        dense = tf.keras.layers.Dense(64, activation="relu")
+        x = dense(inputs)
+        outputs = tf.keras.layers.Dense(num_classes)(x)
+        model = tf.keras.Model(inputs=inputs, outputs=outputs, name="test_model")
+
+        return model
+
+    model = KerasWrapperModel(
+        make_model,
+        model_kwargs={"num_features": data["num_features"], "num_classes": data["num_classes"]},
+    )
+
+    # Test base model works:
+    model.fit(
+        X=dataset_tf,
+        y=data["y"],
+        epochs=2,
+    )
+    preds_base = model.predict_proba(dataset_tf)
+
+    # Test CleanLearning performs well:
+    cl = CleanLearning(model)
+    cl.fit(dataset_tf, data["y"], clf_kwargs={"epochs": 10}, clf_final_kwargs={"epochs": 15})
+
+    preds = cl.predict(dataset_og_order)
+    err = np.sum(preds != data["y_og"]) / len(data["y_og"])
+    issue_indices = list(cl.label_issues_df[cl.label_issues_df["is_label_issue"]].index.values)
+    assert issue_indices == data["error_indices"]
+    assert err < 1e-3
+
+
+@pytest.mark.skipif("not python_version_ok()", reason="need at least python 3.7")
 @pytest.mark.parametrize("batch_size", [1, 32])
 @pytest.mark.filterwarnings("ignore")
 def test_tensorflow_rarelabel(batch_size, data=DATA_RARE_LABEL, hidden_units=8):
     dataset_tf = tf.data.Dataset.from_tensor_slices((data["X"], data["y"])).batch(batch_size)
 
-    model = KerasWrapper(
+    model = KerasWrapperSequential(
         [
             tf.keras.layers.Dense(
                 hidden_units, input_shape=[data["num_features"]], activation="relu"
