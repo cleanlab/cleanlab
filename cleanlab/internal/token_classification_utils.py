@@ -146,12 +146,12 @@ def mapping(entities: List[int], maps: List[int]) -> List[int]:
 
     Examples
     --------
-        >>> unique_identities = [0, 1, 2, 3, 4]  # ["O", "B-PER", "I-PER", "B-LOC", "I-LOC"]
-        >>> maps = [0, 1, 1, 2, 2]  # ["O", "PER", "PER", "LOC", "LOC"]
-        >>> mapping(unique_identities, maps)
-        [0, 1, 1, 2, 2]  # ["O", "PER", "PER", "LOC", "LOC"]
-        >>> mapping([0, 0, 4, 4, 3, 4, 0, 2], maps)
-        [0, 0, 2, 2, 2, 2, 0, 1]  # ["O", "O", "LOC", "LOC", "LOC", "LOC", "O", "PER"]
+    >>> unique_identities = [0, 1, 2, 3, 4]  # ["O", "B-PER", "I-PER", "B-LOC", "I-LOC"]
+    >>> maps = [0, 1, 1, 2, 2]  # ["O", "PER", "PER", "LOC", "LOC"]
+    >>> mapping(unique_identities, maps)
+    [0, 1, 1, 2, 2]  # ["O", "PER", "PER", "LOC", "LOC"]
+    >>> mapping([0, 0, 4, 4, 3, 4, 0, 2], maps)
+    [0, 0, 2, 2, 2, 2, 0, 1]  # ["O", "O", "LOC", "LOC", "LOC", "LOC", "O", "PER"]
     """
     f = lambda x: maps[x]
     return list(map(f, entities))
