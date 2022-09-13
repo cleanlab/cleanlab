@@ -117,8 +117,8 @@ The example below shows how to view all dataset-level issues in one line of code
    cleanlab/rank
    cleanlab/count
    cleanlab/dataset
-   cleanlab/multiannotator
    cleanlab/outlier
+   cleanlab/multiannotator
    cleanlab/benchmarking/index
    cleanlab/experimental/index
    cleanlab/internal/index
