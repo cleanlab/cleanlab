@@ -31,14 +31,20 @@ def get_sentence(words: List[str]) -> str:
 
     Parameters
     ----------
-    words: List[str]
+    words:
         list of word-level tokens
 
     Returns
     ----------
-    sentence: string
+    sentence:
         sentence formed by list of word-level tokens
 
+    Examples
+    --------
+    >>> from cleanlab.internal.token_classification_utils import get_sentence
+    >>> words = ["This", "is", "a", "sentence", "."]
+    >>> get_sentence(words)
+    'This is a sentence.'
     """
     sentence = ""
     for word in words:
