@@ -64,21 +64,33 @@ def filter_sentence(
 
     Parameters
     ----------
-        sentences: List[str]
-            list of sentences
+    sentences:
+        list of sentences
 
-        condition: Optional[Callable[[str], bool]]
-            sentence filtering condition
+    condition:
+        sentence filtering condition
 
     Returns
     ---------
-        sentences: List[str]
-            list of sentences filtered
+    sentences:
+        list of sentences filtered
 
-        mask: List[bool]
-            boolean mask such that `mask[i] == True` if the i'th sentence is included in the
-            filtered sentence, otherwise `mask[i] == False`
+    mask:
+        boolean mask such that `mask[i] == True` if the i'th sentence is included in the
+        filtered sentence, otherwise `mask[i] == False`
 
+    Examples
+    --------
+    >>> from cleanlab.internal.token_classification_utils import filter_sentence
+    >>> sentences = ["Short sentence.", "This is a longer sentence."]
+    >>> condition = lambda x: len(x.split()) > 2
+    >>> long_sentences, _ = filter_sentence(sentences, condition)
+    >>> long_sentences
+    ['This is a longer sentence.']
+    >>> document = ["# Headline", "Sentence 1.", "&", "Sentence 2."]
+    >>> sentences, mask = filter_sentence(document)
+    >>> sentences, mask
+    (['Sentence 1.', 'Sentence 2.'], [False, True, False, True])
     """
     if not condition:
         condition = lambda sentence: len(sentence) > 1 and "#" not in sentence
