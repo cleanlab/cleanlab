@@ -118,6 +118,19 @@ def process_token(token: str, replace: List[Tuple[str, str]] = [("#", "")]) -> s
     Note
     ----
         Only applies to characters in the original input token.
+
+    Examples
+    --------
+    >>> from cleanlab.internal.token_classification_utils import process_token
+    >>> token = "#Comment"
+    >>> process_token("#Comment")
+    'Comment'
+
+    Specify custom replacement rules
+
+    >>> replace = [("C", "a"), ("a", "C")]
+    >>> process_token("Cleanlab", replace)
+    'aleCnlCb'
     """
     replace_dict = {re.escape(k): v for (k, v) in replace}
     pattern = "|".join(replace_dict.keys())
@@ -177,6 +190,18 @@ def merge_probs(probs: np.ndarray, maps: List[int]) -> np.ndarray:
         np.array of shape `(N, K')`, where K' is the number of new classes. Probablities are merged and
         re-normalized if necessary.
 
+    Examples
+    --------
+    >>> import numpy as np
+    >>> from cleanlab.internal.token_classification_utils import merge_probs
+    >>> probs = np.array([
+    ...     [0.55, 0.0125, 0.0375, 0.1, 0.3],
+    ...     [0.1, 0.8, 0, 0.075, 0.025],
+    ... ])
+    >>> maps = [0, 1, 1, 2, 2]
+    >>> merge_probs(probs, maps)
+    array([[0.55, 0.05, 0.4 ],
+           [0.1 , 0.8 , 0.1 ]])
     """
     old_classes = probs.shape[1]
     map_size = np.max(maps) + 1
@@ -207,6 +232,20 @@ def color_sentence(sentence: str, word: str) -> str:
     colored_sentence:
         `sentence` where the every occurance of the word is colored red, using `termcolor.colored`
 
+    Examples
+    --------
+    >>> from cleanlab.internal.token_classification_utils import color_sentence
+    >>> sentence = "This is a sentence."
+    >>> word = "sentence"
+    >>> color_sentence(sentence, word)
+    'This is a \x1b[31msentence\x1b[0m.'
+
+    Works for multiple occurences of the word
+
+    >>> document = "This is a sentence. This is another sentence."
+    >>> word = "sentence"
+    >>> color_sentence(document, word)
+    'This is a \x1b[31msentence\x1b[0m. This is another \x1b[31msentence\x1b[0m.'
     """
     colored_word = colored(word, "red")
     colored_sentence, number_of_substitions = re.subn(
