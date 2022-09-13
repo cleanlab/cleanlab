@@ -104,16 +104,16 @@ def process_token(token: str, replace: List[Tuple[str, str]] = [("#", "")]) -> s
 
     Parameters
     ----------
-        token: str
-            token which potentially contains special characters
+    token:
+        token which potentially contains special characters
 
-        replace: List[Tuple[str, str]]
-            list of tuples `(s1, s2)`, where all occurances of s1 are replaced by s2
+    replace:
+        list of tuples `(s1, s2)`, where all occurances of s1 are replaced by s2
 
     Returns
     ---------
-        processed_token: str
-            processed token whose special character has been replaced
+    processed_token:
+        processed token whose special character has been replaced
 
     Note
     ----
@@ -133,16 +133,16 @@ def mapping(entities: List[int], maps: List[int]) -> List[int]:
 
     Parameters
     ----------
-        entities: List[int]
-            a list of given entities
+    entities:
+        a list of given entities
 
-        maps: List[int]
-            a list of mapped entities, such that the i'th indexed token should be mapped to `maps[i]`
+    maps:
+        a list of mapped entities, such that the i'th indexed token should be mapped to `maps[i]`
 
     Returns
     ---------
-        mapped_entities: List[int]
-            a list of mapped entities
+    mapped_entities:
+        a list of mapped entities
 
     Examples
     --------
@@ -163,19 +163,19 @@ def merge_probs(probs: np.ndarray, maps: List[int]) -> np.ndarray:
 
     Parameters
     ----------
-        probs:
-            np.array of shape `(N, K)`, where N is the number of tokens, and K is the number of classes for the model
+    probs:
+        np.array of shape `(N, K)`, where N is the number of tokens, and K is the number of classes for the model
 
-        maps: List[int]
-            a list of mapped index, such that the probability of the token being in the i'th class is mapped to the
-            `maps[i]` index. If `maps[i] == -1`, the i'th column of `probs` is ignored. If `np.any(maps == -1)`, the
-            returned probability is re-normalized.
+    maps:
+        a list of mapped index, such that the probability of the token being in the i'th class is mapped to the
+        `maps[i]` index. If `maps[i] == -1`, the i'th column of `probs` is ignored. If `np.any(maps == -1)`, the
+        returned probability is re-normalized.
 
     Returns
     ---------
-        probs_merged:
-            np.array of shape `(N, K')`, where K' is the number of new classes. Probablities are merged and
-            re-normalized if necessary.
+    probs_merged:
+        np.array of shape `(N, K')`, where K' is the number of new classes. Probablities are merged and
+        re-normalized if necessary.
 
     """
     old_classes = probs.shape[1]
@@ -197,15 +197,15 @@ def color_sentence(sentence: str, word: str) -> str:
 
     Parameters
     ----------
-        sentence:
-            a sentence where the word is searched
+    sentence:
+        a sentence where the word is searched
 
-        word:
-            keyword to find in `sentence`. Assumes the word exists in the sentence.
+    word:
+        keyword to find in `sentence`. Assumes the word exists in the sentence.
     Returns
     ---------
-        colored_sentence:
-            `sentence` where the every occurance of the word is colored red, using `termcolor.colored`
+    colored_sentence:
+        `sentence` where the every occurance of the word is colored red, using `termcolor.colored`
 
     """
     colored_word = colored(word, "red")
