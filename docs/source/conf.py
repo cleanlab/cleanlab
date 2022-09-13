@@ -39,6 +39,7 @@ extensions = [
     "sphinx_multiversion",
     "sphinx_copybutton",
     "sphinxcontrib.katex",
+    "sphinx_autodoc_typehints",
 ]
 
 numpy_show_class_members = True
@@ -78,7 +79,7 @@ napoleon_use_admonition_for_notes = False
 napoleon_use_admonition_for_references = False
 napoleon_use_ivar = False
 napoleon_use_param = True
-napoleon_use_rtype = True
+napoleon_use_rtype = False
 napoleon_preprocess_types = True
 napoleon_type_aliases = None
 napoleon_attr_annotations = True
