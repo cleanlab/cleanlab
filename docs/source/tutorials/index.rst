@@ -10,8 +10,8 @@ Tutorials
    tabular
    audio
    dataset_health
-   pred_probs_cross_val
    outliers
    multiannotator
    token_classification
+   pred_probs_cross_val
    faq

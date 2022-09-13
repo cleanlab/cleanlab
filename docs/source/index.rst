@@ -101,10 +101,10 @@ The example below shows how to view all dataset-level issues in one line of code
    tutorials/tabular
    tutorials/audio
    tutorials/dataset_health
-   tutorials/pred_probs_cross_val
    tutorials/outliers
    tutorials/multiannotator
    tutorials/token_classification
+   tutorials/pred_probs_cross_val
    tutorials/faq
 
 .. toctree::
@@ -117,8 +117,8 @@ The example below shows how to view all dataset-level issues in one line of code
    cleanlab/rank
    cleanlab/count
    cleanlab/dataset
-   cleanlab/multiannotator
    cleanlab/outlier
+   cleanlab/multiannotator
    cleanlab/benchmarking/index
    cleanlab/experimental/index
    cleanlab/internal/index
