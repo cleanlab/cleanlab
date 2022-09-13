@@ -36,8 +36,7 @@ def get_sentence(words: List[str]) -> str:
 
     Returns
     ----------
-    sentence:
-        sentence formed by list of word-level tokens
+    sentence formed by list of word-level tokens
 
     Examples
     --------
