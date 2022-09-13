@@ -169,8 +169,7 @@ def test_tensorflow_functional(batch_size, shuffle_config, data=DATA, hidden_uni
 
     def make_model(num_features, num_classes):
         inputs = tf.keras.Input(shape=(num_features,))
-        dense = tf.keras.layers.Dense(64, activation="relu")
-        x = dense(inputs)
+        x = tf.keras.layers.Dense(64, activation="relu")(inputs)
         outputs = tf.keras.layers.Dense(num_classes)(x)
         model = tf.keras.Model(inputs=inputs, outputs=outputs, name="test_model")
 
