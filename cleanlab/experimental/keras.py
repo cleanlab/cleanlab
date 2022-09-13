@@ -36,6 +36,11 @@ from typing import Callable
 
 
 class KerasWrapperModel:
+    """
+    KerasWrapperModel takes in a callable function to instantiate a Keras model (using Keras functional API)
+    that is compatible with :py:meth:`CleanLearning.fit()<cleanlab.classification.CleanLearning.fit>`.
+    """
+
     def __init__(
         self,
         model: Callable,
