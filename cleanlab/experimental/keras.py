@@ -36,9 +36,11 @@ from typing import Callable
 
 
 class KerasWrapperModel:
-    """
-    KerasWrapperModel takes in a callable function to instantiate a Keras model (using Keras functional API)
+    """Takes in a callable function to instantiate a Keras Model (using Keras functional API)
     that is compatible with :py:meth:`CleanLearning.fit()<cleanlab.classification.CleanLearning.fit>`.
+
+    The instance methods below work in the same way as those of any ``keras.Model`` object.
+    For instead using Keras sequential API, see the :py:class:`KerasWrapperSequential<cleanlab.experimental.keras.KerasWrapperSequential>` class.
     """
 
     def __init__(
@@ -49,6 +51,25 @@ class KerasWrapperModel:
             "loss": tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
         },
     ):
+        """
+        Parameters
+        ----------
+        model: Callable
+            A callable function to define the Keras Model (using functional API).
+
+            For example::
+
+                def make_model(num_features, num_classes):
+                    ...
+                    return model
+                model = make_model
+
+        model_kwargs: dict, default = {}
+            Dict of args to pass into ``model()`` when instantiating the model.
+
+        complie_kwargs: dict, default = {"loss": tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)}
+            Dict of arguments to pass into ``model.compile()``.
+        """
         self.model = model
         self.model_kwargs = model_kwargs
         self.compile_kwargs = compile_kwargs
@@ -87,10 +108,9 @@ class KerasWrapperModel:
 
 
 class KerasWrapperSequential:
-    """
-    KerasWrapperSequential is instantiated in the same way as a ``tf.keras.models.Sequential`` object,
+    """KerasWrapperSequential is instantiated in the same way as a ``tf.keras.models.Sequential`` object,
     except for extra argument:
-    * *compile_kwargs*: dict of args to pass into ``model.compile()``
+    * *compile_kwargs*: dict of args to pass into ``model.compile()``.
     """
 
     def __init__(
@@ -101,6 +121,18 @@ class KerasWrapperSequential:
             "loss": tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
         },
     ):
+        """
+        Parameters
+        ----------
+        layers: list
+            A list containing the layers to add to the Sequential Keras Model.
+
+        name: str, default = None
+            Name for the Keras model.
+
+        complie_kwargs: dict, default = {"loss": tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)}
+            Dict of arguments to pass into ``model.compile()``.
+        """
         self.layers = layers
         self.name = name
         self.compile_kwargs = compile_kwargs
