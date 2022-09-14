@@ -32,28 +32,118 @@ Tips:
 
 import tensorflow as tf
 import numpy as np
+from typing import Callable
 
 
-class KerasWrapper:
-    """
-    KerasWrapper is instantiated in the same way as a ``tf.keras.models.Sequential`` object,
-    except for extra argument:
-    * *compile_kwargs*: dict of args to pass into ``model.compile()``
+class KerasWrapperModel:
+    """Takes in a callable function to instantiate a Keras Model (using Keras functional API)
+    that is compatible with :py:meth:`CleanLearning.fit()<cleanlab.classification.CleanLearning.fit>`.
+
+    The instance methods below work in the same way as those of any ``keras.Model`` object.
+    For instead using Keras sequential API, see the :py:class:`KerasWrapperSequential<cleanlab.experimental.keras.KerasWrapperSequential>` class.
     """
 
     def __init__(
         self,
-        layers=None,
-        name=None,
-        compile_kwargs={"loss": tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)},
+        model: Callable,
+        model_kwargs: dict = {},
+        compile_kwargs: dict = {
+            "loss": tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
+        },
     ):
+        """
+        Parameters
+        ----------
+        model: Callable
+            A callable function to define the Keras Model (using functional API).
+
+            For example::
+
+                def make_model(num_features, num_classes):
+                    ...
+                    return model
+                model = make_model
+
+        model_kwargs: dict, default = {}
+            Dict of args to pass into ``model()`` when instantiating the model.
+
+        complie_kwargs: dict, default = {"loss": tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)}
+            Dict of arguments to pass into ``model.compile()``.
+        """
+        self.model = model
+        self.model_kwargs = model_kwargs
+        self.compile_kwargs = compile_kwargs
+        self.net = None
+
+    def get_params(self, deep=True):
+        return {
+            "model": self.model,
+            "model_kwargs": self.model_kwargs,
+            "compile_kwargs": self.compile_kwargs,
+        }
+
+    def fit(self, X, y=None, **kwargs):
+        """Note that ``X`` dataset object must already contain the labels as is required for standard Keras fit.
+        You can provide the labels again here as argument ``y`` to be compatible with sklearn, but they are ignored.
+        """
+        self.net = self.model(**self.model_kwargs)
+        self.net.compile(**self.compile_kwargs)
+        self.net.fit(X, **kwargs)
+
+    def predict_proba(self, X, apply_softmax=True, **kwargs):
+        """Set `apply_softmax` to True to indicate your network only outputs logits not probabilities"""
+        if self.net is None:
+            raise ValueError("must call fit() before predict()")
+        pred_probs = self.net.predict(X, **kwargs)
+        if apply_softmax:
+            pred_probs = tf.nn.softmax(pred_probs, axis=1)
+        return pred_probs
+
+    def predict(self, X, **kwargs):
+        pred_probs = self.predict_proba(X, **kwargs)
+        return np.argmax(pred_probs, axis=1)
+
+    def summary(self, **kwargs):
+        self.net.summary(**kwargs)
+
+
+class KerasWrapperSequential:
+    """KerasWrapperSequential is instantiated in the same way as a ``tf.keras.models.Sequential`` object,
+    except for extra argument:
+    * *compile_kwargs*: dict of args to pass into ``model.compile()``.
+    """
+
+    def __init__(
+        self,
+        layers: list = None,
+        name: str = None,
+        compile_kwargs: dict = {
+            "loss": tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
+        },
+    ):
+        """
+        Parameters
+        ----------
+        layers: list
+            A list containing the layers to add to the Sequential Keras Model.
+
+        name: str, default = None
+            Name for the Keras model.
+
+        complie_kwargs: dict, default = {"loss": tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)}
+            Dict of arguments to pass into ``model.compile()``.
+        """
         self.layers = layers
         self.name = name
         self.compile_kwargs = compile_kwargs
         self.net = None
 
     def get_params(self, deep=True):
-        return {"layers": self.layers, "name": self.name, "compile_kwargs": self.compile_kwargs}
+        return {
+            "layers": self.layers,
+            "name": self.name,
+            "compile_kwargs": self.compile_kwargs,
+        }
 
     def fit(self, X, y=None, **kwargs):
         """Note that ``X`` dataset object must already contain the labels as is required for standard Keras fit.
