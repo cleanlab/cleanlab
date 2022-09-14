@@ -279,7 +279,7 @@ def find_label_issues(
             if multi_label:
                 _labels = RawArray("I", int2onehot(labels).flatten())  # type: ignore
             else:
-                _labels = RawArray("I", labels)
+                _labels = RawArray("I", labels)  # type: ignore
             _label_counts = RawArray("I", label_counts)
             _prune_count_matrix = RawArray("I", prune_count_matrix.flatten())  # type: ignore
             _pred_probs = RawArray("f", pred_probs.flatten())
