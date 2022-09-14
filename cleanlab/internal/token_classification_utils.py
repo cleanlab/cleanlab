@@ -231,7 +231,7 @@ def color_sentence(sentence: str, word: str) -> str:
     Returns
     ---------
     colored_sentence:
-        `sentence` where the every occurance of the word is colored red, using `termcolor.colored`
+        `sentence` where the every occurrence of the word is colored red, using ``termcolor.colored``
 
     Examples
     --------
