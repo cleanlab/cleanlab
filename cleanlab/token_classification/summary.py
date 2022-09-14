@@ -295,14 +295,14 @@ def filter_by_token(
 
     Parameters
     ----------
-        token:
-            the specific token the user is looking for
+    token:
+        the specific token the user is looking for
 
-        issues:
-            list of tuples `(i, j)`, which represents the j'th token of the i'th sentence.
+    issues:
+        list of tuples `(i, j)`, which represents the j'th token of the i'th sentence.
 
-        given_words:
-            tokens in a nested-list format, such that `given_words[i]` contains the words of the i'th sentence from
+    given_words:
+        tokens in a nested-list format, such that `given_words[i]` contains the words of the i'th sentence from
         the original file.
 
     Returns
