@@ -156,14 +156,14 @@ def common_label_issues(
 
     labels:
         list of given labels, such that `labels[i]` is a list containing the given labels of the tokens in the i'th
-    sentence, and has length equal to the number of given tokens of the i'th sentence. If provided, also
-    displays the given label of the token.
+        sentence, and has length equal to the number of given tokens of the i'th sentence. If provided, also
+        displays the given label of the token.
 
     pred_probs:
         list of model-predicted probability, such that `pred_probs[i]` contains the model-predicted probability of
-    the tokens in the i'th sentence, and has shape `(N, K)`, where `N` is the number of given tokens of the i'th
-    sentence, and `K` is the number of classes predicted by the model. If both `labels` and `pred_probs` are
-    provided, also evaluate each type of given/predicted label swap.
+        the tokens in the i'th sentence, and has shape `(N, K)`, where `N` is the number of given tokens of the i'th
+        sentence, and `K` is the number of classes predicted by the model. If both `labels` and `pred_probs` are
+        provided, also evaluate each type of given/predicted label swap.
 
     class_names:
         name of classes. If not provided, display the integer index for predicted and given labels.
