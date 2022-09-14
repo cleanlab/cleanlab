@@ -195,7 +195,7 @@ def test_tensorflow_functional(batch_size, shuffle_config, data=DATA, hidden_uni
     preds = cl.predict(dataset_og_order)
     err = np.sum(preds != data["y_og"]) / len(data["y_og"])
     issue_indices = list(cl.label_issues_df[cl.label_issues_df["is_label_issue"]].index.values)
-    assert issue_indices == data["error_indices"]
+    assert set(issue_indices).issubset(set(data["error_indices"]))
     assert err < 1e-3
 
 
