@@ -31,6 +31,7 @@ from cleanlab.internal.label_quality_utils import (
 from cleanlab.internal.validation import assert_valid_inputs, labels_to_array
 from cleanlab.typing import LabelLike
 
+
 class OutOfDistribution:
     """
     Provides scores to detect Out Of Distribution (OOD) examples that are outliers in a dataset.
