@@ -33,7 +33,7 @@ def rank_classes_by_label_quality(
     joint=None,
     confident_joint=None,
     multi_label=False,
-):
+) -> pd.DataFrame:
     """
     Returns a Pandas DataFrame with all classes and three overall class label quality scores
     (details about each score are listed in the Returns parameter). By default, classes are ordered
@@ -54,8 +54,8 @@ def rank_classes_by_label_quality(
 
     Returns
     -------
-    pd.DataFrame
-        A Pandas DataFrame with cols "Class Index", "Label Issues", "Inverse Label Issues",
+    overall_label_quality : pd.DataFrame
+        Pandas DataFrame with cols "Class Index", "Label Issues", "Inverse Label Issues",
         "Label Issues", "Inverse Label Noise", "Label Quality Score",
         with a description of each of these columns below.
         The length of the DataFrame is ``num_classes`` (one row per class).
@@ -112,7 +112,7 @@ def find_overlapping_classes(
     joint=None,
     confident_joint=None,
     multi_label=False,
-):
+) -> pd.DataFrame:
     """Returns the pairs of classes that are often mislabeled as one another.
     Consider merging the top pairs of classes returned by this method each into a single class.
     If the dataset is labeled by human annotators, consider clearly defining the
@@ -208,8 +208,8 @@ def find_overlapping_classes(
 
     Returns
     -------
-    pd.DataFrame
-        A Pandas DataFrame with columns "Class Index A", "Class Index B",
+    overlapping_classes : pd.DataFrame
+        Pandas DataFrame with columns "Class Index A", "Class Index B",
         "Num Overlapping Examples", "Joint Probability" and a description of each below.
         Each row corresponds to a pair of classes.
 
@@ -278,7 +278,7 @@ def overall_label_health_score(
     confident_joint=None,
     multi_label=False,
     verbose=True,
-):
+) -> float:
     """Returns a single score between 0 and 1 measuring the overall quality of all labels in a dataset.
     Intuitively, the score is the average correctness of the given labels across all examples in the
     dataset. So a score of 1 suggests your data is perfectly labeled and a score of 0.5 suggests
@@ -333,7 +333,7 @@ def health_summary(
     confident_joint=None,
     multi_label=False,
     verbose=True,
-):
+) -> dict:
     """Prints a health summary of your datasets including useful statistics like:
 
     * The classes with the most and least label issues
@@ -352,7 +352,7 @@ def health_summary(
 
     Returns
     -------
-    dict
+    summary : dict
         A dictionary containing keys (see the corresponding functions' documentation to understand the values):
 
         - ``"overall_label_health_score"``, corresponding to :py:func:`overall_label_health_score <cleanlab.dataset.overall_label_health_score>`
@@ -441,7 +441,7 @@ def health_summary(
     }
 
 
-def _get_num_examples(labels=None):
+def _get_num_examples(labels=None) -> int:
     """Helper method that finds the number of examples from the parameters or throws an error
     if neither parameter is provided.
 

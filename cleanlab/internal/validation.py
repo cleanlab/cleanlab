@@ -187,7 +187,7 @@ def labels_to_array(y: Union[LabelLike, np.generic]) -> np.ndarray:
 
     Returns
     -------
-    np.ndarray
+    labels_array : np.ndarray
         1D numpy array of labels.
     """
     if isinstance(y, pd.Series):
