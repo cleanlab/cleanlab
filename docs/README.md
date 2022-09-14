@@ -34,27 +34,36 @@ pip install -r docs/requirements.txt
 
 4. If you don't already have it, install [wget](https://www.gnu.org/software/wget/). This can be done with `brew` on macOS: `brew install wget`
 
-5. **[Optional]** [Create a new branch](https://www.atlassian.com/git/tutorials/using-branches), make your code changes, and then `git commit` them. **ONLY COMMITTED CHANGES WILL BE REFLECTED IN THE DOCS BUILD.**
+5. **[Optional]** [Create a new branch](https://www.atlassian.com/git/tutorials/using-branches), make your code changes, and then `git commit` them. **ONLY COMMITTED CHANGES WILL BE REFLECTED IN THE DOCS BUILD WITH `sphinx-multiversion`.**
 
-6. Build the docs with [`sphinx-multiversion`](https://holzhaus.github.io/sphinx-multiversion):
+6. Build the docs with either
+   1. [`sphinx-multiversion`](https://holzhaus.github.io/sphinx-multiversion):
 
-   * If you're building from a **branch** (usually the `master` branch):
+      * If you're building from a **branch** (usually the `master` branch):
 
-   ```
-   sphinx-multiversion docs/source cleanlab-docs -D smv_branch_whitelist=YOUR_BRANCH_NAME -D smv_tag_whitelist=None
-   ```
+      ```
+      sphinx-multiversion docs/source cleanlab-docs -D smv_branch_whitelist=YOUR_BRANCH_NAME -D smv_tag_whitelist=None
+      ```
 
-   * If you're building from a **tag** (usually the tag of the stable release):
+      * If you're building from a **tag** (usually the tag of the stable release):
 
-   ```
-   sphinx-multiversion docs/source cleanlab-docs -D smv_branch_whitelist=None -D smv_tag_whitelist=YOUR_TAG_NAME
-   ```
+      ```
+      sphinx-multiversion docs/source cleanlab-docs -D smv_branch_whitelist=None -D smv_tag_whitelist=YOUR_TAG_NAME
+      ```
 
-   Note: To also build docs for another branch or tag, run the above command again changing only the `YOUR_BRANCH_NAME` or `YOUR_TAG_NAME` placeholder.
+      Note: To also build docs for another branch or tag, run the above command again changing only the `YOUR_BRANCH_NAME` or `YOUR_TAG_NAME` placeholder.
+
+   2. [`sphinx-build`](https://www.sphinx-doc.org/en/master/man/sphinx-build.html):
+
+      * If you're building from the working directory tree (when you may have any un-committed changes saved):
+
+      ```
+      sphinx-build docs/source cleanlab-docs
+      ```
 
    **Fast build**: Executing the Jupyter Notebooks (i.e., the `.ipynb` files) that make up some portion of the docs, such as the tutorials, takes a long time. If you want to skip rendering these, set the environment variable `SKIP_NOTEBOOKS=1`. You can either set this using `export SKIP_NOTEBOOKS=1` or do this inline with `SKIP_NOTEBOOKS=1 sphinx-multiversion ...`.
 
-   While building the docs, your terminal might output:
+   While building the docs with `sphinx-multiversion`, your terminal might output:
    * `unknown config value 'smv_branch_whitelist' in override, ignoring`, and
    * `unknown config value 'smv_tag_whitelist' in override, ignoring`.
 
@@ -84,28 +93,40 @@ pip install -r docs/requirements.txt
 
 9. The docs for each branch and/or tag can be found in the `cleanlab-docs/` directory, open any of the `index.html` in your browser to view the docs:
 
-```
-cleanlab-docs
-|   index.html (redirects to stable release of the docs)
-|   versioning.js (for dynamic versioning and version warning banner)
-|
-└───YOUR_BRANCH_NAME (e.g. master)
-│       index.html
-│       ...
-│
-└───YOUR_TAG_NAME_1 (e.g. your stable release tag name)
-│       index.html
-│       ...
-│
-└───YOUR_TAG_NAME_2 (e.g. an old release tag name)
-│       index.html
-│       ...
-│
-└───stable
-│       index.html (redirects to stable release of the docs)
-│
-└───...
-```
+   ```
+   cleanlab-docs
+   |   index.html (redirects to stable release of the docs)
+   |   versioning.js (for dynamic versioning and version warning banner)
+   |
+   └───YOUR_BRANCH_NAME (e.g. master)
+   │       index.html
+   │       ...
+   │
+   └───YOUR_TAG_NAME_1 (e.g. your stable release tag name)
+   │       index.html
+   │       ...
+   │
+   └───YOUR_TAG_NAME_2 (e.g. an old release tag name)
+   │       index.html
+   │       ...
+   │
+   └───stable
+   │       index.html (redirects to stable release of the docs)
+   │
+   └───...
+   ```
+
+   Note: If you're building the docs from a working directory tree, the docs will be found at the top of the `cleanlab-docs/` directory:
+
+   ```
+   cleanlab-docs
+   |   index.html (docs for the working directory tree)
+   |   ...
+   |
+   └───...
+   ```
+
+   This may overwrite some of the files in `cleanlab-docs/`, like `index.html` from the previous step.
 
 # Build the `cleanlab` docs **remotely** on GitHub
 
