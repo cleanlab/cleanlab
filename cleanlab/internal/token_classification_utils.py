@@ -241,7 +241,7 @@ def color_sentence(sentence: str, word: str) -> str:
     >>> color_sentence(sentence, word)
     'This is a \x1b[31msentence\x1b[0m.'
 
-    Also works for multiple occurences of the word
+    Also works for multiple occurrences of the word
 
     >>> document = "This is a sentence. This is another sentence."
     >>> word = "sentence"
