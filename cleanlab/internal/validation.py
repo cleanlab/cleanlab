@@ -194,10 +194,11 @@ def labels_to_array(y: Union[LabelLike, np.generic]) -> np.ndarray:
         y_series: np.ndarray = y.to_numpy()
         return y_series
     elif isinstance(y, pd.DataFrame):
-        y = y.values
-        if y.shape[1] != 1:
+        y_arr = y.values
+        assert isinstance(y_arr, np.ndarray)
+        if y_arr.shape[1] != 1:
             raise ValueError("labels must be one dimensional.")
-        return y.flatten()
+        return y_arr.flatten()
     else:  # y is list, np.ndarray, or some other tuple-like object
         try:
             return np.asarray(y)

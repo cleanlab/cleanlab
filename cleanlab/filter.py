@@ -277,11 +277,11 @@ def find_label_issues(
         # Prepare multiprocessing shared data
         if n_jobs > 1:
             if multi_label:
-                _labels = RawArray("I", int2onehot(labels).flatten())
+                _labels = RawArray("I", int2onehot(labels).flatten())  # type: ignore
             else:
                 _labels = RawArray("I", labels)
             _label_counts = RawArray("I", label_counts)
-            _prune_count_matrix = RawArray("I", prune_count_matrix.flatten())
+            _prune_count_matrix = RawArray("I", prune_count_matrix.flatten())  # type: ignore
             _pred_probs = RawArray("f", pred_probs.flatten())
         else:  # Multiprocessing is turned off. Create tuple with all parameters
             args = (
@@ -647,7 +647,7 @@ def _get_shared_data() -> Any:  # pragma: no cover
             )
         )
     else:
-        labels = _to_np_array(mp_params["labels"])
+        labels = _to_np_array(mp_params["labels"])  # type: ignore
     return (
         labels,
         label_counts,

@@ -25,6 +25,7 @@ generating noisy labels given a noise matrix, generating valid noise matrices wi
 import numpy as np
 from cleanlab.internal.util import value_counts
 import warnings
+from typing import Optional
 
 
 def noise_matrix_is_valid(noise_matrix, py, *, verbose=False) -> bool:
@@ -200,7 +201,7 @@ def generate_noise_matrix_from_trace(
     frac_zero_noise_rates=0.0,
     seed=0,
     max_iter=10000,
-) -> np.ndarray:
+) -> Optional[np.ndarray]:
     """Generates a ``K x K`` noise matrix ``P(label=k_s|true_label=k_y)`` with
     ``np.sum(np.diagonal(noise_matrix))`` equal to the given `trace`.
 

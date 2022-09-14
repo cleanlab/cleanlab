@@ -228,6 +228,7 @@ def estimate_joint(labels, pred_probs, *, confident_joint=None, multi_label=Fals
     else:
         calibrated_cj = calibrate_confident_joint(confident_joint, labels, multi_label=multi_label)
 
+    assert isinstance(calibrated_cj, np.ndarray)
     return calibrated_cj / float(np.sum(calibrated_cj))
 
 
@@ -238,7 +239,7 @@ def _compute_confident_joint_multi_label(
     thresholds=None,
     calibrate=True,
     return_indices_of_off_diagonals=False,
-) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
+) -> Union[np.ndarray, Tuple[np.ndarray, list]]:
     """Computes the confident joint for multi_labeled data. Thus,
     input `labels` is a list of lists (or list of iterable).
     This is intended as a helper function. You should probably
@@ -306,9 +307,11 @@ def _compute_confident_joint_multi_label(
             np.any(np.delete(pred_probs_bool, k, axis=1)[k_in_l[k]], axis=1) for k in unique_classes
         ]
         # Map boolean mask to the indices of the examples, for each class k
-        indices_of_issues = [indices_k_in_l[k][issues_mask[k]] for k in unique_classes]
+        indices_of_issues_list = [indices_k_in_l[k][issues_mask[k]] for k in unique_classes]
         # Combine error indices for each class k into a single set of all the indices of errors
-        indices_of_issues = np.asarray(list(set([z for lst in indices_of_issues for z in lst])))
+        indices_of_issues = np.asarray(
+            list(set([z for lst in indices_of_issues_list for z in lst]))
+        )
         return confident_joint, sorted(indices_of_issues)
 
     return confident_joint
@@ -322,7 +325,7 @@ def compute_confident_joint(
     calibrate=True,
     multi_label=False,
     return_indices_of_off_diagonals=False,
-) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
+) -> Union[np.ndarray, Tuple[np.ndarray, list]]:
     """Estimates the confident counts of latent true vs observed noisy labels
     for the examples in our dataset. This array of shape ``(K, K)`` is called the **confident joint**
     and contains counts of examples in every class, confidently labeled as every other class.
@@ -638,6 +641,7 @@ def estimate_py_and_noise_matrices_from_probabilities(
         py_method=py_method,
         converge_latent_estimates=converge_latent_estimates,
     )
+    assert isinstance(confident_joint, np.ndarray)
 
     return py, noise_matrix, inv_noise_matrix, confident_joint
 
@@ -813,6 +817,8 @@ def estimate_confident_joint_and_cv_pred_proba(
         thresholds=thresholds,
         calibrate=calibrate,
     )
+    assert isinstance(confident_joint, np.ndarray)
+    assert isinstance(pred_probs, np.ndarray)
 
     return confident_joint, pred_probs
 
