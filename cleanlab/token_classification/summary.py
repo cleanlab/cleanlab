@@ -69,6 +69,18 @@ def display_issues(
     top: int, default=20
         maximum number of outputs to be printed.
 
+    Examples
+    --------
+    >>> from cleanlab.token_classification.summary import display_issues
+    >>> issues = [(2, 0), (0, 1)]
+    >>> given_words = [
+    ...     ["A", "?weird", "sentence"],
+    ...     ["A", "valid", "sentence"],
+    ...     ["An", "sentence", "with", "a", "typo"],
+    ... ]
+    >>> display_issues(issues, given_words)
+    Sentence 2, token 0:
+    ...
     """
     if not class_names:
         print(
@@ -175,6 +187,20 @@ def common_label_issues(
         a data frame with columns ['token', 'num_label_issues'], and each row contains the information for a specific
         token, ordered by the number of label issues in descending order.
 
+    Examples
+    --------
+    >>> from cleanlab.token_classification.summary import common_label_issues
+    >>> issues = [(2, 0), (0, 1)]
+    >>> given_words = [
+    ...     ["A", "?weird", "sentence"],
+    ...     ["A", "valid", "sentence"],
+    ...     ["An", "sentence", "with", "a", "typo"],
+    ... ]
+    >>> df = common_label_issues(issues, given_words)
+    >>> df
+        token  num_label_issues
+    0      An                 1
+    1  ?weird                 1
     """
     count: Dict[str, Any] = {}
     if not labels or not pred_probs:
@@ -284,6 +310,18 @@ def filter_by_token(
     returned_issues:
         list of tuples `(i, j)`, which represents the j'th token of the i'th sentence.
 
+    Examples
+    --------
+    >>> from cleanlab.token_classification.summary import filter_by_token
+    >>> token = "?weird"
+    >>> issues = [(2, 0), (0, 1)]
+    >>> given_words = [
+    ...     ["A", "?weird", "sentence"],
+    ...     ["A", "valid", "sentence"],
+    ...     ["An", "sentence", "with", "a", "typo"],
+    ... ]
+    >>> filter_by_token(token, issues, given_words)
+    [(0, 1)]
     """
     returned_issues = []
     for issue in issues:

@@ -42,6 +42,13 @@ def softmin_sentence_score(token_scores: List[np.ndarray], temperature: float = 
     ---------
     sentence_scores: np.array
         np.array of shape `(N, )`, where `N` is the number of sentences. Contains score for each sentence.
+
+    Examples
+    ---------
+    >>> from cleanlab.token_classification.rank import softmin_sentence_score
+    >>> token_scores = [[0.9, 0.6], [0.0, 0.8, 0.8], [0.8]]
+    >>> softmin_sentence_score(token_scores)
+    array([6.00741787e-01, 1.80056239e-07, 8.00000000e-01])
     """
     if temperature == 0:
         return np.array([np.min(scores) for scores in token_scores])
@@ -111,7 +118,26 @@ def get_label_quality_scores(
     token_info: list
         A list of pandas.Series, such that token_info[i] contains the
         token scores for the i'th sentence. If tokens are provided, the series is indexed by the tokens.
-    ----------
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> from cleanlab.token_classification.rank import get_label_quality_scores
+    >>> labels = [[0, 0, 1], [0, 1]]
+    >>> pred_probs = [
+    ...     np.array([[0.9, 0.1], [0.7, 0.3], [0.05, 0.95]]),
+    ...     np.array([[0.8, 0.2], [0.8, 0.2]]),
+    ... ]
+    >>> sentence_scores, token_info = get_label_quality_scores(labels, pred_probs)
+    >>> sentence_scores
+    array([0.7, 0.2])
+    >>> token_info
+    [0    0.90
+    1    0.70
+    2    0.95
+    dtype: float64, 0    0.8
+    1    0.2
+    dtype: float64]
     """
     methods = ["min", "softmin"]
     assert sentence_score_method in methods, "Select from the following methods:\n%s" % "\n".join(
@@ -172,6 +198,35 @@ def issues_from_scores(
         score. If `token_scores` is not provided, returns list of indices of sentences with label quality score below
         threshold.
 
+    Examples
+    --------
+    >>> import numpy as np
+    >>> from cleanlab.token_classification.rank import issues_from_scores
+    >>> sentence_scores = np.array([0.1, 0.3, 0.6, 0.2, 0.05, 0.9, 0.8, 0.0125, 0.5, 0.6])
+    >>> issues_from_scores(sentence_scores)
+    array([7, 4])
+
+    Changing the score threshold
+
+    >>> issues_from_scores(sentence_scores, threshold=0.5)
+    array([7, 4, 0, 3, 1])
+
+    Providing token scores along with sentence scores finds issues at the token level
+
+    >>> token_scores = [
+    ...     [0.9, 0.6],
+    ...     [0.0, 0.8, 0.8],
+    ...     [0.8, 0.8],
+    ...     [0.1, 0.02, 0.3, 0.4],
+    ...     [0.1, 0.2, 0.03, 0.4],
+    ...     [0.1, 0.2, 0.3, 0.04],
+    ...     [0.1, 0.2, 0.4],
+    ...     [0.3, 0.4],
+    ...     [0.08, 0.2, 0.5, 0.4],
+    ...     [0.1, 0.2, 0.3, 0.4],
+    ... ]
+    >>> issues_from_scores(sentence_scores, token_scores)
+    [(1, 0), (3, 1), (4, 2), (5, 3), (8, 0)]
     """
     if token_scores:
         issues_with_scores = []

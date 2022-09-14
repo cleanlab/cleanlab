@@ -54,6 +54,18 @@ def find_label_issues(
     issues:
         a list containing all potential issues identified by cleanlab, such that each element is a tuple (i, j), which
         corresponds to the j'th token of the i'th sentence.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> from cleanlab.token_classification.filter import find_label_issues
+    >>> labels = [[0, 0, 1], [0, 1]]
+    >>> pred_probs = [
+    ...     np.array([[0.9, 0.1], [0.7, 0.3], [0.05, 0.95]]),
+    ...     np.array([[0.8, 0.2], [0.8, 0.2]]),
+    ... ]
+    >>> find_label_issues(labels, pred_probs)
+    [(1, 1)]
     """
     labels_flatten = [l for label in labels for l in label]
     pred_probs_flatten = np.array([pred for pred_prob in pred_probs for pred in pred_prob])
