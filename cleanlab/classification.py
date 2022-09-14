@@ -510,8 +510,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
                 labels, pred_probs, **self.label_quality_scores_kwargs
             )
 
-        self.label_issues_mask = self.label_issues_df["is_label_issue"].values
-        assert isinstance(self.label_issues_df, np.ndarray)
+        self.label_issues_mask = self.label_issues_df["is_label_issue"].to_numpy()
         x_mask = ~self.label_issues_mask
         x_cleaned, labels_cleaned = subset_X_y(X, labels, x_mask)
         if self.verbose:
@@ -983,7 +982,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
             if len(label_issues) != len(labels):
                 raise ValueError("label_issues and labels must have same length")
             if "given_label" in label_issues.columns and np.any(
-                label_issues["given_label"].values != labels
+                label_issues["given_label"].to_numpy() != labels
             ):
                 raise ValueError("labels must match label_issues['given_label']")
             return label_issues
