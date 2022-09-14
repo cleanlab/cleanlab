@@ -105,6 +105,16 @@ autodoc_default_options = {
 # Subclasses should show parent classes docstrings if they don't override them.
 autodoc_inherit_docstrings = True
 
+# -- Options for copybutton extension -----------------------------------------
+
+# Strip input prompts when copying code blocks. Supports:
+# - Python Repl + continuation prompt
+# - Bash prompt
+# - ipython + continuation prompt
+# - jupyter-console + continuation prompt
+copybutton_prompt_text = r">>> |\.\.\. |\$ |In \[\d*\]: | {2,5}\.\.\.: | {5,8}: "
+copybutton_prompt_is_regexp = True
+
 # -- Options for katex extension -------------------------------------------
 
 if os.getenv("CI") or shutil.which("katex") is not None:
