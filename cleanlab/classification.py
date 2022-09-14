@@ -119,7 +119,7 @@ import numpy as np
 import pandas as pd
 import inspect
 import warnings
-from typing import TypeVar
+from typing import TypeVar, Optional
 
 from cleanlab.rank import get_label_quality_scores
 from cleanlab import filter
@@ -511,6 +511,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
             )
 
         self.label_issues_mask = self.label_issues_df["is_label_issue"].values
+        assert isinstance(self.label_issues_df, np.ndarray)
         x_mask = ~self.label_issues_mask
         x_cleaned, labels_cleaned = subset_X_y(X, labels, x_mask)
         if self.verbose:
@@ -890,7 +891,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
 
         return label_issues_df
 
-    def get_label_issues(self) -> pd.DataFrame:
+    def get_label_issues(self) -> Optional[pd.DataFrame]:
         """
         Accessor. Returns `label_issues_df` attribute if previously already computed.
         This ``pd.DataFrame`` describes the label issues identified for each example

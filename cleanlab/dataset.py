@@ -260,10 +260,10 @@ def find_overlapping_classes(
     num_overlapping = (df["Joint Probability"] * num_examples).round().astype(int)
     df.insert(loc=2, column="Num Overlapping Examples", value=num_overlapping)
     if class_names is not None:
-        df.insert(
+        df.insert(  # type: ignore
             loc=0, column="Class Name A", value=df["Class Index A"].apply(lambda x: class_names[x])
         )
-        df.insert(
+        df.insert(  # type: ignore
             loc=1, column="Class Name B", value=df["Class Index B"].apply(lambda x: class_names[x])
         )
     return df.sort_values(by="Joint Probability", ascending=False).reset_index(drop=True)

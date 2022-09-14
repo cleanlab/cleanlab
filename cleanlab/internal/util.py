@@ -638,7 +638,7 @@ def append_extra_datapoint(to_data, from_data, index) -> DatasetLike:
     if isinstance(to_data, np.ndarray):
         return np.vstack([to_data, from_data[index]])
     elif isinstance(from_data, (pd.DataFrame, pd.Series)):
-        X_extra = from_data.iloc[[index]]
+        X_extra = from_data.iloc[[index]]  # type: ignore
         to_data = pd.concat([to_data, X_extra])
         return to_data.reset_index(drop=True)
     else:
