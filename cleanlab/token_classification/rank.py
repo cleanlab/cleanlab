@@ -31,17 +31,24 @@ def softmin_sentence_score(token_scores: List[np.ndarray], temperature: float = 
 
     Parameters
     ----------
-    token_scores: list
+    token_scores:
         token scores in nested list format, where `token_scores[i]` is a list of token scores of the i'th
         sentence
 
-    temperature: float, default=0.05
+    temperature:
         temperature of the softmax function
 
     Returns
     ---------
-    sentence_scores: np.array
+    sentence_scores:
         np.array of shape `(N, )`, where `N` is the number of sentences. Contains score for each sentence.
+
+    Examples
+    ---------
+    >>> from cleanlab.token_classification.rank import softmin_sentence_score
+    >>> token_scores = [[0.9, 0.6], [0.0, 0.8, 0.8], [0.8]]
+    >>> softmin_sentence_score(token_scores)
+    array([6.00741787e-01, 1.80056239e-07, 8.00000000e-01])
     """
     if temperature == 0:
         return np.array([np.min(scores) for scores in token_scores])
@@ -79,16 +86,16 @@ def get_label_quality_scores(
 
     Parameters
     ----------
-    labels: list
+    labels:
         noisy token labels in nested list format, such that `labels[i]` is a list of token labels of the i'th
         sentence. For datasets with `K` classes, each label must be in 0, 1, ..., K-1. All classes must be present.
-    pred_probs: list
+    pred_probs:
         list of np.arrays, such that `pred_probs[i]` is the model-predicted probabilities for the tokens in
         the i'th sentence, and has shape `(N, K)`. Each row of the matrix corresponds to a token `t` and contains
         the model-predicted probabilities that `t` belongs to each possible class, for each of the K classes. The
         columns must be ordered such that the probabilities correspond to class 0, 1, ..., K-1.
 
-    tokens: list, optional, default=None
+    tokens:
         tokens in nested list format, such that `tokens[i]` is a list of tokens for the i'th sentence. See return value
         `token_info` for more info.
     sentence_score_method: {"min", "softmin"}, default="min"
@@ -100,18 +107,37 @@ def get_label_quality_scores(
         other scores.
     token_score_method: {"self_confidence", "normalized_margin", "confidence_weighted_entropy"}, default="self_confidence"
         label quality scoring method. See `cleanlab.rank.get_label_quality_scores` for more info.
-    sentence_score_kwargs: dict, optional, default={}
+    sentence_score_kwargs:
         keyword arguments for `sentence_score_method`. Supports keyword arguments when `sentence_score_method` is "softmin".
         See `cleanlab.token_classification.rank.softmin_sentence_score` for more info.
     Returns
     ----------
-    sentence_scores: np.array
+    sentence_scores:
         A vector of sentence scores between 0 and 1, where lower scores indicate sentence is more likely to contain at
         least one label issue.
-    token_info: list
+    token_info:
         A list of pandas.Series, such that token_info[i] contains the
         token scores for the i'th sentence. If tokens are provided, the series is indexed by the tokens.
-    ----------
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> from cleanlab.token_classification.rank import get_label_quality_scores
+    >>> labels = [[0, 0, 1], [0, 1]]
+    >>> pred_probs = [
+    ...     np.array([[0.9, 0.1], [0.7, 0.3], [0.05, 0.95]]),
+    ...     np.array([[0.8, 0.2], [0.8, 0.2]]),
+    ... ]
+    >>> sentence_scores, token_info = get_label_quality_scores(labels, pred_probs)
+    >>> sentence_scores
+    array([0.7, 0.2])
+    >>> token_info
+    [0    0.90
+    1    0.70
+    2    0.95
+    dtype: float64, 0    0.8
+    1    0.2
+    dtype: float64]
     """
     methods = ["min", "softmin"]
     assert sentence_score_method in methods, "Select from the following methods:\n%s" % "\n".join(
@@ -155,23 +181,52 @@ def issues_from_scores(
 
     Parameters
     ----------
-    sentence_scores: np.array
+    sentence_scores:
         np.array of shape `(N, )`, where `N` is the number of sentences.
 
-    token_scores: list, optional, default=None
+    token_scores:
         token scores in nested list, such that `token_scores[i]` contains the tokens scores for the i'th sentence
 
-    threshold: int, default=0.1
+    threshold:
         tokens (or sentences, if `token_scores` is not provided) with quality scores above the threshold are not
         included in the result.
 
     Returns
     ---------
-    issues: list
+    issues:
         list of tuples `(i, j)`, which indicates the j'th token of the i'th sentence, sorted by token label quality
         score. If `token_scores` is not provided, returns list of indices of sentences with label quality score below
         threshold.
 
+    Examples
+    --------
+    >>> import numpy as np
+    >>> from cleanlab.token_classification.rank import issues_from_scores
+    >>> sentence_scores = np.array([0.1, 0.3, 0.6, 0.2, 0.05, 0.9, 0.8, 0.0125, 0.5, 0.6])
+    >>> issues_from_scores(sentence_scores)
+    array([7, 4])
+
+    Changing the score threshold
+
+    >>> issues_from_scores(sentence_scores, threshold=0.5)
+    array([7, 4, 0, 3, 1])
+
+    Providing token scores along with sentence scores finds issues at the token level
+
+    >>> token_scores = [
+    ...     [0.9, 0.6],
+    ...     [0.0, 0.8, 0.8],
+    ...     [0.8, 0.8],
+    ...     [0.1, 0.02, 0.3, 0.4],
+    ...     [0.1, 0.2, 0.03, 0.4],
+    ...     [0.1, 0.2, 0.3, 0.04],
+    ...     [0.1, 0.2, 0.4],
+    ...     [0.3, 0.4],
+    ...     [0.08, 0.2, 0.5, 0.4],
+    ...     [0.1, 0.2, 0.3, 0.4],
+    ... ]
+    >>> issues_from_scores(sentence_scores, token_scores)
+    [(1, 0), (3, 1), (4, 2), (5, 3), (8, 0)]
     """
     if token_scores:
         issues_with_scores = []

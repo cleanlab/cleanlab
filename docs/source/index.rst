@@ -119,6 +119,7 @@ The example below shows how to view all dataset-level issues in one line of code
    cleanlab/dataset
    cleanlab/outlier
    cleanlab/multiannotator
+   cleanlab/token_classification/index
    cleanlab/benchmarking/index
    cleanlab/experimental/index
    cleanlab/internal/index
