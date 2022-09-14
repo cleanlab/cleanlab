@@ -29,7 +29,7 @@ from cleanlab.internal.label_quality_utils import (
     get_normalized_entropy,
 )
 from cleanlab.internal.validation import assert_valid_inputs, labels_to_array
-
+from cleanlab.typing import LabelLike
 
 class OutOfDistribution:
     """
@@ -161,7 +161,7 @@ class OutOfDistribution:
         *,
         features: Optional[np.ndarray] = None,
         pred_probs: Optional[np.ndarray] = None,
-        labels: Optional[Union[np.ndarray, list]] = None,
+        labels: Optional[LabelLike] = None,
         verbose: bool = True,
     ):
         """
@@ -314,7 +314,7 @@ class OutOfDistribution:
         *,
         features: Optional[np.ndarray] = None,
         pred_probs: Optional[np.ndarray] = None,
-        labels: Optional[Union[np.ndarray, list]] = None,
+        labels: Optional[LabelLike] = None,
         verbose: bool = True,
     ) -> Optional[np.ndarray]:
         """
@@ -449,7 +449,7 @@ def _get_ood_features_scores(
 def _get_ood_predictions_scores(
     pred_probs: np.ndarray,
     *,
-    labels: Optional[Union[np.ndarray, list]] = None,
+    labels: Optional[LabelLike] = None,
     confident_thresholds: Optional[np.ndarray] = None,
     adjust_pred_probs: bool = True,
     method: str = "entropy",
