@@ -16,7 +16,9 @@
 
 """
 A wrapper class you can use to make any Keras model compatible with cleanlab and sklearn.
-Most of the instance methods of this class are the same as the ones for any Keras model, 
+Use ``KerasWrapperModel`` to wrap existing functional API code for ``keras.Model`` objects, 
+and ``KerasWrapperSequential`` to wrap existing ``tf.keras.models.Sequential`` objects.
+Most of the instance methods of this class are the same as the ones for the wrapped Keras model, 
 see the Keras documentation for details.
 
 This is a good example of making any bespoke neural network compatible with cleanlab.
@@ -26,7 +28,8 @@ You must have Tensorflow installed: https://www.tensorflow.org/install
 Note: Tensorflow is only compatible with Python versions >= 3.7: https://www.tensorflow.org/install/pip#software_requirements
 
 Tips:
-* If this class lacks certain functionality, you can alternatively try scikeras: https://github.com/adriangb/scikeras 
+* If this class lacks certain functionality, you can alternatively try scikeras: https://github.com/adriangb/scikeras
+* Unlike scikeras, this class can operate directly on ``tensorflow.data.Dataset`` objects (like regular Keras models).
 * To call ``fit()`` on a Tensorflow Dataset object with a Keras model, the Dataset should already be batched.
 """
 
