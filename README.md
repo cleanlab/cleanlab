@@ -213,7 +213,7 @@ cleanlab performance across 4 data distributions and 9 classifiers
 </summary>
 <br/>
 
-cleanlab is a general tool that can learn with noisy labels regardless of dataset distribution or classifier type: [examples/classifier\_comparison](https://github.com/cleanlab/examples/blob/master/2_classifier_comparison/classifier_comparison.ipynb).
+cleanlab is a general tool that can learn with noisy labels regardless of dataset distribution or classifier type: [examples/classifier\_comparison](https://github.com/cleanlab/examples/blob/master/classifier_comparison/classifier_comparison.ipynb).
 
 ![](https://raw.githubusercontent.com/cleanlab/assets/master/cleanlab/demo_cleanlab_across_datasets_and_classifiers.png)
 
