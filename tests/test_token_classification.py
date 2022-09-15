@@ -10,7 +10,7 @@ from cleanlab.token_classification.filter import find_label_issues
 from cleanlab.token_classification.rank import (
     get_label_quality_scores,
     issues_from_scores,
-    softmin_sentence_score,
+    _softmin_sentence_score,
 )
 from cleanlab.token_classification.summary import (
     display_issues,
@@ -182,15 +182,15 @@ def test_find_label_issues(test_labels):
 
 def test_softmin_sentence_score():
     token_scores = [[0.9, 0.6], [0.0, 0.8, 0.8], [0.8]]
-    sentence_scores = softmin_sentence_score(token_scores)
+    sentence_scores = _softmin_sentence_score(token_scores)
     assert isinstance(sentence_scores, np.ndarray)
     assert np.allclose(sentence_scores, [0.60074, 1.8e-07, 0.8])
 
     # Temperature limits
-    sentence_scores = softmin_sentence_score(token_scores, temperature=0)
+    sentence_scores = _softmin_sentence_score(token_scores, temperature=0)
     assert np.allclose(sentence_scores, [0.6, 0.0, 0.8])
 
-    sentence_scores = softmin_sentence_score(token_scores, temperature=np.inf)
+    sentence_scores = _softmin_sentence_score(token_scores, temperature=np.inf)
     assert np.allclose(sentence_scores, [0.75, 1.6 / 3, 0.8])
 
 
