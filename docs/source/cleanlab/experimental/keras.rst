@@ -5,4 +5,3 @@ keras
    :autosummary:
    :members:
    :undoc-members:
-   :show-inheritance:
