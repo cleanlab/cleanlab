@@ -425,14 +425,15 @@ def test_find_label_issue_filters_match_origin_functions():
 
 
 def test_num_label_issues():
+    cj_calibrated_off_diag_sum = data["cj"].sum() - data["cj"].trace()
     n = count.num_label_issues(
         labels=data["labels"], pred_probs=data["pred_probs"], confident_joint=data["cj"]
     )
     n2 = filter.find_label_issues(
         labels=data["labels"], pred_probs=data["pred_probs"], confident_joint=data["cj"]
     )
-    # TODO: eventually these should be the same value
-    assert n == 37
+    # TODO: these should be equivalent for `filter_by='confident_learning'`, i.e. assert n == n2
+    assert n == cj_calibrated_off_diag_sum
     assert sum(n2) == 35
 
 
