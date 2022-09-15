@@ -98,7 +98,7 @@ def get_label_quality_multiannotator(
 
     Returns
     -------
-    dict
+    labels_info : dict
         Dictionary containing up to 3 pandas DataFrame with keys as below:
 
         ``label_quality`` : pandas.DataFrame
@@ -461,7 +461,7 @@ def _get_consensus_stats(
 
     Returns
     ------
-    tuple
+    stats : tuple
         A tuple of (consensus_label, annotator_agreement, consensus_quality_score, post_pred_probs).
     """
 
@@ -544,7 +544,7 @@ def _get_annotator_stats(
     Returns
     -------
     annotator_stats : pd.DataFrame
-        Returns overall statistics about each annotator.
+        Overall statistics about each annotator.
         For details, see the documentation of :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>`.
     """
 

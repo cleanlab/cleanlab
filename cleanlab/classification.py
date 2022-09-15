@@ -119,6 +119,7 @@ import numpy as np
 import pandas as pd
 import inspect
 import warnings
+from typing import TypeVar, Optional
 
 from cleanlab.rank import get_label_quality_scores
 from cleanlab import filter
@@ -143,6 +144,9 @@ from cleanlab.internal.validation import (
     assert_valid_inputs,
     labels_to_array,
 )
+
+
+TCleanLearning = TypeVar("TCleanLearning", bound="CleanLearning")  # self type for the class
 
 
 class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
@@ -275,7 +279,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         clf_final_kwargs={},
         validation_func=None,
         y=None,
-    ):
+    ) -> TCleanLearning:
         """
         Train the model `clf` with error-prone, noisy labels as if
         the model had been instead trained on a dataset with the correct labels.
@@ -292,8 +296,8 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
           ``pd.DataFrame``, ``scipy.sparse.csr_matrix``, ``torch.utils.data.Dataset``, ``tensorflow.data.Dataset``,
           or any dataset object ``X`` that supports list-based indexing:
           ``X[index_list]`` to select a subset of training examples.
-          The classifier that this instance was initialized with,
-          ``clf``, must be able to fit() and predict() data of this format.
+          Your classifier that this instance was initialized with,
+          ``clf``, must be able to ``fit()`` and ``predict()`` data of this format.
 
           Note
           ----
@@ -506,7 +510,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
                 labels, pred_probs, **self.label_quality_scores_kwargs
             )
 
-        self.label_issues_mask = self.label_issues_df["is_label_issue"].values
+        self.label_issues_mask = self.label_issues_df["is_label_issue"].to_numpy()
         x_mask = ~self.label_issues_mask
         x_cleaned, labels_cleaned = subset_X_y(X, labels, x_mask)
         if self.verbose:
@@ -584,41 +588,60 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
             )
         return self
 
-    def predict(self, *args, **kwargs):
-        """Returns a vector of predictions.
+    def predict(self, *args, **kwargs) -> np.ndarray:
+        """Predict class labels using your wrapped classifier `clf`.
+        Works just like ``clf.predict()``.
 
         Parameters
         ----------
-        X : np.ndarray
-          An array of shape ``(N, ...)`` of test data."""
+        X : np.ndarray or DatasetLike
+          Test data in the same format expected by your wrapped classifier.
+
+        Returns
+        -------
+        class_predictions : np.ndarray
+          Vector of class predictions for the test examples.
+        """
 
         return self.clf.predict(*args, **kwargs)
 
-    def predict_proba(self, *args, **kwargs):
-        """Returns a vector of predicted probabilities for each example in X,
-        ``P(true label=k)``.
+    def predict_proba(self, *args, **kwargs) -> np.ndarray:
+        """Predict class probabilities ``P(true label=k)`` using your wrapped classifier `clf`.
+        Works just like ``clf.predict_proba()``.
 
         Parameters
         ----------
-        X : np.ndarray
-          An array of shape ``(N, ...)`` of test data."""
+        X : np.ndarray or DatasetLike
+          Test data in the same format expected by your wrapped classifier.
+
+        Returns
+        -------
+        pred_probs : np.ndarray
+          ``(N x K)`` array of predicted class probabilities, one row for each test example.
+        """
 
         return self.clf.predict_proba(*args, **kwargs)
 
-    def score(self, X, y, sample_weight=None):
-        """Returns the `clf`'s score on a test set `X` with labels `y`.
-        Uses the model's default scoring function.
+    def score(self, X, y, sample_weight=None) -> float:
+        """Evaluates your wrapped classifier `clf`'s score on a test set `X` with labels `y`.
+        Uses your model's default scoring function, or simply accuracy if your model as no ``"score"`` attribute.
 
         Parameters
         ----------
-        X : np.ndarray
-          An array of shape ``(N, ...)`` of test data.
+        X : np.ndarray or DatasetLike
+          Test data in the same format expected by your wrapped classifier.
 
-        y : np.ndarray
-          An array of shape ``(N,)`` or ``(N, 1)`` of test labels.
+        y : array_like
+          Test labels in the same format as labels previously used in ``fit()``.
 
         sample_weight : np.ndarray, optional
-          An array of shape ``(N,)`` or ``(N, 1)`` used to weight each example when computing the score."""
+          An array of shape ``(N,)`` or ``(N, 1)`` used to weight each test example when computing the score.
+
+        Returns
+        -------
+        score: float
+          Number quantifying the performance of this classifier on the test data.
+        """
 
         if hasattr(self.clf, "score"):
 
@@ -646,7 +669,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         save_space=False,
         clf_kwargs={},
         validation_func=None,
-    ):
+    ) -> pd.DataFrame:
         """
         Identifies potential label issues in the dataset using confident learning.
 
@@ -689,8 +712,8 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
 
         Returns
         -------
-        pd.DataFrame
-          pandas DataFrame of label issues for each example.
+        label_issues_df : pd.DataFrame
+          DataFrame with info about label issues for each example.
           Unless `save_space` argument is specified, same DataFrame is also stored as
           `self.label_issues_df` attribute accessible via
           :py:meth:`get_label_issues<cleanlab.classification.CleanLearning.get_label_issues>`.
@@ -867,7 +890,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
 
         return label_issues_df
 
-    def get_label_issues(self):
+    def get_label_issues(self) -> Optional[pd.DataFrame]:
         """
         Accessor. Returns `label_issues_df` attribute if previously already computed.
         This ``pd.DataFrame`` describes the label issues identified for each example
@@ -877,7 +900,8 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
 
         Returns
         -------
-        pd.DataFrame
+        label_issues_df : pd.DataFrame
+          DataFrame with (precomputed) info about label issues for each example.
         """
 
         if self.label_issues_df is None:
@@ -943,7 +967,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
             self.confident_joint = find_label_issues_kwargs["confident_joint"]
         self.find_label_issues_kwargs = find_label_issues_kwargs
 
-    def _process_label_issues_arg(self, label_issues, labels):
+    def _process_label_issues_arg(self, label_issues, labels) -> pd.DataFrame:
         """
         Helper method to get the label_issues input arg into a formatted DataFrame.
         """
@@ -958,7 +982,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
             if len(label_issues) != len(labels):
                 raise ValueError("label_issues and labels must have same length")
             if "given_label" in label_issues.columns and np.any(
-                label_issues["given_label"].values != labels
+                label_issues["given_label"].to_numpy() != labels
             ):
                 raise ValueError("labels must match label_issues['given_label']")
             return label_issues

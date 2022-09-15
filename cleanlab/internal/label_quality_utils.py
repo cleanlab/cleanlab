@@ -103,6 +103,7 @@ def get_normalized_entropy(pred_probs: np.ndarray, min_allowed_prob: float = 1e-
     min_allowed_prob : float, default=1e-6
       Minimum allowed probability value. Entries of `pred_probs` below this value will be clipped to this value.
       Ensures entropy remains well-behaved even when `pred_probs` contains zeros.
+
     Returns
     -------
     entropy : np.ndarray (float)

@@ -25,9 +25,10 @@ generating noisy labels given a noise matrix, generating valid noise matrices wi
 import numpy as np
 from cleanlab.internal.util import value_counts
 import warnings
+from typing import Optional
 
 
-def noise_matrix_is_valid(noise_matrix, py, *, verbose=False):
+def noise_matrix_is_valid(noise_matrix, py, *, verbose=False) -> bool:
     """Given a prior `py` representing ``p(true_label=k)``, checks if the given `noise_matrix` is a
     learnable matrix. Learnability means that it is possible to achieve
     better than random performance, on average, for the amount of noise in
@@ -47,7 +48,7 @@ def noise_matrix_is_valid(noise_matrix, py, *, verbose=False):
 
     Returns
     -------
-    bool
+    is_valid : bool
       Whether the noise matrix is a learnable matrix.
     """
 
@@ -105,7 +106,7 @@ def noise_matrix_is_valid(noise_matrix, py, *, verbose=False):
     return True
 
 
-def generate_noisy_labels(true_labels, noise_matrix):
+def generate_noisy_labels(true_labels, noise_matrix) -> np.ndarray:
     """Generates noisy `labels` from perfect labels `true_labels`,
     "exactly" yielding the provided `noise_matrix` between `labels` and `true_labels`.
 
@@ -200,7 +201,7 @@ def generate_noise_matrix_from_trace(
     frac_zero_noise_rates=0.0,
     seed=0,
     max_iter=10000,
-):
+) -> Optional[np.ndarray]:
     """Generates a ``K x K`` noise matrix ``P(label=k_s|true_label=k_y)`` with
     ``np.sum(np.diagonal(noise_matrix))`` equal to the given `trace`.
 
@@ -358,7 +359,7 @@ def generate_n_rand_probabilities_that_sum_to_m(
     *,
     max_prob=1.0,
     min_prob=0.0,
-):
+) -> np.ndarray:
     """
     Generates `n` random probabilities that sum to `m`.
 
@@ -378,6 +379,11 @@ def generate_n_rand_probabilities_that_sum_to_m(
 
     min_prob : float, default=0.0
       Minimum probability of any entry in the returned array. Must be between 0 and 1.
+
+    Returns
+    -------
+    probabilities : np.ndarray
+      An array of probabilities.
     """
 
     epsilon = 1e-6  # Imprecision allowed for inequalities with floats
@@ -447,9 +453,9 @@ def randomly_distribute_N_balls_into_K_bins(
     *,
     max_balls_per_bin=None,
     min_balls_per_bin=None,
-):
-    """Returns a uniformly random numpy integer array of length N that sums
-    to K.
+) -> np.ndarray:
+    """Returns a uniformly random numpy integer array of length `N` that sums
+    to `K`.
 
     Parameters
     ----------
@@ -464,7 +470,8 @@ def randomly_distribute_N_balls_into_K_bins(
 
     Returns
     -------
-    np.array
+    int_array : np.array
+      Length `N` array that sums to `K`.
     """
 
     if N == 0:

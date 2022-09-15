@@ -18,11 +18,15 @@
 Ancillary helper methods used internally throughout this package; mostly related to Confident Learning algorithms.
 """
 
+import warnings
 import numpy as np
 import pandas as pd
+from typing import Any, Union, Tuple
+
+from cleanlab.typing import DatasetLike, LabelLike
 
 
-def remove_noise_from_class(noise_matrix, class_without_noise):
+def remove_noise_from_class(noise_matrix, class_without_noise) -> np.ndarray:
     """A helper function in the setting of PU learning.
     Sets all P(label=class_without_noise|true_label=any_other_class) = 0
     in noise_matrix for pulearning setting, where we have
@@ -57,7 +61,7 @@ def remove_noise_from_class(noise_matrix, class_without_noise):
     return x
 
 
-def clip_noise_rates(noise_matrix):
+def clip_noise_rates(noise_matrix) -> np.ndarray:
     """Clip all noise rates to proper range [0,1), but
     do not modify the diagonal terms because they are not
     noise rates.
@@ -72,7 +76,7 @@ def clip_noise_rates(noise_matrix):
         Diagonal terms are not noise rates, but are consistency P(label=k|true_label=k)
         Assumes columns of noise_matrix sum to 1"""
 
-    def clip_noise_rate_range(noise_rate):
+    def clip_noise_rate_range(noise_rate) -> float:
         """Clip noise rate P(label=k'|true_label=k) or P(true_label=k|label=k')
         into proper range [0,1)"""
         return min(max(noise_rate, 0.0), 0.9999)
@@ -95,7 +99,7 @@ def clip_noise_rates(noise_matrix):
     return noise_matrix
 
 
-def clip_values(x, low=0.0, high=1.0, new_sum=None):
+def clip_values(x, low=0.0, high=1.0, new_sum=None) -> np.ndarray:
     """Clip all values in p to range [low,high].
     Preserves sum of x.
 
@@ -131,7 +135,7 @@ def clip_values(x, low=0.0, high=1.0, new_sum=None):
     return x
 
 
-def value_counts(x):
+def value_counts(x) -> Any:
     """Returns an np.ndarray of shape (K, 1), with the
     value counts for every unique item in the labels list/array,
     where K is the number of unique entries in labels.
@@ -167,7 +171,7 @@ def value_counts(x):
             return np.unique(x, return_counts=True)[1]
 
 
-def round_preserving_sum(iterable):
+def round_preserving_sum(iterable) -> np.ndarray:
     """Rounds an iterable of floats while retaining the original summed value.
     The name of each parameter is required. The type and description of each
     parameter is optional, but should be included if not obvious.
@@ -202,7 +206,7 @@ def round_preserving_sum(iterable):
     return ints.astype(int)
 
 
-def round_preserving_row_totals(confident_joint):
+def round_preserving_row_totals(confident_joint) -> np.ndarray:
     """Rounds confident_joint cj to type int
     while preserving the totals of reach row.
     Assumes that cj is a 2D np.ndarray of type float.
@@ -224,7 +228,7 @@ def round_preserving_row_totals(confident_joint):
     ).astype(int)
 
 
-def int2onehot(labels):
+def int2onehot(labels) -> np.ndarray:
     """Convert list of lists to a onehot matrix for multi-labels
 
     Parameters
@@ -239,7 +243,7 @@ def int2onehot(labels):
     return mlb.fit_transform(labels)
 
 
-def onehot2int(onehot_matrix):
+def onehot2int(onehot_matrix) -> list:
     """Convert a onehot matrix for multi-labels to a list of lists of ints
 
     Parameters
@@ -256,7 +260,7 @@ def onehot2int(onehot_matrix):
     return [list(np.where(row == 1)[0]) for row in onehot_matrix]
 
 
-def estimate_pu_f1(s, prob_s_eq_1):
+def estimate_pu_f1(s, prob_s_eq_1) -> float:
     """Computes Claesen's estimate of f1 in the pulearning setting.
 
     Parameters
@@ -279,7 +283,7 @@ def estimate_pu_f1(s, prob_s_eq_1):
     return recall**2 / (2.0 * frac_positive) if frac_positive != 0 else np.nan
 
 
-def confusion_matrix(true, pred):
+def confusion_matrix(true, pred) -> np.ndarray:
     """Implements a confusion matrix for true labels
     and predicted labels. true and pred MUST BE the same length
     and have the same distinct set of class labels represented.
@@ -392,7 +396,7 @@ def print_joint_matrix(joint_matrix, round_places=2):
     )
 
 
-def compress_int_array(int_array, num_possible_values):
+def compress_int_array(int_array, num_possible_values) -> np.ndarray:
     """Compresses dtype of np.ndarray<int> if num_possible_values is small enough."""
     try:
         compressed_type = None
@@ -407,7 +411,9 @@ def compress_int_array(int_array, num_possible_values):
         return int_array
 
 
-def train_val_split(X, labels, train_idx, holdout_idx):
+def train_val_split(
+    X, labels, train_idx, holdout_idx
+) -> Tuple[DatasetLike, DatasetLike, LabelLike, LabelLike]:
     """Splits data into training/validation sets based on given indices"""
     labels_train, labels_holdout = (
         labels[train_idx],
@@ -450,14 +456,14 @@ def train_val_split(X, labels, train_idx, holdout_idx):
     return X_train, X_holdout, labels_train, labels_holdout
 
 
-def subset_X_y(X, labels, mask):
+def subset_X_y(X, labels, mask) -> Tuple[DatasetLike, LabelLike]:
     """Extracts subset of features/labels where mask is True"""
     labels = subset_labels(labels, mask)
     X = subset_data(X, mask)
     return X, labels
 
 
-def subset_labels(labels, mask):
+def subset_labels(labels, mask) -> Union[list, np.ndarray, pd.Series]:
     """Extracts subset of labels where mask is True"""
     try:  # filtering labels as if it is array or DataFrame
         return labels[mask]
@@ -468,22 +474,24 @@ def subset_labels(labels, mask):
             raise TypeError("labels must be 1D np.ndarray, list, or pd.Series.")
 
 
-def subset_data(X, mask):
+def subset_data(X, mask) -> DatasetLike:
     """Extracts subset of data examples where mask (np.ndarray) is True"""
     try:
         import torch
 
         if isinstance(X, torch.utils.data.Dataset):
-            mask_idx = np.nonzero(mask)[0]
-            return torch.utils.data.Subset(X, mask_idx)
+            mask_idx_list = list(np.nonzero(mask)[0])
+            return torch.utils.data.Subset(X, mask_idx_list)
     except Exception:
         pass
     try:
-        import tensorflow
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore")
+            import tensorflow
 
-        if isinstance(X, tensorflow.data.Dataset):  # special splitting for tensorflow Dataset
-            mask_idx = np.nonzero(mask)[0]
-            return extract_indices_tf(X, mask_idx, allow_shuffle=True)
+            if isinstance(X, tensorflow.data.Dataset):  # special splitting for tensorflow Dataset
+                mask_idx = np.nonzero(mask)[0]
+                return extract_indices_tf(X, mask_idx, allow_shuffle=True)
     except Exception:
         pass
     try:
@@ -492,7 +500,7 @@ def subset_data(X, mask):
         raise TypeError("Data features X must be subsettable with boolean mask array: X[mask]")
 
 
-def extract_indices_tf(X, idx, allow_shuffle):
+def extract_indices_tf(X, idx, allow_shuffle) -> DatasetLike:
     """Extracts subset of tensorflow dataset corresponding to examples at particular indices.
 
     Args:
@@ -549,7 +557,7 @@ def extract_indices_tf(X, idx, allow_shuffle):
     return X_subset
 
 
-def unshuffle_tensorflow_dataset(X):
+def unshuffle_tensorflow_dataset(X) -> tuple:
     """Applies iterative inverse transformations to dataset to get version before ShuffleDataset was created.
     If no ShuffleDataset is in the transformation-history of this dataset, returns None.
 
@@ -586,7 +594,7 @@ def unshuffle_tensorflow_dataset(X):
     return (None, None)
 
 
-def is_torch_dataset(X):
+def is_torch_dataset(X) -> bool:
     try:
         import torch
 
@@ -597,7 +605,7 @@ def is_torch_dataset(X):
     return False  # assumes this cannot be torch dataset if torch cannot be imported
 
 
-def is_tensorflow_dataset(X):
+def is_tensorflow_dataset(X) -> bool:
     try:
         import tensorflow
 
@@ -608,7 +616,7 @@ def is_tensorflow_dataset(X):
     return False  # assumes this cannot be tensorflow dataset if tensorflow cannot be imported
 
 
-def csr_vstack(a, b):
+def csr_vstack(a, b) -> DatasetLike:
     """Takes in 2 csr_matrices and appends the second one to the bottom of the first one.
     Alternative to scipy.sparse.vstack. Returns a sparse matrix.
     """
@@ -619,7 +627,7 @@ def csr_vstack(a, b):
     return a
 
 
-def append_extra_datapoint(to_data, from_data, index):
+def append_extra_datapoint(to_data, from_data, index) -> DatasetLike:
     """Appends an extra datapoint to the data object ``to_data``.
     This datapoint is taken from the data object ``from_data`` at the corresponding index.
     One place this could be useful is ensuring no missing classes after train/validation split.
@@ -630,7 +638,7 @@ def append_extra_datapoint(to_data, from_data, index):
     if isinstance(to_data, np.ndarray):
         return np.vstack([to_data, from_data[index]])
     elif isinstance(from_data, (pd.DataFrame, pd.Series)):
-        X_extra = from_data.iloc[[index]]
+        X_extra = from_data.iloc[[index]]  # type: ignore
         to_data = pd.concat([to_data, X_extra])
         return to_data.reset_index(drop=True)
     else:
@@ -644,7 +652,7 @@ def append_extra_datapoint(to_data, from_data, index):
             raise TypeError("Data features X must support: X.append(X[i])")
 
 
-def get_num_classes(labels=None, pred_probs=None, label_matrix=None, multi_label=None):
+def get_num_classes(labels=None, pred_probs=None, label_matrix=None, multi_label=None) -> int:
     """Determines the number of classes based on information considered in a
     canonical ordering. label_matrix can be: noise_matrix, inverse_noise_matrix, confident_joint,
     or any other K x K matrix where K = number of classes.
@@ -664,7 +672,7 @@ def get_num_classes(labels=None, pred_probs=None, label_matrix=None, multi_label
     return num_unique_classes(labels, multi_label=multi_label)
 
 
-def num_unique_classes(labels, multi_label=None):
+def num_unique_classes(labels, multi_label=None) -> int:
     """Finds the number of unique classes for both single-labeled
     and multi-labeled labels. If multi_label is set to None (default)
     this method will infer if multi_label is True or False based on

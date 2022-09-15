@@ -83,9 +83,8 @@ def order_label_issues(
     Returns
     -------
     label_issues_idx : np.ndarray
-      Return an array of the indices of the label issues, ordered by the label-quality scoring method
-      passed to `rank_by`.
-
+      Return an array of the indices of the examples with label issues,
+      ordered by the label-quality scoring method passed to `rank_by`.
     """
 
     assert_valid_inputs(X=None, y=labels, pred_probs=pred_probs, multi_label=False)
@@ -172,14 +171,14 @@ def get_label_quality_scores(
     Returns
     -------
     label_quality_scores : np.ndarray
-      Scores are between 0 and 1 where lower scores indicate labels less likely to be correct.
+      Contains one score (between 0 and 1) per example.
+      Lower scores indicate more likely mislabeled examples.
 
     See Also
     --------
     get_self_confidence_for_each_label
     get_normalized_margin_for_each_label
     get_confidence_weighted_entropy_for_each_label
-
     """
 
     # TODO: remove allow_missing_classes once supported
@@ -288,11 +287,12 @@ def get_label_quality_ensemble_scores(
     Returns
     -------
     label_quality_scores : np.ndarray
+      Contains one score (between 0 and 1) per example.
+      Lower scores indicate more likely mislabeled examples.
 
     See Also
     --------
     get_label_quality_scores
-
     """
 
     MIN_ALLOWED = 1e-6  # lower-bound clipping threshold to prevents 0 in logs and division
@@ -448,7 +448,7 @@ def get_self_confidence_for_each_label(
     This is a function to compute label-quality scores for classification datasets,
     where lower scores indicate labels less likely to be correct.
 
-    The self-confidence is the holdout probability that an example belongs to
+    The self-confidence is the classifier's predicted probability that an example belongs to
     its given class label.
 
     Self-confidence can work better than normalized-margin for detecting label errors due to out-of-distribution (OOD) or weird examples
@@ -465,9 +465,8 @@ def get_self_confidence_for_each_label(
     Returns
     -------
     label_quality_scores : np.ndarray
-      An array of holdout probabilities that each example in `pred_probs` belongs to its
-      label.
-
+      Contains one score (between 0 and 1) per example.
+      Lower scores indicate more likely mislabeled examples.
     """
 
     # np.mean is used so that this works for multi-labels (list of lists)
@@ -487,9 +486,9 @@ def get_normalized_margin_for_each_label(
     Letting k denote the given label for a datapoint, the normalized margin is
     ``(p(label = k) - max(p(label != k)))``, i.e. the probability
     of the given label minus the probability of the argmax label that is not
-    the given label. This gives you an idea of how likely an example is BOTH
-    its given label AND not another label, and therefore, scores its likelihood
-    of being a good label or a label error.
+    the given label (``normalized_margin = prob_label - max_prob_not_label``).
+    This gives you an idea of how likely an example is BOTH its given label AND not another label,
+    and therefore, scores its likelihood of being a good label or a label error.
 
     Normalized margin works better for finding class conditional label errors where
     there is another label in the set of classes that is clearly better than the given label.
@@ -505,8 +504,8 @@ def get_normalized_margin_for_each_label(
     Returns
     -------
     label_quality_scores : np.ndarray
-      An array of scores (between 0 and 1) for each example of its likelihood of
-      being correctly labeled. ``normalized_margin = prob_label - max_prob_not_label``
+      Contains one score (between 0 and 1) per example.
+      Lower scores indicate more likely mislabeled examples.
     """
 
     self_confidence = get_self_confidence_for_each_label(labels, pred_probs)
@@ -538,8 +537,8 @@ def get_confidence_weighted_entropy_for_each_label(
     Returns
     -------
     label_quality_scores : np.ndarray
-      An array of scores (between 0 and 1) for each example of its likelihood of
-      being correctly labeled.
+      Contains one score (between 0 and 1) per example.
+      Lower scores indicate more likely mislabeled examples.
     """
 
     MIN_ALLOWED = 1e-6  # lower-bound clipping threshold to prevents 0 in logs and division
