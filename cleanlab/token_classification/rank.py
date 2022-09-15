@@ -25,7 +25,9 @@ from typing import List, Optional, Union, Tuple
 from cleanlab.rank import get_label_quality_scores as main_get_label_quality_scores
 
 
-def softmin_sentence_score(token_scores: List[np.ndarray], temperature: float = 0.05) -> np.ndarray:
+def _softmin_sentence_score(
+    token_scores: List[np.ndarray], temperature: float = 0.05
+) -> np.ndarray:
     """
     sentence scoring using the "softmin" scoring method.
 
@@ -45,9 +47,9 @@ def softmin_sentence_score(token_scores: List[np.ndarray], temperature: float = 
 
     Examples
     ---------
-    >>> from cleanlab.token_classification.rank import softmin_sentence_score
+    >>> from cleanlab.token_classification.rank import _softmin_sentence_score
     >>> token_scores = [[0.9, 0.6], [0.0, 0.8, 0.8], [0.8]]
-    >>> softmin_sentence_score(token_scores)
+    >>> _softmin_sentence_score(token_scores)
     array([6.00741787e-01, 1.80056239e-07, 8.00000000e-01])
     """
     if temperature == 0:
@@ -109,7 +111,7 @@ def get_label_quality_scores(
         label quality scoring method. See `cleanlab.rank.get_label_quality_scores` for more info.
     sentence_score_kwargs:
         keyword arguments for `sentence_score_method`. Supports keyword arguments when `sentence_score_method` is "softmin".
-        See `cleanlab.token_classification.rank.softmin_sentence_score` for more info.
+        See `cleanlab.token_classification.rank._softmin_sentence_score` for more info.
     Returns
     ----------
     sentence_scores:
@@ -163,7 +165,7 @@ def get_label_quality_scores(
     else:
         assert sentence_score_method == "softmin"
         temperature = sentence_score_kwargs.get("temperature", 0.05)
-        sentence_scores = softmin_sentence_score(scores_nl, temperature=temperature)
+        sentence_scores = _softmin_sentence_score(scores_nl, temperature=temperature)
 
     if tokens:
         token_info = [pd.Series(scores, index=token) for scores, token in zip(scores_nl, tokens)]
