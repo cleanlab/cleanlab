@@ -109,7 +109,7 @@ def num_label_issues(
     # Normalize confident joint so that it estimates the joint, p(labels,y)
     joint = confident_joint / float(np.sum(confident_joint))
     frac_issues = 1.0 - joint.trace()
-    num_issues = np.rint(frac_issues * len(labels))
+    num_issues = np.rint(frac_issues * len(labels)).astype(int)
 
     return num_issues
 
