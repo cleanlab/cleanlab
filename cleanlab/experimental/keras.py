@@ -42,14 +42,14 @@ from typing import Callable
 class KerasWrapperModel:
     """Takes in a callable function to instantiate a Keras Model (using Keras functional API)
     that is compatible with :py:class:`CleanLearning <cleanlab.classification.CleanLearning>` and sklearn.
-    
+
     The instance methods of this class work in the same way as those of any ``keras.Model`` object, see the Keras documentation for details.
     For using Keras sequential instead of functional API, see the :py:class:`KerasWrapperSequential<cleanlab.experimental.keras.KerasWrapperSequential>` class.
-    
+
     Parameters
     ----------
     model: Callable
-        A callable function to construct the Keras Model (using functional API). Pass in the function here, not the constructed model! 
+        A callable function to construct the Keras Model (using functional API). Pass in the function here, not the constructed model!
 
         For example::
 
@@ -112,11 +112,11 @@ class KerasWrapperModel:
 
 class KerasWrapperSequential:
     """Makes any ``tf.keras.models.Sequential`` object compatible with :py:class:`CleanLearning <cleanlab.classification.CleanLearning>` and sklearn.
-    
-    `KerasWrapperSequential` is instantiated in the same way as a keras ``Sequential``  object, except for optional extra `compile_kwargs` argument. 
+
+    `KerasWrapperSequential` is instantiated in the same way as a keras ``Sequential``  object, except for optional extra `compile_kwargs` argument.
     Just instantiate this object in the same way as your ``tf.keras.models.Sequential`` object (rather than passing in an existing ``Sequential`` object).
     The instance methods of this class work in the same way as those of any keras ``Sequential`` object, see the Keras documentation for details.
-    
+
     Parameters
     ----------
     layers: list
