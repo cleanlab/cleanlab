@@ -11,7 +11,7 @@ experimental
    :show-inheritance:
 
 .. toctree::
-
+    keras
     fasttext
     mnist_pytorch
     coteaching
