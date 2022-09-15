@@ -15,6 +15,7 @@
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
 import numpy as np
+import pandas as pd
 import pytest
 from cleanlab.benchmarking.noise_generation import generate_noise_matrix_from_trace
 from cleanlab.benchmarking.noise_generation import generate_noisy_labels
@@ -526,6 +527,33 @@ def test_ood_predictions_scores():
 
     assert (confident_thresholds_2 == confident_thresholds).all()
     assert (ood_predictions_scores_2 == ood_predictions_scores_adj_entropy).all()
+
+    # test using labels list type works
+    y_with_ood_list = y_with_ood.tolist()
+    (
+        ood_predictions_scores_adj_entropy_list,
+        confident_thresholds_adj_entropy_list,
+    ) = outlier._get_ood_predictions_scores(
+        pred_probs=pred_probs,
+        labels=y_with_ood_list,
+        adjust_pred_probs=True,
+        method="entropy",
+    )
+
+    # test using labels series type works
+    y_with_ood_series = pd.Series(y_with_ood)
+    (
+        ood_predictions_scores_adj_entropy_series,
+        confident_thresholds_adj_entropy_series,
+    ) = outlier._get_ood_predictions_scores(
+        pred_probs=pred_probs,
+        labels=y_with_ood_series,
+        adjust_pred_probs=True,
+        method="entropy",
+    )
+
+    assert (confident_thresholds_adj_entropy_list == confident_thresholds_adj_entropy).all()
+    assert (confident_thresholds_adj_entropy_series == confident_thresholds_adj_entropy).all()
 
 
 @pytest.mark.filterwarnings("ignore::UserWarning")

@@ -28,7 +28,8 @@ from cleanlab.internal.label_quality_utils import (
     _subtract_confident_thresholds,
     get_normalized_entropy,
 )
-from cleanlab.internal.validation import assert_valid_inputs
+from cleanlab.internal.validation import assert_valid_inputs, labels_to_array
+from cleanlab.typing import LabelLike
 
 
 class OutOfDistribution:
@@ -129,7 +130,7 @@ class OutOfDistribution:
           An array of shape ``(N, K)`` of predicted class probabilities output by a trained classifier.
           For details, `pred_probs` in the same format expected by the :py:func:`fit <cleanlab.outlier.OutOfDistribution.fit>` function.
 
-        labels : np.ndarray, optional
+        labels : array_like, optional
           A discrete array of given class labels for the data of shape ``(N,)``.
           For details, `labels` in the same format expected by the :py:func:`fit <cleanlab.outlier.OutOfDistribution.fit>` function.
 
@@ -161,7 +162,7 @@ class OutOfDistribution:
         *,
         features: Optional[np.ndarray] = None,
         pred_probs: Optional[np.ndarray] = None,
-        labels: Optional[np.ndarray] = None,
+        labels: Optional[LabelLike] = None,
         verbose: bool = True,
     ):
         """
@@ -194,8 +195,8 @@ class OutOfDistribution:
           Alternatively it is ok if your model was trained on a separate dataset and you are only evaluating
           data that was previously held-out.
 
-        labels : np.ndarray, optional
-          A discrete vector of given labels for the data of shape ``(N,)``.
+        labels : array_like, optional
+          A discrete vector of given labels for the data of shape ``(N,)``. Supported `array_like` types include: ``np.ndarray`` or ``list``.
           *Format requirements*: for dataset with K classes, labels must be in 0, 1, ..., K-1.
           All the classes (0, 1, ..., and K-1) MUST be present in ``labels``, such that: ``len(set(labels)) == pred_probs.shape[1]``
           If ``params["adjust_confident_thresholds"]`` was previously set to ``False``, you do not have to pass in `labels`.
@@ -314,7 +315,7 @@ class OutOfDistribution:
         *,
         features: Optional[np.ndarray] = None,
         pred_probs: Optional[np.ndarray] = None,
-        labels: Optional[np.ndarray] = None,
+        labels: Optional[LabelLike] = None,
         verbose: bool = True,
     ) -> Optional[np.ndarray]:
         """
@@ -449,7 +450,7 @@ def _get_ood_features_scores(
 def _get_ood_predictions_scores(
     pred_probs: np.ndarray,
     *,
-    labels: Optional[np.ndarray] = None,
+    labels: Optional[LabelLike] = None,
     confident_thresholds: Optional[np.ndarray] = None,
     adjust_pred_probs: bool = True,
     method: str = "entropy",
@@ -465,7 +466,7 @@ def _get_ood_predictions_scores(
     confident_thresholds : np.ndarray, default = None
       For details, see key `confident_thresholds` in the params dict arg of :py:class:`OutOfDistribution <cleanlab.outlier.OutOfDistribution>`.
 
-    labels : np.ndarray, optional
+    labels : array_like, optional
       `labels` in the same format expected by the :py:func:`fit <cleanlab.outlier.OutOfDistribution.fit>` function.
 
     adjust_pred_probs : bool, True
@@ -504,6 +505,7 @@ def _get_ood_predictions_scores(
                     f"params['adjusted_pred_probs'] = False. "
                 )
             else:
+                labels = labels_to_array(labels)
                 assert_valid_inputs(X=None, y=labels, pred_probs=pred_probs, multi_label=False)
                 confident_thresholds = get_confident_thresholds(
                     labels, pred_probs, multi_label=False
