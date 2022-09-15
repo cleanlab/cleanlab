@@ -9,7 +9,7 @@ The dependencies are as follows:
 	- fasttext
 * keras.py - a wrapper to make any Keras model compatible with cleanlab and sklearn
     - tensorflow
-* mnist_pytorch.py - a simplified cleanlab-compatible AlexNet for MNIST using PyTorch
+* mnist_pytorch.py - a cleanlab-compatible simplified AlexNet for MNIST using PyTorch
 	- torch
 	- torchvision
 * cifar_cnn.py - a cleanlab-compatible Convolutional Neural Network for CIFAR using PyTorch, trainable via CoTeaching
