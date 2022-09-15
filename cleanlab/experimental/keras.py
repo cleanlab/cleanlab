@@ -15,22 +15,23 @@
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
 """
-A wrapper class you can use to make any Keras model compatible with cleanlab and sklearn.
-Use ``KerasWrapperModel`` to wrap existing functional API code for ``keras.Model`` objects, 
-and ``KerasWrapperSequential`` to wrap existing ``tf.keras.models.Sequential`` objects.
-Most of the instance methods of this class are the same as the ones for the wrapped Keras model, 
+Wrapper class you can use to make any Keras model compatible with :py:class:`CleanLearning <cleanlab.classification.CleanLearning>` and sklearn.
+Use `KerasWrapperModel` to wrap existing functional API code for ``keras.Model`` objects, 
+and `KerasWrapperSequential` to wrap existing ``tf.keras.models.Sequential`` objects.
+Most of the instance methods of this class work the same as the ones for the wrapped Keras model, 
 see the Keras documentation for details.
 
 This is a good example of making any bespoke neural network compatible with cleanlab.
 
-You must have Tensorflow installed: https://www.tensorflow.org/install
-
-Note: Tensorflow is only compatible with Python versions >= 3.7: https://www.tensorflow.org/install/pip#software_requirements
+You must have Tensorflow 2 installed: https://www.tensorflow.org/install
 
 Tips:
+
 * If this class lacks certain functionality, you can alternatively try scikeras: https://github.com/adriangb/scikeras
 * Unlike scikeras, this class can operate directly on ``tensorflow.data.Dataset`` objects (like regular Keras models).
 * To call ``fit()`` on a Tensorflow Dataset object with a Keras model, the Dataset should already be batched.
+* Tensorflow 2 is only compatible with Python versions >= 3.7: https://www.tensorflow.org/install/pip#software_requirements
+
 """
 
 import tensorflow as tf
@@ -40,10 +41,28 @@ from typing import Callable
 
 class KerasWrapperModel:
     """Takes in a callable function to instantiate a Keras Model (using Keras functional API)
-    that is compatible with :py:meth:`CleanLearning.fit()<cleanlab.classification.CleanLearning.fit>`.
+    that is compatible with :py:class:`CleanLearning <cleanlab.classification.CleanLearning>` and sklearn.
+    
+    The instance methods of this class work in the same way as those of any ``keras.Model`` object, see the Keras documentation for details.
+    For using Keras sequential instead of functional API, see the :py:class:`KerasWrapperSequential<cleanlab.experimental.keras.KerasWrapperSequential>` class.
+    
+    Parameters
+    ----------
+    model: Callable
+        A callable function to construct the Keras Model (using functional API). Pass in the function here, not the constructed model! 
 
-    The instance methods below work in the same way as those of any ``keras.Model`` object.
-    For instead using Keras sequential API, see the :py:class:`KerasWrapperSequential<cleanlab.experimental.keras.KerasWrapperSequential>` class.
+        For example::
+
+            def model(num_features, num_classes):
+                inputs = tf.keras.Input(shape=(num_features,))
+                outputs = tf.keras.layers.Dense(num_classes)(inputs)
+                return tf.keras.Model(inputs=inputs, outputs=outputs, name="my_keras_model")
+
+    model_kwargs: dict, default = {}
+        Dict of optional keyword arguments to pass into ``model()`` when instantiating the ``keras.Model``.
+
+    compile_kwargs: dict, default = {"loss": tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)}
+        Dict of optional keyword arguments to pass into ``model.compile()`` for declaring loss, metrics, optimizer, etc.
     """
 
     def __init__(
@@ -54,25 +73,6 @@ class KerasWrapperModel:
             "loss": tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
         },
     ):
-        """
-        Parameters
-        ----------
-        model: Callable
-            A callable function to define the Keras Model (using functional API).
-
-            For example::
-
-                def make_model(num_features, num_classes):
-                    ...
-                    return model
-                model = make_model
-
-        model_kwargs: dict, default = {}
-            Dict of args to pass into ``model()`` when instantiating the model.
-
-        complie_kwargs: dict, default = {"loss": tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)}
-            Dict of arguments to pass into ``model.compile()``.
-        """
         self.model = model
         self.model_kwargs = model_kwargs
         self.compile_kwargs = compile_kwargs
@@ -86,15 +86,15 @@ class KerasWrapperModel:
         }
 
     def fit(self, X, y=None, **kwargs):
-        """Note that ``X`` dataset object must already contain the labels as is required for standard Keras fit.
-        You can provide the labels again here as argument ``y`` to be compatible with sklearn, but they are ignored.
+        """Note that `X` dataset object must already contain the labels as is required for standard Keras fit.
+        You can optionally provide the labels again here as argument `y` to be compatible with sklearn, but they are ignored.
         """
         self.net = self.model(**self.model_kwargs)
         self.net.compile(**self.compile_kwargs)
         self.net.fit(X, **kwargs)
 
-    def predict_proba(self, X, apply_softmax=True, **kwargs):
-        """Set `apply_softmax` to True to indicate your network only outputs logits not probabilities"""
+    def predict_proba(self, X, *, apply_softmax=True, **kwargs):
+        """Set extra argument `apply_softmax` to True to indicate your network only outputs logits not probabilities."""
         if self.net is None:
             raise ValueError("must call fit() before predict()")
         pred_probs = self.net.predict(X, **kwargs)
@@ -111,9 +111,22 @@ class KerasWrapperModel:
 
 
 class KerasWrapperSequential:
-    """KerasWrapperSequential is instantiated in the same way as a ``tf.keras.models.Sequential`` object,
-    except for extra argument:
-    * *compile_kwargs*: dict of args to pass into ``model.compile()``.
+    """Makes any ``tf.keras.models.Sequential`` object compatible with :py:class:`CleanLearning <cleanlab.classification.CleanLearning>` and sklearn.
+    
+    `KerasWrapperSequential` is instantiated in the same way as a keras ``Sequential``  object, except for optional extra `compile_kwargs` argument. 
+    Just instantiate this object in the same way as your ``tf.keras.models.Sequential`` object (rather than passing in an existing ``Sequential`` object).
+    The instance methods of this class work in the same way as those of any keras ``Sequential`` object, see the Keras documentation for details.
+    
+    Parameters
+    ----------
+    layers: list
+        A list containing the layers to add to the keras ``Sequential`` model (same as for ``tf.keras.models.Sequential``).
+
+    name: str, default = None
+        Name for the Keras model (same as for ``tf.keras.models.Sequential``).
+
+    compile_kwargs: dict, default = {"loss": tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)}
+        Dict of optional keyword arguments to pass into ``model.compile()`` for declaring loss, metrics, optimizer, etc.
     """
 
     def __init__(
@@ -124,18 +137,6 @@ class KerasWrapperSequential:
             "loss": tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
         },
     ):
-        """
-        Parameters
-        ----------
-        layers: list
-            A list containing the layers to add to the Sequential Keras Model.
-
-        name: str, default = None
-            Name for the Keras model.
-
-        complie_kwargs: dict, default = {"loss": tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)}
-            Dict of arguments to pass into ``model.compile()``.
-        """
         self.layers = layers
         self.name = name
         self.compile_kwargs = compile_kwargs
@@ -149,15 +150,15 @@ class KerasWrapperSequential:
         }
 
     def fit(self, X, y=None, **kwargs):
-        """Note that ``X`` dataset object must already contain the labels as is required for standard Keras fit.
-        You can provide the labels again here as argument ``y`` to be compatible with sklearn, but they are ignored.
+        """Note that `X` dataset object must already contain the labels as is required for standard Keras fit.
+        You can optionally provide the labels again here as argument `y` to be compatible with sklearn, but they are ignored.
         """
         self.net = tf.keras.models.Sequential(self.layers, self.name)
         self.net.compile(**self.compile_kwargs)
         self.net.fit(X, **kwargs)
 
-    def predict_proba(self, X, apply_softmax=True, **kwargs):
-        """Set `apply_softmax` to True to indicate your network only outputs logits not probabilities"""
+    def predict_proba(self, X, *, apply_softmax=True, **kwargs):
+        """Set extra argument `apply_softmax` to True to indicate your network only outputs logits not probabilities."""
         if self.net is None:
             raise ValueError("must call fit() before predict()")
         pred_probs = self.net.predict(X, **kwargs)
