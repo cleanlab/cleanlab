@@ -549,7 +549,7 @@ def find_label_issues_using_argmax_confusion_matrix(
         An array of shape ``(N,)`` of noisy labels, i.e. some labels may be erroneous.
         Elements must be in the set 0, 1, ..., K-1, where K is the number of classes.
 
-    pred_probs : np.ndarray (shape (N, K))
+    pred_probs : np.ndarray
         An array of shape ``(N, K)`` of model-predicted probabilities,
         ``P(label=k|x)``. Each row of this matrix corresponds
         to an example `x` and contains the model-predicted probabilities that
