@@ -612,3 +612,59 @@ def test_wrong_info_get_ood_predictions_scores():
         labels=data["labels"],
         adjust_pred_probs=False,  # this should user warning because provided info is not used
     )
+
+
+def test_find_top_outlier_scores():
+    X_train = data["X_train"]
+    X_test = data["X_test"]
+    X_ood = np.array([[999999999.0, 999999999.0]])  # Create OOD datapoint
+    X_test_with_ood = np.vstack([X_test, X_ood])  # Add OOD datapoint to X_test
+
+    # Create OOD object (use knn without cosine metric to identify X_ood correctly
+    OOD_outlier = OutOfDistribution(params={"knn": NearestNeighbors(n_neighbors=5)})
+
+    # Test calling find_top_outlier_scores with not enough information to calculate ood scores
+    try:
+        OOD_outlier.find_top_outliers()
+    except Exception as e:
+        assert "OOD estimator needs to be fit first" in str(e)
+        with pytest.raises(ValueError) as e:
+            OOD_outlier.find_top_outliers()
+
+    # Get top ood score for outlier
+    ood_scores = OOD_outlier.score(features=X_test_with_ood)
+    top_outlier_indices = OOD_outlier.find_top_outliers(scores=ood_scores)
+    top_outlier_indices_more_k = OOD_outlier.find_top_outliers(scores=ood_scores, top=10000)
+
+    ### Check top scores are calculated correctly
+
+    # Checking that X_ood has the smallest outlier score among all the datapoints and outlier scores identifies that
+    assert np.argmin(ood_scores) == (ood_scores.shape[0] - 1)
+    assert len(top_outlier_indices) == len(ood_scores)
+    assert top_outlier_indices[0] == np.argmin(ood_scores)
+
+    # Checking k > len(ood_scores) is same as sorted list of indices
+    assert len(top_outlier_indices) == len(top_outlier_indices_more_k)
+    assert (top_outlier_indices == top_outlier_indices_more_k).all()
+
+    # Get top k ood scores
+    top_outlier_indices_k = OOD_outlier.find_top_outliers(scores=ood_scores, top=10)
+
+    # assert len(top_outlier_indices_k) == 10
+    assert (top_outlier_indices_k == top_outlier_indices[:10]).all()  # scores consistent
+
+    top_outlier_indices_0 = OOD_outlier.find_top_outliers(scores=ood_scores, top=0)
+    assert len(top_outlier_indices_0) == 0
+
+    top_outlier_indices_no_params = OOD_outlier.find_top_outliers()
+    assert (top_outlier_indices_no_params == top_outlier_indices).all()
+
+    # Checking to make sure fit and fit score have same idxs for top outliers and different idxs from score
+    OOD_outlier1 = OutOfDistribution()
+    OOD_outlier2 = OutOfDistribution()
+    _ = OOD_outlier1.fit_score(features=X_train)
+    _ = OOD_outlier2.fit(features=X_train)
+    assert (OOD_outlier1.find_top_outliers() == OOD_outlier2.find_top_outliers()).all()
+
+    test_score = OOD_outlier2.score(features=X_test_with_ood)
+    assert np.sum(OOD_outlier1.find_top_outliers()) != np.sum(test_score)

@@ -101,6 +101,7 @@ class OutOfDistribution:
         self._assert_valid_params(params, self.DEFAULT_PARAM_DICT)
         self.params = self.DEFAULT_PARAM_DICT
         self.params = {**self.params, **params}
+        self.scores = None
 
     def fit_score(
         self,
@@ -155,6 +156,8 @@ class OutOfDistribution:
         if scores is None:  # Fit was called on already fitted object so we just score vals instead
             scores = self.score(features=features, pred_probs=pred_probs)
 
+        self.scores = scores
+
         return scores
 
     def fit(
@@ -206,12 +209,14 @@ class OutOfDistribution:
           Set to ``False`` to suppress all print statements.
 
         """
-        _ = self._shared_fit(
+        scores = self._shared_fit(
             features=features,
             pred_probs=pred_probs,
             labels=labels,
             verbose=verbose,
         )
+
+        self.scores = scores
 
     def score(
         self, *, features: Optional[np.ndarray] = None, pred_probs: Optional[np.ndarray] = None
@@ -269,7 +274,46 @@ class OutOfDistribution:
                     pred_probs, **self._get_params(self.OOD_PARAMS)
                 )
 
+        self.scores = scores
+
         return scores
+
+    def find_top_outliers(self, scores=None, top=None):
+        """
+        Uses passed in outlier `scores` to return `top` outlier indices corresponding to examples most likely to be outliers.
+        Indices ordered from most to least likely to be an outlier.
+
+        If scores is None, outliers determined based on last computed scores. Scores are recomputed every time
+        `:py:func:`fit <cleanlab.outlier.OutOfDistribution.fit>`, `:py:func:`fit_score
+        <cleanlab.outlier.OutOfDistribution.fit_score>` or `:py:func:`score
+        <cleanlab.outlier.OutOfDistribution.score>` is called.
+
+        Parameters
+        ----------
+        scores : np.ndarray, optional
+          Scores array of shape ``(N,)``, where N is the number of examples. Scores can be calculated using :py:func:`fit_score <cleanlab.outlier.OutOfDistribution.fit_score>`
+          or `:py:func:`score <cleanlab.outlier.OutOfDistribution.score>` methods.
+
+        top : int, optional
+          The number of top scores to return. If not specified, all scores are returned ordered from most to least likely to be an outlier.
+
+        Returns
+        -------
+        top_outlier_indices : np.ndarray
+          Top indices corresponding to examples ordered from most to least likely to be an outlier with respect to their outlier scores.
+        """
+        if scores is None:
+            if self.scores is None:
+                raise ValueError(
+                    f"OOD estimator needs to be fit first. Call `fit()` or `fit_scores()` before this function."
+                )
+            scores = self.scores
+
+        if top is None or top > len(scores):
+            top = len(scores)
+
+        top_outlier_indices = scores.argsort()[:top]
+        return top_outlier_indices
 
     def _get_params(self, param_keys) -> dict:
         """
