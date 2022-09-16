@@ -66,7 +66,6 @@ def find_label_issues(
     confident_joint=None,
     n_jobs=None,
     verbose=False,
-    **kwargs{},
 ):
     """
     Identifies potentially bad labels in a dataset (with `N` examples) using confident learning.
@@ -234,8 +233,20 @@ def find_label_issues(
 
     # Number of examples in each class of labels
     if multi_label:
-        #recursively call find_label_issues
-        label_counts = value_counts([i for lst in labels for i in lst])
+        return _find_label_issues_multilabel(
+            labels,
+            pred_probs,
+            return_indices_ranked_by,
+            rank_by_kwargs,
+            filter_by,
+            multi_label,
+            frac_noise,
+            num_to_remove_per_class,
+            min_examples_per_class,
+            confident_joint,
+            n_jobs,
+            verbose,
+        )
     else:
         label_counts = value_counts(labels)
     # Number of classes
@@ -248,6 +259,7 @@ def find_label_issues(
     labels = np.asarray(labels)
     if confident_joint is None or filter_by == "confident_learning":
         from cleanlab.count import compute_confident_joint
+
         # kx2x2
         confident_joint, cl_error_indices = compute_confident_joint(
             labels=labels,
@@ -386,7 +398,7 @@ def find_label_issues(
         print("Number of label issues found: {}".format(sum(label_issues_mask)))
 
     # TODO: run count.num_label_issues() and adjust the total issues found here to match
-    if kwargs['multi_label_verbose_return']:
+    if kwargs["multi_label_verbose_return"]:
         return array
     else:
         return np.union1d(array)
@@ -400,8 +412,6 @@ def find_label_issues(
         )
         return er
     return label_issues_mask
-
-
 
 
 def _keep_at_least_n_per_class(prune_count_matrix, n, *, frac_noise=1.0):
@@ -468,6 +478,34 @@ def _keep_at_least_n_per_class(prune_count_matrix, n, *, frac_noise=1.0):
 
     # These are counts, so return a matrix of ints.
     return round_preserving_row_totals(new_mat).astype(int)
+
+
+def _find_label_issues_multilabel(
+    labels,
+    pred_probs,
+    *,
+    return_indices_ranked_by=None,
+    rank_by_kwargs={},
+    filter_by="prune_by_noise_rate",
+    multi_label=False,
+    frac_noise=1.0,
+    num_to_remove_per_class=None,
+    min_examples_per_class=1,
+    confident_joint=None,
+    n_jobs=None,
+    verbose=False,
+):
+    ranked_label_issues_list = []
+    for i in pred_probs:
+        y_labels = i[1]
+        pred_probabilitites = i[0]
+        ranks = find_label_issues(
+            y_labels.astype(np.int32),
+            pred_probabilitites,
+            return_indices_ranked_by="self_confidence",
+        )
+        ranked_label_issues_list.append(ranks)
+    reduce(np.union1d, ranked_label_issues_list).astype(np.int32)
 
 
 def _reduce_prune_counts(prune_count_matrix, frac_noise=1.0):
