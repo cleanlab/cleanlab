@@ -210,7 +210,7 @@ def labels_to_array(y: Union[LabelLike, np.generic]) -> np.ndarray:
 
 
 def assert_valid_inputs_multiannotator(
-    labels_multiannotator: pd.DataFrame, pred_probs: np.ndarray
+    labels_multiannotator: pd.DataFrame, pred_probs: Optional[np.ndarray]
 ) -> None:
     # Raise error if number of classes in labels_multiannoator does not match number of classes in pred_probs
     if pred_probs is not None:
