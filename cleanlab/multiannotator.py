@@ -126,6 +126,19 @@ def get_label_quality_multiannotator(
     if isinstance(labels_multiannotator, np.ndarray):
         labels_multiannotator = pd.DataFrame(labels_multiannotator)
 
+    # Raise error if number of classes in labels_multiannoator does not match number of classes in pred_probs
+    num_classes = get_num_classes(pred_probs=pred_probs)
+
+    # df = labels_multiannotator.replace({pd.NA: np.NaN}).astype(float)
+
+    unique_ma_labels = np.unique(labels_multiannotator.replace({pd.NA: np.NaN}).astype(float))
+    unique_ma_labels = unique_ma_labels[~np.isnan(unique_ma_labels)]
+    if num_classes != len(unique_ma_labels):
+        raise ValueError(
+            """The number of unique classes in labels_multiannotator do not match the number of classes in pred_probs.
+            A potential likely reason could that some rarely-annotated classes were lost while establishing consensus labels."""
+        )
+
     # Raise error if labels_multiannotator has NaN rows
     if labels_multiannotator.isna().all(axis=1).any():
         raise ValueError("labels_multiannotator cannot have rows with all NaN.")
@@ -423,6 +436,14 @@ def get_majority_vote_label(
         )
         for idx, label_mode in tied_idx.items():
             majority_vote_label[idx] = np.random.choice(label_mode)
+
+    unique_ma_labels = np.unique(labels_multiannotator.replace({pd.NA: np.NaN}).astype(float))
+    unique_ma_labels = unique_ma_labels[~np.isnan(unique_ma_labels)]
+
+    if len(set(unique_ma_labels) - set(np.unique(majority_vote_label))) != 0:
+        print(
+            "CAUTION: Number of unique classes has been reduced from the original data, likely due to some classes being rarely annotated"
+        )
 
     return majority_vote_label.astype("int64")
 
