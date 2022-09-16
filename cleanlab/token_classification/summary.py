@@ -37,12 +37,14 @@ def display_issues(
 ) -> None:
     """
     Display token classification label issues, showing sentence with problematic token(s) highlighted.
+
     Can also shows given and predicted label for each token identified to have label issue.
 
     Parameters
     ----------
     issues:
         List of tuples ``(i, j)`` representing a label issue for the `j`-th token of the `i`-th sentence.
+
         Same format as output by :py:func:`token_classification.filter.find_label_issues <cleanlab.token_classification.filter.find_label_issues>`
         or :py:func:`token_classification.rank.issues_from_scores <cleanlab.token_classification.rank.issues_from_scores>`.
 
@@ -52,13 +54,17 @@ def display_issues(
     labels:
         Optional nested list of given labels for all tokens, such that `labels[i]` is a list of labels, one for each token in the `i`-th sentence.
         For a dataset with K classes, each label must be in 0, 1, ..., K-1.
+
         If `labels` is provided, this function also displays given label of the token identified with issue.
 
     pred_probs:
         Optional list of np arrays, such that `pred_probs[i]` has shape ``(T, K)`` if the `i`-th sentence contains T tokens.
+
         Each row of `pred_probs[i]` corresponds to a token `t` in the `i`-th sentence,
         and contains model-predicted probabilities that `t` belongs to each of the K possible classes.
+
         Columns of each `pred_probs[i]` should be ordered such that the probabilities correspond to class 0, 1, ..., K-1.
+
         If `pred_probs` is provided, this function also displays predicted label of the token identified with issue.
 
     exclude:
@@ -67,6 +73,7 @@ def display_issues(
 
     class_names:
         Optional length K list of names of each class, such that `class_names[i]` is the string name of the class corresponding to `labels` with value `i`.
+
         If `class_names` is provided, display these string names for predicted and given labels, otherwise display the integer index of classes.
 
     top: int, default=20
@@ -155,12 +162,14 @@ def common_label_issues(
 ) -> pd.DataFrame:
     """
     Display the tokens (words) that most commonly have label issues.
+
     These may correspond to words that are ambiguous or systematically misunderstood by the data annotators.
 
     Parameters
     ----------
     issues:
         List of tuples ``(i, j)`` representing a label issue for the `j`-th token of the `i`-th sentence.
+
         Same format as output by :py:func:`token_classification.filter.find_label_issues <cleanlab.token_classification.filter.find_label_issues>`
         or :py:func:`token_classification.rank.issues_from_scores <cleanlab.token_classification.rank.issues_from_scores>`.
 
@@ -168,16 +177,19 @@ def common_label_issues(
         Nested list such that `tokens[i]` is a list of tokens (strings/words) that comprise the `i`-th sentence.
 
     labels:
-        Optional nested list of given labels for all tokens in the same format as `labels` for :py:func:`token_classification.summary.display_issues <cleanlab.token_classification.summary.display_issues>`
+        Optional nested list of given labels for all tokens in the same format as `labels` for :py:func:`token_classification.summary.display_issues <cleanlab.token_classification.summary.display_issues>`.
+
         If `labels` is provided, this function also displays given label of the token identified to commonly suffer from label issues.
 
     pred_probs:
         Optional list of model-predicted probabilities (np arrays) in the same format as `pred_probs` for
         :py:func:`token_classification.summary.display_issues <cleanlab.token_classification.summary.display_issues>`.
+
         If both `labels` and `pred_probs` are provided, also reports each type of given/predicted label swap for tokens identified to commonly suffer from label issues.
 
     class_names:
         Optional length K list of names of each class, such that `class_names[i]` is the string name of the class corresponding to `labels` with value `i`.
+
         If `class_names` is provided, display these string names for predicted and given labels, otherwise display the integer index of classes.
 
     top:
@@ -196,6 +208,7 @@ def common_label_issues(
         If both `labels` and `pred_probs` are provided, DataFrame `df` contains columns ``['token', 'given_label',
         'predicted_label', 'num_label_issues']``, and each row contains information for a specific token and
         given/predicted label swap, ordered by the number of label issues inferred for this type of label swap.
+
         Otherwise, `df` only has columns ['token', 'num_label_issues'], and each row contains the information for a specific
         token, ordered by the number of total label issues involving this token.
 

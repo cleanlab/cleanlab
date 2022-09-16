@@ -31,7 +31,9 @@ def find_label_issues(
     return_indices_ranked_by: str = "self_confidence",
 ) -> List[Tuple[int, int]]:
     """Identifies tokens with label issues in a token classification dataset.
+
     Tokens identified with issues will be ranked by their individual label quality score.
+
     Instead use :py:func:`token_classification.rank.get_label_quality_scores <cleanlab.token_classification.rank.get_label_quality_scores>`
     if you prefer to rank the sentences based on their overall label quality.
 
@@ -39,16 +41,20 @@ def find_label_issues(
     ----------
     labels:
         Nested list of given labels for all tokens, such that `labels[i]` is a list of labels, one for each token in the `i`-th sentence.
+
         For a dataset with K classes, each label must be in 0, 1, ..., K-1. All classes must be present in the dataset.
 
     pred_probs:
         List of np arrays, such that `pred_probs[i]` has shape ``(T, K)`` if the `i`-th sentence contains T tokens.
+
         Each row of `pred_probs[i]` corresponds to a token `t` in the `i`-th sentence,
         and contains model-predicted probabilities that `t` belongs to each of the K possible classes.
+
         Columns of each `pred_probs[i]` should be ordered such that the probabilities correspond to class 0, 1, ..., K-1.
 
     return_indices_ranked_by: {"self_confidence", "normalized_margin", "confidence_weighted_entropy"}, default="self_confidence"
         Returned token-indices are sorted by their label quality score.
+
         See :py:func:`cleanlab.filter.find_label_issues <cleanlab.filter.find_label_issues>`
         documentation for more details on each label quality scoring method.
 
@@ -57,7 +63,9 @@ def find_label_issues(
     issues:
         List of label issues identified by cleanlab, such that each element is a tuple ``(i, j)``, which
         indicates that the `j`-th token of the `i`-th sentence has a label issue.
+
         These tuples are ordered in `issues` list based on the likelihood that the corresponding token is mislabeled.
+
         Use :py:func:`token_classification.summary.display_issues <cleanlab.token_classification.summary.display_issues>`
         to view these issues within the original sentences.
 

@@ -36,23 +36,29 @@ def get_label_quality_scores(
 ) -> Union[np.ndarray, Tuple[np.ndarray, list]]:
     """
     Returns overall quality scores for the labels in each sentence, as well as for the individual tokens' labels in a token classification dataset.
+
     Each score is between 0 and 1.
+
     Lower scores indicate token labels that are less likely to be correct, or sentences that are more likely to contain a mislabeled token.
 
     Parameters
     ----------
     labels:
         Nested list of given labels for all tokens, such that `labels[i]` is a list of labels, one for each token in the `i`-th sentence.
+
         For a dataset with K classes, each label must be in 0, 1, ..., K-1.
 
     pred_probs:
         List of np arrays, such that `pred_probs[i]` has shape ``(T, K)`` if the `i`-th sentence contains T tokens.
+
         Each row of `pred_probs[i]` corresponds to a token `t` in the `i`-th sentence,
         and contains model-predicted probabilities that `t` belongs to each of the K possible classes.
+
         Columns of each `pred_probs[i]` should be ordered such that the probabilities correspond to class 0, 1, ..., K-1.
 
     tokens:
         Nested list such that `tokens[i]` is a list of tokens (strings/words) that comprise the `i`-th sentence.
+
         These strings are used to annotated the returned `token_scores` object, see its documentation for more information.
 
     sentence_score_method: {"min", "softmin"}, default="min"
@@ -65,21 +71,25 @@ def get_label_quality_scores(
 
     token_score_method: {"self_confidence", "normalized_margin", "confidence_weighted_entropy"}, default="self_confidence"
         Label quality scoring method for each token.
+
         See :py:func:`cleanlab.rank.get_label_quality_scores <cleanlab.rank.get_label_quality_scores>` documentation for more info.
 
     sentence_score_kwargs:
         Optional keyword arguments for `sentence_score_method` function (for advanced users only).
+
         See `cleanlab.token_classification.rank._softmin_sentence_score` for more info about keyword arguments supported for that scoring method.
 
     Returns
     -------
     sentence_scores:
         Array of shape ``(N, )`` of scores between 0 and 1, one per sentence in the dataset.
+
         Lower scores indicate sentences more likely to contain a label issue.
 
     token_scores:
         List of ``pd.Series``, such that `token_info[i]` contains the
         label quality scores for individual tokens in the `i`-th sentence.
+
         If `tokens` strings were provided, they are used as index for each ``Series``.
 
     Examples
@@ -141,17 +151,21 @@ def issues_from_scores(
     """
     Converts scores output by :py:func:`token_classification.rank.get_label_quality_scores <cleanlab.token_classification.rank.get_label_quality_scores>`
     to a list of issues of similar format as output by :py:func:`token_classification.filter.find_label_issues <cleanlab.token_classification.filter.find_label_issues>`.
+
     Only considers as issues those tokens with label quality score lower than `threshold`.
+
     Issues are sorted by label quality score, from most severe to least.
 
     Parameters
     ----------
     sentence_scores:
         Array of shape `(N, )` of overall sentence scores, where `N` is the number of sentences in the dataset.
+
         Same format as the `sentence_scores` returned by :py:func:`token_classification.rank.get_label_quality_scores <cleanlab.token_classification.rank.get_label_quality_scores>`.
 
     token_scores:
         Optional list such that `token_scores[i]` contains the individual token scores for the `i`-th sentence.
+
         Same format as the `token_scores` returned by :py:func:`token_classification.rank.get_label_quality_scores <cleanlab.token_classification.rank.get_label_quality_scores>`.
 
     threshold:
@@ -163,9 +177,12 @@ def issues_from_scores(
     issues:
         List of label issues identified by comparing quality scores to threshold, such that each element is a tuple ``(i, j)``, which
         indicates that the `j`-th token of the `i`-th sentence has a label issue.
+
         These tuples are ordered in `issues` list based on the token label quality score.
+
         Use :py:func:`token_classification.summary.display_issues <cleanlab.token_classification.summary.display_issues>`
         to view these issues within the original sentences.
+
         If `token_scores` is not provided, returns array of integer indices (rather than tuples) of the sentences whose label quality score
         falls below the `threshold` (also sorted by overall label quality score of each sentence).
 
@@ -231,8 +248,10 @@ def _softmin_sentence_score(
         where `token_scores[i]` is a list of scores for each toke in the i'th sentence.
 
     temperature:
-        Temperature of the softmax function. Lower values encourage this method to converge
-        toward the label quality score of the token with the lowest quality label in the sentence.
+        Temperature of the softmax function.
+
+        Lower values encourage this method to converge toward the label quality score of the token with the lowest quality label in the sentence.
+
         Higher values encourage this method to converge toward the average label quality score of all tokens in the sentence.
 
     Returns
