@@ -557,8 +557,9 @@ def get_confidence_weighted_entropy_for_each_label(
 
 def find_top_issues(quality_scores: np.ndarray, top: int = 20) -> np.ndarray:
     """
-    Uses passed in `quality_scores` to return `top` indices corresponding to examples most likely to be issues.
-    Indices ordered from most to least likely to be an issue based on value of quality_score.
+    Uses provided `quality_scores` to return `top` indices corresponding to the examples most likely to exhibit issues of a particular type.
+    Returned indices are ordered from most to least severe instance of issue (based on value of `quality_score`). 
+    Make sure that the ordering of `quality_scores` matches the examples in your dataset.
 
     Parameters
     ----------
