@@ -553,3 +553,29 @@ def get_confidence_weighted_entropy_for_each_label(
     label_quality_scores = np.log(label_quality_scores + 1) / clipped_scores
 
     return label_quality_scores
+
+
+def find_top_issues(quality_scores, top=20):
+    """
+    Uses passed in `quality_scores` to return `top` indices corresponding to examples most likely to be issues.
+    Indices ordered from most to least likely to be an issue based on value of quality_score.
+
+    Parameters
+    ----------
+    quality_scores : np.ndarray
+      Scores array of shape ``(N,)``, where N is the number of examples.
+
+    top : int, optional
+      The number of top scores to return.
+
+    Returns
+    -------
+    top_issue_indices : np.ndarray
+      Top indices of issue examples ranked by how likely they are to be an issue.
+    """
+
+    if top is None or top > len(quality_scores):
+        top = len(quality_scores)
+
+    top_outlier_indices = quality_scores.argsort()[:top]
+    return top_outlier_indices
