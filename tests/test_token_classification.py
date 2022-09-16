@@ -178,6 +178,10 @@ def test_find_label_issues(test_labels):
     assert isinstance(issues, list)
     assert len(issues) == 1
     assert issues[0] == (1, 0)
+    issues2 = find_label_issues(
+        test_labels, pred_probs, return_indices_ranked_by="normalized_margin"
+    )
+    assert isinstance(issues2, list)
 
 
 def test_softmin_sentence_score():
@@ -220,8 +224,8 @@ def test_get_label_quality_scores(label_quality_scores):
 
 
 def test_issues_from_scores(label_quality_scores):
-    sentence_scores, token_info = label_quality_scores
-    issues = issues_from_scores(sentence_scores, token_info)
+    sentence_scores, token_scores = label_quality_scores
+    issues = issues_from_scores(sentence_scores, token_scores=token_scores)
     assert len(issues) == 1
     assert issues[0] == (1, 0)
     issues_without = issues_from_scores(sentence_scores)
@@ -231,7 +235,7 @@ def test_issues_from_scores(label_quality_scores):
 
 def test_display_issues():
     display_issues(issues, words)
-    display_issues(issues, words, labels=labels)
+    display_issues(issues, tokens=words, labels=labels)
     display_issues(issues, words, pred_probs=pred_probs)
     display_issues(issues, words, pred_probs=pred_probs, labels=labels)
     display_issues(issues, words, pred_probs=pred_probs, labels=labels, class_names=class_names)
