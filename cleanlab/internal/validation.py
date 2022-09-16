@@ -213,6 +213,7 @@ def assert_valid_inputs_multiannotator(
     labels_multiannotator: pd.DataFrame,
     pred_probs: Optional[np.ndarray] = None,
 ) -> None:
+    """Validate multi-annotator labels"""
     # Raise error if number of classes in labels_multiannoator does not match number of classes in pred_probs
     if pred_probs is not None:
         num_classes = get_num_classes(pred_probs=pred_probs)
