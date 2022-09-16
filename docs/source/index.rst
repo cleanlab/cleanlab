@@ -55,7 +55,7 @@ If you're using a scikit-learn-compatible model (option 1), you don't need to tr
     )
 
 
-By default, :py:meth:`find_label_issues <cleanlab.filter.find_label_issues>` returns a boolean mask of label issues, but setting `return_indices_ranked_by`, :py:meth:`find_label_issues <cleanlab.filter.find_label_issues>` will return the indices of potential mislabeled examples ordered by likelihood of a label issue (estimated via :py:meth:`rank.get_label_quality_scores <cleanlab.rank.get_label_quality_scores>`).
+By default, :py:meth:`find_label_issues <cleanlab.filter.find_label_issues>` returns a boolean mask of label issues, but setting `return_indices_ranked_by`. :py:meth:`find_label_issues <cleanlab.filter.find_label_issues>` will return the indices of potential mislabeled examples ordered by likelihood of a label issue (estimated via :py:meth:`rank.get_label_quality_scores <cleanlab.rank.get_label_quality_scores>`).
 
 .. important::
    The predicted probabilities, ``pred_probs``, from your model **must be out-of-sample**. Never provide predictions on the same data points used to train the model -- these predictions are overfit and unsuitable for finding label errors. Details on how to compute out-of-sample predicted probabilities for your entire dataset are :ref:`here <pred_probs_cross_val>`.
