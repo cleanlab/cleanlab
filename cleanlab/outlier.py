@@ -38,6 +38,8 @@ class OutOfDistribution:
     Each example's OOD score lies in [0,1] with smaller values indicating examples that are less typical under the data distribution.
     OOD scores may be estimated from either: numeric feature embeddings or predicted probabilities from a trained classifier.
 
+    To get indices of examples that are most likely outliers call :py:func:`find_top_issues <cleanlab.rank.find_top_issues>` function on computed OOD scores.
+
     Parameters
     ----------
     params : dict, default = {}
