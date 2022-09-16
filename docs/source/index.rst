@@ -45,7 +45,7 @@ Setting `return_indices_ranked_by` in this function instructs cleanlab to return
     from cleanlab.filter import find_label_issues
     
     # Option 1 - sklearn-compatible models - just provide the data and labels ツ
-    issues_df = CleanLearning(clf=sklearnCompatibleModel).find_label_issues(data, labels)
+    issues_df = CleanLearning(clf=sklearn_compatible_model).find_label_issues(data, labels)
 
     # Option 2 - ANY ML model - just provide the model's predicted probabilities
     ordered_label_issues = find_label_issues(
