@@ -437,7 +437,7 @@ def get_majority_vote_label(
     unique_ma_labels = np.unique(labels_multiannotator.replace({pd.NA: np.NaN}).astype(float))
     unique_ma_labels = unique_ma_labels[~np.isnan(unique_ma_labels)]
 
-    if len(set(majority_vote_label).symmetric_difference(set(np.unique(unique_ma_labels)))) != 0:
+    if len(set(majority_vote_label).symmetric_difference(set(unique_ma_labels))) != 0:
         print(
             "CAUTION: Number of unique classes has been reduced from the original data, likely due to some classes being rarely annotated"
         )
