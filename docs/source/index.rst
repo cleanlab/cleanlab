@@ -35,24 +35,27 @@ Quickstart
 2. Find label errors in your data
 ---------------------------------
 
-cleanlab's :py:meth:`find_label_issues <cleanlab.filter.find_label_issues>` function tells you which examples in your dataset are likely mislabeled. At a minimum, it expects two inputs --- your data's given labels, `labels`, and predicted probabilities, `pred_probs`, from some trained classification model. These must be out-of-sample predictions where the data points were held out from the model during training, which can be :ref:`obtained via cross-validation <pred_probs_cross_val>`.
+cleanlab finds issues in *any dataset that a classifier can be trained on*. The cleanlab package *works with any model* by using model outputs (predicted probabilities) as input -- it doesn't depend on which model created those outputs.
 
-Setting `return_indices_ranked_by` in this function instructs cleanlab to return the indices of potential mislabeled examples, ordered by the likelihood of their given label being incorrect. This is estimated via a *label quality score*, which for example can be specified as ``'self_confidence'`` (predicted probability the given label).
+If you're using a scikit-learn-compatible model (option 1), you don't need to train a model -- you can pass the model, data, and labels into :py:meth:`CleanLearning.find_label_issues <cleanlab.classification.CleanLearning.find_label_issues>` and cleanlab will handle model training for you. If you want to use any non-sklearn-compatible model, e.g. from huggingface, keras, pytorch, etc. (option 2), you can input the trained model's out-of-sample predicted probabilities into :py:meth:`find_label_issues <cleanlab.filter.find_label_issues>`. Examples for both options are below.
 
 .. code-block:: python
 
     from cleanlab.classification import CleanLearning
     from cleanlab.filter import find_label_issues
     
-    # Option 1 - sklearn-compatible models - just provide the data and labels ツ
+    # Option 1 - works with sklearn-compatible models - just input the data and labels ツ
     issues_df = CleanLearning(clf=sklearn_compatible_model).find_label_issues(data, labels)
 
-    # Option 2 - ANY ML model - just provide the model's predicted probabilities
+    # Option 2 - works with ANY ML model - just input the model's predicted probabilities
     ordered_label_issues = find_label_issues(
         labels=labels,
         pred_probs=pred_probs,  # out-of-sample predicted probabilities from any model
         return_indices_ranked_by='self_confidence',
     )
+
+
+By default, :py:meth:`find_label_issues <cleanlab.filter.find_label_issues>` returns a boolean mask of label issues, but setting `return_indices_ranked_by`, :py:meth:`find_label_issues <cleanlab.filter.find_label_issues>` will return the indices of potential mislabeled examples ordered by likelihood of a label issue (estimated via :py:meth:`rank.get_label_quality_scores <cleanlab.rank.get_label_quality_scores>`).
 
 .. important::
    The predicted probabilities, ``pred_probs``, from your model **must be out-of-sample**. Never provide predictions on the same data points used to train the model -- these predictions are overfit and unsuitable for finding label errors. Details on how to compute out-of-sample predicted probabilities for your entire dataset are :ref:`here <pred_probs_cross_val>`.
@@ -72,9 +75,9 @@ When the :py:meth:`.fit() <cleanlab.classification.CleanLearning.fit>` method is
    from sklearn.linear_model import LogisticRegression
    from cleanlab.classification import CleanLearning
 
-   # Train an ML model with noisy labels - 3 lines of code
    cl = CleanLearning(clf=LogisticRegression())  # any sklearn-compatible classifier
    cl.fit(X=train_data, labels=labels)
+
    # Estimate the predictions you would have gotten if you trained with error-free labels.
    predictions = cl.predict(test_data)
 
