@@ -80,7 +80,13 @@ def display_issues(
     ... ]
     >>> display_issues(issues, given_words)
     Sentence 2, token 0:
+    ----
+    An sentence with a typo
     ...
+    ...
+    Sentence 0, token 1:
+    ----
+    A ?weird sentence
     """
     if not class_names:
         print(
