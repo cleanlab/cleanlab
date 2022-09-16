@@ -567,7 +567,7 @@ def find_top_issues(quality_scores: np.ndarray, top: int = 20) -> np.ndarray:
       Array of shape ``(N,)``, where N is the number of examples, containing one quality score for each example in the dataset.
 
     top :
-      The number of top scores to return.
+      The number of indices to return.
 
     Returns
     -------
