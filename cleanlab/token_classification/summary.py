@@ -111,24 +111,25 @@ def display_issues(
                 given = class_names[given]
 
             shown += 1
-            print("Sentence %d, token %d: \n%s" % (i, j, color_sentence(sentence, word)))
+            print("Sentence %d, token %d:" % (i, j))
             if labels and not pred_probs:
-                print("Given label: %s\n" % str(given))
+                print("Given label: %s" % str(given))
             elif not labels and pred_probs:
-                print("Predicted label according to provided pred_probs: %s\n" % str(prediction))
+                print("Predicted label according to provided pred_probs: %s" % str(prediction))
             elif labels and pred_probs:
                 print(
-                    "Given label: %s, predicted label according to provided pred_probs: %s\n"
+                    "Given label: %s, predicted label according to provided pred_probs: %s"
                     % (str(given), str(prediction))
                 )
-            else:
-                print()
+            print("----")
+            print(color_sentence(sentence, word))
         else:
             shown += 1
             sentence = get_sentence(given_words[issue])
-            print("Sentence %d: %s\n" % (issue, sentence))
+            print("Sentence %d: %s" % (issue, sentence))
         if shown == top:
             break
+        print("\n")
 
 
 def common_label_issues(
