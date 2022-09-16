@@ -413,13 +413,13 @@ def test_find_top_issues():
     assert len(top_outlier_indices_k) == 10
 
     # Get k = 20 ood scores
-    top_outlier_indices = rank.find_top_issues(quality_scores=ood_scores)
+    top_outlier_indices = rank.find_top_issues(ood_scores)
     assert len(top_outlier_indices) == 20
 
     # Assert top k scores are consistent with different length scores vectors
     assert (top_outlier_indices_k == top_outlier_indices[:10]).all()  # scores consistent
 
-    top_outlier_indices_0 = rank.find_top_issues(quality_scores=ood_scores, top=0)
+    top_outlier_indices_0 = rank.find_top_issues(ood_scores, top=0)
     assert len(top_outlier_indices_0) == 0
 
     top_outlier_indices_0 = rank.find_top_issues(quality_scores=ood_scores, top=1)

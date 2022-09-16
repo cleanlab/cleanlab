@@ -555,10 +555,10 @@ def get_confidence_weighted_entropy_for_each_label(
     return label_quality_scores
 
 
-def find_top_issues(quality_scores: np.ndarray, top: int = 20) -> np.ndarray:
+def find_top_issues(quality_scores: np.ndarray, *, top: int = 20) -> np.ndarray:
     """
     Uses provided `quality_scores` to return `top` indices corresponding to the examples most likely to exhibit issues of a particular type.
-    Returned indices are ordered from most to least severe instance of issue (based on value of `quality_score`). 
+    Returned indices are ordered from most to least severe instance of issue (based on value of `quality_score`).
     Make sure that the ordering of `quality_scores` matches the examples in your dataset.
 
     Parameters
@@ -572,8 +572,7 @@ def find_top_issues(quality_scores: np.ndarray, top: int = 20) -> np.ndarray:
     Returns
     -------
     top_issue_indices :
-      Indices of top examples most likely to suffer from issue (ranked by issue severity). 
-    """
+        Indices of top examples most likely to have an issue (ranked by issue severity)."""
 
     if top is None or top > len(quality_scores):
         top = len(quality_scores)
