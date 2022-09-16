@@ -221,7 +221,7 @@ def assert_valid_inputs_multiannotator(
         if num_classes != len(unique_ma_labels):
             raise ValueError(
                 """The number of unique classes in labels_multiannotator do not match the number of classes in pred_probs.
-                A potential likely reason could that some rarely-annotated classes were lost while establishing consensus labels."""
+                Perhaps some rarely-annotated classes were lost while establishing consensus labels used to train your classifier."""
             )
 
     # Raise error if labels_multiannotator has NaN rows
