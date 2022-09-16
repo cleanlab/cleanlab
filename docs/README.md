@@ -60,7 +60,7 @@ pip install -r docs/requirements.txt
       ```
       sphinx-build docs/source cleanlab-docs
       ```
-   This won't properly produce/display other versions of the docs, but that shouldn't matter if you are just trying to test some local edits to the current version.
+   This won't properly produce/display other versions of the docs, but that shouldn't matter if you are just trying to test some local edits to the current version. If some notebooks are giving you trouble (eg. due to runtime or dependencies), you can simply delete those .ipynb files before calling `sphinx-build`.
 
    **Fast build**: Executing the Jupyter Notebooks (i.e., the `.ipynb` files) that make up some portion of the docs, such as the tutorials, takes a long time. If you want to skip rendering these, set the environment variable `SKIP_NOTEBOOKS=1`. You can either set this using `export SKIP_NOTEBOOKS=1` or do this inline with `SKIP_NOTEBOOKS=1 sphinx-multiversion ...`.
 
