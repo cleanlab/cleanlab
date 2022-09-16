@@ -572,7 +572,7 @@ def find_top_issues(quality_scores: np.ndarray, *, top: int = 20) -> np.ndarray:
     Returns
     -------
     top_issue_indices :
-        Indices of top examples most likely to have an issue (ranked by issue severity)."""
+        Indices of top examples most likely to suffer from an issue (ranked by issue severity)."""
 
     if top is None or top > len(quality_scores):
         top = len(quality_scores)
