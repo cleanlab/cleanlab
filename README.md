@@ -39,6 +39,7 @@ Get started with: [documentation](https://docs.cleanlab.ai/), [tutorials](https:
 <details><summary><b>News! (2022) </b> -- cleanlab made accessible for everybody, not just ML researchers (<b>click to learn more</b>) </summary>
 <p>
 <ul>
+<li> <b>Sep 2022 📖</b> cleanlab 2.1.0 released! Extends this library to: data labeled by multiple annotators, token classification with text data,  CleanLearning with non-array data, and out-of-distribution detection. </li>
 <li> <b>April 2022 📖</b> cleanlab 2.0.0 released! Lays foundations for this library to grow into a general-purpose data-centric AI toolkit. </li>
 <li> <b>March 2022 📖</b>  Documentation migrated to new website: <a href="https://docs.cleanlab.ai/">docs.cleanlab.ai</a> with quickstart tutorials for image/text/audio/tabular data.</li>
 <li> <b>Feb 2022 💻</b> <a href="https://docs.cleanlab.ai/master/migrating/migrate_v2.html">APIs simplified</a> to make cleanlab accessible for everybody, not just ML researchers </li>
