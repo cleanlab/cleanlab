@@ -223,6 +223,7 @@ def get_label_quality_multiannotator(
                 else:
                     consensus_label[i] = majority_vote_label[i]
             consensus_label = consensus_label.astype("int64")  # convert all label types to int
+
             (
                 annotator_agreement,
                 consensus_quality_score,
@@ -245,6 +246,17 @@ def get_label_quality_multiannotator(
                 {quality_method} is not a valid consensus method!
                 Please choose a valid consensus_method: {valid_methods}
                 """
+            )
+
+        # checks if any labels are dropped
+        labels_set_difference = set(unique_ma_labels) - set(consensus_label)
+        if verbose == True and len(labels_set_difference) > 0:
+            print(
+                f"""CAUTION: Number of unique classes has been reduced from the original data when establishing consensus labels 
+                using consensus method "{curr_method}", likely due to some classes being rarely annotated. 
+                If training a classifier on these consensus labels, it will never see any of the omitted classes unless you 
+                manually replace some of the consensus labels.
+                Classes in the original data but not in consensus labels: {list(map(int, labels_set_difference))}"""
             )
 
         # saving stats into dataframe, computing additional stats if specified
@@ -437,9 +449,15 @@ def get_majority_vote_label(
     unique_ma_labels = np.unique(labels_multiannotator.replace({pd.NA: np.NaN}).astype(float))
     unique_ma_labels = unique_ma_labels[~np.isnan(unique_ma_labels)]
 
-    if len(set(majority_vote_label).symmetric_difference(set(unique_ma_labels))) != 0:
+    labels_set_difference = set(unique_ma_labels) - set(majority_vote_label)
+
+    if len(labels_set_difference) > 0:
         print(
-            "CAUTION: Number of unique classes has been reduced from the original data, likely due to some classes being rarely annotated"
+            f"""CAUTION: Number of unique classes has been reduced from the original data when establishing consensus labels, 
+            likely due to some classes being rarely annotated. If training a classifier on these consensus labels, 
+            it will never see any of the omitted classes unless you manually replace some of the consensus labels.
+            
+            Classes in the original data but not in consensus labels: {list(map(int, labels_set_difference))}"""
         )
 
     return majority_vote_label.astype("int64")
