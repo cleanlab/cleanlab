@@ -16,21 +16,22 @@
 
 """
 Wrapper class you can use to make any Keras model compatible with :py:class:`CleanLearning <cleanlab.classification.CleanLearning>` and sklearn.
-Use `KerasWrapperModel` to wrap existing functional API code for ``keras.Model`` objects, 
-and `KerasWrapperSequential` to wrap existing ``tf.keras.models.Sequential`` objects.
+Use :py:class:`KerasWrapperModel<cleanlab.experimental.keras.KerasWrapperModel>` to wrap existing functional API code for ``keras.Model`` objects, 
+and :py:class:`KerasWrapperSequential<cleanlab.experimental.keras.KerasWrapperSequential>` to wrap existing ``tf.keras.models.Sequential`` objects.
 Most of the instance methods of this class work the same as the ones for the wrapped Keras model, 
-see the Keras documentation for details.
+see the `Keras documentation <https://keras.io/>`_ for details.
 
 This is a good example of making any bespoke neural network compatible with cleanlab.
 
-You must have Tensorflow 2 installed: https://www.tensorflow.org/install
+You must have `Tensorflow 2 installed <https://www.tensorflow.org/install>`_ (only compatible with Python versions >= 3.7).
 
 Tips:
 
-* If this class lacks certain functionality, you can alternatively try scikeras: https://github.com/adriangb/scikeras
-* Unlike scikeras, this class can operate directly on ``tensorflow.data.Dataset`` objects (like regular Keras models).
-* To call ``fit()`` on a Tensorflow Dataset object with a Keras model, the Dataset should already be batched.
-* Tensorflow 2 is only compatible with Python versions >= 3.7: https://www.tensorflow.org/install/pip#software_requirements
+* If this class lacks certain functionality, you can alternatively try `scikeras <https://github.com/adriangb/scikeras>`_.
+* Unlike scikeras, our `KerasWrapper` classes can operate directly on ``tensorflow.data.Dataset`` objects (like regular Keras models).
+* To call ``fit()`` on a tensorflow ``Dataset`` object with a Keras model, the ``Dataset`` should already be batched.
+* Check out our `example <https://github.com/cleanlab/examples/>`_ using this class: [huggingface_keras_imdb](https://github.com/cleanlab/examples/blob/master/huggingface_keras_imdb/huggingface_keras_imdb.ipynb)  
+* Our `unit tests <https://github.com/cleanlab/cleanlab/blob/master/tests/test_frameworks.py>`_ also provide basic usage examples. 
 
 """
 
