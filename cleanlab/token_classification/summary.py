@@ -88,6 +88,7 @@ def display_issues(
         )
         print("Specify this argument to see the string names of each class. \n")
 
+    top = min(top, len(issues))
     shown = 0
     is_tuple = isinstance(issues[0], tuple)
 
