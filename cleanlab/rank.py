@@ -557,9 +557,13 @@ def get_confidence_weighted_entropy_for_each_label(
 
 def find_top_issues(quality_scores: np.ndarray, *, top: int = 20) -> np.ndarray:
     """
-    Returns the sorted indices of the `top` issues in `quality_scores`, ordered from smallest to largest quality score (i.e., from most to least likely to be an issue). For example, the first value returned is the index corresponding to the smallest value in `quality_scores` (most likely to be an issue). The second value in the returned array is the index corresponding to the second smallest value in `quality-scores` (second-most likely to be an issue), and so forth.
+    Returns the sorted indices of the `top` issues in `quality_scores`, ordered from smallest to largest quality score
+    (i.e., from most to least likely to be an issue). For example, the first value returned is the index corresponding
+    to the smallest value in `quality_scores` (most likely to be an issue). The second value in the returned array is
+    the index corresponding to the second smallest value in `quality-scores` (second-most likely to be an issue), and so forth.
 
-    This method assumes that `quality_scores` shares an index with some dataset such that the indices returned by this method map to the examples in that dataset. 
+    This method assumes that `quality_scores` shares an index with some dataset such that the indices returned by this method
+    map to the examples in that dataset. 
 
     Parameters
     ----------
