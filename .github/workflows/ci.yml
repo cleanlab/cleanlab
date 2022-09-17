@@ -61,6 +61,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+      - uses: cclauss/GitHub-Action-for-pylint@0.7.0
       - name: Count unused imports
         run: echo "::set-output name=UNUSED_COUNT::$(pylint * | grep "unused-import" | wc -l)"
         id: unused_check
@@ -75,6 +76,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+      - uses: cclauss/GitHub-Action-for-pylint@0.7.0
       - name: Count wildcard imports
         run: echo "::set-output name=WILDCARD_COUNT::$(pylint * | grep "Wildcard import" | wc -l)"
         id: wildcard_check
