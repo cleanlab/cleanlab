@@ -207,19 +207,22 @@ def get_label_quality_multiannotator(
                 """
             )
 
-        # checks if any labels are dropped
-        unique_ma_labels = np.unique(labels_multiannotator.replace({pd.NA: np.NaN}).astype(float))
-        unique_ma_labels = unique_ma_labels[~np.isnan(unique_ma_labels)]
-        labels_set_difference = set(unique_ma_labels) - set(consensus_label)
-
-        if verbose and len(labels_set_difference) > 0:
-            print(
-                f"""CAUTION: Number of unique classes has been reduced from the original data when establishing consensus labels
-                using consensus method "{curr_method}", likely due to some classes being rarely annotated.
-                If training a classifier on these consensus labels, it will never see any of the omitted classes unless you
-                manually replace some of the consensus labels.
-                Classes in the original data but not in consensus labels: {list(map(int, labels_set_difference))}"""
+        if verbose:
+            # checks if any labels are dropped
+            unique_ma_labels = np.unique(
+                labels_multiannotator.replace({pd.NA: np.NaN}).astype(float)
             )
+            unique_ma_labels = unique_ma_labels[~np.isnan(unique_ma_labels)]
+            labels_set_difference = set(unique_ma_labels) - set(consensus_label)
+
+            if len(labels_set_difference) > 0:
+                print(
+                    f"""CAUTION: Number of unique classes has been reduced from the original data when establishing consensus labels
+                    using consensus method "{curr_method}", likely due to some classes being rarely annotated.
+                    If training a classifier on these consensus labels, it will never see any of the omitted classes unless you
+                    manually replace some of the consensus labels.
+                    Classes in the original data but not in consensus labels: {list(map(int, labels_set_difference))}"""
+                )
 
         # saving stats into dataframe, computing additional stats if specified
         if main_method:
@@ -415,7 +418,6 @@ def get_majority_vote_label(
     if verbose:
         unique_ma_labels = np.unique(labels_multiannotator.replace({pd.NA: np.NaN}).astype(float))
         unique_ma_labels = unique_ma_labels[~np.isnan(unique_ma_labels)]
-
         labels_set_difference = set(unique_ma_labels) - set(majority_vote_label)
 
         if len(labels_set_difference) > 0:
