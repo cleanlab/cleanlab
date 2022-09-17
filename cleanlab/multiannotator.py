@@ -416,6 +416,7 @@ def get_majority_vote_label(
             majority_vote_label[idx] = np.random.choice(label_mode)
 
     if verbose:
+        # check if any classes no longer appear in the set of consensus labels
         unique_ma_labels = np.unique(labels_multiannotator.replace({pd.NA: np.NaN}).astype(float))
         unique_ma_labels = unique_ma_labels[~np.isnan(unique_ma_labels)]
         labels_set_difference = set(unique_ma_labels) - set(majority_vote_label)
