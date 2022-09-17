@@ -15,7 +15,7 @@
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
 
-__version__ = "2.0.0"
+__version__ = "2.1.0"
 
 
 # 2.0.0 - "Data-centric AI Ready". Complete re-architecture of cleanlab API.
