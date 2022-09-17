@@ -61,9 +61,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: actions/setup-python@v2
       - name: Count unused imports
-        run: echo "::set-output name=UNUSED_COUNT::$(pylint * | grep "unused-import" | wc -l)"
+        run: |
+          sudo apt install pylint -y
+          echo "::set-output name=UNUSED_COUNT::$(pylint * | grep "unused-import" | wc -l)"
         id: unused_check
       - name: Fail job is any unused imports are there
         if: ${{ steps.unused_check.outputs.UNUSED_COUNT > 0 }}
@@ -76,9 +77,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: actions/setup-python@v2
       - name: Count wildcard imports
-        run: echo "::set-output name=WILDCARD_COUNT::$(pylint * | grep "Wildcard import" | wc -l)"
+        run: |
+          sudo apt install pylint -y
+          echo "::set-output name=WILDCARD_COUNT::$(pylint * | grep "Wildcard import" | wc -l)"
         id: wildcard_check
       - name: Fail job is any wildcard imports are there
         if: ${{ steps.unused_check.outputs.WILDCARD_COUNT > 0 }}
