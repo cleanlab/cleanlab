@@ -45,7 +45,7 @@ If you're using a scikit-learn-compatible model (option 1), you don't need to tr
     from cleanlab.filter import find_label_issues
     
     # Option 1 - works with sklearn-compatible models - just input the data and labels ツ
-    issues_df = CleanLearning(clf=sklearn_compatible_model).find_label_issues(data, labels)
+    label_issues_info = CleanLearning(clf=sklearn_compatible_model).find_label_issues(data, labels)
 
     # Option 2 - works with ANY ML model - just input the model's predicted probabilities
     ordered_label_issues = find_label_issues(
