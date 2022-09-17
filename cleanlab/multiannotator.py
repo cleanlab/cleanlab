@@ -93,7 +93,7 @@ def get_label_quality_multiannotator(
     return_annotator_stats : bool, default = True
         Boolean to specify if `annotator_stats` is returned.
     verbose : bool, default = True
-        Certain warnings and notes will be printed if ``verbose`` is set to ``True``.
+        Important warnings and other printed statements may be suppressed if ``verbose`` is set to ``False``.
     label_quality_score_kwargs : dict, optional
         Keyword arguments to pass into :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>`.
 
