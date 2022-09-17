@@ -208,7 +208,7 @@ def get_label_quality_multiannotator(
             )
 
         if verbose:
-            # checks if any labels are dropped
+            # check if any classes no longer appear in the set of consensus labels
             unique_ma_labels = np.unique(
                 labels_multiannotator.replace({pd.NA: np.NaN}).astype(float)
             )
