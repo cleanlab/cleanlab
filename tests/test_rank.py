@@ -21,6 +21,8 @@ from cleanlab.internal.label_quality_utils import _subtract_confident_thresholds
 from cleanlab.benchmarking.noise_generation import generate_noise_matrix_from_trace
 from cleanlab.benchmarking.noise_generation import generate_noisy_labels
 from cleanlab import count
+from cleanlab import outlier
+from sklearn.neighbors import NearestNeighbors
 
 
 def make_data(
@@ -378,3 +380,42 @@ def test_unsupported_method_for_adjust_pred_probs():
         method = "confidence_weighted_entropy"
 
         _ = rank.get_label_quality_scores(labels, pred_probs, adjust_pred_probs=True, method=method)
+
+
+def test_find_top_issues():
+    DEFAULT_TOP = 10  # CHANGE THIS IS THE DEFAULT CHANGES
+    X_train = data["X_train"]
+    X_test = data["X_test"]
+    X_ood = np.array([[999999999.0, 999999999.0]])  # Create OOD datapoint
+    X_test_with_ood = np.vstack([X_test, X_ood])  # Add OOD datapoint to X_test
+
+    # Create OOD object (use knn without cosine metric to identify X_ood correctly)
+    knn = NearestNeighbors(n_neighbors=5).fit(X_train)
+    ood_outlier = outlier.OutOfDistribution(params={"knn": knn})
+    ood_scores = ood_outlier.score(features=X_test_with_ood)
+
+    # Get top ood score for outlier example
+    top_outlier_indices = rank.find_top_issues(quality_scores=ood_scores, top=len(ood_scores))
+    top_outlier_indices_more_k = rank.find_top_issues(quality_scores=ood_scores, top=100000)
+
+    ### Check top scores are calculated correctly
+
+    # Checking that X_ood has the smallest outlier score among all the datapoints and outlier scores identifies that
+    assert np.argmin(ood_scores) == (ood_scores.shape[0] - 1)
+    assert len(top_outlier_indices) == len(ood_scores)
+    assert top_outlier_indices[0] == np.argmin(ood_scores)
+
+    # Checking k > len(ood_scores) is same as sorted list of indices
+    assert len(top_outlier_indices) == len(top_outlier_indices_more_k)
+    assert (top_outlier_indices == top_outlier_indices_more_k).all()
+
+    # Get k = DEFAULT_TOP ood scores
+    top_outlier_indices = rank.find_top_issues(ood_scores)
+    assert len(top_outlier_indices) == DEFAULT_TOP
+
+    # Get k < len(ood_scores) ood scores
+    # Assert top k scores are consistent with different length scores vectors
+    for k in [0, 1, 3]:
+        top_outlier_indices_k = rank.find_top_issues(quality_scores=ood_scores, top=k)
+        assert len(top_outlier_indices_k) == k
+        assert (top_outlier_indices_k == top_outlier_indices[:k]).all()  # scores consistent
