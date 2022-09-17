@@ -17,6 +17,9 @@
 
 __version__ = "2.1.0"
 
+# ----------------------------------
+# | PREVIOUS VERSION RELEASE NOTES |
+# ----------------------------------
 
 # 2.0.0 - "Data-centric AI Ready". Complete re-architecture of cleanlab API.
 #
@@ -29,10 +32,6 @@ __version__ = "2.1.0"
 #   For developers:
 #   - If you're coming from 1.0 (pre-1.0.1), you may need to re-clone.
 #   - Extensive support available at https://docs.cleanlab.ai
-
-# ----------------------------------
-# | PREVIOUS VERSION RELEASE NOTES |
-# ----------------------------------
 
 # 1.0.1 - Launch sphinx docs for Cleanlab 1.0 (in preparation for Cleanlab 2.0). Mostly superficial.
 #
