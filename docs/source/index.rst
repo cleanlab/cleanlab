@@ -37,7 +37,7 @@ Quickstart
 
 cleanlab finds issues in *any dataset that a classifier can be trained on*. The cleanlab package *works with any model* by using model outputs (predicted probabilities) as input -- it doesn't depend on which model created those outputs.
 
-If you're using a scikit-learn-compatible model (option 1), you don't need to train a model -- you can pass the model, data, and labels into :py:meth:`CleanLearning.find_label_issues <cleanlab.classification.CleanLearning.find_label_issues>` and cleanlab will handle model training for you. If you want to use any non-sklearn-compatible model, e.g. from huggingface, keras, pytorch, etc. (option 2), you can input the trained model's out-of-sample predicted probabilities into :py:meth:`find_label_issues <cleanlab.filter.find_label_issues>`. Examples for both options are below.
+If you're using a scikit-learn-compatible model (option 1), you don't need to train a model -- you can pass the model, data, and labels into :py:meth:`CleanLearning.find_label_issues <cleanlab.classification.CleanLearning.find_label_issues>` and cleanlab will handle model training for you. If you want to use any non-sklearn-compatible model (option 2), you can input the trained model's out-of-sample predicted probabilities into :py:meth:`find_label_issues <cleanlab.filter.find_label_issues>`. Examples for both options are below.
 
 .. code-block:: python
 
@@ -54,6 +54,7 @@ If you're using a scikit-learn-compatible model (option 1), you don't need to tr
         return_indices_ranked_by='self_confidence',
     )
 
+:py:class:`CleanLearning <cleanlab.classification.CleanLearning>` (Option 1) also works with models from most standard ML frameworks by wrapping the model for scikit-learn compliance, e.g. huggingface (using KerasWrapperModel), Keras (works by default), pytorch (using skorch), etc. 
 
 By default, :py:meth:`find_label_issues <cleanlab.filter.find_label_issues>` returns a boolean mask of label issues. You can instead return the indices of potential mislabeled examples by setting `return_indices_ranked_by` in :py:meth:`find_label_issues <cleanlab.filter.find_label_issues>`. The indices are ordered by likelihood of a label issue (estimated via :py:meth:`rank.get_label_quality_scores <cleanlab.rank.get_label_quality_scores>`).
 
