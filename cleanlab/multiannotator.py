@@ -15,7 +15,7 @@
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
 """
-Methods for analysis of classification data labeled by multiple annotators, including computation of: 
+Methods for analysis of classification data labeled by multiple annotators, including computation of:
 
 * A consensus label for each example that aggregates the individual annotations more accurately than alternative aggregation via majority-vote or other algorithms used in crowdsourcing.
 * A quality score for each consensus label which measures our confidence that this label is correct.
@@ -139,7 +139,7 @@ def get_label_quality_multiannotator(
         majority_vote_label = get_majority_vote_label(
             labels_multiannotator=labels_multiannotator,
             pred_probs=pred_probs,
-            raise_dataset_errors=False,
+            verbose=False,
         )
         (
             MV_annotator_agreement,
@@ -212,11 +212,11 @@ def get_label_quality_multiannotator(
         unique_ma_labels = unique_ma_labels[~np.isnan(unique_ma_labels)]
         labels_set_difference = set(unique_ma_labels) - set(consensus_label)
 
-        if verbose == True and len(labels_set_difference) > 0:
+        if verbose and len(labels_set_difference) > 0:
             print(
-                f"""CAUTION: Number of unique classes has been reduced from the original data when establishing consensus labels 
-                using consensus method "{curr_method}", likely due to some classes being rarely annotated. 
-                If training a classifier on these consensus labels, it will never see any of the omitted classes unless you 
+                f"""CAUTION: Number of unique classes has been reduced from the original data when establishing consensus labels
+                using consensus method "{curr_method}", likely due to some classes being rarely annotated.
+                If training a classifier on these consensus labels, it will never see any of the omitted classes unless you
                 manually replace some of the consensus labels.
                 Classes in the original data but not in consensus labels: {list(map(int, labels_set_difference))}"""
             )
@@ -302,7 +302,7 @@ def get_label_quality_multiannotator(
 def get_majority_vote_label(
     labels_multiannotator: Union[pd.DataFrame, np.ndarray],
     pred_probs: np.ndarray = None,
-    raise_dataset_errors: bool = True,
+    verbose: bool = True,
 ) -> np.ndarray:
     """Returns the majority vote label for each example, aggregated from the labels given by multiple annotators.
 
@@ -315,9 +315,8 @@ def get_majority_vote_label(
     pred_probs : np.ndarray, optional
         An array of shape ``(N, K)`` of model-predicted probabilities, ``P(label=k|x)``.
         For details, predicted probabilities in the same format expected by the :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>`.
-    raise_dataset_errors : bool, optional
-        A boolean to specify if :py:func:`assert_valid_inputs_multiannotator <cleanlab.internal.validation.assert_valid_inputs_multiannotator>` should be executed to check
-        for potential dataset issues. Should always be ``True``, only set to ``False`` internally to prevent duplicate checking.
+    verbose : bool, optional
+        Certain warnings and notes will be printed if ``verbose`` is set to ``True``.
     Returns
     -------
     consensus_label: np.ndarray
@@ -333,8 +332,7 @@ def get_majority_vote_label(
     if isinstance(labels_multiannotator, np.ndarray):
         labels_multiannotator = pd.DataFrame(labels_multiannotator)
 
-    if raise_dataset_errors:
-        assert_valid_inputs_multiannotator(labels_multiannotator, pred_probs)
+    assert_valid_inputs_multiannotator(labels_multiannotator, pred_probs)
 
     majority_vote_label = np.full(len(labels_multiannotator), np.nan)
     mode_labels_multiannotator = labels_multiannotator.mode(axis=1)
@@ -414,7 +412,7 @@ def get_majority_vote_label(
         for idx, label_mode in tied_idx.items():
             majority_vote_label[idx] = np.random.choice(label_mode)
 
-    if raise_dataset_errors:
+    if verbose:
         unique_ma_labels = np.unique(labels_multiannotator.replace({pd.NA: np.NaN}).astype(float))
         unique_ma_labels = unique_ma_labels[~np.isnan(unique_ma_labels)]
 
@@ -422,10 +420,10 @@ def get_majority_vote_label(
 
         if len(labels_set_difference) > 0:
             print(
-                f"""CAUTION: Number of unique classes has been reduced from the original data when establishing consensus labels, 
-                likely due to some classes being rarely annotated. If training a classifier on these consensus labels, 
+                f"""CAUTION: Number of unique classes has been reduced from the original data when establishing consensus labels,
+                likely due to some classes being rarely annotated. If training a classifier on these consensus labels,
                 it will never see any of the omitted classes unless you manually replace some of the consensus labels.
-                
+
                 Classes in the original data but not in consensus labels: {list(map(int, labels_set_difference))}"""
             )
 
