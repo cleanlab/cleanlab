@@ -23,6 +23,7 @@ Methods for analysis of classification data labeled by multiple annotators, incl
 * An overall quality score for each annotator which measures our confidence in the overall correctness of labels obtained from this annotator.
 """
 
+from re import L
 import warnings
 import numpy as np
 import pandas as pd
@@ -209,20 +210,11 @@ def get_label_quality_multiannotator(
 
         if verbose:
             # check if any classes no longer appear in the set of consensus labels
-            unique_ma_labels = np.unique(
-                labels_multiannotator.replace({pd.NA: np.NaN}).astype(float)
+            _check_consensus_label_classes(
+                labels_multiannotator=labels_multiannotator,
+                consensus_label=consensus_label,
+                consensus_method=curr_method,
             )
-            unique_ma_labels = unique_ma_labels[~np.isnan(unique_ma_labels)]
-            labels_set_difference = set(unique_ma_labels) - set(consensus_label)
-
-            if len(labels_set_difference) > 0:
-                print(
-                    f"""CAUTION: Number of unique classes has been reduced from the original data when establishing consensus labels
-                    using consensus method "{curr_method}", likely due to some classes being rarely annotated.
-                    If training a classifier on these consensus labels, it will never see any of the omitted classes unless you
-                    manually replace some of the consensus labels.
-                    Classes in the original data but not in consensus labels: {list(map(int, labels_set_difference))}"""
-                )
 
         # saving stats into dataframe, computing additional stats if specified
         if main_method:
@@ -417,20 +409,43 @@ def get_majority_vote_label(
 
     if verbose:
         # check if any classes no longer appear in the set of consensus labels
-        unique_ma_labels = np.unique(labels_multiannotator.replace({pd.NA: np.NaN}).astype(float))
-        unique_ma_labels = unique_ma_labels[~np.isnan(unique_ma_labels)]
-        labels_set_difference = set(unique_ma_labels) - set(majority_vote_label)
-
-        if len(labels_set_difference) > 0:
-            print(
-                f"""CAUTION: Number of unique classes has been reduced from the original data when establishing consensus labels,
-                likely due to some classes being rarely annotated. If training a classifier on these consensus labels,
-                it will never see any of the omitted classes unless you manually replace some of the consensus labels.
-
-                Classes in the original data but not in consensus labels: {list(map(int, labels_set_difference))}"""
-            )
+        _check_consensus_label_classes(
+            labels_multiannotator=labels_multiannotator,
+            consensus_label=majority_vote_label,
+            consensus_method="majority_vote",
+        )
 
     return majority_vote_label.astype("int64")
+
+
+def convert_long_to_wide_dataset(
+    labels_multiannotator_long: pd.DataFrame,
+) -> pd.DataFrame:
+    """Converts a long format dataset to wide format which is suitable for passing into
+    :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>`.
+
+    Dataframe must contain three columns named:
+
+    #. ``task`` representing each example labeled by the annotators
+    #. ``annotator`` representing each annotator
+    #. ``label`` representing the label given by an annotator for the corresponding task (i.e. example)
+
+    Parameters
+    ----------
+    labels_multiannotator_long : pd.DataFrame
+        pandas DataFrame in long format with three columns named ``task``, ``annotator`` and ``label``
+
+    Returns
+    -------
+    labels_multiannotator_wide : pd.DataFrame
+        pandas DataFrame of the proper format to be passed as ``labels_multiannotator`` for the other ``cleanlab.multiannotator`` functions.
+    """
+    labels_multiannotator_wide = labels_multiannotator_long.pivot(
+        index="task", columns="annotator", values="label"
+    )
+    labels_multiannotator_wide.index.name = None
+    labels_multiannotator_wide.columns.name = None
+    return labels_multiannotator_wide
 
 
 def _get_consensus_stats(
@@ -1054,31 +1069,21 @@ def _get_annotator_worst_class(
     return worst_class
 
 
-def convert_long_to_wide_dataset(
-    labels_multiannotator_long: pd.DataFrame,
-) -> pd.DataFrame:
-    """Converts a long format dataset to wide format which is suitable for passing into
-    :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>`.
+def _check_consensus_label_classes(
+    labels_multiannotator: pd.DataFrame,
+    consensus_label: np.ndarray,
+    consensus_method: str,
+) -> None:
+    """Check if any classes no longer appear in the set of consensus labels (established using the consensus_method stated)"""
+    unique_ma_labels = np.unique(labels_multiannotator.replace({pd.NA: np.NaN}).astype(float))
+    unique_ma_labels = unique_ma_labels[~np.isnan(unique_ma_labels)]
+    labels_set_difference = set(unique_ma_labels) - set(consensus_label)
 
-    Dataframe must contain three columns named:
-
-    #. ``task`` representing each example labeled by the annotators
-    #. ``annotator`` representing each annotator
-    #. ``label`` representing the label given by an annotator for the corresponding task (i.e. example)
-
-    Parameters
-    ----------
-    labels_multiannotator_long : pd.DataFrame
-        pandas DataFrame in long format with three columns named ``task``, ``annotator`` and ``label``
-
-    Returns
-    -------
-    labels_multiannotator_wide : pd.DataFrame
-        pandas DataFrame of the proper format to be passed as ``labels_multiannotator`` for the other ``cleanlab.multiannotator`` functions.
-    """
-    labels_multiannotator_wide = labels_multiannotator_long.pivot(
-        index="task", columns="annotator", values="label"
-    )
-    labels_multiannotator_wide.index.name = None
-    labels_multiannotator_wide.columns.name = None
-    return labels_multiannotator_wide
+    if len(labels_set_difference) > 0:
+        print(
+            f"""CAUTION: Number of unique classes has been reduced from the original data when establishing consensus labels
+            using consensus method "{consensus_method}", likely due to some classes being rarely annotated.
+            If training a classifier on these consensus labels, it will never see any of the omitted classes unless you
+            manually replace some of the consensus labels.
+            Classes in the original data but not in consensus labels: {list(map(int, labels_set_difference))}"""
+        )
