@@ -24,9 +24,6 @@ true_labels_test = y_all[-SKLEARN_DIGITS_TEST_SIZE:].astype(np.int32)
 def test_loaders(
     seed=0,
 ):
-    """This is going to OVERFIT - train and test on the SAME SET.
-    The goal of this test is just to make sure the data loads correctly.
-    And all the main functions work."""
 
     from cleanlab.count import estimate_confident_joint_and_cv_pred_proba, estimate_latent
 

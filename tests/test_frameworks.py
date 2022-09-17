@@ -14,10 +14,6 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
-"""
-Scripts to test cleanlab usage with deep learning frameworks:
-pytorch, skorch, tensorflow, keras 
-"""
 
 import pytest
 import warnings
@@ -83,7 +79,6 @@ def dataset_w_errors():
 
 
 def make_rare_label(data):
-    """Makes one label really rare in the dataset."""
     data = deepcopy(data)
     y = data["y"]
     class0_inds = np.where(y == 0)[0]

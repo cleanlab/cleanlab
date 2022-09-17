@@ -42,9 +42,7 @@ def make_data(
     avg_trace=0.8,
     seed=SEED,  # set to None for non-reproducible randomness
 ):
-    """format specifies what X (and y) looks like, one of:
-    'numpy', 'sparse', 'dataframe', or 'series'.
-    """
+
     np.random.seed(seed=seed)
 
     K = len(means)  # number of classes
@@ -109,7 +107,7 @@ def make_data(
 
 
 def make_rare_label(data):
-    """Makes one label really rare in the dataset."""
+    
     data = deepcopy(data)
     y = data["labels"]
     class0_inds = np.where(y == 0)[0]

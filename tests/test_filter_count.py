@@ -286,7 +286,6 @@ def test_estimate_noise_matrices(sparse):
 
 
 def test_pruning_reduce_prune_counts():
-    """Make sure it doesnt remove when its not supposed to"""
     cj = np.array(
         [
             [325, 16, 22],
@@ -299,7 +298,6 @@ def test_pruning_reduce_prune_counts():
 
 
 def test_pruning_keep_at_least_n_per_class():
-    """Make sure it doesnt remove when its not supposed to"""
     cj = np.array(
         [
             [325, 16, 22],
@@ -333,7 +331,6 @@ def test_pruning_order_method():
     "filter_by", ["prune_by_noise_rate", "prune_by_class", "both", "confident_learning"]
 )
 def test_find_label_issues_multi_label(multi_label, filter_by):
-    """Note: argmax_not_equal method is not compatible with multi_label == True"""
 
     s_ml = [[z, data["true_labels_train"][i]] for i, z in enumerate(data["labels"])]
     noise_idx = filter.find_label_issues(

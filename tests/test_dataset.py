@@ -419,7 +419,7 @@ urls = {
 
 
 def _get_pred_probs_labels_from_labelerrors_datasets(dataset_name):
-    """Helper function to load data from the labelerrors.com datasets."""
+    
 
     labels_url, pred_probs_url = urls[dataset_name]
     response = requests.get(pred_probs_url)
