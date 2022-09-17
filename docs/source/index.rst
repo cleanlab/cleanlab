@@ -54,7 +54,7 @@ If you're using a scikit-learn-compatible model (option 1), you don't need to tr
         return_indices_ranked_by='self_confidence',
     )
 
-:py:class:`CleanLearning <cleanlab.classification.CleanLearning>` (Option 1) also works with models from most standard ML frameworks by wrapping the model for scikit-learn compliance, e.g. huggingface (using KerasWrapperModel), Keras (works by default), pytorch (using skorch), etc. 
+:py:class:`CleanLearning <cleanlab.classification.CleanLearning>` (option 1) also works with models from most standard ML frameworks by wrapping the model for scikit-learn compliance, e.g. huggingface/tensorflow/keras (using our KerasWrapperModel), pytorch (using skorch package), etc. 
 
 By default, :py:meth:`find_label_issues <cleanlab.filter.find_label_issues>` returns a boolean mask of label issues. You can instead return the indices of potential mislabeled examples by setting `return_indices_ranked_by` in :py:meth:`find_label_issues <cleanlab.filter.find_label_issues>`. The indices are ordered by likelihood of a label error (estimated via :py:meth:`rank.get_label_quality_scores <cleanlab.rank.get_label_quality_scores>`).
 
