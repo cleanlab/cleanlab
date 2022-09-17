@@ -77,7 +77,7 @@ When the :py:meth:`.fit() <cleanlab.classification.CleanLearning.fit>` method is
    from cleanlab.classification import CleanLearning
 
    cl = CleanLearning(clf=LogisticRegression())  # any sklearn-compatible classifier
-   cl.fit(X=train_data, labels=labels)
+   cl.fit(train_data, labels)
 
    # Estimate the predictions you would have gotten if you trained without mislabeled data.
    predictions = cl.predict(test_data)
