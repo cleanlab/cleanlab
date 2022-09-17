@@ -23,7 +23,6 @@ Methods for analysis of classification data labeled by multiple annotators, incl
 * An overall quality score for each annotator which measures our confidence in the overall correctness of labels obtained from this annotator.
 """
 
-from re import L
 import warnings
 import numpy as np
 import pandas as pd
