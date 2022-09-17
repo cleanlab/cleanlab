@@ -15,10 +15,29 @@
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
 
-__version__ = "2.0.0"
+__version__ = "2.1.0"
 
+# 2.1.0 - "Multiannotator, Outlier detection, and Token Classification" - Cleanlab supports several new features
+#
+#   For users (+ sometimes developers):
+#   - Improved CleanLearning. Added support for pd.DataFrame, tf.keras.dataset, and other types of data besides np.ndarray
+#   - Added cleanlab.multiannotator module for working with data labeled by multiple annotators
+#   - Added cleanlab.token_classification for token classification with text data
+#   - Added cleanlab.outlier for out-of-distribution detection (includes outlier/anomaly detection)
+#
+#   For developers:
+#   - No significant API-breaking changers.
+#   - Tutorials for all new modules added to https://docs.cleanlab.ai
+#   - Contributing resources added to https://github.com/cleanlab/cleanlab/blob/master/CONTRIBUTING.md
+#   - Contributing ideas added to https://github.com/cleanlab/cleanlab/wiki#ideas-for-contributing-to-cleanlab
+#
+#   See release for a full changelog.
 
-# 2.0.0 - "Data-centric AI Ready". Complete re-architecture of cleanlab API.
+# ----------------------------------
+# | PREVIOUS VERSION RELEASE NOTES |
+# ----------------------------------
+
+# 2.0.0 - "Data-centric AI Ready" - Complete re-architecture of cleanlab API.
 #
 #   For users (+ sometimes developers):
 #   - All aspects of API have changed (method names, parameters, defaults, variables, classes, etc)
@@ -29,10 +48,6 @@ __version__ = "2.0.0"
 #   For developers:
 #   - If you're coming from 1.0 (pre-1.0.1), you may need to re-clone.
 #   - Extensive support available at https://docs.cleanlab.ai
-
-# ----------------------------------
-# | PREVIOUS VERSION RELEASE NOTES |
-# ----------------------------------
 
 # 1.0.1 - Launch sphinx docs for Cleanlab 1.0 (in preparation for Cleanlab 2.0). Mostly superficial.
 #
