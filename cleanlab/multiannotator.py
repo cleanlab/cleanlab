@@ -319,7 +319,7 @@ def get_majority_vote_label(
         An array of shape ``(N, K)`` of model-predicted probabilities, ``P(label=k|x)``.
         For details, predicted probabilities in the same format expected by the :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>`.
     verbose : bool, optional
-        Certain warnings and notes will be printed if ``verbose`` is set to ``True``.
+        Important warnings and other printed statements may be suppressed if ``verbose`` is set to ``False``.
     Returns
     -------
     consensus_label: np.ndarray
