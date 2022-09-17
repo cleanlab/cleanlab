@@ -56,6 +56,34 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: psf/black@stable
+  check_unused_imports:
+    name: Check for unused imports
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Count unused imports
+        run: echo "::set-output name=UNUSED_COUNT::$(pylint * | grep "unused-import" | wc -l)"
+        id: unused_check
+      - name: Fail job is any unused imports are there
+        if: ${{ steps.unused_check.outputs.UNUSED_COUNT > 0 }}
+        uses: actions/github-script@v3
+        with:
+          script: |
+            core.setFailed('Code has unused imports! Please `run pylint * | grep "unused-import"`')
+  check_wildcard_imports:
+    name: Check for wildcard imports
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Count wildcard imports
+        run: echo "::set-output name=WILDCARD_COUNT::$(pylint * | grep "Wildcard import" | wc -l)"
+        id: wildcard_check
+      - name: Fail job is any wildcard imports are there
+        if: ${{ steps.unused_check.outputs.WILDCARD_COUNT > 0 }}
+        uses: actions/github-script@v3
+        with:
+          script: |
+            core.setFailed('Code has wildcard imports! Please `pylint * | grep "Wildcard import"`')
   nblint:
     name: Lint Notebooks
     runs-on: ubuntu-latest
