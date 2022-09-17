@@ -19,6 +19,7 @@ Checks to ensure valid inputs for various methods.
 """
 
 from cleanlab.typing import LabelLike, DatasetLike
+from cleanlab.internal.util import get_num_classes
 from typing import Any, List, Optional, Union
 import warnings
 import numpy as np
@@ -206,3 +207,55 @@ def labels_to_array(y: Union[LabelLike, np.generic]) -> np.ndarray:
             raise ValueError(
                 "List of labels must be convertable to 1D numpy array via: np.ndarray(labels)."
             )
+
+
+def assert_valid_inputs_multiannotator(
+    labels_multiannotator: pd.DataFrame,
+    pred_probs: Optional[np.ndarray] = None,
+) -> None:
+    """Validate multi-annotator labels"""
+    # Raise error if number of classes in labels_multiannoator does not match number of classes in pred_probs
+    if pred_probs is not None:
+        num_classes = get_num_classes(pred_probs=pred_probs)
+        unique_ma_labels = np.unique(labels_multiannotator.replace({pd.NA: np.NaN}).astype(float))
+        unique_ma_labels = unique_ma_labels[~np.isnan(unique_ma_labels)]
+        if num_classes != len(unique_ma_labels):
+            raise ValueError(
+                """The number of unique classes in labels_multiannotator do not match the number of classes in pred_probs.
+                Perhaps some rarely-annotated classes were lost while establishing consensus labels used to train your classifier."""
+            )
+
+    # Raise error if labels_multiannotator has NaN rows
+    if labels_multiannotator.isna().all(axis=1).any():
+        raise ValueError("labels_multiannotator cannot have rows with all NaN.")
+
+    # Raise error if labels_multiannotator has NaN columns
+    if labels_multiannotator.isna().all().any():
+        nan_columns = list(
+            labels_multiannotator.columns[labels_multiannotator.isna().all() == True]
+        )
+        raise ValueError(
+            f"""labels_multiannotator cannot have columns with all NaN.
+            Annotators {nan_columns} did not label any examples."""
+        )
+
+    # Raise error if labels_multiannotator has <= 1 column
+    if len(labels_multiannotator.columns) <= 1:
+        raise ValueError(
+            """labels_multiannotator must have more than one column. 
+            If there is only one annotator, use cleanlab.rank.get_label_quality_scores instead"""
+        )
+
+    # Raise error if labels_multiannotator only has 1 label per example
+    if labels_multiannotator.apply(lambda s: len(s.dropna()) == 1, axis=1).all():
+        raise ValueError(
+            """Each example only has one label, collapse the labels into a 1-D array and use
+            cleanlab.rank.get_label_quality_scores instead"""
+        )
+
+    # Raise warning if no examples with 2 or more annotators agree
+    # TODO: might shift this later in the code to avoid extra compute
+    if labels_multiannotator.apply(
+        lambda s: np.array_equal(s.dropna().unique(), s.dropna()), axis=1
+    ).all():
+        warnings.warn("Annotators do not agree on any example. Check input data.")

@@ -221,6 +221,50 @@ def test_label_quality_scores_multiannotator():
 
 
 @pytest.mark.filterwarnings("ignore::UserWarning")
+def test_rare_class():
+    labels = np.array(
+        [
+            [1, np.NaN, 2],
+            [1, 1, 0],
+            [2, 2, 0],
+            [np.NaN, 2, 2],
+            [np.NaN, 2, 1],
+            [np.NaN, 2, 2],
+        ]
+    )
+
+    pred_probs = np.array(
+        [
+            [0.4, 0.4, 0.2],
+            [0.3, 0.6, 0.1],
+            [0.05, 0.2, 0.75],
+            [0.1, 0.4, 0.5],
+            [0.2, 0.4, 0.4],
+            [0.2, 0.4, 0.4],
+        ]
+    )
+
+    consensus_label = get_majority_vote_label(labels)
+    multiannotator_dict = get_label_quality_multiannotator(labels, pred_probs)
+
+    pred_probs_missing = np.array(
+        [
+            [0.8, 0.2],
+            [0.6, 0.14],
+            [0.95, 0.05],
+            [0.5, 0.5],
+            [0.4, 0.6],
+            [0.4, 0.6],
+        ]
+    )
+
+    try:
+        multiannotator_dict = get_label_quality_multiannotator(labels, pred_probs_missing)
+    except ValueError as e:
+        assert "do not match the number of classes in pred_probs" in str(e)
+
+
+@pytest.mark.filterwarnings("ignore::UserWarning")
 def test_get_consensus_label():
     labels = data["labels"]
 

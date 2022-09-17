@@ -15,7 +15,7 @@
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
 """
-Methods for analysis of classification data labeled by multiple annotators, including computation of: 
+Methods for analysis of classification data labeled by multiple annotators, including computation of:
 
 * A consensus label for each example that aggregates the individual annotations more accurately than alternative aggregation via majority-vote or other algorithms used in crowdsourcing.
 * A quality score for each consensus label which measures our confidence that this label is correct.
@@ -30,6 +30,7 @@ from typing import List, Dict, Any, Union, Tuple, Optional
 
 from cleanlab.rank import get_label_quality_scores
 from cleanlab.internal.util import get_num_classes
+from cleanlab.internal.validation import assert_valid_inputs_multiannotator
 
 
 def get_label_quality_multiannotator(
@@ -92,7 +93,7 @@ def get_label_quality_multiannotator(
     return_annotator_stats : bool, default = True
         Boolean to specify if `annotator_stats` is returned.
     verbose : bool, default = True
-        Certain warnings and notes will be printed if ``verbose`` is set to ``True``.
+        Important warnings and other printed statements may be suppressed if ``verbose`` is set to ``False``.
     label_quality_score_kwargs : dict, optional
         Keyword arguments to pass into :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>`.
 
@@ -126,40 +127,7 @@ def get_label_quality_multiannotator(
     if isinstance(labels_multiannotator, np.ndarray):
         labels_multiannotator = pd.DataFrame(labels_multiannotator)
 
-    # Raise error if labels_multiannotator has NaN rows
-    if labels_multiannotator.isna().all(axis=1).any():
-        raise ValueError("labels_multiannotator cannot have rows with all NaN.")
-
-    # Raise error if labels_multiannotator has NaN columns
-    if labels_multiannotator.isna().all().any():
-        nan_columns = list(
-            labels_multiannotator.columns[labels_multiannotator.isna().all() == True]
-        )
-        raise ValueError(
-            f"""labels_multiannotator cannot have columns with all NaN.
-            Annotators {nan_columns} did not label any examples."""
-        )
-
-    # Raise error if labels_multiannotator has <= 1 column
-    if len(labels_multiannotator.columns) <= 1:
-        raise ValueError(
-            """labels_multiannotator must have more than one column. 
-            If there is only one annotator, use cleanlab.rank.get_label_quality_scores instead"""
-        )
-
-    # Raise error if labels_multiannotator only has 1 label per example
-    if labels_multiannotator.apply(lambda s: len(s.dropna()) == 1, axis=1).all():
-        raise ValueError(
-            """Each example only has one label, collapse the labels into a 1-D array and use
-            cleanlab.rank.get_label_quality_scores instead"""
-        )
-
-    # Raise warning if no examples with 2 or more annotators agree
-    # TODO: might shift this later in the code to avoid extra compute
-    if labels_multiannotator.apply(
-        lambda s: np.array_equal(s.dropna().unique(), s.dropna()), axis=1
-    ).all():
-        warnings.warn("Annotators do not agree on any example. Check input data.")
+    assert_valid_inputs_multiannotator(labels_multiannotator, pred_probs)
 
     # Count number of non-NaN values for each example
     num_annotations = labels_multiannotator.count(axis=1).to_numpy()
@@ -171,6 +139,7 @@ def get_label_quality_multiannotator(
         majority_vote_label = get_majority_vote_label(
             labels_multiannotator=labels_multiannotator,
             pred_probs=pred_probs,
+            verbose=False,
         )
         (
             MV_annotator_agreement,
@@ -213,6 +182,7 @@ def get_label_quality_multiannotator(
                 else:
                     consensus_label[i] = majority_vote_label[i]
             consensus_label = consensus_label.astype("int64")  # convert all label types to int
+
             (
                 annotator_agreement,
                 consensus_quality_score,
@@ -236,6 +206,23 @@ def get_label_quality_multiannotator(
                 Please choose a valid consensus_method: {valid_methods}
                 """
             )
+
+        if verbose:
+            # check if any classes no longer appear in the set of consensus labels
+            unique_ma_labels = np.unique(
+                labels_multiannotator.replace({pd.NA: np.NaN}).astype(float)
+            )
+            unique_ma_labels = unique_ma_labels[~np.isnan(unique_ma_labels)]
+            labels_set_difference = set(unique_ma_labels) - set(consensus_label)
+
+            if len(labels_set_difference) > 0:
+                print(
+                    f"""CAUTION: Number of unique classes has been reduced from the original data when establishing consensus labels
+                    using consensus method "{curr_method}", likely due to some classes being rarely annotated.
+                    If training a classifier on these consensus labels, it will never see any of the omitted classes unless you
+                    manually replace some of the consensus labels.
+                    Classes in the original data but not in consensus labels: {list(map(int, labels_set_difference))}"""
+                )
 
         # saving stats into dataframe, computing additional stats if specified
         if main_method:
@@ -318,6 +305,7 @@ def get_label_quality_multiannotator(
 def get_majority_vote_label(
     labels_multiannotator: Union[pd.DataFrame, np.ndarray],
     pred_probs: np.ndarray = None,
+    verbose: bool = True,
 ) -> np.ndarray:
     """Returns the majority vote label for each example, aggregated from the labels given by multiple annotators.
 
@@ -330,7 +318,8 @@ def get_majority_vote_label(
     pred_probs : np.ndarray, optional
         An array of shape ``(N, K)`` of model-predicted probabilities, ``P(label=k|x)``.
         For details, predicted probabilities in the same format expected by the :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>`.
-
+    verbose : bool, optional
+        Important warnings and other printed statements may be suppressed if ``verbose`` is set to ``False``.
     Returns
     -------
     consensus_label: np.ndarray
@@ -345,6 +334,8 @@ def get_majority_vote_label(
 
     if isinstance(labels_multiannotator, np.ndarray):
         labels_multiannotator = pd.DataFrame(labels_multiannotator)
+
+    assert_valid_inputs_multiannotator(labels_multiannotator, pred_probs)
 
     majority_vote_label = np.full(len(labels_multiannotator), np.nan)
     mode_labels_multiannotator = labels_multiannotator.mode(axis=1)
@@ -423,6 +414,21 @@ def get_majority_vote_label(
         )
         for idx, label_mode in tied_idx.items():
             majority_vote_label[idx] = np.random.choice(label_mode)
+
+    if verbose:
+        # check if any classes no longer appear in the set of consensus labels
+        unique_ma_labels = np.unique(labels_multiannotator.replace({pd.NA: np.NaN}).astype(float))
+        unique_ma_labels = unique_ma_labels[~np.isnan(unique_ma_labels)]
+        labels_set_difference = set(unique_ma_labels) - set(majority_vote_label)
+
+        if len(labels_set_difference) > 0:
+            print(
+                f"""CAUTION: Number of unique classes has been reduced from the original data when establishing consensus labels,
+                likely due to some classes being rarely annotated. If training a classifier on these consensus labels,
+                it will never see any of the omitted classes unless you manually replace some of the consensus labels.
+
+                Classes in the original data but not in consensus labels: {list(map(int, labels_set_difference))}"""
+            )
 
     return majority_vote_label.astype("int64")
 
