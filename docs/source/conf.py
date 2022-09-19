@@ -32,6 +32,7 @@ extensions = [
     "sphinx.ext.napoleon",
     "nbsphinx",
     "sphinx.ext.autodoc",
+    "sphinx.ext.autosummary",
     "autodocsumm",
     "sphinx.ext.viewcode",
     "sphinx.ext.todo",
@@ -166,7 +167,7 @@ nbsphinx_prolog = (
         .dataframe {
             background: #D7D7D7;
         }
-    
+
         th {
             color:black;
         }

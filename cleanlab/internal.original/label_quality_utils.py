@@ -96,17 +96,17 @@ def get_normalized_entropy(pred_probs: np.ndarray, min_allowed_prob: float = 1e-
 
     Parameters
     ----------
-    pred_probs
+    pred_probs : np.ndarray (shape (N, K))
       Each row of this matrix corresponds to an example x and contains the model-predicted
       probabilities that x belongs to each possible class: P(label=k|x)
 
-    min_allowed_prob
+    min_allowed_prob : float, default=1e-6
       Minimum allowed probability value. Entries of `pred_probs` below this value will be clipped to this value.
       Ensures entropy remains well-behaved even when `pred_probs` contains zeros.
 
     Returns
     -------
-    entropy : np.ndarray 
+    entropy : np.ndarray (float)
       Each element is the normalized entropy of the corresponding row of ``pred_probs``.
     """
 
