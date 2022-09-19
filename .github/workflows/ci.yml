@@ -68,7 +68,7 @@ jobs:
       - name: Minimal test outlier.py
         run: python3 -c "import cleanlab; from cleanlab.outlier import OutOfDistribution; ood = OutOfDistribution(); print(ood)"
       - name: Minimal test rank.py
-        run: python3 -c "import cleanlab; from cleanlab.rank import get_self_confidence_for_each_label;x=get_self_confidence_for_each_label(labels=np.array([1,0,0]),pred_probs=np.array([[0.2,0.8],[0.9,0.1],[0.5,0.5]]));print(x)"
+        run: python3 -c "import cleanlab; import numpy as np; from cleanlab.rank import get_self_confidence_for_each_label;x=get_self_confidence_for_each_label(labels=np.array([1,0,0]),pred_probs=np.array([[0.2,0.8],[0.9,0.1],[0.5,0.5]]));print(x)"
       - name: Minimal test typing.py
         run: python3 -c "import cleanlab; from cleanlab import typing"
       - name: Minimal test token_classification/filter.py
@@ -76,9 +76,9 @@ jobs:
       - name: Minimal test token_classification/rank.py
         run: python3 -c "import cleanlab; import numpy as np; from cleanlab.token_classification.rank import get_label_quality_scores; x=get_label_quality_scores(labels=[[0, 0, 1], [0, 1]], pred_probs=[np.array([[0.9, 0.1], [0.7, 0.3], [0.05, 0.95]]),np.array([[0.8, 0.2], [0.8, 0.2]]),]);print(x)"
       - name: Minimal test token_classification/summary.py
-        run: python3 -c "import cleanlab; import numpy as np; from cleanlab.token_classification.summary import display_issues;display_issues(issues=[(2, 0), (0, 1)],tokens=[["A", "?weird", "sentence"],["A", "valid", "sentence"],["An", "sentence", "with", "a", "typo"],])"
+        run: python3 -c "import cleanlab; from cleanlab.token_classification.summary import display_issues;display_issues(issues=[(2, 0), (0, 1)],tokens=[["A", "?weird", "sentence"],["A", "valid", "sentence"],["An", "sentence", "with", "a", "typo"],])"
       - name: Minimal test benchmarking/noise_generation.py
-        run: python3 -c "import cleanlab; import numpy as np; from cleanlab.benchmarking import generate_noise_matrix_from_trace;X=generate_noise_matrix_from_trace(5,2.3);print(X)"
+        run: python3 -c "import cleanlab; from cleanlab.benchmarking import generate_noise_matrix_from_trace;X=generate_noise_matrix_from_trace(5,2.3);print(X)"
   typecheck:
     name: Type check
     runs-on: ubuntu-latest
