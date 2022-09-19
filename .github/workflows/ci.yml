@@ -37,6 +37,27 @@ jobs:
       - name: Test with coverage
         run: pytest --verbose --cov=cleanlab/ --cov-config .coveragerc --cov-report=xml
       - uses: codecov/codecov-action@v2
+  test-dependencies:
+    name: "Test: Package runs with non-optional dependencies on ${{ matrix.os }}"
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+          - windows-latest
+        python:
+          - "3.10"
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install cleanlab
+        run: pip install -e .
+      - name: Test with coverage
+        run: pytest --verbose --cov=cleanlab/ --cov-config .coveragerc --cov-report=xml
+      - uses: codecov/codecov-action@v2
   typecheck:
     name: Type check
     runs-on: ubuntu-latest
