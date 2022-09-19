@@ -415,7 +415,6 @@ def find_label_issues(
 def _find_label_issues_multilabel(
     labels,
     pred_probs,
-    *,
     return_indices_ranked_by=None,
     rank_by_kwargs={},
     filter_by="prune_by_noise_rate",
