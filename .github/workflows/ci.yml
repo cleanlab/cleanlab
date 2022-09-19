@@ -55,8 +55,22 @@ jobs:
           python-version: ${{ matrix.python }}
       - name: Install cleanlab
         run: pip install -e .
+      - name: Minimal test classification.py
+        run: python3 -c "import cleanlab; from cleanlab.classification import CleanLearning; cl = CleanLearning(); print(cl)"
+      - name: Minimal test count.py
+        run: python3 -c "import cleanlab; from cleanlab.count import num_label_issues; x = num_label_issues(labels=[1,0,0],pred_probs=[[0.2,0.8],[0.9,0.1],[0.5,0.5]]); print(x)"
+      - name: Minimal test dataset.py
+        run: python3 -c "import cleanlab; from cleanlab.dataset import rank_classes_by_label_quality"
+      - name: Minimal test filter.py
+        run: python3 -c "import cleanlab; from cleanlab.filter import find_label_issues"
+      - name: Minimal test multiannotator.py
+        run: python3 -c "import cleanlab; from cleanlab.multiannotator import get_majority_vote_label"
       - name: Minimal test outlier.py
         run: python3 -c "import cleanlab; from cleanlab.outlier import OutOfDistribution; ood = OutOfDistribution(); print(ood)"
+      - name: Minimal test rank.py
+        run: python3 -c "import cleanlab; from cleanlab.rank import get_self_confidence_for_each_label"
+      - name: Minimal test typing.py
+        run: python3 -c "import cleanlab; from cleanlab import typing"
   typecheck:
     name: Type check
     runs-on: ubuntu-latest
