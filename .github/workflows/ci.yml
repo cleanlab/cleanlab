@@ -37,7 +37,7 @@ jobs:
       - name: Test with coverage
         run: pytest --verbose --cov=cleanlab/ --cov-config .coveragerc --cov-report=xml
       - uses: codecov/codecov-action@v2
-  test-dependencies:
+  test-minimal-dependencies:
     name: "Test: Package runs with non-optional dependencies on ${{ matrix.os }}"
     runs-on: ${{ matrix.os }}
     strategy:
@@ -55,9 +55,8 @@ jobs:
           python-version: ${{ matrix.python }}
       - name: Install cleanlab
         run: pip install -e .
-      - name: Test with coverage
-        run: pytest --verbose --cov=cleanlab/ --cov-config .coveragerc --cov-report=xml
-      - uses: codecov/codecov-action@v2
+      - name: Minimal test outlier.py
+        run: python3 -c "import cleanlab; from cleanlab.outlier import OutOfDistribution; ood = OutOfDistribution(); print(ood)"
   typecheck:
     name: Type check
     runs-on: ubuntu-latest
