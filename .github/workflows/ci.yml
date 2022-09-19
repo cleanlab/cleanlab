@@ -38,15 +38,15 @@ jobs:
         run: pytest --verbose --cov=cleanlab/ --cov-config .coveragerc --cov-report=xml
       - uses: codecov/codecov-action@v2
   test-minimal-dependencies:
-    name: "Test: Package runs with non-optional dependencies on ${{ matrix.os }}"
-    runs-on: ${{ matrix.os }}
+    name: "Test: Python ${{ matrix.python }} optional dependencies"
+    runs-on: ubuntu-latest
     strategy:
       matrix:
-        os:
-          - ubuntu-latest
-          - macos-latest
-          - windows-latest
         python:
+          - "3.6"
+          - "3.7"
+          - "3.8"
+          - "3.9"
           - "3.10"
     steps:
       - uses: actions/checkout@v2
@@ -55,6 +55,8 @@ jobs:
           python-version: ${{ matrix.python }}
       - name: Install cleanlab
         run: pip install -e .
+      - name: Python version check == ${{ matrix.python }}
+        run:  python3 --version
       - name: Minimal test classification.py
         run: python3 -c "import cleanlab; from cleanlab.classification import CleanLearning; cl = CleanLearning(); print(cl)"
       - name: Minimal test count.py
@@ -76,7 +78,7 @@ jobs:
       - name: Minimal test token_classification/rank.py
         run: python3 -c "import cleanlab; import numpy as np; from cleanlab.token_classification.rank import get_label_quality_scores; x=get_label_quality_scores(labels=[[0, 0, 1], [0, 1]], pred_probs=[np.array([[0.9, 0.1], [0.7, 0.3], [0.05, 0.95]]),np.array([[0.8, 0.2], [0.8, 0.2]]),]);print(x)"
       - name: Minimal test token_classification/summary.py
-        run: python3 -c "import cleanlab; from cleanlab.token_classification.summary import display_issues;display_issues(issues=[(2, 0), (0, 1)],tokens=[["A", "?weird", "sentence"],["A", "valid", "sentence"],["An", "sentence", "with", "a", "typo"],])"
+        run: python3 -c "import cleanlab; from cleanlab.token_classification.summary import display_issues;display_issues(issues=[(2, 0), (0, 1)],tokens=[["A", "?weird", "sentence"],["A", "valid", "sentence"],["An", "sentence", "with", "a", "typo"]])"
       - name: Minimal test benchmarking/noise_generation.py
         run: python3 -c "import cleanlab; from cleanlab.benchmarking import generate_noise_matrix_from_trace;X=generate_noise_matrix_from_trace(5,2.3);print(X)"
   typecheck:
