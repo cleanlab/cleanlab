@@ -58,17 +58,17 @@ jobs:
       - name: Minimal test classification.py
         run: python3 -c "import cleanlab; from cleanlab.classification import CleanLearning; cl = CleanLearning(); print(cl)"
       - name: Minimal test count.py
-        run: python3 -c "import cleanlab; import numpy as np; from cleanlab.count import num_label_issues; x = num_label_issues(labels=np.array([1,0,0]),pred_probs=np.array([[0.2,0.8],[0.9,0.1],[0.5,0.5]])); print(x)"
+        run: python3 -c "import cleanlab; import numpy as np; from cleanlab.count import num_label_issues;x = num_label_issues(labels=np.array([1,0,0]),pred_probs=np.array([[0.2,0.8],[0.9,0.1],[0.5,0.5]]));print(x)"
       - name: Minimal test dataset.py
-        run: python3 -c "import cleanlab; from cleanlab.dataset import rank_classes_by_label_quality"
+        run: python3 -c "import cleanlab; import numpy as np; from cleanlab.dataset import rank_classes_by_label_quality;x=rank_classes_by_label_quality(labels=np.array([1,0,0]),pred_probs=np.array([[0.2,0.8],[0.9,0.1],[0.5,0.5]]));print(x)"
       - name: Minimal test filter.py
-        run: python3 -c "import cleanlab; from cleanlab.filter import find_label_issues"
+        run: python3 -c "import cleanlab; import numpy as np; from cleanlab.filter import find_label_issues;x=find_label_issues(labels=np.array([1,0,0]),pred_probs=np.array([[0.2,0.8],[0.9,0.1],[0.5,0.5]]));print(x)"
       - name: Minimal test multiannotator.py
-        run: python3 -c "import cleanlab; from cleanlab.multiannotator import get_majority_vote_label"
+        run: python3 -c "import cleanlab; import numpy as np; from cleanlab.multiannotator import get_majority_vote_label;x=get_majority_vote_label(labels=np.array([[1,0,0],[1,0,1],[1,0,0]]),pred_probs=np.array([[0.2,0.8],[0.9,0.1],[0.5,0.5]]));print(x)"
       - name: Minimal test outlier.py
         run: python3 -c "import cleanlab; from cleanlab.outlier import OutOfDistribution; ood = OutOfDistribution(); print(ood)"
       - name: Minimal test rank.py
-        run: python3 -c "import cleanlab; from cleanlab.rank import get_self_confidence_for_each_label"
+        run: python3 -c "import cleanlab; from cleanlab.rank import get_self_confidence_for_each_label;x=get_self_confidence_for_each_label(labels=np.array([1,0,0]),pred_probs=np.array([[0.2,0.8],[0.9,0.1],[0.5,0.5]]));print(x)"
       - name: Minimal test typing.py
         run: python3 -c "import cleanlab; from cleanlab import typing"
   typecheck:
