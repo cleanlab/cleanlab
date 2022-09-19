@@ -398,10 +398,7 @@ def find_label_issues(
         print("Number of label issues found: {}".format(sum(label_issues_mask)))
 
     # TODO: run count.num_label_issues() and adjust the total issues found here to match
-    if kwargs["multi_label_verbose_return"]:
-        return array
-    else:
-        return np.union1d(array)
+
     if return_indices_ranked_by is not None:
         er = order_label_issues(
             label_issues_mask=label_issues_mask,
@@ -495,14 +492,30 @@ def _find_label_issues_multilabel(
     n_jobs=None,
     verbose=False,
 ):
+    """
+    TODO
+    """
     ranked_label_issues_list = []
-    for i in pred_probs:
-        y_labels = i[1]
-        pred_probabilitites = i[0]
+    for i in range(0, len(pred_probs)):
+        y_labels = labels[i]
+        pred_probabilitites = pred_probs[i]
+        if confident_joint is None:
+            conf = None
+        else:
+            conf = confident_joint[i]
         ranks = find_label_issues(
             y_labels.astype(np.int32),
             pred_probabilitites,
-            return_indices_ranked_by="self_confidence",
+            return_indices_ranked_by=return_indices_ranked_by,
+            rank_by_kwargs=rank_by_kwargs,
+            filter_by=filter_by,
+            multi_label=False,
+            frac_noise=frac_noise,
+            num_to_remove_per_class=num_to_remove_per_class,
+            min_examples_per_class=min_examples_per_class,
+            confident_joint=conf[i],
+            n_jobs=n_jobs,
+            verbose=verbose,
         )
         ranked_label_issues_list.append(ranks)
     reduce(np.union1d, ranked_label_issues_list).astype(np.int32)
