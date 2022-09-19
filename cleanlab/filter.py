@@ -26,6 +26,7 @@ from multiprocessing.sharedctypes import RawArray
 import sys
 import warnings
 from typing import Any
+from functools import reduce
 
 from cleanlab.count import calibrate_confident_joint
 from cleanlab.rank import order_label_issues
@@ -235,7 +236,20 @@ def find_label_issues(
 
     # Number of examples in each class of labels
     if multi_label:
-        label_counts = value_counts([i for lst in labels for i in lst])
+        return _find_label_issues_multilabel(
+            labels,
+            pred_probs,
+            return_indices_ranked_by,
+            rank_by_kwargs,
+            filter_by,
+            multi_label,
+            frac_noise,
+            num_to_remove_per_class,
+            min_examples_per_class,
+            confident_joint,
+            n_jobs,
+            verbose,
+        )
     else:
         label_counts = value_counts(labels)
     # Number of classes
@@ -396,6 +410,39 @@ def find_label_issues(
         )
         return er
     return label_issues_mask
+
+
+def _find_label_issues_multilabel(
+    labels,
+    pred_probs,
+    *,
+    return_indices_ranked_by=None,
+    rank_by_kwargs={},
+    filter_by="prune_by_noise_rate",
+    multi_label=False,
+    frac_noise=1.0,
+    num_to_remove_per_class=None,
+    min_examples_per_class=1,
+    confident_joint=None,
+    n_jobs=None,
+    verbose=False,
+):
+    ranked_label_issues_list = []
+    for i in range(0, len(pred_probs)):
+        y_labels = labels[i]
+        pred_probabilitites = pred_probs[i]
+        if confident_joint is None:
+            conf = None
+        else:
+            conf = confident_joint[i]
+        ranks = find_label_issues(
+            y_labels.astype(np.int32),
+            pred_probabilitites,
+            return_indices_ranked_by="self_confidence",
+            confident_joint=conf[i],
+        )
+        ranked_label_issues_list.append(ranks)
+    reduce(np.union1d, ranked_label_issues_list).astype(np.int32)
 
 
 def _keep_at_least_n_per_class(prune_count_matrix, n, *, frac_noise=1.0) -> np.ndarray:
