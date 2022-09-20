@@ -435,7 +435,9 @@ def _find_label_issues_multilabel(
     if return_indices_ranked_by is None:
         bissues = np.zeros(y_one.shape).astype(bool)
         for class_num in range(0, num_classes):
-            pred_probabilitites = np.stack([1 - pred_probs[:, class_num], pred_probs[:, class_num]]).T
+            pred_probabilitites = np.stack(
+                [1 - pred_probs[:, class_num], pred_probs[:, class_num]]
+            ).T
             if confident_joint is None:
                 conf = None
             else:
@@ -458,7 +460,9 @@ def _find_label_issues_multilabel(
         label_issues_list = []
 
         for class_num in range(0, num_classes):
-            pred_probabilitites = np.stack([1 - pred_probs[:, class_num], pred_probs[:, class_num]]).T
+            pred_probabilitites = np.stack(
+                [1 - pred_probs[:, class_num], pred_probs[:, class_num]]
+            ).T
             if confident_joint is None:
                 conf = None
             else:
