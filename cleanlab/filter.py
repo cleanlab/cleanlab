@@ -457,11 +457,11 @@ def _find_label_issues_multilabel(
                 n_jobs=n_jobs,
                 verbose=verbose,
             )
+        return bissues
     else:
         label_issues_list = []
 
         for i in range(0, num_classes):
-            y_labels = labels[i]
             pred_probabilitites = np.stack([1 - pred_probs[:, i], pred_probs[:, i]]).T
             if confident_joint is None:
                 conf = None
