@@ -429,19 +429,19 @@ def _find_label_issues_multilabel(
     """
     num_classes = pred_probs.shape[1]
     y_one = np.zeros((len(labels), num_classes))
-    for i in range(0, len(labels)):
-        for j in range(0, len(labels[i])):
-            y_one[i][j] = 1
+    for class_num in range(0, len(labels)):
+        for j in range(0, len(labels[class_num])):
+            y_one[class_num][j] = 1
     if return_indices_ranked_by is None:
         bissues = np.zeros(y_one.shape).astype(bool)
-        for i in range(0, num_classes):
-            pred_probabilitites = np.stack([1 - pred_probs[:, i], pred_probs[:, i]]).T
+        for class_num in range(0, num_classes):
+            pred_probabilitites = np.stack([1 - pred_probs[:, class_num], pred_probs[:, class_num]]).T
             if confident_joint is None:
                 conf = None
             else:
-                conf = confident_joint[i]
-            bissues[:, i] = find_label_issues(
-                y_one[:, i],
+                conf = confident_joint[class_num]
+            bissues[:, class_num] = find_label_issues(
+                y_one[:, class_num],
                 pred_probabilitites,
                 frac_noise=frac_noise,
                 rank_by_kwargs=rank_by_kwargs,
@@ -457,14 +457,14 @@ def _find_label_issues_multilabel(
     else:
         label_issues_list = []
 
-        for i in range(0, num_classes):
-            pred_probabilitites = np.stack([1 - pred_probs[:, i], pred_probs[:, i]]).T
+        for class_num in range(0, num_classes):
+            pred_probabilitites = np.stack([1 - pred_probs[:, class_num], pred_probs[:, class_num]]).T
             if confident_joint is None:
                 conf = None
             else:
-                conf = confident_joint[i]
+                conf = confident_joint[class_num]
             index_issues = find_label_issues(
-                y_one[:, i],
+                y_one[:, class_num],
                 pred_probabilitites,
                 return_indices_ranked_by=return_indices_ranked_by,
                 rank_by_kwargs=rank_by_kwargs,
