@@ -72,6 +72,10 @@ jobs:
         with:
           script: |
             core.setFailed('Code has unused imports! Please `run pylint * | grep "unused-import"`')
+      - name: Print files with unused imports
+        if: ${{ steps.unused_check.outputs.UNUSED_COUNT > 0 }}
+        run: |
+          pylint * | grep "unused-import"
   check_wildcard_imports:
     name: Check for wildcard imports
     runs-on: ubuntu-latest
@@ -88,6 +92,10 @@ jobs:
         with:
           script: |
             core.setFailed('Code has wildcard imports! Please `pylint * | grep "Wildcard import"`')
+      - name: Print files with unused imports
+        if: ${{ steps.unused_check.outputs.WILDCARD_COUNT > 0 }}
+        run: |
+          pylint * | grep "Wildcard import"
   nblint:
     name: Lint Notebooks
     runs-on: ubuntu-latest
