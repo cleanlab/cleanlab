@@ -415,6 +415,7 @@ def find_label_issues(
 def _find_label_issues_multilabel(
     labels,
     pred_probs,
+    *,
     return_indices_ranked_by=None,
     rank_by_kwargs={},
     filter_by="prune_by_noise_rate",
@@ -426,22 +427,58 @@ def _find_label_issues_multilabel(
     n_jobs=None,
     verbose=False,
 ):
+    """
+    NOT
+    """
     ranked_label_issues_list = []
-    for i in range(0, len(pred_probs)):
-        y_labels = labels[i]
-        pred_probabilitites = pred_probs[i]
-        if confident_joint is None:
-            conf = None
-        else:
-            conf = confident_joint[i]
-        ranks = find_label_issues(
-            y_labels.astype(np.int32),
-            pred_probabilitites,
-            return_indices_ranked_by="self_confidence",
-            confident_joint=conf[i],
-        )
-        ranked_label_issues_list.append(ranks)
-    reduce(np.union1d, ranked_label_issues_list).astype(np.int32)
+    num_classes = pred_probs.shape[1]
+    y_one = np.zeros((len(labels), num_classes))
+    for i in range(0, len(yl)):
+        for j in range(0, len(yl[i])):
+            y_one[i][j] = 1
+    if return_indices_ranked_by is None:
+        bissues = np.zeros(y.shape).astype(bool)
+        for i in range(0, num_classes):
+            y_labels = labels[i]
+            pred_probabilitites = np.stack([1 - pred_probs[:, i], pred_probs[:, i]]).T
+            bissues[:, i] = find_label_issues(
+                y[:, i],
+                pred_probabilitites,
+                frac_noise=frac_noise,
+                rank_by_kwargs=rank_by_kwargs,
+                filter_by=filter_by,
+                multi_label=False,
+                frac_noise=frac_noise,
+                num_to_remove_per_class=num_to_remove_per_class,
+                min_examples_per_class=min_examples_per_class,
+                confident_joint=conf[i],
+                n_jobs=n_jobs,
+                verbose=verbose,
+            )
+    else:
+        for i in range(0, num_classes):
+            y_labels = labels[i]
+            pred_probabilitites = np.stack([1 - pred_probs[:, i], pred_probs[:, i]]).T
+            if confident_joint is None:
+                conf = None
+            else:
+                conf = confident_joint[i]
+            ranks = find_label_issues(
+                y_labels.astype(np.int32),
+                pred_probabilitites,
+                return_indices_ranked_by=return_indices_ranked_by,
+                rank_by_kwargs=rank_by_kwargs,
+                filter_by=filter_by,
+                multi_label=False,
+                frac_noise=frac_noise,
+                num_to_remove_per_class=num_to_remove_per_class,
+                min_examples_per_class=min_examples_per_class,
+                confident_joint=conf[i],
+                n_jobs=n_jobs,
+                verbose=verbose,
+            )
+            ranked_label_issues_list.append(ranks)
+        return reduce(np.union1d, ranked_label_issues_list).astype(np.int32)
 
 
 def _keep_at_least_n_per_class(prune_count_matrix, n, *, frac_noise=1.0) -> np.ndarray:
