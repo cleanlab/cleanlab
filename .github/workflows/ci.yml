@@ -66,16 +66,16 @@ jobs:
           sudo apt install pylint -y
           echo "::set-output name=UNUSED_COUNT::$(pylint * | grep "unused-import" | wc -l)"
         id: unused_check
+      - name: Print files with unused imports
+        if: ${{ steps.unused_check.outputs.UNUSED_COUNT > 0 }}
+        run: |
+          pylint * | grep "unused-import"
       - name: Fail job is any unused imports are there
         if: ${{ steps.unused_check.outputs.UNUSED_COUNT > 0 }}
         uses: actions/github-script@v3
         with:
           script: |
             core.setFailed('Code has unused imports! Please `run pylint * | grep "unused-import"`')
-      - name: Print files with unused imports
-        if: ${{ steps.unused_check.outputs.UNUSED_COUNT > 0 }}
-        run: |
-          pylint * | grep "unused-import"
   check_wildcard_imports:
     name: Check for wildcard imports
     runs-on: ubuntu-latest
@@ -86,16 +86,16 @@ jobs:
           sudo apt install pylint -y
           echo "::set-output name=WILDCARD_COUNT::$(pylint * | grep "Wildcard import" | wc -l)"
         id: wildcard_check
+      - name: Print files with unused imports
+        if: ${{ steps.unused_check.outputs.WILDCARD_COUNT > 0 }}
+        run: |
+          pylint * | grep "Wildcard import"
       - name: Fail job is any wildcard imports are there
         if: ${{ steps.unused_check.outputs.WILDCARD_COUNT > 0 }}
         uses: actions/github-script@v3
         with:
           script: |
             core.setFailed('Code has wildcard imports! Please `pylint * | grep "Wildcard import"`')
-      - name: Print files with unused imports
-        if: ${{ steps.unused_check.outputs.WILDCARD_COUNT > 0 }}
-        run: |
-          pylint * | grep "Wildcard import"
   nblint:
     name: Lint Notebooks
     runs-on: ubuntu-latest
