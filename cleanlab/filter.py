@@ -449,7 +449,7 @@ def _find_label_issues_multilabel(
                 multi_label=False,
                 num_to_remove_per_class=num_to_remove_per_class,
                 min_examples_per_class=min_examples_per_class,
-                confident_joint=conf[i],
+                confident_joint=conf,
                 n_jobs=n_jobs,
                 verbose=verbose,
             )
@@ -473,7 +473,7 @@ def _find_label_issues_multilabel(
                 frac_noise=frac_noise,
                 num_to_remove_per_class=num_to_remove_per_class,
                 min_examples_per_class=min_examples_per_class,
-                confident_joint=conf[i],
+                confident_joint=conf,
                 n_jobs=n_jobs,
                 verbose=verbose,
             )
