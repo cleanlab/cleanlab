@@ -10,7 +10,7 @@ from cleanlab.token_classification.filter import find_label_issues
 from cleanlab.token_classification.rank import (
     get_label_quality_scores,
     issues_from_scores,
-    softmin_sentence_score,
+    _softmin_sentence_score,
 )
 from cleanlab.token_classification.summary import (
     display_issues,
@@ -18,6 +18,7 @@ from cleanlab.token_classification.summary import (
     filter_by_token,
 )
 import numpy as np
+import pandas as pd
 import pytest
 
 import warnings
@@ -125,9 +126,42 @@ def test_merge_probs_with_normalization():
     assert np.allclose(expected, merged_probs)
 
 
-def test_color_sentence():
-    colored = color_sentence(sentences[0], words[0][1])
-    assert colored == "Hello \x1b[31mWorld\x1b[0m"
+# Color boundaries
+C_L, C_R = "\x1b[31m", "\x1b[0m"
+
+
+@pytest.mark.parametrize(
+    "sentence,word,expected",
+    [
+        ("Hello World", "World", f"Hello {C_L}World{C_R}"),
+        ("If you and I were to meet", "I", f"If you and {C_L}I{C_R} were to meet"),
+        ("If you and I were to meet", "If you and I", f"{C_L}If you and I{C_R} were to meet"),
+        ("If you and I were to meet", "If you and I w", f"{C_L}If you and I w{C_R}ere to meet"),
+        ("I think I know this", "I", f"{C_L}I{C_R} think {C_L}I{C_R} know this"),
+        ("A good reason for a test", "a", f"A good reason for {C_L}a{C_R} test"),
+        ("ab ab a b ab", "ab a", f"ab {C_L}ab a{C_R} b ab"),
+        ("ab ab ab ab", "ab a", f"{C_L}ab a{C_R}b {C_L}ab a{C_R}b"),
+        (
+            "Alan John Percivale (A.j.p.) Taylor died",
+            "(",
+            f"Alan John Percivale {C_L}({C_R}A.j.p.) Taylor died",
+        ),
+    ],
+    ids=[
+        "single_word",
+        "ignore_subwords",
+        "multi-token_match",
+        "substring_replacement",
+        "multiple_matches",
+        "case_sensitive",
+        "only_word_boundary",
+        "non_overlapping_substrings",
+        "issue_403-escape_special_regex_characters",
+    ],
+)
+def test_color_sentence(sentence, word, expected):
+    colored = color_sentence(sentence, word)
+    assert colored == expected
 
 
 issues = find_label_issues(labels, pred_probs)
@@ -144,19 +178,23 @@ def test_find_label_issues(test_labels):
     assert isinstance(issues, list)
     assert len(issues) == 1
     assert issues[0] == (1, 0)
+    issues2 = find_label_issues(
+        test_labels, pred_probs, return_indices_ranked_by="normalized_margin"
+    )
+    assert isinstance(issues2, list)
 
 
 def test_softmin_sentence_score():
     token_scores = [[0.9, 0.6], [0.0, 0.8, 0.8], [0.8]]
-    sentence_scores = softmin_sentence_score(token_scores)
+    sentence_scores = _softmin_sentence_score(token_scores)
     assert isinstance(sentence_scores, np.ndarray)
     assert np.allclose(sentence_scores, [0.60074, 1.8e-07, 0.8])
 
     # Temperature limits
-    sentence_scores = softmin_sentence_score(token_scores, temperature=0)
+    sentence_scores = _softmin_sentence_score(token_scores, temperature=0)
     assert np.allclose(sentence_scores, [0.6, 0.0, 0.8])
 
-    sentence_scores = softmin_sentence_score(token_scores, temperature=np.inf)
+    sentence_scores = _softmin_sentence_score(token_scores, temperature=np.inf)
     assert np.allclose(sentence_scores, [0.75, 1.6 / 3, 0.8])
 
 
@@ -186,8 +224,8 @@ def test_get_label_quality_scores(label_quality_scores):
 
 
 def test_issues_from_scores(label_quality_scores):
-    sentence_scores, token_info = label_quality_scores
-    issues = issues_from_scores(sentence_scores, token_info)
+    sentence_scores, token_scores = label_quality_scores
+    issues = issues_from_scores(sentence_scores, token_scores=token_scores)
     assert len(issues) == 1
     assert issues[0] == (1, 0)
     issues_without = issues_from_scores(sentence_scores)
@@ -197,23 +235,59 @@ def test_issues_from_scores(label_quality_scores):
 
 def test_display_issues():
     display_issues(issues, words)
-    display_issues(issues, words, given_labels=labels)
+    display_issues(issues, tokens=words, labels=labels)
     display_issues(issues, words, pred_probs=pred_probs)
-    display_issues(issues, words, pred_probs=pred_probs, given_labels=labels)
-    display_issues(
-        issues, words, pred_probs=pred_probs, given_labels=labels, class_names=class_names
-    )
+    display_issues(issues, words, pred_probs=pred_probs, labels=labels)
+    display_issues(issues, words, pred_probs=pred_probs, labels=labels, class_names=class_names)
+
+    exclude = [(1, 2)]  # Occurs in first token of second sentence "#I"
+    display_issues(issues, words, pred_probs=pred_probs, labels=labels, exclude=exclude)
+
+    top = 1
+    display_issues(issues, words, pred_probs=pred_probs, labels=labels, top=top)
 
     issues_sentence_only = [i for i, _ in issues]
     display_issues(issues_sentence_only, words)
 
 
-def test_common_label_issues():
-    common_label_issues(issues, words)
-    common_label_issues(
-        issues, words, labels=labels, pred_probs=pred_probs, class_names=class_names
-    )
+TEST_KWARGS = {"labels": labels, "pred_probs": pred_probs, "class_names": class_names}
 
 
-def test_filter_by_token():
-    filter_by_token("Hello", issues, words)
+@pytest.mark.parametrize(
+    "test_issues",
+    [issues, issues + [(1, 0)]],
+    ids=["default issues", "augmented issues"],
+)
+@pytest.mark.parametrize(
+    "test_kwargs",
+    [
+        {},
+        TEST_KWARGS,
+        {**TEST_KWARGS, "top": 1},
+        {**TEST_KWARGS, "exclude": [(1, 2)]},
+        {**TEST_KWARGS, "verbose": False},
+    ],
+    ids=["no kwargs", "labels+pred_probs+class_names", "...+top", "...+exclude", "...+no verbose"],
+)
+def test_common_label_issues(test_issues, test_kwargs):
+    df = common_label_issues(test_issues, words, **test_kwargs)
+    assert isinstance(df, pd.DataFrame)
+
+    columns = df.columns.tolist()
+    for col in ["token", "num_label_issues"]:
+        assert col in columns
+    if test_kwargs:
+        for col in ["given_label", "predicted_label"]:
+            assert col in columns
+
+
+@pytest.mark.parametrize(
+    "test_token,expected_issues",
+    [
+        ("Hello", []),
+        ("#I", [(1, 0)]),
+    ],
+)
+def test_filter_by_token(test_token, expected_issues):
+    returned_issues = filter_by_token(test_token, issues, words)
+    assert returned_issues == expected_issues

@@ -25,6 +25,7 @@ import multiprocessing
 from multiprocessing.sharedctypes import RawArray
 import sys
 import warnings
+from typing import Any
 
 from cleanlab.count import calibrate_confident_joint
 from cleanlab.rank import order_label_issues
@@ -65,7 +66,7 @@ def find_label_issues(
     confident_joint=None,
     n_jobs=None,
     verbose=False,
-):
+) -> np.ndarray:
     """
     Identifies potentially bad labels in a dataset (with `N` examples) using confident learning.
 
@@ -188,13 +189,15 @@ def find_label_issues(
     Returns
     -------
     label_issues : np.ndarray
-      A boolean mask for the entire dataset where ``True`` represents a
-      label issue and ``False`` represents an example that is accurately
-      labeled with high confidence.
+      If `return_indices_ranked_by` left unspecified, returns a boolean **mask** for the entire dataset
+      where ``True`` represents a label issue and ``False`` represents an example that is
+      accurately labeled with high confidence.
+      If `return_indices_ranked_by` is specified, returns a shorter array of **indices** of examples identified to have
+      label issues (i.e. those indices where the mask would be ``True``), sorted by likelihood that the corresponding label is correct.
 
       Note
       ----
-      You can also return the *indices* of the label issues in your dataset by setting
+      Obtain the *indices* of label issues in your dataset by setting
       `return_indices_ranked_by`.
     """
 
@@ -274,11 +277,11 @@ def find_label_issues(
         # Prepare multiprocessing shared data
         if n_jobs > 1:
             if multi_label:
-                _labels = RawArray("I", int2onehot(labels).flatten())
+                _labels = RawArray("I", int2onehot(labels).flatten())  # type: ignore
             else:
-                _labels = RawArray("I", labels)
+                _labels = RawArray("I", labels)  # type: ignore
             _label_counts = RawArray("I", label_counts)
-            _prune_count_matrix = RawArray("I", prune_count_matrix.flatten())
+            _prune_count_matrix = RawArray("I", prune_count_matrix.flatten())  # type: ignore
             _pred_probs = RawArray("f", pred_probs.flatten())
         else:  # Multiprocessing is turned off. Create tuple with all parameters
             args = (
@@ -395,7 +398,7 @@ def find_label_issues(
     return label_issues_mask
 
 
-def _keep_at_least_n_per_class(prune_count_matrix, n, *, frac_noise=1.0):
+def _keep_at_least_n_per_class(prune_count_matrix, n, *, frac_noise=1.0) -> np.ndarray:
     """Make sure every class has at least n examples after removing noise.
     Functionally, increase each column, increases the diagonal term #(true_label=k,label=k)
     of prune_count_matrix until it is at least n, distributing the amount
@@ -461,7 +464,7 @@ def _keep_at_least_n_per_class(prune_count_matrix, n, *, frac_noise=1.0):
     return round_preserving_row_totals(new_mat).astype(int)
 
 
-def _reduce_prune_counts(prune_count_matrix, frac_noise=1.0):
+def _reduce_prune_counts(prune_count_matrix, frac_noise=1.0) -> np.ndarray:
     """Reduce (multiply) all prune counts (non-diagonal) by frac_noise and
     increase diagonal by the total amount reduced in each column to
     preserve column counts.
@@ -492,7 +495,7 @@ def _reduce_prune_counts(prune_count_matrix, frac_noise=1.0):
     return new_mat.astype(int)
 
 
-def find_predicted_neq_given(labels, pred_probs, *, multi_label=False):
+def find_predicted_neq_given(labels, pred_probs, *, multi_label=False) -> np.ndarray:
     """A simple baseline approach that considers ``argmax(pred_probs) != labels`` as a label error.
 
     Parameters
@@ -529,7 +532,7 @@ def find_label_issues_using_argmax_confusion_matrix(
     *,
     calibrate=True,
     filter_by="prune_by_noise_rate",
-):
+) -> np.ndarray:
     """This is a baseline approach that uses the confusion matrix
     of ``argmax(pred_probs)`` and labels as the confident joint and then uses cleanlab
     (confident learning) to find the label issues using this matrix.
@@ -546,7 +549,7 @@ def find_label_issues_using_argmax_confusion_matrix(
         An array of shape ``(N,)`` of noisy labels, i.e. some labels may be erroneous.
         Elements must be in the set 0, 1, ..., K-1, where K is the number of classes.
 
-    pred_probs : np.ndarray (shape (N, K))
+    pred_probs : np.ndarray
         An array of shape ``(N, K)`` of model-predicted probabilities,
         ``P(label=k|x)``. Each row of this matrix corresponds
         to an example `x` and contains the model-predicted probabilities that
@@ -588,7 +591,7 @@ def find_label_issues_using_argmax_confusion_matrix(
 mp_params = {}  # Globals to be shared across threads in multiprocessing
 
 
-def _to_np_array(mp_arr, dtype="int32", shape=None):  # pragma: no cover
+def _to_np_array(mp_arr, dtype="int32", shape=None) -> np.ndarray:  # pragma: no cover
     """multipropecessing Helper function to convert a multiprocessing
     RawArray to a numpy array."""
     arr = np.frombuffer(mp_arr, dtype=dtype)
@@ -620,7 +623,7 @@ def _init(
     mp_params["min_examples_per_class"] = __min_examples_per_class
 
 
-def _get_shared_data():  # pragma: no cover
+def _get_shared_data() -> Any:  # pragma: no cover
     """multiprocessing helper function to extract numpy arrays from
     shared RawArray types used to shared data across process."""
 
@@ -644,7 +647,7 @@ def _get_shared_data():  # pragma: no cover
             )
         )
     else:
-        labels = _to_np_array(mp_params["labels"])
+        labels = _to_np_array(mp_params["labels"])  # type: ignore
     return (
         labels,
         label_counts,
@@ -655,7 +658,7 @@ def _get_shared_data():  # pragma: no cover
     )
 
 
-def _prune_by_class(k, args=None):
+def _prune_by_class(k, args=None) -> np.ndarray:
     """multiprocessing Helper function for find_label_issues()
     that assumes globals and produces a mask for class k for each example by
     removing the examples with *smallest probability* of
@@ -699,7 +702,7 @@ def _prune_by_class(k, args=None):
         return np.zeros(len(labels), dtype=bool)
 
 
-def _prune_by_count(k, args=None):
+def _prune_by_count(k, args=None) -> np.ndarray:
     """multiprocessing Helper function for find_label_issues() that assumes
     globals and produces a mask for class k for each example by
     removing the example with noisy label k having *largest margin*,
@@ -751,17 +754,7 @@ def _prune_by_count(k, args=None):
     return label_issues_mask
 
 
-def _self_confidence(args, _pred_probs):  # pragma: no cover
-    """multiprocessing Helper function for find_label_issues() that assumes
-    global pred_probs and computes the self-confidence (prob of given label)
-    for an example (row in pred_probs) given the example index idx
-    and its label l.
-    np.mean(pred_probs[]) enables this code to work for multi-class l."""
-    (idx, l) = args
-    return np.mean(_pred_probs[idx, l])
-
-
-def _multiclass_crossval_predict(labels, pyx):
+def _multiclass_crossval_predict(labels, pyx) -> np.ndarray:
     """Returns a numpy 2D array of one-hot encoded
     multiclass predictions. Each row in the array
     provides the predictions for a particular example.

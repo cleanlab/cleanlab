@@ -36,8 +36,7 @@ labels in data that was previously held-out.
 
 import numpy as np
 from sklearn.metrics import log_loss
-from sklearn.neighbors import NearestNeighbors
-from typing import List, Optional, Union, Tuple
+from typing import List
 import warnings
 
 from cleanlab.internal.validation import assert_valid_inputs
@@ -84,9 +83,8 @@ def order_label_issues(
     Returns
     -------
     label_issues_idx : np.ndarray
-      Return an array of the indices of the label issues, ordered by the label-quality scoring method
-      passed to `rank_by`.
-
+      Return an array of the indices of the examples with label issues,
+      ordered by the label-quality scoring method passed to `rank_by`.
     """
 
     assert_valid_inputs(X=None, y=labels, pred_probs=pred_probs, multi_label=False)
@@ -173,14 +171,14 @@ def get_label_quality_scores(
     Returns
     -------
     label_quality_scores : np.ndarray
-      Scores are between 0 and 1 where lower scores indicate labels less likely to be correct.
+      Contains one score (between 0 and 1) per example.
+      Lower scores indicate more likely mislabeled examples.
 
     See Also
     --------
     get_self_confidence_for_each_label
     get_normalized_margin_for_each_label
     get_confidence_weighted_entropy_for_each_label
-
     """
 
     # TODO: remove allow_missing_classes once supported
@@ -289,11 +287,12 @@ def get_label_quality_ensemble_scores(
     Returns
     -------
     label_quality_scores : np.ndarray
+      Contains one score (between 0 and 1) per example.
+      Lower scores indicate more likely mislabeled examples.
 
     See Also
     --------
     get_label_quality_scores
-
     """
 
     MIN_ALLOWED = 1e-6  # lower-bound clipping threshold to prevents 0 in logs and division
@@ -449,7 +448,7 @@ def get_self_confidence_for_each_label(
     This is a function to compute label-quality scores for classification datasets,
     where lower scores indicate labels less likely to be correct.
 
-    The self-confidence is the holdout probability that an example belongs to
+    The self-confidence is the classifier's predicted probability that an example belongs to
     its given class label.
 
     Self-confidence can work better than normalized-margin for detecting label errors due to out-of-distribution (OOD) or weird examples
@@ -466,9 +465,8 @@ def get_self_confidence_for_each_label(
     Returns
     -------
     label_quality_scores : np.ndarray
-      An array of holdout probabilities that each example in `pred_probs` belongs to its
-      label.
-
+      Contains one score (between 0 and 1) per example.
+      Lower scores indicate more likely mislabeled examples.
     """
 
     # np.mean is used so that this works for multi-labels (list of lists)
@@ -488,9 +486,9 @@ def get_normalized_margin_for_each_label(
     Letting k denote the given label for a datapoint, the normalized margin is
     ``(p(label = k) - max(p(label != k)))``, i.e. the probability
     of the given label minus the probability of the argmax label that is not
-    the given label. This gives you an idea of how likely an example is BOTH
-    its given label AND not another label, and therefore, scores its likelihood
-    of being a good label or a label error.
+    the given label (``normalized_margin = prob_label - max_prob_not_label``).
+    This gives you an idea of how likely an example is BOTH its given label AND not another label,
+    and therefore, scores its likelihood of being a good label or a label error.
 
     Normalized margin works better for finding class conditional label errors where
     there is another label in the set of classes that is clearly better than the given label.
@@ -506,8 +504,8 @@ def get_normalized_margin_for_each_label(
     Returns
     -------
     label_quality_scores : np.ndarray
-      An array of scores (between 0 and 1) for each example of its likelihood of
-      being correctly labeled. ``normalized_margin = prob_label - max_prob_not_label``
+      Contains one score (between 0 and 1) per example.
+      Lower scores indicate more likely mislabeled examples.
     """
 
     self_confidence = get_self_confidence_for_each_label(labels, pred_probs)
@@ -539,8 +537,8 @@ def get_confidence_weighted_entropy_for_each_label(
     Returns
     -------
     label_quality_scores : np.ndarray
-      An array of scores (between 0 and 1) for each example of its likelihood of
-      being correctly labeled.
+      Contains one score (between 0 and 1) per example.
+      Lower scores indicate more likely mislabeled examples.
     """
 
     MIN_ALLOWED = 1e-6  # lower-bound clipping threshold to prevents 0 in logs and division
@@ -557,98 +555,30 @@ def get_confidence_weighted_entropy_for_each_label(
     return label_quality_scores
 
 
-def get_outlier_scores(
-    features: Optional[np.ndarray] = None,
-    knn: Optional[NearestNeighbors] = None,
-    k: Optional[int] = None,
-    t: int = 1,
-    return_estimator: bool = False,
-) -> Union[np.ndarray, Tuple[np.ndarray, NearestNeighbors]]:
-    """Returns an outlier score for each example based on its feature values. Scores lie in [0,1] with smaller values indicating examples
-    that are less typical under the dataset distribution (values near 0 indicate outliers).
-    The score is based on the average distance between the example and its K nearest neighbors in the dataset (in feature space).
+def find_top_issues(quality_scores: np.ndarray, *, top: int = 10) -> np.ndarray:
+    """Returns the sorted indices of the `top` issues in `quality_scores`, ordered from smallest to largest quality score
+    (i.e., from most to least likely to be an issue). For example, the first value returned is the index corresponding
+    to the smallest value in `quality_scores` (most likely to be an issue). The second value in the returned array is
+    the index corresponding to the second smallest value in `quality-scores` (second-most likely to be an issue), and so forth.
+
+    This method assumes that `quality_scores` shares an index with some dataset such that the indices returned by this method
+    map to the examples in that dataset.
 
     Parameters
     ----------
-    features : np.ndarray
-      Feature array of shape ``(N, M)``, where N is the number of examples and M is the number of features used to represent each example.
-      All features should be numeric. For unstructured data (eg. images, text, categorical values, ...), you should provide
-      vector embeddings to represent each example (e.g. extracted from some pretrained neural network).
+    quality_scores :
+      Array of shape ``(N,)``, where N is the number of examples, containing one quality score for each example in the dataset.
 
-    knn : sklearn.neighbors.NearestNeighbors, default = None
-      Instantiated ``NearestNeighbors`` object that's been fitted on a dataset in the same feature space.
-      Note that the distance metric and n_neighbors is specified when instantiating this class.
-      You can also pass in a subclass of ``sklearn.neighbors.NearestNeighbors`` which allows you to use faster
-      approximate neighbor libraries as long as you wrap them behind the same sklearn API.
-      If you specify ``knn`` here and wish to find outliers in the same data you already passed into ``knn.fit(features)``, you should specify ``features = None`` here if your ``knn.kneighbors(None)``
-      returns the distances to the datapoints it was ``fit()`` on.
-      If ``knn = None``, then by default ``knn = sklearn.neighbors.NearestNeighbors(n_neighbors=k, metric="cosine").fit(features)``
+    top :
+      The number of indices to return.
 
-      See: https://scikit-learn.org/stable/modules/neighbors.html
-
-    k : int, default=None
-      Optional number of neighbors to use when calculating outlier score (average distance to neighbors).
-      If `k` is not provided, then by default ``k = knn.n_neighbors`` or ``k = 10`` if ``knn is None``.
-      If an existing ``knn`` object is provided, you can still specify that outlier scores should use
-      a different value of `k` than originally used in the ``knn``,
-      as long as your specified value of `k` is smaller than the value originally used in ``knn``.
-
-    t : int, default=1
-      Optional hyperparameter only for advanced users.
-      Controls transformation of distances between examples into similarity scores that lie in [0,1].
-      The transformation applied to distances `x` is `exp(-x*t)`.
-      If you find your scores are all too close to 1, consider increasing `t`,
-      although the relative scores of examples will still have the same ranking across the dataset.
-
-    return_estimator : bool, default = False
-      Whether the `knn` Estimator object should also be returned (eg. so it can be applied on future data).
-      If True, this function returns a tuple `(outlier_scores, knn)`.
     Returns
     -------
-    outlier_scores : np.ndarray
-      Score for each example that roughly corresponds to the likelihood this example stems from the same distribution as
-      the dataset features (i.e. is not an outlier).
-      If ``return_estimator = True``, then a tuple is returned
-      whose first element is array of `outlier_scores` and second is a `knn` Estimator object.
-    """
-    DEFAULT_K = 10
-    if knn is None:  # setup default KNN estimator
-        # Make sure both knn and features are not None
-        if features is None:
-            raise ValueError(
-                f"Both knn and features arguments cannot be None at the same time. Not enough information to compute outlier scores."
-            )
-        if k is None:
-            k = DEFAULT_K  # use default when knn and k are both None
-        if k > len(features):  # Ensure number of neighbors less than number of examples
-            raise ValueError(
-                f"Number of nearest neighbors k={k} cannot exceed the number of examples N={len(features)} passed into the estimator (knn)."
-            )
-        knn = NearestNeighbors(n_neighbors=k, metric="cosine").fit(features)
-        features = None  # features should be None in knn.kneighbors(features) to avoid counting duplicate data points
-    elif k is None:
-        k = knn.n_neighbors
+    top_issue_indices :
+      Indices of top examples most likely to suffer from an issue (ranked by issue severity)."""
 
-    max_k = knn.n_neighbors  # number of neighbors previously used in NearestNeighbors object
-    if k > max_k:  # if k provided is too high, use max possible number of nearest neighbors
-        warnings.warn(
-            f"Chosen k={k} cannot be greater than n_neighbors={max_k} which was used when fitting "
-            f"NearestNeighbors object! Value of k changed to k={max_k}.",
-            UserWarning,
-        )
-        k = max_k
+    if top is None or top > len(quality_scores):
+        top = len(quality_scores)
 
-    # Get distances to k-nearest neighbors Note that the knn object contains the specification of distance metric
-    # and n_neighbors (k value) If our query set of features matches the training set used to fit knn, the nearest
-    # neighbor of each point is the point itself, at a distance of zero.
-    distances, _ = knn.kneighbors(features)
-
-    # Calculate average distance to k-nearest neighbors
-    avg_knn_distances = distances[:, :k].mean(axis=1)
-
-    # Map outlier_scores to range 0-1 with 0 = most concerning
-    outlier_scores: np.ndarray = np.exp(-1 * avg_knn_distances * t)
-    if return_estimator:
-        return (outlier_scores, knn)
-    else:
-        return outlier_scores
+    top_outlier_indices = quality_scores.argsort()[:top]
+    return top_outlier_indices
