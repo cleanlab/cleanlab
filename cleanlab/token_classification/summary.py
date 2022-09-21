@@ -1,53 +1,103 @@
+# Copyright (C) 2017-2022  Cleanlab Inc.
+# This file is part of cleanlab.
+#
+# cleanlab is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published
+# by the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# cleanlab is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
+
+"""
+Methods to display sentences and their label issues in a token classification dataset (text data), as well as summarize the types of issues identified.
+"""
+
 import numpy as np
 import pandas as pd
+
 from cleanlab.internal.token_classification_utils import *
 from typing import Optional, Dict, Any
 
 
+
 def display_issues(
     issues: list,
-    given_words: list,
+    tokens: List[List[str]],
     *,
+    labels: Optional[list] = None,
     pred_probs: Optional[list] = None,
-    given_labels: Optional[list] = None,
-    exclude: list = [],
-    class_names: Optional[list] = None,
+    exclude: List[Tuple[int, int]] = [],
+    class_names: Optional[List[str]] = None,
     top: int = 20
 ) -> None:
     """
-    Display issues, including sentence with issue token highlighted. Also shows given and predicted label
-    if possible.
+    Display token classification label issues, showing sentence with problematic token(s) highlighted.
+
+    Can also shows given and predicted label for each token identified to have label issue.
 
     Parameters
     ----------
-    issues: list
-        list of tuples `(i, j)`, which represents the j'th token of the i'th sentence.
+    issues:
+        List of tuples ``(i, j)`` representing a label issue for the `j`-th token of the `i`-th sentence.
 
-    given_words: list
-        tokens in a nested-list format, such that `given_words[i]` contains the words of the i'th sentence from
-        the original file.
+        Same format as output by :py:func:`token_classification.filter.find_label_issues <cleanlab.token_classification.filter.find_label_issues>`
+        or :py:func:`token_classification.rank.issues_from_scores <cleanlab.token_classification.rank.issues_from_scores>`.
 
-    pred_probs: list, default=None
-        list of model-predicted probability, such that `pred_probs[i]` contains the model-predicted probability of
-        the tokens in the i'th sentence, and has shape `(N, K)`, where `N` is the number of given tokens of the i'th
-        sentence, and `K` is the number of classes predicted by the model. If provided, also displays the predicted
-        label of the token.
+    tokens:
+        Nested list such that `tokens[i]` is a list of tokens (strings/words) that comprise the `i`-th sentence.
 
-    given_labels: list, default=None
-        list of given labels, such that `given_labels[i]` is a list containing the given labels of the tokens in the
-        i'th sentence, and has length equal to the number of given tokens of the i'th sentence. If provided, also
-        displays the given label of the token.
+    labels:
+        Optional nested list of given labels for all tokens, such that `labels[i]` is a list of labels, one for each token in the `i`-th sentence.
+        For a dataset with K classes, each label must be in 0, 1, ..., K-1.
 
-    exclude: list, default=[]
-        list of given/predicted label swaps to be excluded. For example, if `exclude=[(0, 1), (1, 0)]`, swaps between
-        class 0 and 1 are not displayed.
+        If `labels` is provided, this function also displays given label of the token identified with issue.
 
-    class_names: list, default=None
-        name of classes. If not provided, display the integer index for predicted and given labels.
+    pred_probs:
+        Optional list of np arrays, such that `pred_probs[i]` has shape ``(T, K)`` if the `i`-th sentence contains T tokens.
+
+        Each row of `pred_probs[i]` corresponds to a token `t` in the `i`-th sentence,
+        and contains model-predicted probabilities that `t` belongs to each of the K possible classes.
+
+        Columns of each `pred_probs[i]` should be ordered such that the probabilities correspond to class 0, 1, ..., K-1.
+
+        If `pred_probs` is provided, this function also displays predicted label of the token identified with issue.
+
+    exclude:
+        Optional list of given/predicted label swaps (tuples) to be ignored. For example, if `exclude=[(0, 1), (1, 0)]`,
+        tokens whose label was likely swapped between class 0 and 1 are not displayed. Class labels must be in 0, 1, ..., K-1.
+
+    class_names:
+        Optional length K list of names of each class, such that `class_names[i]` is the string name of the class corresponding to `labels` with value `i`.
+
+        If `class_names` is provided, display these string names for predicted and given labels, otherwise display the integer index of classes.
 
     top: int, default=20
-        maximum number of outputs to be printed.
+        Maximum number of issues to be printed.
 
+    Examples
+    --------
+    >>> from cleanlab.token_classification.summary import display_issues
+    >>> issues = [(2, 0), (0, 1)]
+    >>> tokens = [
+    ...     ["A", "?weird", "sentence"],
+    ...     ["A", "valid", "sentence"],
+    ...     ["An", "sentence", "with", "a", "typo"],
+    ... ]
+    >>> display_issues(issues, tokens)
+    Sentence 2, token 0:
+    ----
+    An sentence with a typo
+    ...
+    ...
+    Sentence 0, token 1:
+    ----
+    A ?weird sentence
     """
     if not class_names:
         print(
@@ -55,111 +105,134 @@ def display_issues(
         )
         print("Specify this argument to see the string names of each class. \n")
 
+    top = min(top, len(issues))
     shown = 0
-    is_tuple = type(issues[0]) == tuple
+    is_tuple = isinstance(issues[0], tuple)
 
     for issue in issues:
         if is_tuple:
             i, j = issue
-            sentence = get_sentence(given_words[i])
-            word = given_words[i][j]
+            sentence = get_sentence(tokens[i])
+            word = tokens[i][j]
 
             if pred_probs:
                 prediction = pred_probs[i][j].argmax()
-            if given_labels:
-                given = given_labels[i][j]
-            if pred_probs and given_labels:
+            if labels:
+                given = labels[i][j]
+            if pred_probs and labels:
                 if (given, prediction) in exclude:
                     continue
 
             if pred_probs and class_names:
                 prediction = class_names[prediction]
-            if given_labels and class_names:
+            if labels and class_names:
                 given = class_names[given]
 
             shown += 1
-            print("Sentence %d, token %d: \n%s" % (i, j, color_sentence(sentence, word)))
-            if given_labels and not pred_probs:
-                print("Given label: %s\n" % str(given))
-            elif not given_labels and pred_probs:
-                print("Predicted label according to provided pred_probs: %s\n" % str(prediction))
-            elif given_labels and pred_probs:
+            print("Sentence %d, token %d:" % (i, j))
+            if labels and not pred_probs:
+                print("Given label: %s" % str(given))
+            elif not labels and pred_probs:
+                print("Predicted label according to provided pred_probs: %s" % str(prediction))
+            elif labels and pred_probs:
                 print(
-                    "Given label: %s, predicted label according to provided pred_probs: %s\n"
+                    "Given label: %s, predicted label according to provided pred_probs: %s"
                     % (str(given), str(prediction))
                 )
-            else:
-                print()
+            print("----")
+            print(color_sentence(sentence, word))
         else:
             shown += 1
-            sentence = get_sentence(given_words[issue])
-            print("Sentence %d: %s\n" % (issue, sentence))
+            sentence = get_sentence(tokens[issue])
+            print("Sentence %d: %s" % (issue, sentence))
         if shown == top:
             break
+        print("\n")
 
 
 def common_label_issues(
-    issues: list,
-    given_words: list,
+    issues: List[Tuple[int, int]],
+    tokens: List[List[str]],
     *,
     labels: Optional[list] = None,
     pred_probs: Optional[list] = None,
-    class_names: Optional[list] = None,
+    class_names: Optional[List[str]] = None,
     top: int = 10,
-    exclude: list = [],
+    exclude: List[Tuple[int, int]] = [],
     verbose: bool = True
 ) -> pd.DataFrame:
     """
-    Display the most common tokens that are potentially mislabeled.
+    Display the tokens (words) that most commonly have label issues.
+
+    These may correspond to words that are ambiguous or systematically misunderstood by the data annotators.
 
     Parameters
     ----------
-    issues: list
-        list of tuples `(i, j)`, which represents the j'th token of the i'th sentence.
+    issues:
+        List of tuples ``(i, j)`` representing a label issue for the `j`-th token of the `i`-th sentence.
 
-    given_words: list
-        tokens in a nested-list format, such that `given_words[i]` contains the words of the i'th sentence from
-        the original file.
+        Same format as output by :py:func:`token_classification.filter.find_label_issues <cleanlab.token_classification.filter.find_label_issues>`
+        or :py:func:`token_classification.rank.issues_from_scores <cleanlab.token_classification.rank.issues_from_scores>`.
 
-    labels: list
-        list of given labels, such that `labels[i]` is a list containing the given labels of the tokens in the i'th
-    sentence, and has length equal to the number of given tokens of the i'th sentence. If provided, also
-    displays the given label of the token.
+    tokens:
+        Nested list such that `tokens[i]` is a list of tokens (strings/words) that comprise the `i`-th sentence.
 
-    pred_probs: list
-        list of model-predicted probability, such that `pred_probs[i]` contains the model-predicted probability of
-    the tokens in the i'th sentence, and has shape `(N, K)`, where `N` is the number of given tokens of the i'th
-    sentence, and `K` is the number of classes predicted by the model. If both `labels` and `pred_probs` are
-    provided, also evaluate each type of given/predicted label swap.
+    labels:
+        Optional nested list of given labels for all tokens in the same format as `labels` for :py:func:`token_classification.summary.display_issues <cleanlab.token_classification.summary.display_issues>`.
 
-    class_names: list, default=None
-        name of classes. If not provided, display the integer index for predicted and given labels.
+        If `labels` is provided, this function also displays given label of the token identified to commonly suffer from label issues.
 
-    top: int, default=10
-        maximum number of outputs to be printed.
+    pred_probs:
+        Optional list of model-predicted probabilities (np arrays) in the same format as `pred_probs` for
+        :py:func:`token_classification.summary.display_issues <cleanlab.token_classification.summary.display_issues>`.
 
-    exclude: list, default=[]
-        list of given/predicted label swaps to be excluded. For example, if `exclude=[(0, 1), (1, 0)]`, swaps between
-        class 0 and 1 are not displayed.
+        If both `labels` and `pred_probs` are provided, also reports each type of given/predicted label swap for tokens identified to commonly suffer from label issues.
 
-    verbose: bool, default=True
-        if set to True, also display each type of given/predicted label swap for each token.
+    class_names:
+        Optional length K list of names of each class, such that `class_names[i]` is the string name of the class corresponding to `labels` with value `i`.
+
+        If `class_names` is provided, display these string names for predicted and given labels, otherwise display the integer index of classes.
+
+    top:
+        Maximum number of tokens to print information for.
+
+    exclude:
+        Optional list of given/predicted label swaps (tuples) to be ignored in the same format as `exclude` for
+        :py:func:`token_classification.summary.display_issues <cleanlab.token_classification.summary.display_issues>`.
+
+    verbose:
+        Whether to also print out the token information in the returned DataFrame `df`.
 
     Returns
-    ---------
-    df: pandas.DataFrame
-        if both `labels` and `pred_probs` are provided, return a data frame with columns ['token', 'given_label',
-        'predicted_label', 'num_label_issues'], and each row contains the information for a specific token and
-        given/predicted label swap, ordered by the number of label issues in descending order. Otherwise, return
-        a data frame with columns ['token', 'num_label_issues'], and each row contains the information for a specific
-        token, ordered by the number of label issues in descending order.
+    -------
+    df:
+        If both `labels` and `pred_probs` are provided, DataFrame `df` contains columns ``['token', 'given_label',
+        'predicted_label', 'num_label_issues']``, and each row contains information for a specific token and
+        given/predicted label swap, ordered by the number of label issues inferred for this type of label swap.
 
+        Otherwise, `df` only has columns ['token', 'num_label_issues'], and each row contains the information for a specific
+        token, ordered by the number of total label issues involving this token.
+
+    Examples
+    --------
+    >>> from cleanlab.token_classification.summary import common_label_issues
+    >>> issues = [(2, 0), (0, 1)]
+    >>> tokens = [
+    ...     ["A", "?weird", "sentence"],
+    ...     ["A", "valid", "sentence"],
+    ...     ["An", "sentence", "with", "a", "typo"],
+    ... ]
+    >>> df = common_label_issues(issues, tokens)
+    >>> df
+        token  num_label_issues
+    0      An                 1
+    1  ?weird                 1
     """
     count: Dict[str, Any] = {}
     if not labels or not pred_probs:
         for issue in issues:
             i, j = issue
-            word = given_words[i][j]
+            word = tokens[i][j]
             if word not in count:
                 count[word] = 0
             count[word] += 1
@@ -187,7 +260,7 @@ def common_label_issues(
     n = pred_probs[0].shape[1]
     for issue in issues:
         i, j = issue
-        word = given_words[i][j]
+        word = tokens[i][j]
         label = labels[i][j]
         pred = pred_probs[i][j].argmax()
         if word not in count:
@@ -240,31 +313,47 @@ def common_label_issues(
     )
 
 
-def filter_by_token(token: str, issues: list, given_words: list) -> list:
+def filter_by_token(
+    token: str, issues: List[Tuple[int, int]], tokens: List[List[str]]
+) -> List[Tuple[int, int]]:
     """
-    Searches a specific token within all issue tokens
+    Return subset of label issues involving a particular token.
 
     Parameters
     ----------
-        token: string
-            the specific token the user is looking for
+    token:
+        A specific token you are interested in.
 
-        issues: list
-            list of tuples `(i, j)`, which represents the j'th token of the i'th sentence.
+    issues:
+        List of tuples ``(i, j)`` representing a label issue for the `j`-th token of the `i`-th sentence.
+        Same format as output by :py:func:`token_classification.filter.find_label_issues <cleanlab.token_classification.filter.find_label_issues>`
+        or :py:func:`token_classification.rank.issues_from_scores <cleanlab.token_classification.rank.issues_from_scores>`.
 
-        given_words: list
-            tokens in a nested-list format, such that `given_words[i]` contains the words of the i'th sentence from
-        the original file.
+    tokens:
+        Nested list such that `tokens[i]` is a list of tokens (strings/words) that comprise the `i`-th sentence.
 
     Returns
     ----------
-    returned_issues: list
-        list of tuples `(i, j)`, which represents the j'th token of the i'th sentence.
+    issues_subset:
+        List of tuples ``(i, j)`` representing a label issue for the `j`-th token of the `i`-th sentence, in the same format as `issues`.
+        But restricting to only those issues that involve the specified `token`.
 
+    Examples
+    --------
+    >>> from cleanlab.token_classification.summary import filter_by_token
+    >>> token = "?weird"
+    >>> issues = [(2, 0), (0, 1)]
+    >>> tokens = [
+    ...     ["A", "?weird", "sentence"],
+    ...     ["A", "valid", "sentence"],
+    ...     ["An", "sentence", "with", "a", "typo"],
+    ... ]
+    >>> filter_by_token(token, issues, tokens)
+    [(0, 1)]
     """
     returned_issues = []
     for issue in issues:
         i, j = issue
-        if token.lower() == given_words[i][j].lower():
+        if token.lower() == tokens[i][j].lower():
             returned_issues.append(issue)
     return returned_issues

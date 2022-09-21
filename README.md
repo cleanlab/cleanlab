@@ -39,9 +39,11 @@ Get started with: [documentation](https://docs.cleanlab.ai/), [tutorials](https:
 <details><summary><b>News! (2022) </b> -- cleanlab made accessible for everybody, not just ML researchers (<b>click to learn more</b>) </summary>
 <p>
 <ul>
+<li> <b>Sep 2022 📖</b> cleanlab 2.1.0 released! Added support for: data labeled by multiple annotators in cleanlab.multiannotator, token classification with text data in cleanlab.token_classification, CleanLearning with non-numpy-array data (e.g. pandas dataframes, keras datasets, etc) in cleanlab.classification.CleanLearning, and out-of-distribution detection in cleanlab.outlier! </li>
 <li> <b>April 2022 📖</b> cleanlab 2.0.0 released! Lays foundations for this library to grow into a general-purpose data-centric AI toolkit. </li>
 <li> <b>March 2022 📖</b>  Documentation migrated to new website: <a href="https://docs.cleanlab.ai/">docs.cleanlab.ai</a> with quickstart tutorials for image/text/audio/tabular data.</li>
 <li> <b>Feb 2022 💻</b> <a href="https://docs.cleanlab.ai/master/migrating/migrate_v2.html">APIs simplified</a> to make cleanlab accessible for everybody, not just ML researchers </li>
+<li> <b>Long-time cleanlab user?</b> Here's <a href="https://docs.cleanlab.ai/stable/migrating/migrate_v2.html">how to migrate</a> to cleanlab versions >= 2.0.0. </li>
 </ul>
 </p>
 </details>
@@ -70,9 +72,6 @@ Get started with: [documentation](https://docs.cleanlab.ai/), [tutorials](https:
 
 Release notes for past versions are available [here](https://github.com/cleanlab/cleanlab/releases). Details behind certain updates are explained in our [blog](https://cleanlab.ai/blog/).
 
-**Long-time cleanlab user?**
-
-* Here's a [guide](https://docs.cleanlab.ai/stable/migrating/migrate_v2.html) on how to migrate to cleanlab 2.0.0.
 
 ## So fresh, so cleanlab
 
@@ -215,7 +214,7 @@ cleanlab performance across 4 data distributions and 9 classifiers
 </summary>
 <br/>
 
-cleanlab is a general tool that can learn with noisy labels regardless of dataset distribution or classifier type: [examples/classifier\_comparison](https://github.com/cleanlab/examples/blob/master/classifier_comparison.ipynb).
+cleanlab is a general tool that can learn with noisy labels regardless of dataset distribution or classifier type: [examples/classifier\_comparison](https://github.com/cleanlab/examples/blob/master/classifier_comparison/classifier_comparison.ipynb).
 
 ![](https://raw.githubusercontent.com/cleanlab/assets/master/cleanlab/demo_cleanlab_across_datasets_and_classifiers.png)
 

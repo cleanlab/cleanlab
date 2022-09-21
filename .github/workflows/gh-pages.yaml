@@ -21,7 +21,11 @@ jobs:
           fetch-depth: 0
 
       - name: Install Pandoc
-        run: sudo apt-get install pandoc
+        # pin Pandoc version
+        run: |
+          cd /tmp
+          wget https://github.com/jgm/pandoc/releases/download/2.19.2/pandoc-2.19.2-linux-amd64.tar.gz
+          sudo tar xzvf pandoc-2.19.2-linux-amd64.tar.gz --strip-components 1 -C /usr/local
 
       - name: Setup Python
         uses: actions/setup-python@v2
@@ -164,3 +168,5 @@ jobs:
         with:
           directory: ./cleanlab-docs
           external_only: true
+          url_ignore_re: |
+            ^https://pradyunsg.me/

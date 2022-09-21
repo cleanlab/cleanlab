@@ -42,7 +42,7 @@ Want to write code to help improve cleanlab? Awesome!
 If there are [open issues][issues], you're more than welcome to work on those (a good place to start is those tagged "good first issue"). If you have your own ideas, that's great too! In that case, before working on substantial changes to the code base, it is *highly recommended* that you first
 [open an issue][issue] describing what you intend to work on.
 
-To contribute your code to the library, you'll want to create a new [Pull Request][pr].
+To contribute your code to the library, you'll want to [fork the repo](https://docs.github.com/en/get-started/quickstart/fork-a-repo), push your changes to your fork, and finally create a new [Pull Request][pr].
 
 Detailed development instructions, such as how to run the tests, are available
 in [DEVELOPMENT.md](DEVELOPMENT.md).

@@ -29,6 +29,7 @@ from sklearn.metrics import confusion_matrix
 import sklearn.base
 import numpy as np
 import warnings
+from typing import Tuple, Union
 
 from cleanlab.internal.util import (
     value_counts,
@@ -56,7 +57,7 @@ def num_label_issues(
     labels,
     pred_probs,
     confident_joint=None,
-):
+) -> int:
     """Estimates the number of label issues in the `labels` of a dataset.
 
     This method is **more accurate** than ``sum(find_label_issues())`` because its computed using only
@@ -97,8 +98,8 @@ def num_label_issues(
 
     Returns
     -------
-    int
-      An estimate of the number of label issues.
+    num_issues : int
+      The estimated number of examples with label issues in the dataset.
     """
 
     if confident_joint is None:
@@ -106,12 +107,12 @@ def num_label_issues(
     # Normalize confident joint so that it estimates the joint, p(labels,y)
     joint = confident_joint / float(np.sum(confident_joint))
     frac_issues = 1.0 - joint.trace()
-    num_issues = int(frac_issues * len(labels))
+    num_issues = np.rint(frac_issues * len(labels)).astype(int)
 
     return num_issues
 
 
-def calibrate_confident_joint(confident_joint, labels, *, multi_label=False):
+def calibrate_confident_joint(confident_joint, labels, *, multi_label=False) -> np.ndarray:
     """Calibrates any confident joint estimate ``P(label=i, true_label=j)`` such that
     ``np.sum(cj) == len(labels)`` and ``np.sum(cj, axis = 1) == np.bincount(labels)``.
 
@@ -169,7 +170,7 @@ def calibrate_confident_joint(confident_joint, labels, *, multi_label=False):
     return round_preserving_row_totals(calibrated_cj)
 
 
-def estimate_joint(labels, pred_probs, *, confident_joint=None, multi_label=False):
+def estimate_joint(labels, pred_probs, *, confident_joint=None, multi_label=False) -> np.ndarray:
     """
     Estimates the joint distribution of label noise ``P(label=i, true_label=j)`` guaranteed to:
 
@@ -210,9 +211,9 @@ def estimate_joint(labels, pred_probs, *, confident_joint=None, multi_label=Fals
 
     Returns
     -------
-    confident_joint : np.ndarray
+    confident_joint_distribution : np.ndarray
       An array of shape ``(K, K)`` representing an
-      estimate of the true joint of noisy and true labels.
+      estimate of the true joint distribution of noisy and true labels.
     """
 
     if confident_joint is None:
@@ -225,6 +226,7 @@ def estimate_joint(labels, pred_probs, *, confident_joint=None, multi_label=Fals
     else:
         calibrated_cj = calibrate_confident_joint(confident_joint, labels, multi_label=multi_label)
 
+    assert isinstance(calibrated_cj, np.ndarray)
     return calibrated_cj / float(np.sum(calibrated_cj))
 
 
@@ -235,7 +237,7 @@ def _compute_confident_joint_multi_label(
     thresholds=None,
     calibrate=True,
     return_indices_of_off_diagonals=False,
-):
+) -> Union[np.ndarray, Tuple[np.ndarray, list]]:
     """Computes the confident joint for multi_labeled data. Thus,
     input `labels` is a list of lists (or list of iterable).
     This is intended as a helper function. You should probably
@@ -303,9 +305,11 @@ def _compute_confident_joint_multi_label(
             np.any(np.delete(pred_probs_bool, k, axis=1)[k_in_l[k]], axis=1) for k in unique_classes
         ]
         # Map boolean mask to the indices of the examples, for each class k
-        indices_of_issues = [indices_k_in_l[k][issues_mask[k]] for k in unique_classes]
+        indices_of_issues_list = [indices_k_in_l[k][issues_mask[k]] for k in unique_classes]
         # Combine error indices for each class k into a single set of all the indices of errors
-        indices_of_issues = np.asarray(list(set([z for lst in indices_of_issues for z in lst])))
+        indices_of_issues = np.asarray(
+            list(set([z for lst in indices_of_issues_list for z in lst]))
+        )
         return confident_joint, sorted(indices_of_issues)
 
     return confident_joint
@@ -319,25 +323,16 @@ def compute_confident_joint(
     calibrate=True,
     multi_label=False,
     return_indices_of_off_diagonals=False,
-):
-    """Estimates ``P(labels,y)``, the confident counts of the latent
-    joint distribution of true and noisy labels
-    using observed labels and predicted probabilities pred_probs.
-
-    This estimate is called the confident joint.
-
-    When ``calibrate=True``, this method returns an estimate of
-    the latent true joint counts of noisy and true labels.
+) -> Union[np.ndarray, Tuple[np.ndarray, list]]:
+    """Estimates the confident counts of latent true vs observed noisy labels
+    for the examples in our dataset. This array of shape ``(K, K)`` is called the **confident joint**
+    and contains counts of examples in every class, confidently labeled as every other class.
+    These counts may subsequently be used to estimate the joint distribution of true and noisy labels
+    (by normalizing them to frequencies).
 
     Important: this function assumes that `pred_probs` are out-of-sample
     holdout probabilities. This can be :ref:`done with cross validation <pred_probs_cross_val>`. If
     the probabilities are not computed out-of-sample, overfitting may occur.
-
-    This function estimates the joint of shape ``(K, K)``. This is the
-    confident counts of examples in every class, labeled as every other class.
-
-    Under certain conditions, estimates are exact, and in most
-    conditions, the estimate is within 1 percent of the truth.
 
     Parameters
     ----------
@@ -373,6 +368,8 @@ def compute_confident_joint(
     calibrate : bool, default=True
         Calibrates confident joint estimate ``P(label=i, true_label=j)`` such that
         ``np.sum(cj) == len(labels)`` and ``np.sum(cj, axis = 1) == np.bincount(labels)``.
+        When ``calibrate=True``, this method returns an estimate of
+        the latent true joint counts of noisy and true labels.
 
     multi_label : bool, optional
       If ``True``, labels should be an iterable (e.g. list) of iterables, containing a
@@ -389,6 +386,13 @@ def compute_confident_joint(
       of confident joint as a baseline proxy for the label issues. This
       sometimes works as well as ``filter.find_label_issues(confident_joint)``.
 
+    Returns
+    -------
+    confident_joint_counts : np.ndarray
+      An array of shape ``(K, K)`` representing counts of examples
+      for which we are confident about their given and true label.
+      If `return_indices_of_off_diagonals` is ``True``, `confident_joint_counts` is the first element of returned tuple
+      and second element is another array of indices counted in off-diagonals of confident joint.
 
     Note
     ----
@@ -483,7 +487,7 @@ def estimate_latent(
     *,
     py_method="cnt",
     converge_latent_estimates=False,
-):
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Computes the latent prior ``p(y)``, the noise matrix ``P(labels|y)`` and the
     inverse noise matrix ``P(y|labels)`` from the `confident_joint` ``count(labels, y)``. The
     `confident_joint` can be estimated by `compute_confident_joint <cleanlab.count.compute_confident_joint>`
@@ -560,7 +564,7 @@ def estimate_py_and_noise_matrices_from_probabilities(
     converge_latent_estimates=True,
     py_method="cnt",
     calibrate=True,
-):
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """Computes the confident counts
     estimate of latent variables `py` and the noise rates
     using observed labels and predicted probabilities, `pred_probs`.
@@ -620,8 +624,8 @@ def estimate_py_and_noise_matrices_from_probabilities(
 
     Returns
     ------
-    tuple
-        A tuple of (py, noise_matrix, inverse_noise_matrix, confident_joint)."""
+    estimates : tuple
+        A tuple of arrays: (`py`, `noise_matrix`, `inverse_noise_matrix`, `confident_joint`)."""
 
     confident_joint = compute_confident_joint(
         labels=labels,
@@ -635,6 +639,7 @@ def estimate_py_and_noise_matrices_from_probabilities(
         py_method=py_method,
         converge_latent_estimates=converge_latent_estimates,
     )
+    assert isinstance(confident_joint, np.ndarray)
 
     return py, noise_matrix, inv_noise_matrix, confident_joint
 
@@ -650,7 +655,7 @@ def estimate_confident_joint_and_cv_pred_proba(
     calibrate=True,
     clf_kwargs={},
     validation_func=None,
-):
+) -> Tuple[np.ndarray, np.ndarray]:
     """Estimates ``P(labels, y)``, the confident counts of the latent
     joint distribution of true and noisy labels
     using observed `labels` and predicted probabilities `pred_probs`.
@@ -721,7 +726,7 @@ def estimate_confident_joint_and_cv_pred_proba(
 
     Returns
     ------
-    tuple
+    estimates : tuple
       Tuple of two numpy arrays in the form:
       (joint counts matrix, predicted probability matrix)"""
 
@@ -810,6 +815,8 @@ def estimate_confident_joint_and_cv_pred_proba(
         thresholds=thresholds,
         calibrate=calibrate,
     )
+    assert isinstance(confident_joint, np.ndarray)
+    assert isinstance(pred_probs, np.ndarray)
 
     return confident_joint, pred_probs
 
@@ -826,7 +833,7 @@ def estimate_py_noise_matrices_and_cv_pred_proba(
     seed=None,
     clf_kwargs={},
     validation_func=None,
-):
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """This function computes the out-of-sample predicted
     probability ``P(label=k|x)`` for every example x in `X` using cross
     validation while also computing the confident counts noise
@@ -895,8 +902,8 @@ def estimate_py_noise_matrices_and_cv_pred_proba(
 
     Returns
     ------
-    tuple
-      A tuple of five arrays (py, noise_matrix, inverse_noise_matrix, confident joint, predicted probability matrix).
+    estimates: tuple
+      A tuple of five arrays (py, noise matrix, inverse noise matrix, confident joint, predicted probability matrix).
     """
 
     confident_joint, pred_probs = estimate_confident_joint_and_cv_pred_proba(
@@ -929,7 +936,7 @@ def estimate_cv_predicted_probabilities(
     seed=None,
     clf_kwargs={},
     validation_func=None,
-):
+) -> np.ndarray:
     """This function computes the out-of-sample predicted
     probability [P(label=k|x)] for every example in X using cross
     validation. Output is a np.ndarray of shape (N, K) where N is
@@ -995,7 +1002,7 @@ def estimate_noise_matrices(
     seed=None,
     clf_kwargs={},
     validation_func=None,
-):
+) -> Tuple[np.ndarray, np.ndarray]:
     """Estimates the `noise_matrix` of shape ``(K, K)``. This is the
     fraction of examples in every class, labeled as every other class. The
     `noise_matrix` is a conditional probability matrix for ``P(label=k_s|true_label=k_y)``.
@@ -1053,8 +1060,8 @@ def estimate_noise_matrices(
 
     Returns
     ------
-    tuple
-      A tuple containing (noise_matrix, inv_noise_matrix)."""
+    estimates : tuple
+      A tuple containing arrays (`noise_matrix`, `inv_noise_matrix`)."""
 
     return estimate_py_noise_matrices_and_cv_pred_proba(
         X=X,
@@ -1077,7 +1084,7 @@ def _converge_estimates(
     *,
     inv_noise_matrix_iterations=5,
     noise_matrix_iterations=3,
-):
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Updates py := P(true_label=k) and both `noise_matrix` and `inverse_noise_matrix`
     to be numerically consistent with each other, by iteratively updating their estimates based on
     the mathematical relationships between them.
@@ -1130,7 +1137,8 @@ def _converge_estimates(
 
     Returns
     ------
-        Three np.ndarrays of the form (py, noise_matrix, inverse_noise_matrix) all
+    estimates: tuple
+        Three arrays of the form (`py`, `noise_matrix`, `inverse_noise_matrix`) all
         having numerical agreement in terms of their mathematical relations."""
 
     for j in range(noise_matrix_iterations):

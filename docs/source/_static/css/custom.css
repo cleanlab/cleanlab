@@ -1,0 +1,21 @@
+details {
+    margin-bottom: 0.75rem;
+    margin-top: 0.5rem;
+}
+
+details summary {
+    cursor: pointer;
+}
+
+details summary > * {
+    display: inline;
+}
+
+details[open] summary {
+    padding-bottom: 0.75rem;
+    border-bottom: 2px dashed #ccc;
+}
+
+details[open] {
+    border-bottom: 2px dashed #ccc;
+}

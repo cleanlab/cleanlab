@@ -15,52 +15,54 @@
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
 
-# ## Latent Algebra
-#
-# #### Contains mathematical functions relating the latent terms,
-# $p(labels), P_{labels \vert y}, P_{y \vert labels}, p(true_labels)$, etc. together.
-# For every function here, if the inputs are exact, the output is guaranteed
-# to be exact. Every function herein is the computational equivalent of a
-# mathematical equation having a closed, exact form. If the inputs are
-# inexact, the error will of course propagate.
+"""
+Contains mathematical functions relating the latent terms,
+``P(given_label)``, ``P(given_label | true_label)``, ``P(true_label | given_label)``, ``P(true_label)``, etc. together.
+For every function here, if the inputs are exact, the output is guaranteed to be exact. 
+Every function herein is the computational equivalent of a mathematical equation having a closed, exact form. 
+If the inputs are inexact, the error will of course propagate.
+Throughout `K` denotes the number of classes in the classification task.
+"""
 
+import warnings
 import numpy as np
+from typing import Any, Tuple
 
 from cleanlab.internal.util import value_counts, clip_values, clip_noise_rates
-import warnings
 
 
-def compute_ps_py_inv_noise_matrix(labels, noise_matrix):
-    """Compute ps := P(labels=k), py := P(true_labels=k), and the inverse noise matrix.
+def compute_ps_py_inv_noise_matrix(
+    labels, noise_matrix
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Compute ``ps := P(labels=k), py := P(true_labels=k)``, and the inverse noise matrix.
 
     Parameters
     ----------
     labels : np.ndarray
           A discrete vector of noisy labels, i.e. some labels may be erroneous.
-          *Format requirements*: for dataset with K classes, labels must be in {0,1,...,K-1}.
+          *Format requirements*: for dataset with `K` classes, labels must be in ``{0,1,...,K-1}``.
 
-    noise_matrix : np.ndarray of shape (K, K), K = number of classes
-        A conditional probability matrix of the form P(label=k_s|true_label=k_y) containing
+    noise_matrix : np.ndarray
+        A conditional probability matrix (of shape ``(K, K)``) of the form ``P(label=k_s|true_label=k_y)`` containing
         the fraction of examples in every class, labeled as every other class.
         Assumes columns of noise_matrix sum to 1."""
 
-    # 'ps' is p(labels=k)
-    ps = value_counts(labels) / float(len(labels))
-
+    ps = value_counts(labels) / float(len(labels))  # p(labels=k)
     py, inverse_noise_matrix = compute_py_inv_noise_matrix(ps, noise_matrix)
     return ps, py, inverse_noise_matrix
 
 
-def compute_py_inv_noise_matrix(ps, noise_matrix):
+def compute_py_inv_noise_matrix(ps, noise_matrix) -> Tuple[np.ndarray, np.ndarray]:
     """Compute py := P(true_label=k), and the inverse noise matrix.
 
     Parameters
     ----------
-    ps : np.ndarray (shape (K, ) or (1, K))
-        The fraction (prior probability) of each observed, NOISY class P(labels = k).
+    ps : np.ndarray
+        Array of shape ``(K, )`` or ``(1, K)``.
+        The fraction (prior probability) of each observed, NOISY class ``P(labels = k)``.
 
-    noise_matrix : np.ndarray of shape (K, K), K = number of classes
-        A conditional probability matrix of the form P(label=k_s|true_label=k_y) containing
+    noise_matrix : np.ndarray
+        A conditional probability matrix (of shape ``(K, K)``) of the form ``P(label=k_s|true_label=k_y)`` containing
         the fraction of examples in every class, labeled as every other class.
         Assumes columns of noise_matrix sum to 1."""
 
@@ -77,7 +79,7 @@ def compute_py_inv_noise_matrix(ps, noise_matrix):
     return py, compute_inv_noise_matrix(py=py, noise_matrix=noise_matrix, ps=ps)
 
 
-def compute_inv_noise_matrix(py, noise_matrix, *, ps=None):
+def compute_inv_noise_matrix(py, noise_matrix, *, ps=None) -> np.ndarray:
     """Compute the inverse noise matrix if py := P(true_label=k) is given.
 
     Parameters
@@ -85,15 +87,14 @@ def compute_inv_noise_matrix(py, noise_matrix, *, ps=None):
     py : np.ndarray (shape (K, 1))
         The fraction (prior probability) of each TRUE class label, P(true_label = k)
 
-    noise_matrix : np.ndarray of shape (K, K), K = number of classes
-        A conditional probability matrix of the form P(label=k_s|true_label=k_y) containing
+    noise_matrix : np.ndarray
+        A conditional probability matrix (of shape ``(K, K)``) of the form ``P(label=k_s|true_label=k_y)`` containing
         the fraction of examples in every class, labeled as every other class.
         Assumes columns of noise_matrix sum to 1.
 
-    ps : np.ndarray (shape (K, 1))
-        The fraction (prior probability) of each NOISY given label, P(labels = k).
-        ps is easily computable from py and should only be provided if it has
-        already been precomputed, to increase code efficiency.
+    ps : np.ndarray
+        Array of shape ``(K, 1)`` containing the fraction (prior probability) of each NOISY given label, ``P(labels = k)``.
+        `ps` is easily computable from py and should only be provided if it has already been precomputed, to increase code efficiency.
 
     Examples
     --------
@@ -128,32 +129,31 @@ def compute_inv_noise_matrix(py, noise_matrix, *, ps=None):
     return clip_noise_rates(inverse_noise_matrix)
 
 
-def compute_noise_matrix_from_inverse(ps, inverse_noise_matrix, *, py=None):
-    """Compute the noise matrix P(label=k_s|true_label=k_y).
+def compute_noise_matrix_from_inverse(ps, inverse_noise_matrix, *, py=None) -> np.ndarray:
+    """Compute the noise matrix ``P(label=k_s|true_label=k_y)``.
 
     Parameters
     ----------
-    py : np.ndarray (shape (K, 1))
-        The fraction (prior probability) of each TRUE class label, P(true_label = k)
+    py : np.ndarray
+        Array of shape ``(K, 1)`` containing the fraction (prior probability) of each TRUE class label, ``P(true_label = k)``.
 
-    inverse_noise_matrix : np.ndarray of shape (K, K), K = number of classes
-        A conditional probability matrix of the form P(true_label=k_y|label=k_s) representing
+    inverse_noise_matrix : np.ndarray
+        A conditional probability matrix (of shape ``(K, K)``) of the form P(true_label=k_y|label=k_s) representing
         the estimated fraction observed examples in each class k_s, that are
         mislabeled examples from every other class k_y. If None, the
         inverse_noise_matrix will be computed from pred_probs and labels.
         Assumes columns of inverse_noise_matrix sum to 1.
 
-    ps : np.ndarray (shape (K, 1))
-        The fraction (prior probability) of each observed NOISY label, P(labels = k).
-        ps is easily computable from py and should only be provided if it has
-        already been precomputed, to increase code efficiency.
+    ps : np.ndarray
+        Array of shape ``(K, 1)`` containing the fraction (prior probability) of each observed NOISY label, P(labels = k).
+        `ps` is easily computable from `py` and should only be provided if it has already been precomputed, to increase code efficiency.
 
     Returns
     -------
-    noise_matrix : np.ndarray of shape (K, K), K = number of classes
-        A conditional probability matrix of the form P(label=k_s|true_label=k_y) containing
+    noise_matrix : np.ndarray 
+        Array of shape ``(K, K)``, where `K` = number of classes, whose columns sum to 1.
+        A conditional probability matrix of the form ``P(label=k_s|true_label=k_y)`` containing
         the fraction of examples in every class, labeled as every other class.
-        Columns of noise_matrix sum to 1.
 
     Examples
     --------
@@ -191,44 +191,46 @@ def compute_noise_matrix_from_inverse(ps, inverse_noise_matrix, *, py=None):
 
 def compute_py(
     ps, noise_matrix, inverse_noise_matrix, *, py_method="cnt", true_labels_class_counts=None
-):
-    """Compute py := P(true_labels=k) from ps := P(labels=k), noise_matrix, and the
-    inverse noise matrix.
+) -> np.ndarray:
+    """Compute ``py := P(true_labels=k)`` from ``ps := P(labels=k)``, `noise_matrix`, and
+    `inverse_noise_matrix`.
 
-    This method is ** ROBUST ** when py_method = 'cnt'
+    This method is ** ROBUST ** when ``py_method = 'cnt'``
     It may work well even when the noise matrices are estimated
     poorly by using the diagonals of the matrices
     instead of all the probabilities in the entire matrix.
 
     Parameters
     ----------
-    ps : np.ndarray (shape (K, ) or (1, K))
-        The fraction (prior probability) of each observed, noisy label, P(labels = k)
+    ps : np.ndarray
+        Array of shape ``(K, )`` or ``(1, K)`` containing the fraction (prior probability) of each observed, noisy label, P(labels = k)
 
-    noise_matrix : np.ndarray of shape (K, K), K = number of classes
-        A conditional probability matrix of the form P(label=k_s|true_label=k_y) containing
+    noise_matrix : np.ndarray
+        A conditional probability matrix ( of shape ``(K, K)``) of the form ``P(label=k_s|true_label=k_y)`` containing
         the fraction of examples in every class, labeled as every other class.
         Assumes columns of noise_matrix sum to 1.
 
     inverse_noise_matrix : np.ndarray of shape (K, K), K = number of classes
-        A conditional probability matrix of the form P(true_label=k_y|label=k_s) representing
-        the estimated fraction observed examples in each class k_s, that are
-        mislabeled examples from every other class k_y. If None, the
-        inverse_noise_matrix will be computed from pred_probs and labels.
-        Assumes columns of inverse_noise_matrix sum to 1.
+        A conditional probability matrix ( of shape ``(K, K)``) of the form ``P(true_label=k_y|label=k_s)`` representing
+        the estimated fraction observed examples in each class `k_s`, that are
+        mislabeled examples from every other class `k_y`. If ``None``, the
+        inverse_noise_matrix will be computed from `pred_probs` and `labels`.
+        Assumes columns of `inverse_noise_matrix` sum to 1.
 
     py_method : str (Options: ["cnt", "eqn", "marginal", "marginal_ps"])
-        How to compute the latent prior p(true_label=k). Default is "cnt" as it often
+        How to compute the latent prior ``p(true_label=k)``. Default is "cnt" as it often
         works well even when the noise matrices are estimated poorly by using
         the matrix diagonals instead of all the probabilities.
 
-    true_labels_class_counts : np.ndarray (shape (K, ) or (1, K))
-        The marginal counts of the confident joint (like cj.sum(axis = 0))
+    true_labels_class_counts : np.ndarray
+        Array of shape ``(K, )`` or ``(1, K)`` containing the marginal counts of the confident joint
+        (like ``cj.sum(axis = 0)``).
 
     Returns
     -------
-    py : np.ndarray (shape (K, ) or (1, K))
-        The fraction (prior probability) of each TRUE class label, P(true_label = k)."""
+    py : np.ndarray
+        Array of shape ``(K, )`` or ``(1, K)``.
+        The fraction (prior probability) of each TRUE class label, ``P(true_label = k)``."""
 
     if len(np.shape(ps)) > 2 or (len(np.shape(ps)) == 2 and np.shape(ps)[0] != 1):
         w = "Input parameter np.ndarray ps has shape " + str(np.shape(ps))
@@ -266,8 +268,8 @@ def compute_py(
 
 
 def compute_pyx(pred_probs, noise_matrix, inverse_noise_matrix):
-    """Compute pyx := P(true_label=k|x) from pred_probs := P(label=k|x), and the noise_matrix and
-    inverse noise matrix.
+    """Compute ``pyx := P(true_label=k|x)`` from ``pred_probs := P(label=k|x)``, `noise_matrix` and
+    `inverse_noise_matrix`.
 
     This method is ROBUST - meaning it works well even when the
     noise matrices are estimated poorly by only using the diagonals of the
@@ -275,29 +277,29 @@ def compute_pyx(pred_probs, noise_matrix, inverse_noise_matrix):
 
     Parameters
     ----------
-    pred_probs : np.ndarray (shape (N, K))
-        P(label=k|x) is a matrix with K model-predicted probabilities.
+    pred_probs : np.ndarray
+        ``P(label=k|x)`` is a ``(N x K)`` matrix with K model-predicted probabilities.
         Each row of this matrix corresponds to an example `x` and contains the model-predicted
         probabilities that `x` belongs to each possible class.
         The columns must be ordered such that these probabilities correspond to class 0,1,2,...
         `pred_probs` should have been computed using 3 (or higher) fold cross-validation.
 
-    noise_matrix : np.ndarray of shape (K, K), K = number of classes
-        A conditional probability matrix of the form P(label=k_s|true_label=k_y) containing
+    noise_matrix : np.ndarray
+        A conditional probability matrix (of shape ``(K, K)``) of the form ``P(label=k_s|true_label=k_y)`` containing
         the fraction of examples in every class, labeled as every other class.
-        Assumes columns of noise_matrix sum to 1.
+        Assumes columns of `noise_matrix` sum to 1.
 
-    inverse_noise_matrix : np.ndarray of shape (K, K), K = number of classes
-        A conditional probability matrix of the form P(true_label=k_y|label=k_s) representing
-        the estimated fraction observed examples in each class k_s, that are
-        mislabeled examples from every other class k_y. If None, the
-        inverse_noise_matrix will be computed from pred_probs and labels.
-        Assumes columns of inverse_noise_matrix sum to 1.
+    inverse_noise_matrix : np.ndarray
+        A conditional probability matrix (of shape ``(K, K)``)  of the form ``P(true_label=k_y|label=k_s)`` representing
+        the estimated fraction observed examples in each class `k_s`, that are
+        mislabeled examples from every other class `k_y`. If None, the
+        inverse_noise_matrix will be computed from `pred_probs` and `labels`.
+        Assumes columns of `inverse_noise_matrix` sum to 1.
 
     Returns
     -------
-    pyx : np.ndarray (shape (N, K))
-        P(true_label=k|x) is a matrix with K model-predicted probabilities.
+    pyx : np.ndarray
+        ``P(true_label=k|x)`` is a  ``(N, K)`` matrix of model-predicted probabilities.
         Each row of this matrix corresponds to an example `x` and contains the model-predicted
         probabilities that `x` belongs to each possible class.
         The columns must be ordered such that these probabilities correspond to class 0,1,2,...

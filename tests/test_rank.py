@@ -21,6 +21,7 @@ from cleanlab.internal.label_quality_utils import _subtract_confident_thresholds
 from cleanlab.benchmarking.noise_generation import generate_noise_matrix_from_trace
 from cleanlab.benchmarking.noise_generation import generate_noisy_labels
 from cleanlab import count
+from cleanlab import outlier
 from sklearn.neighbors import NearestNeighbors
 
 
@@ -381,134 +382,40 @@ def test_unsupported_method_for_adjust_pred_probs():
         _ = rank.get_label_quality_scores(labels, pred_probs, adjust_pred_probs=True, method=method)
 
 
-def test_get_outlier_scores():
+def test_find_top_issues():
+    DEFAULT_TOP = 10  # CHANGE THIS IS THE DEFAULT CHANGES
     X_train = data["X_train"]
     X_test = data["X_test"]
+    X_ood = np.array([[999999999.0, 999999999.0]])  # Create OOD datapoint
+    X_test_with_ood = np.vstack([X_test, X_ood])  # Add OOD datapoint to X_test
 
-    # Create OOD datapoint
-    X_ood = np.array([[999999999.0, 999999999.0]])
-
-    # Add OOD datapoint to X_test
-    X_test_with_ood = np.vstack([X_test, X_ood])
-
-    # Fit nearest neighbors on X_train
+    # Create OOD object (use knn without cosine metric to identify X_ood correctly)
     knn = NearestNeighbors(n_neighbors=5).fit(X_train)
+    ood_outlier = outlier.OutOfDistribution(params={"knn": knn})
+    ood_scores = ood_outlier.score(features=X_test_with_ood)
 
-    # Get KNN distance as outlier score
-    k = 5
-    knn_distance_to_score = rank.get_outlier_scores(features=X_test_with_ood, knn=knn, k=k)
+    # Get top ood score for outlier example
+    top_outlier_indices = rank.find_top_issues(quality_scores=ood_scores, top=len(ood_scores))
+    top_outlier_indices_more_k = rank.find_top_issues(quality_scores=ood_scores, top=100000)
 
-    # Checking that X_ood has the smallest outlier score among all the datapoints
-    assert np.argmin(knn_distance_to_score) == (knn_distance_to_score.shape[0] - 1)
+    ### Check top scores are calculated correctly
 
-    # Get KNN distance as outlier score without passing k
-    # By default k=10 is used or k = n_neighbors when k > n_neighbors extracted from the knn
-    knn_distance_to_score = rank.get_outlier_scores(features=X_test_with_ood, knn=knn)
-    # Checking that X_ood has the smallest outlier score among all the datapoints
-    assert np.argmin(knn_distance_to_score) == (knn_distance_to_score.shape[0] - 1)
+    # Checking that X_ood has the smallest outlier score among all the datapoints and outlier scores identifies that
+    assert np.argmin(ood_scores) == (ood_scores.shape[0] - 1)
+    assert len(top_outlier_indices) == len(ood_scores)
+    assert top_outlier_indices[0] == np.argmin(ood_scores)
 
-    # Get KNN distance as outlier score passing k and t > 1
-    large_t_knn_distance_to_score = rank.get_outlier_scores(
-        features=X_test_with_ood, knn=knn, k=k, t=5
-    )
+    # Checking k > len(ood_scores) is same as sorted list of indices
+    assert len(top_outlier_indices) == len(top_outlier_indices_more_k)
+    assert (top_outlier_indices == top_outlier_indices_more_k).all()
 
-    # Checking that X_ood has the smallest outlier score among all the datapoints
-    assert np.argmin(large_t_knn_distance_to_score) == (large_t_knn_distance_to_score.shape[0] - 1)
+    # Get k = DEFAULT_TOP ood scores
+    top_outlier_indices = rank.find_top_issues(ood_scores)
+    assert len(top_outlier_indices) == DEFAULT_TOP
 
-    # Get KNN distance as outlier score passing k and t < 1
-    small_t_knn_distance_to_score = rank.get_outlier_scores(
-        features=X_test_with_ood, knn=knn, k=k, t=0.002
-    )
-
-    # Checking that X_ood has the smallest outlier score among all the datapoints
-    assert np.argmin(small_t_knn_distance_to_score) == (small_t_knn_distance_to_score.shape[0] - 1)
-    assert np.sum(small_t_knn_distance_to_score) >= np.sum(large_t_knn_distance_to_score)
-
-
-@pytest.mark.filterwarnings("ignore::UserWarning")
-def test_default_k_and_model_get_outlier_scores():
-    # Testing using 'None' as model param and correct setting of default k as max_k
-
-    # Create dataset with OOD example
-    X = data["X_test"]
-    X_ood = np.array([[999999999.0, 999999999.0]])
-    X_with_ood = np.vstack([X, X_ood])
-
-    instantiated_k = 10
-
-    # Create NN class object with small instantiated k and fit on data
-    knn = NearestNeighbors(n_neighbors=instantiated_k, metric="cosine").fit(X_with_ood)
-
-    avg_knn_distances_default_model = rank.get_outlier_scores(
-        features=X_with_ood,
-        k=instantiated_k,  # this should use default estimator (same as above) and k = instantiated_k
-    )
-
-    avg_knn_distances_default_k, knn2 = rank.get_outlier_scores(
-        features=X_with_ood,  # default k should be set to 10 == instantiated_k
-        return_estimator=True,
-    )
-    assert isinstance(knn2, type(knn))
-
-    avg_knn_distances = rank.get_outlier_scores(
-        features=None,
-        knn=knn,
-        k=25,  # this should throw user warn, k should be set to instantiated_k
-    )
-
-    # Score sums should be equal because the three estimators used have identical params and fit
-    assert avg_knn_distances.sum() == avg_knn_distances_default_model.sum()
-    assert avg_knn_distances_default_k.sum() == avg_knn_distances.sum()
-
-    avg_knn_distances_large_k = rank.get_outlier_scores(
-        features=X_with_ood,
-        k=25,  # this should use default estimator and k = 25
-    )
-
-    avg_knn_distances_tiny_k = rank.get_outlier_scores(
-        features=None,
-        knn=knn,
-        k=1,  # this should use knn estimator and k = 1
-    )
-
-    avg_knn_distances_tiny_k_default = rank.get_outlier_scores(
-        features=X_with_ood,
-        k=1,  # this should use default estimator and k = 1
-    )
-
-    # Score sums should be different because k = user param for estimators and k != 10.
-    assert avg_knn_distances_tiny_k.sum() != avg_knn_distances.sum()
-    assert avg_knn_distances_large_k.sum() != avg_knn_distances.sum()
-    assert avg_knn_distances_tiny_k_default.sum() != avg_knn_distances_default_model.sum()
-
-    # Test that when knn is None ValueError raised if passed in k > len(features)
-    try:
-        rank.get_outlier_scores(
-            features=X_with_ood,
-            knn=None,
-            k=len(X_with_ood) + 1,  # this should throw ValueError, k ! > len(features)
-        )
-    except Exception as e:
-        assert "nearest neighbors" in str(e)
-        with pytest.raises(ValueError) as e:
-            rank.get_outlier_scores(
-                features=X_with_ood,
-                knn=None,
-                k=len(X_with_ood) + 1,  # this should throw ValueError, k ! > len(features)
-            )
-
-
-def test_not_enough_info_get_outlier_scores():
-    # Testing calling function with not enough information to calculate outlier scores
-    try:
-        rank.get_outlier_scores(
-            features=None,
-            knn=None,  # this should throw TypeError because knn=None and features=None
-        )
-    except Exception as e:
-        assert "Both knn and features arguments" in str(e)
-        with pytest.raises(ValueError) as e:
-            rank.get_outlier_scores(
-                features=None,
-                knn=None,  # this should throw TypeError because knn=None and features=None
-            )
+    # Get k < len(ood_scores) ood scores
+    # Assert top k scores are consistent with different length scores vectors
+    for k in [0, 1, 3]:
+        top_outlier_indices_k = rank.find_top_issues(quality_scores=ood_scores, top=k)
+        assert len(top_outlier_indices_k) == k
+        assert (top_outlier_indices_k == top_outlier_indices[:k]).all()  # scores consistent

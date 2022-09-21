@@ -34,27 +34,37 @@ pip install -r docs/requirements.txt
 
 4. If you don't already have it, install [wget](https://www.gnu.org/software/wget/). This can be done with `brew` on macOS: `brew install wget`
 
-5. **[Optional]** [Create a new branch](https://www.atlassian.com/git/tutorials/using-branches), make your code changes, and then `git commit` them. **ONLY COMMITTED CHANGES WILL BE REFLECTED IN THE DOCS BUILD.**
+5. **[Optional]** [Create a new branch](https://www.atlassian.com/git/tutorials/using-branches), make your code changes, and then `git commit` them. **ONLY COMMITTED CHANGES WILL BE REFLECTED IN THE DOCS BUILD WITH `sphinx-multiversion`.** Instead use `sphinx-build` if you don't want to commit some test changes but still want to see their corresponding docs.
 
-6. Build the docs with [`sphinx-multiversion`](https://holzhaus.github.io/sphinx-multiversion):
+6. Build the docs with either
+   1. [`sphinx-multiversion`](https://holzhaus.github.io/sphinx-multiversion):
 
-   * If you're building from a **branch** (usually the `master` branch):
+      * If you're building from a **branch** (usually the `master` branch):
 
-   ```
-   sphinx-multiversion docs/source cleanlab-docs -D smv_branch_whitelist=YOUR_BRANCH_NAME -D smv_tag_whitelist=None
-   ```
+      ```
+      sphinx-multiversion docs/source cleanlab-docs -D smv_branch_whitelist=YOUR_BRANCH_NAME -D smv_tag_whitelist=None
+      ```
 
-   * If you're building from a **tag** (usually the tag of the stable release):
+      * If you're building from a **tag** (usually the tag of the stable release):
 
-   ```
-   sphinx-multiversion docs/source cleanlab-docs -D smv_branch_whitelist=None -D smv_tag_whitelist=YOUR_TAG_NAME
-   ```
+      ```
+      sphinx-multiversion docs/source cleanlab-docs -D smv_branch_whitelist=None -D smv_tag_whitelist=YOUR_TAG_NAME
+      ```
 
-   Note: To also build docs for another branch or tag, run the above command again changing only the `YOUR_BRANCH_NAME` or `YOUR_TAG_NAME` placeholder.
+      Note: To also build docs for another branch or tag, run the above command again changing only the `YOUR_BRANCH_NAME` or `YOUR_TAG_NAME` placeholder.
+
+   2. [`sphinx-build`](https://www.sphinx-doc.org/en/master/man/sphinx-build.html):
+
+      * If you want to test out some changes without comitting them, then you can build from your current working directory tree (where you have any un-committed changes locally saved):
+
+      ```
+      sphinx-build docs/source cleanlab-docs
+      ```
+   This won't properly produce/display other versions of the docs, but that shouldn't matter if you are just trying to test some local edits to the current version. If some notebooks are giving you trouble (eg. due to runtime or dependencies), you can simply delete those .ipynb files before calling `sphinx-build`.
 
    **Fast build**: Executing the Jupyter Notebooks (i.e., the `.ipynb` files) that make up some portion of the docs, such as the tutorials, takes a long time. If you want to skip rendering these, set the environment variable `SKIP_NOTEBOOKS=1`. You can either set this using `export SKIP_NOTEBOOKS=1` or do this inline with `SKIP_NOTEBOOKS=1 sphinx-multiversion ...`.
 
-   While building the docs, your terminal might output:
+   While building the docs with `sphinx-multiversion`, your terminal might output:
    * `unknown config value 'smv_branch_whitelist' in override, ignoring`, and
    * `unknown config value 'smv_tag_whitelist' in override, ignoring`.
 
@@ -84,28 +94,40 @@ pip install -r docs/requirements.txt
 
 9. The docs for each branch and/or tag can be found in the `cleanlab-docs/` directory, open any of the `index.html` in your browser to view the docs:
 
-```
-cleanlab-docs
-|   index.html (redirects to stable release of the docs)
-|   versioning.js (for dynamic versioning and version warning banner)
-|
-└───YOUR_BRANCH_NAME (e.g. master)
-│       index.html
-│       ...
-│
-└───YOUR_TAG_NAME_1 (e.g. your stable release tag name)
-│       index.html
-│       ...
-│
-└───YOUR_TAG_NAME_2 (e.g. an old release tag name)
-│       index.html
-│       ...
-│
-└───stable
-│       index.html (redirects to stable release of the docs)
-│
-└───...
-```
+   ```
+   cleanlab-docs
+   |   index.html (redirects to stable release of the docs)
+   |   versioning.js (for dynamic versioning and version warning banner)
+   |
+   └───YOUR_BRANCH_NAME (e.g. master)
+   │       index.html
+   │       ...
+   │
+   └───YOUR_TAG_NAME_1 (e.g. your stable release tag name)
+   │       index.html
+   │       ...
+   │
+   └───YOUR_TAG_NAME_2 (e.g. an old release tag name)
+   │       index.html
+   │       ...
+   │
+   └───stable
+   │       index.html (redirects to stable release of the docs)
+   │
+   └───...
+   ```
+
+   Note: If you're building the docs from a working directory tree, the docs will be found at the top of the `cleanlab-docs/` directory:
+
+   ```
+   cleanlab-docs
+   |   index.html (docs for the working directory tree)
+   |   ...
+   |
+   └───...
+   ```
+
+   This may overwrite some of the files in `cleanlab-docs/`, like `index.html` from the previous step.
 
 # Build the `cleanlab` docs **remotely** on GitHub
 
@@ -198,9 +220,12 @@ We've configured GitHub Actions to run the GitHub Pages workflow (gh-pages.yaml)
 
 12. Deploy `cleanlab-docs/` folder to the `cleanlab/cleanlab-docs` repo's `master branch`.
 
-# Tips for editing docs
+
+# Tips for editing docs/tutorials
 
 ## Tutorials
+
+Each tutorial is a Jupyter notebook (unexecuted .ipynb file) that will be executed during CI for the version displayed at docs.cleanlab.ai using [nbsphinx](https://github.com/cleanlab/cleanlab/blob/31c939ff9aa487e9670b1a0f3f711a1d78448a91/docs/source/conf.py). Some basic [linting](https://github.com/cleanlab/cleanlab/blob/master/.ci/nblint.py) is also applied to ensure proper notebook formatting such as no trailing newlines at the end of cells. Here are some tips when adding a new tutorial notebook:
 
 1. Make sure to clear all Cell outputs before you `git commit` a tutorial. The outputs of cells should never be tracked in git, these outputs are automatically constructed for displaying on docs.cleanlab.ai during the CI which executes all notebooks in the folder **docs/source/**.
 
@@ -212,7 +237,7 @@ We've configured GitHub Actions to run the GitHub Pages workflow (gh-pages.yaml)
     "nbsphinx": "hidden"
    }
 ```
-This includes cells that install dependencies and cells that run tests to verify the notebook has executed correctly.
+This includes cells that install dependencies and cells that run tests to verify the notebook has executed correctly. These cells will still be visible when the notebook is run in Colab or locally in Jupyter, so make sure to add a comment explaining their purpose at the top.
 
 4. If developing Notebook in virtualenv, make sure at the end to change the end of the raw .ipynb file to have the following:
 ```
@@ -223,13 +248,21 @@ This includes cells that install dependencies and cells that run tests to verify
    "name": "python3"
   }
 ```
-instead of containing your own virtualenv in there.
+instead of containing your own virtualenv in there. CI will FAIL if you instead list your own virtualenv here!
 
 5. When adding dependencies to a tutorial:
    - Make sure to update **docs/requirements.txt** which lists all extra dependencies installed during CI to build the docs.
-   - Add a comment in hidden cell not displayed on docs.cleanlab.ai which states which version of dependencies you used. 
+   - Add a comment in hidden cell not displayed on docs.cleanlab.ai stating which version of dependencies you used.
+   - Think carefully whether each dependency is really necessary and if its future versions will be stable / compatible with future versions of existing dependencies.
 
-6. Don't forget to update **docs/source/index.rst** and **docs/source/tutorials/index.rst** to ensure your tutorial is linked from the main documentation.
+6. Don't forget to update **docs/source/index.rst** and **docs/source/tutorials/index.rst** to ensure your tutorial properly linked. Otherwise it will not appear on docs.cleanlab.ai!
+
+7. Ask yourself: 
+- How can I make this tutorial run faster without sacrificing educational value?  Perhaps use smaller subsample of the dataset, smaller/pretrained model, etc.
+- What sections of this tutorial are least vital?  Consider creating a separate [Examples](https://github.com/cleanlab/examples) notebook that features those.
+
+All of our tutorials are quickstart guides that should run quite fast. Longer/comprehensive notebooks are better added in [Examples](https://github.com/cleanlab/examples).
+
 
 ## API Documentation
 
