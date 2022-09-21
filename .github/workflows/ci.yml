@@ -76,8 +76,6 @@ jobs:
         with:
           script: |
             core.setFailed('Code has unused imports! Please `run pylint * | grep "unused-import"`')
-        run: |
-          pylint * | grep "unused-import"
   check_wildcard_imports:
     name: Check for wildcard imports
     runs-on: ubuntu-latest
