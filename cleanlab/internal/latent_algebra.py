@@ -26,7 +26,7 @@ Throughout `K` denotes the number of classes in the classification task.
 
 import warnings
 import numpy as np
-from typing import Any, Tuple
+from typing import Tuple
 
 from cleanlab.internal.util import value_counts, clip_values, clip_noise_rates
 
