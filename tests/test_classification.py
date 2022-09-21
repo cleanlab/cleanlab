@@ -19,7 +19,6 @@ import warnings
 from sklearn.linear_model import LogisticRegression
 from sklearn.base import BaseEstimator
 from sklearn.model_selection import GridSearchCV
-from numpy.random import multivariate_normal
 import scipy
 import pytest
 import numpy as np

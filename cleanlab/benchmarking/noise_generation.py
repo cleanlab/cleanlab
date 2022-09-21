@@ -24,7 +24,6 @@ generating noisy labels given a noise matrix, generating valid noise matrices wi
 
 import numpy as np
 from cleanlab.internal.util import value_counts
-import warnings
 
 
 def noise_matrix_is_valid(noise_matrix, py, *, verbose=False):

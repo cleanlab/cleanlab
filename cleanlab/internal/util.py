@@ -566,7 +566,6 @@ def unshuffle_tensorflow_dataset(X):
         or ``len(pre_X)`` if buffer_size cannot be determined, or None if no ShuffleDataset found.
     """
     try:
-        import tensorflow
         from tensorflow.python.data.ops.dataset_ops import ShuffleDataset
 
         X_inputs = [X]

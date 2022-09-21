@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 from cleanlab.internal.token_classification_utils import *
-from typing import Optional, Union, Tuple, Dict, Any
+from typing import Optional, Dict, Any
 
 
 def display_issues(

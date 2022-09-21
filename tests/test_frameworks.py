@@ -30,7 +30,6 @@ import os
 from copy import deepcopy
 import random
 import numpy as np
-import pandas as pd
 
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"  # suppress TF warnings on some systems
 if os.name == "nt":  # check if we are on Windows
