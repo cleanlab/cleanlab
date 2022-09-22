@@ -455,7 +455,7 @@ def _find_label_issues_multilabel(
                 n_jobs=n_jobs,
                 verbose=verbose,
             )
-        return bissues
+        return bissues.sum(axis=1) >= 1
     else:
         label_issues_list = []
 
