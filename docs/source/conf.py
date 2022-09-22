@@ -141,6 +141,14 @@ GITHUB_REF_NAME = os.getenv("GITHUB_REF_NAME") or "master"
 # Pass additional variables to Jinja templates
 html_context = {
     "DOCS_SITE_URL": DOCS_SITE_URL,
+    # Add new tags to RELEASE_VERSIONS before release
+    # fmt: off
+    "RELEASE_VERSIONS": [
+        "v2.1.0",
+        "v2.0.0", 
+        "v1.0.1"
+    ],
+    # fmt: on
 }
 
 # -- nbsphinx Configuration ---------------------------------------------------
