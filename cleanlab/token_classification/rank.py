@@ -33,7 +33,7 @@ def get_label_quality_scores(
     token_score_method: str = "self_confidence",
     sentence_score_method: str = "min",
     sentence_score_kwargs: dict = {},
-) -> Union[np.ndarray, Tuple[np.ndarray, list]]:
+) -> Tuple[np.ndarray, list]:
     """
     Returns overall quality scores for the labels in each sentence, as well as for the individual tokens' labels in a token classification dataset.
 
