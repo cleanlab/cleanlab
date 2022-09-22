@@ -3,6 +3,7 @@ var Version = {
   commit_hash: "placeholder_commit_hash",
 };
 
+// Add new version tags here before a release 
 var ReleaseVersions = [
   "2.1.0",
   "2.0.0",
