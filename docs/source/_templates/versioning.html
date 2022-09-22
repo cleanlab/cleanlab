@@ -23,14 +23,6 @@
                 >developer</a
             >
         </li>
-        <li class="toctree-l1">
-            <a
-                id="v1.0.1"
-                class="reference internal"
-                href="{{DOCS_SITE_URL}}v1.0.1/"
-                >v1.0.1</a
-            >
-        </li>
     </ul>
 </div>
 
@@ -55,6 +47,21 @@
             "master <code class='docutils literal notranslate'><span class='pre'> (" +
             commit_hash.slice(0, 7) +
             "&hellip;)</span></code>";
+    });
+    window.addEventListener("load", () => {
+        let unorderedList = document.getElementById("commit_hash").parentElement.parentElement;
+        
+        for (let i = 0; i < ReleaseVersions.length; i++) {
+            let listItem = document.createElement("li");
+            listItem.className = "toctree-l1";
+            let anchor = document.createElement("a");
+            anchor.className = "reference internal";
+            anchor.id = ReleaseVersions[i];
+            anchor.href = DOCS_SITE_URL + ReleaseVersions[i] + "/";
+            anchor.innerHTML = ReleaseVersions[i];
+            listItem.appendChild(anchor);
+            unorderedList.appendChild(listItem);
+        }
     });
 </script>
 
