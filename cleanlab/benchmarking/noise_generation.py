@@ -22,9 +22,10 @@ Specifically, this module provides methods for generating valid noise matrices (
 generating noisy labels given a noise matrix, generating valid noise matrices with a specific trace value, and more.
 """
 
+from typing import Optional
+
 import numpy as np
 from cleanlab.internal.util import value_counts
-
 
 
 def noise_matrix_is_valid(noise_matrix, py, *, verbose=False) -> bool:

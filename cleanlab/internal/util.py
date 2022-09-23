@@ -573,7 +573,9 @@ def unshuffle_tensorflow_dataset(X) -> tuple:
         or ``len(pre_X)`` if buffer_size cannot be determined, or None if no ShuffleDataset found.
     """
     try:
-        from tensorflow.python.data.ops.dataset_ops import ShuffleDataset
+        from tensorflow.python.data.ops.dataset_ops import (  # pylint: disable=no-name-in-module
+            ShuffleDataset,
+        )
 
         X_inputs = [X]
         while len(X_inputs) == 1:

@@ -511,7 +511,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
             )
 
         self.label_issues_mask = self.label_issues_df["is_label_issue"].to_numpy()
-        x_mask = ~self.label_issues_mask
+        x_mask = np.invert(self.label_issues_mask)
         x_cleaned, labels_cleaned = subset_X_y(X, labels, x_mask)
         if self.verbose:
             print(f"Pruning {np.sum(self.label_issues_mask)} examples with label issues ...")
