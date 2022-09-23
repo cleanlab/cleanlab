@@ -26,7 +26,7 @@ from multiprocessing.sharedctypes import RawArray
 import sys
 import warnings
 from typing import Any
-
+from functools import reduce
 from cleanlab.count import calibrate_confident_joint
 from cleanlab.rank import order_label_issues
 from cleanlab.internal.validation import assert_valid_inputs
@@ -235,7 +235,20 @@ def find_label_issues(
 
     # Number of examples in each class of labels
     if multi_label:
-        label_counts = value_counts([i for lst in labels for i in lst])
+        return _find_label_issues_multilabel(
+            labels,
+            pred_probs,
+            return_indices_ranked_by,
+            rank_by_kwargs,
+            filter_by,
+            frac_noise,
+            num_to_remove_per_class,
+            min_examples_per_class,
+            confident_joint,
+            n_jobs,
+            verbose,
+        )
+
     else:
         label_counts = value_counts(labels)
     # Number of classes
@@ -396,6 +409,58 @@ def find_label_issues(
         )
         return er
     return label_issues_mask
+
+
+def _find_label_issues_multilabel(
+    labels,
+    pred_probs,
+    return_indices_ranked_by=None,
+    rank_by_kwargs={},
+    filter_by="prune_by_noise_rate",
+    frac_noise=1.0,
+    num_to_remove_per_class=None,
+    min_examples_per_class=1,
+    confident_joint=None,
+    n_jobs=None,
+    verbose=False,
+):
+    num_classes = pred_probs.shape[1]
+    y_one = np.zeros((len(labels), num_classes))
+    for class_num in range(0, len(labels)):
+        for j in range(0, len(labels[class_num])):
+            y_one[class_num][j] = 1
+    if return_indices_ranked_by is None:
+        bissues = np.zeros(y_one.shape).astype(bool)
+    else:
+        label_issues_list = []
+    for class_num in range(0, num_classes):
+        pred_probabilitites = np.stack([1 - pred_probs[:, class_num], pred_probs[:, class_num]]).T
+        if confident_joint is None:
+            conf = None
+        else:
+            conf = confident_joint[class_num]
+        binary_label_issues = find_label_issues(
+            y_one[:, class_num],
+            pred_probabilitites,
+            frac_noise=frac_noise,
+            rank_by_kwargs=rank_by_kwargs,
+            filter_by=filter_by,
+            multi_label=False,
+            num_to_remove_per_class=num_to_remove_per_class,
+            min_examples_per_class=min_examples_per_class,
+            confident_joint=conf,
+            n_jobs=n_jobs,
+            verbose=verbose,
+        )
+        if return_indices_ranked_by is None:
+            bissues[:, class_num] = binary_label_issues
+        else:
+            label_issues_list.append(binary_label_issues)
+
+    if return_indices_ranked_by is None:
+        return bissues.sum(axis=1) > 1
+    else:
+        return reduce(np.union1d, label_issues_list).astype(np.int32)
 
 
 def _keep_at_least_n_per_class(prune_count_matrix, n, *, frac_noise=1.0) -> np.ndarray:
