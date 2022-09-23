@@ -346,7 +346,10 @@ def test_find_label_issues_multi_label(multi_label, filter_by):
     acc = np.mean((data["labels"] != data["true_labels_train"]) == noise_idx)
     # Make sure cleanlab does reasonably well finding the errors.
     # acc is the accuracy of detecting a label error.
-    assert acc > 0.85
+    if multi_label:
+        assert acc > 0.78
+    else:
+        assert acc > 0.85
 
 
 @pytest.mark.parametrize("return_indices_of_off_diagonals", [True, False])
