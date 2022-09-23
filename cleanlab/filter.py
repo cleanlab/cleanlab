@@ -66,6 +66,7 @@ def find_label_issues(
     confident_joint=None,
     n_jobs=None,
     verbose=False,
+    allow_missing_classes=False,
 ) -> np.ndarray:
     """
     Identifies potentially bad labels in a dataset (with `N` examples) using confident learning.
@@ -208,7 +209,13 @@ def find_label_issues(
         "confident_learning",
         "predicted_neq_given",
     ]  # TODO: change default to confident_learning ?
-    assert_valid_inputs(X=None, y=labels, pred_probs=pred_probs, multi_label=multi_label)
+    assert_valid_inputs(
+        X=None,
+        y=labels,
+        pred_probs=pred_probs,
+        multi_label=multi_label,
+        allow_missing_classes=allow_missing_classes,
+    )
     if filter_by in ["confident_learning", "predicted_neq_given"] and (
         frac_noise != 1.0 or num_to_remove_per_class is not None
     ):
@@ -425,10 +432,10 @@ def _find_label_issues_multilabel(
     verbose: bool = False,
 ) -> np.array:
     num_classes = pred_probs.shape[1]
-    y_one = np.zeros((len(labels), num_classes))
+    y_one = np.zeros((len(labels), num_classes)).astype(np.int32)
     for class_num in range(0, len(labels)):
         for j in range(0, len(labels[class_num])):
-            y_one[class_num][j] = 1
+            y_one[class_num][labels[class_num][j]] = 1
     if return_indices_ranked_by is None:
         bissues = np.zeros(y_one.shape).astype(bool)
     else:
@@ -440,8 +447,9 @@ def _find_label_issues_multilabel(
         else:
             conf = confident_joint[class_num]
         binary_label_issues = find_label_issues(
-            y_one[:, class_num],
-            pred_probabilitites,
+            labels=y_one[:, class_num],
+            pred_probs=pred_probabilitites,
+            return_indices_ranked_by=return_indices_ranked_by,
             frac_noise=frac_noise,
             rank_by_kwargs=rank_by_kwargs,
             filter_by=filter_by,
@@ -451,6 +459,7 @@ def _find_label_issues_multilabel(
             confident_joint=conf,
             n_jobs=n_jobs,
             verbose=verbose,
+            allow_missing_classes=True,
         )
         if return_indices_ranked_by is None:
             bissues[:, class_num] = binary_label_issues
