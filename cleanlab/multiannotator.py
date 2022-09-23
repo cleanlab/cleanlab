@@ -26,7 +26,8 @@ Methods for analysis of classification data labeled by multiple annotators, incl
 import warnings
 import numpy as np
 import pandas as pd
-from typing import List, Dict, Any, Union, Tuple, Optional
+
+from typing import List, Dict, Any, Union, Tuple
 
 from cleanlab.rank import get_label_quality_scores
 from cleanlab.internal.util import get_num_classes

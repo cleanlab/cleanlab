@@ -342,7 +342,7 @@ def get_label_quality_ensemble_scores(
                 )  # lower-bound clipping threshold to prevents 0 in logs when calculating log loss
                 pred_probs_clipped /= pred_probs_clipped.sum(axis=1)[:, np.newaxis]  # renormalize
 
-                neg_log_loss = np.exp(t * (-log_loss(labels, pred_probs_clipped)))
+                neg_log_loss = np.exp(-t * log_loss(labels, pred_probs_clipped))
                 neg_log_loss_list.append(neg_log_loss)
 
             # weights using negative log loss

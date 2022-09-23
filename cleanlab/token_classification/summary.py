@@ -18,11 +18,12 @@
 Methods to display sentences and their label issues in a token classification dataset (text data), as well as summarize the types of issues identified.
 """
 
+from typing import Any, Dict, List, Optional, Tuple
+
 import numpy as np
 import pandas as pd
-from typing import List, Optional, Tuple, Dict, Any
 
-from cleanlab.internal.token_classification_utils import get_sentence, color_sentence
+from cleanlab.internal.token_classification_utils import color_sentence, get_sentence
 
 
 def display_issues(

@@ -28,7 +28,6 @@ from sklearn.model_selection import StratifiedKFold
 from sklearn.metrics import confusion_matrix
 import sklearn.base
 import numpy as np
-import pandas as pd
 import warnings
 from typing import Tuple, Union
 
@@ -37,7 +36,6 @@ from cleanlab.internal.util import (
     clip_values,
     clip_noise_rates,
     round_preserving_row_totals,
-    csr_vstack,
     append_extra_datapoint,
     train_val_split,
     get_num_classes,
