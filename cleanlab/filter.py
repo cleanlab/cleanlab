@@ -25,7 +25,7 @@ import multiprocessing
 from multiprocessing.sharedctypes import RawArray
 import sys
 import warnings
-from typing import Any, Union
+from typing import Any, Union, List
 from functools import reduce
 from cleanlab.count import calibrate_confident_joint
 from cleanlab.rank import order_label_issues
@@ -186,6 +186,11 @@ def find_label_issues(
 
     verbose : optional
       If ``True``, prints when multiprocessing happens.
+
+    allow_missing_classes : optional
+        Note
+        ----
+        Only set this parameter if multi_label is True.
 
     Returns
     -------
@@ -427,10 +432,29 @@ def _find_label_issues_multilabel(
     frac_noise: float = 1.0,
     num_to_remove_per_class: Union[int, None] = None,
     min_examples_per_class=1,
-    confident_joint: Union[list, None] = None,
+    confident_joint: Union[List, None] = None,
     n_jobs: Union[int, None] = None,
     verbose: bool = False,
 ) -> np.array:
+    """
+    Parameters
+    ----------
+    labels
+    pred_probs
+    return_indices_ranked_by
+    rank_by_kwargs
+    filter_by
+    frac_noise
+    num_to_remove_per_class
+    min_examples_per_class
+    confident_joint
+    n_jobs
+    verbose
+
+    Returns
+    -------
+
+    """
     num_classes = pred_probs.shape[1]
     y_one = np.zeros((len(labels), num_classes)).astype(np.int32)
     for class_num in range(0, len(labels)):
