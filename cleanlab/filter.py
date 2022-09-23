@@ -425,17 +425,17 @@ def find_label_issues(
 
 def _find_label_issues_multilabel(
     labels: list,
-    pred_probs: list,
+    pred_probs: np.array,
     return_indices_ranked_by: Union[None, str] = None,
     rank_by_kwargs={},
     filter_by: str = "prune_by_noise_rate",
     frac_noise: float = 1.0,
     num_to_remove_per_class: int = None,
     min_examples_per_class=1,
-    confident_joint: List = None,
+    confident_joint: Union[None, np.array] = None,
     n_jobs: int = None,
     verbose: bool = False,
-) -> np.array:
+) -> List:
     """
     Parameters
     ----------
@@ -577,7 +577,7 @@ def _find_label_issues_multilabel(
             label_issues_list.append(binary_label_issues)
 
     if return_indices_ranked_by is None:
-        return bissues.sum(axis=1) > 1
+        return bissues.sum(axis=1) >= 1
     else:
         return reduce(np.union1d, label_issues_list).astype(np.int32)
 
