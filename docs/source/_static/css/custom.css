@@ -7,7 +7,7 @@ details summary {
     cursor: pointer;
 }
 
-details summary > * {
+details summary>* {
     display: inline;
 }
 
@@ -18,4 +18,24 @@ details[open] summary {
 
 details[open] {
     border-bottom: 2px dashed #ccc;
+}
+
+h1 {
+    font-size: 2em;
+}
+
+h2 {
+    font-size: 1.5em;
+}
+
+h3 {
+    font-size: 1.17em;
+}
+
+h5 {
+    font-size: .83em;
+}
+
+h6 {
+    font-size: .75em;
 }
