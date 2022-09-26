@@ -186,10 +186,6 @@ def find_label_issues(
     verbose : optional
       If ``True``, prints when multiprocessing happens.
 
-    allow_missing_classes : optional
-        Note
-        ----
-        Only set this parameter if multi_label is True.
 
     Returns
     -------
@@ -213,12 +209,7 @@ def find_label_issues(
         "confident_learning",
         "predicted_neq_given",
     ]  # TODO: change default to confident_learning ?
-    assert_valid_inputs(
-        X=None,
-        y=labels,
-        pred_probs=pred_probs,
-        multi_label=multi_label,
-    )
+    assert_valid_inputs(X=None, y=labels, pred_probs=pred_probs, multi_label=multi_label)
     if filter_by in ["confident_learning", "predicted_neq_given"] and (
         frac_noise != 1.0 or num_to_remove_per_class is not None
     ):
