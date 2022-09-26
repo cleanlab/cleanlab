@@ -186,7 +186,6 @@ def find_label_issues(
     verbose : optional
       If ``True``, prints when multiprocessing happens.
 
-
     Returns
     -------
     label_issues : np.ndarray
