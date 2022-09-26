@@ -66,7 +66,6 @@ def find_label_issues(
     confident_joint=None,
     n_jobs=None,
     verbose=False,
-    allow_missing_classes=False,
 ) -> np.ndarray:
     """
     Identifies potentially bad labels in a dataset (with `N` examples) using confident learning.
@@ -219,7 +218,6 @@ def find_label_issues(
         y=labels,
         pred_probs=pred_probs,
         multi_label=multi_label,
-        allow_missing_classes=allow_missing_classes,
     )
     if filter_by in ["confident_learning", "predicted_neq_given"] and (
         frac_noise != 1.0 or num_to_remove_per_class is not None
@@ -544,18 +542,19 @@ def _find_label_issues_multilabel(
         bissues = np.zeros(y_one.shape).astype(bool)
     else:
         label_issues_list = []
+
+    if confident_joint is not None:
+        if len(confident_joint.shape) != 3:
+            warnings.warn(
+                f"The new recommended format for confident_joint in multi_label settings is (num_classes,k,k) (as output by compute_confident_joint(...,multi_label=True)). Your k x k confident_joint in the old format is being ignored."
+            )
+            confident_joint = None
     for class_num in range(0, num_classes):
         pred_probabilitites = np.stack([1 - pred_probs[:, class_num], pred_probs[:, class_num]]).T
         if confident_joint is None:
             conf = None
         else:
-            if len(confident_joint.shape) != 3:
-                conf = None
-                warnings.warn(
-                    f"The new recommended format for confident_joint in multi_label settings is (num_classes,k,k) (as output by compute_confident_joint(...,multi_label=True)). Your k x k confident_joint in the old format is being ignored."
-                )
-            else:
-                conf = confident_joint[class_num]
+            conf = confident_joint[class_num]
         binary_label_issues = find_label_issues(
             labels=y_one[:, class_num],
             pred_probs=pred_probabilitites,
@@ -569,7 +568,6 @@ def _find_label_issues_multilabel(
             confident_joint=conf,
             n_jobs=n_jobs,
             verbose=verbose,
-            allow_missing_classes=True,
         )
         if return_indices_ranked_by is None:
             bissues[:, class_num] = binary_label_issues

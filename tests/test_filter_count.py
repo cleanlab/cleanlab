@@ -341,7 +341,6 @@ def test_find_label_issues_multi_label(multi_label, filter_by):
         pred_probs=data["pred_probs"],
         filter_by=filter_by,
         multi_label=multi_label,
-        allow_missing_classes=multi_label,
     )
     acc = np.mean((data["labels"] != data["true_labels_train"]) == noise_idx)
     # Make sure cleanlab does reasonably well finding the errors.
