@@ -424,13 +424,13 @@ def find_label_issues(
 def _find_label_issues_multilabel(
     labels: list,
     pred_probs: np.ndarray,
-    return_indices_ranked_by: Optional[None, str] = None,
+    return_indices_ranked_by: Optional[str] = None,
     rank_by_kwargs={},
     filter_by: str = "prune_by_noise_rate",
     frac_noise: float = 1.0,
     num_to_remove_per_class: int = None,
     min_examples_per_class=1,
-    confident_joint: Union[None, np.ndarray] = None,
+    confident_joint: Optional[np.ndarray] = None,
     n_jobs: int = None,
     verbose: bool = False,
 ) -> np.ndarray:
