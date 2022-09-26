@@ -549,7 +549,7 @@ def _find_label_issues_multilabel(
         if confident_joint is None:
             conf = None
         else:
-            if len(confident_joint.shape()) != 3:
+            if len(confident_joint.shape) != 3:
                 conf = None
                 warnings.warn(
                     f"The new recommended format for confident_joint in multi_label settings is (num_classes,k,k) (as output by compute_confident_joint(...,multi_label=True)). Your k x k confident_joint in the old format is being ignored."
