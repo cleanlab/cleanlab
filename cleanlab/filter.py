@@ -533,6 +533,9 @@ def _find_label_issues_multilabel(
       `return_indices_ranked_by`.
 
     """
+    k = get_num_classes(
+        labels=labels, pred_probs=pred_probs, label_matrix=confident_joint, multi_label=True
+    )
     num_classes = pred_probs.shape[1]
     y_one = np.zeros((len(labels), num_classes)).astype(np.int32)
     for class_num in range(0, len(labels)):
@@ -544,11 +547,14 @@ def _find_label_issues_multilabel(
         label_issues_list = []
 
     if confident_joint is not None:
-        if len(confident_joint.shape) != 3:
+        confident_joint_shape = confident_joint.shape
+        if confident_joint_shape == (k, k):
             warnings.warn(
                 f"The new recommended format for confident_joint in multi_label settings is (num_classes,k,k) (as output by compute_confident_joint(...,multi_label=True)). Your k x k confident_joint in the old format is being ignored."
             )
             confident_joint = None
+        elif confident_joint_shape != (num_classes, k, k):
+            raise ValueError("confident_joint should be of shape (num_classes,K, K)")
     for class_num in range(0, num_classes):
         pred_probabilitites = np.stack([1 - pred_probs[:, class_num], pred_probs[:, class_num]]).T
         if confident_joint is None:
