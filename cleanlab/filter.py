@@ -25,7 +25,7 @@ import multiprocessing
 from multiprocessing.sharedctypes import RawArray
 import sys
 import warnings
-from typing import Any, Union
+from typing import Any, Optional
 from functools import reduce
 from cleanlab.count import calibrate_confident_joint
 from cleanlab.rank import order_label_issues
@@ -424,7 +424,7 @@ def find_label_issues(
 def _find_label_issues_multilabel(
     labels: list,
     pred_probs: np.ndarray,
-    return_indices_ranked_by: Union[None, str] = None,
+    return_indices_ranked_by: Optional[None, str] = None,
     rank_by_kwargs={},
     filter_by: str = "prune_by_noise_rate",
     frac_noise: float = 1.0,
