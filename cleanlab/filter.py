@@ -540,7 +540,7 @@ def _find_label_issues_multilabel(
         elif confident_joint_shape != (num_classes, num_classes, num_classes):
             raise ValueError("confident_joint should be of shape (num_classes,K, K)")
     for class_num in range(0, num_classes):
-        pred_probabilitites = np.stack([1 - pred_probs[:, class_num], pred_probs[:, class_num]]).T
+        pred_probabilitites = _binarize_pred_probs_slice(pred_probs, class_num)
         if confident_joint is None:
             conf = None
         else:
@@ -568,6 +568,12 @@ def _find_label_issues_multilabel(
         return bissues.sum(axis=1) >= 1
     else:
         return reduce(np.union1d, label_issues_list).astype(np.int32)
+
+
+def _binarize_pred_probs_slice(pred_probs: np.ndarray, class_num: int) -> np.ndarray:
+    pred_probs_class = pred_probs[:, class_num]
+    pred_probabilitites = np.stack([1 - pred_probs_class, pred_probs_class]).T
+    return pred_probabilitites
 
 
 def _binarize_multilabels(labels: List[List[int]], num_classes: int) -> np.ndarray:
