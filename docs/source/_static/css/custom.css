@@ -7,7 +7,7 @@ details summary {
     cursor: pointer;
 }
 
-details summary>* {
+details summary > * {
     display: inline;
 }
 
