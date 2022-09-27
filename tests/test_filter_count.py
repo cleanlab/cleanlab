@@ -446,15 +446,12 @@ def test_num_label_issues():
         estimation_method="off_diagonal_recalibrated",
     )  # this should calculate and calibrate the confident joint into same matrix as data["cj"]
 
-    assert (
-        n == cj_calibrated_off_diag_sum
-    )  # data["cj"] is already calibrated and estimation method does not do extra calibration
-    assert (
-        n == n1
-    )  # data["cj"] is already calibrated but recalibrating it should not change the values
-    assert (
-        n == n2
-    )  # should calculate and calibrate the confident joint into same matrix as data["cj"]
+    # data["cj"] is already calibrated and estimation method does not do extra calibration
+    assert n == cj_calibrated_off_diag_sum
+    # data["cj"] is already calibrated but recalibrating it should not change the values
+    assert n == n1
+    # should calculate and calibrate the confident joint into same matrix as data["cj"]
+    assert n == n2
 
     f = filter.find_label_issues(
         labels=data["labels"], pred_probs=data["pred_probs"], confident_joint=data["cj"]
@@ -469,7 +466,7 @@ def test_num_label_issues():
     n3 = count.num_label_issues(
         labels=data["labels"],
         pred_probs=data["pred_probs"],
-    )  # this should calculate and calibrate the confident joint into same matrix as data["cj"]
+    )
 
     assert sum(f1) == n3  # values should be equivalent for `filter_by='confident_learning'`
 
