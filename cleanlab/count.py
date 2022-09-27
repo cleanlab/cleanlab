@@ -117,7 +117,7 @@ def num_label_issues(
         joint = confident_joint / float(np.sum(confident_joint))
         frac_issues = 1.0 - joint.trace()
         num_issues = np.rint(frac_issues * len(labels)).astype(int)
-    elif estimation_method not in valid_methods:
+    else:
         raise ValueError(
             f"""
             {estimation_method} is not a valid estimation method!
