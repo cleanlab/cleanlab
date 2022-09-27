@@ -578,11 +578,9 @@ def _binarize_pred_probs_slice(pred_probs: np.ndarray, class_num: int) -> np.nda
 
 def _binarize_multilabels(labels: List[List[int]], num_classes: int) -> np.ndarray:
     num_examples = len(labels)
-
     y_one = np.zeros((num_examples, num_classes)).astype(np.int32)
-    for class_num in range(0, len(labels)):
-        for j in range(0, len(labels[class_num])):
-            y_one[class_num][labels[class_num][j]] = 1
+    for example, multilabel in enumerate(labels):
+        y_one[example, multilabel] = 1
     return y_one
 
 
