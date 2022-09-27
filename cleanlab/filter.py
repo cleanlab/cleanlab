@@ -25,7 +25,7 @@ import multiprocessing
 from multiprocessing.sharedctypes import RawArray
 import sys
 import warnings
-from typing import Any, Optional
+from typing import Any, List, Optional
 from functools import reduce
 from cleanlab.count import calibrate_confident_joint
 from cleanlab.rank import order_label_issues
@@ -524,10 +524,7 @@ def _find_label_issues_multilabel(
 
     """
     num_classes = pred_probs.shape[1]
-    y_one = np.zeros((len(labels), num_classes)).astype(np.int32)
-    for class_num in range(0, len(labels)):
-        for j in range(0, len(labels[class_num])):
-            y_one[class_num][labels[class_num][j]] = 1
+    y_one = _binarize_multilabels(labels, num_classes)
     if return_indices_ranked_by is None:
         bissues = np.zeros(y_one.shape).astype(bool)
     else:
@@ -571,6 +568,16 @@ def _find_label_issues_multilabel(
         return bissues.sum(axis=1) >= 1
     else:
         return reduce(np.union1d, label_issues_list).astype(np.int32)
+
+
+def _binarize_multilabels(labels: List[List[int]], num_classes: int) -> np.ndarray:
+    num_examples = len(labels)
+
+    y_one = np.zeros((num_examples, num_classes)).astype(np.int32)
+    for class_num in range(0, len(labels)):
+        for j in range(0, len(labels[class_num])):
+            y_one[class_num][labels[class_num][j]] = 1
+    return y_one
 
 
 def _keep_at_least_n_per_class(prune_count_matrix, n, *, frac_noise=1.0) -> np.ndarray:
