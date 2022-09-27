@@ -56,7 +56,9 @@ from cleanlab.internal.validation import (
 def num_label_issues(
     labels,
     pred_probs,
+    *,
     confident_joint=None,
+    estimation_method="off_diagonal",
 ) -> int:
     """Estimates the number of label issues in the `labels` of a dataset.
 
@@ -96,18 +98,40 @@ def num_label_issues(
       The `confident_joint` can be computed using :py:func:`count.compute_confident_joint <cleanlab.count.compute_confident_joint>`.
       If not provided, it is computed from the given (noisy) `labels` and `pred_probs`.
 
+    estimation_method :
+      Method for estimating the number of label issues in dataset by counting the examples in the off-diagonal of the `confident_joint` ``P(label=i, true_label=j)``.
+
+       - ``'off_diagonal'``: Counts the number of examples in the off-diagonal of the `confident_joint`.
+       - ``'off_diagonal_recalibrated'``: Calibrates confident joint estimate ``P(label=i, true_label=j)`` such that
+      ``np.sum(cj) == len(labels)`` and ``np.sum(cj, axis = 1) == np.bincount(labels)`` before counting the number of examples in the off-diagonal. Number will always be equal to or greater than ``estimate_issues='off_diagonal'``.
+
     Returns
     -------
     num_issues : int
       The estimated number of examples with label issues in the dataset.
     """
+    valid_methods = ["off_diagonal", "off_diagonal_recalibrated"]
 
     if confident_joint is None:
-        confident_joint = compute_confident_joint(labels=labels, pred_probs=pred_probs)
-    # Normalize confident joint so that it estimates the joint, p(labels,y)
-    joint = confident_joint / float(np.sum(confident_joint))
-    frac_issues = 1.0 - joint.trace()
-    num_issues = np.rint(frac_issues * len(labels)).astype(int)
+        confident_joint = compute_confident_joint(
+            labels=labels, pred_probs=pred_probs, calibrate=False
+        )
+
+    if estimation_method is "off_diagonal":
+        num_issues = np.sum(confident_joint) - np.trace(confident_joint)
+    elif estimation_method is "off_diagonal_recalibrated":
+        # Normalize confident joint so that it estimates the joint, p(labels,y)
+        confident_joint = calibrate_confident_joint(confident_joint, labels)
+        joint = confident_joint / float(np.sum(confident_joint))
+        frac_issues = 1.0 - joint.trace()
+        num_issues = np.rint(frac_issues * len(labels)).astype(int)
+    elif estimation_method not in valid_methods:
+        raise ValueError(
+            f"""
+            {estimation_method} is not a valid estimation method!
+            Please choose a valid estimation method: {valid_methods}
+            """
+        )
 
     return num_issues
 
