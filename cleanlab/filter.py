@@ -28,7 +28,7 @@ import warnings
 from typing import Any, List, Optional
 from functools import reduce
 from cleanlab.count import calibrate_confident_joint
-from cleanlab.rank import order_label_issues
+from cleanlab.rank import order_label_issues, get_label_quality_scores
 from cleanlab.internal.validation import assert_valid_inputs
 from cleanlab.internal.util import (
     value_counts,
@@ -529,7 +529,7 @@ def _find_label_issues_multilabel(
         bissues = np.zeros(y_one.shape).astype(bool)
     else:
         label_issues_list = []
-
+        label_quality_scores_list = []
     if confident_joint is not None:
         confident_joint_shape = confident_joint.shape
         if confident_joint_shape == (num_classes, num_classes):
@@ -563,7 +563,9 @@ def _find_label_issues_multilabel(
             bissues[:, class_num] = binary_label_issues
         else:
             label_issues_list.append(binary_label_issues)
-
+            label_quality_scores_list.append(
+                get_label_quality_scores(labels=y_one[:, class_num], pred_probs=pred_probabilitites)
+            )
     if return_indices_ranked_by is None:
         return bissues.sum(axis=1) >= 1
     else:
