@@ -222,6 +222,16 @@ def get_label_quality_scores(
     return label_quality_scores
 
 
+def get_label_quality_scores_multilabel(
+    labels: np.ndarray,
+    pred_probs: np.ndarray,
+    *,
+    method: str = "self_confidence",
+    adjust_pred_probs: bool = False,
+):
+    return labels
+
+
 def get_label_quality_ensemble_scores(
     labels: np.ndarray,
     pred_probs_list: List[np.ndarray],
