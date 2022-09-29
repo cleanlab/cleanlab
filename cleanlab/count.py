@@ -29,7 +29,9 @@ from sklearn.metrics import confusion_matrix
 import sklearn.base
 import numpy as np
 import warnings
-from typing import Tuple, Union
+from typing import Tuple, Union, Optional
+
+from cleanlab.typing import LabelLike
 
 from cleanlab.internal.util import (
     value_counts,
@@ -54,22 +56,22 @@ from cleanlab.internal.validation import (
 
 
 def num_label_issues(
-    labels,
-    pred_probs,
+    labels: LabelLike,
+    pred_probs: np.ndarray,
     *,
-    confident_joint=None,
-    estimation_method="off_diagonal",
+    confident_joint: Optional[np.ndarray] = None,
+    estimation_method: str = "off_diagonal",
 ) -> int:
     """Estimates the number of label issues in the `labels` of a dataset. Use this method to get the most accurate
     estimate of number of label issues when you don't need the indices of the label issues.
 
     Parameters
     ----------
-    labels : np.ndarray
+    labels :
       An array of shape ``(N,)`` of noisy labels, i.e. some labels may be erroneous.
       Elements must be in the set 0, 1, ..., K-1, where K is the number of classes.
 
-    pred_probs : np.ndarray
+    pred_probs :
       An array of shape ``(N, K)`` of model-predicted probabilities,
       ``P(label=k|x)``. Each row of this matrix corresponds
       to an example `x` and contains the model-predicted probabilities that
@@ -78,7 +80,7 @@ def num_label_issues(
       class 0, 1, ..., K-1. `pred_probs` should have been computed using 3 (or
       higher) fold cross-validation.
 
-    confident_joint : np.ndarray, optional
+    confident_joint :
       An array of shape ``(K, K)`` representing the confident joint, the matrix used for identifying label issues, which
       estimates a confident subset of the joint distribution of the noisy and true labels, ``P_{noisy label, true label}``.
       Entry ``(j, k)`` in the matrix is the number of examples confidently counted into the pair of ``(noisy label=j, true label=k)`` classes.
@@ -88,7 +90,7 @@ def num_label_issues(
     estimation_method :
       Method for estimating the number of label issues in dataset by counting the examples in the off-diagonal of the `confident_joint` ``P(label=i, true_label=j)``.
        - ``'off_diagonal'``: Counts the number of examples in the off-diagonal of the `confident_joint`. Returns the same value as ``sum(find_label_issues(filter_by='confident_learning'))``
-       - ``'off_diagonal_recalibrated'``: Calibrates confident joint estimate ``P(label=i, true_label=j)`` such that
+       - ``'off_diagonal_calibrated'``: Calibrates confident joint estimate ``P(label=i, true_label=j)`` such that
        ``np.sum(cj) == len(labels)`` and ``np.sum(cj, axis = 1) == np.bincount(labels)`` before counting the number
        of examples in the off-diagonal. Number will always be equal to or greater than
        ``estimate_issues='off_diagonal'``. You can use this value as the cutoff threshold used with ranking/scoring
@@ -97,24 +99,29 @@ def num_label_issues(
           1. As we add more label and data quality scoring functions in :py:mod:`cleanlab.rank`, this approach will always work.
           2. If you have a custom score to rank your data by label quality and you just need to know the cut-off of likely label issues.
 
+       TL;DR: use this method to get the most accurate estimate of number of label issues when you don't need the indices of the label issues.
+
     Returns
     -------
-    num_issues : int
+    num_issues :
       The estimated number of examples with label issues in the dataset.
     """
-    valid_methods = ["off_diagonal", "off_diagonal_recalibrated"]
+    valid_methods = ["off_diagonal", "off_diagonal_calibrated"]
+
+    labels = labels_to_array(labels)
+    assert_valid_inputs(X=None, y=labels, pred_probs=pred_probs)
 
     if confident_joint is None:
+        # Original non-calibrated counts of confidently correctly and incorrectly labeled examples.
         confident_joint = compute_confident_joint(
             labels=labels, pred_probs=pred_probs, calibrate=False
         )
 
     if estimation_method is "off_diagonal":
         num_issues = np.sum(confident_joint) - np.trace(confident_joint)
-    elif estimation_method is "off_diagonal_recalibrated":
-        # Normalize confident joint so that it estimates the joint, p(labels,y)
-        confident_joint = calibrate_confident_joint(confident_joint, labels)
-        joint = confident_joint / float(np.sum(confident_joint))
+    elif estimation_method is "off_diagonal_calibrated":
+        # Estimate_joint calibrates the row sums to match the prior distribution of given labels and normalizes to sum to 1
+        joint = estimate_joint(labels, pred_probs, confident_joint=confident_joint)
         frac_issues = 1.0 - joint.trace()
         num_issues = np.rint(frac_issues * len(labels)).astype(int)
     else:
