@@ -265,7 +265,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         self.clf_final_kwargs = None
 
     def fit(
-        self,
+        self: TCleanLearning,
         X,
         labels=None,
         *,
