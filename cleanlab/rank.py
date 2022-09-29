@@ -222,30 +222,6 @@ def get_label_quality_scores(
     return label_quality_scores
 
 
-def _get_label_quality_scores_multilabel(
-    labels: List[np.ndarray],
-    pred_probs: List[np.ndarray],
-    label_issues_list: List[np.ndarray],
-    *,
-    method: str = "self_confidence",
-):
-    label_scores = []
-    num_issues_per_class = []
-    for i in range(0, len(labels)):
-        label_scores.append(
-            get_label_quality_scores(labels=labels[i], pred_probs=pred_probs[i]), method
-        )
-        num_issues_per_class.append(len(label_issues_list[i]))
-    num_issues_per_class = np.array(num_issues_per_class)
-    num_issues_per_class /= np.sum(num_issues_per_class)
-    for i in range(0, len(label_scores)):
-        label_scores[i] = label_scores[i] * num_issues_per_class[i]
-    label_scores = np.array(label_scores)
-    label_scores = label_scores.sum(axis=1)
-
-    return labels
-
-
 def get_label_quality_ensemble_scores(
     labels: np.ndarray,
     pred_probs_list: List[np.ndarray],
