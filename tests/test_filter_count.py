@@ -437,13 +437,13 @@ def test_num_label_issues():
         labels=data["labels"],
         pred_probs=data["pred_probs"],
         confident_joint=data["cj"],
-        estimation_method="off_diagonal_recalibrated",
+        estimation_method="off_diagonal_calibrated",
     )  # data["cj"] is already calibrated but recalibrating it should not change the values
 
     n2 = count.num_label_issues(
         labels=data["labels"],
         pred_probs=data["pred_probs"],
-        estimation_method="off_diagonal_recalibrated",
+        estimation_method="off_diagonal_calibrated",
     )  # this should calculate and calibrate the confident joint into same matrix as data["cj"]
 
     # data["cj"] is already calibrated and estimation method does not do extra calibration
