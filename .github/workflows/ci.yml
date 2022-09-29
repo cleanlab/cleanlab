@@ -25,6 +25,10 @@ jobs:
       - uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python }}
+      - name: Install cleanlab
+        run: pip install -e .
+      - name: Check cleanlab runs without optional dependencies
+        run: python3 -c "import cleanlab"
       - name: Install development dependencies
         run: pip install -r requirements-dev.txt
       - name: Overwrite tensorflow version on Windows
@@ -32,8 +36,6 @@ jobs:
         run: |
           pip uninstall -y tensorflow
           pip install tensorflow-cpu
-      - name: Install cleanlab
-        run: pip install -e .
       - name: Test with coverage
         run: pytest --verbose --cov=cleanlab/ --cov-config .coveragerc --cov-report=xml
       - uses: codecov/codecov-action@v2

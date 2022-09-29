@@ -64,7 +64,7 @@ pip install -r docs/requirements.txt
 
    **Fast build**: Executing the Jupyter Notebooks (i.e., the `.ipynb` files) that make up some portion of the docs, such as the tutorials, takes a long time. If you want to skip rendering these, set the environment variable `SKIP_NOTEBOOKS=1`. You can either set this using `export SKIP_NOTEBOOKS=1` or do this inline with `SKIP_NOTEBOOKS=1 sphinx-multiversion ...`.
 
-   **Skipping specific notebooks**: If you want to skip rendering a few specific notebooks buring your local build, the best way to do this is to temporarily move the files outside the `cleanlab` folder (so `nbsphinx` would not find it), then build the docs, before finally moving the files back (to ensure they will not be deleted when pushed to GitHub)
+   **Skipping specific notebooks**: If you want to skip rendering a few specific notebooks during your local build, the best way to do this is to temporarily move the files outside the `cleanlab` folder (so `nbsphinx` would not find it), then build the docs, before finally moving the files back (to ensure they will not be deleted when pushed to GitHub)
 
    Example workflow for skipping notebooks, given our current working directory is the `cleanlab` root folder and we want to ignore the `audio.ipynb` notebook:
 
