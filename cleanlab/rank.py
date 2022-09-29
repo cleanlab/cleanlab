@@ -50,7 +50,6 @@ def order_label_issues(
     label_issues_mask: np.ndarray,
     labels: np.ndarray,
     pred_probs: np.ndarray,
-    multi_label: bool,
     *,
     rank_by: str = "self_confidence",
     rank_by_kwargs: dict = {},

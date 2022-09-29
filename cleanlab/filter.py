@@ -142,6 +142,9 @@ def find_label_issues(
       list of labels for each example, instead of just a single label.
       The multi-label setting supports classification tasks where an example has 1 or more labels.
       Example of a multi-labeled `labels` input: ``[[0,1], [1], [0,2], [0,1,2], [0], [1], ...]``.
+      Confident joint should be of shape [N,k,k]
+      pred_probs need not sum to 1.0
+
 
     frac_noise : float, default=1.0
       Used to only return the "top" ``frac_noise * num_label_issues``. The choice of which "top"
@@ -451,7 +454,16 @@ def _find_label_issues_multilabel(
       Alternatively it is ok if your model was trained on a separate dataset and you are only evaluating
       data that was previously held-out.
 
-    return_indices_ranked_by : Not Supported yet
+    return_indices_ranked_by : {None, 'self_confidence', 'normalized_margin', 'confidence_weighted_entropy'}, default=None
+      Determines what is returned by this method: either a boolean mask or list of indices np.ndarray.
+      If ``None``, this function returns a boolean mask (``True`` if example at index is label error).
+      If not ``None``, this function returns a sorted array of indices of examples with label issues
+      (instead of a boolean mask). Indices are sorted by label quality score which can be one of:
+
+      - ``'normalized_margin'``: ``normalized margin (p(label = k) - max(p(label != k)))``
+      - ``'self_confidence'``: ``[pred_probs[i][labels[i]] for i in label_issues_idx]``
+      - ``'confidence_weighted_entropy'``: ``entropy(pred_probs) / self_confidence``
+
     rank_by_kwargs : dict, optional
       Optional keyword arguments to pass into scoring functions for ranking by
       label quality score: Not supported yet.
@@ -574,6 +586,12 @@ def _find_label_issues_multilabel(
     if return_indices_ranked_by is None:
         return bissues.sum(axis=1) >= 1
     else:
+        lab_issue_probs = get_label_quality_scores(
+            labels=labels_list[0],
+            pred_probs=pred_probs_list[0],
+            method=return_indices_ranked_by,
+            **rank_by_kwargs,
+        )
         return _get_label_quality_scores_multilabel(
             labels=labels_list, pred_probs=pred_probs_list, label_issues_list=label_issues_list
         )
