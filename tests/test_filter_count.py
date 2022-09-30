@@ -332,7 +332,11 @@ def test_pruning_order_method():
 @pytest.mark.parametrize(
     "filter_by", ["prune_by_noise_rate", "prune_by_class", "both", "confident_learning"]
 )
-def test_find_label_issues_multi_label(multi_label, filter_by):
+@pytest.mark.parametrize(
+    "return_indices_ranked_by",
+    [None, "self_confidence", "normalized_margin", "confidence_weighted_entropy"],
+)
+def test_find_label_issues_multi_label(multi_label, filter_by, return_indices_ranked_by):
     """Note: argmax_not_equal method is not compatible with multi_label == True"""
 
     s_ml = [[z, data["true_labels_train"][i]] for i, z in enumerate(data["labels"])]
@@ -341,7 +345,12 @@ def test_find_label_issues_multi_label(multi_label, filter_by):
         pred_probs=data["pred_probs"],
         filter_by=filter_by,
         multi_label=multi_label,
+        return_indices_ranked_by=return_indices_ranked_by,
     )
+    if return_indices_ranked_by is not None:
+        noise_bool = np.zeros(len(s_ml)).astype(bool)
+        noise_bool[noise_idx] = True
+        noise_idx = noise_bool
     acc = np.mean((data["labels"] != data["true_labels_train"]) == noise_idx)
     # Make sure cleanlab does reasonably well finding the errors.
     # acc is the accuracy of detecting a label error.
