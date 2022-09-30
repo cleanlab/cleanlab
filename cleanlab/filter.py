@@ -141,8 +141,8 @@ def find_label_issues(
       list of labels for each example, instead of just a single label.
       The multi-label setting supports classification tasks where an example has 1 or more labels.
       Example of a multi-labeled `labels` input: ``[[0,1], [1], [0,2], [0,1,2], [0], [1], ...]``.
-      Confident joint should be of shape [N,k,k]
-      pred_probs need not sum to 1.0
+      Confident joint should be an array of shape ``(N, K, K)``
+      The pred_probs need not sum to 1.0
 
 
     frac_noise : float, default=1.0
@@ -444,7 +444,7 @@ def _find_label_issues_multilabel(
       to an example `x` and contains the model-predicted probabilities that
       `x` belongs to each possible class, for each of the K classes. The
       columns must be ordered such that these probabilities correspond to
-      class 0, 1, ..., K-1.
+      class 0, 1, ..., K-1. They need not sum to 1.0
 
       **Caution**: `pred_probs` from your model must be out-of-sample!
       You should never provide predictions on the same examples used to train the model,
@@ -586,13 +586,8 @@ def _find_label_issues_multilabel(
         return bissues.sum(axis=1) >= 1
     else:
         label_issues_idx = reduce(np.union1d, label_issues_list).astype(np.int32)
-        label_quality_scores = get_label_quality_scores(
-            labels=labels_list[0],
-            pred_probs=pred_probs_list[0],
-            method=return_indices_ranked_by,
-            **rank_by_kwargs,
-        )
-        for i in range(1, num_classes):
+        label_quality_scores = np.zeros(len(labels))
+        for i in range(0, num_classes):
             label_quality_scores += get_label_quality_scores(
                 labels=labels_list[i],
                 pred_probs=pred_probs_list[i],
