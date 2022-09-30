@@ -7,3 +7,4 @@ from . import benchmarking
 from . import dataset
 from . import multiannotator
 from . import outlier
+from . import token_classification
