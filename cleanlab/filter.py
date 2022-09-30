@@ -510,7 +510,7 @@ def _find_label_issues_multilabel(
     confident_joint : np.ndarray, optional
       An array of shape ``(num_classes,K, K)`` representing the confident joint, the matrix used for identifying label issues, which
       estimates a confident subset of the joint distribution of the noisy and true labels, ``P_{noisy label, true label}``.
-      Entry ``(j, k)`` in the matrix is the number of examples confidently counted into the pair of ``(noisy label=j, true label=k)`` classes.
+      Entry ``(c, j, k)`` in the matrix is the number of examples in a one-vs-rest class confidently counted into the pair of ``(class c, noisy label=j, true label=k)`` classes.
       The `confident_joint` can be computed using :py:func:`count.compute_confident_joint <cleanlab.count.compute_confident_joint>`.
       If not provided, it is computed from the given (noisy) `labels` and `pred_probs`.
 
