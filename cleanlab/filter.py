@@ -31,7 +31,6 @@ from cleanlab.count import calibrate_confident_joint
 from cleanlab.rank import (
     order_label_issues,
     get_label_quality_scores,
-    _get_label_quality_scores_multilabel,
 )
 from cleanlab.internal.validation import assert_valid_inputs
 from cleanlab.internal.util import (
@@ -586,16 +585,23 @@ def _find_label_issues_multilabel(
     if return_indices_ranked_by is None:
         return bissues.sum(axis=1) >= 1
     else:
-        lab_issue_probs = get_label_quality_scores(
+        label_issues_idx = reduce(np.union1d, label_issues_list).astype(np.int32)
+        label_quality_scores = get_label_quality_scores(
             labels=labels_list[0],
             pred_probs=pred_probs_list[0],
             method=return_indices_ranked_by,
             **rank_by_kwargs,
         )
-        return _get_label_quality_scores_multilabel(
-            labels=labels_list, pred_probs=pred_probs_list, label_issues_list=label_issues_list
-        )
-        return reduce(np.union1d, label_issues_list).astype(np.int32)
+        for i in range(1, num_classes):
+            label_quality_scores += get_label_quality_scores(
+                labels=labels_list[i],
+                pred_probs=pred_probs_list[i],
+                method=return_indices_ranked_by,
+                **rank_by_kwargs,
+            )
+        label_quality_scores /= num_classes
+        label_quality_scores_issues = label_quality_scores[label_issues_idx]
+        return label_issues_idx[np.argsort(label_quality_scores_issues)]
 
 
 def _binarize_pred_probs_slice(pred_probs: np.ndarray, class_num: int) -> np.ndarray:
