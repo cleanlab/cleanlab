@@ -295,10 +295,7 @@ def find_label_issues(
 
         # Prepare multiprocessing shared data
         if n_jobs > 1:
-            if multi_label:
-                _labels = RawArray("I", int2onehot(labels).flatten())  # type: ignore
-            else:
-                _labels = RawArray("I", labels)  # type: ignore
+            _labels = RawArray("I", labels)  # type: ignore
             _label_counts = RawArray("I", label_counts)
             _prune_count_matrix = RawArray("I", prune_count_matrix.flatten())  # type: ignore
             _pred_probs = RawArray("f", pred_probs.flatten())
@@ -387,18 +384,9 @@ def find_label_issues(
         label_issues_mask = find_predicted_neq_given(labels, pred_probs, multi_label=multi_label)
 
     # Remove label issues if given label == model prediction
-    if multi_label:
-        pred = _multiclass_crossval_predict(labels, pred_probs)
-        labels = MultiLabelBinarizer().fit_transform(labels)
-    else:
-        pred = pred_probs.argmax(axis=1)
+    pred = pred_probs.argmax(axis=1)
     for i, pred_label in enumerate(pred):
-        if (
-            multi_label
-            and np.all(pred_label == labels[i])
-            or not multi_label
-            and pred_label == labels[i]
-        ):
+        if not multi_label and pred_label == labels[i]:
             label_issues_mask[i] = False
 
     if verbose:
@@ -538,9 +526,8 @@ def _find_label_issues_multilabel(
       `return_indices_ranked_by`.
 
     """
-    num_classes = pred_probs.shape[1]
-    mlb = MultiLabelBinarizer()
-    y_one = mlb.fit_transform(labels)
+    num_classes = get_num_classes(labels=labels, pred_probs=pred_probs)
+    y_one = int2onehot(labels)
     if return_indices_ranked_by is None:
         bissues = np.zeros(y_one.shape).astype(bool)
     else:
