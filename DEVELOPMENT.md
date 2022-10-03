@@ -3,16 +3,6 @@
 This document explains how to set up a development environment for
 [contributing](CONTRIBUTING.md) to cleanlab.
 
-## Adding new modules into the source code
-
-  You should go through the following checklist if you intend to add new functionality to the package in a separate module.
-- [x] Add brief description of the module’s purpose in a comment at the top of file and docstrings for every function.
-- [x] Import the module `my_module.py` into main [``__init__.py``](cleanlab/__init__.py)
-- [x] Create detailed unit tests (typically in a new file `tests/test_my_module.py`)
-- [x] Add module to docs index pages [here](docs/source/index.rst) and create .rst file [here](docs/source/cleanlab/) (so it appears on [docs.cleanlab.ai](https://docs.cleanlab.ai/stable/index.html))
-- [x] Create a QuickStart [tutorial](docs/source/tutorials) notebook that runs main module functionality in 5min or less and add it to index pages [here](docs/source/tutorials/index.rst) and [here](docs/source/index.rst). Clear cell output before pushing.
-- [x] Create an [examples](https://github.com/cleanlab/examples) notebook that runs more advanced module functionality with a more real-world application (can have a longer run time). Push with printed cell output.
-
 ## Setting up a virtual environment
 
 While this is not required, we recommend that you do development and testing in
@@ -40,6 +30,16 @@ Run the following commands in the repository's root directory.
 1. Install development requirements with `pip install -r requirements-dev.txt`
 
 1. Install cleanlab as an editable package with `pip install -e .`
+
+## Adding new modules into the source code
+
+  You should go through the following checklist if you intend to add new functionality to the package in a separate module.
+- [x] Add brief description of the module’s purpose in a comment at the top of file and docstrings for every function.
+- [x] Import the module `my_module.py` into main [``__init__.py``](cleanlab/__init__.py)
+- [x] Create detailed unit tests (typically in a new file `tests/test_my_module.py`)
+- [x] Add module to docs index pages [here](docs/source/index.rst) and create .rst file [here](docs/source/cleanlab/) (so it appears on [docs.cleanlab.ai](https://docs.cleanlab.ai/stable/index.html))
+- [x] Create a QuickStart [tutorial](docs/source/tutorials) notebook that runs main module functionality in 5min or less and add it to index pages [here](docs/source/tutorials/index.rst) and [here](docs/source/index.rst). Clear cell output before pushing.
+- [x] Create an [examples](https://github.com/cleanlab/examples) notebook that runs more advanced module functionality with a more real-world application (can have a longer run time). Push with printed cell output.
 
 ## Testing
 
