@@ -357,6 +357,30 @@ def test_find_label_issues_multi_label(multi_label, filter_by, return_indices_ra
     assert acc > 0.85
 
 
+@pytest.mark.parametrize(
+    "confident_joint",
+    [None, [[[1, 0], [0, 4]], [[3, 0], [0, 2]], [[3, 0], [1, 1]], [[3, 1], [0, 1]]]],
+)
+def test_find_label_issues_multi_label_conf_joint(confident_joint):
+    pred_probs = np.array(
+        [
+            [0.9, 0.1, 0.0, 0.4],
+            [0.7, 0.8, 0.2, 0.3],
+            [0.9, 0.8, 0.4, 0.2],
+            [0.1, 0.1, 0.8, 0.3],
+            [0.4, 0.5, 0.1, 0.1],
+        ]
+    )
+    labels = [[0], [0, 1], [0, 1], [2], [0, 2, 3]]
+    noise_idx = filter.find_label_issues(
+        labels=labels,
+        pred_probs=pred_probs,
+        multi_label=True,
+        confident_joint=np.array(confident_joint) if confident_joint else None,
+    )
+    assert noise_idx.tolist() == [False, False, False, False, True]
+
+
 @pytest.mark.parametrize("return_indices_of_off_diagonals", [True, False])
 def test_confident_learning_filter(return_indices_of_off_diagonals):
     if return_indices_of_off_diagonals:

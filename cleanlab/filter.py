@@ -508,7 +508,7 @@ def _find_label_issues_multilabel(
       when pruning noisy examples in datasets with rare classes.
 
     confident_joint : np.ndarray, optional
-      An array of shape ``(num_classes,K, K)`` representing the confident joint, the matrix used for identifying label issues, which
+      An array of shape ``(num_classes,2, 2)`` representing the confident joint, the matrix used for identifying label issues, which
       estimates a confident subset of the joint distribution of the noisy and true labels, ``P_{noisy label, true label}``.
       Entry ``(c, j, k)`` in the matrix is the number of examples in a one-vs-rest class confidently counted into the pair of ``(class c, noisy label=j, true label=k)`` classes.
       The `confident_joint` can be computed using :py:func:`count.compute_confident_joint <cleanlab.count.compute_confident_joint>`.
@@ -553,8 +553,8 @@ def _find_label_issues_multilabel(
                 f"The new recommended format for confident_joint in multi_label settings is (num_classes,k,k) (as output by compute_confident_joint(...,multi_label=True)). Your k x k confident_joint in the old format is being ignored."
             )
             confident_joint = None
-        elif confident_joint_shape != (num_classes, num_classes, num_classes):
-            raise ValueError("confident_joint should be of shape (num_classes,K, K)")
+        elif confident_joint_shape != (num_classes, 2, 2):
+            raise ValueError("confident_joint should be of shape (num_classes,2, 2)")
     for class_num in range(0, num_classes):
         pred_probabilitites = _binarize_pred_probs_slice(pred_probs, class_num)
         if confident_joint is None:
