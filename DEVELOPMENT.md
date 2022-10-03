@@ -3,8 +3,9 @@
 This document explains how to set up a development environment for
 [contributing](CONTRIBUTING.md) to cleanlab.
 
-#### Checklist for adding new modules into the source code
+## Adding new modules into the source code
 
+  You should go through the following checklist if you intend to add new functionality to the package in a separate module.
 - [x] Add brief description of the module’s purpose in a comment at the top of file and docstrings for every function.
 - [x] Import the module `my_module.py` into main [``__init__.py``](cleanlab/__init__.py)
 - [x] Create detailed unit tests (typically in a new file `tests/test_my_module.py`)
