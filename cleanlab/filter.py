@@ -606,14 +606,6 @@ def _binarize_pred_probs_slice(pred_probs: np.ndarray, class_num: int) -> np.nda
     return pred_probabilitites
 
 
-def _binarize_multilabels(labels: List[List[int]], num_classes: int) -> np.ndarray:
-    num_examples = len(labels)
-    y_one = np.zeros((num_examples, num_classes)).astype(np.int32)
-    for example, multilabel in enumerate(labels):
-        y_one[example, multilabel] = 1
-    return y_one
-
-
 def _keep_at_least_n_per_class(prune_count_matrix, n, *, frac_noise=1.0) -> np.ndarray:
     """Make sure every class has at least n examples after removing noise.
     Functionally, increase each column, increases the diagonal term #(true_label=k,label=k)
