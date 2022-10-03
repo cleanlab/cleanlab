@@ -3,6 +3,7 @@
 from cleanlab.internal import util
 import numpy as np
 
+from cleanlab.internal.util import onehot2int, int2onehot
 
 noise_matrix = np.array([[1.0, 0.0, 0.2], [0.0, 0.7, 0.2], [0.0, 0.3, 0.6]])
 
@@ -74,6 +75,11 @@ def test_round_preserving_sum():
     # Make sure one of ints is now 2 to preserve sum of 11
     assert np.any(ints == 2)
     assert sum(ints) == 11
+
+
+def test_one_hot():
+    labels = [[0], [0, 1], [0, 1], [2], [0, 2, 3]]
+    assert onehot2int(int2onehot(labels)) == labels
 
 
 def test_round_preserving_row_totals():

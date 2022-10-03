@@ -36,7 +36,6 @@ from cleanlab.internal.validation import assert_valid_inputs
 from cleanlab.internal.util import (
     value_counts,
     round_preserving_row_totals,
-    onehot2int,
     int2onehot,
     get_num_classes,
 )
@@ -834,15 +833,7 @@ def _get_shared_data() -> Any:  # pragma: no cover
     )
     min_examples_per_class = mp_params["min_examples_per_class"]
     multi_label = mp_params["multi_label"]
-    if multi_label:  # Shared data is passed as one-hot encoded matrix
-        labels = onehot2int(
-            _to_np_array(
-                mp_arr=mp_params["labels"],
-                shape=(pred_probs.shape[0], pred_probs.shape[1]),
-            )
-        )
-    else:
-        labels = _to_np_array(mp_params["labels"])  # type: ignore
+    labels = _to_np_array(mp_params["labels"])  # type: ignore
     return (
         labels,
         label_counts,
@@ -947,40 +938,3 @@ def _prune_by_count(k, args=None) -> np.ndarray:
             cut = -np.partition(-margin[label_filter], num2prune - 1)[num2prune - 1]
             label_issues_mask = label_issues_mask | (label_filter & (margin >= cut))
     return label_issues_mask
-
-
-def _multiclass_crossval_predict(labels, pyx) -> np.ndarray:
-    """Returns a numpy 2D array of one-hot encoded
-    multiclass predictions. Each row in the array
-    provides the predictions for a particular example.
-    The boundary condition used to threshold predictions
-    is computed by maximizing the F1 ROC curve.
-
-    Parameters
-    ----------
-    labels : list of lists (length N)
-      These are multiclass labels. Each list in the list contains all the
-      labels for that example.
-
-    pyx : np.ndarray (shape (N, K))
-        P(label=k|x) is a matrix with K model-predicted probabilities.
-        Each row of this matrix corresponds to an example `x` and contains the model-predicted
-        probabilities that `x` belongs to each possible class.
-        The columns must be ordered such that these probabilities correspond to class 0,1,2,...
-        `pred_probs` should have been computed using 3 (or higher) fold cross-validation."""
-
-    from sklearn.metrics import f1_score
-
-    boundaries = np.arange(0.05, 0.9, 0.05)
-    labels_one_hot = MultiLabelBinarizer().fit_transform(labels)
-    f1s = [
-        f1_score(
-            labels_one_hot,
-            (pyx > boundary).astype(np.uint8),
-            average="micro",
-        )
-        for boundary in boundaries
-    ]
-    boundary = boundaries[np.argmax(f1s)]
-    pred = (pyx > boundary).astype(np.uint8)
-    return pred
