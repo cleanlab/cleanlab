@@ -25,7 +25,7 @@ import multiprocessing
 from multiprocessing.sharedctypes import RawArray
 import sys
 import warnings
-from typing import Any, List, Optional
+from typing import Any, Optional
 from functools import reduce
 from cleanlab.count import calibrate_confident_joint
 from cleanlab.rank import (
