@@ -217,12 +217,12 @@ def test_estimate_joint(use_confident_joint):
     # Check that joint sums to 1.
     assert abs(np.sum(joint) - 1.0) < 1e-6
 
-
 def test_compute_confident_joint():
     cj = count.compute_confident_joint(
         labels=data["labels"],
         pred_probs=data["pred_probs"],
     )
+
 
     # Check that confident joint doesn't overcount number of examples.
     assert np.sum(cj) <= data["n"]
@@ -365,6 +365,7 @@ def test_find_label_issues_multi_label(multi_label, filter_by, return_indices_ra
         [[1, 1, 0, 2], [0, 1, 0, 1], [0, 0, 1, 1], [0, 0, 0, 1]],
     ],
 )
+@pytest.mark.filterwarnings("ignore:WARNING!")
 def test_find_label_issues_multi_label_conf_joint(confident_joint):
     pred_probs = np.array(
         [
@@ -463,13 +464,15 @@ def test_find_label_issue_filters_match_origin_functions():
         assert "not supported" in str(e)
 
 
-def test_num_label_issues():
+@pytest.mark.parametrize("confident_joint", [None, True])
+def test_num_label_issues(confident_joint):
     cj_calibrated_off_diag_sum = data["cj"].sum() - data["cj"].trace()
+    confident_joint = data["cj"] if confident_joint else None
     n = count.num_label_issues(
-        labels=data["labels"], pred_probs=data["pred_probs"], confident_joint=data["cj"]
+        labels=data["labels"], pred_probs=data["pred_probs"], confident_joint=confident_joint
     )
     n2 = filter.find_label_issues(
-        labels=data["labels"], pred_probs=data["pred_probs"], confident_joint=data["cj"]
+        labels=data["labels"], pred_probs=data["pred_probs"], confident_joint=confident_joint
     )
     # TODO: these should be equivalent for `filter_by='confident_learning'`, i.e. assert n == n2
     assert n == cj_calibrated_off_diag_sum
