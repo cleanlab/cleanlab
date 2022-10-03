@@ -539,7 +539,8 @@ def _find_label_issues_multilabel(
 
     """
     num_classes = pred_probs.shape[1]
-    y_one = _binarize_multilabels(labels, num_classes)
+    mlb = MultiLabelBinarizer()
+    y_one = mlb.fit_transform(labels)
     if return_indices_ranked_by is None:
         bissues = np.zeros(y_one.shape).astype(bool)
     else:
