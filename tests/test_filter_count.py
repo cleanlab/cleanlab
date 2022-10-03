@@ -359,7 +359,11 @@ def test_find_label_issues_multi_label(multi_label, filter_by, return_indices_ra
 
 @pytest.mark.parametrize(
     "confident_joint",
-    [None, [[[1, 0], [0, 4]], [[3, 0], [0, 2]], [[3, 0], [1, 1]], [[3, 1], [0, 1]]]],
+    [
+        None,
+        [[[1, 0], [0, 4]], [[3, 0], [0, 2]], [[3, 0], [1, 1]], [[3, 1], [0, 1]]],
+        [[1, 1, 0, 2], [0, 1, 0, 1], [0, 0, 1, 1], [0, 0, 0, 1]],
+    ],
 )
 def test_find_label_issues_multi_label_conf_joint(confident_joint):
     pred_probs = np.array(
