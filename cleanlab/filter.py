@@ -20,7 +20,6 @@ Methods to identify which examples have label issues.
 
 import numpy as np
 from sklearn.metrics import confusion_matrix
-from sklearn.preprocessing import MultiLabelBinarizer
 import multiprocessing
 from multiprocessing.sharedctypes import RawArray
 import sys

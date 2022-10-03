@@ -376,6 +376,8 @@ def test_find_label_issues_multi_label_conf_joint(confident_joint):
         ]
     )
     labels = [[0], [0, 1], [0, 1], [2], [0, 2, 3]]
+    cj = count.compute_confident_joint(labels=labels, pred_probs=pred_probs, multi_label=True)
+    assert cj.shape == (4, 4)
     noise_idx = filter.find_label_issues(
         labels=labels,
         pred_probs=pred_probs,
