@@ -217,12 +217,12 @@ def test_estimate_joint(use_confident_joint):
     # Check that joint sums to 1.
     assert abs(np.sum(joint) - 1.0) < 1e-6
 
+
 def test_compute_confident_joint():
     cj = count.compute_confident_joint(
         labels=data["labels"],
         pred_probs=data["pred_probs"],
     )
-
 
     # Check that confident joint doesn't overcount number of examples.
     assert np.sum(cj) <= data["n"]
