@@ -389,23 +389,27 @@ def test_find_label_issues_multi_label_conf_joint(confident_joint):
 
 
 @pytest.mark.parametrize("return_indices_of_off_diagonals", [True, False])
-def test_confident_learning_filter(return_indices_of_off_diagonals):
+@pytest.mark.parametrize("multi_label", [True, False])
+def test_confident_learning_filter(return_indices_of_off_diagonals, multi_label):
+    s_ml = [[z, data["true_labels_train"][i]] for i, z in enumerate(data["labels"])]
     if return_indices_of_off_diagonals:
         cj, indices = count.compute_confident_joint(
-            labels=data["labels"],
+            labels=s_ml if multi_label else data["labels"],
             pred_probs=data["pred_probs"],
             calibrate=False,
             return_indices_of_off_diagonals=True,
+            multi_label=multi_label,
         )
         # Check that the number of 'label issues' found in off diagonals
         # matches the off diagonals of the uncalibrated confident joint
         assert len(indices) == (np.sum(cj) - np.trace(cj))
     else:
         cj = count.compute_confident_joint(
-            labels=data["labels"],
+            labels=s_ml if multi_label else data["labels"],
             pred_probs=data["pred_probs"],
             calibrate=False,
             return_indices_of_off_diagonals=False,
+            multi_label=multi_label,
         )
         assert np.trace(cj) > -1
 
