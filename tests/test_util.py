@@ -82,7 +82,7 @@ def test_one_hot():
     assert onehot2int(int2onehot(labels)) == labels
 
 
-def test_one_hot():
+def test_num_unique():
     labels = [[0], [0, 1], [0, 1], [2], [0, 2, 3]]
     assert num_unique_classes(labels) == 4
 
