@@ -207,6 +207,8 @@ On rare occasions, you may want to update the docs without deleting and recreati
 
 > :warning: Any build artifacts manually added to `cleanlab/cleanlab-docs` that do not live in the `master` branch of the `cleanlab/cleanlab` repo will be lost in future versions of cleanlab docs. So any edit made in the v2.0.0 docs which you also want to have in the v2.0.1, v2.0.2, etc. docs needs to be introduced as a PR to the `cleanlab/cleanlab` repo as well.
 
+> :warning: Currently, if updating stable/old version (say `vXXX`) of tutorials from latest master branch version, the install of cleanlab package in notebooks/colabs will be wrong. To remedy this, you need to update the cleanlab version in all `.ipynb` files inside folders: **cleanlab-docs/vXXX/tutorials/** and **cleanlab-docs/vXXX/_sources/**. The tutorial `.html` pages will also have wrong colab links as well. Currently have to   update the `.html` files in **cleanlab-docs/vXXX/tutorials/** to replace these colab links with the proper links (replace `/master/` in the link with `/vXXX/` for the version you are building docs for).
+
 # Behind-the-scenes of the GitHub Pages workflow
 
 We've configured GitHub Actions to run the GitHub Pages workflow (gh-pages.yaml) to build and deploy our docs' static files. Here's a breakdown of what this workflow does in the background:
