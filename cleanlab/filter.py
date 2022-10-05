@@ -137,7 +137,7 @@ def find_label_issues(
     multi_label : bool, optional
       If ``True``, labels should be an iterable (e.g. list) of iterables, containing a
       list of labels for each example, instead of just a single label.
-      The multi-label setting supports classification tasks where an example has 1 or more labels.
+      The multi-label setting supports classification tasks where an example can belong to more than 1 class (rather than exactly one class as in standard multi-class classification).
       Example of a multi-labeled `labels` input: ``[[0,1], [1], [0,2], [0,1,2], [0], [1], ...]``. This says the first example in dataset belongs to both class 0 and class 1, according to its given label.
       Confident joint should be an array of shape ``(K, 2, 2)`` in multi-label settings.
       Each row of `pred_probs` no longer needs to sum to 1 in multi-label settings, since one example can now belong to multiple classes simultaneously.
