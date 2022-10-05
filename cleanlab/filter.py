@@ -140,7 +140,7 @@ def find_label_issues(
       The multi-label setting supports classification tasks where an example has 1 or more labels.
       Example of a multi-labeled `labels` input: ``[[0,1], [1], [0,2], [0,1,2], [0], [1], ...]``.
       Confident joint should be an array of shape ``(N, K, K)``
-      The pred_probs need not sum to 1.0
+      Each row of `pred_probs` no longer needs to sum to 1 in multi-label settings, since one example can now belong to multiple classes simultaneously.
 
 
     frac_noise : float, default=1.0
