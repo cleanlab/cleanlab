@@ -432,12 +432,6 @@ def _find_label_issues_multilabel(
       columns must be ordered such that these probabilities correspond to
       class 0, 1, ..., K-1. They need not sum to 1.0
 
-      **Caution**: `pred_probs` from your model must be out-of-sample!
-      You should never provide predictions on the same examples used to train the model,
-      as these will be overfit and unsuitable for finding label-errors.
-      To obtain out-of-sample predicted probabilities for every datapoint in your dataset, you can use :ref:`cross-validation <pred_probs_cross_val>`.
-      Alternatively it is ok if your model was trained on a separate dataset and you are only evaluating
-      data that was previously held-out.
 
     return_indices_ranked_by : {None, 'self_confidence', 'normalized_margin', 'confidence_weighted_entropy'}, default=None
       Determines what is returned by this method: either a boolean mask or list of indices np.ndarray.
