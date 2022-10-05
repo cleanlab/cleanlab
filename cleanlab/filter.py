@@ -571,7 +571,7 @@ def _find_label_issues_multilabel(
     if return_indices_ranked_by is None:
         return bissues.sum(axis=1) >= 1
     else:
-        label_issues_idx = reduce(np.union1d, label_issues_list).astype(np.int32)
+        label_issues_idx = reduce(np.union1d, label_issues_list)
         label_quality_scores = np.zeros(len(labels))
         for i in range(0, num_classes):
             label_quality_scores += get_label_quality_scores(

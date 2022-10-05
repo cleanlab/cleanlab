@@ -369,8 +369,12 @@ def test_find_label_issues_multi_label(multi_label, filter_by, return_indices_ra
         [[1, 1, 0, 2], [0, 1, 0, 1], [0, 0, 1, 1], [0, 0, 0, 1]],
     ],
 )
+@pytest.mark.parametrize(
+    "return_indices_ranked_by",
+    [None, "self_confidence", "normalized_margin", "confidence_weighted_entropy"],
+)
 @pytest.mark.filterwarnings("ignore:WARNING!")
-def test_find_label_issues_multi_label_conf_joint(confident_joint):
+def test_find_label_issues_multi_label_small(confident_joint, return_indices_ranked_by):
     pred_probs = np.array(
         [
             [0.9, 0.1, 0.0, 0.4],
@@ -388,7 +392,12 @@ def test_find_label_issues_multi_label_conf_joint(confident_joint):
         pred_probs=pred_probs,
         multi_label=True,
         confident_joint=np.array(confident_joint) if confident_joint else None,
+        return_indices_ranked_by=return_indices_ranked_by,
     )
+    if return_indices_ranked_by is not None:
+        noise_bool = np.zeros(len(labels)).astype(bool)
+        noise_bool[noise_idx] = True
+        noise_idx = noise_bool
     assert noise_idx.tolist() == [False, False, False, False, True]
 
 
