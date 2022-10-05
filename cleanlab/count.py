@@ -32,6 +32,7 @@ import pandas as pd
 import warnings
 from typing import Tuple, Union
 
+from cleanlab.filter import _binarize_pred_probs_slice
 from cleanlab.internal.util import (
     value_counts,
     clip_values,
@@ -43,6 +44,7 @@ from cleanlab.internal.util import (
     get_num_classes,
     is_torch_dataset,
     is_tensorflow_dataset,
+    int2onehot,
 )
 from cleanlab.internal.latent_algebra import (
     compute_inv_noise_matrix,
@@ -281,40 +283,32 @@ def _compute_confident_joint_multi_label(
         of confident joint as a baseline proxy for the label issues. This
         sometimes works as well as filter.find_label_issues(confident_joint)."""
 
-    # Assumes all classes are represented in labels: [0, 1, 2, ... num_classes - 1]
-    unique_classes = range(get_num_classes(labels=labels, pred_probs=pred_probs))
-    if thresholds is None:
-        # the avg probability of class given that the label is represented.
-        thresholds = get_confident_thresholds(labels, pred_probs, multi_label=True)
-    # N x K matrix. Create mask for every example if for each class, prob >= threshold
-    pred_probs_bool = pred_probs >= thresholds
-
-    # Compute confident joint
-    # K x N matrix. (no need to avoid collisions for multi-label, double counting is okay!)
-    k_in_l = np.array([[k in lst for lst in labels] for k in unique_classes])
-    # K x K matrix. Num examples with given label k where prob >= threshold for each (true) label k
-    confident_joint = np.array([pred_probs_bool[k_in_l[k]].sum(axis=0) for k in unique_classes])
-    # Guarantee at least one correctly labeled example is represented in every class
-    np.fill_diagonal(confident_joint, confident_joint.diagonal().clip(min=1))
-    if calibrate:
-        confident_joint = calibrate_confident_joint(confident_joint, labels, multi_label=True)
-    if return_indices_of_off_diagonals:
-        # Todo add more tests and consider refactoring for efficiency (combine with confident_joint)
-        # Convert boolean mask of k_in_l to indices of examples that include class k in the labels
-        indices_k_in_l = [np.arange(len(labels))[k_in_l[k]] for k in unique_classes]
-        # Find boolean mask where the thresholds exceed for non-given class, for each class k
-        issues_mask = [
-            np.any(np.delete(pred_probs_bool, k, axis=1)[k_in_l[k]], axis=1) for k in unique_classes
-        ]
-        # Map boolean mask to the indices of the examples, for each class k
-        indices_of_issues_list = [indices_k_in_l[k][issues_mask[k]] for k in unique_classes]
-        # Combine error indices for each class k into a single set of all the indices of errors
-        indices_of_issues = np.asarray(
-            list(set([z for lst in indices_of_issues_list for z in lst]))
+    unique_classes = get_num_classes(labels=labels, pred_probs=pred_probs)
+    print("num_classes", unique_classes)
+    y_one = int2onehot(labels)
+    conf_list = []
+    for class_num in range(0, unique_classes):
+        pred_probabilitites = _binarize_pred_probs_slice(pred_probs, class_num)
+        cj = compute_confident_joint(
+            labels=y_one[:, class_num],
+            pred_probs=pred_probabilitites,
+            multi_label=False,
+            thresholds=thresholds,
+            calibrate=calibrate,
+            return_indices_of_off_diagonals=return_indices_of_off_diagonals,
         )
-        return confident_joint, sorted(indices_of_issues)
+        conf_list.append(cj)
 
-    return confident_joint
+    if return_indices_of_off_diagonals:
+        confident_joint_list = []
+        indices_of_issues_list = []
+        for i in range(0, len(conf_list)):
+            confident_joint_list.append(conf_list[i][0])
+            indices_of_issues_list.append(sorted(conv_list[i][1]))
+
+        return np.array(confident_joint_list), indices_of_issues_list
+
+    return np.array(conf_list)
 
 
 def compute_confident_joint(
