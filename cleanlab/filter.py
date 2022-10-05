@@ -536,7 +536,7 @@ def _find_label_issues_multilabel(
         confident_joint_shape = confident_joint.shape
         if confident_joint_shape == (num_classes, num_classes):
             warnings.warn(
-                f"The new recommended format for confident_joint in multi_label settings is (num_classes,2,2) (as output by compute_confident_joint(...,multi_label=True)). Your k x k confident_joint in the old format is being ignored."
+                f"The new recommended format for `confident_joint` in multi_label settings is (num_classes,2,2) as output by compute_confident_joint(...,multi_label=True). Your K x K confident_joint in the old format is being ignored."
             )
             confident_joint = None
         elif confident_joint_shape != (num_classes, 2, 2):
