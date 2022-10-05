@@ -83,13 +83,15 @@ def make_data(
         labels=labels,
         cv_n_folds=3,
     )
-
+    multi_labels = [list(set([z, true_labels_train[i]])) for i, z in enumerate(labels)]
+    multi_labels[20] = [0, 1, 2]
     return {
         "X_train": X_train,
         "true_labels_train": true_labels_train,
         "X_test": X_test,
         "true_labels_test": true_labels_test,
         "labels": labels,
+        "multi_labels": multi_labels,
         "ps": ps,
         "py": py,
         "noise_matrix": noise_matrix,
@@ -338,17 +340,16 @@ def test_pruning_order_method():
 )
 def test_find_label_issues_multi_label(multi_label, filter_by, return_indices_ranked_by):
     """Note: argmax_not_equal method is not compatible with multi_label == True"""
-
-    s_ml = [[z, data["true_labels_train"][i]] for i, z in enumerate(data["labels"])]
+    labels = data["multi_labels"] if multi_label else data["labels"]
     noise_idx = filter.find_label_issues(
-        labels=s_ml if multi_label else data["labels"],
+        labels=labels,
         pred_probs=data["pred_probs"],
         filter_by=filter_by,
         multi_label=multi_label,
         return_indices_ranked_by=return_indices_ranked_by,
     )
     if return_indices_ranked_by is not None:
-        noise_bool = np.zeros(len(s_ml)).astype(bool)
+        noise_bool = np.zeros(len(labels)).astype(bool)
         noise_bool[noise_idx] = True
         noise_idx = noise_bool
     acc = np.mean((data["labels"] != data["true_labels_train"]) == noise_idx)
@@ -391,10 +392,10 @@ def test_find_label_issues_multi_label_conf_joint(confident_joint):
 @pytest.mark.parametrize("return_indices_of_off_diagonals", [True, False])
 @pytest.mark.parametrize("multi_label", [True, False])
 def test_confident_learning_filter(return_indices_of_off_diagonals, multi_label):
-    s_ml = [[z, data["true_labels_train"][i]] for i, z in enumerate(data["labels"])]
+    labels = data["multi_labels"] if multi_label else data["labels"]
     if return_indices_of_off_diagonals:
         cj, indices = count.compute_confident_joint(
-            labels=s_ml if multi_label else data["labels"],
+            labels=labels,
             pred_probs=data["pred_probs"],
             calibrate=False,
             return_indices_of_off_diagonals=True,
@@ -402,10 +403,14 @@ def test_confident_learning_filter(return_indices_of_off_diagonals, multi_label)
         )
         # Check that the number of 'label issues' found in off diagonals
         # matches the off diagonals of the uncalibrated confident joint
-        assert len(indices) == (np.sum(cj) - np.trace(cj))
+
+        if multi_label:
+            assert len(indices) == (np.sum(cj) - np.trace(cj)) - 1
+        else:
+            assert len(indices) == (np.sum(cj) - np.trace(cj))
     else:
         cj = count.compute_confident_joint(
-            labels=s_ml if multi_label else data["labels"],
+            labels=labels,
             pred_probs=data["pred_probs"],
             calibrate=False,
             return_indices_of_off_diagonals=False,
