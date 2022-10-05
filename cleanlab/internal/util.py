@@ -687,6 +687,12 @@ def num_unique_classes(labels, multi_label=None) -> int:
         return len(set(labels))
 
 
+def _binarize_pred_probs_slice(pred_probs: np.ndarray, class_num: int) -> np.ndarray:
+    pred_probs_class = pred_probs[:, class_num]
+    pred_probabilitites = np.stack([1 - pred_probs_class, pred_probs_class]).T
+    return pred_probabilitites
+
+
 def smart_display_dataframe(df):  # pragma: no cover
     """Display a pandas dataframe if in a jupyter notebook, otherwise print it to console."""
     try:

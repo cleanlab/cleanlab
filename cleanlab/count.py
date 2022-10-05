@@ -28,11 +28,9 @@ from sklearn.model_selection import StratifiedKFold
 from sklearn.metrics import confusion_matrix
 import sklearn.base
 import numpy as np
-import pandas as pd
 import warnings
 from typing import Tuple, Union
 
-from cleanlab.filter import _binarize_pred_probs_slice
 from cleanlab.internal.util import (
     value_counts,
     clip_values,
@@ -45,6 +43,7 @@ from cleanlab.internal.util import (
     is_torch_dataset,
     is_tensorflow_dataset,
     int2onehot,
+    _binarize_pred_probs_slice,
 )
 from cleanlab.internal.latent_algebra import (
     compute_inv_noise_matrix,
@@ -304,7 +303,7 @@ def _compute_confident_joint_multi_label(
         indices_of_issues_list = []
         for i in range(0, len(conf_list)):
             confident_joint_list.append(conf_list[i][0])
-            indices_of_issues_list.append(sorted(conv_list[i][1]))
+            indices_of_issues_list.append(sorted(conf_list[i][1]))
 
         return np.array(confident_joint_list), indices_of_issues_list
 

@@ -37,6 +37,7 @@ from cleanlab.internal.util import (
     round_preserving_row_totals,
     int2onehot,
     get_num_classes,
+    _binarize_pred_probs_slice,
 )
 
 # tqdm is a module used to print time-to-complete when multiprocessing is used.
@@ -577,12 +578,6 @@ def _find_label_issues_multilabel(
         label_quality_scores /= num_classes
         label_quality_scores_issues = label_quality_scores[label_issues_idx]
         return label_issues_idx[np.argsort(label_quality_scores_issues)]
-
-
-def _binarize_pred_probs_slice(pred_probs: np.ndarray, class_num: int) -> np.ndarray:
-    pred_probs_class = pred_probs[:, class_num]
-    pred_probabilitites = np.stack([1 - pred_probs_class, pred_probs_class]).T
-    return pred_probabilitites
 
 
 def _keep_at_least_n_per_class(prune_count_matrix, n, *, frac_noise=1.0) -> np.ndarray:
