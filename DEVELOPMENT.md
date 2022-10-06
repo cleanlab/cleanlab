@@ -29,7 +29,9 @@ Run the following commands in the repository's root directory.
 
 1. Install development requirements with `pip install -r requirements-dev.txt`
 
-1. Install cleanlab as an editable package with `pip install -e .`
+2. Install cleanlab as an editable package with `pip install -e .`
+
+For Macs with Apple silicon: replace `tensorflow` in requirements-dev.txt with: `tensorflow-macos==2.9.2` and `tensorflow-metal==0.5.1`
 
 
 ## Testing
@@ -60,7 +62,6 @@ $ pytest --cov=cleanlab/ --cov-config .coveragerc --cov-report=html
 
 The coverage report will be available in `coverage_html_report/index.html`,
 which you can open with your web browser.
-
 
 ### Type checking
 
