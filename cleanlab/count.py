@@ -283,7 +283,6 @@ def _compute_confident_joint_multi_label(
         sometimes works as well as filter.find_label_issues(confident_joint)."""
 
     unique_classes = get_num_classes(labels=labels, pred_probs=pred_probs)
-    print("num_classes", unique_classes)
     y_one = int2onehot(labels)
     conf_list = []
     for class_num in range(0, unique_classes):
