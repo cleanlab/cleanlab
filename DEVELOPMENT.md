@@ -125,7 +125,7 @@ endings match the project style.
 - [x] Import the module `my_module.py` into main [``__init__.py``](cleanlab/__init__.py)
 - [x] Create detailed unit tests (typically in a new file `tests/test_my_module.py`)
 - [x] Add new module to docs index pages (**docs/source/index.rst**) and create .rst file in **docs/source/cleanlab/** (so that module appears on [docs.cleanlab.ai](https://docs.cleanlab.ai/stable/index.html) -- please verify its documentation also looks good there)
-- [x] Create a QuickStart [tutorial](docs/source/tutorials) notebook that runs main module functionality in 5min or less and add it to index pages [here](docs/source/tutorials/index.rst) and [here](docs/source/index.rst). Clear cell output before pushing.
+- [x] Create a QuickStart (**docs/source/tutorials**) notebook that runs main module functionality in 5min or less and add it to index pages (**docs/source/tutorials/index.rst**, **docs/source/index.rst**). Clear cell output before pushing.
 - [x] Create an [examples](https://github.com/cleanlab/examples) notebook that runs more advanced module functionality with a more real-world application (can have a longer run time). Push with printed cell output.
 
 
