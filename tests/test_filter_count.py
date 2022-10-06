@@ -417,7 +417,8 @@ def test_confident_learning_filter(return_indices_of_off_diagonals, multi_label)
         # matches the off diagonals of the uncalibrated confident joint
 
         if multi_label:
-            assert len(indices) == (np.sum(cj) - np.trace(cj)) - 1
+            for c, ind in zip(cj, indices):
+                assert len(ind) == (np.sum(c) - np.trace(c))
         else:
             assert len(indices) == (np.sum(cj) - np.trace(cj))
     else:
@@ -425,10 +426,14 @@ def test_confident_learning_filter(return_indices_of_off_diagonals, multi_label)
             labels=labels,
             pred_probs=data["pred_probs"],
             calibrate=False,
-            return_indices_of_off_diagonals=False,
+            return_indices_of_off_diagonals=return_indices_of_off_diagonals,
             multi_label=multi_label,
         )
-        assert np.trace(cj) > -1
+        if multi_label:
+            for c in cj:
+                assert np.trace(c) > -1
+        else:
+            assert np.trace(cj) > -1
 
 
 def test_predicted_neq_given_filter():
