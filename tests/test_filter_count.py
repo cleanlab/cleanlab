@@ -373,7 +373,7 @@ def test_find_label_issues_multi_label(multi_label, filter_by, return_indices_ra
     "return_indices_ranked_by",
     [None, "self_confidence", "normalized_margin", "confidence_weighted_entropy"],
 )
-@pytest.mark.filterwarnings("ignore:WARNING!")
+@pytest.mark.filterwarnings("ignore::UserWarning")
 def test_find_label_issues_multi_label_small(confident_joint, return_indices_ranked_by):
     pred_probs = np.array(
         [
