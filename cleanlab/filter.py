@@ -435,7 +435,7 @@ def _find_label_issues_multilabel(
     else:
         label_issues_list, labels_list, pred_probs_list = per_class_issues
         label_issues_idx = reduce(np.union1d, label_issues_list)
-        num_classes = len(pred_probs_list)
+        num_classes = get_num_classes(labels=labels, pred_probs=pred_probs)
         label_quality_scores = np.zeros(len(labels))
         for i in range(0, num_classes):
             label_quality_scores += get_label_quality_scores(
@@ -480,58 +480,22 @@ def _find_multilabel_issues_per_class(
 
 
     return_indices_ranked_by : {None, 'self_confidence', 'normalized_margin', 'confidence_weighted_entropy'}, default=None
-      Determines what is returned by this method: either a boolean mask or list of indices np.ndarray.
-      If ``None``, this function returns a boolean mask (``True`` if example at index is label error).
-      If not ``None``, this function returns a sorted array of indices of examples with label issues
-      (instead of a boolean mask). Indices are sorted by label quality score which can be one of:
-
-      - ``'normalized_margin'``: ``normalized margin (p(label = k) - max(p(label != k)))``
-      - ``'self_confidence'``: ``[pred_probs[i][labels[i]] for i in label_issues_idx]``
-      - ``'confidence_weighted_entropy'``: ``entropy(pred_probs) / self_confidence``
+      Refer to documentation for this argument in filter.find_label_issues() for details.
 
     rank_by_kwargs : dict, optional
-      Optional keyword arguments to pass into scoring functions for ranking by
-      label quality score: Not supported yet.
+      Refer to documentation for this argument in filter.find_label_issues() for details.
 
     filter_by : {'prune_by_class', 'prune_by_noise_rate', 'both', 'confident_learning', 'predicted_neq_given'}, default='prune_by_noise_rate'
-      Method to determine which examples are flagged as having label issue, so you can filter/prune them from the dataset. Options:
-
-      - ``'prune_by_noise_rate'``: filters examples with *high probability* of being mislabeled for every non-diagonal in the confident joint (see `prune_counts_matrix` in `filter.py`). These are the examples where (with high confidence) the given label is unlikely to match the predicted label for the example.
-      - ``'prune_by_class'``: filters the examples with *smallest probability* of belonging to their given class label for every class.
-      - ``'both'``: filters only those examples that would be filtered by both ``'prune_by_noise_rate'`` and ``'prune_by_class'``.
-      - ``'confident_learning'``: filters the examples counted as part of the off-diagonals of the confident joint. These are the examples that are confidently predicted to be a different label than their given label.
-      - ``'predicted_neq_given'``: filters examples for which the predicted class (i.e. argmax of the predicted probabilities) does not match the given label.
+      Refer to documentation for this argument in filter.find_label_issues() for details.
 
     frac_noise : float, default=1.0
-      Used to only return the "top" ``frac_noise * num_label_issues``. The choice of which "top"
-      label issues to return is dependent on the `filter_by` method used. It works by reducing the
-      size of the off-diagonals of the `joint` distribution of given labels and true labels
-      proportionally by `frac_noise` prior to estimating label issues with each method.
-      This parameter only applies for `filter_by=both`, `filter_by=prune_by_class`, and
-      `filter_by=prune_by_noise_rate` methods and currently is unused by other methods.
-      When ``frac_noise=1.0``, return all "confident" estimated noise indices (recommended).
-
-      frac_noise * number_of_mislabeled_examples_in_class_k.
+      Refer to documentation for this argument in filter.find_label_issues() for details.
 
     num_to_remove_per_class : array_like
-      An iterable of length K, the number of classes.
-      E.g. if K = 3, ``num_to_remove_per_class=[5, 0, 1]`` would return
-      the indices of the 5 most likely mislabeled examples in class 0,
-      and the most likely mislabeled example in class 2.
-
-      Note
-      ----
-      Only set this parameter if ``filter_by='prune_by_class'``.
-      You may use with ``filter_by='prune_by_noise_rate'``, but
-      if ``num_to_remove_per_class=k``, then either k-1, k, or k+1
-      examples may be removed for any class due to rounding error. If you need
-      exactly 'k' examples removed from every class, you should use
-      ``filter_by='prune_by_class'``.
+      Refer to documentation for this argument in filter.find_label_issues() for details.
 
     min_examples_per_class : int, default=1
-      Minimum number of examples per class to avoid flagging as label issues.
-      This is useful to avoid deleting too much data from one class
-      when pruning noisy examples in datasets with rare classes.
+      Refer to documentation for this argument in filter.find_label_issues() for details.
 
     confident_joint : np.ndarray, optional
       An array of shape ``(num_classes,2, 2)`` representing the confident joint, the matrix used for identifying label issues, which
@@ -541,21 +505,18 @@ def _find_multilabel_issues_per_class(
       If not provided, it is computed from the given (noisy) `labels` and `pred_probs`.
 
     n_jobs : optional
-      Number of processing threads used by multiprocessing. Default ``None``
-      sets to the number of cores on your CPU.
-      Set this to 1 to *disable* parallel processing (if its causing issues).
-      Windows users may see a speed-up with ``n_jobs=1``.
+      Refer to documentation for this argument in filter.find_label_issues() for details.
 
     verbose : optional
       If ``True``, prints when multiprocessing happens.
 
     Returns
     -------
-    label_issues : np.ndarray
-      If `return_indices_ranked_by` left unspecified, returns a boolean **mask** for the entire dataset
+    per_class_label_issues : list(np.ndarray)
+      If `return_indices_ranked_by` left unspecified, returns a list of boolean **masks** for the entire dataset
       where ``True`` represents a label issue and ``False`` represents an example that is
       accurately labeled with high confidence.
-      If `return_indices_ranked_by` is specified, returns a shorter array of **indices** of examples identified to have
+      If `return_indices_ranked_by` is specified, returns a list of shorter arrays of **indices** of examples identified to have
       label issues (i.e. those indices where the mask would be ``True``), sorting by likelihood that the corresponding label is correct is not supported yet.
 
       Note
