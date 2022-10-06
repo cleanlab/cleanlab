@@ -417,6 +417,51 @@ def _find_label_issues_multilabel(
     n_jobs: int = None,
     verbose: bool = False,
 ) -> np.ndarray:
+    per_class_issues = _find_multilabel_issues_per_class(
+        labels,
+        pred_probs,
+        return_indices_ranked_by,
+        rank_by_kwargs,
+        filter_by,
+        frac_noise,
+        num_to_remove_per_class,
+        min_examples_per_class,
+        confident_joint,
+        n_jobs,
+        verbose,
+    )
+    if return_indices_ranked_by is None:
+        return per_class_issues.sum(axis=1) >= 1
+    else:
+        label_issues_list, labels_list, pred_probs_list = per_class_issues
+        label_issues_idx = reduce(np.union1d, label_issues_list)
+        num_classes = len(pred_probs_list)
+        label_quality_scores = np.zeros(len(labels))
+        for i in range(0, num_classes):
+            label_quality_scores += get_label_quality_scores(
+                labels=labels_list[i],
+                pred_probs=pred_probs_list[i],
+                method=return_indices_ranked_by,
+                **rank_by_kwargs,
+            )
+        label_quality_scores /= num_classes
+        label_quality_scores_issues = label_quality_scores[label_issues_idx]
+        return label_issues_idx[np.argsort(label_quality_scores_issues)]
+
+
+def _find_multilabel_issues_per_class(
+    labels: list,
+    pred_probs: np.ndarray,
+    return_indices_ranked_by: Optional[str] = None,
+    rank_by_kwargs={},
+    filter_by: str = "prune_by_noise_rate",
+    frac_noise: float = 1.0,
+    num_to_remove_per_class: int = None,
+    min_examples_per_class=1,
+    confident_joint: Optional[np.ndarray] = None,
+    n_jobs: int = None,
+    verbose: bool = False,
+) -> np.ndarray:
     """
     Parameters
     ----------
@@ -564,20 +609,9 @@ def _find_label_issues_multilabel(
             labels_list.append(y_one[:, class_num])
             pred_probs_list.append(pred_probabilitites)
     if return_indices_ranked_by is None:
-        return bissues.sum(axis=1) >= 1
+        return bissues
     else:
-        label_issues_idx = reduce(np.union1d, label_issues_list)
-        label_quality_scores = np.zeros(len(labels))
-        for i in range(0, num_classes):
-            label_quality_scores += get_label_quality_scores(
-                labels=labels_list[i],
-                pred_probs=pred_probs_list[i],
-                method=return_indices_ranked_by,
-                **rank_by_kwargs,
-            )
-        label_quality_scores /= num_classes
-        label_quality_scores_issues = label_quality_scores[label_issues_idx]
-        return label_issues_idx[np.argsort(label_quality_scores_issues)]
+        return label_issues_list, labels_list, pred_probs_list
 
 
 def _keep_at_least_n_per_class(prune_count_matrix, n, *, frac_noise=1.0) -> np.ndarray:
