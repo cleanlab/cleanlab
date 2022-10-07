@@ -190,13 +190,6 @@ class OutOfDistribution:
           columns must be ordered such that these probabilities correspond to
           class 0, 1, ..., K-1.
 
-          **Caution**: `pred_probs` from your model must be out-of-sample!
-          You should never provide predictions on the same examples used to train the model,
-          as these will be overfit and unsuitable for finding label-errors.
-          To obtain out-of-sample predicted probabilities for every datapoint in your dataset, you can use :ref:`cross-validation <pred_probs_cross_val>`.
-          Alternatively it is ok if your model was trained on a separate dataset and you are only evaluating
-          data that was previously held-out.
-
         labels : array_like, optional
           A discrete vector of given labels for the data of shape ``(N,)``. Supported `array_like` types include: ``np.ndarray`` or ``list``.
           *Format requirements*: for dataset with K classes, labels must be in 0, 1, ..., K-1.

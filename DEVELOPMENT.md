@@ -29,7 +29,10 @@ Run the following commands in the repository's root directory.
 
 1. Install development requirements with `pip install -r requirements-dev.txt`
 
-1. Install cleanlab as an editable package with `pip install -e .`
+2. Install cleanlab as an editable package with `pip install -e .`
+
+For Macs with Apple silicon: replace `tensorflow` in requirements-dev.txt with: `tensorflow-macos==2.9.2` and `tensorflow-metal==0.5.1`
+
 
 ## Testing
 
@@ -59,7 +62,6 @@ $ pytest --cov=cleanlab/ --cov-config .coveragerc --cov-report=html
 
 The coverage report will be available in `coverage_html_report/index.html`,
 which you can open with your web browser.
-
 
 ### Type checking
 
@@ -91,22 +93,13 @@ examples/run_all_notebooks.sh
 ```
 
 
-## Documentation
-
-You can build the docs from your local cleanlab version by following [these
-instructions](docs/README.md#build-the-cleanlab-docs-locally).
-
-If editing existing docs or adding new tutorials, please first read through our [guidelines](https://github.com/cleanlab/cleanlab/tree/master/docs#tips-for-editing-docstutorials).
-
-
-## Code style
+## How to style new code contributions
 
 cleanlab follows the [Black](https://black.readthedocs.io/) code style. This is
 enforced by CI, so please format your code by invoking `black` before submitting a pull request.
 
 Generally aim to follow the [PEP-8 coding style](https://peps.python.org/pep-0008/). 
 Please do not use wildcard `import *` in any files, instead you should always import the specific functions that you need from a module.
-
 
 ### Pre-commit hook
 
@@ -124,6 +117,26 @@ This repo uses [EditorConfig](https://editorconfig.org/) to keep code style
 consistent across editors and IDEs. You can install a plugin for your editor,
 and then your editor will automatically ensure that indentation and line
 endings match the project style.
+
+
+## Adding new modules into the source code
+
+  You should go through the following checklist if you intend to add new functionality to the package in a separate module.
+- [x] Add brief description of the module’s purpose in a comment at the top of file and docstrings for every function.
+- [x] Import the module `my_module.py` into main [``__init__.py``](cleanlab/__init__.py)
+- [x] Create detailed unit tests (typically in a new file `tests/test_my_module.py`)
+- [x] Add new module to docs index pages (**docs/source/index.rst**) and create .rst file in **docs/source/cleanlab/** (so that module appears on [docs.cleanlab.ai](https://docs.cleanlab.ai/stable/index.html) -- please verify its documentation also looks good there)
+- [x] Create a QuickStart (**docs/source/tutorials**) notebook that runs main module functionality in 5min or less and add it to index pages (**docs/source/tutorials/index.rst**, **docs/source/index.rst**). Clear cell output before pushing.
+- [x] Create an [examples](https://github.com/cleanlab/examples) notebook that runs more advanced module functionality with a more real-world application (can have a longer run time). Push with printed cell output.
+
+
+## Documentation
+
+You can build the docs from your local cleanlab version by following [these
+instructions](docs/README.md#build-the-cleanlab-docs-locally).
+
+If editing existing docs or adding new tutorials, please first read through our [guidelines](https://github.com/cleanlab/cleanlab/tree/master/docs#tips-for-editing-docstutorials).
+
 
 ## Documentation style
 

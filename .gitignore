@@ -1,10 +1,4 @@
-# Added by Curtis G. Northcutt
-examples/imagenet/img
-examples/cifar10/img
-examples/amazon_reviews_dataset/pickles
 cleanlab/*.ipynb
-cleanlab/models/*.ipynb
-tests/*.ipynb
 .DS_Store
 */.DS_Store
 tests/fasttext_data/

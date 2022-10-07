@@ -495,14 +495,64 @@ def test_num_label_issues(confident_joint):
     cj_calibrated_off_diag_sum = data["cj"].sum() - data["cj"].trace()
     confident_joint = data["cj"] if confident_joint else None
     n = count.num_label_issues(
-        labels=data["labels"], pred_probs=data["pred_probs"], confident_joint=confident_joint
-    )
-    n2 = filter.find_label_issues(
-        labels=data["labels"], pred_probs=data["pred_probs"], confident_joint=confident_joint
-    )
-    # TODO: these should be equivalent for `filter_by='confident_learning'`, i.e. assert n == n2
+        labels=data["labels"],
+        pred_probs=data["pred_probs"],
+        confident_joint=confident_joint,
+        estimation_method="off_diagonal",
+    )  # data["cj"] is already calibrated and estimation method does not do extra calibration
+
+    n1 = count.num_label_issues(
+        labels=data["labels"],
+        pred_probs=data["pred_probs"],
+        confident_joint=confident_joint,
+        estimation_method="off_diagonal_calibrated",
+    )  # data["cj"] is already calibrated but recalibrating it should not change the values
+
+    n2 = count.num_label_issues(
+        labels=data["labels"],
+        pred_probs=data["pred_probs"],
+        estimation_method="off_diagonal_calibrated",
+    )  # this should calculate and calibrate the confident joint into same matrix as data["cj"]
+
+    # data["cj"] is already calibrated and estimation method does not do extra calibration
     assert n == cj_calibrated_off_diag_sum
-    assert sum(n2) == 35
+    # data["cj"] is already calibrated but recalibrating it should not change the values
+    assert n == n1
+    # should calculate and calibrate the confident joint into same matrix as data["cj"]
+    assert n == n2
+
+    f = filter.find_label_issues(
+        labels=data["labels"], pred_probs=data["pred_probs"], confident_joint=data["cj"]
+    )
+
+    assert sum(f) == 35
+
+    f1 = filter.find_label_issues(
+        labels=data["labels"], pred_probs=data["pred_probs"], filter_by="confident_learning"
+    )
+
+    n3 = count.num_label_issues(
+        labels=data["labels"],
+        pred_probs=data["pred_probs"],
+    )
+
+    assert sum(f1) == n3  # values should be equivalent for `filter_by='confident_learning'`
+
+    # check wrong estimation_method throws ValueError
+    try:
+        count.num_label_issues(
+            labels=data["labels"],
+            pred_probs=data["pred_probs"],
+            estimation_method="not_a_real_method",
+        )
+    except Exception as e:
+        assert "not a valid estimation method" in str(e)
+        with pytest.raises(ValueError) as e:
+            count.num_label_issues(
+                labels=data["labels"],
+                pred_probs=data["pred_probs"],
+                estimation_method="not_a_real_method",
+            )
 
 
 def test_issue_158():

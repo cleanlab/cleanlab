@@ -64,6 +64,31 @@ pip install -r docs/requirements.txt
 
    **Fast build**: Executing the Jupyter Notebooks (i.e., the `.ipynb` files) that make up some portion of the docs, such as the tutorials, takes a long time. If you want to skip rendering these, set the environment variable `SKIP_NOTEBOOKS=1`. You can either set this using `export SKIP_NOTEBOOKS=1` or do this inline with `SKIP_NOTEBOOKS=1 sphinx-multiversion ...`.
 
+   **Skipping specific notebooks**: If you want to skip rendering a few specific notebooks during your local build, the best way to do this is to temporarily move the files outside the `cleanlab` folder (so `nbsphinx` would not find it), then build the docs, before finally moving the files back (to ensure they will not be deleted when pushed to GitHub)
+
+   Example workflow for skipping notebooks, given our current working directory is the `cleanlab` root folder and we want to ignore the `audio.ipynb` notebook:
+
+   1. create an empty folder outside of cleanlab folder
+   ```
+   mkdir ../ignore_notebooks
+   ```
+
+   2. move the notebook to ignore from local build to the newly created folder
+   ```
+   mv docs/source/tutorials/audio.ipynb ../ignore_notebooks 
+   ```
+
+   3. build the docs locally, using `sphinx-build` as it does not require you to commit your changes
+   ```
+   sphinx-build docs/source cleanlab-docs
+   ```
+
+   4. move the notebook back to its original location
+   ```
+   mv ../ignore_notebooks/audio.ipynb docs/source/tutorials
+   ```
+
+
    While building the docs with `sphinx-multiversion`, your terminal might output:
    * `unknown config value 'smv_branch_whitelist' in override, ignoring`, and
    * `unknown config value 'smv_tag_whitelist' in override, ignoring`.
@@ -181,6 +206,8 @@ On rare occasions, you may want to update the docs without deleting and recreati
 11. Replace these files in [github.com/cleanlab/cleanlab-docs](https://www.github.com/cleanlab/cleanlab-docs) by uploading the new ones to the corresponding version folder in the `master` branch of the `cleanlab/cleanlab-docs` repo.
 
 > :warning: Any build artifacts manually added to `cleanlab/cleanlab-docs` that do not live in the `master` branch of the `cleanlab/cleanlab` repo will be lost in future versions of cleanlab docs. So any edit made in the v2.0.0 docs which you also want to have in the v2.0.1, v2.0.2, etc. docs needs to be introduced as a PR to the `cleanlab/cleanlab` repo as well.
+
+> :warning: Currently, if updating stable/old version (say `vXXX`) of tutorials from latest master branch version, the install of cleanlab package in notebooks/colabs will be wrong. To remedy this, you need to update the cleanlab version in all `.ipynb` files inside folders: **cleanlab-docs/vXXX/tutorials/** and **cleanlab-docs/vXXX/_sources/**. The tutorial `.html` pages will also have wrong colab links as well. Currently have to   update the `.html` files in **cleanlab-docs/vXXX/tutorials/** to replace these colab links with the proper links (replace `/master/` in the link with `/vXXX/` for the version you are building docs for).
 
 # Behind-the-scenes of the GitHub Pages workflow
 

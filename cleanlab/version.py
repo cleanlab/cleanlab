@@ -15,7 +15,9 @@
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
 
-__version__ = "2.1.0"
+__version__ = "2.1.1"
+
+# 2.1.1 - Not yet released, you are using a developer version.
 
 # 2.1.0 - "Multiannotator, Outlier detection, and Token Classification" - Cleanlab supports several new features
 #

@@ -23,14 +23,16 @@
                 >developer</a
             >
         </li>
+        {% for version in RELEASE_VERSIONS %}
         <li class="toctree-l1">
             <a
-                id="v1.0.1"
+                id="{{ version }}"
                 class="reference internal"
-                href="{{DOCS_SITE_URL}}v1.0.1/"
-                >v1.0.1</a
+                href="{{DOCS_SITE_URL}}{{version}}/"
+                >{{version}}</a
             >
         </li>
+        {% endfor %}
     </ul>
 </div>
 
