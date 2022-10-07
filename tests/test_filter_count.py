@@ -85,18 +85,12 @@ def make_data(
         labels=labels,
         cv_n_folds=3,
     )
-    multi_labels = [list(set([z, true_labels_train[i]])) for i, z in enumerate(labels)]
-    if len(labels) > 20:
-        multi_labels[20] = [0, 1, 2]
-    else:
-        multi_labels[-1] = [0, 1, 2]
     return {
         "X_train": X_train,
         "true_labels_train": true_labels_train,
         "X_test": X_test,
         "true_labels_test": true_labels_test,
         "labels": labels,
-        "multi_labels": multi_labels,
         "ps": ps,
         "py": py,
         "noise_matrix": noise_matrix,
