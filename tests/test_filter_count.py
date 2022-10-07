@@ -493,18 +493,17 @@ def test_find_label_issue_filters_match_origin_functions():
 @pytest.mark.parametrize("confident_joint", [None, True])
 def test_num_label_issues(confident_joint):
     cj_calibrated_off_diag_sum = data["cj"].sum() - data["cj"].trace()
-    confident_joint = data["cj"] if confident_joint else None
     n = count.num_label_issues(
         labels=data["labels"],
         pred_probs=data["pred_probs"],
-        confident_joint=confident_joint,
+        confident_joint=data["cj"],
         estimation_method="off_diagonal",
     )  # data["cj"] is already calibrated and estimation method does not do extra calibration
 
     n1 = count.num_label_issues(
         labels=data["labels"],
         pred_probs=data["pred_probs"],
-        confident_joint=confident_joint,
+        confident_joint=data["cj"],
         estimation_method="off_diagonal_calibrated",
     )  # data["cj"] is already calibrated but recalibrating it should not change the values
 
