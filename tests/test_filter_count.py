@@ -24,7 +24,6 @@ import scipy
 import pytest
 from sklearn.multioutput import MultiOutputClassifier
 from sklearn.linear_model import LogisticRegression
-from sklearn.model_selection import cross_val_predict
 
 
 def make_data(
