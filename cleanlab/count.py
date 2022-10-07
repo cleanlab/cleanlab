@@ -269,82 +269,6 @@ def estimate_joint(labels, pred_probs, *, confident_joint=None, multi_label=Fals
     return calibrated_cj / float(np.sum(calibrated_cj))
 
 
-def _compute_confident_joint_multi_label(
-    labels,
-    pred_probs,
-    *,
-    thresholds=None,
-    calibrate=True,
-    return_indices_of_off_diagonals=False,
-) -> Union[np.ndarray, Tuple[np.ndarray, list]]:
-    """Computes the confident joint for multi_labeled data. Thus,
-    input `labels` is a list of lists (or list of iterable).
-    This is intended as a helper function. You should probably
-    be using `compute_confident_joint(multi_label=True)` instead.
-
-    The MAJOR DIFFERENCE in how this is computed versus single_label,
-    is the total number of errors considered is based on the number
-    of labels, not the number of examples. So, the confident_joint
-    will have larger values.
-
-    See `compute_confident_joint` docstring for more info.
-
-    Parameters
-    ----------
-    labels : list of list/iterable (length N)
-        These are multiclass labels. Each list in the list contains
-        all the labels for that example. This method will fail if labels
-        is not a list of lists (or a list of np.ndarrays or iterable).
-
-    pred_probs : np.ndarray (shape (N, K))
-        P(label=k|x) is a matrix with K model-predicted probabilities.
-        Each row of this matrix corresponds to an example `x` and contains the model-predicted
-        probabilities that `x` belongs to each possible class.
-        The columns must be ordered such that these probabilities correspond to class 0, 1, 2,..., K-1.
-        `pred_probs` must be out-of-sample (ideally should have been computed using 3+ fold cross-validation).
-
-    thresholds : iterable (list or np.ndarray) of shape (K, 1)  or (K,)
-        P(label^=k|label=k). If an example has a predicted probability "greater" than
-        this threshold, it is counted as having true_label = k. This is
-        not used for filtering/pruning, only for estimating the noise rates using
-        confident counts. This value should be between 0 and 1. Default is None.
-
-    calibrate : bool, default = True
-        Calibrates confident joint estimate P(label=i, true_label=j) such that
-        np.sum(cj) == len(labels) and np.sum(cj, axis = 1) == np.bincount(labels).
-
-    return_indices_of_off_diagonals: bool, default = False
-        If true returns indices of examples that were counted in off-diagonals
-        of confident joint as a baseline proxy for the label issues. This
-        sometimes works as well as filter.find_label_issues(confident_joint)."""
-
-    unique_classes = get_num_classes(labels=labels, pred_probs=pred_probs)
-    y_one = int2onehot(labels)
-    conf_list = []
-    for class_num in range(0, unique_classes):
-        pred_probabilitites = _binarize_pred_probs_slice(pred_probs, class_num)
-        cj = compute_confident_joint(
-            labels=y_one[:, class_num],
-            pred_probs=pred_probabilitites,
-            multi_label=False,
-            thresholds=thresholds,
-            calibrate=calibrate,
-            return_indices_of_off_diagonals=return_indices_of_off_diagonals,
-        )
-        conf_list.append(cj)
-
-    if return_indices_of_off_diagonals:
-        confident_joint_list = []
-        indices_of_issues_list = []
-        for i in range(0, len(conf_list)):
-            confident_joint_list.append(conf_list[i][0])
-            indices_of_issues_list.append(sorted(conf_list[i][1]))
-
-        return np.array(confident_joint_list), indices_of_issues_list
-
-    return np.array(conf_list)
-
-
 def compute_confident_joint(
     labels,
     pred_probs,
@@ -509,6 +433,88 @@ def compute_confident_joint(
         return confident_joint, indices
 
     return confident_joint
+
+
+def _compute_confident_joint_multi_label(
+    labels,
+    pred_probs,
+    *,
+    thresholds=None,
+    calibrate=True,
+    return_indices_of_off_diagonals=False,
+) -> Union[np.ndarray, Tuple[np.ndarray, list]]:
+    """Computes the confident joint for multi_labeled data. Thus,
+    input `labels` is a list of lists (or list of iterable).
+    This is intended as a helper function. You should probably
+    be using `compute_confident_joint(multi_label=True)` instead.
+
+    The MAJOR DIFFERENCE in how this is computed versus single_label,
+    is the total number of errors considered is based on the number
+    of labels, not the number of examples. So, the confident_joint
+    will have larger values.
+
+    See `compute_confident_joint` docstring for more info.
+
+    Parameters
+    ----------
+    labels : list of list/iterable (length N)
+        These are multiclass labels. Each list in the list contains
+        all the labels for that example. This method will fail if labels
+        is not a list of lists (or a list of np.ndarrays or iterable).
+
+    pred_probs : np.ndarray (shape (N, K))
+        P(label=k|x) is a matrix with K model-predicted probabilities.
+        Each row of this matrix corresponds to an example `x` and contains the model-predicted
+        probabilities that `x` belongs to each possible class.
+        The columns must be ordered such that these probabilities correspond to class 0, 1, 2,..., K-1.
+        `pred_probs` must be out-of-sample (ideally should have been computed using 3+ fold cross-validation).
+
+    thresholds : iterable (list or np.ndarray) of shape (K, 1)  or (K,)
+        P(label^=k|label=k). If an example has a predicted probability "greater" than
+        this threshold, it is counted as having true_label = k. This is
+        not used for filtering/pruning, only for estimating the noise rates using
+        confident counts. This value should be between 0 and 1. Default is None.
+
+    calibrate : bool, default = True
+        Calibrates confident joint estimate P(label=i, true_label=j) such that
+        np.sum(cj) == len(labels) and np.sum(cj, axis = 1) == np.bincount(labels).
+
+    return_indices_of_off_diagonals: bool, default = False
+        If true returns indices of examples that were counted in off-diagonals
+        of confident joint as a baseline proxy for the label issues. This
+        sometimes works as well as filter.find_label_issues(confident_joint)."""
+
+    num_classes = get_num_classes(labels=labels, pred_probs=pred_probs)
+    y_one = int2onehot(labels)
+    confident_joint_list = np.ndarray(shape=(num_classes, 2, 2), dtype=np.int64)
+    indices_of_issues_list = []
+    for class_num in range(0, num_classes):
+        pred_probabilitites = _binarize_pred_probs_slice(pred_probs, class_num)
+        if return_indices_of_off_diagonals:
+            cj, ind = compute_confident_joint(
+                labels=y_one[:, class_num],
+                pred_probs=pred_probabilitites,
+                multi_label=False,
+                thresholds=thresholds,
+                calibrate=calibrate,
+                return_indices_of_off_diagonals=return_indices_of_off_diagonals,
+            )
+            indices_of_issues_list.append(ind)
+        else:
+            cj = compute_confident_joint(
+                labels=y_one[:, class_num],
+                pred_probs=pred_probabilitites,
+                multi_label=False,
+                thresholds=thresholds,
+                calibrate=calibrate,
+                return_indices_of_off_diagonals=return_indices_of_off_diagonals,
+            )
+        confident_joint_list[class_num] = cj
+
+    if return_indices_of_off_diagonals:
+        return confident_joint_list, indices_of_issues_list
+
+    return np.array(confident_joint_list)
 
 
 def estimate_latent(

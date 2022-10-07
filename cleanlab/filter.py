@@ -24,7 +24,7 @@ import multiprocessing
 from multiprocessing.sharedctypes import RawArray
 import sys
 import warnings
-from typing import Any, Optional
+from typing import Any, Optional, Union, Tuple, List
 from functools import reduce
 from cleanlab.count import calibrate_confident_joint
 from cleanlab.rank import (
@@ -461,7 +461,7 @@ def _find_multilabel_issues_per_class(
     confident_joint: Optional[np.ndarray] = None,
     n_jobs: int = None,
     verbose: bool = False,
-) -> np.ndarray:
+) -> Union[np.ndarray, Tuple[List[np.ndarray], List[Any], List[np.ndarray]]]:
     """
     Parameters
     ----------

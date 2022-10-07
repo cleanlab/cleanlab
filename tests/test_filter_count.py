@@ -205,7 +205,6 @@ def test_calibrate_joint(multi_label):
 
     # Check calibration
     if multi_label:
-
         y_one = int2onehot(labels)
         for class_num in range(0, len(calibrated_cj)):
             label_counts = np.bincount(y_one[:, class_num])
