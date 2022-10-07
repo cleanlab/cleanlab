@@ -183,7 +183,7 @@ def calibrate_confident_joint(confident_joint, labels, *, multi_label=False) -> 
     """
 
     if multi_label:
-        label_counts = value_counts([x for lst in labels for x in lst])
+        return _calibrate_confident_joint_multilabel(confident_joint, labels)
     else:
         label_counts = value_counts(labels)
     # Calibrate confident joint to have correct p(labels) prior on noisy labels.
@@ -193,6 +193,20 @@ def calibrate_confident_joint(confident_joint, labels, *, multi_label=False) -> 
     # The number of total labels (for multi-labeled datasets)
     calibrated_cj = calibrated_cj / np.sum(calibrated_cj) * sum(label_counts)
     return round_preserving_row_totals(calibrated_cj)
+
+
+def _calibrate_confident_joint_multilabel(confident_joint, labels):
+    y_one = int2onehot(labels)
+    num_classes = len(confident_joint)
+    calibrate_confident_joint_list = []
+    for class_num in range(0, num_classes):
+        calibrate_confident_joint_list.append(
+            calibrate_confident_joint(
+                confident_joint[class_num],
+                labels=y_one[:, class_num],
+            )
+        )
+    return np.array(calibrate_confident_joint_list)
 
 
 def estimate_joint(labels, pred_probs, *, confident_joint=None, multi_label=False) -> np.ndarray:

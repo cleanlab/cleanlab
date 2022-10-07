@@ -18,7 +18,7 @@ from cleanlab import count, filter
 from cleanlab.internal.latent_algebra import compute_inv_noise_matrix
 from cleanlab.benchmarking.noise_generation import generate_noise_matrix_from_trace
 from cleanlab.benchmarking.noise_generation import generate_noisy_labels
-from cleanlab.internal.util import value_counts
+from cleanlab.internal.util import value_counts, int2onehot
 import numpy as np
 import scipy
 import pytest
@@ -185,27 +185,45 @@ def test_prune_on_small_data(filter_by):
     assert not any(noise_idx)
 
 
-def test_calibrate_joint():
+@pytest.mark.parametrize(
+    "multi_label",
+    [True, False],
+)
+def test_calibrate_joint(multi_label):
+    labels = data["multi_labels"] if multi_label else data["labels"]
     cj = count.compute_confident_joint(
-        labels=data["labels"],
+        labels=labels,
         pred_probs=data["pred_probs"],
+        multi_label=multi_label,
         calibrate=False,
     )
     calibrated_cj = count.calibrate_confident_joint(
         confident_joint=cj,
-        labels=data["labels"],
+        labels=labels,
+        multi_label=multi_label,
     )
-    label_counts = np.bincount(data["labels"])
 
     # Check calibration
-    assert all(calibrated_cj.sum(axis=1).round().astype(int) == label_counts)
-    assert len(data["labels"]) == int(round(np.sum(calibrated_cj)))
+    if multi_label:
 
-    calibrated_cj2 = count.compute_confident_joint(
-        labels=data["labels"],
-        pred_probs=data["pred_probs"],
-        calibrate=True,
-    )
+        y_one = int2onehot(labels)
+        for class_num in range(0, len(calibrated_cj)):
+            label_counts = np.bincount(y_one[:, class_num])
+            assert all(calibrated_cj[class_num].sum(axis=1).round().astype(int) == label_counts)
+            assert len(data["labels"]) == int(round(np.sum(calibrated_cj[class_num])))
+        calibrated_cj2 = count.compute_confident_joint(
+            labels=labels, pred_probs=data["pred_probs"], calibrate=True, multi_label=multi_label
+        )
+    else:
+        label_counts = np.bincount(data["labels"])
+        assert all(calibrated_cj.sum(axis=1).round().astype(int) == label_counts)
+        assert len(data["labels"]) == int(round(np.sum(calibrated_cj)))
+
+        calibrated_cj2 = count.compute_confident_joint(
+            labels=data["labels"],
+            pred_probs=data["pred_probs"],
+            calibrate=True,
+        )
 
     # Check equivalency
     assert np.all(calibrated_cj == calibrated_cj2)
