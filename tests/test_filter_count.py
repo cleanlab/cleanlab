@@ -233,10 +233,13 @@ def test_calibrate_joint(multi_label):
 def test_estimate_joint(use_confident_joint, multi_label):
     labels = data["multi_labels"] if multi_label else data["labels"]
     if use_confident_joint and multi_label:
+        cj = count.compute_confident_joint(
+            labels=labels, pred_probs=data["pred_probs"], multi_label=multi_label
+        )
         joint = count.estimate_joint(
             labels=labels,
             pred_probs=data["pred_probs"],
-            confident_joint=None,
+            confident_joint=cj,
             multi_label=multi_label,
         )
     else:

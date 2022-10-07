@@ -182,6 +182,9 @@ def calibrate_confident_joint(
     calibrated_cj : np.ndarray
       An array of shape ``(K, K)`` of type float representing a valid
       estimate of the joint *counts* of noisy and true labels.
+      If multi_label is true, it returns an array of shape ``(K, 2, 2)``,
+      where entry ``(c, j, k)`` in the matrix is the number of examples in a one-vs-rest class confidently counted into the pair of ``(class c, noisy label=j, true label=k)`` classes.
+
     """
 
     if multi_label:
@@ -200,6 +203,30 @@ def calibrate_confident_joint(
 def _calibrate_confident_joint_multilabel(
     confident_joint: np.ndarray, labels: list
 ) -> List[np.ndarray]:
+    """Calibrates the confident joint for multi_labeled data. Thus,
+        input `labels` is a list of lists (or list of iterable).
+        This is intended as a helper function. You should probably
+        be using `calibrate_confident_joint(multi_label=True)` instead.
+
+
+        See `calibrate_confident_joint` docstring for more info.
+
+    Parameters
+    ----------
+    confident_joint : np.ndarray
+        Refer to documentation for this argument in count.calibrate_confident_joint() for details.
+
+    labels : np.ndarray
+        Refer to documentation for this argument in count.calibrate_confident_joint() for details.
+
+    multi_label : bool, optional
+        Refer to documentation for this argument in count.calibrate_confident_joint() for details.
+
+    Returns
+    -------
+    calibrated_cj : np.ndarray
+      An array of shape ``(K, 2, 2)`` of type float representing a valid
+      estimate of the joint *counts* of noisy and true labels in a one-vs-rest setting."""
     y_one = int2onehot(labels)
     num_classes = len(confident_joint)
     calibrate_confident_joint_list = []
@@ -486,12 +513,28 @@ def _compute_confident_joint_multi_label(
     return_indices_of_off_diagonals: bool, default = False
         If true returns indices of examples that were counted in off-diagonals
         of confident joint as a baseline proxy for the label issues. This
-        sometimes works as well as filter.find_label_issues(confident_joint)."""
+        sometimes works as well as filter.find_label_issues(confident_joint).
+
+    Returns
+    -------
+    confident_joint_counts : np.ndarray
+      An array of shape ``(num_classes,2, 2)`` representing the confident joint, the matrix used for identifying label issues, which
+      estimates a confident subset of the joint distribution of the noisy and true labels, ``P_{noisy label, true label}``.
+      Entry ``(c, j, k)`` in the matrix is the number of examples in a one-vs-rest class confidently counted into the pair of ``(class c, noisy label=j, true label=k)`` classes.
+
+    Note: if return_indices_of_off_diagonals is True, this function returns confident_joint_counts, indices_off_diagonal
+    where indices_off_diagonal is a list of array of indices counted in off-diagonals of confident joint for each class.
+    """
 
     num_classes = get_num_classes(labels=labels, pred_probs=pred_probs)
-    y_one = int2onehot(labels)
+    try:
+        y_one = int2onehot(labels)
+    except TypeError:
+        raise ValueError(
+            "wrong format for labels, should be a list of list[indices], please check the documentation in find_label_issues for further information"
+        )
     confident_joint_list = np.ndarray(shape=(num_classes, 2, 2), dtype=np.int64)  # type: ignore
-    indices_of_issues_list = []
+    indices_off_diagonal = []
     for class_num in range(0, num_classes):
         pred_probabilitites = _binarize_pred_probs_slice(pred_probs, class_num)
         if return_indices_of_off_diagonals:
@@ -503,7 +546,7 @@ def _compute_confident_joint_multi_label(
                 calibrate=calibrate,
                 return_indices_of_off_diagonals=return_indices_of_off_diagonals,
             )
-            indices_of_issues_list.append(ind)
+            indices_off_diagonal.append(ind)
         else:
             cj = compute_confident_joint(
                 labels=y_one[:, class_num],
@@ -516,7 +559,7 @@ def _compute_confident_joint_multi_label(
         confident_joint_list[class_num] = cj
 
     if return_indices_of_off_diagonals:
-        return confident_joint_list, indices_of_issues_list
+        return confident_joint_list, indices_off_diagonal
 
     return np.array(confident_joint_list)
 

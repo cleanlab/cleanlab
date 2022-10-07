@@ -526,7 +526,12 @@ def _find_multilabel_issues_per_class(
 
     """
     num_classes = get_num_classes(labels=labels, pred_probs=pred_probs)
-    y_one = int2onehot(labels)
+    try:
+        y_one = int2onehot(labels)
+    except TypeError:
+        raise ValueError(
+            "wrong format for labels, should be a list of list[indices], please check the documentation in find_label_issues for further information"
+        )
     if return_indices_ranked_by is None:
         bissues = np.zeros(y_one.shape).astype(bool)
     else:
