@@ -22,6 +22,8 @@ from cleanlab.internal.util import value_counts, int2onehot
 import numpy as np
 import scipy
 import pytest
+from sklearn.multioutput import MultiOutputClassifier
+from sklearn.linear_model import LogisticRegression
 
 
 def make_data(
@@ -109,11 +111,108 @@ def make_data(
     }
 
 
+def make_multilabel_data(
+    means=[[-5, 2], [0, 2], [-3, 6]],
+    covs=[[[3, -1.5], [-1.5, 1]], [[1, 0.5], [0.5, 4]], [[5, 1], [1, 5]]],
+    means_mul=[[-3, 1.5], [-6, 4], [2, 6], [-2, 3]],
+    covs_mul=[
+        [[0.3, 0.0], [0.0, 0.4]],
+        [[0.3, 0.0], [0.0, 0.4]],
+        [[0.3, 0.0], [0.0, 0.4]],
+        [[0.3, 0.0], [0.0, 0.4]],
+        [[0.2, 0], [0, 0.2]],
+    ],
+    label_mul=[[0, 1], [0, 2], [1, 2], [0, 1, 2]],
+    sizes_single_label=[100, 150, 100],
+    sizes_multi_label=[10, 20, 20, 5],
+    avg_trace=0.9,
+    seed=1,
+):
+    m = len(means) + len(
+        means_mul
+    )  # number of classes by treating each multilabel as 1 unique label
+    n = sum(sizes_single_label) + sum(sizes_multi_label)
+    local_data = []
+    labels = []
+    test_data = []
+    test_labels = []
+    for i in range(0, len(means)):
+        local_data.append(
+            np.random.multivariate_normal(mean=means[i], cov=covs[i], size=sizes_single_label[i])
+        )
+        test_data.append(
+            np.random.multivariate_normal(mean=means[i], cov=covs[i], size=sizes_single_label[i])
+        )
+        test_labels += [[i]] * sizes_single_label[i]
+        labels += [[i]] * sizes_single_label[i]
+
+    for i in range(0, len(means_mul)):
+        local_data.append(
+            np.random.multivariate_normal(
+                mean=means_mul[i], cov=covs_mul[i], size=sizes_multi_label[i]
+            )
+        )
+        test_data.append(
+            np.random.multivariate_normal(
+                mean=means_mul[i], cov=covs_mul[i], size=sizes_multi_label[i]
+            )
+        )
+        test_labels += [label_mul[i]] * sizes_multi_label[i]
+        labels += [label_mul[i]] * sizes_multi_label[i]
+
+    X_train = np.vstack(local_data)
+    X_test = np.vstack(test_data)
+
+    d = {}
+    for i in labels:
+        if str(i) not in d:
+            d[str(i)] = len(d)
+    inv_d = {v: k for k, v in d.items()}
+
+    labels_idx = [d[str(i)] for i in labels]
+
+    py = np.bincount(labels_idx) / float(len(labels_idx))
+
+    noise_matrix = generate_noise_matrix_from_trace(
+        m,
+        trace=avg_trace * m,
+        py=py,
+        valid_noise_matrix=True,
+        seed=seed,
+    )
+    noisy_labels_idx = generate_noisy_labels(labels_idx, noise_matrix)
+    noisy_labels = [eval(inv_d[i]) for i in noisy_labels_idx]
+    ps = np.bincount(labels_idx) / float(len(labels_idx))
+    inv = compute_inv_noise_matrix(py, noise_matrix, ps=ps)
+
+    clf = MultiOutputClassifier(LogisticRegression())
+    y_train = int2onehot(noisy_labels)
+    clf.fit(X_train, y_train)
+    pyi = clf.predict_proba(X_train)
+    pred_probs = -1 * np.ones(y_train.shape)
+    for i, p in enumerate(pyi):
+        pred_probs[:, i] = p[:, 1]
+    cj = count.compute_confident_joint(labels=noisy_labels, pred_probs=pred_probs, multi_label=True)
+    return {
+        "X_train": X_train,
+        "true_labels_train": labels,
+        "X_test": X_test,
+        "true_labels_test": test_labels,
+        "labels": noisy_labels,
+        "noise_matrix": noise_matrix,
+        "inverse_noise_matrix": inv,
+        "cj": cj,
+        "pred_probs": pred_probs,
+        "m": m,
+        "n": n,
+    }
+
+
 # Global to be used by all test methods.
 # Only compute this once for speed.
 seed = 1
 data = make_data(sparse=False, seed=1)
-
+multilabel_data = make_multilabel_data(seed=1)
 # Create some simple data to test
 pred_probs_ = np.array(
     [
@@ -190,37 +289,40 @@ def test_prune_on_small_data(filter_by):
     [True, False],
 )
 def test_calibrate_joint(multi_label):
-    labels = data["multi_labels"] if multi_label else data["labels"]
+    dataset = multilabel_data if multi_label else data
     cj = count.compute_confident_joint(
-        labels=labels,
-        pred_probs=data["pred_probs"],
+        labels=dataset["labels"],
+        pred_probs=dataset["pred_probs"],
         multi_label=multi_label,
         calibrate=False,
     )
     calibrated_cj = count.calibrate_confident_joint(
         confident_joint=cj,
-        labels=labels,
+        labels=dataset["labels"],
         multi_label=multi_label,
     )
 
     # Check calibration
     if multi_label:
-        y_one = int2onehot(labels)
+        y_one = int2onehot(dataset["labels"])
         for class_num in range(0, len(calibrated_cj)):
             label_counts = np.bincount(y_one[:, class_num])
             assert all(calibrated_cj[class_num].sum(axis=1).round().astype(int) == label_counts)
-            assert len(data["labels"]) == int(round(np.sum(calibrated_cj[class_num])))
+            assert len(dataset["labels"]) == int(round(np.sum(calibrated_cj[class_num])))
         calibrated_cj2 = count.compute_confident_joint(
-            labels=labels, pred_probs=data["pred_probs"], calibrate=True, multi_label=multi_label
+            labels=dataset["labels"],
+            pred_probs=dataset["pred_probs"],
+            calibrate=True,
+            multi_label=multi_label,
         )
     else:
         label_counts = np.bincount(data["labels"])
         assert all(calibrated_cj.sum(axis=1).round().astype(int) == label_counts)
-        assert len(data["labels"]) == int(round(np.sum(calibrated_cj)))
+        assert len(dataset["labels"]) == int(round(np.sum(calibrated_cj)))
 
         calibrated_cj2 = count.compute_confident_joint(
-            labels=data["labels"],
-            pred_probs=data["pred_probs"],
+            labels=dataset["labels"],
+            pred_probs=dataset["pred_probs"],
             calibrate=True,
         )
 
@@ -231,23 +333,23 @@ def test_calibrate_joint(multi_label):
 @pytest.mark.parametrize("use_confident_joint", [True, False])
 @pytest.mark.parametrize("multi_label", [True, False])
 def test_estimate_joint(use_confident_joint, multi_label):
-    labels = data["multi_labels"] if multi_label else data["labels"]
+    dataset = multilabel_data if multi_label else data
     if use_confident_joint and multi_label:
         cj = count.compute_confident_joint(
-            labels=labels, pred_probs=data["pred_probs"], multi_label=multi_label
+            labels=dataset["labels"], pred_probs=dataset["pred_probs"], multi_label=multi_label
         )
         joint = count.estimate_joint(
-            labels=labels,
-            pred_probs=data["pred_probs"],
+            labels=dataset["labels"],
+            pred_probs=dataset["pred_probs"],
             confident_joint=cj,
             multi_label=multi_label,
         )
     else:
 
         joint = count.estimate_joint(
-            labels=labels,
-            pred_probs=data["pred_probs"],
-            confident_joint=data["cj"] if use_confident_joint else None,
+            labels=dataset["labels"],
+            pred_probs=dataset["pred_probs"],
+            confident_joint=dataset["cj"] if use_confident_joint else None,
             multi_label=multi_label,
         )
 
@@ -375,10 +477,12 @@ def test_pruning_order_method():
 )
 def test_find_label_issues_multi_label(multi_label, filter_by, return_indices_ranked_by):
     """Note: argmax_not_equal method is not compatible with multi_label == True"""
-    labels = data["multi_labels"] if multi_label else data["labels"]
+    dataset = multilabel_data if multi_label else data
+    labels = dataset["labels"]
+
     noise_idx = filter.find_label_issues(
-        labels=labels,
-        pred_probs=data["pred_probs"],
+        labels=dataset["labels"],
+        pred_probs=dataset["pred_probs"],
         filter_by=filter_by,
         multi_label=multi_label,
         return_indices_ranked_by=return_indices_ranked_by,
@@ -387,10 +491,19 @@ def test_find_label_issues_multi_label(multi_label, filter_by, return_indices_ra
         noise_bool = np.zeros(len(labels)).astype(bool)
         noise_bool[noise_idx] = True
         noise_idx = noise_bool
-    acc = np.mean((data["labels"] != data["true_labels_train"]) == noise_idx)
+    acc = np.mean(
+        (
+            np.array(dataset["labels"], dtype=np.object_)
+            != np.array(dataset["true_labels_train"], dtype=np.object_)
+        )
+        == noise_idx
+    )
     # Make sure cleanlab does reasonably well finding the errors.
     # acc is the accuracy of detecting a label error.
-    assert acc > 0.85
+    if multi_label:
+        assert acc > 0.85
+    else:
+        assert acc > 0.85
 
 
 @pytest.mark.parametrize(
@@ -436,11 +549,12 @@ def test_find_label_issues_multi_label_small(confident_joint, return_indices_ran
 @pytest.mark.parametrize("return_indices_of_off_diagonals", [True, False])
 @pytest.mark.parametrize("multi_label", [True, False])
 def test_confident_learning_filter(return_indices_of_off_diagonals, multi_label):
-    labels = data["multi_labels"] if multi_label else data["labels"]
+    dataset = multilabel_data if multi_label else data
+    labels = dataset["labels"]
     if return_indices_of_off_diagonals:
         cj, indices = count.compute_confident_joint(
             labels=labels,
-            pred_probs=data["pred_probs"],
+            pred_probs=dataset["pred_probs"],
             calibrate=False,
             return_indices_of_off_diagonals=True,
             multi_label=multi_label,
@@ -456,7 +570,7 @@ def test_confident_learning_filter(return_indices_of_off_diagonals, multi_label)
     else:
         cj = count.compute_confident_joint(
             labels=labels,
-            pred_probs=data["pred_probs"],
+            pred_probs=dataset["pred_probs"],
             calibrate=False,
             return_indices_of_off_diagonals=return_indices_of_off_diagonals,
             multi_label=multi_label,
