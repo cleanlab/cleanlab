@@ -29,7 +29,7 @@ from sklearn.metrics import confusion_matrix
 import sklearn.base
 import numpy as np
 import warnings
-from typing import Tuple, Union, Optional
+from typing import Tuple, Union, Optional, List
 
 from cleanlab.typing import LabelLike
 
@@ -117,10 +117,10 @@ def num_label_issues(
         # Original non-calibrated counts of confidently correctly and incorrectly labeled examples.
         confident_joint = compute_confident_joint(
             labels=labels, pred_probs=pred_probs, calibrate=False
-        )
+        )  # type: ignore
 
     if estimation_method is "off_diagonal":
-        num_issues = np.sum(confident_joint) - np.trace(confident_joint)
+        num_issues = np.sum(confident_joint) - np.trace(confident_joint)  # type: ignore
     elif estimation_method is "off_diagonal_calibrated":
         # Estimate_joint calibrates the row sums to match the prior distribution of given labels and normalizes to sum to 1
         joint = estimate_joint(labels, pred_probs, confident_joint=confident_joint)
@@ -137,7 +137,9 @@ def num_label_issues(
     return num_issues
 
 
-def calibrate_confident_joint(confident_joint, labels, *, multi_label=False) -> np.ndarray:
+def calibrate_confident_joint(
+    confident_joint, labels, *, multi_label=False
+) -> Union[np.ndarray, List[np.ndarray]]:
     """Calibrates any confident joint estimate ``P(label=i, true_label=j)`` such that
     ``np.sum(cj) == len(labels)`` and ``np.sum(cj, axis = 1) == np.bincount(labels)``.
 
@@ -195,7 +197,9 @@ def calibrate_confident_joint(confident_joint, labels, *, multi_label=False) -> 
     return round_preserving_row_totals(calibrated_cj)
 
 
-def _calibrate_confident_joint_multilabel(confident_joint, labels):
+def _calibrate_confident_joint_multilabel(
+    confident_joint: np.ndarray, labels: list
+) -> List[np.ndarray]:
     y_one = int2onehot(labels)
     num_classes = len(confident_joint)
     calibrate_confident_joint_list = []
@@ -206,7 +210,7 @@ def _calibrate_confident_joint_multilabel(confident_joint, labels):
                 labels=y_one[:, class_num],
             )
         )
-    return np.array(calibrate_confident_joint_list)
+    return np.array(calibrate_confident_joint_list)  # type: ignore
 
 
 def estimate_joint(labels, pred_probs, *, confident_joint=None, multi_label=False) -> np.ndarray:
@@ -263,7 +267,7 @@ def estimate_joint(labels, pred_probs, *, confident_joint=None, multi_label=Fals
             multi_label=multi_label,
         )
     else:
-        calibrated_cj = calibrate_confident_joint(confident_joint, labels, multi_label=multi_label)
+        calibrated_cj = calibrate_confident_joint(confident_joint, labels, multi_label=multi_label)  # type: ignore
 
     assert isinstance(calibrated_cj, np.ndarray)
     return calibrated_cj / float(np.sum(calibrated_cj))
@@ -442,7 +446,7 @@ def _compute_confident_joint_multi_label(
     thresholds=None,
     calibrate=True,
     return_indices_of_off_diagonals=False,
-) -> Union[np.ndarray, Tuple[np.ndarray, list]]:
+) -> Union[np.ndarray, Tuple[np.ndarray, list]]:  # type: ignore
     """Computes the confident joint for multi_labeled data. Thus,
     input `labels` is a list of lists (or list of iterable).
     This is intended as a helper function. You should probably
@@ -486,7 +490,7 @@ def _compute_confident_joint_multi_label(
 
     num_classes = get_num_classes(labels=labels, pred_probs=pred_probs)
     y_one = int2onehot(labels)
-    confident_joint_list = np.ndarray(shape=(num_classes, 2, 2), dtype=np.int64)
+    confident_joint_list = np.ndarray(shape=(num_classes, 2, 2), dtype=np.int64)  # type: ignore
     indices_of_issues_list = []
     for class_num in range(0, num_classes):
         pred_probabilitites = _binarize_pred_probs_slice(pred_probs, class_num)
