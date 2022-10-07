@@ -478,7 +478,6 @@ def test_pruning_order_method():
 def test_find_label_issues_multi_label(multi_label, filter_by, return_indices_ranked_by):
     """Note: argmax_not_equal method is not compatible with multi_label == True"""
     dataset = multilabel_data if multi_label else data
-    labels = dataset["labels"]
 
     noise_idx = filter.find_label_issues(
         labels=dataset["labels"],
@@ -488,7 +487,7 @@ def test_find_label_issues_multi_label(multi_label, filter_by, return_indices_ra
         return_indices_ranked_by=return_indices_ranked_by,
     )
     if return_indices_ranked_by is not None:
-        noise_bool = np.zeros(len(labels)).astype(bool)
+        noise_bool = np.zeros(len(dataset["labels"])).astype(bool)
         noise_bool[noise_idx] = True
         noise_idx = noise_bool
     acc = np.mean(
@@ -550,10 +549,9 @@ def test_find_label_issues_multi_label_small(confident_joint, return_indices_ran
 @pytest.mark.parametrize("multi_label", [True, False])
 def test_confident_learning_filter(return_indices_of_off_diagonals, multi_label):
     dataset = multilabel_data if multi_label else data
-    labels = dataset["labels"]
     if return_indices_of_off_diagonals:
         cj, indices = count.compute_confident_joint(
-            labels=labels,
+            labels=dataset["labels"],
             pred_probs=dataset["pred_probs"],
             calibrate=False,
             return_indices_of_off_diagonals=True,
@@ -569,7 +567,7 @@ def test_confident_learning_filter(return_indices_of_off_diagonals, multi_label)
             assert len(indices) == (np.sum(cj) - np.trace(cj))
     else:
         cj = count.compute_confident_joint(
-            labels=labels,
+            labels=dataset["labels"],
             pred_probs=dataset["pred_probs"],
             calibrate=False,
             return_indices_of_off_diagonals=return_indices_of_off_diagonals,
