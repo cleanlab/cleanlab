@@ -24,6 +24,7 @@ import scipy
 import pytest
 from sklearn.multioutput import MultiOutputClassifier
 from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import cross_val_predict
 
 
 def make_data(
@@ -493,10 +494,7 @@ def test_find_label_issues_multi_label(multi_label, filter_by, return_indices_ra
     )
     # Make sure cleanlab does reasonably well finding the errors.
     # acc is the accuracy of detecting a label error.
-    if multi_label:
-        assert acc > 0.85
-    else:
-        assert acc > 0.85
+    assert acc > 0.85
 
 
 @pytest.mark.parametrize(
