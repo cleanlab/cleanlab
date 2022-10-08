@@ -115,7 +115,7 @@ def num_label_issues(
 
     if confident_joint is None:
         # Original non-calibrated counts of confidently correctly and incorrectly labeled examples.
-        confident_joint = compute_confident_joint(
+        computed_confident_joint = compute_confident_joint(
             labels=labels, pred_probs=pred_probs, calibrate=False
         )  # type: ignore
     else:
