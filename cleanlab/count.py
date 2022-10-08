@@ -120,7 +120,7 @@ def num_label_issues(
         )  # type: ignore
 
     if estimation_method is "off_diagonal":
-        num_issues = np.sum(confident_joint) - np.trace(confident_joint)  # type: ignore
+        num_issues: int = np.sum(confident_joint) - np.trace(confident_joint)  # type: ignore
     elif estimation_method is "off_diagonal_calibrated":
         # Estimate_joint calibrates the row sums to match the prior distribution of given labels and normalizes to sum to 1
         joint = estimate_joint(labels, pred_probs, confident_joint=confident_joint)
