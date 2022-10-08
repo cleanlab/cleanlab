@@ -119,7 +119,7 @@ def num_label_issues(
             calibrate=False,
         )
     else:
-        computed_confident_joint = confident_joint.copy()
+        computed_confident_joint = confident_joint
 
     assert isinstance(computed_confident_joint, np.ndarray)
 
