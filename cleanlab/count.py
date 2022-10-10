@@ -182,10 +182,12 @@ def calibrate_confident_joint(confident_joint, labels, *, multi_label=False) -> 
     Returns
     -------
     calibrated_cj : np.ndarray
-      An array of shape ``(K, K)`` of type float representing a valid
-      estimate of the joint *counts* of noisy and true labels.
-      If multi_label is true, it returns an array of shape ``(K, 2, 2)``,
-      where entry ``(c, j, k)`` in the matrix is the number of examples in a one-vs-rest class confidently counted into the pair of ``(class c, noisy label=j, true label=k)`` classes.
+      An array of shape ``(K, K)`` representing a valid estimate of the joint *counts* of noisy and true labels (if `multi_label` is False).
+      If `multi_label` is True, the returned `calibrated_cj` is instead an one-vs-rest array of shape ``(K, 2, 2)``, 
+      where for class `c`: entry ``(c, 0, 0)`` in this one-vs-rest  array is the number of examples whose noisy label contains `c` confidently identified as truly belonging to class `c` as well. 
+      Entry ``(c, 1, 0)`` in this one-vs-rest  array is the number of examples whose noisy label contains `c` confidently identified as not actually belonging to class `c`. 
+      Entry ``(c, 0, 1)`` in this one-vs-rest array is the number of examples whose noisy label does not contain `c` confidently identified as truly belonging to class `c`.
+      Entry ``(c, 1, 1)`` in this one-vs-rest array is the number of examples whose noisy label does not contain `c` confidently identified as actually not belonging to class `c` as well.
 
     """
 
