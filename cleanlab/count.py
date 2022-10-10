@@ -141,9 +141,7 @@ def num_label_issues(
     return num_issues
 
 
-def calibrate_confident_joint(
-    confident_joint, labels, *, multi_label=False
-) -> Union[np.ndarray, List[np.ndarray]]:
+def calibrate_confident_joint(confident_joint, labels, *, multi_label=False) -> np.ndarray:
     """Calibrates any confident joint estimate ``P(label=i, true_label=j)`` such that
     ``np.sum(cj) == len(labels)`` and ``np.sum(cj, axis = 1) == np.bincount(labels)``.
 
@@ -204,9 +202,7 @@ def calibrate_confident_joint(
     return round_preserving_row_totals(calibrated_cj)
 
 
-def _calibrate_confident_joint_multilabel(
-    confident_joint: np.ndarray, labels: list
-) -> List[np.ndarray]:
+def _calibrate_confident_joint_multilabel(confident_joint: np.ndarray, labels: list) -> np.ndarray:
     """Calibrates the confident joint for multi_labeled data. Thus,
         input `labels` is a list of lists (or list of iterable).
         This is intended as a helper function. You should probably
@@ -233,15 +229,15 @@ def _calibrate_confident_joint_multilabel(
       estimate of the joint *counts* of noisy and true labels in a one-vs-rest setting."""
     y_one = int2onehot(labels)
     num_classes = len(confident_joint)
-    calibrate_confident_joint_list = []
+    calibrate_confident_joint_list: np.ndarray = np.ndarray(
+        shape=(num_classes, 2, 2), dtype=np.int64
+    )
     for class_num in range(0, num_classes):
-        calibrate_confident_joint_list.append(
-            calibrate_confident_joint(
-                confident_joint[class_num],
-                labels=y_one[:, class_num],
-            )
+        calibrate_confident_joint_list[class_num] = calibrate_confident_joint(
+            confident_joint[class_num], labels=y_one[:, class_num]
         )
-    return np.array(calibrate_confident_joint_list)  # type: ignore
+
+    return calibrate_confident_joint_list
 
 
 def estimate_joint(labels, pred_probs, *, confident_joint=None, multi_label=False) -> np.ndarray:
@@ -298,7 +294,7 @@ def estimate_joint(labels, pred_probs, *, confident_joint=None, multi_label=Fals
             multi_label=multi_label,
         )
     else:
-        calibrated_cj = calibrate_confident_joint(confident_joint, labels, multi_label=multi_label)  # type: ignore
+        calibrated_cj = calibrate_confident_joint(confident_joint, labels, multi_label=multi_label)
 
     assert isinstance(calibrated_cj, np.ndarray)
     return calibrated_cj / float(np.sum(calibrated_cj))
