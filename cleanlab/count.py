@@ -380,6 +380,7 @@ def compute_confident_joint(
 
     Note: if `return_indices_of_off_diagonals` is set as True, this function instead returns a tuple `(confident_joint, indices_off_diagonal)`
     where `indices_off_diagonal` is an array and each array contains the indices of examples counted in off-diagonals of confident joint.
+    
     Note
     ----
 
