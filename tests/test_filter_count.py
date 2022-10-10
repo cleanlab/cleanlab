@@ -24,6 +24,7 @@ import scipy
 import pytest
 from sklearn.multioutput import MultiOutputClassifier
 from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import cross_val_predict
 
 
 def make_data(
@@ -107,55 +108,46 @@ def make_data(
 
 def make_multilabel_data(
     means=[[-5, 2], [0, 2], [-3, 6]],
-    covs=[[[3, -1.5], [-1.5, 1]], [[1, 0.5], [0.5, 4]], [[5, 1], [1, 5]]],
-    means_mul=[[-3, 1.5], [-6, 4], [2, 6], [-2, 3]],
-    covs_mul=[
-        [[0.3, 0.0], [0.0, 0.4]],
-        [[0.3, 0.0], [0.0, 0.4]],
-        [[0.3, 0.0], [0.0, 0.4]],
-        [[0.3, 0.0], [0.0, 0.4]],
-        [[0.2, 0], [0, 0.2]],
-    ],
-    label_mul=[[0, 1], [0, 2], [1, 2], [0, 1, 2]],
-    sizes_single_label=[100, 150, 100],
-    sizes_multi_label=[10, 20, 20, 5],
+    covs=[[[3, -1.5], [-1.5, 1]], [[5, -1.5], [-1.5, 1]], [[3, -1.5], [-1.5, 1]]],
+    boxes_coordinates=[[-3.5, 0, -1.5, 1.7], [-1, 3, 2, 4], [-5, 2, -3, 4], [-3, 2, -1, 4]],
+    box_multilabels=[[0, 1], [1, 2], [0, 2], [0, 1, 2]],
+    sizes=[100, 80, 100],
     avg_trace=0.9,
     seed=1,
 ):
+    np.random.seed(seed=seed)
     m = len(means) + len(
-        means_mul
+        box_multilabels
     )  # number of classes by treating each multilabel as 1 unique label
-    n = sum(sizes_single_label) + sum(sizes_multi_label)
+    n = sum(sizes)
     local_data = []
     labels = []
     test_data = []
     test_labels = []
     for i in range(0, len(means)):
-        local_data.append(
-            np.random.multivariate_normal(mean=means[i], cov=covs[i], size=sizes_single_label[i])
-        )
-        test_data.append(
-            np.random.multivariate_normal(mean=means[i], cov=covs[i], size=sizes_single_label[i])
-        )
-        test_labels += [[i]] * sizes_single_label[i]
-        labels += [[i]] * sizes_single_label[i]
+        local_data.append(np.random.multivariate_normal(mean=means[i], cov=covs[i], size=sizes[i]))
+        test_data.append(np.random.multivariate_normal(mean=means[i], cov=covs[i], size=sizes[i]))
+        test_labels += [[i]] * sizes[i]
+        labels += [[i]] * sizes[i]
 
-    for i in range(0, len(means_mul)):
-        local_data.append(
-            np.random.multivariate_normal(
-                mean=means_mul[i], cov=covs_mul[i], size=sizes_multi_label[i]
-            )
-        )
-        test_data.append(
-            np.random.multivariate_normal(
-                mean=means_mul[i], cov=covs_mul[i], size=sizes_multi_label[i]
-            )
-        )
-        test_labels += [label_mul[i]] * sizes_multi_label[i]
-        labels += [label_mul[i]] * sizes_multi_label[i]
+    def make_multi(X, Y, bx1, by1, bx2, by2, label_list):
+        ll = np.array([bx1, by1])  # lower-left
+        ur = np.array([bx2, by2])  # upper-right
+
+        inidx = np.all(np.logical_and(X.tolist() >= ll, X.tolist() <= ur), axis=1)
+        for i in range(0, len(Y)):
+            if inidx[i]:
+                Y[i] = label_list
+        return Y
 
     X_train = np.vstack(local_data)
     X_test = np.vstack(test_data)
+
+    for i in range(0, len(box_multilabels)):
+        bx1, by1, bx2, by2 = boxes_coordinates[i]
+        multi_label = box_multilabels[i]
+        labels = make_multi(X_train, labels, bx1, by1, bx2, by2, multi_label)
+        test_labels = make_multi(X_test, test_labels, bx1, by1, bx2, by2, multi_label)
 
     d = {}
     for i in labels:
@@ -179,10 +171,9 @@ def make_multilabel_data(
     ps = np.bincount(labels_idx) / float(len(labels_idx))
     inv = compute_inv_noise_matrix(py, noise_matrix, ps=ps)
 
-    clf = MultiOutputClassifier(LogisticRegression())
     y_train = int2onehot(noisy_labels)
-    clf.fit(X_train, y_train)
-    pyi = clf.predict_proba(X_train)
+    clf = MultiOutputClassifier(LogisticRegression())
+    pyi = cross_val_predict(clf, X_train, y_train, method="predict_proba")
     pred_probs = np.zeros(y_train.shape)
     for i, p in enumerate(pyi):
         pred_probs[:, i] = p[:, 1]
