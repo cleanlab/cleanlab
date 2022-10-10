@@ -536,7 +536,7 @@ def _compute_confident_joint_multi_label(
         raise ValueError(
             "wrong format for labels, should be a list of list[indices], please check the documentation in find_label_issues for further information"
         )
-    confident_joint_list = np.ndarray(shape=(num_classes, 2, 2), dtype=np.int64)  # type: ignore
+    confident_joint_list: np.ndarray = np.ndarray(shape=(num_classes, 2, 2), dtype=np.int64)
     indices_off_diagonal = []
     for class_num in range(0, num_classes):
         pred_probabilitites = _binarize_pred_probs_slice(pred_probs, class_num)
