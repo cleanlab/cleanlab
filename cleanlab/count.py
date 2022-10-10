@@ -476,7 +476,7 @@ def _compute_confident_joint_multi_label(
     thresholds=None,
     calibrate=True,
     return_indices_of_off_diagonals=False,
-) -> Union[np.ndarray, Tuple[np.ndarray, list]]:  # type: ignore
+) -> Union[np.ndarray, Tuple[np.ndarray, list]]:
     """Computes the confident joint for multi_labeled data. Thus,
     input `labels` is a list of lists (or list of iterable).
     This is intended as a helper function. You should probably
