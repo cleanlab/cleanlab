@@ -377,8 +377,6 @@ def compute_confident_joint(
     confident_joint_counts : np.ndarray
       An array of shape ``(K, K)`` representing counts of examples
       for which we are confident about their given and true label.
-      If `return_indices_of_off_diagonals` is ``True``, `confident_joint_counts` is the first element of returned tuple
-      and second element is another array of indices counted in off-diagonals of confident joint.
 
     Note: if `return_indices_of_off_diagonals` is set as True, this function instead returns a tuple `(confident_joint, indices_off_diagonal)`
     where `indices_off_diagonal` is an array and each array contains the indices of examples counted in off-diagonals of confident joint.
