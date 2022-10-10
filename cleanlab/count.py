@@ -29,7 +29,7 @@ from sklearn.metrics import confusion_matrix
 import sklearn.base
 import numpy as np
 import warnings
-from typing import Tuple, Union, Optional, List
+from typing import Tuple, Union, Optional
 
 from cleanlab.typing import LabelLike
 
