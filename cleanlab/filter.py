@@ -431,7 +431,8 @@ def _find_label_issues_multilabel(
         verbose,
     )
     if return_indices_ranked_by is None:
-        return per_class_issues.sum(axis=1) >= 1  # type: ignore
+        assert isinstance(per_class_issues, np.ndarray)
+        return per_class_issues.sum(axis=1) >= 1
     else:
         label_issues_list, labels_list, pred_probs_list = per_class_issues
         label_issues_idx = reduce(np.union1d, label_issues_list)
