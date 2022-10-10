@@ -564,7 +564,7 @@ def _compute_confident_joint_multi_label(
     if return_indices_of_off_diagonals:
         return confident_joint_list, indices_off_diagonal
 
-    return np.array(confident_joint_list)
+    return confident_joint_list
 
 
 def estimate_latent(
