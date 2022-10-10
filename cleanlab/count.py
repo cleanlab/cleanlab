@@ -526,8 +526,8 @@ def _compute_confident_joint_multi_label(
       estimates a confident subset of the joint distribution of the noisy and true labels, ``P_{noisy label, true label}``.
       Entry ``(c, j, k)`` in the matrix is the number of examples in a one-vs-rest class confidently counted into the pair of ``(class c, noisy label=j, true label=k)`` classes.
 
-    Note: if return_indices_of_off_diagonals is True, this function returns confident_joint_counts, indices_off_diagonal
-    where indices_off_diagonal is a list of array of indices counted in off-diagonals of confident joint for each class.
+    Note: if `return_indices_of_off_diagonals` is set as True, this function instead returns a tuple `(confident_joint_counts, indices_off_diagonal)`
+    where `indices_off_diagonal` is a list of arrays (one per class) and each array contains the indices of examples counted in off-diagonals of confident joint for that class.
     """
 
     num_classes = get_num_classes(labels=labels, pred_probs=pred_probs)
