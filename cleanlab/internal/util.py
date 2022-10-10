@@ -689,6 +689,7 @@ def num_unique_classes(labels, multi_label=None) -> int:
 
 
 def _binarize_pred_probs_slice(pred_probs: np.ndarray, class_num: int) -> np.ndarray:
+    """Binarize predicted probabilities of a particular class, in the form of a one-vs-rest setting"""
     pred_probs_class = pred_probs[:, class_num]
     pred_probabilities = np.stack([1 - pred_probs_class, pred_probs_class]).T
     return pred_probabilities

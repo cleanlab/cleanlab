@@ -183,7 +183,7 @@ def make_multilabel_data(
     y_train = int2onehot(noisy_labels)
     clf.fit(X_train, y_train)
     pyi = clf.predict_proba(X_train)
-    pred_probs = -1 * np.ones(y_train.shape)
+    pred_probs = np.zeros(y_train.shape)
     for i, p in enumerate(pyi):
         pred_probs[:, i] = p[:, 1]
     cj = count.compute_confident_joint(labels=noisy_labels, pred_probs=pred_probs, multi_label=True)
@@ -278,65 +278,87 @@ def test_prune_on_small_data(filter_by):
     assert not any(noise_idx)
 
 
-@pytest.mark.parametrize(
-    "multi_label",
-    [True, False],
-)
-def test_calibrate_joint(multi_label):
-    dataset = multilabel_data if multi_label else data
+def test_calibrate_joint():
+    dataset = data
     cj = count.compute_confident_joint(
         labels=dataset["labels"],
         pred_probs=dataset["pred_probs"],
-        multi_label=multi_label,
         calibrate=False,
     )
     calibrated_cj = count.calibrate_confident_joint(
         confident_joint=cj,
         labels=dataset["labels"],
-        multi_label=multi_label,
     )
 
     # Check calibration
-    if multi_label:
-        y_one = int2onehot(dataset["labels"])
-        for class_num in range(0, len(calibrated_cj)):
-            label_counts = np.bincount(y_one[:, class_num])
-            assert all(calibrated_cj[class_num].sum(axis=1).round().astype(int) == label_counts)
-            assert len(dataset["labels"]) == int(round(np.sum(calibrated_cj[class_num])))
-        calibrated_cj2 = count.compute_confident_joint(
-            labels=dataset["labels"],
-            pred_probs=dataset["pred_probs"],
-            calibrate=True,
-            multi_label=multi_label,
-        )
-    else:
-        label_counts = np.bincount(data["labels"])
-        assert all(calibrated_cj.sum(axis=1).round().astype(int) == label_counts)
-        assert len(dataset["labels"]) == int(round(np.sum(calibrated_cj)))
+    label_counts = np.bincount(data["labels"])
+    assert all(calibrated_cj.sum(axis=1).round().astype(int) == label_counts)
+    assert len(dataset["labels"]) == int(round(np.sum(calibrated_cj)))
 
-        calibrated_cj2 = count.compute_confident_joint(
-            labels=dataset["labels"],
-            pred_probs=dataset["pred_probs"],
-            calibrate=True,
-        )
+    calibrated_cj2 = count.compute_confident_joint(
+        labels=dataset["labels"],
+        pred_probs=dataset["pred_probs"],
+        calibrate=True,
+    )
 
     # Check equivalency
     assert np.all(calibrated_cj == calibrated_cj2)
 
 
+def test_calibrate_joint_multilabel():
+    dataset = multilabel_data
+    cj = count.compute_confident_joint(
+        labels=dataset["labels"],
+        pred_probs=dataset["pred_probs"],
+        multi_label=True,
+        calibrate=False,
+    )
+    calibrated_cj = count.calibrate_confident_joint(
+        confident_joint=cj,
+        labels=dataset["labels"],
+        multi_label=True,
+    )
+    y_one = int2onehot(dataset["labels"])
+    # Check calibration
+    for class_num in range(0, len(calibrated_cj)):
+        label_counts = np.bincount(y_one[:, class_num])
+        assert all(calibrated_cj[class_num].sum(axis=1).round().astype(int) == label_counts)
+        assert len(dataset["labels"]) == int(round(np.sum(calibrated_cj[class_num])))
+    calibrated_cj2 = count.compute_confident_joint(
+        labels=dataset["labels"],
+        pred_probs=dataset["pred_probs"],
+        calibrate=True,
+        multi_label=True,
+    )
+    # Check equivalency
+    assert np.all(calibrated_cj == calibrated_cj2)
+
+
 @pytest.mark.parametrize("use_confident_joint", [True, False])
-@pytest.mark.parametrize("multi_label", [True, False])
-def test_estimate_joint(use_confident_joint, multi_label):
-    dataset = multilabel_data if multi_label else data
-    if use_confident_joint and multi_label:
+def test_estimate_joint(use_confident_joint):
+    dataset = data
+    joint = count.estimate_joint(
+        labels=dataset["labels"],
+        pred_probs=dataset["pred_probs"],
+        confident_joint=dataset["cj"] if use_confident_joint else None,
+    )
+
+    # Check that joint sums to 1.
+    assert abs(np.sum(joint) - 1.0) < 1e-6
+
+
+@pytest.mark.parametrize("use_confident_joint", [True, False])
+def test_estimate_joint_multilabel(use_confident_joint):
+    dataset = multilabel_data
+    if use_confident_joint:
         cj = count.compute_confident_joint(
-            labels=dataset["labels"], pred_probs=dataset["pred_probs"], multi_label=multi_label
+            labels=dataset["labels"], pred_probs=dataset["pred_probs"], multi_label=True
         )
         joint = count.estimate_joint(
             labels=dataset["labels"],
             pred_probs=dataset["pred_probs"],
             confident_joint=cj,
-            multi_label=multi_label,
+            multi_label=True,
         )
     else:
 
@@ -344,9 +366,8 @@ def test_estimate_joint(use_confident_joint, multi_label):
             labels=dataset["labels"],
             pred_probs=dataset["pred_probs"],
             confident_joint=dataset["cj"] if use_confident_joint else None,
-            multi_label=multi_label,
+            multi_label=True,
         )
-
     # Check that joint sums to 1.
     assert abs(np.sum(joint) - 1.0) < 1e-6
 
@@ -537,38 +558,57 @@ def test_find_label_issues_multi_label_small(confident_joint, return_indices_ran
 
 
 @pytest.mark.parametrize("return_indices_of_off_diagonals", [True, False])
-@pytest.mark.parametrize("multi_label", [True, False])
-def test_confident_learning_filter(return_indices_of_off_diagonals, multi_label):
-    dataset = multilabel_data if multi_label else data
+def test_confident_learning_filter(return_indices_of_off_diagonals):
+    dataset = data
     if return_indices_of_off_diagonals:
         cj, indices = count.compute_confident_joint(
             labels=dataset["labels"],
             pred_probs=dataset["pred_probs"],
             calibrate=False,
             return_indices_of_off_diagonals=True,
-            multi_label=multi_label,
         )
         # Check that the number of 'label issues' found in off diagonals
         # matches the off diagonals of the uncalibrated confident joint
 
-        if multi_label:
-            for c, ind in zip(cj, indices):
-                assert len(ind) == (np.sum(c) - np.trace(c))
-        else:
-            assert len(indices) == (np.sum(cj) - np.trace(cj))
+        assert len(indices) == (np.sum(cj) - np.trace(cj))
     else:
         cj = count.compute_confident_joint(
             labels=dataset["labels"],
             pred_probs=dataset["pred_probs"],
             calibrate=False,
             return_indices_of_off_diagonals=return_indices_of_off_diagonals,
-            multi_label=multi_label,
         )
-        if multi_label:
-            for c in cj:
-                assert np.trace(c) > -1
-        else:
-            assert np.trace(cj) > -1
+
+        assert np.trace(cj) > -1
+
+
+@pytest.mark.parametrize("return_indices_of_off_diagonals", [True, False])
+def test_confident_learning_filter_multilabel(return_indices_of_off_diagonals):
+    dataset = multilabel_data
+
+    if return_indices_of_off_diagonals:
+        cj, indices = count.compute_confident_joint(
+            labels=dataset["labels"],
+            pred_probs=dataset["pred_probs"],
+            calibrate=False,
+            return_indices_of_off_diagonals=True,
+            multi_label=True,
+        )
+        # Check that the number of 'label issues' found in off diagonals
+        # matches the off diagonals of the uncalibrated confident joint
+
+        for c, ind in zip(cj, indices):
+            assert len(ind) == (np.sum(c) - np.trace(c))
+    else:
+        cj = count.compute_confident_joint(
+            labels=dataset["labels"],
+            pred_probs=dataset["pred_probs"],
+            calibrate=False,
+            return_indices_of_off_diagonals=return_indices_of_off_diagonals,
+            multi_label=True,
+        )
+        for c in cj:
+            assert np.trace(c) > -1
 
 
 def test_predicted_neq_given_filter():
