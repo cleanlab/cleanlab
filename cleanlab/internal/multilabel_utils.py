@@ -23,7 +23,6 @@ import itertools
 from typing import Callable, Optional
 
 import numpy as np
-import sklearn
 from sklearn.model_selection import cross_val_predict
 from sklearn.utils.multiclass import is_multilabel
 
@@ -32,7 +31,6 @@ from cleanlab.rank import (
     get_normalized_margin_for_each_label,
     get_confidence_weighted_entropy_for_each_label,
 )
-from cleanlab.internal.util import train_val_split
 
 
 class _Wrapper:
