@@ -297,7 +297,27 @@ def estimate_joint(labels, pred_probs, *, confident_joint=None, multi_label=Fals
         calibrated_cj = calibrate_confident_joint(confident_joint, labels, multi_label=multi_label)
 
     assert isinstance(calibrated_cj, np.ndarray)
-    return calibrated_cj / float(np.sum(calibrated_cj))
+    if multi_label:
+        return _estimate_joint_multilabel(
+            labels=labels, pred_probs=pred_probs, confident_joint=confident_joint
+        )
+    else:
+        return calibrated_cj / float(np.sum(calibrated_cj))
+
+
+def _estimate_joint_multilabel(labels, pred_probs, *, confident_joint) -> np.ndarray:
+    num_classes = get_num_classes(labels=labels, pred_probs=pred_probs)
+    y_one = int2onehot(labels)
+    calibrated_cf = np.ndarray((num_classes, 2, 2))
+    for class_num in range(num_classes):
+        pred_probabilitites = _binarize_pred_probs_slice(pred_probs, class_num)
+        calibrated_cf[class_num] = estimate_joint(
+            labels=y_one[:, class_num],
+            pred_probs=pred_probabilitites,
+            confident_joint=confident_joint[class_num],
+        )
+
+    return calibrated_cf
 
 
 def compute_confident_joint(
@@ -378,9 +398,12 @@ def compute_confident_joint(
       An array of shape ``(K, K)`` representing counts of examples
       for which we are confident about their given and true label.
 
-    Note: if `return_indices_of_off_diagonals` is set as True, this function instead returns a tuple `(confident_joint, indices_off_diagonal)`
-    where `indices_off_diagonal` is an array and each array contains the indices of examples counted in off-diagonals of confident joint.
-    
+
+      Note
+      ----
+      if `return_indices_of_off_diagonals` is set as True, this function instead returns a tuple `(confident_joint, indices_off_diagonal)`
+      where `indices_off_diagonal` is an array and each array contains the indices of examples counted in off-diagonals of confident joint.
+
     Note
     ----
 
@@ -1286,14 +1309,23 @@ def get_confident_thresholds(
         get_num_classes(labels=labels, pred_probs=pred_probs, multi_label=multi_label)
     )
     if multi_label:
-        # Compute thresholds = p(label=k | k in set of given labels)
-        k_in_l = np.array([[k in lst for lst in labels] for k in unique_classes])
-        # The avg probability of class given that the label is represented.
-        confident_thresholds = np.array(
-            [np.mean(pred_probs[:, k][k_in_l[k]]) for k in unique_classes]
-        )
+        return _get_confident_thresholds_multilabel(labels=labels, pred_probs=pred_probs)
     else:
         confident_thresholds = np.array(
             [np.mean(pred_probs[:, k][labels == k]) for k in unique_classes]
         )
     return confident_thresholds
+
+
+def _get_confident_thresholds_multilabel(
+    labels: np.ndarray,
+    pred_probs: np.ndarray,
+):
+    num_classes = get_num_classes(labels=labels, pred_probs=pred_probs)
+    confident_thresholds = np.array((num_classes, pred_probs.shape[1]))
+    y_one = int2onehot(labels)
+    for class_num in range(num_classes):
+        pred_probabilitites = _binarize_pred_probs_slice(pred_probs, class_num)
+        confident_thresholds[class_num] = get_confident_thresholds(
+            pred_probs=pred_probabilitites, labels=y_one[:, class_num]
+        )
