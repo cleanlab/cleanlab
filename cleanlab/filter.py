@@ -712,7 +712,7 @@ def find_predicted_neq_given(labels, pred_probs, *, multi_label=False) -> np.nda
 def _find_predicted_neq_given(labels, pred_probs) -> np.ndarray:
     y_one = int2onehot(labels)
     num_classes = get_num_classes(labels=labels, pred_probs=pred_probs)
-    pred_neq = np.ndarray((num_classes, pred_probs.shape[1]))
+    pred_neq: np.ndarray = np.ndarray((num_classes, pred_probs.shape[1]))
     for class_num in range(num_classes):
         pred_probabilitites = _binarize_pred_probs_slice(pred_probs, class_num)
         pred_neq[class_num] = find_predicted_neq_given(
