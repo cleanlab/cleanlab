@@ -29,17 +29,7 @@ from cleanlab.benchmarking.noise_generation import (
     generate_noise_matrix_from_trace,
     generate_noisy_labels,
 )
-from cleanlab.internal.util import train_val_split
-
-
-def multilabel_py(y):
-    unique_labels = np.unique(y, axis=0)
-    n = y.shape[0]
-    multilabel_counts = [
-        np.sum(np.prod([label[i] == y[:, i] for i in range(y.shape[1])], axis=0))
-        for label in unique_labels
-    ]
-    return np.array(multilabel_counts) / float(n)
+import cleanlab.internal.multilabel_utils as mlutils
 
 
 DATASET_KWARGS = {
@@ -53,38 +43,6 @@ DATASET_KWARGS = {
     "return_indicator": "dense",
     "return_distributions": True,
 }
-
-
-def get_split_generator(labels, cv):
-    unique_labels = np.unique(labels, axis=0)
-    label_to_index = {tuple(label): i for i, label in enumerate(unique_labels)}
-    multilabel_ids = np.array([label_to_index[tuple(label)] for label in labels])
-    split_generator = cv.split(X=multilabel_ids, y=multilabel_ids)
-    return split_generator
-
-
-def train_fold(X, labels, *, clf, pred_probs, cv_train_idx, cv_holdout_idx):
-    clf_copy = sklearn.base.clone(clf)
-    X_train_cv, X_holdout_cv, s_train_cv, _ = train_val_split(
-        X, labels, cv_train_idx, cv_holdout_idx
-    )
-    clf_copy.fit(X_train_cv, s_train_cv)
-    pred_probs[cv_holdout_idx] = clf_copy.predict_proba(X_holdout_cv)
-
-
-def get_cross_validated_multilabel_pred_probs(X, labels, *, clf, cv):
-    split_generator = get_split_generator(labels, cv)
-    pred_probs = np.zeros(shape=labels.shape)
-    for cv_train_idx, cv_holdout_idx in split_generator:
-        train_fold(
-            X,
-            labels,
-            clf=clf,
-            pred_probs=pred_probs,
-            cv_train_idx=cv_train_idx,
-            cv_holdout_idx=cv_holdout_idx,
-        )
-    return pred_probs
 
 
 @pytest.fixture
@@ -118,9 +76,9 @@ def multilabeled_data(
     )
 
     # Compute p(true_label=k)
-    py = multilabel_py(y_train)
+    py = mlutils.multilabel_py(y_train)
 
-    m = len(unique_labels)
+    m = py.shape[0]
     trace = avg_trace * m
     noise_matrix = generate_noise_matrix_from_trace(
         m,
@@ -148,7 +106,7 @@ def multilabeled_data(
         shuffle=True,
         random_state=seed,
     )
-    pred_probs = get_cross_validated_multilabel_pred_probs(X_train, s, clf=clf, cv=kf)
+    pred_probs = mlutils.get_cross_validated_multilabel_pred_probs(X_train, s, clf=clf, cv=kf)
 
     label_errors_mask = s_index != y_train_index
 

@@ -15,13 +15,15 @@
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
 """
-Helper classes and functions used internally for computing multilabel label quality scores.
+Helper classes and functions used internally to compute label quality scores in multi-label classification.
 """
 
 from enum import Enum
+import itertools
 from typing import Callable, Optional
 
 import numpy as np
+import sklearn
 from sklearn.utils.multiclass import is_multilabel
 
 from cleanlab.rank import (
@@ -29,6 +31,7 @@ from cleanlab.rank import (
     get_normalized_margin_for_each_label,
     get_confidence_weighted_entropy_for_each_label,
 )
+from cleanlab.internal.util import train_val_split
 
 
 class _Wrapper:
@@ -36,7 +39,7 @@ class _Wrapper:
     setting them as methods of the Enum class.
 
 
-    This class is only intended to be used internally for the BaseQualityScorer or
+    This class is only intended to be used internally for the ClassLabelScorer or
     other cases where functions are used for enumeration values.
     """
 
@@ -50,7 +53,7 @@ class _Wrapper:
         return self.f.__name__
 
 
-class BaseQualityScorer(Enum):
+class ClassLabelScorer(Enum):
     """Enum for the different methods to compute label quality scores."""
 
     SELF_CONFIDENCE = _Wrapper(get_self_confidence_for_each_label)
@@ -67,7 +70,7 @@ class MultilabelScorer:
 
     def __init__(
         self,
-        base_scorer: BaseQualityScorer = BaseQualityScorer.SELF_CONFIDENCE,
+        base_scorer: ClassLabelScorer = ClassLabelScorer.SELF_CONFIDENCE,
         aggregator: Optional[Callable[..., np.ndarray]] = None,
         *,
         strict: bool = True,
@@ -89,10 +92,10 @@ class MultilabelScorer:
 
         Examples
         --------
-        >>> from cleanlab.internal.multilabel_rank import MultilabelScorer, BaseQualityScorer
+        >>> from cleanlab.internal.multilabel_utils import MultilabelScorer, ClassLabelScorer
         >>> import numpy as np
         >>> scorer = MultilabelScorer(
-        ...     base_scorer = BaseQualityScorer.NORMALIZED_MARGIN,
+        ...     base_scorer = ClassLabelScorer.NORMALIZED_MARGIN,
         ...     aggregator = np.min,
         ... )
         >>> labels = np.array([[0, 1, 0], [1, 0, 1]])
@@ -132,7 +135,7 @@ class MultilabelScorer:
 
         Examples
         --------
-        >>> from cleanlab.internal.multilabel_rank import MultilabelScorer
+        >>> from cleanlab.internal.multilabel_utils import MultilabelScorer
         >>> import numpy as np
         >>> scorer = MultilabelScorer()
         >>> labels = np.array([[0, 1, 0], [1, 0, 1]])
@@ -184,3 +187,88 @@ class MultilabelScorer:
 
 def get_label_quality_scores(labels, pred_probs, *, method: MultilabelScorer):
     return method(labels, pred_probs)
+
+
+# Probabilities
+
+
+def multilabel_py(y: np.ndarray) -> np.ndarray:
+    """Compute the prior probability of each label in a multi-label classification problem.
+
+    Parameters
+    ----------
+    y :
+        A 2d numpy array of binarized multi-labels of shape (N, K) where N is the number of samples and K is the number of classes.
+
+    Returns
+    -------
+    py :
+        A 1d numpy array of prior probabilities of shape (2**K,) where 2**K is the number of possible class-assignment configurations.
+
+    Examples
+    --------
+    >>> y = np.array([[0, 0], [0, 1], [1, 0], [1, 1]])
+    >>> multilabel_py(y)
+    array([0.25, 0.25, 0.25, 0.25])
+    >>> y = np.array([[0, 0], [0, 1], [1, 0], [1, 1], [1, 0]])
+    >>> multilabel_py(y)
+    array([0.2, 0.2, 0.4, 0.2])
+    """
+    # Count the number of unique class-assignment configurations/labels
+    # and the number of times each configuration occurs.
+    N, K = y.shape
+    unique_labels, counts = np.unique(y, axis=0, return_counts=True)
+    counts = _fix_missing_class_count(K, unique_labels, counts)
+    py = counts / N
+    return py
+
+
+def _fix_missing_class_count(K: int, unique_labels: np.ndarray, counts: np.ndarray) -> np.ndarray:
+    """If there are missing configurations, i.e. fewer than 2**K unique label, add them with a count of 0."""
+    if unique_labels.shape[0] < 2**K:
+        # Get the missing labels.
+        all_configurations = itertools.product([0, 1], repeat=K)
+        missing_labels = np.array(list(set(all_configurations) - set(map(tuple, unique_labels))))
+        # Add the missing labels with a count of 0.
+        unique_labels = np.vstack((unique_labels, missing_labels))
+        counts = np.hstack((counts, np.zeros(missing_labels.shape[0])))
+        # Sort the labels and counts by binary representation in
+        # 'big' bit order:  [0, 0] < [0, 1] < [1, 0] < [1, 1])
+        sorted_ids = np.argsort(np.sum(unique_labels * 2 ** np.arange(K)[::-1], axis=1))
+        counts = counts[sorted_ids]
+    return counts
+
+
+# Cross-validation helpers
+
+
+def _get_split_generator(labels, cv):
+    unique_labels = np.unique(labels, axis=0)
+    label_to_index = {tuple(label): i for i, label in enumerate(unique_labels)}
+    multilabel_ids = np.array([label_to_index[tuple(label)] for label in labels])
+    split_generator = cv.split(X=multilabel_ids, y=multilabel_ids)
+    return split_generator
+
+
+def _train_fold(X, labels, *, clf, pred_probs, cv_train_idx, cv_holdout_idx):
+    clf_copy = sklearn.base.clone(clf)
+    X_train_cv, X_holdout_cv, s_train_cv, _ = train_val_split(
+        X, labels, cv_train_idx, cv_holdout_idx
+    )
+    clf_copy.fit(X_train_cv, s_train_cv)
+    pred_probs[cv_holdout_idx] = clf_copy.predict_proba(X_holdout_cv)
+
+
+def get_cross_validated_multilabel_pred_probs(X, labels, *, clf, cv):
+    split_generator = _get_split_generator(labels, cv)
+    pred_probs = np.zeros(shape=labels.shape)
+    for cv_train_idx, cv_holdout_idx in split_generator:
+        _train_fold(
+            X,
+            labels,
+            clf=clf,
+            pred_probs=pred_probs,
+            cv_train_idx=cv_train_idx,
+            cv_holdout_idx=cv_holdout_idx,
+        )
+    return pred_probs
