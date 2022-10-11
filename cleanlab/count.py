@@ -183,9 +183,9 @@ def calibrate_confident_joint(confident_joint, labels, *, multi_label=False) -> 
     -------
     calibrated_cj : np.ndarray
       An array of shape ``(K, K)`` representing a valid estimate of the joint *counts* of noisy and true labels (if `multi_label` is False).
-      If `multi_label` is True, the returned `calibrated_cj` is instead an one-vs-rest array of shape ``(K, 2, 2)``, 
-      where for class `c`: entry ``(c, 0, 0)`` in this one-vs-rest  array is the number of examples whose noisy label contains `c` confidently identified as truly belonging to class `c` as well. 
-      Entry ``(c, 1, 0)`` in this one-vs-rest  array is the number of examples whose noisy label contains `c` confidently identified as not actually belonging to class `c`. 
+      If `multi_label` is True, the returned `calibrated_cj` is instead an one-vs-rest array of shape ``(K, 2, 2)``,
+      where for class `c`: entry ``(c, 0, 0)`` in this one-vs-rest  array is the number of examples whose noisy label contains `c` confidently identified as truly belonging to class `c` as well.
+      Entry ``(c, 1, 0)`` in this one-vs-rest  array is the number of examples whose noisy label contains `c` confidently identified as not actually belonging to class `c`.
       Entry ``(c, 0, 1)`` in this one-vs-rest array is the number of examples whose noisy label does not contain `c` confidently identified as truly belonging to class `c`.
       Entry ``(c, 1, 1)`` in this one-vs-rest array is the number of examples whose noisy label does not contain `c` confidently identified as actually not belonging to class `c` as well.
 
@@ -310,7 +310,7 @@ def estimate_joint(labels, pred_probs, *, confident_joint=None, multi_label=Fals
 def _estimate_joint_multilabel(labels, pred_probs, *, confident_joint) -> np.ndarray:
     num_classes = get_num_classes(labels=labels, pred_probs=pred_probs)
     y_one = int2onehot(labels)
-    calibrated_cf = np.ndarray((num_classes, 2, 2))
+    calibrated_cf: np.ndarray = np.ndarray((num_classes, 2, 2))
     for class_num in range(num_classes):
         pred_probabilitites = _binarize_pred_probs_slice(pred_probs, class_num)
         calibrated_cf[class_num] = estimate_joint(
