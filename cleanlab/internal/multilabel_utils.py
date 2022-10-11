@@ -24,6 +24,7 @@ from typing import Callable, Optional
 
 import numpy as np
 import sklearn
+from sklearn.model_selection import cross_val_predict
 from sklearn.utils.multiclass import is_multilabel
 
 from cleanlab.rank import (
@@ -250,25 +251,7 @@ def _get_split_generator(labels, cv):
     return split_generator
 
 
-def _train_fold(X, labels, *, clf, pred_probs, cv_train_idx, cv_holdout_idx):
-    clf_copy = sklearn.base.clone(clf)
-    X_train_cv, X_holdout_cv, s_train_cv, _ = train_val_split(
-        X, labels, cv_train_idx, cv_holdout_idx
-    )
-    clf_copy.fit(X_train_cv, s_train_cv)
-    pred_probs[cv_holdout_idx] = clf_copy.predict_proba(X_holdout_cv)
-
-
 def get_cross_validated_multilabel_pred_probs(X, labels, *, clf, cv):
     split_generator = _get_split_generator(labels, cv)
-    pred_probs = np.zeros(shape=labels.shape)
-    for cv_train_idx, cv_holdout_idx in split_generator:
-        _train_fold(
-            X,
-            labels,
-            clf=clf,
-            pred_probs=pred_probs,
-            cv_train_idx=cv_train_idx,
-            cv_holdout_idx=cv_holdout_idx,
-        )
+    pred_probs = cross_val_predict(clf, X, labels, cv=split_generator, method="predict_proba")
     return pred_probs

@@ -226,28 +226,6 @@ def test_get_split_generator_rare_configurations(cv, K):
     assert len(train_counts) != len(test_counts)
 
 
-def test_train_fold(dummy_features, labels, cv):
-    # Make sure that the function updates `pred_probs` in-place.
-    clf = OneVsRestClassifier(LogisticRegression())
-    split_generator = mlutils._get_split_generator(labels, cv)
-    train, val = next(split_generator)
-    pred_probs = np.zeros(labels.shape)
-    assert pred_probs.sum() == 0
-    mlutils._train_fold(
-        dummy_features,
-        labels,
-        clf=clf,
-        pred_probs=pred_probs,
-        cv_train_idx=train,
-        cv_holdout_idx=val,
-    )
-    assert pred_probs.sum() > 0
-
-    # Check that only a portion of the predictions are updated
-    # Only some rows should be zeros
-    assert np.any(pred_probs.sum(axis=1) == 0, axis=0)
-
-
 def test_get_cross_validated_multilabel_pred_probs(dummy_features, labels, cv):
     clf = OneVsRestClassifier(LogisticRegression(random_state=0))
     pred_probs = mlutils.get_cross_validated_multilabel_pred_probs(
@@ -261,7 +239,8 @@ def test_get_cross_validated_multilabel_pred_probs(dummy_features, labels, cv):
     assert np.all(pred_probs >= 0) and np.all(pred_probs <= 1)
     assert np.all(np.isfinite(pred_probs))
 
-    # Gold master test
+    # Gold master test - Ensure output is consistent
+    assert dummy_features.shape == (10, 2)
     gold_master = np.array(
         [
             [0.203, 0.465, 0.612],
