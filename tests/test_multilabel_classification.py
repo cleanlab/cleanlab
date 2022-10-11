@@ -15,6 +15,7 @@
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
 
+import itertools
 import typing
 import numpy as np
 import pytest
@@ -164,17 +165,64 @@ def test_multilabel_py(given_labels, expected):
     assert np.isclose(py, expected).all()
 
 
-def test_get_split_generator(labels, cv):
-    split_generator = mlrank._get_split_generator(labels, cv)
+@pytest.mark.parametrize("K", [2, 3, 4], ids=["K=2", "K=3", "K=4"])
+def test_get_split_generator(cv, K):
+
+    all_configurations = np.array(list(itertools.product([0, 1], repeat=K)))
+    given_labels = np.repeat(all_configurations, 2, axis=0)
+
+    split_generator = mlrank._get_split_generator(given_labels, cv)
     assert isinstance(split_generator, typing.Generator)
 
     train, test = next(split_generator)
     for split in (train, test):
         assert isinstance(split, np.ndarray)
-        assert np.isin(split, np.arange(labels.shape[0])).all()
+        assert np.isin(split, np.arange(given_labels.shape[0])).all()
 
-    assert np.isin(train, test).sum() == 0
-    assert np.isin(test, train).sum() == 0
+    # Test that the label distribution is relatively equal among the splits.
+    train_labels, test_labels = given_labels[train], given_labels[test]
+    _, train_counts = np.unique(train_labels, axis=0, return_counts=True)
+    _, test_counts = np.unique(test_labels, axis=0, return_counts=True)
+    # cv.get_n_splits() is 2, so we expect 1/2 of the labels in each split.
+    assert np.all(train_counts == 1)
+    assert np.all(test_counts == 1)
+
+
+# Test split_generator with rare/missing multilabel configurations
+@pytest.mark.parametrize("K", [2, 3, 4], ids=["K=2", "K=3", "K=4"])
+def test_get_split_generator_rare_configurations(cv, K):
+
+    all_configurations = np.array(list(itertools.product([0, 1], repeat=K)))
+    given_labels = np.repeat(all_configurations, 2, axis=0)
+
+    # Remove one configuration
+    given_labels = given_labels[~np.all(given_labels == all_configurations[0], axis=1)]
+
+    split_generator = mlrank._get_split_generator(given_labels, cv)
+    train, test = next(split_generator)
+    train_labels, test_labels = given_labels[train], given_labels[test]
+
+    # Test that the label distribution is relatively equal among the splits.
+    _, train_counts = np.unique(train_labels, axis=0, return_counts=True)
+    _, test_counts = np.unique(test_labels, axis=0, return_counts=True)
+    # cv.get_n_splits() is 2, so we expect 1/2 of the labels in each split.
+    assert np.all(train_counts == 1)
+    assert np.all(test_counts == 1)
+    assert len(train_counts) == len(test_counts) == len(all_configurations) - 1
+
+    # Remove one instance from labels
+    given_labels = given_labels[1:, :]
+
+    split_generator = mlrank._get_split_generator(given_labels, cv)
+    train, test = next(split_generator)
+    train_labels, test_labels = given_labels[train], given_labels[test]
+
+    # Test that the label distribution is relatively equal among the splits.
+    _, train_counts = np.unique(train_labels, axis=0, return_counts=True)
+    _, test_counts = np.unique(test_labels, axis=0, return_counts=True)
+    # cv.get_n_splits() is 2, so we expect 1/2 of the labels in each split,
+    # except for the class with one fewer instances.
+    assert len(train_counts) != len(test_counts)
 
 
 def test_train_fold(dummy_features, labels, cv):
