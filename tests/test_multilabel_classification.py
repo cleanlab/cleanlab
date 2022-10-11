@@ -74,6 +74,7 @@ def cv():
 
 @pytest.fixture
 def dummy_features(labels):
+    np.random.seed(42)
     return np.random.rand(labels.shape[0], 2)
 
 
@@ -248,7 +249,7 @@ def test_train_fold(dummy_features, labels, cv):
 
 
 def test_get_cross_validated_multilabel_pred_probs(dummy_features, labels, cv):
-    clf = OneVsRestClassifier(LogisticRegression())
+    clf = OneVsRestClassifier(LogisticRegression(random_state=0))
     pred_probs = mlutils.get_cross_validated_multilabel_pred_probs(
         dummy_features,
         labels,
@@ -259,3 +260,20 @@ def test_get_cross_validated_multilabel_pred_probs(dummy_features, labels, cv):
     assert pred_probs.shape == labels.shape
     assert np.all(pred_probs >= 0) and np.all(pred_probs <= 1)
     assert np.all(np.isfinite(pred_probs))
+
+    # Gold master test
+    gold_master = np.array(
+        [
+            [0.203, 0.465, 0.612],
+            [0.802, 0.596, 0.43],
+            [0.776, 0.649, 0.391],
+            [0.201, 0.439, 0.633],
+            [0.203, 0.443, 0.584],
+            [0.814, 0.572, 0.332],
+            [0.201, 0.388, 0.544],
+            [0.778, 0.646, 0.392],
+            [0.796, 0.611, 0.387],
+            [0.199, 0.381, 0.58],
+        ]
+    )
+    assert np.allclose(pred_probs, gold_master, atol=5e-4)
