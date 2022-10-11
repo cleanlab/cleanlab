@@ -709,6 +709,18 @@ def find_predicted_neq_given(labels, pred_probs, *, multi_label=False) -> np.nda
     return np.argmax(pred_probs, axis=1) != np.asarray(labels)
 
 
+def _find_predicted_neq_given(labels, pred_probs) -> np.ndarray:
+    y_one = int2onehot(labels)
+    num_classes = get_num_classes(labels=labels, pred_probs=pred_probs)
+    pred_neq = np.ndarray((num_classes, pred_probs.shape[1]))
+    for class_num in range(num_classes):
+        pred_probabilitites = _binarize_pred_probs_slice(pred_probs, class_num)
+        pred_neq[class_num] = find_predicted_neq_given(
+            labels=y_one[:, class_num], pred_probs=pred_probabilitites
+        )
+    return pred_neq
+
+
 def find_label_issues_using_argmax_confusion_matrix(
     labels,
     pred_probs,
