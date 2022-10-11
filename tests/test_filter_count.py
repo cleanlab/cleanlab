@@ -351,6 +351,7 @@ def test_estimate_joint_multilabel(use_confident_joint):
             confident_joint=cj,
             multi_label=True,
         )
+
     else:
 
         joint = count.estimate_joint(
@@ -359,8 +360,9 @@ def test_estimate_joint_multilabel(use_confident_joint):
             confident_joint=dataset["cj"] if use_confident_joint else None,
             multi_label=True,
         )
-    # Check that joint sums to 1.
-    assert abs(np.sum(joint) - 1.0) < 1e-6
+    # Check that each joint sums to 1.
+    for j in joint:
+        assert abs(np.sum(j) - 1.0) < 1e-6
 
 
 def test_compute_confident_joint():

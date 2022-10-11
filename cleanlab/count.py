@@ -310,13 +310,22 @@ def estimate_joint(labels, pred_probs, *, confident_joint=None, multi_label=Fals
 def _estimate_joint_multilabel(labels, pred_probs, *, confident_joint) -> np.ndarray:
     num_classes = get_num_classes(labels=labels, pred_probs=pred_probs)
     y_one = int2onehot(labels)
+    if confident_joint is None:
+        calibrated_cj = compute_confident_joint(
+            labels,
+            pred_probs,
+            calibrate=True,
+            multi_label=True,
+        )
+    else:
+        calibrated_cj = confident_joint
     calibrated_cf: np.ndarray = np.ndarray((num_classes, 2, 2))
     for class_num in range(num_classes):
         pred_probabilitites = _binarize_pred_probs_slice(pred_probs, class_num)
         calibrated_cf[class_num] = estimate_joint(
             labels=y_one[:, class_num],
             pred_probs=pred_probabilitites,
-            confident_joint=confident_joint[class_num],
+            confident_joint=calibrated_cj[class_num],
         )
 
     return calibrated_cf
