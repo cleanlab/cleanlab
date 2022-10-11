@@ -640,6 +640,21 @@ def test_predicted_neq_given_filter():
     )
 
 
+def test_predicted_neq_given_filter_multilabel():
+    pred_probs = np.array(
+        [
+            [0.9, 0.1, 0.0, 0.4],
+            [0.7, 0.8, 0.2, 0.3],
+            [0.9, 0.8, 0.4, 0.2],
+            [0.1, 0.1, 0.8, 0.3],
+            [0.4, 0.5, 0.1, 0.1],
+        ]
+    )
+    labels = [[0], [0, 1], [0, 1], [2], [0, 2, 3]]
+    label_issues = filter.find_predicted_neq_given(labels, pred_probs, multi_label=True)
+    assert all(label_issues == [False, False, False, False, True])
+
+
 @pytest.mark.parametrize("calibrate", [True, False])
 @pytest.mark.parametrize("filter_by", ["prune_by_noise_rate", "prune_by_class", "both"])
 def test_find_label_issues_using_argmax_confusion_matrix(calibrate, filter_by):

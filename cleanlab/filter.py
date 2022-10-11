@@ -702,23 +702,20 @@ def find_predicted_neq_given(labels, pred_probs, *, multi_label=False) -> np.nda
 
     assert_valid_inputs(X=None, y=labels, pred_probs=pred_probs, multi_label=multi_label)
     if multi_label:
-        # TODO: This needs to be tested.
-        return np.array(
-            [all(np.argsort(pred_probs[i])[: len(j)] == sorted(j)) for i, j in enumerate(labels)]
-        )
+        return _find_predicted_neq_given_multilabel(labels=labels, pred_probs=pred_probs)
     return np.argmax(pred_probs, axis=1) != np.asarray(labels)
 
 
-def _find_predicted_neq_given(labels, pred_probs) -> np.ndarray:
+def _find_predicted_neq_given_multilabel(labels, pred_probs) -> np.ndarray:
     y_one = int2onehot(labels)
     num_classes = get_num_classes(labels=labels, pred_probs=pred_probs)
-    pred_neq: np.ndarray = np.ndarray((num_classes, pred_probs.shape[1]))
+    pred_neq: np.ndarray = np.zeros(y_one.shape).astype(bool)
     for class_num in range(num_classes):
         pred_probabilitites = _binarize_pred_probs_slice(pred_probs, class_num)
-        pred_neq[class_num] = find_predicted_neq_given(
+        pred_neq[:, class_num] = find_predicted_neq_given(
             labels=y_one[:, class_num], pred_probs=pred_probabilitites
         )
-    return pred_neq
+    return pred_neq.sum(axis=1) >= 1
 
 
 def find_label_issues_using_argmax_confusion_matrix(
