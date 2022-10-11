@@ -15,6 +15,7 @@
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
 from cleanlab import count, filter
+from cleanlab.count import get_confident_thresholds
 from cleanlab.internal.latent_algebra import compute_inv_noise_matrix
 from cleanlab.benchmarking.noise_generation import generate_noise_matrix_from_trace
 from cleanlab.benchmarking.noise_generation import generate_noisy_labels
@@ -363,6 +364,20 @@ def test_estimate_joint_multilabel(use_confident_joint):
     # Check that each joint sums to 1.
     for j in joint:
         assert abs(np.sum(j) - 1.0) < 1e-6
+
+
+def test_confidence_thresholds():
+    dataset = data
+    cft = get_confident_thresholds(pred_probs=dataset["pred_probs"], labels=dataset["labels"])
+    assert cft.shape == (dataset["pred_probs"].shape[1],)
+
+
+def test_confidence_thresholds_multilabel():
+    dataset = multilabel_data
+    cft = get_confident_thresholds(
+        pred_probs=dataset["pred_probs"], labels=dataset["labels"], multi_label=True
+    )
+    assert cft.shape == (dataset["pred_probs"].shape[1], 2)
 
 
 def test_compute_confident_joint():

@@ -1333,10 +1333,11 @@ def _get_confident_thresholds_multilabel(
     pred_probs: np.ndarray,
 ):
     num_classes = get_num_classes(labels=labels, pred_probs=pred_probs)
-    confident_thresholds = np.array((num_classes, pred_probs.shape[1]))
+    confident_thresholds = np.ndarray((num_classes, 2))
     y_one = int2onehot(labels)
     for class_num in range(num_classes):
         pred_probabilitites = _binarize_pred_probs_slice(pred_probs, class_num)
         confident_thresholds[class_num] = get_confident_thresholds(
             pred_probs=pred_probabilitites, labels=y_one[:, class_num]
         )
+    return confident_thresholds
