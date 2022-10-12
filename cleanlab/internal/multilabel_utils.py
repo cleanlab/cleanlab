@@ -18,19 +18,48 @@
 Helper classes and functions used internally to compute label quality scores in multi-label classification.
 """
 
+from collections.abc import Sequence
 from enum import Enum
 import itertools
 from typing import Callable, Optional
+import warnings
 
 import numpy as np
 from sklearn.model_selection import cross_val_predict
-from sklearn.utils.multiclass import is_multilabel
 
 from cleanlab.rank import (
     get_self_confidence_for_each_label,
     get_normalized_margin_for_each_label,
     get_confidence_weighted_entropy_for_each_label,
 )
+
+
+def _is_multilabel(y: np.ndarray) -> bool:
+    """Checks whether `y` is in a multi-label indicator matrix format.
+
+    Sparse matrices are not supported.
+    """
+    if hasattr(y, "__array__") or isinstance(y, Sequence):
+        # DeprecationWarning will be replaced by ValueError, see NEP 34
+        # https://numpy.org/neps/nep-0034-infer-dtype-is-object.html
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", np.VisibleDeprecationWarning)
+            try:
+                y = np.asarray(y)
+            except np.VisibleDeprecationWarning:
+                # dtype=object should be provided explicitly for ragged arrays,
+                # see NEP 34
+                y = np.array(y, dtype=object)
+
+    if not (hasattr(y, "shape") and y.ndim == 2 and y.shape[1] > 1):
+        return False
+
+    labels = np.unique(y)
+
+    return len(labels) < 3 and (
+        y.dtype.kind in "biu"  # bool, int, uint
+        or (y.dtype.kind == "f" and np.all(y.astype(int) == y))
+    )
 
 
 class _Wrapper:
@@ -178,7 +207,10 @@ class MultilabelScorer:
         Checks that (multi-)labels are in the proper binary indicator format and that
         they are compatible with the predicted probabilities.
         """
-        if not is_multilabel(labels):
+        # Only allow dense matrices for labels for now
+        if not isinstance(labels, np.ndarray):
+            raise TypeError("Labels must be a numpy array.")
+        if not _is_multilabel(labels):
             raise ValueError("Labels must be in multi-label format.")
         if labels.shape != pred_probs.shape:
             raise ValueError("Labels and predicted probabilities must have the same shape.")

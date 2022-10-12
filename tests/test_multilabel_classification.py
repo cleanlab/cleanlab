@@ -20,7 +20,6 @@ import typing
 import numpy as np
 import pytest
 import sklearn
-from sklearn.utils.multiclass import is_multilabel
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.linear_model import LogisticRegression
 
@@ -116,6 +115,25 @@ def scorer():
         base_scorer=mlutils.ClassLabelScorer.SELF_CONFIDENCE,
         aggregator=np.min,
     )
+
+
+def test_is_multilabel(labels):
+    assert mlutils._is_multilabel(labels)
+    assert not mlutils._is_multilabel(labels[:, 0])
+
+
+@pytest.mark.parametrize(
+    "input",
+    [
+        [[0], [1, 2], [0, 2]],
+        [["a", "b"], ["b"]],
+        np.array([[[0, 1], [0, 1]], [[1, 1], [0, 0]]]),
+        1,
+    ],
+    ids=["lists of ids", "lists of strings", "3d array", "scalar"],
+)
+def test_is_multilabel_is_false(input):
+    assert not mlutils._is_multilabel(input)
 
 
 def test_multilabel_scorer_extend_binary_pred_probs():
