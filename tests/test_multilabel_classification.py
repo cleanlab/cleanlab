@@ -140,15 +140,6 @@ def test_multilabel_scorer_extend_binary_pred_probs():
     assert np.sum(pred_probs_extended, axis=1).all() == 1
 
 
-def test_fixture_for_multi_label_data(multilabeled_data):
-    """Internal test to ensure that the multilabeled_data test fixture is correctly set up."""
-    assert isinstance(multilabeled_data, dict)
-    assert isinstance(multilabeled_data["labels"], np.ndarray)
-    assert is_multilabel(multilabeled_data["labels"])
-    assert isinstance(multilabeled_data["pred_probs"], np.ndarray)
-    assert multilabeled_data["labels"].shape == multilabeled_data["pred_probs"].shape
-
-
 def test_get_label_quality_scores_output(labels, pred_probs, scorer):
     # Check that the function returns a dictionary with the correct keys.
     scores = mlutils.get_label_quality_scores(labels, pred_probs, method=scorer)
