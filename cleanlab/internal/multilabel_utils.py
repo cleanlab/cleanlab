@@ -39,19 +39,7 @@ def _is_multilabel(y: np.ndarray) -> bool:
 
     Sparse matrices are not supported.
     """
-    if hasattr(y, "__array__") or isinstance(y, Sequence):
-        # DeprecationWarning will be replaced by ValueError, see NEP 34
-        # https://numpy.org/neps/nep-0034-infer-dtype-is-object.html
-        with warnings.catch_warnings():
-            warnings.simplefilter("error", np.VisibleDeprecationWarning)
-            try:
-                y = np.asarray(y)
-            except np.VisibleDeprecationWarning:
-                # dtype=object should be provided explicitly for ragged arrays,
-                # see NEP 34
-                y = np.array(y, dtype=object)
-
-    if not (hasattr(y, "shape") and y.ndim == 2 and y.shape[1] > 1):
+    if not (isinstance(y, np.ndarray) and y.ndim == 2 and y.shape[1] > 1):
         return False
 
     labels = np.unique(y)
