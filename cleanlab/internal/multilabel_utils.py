@@ -58,7 +58,7 @@ def _is_multilabel(y: np.ndarray) -> bool:
 
     return len(labels) < 3 and (
         y.dtype.kind in "biu"  # bool, int, uint
-        or (y.dtype.kind == "f" and np.all(y.astype(int) == y))
+        or (y.dtype.kind == "f" and bool(np.all(y.astype(int) == y)))
     )
 
 
