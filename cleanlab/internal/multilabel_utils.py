@@ -94,7 +94,7 @@ class ClassLabelScorer(Enum):
 
 
 class MultilabelScorer:
-    """A class for aggregating label quality scores for multi-label classification problems."""
+    """Aggregates label quality scores across different classes to produce one score per example in multi-label classification tasks."""
 
     def __init__(
         self,
