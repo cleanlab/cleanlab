@@ -41,13 +41,7 @@ def _is_multilabel(y: np.ndarray) -> bool:
     """
     if not (isinstance(y, np.ndarray) and y.ndim == 2 and y.shape[1] > 1):
         return False
-
-    labels = np.unique(y)
-
-    return len(labels) < 3 and (
-        y.dtype.kind in "biu"  # bool, int, uint
-        or (y.dtype.kind == "f" and bool(np.all(y.astype(int) == y)))
-    )
+    return np.array_equal(np.unique(y), [0, 1])
 
 
 class _Wrapper:
