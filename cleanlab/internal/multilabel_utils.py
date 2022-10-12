@@ -18,11 +18,9 @@
 Helper classes and functions used internally to compute label quality scores in multi-label classification.
 """
 
-from collections.abc import Sequence
 from enum import Enum
 import itertools
 from typing import Callable, Optional
-import warnings
 
 import numpy as np
 from sklearn.model_selection import cross_val_predict
