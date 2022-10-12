@@ -114,7 +114,7 @@ class MultilabelScorer:
         """
         self.base_scorer = base_scorer
         if aggregator is None:
-            self.aggregator = np.mean
+            self.aggregator: Callable[..., np.ndarray] = np.mean
         else:
             self.aggregator = aggregator
         self.strict = strict
