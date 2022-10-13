@@ -417,6 +417,12 @@ def _find_label_issues_multilabel(
     n_jobs: int = None,
     verbose: bool = False,
 ) -> np.ndarray:
+    """
+
+    A pooling function for _find_multilabel_issues_per_class
+
+
+    """
     per_class_issues = _find_multilabel_issues_per_class(
         labels,
         pred_probs,
@@ -726,7 +732,12 @@ def _find_predicted_neq_given_multilabel(labels, pred_probs) -> np.ndarray:
        labeled with high confidence.
 
     """
-    y_one = int2onehot(labels)
+    try:
+        y_one = int2onehot(labels)
+    except TypeError:
+        raise ValueError(
+            "wrong format for labels, should be a list of list[indices], please check the documentation in find_label_issues for further information"
+        )
     num_classes = get_num_classes(labels=labels, pred_probs=pred_probs)
     pred_neq: np.ndarray = np.zeros(y_one.shape).astype(bool)
     for class_num in range(num_classes):

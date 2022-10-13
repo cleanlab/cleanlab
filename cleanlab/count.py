@@ -160,6 +160,7 @@ def calibrate_confident_joint(confident_joint, labels, *, multi_label=False) -> 
       Entry ``(j, k)`` in the matrix is the number of examples confidently counted into the pair of ``(noisy label=j, true label=k)`` classes.
       The `confident_joint` can be computed using :py:func:`count.compute_confident_joint <cleanlab.count.compute_confident_joint>`.
       If not provided, it is computed from the given (noisy) `labels` and `pred_probs`.
+      If multi_label is True, then the confident should be an array of shape ``(K, 2, 2)``.
 
     labels : np.ndarray
       A discrete vector of noisy labels, i.e. some labels may be erroneous.
@@ -228,7 +229,12 @@ def _calibrate_confident_joint_multilabel(confident_joint: np.ndarray, labels: l
     calibrated_cj : np.ndarray
       An array of shape ``(K, 2, 2)`` of type float representing a valid
       estimate of the joint *counts* of noisy and true labels in a one-vs-rest setting."""
-    y_one = int2onehot(labels)
+    try:
+        y_one = int2onehot(labels)
+    except TypeError:
+        raise ValueError(
+            "wrong format for labels, should be a list of list[indices], please check the documentation in find_label_issues for further information"
+        )
     num_classes = len(confident_joint)
     calibrate_confident_joint_list: np.ndarray = np.ndarray(
         shape=(num_classes, 2, 2), dtype=np.int64
@@ -273,6 +279,7 @@ def estimate_joint(labels, pred_probs, *, confident_joint=None, multi_label=Fals
       Entry ``(j, k)`` in the matrix is the number of examples confidently counted into the pair of ``(noisy label=j, true label=k)`` classes.
       The `confident_joint` can be computed using :py:func:`count.compute_confident_joint <cleanlab.count.compute_confident_joint>`.
       If not provided, it is computed from the given (noisy) `labels` and `pred_probs`.
+      If multi_label is True, then the confident should be an array of shape ``(K, 2, 2)``.
 
     multi_label : bool, optional
       If ``True``, labels should be an iterable (e.g. list) of iterables, containing a
@@ -285,6 +292,11 @@ def estimate_joint(labels, pred_probs, *, confident_joint=None, multi_label=Fals
     confident_joint_distribution : np.ndarray
       An array of shape ``(K, K)`` representing an
       estimate of the true joint distribution of noisy and true labels.
+      If multi_label is True,
+      An array of shape ``(num_classes,2, 2)`` representing an
+      estimate of the true joint distribution of noisy and true labels,
+      Entry ``(c, j, k)`` in the matrix is the number of examples in a one-vs-rest class confidently counted into the pair of ``(class c, noisy label=j, true label=k)`` classes.
+
     """
 
     if confident_joint is None:
@@ -306,9 +318,46 @@ def estimate_joint(labels, pred_probs, *, confident_joint=None, multi_label=Fals
         return calibrated_cj / float(np.sum(calibrated_cj))
 
 
-def _estimate_joint_multilabel(labels, pred_probs, *, confident_joint) -> np.ndarray:
+def _estimate_joint_multilabel(labels, pred_probs, *, confident_joint=None) -> np.ndarray:
+    """Parameters
+     ----------
+     labels : np.ndarray
+       An array of shape ``(N,)`` of noisy labels, i.e. some labels may be erroneous.
+       Elements must be in the set 0, 1, ..., K-1, where K is the number of classes.
+       All the classes (0, 1, ..., and K-1) MUST be present in ``labels``, such that:
+       ``len(set(labels)) == pred_probs.shape[1]`` for standard multi-class classification with single-labeled data (e.g. ``labels =  [1,0,2,1,1,0...]``).
+       For multi-label classification where each example can belong to multiple classes(e.g. ``labels = [[1,2],[1],[0],..]``),
+       your labels should instead satisfy: ``len(set(k for l in labels for k in l)) == pred_probs.shape[1])``.
+
+     pred_probs : np.ndarray
+       An array of shape ``(N, K)`` of model-predicted probabilities,
+       ``P(label=k|x)``. Each row of this matrix corresponds
+       to an example `x` and contains the model-predicted probabilities that
+       `x` belongs to each possible class, for each of the K classes. The
+       columns must be ordered such that these probabilities correspond to
+       class 0, 1, ..., K-1. `pred_probs` should have been computed using 3 (or
+       higher) fold cross-validation.
+
+    confident_joint : np.ndarray, optional
+       An array of shape ``(num_classes,2, 2)`` representing the confident joint, the matrix used for identifying label issues, which
+       estimates a confident subset of the joint distribution of the noisy and true labels, ``P_{noisy label, true label}``.
+       Entry ``(c, j, k)`` in the matrix is the number of examples in a one-vs-rest class confidently counted into the pair of ``(class c, noisy label=j, true label=k)`` classes.
+       The `confident_joint` can be computed using :py:func:`count.compute_confident_joint <cleanlab.count.compute_confident_joint>`.
+       If not provided, it is computed from the given (noisy) `labels` and `pred_probs`.
+
+     Returns
+     -------
+     confident_joint_distribution : np.ndarray
+       An array of shape ``(K, 2, 2)`` representing an
+       estimate of the true joint distribution of noisy and true labels in a multi-label setting.
+    """
     num_classes = get_num_classes(labels=labels, pred_probs=pred_probs)
-    y_one = int2onehot(labels)
+    try:
+        y_one = int2onehot(labels)
+    except TypeError:
+        raise ValueError(
+            "wrong format for labels, should be a list of list[indices], please check the documentation in find_label_issues for further information"
+        )
     if confident_joint is None:
         calibrated_cj = compute_confident_joint(
             labels,
@@ -407,6 +456,10 @@ def compute_confident_joint(
     confident_joint_counts : np.ndarray
       An array of shape ``(K, K)`` representing counts of examples
       for which we are confident about their given and true label.
+      If multi_label is True,
+      An array of shape ``(num_classes,2, 2)`` representing the confident joint, the matrix used for identifying label issues, which
+      estimates a confident subset of the joint distribution of the noisy and true labels, ``P_{noisy label, true label}``.
+      Entry ``(c, j, k)`` in the matrix is the number of examples in a one-vs-rest class confidently counted into the pair of ``(class c, noisy label=j, true label=k)`` classes.
 
 
       Note
@@ -1331,9 +1384,34 @@ def _get_confident_thresholds_multilabel(
     labels: np.ndarray,
     pred_probs: np.ndarray,
 ):
+    """Returns expected (average) "self-confidence" for each class.
+
+    The confident class threshold for a class j is the expected (average) "self-confidence" for class j in a one-vs-rest setting.
+
+    Parameters
+    ----------
+    labels: list
+       List of noisy labels for multi-label classification where each example can belong to multiple classes (e.g. ``labels = [[1,2],[1],[0],..]`` indicates the first example in dataset belongs to both class 1 and class 2.
+       For multi-label settings, your `labels` should instead satisfy: ``len(set(k for l in labels for k in l)) == pred_probs.shape[1])``.
+
+    pred_probs : np.ndarray
+       Predicted-probabilities in the same format expected by the :py:func:`get_confident_thresholds <cleanlab.count.get_confident_thresholds>` function.
+
+
+
+    Returns
+    -------
+    confident_thresholds : np.ndarray
+      An array of shape ``(K, 2)`` where K is the number of classes.
+    """
     num_classes = get_num_classes(labels=labels, pred_probs=pred_probs)
+    try:
+        y_one = int2onehot(labels)
+    except TypeError:
+        raise ValueError(
+            "wrong format for labels, should be a list of list[indices], please check the documentation in find_label_issues for further information"
+        )
     confident_thresholds: np.ndarray = np.ndarray((num_classes, 2))
-    y_one = int2onehot(labels)
     for class_num in range(num_classes):
         pred_probabilitites = _binarize_pred_probs_slice(pred_probs, class_num)
         confident_thresholds[class_num] = get_confident_thresholds(
