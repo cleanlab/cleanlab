@@ -331,12 +331,11 @@ def _estimate_joint_multilabel(labels, pred_probs, *, confident_joint=None) -> n
 
      pred_probs : np.ndarray
        An array of shape ``(N, K)`` of model-predicted probabilities,
-       ``P(label=k|x)``. Each row of this matrix corresponds
-       to an example `x` and contains the model-predicted probabilities that
-       `x` belongs to each possible class, for each of the K classes. The
-       columns must be ordered such that these probabilities correspond to
-       class 0, 1, ..., K-1. `pred_probs` should have been computed using 3 (or
-       higher) fold cross-validation.
+      ``P(label=k|x)``. Each row of this matrix corresponds
+      to an example `x` and contains the model-predicted probabilities that
+      `x` belongs to each possible class, for each of the K classes. The
+      columns must be ordered such that these probabilities correspond to
+      class 0, 1, ..., K-1. They need not sum to 1.0
 
     confident_joint : np.ndarray, optional
        An array of shape ``(num_classes,2, 2)`` representing the confident joint, the matrix used for identifying label issues, which
