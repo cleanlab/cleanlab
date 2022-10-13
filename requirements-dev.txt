@@ -5,6 +5,7 @@ pandas-stubs
 pre-commit
 pytest
 pytest-cov
+pytest-lazy-fixture
 requests
 scipy
 torch
