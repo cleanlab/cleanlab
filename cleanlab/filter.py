@@ -707,6 +707,25 @@ def find_predicted_neq_given(labels, pred_probs, *, multi_label=False) -> np.nda
 
 
 def _find_predicted_neq_given_multilabel(labels, pred_probs) -> np.ndarray:
+    """
+
+    Parameters
+     ----------
+     labels : list
+       List of noisy labels for multi-label classification where each example can belong to multiple classes (e.g. ``labels = [[1,2],[1],[0],..]`` indicates the first example in dataset belongs to both class 1 and class 2.
+       For multi-label settings, your `labels` should instead satisfy: ``len(set(k for l in labels for k in l)) == pred_probs.shape[1])``.
+
+     pred_probs : np.ndarray
+       Predicted-probabilities in the same format expected by the :py:func:`find_label_issues <cleanlab.filter.find_label_issues>` function.
+
+     Returns
+     -------
+     label_issues_mask : np.ndarray
+       A boolean mask for the entire dataset where ``True`` represents a
+       label issue and ``False`` represents an example that is accurately
+       labeled with high confidence.
+
+    """
     y_one = int2onehot(labels)
     num_classes = get_num_classes(labels=labels, pred_probs=pred_probs)
     pred_neq: np.ndarray = np.zeros(y_one.shape).astype(bool)
