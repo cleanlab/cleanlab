@@ -456,7 +456,7 @@ def compute_confident_joint(
       An array of shape ``(K, K)`` representing counts of examples
       for which we are confident about their given and true label.
       If multi_label is True,
-      An array of shape ``(num_classes,2, 2)`` representing the confident joint, the matrix used for identifying label issues, which
+      An array of shape ``(K, 2, 2)`` representing the confident joint, the matrix used for identifying label issues, which
       estimates a confident subset of the joint distribution of the noisy and true labels, ``P_{noisy label, true label}``.
       Entry ``(c, j, k)`` in the matrix is the number of examples in a one-vs-rest class confidently counted into the pair of ``(class c, noisy label=j, true label=k)`` classes.
 
