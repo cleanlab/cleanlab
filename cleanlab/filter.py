@@ -154,6 +154,9 @@ def find_label_issues(
       When ``frac_noise=1.0``, return all "confident" estimated noise indices (recommended).
 
       frac_noise * number_of_mislabeled_examples_in_class_k.
+      Note
+      ----
+      This is not yet supported in multilabel setting.
 
     num_to_remove_per_class : array_like
       An iterable of length K, the number of classes.
@@ -794,6 +797,10 @@ def find_label_issues_using_argmax_confusion_matrix(
       A boolean mask for the entire dataset where ``True`` represents a
       label issue and ``False`` represents an example that is accurately
       labeled with high confidence.
+
+    Note
+    ----
+    Multi-label classification is not supported in this method.
     """
 
     assert_valid_inputs(X=None, y=labels, pred_probs=pred_probs, multi_label=False)
