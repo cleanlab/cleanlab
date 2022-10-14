@@ -338,7 +338,7 @@ def _estimate_joint_multilabel(labels, pred_probs, *, confident_joint=None) -> n
       class 0, 1, ..., K-1. They need not sum to 1.0
 
     confident_joint : np.ndarray, optional
-       An array of shape ``(num_classes,2, 2)`` representing the confident joint, the matrix used for identifying label issues, which
+       An array of shape ``(K, 2, 2)`` representing the confident joint, the matrix used for identifying label issues, which
        estimates a confident subset of the joint distribution of the noisy and true labels, ``P_{noisy label, true label}``.
        Entry ``(c, j, k)`` in the matrix is the number of examples in a one-vs-rest class confidently counted into the pair of ``(class c, noisy label=j, true label=k)`` classes.
        The `confident_joint` can be computed using :py:func:`count.compute_confident_joint <cleanlab.count.compute_confident_joint>`.
