@@ -576,8 +576,8 @@ def _compute_confident_joint_multi_label(
     Parameters
     ----------
     labels : list of list/iterable (length N)
-        These are multiclass labels. Each list in the list contains
-        all the labels for that example. This method will fail if labels
+        List of noisy labels for multi-label classification. Each list in the list contains
+        all the class assignments for that example. This method will fail if labels
         is not a list of lists (or a list of np.ndarrays or iterable).
 
     pred_probs : np.ndarray (shape (N, K))
