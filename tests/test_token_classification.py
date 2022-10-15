@@ -1,3 +1,4 @@
+from typing import Any, Dict
 from cleanlab.internal.token_classification_utils import (
     get_sentence,
     filter_sentence,
@@ -250,7 +251,7 @@ def test_display_issues():
     display_issues(issues_sentence_only, words)
 
 
-TEST_KWARGS = {"labels": labels, "pred_probs": pred_probs, "class_names": class_names}
+TEST_KWARGS: Dict[str, Any] = {"labels": labels, "pred_probs": pred_probs, "class_names": class_names}
 
 
 @pytest.mark.parametrize(

@@ -25,7 +25,7 @@ import multiprocessing
 from multiprocessing.sharedctypes import RawArray
 import sys
 import warnings
-from typing import Any
+from typing import Any, Dict
 
 from cleanlab.count import calibrate_confident_joint
 from cleanlab.rank import order_label_issues
@@ -588,7 +588,7 @@ def find_label_issues_using_argmax_confusion_matrix(
 
 # Multiprocessing helper functions:
 
-mp_params = {}  # Globals to be shared across threads in multiprocessing
+mp_params: Dict[str, Any] = {}  # Globals to be shared across threads in multiprocessing
 
 
 def _to_np_array(mp_arr, dtype="int32", shape=None) -> np.ndarray:  # pragma: no cover
