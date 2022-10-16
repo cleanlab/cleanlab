@@ -18,6 +18,7 @@
 Methods to identify which examples have label issues.
 """
 
+from audioop import mul
 import numpy as np
 from sklearn.metrics import confusion_matrix
 from sklearn.preprocessing import MultiLabelBinarizer
@@ -25,7 +26,7 @@ import multiprocessing
 from multiprocessing.sharedctypes import RawArray
 import sys
 import warnings
-from typing import Any, Dict
+from typing import Any, Dict, List, Optional, SupportsIndex, Tuple
 
 from cleanlab.count import calibrate_confident_joint
 from cleanlab.rank import order_label_issues
@@ -591,7 +592,9 @@ def find_label_issues_using_argmax_confusion_matrix(
 mp_params: Dict[str, Any] = {}  # Globals to be shared across threads in multiprocessing
 
 
-def _to_np_array(mp_arr, dtype="int32", shape=None) -> np.ndarray:  # pragma: no cover
+def _to_np_array(
+    mp_arr: bytearray, dtype="int32", shape: Tuple[int, int] = None
+) -> np.ndarray:  # pragma: no cover
     """multipropecessing Helper function to convert a multiprocessing
     RawArray to a numpy array."""
     arr = np.frombuffer(mp_arr, dtype=dtype)
@@ -658,7 +661,8 @@ def _get_shared_data() -> Any:  # pragma: no cover
     )
 
 
-def _prune_by_class(k, args=None) -> np.ndarray:
+# TODO figure out what the types inside args are.
+def _prune_by_class(k: int, args=None) -> np.ndarray:
     """multiprocessing Helper function for find_label_issues()
     that assumes globals and produces a mask for class k for each example by
     removing the examples with *smallest probability* of
@@ -702,7 +706,8 @@ def _prune_by_class(k, args=None) -> np.ndarray:
         return np.zeros(len(labels), dtype=bool)
 
 
-def _prune_by_count(k, args=None) -> np.ndarray:
+# TODO figure out what the types inside args are.
+def _prune_by_count(k: int, args=None) -> np.ndarray:
     """multiprocessing Helper function for find_label_issues() that assumes
     globals and produces a mask for class k for each example by
     removing the example with noisy label k having *largest margin*,
@@ -754,7 +759,7 @@ def _prune_by_count(k, args=None) -> np.ndarray:
     return label_issues_mask
 
 
-def _multiclass_crossval_predict(labels, pyx) -> np.ndarray:
+def _multiclass_crossval_predict(labels: List[List[str]], pyx: np.ndarray) -> np.ndarray:
     """Returns a numpy 2D array of one-hot encoded
     multiclass predictions. Each row in the array
     provides the predictions for a particular example.
