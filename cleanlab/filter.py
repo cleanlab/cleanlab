@@ -537,8 +537,8 @@ def find_predicted_neq_given(
 
 
 def find_label_issues_using_argmax_confusion_matrix(
-    labels,
-    pred_probs,
+    labels: np.ndarray,
+    pred_probs: np.ndarray,
     *,
     calibrate=True,
     filter_by="prune_by_noise_rate",
