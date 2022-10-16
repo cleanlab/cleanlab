@@ -26,7 +26,7 @@ import multiprocessing
 from multiprocessing.sharedctypes import RawArray
 import sys
 import warnings
-from typing import Any, Dict, List, Optional, SupportsIndex, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from cleanlab.count import calibrate_confident_joint
 from cleanlab.rank import order_label_issues
@@ -54,18 +54,18 @@ except ImportError as e:  # pragma: no cover
 
 
 def find_label_issues(
-    labels,
-    pred_probs,
+    labels: np.ndarray,
+    pred_probs: Optional[np.ndarray],
     *,
     return_indices_ranked_by=None,
-    rank_by_kwargs={},
+    rank_by_kwargs: Optional[Dict[str, Any]] = None,
     filter_by="prune_by_noise_rate",
     multi_label=False,
     frac_noise=1.0,
-    num_to_remove_per_class=None,
+    num_to_remove_per_class: Optional[int] = None,
     min_examples_per_class=1,
-    confident_joint=None,
-    n_jobs=None,
+    confident_joint: Optional[np.ndarray] = None,
+    n_jobs: Optional[int] = None,
     verbose=False,
 ) -> np.ndarray:
     """
@@ -201,6 +201,11 @@ def find_label_issues(
       Obtain the *indices* of label issues in your dataset by setting
       `return_indices_ranked_by`.
     """
+    if not rank_by_kwargs:
+        rank_by_kwargs = {}
+
+    if not pred_probs:
+        pred_probs = np.ndarray([])
 
     assert filter_by in [
         "prune_by_noise_rate",
@@ -399,7 +404,9 @@ def find_label_issues(
     return label_issues_mask
 
 
-def _keep_at_least_n_per_class(prune_count_matrix, n, *, frac_noise=1.0) -> np.ndarray:
+def _keep_at_least_n_per_class(
+    prune_count_matrix: np.ndarray, n: int, *, frac_noise=1.0
+) -> np.ndarray:
     """Make sure every class has at least n examples after removing noise.
     Functionally, increase each column, increases the diagonal term #(true_label=k,label=k)
     of prune_count_matrix until it is at least n, distributing the amount
@@ -465,7 +472,7 @@ def _keep_at_least_n_per_class(prune_count_matrix, n, *, frac_noise=1.0) -> np.n
     return round_preserving_row_totals(new_mat).astype(int)
 
 
-def _reduce_prune_counts(prune_count_matrix, frac_noise=1.0) -> np.ndarray:
+def _reduce_prune_counts(prune_count_matrix: np.ndarray, frac_noise=1.0) -> np.ndarray:
     """Reduce (multiply) all prune counts (non-diagonal) by frac_noise and
     increase diagonal by the total amount reduced in each column to
     preserve column counts.
@@ -496,7 +503,9 @@ def _reduce_prune_counts(prune_count_matrix, frac_noise=1.0) -> np.ndarray:
     return new_mat.astype(int)
 
 
-def find_predicted_neq_given(labels, pred_probs, *, multi_label=False) -> np.ndarray:
+def find_predicted_neq_given(
+    labels: np.ndarray, pred_probs: np.ndarray, *, multi_label=False
+) -> np.ndarray:
     """A simple baseline approach that considers ``argmax(pred_probs) != labels`` as a label error.
 
     Parameters
