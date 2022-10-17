@@ -228,7 +228,7 @@ def _calibrate_confident_joint_multilabel(confident_joint: np.ndarray, labels: l
     -------
     calibrated_cj : np.ndarray
       An array of shape ``(K, 2, 2)`` of type float representing a valid
-      estimate of the joint *counts* of noisy and true labels in a one-vs-rest setting."""
+      estimate of the joint *counts* of noisy and true labels in a one-vs-rest fashion."""
     try:
         y_one = int2onehot(labels)
     except TypeError:
