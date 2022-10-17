@@ -20,22 +20,24 @@ Methods to identify which examples have label issues.
 
 import numpy as np
 from sklearn.metrics import confusion_matrix
-from sklearn.preprocessing import MultiLabelBinarizer
 import multiprocessing
 from multiprocessing.sharedctypes import RawArray
 import sys
 import warnings
-from typing import Any
-
+from typing import Any, Optional, Union, Tuple, List
+from functools import reduce
 from cleanlab.count import calibrate_confident_joint
-from cleanlab.rank import order_label_issues
+from cleanlab.rank import (
+    order_label_issues,
+    get_label_quality_scores,
+)
 from cleanlab.internal.validation import assert_valid_inputs
 from cleanlab.internal.util import (
     value_counts,
     round_preserving_row_totals,
-    onehot2int,
     int2onehot,
     get_num_classes,
+    _binarize_pred_probs_slice,
 )
 
 # tqdm is a module used to print time-to-complete when multiprocessing is used.
@@ -136,8 +138,11 @@ def find_label_issues(
     multi_label : bool, optional
       If ``True``, labels should be an iterable (e.g. list) of iterables, containing a
       list of labels for each example, instead of just a single label.
-      The multi-label setting supports classification tasks where an example has 1 or more labels.
-      Example of a multi-labeled `labels` input: ``[[0,1], [1], [0,2], [0,1,2], [0], [1], ...]``.
+      The multi-label setting supports classification tasks where an example can belong to more than 1 class (rather than exactly one class as in standard multi-class classification).
+      Example of a multi-labeled `labels` input: ``[[0,1], [1], [0,2], [0,1,2], [0], [1], ...]``. This says the first example in dataset belongs to both class 0 and class 1, according to its given label.
+      Confident joint should be an array of shape ``(K, 2, 2)`` in multi-label settings.
+      Each row of `pred_probs` no longer needs to sum to 1 in multi-label settings, since one example can now belong to multiple classes simultaneously.
+
 
     frac_noise : float, default=1.0
       Used to only return the "top" ``frac_noise * num_label_issues``. The choice of which "top"
@@ -149,6 +154,7 @@ def find_label_issues(
       When ``frac_noise=1.0``, return all "confident" estimated noise indices (recommended).
 
       frac_noise * number_of_mislabeled_examples_in_class_k.
+      Note: specifying `frac_noise` is not yet supported if `multi_label` is True.
 
     num_to_remove_per_class : array_like
       An iterable of length K, the number of classes.
@@ -176,6 +182,7 @@ def find_label_issues(
       Entry ``(j, k)`` in the matrix is the number of examples confidently counted into the pair of ``(noisy label=j, true label=k)`` classes.
       The `confident_joint` can be computed using :py:func:`count.compute_confident_joint <cleanlab.count.compute_confident_joint>`.
       If not provided, it is computed from the given (noisy) `labels` and `pred_probs`.
+      If `multi_label` is True, `confident_joint` should instead be a one-vs-rest array with shape ``(K, 2, 2)``.
 
     n_jobs : optional
       Number of processing threads used by multiprocessing. Default ``None``
@@ -235,7 +242,20 @@ def find_label_issues(
 
     # Number of examples in each class of labels
     if multi_label:
-        label_counts = value_counts([i for lst in labels for i in lst])
+        return _find_label_issues_multilabel(
+            labels,
+            pred_probs,
+            return_indices_ranked_by,
+            rank_by_kwargs,
+            filter_by,
+            frac_noise,
+            num_to_remove_per_class,
+            min_examples_per_class,
+            confident_joint,
+            n_jobs,
+            verbose,
+        )
+
     else:
         label_counts = value_counts(labels)
     # Number of classes
@@ -276,10 +296,7 @@ def find_label_issues(
 
         # Prepare multiprocessing shared data
         if n_jobs > 1:
-            if multi_label:
-                _labels = RawArray("I", int2onehot(labels).flatten())  # type: ignore
-            else:
-                _labels = RawArray("I", labels)  # type: ignore
+            _labels = RawArray("I", labels)  # type: ignore
             _label_counts = RawArray("I", label_counts)
             _prune_count_matrix = RawArray("I", prune_count_matrix.flatten())  # type: ignore
             _pred_probs = RawArray("f", pred_probs.flatten())
@@ -368,18 +385,9 @@ def find_label_issues(
         label_issues_mask = find_predicted_neq_given(labels, pred_probs, multi_label=multi_label)
 
     # Remove label issues if given label == model prediction
-    if multi_label:
-        pred = _multiclass_crossval_predict(labels, pred_probs)
-        labels = MultiLabelBinarizer().fit_transform(labels)
-    else:
-        pred = pred_probs.argmax(axis=1)
+    pred = pred_probs.argmax(axis=1)
     for i, pred_label in enumerate(pred):
-        if (
-            multi_label
-            and np.all(pred_label == labels[i])
-            or not multi_label
-            and pred_label == labels[i]
-        ):
+        if pred_label == labels[i]:
             label_issues_mask[i] = False
 
     if verbose:
@@ -396,6 +404,190 @@ def find_label_issues(
         )
         return er
     return label_issues_mask
+
+
+def _find_label_issues_multilabel(
+    labels: list,
+    pred_probs: np.ndarray,
+    return_indices_ranked_by: Optional[str] = None,
+    rank_by_kwargs={},
+    filter_by: str = "prune_by_noise_rate",
+    frac_noise: float = 1.0,
+    num_to_remove_per_class: int = None,
+    min_examples_per_class=1,
+    confident_joint: Optional[np.ndarray] = None,
+    n_jobs: int = None,
+    verbose: bool = False,
+) -> np.ndarray:
+    """
+
+    Finds label issues in multi-label classification data where each example can belong to more than one class. This is done via a one-vs-rest reduction for each class and the  results are subsequently aggregated across all classes.
+
+
+    """
+    per_class_issues = _find_multilabel_issues_per_class(
+        labels,
+        pred_probs,
+        return_indices_ranked_by,
+        rank_by_kwargs,
+        filter_by,
+        frac_noise,
+        num_to_remove_per_class,
+        min_examples_per_class,
+        confident_joint,
+        n_jobs,
+        verbose,
+    )
+    if return_indices_ranked_by is None:
+        assert isinstance(per_class_issues, np.ndarray)
+        return per_class_issues.sum(axis=1) >= 1
+    else:
+        label_issues_list, labels_list, pred_probs_list = per_class_issues
+        label_issues_idx = reduce(np.union1d, label_issues_list)
+        num_classes = get_num_classes(labels=labels, pred_probs=pred_probs)
+        label_quality_scores = np.zeros(len(labels))
+        for i in range(0, num_classes):
+            label_quality_scores += get_label_quality_scores(
+                labels=labels_list[i],
+                pred_probs=pred_probs_list[i],
+                method=return_indices_ranked_by,
+                **rank_by_kwargs,
+            )
+        label_quality_scores /= num_classes
+        label_quality_scores_issues = label_quality_scores[label_issues_idx]
+        return label_issues_idx[np.argsort(label_quality_scores_issues)]
+
+
+def _find_multilabel_issues_per_class(
+    labels: list,
+    pred_probs: np.ndarray,
+    return_indices_ranked_by: Optional[str] = None,
+    rank_by_kwargs={},
+    filter_by: str = "prune_by_noise_rate",
+    frac_noise: float = 1.0,
+    num_to_remove_per_class: int = None,
+    min_examples_per_class=1,
+    confident_joint: Optional[np.ndarray] = None,
+    n_jobs: int = None,
+    verbose: bool = False,
+) -> Union[np.ndarray, Tuple[List[np.ndarray], List[Any], List[np.ndarray]]]:
+    """
+    Parameters
+    ----------
+    labels : list
+      List of noisy labels for multi-label classification where each example can belong to multiple classes (e.g. ``labels = [[1,2],[1],[0],..]`` indicates the first example in dataset belongs to both class 1 and class 2.
+      For multi-label settings, your `labels` should instead satisfy: ``len(set(k for l in labels for k in l)) == pred_probs.shape[1])``.
+
+
+    pred_probs : np.ndarray
+      An array of shape ``(N, K)`` of model-predicted probabilities,
+      ``P(label=k|x)``. Each row of this matrix corresponds
+      to an example `x` and contains the model-predicted probabilities that
+      `x` belongs to each possible class, for each of the K classes. The
+      columns must be ordered such that these probabilities correspond to
+      class 0, 1, ..., K-1. They need not sum to 1.0
+
+
+    return_indices_ranked_by : {None, 'self_confidence', 'normalized_margin', 'confidence_weighted_entropy'}, default=None
+      Refer to documentation for this argument in filter.find_label_issues() for details.
+
+    rank_by_kwargs : dict, optional
+      Refer to documentation for this argument in filter.find_label_issues() for details.
+
+    filter_by : {'prune_by_class', 'prune_by_noise_rate', 'both', 'confident_learning', 'predicted_neq_given'}, default='prune_by_noise_rate'
+      Refer to documentation for this argument in filter.find_label_issues() for details.
+
+    frac_noise : float, default=1.0
+      Refer to documentation for this argument in filter.find_label_issues() for details.
+
+    num_to_remove_per_class : array_like
+      Refer to documentation for this argument in filter.find_label_issues() for details.
+
+    min_examples_per_class : int, default=1
+      Refer to documentation for this argument in filter.find_label_issues() for details.
+
+    confident_joint : np.ndarray, optional
+      An array of shape ``(K, 2, 2)`` representing a one-vs-rest formatted confident joint.
+      Entry ``(c, i, j)`` in this array is the number of examples confidently counted into a ``(class c, noisy label=i, true label=j)`` bin,
+      where `i, j` are either 0 or 1 to denote whether this example belongs to class `c` or not
+      (recall examples can belong to multiple classes in multi-label classification).
+      The `confident_joint` can be computed using :py:func:`count.compute_confident_joint <cleanlab.count.compute_confident_joint>`.
+      If not provided, it is computed from the given (noisy) `labels` and `pred_probs`.
+
+    n_jobs : optional
+      Refer to documentation for this argument in filter.find_label_issues() for details.
+
+    verbose : optional
+      If ``True``, prints when multiprocessing happens.
+
+    Returns
+    -------
+    per_class_label_issues : list(np.ndarray)
+      If `return_indices_ranked_by` left unspecified, returns a list of boolean **masks** for the entire dataset
+      where ``True`` represents a label issue and ``False`` represents an example that is
+      accurately labeled with high confidence.
+      If `return_indices_ranked_by` is specified, returns a list of shorter arrays of **indices** of examples identified to have
+      label issues (i.e. those indices where the mask would be ``True``), sorting by likelihood that the corresponding label is correct is not supported yet.
+
+      Note
+      ----
+      Obtain the *indices* of label issues in your dataset by setting
+      `return_indices_ranked_by`.
+
+    """
+    num_classes = get_num_classes(labels=labels, pred_probs=pred_probs)
+    try:
+        y_one = int2onehot(labels)
+    except TypeError:
+        raise ValueError(
+            "wrong format for labels, should be a list of list[indices], please check the documentation in find_label_issues for further information"
+        )
+    if return_indices_ranked_by is None:
+        bissues = np.zeros(y_one.shape).astype(bool)
+    else:
+        label_issues_list = []
+    labels_list = []
+    pred_probs_list = []
+    if confident_joint is not None:
+        confident_joint_shape = confident_joint.shape
+        if confident_joint_shape == (num_classes, num_classes):
+            warnings.warn(
+                f"The new recommended format for `confident_joint` in multi_label settings is (num_classes,2,2) as output by compute_confident_joint(...,multi_label=True). Your K x K confident_joint in the old format is being ignored."
+            )
+            confident_joint = None
+        elif confident_joint_shape != (num_classes, 2, 2):
+            raise ValueError("confident_joint should be of shape (num_classes, 2, 2)")
+    for class_num in range(0, num_classes):
+        pred_probabilitites = _binarize_pred_probs_slice(pred_probs, class_num)
+        if confident_joint is None:
+            conf = None
+        else:
+            conf = confident_joint[class_num]
+        binary_label_issues = find_label_issues(
+            labels=y_one[:, class_num],
+            pred_probs=pred_probabilitites,
+            return_indices_ranked_by=return_indices_ranked_by,
+            frac_noise=frac_noise,
+            rank_by_kwargs=rank_by_kwargs,
+            filter_by=filter_by,
+            multi_label=False,
+            num_to_remove_per_class=num_to_remove_per_class,
+            min_examples_per_class=min_examples_per_class,
+            confident_joint=conf,
+            n_jobs=n_jobs,
+            verbose=verbose,
+        )
+
+        if return_indices_ranked_by is None:
+            bissues[:, class_num] = binary_label_issues
+        else:
+            label_issues_list.append(binary_label_issues)
+            labels_list.append(y_one[:, class_num])
+            pred_probs_list.append(pred_probabilitites)
+    if return_indices_ranked_by is None:
+        return bissues
+    else:
+        return label_issues_list, labels_list, pred_probs_list
 
 
 def _keep_at_least_n_per_class(prune_count_matrix, n, *, frac_noise=1.0) -> np.ndarray:
@@ -519,11 +711,44 @@ def find_predicted_neq_given(labels, pred_probs, *, multi_label=False) -> np.nda
 
     assert_valid_inputs(X=None, y=labels, pred_probs=pred_probs, multi_label=multi_label)
     if multi_label:
-        # TODO: This needs to be tested.
-        return np.array(
-            [all(np.argsort(pred_probs[i])[: len(j)] == sorted(j)) for i, j in enumerate(labels)]
-        )
+        return _find_predicted_neq_given_multilabel(labels=labels, pred_probs=pred_probs)
     return np.argmax(pred_probs, axis=1) != np.asarray(labels)
+
+
+def _find_predicted_neq_given_multilabel(labels, pred_probs) -> np.ndarray:
+    """
+
+    Parameters
+     ----------
+     labels : list
+       List of noisy labels for multi-label classification where each example can belong to multiple classes (e.g. ``labels = [[1,2],[1],[0],..]`` indicates the first example in dataset belongs to both class 1 and class 2.
+       For multi-label settings, your `labels` should instead satisfy: ``len(set(k for l in labels for k in l)) == pred_probs.shape[1])``.
+
+     pred_probs : np.ndarray
+       Predicted-probabilities in the same format expected by the :py:func:`find_label_issues <cleanlab.filter.find_label_issues>` function.
+
+     Returns
+     -------
+     label_issues_mask : np.ndarray
+       A boolean mask for the entire dataset where ``True`` represents a
+       label issue and ``False`` represents an example that is accurately
+       labeled with high confidence.
+
+    """
+    try:
+        y_one = int2onehot(labels)
+    except TypeError:
+        raise ValueError(
+            "wrong format for labels, should be a list of list[indices], please check the documentation in find_label_issues for further information"
+        )
+    num_classes = get_num_classes(labels=labels, pred_probs=pred_probs)
+    pred_neq: np.ndarray = np.zeros(y_one.shape).astype(bool)
+    for class_num in range(num_classes):
+        pred_probabilitites = _binarize_pred_probs_slice(pred_probs, class_num)
+        pred_neq[:, class_num] = find_predicted_neq_given(
+            labels=y_one[:, class_num], pred_probs=pred_probabilitites
+        )
+    return pred_neq.sum(axis=1) >= 1
 
 
 def find_label_issues_using_argmax_confusion_matrix(
@@ -572,6 +797,10 @@ def find_label_issues_using_argmax_confusion_matrix(
       A boolean mask for the entire dataset where ``True`` represents a
       label issue and ``False`` represents an example that is accurately
       labeled with high confidence.
+
+    Note
+    ----
+    Multi-label classification is not supported in this method.
     """
 
     assert_valid_inputs(X=None, y=labels, pred_probs=pred_probs, multi_label=False)
@@ -639,15 +868,7 @@ def _get_shared_data() -> Any:  # pragma: no cover
     )
     min_examples_per_class = mp_params["min_examples_per_class"]
     multi_label = mp_params["multi_label"]
-    if multi_label:  # Shared data is passed as one-hot encoded matrix
-        labels = onehot2int(
-            _to_np_array(
-                mp_arr=mp_params["labels"],
-                shape=(pred_probs.shape[0], pred_probs.shape[1]),
-            )
-        )
-    else:
-        labels = _to_np_array(mp_params["labels"])  # type: ignore
+    labels = _to_np_array(mp_params["labels"])  # type: ignore
     return (
         labels,
         label_counts,
@@ -752,40 +973,3 @@ def _prune_by_count(k, args=None) -> np.ndarray:
             cut = -np.partition(-margin[label_filter], num2prune - 1)[num2prune - 1]
             label_issues_mask = label_issues_mask | (label_filter & (margin >= cut))
     return label_issues_mask
-
-
-def _multiclass_crossval_predict(labels, pyx) -> np.ndarray:
-    """Returns a numpy 2D array of one-hot encoded
-    multiclass predictions. Each row in the array
-    provides the predictions for a particular example.
-    The boundary condition used to threshold predictions
-    is computed by maximizing the F1 ROC curve.
-
-    Parameters
-    ----------
-    labels : list of lists (length N)
-      These are multiclass labels. Each list in the list contains all the
-      labels for that example.
-
-    pyx : np.ndarray (shape (N, K))
-        P(label=k|x) is a matrix with K model-predicted probabilities.
-        Each row of this matrix corresponds to an example `x` and contains the model-predicted
-        probabilities that `x` belongs to each possible class.
-        The columns must be ordered such that these probabilities correspond to class 0,1,2,...
-        `pred_probs` should have been computed using 3 (or higher) fold cross-validation."""
-
-    from sklearn.metrics import f1_score
-
-    boundaries = np.arange(0.05, 0.9, 0.05)
-    labels_one_hot = MultiLabelBinarizer().fit_transform(labels)
-    f1s = [
-        f1_score(
-            labels_one_hot,
-            (pyx > boundary).astype(np.uint8),
-            average="micro",
-        )
-        for boundary in boundaries
-    ]
-    boundary = boundaries[np.argmax(f1s)]
-    pred = (pyx > boundary).astype(np.uint8)
-    return pred
