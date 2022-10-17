@@ -420,7 +420,7 @@ def _find_label_issues_multilabel(
 ) -> np.ndarray:
     """
 
-    A pooling function for _find_multilabel_issues_per_class
+    Finds label issues in multi-label classification data where each example can belong to more than one class. This is done via a one-vs-rest reduction for each class and the  results are subsequently aggregated across all classes.
 
 
     """
