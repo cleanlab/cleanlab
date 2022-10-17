@@ -18,7 +18,6 @@
 Methods to identify which examples have label issues.
 """
 
-from audioop import mul
 import numpy as np
 from sklearn.metrics import confusion_matrix
 from sklearn.preprocessing import MultiLabelBinarizer
@@ -54,19 +53,19 @@ except ImportError as e:  # pragma: no cover
 
 
 def find_label_issues(
-    labels: np.ndarray,
-    pred_probs: Optional[np.ndarray],
+    labels,
+    pred_probs: Optional[np.ndarray] = None,
     *,
-    return_indices_ranked_by=None,
+    return_indices_ranked_by: Optional[str] = None,
     rank_by_kwargs: Optional[Dict[str, Any]] = None,
-    filter_by="prune_by_noise_rate",
-    multi_label=False,
-    frac_noise=1.0,
+    filter_by: str = "prune_by_noise_rate",
+    multi_label: bool = False,
+    frac_noise: float = 1.0,
     num_to_remove_per_class: Optional[int] = None,
-    min_examples_per_class=1,
+    min_examples_per_class: int = 1,
     confident_joint: Optional[np.ndarray] = None,
     n_jobs: Optional[int] = None,
-    verbose=False,
+    verbose: bool = False,
 ) -> np.ndarray:
     """
     Identifies potentially bad labels in a dataset (with `N` examples) using confident learning.
@@ -288,7 +287,7 @@ def find_label_issues(
                 _labels = RawArray("I", labels)  # type: ignore
             _label_counts = RawArray("I", label_counts)
             _prune_count_matrix = RawArray("I", prune_count_matrix.flatten())  # type: ignore
-            _pred_probs = RawArray("f", pred_probs.flatten())
+            _pred_probs = RawArray("f", pred_probs.flatten())  # type: ignore
         else:  # Multiprocessing is turned off. Create tuple with all parameters
             args = (
                 labels,
@@ -405,7 +404,7 @@ def find_label_issues(
 
 
 def _keep_at_least_n_per_class(
-    prune_count_matrix: np.ndarray, n: int, *, frac_noise=1.0
+    prune_count_matrix: np.ndarray, n: int, *, frac_noise: float = 1.0
 ) -> np.ndarray:
     """Make sure every class has at least n examples after removing noise.
     Functionally, increase each column, increases the diagonal term #(true_label=k,label=k)
@@ -472,7 +471,7 @@ def _keep_at_least_n_per_class(
     return round_preserving_row_totals(new_mat).astype(int)
 
 
-def _reduce_prune_counts(prune_count_matrix: np.ndarray, frac_noise=1.0) -> np.ndarray:
+def _reduce_prune_counts(prune_count_matrix: np.ndarray, frac_noise: float = 1.0) -> np.ndarray:
     """Reduce (multiply) all prune counts (non-diagonal) by frac_noise and
     increase diagonal by the total amount reduced in each column to
     preserve column counts.
@@ -504,7 +503,7 @@ def _reduce_prune_counts(prune_count_matrix: np.ndarray, frac_noise=1.0) -> np.n
 
 
 def find_predicted_neq_given(
-    labels: np.ndarray, pred_probs: np.ndarray, *, multi_label=False
+    labels: np.ndarray, pred_probs: np.ndarray, *, multi_label: bool = False
 ) -> np.ndarray:
     """A simple baseline approach that considers ``argmax(pred_probs) != labels`` as a label error.
 
