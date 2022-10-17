@@ -160,7 +160,7 @@ def calibrate_confident_joint(confident_joint, labels, *, multi_label=False) -> 
       Entry ``(j, k)`` in the matrix is the number of examples confidently counted into the pair of ``(noisy label=j, true label=k)`` classes.
       The `confident_joint` can be computed using :py:func:`count.compute_confident_joint <cleanlab.count.compute_confident_joint>`.
       If not provided, it is computed from the given (noisy) `labels` and `pred_probs`.
-      If multi_label is True, then the confident should be an array of shape ``(K, 2, 2)``.
+      If `multi_label` is True, then the `confident_joint` should be a one-vs-rest array of shape ``(K, 2, 2)``, and an array of the same shape will be returned.
 
     labels : np.ndarray
       A discrete vector of noisy labels, i.e. some labels may be erroneous.
