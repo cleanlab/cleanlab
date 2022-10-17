@@ -176,7 +176,7 @@ def calibrate_confident_joint(confident_joint, labels, *, multi_label=False) -> 
       The multi-label setting supports classification tasks where an example has 1 or more labels.
       Example of a multi-labeled `labels` input: ``[[0,1], [1], [0,2], [0,1,2], [0], [1], ...]``.
       The major difference in how this is calibrated versus single-label is that
-      confident/calibrated joint arrays have shape ``(K, 2, 2)`` formatted in a one-vs-rest fashion such that they contain a 2x2 matrix for each class that counts examples which are correctly/incorrectly labeled as belonging to that class. 
+      confident/calibrated joint arrays have shape ``(K, 2, 2)`` formatted in a one-vs-rest fashion such that they contain a 2x2 matrix for each class that counts examples which are correctly/incorrectly labeled as belonging to that class.
       After calibration, the entries in each class-specific 2x2 matrix will sum to the number of examples.
 
     Returns

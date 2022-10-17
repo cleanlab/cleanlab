@@ -324,6 +324,7 @@ def test_calibrate_joint_multilabel():
     )
     # Check equivalency
     assert np.all(calibrated_cj == calibrated_cj2)
+    assert calibrated_cj.shape == calibrated_cj2.shape == (3, 2, 2)
 
 
 @pytest.mark.parametrize("use_confident_joint", [True, False])
@@ -346,21 +347,27 @@ def test_estimate_joint_multilabel(use_confident_joint):
         cj = count.compute_confident_joint(
             labels=dataset["labels"], pred_probs=dataset["pred_probs"], multi_label=True
         )
+        assert cj.shape == (3, 2, 2)
         joint = count.estimate_joint(
             labels=dataset["labels"],
             pred_probs=dataset["pred_probs"],
             confident_joint=cj,
             multi_label=True,
         )
-
+        joint_2 = count.estimate_joint(
+            labels=dataset["labels"],
+            pred_probs=dataset["pred_probs"],
+            multi_label=True,
+        )
+        assert np.array_equal(joint, joint_2)
     else:
 
         joint = count.estimate_joint(
             labels=dataset["labels"],
             pred_probs=dataset["pred_probs"],
-            confident_joint=dataset["cj"] if use_confident_joint else None,
             multi_label=True,
         )
+    assert joint.shape == (3, 2, 2)
     # Check that each joint sums to 1.
     for j in joint:
         assert abs(np.sum(j) - 1.0) < 1e-6
@@ -385,7 +392,6 @@ def test_compute_confident_joint():
         labels=data["labels"],
         pred_probs=data["pred_probs"],
     )
-
     # Check that confident joint doesn't overcount number of examples.
     assert np.sum(cj) <= data["n"]
     # Check that confident joint is correct shape
@@ -558,11 +564,33 @@ def test_find_label_issues_multi_label_small(confident_joint, return_indices_ran
         confident_joint=np.array(confident_joint) if confident_joint else None,
         return_indices_ranked_by=return_indices_ranked_by,
     )
-    if return_indices_ranked_by is not None:
+    noise_idx2 = filter.find_label_issues(
+        labels=labels,
+        pred_probs=pred_probs,
+        multi_label=True,
+        confident_joint=cj,
+        return_indices_ranked_by=return_indices_ranked_by,
+    )
+    noise_idx3 = filter.find_label_issues(
+        labels=labels,
+        pred_probs=pred_probs,
+        multi_label=True,
+        confident_joint=cj[::-1],
+        return_indices_ranked_by=return_indices_ranked_by,
+    )
+
+    def _idx_to_bool(idx):
         noise_bool = np.zeros(len(labels)).astype(bool)
-        noise_bool[noise_idx] = True
-        noise_idx = noise_bool
-    assert noise_idx.tolist() == [False, False, False, False, True]
+        noise_bool[idx] = True
+        return noise_bool
+
+    if return_indices_ranked_by is not None:
+        noise_idx = _idx_to_bool(noise_idx)
+        noise_idx2 = _idx_to_bool(noise_idx2)
+        noise_idx3 = _idx_to_bool(noise_idx3)
+    expected_output = [False, False, False, False, True]
+    assert noise_idx.tolist() == noise_idx2.tolist() == expected_output
+    assert noise_idx3.tolist() != [False, False, False, False, True]
 
 
 @pytest.mark.parametrize("return_indices_of_off_diagonals", [True, False])
