@@ -203,7 +203,7 @@ def find_label_issues(
     if not rank_by_kwargs:
         rank_by_kwargs = {}
 
-    if not pred_probs:
+    if pred_probs is None:
         pred_probs = np.ndarray([])
 
     assert filter_by in [
