@@ -332,7 +332,7 @@ def _estimate_joint_multilabel(labels, pred_probs, *, confident_joint=None) -> n
      -------
      confident_joint_distribution : np.ndarray
        An array of shape ``(K, 2, 2)`` representing an
-       estimate of the true joint distribution of noisy and true labels in a multi-label setting.
+       estimate of the true joint distribution of noisy and true labels for each class, in a one-vs-rest format employed for multi-label settings.
     """
     num_classes = get_num_classes(labels=labels, pred_probs=pred_probs)
     try:
