@@ -571,13 +571,14 @@ def test_find_label_issues_multi_label_small(confident_joint, return_indices_ran
         confident_joint=cj,
         return_indices_ranked_by=return_indices_ranked_by,
     )
-    noise_idx3 = filter.find_label_issues(
-        labels=labels,
-        pred_probs=pred_probs,
-        multi_label=True,
-        confident_joint=cj[::-1],
-        return_indices_ranked_by=return_indices_ranked_by,
-    )
+    if confident_joint is not None:
+        noise_idx3 = filter.find_label_issues(
+            labels=labels,
+            pred_probs=pred_probs,
+            multi_label=True,
+            confident_joint=cj[::-1],
+            return_indices_ranked_by=return_indices_ranked_by,
+        )
 
     def _idx_to_bool(idx):
         noise_bool = np.zeros(len(labels)).astype(bool)
@@ -587,10 +588,12 @@ def test_find_label_issues_multi_label_small(confident_joint, return_indices_ran
     if return_indices_ranked_by is not None:
         noise_idx = _idx_to_bool(noise_idx)
         noise_idx2 = _idx_to_bool(noise_idx2)
-        noise_idx3 = _idx_to_bool(noise_idx3)
+        if confident_joint is not None:
+            noise_idx3 = _idx_to_bool(noise_idx3)
     expected_output = [False, False, False, False, True]
     assert noise_idx.tolist() == noise_idx2.tolist() == expected_output
-    assert noise_idx3.tolist() != [False, False, False, False, True]
+    if confident_joint is not None:
+        assert noise_idx3.tolist() != [False, False, False, False, True]
 
 
 @pytest.mark.parametrize("return_indices_of_off_diagonals", [True, False])
