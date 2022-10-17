@@ -439,16 +439,18 @@ def compute_confident_joint(
     confident_joint_counts : np.ndarray
       An array of shape ``(K, K)`` representing counts of examples
       for which we are confident about their given and true label (if `multi_label` is False).
-      If multi_label is True,
-      An array of shape ``(K, 2, 2)`` representing the confident joint, the matrix used for identifying label issues, which
-      estimates a confident subset of the joint distribution of the noisy and true labels, ``P_{noisy label, true label}``.
-      Entry ``(c, j, k)`` in the matrix is the number of examples in a one-vs-rest class confidently counted into the pair of ``(class c, noisy label=j, true label=k)`` classes.
+      If `multi_label` is True,
+      this array instead has shape ``(K, 2, 2)`` representing a one-vs-rest format for the  confident joint, where for each class `c`:
+      Entry ``(c, 0, 0)`` in this one-vs-rest array is the number of examples whose noisy label contains `c` confidently identified as truly belonging to class `c` as well.
+      Entry ``(c, 1, 0)`` in this one-vs-rest array is the number of examples whose noisy label contains `c` confidently identified as not actually belonging to class `c`.
+      Entry ``(c, 0, 1)`` in this one-vs-rest array is the number of examples whose noisy label does not contain `c` confidently identified as truly belonging to class `c`.
+      Entry ``(c, 1, 1)`` in this one-vs-rest array is the number of examples whose noisy label does not contain `c` confidently identified as actually not belonging to class `c` as well.
 
 
       Note
       ----
-      if `return_indices_of_off_diagonals` is set as True, this function instead returns a tuple `(confident_joint, indices_off_diagonal)`
-      where `indices_off_diagonal` is an array and each array contains the indices of examples counted in off-diagonals of confident joint.
+      If `return_indices_of_off_diagonals` is set as True, this function instead returns a tuple `(confident_joint, indices_off_diagonal)`
+      where `indices_off_diagonal` is a list of arrays and each array contains the indices of examples counted in off-diagonals of confident joint.
 
     Note
     ----
