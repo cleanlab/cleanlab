@@ -16,6 +16,8 @@
 
 """
 Methods to find label issues in token classification datasets (text data), where each token in a sentence receives its own class label.
+
+The underlying algorithms are described in `this paper <https://arxiv.org/abs/2210.03920>`_.
 """
 
 import numpy as np
