@@ -562,9 +562,9 @@ def _compute_confident_joint_multi_label(
     Parameters
     ----------
     labels : list of list/iterable (length N)
-        List of noisy labels for multi-label classification. Each list in the list contains
-        all the class assignments for that example. This method will fail if labels
-        is not a list of lists (or a list of np.ndarrays or iterable).
+        Given noisy labels for multi-label classification.
+        Must be a list of lists (or a list of np.ndarrays or iterable).
+        The i-th element is a list containing the classes that the i-th example belongs to.
 
     pred_probs : np.ndarray (shape (N, K))
         P(label=k|x) is a matrix with K model-predicted probabilities.
