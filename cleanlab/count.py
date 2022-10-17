@@ -438,7 +438,7 @@ def compute_confident_joint(
     -------
     confident_joint_counts : np.ndarray
       An array of shape ``(K, K)`` representing counts of examples
-      for which we are confident about their given and true label.
+      for which we are confident about their given and true label (if `multi_label` is False).
       If multi_label is True,
       An array of shape ``(K, 2, 2)`` representing the confident joint, the matrix used for identifying label issues, which
       estimates a confident subset of the joint distribution of the noisy and true labels, ``P_{noisy label, true label}``.
