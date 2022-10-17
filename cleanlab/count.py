@@ -581,7 +581,7 @@ def _compute_confident_joint_multi_label(
 
     calibrate : bool, default = True
         Calibrates confident joint estimate P(label=i, true_label=j) such that
-        np.sum(cj) == len(labels) and np.sum(cj, axis = 1) == np.bincount(labels).
+        ``np.sum(cj) == len(labels) and np.sum(cj, axis = 1) == np.bincount(labels)``.
 
     return_indices_of_off_diagonals: bool, default = False
         If true returns indices of examples that were counted in off-diagonals
