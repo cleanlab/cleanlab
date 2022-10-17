@@ -291,12 +291,10 @@ def estimate_joint(labels, pred_probs, *, confident_joint=None, multi_label=Fals
     -------
     confident_joint_distribution : np.ndarray
       An array of shape ``(K, K)`` representing an
-      estimate of the true joint distribution of noisy and true labels.
-      If multi_label is True,
-      An array of shape ``(num_classes,2, 2)`` representing an
-      estimate of the true joint distribution of noisy and true labels,
-      Entry ``(c, j, k)`` in the matrix is the number of examples in a one-vs-rest class confidently counted into the pair of ``(class c, noisy label=j, true label=k)`` classes.
-
+      estimate of the true joint distribution of noisy and true labels (if `multi_label` is False).
+      If `multi_label` is True, an array of shape ``(K, 2, 2)`` representing an
+      estimate of the true joint distribution of noisy and true labels for each class in a one-vs-rest fashion.
+      Entry ``(c, i, j)`` in this array is the number of examples confidently counted into a``(class c, noisy label=i, true label=j)`` bin, where `i,j` are either 0 or 1 to denote whether this example belongs to class `c` or not (recall examples can belong to multiple classes in multi-label classification).
     """
 
     if confident_joint is None:
