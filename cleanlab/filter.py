@@ -182,7 +182,7 @@ def find_label_issues(
       Entry ``(j, k)`` in the matrix is the number of examples confidently counted into the pair of ``(noisy label=j, true label=k)`` classes.
       The `confident_joint` can be computed using :py:func:`count.compute_confident_joint <cleanlab.count.compute_confident_joint>`.
       If not provided, it is computed from the given (noisy) `labels` and `pred_probs`.
-      If `multi_label` is True, confident_joint should instead be a one-vs-rest array with shape ``(K, 2, 2)``.
+      If `multi_label` is True, `confident_joint` should instead be a one-vs-rest array with shape ``(K, 2, 2)``.
 
     n_jobs : optional
       Number of processing threads used by multiprocessing. Default ``None``
