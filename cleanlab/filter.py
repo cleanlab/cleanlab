@@ -555,7 +555,7 @@ def _find_multilabel_issues_per_class(
             )
             confident_joint = None
         elif confident_joint_shape != (num_classes, 2, 2):
-            raise ValueError("confident_joint should be of shape (num_classes,2, 2)")
+            raise ValueError("confident_joint should be of shape (num_classes, 2, 2)")
     for class_num in range(0, num_classes):
         pred_probabilitites = _binarize_pred_probs_slice(pred_probs, class_num)
         if confident_joint is None:
