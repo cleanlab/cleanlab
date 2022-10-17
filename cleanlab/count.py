@@ -1391,7 +1391,7 @@ def _get_confident_thresholds_multilabel(
     Returns
     -------
     confident_thresholds : np.ndarray
-      An array of shape ``(K, 2)`` where K is the number of classes.
+      An array of shape ``(K, 2, 2)`` where `K` is the number of classes, in a one-vs-rest format.
     """
     num_classes = get_num_classes(labels=labels, pred_probs=pred_probs)
     try:
