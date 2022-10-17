@@ -154,9 +154,7 @@ def find_label_issues(
       When ``frac_noise=1.0``, return all "confident" estimated noise indices (recommended).
 
       frac_noise * number_of_mislabeled_examples_in_class_k.
-      Note
-      ----
-      This is not yet supported in multilabel setting.
+      Note: specifying `frac_noise` is not yet supported if `multi_label` is True.
 
     num_to_remove_per_class : array_like
       An iterable of length K, the number of classes.
