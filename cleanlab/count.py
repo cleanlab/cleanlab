@@ -1384,7 +1384,7 @@ def _get_confident_thresholds_multilabel(
     Parameters
     ----------
     labels: list
-       Refer to documentation for this argument in count.calibrate_confident_joint() with multi_label=True for details.
+       Refer to documentation for this argument in ``count.calibrate_confident_joint()`` with `multi_label=True` for details.
     pred_probs : np.ndarray
        Predicted-probabilities in the same format expected by the :py:func:`get_confident_thresholds <cleanlab.count.get_confident_thresholds>` function.
 
