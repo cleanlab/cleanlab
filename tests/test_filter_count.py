@@ -340,33 +340,24 @@ def test_estimate_joint(use_confident_joint):
     assert abs(np.sum(joint) - 1.0) < 1e-6
 
 
-@pytest.mark.parametrize("use_confident_joint", [True, False])
-def test_estimate_joint_multilabel(use_confident_joint):
+def test_estimate_joint_multilabel():
     dataset = multilabel_data
-    if use_confident_joint:
-        cj = count.compute_confident_joint(
-            labels=dataset["labels"], pred_probs=dataset["pred_probs"], multi_label=True
-        )
-        assert cj.shape == (3, 2, 2)
-        joint = count.estimate_joint(
-            labels=dataset["labels"],
-            pred_probs=dataset["pred_probs"],
-            confident_joint=cj,
-            multi_label=True,
-        )
-        joint_2 = count.estimate_joint(
-            labels=dataset["labels"],
-            pred_probs=dataset["pred_probs"],
-            multi_label=True,
-        )
-        assert np.array_equal(joint, joint_2)
-    else:
-
-        joint = count.estimate_joint(
-            labels=dataset["labels"],
-            pred_probs=dataset["pred_probs"],
-            multi_label=True,
-        )
+    cj = count.compute_confident_joint(
+        labels=dataset["labels"], pred_probs=dataset["pred_probs"], multi_label=True
+    )
+    assert cj.shape == (3, 2, 2)
+    joint = count.estimate_joint(
+        labels=dataset["labels"],
+        pred_probs=dataset["pred_probs"],
+        confident_joint=cj,
+        multi_label=True,
+    )
+    joint_2 = count.estimate_joint(
+        labels=dataset["labels"],
+        pred_probs=dataset["pred_probs"],
+        multi_label=True,
+    )
+    assert np.array_equal(joint, joint_2)
     assert joint.shape == (3, 2, 2)
     # Check that each joint sums to 1.
     for j in joint:
@@ -593,7 +584,7 @@ def test_find_label_issues_multi_label_small(confident_joint, return_indices_ran
     expected_output = [False, False, False, False, True]
     assert noise_idx.tolist() == noise_idx2.tolist() == expected_output
     if confident_joint is not None:
-        assert noise_idx3.tolist() != [False, False, False, False, True]
+        assert noise_idx3.tolist() != expected_output
 
 
 @pytest.mark.parametrize("return_indices_of_off_diagonals", [True, False])
