@@ -591,9 +591,7 @@ def _compute_confident_joint_multi_label(
     Returns
     -------
     confident_joint_counts : np.ndarray
-      An array of shape ``(K, 2, 2)`` representing the confident joint, the matrix used for identifying label issues, which
-      estimates a confident subset of the joint distribution of the noisy and true labels, ``P_{noisy label, true label}``.
-      Entry ``(c, j, k)`` in the matrix is the number of examples in a one-vs-rest class confidently counted into the pair of ``(class c, noisy label=j, true label=k)`` classes.
+      An array of shape ``(K, 2, 2)`` representing the confident joint of noisy and true labels for each class, in a one-vs-rest format employed for multi-label settings.
 
     Note: if `return_indices_of_off_diagonals` is set as True, this function instead returns a tuple `(confident_joint_counts, indices_off_diagonal)`
     where `indices_off_diagonal` is a list of arrays (one per class) and each array contains the indices of examples counted in off-diagonals of confident joint for that class.
