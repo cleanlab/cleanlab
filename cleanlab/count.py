@@ -205,7 +205,7 @@ def calibrate_confident_joint(confident_joint, labels, *, multi_label=False) -> 
 
 
 def _calibrate_confident_joint_multilabel(confident_joint: np.ndarray, labels: list) -> np.ndarray:
-    """Calibrates the confident joint for muli-label classification data. Here
+    """Calibrates the confident joint for multi-label classification data. Here
         input `labels` is a list of lists (or list of iterable).
         This is intended as a helper function. You should probably
         be using `calibrate_confident_joint(multi_label=True)` instead.
