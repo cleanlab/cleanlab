@@ -16,6 +16,8 @@
 
 """
 Methods to rank and score sentences in a token classification dataset (text data), based on how likely they are to contain label errors.
+
+The underlying algorithms are described in `this paper <https://arxiv.org/abs/2210.03920>`_.
 """
 
 import pandas as pd

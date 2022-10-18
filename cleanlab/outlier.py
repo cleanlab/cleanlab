@@ -16,6 +16,8 @@
 
 """
 Methods for finding out-of-distribution examples in a dataset via scores that quantify how atypical each example is compared to the others.
+
+The underlying algorithms are described in `this paper <https://arxiv.org/abs/2207.03061>`_.
 """
 
 import warnings
