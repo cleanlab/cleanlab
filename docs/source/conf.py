@@ -82,7 +82,7 @@ napoleon_use_ivar = False
 napoleon_use_param = True
 napoleon_use_rtype = False
 napoleon_preprocess_types = True
-napoleon_type_aliases: Optional[Dict[str, str]] = None
+napoleon_type_aliases = None
 napoleon_attr_annotations = True
 
 # -- Options for autodoc extension -------------------------------------------
