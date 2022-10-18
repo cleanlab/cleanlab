@@ -21,6 +21,8 @@ Methods for analysis of classification data labeled by multiple annotators, incl
 * A quality score for each consensus label which measures our confidence that this label is correct.
 * An analogous label quality score for each individual label chosen by one annotator for a particular example.
 * An overall quality score for each annotator which measures our confidence in the overall correctness of labels obtained from this annotator.
+
+The underlying algorithms are described in `the CROWDLAB paper <https://arxiv.org/abs/2210.06812>`_.
 """
 
 import warnings
