@@ -26,7 +26,6 @@ import sys
 import warnings
 from typing import Any, Dict, List, Optional, Tuple, Union
 from functools import reduce
-
 from cleanlab.count import calibrate_confident_joint
 from cleanlab.rank import (
     order_label_issues,
@@ -57,7 +56,7 @@ except ImportError as e:  # pragma: no cover
 
 def find_label_issues(
     labels,
-    pred_probs: Optional[np.ndarray] = None,
+    pred_probs: np.ndarray,
     *,
     return_indices_ranked_by: Optional[str] = None,
     rank_by_kwargs: Optional[Dict[str, Any]] = None,
@@ -210,9 +209,6 @@ def find_label_issues(
     """
     if not rank_by_kwargs:
         rank_by_kwargs = {}
-
-    if pred_probs is None:
-        pred_probs = np.ndarray([])
 
     assert filter_by in [
         "prune_by_noise_rate",
