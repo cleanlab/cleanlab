@@ -727,14 +727,14 @@ def format_labels(labels: LabelLike, multiannotator: bool = False) -> Tuple[Labe
         unique_labels = pd.unique(np_labels.ravel())
 
         try:
-            unique_labels_filter = unique_labels[~np.isnan(unique_labels)]
-            unique_labels = np.sort(unique_labels_filter)
+            unique_labels = unique_labels[~np.isnan(unique_labels)]
+            unique_labels = np.sort(unique_labels)
         except (TypeError):  # np.unique / np.sort cannot handle string values or pd.NA types
             nan_mask = np.array(
                 [(l is np.NaN) or (l is pd.NA) or (l == "nan") for l in unique_labels]
             )
-            unique_labels_filter = unique_labels[~nan_mask]
-            unique_labels = np.sort(unique_labels_filter)
+            unique_labels = unique_labels[~nan_mask]
+            unique_labels = np.sort(unique_labels)
 
         # convert float labels (that arose because np.nan is float type) to int
         if unique_labels.dtype == "float":
