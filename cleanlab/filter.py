@@ -64,7 +64,7 @@ def find_label_issues(
     multi_label: bool = False,
     frac_noise: float = 1.0,
     num_to_remove_per_class: Optional[int] = None,
-    min_examples_per_class: int = 1,
+    min_examples_per_class=1,
     confident_joint: Optional[np.ndarray] = None,
     n_jobs: Optional[int] = None,
     verbose: bool = False,
