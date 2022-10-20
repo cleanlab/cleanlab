@@ -14,7 +14,6 @@ import os
 import sys
 import datetime
 import shutil
-from typing import Dict, Optional
 
 sys.path.insert(0, os.path.abspath("../../cleanlab"))
 
