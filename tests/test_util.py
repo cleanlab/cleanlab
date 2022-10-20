@@ -2,6 +2,7 @@
 
 from cleanlab.internal import util
 import numpy as np
+import pandas as pd
 
 from cleanlab.internal.util import onehot2int, int2onehot, num_unique_classes, format_labels
 from cleanlab.internal.validation import assert_valid_class_labels
@@ -129,6 +130,7 @@ def test_confusion_matrix_nonconsecutive():
 
 
 def test_format_labels():
+    # test 1D labels
     str_labels = np.array(["b", "b", "a", "c", "a"])
     labels, label_map = format_labels(str_labels)
 
@@ -138,3 +140,22 @@ def test_format_labels():
     assert label_map[2] == "c"
 
     assert_valid_class_labels(labels)
+
+    # test multiannotator labels
+    str_labels = np.array(
+        [
+            ["a", "b", "c"],
+            ["b", "b", np.NaN],
+            ["z", np.NaN, "c"],
+        ]
+    )
+    labels, label_map = format_labels(str_labels, multiannotator=True)
+
+    num_labels = pd.DataFrame(
+        [
+            [3, 2, 1],
+            [1, 2, np.NaN],
+            [3, np.NaN, 3],
+        ]
+    )
+    labels, label_map = format_labels(num_labels, multiannotator=True)

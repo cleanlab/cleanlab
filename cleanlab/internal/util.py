@@ -689,29 +689,66 @@ def num_unique_classes(labels, multi_label=None) -> int:
         return len(set(labels))
 
 
-def format_labels(labels: Union[LabelLike, np.generic]) -> Tuple[np.ndarray, dict]:
+def format_labels(labels: LabelLike, multiannotator: bool = False) -> Tuple[LabelLike, dict]:
     """Takes an array of labels and formats it such that labels are in the set ``0, 1, ..., K-1``,
     where ``K`` is the number of classes. The labels are assigned based on lexicographic order.
+    Set ``multiannotator=True`` for datasets that have more than one annotator.
 
     Returns
     -------
-    labels : np.ndarray
-        An array of shape ``(N,)`` with the formatted labels that can be passed to other cleanlab functions.
+    labels
+        If ``multiannotator=False``, returns np.ndarray of shape ``(N,)``;
+        if ``multiannotator=True``, returns pd.DataFrame of shape ``(N,)``;
+        The return labels will be properly formatted and can be passed to other cleanlab functions.
 
-    mapping : dict
+    mapping
         A dictionary showing the mapping of new to old labels
     """
+    if not multiannotator:
+        labels = labels_to_array(labels)
+        if labels.ndim != 1:
+            raise ValueError("labels must be 1D numpy array.")
 
-    labels = labels_to_array(labels)
-    if labels.ndim != 1:
-        raise ValueError("labels must be 1D numpy array.")
+        unique_labels = np.unique(labels)
+        label_map = {label: i for i, label in enumerate(unique_labels)}
+        formatted_labels = np.array([label_map[l] for l in labels])
+        inverse_map = {i: label for label, i in label_map.items()}
 
-    unique_labels = np.unique(labels)
-    label_map = {label: i for i, label in enumerate(unique_labels)}
-    formatted_labels = np.array([label_map[l] for l in labels])
-    inverse_map = {i: label for label, i in label_map.items()}
+        return formatted_labels, inverse_map
 
-    return formatted_labels, inverse_map
+    else:
+        if isinstance(labels, pd.DataFrame):
+            np_labels = labels.values
+        elif isinstance(labels, np.ndarray):
+            np_labels = labels
+        else:
+            raise TypeError("labels must be 2D numpy array or pandas DataFrame")
+
+        unique_labels = pd.unique(np_labels.ravel())
+
+        try:
+            unique_labels_filter = unique_labels[~np.isnan(unique_labels)]
+            unique_labels = np.sort(unique_labels_filter)
+        except (TypeError):  # np.unique / np.sort cannot handle string values or pd.NA types
+            nan_mask = np.array(
+                [(l is np.NaN) or (l is pd.NA) or (l == "nan") for l in unique_labels]
+            )
+            unique_labels_filter = unique_labels[~nan_mask]
+            unique_labels = np.sort(unique_labels_filter)
+
+        # convert float labels (that arose because np.nan is float type) to int
+        if unique_labels.dtype == "float":
+            unique_labels = unique_labels.astype("int")
+
+        label_map = {label: i for i, label in enumerate(unique_labels)}
+        inverse_map = {i: label for label, i in label_map.items()}
+
+        if isinstance(labels, np.ndarray):
+            labels = pd.DataFrame(labels)
+
+        formatted_labels_df = labels.apply(lambda s: s.map(label_map))
+
+        return formatted_labels_df, inverse_map
 
 
 def _binarize_pred_probs_slice(pred_probs: np.ndarray, class_num: int) -> np.ndarray:
