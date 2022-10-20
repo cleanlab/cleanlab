@@ -689,7 +689,7 @@ def num_unique_classes(labels, multi_label=None) -> int:
         return len(set(labels))
 
 
-def format_labels(labels: Union[LabelLike, np.generic]) -> np.ndarray:
+def format_labels(labels: Union[LabelLike, np.generic]) -> Tuple[np.ndarray, dict]:
     """Takes an array of labels and formats it such that labels are in the set ``0, 1, ..., K-1``,
     where ``K`` is the number of classes. The labels are assigned based on lexicographic order.
 

@@ -3,7 +3,8 @@
 from cleanlab.internal import util
 import numpy as np
 
-from cleanlab.internal.util import onehot2int, int2onehot, num_unique_classes
+from cleanlab.internal.util import onehot2int, int2onehot, num_unique_classes, format_labels
+from cleanlab.internal.validation import assert_valid_class_labels
 
 noise_matrix = np.array([[1.0, 0.0, 0.2], [0.0, 0.7, 0.2], [0.0, 0.3, 0.6]])
 
@@ -125,3 +126,15 @@ def test_confusion_matrix_nonconsecutive():
     assert cmat[0][1] == 2
     assert cmat[1][0] == 0
     assert cmat[1][1] == 1
+
+
+def test_format_labels():
+    str_labels = np.array(["b", "b", "a", "c", "a"])
+    labels, label_map = format_labels(str_labels)
+
+    assert all(labels == np.array([1, 1, 0, 2, 0]))
+    assert label_map[0] == "a"
+    assert label_map[1] == "b"
+    assert label_map[2] == "c"
+
+    assert_valid_class_labels(labels)
