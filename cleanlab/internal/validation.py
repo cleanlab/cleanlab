@@ -19,7 +19,6 @@ Checks to ensure valid inputs for various methods.
 """
 
 from cleanlab.typing import LabelLike, DatasetLike
-from cleanlab.internal.util import get_num_classes
 from typing import Any, List, Optional, Union
 import warnings
 import numpy as np
@@ -216,7 +215,7 @@ def assert_valid_inputs_multiannotator(
     """Validate multi-annotator labels"""
     # Raise error if number of classes in labels_multiannoator does not match number of classes in pred_probs
     if pred_probs is not None:
-        num_classes = get_num_classes(pred_probs=pred_probs)
+        num_classes = pred_probs.shape[1]
         unique_ma_labels = np.unique(labels_multiannotator.replace({pd.NA: np.NaN}).astype(float))
         unique_ma_labels = unique_ma_labels[~np.isnan(unique_ma_labels)]
         if num_classes != len(unique_ma_labels):
