@@ -224,6 +224,11 @@ def assert_valid_inputs_multiannotator(
                 Perhaps some rarely-annotated classes were lost while establishing consensus labels used to train your classifier."""
             )
 
+    # Raise error if labels are not formatted properly
+    all_labels_flatten = labels_multiannotator.values.ravel()
+    all_labels_flatten = all_labels_flatten[~np.isnan(all_labels_flatten)]
+    assert_valid_class_labels(all_labels_flatten)
+
     # Raise error if labels_multiannotator has NaN rows
     if labels_multiannotator.isna().all(axis=1).any():
         raise ValueError("labels_multiannotator cannot have rows with all NaN.")
