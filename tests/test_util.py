@@ -140,22 +140,3 @@ def test_format_labels():
     assert label_map[2] == "c"
 
     assert_valid_class_labels(labels)
-
-    # test multiannotator labels
-    str_labels = np.array(
-        [
-            ["a", "b", "c"],
-            ["b", "b", np.NaN],
-            ["z", np.NaN, "c"],
-        ]
-    )
-    labels, label_map = format_labels(str_labels, multiannotator=True)
-
-    num_labels = pd.DataFrame(
-        [
-            [3, 2, 1],
-            [1, 2, np.NaN],
-            [3, np.NaN, 3],
-        ]
-    )
-    labels, label_map = format_labels(num_labels, multiannotator=True)
