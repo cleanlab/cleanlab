@@ -109,6 +109,7 @@ Please see our `contributing guidelines <https://github.com/cleanlab/cleanlab/bl
    :hidden:
 
    Quickstart <self>
+   How to contribute <https://github.com/cleanlab/cleanlab/blob/master/CONTRIBUTING.md>
 
 .. toctree::
    :hidden:
