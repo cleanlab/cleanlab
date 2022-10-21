@@ -2,7 +2,6 @@
 
 from cleanlab.internal import util
 import numpy as np
-import pandas as pd
 
 from cleanlab.internal.util import onehot2int, int2onehot, num_unique_classes, format_labels
 from cleanlab.internal.validation import assert_valid_class_labels

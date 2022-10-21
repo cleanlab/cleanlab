@@ -18,7 +18,7 @@
 Helper methods used internally in cleanlab.multiannotator
 """
 
-from cleanlab.typing import LabelLike, DatasetLike
+from cleanlab.typing import LabelLike
 from typing import Optional, Tuple
 import warnings
 import numpy as np
