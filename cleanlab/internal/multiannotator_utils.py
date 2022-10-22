@@ -30,7 +30,7 @@ def assert_valid_inputs_multiannotator(
     labels_multiannotator: pd.DataFrame,
     pred_probs: Optional[np.ndarray] = None,
 ) -> None:
-    """Validate multi-annotator labels"""
+    """Validate format of multi-annotator labels"""
     # Raise error if number of classes in labels_multiannoator does not match number of classes in pred_probs
     if pred_probs is not None:
         num_classes = pred_probs.shape[1]
@@ -89,12 +89,12 @@ def format_multiannotator_labels(labels: LabelLike) -> Tuple[pd.DataFrame, dict]
 
     Returns
     -------
-    labels
+    formatted_labels
         Returns pd.DataFrame of shape ``(N,M)``. The return labels will be properly formatted and can be passed to
         cleanlab.multiannotator functions.
 
     mapping
-        A dictionary showing the mapping of new to old labels.
+        A dictionary showing the mapping of new to old labels, such that ``mapping[k]`` returns the name of the k-th class.
     """
     if isinstance(labels, pd.DataFrame):
         np_labels = labels.values

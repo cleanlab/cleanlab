@@ -692,14 +692,15 @@ def num_unique_classes(labels, multi_label=None) -> int:
 def format_labels(labels: LabelLike) -> Tuple[np.ndarray, dict]:
     """Takes an array of labels and formats it such that labels are in the set ``0, 1, ..., K-1``,
     where ``K`` is the number of classes. The labels are assigned based on lexicographic order.
+    This is useful for mapping string class labels to the integer format required by many cleanlab (and sklearn) functions.
 
     Returns
     -------
-    labels
+    formatted_labels
         Returns np.ndarray of shape ``(N,)``. The return labels will be properly formatted and can be passed to other cleanlab functions.
 
     mapping
-        A dictionary showing the mapping of new to old labels
+        A dictionary showing the mapping of new to old labels, such that ``mapping[k]`` returns the name of the k-th class.
     """
     labels = labels_to_array(labels)
     if labels.ndim != 1:
