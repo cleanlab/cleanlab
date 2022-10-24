@@ -118,7 +118,7 @@ class Aggregator:
         return self.method(scores, **{**kwargs, **self.kwargs})
 
     def __repr__(self):
-        return f"Aggregator(method={self.method.__name__})"
+        return f"Aggregator(method={self.method.__name__}, kwargs={self.kwargs})"
 
 
 def exponential_moving_average(
