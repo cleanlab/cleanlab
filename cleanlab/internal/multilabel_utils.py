@@ -73,13 +73,61 @@ class ClassLabelScorer(Enum):
         return self.value(labels, pred_probs, **kwargs)
 
 
+class Aggregator:
+    """Helper class for aggregating the label quality scores for each class into a single score for each datapoint.
+
+    Parameters
+    ----------
+    method:
+        The method to compute the label quality scores for each class.
+
+    kwargs:
+        Additional keyword arguments to pass to the method when called.
+    """
+
+    def __init__(self, method, **kwargs):
+        self._validate_method(method)
+        self.method = method
+        self.kwargs = kwargs
+
+    @staticmethod
+    def _validate_method(method) -> None:
+        assert callable(method), f"Expected callable method, got {type(method)}"
+
+    @staticmethod
+    def _validate_scores(scores: np.ndarray) -> None:
+        if not (isinstance(scores, np.ndarray) and scores.ndim == 2):
+            raise ValueError(
+                f"Expected 2D array for scores, got {type(scores)} with shape {scores.shape}"
+            )
+
+    def __call__(self, scores: np.ndarray, **kwargs) -> np.ndarray:
+        """Returns the label quality scores for each datapoint based on the given label quality scores for each class.
+
+        Parameters
+        ----------
+        scores:
+            The label quality scores for each class.
+
+        Returns
+        -------
+            A single label quality score for each datapoint.
+        """
+        self._validate_scores(scores)
+        kwargs["axis"] = 1
+        return self.method(scores, **{**kwargs, **self.kwargs})
+
+    def __repr__(self):
+        return f"Aggregator(method={self.method.__name__})"
+
+
 class MultilabelScorer:
     """Aggregates label quality scores across different classes to produce one score per example in multi-label classification tasks."""
 
     def __init__(
         self,
         base_scorer: ClassLabelScorer = ClassLabelScorer.SELF_CONFIDENCE,
-        aggregator: Optional[Callable[..., np.ndarray]] = None,
+        aggregator: Optional[Aggregator] = None,
         *,
         strict: bool = True,
     ):
@@ -104,7 +152,7 @@ class MultilabelScorer:
         >>> import numpy as np
         >>> scorer = MultilabelScorer(
         ...     base_scorer = ClassLabelScorer.NORMALIZED_MARGIN,
-        ...     aggregator = np.min,
+        ...     aggregator = np.min,  # Use the "worst" label quality score for each example.
         ... )
         >>> labels = np.array([[0, 1, 0], [1, 0, 1]])
         >>> pred_probs = np.array([[0.1, 0.9, 0.1], [0.4, 0.1, 0.9]])
@@ -114,7 +162,9 @@ class MultilabelScorer:
         """
         self.base_scorer = base_scorer
         if aggregator is None:
-            self.aggregator: Callable[..., np.ndarray] = np.mean
+            self.aggregator = Aggregator(exponential_moving_average, alpha=0.8)
+        elif not isinstance(aggregator, Aggregator):
+            self.aggregator = Aggregator(aggregator)
         else:
             self.aggregator = aggregator
         self.strict = strict
@@ -134,7 +184,7 @@ class MultilabelScorer:
             A 2D array of shape (n_samples, n_labels) with predicted probabilities.
 
         kwargs:
-            Additional keyword arguments to pass to the base_scorer.
+            Additional keyword arguments to pass to the base_scorer and the aggregator.
 
         Returns
         -------
@@ -158,7 +208,7 @@ class MultilabelScorer:
             pred_prob_i_two_columns = self._stack_complement(pred_prob_i)
             scores[:, i] = self.base_scorer(label_i, pred_prob_i_two_columns, **kwargs)
 
-        return self.aggregator(scores, axis=-1)
+        return self.aggregator(scores, **kwargs)
 
     @staticmethod
     def _stack_complement(pred_prob_slice: np.ndarray) -> np.ndarray:

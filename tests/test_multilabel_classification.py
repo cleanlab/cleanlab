@@ -98,7 +98,9 @@ def dummy_features(labels):
 
 
 @pytest.mark.parametrize("base_scorer", [scorer for scorer in mlutils.ClassLabelScorer])
-@pytest.mark.parametrize("aggregator", [np.min, np.max, np.mean, None])
+@pytest.mark.parametrize(
+    "aggregator", [mlutils.exponential_moving_average, np.min, np.max, np.mean, None]
+)
 @pytest.mark.parametrize("strict", [True, False])
 def test_multilabel_scorer(base_scorer, aggregator, strict, labels, pred_probs):
     scorer = mlutils.MultilabelScorer(base_scorer, aggregator, strict=strict)
