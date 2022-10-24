@@ -65,11 +65,48 @@ class ClassLabelScorer(Enum):
     """Enum for the different methods to compute label quality scores."""
 
     SELF_CONFIDENCE = _Wrapper(get_self_confidence_for_each_label)
+    """Returns the self-confidence label-quality score for each datapoint.
+    
+    See also
+    --------
+    cleanlab.rank.get_self_confidence_for_each_label
+    """
     NORMALIZED_MARGIN = _Wrapper(get_normalized_margin_for_each_label)
+    """Returns the "normalized margin" label-quality score for each datapoint.
+
+    See also
+    --------
+    cleanlab.rank.get_normalized_margin_for_each_label
+    """
     CONFIDENCE_WEIGHTED_ENTROPY = _Wrapper(get_confidence_weighted_entropy_for_each_label)
+    """Returns the "confidence weighted entropy" label-quality score for each datapoint.
+
+    See also
+    --------
+    cleanlab.rank.get_confidence_weighted_entropy_for_each_label
+    """
 
     def __call__(self, labels: np.ndarray, pred_probs: np.ndarray, **kwargs) -> np.ndarray:
-        """Returns the label-quality scores for each datapoint based on the given labels and predicted probabilities."""
+        """Returns the label-quality scores for each datapoint based on the given labels and predicted probabilities.
+
+        See the documentation for each method for more details.
+
+        Example
+        -------
+        >>> import numpy as np
+        >>> from cleanlab.internal.multilabel_utils import ClassLabelScorer
+        >>> labels = np.array([0, 0, 0, 1, 1, 1])
+        >>> pred_probs = np.array([
+        ...     [0.9, 0.1],
+        ...     [0.8, 0.2],
+        ...     [0.7, 0.3],
+        ...     [0.2, 0.8],
+        ...     [0.75, 0.25],
+        ...     [0.1, 0.9],
+        ... ])
+        >>> ClassLabelScorer.SELF_CONFIDENCE(labels, pred_probs)
+        array([0.9 , 0.8 , 0.7 , 0.8 , 0.25, 0.9 ])
+        """
         return self.value(labels, pred_probs, **kwargs)
 
 
@@ -174,7 +211,29 @@ def exponential_moving_average(
 
 
 class MultilabelScorer:
-    """Aggregates label quality scores across different classes to produce one score per example in multi-label classification tasks."""
+    """Aggregates label quality scores across different classes to produce one score per example in multi-label classification tasks.
+
+    Parameters
+    ----------
+    base_scorer:
+        The method to compute the label quality scores for each class.
+
+        See the documentation for the ClassLabelScorer enum for more details.
+
+    aggregator:
+        The method to aggregate the label quality scores for each class into a single score for each datapoint.
+
+        Defaults to the EMA (exponential moving average) aggregator with forgetting factor ``alpha=0.8``.
+
+        See the documentation for the Aggregator class for more details.
+
+        See also
+        --------
+        exponential_moving_average
+
+    strict:
+        Flag for performing strict validation of the input data.
+    """
 
     def __init__(
         self,
@@ -186,31 +245,9 @@ class MultilabelScorer:
         """
         Initialize object with a base scoring function that is applied to each label and function that pools scores accross labels.
 
-        Parameters
-        ----------
-        base_scorer:
-            A function that computes a quality score for a single label in a multi-label classification problem.
-
-        aggregator:
-            A function that aggregates the scores computed by base_scorer over all labels.
-            If None, the scores are averaged.
-
-        strict:
-            If True, raises an error if the labels are not binary or are incompatible with the predicted probabilities.
-
         Examples
         --------
-        >>> from cleanlab.internal.multilabel_utils import MultilabelScorer, ClassLabelScorer
-        >>> import numpy as np
-        >>> scorer = MultilabelScorer(
-        ...     base_scorer = ClassLabelScorer.NORMALIZED_MARGIN,
-        ...     aggregator = np.min,  # Use the "worst" label quality score for each example.
-        ... )
-        >>> labels = np.array([[0, 1, 0], [1, 0, 1]])
-        >>> pred_probs = np.array([[0.1, 0.9, 0.1], [0.4, 0.1, 0.9]])
-        >>> scores = scorer(labels, pred_probs)
-        >>> scores
-        array([0.9, 0.4])
+
         """
         self.base_scorer = base_scorer
         if not isinstance(aggregator, Aggregator):
@@ -243,13 +280,22 @@ class MultilabelScorer:
 
         Examples
         --------
-        >>> from cleanlab.internal.multilabel_utils import MultilabelScorer
+        >>> from cleanlab.internal.multilabel_utils import MultilabelScorer, ClassLabelScorer
         >>> import numpy as np
-        >>> scorer = MultilabelScorer()
         >>> labels = np.array([[0, 1, 0], [1, 0, 1]])
         >>> pred_probs = np.array([[0.1, 0.9, 0.1], [0.4, 0.1, 0.9]])
+        >>> scorer = MultilabelScorer()
         >>> scores = scorer(labels, pred_probs)
         >>> scores
+        array([0.9, 0.5])
+
+        >>> scorer = MultilabelScorer(
+        ...     base_scorer = ClassLabelScorer.NORMALIZED_MARGIN,
+        ...     aggregator = np.min,  # Use the "worst" label quality score for each example.
+        ... )
+        >>> scores = scorer(labels, pred_probs)
+        >>> scores
+        array([0.9, 0.4])
         """
         if self.strict:
             self._validate_labels_and_pred_probs(labels, pred_probs)
