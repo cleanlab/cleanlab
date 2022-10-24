@@ -265,3 +265,56 @@ def get_cross_validated_multilabel_pred_probs(X, labels, *, clf, cv):
     split_generator = _get_split_generator(labels, cv)
     pred_probs = cross_val_predict(clf, X, labels, cv=split_generator, method="predict_proba")
     return pred_probs
+
+
+# Aggregators
+
+
+def exponential_moving_average(
+    s: np.ndarray,
+    *,
+    alpha: Optional[float] = None,
+    axis: int = 1,
+    **_,
+) -> np.ndarray:
+    """Exponential moving average (EMA) score function.
+
+    For a score vector s = (s_1, ..., s_K) with K scores, the values
+    are sorted in *descending* order and the exponential moving average
+    of the last score is calculated.
+
+    Parameters
+    ----------
+    s :
+        Scores to be transformed.
+
+    alpha :
+        Discount factor that determines the weight of the previous EMA score.
+        Higher alpha means that the previous EMA score has a lower weight while
+        the current score has a higher weight.
+
+        If alpha is None, it is set to 2 / (K + 1) where K is the number of scores.
+
+    axis :
+        Axis along which the scores are sorted.
+
+    Returns
+    -------
+        Exponential moving average score.
+
+    Examples
+    --------
+    >>> s = np.array([0.1, 0.2, 0.3])
+    >>> exponential_moving_average(s, alpha=0.5)
+    np.array([0.175])
+    """
+    K = s.shape[1]
+    s_sorted = np.fliplr(np.sort(s, axis=axis))
+    if alpha is None:
+        # One conventional choice for alpha is 2/(K + 1), where K is the number of periods in the moving average.
+        alpha = float(2 / (K + 1))
+    s_T = s_sorted.T
+    s_ema, s_next = s_T[0], s_T[1:]
+    for s_i in s_next:
+        s_ema = alpha * s_i + (1 - alpha) * s_ema
+    return s_ema
