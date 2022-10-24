@@ -148,6 +148,7 @@ class Aggregator:
 
         Returns
         -------
+        aggregated_scores:
             A single label quality score for each datapoint.
         """
         self._validate_scores(scores)
