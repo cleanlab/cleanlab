@@ -9,6 +9,7 @@ from cleanlab.multiannotator import (
     convert_long_to_wide_dataset,
     get_majority_vote_label,
 )
+from cleanlab.internal.multiannotator_utils import format_multiannotator_labels
 import pandas as pd
 
 
@@ -311,3 +312,27 @@ def test_impute_nonoverlaping_annotators():
     )
 
     multiannotator_dict = get_label_quality_multiannotator(labels, pred_probs)
+
+
+def test_format_multiannotator_labels():
+    str_labels = np.array(
+        [
+            ["a", "b", "c"],
+            ["b", "b", np.NaN],
+            ["z", np.NaN, "c"],
+        ]
+    )
+    labels, label_map = format_multiannotator_labels(str_labels)
+
+    assert isinstance(labels, pd.DataFrame)
+    assert label_map[0] == "a"
+    assert label_map[3] == "z"
+
+    num_labels = pd.DataFrame(
+        [
+            [3, 2, 1],
+            [1, 2, np.NaN],
+            [3, np.NaN, 3],
+        ]
+    )
+    labels, label_map = format_multiannotator_labels(num_labels)

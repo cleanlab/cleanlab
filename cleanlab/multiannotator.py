@@ -33,7 +33,7 @@ from typing import List, Dict, Any, Union, Tuple
 
 from cleanlab.rank import get_label_quality_scores
 from cleanlab.internal.util import get_num_classes
-from cleanlab.internal.validation import assert_valid_inputs_multiannotator
+from cleanlab.internal.multiannotator_utils import assert_valid_inputs_multiannotator
 
 
 def get_label_quality_multiannotator(

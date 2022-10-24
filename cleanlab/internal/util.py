@@ -24,6 +24,7 @@ import pandas as pd
 from typing import Any, Union, Tuple
 
 from cleanlab.typing import DatasetLike, LabelLike
+from cleanlab.internal.validation import labels_to_array
 
 
 def remove_noise_from_class(noise_matrix, class_without_noise) -> np.ndarray:
@@ -686,6 +687,31 @@ def num_unique_classes(labels, multi_label=None) -> int:
         return len(set(l for grp in labels for l in list(grp)))
     else:
         return len(set(labels))
+
+
+def format_labels(labels: LabelLike) -> Tuple[np.ndarray, dict]:
+    """Takes an array of labels and formats it such that labels are in the set ``0, 1, ..., K-1``,
+    where ``K`` is the number of classes. The labels are assigned based on lexicographic order.
+    This is useful for mapping string class labels to the integer format required by many cleanlab (and sklearn) functions.
+
+    Returns
+    -------
+    formatted_labels
+        Returns np.ndarray of shape ``(N,)``. The return labels will be properly formatted and can be passed to other cleanlab functions.
+
+    mapping
+        A dictionary showing the mapping of new to old labels, such that ``mapping[k]`` returns the name of the k-th class.
+    """
+    labels = labels_to_array(labels)
+    if labels.ndim != 1:
+        raise ValueError("labels must be 1D numpy array.")
+
+    unique_labels = np.unique(labels)
+    label_map = {label: i for i, label in enumerate(unique_labels)}
+    formatted_labels = np.array([label_map[l] for l in labels])
+    inverse_map = {i: label for label, i in label_map.items()}
+
+    return formatted_labels, inverse_map
 
 
 def _binarize_pred_probs_slice(pred_probs: np.ndarray, class_num: int) -> np.ndarray:
