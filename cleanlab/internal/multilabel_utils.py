@@ -179,7 +179,7 @@ class MultilabelScorer:
     def __init__(
         self,
         base_scorer: ClassLabelScorer = ClassLabelScorer.SELF_CONFIDENCE,
-        aggregator: Optional[Aggregator] = None,
+        aggregator: Aggregator = Aggregator(exponential_moving_average, alpha=0.8),
         *,
         strict: bool = True,
     ):
@@ -213,9 +213,7 @@ class MultilabelScorer:
         array([0.9, 0.4])
         """
         self.base_scorer = base_scorer
-        if aggregator is None:
-            self.aggregator = Aggregator(exponential_moving_average, alpha=0.8)
-        elif not isinstance(aggregator, Aggregator):
+        if not isinstance(aggregator, Aggregator):
             self.aggregator = Aggregator(aggregator)
         else:
             self.aggregator = aggregator
