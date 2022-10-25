@@ -109,6 +109,37 @@ class ClassLabelScorer(Enum):
         """
         return self.value(labels, pred_probs, **kwargs)
 
+    @classmethod
+    def from_str(cls, method: str) -> "ClassLabelScorer":
+        """Constructs an instance of the ClassLabelScorer enum based on the given method name.
+
+        Parameters
+        ----------
+        method:
+            The name of the scoring method to use.
+
+        Returns
+        -------
+        scorer:
+            An instance of the ClassLabelScorer enum.
+
+        Raises
+        ------
+        ValueError:
+            If the given method name is not a valid method name.
+            It must be one of the following: "self_confidence", "normalized_margin", or "confidence_weighted_entropy".
+
+        Example
+        -------
+        >>> from cleanlab.internal.multilabel_utils import ClassLabelScorer
+        >>> ClassLabelScorer.from_str("self_confidence")
+        <ClassLabelScorer.SELF_CONFIDENCE: get_self_confidence_for_each_label>
+        """
+        try:
+            return cls[method.upper()]
+        except KeyError:
+            raise ValueError(f"Invalid method name: {method}")
+
 
 class Aggregator:
     """Helper class for aggregating the label quality scores for each class into a single score for each datapoint.

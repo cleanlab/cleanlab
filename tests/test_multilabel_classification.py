@@ -111,6 +111,17 @@ def test_multilabel_scorer(base_scorer, aggregator, strict, labels, pred_probs):
     assert test_scores.shape == (labels.shape[0],)
 
 
+@pytest.mark.parametrize(
+    "method", ["self_confidence", "normalized_margin", "confidence_weighted_entropy"]
+)
+def test_class_label_scorer_from_str(method):
+    for m in (method, method.upper()):
+        scorer = mlutils.ClassLabelScorer.from_str(m)
+        assert callable(scorer)
+        with pytest.raises(ValueError):
+            mlutils.ClassLabelScorer.from_str(m.replace("_", "-"))
+
+
 @pytest.fixture
 def scorer():
     return mlutils.MultilabelScorer(
