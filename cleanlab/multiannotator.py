@@ -68,8 +68,9 @@ def get_label_quality_multiannotator(
         where N is the number of examples and M is the number of annotators.
         ``labels_multiannotator[n][m]`` = label for n-th example given by m-th annotator.
 
-        For a dataset with K classes, each given label must be an integer in 0, 1, ..., K-1 or
-        ``NaN`` if this annotator did not label a particular example. If pd.DataFrame, column names should correspond to each annotator's ID.
+        For a dataset with K classes, each given label must be an integer in 0, 1, ..., K-1 or ``NaN`` if this annotator did not label a particular example.
+        If you have string or other differently formatted labels, you can convert them to the proper format using :py:func:`format_multiannotator_labels <cleanlab.internal.multiannotator_utils.format_multiannotator_labels>`.
+        If pd.DataFrame, column names should correspond to each annotator's ID.
     pred_probs : np.ndarray
         An array of shape ``(N, K)`` of predicted class probabilities from a trained classifier model.
         Predicted probabilities in the same format expected by the :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>`.
