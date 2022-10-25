@@ -239,10 +239,8 @@ def _calibrate_confident_joint_multilabel(confident_joint: np.ndarray, labels: l
     calibrate_confident_joint_list: np.ndarray = np.ndarray(
         shape=(num_classes, 2, 2), dtype=np.int64
     )
-    for class_num in range(0, num_classes):
-        calibrate_confident_joint_list[class_num] = calibrate_confident_joint(
-            confident_joint[class_num], labels=y_one[:, class_num]
-        )
+    for class_num, (cj, y) in enumerate(zip(confident_joint, y_one.T)):
+        calibrate_confident_joint_list[class_num] = calibrate_confident_joint(cj, labels=y)
 
     return calibrate_confident_joint_list
 
