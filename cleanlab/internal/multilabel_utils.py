@@ -336,7 +336,43 @@ class MultilabelScorer:
             raise ValueError("Labels and predicted probabilities must have the same shape.")
 
 
-def get_label_quality_scores(labels, pred_probs, *, method: MultilabelScorer):
+def get_label_quality_scores(
+    labels, pred_probs, *, method: MultilabelScorer = MultilabelScorer()
+) -> np.ndarray:
+    """Computes a quality score for each label in a multi-label classification problem
+    based on out-of-sample predicted probabilities.
+
+    Parameters
+    ----------
+    labels:
+        A 2D array of shape (N, K) with binary labels.
+
+    pred_probs:
+        A 2D array of shape (N, K) with predicted probabilities.
+
+    method:
+        A scoring+aggregation method for computing the label quality scores of examples in a multi-label classification setting.
+
+    Returns
+    -------
+    scores:
+        A 1D array of shape (N,) with the quality scores for each datapoint.
+
+    Examples
+    --------
+    >>> import cleanlab.internal.multilabel_utils as mlutils
+    >>> import numpy as np
+    >>> labels = np.array([[0, 1, 0], [1, 0, 1]])
+    >>> pred_probs = np.array([[0.1, 0.9, 0.1], [0.4, 0.1, 0.9]])
+    >>> scores = mlutils.get_label_quality_scores(labels, pred_probs, method=mlutils.MultilabelScorer())
+    >>> scores
+    array([0.9, 0.5])
+
+    See also
+    --------
+    MultilabelScorer:
+        See the documentation for the MultilabelScorer class for more examples of scoring methods and aggregation methods.
+    """
     return method(labels, pred_probs)
 
 
@@ -349,12 +385,12 @@ def multilabel_py(y: np.ndarray) -> np.ndarray:
     Parameters
     ----------
     y :
-        A 2d numpy array of binarized multi-labels of shape (N, K) where N is the number of samples and K is the number of classes.
+        A 2d array of binarized multi-labels of shape (N, K) where N is the number of samples and K is the number of classes.
 
     Returns
     -------
     py :
-        A 1d numpy array of prior probabilities of shape (2**K,) where 2**K is the number of possible class-assignment configurations.
+        A 1d array of prior probabilities of shape (2**K,) where 2**K is the number of possible class-assignment configurations.
 
     Examples
     --------
@@ -401,7 +437,53 @@ def _get_split_generator(labels, cv):
     return split_generator
 
 
-def get_cross_validated_multilabel_pred_probs(X, labels, *, clf, cv):
+def get_cross_validated_multilabel_pred_probs(X, labels: np.ndarray, *, clf, cv) -> np.ndarray:
+    """Get predicted probabilities for a multi-label classifier via cross-validation.
+
+    Note
+    ----
+    The labels are reformatted to a "multi-class" format internally to support a wider range of cross-validation strategies.
+    If you have a multi-label dataset with `K` classes, the labels are reformatted to a "multi-class" format with up to `2**K` classes
+    (i.e. the number of possible class-assignment configurations).
+    It is unlikely that you'll all `2**K` configurations in your dataset.
+
+    Parameters
+    ----------
+    X :
+        A 2d array of features of shape (N, M) where N is the number of samples and M is the number of features.
+
+    labels :
+        A 2d array of binarized multi-labels of shape (N, K) where N is the number of samples and K is the number of classes.
+
+    clf :
+        A multi-label classifier with a ``predict_proba`` method.
+
+    cv :
+        A cross-validation splitter with a ``split`` method that returns a generator of train/test indices.
+
+    Returns
+    -------
+    pred_probs :
+        A 2d array of predicted probabilities of shape (N, K) where N is the number of samples and K is the number of classes.
+
+        Note
+        ----
+        The predicted probabilities are not expected to sum to 1 for each sample in the case of multi-label classification.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> from sklearn.model_selection import KFold
+    >>> from sklearn.multiclass import OneVsRestClassifier
+    >>> from sklearn.ensemble import RandomForestClassifier
+    >>> from cleanlab.internal.multilabel_utils import get_cross_validated_multilabel_pred_probs
+    >>> np.random.seed(0)
+    >>> X = np.random.rand(16, 2)
+    >>> labels = np.random.randint(0, 2, size=(16, 2))
+    >>> clf = OneVsRestClassifier(RandomForestClassifier())
+    >>> cv = KFold(n_splits=2)
+    >>> get_cross_validated_multilabel_pred_probs(X, labels, clf=clf, cv=cv)
+    """
     split_generator = _get_split_generator(labels, cv)
     pred_probs = cross_val_predict(clf, X, labels, cv=split_generator, method="predict_proba")
     return pred_probs
