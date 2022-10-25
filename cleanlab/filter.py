@@ -39,6 +39,7 @@ from cleanlab.internal.util import (
     get_num_classes,
     _binarize_pred_probs_slice,
 )
+import cleanlab.internal.multilabel_utils as mlutils
 
 # tqdm is a module used to print time-to-complete when multiprocessing is used.
 # This module is not necessary, and therefore is not a package dependency, but
@@ -446,16 +447,15 @@ def _find_label_issues_multilabel(
     else:
         label_issues_list, labels_list, pred_probs_list = per_class_issues
         label_issues_idx = reduce(np.union1d, label_issues_list)
-        num_classes = get_num_classes(labels=labels, pred_probs=pred_probs)
-        label_quality_scores = np.zeros(len(labels))
-        for i in range(0, num_classes):
-            label_quality_scores += get_label_quality_scores(
-                labels=labels_list[i],
-                pred_probs=pred_probs_list[i],
-                method=return_indices_ranked_by,
-                **rank_by_kwargs,
-            )
-        label_quality_scores /= num_classes
+        label_quality_scores = mlutils.get_label_quality_scores(
+            labels=labels_list,
+            pred_probs=pred_probs_list,
+            method=mlutils.MultilabelScorer(
+                base_scorer=mlutils.ClassLabelScorer.from_str(return_indices_ranked_by),
+                aggregator=np.mean,
+            ),
+            base_scorer_kwargs=rank_by_kwargs,
+        )
         label_quality_scores_issues = label_quality_scores[label_issues_idx]
         return label_issues_idx[np.argsort(label_quality_scores_issues)]
 
@@ -472,7 +472,7 @@ def _find_multilabel_issues_per_class(
     confident_joint: Optional[np.ndarray] = None,
     n_jobs: int = None,
     verbose: bool = False,
-) -> Union[np.ndarray, Tuple[List[np.ndarray], List[Any], List[np.ndarray]]]:
+) -> Union[np.ndarray, Tuple[List[np.ndarray], np.ndarray, np.ndarray]]:
     """
     Parameters
     ----------
@@ -585,11 +585,11 @@ def _find_multilabel_issues_per_class(
         else:
             label_issues_list.append(binary_label_issues)
             labels_list.append(y_one[:, class_num])
-            pred_probs_list.append(pred_probabilitites)
+            pred_probs_list.append(pred_probabilitites.T[1])
     if return_indices_ranked_by is None:
         return bissues
     else:
-        return label_issues_list, labels_list, pred_probs_list
+        return label_issues_list, np.vstack(labels_list).T, np.vstack(pred_probs_list).T
 
 
 def _keep_at_least_n_per_class(
