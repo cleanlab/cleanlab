@@ -20,7 +20,7 @@ Helper classes and functions used internally to compute label quality scores in 
 
 from enum import Enum
 import itertools
-from typing import Callable, Optional
+from typing import Callable, Optional, Union
 
 import numpy as np
 from sklearn.model_selection import cross_val_predict
@@ -239,17 +239,10 @@ class MultilabelScorer:
     def __init__(
         self,
         base_scorer: ClassLabelScorer = ClassLabelScorer.SELF_CONFIDENCE,
-        aggregator: Aggregator = Aggregator(exponential_moving_average, alpha=0.8),
+        aggregator: Union[Aggregator, Callable] = Aggregator(exponential_moving_average, alpha=0.8),
         *,
         strict: bool = True,
     ):
-        """
-        Initialize object with a base scoring function that is applied to each label and function that pools scores accross labels.
-
-        Examples
-        --------
-
-        """
         self.base_scorer = base_scorer
         if not isinstance(aggregator, Aggregator):
             self.aggregator = Aggregator(aggregator)
