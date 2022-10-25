@@ -24,6 +24,7 @@ from sklearn.multiclass import OneVsRestClassifier
 from sklearn.linear_model import LogisticRegression
 
 from cleanlab.internal import multilabel_utils as mlutils
+from cleanlab.internal.util import stack_complement
 
 
 @pytest.fixture
@@ -137,7 +138,7 @@ def test_is_multilabel_is_false(input):
 
 
 def test_multilabel_scorer_extend_binary_pred_probs():
-    method = mlutils.MultilabelScorer._stack_complement
+    method = stack_complement
 
     # Toy example
     pred_probs_class = np.array([0.1, 0.9, 0.3, 0.8])
