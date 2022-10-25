@@ -688,6 +688,7 @@ def num_unique_classes(labels, multi_label=None) -> int:
     else:
         return len(set(labels))
 
+
 def get_onehot_num_classes(labels, pred_probs=None):
     """Returns OneHot encoding of MultiLabel Data, and number of classes"""
     num_classes = get_num_classes(labels=labels, pred_probs=pred_probs)
@@ -698,6 +699,27 @@ def get_onehot_num_classes(labels, pred_probs=None):
             "wrong format for labels, should be a list of list[indices], please check the documentation in find_label_issues for further information"
         )
     return y_one, num_classes
+
+
+def stack_complement(pred_prob_slice: np.ndarray) -> np.ndarray:
+    """
+    Extends predicted probabilities of a single class to two columns.
+
+    Parameters
+    ----------
+    pred_prob_slice:
+        A 1D array with predicted probabilities for a single class.
+
+    Example
+    -------
+    >>> pred_prob_slice = np.array([0.1, 0.9, 0.3, 0.8])
+    >>> stack_complement(pred_prob_slice)
+    array([[0.9, 0.1],
+            [0.1, 0.9],
+            [0.7, 0.3],
+            [0.2, 0.8]])
+    """
+    return np.vstack((1 - pred_prob_slice, pred_prob_slice)).T
 
 
 def format_labels(labels: LabelLike) -> Tuple[np.ndarray, dict]:

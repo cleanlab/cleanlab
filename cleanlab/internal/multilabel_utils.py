@@ -25,6 +25,7 @@ from typing import Callable, Optional, Union
 import numpy as np
 from sklearn.model_selection import cross_val_predict
 
+from cleanlab.internal.util import stack_complement
 from cleanlab.rank import (
     get_self_confidence_for_each_label,
     get_normalized_margin_for_each_label,
@@ -326,31 +327,10 @@ class MultilabelScorer:
             self._validate_labels_and_pred_probs(labels, pred_probs)
         scores = np.zeros(shape=labels.shape)
         for i, (label_i, pred_prob_i) in enumerate(zip(labels.T, pred_probs.T)):
-            pred_prob_i_two_columns = self._stack_complement(pred_prob_i)
+            pred_prob_i_two_columns = stack_complement(pred_prob_i)
             scores[:, i] = self.base_scorer(label_i, pred_prob_i_two_columns, **kwargs)
 
         return self.aggregator(scores, **kwargs)
-
-    @staticmethod
-    def _stack_complement(pred_prob_slice: np.ndarray) -> np.ndarray:
-        """
-        Extends predicted probabilities of a single class to two columns.
-
-        Parameters
-        ----------
-        pred_prob_slice:
-            A 1D array with predicted probabilities for a single class.
-
-        Example
-        -------
-        >>> pred_prob_slice = np.array([0.1, 0.9, 0.3, 0.8])
-        >>> MultilabelScorer._stack_complement(pred_prob_slice)
-        array([[0.9, 0.1],
-                [0.1, 0.9],
-                [0.7, 0.3],
-                [0.2, 0.8]])
-        """
-        return np.vstack((1 - pred_prob_slice, pred_prob_slice)).T
 
     @staticmethod
     def _validate_labels_and_pred_probs(labels: np.ndarray, pred_probs: np.ndarray) -> None:
