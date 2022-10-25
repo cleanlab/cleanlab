@@ -35,9 +35,9 @@ from cleanlab.internal.validation import assert_valid_inputs
 from cleanlab.internal.util import (
     value_counts,
     round_preserving_row_totals,
-    int2onehot,
     get_num_classes,
     _binarize_pred_probs_slice,
+    get_onehot_num_classes,
 )
 
 # tqdm is a module used to print time-to-complete when multiprocessing is used.
@@ -535,13 +535,7 @@ def _find_multilabel_issues_per_class(
       `return_indices_ranked_by`.
 
     """
-    num_classes = get_num_classes(labels=labels, pred_probs=pred_probs)
-    try:
-        y_one = int2onehot(labels)
-    except TypeError:
-        raise ValueError(
-            "wrong format for labels, should be a list of list[indices], please check the documentation in find_label_issues for further information"
-        )
+    y_one, num_classes = get_onehot_num_classes(labels, pred_probs)
     if return_indices_ranked_by is None:
         bissues = np.zeros(y_one.shape).astype(bool)
     else:
@@ -735,13 +729,7 @@ def _find_predicted_neq_given_multilabel(labels, pred_probs) -> np.ndarray:
        labeled with high confidence.
 
     """
-    try:
-        y_one = int2onehot(labels)
-    except TypeError:
-        raise ValueError(
-            "wrong format for labels, should be a list of list[indices], please check the documentation in find_label_issues for further information"
-        )
-    num_classes = get_num_classes(labels=labels, pred_probs=pred_probs)
+    y_one, num_classes = get_onehot_num_classes(labels, pred_probs)
     pred_neq: np.ndarray = np.zeros(y_one.shape).astype(bool)
     for class_num in range(num_classes):
         pred_probabilitites = _binarize_pred_probs_slice(pred_probs, class_num)

@@ -45,6 +45,7 @@ from cleanlab.internal.util import (
     is_tensorflow_dataset,
     int2onehot,
     _binarize_pred_probs_slice,
+    get_onehot_num_classes,
 )
 from cleanlab.internal.latent_algebra import (
     compute_inv_noise_matrix,
@@ -229,12 +230,7 @@ def _calibrate_confident_joint_multilabel(confident_joint: np.ndarray, labels: l
     calibrated_cj : np.ndarray
       An array of shape ``(K, 2, 2)`` of type float representing a valid
       estimate of the joint *counts* of noisy and true labels in a one-vs-rest fashion."""
-    try:
-        y_one = int2onehot(labels)
-    except TypeError:
-        raise ValueError(
-            "wrong format for labels, should be a list of list[indices], please check the documentation in find_label_issues for further information"
-        )
+    y_one, num_classes = get_onehot_num_classes(labels)
     num_classes = len(confident_joint)
     calibrate_confident_joint_list: np.ndarray = np.ndarray(
         shape=(num_classes, 2, 2), dtype=np.int64
@@ -1393,13 +1389,7 @@ def _get_confident_thresholds_multilabel(
     confident_thresholds : np.ndarray
       An array of shape ``(K, 2, 2)`` where `K` is the number of classes, in a one-vs-rest format.
     """
-    num_classes = get_num_classes(labels=labels, pred_probs=pred_probs)
-    try:
-        y_one = int2onehot(labels)
-    except TypeError:
-        raise ValueError(
-            "wrong format for labels, should be a list of list[indices], please check the documentation in find_label_issues for further information"
-        )
+    y_one, num_classes = get_onehot_num_classes(labels, pred_probs)
     confident_thresholds: np.ndarray = np.ndarray((num_classes, 2))
     for class_num in range(num_classes):
         pred_probabilitites = _binarize_pred_probs_slice(pred_probs, class_num)

@@ -688,6 +688,18 @@ def num_unique_classes(labels, multi_label=None) -> int:
         return len(set(labels))
 
 
+def get_onehot_num_classes(labels, pred_probs=None):
+    """Returns OneHot encoding of MultiLabel Data, and number of classes"""
+    num_classes = get_num_classes(labels=labels, pred_probs=pred_probs)
+    try:
+        y_one = int2onehot(labels)
+    except TypeError:
+        raise ValueError(
+            "wrong format for labels, should be a list of list[indices], please check the documentation in find_label_issues for further information"
+        )
+    return y_one, num_classes
+
+
 def _binarize_pred_probs_slice(pred_probs: np.ndarray, class_num: int) -> np.ndarray:
     """Binarize predicted probabilities of a particular class, in the form of a one-vs-rest setting"""
     pred_probs_class = pred_probs[:, class_num]
