@@ -31,6 +31,7 @@ from cleanlab.rank import (
     order_label_issues,
     get_label_quality_scores,
 )
+import cleanlab.internal.multilabel_utils as mlutils
 from cleanlab.internal.validation import assert_valid_inputs
 from cleanlab.internal.util import (
     value_counts,
@@ -444,16 +445,16 @@ def _find_label_issues_multilabel(
     else:
         label_issues_list, labels_list, pred_probs_list = per_class_issues
         label_issues_idx = reduce(np.union1d, label_issues_list)
-        num_classes = get_num_classes(labels=labels, pred_probs=pred_probs)
-        label_quality_scores = np.zeros(len(labels))
-        for i in range(0, num_classes):
-            label_quality_scores += get_label_quality_scores(
-                labels=labels_list[i],
-                pred_probs=pred_probs_list[i],
-                method=return_indices_ranked_by,
-                **rank_by_kwargs,
-            )
-        label_quality_scores /= num_classes
+        y_one, num_classes = get_onehot_num_classes(labels, pred_probs)
+        label_quality_scores = mlutils.get_label_quality_scores(
+            labels=y_one,
+            pred_probs=pred_probs,
+            method=mlutils.MultilabelScorer(
+                base_scorer=mlutils.ClassLabelScorer.from_str(return_indices_ranked_by),
+                aggregator=np.mean,
+            ),
+            base_scorer_kwargs=rank_by_kwargs,
+        )
         label_quality_scores_issues = label_quality_scores[label_issues_idx]
         return label_issues_idx[np.argsort(label_quality_scores_issues)]
 

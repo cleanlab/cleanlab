@@ -20,7 +20,7 @@ Helper classes and functions used internally to compute label quality scores in 
 
 from enum import Enum
 import itertools
-from typing import Callable, Optional
+from typing import Callable, Optional, Union
 
 import numpy as np
 from sklearn.model_selection import cross_val_predict
@@ -65,56 +65,218 @@ class ClassLabelScorer(Enum):
     """Enum for the different methods to compute label quality scores."""
 
     SELF_CONFIDENCE = _Wrapper(get_self_confidence_for_each_label)
+    """Returns the self-confidence label-quality score for each datapoint.
+
+    See also
+    --------
+    cleanlab.rank.get_self_confidence_for_each_label
+    """
     NORMALIZED_MARGIN = _Wrapper(get_normalized_margin_for_each_label)
+    """Returns the "normalized margin" label-quality score for each datapoint.
+
+    See also
+    --------
+    cleanlab.rank.get_normalized_margin_for_each_label
+    """
     CONFIDENCE_WEIGHTED_ENTROPY = _Wrapper(get_confidence_weighted_entropy_for_each_label)
+    """Returns the "confidence weighted entropy" label-quality score for each datapoint.
+
+    See also
+    --------
+    cleanlab.rank.get_confidence_weighted_entropy_for_each_label
+    """
 
     def __call__(self, labels: np.ndarray, pred_probs: np.ndarray, **kwargs) -> np.ndarray:
-        """Returns the label-quality scores for each datapoint based on the given labels and predicted probabilities."""
+        """Returns the label-quality scores for each datapoint based on the given labels and predicted probabilities.
+
+        See the documentation for each method for more details.
+
+        Example
+        -------
+        >>> import numpy as np
+        >>> from cleanlab.internal.multilabel_utils import ClassLabelScorer
+        >>> labels = np.array([0, 0, 0, 1, 1, 1])
+        >>> pred_probs = np.array([
+        ...     [0.9, 0.1],
+        ...     [0.8, 0.2],
+        ...     [0.7, 0.3],
+        ...     [0.2, 0.8],
+        ...     [0.75, 0.25],
+        ...     [0.1, 0.9],
+        ... ])
+        >>> ClassLabelScorer.SELF_CONFIDENCE(labels, pred_probs)
+        array([0.9 , 0.8 , 0.7 , 0.8 , 0.25, 0.9 ])
+        """
         return self.value(labels, pred_probs, **kwargs)
+
+    @classmethod
+    def from_str(cls, method: str) -> "ClassLabelScorer":
+        """Constructs an instance of the ClassLabelScorer enum based on the given method name.
+
+        Parameters
+        ----------
+        method:
+            The name of the scoring method to use.
+
+        Returns
+        -------
+        scorer:
+            An instance of the ClassLabelScorer enum.
+
+        Raises
+        ------
+        ValueError:
+            If the given method name is not a valid method name.
+            It must be one of the following: "self_confidence", "normalized_margin", or "confidence_weighted_entropy".
+
+        Example
+        -------
+        >>> from cleanlab.internal.multilabel_utils import ClassLabelScorer
+        >>> ClassLabelScorer.from_str("self_confidence")
+        <ClassLabelScorer.SELF_CONFIDENCE: get_self_confidence_for_each_label>
+        """
+        try:
+            return cls[method.upper()]
+        except KeyError:
+            raise ValueError(f"Invalid method name: {method}")
+
+
+class Aggregator:
+    """Helper class for aggregating the label quality scores for each class into a single score for each datapoint.
+
+    Parameters
+    ----------
+    method:
+        The method to compute the label quality scores for each class.
+
+    kwargs:
+        Additional keyword arguments to pass to the method when called.
+    """
+
+    def __init__(self, method, **kwargs):
+        self._validate_method(method)
+        self.method = method
+        self.kwargs = kwargs
+
+    @staticmethod
+    def _validate_method(method) -> None:
+        assert callable(method), f"Expected callable method, got {type(method)}"
+
+    @staticmethod
+    def _validate_scores(scores: np.ndarray) -> None:
+        if not (isinstance(scores, np.ndarray) and scores.ndim == 2):
+            raise ValueError(
+                f"Expected 2D array for scores, got {type(scores)} with shape {scores.shape}"
+            )
+
+    def __call__(self, scores: np.ndarray, **kwargs) -> np.ndarray:
+        """Returns the label quality scores for each datapoint based on the given label quality scores for each class.
+
+        Parameters
+        ----------
+        scores:
+            The label quality scores for each class.
+
+        Returns
+        -------
+        aggregated_scores:
+            A single label quality score for each datapoint.
+        """
+        self._validate_scores(scores)
+        kwargs["axis"] = 1
+        return self.method(scores, **{**kwargs, **self.kwargs})
+
+    def __repr__(self):
+        return f"Aggregator(method={self.method.__name__}, kwargs={self.kwargs})"
+
+
+def exponential_moving_average(
+    s: np.ndarray,
+    *,
+    alpha: Optional[float] = None,
+    axis: int = 1,
+    **_,
+) -> np.ndarray:
+    """Exponential moving average (EMA) score function.
+
+    For a score vector s = (s_1, ..., s_K) with K scores, the values
+    are sorted in *descending* order and the exponential moving average
+    of the last score is calculated.
+
+    Parameters
+    ----------
+    s :
+        Scores to be transformed.
+
+    alpha :
+        Discount factor that determines the weight of the previous EMA score.
+        Higher alpha means that the previous EMA score has a lower weight while
+        the current score has a higher weight.
+
+        If alpha is None, it is set to 2 / (K + 1) where K is the number of scores.
+
+    axis :
+        Axis along which the scores are sorted.
+
+    Returns
+    -------
+        Exponential moving average score.
+
+    Examples
+    --------
+    >>> from cleanlab.internal.multilabel_utils import exponential_moving_average
+    >>> import numpy as np
+    >>> s = np.array([0.1, 0.2, 0.3])
+    >>> exponential_moving_average(s, alpha=0.5)
+    np.array([0.175])
+    """
+    K = s.shape[1]
+    s_sorted = np.fliplr(np.sort(s, axis=axis))
+    if alpha is None:
+        # One conventional choice for alpha is 2/(K + 1), where K is the number of periods in the moving average.
+        alpha = float(2 / (K + 1))
+    s_T = s_sorted.T
+    s_ema, s_next = s_T[0], s_T[1:]
+    for s_i in s_next:
+        s_ema = alpha * s_i + (1 - alpha) * s_ema
+    return s_ema
 
 
 class MultilabelScorer:
-    """Aggregates label quality scores across different classes to produce one score per example in multi-label classification tasks."""
+    """Aggregates label quality scores across different classes to produce one score per example in multi-label classification tasks.
+
+    Parameters
+    ----------
+    base_scorer:
+        The method to compute the label quality scores for each class.
+
+        See the documentation for the ClassLabelScorer enum for more details.
+
+    aggregator:
+        The method to aggregate the label quality scores for each class into a single score for each datapoint.
+
+        Defaults to the EMA (exponential moving average) aggregator with forgetting factor ``alpha=0.8``.
+
+        See the documentation for the Aggregator class for more details.
+
+        See also
+        --------
+        exponential_moving_average
+
+    strict:
+        Flag for performing strict validation of the input data.
+    """
 
     def __init__(
         self,
         base_scorer: ClassLabelScorer = ClassLabelScorer.SELF_CONFIDENCE,
-        aggregator: Optional[Callable[..., np.ndarray]] = None,
+        aggregator: Union[Aggregator, Callable] = Aggregator(exponential_moving_average, alpha=0.8),
         *,
         strict: bool = True,
     ):
-        """
-        Initialize object with a base scoring function that is applied to each label and function that pools scores accross labels.
-
-        Parameters
-        ----------
-        base_scorer:
-            A function that computes a quality score for a single label in a multi-label classification problem.
-
-        aggregator:
-            A function that aggregates the scores computed by base_scorer over all labels.
-            If None, the scores are averaged.
-
-        strict:
-            If True, raises an error if the labels are not binary or are incompatible with the predicted probabilities.
-
-        Examples
-        --------
-        >>> from cleanlab.internal.multilabel_utils import MultilabelScorer, ClassLabelScorer
-        >>> import numpy as np
-        >>> scorer = MultilabelScorer(
-        ...     base_scorer = ClassLabelScorer.NORMALIZED_MARGIN,
-        ...     aggregator = np.min,
-        ... )
-        >>> labels = np.array([[0, 1, 0], [1, 0, 1]])
-        >>> pred_probs = np.array([[0.1, 0.9, 0.1], [0.4, 0.1, 0.9]])
-        >>> scores = scorer(labels, pred_probs)
-        >>> scores
-        array([0.9, 0.4])
-        """
         self.base_scorer = base_scorer
-        if aggregator is None:
-            self.aggregator: Callable[..., np.ndarray] = np.mean
+        if not isinstance(aggregator, Aggregator):
+            self.aggregator = Aggregator(aggregator)
         else:
             self.aggregator = aggregator
         self.strict = strict
@@ -134,7 +296,7 @@ class MultilabelScorer:
             A 2D array of shape (n_samples, n_labels) with predicted probabilities.
 
         kwargs:
-            Additional keyword arguments to pass to the base_scorer.
+            Additional keyword arguments to pass to the base_scorer and the aggregator.
 
         Returns
         -------
@@ -143,13 +305,22 @@ class MultilabelScorer:
 
         Examples
         --------
-        >>> from cleanlab.internal.multilabel_utils import MultilabelScorer
+        >>> from cleanlab.internal.multilabel_utils import MultilabelScorer, ClassLabelScorer
         >>> import numpy as np
-        >>> scorer = MultilabelScorer()
         >>> labels = np.array([[0, 1, 0], [1, 0, 1]])
         >>> pred_probs = np.array([[0.1, 0.9, 0.1], [0.4, 0.1, 0.9]])
+        >>> scorer = MultilabelScorer()
         >>> scores = scorer(labels, pred_probs)
         >>> scores
+        array([0.9, 0.5])
+
+        >>> scorer = MultilabelScorer(
+        ...     base_scorer = ClassLabelScorer.NORMALIZED_MARGIN,
+        ...     aggregator = np.min,  # Use the "worst" label quality score for each example.
+        ... )
+        >>> scores = scorer(labels, pred_probs)
+        >>> scores
+        array([0.9, 0.4])
         """
         if self.strict:
             self._validate_labels_and_pred_probs(labels, pred_probs)
@@ -158,7 +329,7 @@ class MultilabelScorer:
             pred_prob_i_two_columns = self._stack_complement(pred_prob_i)
             scores[:, i] = self.base_scorer(label_i, pred_prob_i_two_columns, **kwargs)
 
-        return self.aggregator(scores, axis=-1)
+        return self.aggregator(scores, **kwargs)
 
     @staticmethod
     def _stack_complement(pred_prob_slice: np.ndarray) -> np.ndarray:
@@ -196,7 +367,43 @@ class MultilabelScorer:
             raise ValueError("Labels and predicted probabilities must have the same shape.")
 
 
-def get_label_quality_scores(labels, pred_probs, *, method: MultilabelScorer):
+def get_label_quality_scores(
+    labels, pred_probs, *, method: MultilabelScorer = MultilabelScorer()
+) -> np.ndarray:
+    """Computes a quality score for each label in a multi-label classification problem
+    based on out-of-sample predicted probabilities.
+
+    Parameters
+    ----------
+    labels:
+        A 2D array of shape (N, K) with binary labels.
+
+    pred_probs:
+        A 2D array of shape (N, K) with predicted probabilities.
+
+    method:
+        A scoring+aggregation method for computing the label quality scores of examples in a multi-label classification setting.
+
+    Returns
+    -------
+    scores:
+        A 1D array of shape (N,) with the quality scores for each datapoint.
+
+    Examples
+    --------
+    >>> import cleanlab.internal.multilabel_utils as mlutils
+    >>> import numpy as np
+    >>> labels = np.array([[0, 1, 0], [1, 0, 1]])
+    >>> pred_probs = np.array([[0.1, 0.9, 0.1], [0.4, 0.1, 0.9]])
+    >>> scores = mlutils.get_label_quality_scores(labels, pred_probs, method=mlutils.MultilabelScorer())
+    >>> scores
+    array([0.9, 0.5])
+
+    See also
+    --------
+    MultilabelScorer:
+        See the documentation for the MultilabelScorer class for more examples of scoring methods and aggregation methods.
+    """
     return method(labels, pred_probs)
 
 
@@ -209,12 +416,12 @@ def multilabel_py(y: np.ndarray) -> np.ndarray:
     Parameters
     ----------
     y :
-        A 2d numpy array of binarized multi-labels of shape (N, K) where N is the number of samples and K is the number of classes.
+        A 2d array of binarized multi-labels of shape (N, K) where N is the number of samples and K is the number of classes.
 
     Returns
     -------
     py :
-        A 1d numpy array of prior probabilities of shape (2**K,) where 2**K is the number of possible class-assignment configurations.
+        A 1d array of prior probabilities of shape (2**K,) where 2**K is the number of possible class-assignment configurations.
 
     Examples
     --------
@@ -261,7 +468,53 @@ def _get_split_generator(labels, cv):
     return split_generator
 
 
-def get_cross_validated_multilabel_pred_probs(X, labels, *, clf, cv):
+def get_cross_validated_multilabel_pred_probs(X, labels: np.ndarray, *, clf, cv) -> np.ndarray:
+    """Get predicted probabilities for a multi-label classifier via cross-validation.
+
+    Note
+    ----
+    The labels are reformatted to a "multi-class" format internally to support a wider range of cross-validation strategies.
+    If you have a multi-label dataset with `K` classes, the labels are reformatted to a "multi-class" format with up to `2**K` classes
+    (i.e. the number of possible class-assignment configurations).
+    It is unlikely that you'll all `2**K` configurations in your dataset.
+
+    Parameters
+    ----------
+    X :
+        A 2d array of features of shape (N, M) where N is the number of samples and M is the number of features.
+
+    labels :
+        A 2d array of binarized multi-labels of shape (N, K) where N is the number of samples and K is the number of classes.
+
+    clf :
+        A multi-label classifier with a ``predict_proba`` method.
+
+    cv :
+        A cross-validation splitter with a ``split`` method that returns a generator of train/test indices.
+
+    Returns
+    -------
+    pred_probs :
+        A 2d array of predicted probabilities of shape (N, K) where N is the number of samples and K is the number of classes.
+
+        Note
+        ----
+        The predicted probabilities are not expected to sum to 1 for each sample in the case of multi-label classification.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> from sklearn.model_selection import KFold
+    >>> from sklearn.multiclass import OneVsRestClassifier
+    >>> from sklearn.ensemble import RandomForestClassifier
+    >>> from cleanlab.internal.multilabel_utils import get_cross_validated_multilabel_pred_probs
+    >>> np.random.seed(0)
+    >>> X = np.random.rand(16, 2)
+    >>> labels = np.random.randint(0, 2, size=(16, 2))
+    >>> clf = OneVsRestClassifier(RandomForestClassifier())
+    >>> cv = KFold(n_splits=2)
+    >>> get_cross_validated_multilabel_pred_probs(X, labels, clf=clf, cv=cv)
+    """
     split_generator = _get_split_generator(labels, cv)
     pred_probs = cross_val_predict(clf, X, labels, cv=split_generator, method="predict_proba")
     return pred_probs
