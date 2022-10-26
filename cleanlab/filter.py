@@ -30,16 +30,15 @@ from cleanlab.count import calibrate_confident_joint
 from cleanlab.rank import (
     order_label_issues,
 )
-import cleanlab.internal.multilabel_utils as mlutils
+import cleanlab.internal.multilabel_scorer as mlutils
 
 from cleanlab.internal.validation import assert_valid_inputs
 from cleanlab.internal.util import (
     value_counts,
     round_preserving_row_totals,
     get_num_classes,
-    get_onehot_num_classes,
-    stack_complement,
 )
+from cleanlab.internal.multilabel_utils import stack_complement, get_onehot_num_classes
 
 # tqdm is a module used to print time-to-complete when multiprocessing is used.
 # This module is not necessary, and therefore is not a package dependency, but

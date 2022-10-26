@@ -23,8 +23,8 @@ import sklearn
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.linear_model import LogisticRegression
 
-from cleanlab.internal import multilabel_utils as mlutils
-from cleanlab.internal.util import stack_complement
+from cleanlab.internal import multilabel_scorer as mlutils
+from cleanlab.internal.multilabel_utils import stack_complement
 
 
 @pytest.fixture

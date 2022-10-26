@@ -43,9 +43,8 @@ from cleanlab.internal.util import (
     get_num_classes,
     is_torch_dataset,
     is_tensorflow_dataset,
-    get_onehot_num_classes,
-    stack_complement,
 )
+from cleanlab.internal.multilabel_utils import stack_complement, get_onehot_num_classes
 
 from cleanlab.internal.latent_algebra import (
     compute_inv_noise_matrix,
