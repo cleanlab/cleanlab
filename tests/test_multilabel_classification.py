@@ -284,11 +284,10 @@ def test_get_cross_validated_multilabel_pred_probs(dummy_features, labels, cv, p
     assert dummy_features.shape == (10, 2)
     assert np.allclose(pred_probs, pred_probs_gold, atol=5e-4)
 
-
-def test_exponential_moving_average():
+@pytest.mark.parametrize("alpha", [0.5, None])
+def test_exponential_moving_average(alpha):
     # Test that the exponential moving average is correct
     # for a simple example.
-    alpha = 0.5
     for x, expected_ema in zip(
         [
             np.ones(5).reshape(1, -1),
