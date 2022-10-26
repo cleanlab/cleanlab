@@ -486,7 +486,8 @@ cleanlab is based on peer-reviewed research. Here are the relevant papers to cit
 
 - [Cleanlab Blog](https://cleanlab.ai/blog/)
 
-- [Cleanlab Studio](https://cleanlab.ai/studio): No-code Data Improvement  
+- [Cleanlab Studio](https://cleanlab.ai/studio): No-code Data Improvement
+
 While this open-source library **finds** data issues, an interface is needed to efficiently **fix** these issues in your dataset. [Cleanlab Studio](https://cleanlab.ai/studio) is a no-code platform to find and fix problems in real-world ML datasets. Studio automatically runs optimized versions of the algorithms from this open-source library on top of AutoML models fit to your data, and presents detected issues in a smart data editing interface. Think of it like a data cleaning assistant that helps you quickly improve the quality of your data (via AI/automation + streamlined UX).
 
 ## Join our community
