@@ -201,7 +201,22 @@ def exponential_moving_average(
 
     For a score vector s = (s_1, ..., s_K) with K scores, the values
     are sorted in *descending* order and the exponential moving average
-    of the last score is calculated.
+    of the last score is calculated, denoted as EMA_K according to the
+    note below.
+
+    Note
+    ----
+
+    The recursive formula for the EMA at step :math:`t = 2, ..., K` is:
+
+    .. math::
+
+        \\text{EMA}_t = \\alpha \cdot s_t + (1 - \\alpha) \cdot \\text{EMA}_{t-1},
+
+    We set :math:`\\text{EMA}_1 = s_1` as the largest score in the sorted vector s.
+
+    :math:`\\alpha` is the "forgetting factor" that gives more weight to the
+    most recent scores, and successively less weight to the previous scores.
 
     Parameters
     ----------
@@ -220,6 +235,7 @@ def exponential_moving_average(
 
     Returns
     -------
+    s_ema :
         Exponential moving average score.
 
     Examples
