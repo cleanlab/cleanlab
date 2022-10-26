@@ -149,3 +149,4 @@ The example below shows how to view all dataset-level issues in one line of code
    GitHub <https://github.com/cleanlab/cleanlab>
    PyPI <https://pypi.org/project/cleanlab/>
    Conda <https://anaconda.org/Cleanlab/cleanlab>
+   Cleanlab Studio <https://cleanlab.ai/studio/>
