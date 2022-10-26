@@ -110,6 +110,17 @@ def test_multilabel_scorer(base_scorer, aggregator, strict, labels, pred_probs):
     assert test_scores.shape == (labels.shape[0],)
 
 
+@pytest.mark.parametrize(
+    "method", ["self_confidence", "normalized_margin", "confidence_weighted_entropy"]
+)
+def test_class_label_scorer_from_str(method):
+    for m in (method, method.upper()):
+        scorer = mlutils.ClassLabelScorer.from_str(m)
+        assert callable(scorer)
+        with pytest.raises(ValueError):
+            mlutils.ClassLabelScorer.from_str(m.replace("_", "-"))
+
+
 @pytest.fixture
 def scorer():
     return mlutils.MultilabelScorer(
@@ -272,3 +283,19 @@ def test_get_cross_validated_multilabel_pred_probs(dummy_features, labels, cv, p
     # Gold master test - Ensure output is consistent
     assert dummy_features.shape == (10, 2)
     assert np.allclose(pred_probs, pred_probs_gold, atol=5e-4)
+
+
+def test_exponential_moving_average():
+    # Test that the exponential moving average is correct
+    # for a simple example.
+    alpha = 0.5
+    for x, expected_ema in zip(
+        [
+            np.ones(5).reshape(1, -1),
+            np.array([[0.1, 0.2, 0.3]]),
+            np.array([x / 10 for x in range(1, 7)]).reshape(2, 3),
+        ],
+        [1, 0.175, np.array([0.175, 0.475])],
+    ):
+        ema = mlutils.exponential_moving_average(x, alpha=alpha)
+        assert np.allclose(ema, expected_ema, atol=1e-4)
