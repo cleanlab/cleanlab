@@ -224,6 +224,7 @@ def exponential_moving_average(
 
     Returns
     -------
+    s_ema :
         Exponential moving average score.
 
     Examples
