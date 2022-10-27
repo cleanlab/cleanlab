@@ -286,7 +286,13 @@ class MultilabelScorer:
             self.aggregator = aggregator
         self.strict = strict
 
-    def __call__(self, labels: np.ndarray, pred_probs: np.ndarray, **kwargs) -> np.ndarray:
+    def __call__(
+        self,
+        labels: np.ndarray,
+        pred_probs: np.ndarray,
+        base_scorer_kwargs: Optional[dict] = None,
+        **aggregator_kwargs,
+    ) -> np.ndarray:
         """
         Computes a quality score for each label in a multi-label classification problem
         based on out-of-sample predicted probabilities.
@@ -302,6 +308,12 @@ class MultilabelScorer:
 
         kwargs:
             Additional keyword arguments to pass to the base_scorer and the aggregator.
+
+        base_scorer_kwargs:
+             Keyword arguments to pass to the base_scorer
+
+         aggregator_kwargs:
+             Additional keyword arguments to pass to the aggregator.
 
         Returns
         -------
@@ -330,11 +342,13 @@ class MultilabelScorer:
         if self.strict:
             self._validate_labels_and_pred_probs(labels, pred_probs)
         scores = np.zeros(shape=labels.shape)
+        if base_scorer_kwargs is None:
+            base_scorer_kwargs = {}
         for i, (label_i, pred_prob_i) in enumerate(zip(labels.T, pred_probs.T)):
             pred_prob_i_two_columns = stack_complement(pred_prob_i)
-            scores[:, i] = self.base_scorer(label_i, pred_prob_i_two_columns, **kwargs)
+            scores[:, i] = self.base_scorer(label_i, pred_prob_i_two_columns, **base_scorer_kwargs)
 
-        return self.aggregator(scores, **kwargs)
+        return self.aggregator(scores, **aggregator_kwargs)
 
     @staticmethod
     def _validate_labels_and_pred_probs(labels: np.ndarray, pred_probs: np.ndarray) -> None:
@@ -352,7 +366,12 @@ class MultilabelScorer:
 
 
 def get_label_quality_scores(
-    labels, pred_probs, *, method: MultilabelScorer = MultilabelScorer()
+    labels,
+    pred_probs,
+    *,
+    method: MultilabelScorer = MultilabelScorer(),
+    base_scorer_kwargs: Optional[dict] = None,
+    **aggregator_kwargs,
 ) -> np.ndarray:
     """Computes a quality score for each label in a multi-label classification problem
     based on out-of-sample predicted probabilities.
@@ -368,6 +387,12 @@ def get_label_quality_scores(
     method:
         A scoring+aggregation method for computing the label quality scores of examples in a multi-label classification setting.
 
+    base_scorer_kwargs:
+        Keyword arguments to pass to the class-label scorer.
+
+    aggregator_kwargs:
+        Additional keyword arguments to pass to the aggregator.
+
     Returns
     -------
     scores:
@@ -375,7 +400,7 @@ def get_label_quality_scores(
 
     Examples
     --------
-    >>> import cleanlab.internal.multilabel_scorer as mlutils
+    >>> import cleanlab.internal.multilabel_utils as mlutils
     >>> import numpy as np
     >>> labels = np.array([[0, 1, 0], [1, 0, 1]])
     >>> pred_probs = np.array([[0.1, 0.9, 0.1], [0.4, 0.1, 0.9]])
@@ -388,7 +413,7 @@ def get_label_quality_scores(
     MultilabelScorer:
         See the documentation for the MultilabelScorer class for more examples of scoring methods and aggregation methods.
     """
-    return method(labels, pred_probs)
+    return method(labels, pred_probs, base_scorer_kwargs=base_scorer_kwargs, **aggregator_kwargs)
 
 
 # Probabilities
