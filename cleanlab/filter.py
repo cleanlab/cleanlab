@@ -454,6 +454,7 @@ def _find_label_issues_multilabel(
                 base_scorer=mlutils.ClassLabelScorer.from_str(return_indices_ranked_by),
                 aggregator=np.mean,
             ),
+            base_scorer_kwargs=rank_by_kwargs,
         )
         label_quality_scores_issues = label_quality_scores[label_issues_idx]
         return label_issues_idx[np.argsort(label_quality_scores_issues)]
