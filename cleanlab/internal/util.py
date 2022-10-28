@@ -177,7 +177,8 @@ def value_counts(x, *, num_classes=None, multi_label=False) -> np.ndarray:
     if num_classes <= max(unique_classes):
         raise ValueError(f"Required: num_classes > max(x), but {num_classes} <= {max(x)}.")
     # Add zero counts for all missing classes in [0, 1,..., num_classes-1]
-    missing_classes = get_missing_classes(x, num_classes=num_classes, multi_label=multi_label)
+    # multi_label=False regardless because x was flattened.
+    missing_classes = get_missing_classes(x, num_classes=num_classes, multi_label=False)
     missing_counts = [(z, 0) for z in missing_classes]
     # Return counts with zeros for all missing classes.
     return np.array(list(zip(*sorted(list(zip(unique_classes, counts)) + missing_counts)))[1])
@@ -196,7 +197,6 @@ def get_missing_classes(labels, *, pred_probs=None, num_classes=None, multi_labe
     """Find which classes are present in ``pred_probs`` but not present in ``labels``.
 
     See ``count.compute_confident_joint`` for parameter docstrings."""
-
     if pred_probs is None and num_classes is None:
         raise ValueError("Both pred_probs and num_classes are None. You must provide exactly one.")
     if pred_probs is not None and num_classes is not None:
@@ -264,18 +264,21 @@ def round_preserving_row_totals(confident_joint) -> np.ndarray:
     ).astype(int)
 
 
-def int2onehot(labels) -> np.ndarray:
+def int2onehot(labels, K) -> np.ndarray:
     """Convert list of lists to a onehot matrix for multi-labels
 
     Parameters
     ----------
     labels: list of lists of integers
       e.g. [[0,1], [3], [1,2,3], [1], [2]]
-      All integers from 0,1,...,K-1 must be represented."""
+      All integers from 0,1,...,K-1 must be represented.
+
+    K: int
+      The number of classes."""
 
     from sklearn.preprocessing import MultiLabelBinarizer
 
-    mlb = MultiLabelBinarizer()
+    mlb = MultiLabelBinarizer(classes=range(K))
     return mlb.fit_transform(labels)
 
 

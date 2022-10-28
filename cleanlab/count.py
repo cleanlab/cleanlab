@@ -41,6 +41,7 @@ from cleanlab.internal.util import (
     append_extra_datapoint,
     train_val_split,
     get_num_classes,
+    get_unique_classes,
     is_torch_dataset,
     is_tensorflow_dataset,
 )
@@ -1435,9 +1436,7 @@ def get_confident_thresholds(
       An array of shape ``(K, )`` where K is the number of classes."""
 
     all_classes = range(pred_probs.shape[1])
-    unique_classes = (
-        np.unique([l for lst in labels for l in lst]) if multi_label else np.unique(labels)
-    )
+    unique_classes = get_unique_classes(labels, multi_label=multi_label)
     # labels must be a valid np.ndarray.
     labels = cleanlab.internal.validation.labels_to_array(labels)
     # When all_classes != unique_classes the class threshold for the missing classes is set to

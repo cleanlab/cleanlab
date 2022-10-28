@@ -242,7 +242,6 @@ def find_label_issues(
     else:
         assert n_jobs >= 1
 
-<<<<<<< HEAD
     # Number of examples in each class of labels
     if multi_label:
         return _find_label_issues_multilabel(
@@ -261,8 +260,7 @@ def find_label_issues(
 
     else:
         label_counts = value_counts(labels)
-=======
->>>>>>> 81c736f (Add support for missing classes.)
+
     # Number of classes
     K = get_num_classes(
         labels=labels, pred_probs=pred_probs, label_matrix=confident_joint, multi_label=multi_label
@@ -958,7 +956,7 @@ def _prune_by_count(k: int, args=None) -> np.ndarray:
 
     label_issues_mask = np.zeros(len(pred_probs), dtype=bool)
     pred_probs_k = pred_probs[:, k]
-    K = len(label_counts)
+    K = get_num_classes(labels, pred_probs, multi_label=multi_label)
     if label_counts[k] <= min_examples_per_class:  # No prune if not at least min_examples_per_class
         warnings.warn(
             f"May not flag all label issues in class: {k}, it has too few examples (see `min_examples_per_class` argument)"
@@ -975,3 +973,40 @@ def _prune_by_count(k: int, args=None) -> np.ndarray:
             cut = -np.partition(-margin[label_filter], num2prune - 1)[num2prune - 1]
             label_issues_mask = label_issues_mask | (label_filter & (margin >= cut))
     return label_issues_mask
+
+
+def _multiclass_crossval_predict(labels, pred_probs) -> np.ndarray:
+    """Returns a numpy 2D array of one-hot encoded
+    multiclass predictions. Each row in the array
+    provides the predictions for a particular example.
+    The boundary condition used to threshold predictions
+    is computed by maximizing the F1 ROC curve.
+
+    Parameters
+    ----------
+    labels : list of lists (length N)
+      These are multiclass labels. Each list in the list contains all the
+      labels for that example.
+
+    pred_probs : np.ndarray (shape (N, K))
+        P(label=k|x) is a matrix with K model-predicted probabilities.
+        Each row of this matrix corresponds to an example `x` and contains the model-predicted
+        probabilities that `x` belongs to each possible class.
+        The columns must be ordered such that these probabilities correspond to class 0,1,2,...
+        `pred_probs` should have been computed using 3 (or higher) fold cross-validation."""
+
+    from sklearn.metrics import f1_score
+    boundaries = np.arange(0.05, 0.9, 0.05)
+    K = get_num_classes(labels=labels, pred_probs=pred_probs, multi_label=True,)
+    labels_one_hot = int2onehot(labels, K)
+    f1s = [
+        f1_score(
+            labels_one_hot,
+            (pred_probs > boundary).astype(np.uint8),
+            average="micro",
+        )
+        for boundary in boundaries
+    ]
+    boundary = boundaries[np.argmax(f1s)]
+    pred = (pred_probs > boundary).astype(np.uint8)
+    return pred
