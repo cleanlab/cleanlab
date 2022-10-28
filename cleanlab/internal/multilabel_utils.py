@@ -15,7 +15,7 @@
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
 """
-Helper classes and functions used internally to compute label quality scores in multi-label classification.
+Helper functions used internally by multilabel utils.
 """
 
 
