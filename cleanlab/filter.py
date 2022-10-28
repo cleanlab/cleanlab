@@ -452,7 +452,6 @@ def _find_label_issues_multilabel(
             pred_probs=pred_probs,
             method=ml_scorer.MultilabelScorer(
                 base_scorer=ml_scorer.ClassLabelScorer.from_str(return_indices_ranked_by),
-                aggregator=np.mean,
             ),
             base_scorer_kwargs=rank_by_kwargs,
         )
