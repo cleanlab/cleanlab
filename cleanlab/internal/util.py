@@ -714,13 +714,6 @@ def format_labels(labels: LabelLike) -> Tuple[np.ndarray, dict]:
     return formatted_labels, inverse_map
 
 
-def _binarize_pred_probs_slice(pred_probs: np.ndarray, class_num: int) -> np.ndarray:
-    """Binarize predicted probabilities of a particular class, in the form of a one-vs-rest setting"""
-    pred_probs_class = pred_probs[:, class_num]
-    pred_probabilities = np.stack([1 - pred_probs_class, pred_probs_class]).T
-    return pred_probabilities
-
-
 def smart_display_dataframe(df):  # pragma: no cover
     """Display a pandas dataframe if in a jupyter notebook, otherwise print it to console."""
     try:

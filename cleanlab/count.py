@@ -43,9 +43,9 @@ from cleanlab.internal.util import (
     get_num_classes,
     is_torch_dataset,
     is_tensorflow_dataset,
-    int2onehot,
-    _binarize_pred_probs_slice,
 )
+from cleanlab.internal.multilabel_utils import stack_complement, get_onehot_num_classes
+
 from cleanlab.internal.latent_algebra import (
     compute_inv_noise_matrix,
     compute_py,
@@ -229,20 +229,13 @@ def _calibrate_confident_joint_multilabel(confident_joint: np.ndarray, labels: l
     calibrated_cj : np.ndarray
       An array of shape ``(K, 2, 2)`` of type float representing a valid
       estimate of the joint *counts* of noisy and true labels in a one-vs-rest fashion."""
-    try:
-        y_one = int2onehot(labels)
-    except TypeError:
-        raise ValueError(
-            "wrong format for labels, should be a list of list[indices], please check the documentation in find_label_issues for further information"
-        )
+    y_one, num_classes = get_onehot_num_classes(labels)
     num_classes = len(confident_joint)
     calibrate_confident_joint_list: np.ndarray = np.ndarray(
         shape=(num_classes, 2, 2), dtype=np.int64
     )
-    for class_num in range(0, num_classes):
-        calibrate_confident_joint_list[class_num] = calibrate_confident_joint(
-            confident_joint[class_num], labels=y_one[:, class_num]
-        )
+    for class_num, (cj, y) in enumerate(zip(confident_joint, y_one.T)):
+        calibrate_confident_joint_list[class_num] = calibrate_confident_joint(cj, labels=y)
 
     return calibrate_confident_joint_list
 
@@ -336,13 +329,7 @@ def _estimate_joint_multilabel(labels, pred_probs, *, confident_joint=None) -> n
        An array of shape ``(K, 2, 2)`` representing an
        estimate of the true joint distribution of noisy and true labels for each class, in a one-vs-rest format employed for multi-label settings.
     """
-    num_classes = get_num_classes(labels=labels, pred_probs=pred_probs)
-    try:
-        y_one = int2onehot(labels)
-    except TypeError:
-        raise ValueError(
-            "wrong format for labels, should be a list of list[indices], please check the documentation in find_label_issues for further information"
-        )
+    y_one, num_classes = get_onehot_num_classes(labels, pred_probs)
     if confident_joint is None:
         calibrated_cj = compute_confident_joint(
             labels,
@@ -353,10 +340,10 @@ def _estimate_joint_multilabel(labels, pred_probs, *, confident_joint=None) -> n
     else:
         calibrated_cj = confident_joint
     calibrated_cf: np.ndarray = np.ndarray((num_classes, 2, 2))
-    for class_num in range(num_classes):
-        pred_probabilitites = _binarize_pred_probs_slice(pred_probs, class_num)
+    for class_num, (label, pred_prob) in enumerate(zip(y_one.T, pred_probs.T)):
+        pred_probabilitites = stack_complement(pred_prob)
         calibrated_cf[class_num] = estimate_joint(
-            labels=y_one[:, class_num],
+            labels=label,
             pred_probs=pred_probabilitites,
             confident_joint=calibrated_cj[class_num],
         )
@@ -599,20 +586,14 @@ def _compute_confident_joint_multi_label(
     where `indices_off_diagonal` is a list of arrays (one per class) and each array contains the indices of examples counted in off-diagonals of confident joint for that class.
     """
 
-    num_classes = get_num_classes(labels=labels, pred_probs=pred_probs)
-    try:
-        y_one = int2onehot(labels)
-    except TypeError:
-        raise ValueError(
-            "wrong format for labels, should be a list of list[indices], please check the documentation in find_label_issues for further information"
-        )
+    y_one, num_classes = get_onehot_num_classes(labels, pred_probs)
     confident_joint_list: np.ndarray = np.ndarray(shape=(num_classes, 2, 2), dtype=np.int64)
     indices_off_diagonal = []
-    for class_num in range(0, num_classes):
-        pred_probabilitites = _binarize_pred_probs_slice(pred_probs, class_num)
+    for class_num, (label, pred_prob) in enumerate(zip(y_one.T, pred_probs.T)):
+        pred_probabilitites = stack_complement(pred_prob)
         if return_indices_of_off_diagonals:
             cj, ind = compute_confident_joint(
-                labels=y_one[:, class_num],
+                labels=label,
                 pred_probs=pred_probabilitites,
                 multi_label=False,
                 thresholds=thresholds,
@@ -622,7 +603,7 @@ def _compute_confident_joint_multi_label(
             indices_off_diagonal.append(ind)
         else:
             cj = compute_confident_joint(
-                labels=y_one[:, class_num],
+                labels=label,
                 pred_probs=pred_probabilitites,
                 multi_label=False,
                 thresholds=thresholds,
@@ -1395,17 +1376,11 @@ def _get_confident_thresholds_multilabel(
     confident_thresholds : np.ndarray
       An array of shape ``(K, 2, 2)`` where `K` is the number of classes, in a one-vs-rest format.
     """
-    num_classes = get_num_classes(labels=labels, pred_probs=pred_probs)
-    try:
-        y_one = int2onehot(labels)
-    except TypeError:
-        raise ValueError(
-            "wrong format for labels, should be a list of list[indices], please check the documentation in find_label_issues for further information"
-        )
+    y_one, num_classes = get_onehot_num_classes(labels, pred_probs)
     confident_thresholds: np.ndarray = np.ndarray((num_classes, 2))
-    for class_num in range(num_classes):
-        pred_probabilitites = _binarize_pred_probs_slice(pred_probs, class_num)
+    for class_num, (label, pred_prob) in enumerate(zip(y_one.T, pred_probs.T)):
+        pred_probabilitites = stack_complement(pred_prob)
         confident_thresholds[class_num] = get_confident_thresholds(
-            pred_probs=pred_probabilitites, labels=y_one[:, class_num]
+            pred_probs=pred_probabilitites, labels=labels
         )
     return confident_thresholds

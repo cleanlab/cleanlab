@@ -29,16 +29,16 @@ from functools import reduce
 from cleanlab.count import calibrate_confident_joint
 from cleanlab.rank import (
     order_label_issues,
-    get_label_quality_scores,
 )
+import cleanlab.internal.multilabel_scorer as ml_scorer
+
 from cleanlab.internal.validation import assert_valid_inputs
 from cleanlab.internal.util import (
     value_counts,
     round_preserving_row_totals,
-    int2onehot,
     get_num_classes,
-    _binarize_pred_probs_slice,
 )
+from cleanlab.internal.multilabel_utils import stack_complement, get_onehot_num_classes
 
 # tqdm is a module used to print time-to-complete when multiprocessing is used.
 # This module is not necessary, and therefore is not a package dependency, but
@@ -446,16 +446,15 @@ def _find_label_issues_multilabel(
     else:
         label_issues_list, labels_list, pred_probs_list = per_class_issues
         label_issues_idx = reduce(np.union1d, label_issues_list)
-        num_classes = get_num_classes(labels=labels, pred_probs=pred_probs)
-        label_quality_scores = np.zeros(len(labels))
-        for i in range(0, num_classes):
-            label_quality_scores += get_label_quality_scores(
-                labels=labels_list[i],
-                pred_probs=pred_probs_list[i],
-                method=return_indices_ranked_by,
-                **rank_by_kwargs,
-            )
-        label_quality_scores /= num_classes
+        y_one, num_classes = get_onehot_num_classes(labels, pred_probs)
+        label_quality_scores = ml_scorer.get_label_quality_scores(
+            labels=y_one,
+            pred_probs=pred_probs,
+            method=ml_scorer.MultilabelScorer(
+                base_scorer=ml_scorer.ClassLabelScorer.from_str(return_indices_ranked_by),
+            ),
+            base_scorer_kwargs=rank_by_kwargs,
+        )
         label_quality_scores_issues = label_quality_scores[label_issues_idx]
         return label_issues_idx[np.argsort(label_quality_scores_issues)]
 
@@ -537,13 +536,7 @@ def _find_multilabel_issues_per_class(
       `return_indices_ranked_by`.
 
     """
-    num_classes = get_num_classes(labels=labels, pred_probs=pred_probs)
-    try:
-        y_one = int2onehot(labels)
-    except TypeError:
-        raise ValueError(
-            "wrong format for labels, should be a list of list[indices], please check the documentation in find_label_issues for further information"
-        )
+    y_one, num_classes = get_onehot_num_classes(labels, pred_probs)
     if return_indices_ranked_by is None:
         bissues = np.zeros(y_one.shape).astype(bool)
     else:
@@ -559,14 +552,14 @@ def _find_multilabel_issues_per_class(
             confident_joint = None
         elif confident_joint_shape != (num_classes, 2, 2):
             raise ValueError("confident_joint should be of shape (num_classes, 2, 2)")
-    for class_num in range(0, num_classes):
-        pred_probabilitites = _binarize_pred_probs_slice(pred_probs, class_num)
+    for class_num, (label, pred_prob) in enumerate(zip(y_one.T, pred_probs.T)):
+        pred_probabilitites = stack_complement(pred_prob)
         if confident_joint is None:
             conf = None
         else:
             conf = confident_joint[class_num]
         binary_label_issues = find_label_issues(
-            labels=y_one[:, class_num],
+            labels=label,
             pred_probs=pred_probabilitites,
             return_indices_ranked_by=return_indices_ranked_by,
             frac_noise=frac_noise,
@@ -584,7 +577,7 @@ def _find_multilabel_issues_per_class(
             bissues[:, class_num] = binary_label_issues
         else:
             label_issues_list.append(binary_label_issues)
-            labels_list.append(y_one[:, class_num])
+            labels_list.append(label)
             pred_probs_list.append(pred_probabilitites)
     if return_indices_ranked_by is None:
         return bissues
@@ -741,18 +734,12 @@ def _find_predicted_neq_given_multilabel(labels, pred_probs) -> np.ndarray:
        labeled with high confidence.
 
     """
-    try:
-        y_one = int2onehot(labels)
-    except TypeError:
-        raise ValueError(
-            "wrong format for labels, should be a list of list[indices], please check the documentation in find_label_issues for further information"
-        )
-    num_classes = get_num_classes(labels=labels, pred_probs=pred_probs)
+    y_one, num_classes = get_onehot_num_classes(labels, pred_probs)
     pred_neq: np.ndarray = np.zeros(y_one.shape).astype(bool)
-    for class_num in range(num_classes):
-        pred_probabilitites = _binarize_pred_probs_slice(pred_probs, class_num)
+    for class_num, (label, pred_prob) in enumerate(zip(y_one.T, pred_probs.T)):
+        pred_probabilitites = stack_complement(pred_prob)
         pred_neq[:, class_num] = find_predicted_neq_given(
-            labels=y_one[:, class_num], pred_probs=pred_probabilitites
+            labels=label, pred_probs=pred_probabilitites
         )
     return pred_neq.sum(axis=1) >= 1
 
