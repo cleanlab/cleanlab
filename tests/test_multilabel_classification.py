@@ -24,7 +24,7 @@ from sklearn.multiclass import OneVsRestClassifier
 from sklearn.linear_model import LogisticRegression
 
 from cleanlab.internal import multilabel_scorer as ml_scorer
-from cleanlab.internal.multilabel_utils import stack_complement
+from cleanlab.internal.multilabel_utils import stack_complement, get_onehot_num_classes
 
 
 @pytest.fixture
@@ -177,6 +177,17 @@ def test_stack_complement():
     pred_probs_class = np.random.rand(100)
     pred_probs_extended = stack_complement(pred_probs_class)
     assert np.sum(pred_probs_extended, axis=1).all() == 1
+
+
+@pytest.mark.parametrize(
+    "pred_probs_test",
+    (None, pytest.lazy_fixture("pred_probs")),
+    ids=["Without probabilities", "With probabilities"],
+)
+def test_get_onehot_num_classes(labels, pred_probs_test):
+    labels_list = [np.nonzero(x)[0].tolist() for x in labels]
+    _, num_classes = get_onehot_num_classes(labels_list, pred_probs_test)
+    assert num_classes == 3
 
 
 def test_get_label_quality_scores_output(labels, pred_probs, scorer):
