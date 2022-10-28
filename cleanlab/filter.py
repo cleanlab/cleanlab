@@ -30,7 +30,7 @@ from cleanlab.count import calibrate_confident_joint
 from cleanlab.rank import (
     order_label_issues,
 )
-import cleanlab.internal.multilabel_scorer as mlutils
+import cleanlab.internal.multilabel_scorer as ml_scorer
 
 from cleanlab.internal.validation import assert_valid_inputs
 from cleanlab.internal.util import (
@@ -447,11 +447,11 @@ def _find_label_issues_multilabel(
         label_issues_list, labels_list, pred_probs_list = per_class_issues
         label_issues_idx = reduce(np.union1d, label_issues_list)
         y_one, num_classes = get_onehot_num_classes(labels, pred_probs)
-        label_quality_scores = mlutils.get_label_quality_scores(
+        label_quality_scores = ml_scorer.get_label_quality_scores(
             labels=y_one,
             pred_probs=pred_probs,
-            method=mlutils.MultilabelScorer(
-                base_scorer=mlutils.ClassLabelScorer.from_str(return_indices_ranked_by),
+            method=ml_scorer.MultilabelScorer(
+                base_scorer=ml_scorer.ClassLabelScorer.from_str(return_indices_ranked_by),
                 aggregator=np.mean,
             ),
             base_scorer_kwargs=rank_by_kwargs,

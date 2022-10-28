@@ -400,11 +400,11 @@ def get_label_quality_scores(
 
     Examples
     --------
-    >>> import cleanlab.internal.multilabel_utils as mlutils
+    >>> import cleanlab.internal.multilabel_utils as ml_scorer
     >>> import numpy as np
     >>> labels = np.array([[0, 1, 0], [1, 0, 1]])
     >>> pred_probs = np.array([[0.1, 0.9, 0.1], [0.4, 0.1, 0.9]])
-    >>> scores = mlutils.get_label_quality_scores(labels, pred_probs, method=mlutils.MultilabelScorer())
+    >>> scores = ml_scorer.get_label_quality_scores(labels, pred_probs, method=ml_scorer.MultilabelScorer())
     >>> scores
     array([0.9, 0.5])
 

@@ -23,7 +23,7 @@ import sklearn
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.linear_model import LogisticRegression
 
-from cleanlab.internal import multilabel_scorer as mlutils
+from cleanlab.internal import multilabel_scorer as ml_scorer
 from cleanlab.internal.multilabel_utils import stack_complement
 
 
@@ -98,11 +98,11 @@ def dummy_features(labels):
     return np.random.rand(labels.shape[0], 2)
 
 
-@pytest.mark.parametrize("base_scorer", [scorer for scorer in mlutils.ClassLabelScorer])
+@pytest.mark.parametrize("base_scorer", [scorer for scorer in ml_scorer.ClassLabelScorer])
 @pytest.mark.parametrize("aggregator", [np.min, np.max, np.mean])
 @pytest.mark.parametrize("strict", [True, False])
 def test_multilabel_scorer(base_scorer, aggregator, strict, labels, pred_probs):
-    scorer = mlutils.MultilabelScorer(base_scorer, aggregator, strict=strict)
+    scorer = ml_scorer.MultilabelScorer(base_scorer, aggregator, strict=strict)
     assert callable(scorer)
 
     test_scores = scorer(labels, pred_probs)
@@ -115,23 +115,23 @@ def test_multilabel_scorer(base_scorer, aggregator, strict, labels, pred_probs):
 )
 def test_class_label_scorer_from_str(method):
     for m in (method, method.upper()):
-        scorer = mlutils.ClassLabelScorer.from_str(m)
+        scorer = ml_scorer.ClassLabelScorer.from_str(m)
         assert callable(scorer)
         with pytest.raises(ValueError):
-            mlutils.ClassLabelScorer.from_str(m.replace("_", "-"))
+            ml_scorer.ClassLabelScorer.from_str(m.replace("_", "-"))
 
 
 @pytest.fixture
 def scorer():
-    return mlutils.MultilabelScorer(
-        base_scorer=mlutils.ClassLabelScorer.SELF_CONFIDENCE,
+    return ml_scorer.MultilabelScorer(
+        base_scorer=ml_scorer.ClassLabelScorer.SELF_CONFIDENCE,
         aggregator=np.min,
     )
 
 
 def test_is_multilabel(labels):
-    assert mlutils._is_multilabel(labels)
-    assert not mlutils._is_multilabel(labels[:, 0])
+    assert ml_scorer._is_multilabel(labels)
+    assert not ml_scorer._is_multilabel(labels[:, 0])
 
 
 @pytest.mark.parametrize(
@@ -145,7 +145,7 @@ def test_is_multilabel(labels):
     ids=["lists of ids", "lists of strings", "3d array", "scalar"],
 )
 def test_is_multilabel_is_false(input):
-    assert not mlutils._is_multilabel(input)
+    assert not ml_scorer._is_multilabel(input)
 
 
 def test_multilabel_scorer_extend_binary_pred_probs():
@@ -172,7 +172,7 @@ def test_multilabel_scorer_extend_binary_pred_probs():
 
 def test_get_label_quality_scores_output(labels, pred_probs, scorer):
     # Check that the function returns a dictionary with the correct keys.
-    scores = mlutils.get_label_quality_scores(labels, pred_probs, method=scorer)
+    scores = ml_scorer.get_label_quality_scores(labels, pred_probs, method=scorer)
     assert isinstance(scores, np.ndarray)
     assert scores.shape == (labels.shape[0],)
     assert np.all(scores >= 0) and np.all(scores <= 1)
@@ -201,7 +201,7 @@ def test_get_label_quality_scores_output(labels, pred_probs, scorer):
     ],
 )
 def test_multilabel_py(given_labels, expected):
-    py = mlutils.multilabel_py(given_labels)
+    py = ml_scorer.multilabel_py(given_labels)
     assert isinstance(py, np.ndarray)
     assert py.shape == (2 ** given_labels.shape[1],)
     assert np.isclose(py, expected).all()
@@ -213,7 +213,7 @@ def test_get_split_generator(cv, K):
     all_configurations = np.array(list(itertools.product([0, 1], repeat=K)))
     given_labels = np.repeat(all_configurations, 2, axis=0)
 
-    split_generator = mlutils._get_split_generator(given_labels, cv)
+    split_generator = ml_scorer._get_split_generator(given_labels, cv)
     assert isinstance(split_generator, typing.Generator)
 
     train, test = next(split_generator)
@@ -240,7 +240,7 @@ def test_get_split_generator_rare_configurations(cv, K):
     # Remove one configuration
     given_labels = given_labels[~np.all(given_labels == all_configurations[0], axis=1)]
 
-    split_generator = mlutils._get_split_generator(given_labels, cv)
+    split_generator = ml_scorer._get_split_generator(given_labels, cv)
     train, test = next(split_generator)
     train_labels, test_labels = given_labels[train], given_labels[test]
 
@@ -255,7 +255,7 @@ def test_get_split_generator_rare_configurations(cv, K):
     # Remove one instance from labels
     given_labels = given_labels[1:, :]
 
-    split_generator = mlutils._get_split_generator(given_labels, cv)
+    split_generator = ml_scorer._get_split_generator(given_labels, cv)
     train, test = next(split_generator)
     train_labels, test_labels = given_labels[train], given_labels[test]
 
@@ -269,7 +269,7 @@ def test_get_split_generator_rare_configurations(cv, K):
 
 def test_get_cross_validated_multilabel_pred_probs(dummy_features, labels, cv, pred_probs_gold):
     clf = OneVsRestClassifier(LogisticRegression(random_state=0))
-    pred_probs = mlutils.get_cross_validated_multilabel_pred_probs(
+    pred_probs = ml_scorer.get_cross_validated_multilabel_pred_probs(
         dummy_features,
         labels,
         clf=clf,
@@ -297,5 +297,5 @@ def test_exponential_moving_average(alpha):
         ],
         [1, 0.175, np.array([0.175, 0.475])],
     ):
-        ema = mlutils.exponential_moving_average(x, alpha=alpha)
+        ema = ml_scorer.exponential_moving_average(x, alpha=alpha)
         assert np.allclose(ema, expected_ema, atol=1e-4)
