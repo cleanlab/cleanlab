@@ -109,6 +109,17 @@ def test_multilabel_scorer(base_scorer, aggregator, strict, labels, pred_probs):
     assert isinstance(test_scores, np.ndarray)
     assert test_scores.shape == (labels.shape[0],)
 
+    # Test base_scorer_kwargs
+    base_scorer_kwargs = {"adjust_pred_probs": True}
+    if scorer.base_scorer is not ml_scorer.ClassLabelScorer.CONFIDENCE_WEIGHTED_ENTROPY:
+        test_scores = scorer(labels, pred_probs, base_scorer_kwargs=base_scorer_kwargs)
+        assert isinstance(test_scores, np.ndarray)
+        assert test_scores.shape == (labels.shape[0],)
+    else:
+        with pytest.raises(ValueError) as e:
+            scorer(labels, pred_probs, base_scorer_kwargs=base_scorer_kwargs)
+            assert "adjust_pred_probs is not currently supported for" in str(e)
+
 
 @pytest.mark.parametrize(
     "method", ["self_confidence", "normalized_margin", "confidence_weighted_entropy"]

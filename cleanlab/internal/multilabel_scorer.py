@@ -24,6 +24,7 @@ from typing import Callable, Optional, Union
 import numpy as np
 from sklearn.model_selection import cross_val_predict
 from cleanlab.internal.multilabel_utils import _is_multilabel, stack_complement
+from cleanlab.internal.label_quality_utils import _subtract_confident_thresholds
 from cleanlab.rank import (
     get_self_confidence_for_each_label,
     get_normalized_margin_for_each_label,
@@ -96,7 +97,21 @@ class ClassLabelScorer(Enum):
         >>> ClassLabelScorer.SELF_CONFIDENCE(labels, pred_probs)
         array([0.9 , 0.8 , 0.7 , 0.8 , 0.25, 0.9 ])
         """
-        return self.value(labels, pred_probs, **kwargs)
+        pred_probs = self._adjust_pred_probs(labels, pred_probs, **kwargs)
+        return self.value(labels, pred_probs)
+
+    def _adjust_pred_probs(
+        self, labels: np.ndarray, pred_probs: np.ndarray, **kwargs
+    ) -> np.ndarray:
+        """Returns adjusted predicted probabilities by subtracting the class confident thresholds and renormalizing.
+
+        This is used to adjust the predicted probabilities for the SELF_CONFIDENCE and NORMALIZED_MARGIN methods.
+        """
+        if kwargs.get("adjust_pred_probs", False) is True:
+            if self == ClassLabelScorer.CONFIDENCE_WEIGHTED_ENTROPY:
+                raise ValueError(f"adjust_pred_probs is not currently supported for {self}.")
+            pred_probs = _subtract_confident_thresholds(labels, pred_probs)
+        return pred_probs
 
     @classmethod
     def from_str(cls, method: str) -> "ClassLabelScorer":
