@@ -159,12 +159,10 @@ def test_is_multilabel_is_false(input):
     assert not ml_scorer._is_multilabel(input)
 
 
-def test_multilabel_scorer_extend_binary_pred_probs():
-    method = stack_complement
-
+def test_stack_complement():
     # Toy example
     pred_probs_class = np.array([0.1, 0.9, 0.3, 0.8])
-    pred_probs_extended = method(pred_probs_class)
+    pred_probs_extended = stack_complement(pred_probs_class)
     pred_probs_expected = np.array(
         [
             [0.9, 0.1],
@@ -177,7 +175,7 @@ def test_multilabel_scorer_extend_binary_pred_probs():
 
     # Check preservation of probabilities
     pred_probs_class = np.random.rand(100)
-    pred_probs_extended = method(pred_probs_class)
+    pred_probs_extended = stack_complement(pred_probs_class)
     assert np.sum(pred_probs_extended, axis=1).all() == 1
 
 
