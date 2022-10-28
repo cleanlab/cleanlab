@@ -18,7 +18,6 @@
 Helper functions used internally by multilabel utils.
 """
 
-
 import numpy as np
 
 from cleanlab.internal.util import get_num_classes, int2onehot
