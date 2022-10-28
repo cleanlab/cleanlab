@@ -15,7 +15,7 @@
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
 """
-Helper functions used internally by multilabel utils.
+Helper functions used internally for multi-label classification tasks.
 """
 
 import numpy as np
