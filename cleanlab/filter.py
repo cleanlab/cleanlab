@@ -34,7 +34,7 @@ import cleanlab.internal.multilabel_scorer as ml_scorer
 
 from cleanlab.internal.validation import assert_valid_inputs
 from cleanlab.internal.util import (
-    value_counts,
+    value_counts_fill_missing_classes,
     round_preserving_row_totals,
     get_num_classes,
 )
@@ -242,6 +242,7 @@ def find_label_issues(
     else:
         assert n_jobs >= 1
 
+<<<<<<< HEAD
     # Number of examples in each class of labels
     if multi_label:
         return _find_label_issues_multilabel(
@@ -260,10 +261,14 @@ def find_label_issues(
 
     else:
         label_counts = value_counts(labels)
+=======
+>>>>>>> 81c736f (Add support for missing classes.)
     # Number of classes
     K = get_num_classes(
         labels=labels, pred_probs=pred_probs, label_matrix=confident_joint, multi_label=multi_label
     )
+    # Number of examples in each class of labels
+    label_counts = value_counts_fill_missing_classes(labels, K, multi_label=multi_label)
     # Boolean set to true if dataset is large
     big_dataset = K * len(labels) > 1e8
     # Ensure labels are of type np.ndarray()

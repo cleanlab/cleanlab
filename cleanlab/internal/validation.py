@@ -25,13 +25,12 @@ import numpy as np
 import pandas as pd
 
 
-# TODO: remove allow_missing_classes once supported
 def assert_valid_inputs(
     X: DatasetLike,
     y: LabelLike,
     pred_probs: Optional[np.ndarray] = None,
     multi_label: bool = False,
-    allow_missing_classes: bool = False,
+    allow_missing_classes: bool = True,
 ) -> None:
     """Checks that ``X``, ``labels``, ``pred_probs`` are correctly formatted."""
     if not isinstance(y, (list, np.ndarray, np.generic, pd.Series, pd.DataFrame)):
@@ -80,35 +79,28 @@ def assert_valid_inputs(
         if len(pred_probs) != len(y):
             raise ValueError("pred_probs and labels must have same length.")
         if len(pred_probs.shape) != 2:
-            raise ValueError("pred_probs array must have shape: num_examples x num_classes.")
+            raise ValueError(
+                "pred_probs array must have shape: num_examples x num_classes."
+            )
         # Check for valid probabilities.
         if (np.min(pred_probs) < 0) or (np.max(pred_probs) > 1):
             raise ValueError("Values in pred_probs must be between 0 and 1.")
         if X is not None:
-            warnings.warn("When X and pred_probs are both provided, former may be ignored.")
-        # TODO: can remove this clause once missing classes are supported
-        if not allow_missing_classes and not multi_label:
-            num_unique_labels = len(np.unique(y))
-            if num_unique_labels != pred_probs.shape[1]:
-                raise ValueError(
-                    "All classes in (0,1,2,...,K-1) must be present in labels "
-                    f"with K = pred_probs.shape[1] = {pred_probs.shape[1]} in your case, "
-                    f"but your labels only contain {num_unique_labels} unique values."
-                )
+            warnings.warn(
+                "When X and pred_probs are both provided, the former may be ignored."
+            )
 
 
 def assert_valid_class_labels(
     y: np.ndarray,
     allow_missing_classes: bool = False,
 ) -> None:
-    """Checks that ``labels`` is properly formatted, i.e. a 1D array that is
-    zero-indexed (first label is 0) with all classes present (if ``allow_missing_classes is False``).
-    Assumes ``labels`` is a 1D numpy array (not multi-label).
+    """Checks that ``labels`` is properly formatted, i.e. a 1D numpy array where labels are zero-based
+    integers (not multi-label).
     """
     if y.ndim != 1:
         raise ValueError("labels must be 1D numpy array.")
 
-    # TODO: can remove this clause once missing classes are supported
     if not allow_missing_classes:
         unique_classes = np.unique(y)
         if len(unique_classes) < 2:
@@ -152,7 +144,7 @@ def assert_indexing_works(
         try:  # check if X is pytorch Dataset object using lazy import
             import torch
 
-            if isinstance(X, torch.utils.data.Dataset):  # special indexing for pytorch Dataset
+            if isinstance(X, torch.utils.data.Dataset):  # indexing for pytorch Dataset
                 _ = torch.utils.data.Subset(X, idx)  # type: ignore[call-overload]
                 is_indexed = True
         except Exception:
@@ -162,16 +154,14 @@ def assert_indexing_works(
             import tensorflow as tf
 
             if isinstance(X, tf.data.Dataset):
-                is_indexed = True  # skip check for tensorflow Dataset (too compute-intensive)
+                is_indexed = True  # skip check for tensorflow Dataset (too expensive)
         except Exception:
             pass
     if not is_indexed:
         try:
             _ = X[idx]  # type: ignore[call-overload]
         except Exception:
-            msg = (
-                "Data features X must support list-based indexing; i.e. one of these must work: \n"
-            )
+            msg = "Data features X must support list-based indexing; i.e. one of these must work: \n"
             msg += "1)  X[index_list] where say index_list = [0,1,3,10], or \n"
             msg += "2)  X.iloc[index_list] if X is pandas DataFrame."
             raise TypeError(msg)

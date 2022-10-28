@@ -22,7 +22,7 @@ Methods for estimating latent structures used for confident learning, including:
 * Latent inverse noise matrix characterizing the flipping process: `inv`: ``P(true label | given label)``
 * Latent `confident_joint`, an un-normalized matrix that counts the confident subset of label errors under the joint distribution for true/given label
 """
-
+import cleanlab.internal.util
 from sklearn.linear_model import LogisticRegression as LogReg
 from sklearn.model_selection import StratifiedKFold
 from sklearn.metrics import confusion_matrix
@@ -34,7 +34,7 @@ from typing import Tuple, Union, Optional
 from cleanlab.typing import LabelLike
 
 from cleanlab.internal.util import (
-    value_counts,
+    value_counts_fill_missing_classes,
     clip_values,
     clip_noise_rates,
     round_preserving_row_totals,
@@ -121,10 +121,15 @@ def num_label_issues(
     else:
         computed_confident_joint = confident_joint
 
+<<<<<<< HEAD
     assert isinstance(computed_confident_joint, np.ndarray)
 
     if estimation_method == "off_diagonal":
         num_issues: int = np.sum(computed_confident_joint) - np.trace(computed_confident_joint)
+=======
+    if estimation_method == "off_diagonal":
+        num_issues = np.sum(confident_joint) - np.trace(confident_joint)
+>>>>>>> 81c736f (Add support for missing classes.)
     elif estimation_method == "off_diagonal_calibrated":
         # Estimate_joint calibrates the row sums to match the prior distribution of given labels and normalizes to sum to 1
         joint = estimate_joint(labels, pred_probs, confident_joint=computed_confident_joint)
@@ -191,10 +196,15 @@ def calibrate_confident_joint(confident_joint, labels, *, multi_label=False) -> 
 
     """
 
+<<<<<<< HEAD
     if multi_label:
         return _calibrate_confident_joint_multilabel(confident_joint, labels)
     else:
         label_counts = value_counts(labels)
+=======
+    num_classes = len(confident_joint)
+    label_counts = value_counts_fill_missing_classes(labels, num_classes, multi_label=multi_label)
+>>>>>>> 81c736f (Add support for missing classes.)
     # Calibrate confident joint to have correct p(labels) prior on noisy labels.
     calibrated_cj = (confident_joint.T / confident_joint.sum(axis=1) * label_counts).T
     # Calibrate confident joint to sum to:
@@ -513,7 +523,11 @@ def compute_confident_joint(
     # true_labels_confident omits meaningless all-False rows
     true_labels_confident = true_label_guess[at_least_one_confident]
     labels_confident = labels[at_least_one_confident]
-    confident_joint = confusion_matrix(true_labels_confident, labels_confident).T
+    confident_joint = confusion_matrix(
+        y_true=true_labels_confident,
+        y_pred=labels_confident,
+        labels=range(pred_probs.shape[1]),
+    ).T
     # Guarantee at least one correctly labeled example is represented in every class
     np.fill_diagonal(confident_joint, confident_joint.diagonal().clip(min=1))
     if calibrate:
@@ -623,6 +637,7 @@ def estimate_latent(
     labels,
     *,
     py_method="cnt",
+    multi_label=False,
     converge_latent_estimates=False,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Computes the latent prior ``p(y)``, the noise matrix ``P(labels|y)`` and the
@@ -649,6 +664,16 @@ def estimate_latent(
       which works well even when the noise matrices are estimated poorly by using
       the matrix diagonals instead of all the probabilities.
 
+    multi_label : bool, optional
+      If ``True``, labels should be an iterable (e.g. list) of iterables, containing a
+      list of labels for each example, instead of just a single label.
+      The multi-label setting supports classification tasks where an example has 1 or more labels.
+      Example of a multi-labeled `labels` input: ``[[0,1], [1], [0,2], [0,1,2], [0], [1], ...]``.
+      The major difference in how this is calibrated versus single-label is that
+      the total number of errors considered is based on the number of labels,
+      not the number of examples. So, the calibrated `confident_joint` will sum
+      to the number of total labels.
+
     converge_latent_estimates : bool, optional
       If ``True``, forces numerical consistency of estimates. Each is estimated
       independently, but they are related mathematically with closed form
@@ -664,8 +689,10 @@ def estimate_latent(
     Multi-label classification is not supported in this method.
     """
 
+    num_classes = len(confident_joint)
     # 'ps' is p(labels=k)
-    ps = value_counts(labels) / float(len(labels))
+    label_counts = value_counts_fill_missing_classes(labels, num_classes, multi_label=multi_label)
+    ps = label_counts / np.sum(label_counts)
     # Number of training examples confidently counted from each noisy class
     labels_class_counts = confident_joint.sum(axis=1).astype(float)
     # Number of training examples confidently counted into each true class
@@ -706,6 +733,7 @@ def estimate_py_and_noise_matrices_from_probabilities(
     converge_latent_estimates=True,
     py_method="cnt",
     calibrate=True,
+    multi_label=False,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """Computes the confident counts
     estimate of latent variables `py` and the noise rates
@@ -764,6 +792,16 @@ def estimate_py_and_noise_matrices_from_probabilities(
       Calibrates confident joint estimate ``P(label=i, true_label=j)`` such that
       ``np.sum(cj) == len(labels)`` and ``np.sum(cj, axis = 1) == np.bincount(labels)``.
 
+    multi_label : bool, optional
+      If ``True``, labels should be an iterable (e.g. list) of iterables, containing a
+      list of labels for each example, instead of just a single label.
+      The multi-label setting supports classification tasks where an example has 1 or more labels.
+      Example of a multi-labeled `labels` input: ``[[0,1], [1], [0,2], [0,1,2], [0], [1], ...]``.
+      The major difference in how this is calibrated versus single-label is that
+      the total number of errors considered is based on the number of labels,
+      not the number of examples. So, the calibrated `confident_joint` will sum
+      to the number of total labels.
+
     Returns
     ------
     estimates : tuple
@@ -779,11 +817,13 @@ def estimate_py_and_noise_matrices_from_probabilities(
         pred_probs=pred_probs,
         thresholds=thresholds,
         calibrate=calibrate,
+        multi_label=multi_label,
     )
     py, noise_matrix, inv_noise_matrix = estimate_latent(
         confident_joint=confident_joint,
         labels=labels,
         py_method=py_method,
+        multi_label=multi_label,
         converge_latent_estimates=converge_latent_estimates,
     )
     assert isinstance(confident_joint, np.ndarray)
@@ -798,6 +838,7 @@ def estimate_confident_joint_and_cv_pred_proba(
     *,
     cv_n_folds=5,
     thresholds=None,
+    multi_label=False,
     seed=None,
     calibrate=True,
     clf_kwargs={},
@@ -856,6 +897,16 @@ def estimate_confident_joint_and_cv_pred_proba(
       k. This is not used for pruning/filtering, only for estimating the
       noise rates using confident counts.
 
+    multi_label : bool, optional
+      If ``True``, labels should be an iterable (e.g. list) of iterables, containing a
+      list of labels for each example, instead of just a single label.
+      The multi-label setting supports classification tasks where an example has 1 or more labels.
+      Example of a multi-labeled `labels` input: ``[[0,1], [1], [0,2], [0,1,2], [0], [1], ...]``.
+      The major difference in how this is calibrated versus single-label is that
+      the total number of errors considered is based on the number of labels,
+      not the number of examples. So, the calibrated `confident_joint` will sum
+      to the number of total labels.
+
     seed : int, optional
         Set the default state of the random number generator used to split
         the cross-validated folds. If None, uses np.random current random state.
@@ -880,7 +931,8 @@ def estimate_confident_joint_and_cv_pred_proba(
     assert_valid_inputs(X, labels)
     labels = labels_to_array(labels)
     num_classes = get_num_classes(
-        labels=labels
+        labels=labels,
+        multi_label=multi_label,  # TODO: add multi_label thoughout and fix comment below)
     )  # This method definitely only works if all classes are present.
 
     # Create cross-validation object for out-of-sample predicted probabilities.
@@ -923,6 +975,7 @@ def estimate_confident_joint_and_cv_pred_proba(
                     "Duplicated some data across multiple folds to ensure training does not fail "
                     f"because these classes do not have enough data for proper cross-validation: {missing_classes}."
                 )
+                # TODO: might need to redo this part now given this PR
                 for missing_class in missing_classes:
                     # Duplicate one instance of missing_class from holdout data to the training data:
                     holdout_inds = np.where(s_holdout_cv == missing_class)[0]
@@ -961,6 +1014,7 @@ def estimate_confident_joint_and_cv_pred_proba(
         pred_probs=pred_probs,  # P(labels = k|x)
         thresholds=thresholds,
         calibrate=calibrate,
+        multi_label=multi_label,
     )
     assert isinstance(confident_joint, np.ndarray)
     assert isinstance(pred_probs, np.ndarray)
@@ -977,6 +1031,7 @@ def estimate_py_noise_matrices_and_cv_pred_proba(
     thresholds=None,
     converge_latent_estimates=False,
     py_method="cnt",
+    multi_label=False,
     seed=None,
     clf_kwargs={},
     validation_func=None,
@@ -1036,6 +1091,16 @@ def estimate_py_noise_matrices_and_cv_pred_proba(
       works well even when the noise matrices are estimated poorly by using
       the matrix diagonals instead of all the probabilities.
 
+    multi_label : bool, optional
+      If ``True``, labels should be an iterable (e.g. list) of iterables, containing a
+      list of labels for each example, instead of just a single label.
+      The multi-label setting supports classification tasks where an example has 1 or more labels.
+      Example of a multi-labeled `labels` input: ``[[0,1], [1], [0,2], [0,1,2], [0], [1], ...]``.
+      The major difference in how this is calibrated versus single-label is that
+      the total number of errors considered is based on the number of labels,
+      not the number of examples. So, the calibrated `confident_joint` will sum
+      to the number of total labels.
+
     seed : int, optional
       Set the default state of the random number generator used to split
       the cross-validated folds. If ``None``, uses ``np.random`` current random state.
@@ -1059,6 +1124,7 @@ def estimate_py_noise_matrices_and_cv_pred_proba(
         clf=clf,
         cv_n_folds=cv_n_folds,
         thresholds=thresholds,
+        multi_label=multi_label,
         seed=seed,
         clf_kwargs=clf_kwargs,
         validation_func=validation_func,
@@ -1068,6 +1134,7 @@ def estimate_py_noise_matrices_and_cv_pred_proba(
         confident_joint=confident_joint,
         labels=labels,
         py_method=py_method,
+        multi_label=multi_label,
         converge_latent_estimates=converge_latent_estimates,
     )
 
@@ -1080,6 +1147,7 @@ def estimate_cv_predicted_probabilities(
     clf=LogReg(multi_class="auto", solver="lbfgs"),
     *,
     cv_n_folds=5,
+    multi_label=False,
     seed=None,
     clf_kwargs={},
     validation_func=None,
@@ -1108,6 +1176,16 @@ def estimate_cv_predicted_probabilities(
       The number of cross-validation folds used to compute
       out-of-sample probabilities for each example in `X`.
 
+    multi_label : bool, optional
+      If ``True``, labels should be an iterable (e.g. list) of iterables, containing a
+      list of labels for each example, instead of just a single label.
+      The multi-label setting supports classification tasks where an example has 1 or more labels.
+      Example of a multi-labeled `labels` input: ``[[0,1], [1], [0,2], [0,1,2], [0], [1], ...]``.
+      The major difference in how this is calibrated versus single-label is that
+      the total number of errors considered is based on the number of labels,
+      not the number of examples. So, the calibrated `confident_joint` will sum
+      to the number of total labels.
+
     seed : int, optional
       Set the default state of the random number generator used to split
       the cross-validated folds. If ``None``, uses ``np.random`` current random state.
@@ -1132,6 +1210,7 @@ def estimate_cv_predicted_probabilities(
         labels=labels,
         clf=clf,
         cv_n_folds=cv_n_folds,
+        multi_label=multi_label,
         seed=seed,
         clf_kwargs=clf_kwargs,
         validation_func=validation_func,
@@ -1146,6 +1225,7 @@ def estimate_noise_matrices(
     cv_n_folds=5,
     thresholds=None,
     converge_latent_estimates=True,
+    multi_label=False,
     seed=None,
     clf_kwargs={},
     validation_func=None,
@@ -1194,6 +1274,16 @@ def estimate_noise_matrices(
       independently, but they are related mathematically with closed form
       equivalences. This will iteratively make them mathematically consistent.
 
+    multi_label : bool, optional
+      If ``True``, labels should be an iterable (e.g. list) of iterables, containing a
+      list of labels for each example, instead of just a single label.
+      The multi-label setting supports classification tasks where an example has 1 or more labels.
+      Example of a multi-labeled `labels` input: ``[[0,1], [1], [0,2], [0,1,2], [0], [1], ...]``.
+      The major difference in how this is calibrated versus single-label is that
+      the total number of errors considered is based on the number of labels,
+      not the number of examples. So, the calibrated `confident_joint` will sum
+      to the number of total labels.
+
     seed : int, optional
         Set the default state of the random number generator used to split
         the cross-validated folds. If None, uses np.random current random state.
@@ -1217,6 +1307,7 @@ def estimate_noise_matrices(
         cv_n_folds=cv_n_folds,
         thresholds=thresholds,
         converge_latent_estimates=converge_latent_estimates,
+        multi_label=multi_label,
         seed=seed,
         clf_kwargs=clf_kwargs,
         validation_func=validation_func,
@@ -1343,11 +1434,21 @@ def get_confident_thresholds(
     confident_thresholds : np.ndarray
       An array of shape ``(K, )`` where K is the number of classes."""
 
-    # Assumes all classes are represented in labels: [0, 1, 2, ... num_classes - 1]
-    unique_classes = range(
-        get_num_classes(labels=labels, pred_probs=pred_probs, multi_label=multi_label)
+    all_classes = range(pred_probs.shape[1])
+    unique_classes = (
+        np.unique([l for lst in labels for l in lst]) if multi_label else np.unique(labels)
     )
+    # labels must be a valid np.ndarray.
+    labels = cleanlab.internal.validation.labels_to_array(labels)
+    # When all_classes != unique_classes the class threshold for the missing classes is set to
+    # BIG_VALUE such that no valid prob >= BIG_VALUE (no example will be counted in missing classes)
+    # REQUIRES: pred_probs.max() >= 1
+    # TODO: if you want this to work for arbitrary softmax outputs where pred_probs.max()
+    #  may exceed 1, change BIG_VALUE = 2 --> BIG_VALUE = 2 * pred_probs.max(). Downside of
+    #  this approach is that there will be no standard value returned for missing classes.
+    BIG_VALUE = 2
     if multi_label:
+<<<<<<< HEAD
         return _get_confident_thresholds_multilabel(labels=labels, pred_probs=pred_probs)
     else:
         confident_thresholds = np.array(
@@ -1384,3 +1485,18 @@ def _get_confident_thresholds_multilabel(
             pred_probs=pred_probabilitites, labels=labels
         )
     return confident_thresholds
+=======
+        # Compute thresholds = p(label=k | k in set of given labels)
+        k_in_l = {k: [k in lst for lst in labels] for k in unique_classes}
+        # The avg probability of class given that the label is represented.
+        confident_thresholds = [
+            np.mean(pred_probs[:, k][k_in_l[k]]) if k in unique_classes else BIG_VALUE
+            for k in all_classes
+        ]
+    else:
+        confident_thresholds = [
+            np.mean(pred_probs[:, k][labels == k]) if k in unique_classes else BIG_VALUE
+            for k in all_classes
+        ]
+    return np.array(confident_thresholds)
+>>>>>>> 81c736f (Add support for missing classes.)
