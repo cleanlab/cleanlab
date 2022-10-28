@@ -11,6 +11,7 @@ experimental
    :show-inheritance:
 
 .. toctree::
+    datalab/index
     keras
     fasttext
     mnist_pytorch
