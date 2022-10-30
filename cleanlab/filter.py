@@ -390,6 +390,7 @@ def find_label_issues(
         label_issues_mask = find_predicted_neq_given(labels, pred_probs, multi_label=multi_label)
 
     # Remove label issues if given label == model prediction
+    # TODO: consider use of _multiclass_crossval_predict() here
     pred = pred_probs.argmax(axis=1)
     for i, pred_label in enumerate(pred):
         if pred_label == labels[i]:
@@ -975,6 +976,7 @@ def _prune_by_count(k: int, args=None) -> np.ndarray:
     return label_issues_mask
 
 
+# TODO: move to utils
 def _multiclass_crossval_predict(labels, pred_probs) -> np.ndarray:
     """Returns a numpy 2D array of one-hot encoded
     multiclass predictions. Each row in the array
