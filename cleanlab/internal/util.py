@@ -264,6 +264,7 @@ def round_preserving_row_totals(confident_joint) -> np.ndarray:
     ).astype(int)
 
 
+# TODO: move to multilabel_utils.py
 def int2onehot(labels, K) -> np.ndarray:
     """Convert list of lists to a onehot matrix for multi-labels
 
@@ -282,6 +283,7 @@ def int2onehot(labels, K) -> np.ndarray:
     return mlb.fit_transform(labels)
 
 
+# TODO: move to multilabel_utils.py
 def onehot2int(onehot_matrix) -> list:
     """Convert a onehot matrix for multi-labels to a list of lists of ints
 

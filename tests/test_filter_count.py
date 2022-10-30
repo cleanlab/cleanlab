@@ -117,7 +117,8 @@ def make_multilabel_data(
     seed=1,
 ):
     np.random.seed(seed=seed)
-    m = len(means) + len(
+    num_classes = len(means)
+    m = num_classes + len(
         box_multilabels
     )  # number of classes by treating each multilabel as 1 unique label
     n = sum(sizes)
@@ -172,7 +173,7 @@ def make_multilabel_data(
     ps = np.bincount(labels_idx) / float(len(labels_idx))
     inv = compute_inv_noise_matrix(py, noise_matrix, ps=ps)
 
-    y_train = int2onehot(noisy_labels)
+    y_train = int2onehot(noisy_labels, K=num_classes)
     clf = MultiOutputClassifier(LogisticRegression())
     pyi = cross_val_predict(clf, X_train, y_train, method="predict_proba")
     pred_probs = np.zeros(y_train.shape)
@@ -310,7 +311,7 @@ def test_calibrate_joint_multilabel():
         labels=dataset["labels"],
         multi_label=True,
     )
-    y_one = int2onehot(dataset["labels"])
+    y_one = int2onehot(dataset["labels"], K=dataset["pred_probs"].shape[1])
     # Check calibration
     for class_num in range(0, len(calibrated_cj)):
         label_counts = np.bincount(y_one[:, class_num])

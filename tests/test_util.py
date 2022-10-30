@@ -79,8 +79,9 @@ def test_round_preserving_sum():
 
 
 def test_one_hot():
+    num_classes = 4
     labels = [[0], [0, 1], [0, 1], [2], [0, 2, 3]]
-    assert onehot2int(int2onehot(labels)) == labels
+    assert onehot2int(int2onehot(labels, K=num_classes)) == labels
 
 
 def test_num_unique():

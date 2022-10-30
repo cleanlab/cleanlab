@@ -242,7 +242,6 @@ def find_label_issues(
     else:
         assert n_jobs >= 1
 
-    # Number of examples in each class of labels
     if multi_label:
         return _find_label_issues_multilabel(
             labels,
@@ -258,10 +257,7 @@ def find_label_issues(
             verbose,
         )
 
-    else:
-        label_counts = value_counts(labels)
-
-    # Number of classes
+    # Else this is standard multi-class classification
     K = get_num_classes(
         labels=labels, pred_probs=pred_probs, label_matrix=confident_joint, multi_label=multi_label
     )

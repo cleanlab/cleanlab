@@ -1359,7 +1359,7 @@ def get_confident_thresholds(
     confident_thresholds : np.ndarray
       An array of shape ``(K, )`` where K is the number of classes."""
 
-    labels = cleanlab.internal.validation.labels_to_array(labels)
+    labels = labels_to_array(labels)
     all_classes = range(pred_probs.shape[1])
     unique_classes = get_unique_classes(labels)
     BIG_VALUE = 2
