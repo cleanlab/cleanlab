@@ -34,15 +34,17 @@ from typing import Tuple, Union, Optional
 from cleanlab.typing import LabelLike
 
 from cleanlab.internal.util import (
-    value_counts,
+    value_counts_fill_missing_classes,
     clip_values,
     clip_noise_rates,
     round_preserving_row_totals,
     append_extra_datapoint,
     train_val_split,
     get_num_classes,
+    get_unique_classes,
     is_torch_dataset,
     is_tensorflow_dataset,
+    TINY_VALUE,
 )
 from cleanlab.internal.multilabel_utils import stack_complement, get_onehot_num_classes
 
@@ -194,13 +196,22 @@ def calibrate_confident_joint(confident_joint, labels, *, multi_label=False) -> 
     if multi_label:
         return _calibrate_confident_joint_multilabel(confident_joint, labels)
     else:
-        label_counts = value_counts(labels)
+        num_classes = len(confident_joint)
+        label_counts = value_counts_fill_missing_classes(labels, num_classes, multi_label=False)
     # Calibrate confident joint to have correct p(labels) prior on noisy labels.
-    calibrated_cj = (confident_joint.T / confident_joint.sum(axis=1) * label_counts).T
+    calibrated_cj = (
+        confident_joint.T
+        / np.clip(confident_joint.sum(axis=1), a_min=TINY_VALUE, a_max=None)
+        * label_counts
+    ).T
     # Calibrate confident joint to sum to:
     # The number of examples (for single labeled datasets)
     # The number of total labels (for multi-labeled datasets)
-    calibrated_cj = calibrated_cj / np.sum(calibrated_cj) * sum(label_counts)
+    calibrated_cj = (
+        calibrated_cj
+        / np.clip(np.sum(calibrated_cj), a_min=TINY_VALUE, a_max=None)
+        * sum(label_counts)
+    )
     return round_preserving_row_totals(calibrated_cj)
 
 
@@ -308,7 +319,7 @@ def estimate_joint(labels, pred_probs, *, confident_joint=None, multi_label=Fals
             labels=labels, pred_probs=pred_probs, confident_joint=confident_joint
         )
     else:
-        return calibrated_cj / float(np.sum(calibrated_cj))
+        return calibrated_cj / np.clip(float(np.sum(calibrated_cj)), a_min=TINY_VALUE, a_max=None)
 
 
 def _estimate_joint_multilabel(labels, pred_probs, *, confident_joint=None) -> np.ndarray:
@@ -513,8 +524,11 @@ def compute_confident_joint(
     # true_labels_confident omits meaningless all-False rows
     true_labels_confident = true_label_guess[at_least_one_confident]
     labels_confident = labels[at_least_one_confident]
-    confident_joint = confusion_matrix(true_labels_confident, labels_confident).T
-    # Guarantee at least one correctly labeled example is represented in every class
+    confident_joint = confusion_matrix(
+        y_true=true_labels_confident,
+        y_pred=labels_confident,
+        labels=range(pred_probs.shape[1]),
+    ).T  # Guarantee at least one correctly labeled example is represented in every class
     np.fill_diagonal(confident_joint, confident_joint.diagonal().clip(min=1))
     if calibrate:
         confident_joint = calibrate_confident_joint(confident_joint, labels)
@@ -664,16 +678,20 @@ def estimate_latent(
     Multi-label classification is not supported in this method.
     """
 
+    num_classes = len(confident_joint)
+    label_counts = value_counts_fill_missing_classes(labels, num_classes)
     # 'ps' is p(labels=k)
-    ps = value_counts(labels) / float(len(labels))
+    ps = label_counts / float(len(labels))
     # Number of training examples confidently counted from each noisy class
     labels_class_counts = confident_joint.sum(axis=1).astype(float)
     # Number of training examples confidently counted into each true class
     true_labels_class_counts = confident_joint.sum(axis=0).astype(float)
     # p(label=k_s|true_label=k_y) ~ |label=k_s and true_label=k_y| / |true_label=k_y|
-    noise_matrix = confident_joint / true_labels_class_counts
+    noise_matrix = confident_joint / np.clip(true_labels_class_counts, a_min=TINY_VALUE, a_max=None)
     # p(true_label=k_y|label=k_s) ~ |true_label=k_y and label=k_s| / |label=k_s|
-    inv_noise_matrix = confident_joint.T / labels_class_counts
+    inv_noise_matrix = confident_joint.T / np.clip(
+        labels_class_counts, a_min=TINY_VALUE, a_max=None
+    )
     # Compute the prior p(y), the latent (uncorrupted) class distribution.
     py = compute_py(
         ps,
@@ -875,7 +893,12 @@ def estimate_confident_joint_and_cv_pred_proba(
     ------
     estimates : tuple
       Tuple of two numpy arrays in the form:
-      (joint counts matrix, predicted probability matrix)"""
+      (joint counts matrix, predicted probability matrix)
+
+    Note
+    ----
+    Multi-label classification is not supported in this method.
+    """
 
     assert_valid_inputs(X, labels)
     labels = labels_to_array(labels)
@@ -1051,6 +1074,10 @@ def estimate_py_noise_matrices_and_cv_pred_proba(
     ------
     estimates: tuple
       A tuple of five arrays (py, noise matrix, inverse noise matrix, confident joint, predicted probability matrix).
+
+    Note
+    ----
+    Multi-label classification is not supported in this method.
     """
 
     confident_joint, pred_probs = estimate_confident_joint_and_cv_pred_proba(
@@ -1343,17 +1370,24 @@ def get_confident_thresholds(
     confident_thresholds : np.ndarray
       An array of shape ``(K, )`` where K is the number of classes."""
 
-    # Assumes all classes are represented in labels: [0, 1, 2, ... num_classes - 1]
-    unique_classes = range(
-        get_num_classes(labels=labels, pred_probs=pred_probs, multi_label=multi_label)
-    )
+    labels = labels_to_array(labels)
+    all_classes = range(pred_probs.shape[1])
+    unique_classes = get_unique_classes(labels)
+    BIG_VALUE = 2
     if multi_label:
         return _get_confident_thresholds_multilabel(labels=labels, pred_probs=pred_probs)
     else:
-        confident_thresholds = np.array(
-            [np.mean(pred_probs[:, k][labels == k]) for k in unique_classes]
-        )
-    return confident_thresholds
+        # When all_classes != unique_classes the class threshold for the missing classes is set to
+        # BIG_VALUE such that no valid prob >= BIG_VALUE (no example will be counted in missing classes)
+        # REQUIRES: pred_probs.max() >= 1
+        # TODO: if you want this to work for arbitrary softmax outputs where pred_probs.max()
+        #  may exceed 1, change BIG_VALUE = 2 --> BIG_VALUE = 2 * pred_probs.max(). Downside of
+        #  this approach is that there will be no standard value returned for missing classes.
+        confident_thresholds = [
+            np.mean(pred_probs[:, k][labels == k]) if k in unique_classes else BIG_VALUE
+            for k in all_classes
+        ]
+        return np.array(confident_thresholds)
 
 
 def _get_confident_thresholds_multilabel(
