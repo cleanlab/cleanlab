@@ -741,7 +741,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         else:
             label_matrix = inverse_noise_matrix
         self.num_classes = get_num_classes(labels, pred_probs, label_matrix)
-        if len(labels) / self.num_classes < self.cv_n_folds:
+        if (pred_probs is None) and (len(labels) / self.num_classes < self.cv_n_folds):
             raise ValueError(
                 "Need more data from each class for cross-validation. "
                 "Try decreasing cv_n_folds (eg. to 2 or 3) in CleanLearning()"

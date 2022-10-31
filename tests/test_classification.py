@@ -774,3 +774,22 @@ def test_cj_in_find_label_issues_kwargs(filter_by, seed):
     # Chceck that the same exact number of issues are found regardless if the confident joint
     # is computed during find_label_issues or precomputed and provided as a kwargs parameter.
     assert num_issues[0] == num_issues[1]
+
+
+def test_find_issues_missing_classes():
+    labels = np.array([0, 0, 2, 2])
+    pred_probs = np.array(
+        [[0.9, 0.0, 0.1, 0.0], [0.8, 0.0, 0.2, 0.0], [0.1, 0.0, 0.9, 0.0], [0.95, 0.0, 0.05, 0.0]]
+    )
+    issues_df = CleanLearning(
+        find_label_issues_kwargs={"min_examples_per_class": 0}
+    ).find_label_issues(labels=labels, pred_probs=pred_probs)
+    issues = issues_df["is_label_issue"].values
+    assert np.all(issues == np.array([False, False, False, True]))
+    # Check results match without these missing classes present in pred_probs:
+    pred_probs2 = pred_probs[:, list(sorted(np.unique(labels)))]
+    labels2 = np.array([0, 0, 1, 1])
+    issues_df2 = CleanLearning(
+        find_label_issues_kwargs={"min_examples_per_class": 0}
+    ).find_label_issues(labels=labels2, pred_probs=pred_probs2)
+    assert all(issues_df2["is_label_issue"].values == issues)
