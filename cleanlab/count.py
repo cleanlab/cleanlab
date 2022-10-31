@@ -1063,7 +1063,7 @@ def estimate_py_noise_matrices_and_cv_pred_proba(
     ------
     estimates: tuple
       A tuple of five arrays (py, noise matrix, inverse noise matrix, confident joint, predicted probability matrix).
-    
+
     Note
     ----
     Multi-label classification is not supported in this method.

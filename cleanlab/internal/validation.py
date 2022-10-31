@@ -79,16 +79,12 @@ def assert_valid_inputs(
         if len(pred_probs) != len(y):
             raise ValueError("pred_probs and labels must have same length.")
         if len(pred_probs.shape) != 2:
-            raise ValueError(
-                "pred_probs array must have shape: num_examples x num_classes."
-            )
+            raise ValueError("pred_probs array must have shape: num_examples x num_classes.")
         # Check for valid probabilities.
         if (np.min(pred_probs) < 0) or (np.max(pred_probs) > 1):
             raise ValueError("Values in pred_probs must be between 0 and 1.")
         if X is not None:
-            warnings.warn(
-                "When X and pred_probs are both provided, the former may be ignored."
-            )
+            warnings.warn("When X and pred_probs are both provided, the former may be ignored.")
 
 
 def assert_valid_class_labels(
@@ -161,7 +157,9 @@ def assert_indexing_works(
         try:
             _ = X[idx]  # type: ignore[call-overload]
         except Exception:
-            msg = "Data features X must support list-based indexing; i.e. one of these must work: \n"
+            msg = (
+                "Data features X must support list-based indexing; i.e. one of these must work: \n"
+            )
             msg += "1)  X[index_list] where say index_list = [0,1,3,10], or \n"
             msg += "2)  X.iloc[index_list] if X is pandas DataFrame."
             raise TypeError(msg)

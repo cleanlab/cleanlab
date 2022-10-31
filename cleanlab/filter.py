@@ -994,8 +994,13 @@ def _multiclass_crossval_predict(labels, pred_probs) -> np.ndarray:
         `pred_probs` should have been computed using 3 (or higher) fold cross-validation."""
 
     from sklearn.metrics import f1_score
+
     boundaries = np.arange(0.05, 0.9, 0.05)
-    K = get_num_classes(labels=labels, pred_probs=pred_probs, multi_label=True,)
+    K = get_num_classes(
+        labels=labels,
+        pred_probs=pred_probs,
+        multi_label=True,
+    )
     labels_one_hot = int2onehot(labels, K)
     f1s = [
         f1_score(
