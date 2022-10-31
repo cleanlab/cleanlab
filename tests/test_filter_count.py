@@ -825,10 +825,18 @@ def test_removing_class_consistent_results():
     # Note that only one label is class 1 (we're going to change it to class 2 later...)
     labels = np.array([0, 0, 0, 0, 1, 2, 2, 2])
     # Third example is a label error
-    pred_probs = np.array([
-        [0.9, 0.1, 0.0], [0.8, 0.1, 0.1], [0.1, 0.0, 0.9], [0.9, 0.0, 0.1],
-        [0.1, 0.3, 0.6], [0.1, 0.0, 0.9], [0.1, 0.0, 0.9], [0.1, 0.0, 0.9],
-    ])
+    pred_probs = np.array(
+        [
+            [0.9, 0.1, 0.0],
+            [0.8, 0.1, 0.1],
+            [0.1, 0.0, 0.9],
+            [0.9, 0.0, 0.1],
+            [0.1, 0.3, 0.6],
+            [0.1, 0.0, 0.9],
+            [0.1, 0.0, 0.9],
+            [0.1, 0.0, 0.9],
+        ]
+    )
     cj_with1 = count.compute_confident_joint(labels, pred_probs)
     issues_with1 = filter.find_label_issues(labels, pred_probs)
 
@@ -837,14 +845,20 @@ def test_removing_class_consistent_results():
     issues_no1 = filter.find_label_issues(labels, pred_probs)
 
     assert np.all(issues_with1 == issues_no1)
-    assert np.all(cj_with1 == [
-        [3, 0, 1],
-        [0, 1, 0],
-        [0, 0, 3],
-    ])
+    assert np.all(
+        cj_with1
+        == [
+            [3, 0, 1],
+            [0, 1, 0],
+            [0, 0, 3],
+        ]
+    )
     # Check that the 1, 1 entry goes away and moves to 2, 2 (since we changed label 1 to 2)
-    assert np.all(cj_no1 == [
-        [3, 0, 1],
-        [0, 0, 0],
-        [0, 0, 4],
-    ])
+    assert np.all(
+        cj_no1
+        == [
+            [3, 0, 1],
+            [0, 0, 0],
+            [0, 0, 4],
+        ]
+    )

@@ -37,6 +37,7 @@ from cleanlab.internal.util import (
     value_counts_fill_missing_classes,
     round_preserving_row_totals,
     get_num_classes,
+    int2onehot,
 )
 from cleanlab.internal.multilabel_utils import stack_complement, get_onehot_num_classes
 
@@ -972,8 +973,8 @@ def _prune_by_count(k: int, args=None) -> np.ndarray:
     return label_issues_mask
 
 
-# TODO: move to utils
-def _multiclass_crossval_predict(labels, pred_probs) -> np.ndarray:
+# TODO: decide if we want to keep this based on TODO above. If so move to utils. Add unit test for this.
+def _multiclass_crossval_predict(labels, pred_probs) -> np.ndarray:  # pragma: no cover
     """Returns a numpy 2D array of one-hot encoded
     multiclass predictions. Each row in the array
     provides the predictions for a particular example.
