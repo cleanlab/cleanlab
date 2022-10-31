@@ -3,7 +3,8 @@
 from cleanlab.internal import util
 import numpy as np
 
-from cleanlab.internal.util import onehot2int, int2onehot, num_unique_classes, format_labels
+from cleanlab.internal.util import num_unique_classes, format_labels
+from cleanlab.internal.multilabel_utils import int2onehot, onehot2int
 from cleanlab.internal.validation import assert_valid_class_labels
 
 noise_matrix = np.array([[1.0, 0.0, 0.2], [0.0, 0.7, 0.2], [0.0, 0.3, 0.6]])
