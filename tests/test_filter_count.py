@@ -895,3 +895,48 @@ def test_removing_class_consistent_results():
             [0, 0, 4],
         ]
     )
+
+
+def test_estimate_py_and_noise_matrices_missing_classes():
+    labels = np.array([0, 0, 2, 2])
+    pred_probs = np.array(
+        [[0.9, 0.0, 0.1, 0.0], [0.8, 0.0, 0.2, 0.0], [0.1, 0.0, 0.9, 0.0], [0.95, 0.0, 0.05, 0.0]]
+    )
+    (
+        py,
+        noise_matrix,
+        inverse_noise_matrix,
+        confident_joint,
+    ) = estimate_py_and_noise_matrices_from_probabilities(labels, pred_probs)
+    # check results with pred-prob on missing classes = 0 match results without these missing classes in pred_probs
+    present_classes = list(sorted(np.unique(labels)))
+    pred_probs2 = pred_probs[:, present_classes]
+    labels2 = np.array([0, 0, 1, 1])
+    (
+        py2,
+        noise_matrix2,
+        inverse_noise_matrix2,
+        confident_joint2,
+    ) = estimate_py_and_noise_matrices_from_probabilities(labels2, pred_probs2)
+    # These may be slightly off due to clipping to prevent division by 0:
+    assert (np.isclose(py[present_classes], py2, atol=1e-5)).all()
+    assert (
+        np.isclose(confident_joint[np.ix_(present_classes, present_classes)], confident_joint2)
+    ).all()
+    assert (np.isclose(noise_matrix[np.ix_(present_classes, present_classes)], noise_matrix2)).all()
+    assert (
+        np.isclose(
+            inverse_noise_matrix[np.ix_(present_classes, present_classes)], inverse_noise_matrix2
+        )
+    ).all()
+
+    # check this still works with nonzero pred_prob on missing class
+    pred_probs3 = np.array(
+        [
+            [0.9, 0.1, 0.0, 0.0],
+            [0.8, 0.1, 0.1, 0.0],
+            [0.1, 0.0, 0.9, 0.0],
+            [0.9, 0.025, 0.025, 0.05],
+        ]
+    )
+    _ = estimate_py_and_noise_matrices_from_probabilities(labels, pred_probs3)
