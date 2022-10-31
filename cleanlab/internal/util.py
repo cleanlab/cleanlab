@@ -27,6 +27,9 @@ from cleanlab.typing import DatasetLike, LabelLike
 from cleanlab.internal.validation import labels_to_array
 
 
+TINY_VALUE = 1e-100
+
+
 def remove_noise_from_class(noise_matrix, class_without_noise) -> np.ndarray:
     """A helper function in the setting of PU learning.
     Sets all P(label=class_without_noise|true_label=any_other_class) = 0
@@ -96,7 +99,6 @@ def clip_noise_rates(noise_matrix) -> np.ndarray:
 
     # Re-normalized noise_matrix so that columns sum to one.
     noise_matrix = noise_matrix / noise_matrix.sum(axis=0)
-
     return noise_matrix
 
 

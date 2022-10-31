@@ -28,7 +28,7 @@ import warnings
 import numpy as np
 from typing import Tuple
 
-from cleanlab.internal.util import value_counts, clip_values, clip_noise_rates
+from cleanlab.internal.util import value_counts, clip_values, clip_noise_rates, TINY_VALUE
 
 
 def compute_ps_py_inv_noise_matrix(

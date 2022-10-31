@@ -299,7 +299,7 @@ def find_label_issues(
         # Prepare multiprocessing shared data
         if n_jobs > 1:
             _labels = RawArray("I", labels)  # type: ignore
-            _label_counts = RawArray("I", label_counts)
+            _label_counts = RawArray("I", label_counts)  # type: ignore
             _prune_count_matrix = RawArray("I", prune_count_matrix.flatten())  # type: ignore
             _pred_probs = RawArray("f", pred_probs.flatten())  # type: ignore
         else:  # Multiprocessing is turned off. Create tuple with all parameters

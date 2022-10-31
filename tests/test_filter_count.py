@@ -15,7 +15,10 @@
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
 from cleanlab import count, filter
-from cleanlab.count import get_confident_thresholds
+from cleanlab.count import (
+    get_confident_thresholds,
+    estimate_py_and_noise_matrices_from_probabilities,
+)
 from cleanlab.internal.latent_algebra import compute_inv_noise_matrix
 from cleanlab.benchmarking.noise_generation import generate_noise_matrix_from_trace
 from cleanlab.benchmarking.noise_generation import generate_noisy_labels
@@ -816,9 +819,39 @@ def test_issue_158():
 
 def test_missing_classes():
     labels = np.array([0, 0, 2, 2])
-    pred_probs = np.array([[0.9, 0.1, 0.0], [0.8, 0.1, 0.1], [0.1, 0.0, 0.9], [0.95, 0.0, 0.05]])
+    pred_probs = np.array(
+        [[0.9, 0.0, 0.1, 0.0], [0.8, 0.0, 0.2, 0.0], [0.1, 0.0, 0.9, 0.0], [0.95, 0.0, 0.05, 0.0]]
+    )
     issues = filter.find_label_issues(labels, pred_probs)
     assert np.all(issues == np.array([False, False, False, True]))
+    # check results with pred-prob on missing classes = 0 match results without these missing classes in pred_probs
+    pred_probs2 = pred_probs[:, list(sorted(np.unique(labels)))]
+    labels2 = np.array([0, 0, 1, 1])
+    issues2 = filter.find_label_issues(labels2, pred_probs2)
+    assert all(issues2 == issues)
+    # check this still works with nonzero pred_prob on missing class
+    pred_probs3 = np.array(
+        [
+            [0.9, 0.1, 0.0, 0.0],
+            [0.8, 0.1, 0.1, 0.0],
+            [0.1, 0.0, 0.9, 0.0],
+            [0.9, 0.025, 0.025, 0.05],
+        ]
+    )
+    issues3 = filter.find_label_issues(labels, pred_probs3)
+    assert all(issues3 == issues)
+    # check this works with n_jobs = 1
+    issues4 = filter.find_label_issues(labels, pred_probs, n_jobs=1)
+    assert all(issues4 == issues)
+    # check this works with different filter_by
+    for fb in [
+        "prune_by_class",
+        "prune_by_noise_rate",
+        "both",
+        "confident_learning",
+        "predicted_neq_given",
+    ]:
+        assert all(filter.find_label_issues(labels, pred_probs, filter_by=fb) == issues)
 
 
 def test_removing_class_consistent_results():
