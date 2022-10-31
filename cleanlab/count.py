@@ -199,11 +199,19 @@ def calibrate_confident_joint(confident_joint, labels, *, multi_label=False) -> 
         num_classes = len(confident_joint)
         label_counts = value_counts_fill_missing_classes(labels, num_classes, multi_label=False)
     # Calibrate confident joint to have correct p(labels) prior on noisy labels.
-    calibrated_cj = (confident_joint.T / confident_joint.sum(axis=1) * label_counts).T
+    calibrated_cj = (
+        confident_joint.T
+        / np.clip(confident_joint.sum(axis=1), a_min=TINY_VALUE, a_max=None)
+        * label_counts
+    ).T
     # Calibrate confident joint to sum to:
     # The number of examples (for single labeled datasets)
     # The number of total labels (for multi-labeled datasets)
-    calibrated_cj = calibrated_cj / np.sum(calibrated_cj) * sum(label_counts)
+    calibrated_cj = (
+        calibrated_cj
+        / np.clip(np.sum(calibrated_cj), a_min=TINY_VALUE, a_max=None)
+        * sum(label_counts)
+    )
     return round_preserving_row_totals(calibrated_cj)
 
 
@@ -311,7 +319,7 @@ def estimate_joint(labels, pred_probs, *, confident_joint=None, multi_label=Fals
             labels=labels, pred_probs=pred_probs, confident_joint=confident_joint
         )
     else:
-        return calibrated_cj / float(np.sum(calibrated_cj))
+        return calibrated_cj / np.clip(float(np.sum(calibrated_cj)), a_min=TINY_VALUE, a_max=None)
 
 
 def _estimate_joint_multilabel(labels, pred_probs, *, confident_joint=None) -> np.ndarray:
@@ -679,9 +687,11 @@ def estimate_latent(
     # Number of training examples confidently counted into each true class
     true_labels_class_counts = confident_joint.sum(axis=0).astype(float)
     # p(label=k_s|true_label=k_y) ~ |label=k_s and true_label=k_y| / |true_label=k_y|
-    noise_matrix = confident_joint / true_labels_class_counts
+    noise_matrix = confident_joint / np.clip(true_labels_class_counts, a_min=TINY_VALUE, a_max=None)
     # p(true_label=k_y|label=k_s) ~ |true_label=k_y and label=k_s| / |label=k_s|
-    inv_noise_matrix = confident_joint.T / labels_class_counts
+    inv_noise_matrix = confident_joint.T / np.clip(
+        labels_class_counts, a_min=TINY_VALUE, a_max=None
+    )
     # Compute the prior p(y), the latent (uncorrupted) class distribution.
     py = compute_py(
         ps,

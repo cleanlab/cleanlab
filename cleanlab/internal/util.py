@@ -98,7 +98,7 @@ def clip_noise_rates(noise_matrix) -> np.ndarray:
     np.fill_diagonal(noise_matrix, diagonal)
 
     # Re-normalized noise_matrix so that columns sum to one.
-    noise_matrix = noise_matrix / noise_matrix.sum(axis=0)
+    noise_matrix = noise_matrix / np.clip(noise_matrix.sum(axis=0), a_min=TINY_VALUE, a_max=None)
     return noise_matrix
 
 
@@ -134,7 +134,9 @@ def clip_values(x, low=0.0, high=1.0, new_sum=None) -> np.ndarray:
     )  # Vectorize clip_range for efficiency with np.ndarrays
     prev_sum = sum(x) if new_sum is None else new_sum  # Store previous sum
     x = vectorized_clip(x)  # Clip all values (efficiently)
-    x = x * prev_sum / float(sum(x))  # Re-normalized values to sum to previous sum
+    x = (
+        x * prev_sum / np.clip(float(sum(x)), a_min=TINY_VALUE, a_max=None)
+    )  # Re-normalized values to sum to previous sum
     return x
 
 
