@@ -34,9 +34,10 @@ import cleanlab.internal.multilabel_scorer as ml_scorer
 
 from cleanlab.internal.validation import assert_valid_inputs
 from cleanlab.internal.util import (
-    value_counts,
+    value_counts_fill_missing_classes,
     round_preserving_row_totals,
     get_num_classes,
+    int2onehot,
 )
 from cleanlab.internal.multilabel_utils import stack_complement, get_onehot_num_classes
 
@@ -242,7 +243,6 @@ def find_label_issues(
     else:
         assert n_jobs >= 1
 
-    # Number of examples in each class of labels
     if multi_label:
         return _find_label_issues_multilabel(
             labels,
@@ -258,12 +258,12 @@ def find_label_issues(
             verbose,
         )
 
-    else:
-        label_counts = value_counts(labels)
-    # Number of classes
+    # Else this is standard multi-class classification
     K = get_num_classes(
         labels=labels, pred_probs=pred_probs, label_matrix=confident_joint, multi_label=multi_label
     )
+    # Number of examples in each class of labels
+    label_counts = value_counts_fill_missing_classes(labels, K, multi_label=multi_label)
     # Boolean set to true if dataset is large
     big_dataset = K * len(labels) > 1e8
     # Ensure labels are of type np.ndarray()
@@ -299,7 +299,7 @@ def find_label_issues(
         # Prepare multiprocessing shared data
         if n_jobs > 1:
             _labels = RawArray("I", labels)  # type: ignore
-            _label_counts = RawArray("I", label_counts)
+            _label_counts = RawArray("I", label_counts)  # type: ignore
             _prune_count_matrix = RawArray("I", prune_count_matrix.flatten())  # type: ignore
             _pred_probs = RawArray("f", pred_probs.flatten())  # type: ignore
         else:  # Multiprocessing is turned off. Create tuple with all parameters
@@ -387,6 +387,7 @@ def find_label_issues(
         label_issues_mask = find_predicted_neq_given(labels, pred_probs, multi_label=multi_label)
 
     # Remove label issues if given label == model prediction
+    # TODO: consider use of _multiclass_crossval_predict() here
     pred = pred_probs.argmax(axis=1)
     for i, pred_label in enumerate(pred):
         if pred_label == labels[i]:
@@ -953,7 +954,7 @@ def _prune_by_count(k: int, args=None) -> np.ndarray:
 
     label_issues_mask = np.zeros(len(pred_probs), dtype=bool)
     pred_probs_k = pred_probs[:, k]
-    K = len(label_counts)
+    K = get_num_classes(labels, pred_probs, multi_label=multi_label)
     if label_counts[k] <= min_examples_per_class:  # No prune if not at least min_examples_per_class
         warnings.warn(
             f"May not flag all label issues in class: {k}, it has too few examples (see `min_examples_per_class` argument)"
@@ -970,3 +971,46 @@ def _prune_by_count(k: int, args=None) -> np.ndarray:
             cut = -np.partition(-margin[label_filter], num2prune - 1)[num2prune - 1]
             label_issues_mask = label_issues_mask | (label_filter & (margin >= cut))
     return label_issues_mask
+
+
+# TODO: decide if we want to keep this based on TODO above. If so move to utils. Add unit test for this.
+def _multiclass_crossval_predict(labels, pred_probs) -> np.ndarray:  # pragma: no cover
+    """Returns a numpy 2D array of one-hot encoded
+    multiclass predictions. Each row in the array
+    provides the predictions for a particular example.
+    The boundary condition used to threshold predictions
+    is computed by maximizing the F1 ROC curve.
+
+    Parameters
+    ----------
+    labels : list of lists (length N)
+      These are multiclass labels. Each list in the list contains all the
+      labels for that example.
+
+    pred_probs : np.ndarray (shape (N, K))
+        P(label=k|x) is a matrix with K model-predicted probabilities.
+        Each row of this matrix corresponds to an example `x` and contains the model-predicted
+        probabilities that `x` belongs to each possible class.
+        The columns must be ordered such that these probabilities correspond to class 0,1,2,...
+        `pred_probs` should have been computed using 3 (or higher) fold cross-validation."""
+
+    from sklearn.metrics import f1_score
+
+    boundaries = np.arange(0.05, 0.9, 0.05)
+    K = get_num_classes(
+        labels=labels,
+        pred_probs=pred_probs,
+        multi_label=True,
+    )
+    labels_one_hot = int2onehot(labels, K)
+    f1s = [
+        f1_score(
+            labels_one_hot,
+            (pred_probs > boundary).astype(np.uint8),
+            average="micro",
+        )
+        for boundary in boundaries
+    ]
+    boundary = boundaries[np.argmax(f1s)]
+    pred = (pred_probs > boundary).astype(np.uint8)
+    return pred

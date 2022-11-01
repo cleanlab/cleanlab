@@ -181,10 +181,7 @@ def get_label_quality_scores(
     get_confidence_weighted_entropy_for_each_label
     """
 
-    # TODO: remove allow_missing_classes once supported
-    assert_valid_inputs(
-        X=None, y=labels, pred_probs=pred_probs, multi_label=False, allow_missing_classes=True
-    )
+    assert_valid_inputs(X=None, y=labels, pred_probs=pred_probs, multi_label=False)
 
     # Available scoring functions to choose from
     scoring_funcs = {

@@ -58,7 +58,7 @@ def get_onehot_num_classes(labels, pred_probs=None):
     """Returns OneHot encoding of MultiLabel Data, and number of classes"""
     num_classes = get_num_classes(labels=labels, pred_probs=pred_probs)
     try:
-        y_one = int2onehot(labels)
+        y_one = int2onehot(labels, K=num_classes)
     except TypeError:
         raise ValueError(
             "wrong format for labels, should be a list of list[indices], please check the documentation in find_label_issues for further information"
