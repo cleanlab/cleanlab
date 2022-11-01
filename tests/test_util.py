@@ -3,7 +3,7 @@
 from cleanlab.internal import util
 import numpy as np
 
-from cleanlab.internal.util import num_unique_classes, format_labels
+from cleanlab.internal.util import num_unique_classes, format_labels, get_missing_classes
 from cleanlab.internal.multilabel_utils import int2onehot, onehot2int
 from cleanlab.internal.validation import assert_valid_class_labels
 
