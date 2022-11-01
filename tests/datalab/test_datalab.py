@@ -17,9 +17,34 @@
 
 from cleanlab.experimental.datalab.datalab import Datalab
 
+from datasets import load_dataset
+import numpy as np
 
-def test_datalab_class():
-    lab = Datalab()
+import pytest
+
+
+LABEL_NAME = "star"
+
+
+@pytest.fixture
+def dataset():
+    return load_dataset("lhoestq/demo1", split="train")
+
+
+def test_datalab_class(dataset):
+    lab = Datalab(dataset, LABEL_NAME)
     # Has the right attributes
-    for attr in []:
+    for attr in ["data", "labels", "_labels", "info", "issues", "silo"]:
         assert hasattr(lab, attr)
+
+
+def test_datalab_invalid_datasetdict():
+    with pytest.raises(AssertionError) as e:
+        dataset = load_dataset("lhoestq/demo1")
+        lab = Datalab(dataset, LABEL_NAME)
+        assert "Please pass a single dataset, not a DatasetDict." in str(e)
+
+
+def test_data_features_and_labels(dataset):
+    lab = Datalab(dataset, LABEL_NAME)
+    assert lab._labels == np.array([1, 1, 2, 0, 2])
