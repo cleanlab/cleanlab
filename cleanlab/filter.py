@@ -37,9 +37,9 @@ from cleanlab.internal.util import (
     value_counts_fill_missing_classes,
     round_preserving_row_totals,
     get_num_classes,
-    int2onehot,
 )
-from cleanlab.internal.multilabel_utils import stack_complement, get_onehot_num_classes
+
+from cleanlab.internal.multilabel_utils import stack_complement, get_onehot_num_classes, int2onehot
 
 # tqdm is a module used to print time-to-complete when multiprocessing is used.
 # This module is not necessary, and therefore is not a package dependency, but

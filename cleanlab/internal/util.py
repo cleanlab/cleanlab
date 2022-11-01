@@ -267,6 +267,7 @@ def round_preserving_row_totals(confident_joint) -> np.ndarray:
         arr=confident_joint,
     ).astype(int)
 
+
 def estimate_pu_f1(s, prob_s_eq_1) -> float:
     """Computes Claesen's estimate of f1 in the pulearning setting.
 
