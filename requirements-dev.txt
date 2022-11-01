@@ -1,5 +1,6 @@
 # Python dependencies for development
 coverage != 6.3, != 6.3.*
+datasets
 mypy
 pandas-stubs
 pre-commit
