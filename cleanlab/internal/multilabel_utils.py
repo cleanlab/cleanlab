@@ -84,8 +84,7 @@ def int2onehot(labels) -> np.ndarray:
 
 
 def onehot2int(onehot_matrix) -> list:
-    """Convert a onehot matrix for multi-labels which is
-     a binarized format to a list of lists of ints.
+    """Convert a multi-hot matrix for multi-label classification (which is specifically a onehot-like matrix of 0s and 1s in a binarized format with multiple 1s allowed per row) to a list of lists of ints that can be used with other cleanlab functions for multi-label classification.
 
     Parameters
     ----------
