@@ -69,7 +69,7 @@ def get_onehot_num_classes(labels, pred_probs=None):
 def int2onehot(labels, K) -> np.ndarray:
     """Convert multi-label classification `labels` from a ``List[List[int]]`` format to a onehot matrix.
     This returns a binarized format of the labels as a multi-hot vector for each example, where the entries in this vector are 1 for each class that applies to this example and 0 otherwise.
-    
+
     Parameters
     ----------
     labels: list of lists of integers
@@ -86,13 +86,13 @@ def int2onehot(labels, K) -> np.ndarray:
 
 def onehot2int(onehot_matrix) -> list:
     """Convert multi-label classification `labels` from a onehot matrix format to a ``List[List[int]]`` format that can be used with other cleanlab functions.
-    
+
     Parameters
     ----------
     onehot_matrix: 2D np.ndarray of 0s and 1s
-      A matrix representation of multi-label classification labels in a binarized format as a multi-hot vector for each example. 
+      A matrix representation of multi-label classification labels in a binarized format as a multi-hot vector for each example.
       The entries in this vector are 1 for each class that applies to this example and 0 otherwise.
-    
+
     Returns
     -------
     labels: list of lists of integers
