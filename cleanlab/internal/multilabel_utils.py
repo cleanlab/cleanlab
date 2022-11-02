@@ -17,7 +17,7 @@
 """
 Helper functions used internally for multi-label classification tasks.
 """
-from typing import Tuple, Optional, List, Any
+from typing import Tuple, Optional
 
 import numpy as np
 
