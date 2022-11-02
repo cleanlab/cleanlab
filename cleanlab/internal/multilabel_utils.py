@@ -83,7 +83,8 @@ def int2onehot(labels, K) -> np.ndarray:
 
 
 def onehot2int(onehot_matrix) -> list:
-    """Convert a onehot matrix for multi-labels to a list of lists of ints
+    """Convert multi-label classification `labels` from a onehot matrix format to a ``List[List[int]]`` format that can be used with other cleanlab functions.
+    
     Parameters
     ----------
     onehot_matrix: 2D np.ndarray of 0s and 1s
