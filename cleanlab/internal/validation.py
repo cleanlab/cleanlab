@@ -84,8 +84,11 @@ def assert_valid_inputs(
         if len(pred_probs.shape) != 2:
             raise ValueError("pred_probs array must have shape: num_examples x num_classes.")
         if not multi_label:
+            assert isinstance(y, np.ndarray)
             highest_class = max(y) + 1
         else:
+            assert isinstance(y, list)
+            assert all(isinstance(y_i, list) for y_i in y)
             highest_class = max([max(y_i) for y_i in y]) + 1
         if pred_probs.shape[1] < highest_class:
             raise ValueError(
