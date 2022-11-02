@@ -1327,7 +1327,7 @@ def _converge_estimates(
 
 
 def get_confident_thresholds(
-    labels: np.ndarray,
+    labels: Union[np.ndarray, list],
     pred_probs: np.ndarray,
     multi_label: bool = False,
 ) -> np.ndarray:
@@ -1344,7 +1344,7 @@ def get_confident_thresholds(
       ``len(set(labels)) == pred_probs.shape[1]`` for standard multi-class classification with single-labeled data (e.g. ``labels =  [1,0,2,1,1,0...]``).
       For multi-label classification where each example can belong to multiple classes(e.g. ``labels = [[1,2],[1],[0],..]``),
       your labels should instead satisfy: ``len(set(k for l in labels for k in l)) == pred_probs.shape[1])``.
-
+      if multilabel is True, input `labels` is a list of lists (or list of iterable).
     pred_probs : np.ndarray
       An array of shape ``(N, K)`` of model-predicted probabilities,
       ``P(label=k|x)``. Each row of this matrix corresponds
@@ -1375,6 +1375,7 @@ def get_confident_thresholds(
     unique_classes = get_unique_classes(labels)
     BIG_VALUE = 2
     if multi_label:
+        assert isinstance(labels, list)
         return _get_confident_thresholds_multilabel(labels=labels, pred_probs=pred_probs)
     else:
         # When all_classes != unique_classes the class threshold for the missing classes is set to
@@ -1391,7 +1392,7 @@ def get_confident_thresholds(
 
 
 def _get_confident_thresholds_multilabel(
-    labels: np.ndarray,
+    labels: list,
     pred_probs: np.ndarray,
 ):
     """Returns expected (average) "self-confidence" for each class.

@@ -17,7 +17,7 @@
 """
 Helper functions used internally for multi-label classification tasks.
 """
-from typing import Tuple, Union
+from typing import Tuple, Optional, List, Any
 
 import numpy as np
 
@@ -56,7 +56,7 @@ def stack_complement(pred_prob_slice: np.ndarray) -> np.ndarray:
 
 
 def get_onehot_num_classes(
-    labels: list, pred_probs: Union[np.ndarray, None] = None
+    labels: list, pred_probs: Optional[np.ndarray] = None
 ) -> Tuple[np.ndarray, int]:
     """Returns OneHot encoding of MultiLabel Data, and number of classes"""
     num_classes = get_num_classes(labels=labels, pred_probs=pred_probs)
