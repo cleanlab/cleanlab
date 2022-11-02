@@ -1415,6 +1415,6 @@ def _get_confident_thresholds_multilabel(
     for class_num, (label, pred_prob) in enumerate(zip(y_one.T, pred_probs.T)):
         pred_probabilitites = stack_complement(pred_prob)
         confident_thresholds[class_num] = get_confident_thresholds(
-            pred_probs=pred_probabilitites, labels=label
+            pred_probs=pred_probs_binary, labels=label_for_class
         )
     return confident_thresholds
