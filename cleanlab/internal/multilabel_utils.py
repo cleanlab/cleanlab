@@ -90,7 +90,9 @@ def onehot2int(onehot_matrix) -> list:
     Parameters
     ----------
     onehot_matrix: 2D np.ndarray of 0s and 1s
-      A one hot encoded matrix representation of multi-labels.
+      A matrix representation of multi-label classification labels in a binarized format as a multi-hot vector for each example. 
+      The entries in this vector are 1 for each class that applies to this example and 0 otherwise.
+    
     Returns
     -------
     labels: list of lists of integers
