@@ -351,11 +351,11 @@ def _estimate_joint_multilabel(labels, pred_probs, *, confident_joint=None) -> n
     else:
         calibrated_cj = confident_joint
     calibrated_cf: np.ndarray = np.ndarray((num_classes, 2, 2))
-    for class_num, (label, pred_prob) in enumerate(zip(y_one.T, pred_probs.T)):
-        pred_probabilitites = stack_complement(pred_prob)
+    for class_num, (label, pred_prob_for_class) in enumerate(zip(y_one.T, pred_probs.T)):
+        pred_probs_binary = stack_complement(pred_prob_for_class)
         calibrated_cf[class_num] = estimate_joint(
             labels=label,
-            pred_probs=pred_probabilitites,
+            pred_probs=pred_probs_binary,
             confident_joint=calibrated_cj[class_num],
         )
 
@@ -603,12 +603,12 @@ def _compute_confident_joint_multi_label(
     y_one, num_classes = get_onehot_num_classes(labels, pred_probs)
     confident_joint_list: np.ndarray = np.ndarray(shape=(num_classes, 2, 2), dtype=np.int64)
     indices_off_diagonal = []
-    for class_num, (label, pred_prob) in enumerate(zip(y_one.T, pred_probs.T)):
-        pred_probabilitites = stack_complement(pred_prob)
+    for class_num, (label, pred_prob_for_class) in enumerate(zip(y_one.T, pred_probs.T)):
+        pred_probs_binary = stack_complement(pred_prob_for_class)
         if return_indices_of_off_diagonals:
             cj, ind = compute_confident_joint(
                 labels=label,
-                pred_probs=pred_probabilitites,
+                pred_probs=pred_probs_binary,
                 multi_label=False,
                 thresholds=thresholds,
                 calibrate=calibrate,
@@ -618,7 +618,7 @@ def _compute_confident_joint_multi_label(
         else:
             cj = compute_confident_joint(
                 labels=label,
-                pred_probs=pred_probabilitites,
+                pred_probs=pred_probs_binary,
                 multi_label=False,
                 thresholds=thresholds,
                 calibrate=calibrate,
