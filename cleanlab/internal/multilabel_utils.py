@@ -17,7 +17,7 @@
 """
 Helper functions used internally for multi-label classification tasks.
 """
-from typing import Tuple, Optional
+from typing import Tuple, Optional, List
 
 import numpy as np
 
@@ -87,7 +87,7 @@ def int2onehot(labels: list, K: int) -> np.ndarray:
     return mlb.fit_transform(labels)
 
 
-def onehot2int(onehot_matrix: np.ndarray) -> list:
+def onehot2int(onehot_matrix: np.ndarray) -> List[List[int]]:
     """Convert multi-label classification `labels` from a onehot matrix format to a ``List[List[int]]`` format that can be used with other cleanlab functions.
 
     Parameters
