@@ -1412,8 +1412,8 @@ def _get_confident_thresholds_multilabel(
     """
     y_one, num_classes = get_onehot_num_classes(labels, pred_probs)
     confident_thresholds: np.ndarray = np.ndarray((num_classes, 2))
-    for class_num, (label, pred_prob) in enumerate(zip(y_one.T, pred_probs.T)):
-        pred_probabilitites = stack_complement(pred_prob)
+    for class_num, (label_for_class, pred_prob_for_class) in enumerate(zip(y_one.T, pred_probs.T)):
+        pred_probs_binary = stack_complement(pred_prob_for_class)
         confident_thresholds[class_num] = get_confident_thresholds(
             pred_probs=pred_probs_binary, labels=label_for_class
         )
