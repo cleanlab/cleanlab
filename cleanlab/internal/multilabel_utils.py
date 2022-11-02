@@ -17,6 +17,7 @@
 """
 Helper functions used internally for multi-label classification tasks.
 """
+from typing import Tuple, Union
 
 import numpy as np
 
@@ -54,7 +55,9 @@ def stack_complement(pred_prob_slice: np.ndarray) -> np.ndarray:
     return np.vstack((1 - pred_prob_slice, pred_prob_slice)).T
 
 
-def get_onehot_num_classes(labels, pred_probs=None):
+def get_onehot_num_classes(
+    labels: list, pred_probs: Union[np.ndarray, None] = None
+) -> Tuple[np.ndarray, int]:
     """Returns OneHot encoding of MultiLabel Data, and number of classes"""
     num_classes = get_num_classes(labels=labels, pred_probs=pred_probs)
     try:
@@ -66,7 +69,7 @@ def get_onehot_num_classes(labels, pred_probs=None):
     return y_one, num_classes
 
 
-def int2onehot(labels, K) -> np.ndarray:
+def int2onehot(labels: list, K: int) -> np.ndarray:
     """Convert multi-label classification `labels` from a ``List[List[int]]`` format to a onehot matrix.
     This returns a binarized format of the labels as a multi-hot vector for each example, where the entries in this vector are 1 for each class that applies to this example and 0 otherwise.
 
@@ -84,7 +87,7 @@ def int2onehot(labels, K) -> np.ndarray:
     return mlb.fit_transform(labels)
 
 
-def onehot2int(onehot_matrix) -> list:
+def onehot2int(onehot_matrix: np.ndarray) -> list:
     """Convert multi-label classification `labels` from a onehot matrix format to a ``List[List[int]]`` format that can be used with other cleanlab functions.
 
     Parameters
