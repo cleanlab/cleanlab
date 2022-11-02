@@ -817,6 +817,7 @@ def test_issue_158():
     assert not np.any(np.isnan(inv_noise_matrix))
 
 
+@pytest.mark.filterwarnings("ignore:May not flag all label issues")
 def test_missing_classes():
     labels = np.array([0, 0, 2, 2])
     pred_probs = np.array(
