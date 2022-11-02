@@ -1369,11 +1369,6 @@ def get_confident_thresholds(
     -------
     confident_thresholds : np.ndarray
       An array of shape ``(K, )`` where K is the number of classes."""
-
-    labels = labels_to_array(labels)
-    all_classes = range(pred_probs.shape[1])
-    unique_classes = get_unique_classes(labels)
-    BIG_VALUE = 2
     if multi_label:
         assert isinstance(labels, list)
         return _get_confident_thresholds_multilabel(labels=labels, pred_probs=pred_probs)
@@ -1384,6 +1379,10 @@ def get_confident_thresholds(
         # TODO: if you want this to work for arbitrary softmax outputs where pred_probs.max()
         #  may exceed 1, change BIG_VALUE = 2 --> BIG_VALUE = 2 * pred_probs.max(). Downside of
         #  this approach is that there will be no standard value returned for missing classes.
+        labels = labels_to_array(labels)
+        all_classes = range(pred_probs.shape[1])
+        unique_classes = get_unique_classes(labels)
+        BIG_VALUE = 2
         confident_thresholds = [
             np.mean(pred_probs[:, k][labels == k]) if k in unique_classes else BIG_VALUE
             for k in all_classes
