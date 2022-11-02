@@ -67,7 +67,9 @@ def get_onehot_num_classes(labels, pred_probs=None):
 
 
 def int2onehot(labels, K) -> np.ndarray:
-    """Convert list of lists to a onehot matrix for multi-labels
+    """Convert multi-label classification `labels` from a ``List[List[int]]`` format to a onehot matrix.
+    This returns a binarized format of the labels as a multi-hot vector for each example, where the entries in this vector are 1 for each class that applies to this example and 0 otherwise.
+    
     Parameters
     ----------
     labels: list of lists of integers
