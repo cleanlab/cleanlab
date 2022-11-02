@@ -45,9 +45,7 @@ def assert_valid_inputs_multiannotator(
     # Raise error if labels are not formatted properly
     all_labels_flatten = labels_multiannotator.replace({pd.NA: np.NaN}).astype(float).values.ravel()
     all_labels_flatten = all_labels_flatten[~np.isnan(all_labels_flatten)]
-    assert_valid_class_labels(
-        all_labels_flatten, allow_missing_classes=False, one_class_allowed=True
-    )
+    assert_valid_class_labels(all_labels_flatten, allow_missing_classes=False, allow_one_class=True)
 
     # Raise error if labels_multiannotator has NaN rows
     if labels_multiannotator.isna().all(axis=1).any():

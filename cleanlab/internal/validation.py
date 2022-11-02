@@ -31,7 +31,7 @@ def assert_valid_inputs(
     pred_probs: Optional[np.ndarray] = None,
     multi_label: bool = False,
     allow_missing_classes: bool = True,
-    one_class_allowed: bool = False,
+    allow_one_class: bool = False,
 ) -> None:
     """Checks that ``X``, ``labels``, ``pred_probs`` are correctly formatted."""
     if not isinstance(y, (list, np.ndarray, np.generic, pd.Series, pd.DataFrame)):
@@ -39,7 +39,7 @@ def assert_valid_inputs(
     if not multi_label:
         y = labels_to_array(y)
         assert_valid_class_labels(
-            y=y, allow_missing_classes=allow_missing_classes, one_class_allowed=one_class_allowed
+            y=y, allow_missing_classes=allow_missing_classes, allow_one_class=allow_one_class
         )
 
     allow_empty_X = True
@@ -104,7 +104,7 @@ def assert_valid_inputs(
 def assert_valid_class_labels(
     y: np.ndarray,
     allow_missing_classes: bool = True,
-    one_class_allowed: bool = False,
+    allow_one_class: bool = False,
 ) -> None:
     """Checks that ``labels`` is properly formatted, i.e. a 1D numpy array where labels are zero-based
     integers (not multi-label).
@@ -117,7 +117,7 @@ def assert_valid_class_labels(
         raise ValueError("Labels must be positive integers corresponding to class indices.")
 
     unique_classes = np.unique(y)
-    if (not one_class_allowed) and (len(unique_classes) < 2):
+    if (not allow_one_class) and (len(unique_classes) < 2):
         raise ValueError("Labels must contain at least 2 classes.")
 
     if not allow_missing_classes:

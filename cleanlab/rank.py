@@ -182,7 +182,7 @@ def get_label_quality_scores(
     """
 
     assert_valid_inputs(
-        X=None, y=labels, pred_probs=pred_probs, multi_label=False, one_class_allowed=True
+        X=None, y=labels, pred_probs=pred_probs, multi_label=False, allow_one_class=True
     )
 
     # Available scoring functions to choose from
