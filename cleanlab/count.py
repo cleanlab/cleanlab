@@ -351,11 +351,11 @@ def _estimate_joint_multilabel(labels, pred_probs, *, confident_joint=None) -> n
     else:
         calibrated_cj = confident_joint
     calibrated_cf: np.ndarray = np.ndarray((num_classes, 2, 2))
-    for class_num, (label, pred_prob) in enumerate(zip(y_one.T, pred_probs.T)):
-        pred_probabilitites = stack_complement(pred_prob)
+    for class_num, (label, pred_prob_for_class) in enumerate(zip(y_one.T, pred_probs.T)):
+        pred_probs_binary = stack_complement(pred_prob_for_class)
         calibrated_cf[class_num] = estimate_joint(
             labels=label,
-            pred_probs=pred_probabilitites,
+            pred_probs=pred_probs_binary,
             confident_joint=calibrated_cj[class_num],
         )
 
@@ -603,12 +603,12 @@ def _compute_confident_joint_multi_label(
     y_one, num_classes = get_onehot_num_classes(labels, pred_probs)
     confident_joint_list: np.ndarray = np.ndarray(shape=(num_classes, 2, 2), dtype=np.int64)
     indices_off_diagonal = []
-    for class_num, (label, pred_prob) in enumerate(zip(y_one.T, pred_probs.T)):
-        pred_probabilitites = stack_complement(pred_prob)
+    for class_num, (label, pred_prob_for_class) in enumerate(zip(y_one.T, pred_probs.T)):
+        pred_probs_binary = stack_complement(pred_prob_for_class)
         if return_indices_of_off_diagonals:
             cj, ind = compute_confident_joint(
                 labels=label,
-                pred_probs=pred_probabilitites,
+                pred_probs=pred_probs_binary,
                 multi_label=False,
                 thresholds=thresholds,
                 calibrate=calibrate,
@@ -618,7 +618,7 @@ def _compute_confident_joint_multi_label(
         else:
             cj = compute_confident_joint(
                 labels=label,
-                pred_probs=pred_probabilitites,
+                pred_probs=pred_probs_binary,
                 multi_label=False,
                 thresholds=thresholds,
                 calibrate=calibrate,
@@ -1327,7 +1327,7 @@ def _converge_estimates(
 
 
 def get_confident_thresholds(
-    labels: np.ndarray,
+    labels: Union[np.ndarray, list],
     pred_probs: np.ndarray,
     multi_label: bool = False,
 ) -> np.ndarray:
@@ -1344,6 +1344,7 @@ def get_confident_thresholds(
       ``len(set(labels)) == pred_probs.shape[1]`` for standard multi-class classification with single-labeled data (e.g. ``labels =  [1,0,2,1,1,0...]``).
       For multi-label classification where each example can belong to multiple classes(e.g. ``labels = [[1,2],[1],[0],..]``),
       your labels should instead satisfy: ``len(set(k for l in labels for k in l)) == pred_probs.shape[1])``.
+      if multilabel is True, input `labels` is a list of lists (or list of iterable).
 
     pred_probs : np.ndarray
       An array of shape ``(N, K)`` of model-predicted probabilities,
@@ -1369,12 +1370,8 @@ def get_confident_thresholds(
     -------
     confident_thresholds : np.ndarray
       An array of shape ``(K, )`` where K is the number of classes."""
-
-    labels = labels_to_array(labels)
-    all_classes = range(pred_probs.shape[1])
-    unique_classes = get_unique_classes(labels)
-    BIG_VALUE = 2
     if multi_label:
+        assert isinstance(labels, list)
         return _get_confident_thresholds_multilabel(labels=labels, pred_probs=pred_probs)
     else:
         # When all_classes != unique_classes the class threshold for the missing classes is set to
@@ -1383,6 +1380,10 @@ def get_confident_thresholds(
         # TODO: if you want this to work for arbitrary softmax outputs where pred_probs.max()
         #  may exceed 1, change BIG_VALUE = 2 --> BIG_VALUE = 2 * pred_probs.max(). Downside of
         #  this approach is that there will be no standard value returned for missing classes.
+        labels = labels_to_array(labels)
+        all_classes = range(pred_probs.shape[1])
+        unique_classes = get_unique_classes(labels)
+        BIG_VALUE = 2
         confident_thresholds = [
             np.mean(pred_probs[:, k][labels == k]) if k in unique_classes else BIG_VALUE
             for k in all_classes
@@ -1391,7 +1392,7 @@ def get_confident_thresholds(
 
 
 def _get_confident_thresholds_multilabel(
-    labels: np.ndarray,
+    labels: list,
     pred_probs: np.ndarray,
 ):
     """Returns expected (average) "self-confidence" for each class.
@@ -1412,9 +1413,9 @@ def _get_confident_thresholds_multilabel(
     """
     y_one, num_classes = get_onehot_num_classes(labels, pred_probs)
     confident_thresholds: np.ndarray = np.ndarray((num_classes, 2))
-    for class_num, (label, pred_prob) in enumerate(zip(y_one.T, pred_probs.T)):
-        pred_probabilitites = stack_complement(pred_prob)
+    for class_num, (label_for_class, pred_prob_for_class) in enumerate(zip(y_one.T, pred_probs.T)):
+        pred_probs_binary = stack_complement(pred_prob_for_class)
         confident_thresholds[class_num] = get_confident_thresholds(
-            pred_probs=pred_probabilitites, labels=labels
+            pred_probs=pred_probs_binary, labels=label_for_class
         )
     return confident_thresholds

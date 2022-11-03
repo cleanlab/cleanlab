@@ -37,9 +37,9 @@ from cleanlab.internal.util import (
     value_counts_fill_missing_classes,
     round_preserving_row_totals,
     get_num_classes,
-    int2onehot,
 )
-from cleanlab.internal.multilabel_utils import stack_complement, get_onehot_num_classes
+
+from cleanlab.internal.multilabel_utils import stack_complement, get_onehot_num_classes, int2onehot
 
 # tqdm is a module used to print time-to-complete when multiprocessing is used.
 # This module is not necessary, and therefore is not a package dependency, but
@@ -553,15 +553,15 @@ def _find_multilabel_issues_per_class(
             confident_joint = None
         elif confident_joint_shape != (num_classes, 2, 2):
             raise ValueError("confident_joint should be of shape (num_classes, 2, 2)")
-    for class_num, (label, pred_prob) in enumerate(zip(y_one.T, pred_probs.T)):
-        pred_probabilitites = stack_complement(pred_prob)
+    for class_num, (label, pred_prob_for_class) in enumerate(zip(y_one.T, pred_probs.T)):
+        pred_probs_binary = stack_complement(pred_prob_for_class)
         if confident_joint is None:
             conf = None
         else:
             conf = confident_joint[class_num]
         binary_label_issues = find_label_issues(
             labels=label,
-            pred_probs=pred_probabilitites,
+            pred_probs=pred_probs_binary,
             return_indices_ranked_by=return_indices_ranked_by,
             frac_noise=frac_noise,
             rank_by_kwargs=rank_by_kwargs,
@@ -579,7 +579,7 @@ def _find_multilabel_issues_per_class(
         else:
             label_issues_list.append(binary_label_issues)
             labels_list.append(label)
-            pred_probs_list.append(pred_probabilitites)
+            pred_probs_list.append(pred_probs_binary)
     if return_indices_ranked_by is None:
         return bissues
     else:
@@ -737,10 +737,10 @@ def _find_predicted_neq_given_multilabel(labels, pred_probs) -> np.ndarray:
     """
     y_one, num_classes = get_onehot_num_classes(labels, pred_probs)
     pred_neq: np.ndarray = np.zeros(y_one.shape).astype(bool)
-    for class_num, (label, pred_prob) in enumerate(zip(y_one.T, pred_probs.T)):
-        pred_probabilitites = stack_complement(pred_prob)
+    for class_num, (label, pred_prob_for_class) in enumerate(zip(y_one.T, pred_probs.T)):
+        pred_probs_binary = stack_complement(pred_prob_for_class)
         pred_neq[:, class_num] = find_predicted_neq_given(
-            labels=label, pred_probs=pred_probabilitites
+            labels=label, pred_probs=pred_probs_binary
         )
     return pred_neq.sum(axis=1) >= 1
 

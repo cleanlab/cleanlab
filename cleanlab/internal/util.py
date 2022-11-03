@@ -268,43 +268,6 @@ def round_preserving_row_totals(confident_joint) -> np.ndarray:
     ).astype(int)
 
 
-# TODO: move to multilabel_utils.py
-def int2onehot(labels, K) -> np.ndarray:
-    """Convert list of lists to a onehot matrix for multi-labels
-
-    Parameters
-    ----------
-    labels: list of lists of integers
-      e.g. [[0,1], [3], [1,2,3], [1], [2]]
-      All integers from 0,1,...,K-1 must be represented.
-
-    K: int
-      The number of classes."""
-
-    from sklearn.preprocessing import MultiLabelBinarizer
-
-    mlb = MultiLabelBinarizer(classes=range(K))
-    return mlb.fit_transform(labels)
-
-
-# TODO: move to multilabel_utils.py
-def onehot2int(onehot_matrix) -> list:
-    """Convert a onehot matrix for multi-labels to a list of lists of ints
-
-    Parameters
-    ----------
-    onehot_matrix: 2D np.ndarray of 0s and 1s
-      A one hot encoded matrix representation of multi-labels.
-
-    Returns
-    -------
-    labels: list of lists of integers
-      e.g. [[0,1], [3], [1,2,3], [1], [2]]
-      All integers from 0,1,...,K-1 must be represented."""
-
-    return [list(np.where(row == 1)[0]) for row in onehot_matrix]
-
-
 def estimate_pu_f1(s, prob_s_eq_1) -> float:
     """Computes Claesen's estimate of f1 in the pulearning setting.
 
