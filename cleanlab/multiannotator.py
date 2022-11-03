@@ -361,7 +361,6 @@ def get_majority_vote_label(
 
     # tiebreak 2: using empirical class frequencies
     if len(tied_idx) > 0:
-        # TODO - will not work if there is no pred_probs
         num_classes = int(
             np.nanmax(labels_multiannotator.replace({pd.NA: np.NaN}).astype(float).values) + 1
         )
