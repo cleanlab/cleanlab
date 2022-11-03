@@ -34,18 +34,21 @@ def assert_valid_inputs_multiannotator(
     # Raise error if number of classes in labels_multiannoator does not match number of classes in pred_probs
     if pred_probs is not None:
         num_classes = pred_probs.shape[1]
-        unique_ma_labels = np.unique(labels_multiannotator.replace({pd.NA: np.NaN}).astype(float))
-        unique_ma_labels = unique_ma_labels[~np.isnan(unique_ma_labels)]
-        if num_classes != len(unique_ma_labels):
+        highest_class = (
+            np.nanmax(labels_multiannotator.replace({pd.NA: np.NaN}).astype(float).values) + 1
+        )
+
+        # this allows for missing labels, but not missing columns in pred_probs
+        if num_classes < highest_class:
             raise ValueError(
-                """The number of unique classes in labels_multiannotator do not match the number of classes in pred_probs.
-                Perhaps some rarely-annotated classes were lost while establishing consensus labels used to train your classifier."""
+                f"""pred_probs must have at least {int(highest_class)} columns based on the largest class label which appears in labels_multiannotator.
+            Perhaps some rarely-annotated classes were lost while establishing consensus labels used to train your classifier."""
             )
 
     # Raise error if labels are not formatted properly
     all_labels_flatten = labels_multiannotator.replace({pd.NA: np.NaN}).astype(float).values.ravel()
     all_labels_flatten = all_labels_flatten[~np.isnan(all_labels_flatten)]
-    assert_valid_class_labels(all_labels_flatten, allow_missing_classes=False, allow_one_class=True)
+    assert_valid_class_labels(all_labels_flatten, allow_one_class=True)
 
     # Raise error if labels_multiannotator has NaN rows
     if labels_multiannotator.isna().all(axis=1).any():
@@ -58,21 +61,21 @@ def assert_valid_inputs_multiannotator(
         )
         raise ValueError(
             f"""labels_multiannotator cannot have columns with all NaN.
-            Annotators {nan_columns} did not label any examples."""
+        Annotators {nan_columns} did not label any examples."""
         )
 
     # Raise error if labels_multiannotator has <= 1 column
     if len(labels_multiannotator.columns) <= 1:
         raise ValueError(
             """labels_multiannotator must have more than one column. 
-            If there is only one annotator, use cleanlab.rank.get_label_quality_scores instead"""
+        If there is only one annotator, use cleanlab.rank.get_label_quality_scores instead"""
         )
 
     # Raise error if labels_multiannotator only has 1 label per example
     if labels_multiannotator.apply(lambda s: len(s.dropna()) == 1, axis=1).all():
         raise ValueError(
             """Each example only has one label, collapse the labels into a 1-D array and use
-            cleanlab.rank.get_label_quality_scores instead"""
+        cleanlab.rank.get_label_quality_scores instead"""
         )
 
     # Raise warning if no examples with 2 or more annotators agree

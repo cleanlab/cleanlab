@@ -206,7 +206,7 @@ def get_label_quality_multiannotator(
         else:
             raise ValueError(
                 f"""
-                {quality_method} is not a valid consensus method!
+                {curr_method} is not a valid consensus method!
                 Please choose a valid consensus_method: {valid_methods}
                 """
             )
@@ -361,9 +361,13 @@ def get_majority_vote_label(
 
     # tiebreak 2: using empirical class frequencies
     if len(tied_idx) > 0:
-        class_frequencies = (
-            labels_multiannotator.apply(lambda s: s.value_counts(), axis=1).sum().to_numpy()
+        # TODO - will not work if there is no pred_probs
+        num_classes = int(
+            np.nanmax(labels_multiannotator.replace({pd.NA: np.NaN}).astype(float).values) + 1
         )
+        class_frequencies = labels_multiannotator.apply(
+            lambda s: np.bincount(s[s.notna()], minlength=num_classes), axis=1
+        ).sum()
         for idx, label_mode in tied_idx.copy().items():
             max_frequency = np.where(
                 class_frequencies[label_mode] == np.max(class_frequencies[label_mode])
@@ -817,10 +821,11 @@ def _get_post_pred_probs_and_weights(
         return_annotator_weight = adjusted_annotator_agreement
 
     elif quality_method == "agreement":
-        label_counts = (
-            labels_multiannotator.apply(lambda s: s.value_counts(), axis=1)
-            .fillna(value=0)
-            .to_numpy()
+        num_classes = get_num_classes(pred_probs=prior_pred_probs)
+        label_counts = np.stack(
+            labels_multiannotator.apply(
+                lambda s: np.bincount(s[s.notna()], minlength=num_classes), axis=1
+            )
         )
         post_pred_probs = label_counts / num_annotations.reshape(-1, 1)
 
