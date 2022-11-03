@@ -19,11 +19,13 @@ from cleanlab.experimental.datalab.datalab import Datalab
 
 from datasets import load_dataset
 import numpy as np
+import pandas as pd
 
 import pytest
 
 
 LABEL_NAME = "star"
+SEED = 42
 
 
 @pytest.fixture
@@ -31,20 +33,39 @@ def dataset():
     return load_dataset("lhoestq/demo1", split="train")
 
 
+@pytest.fixture
+def lab(dataset):
+    return Datalab(data=dataset, label_name=LABEL_NAME)
+
+
+@pytest.fixture
+def pred_probs(dataset):
+    np.random.seed(SEED)
+    return np.random.rand(len(dataset), 3)
+
+
 def test_datalab_class(dataset):
     lab = Datalab(dataset, LABEL_NAME)
     # Has the right attributes
-    for attr in ["data", "labels", "_labels", "info", "issues", "silo"]:
-        assert hasattr(lab, attr)
+    for attr in ["data", "label_name", "_labels", "info", "issues", "_silo"]:
+        assert hasattr(lab, attr), f"Missing attribute {attr}"
 
 
 def test_datalab_invalid_datasetdict():
     with pytest.raises(AssertionError) as e:
         dataset = load_dataset("lhoestq/demo1")
-        lab = Datalab(dataset, LABEL_NAME)
+        Datalab(dataset, LABEL_NAME)
         assert "Please pass a single dataset, not a DatasetDict." in str(e)
 
 
 def test_data_features_and_labels(dataset):
     lab = Datalab(dataset, LABEL_NAME)
-    assert lab._labels == np.array([1, 1, 2, 0, 2])
+    assert all(lab._labels == np.array([1, 1, 2, 0, 2]))
+
+
+def test_find_issues(lab, pred_probs):
+    assert lab.issues is None
+    lab.find_issues(pred_probs=pred_probs)
+    assert lab.issues is not None, "Issues weren't updated"
+    assert isinstance(lab.issues, pd.DataFrame), "Issues should by in a dataframe"
+    assert all(lab.issues.predicted_label == np.array([1, 0, 1, 2, 0]))

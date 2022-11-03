@@ -31,12 +31,14 @@ pred_probs = pred_probs / pred_probs.sum(axis=1)[:, np.newaxis]
 datalab = Datalab(my_data, label_name="star")
 datalab.find_issues(pred_probs=pred_probs)
 
-datalab.issues
+print(datalab)
 
-path = "temp_datalab.dl"
+print(datalab.issues)
+
+path = "temp_datalab/"
 datalab.save(path)
 
 datalab = None
 datalab = Datalab.load(path, data=my_data)
 
-datalab.issues
+print(datalab.issues)
