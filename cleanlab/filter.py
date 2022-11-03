@@ -105,12 +105,9 @@ def find_label_issues(
       columns must be ordered such that these probabilities correspond to
       class 0, 1, ..., K-1.
 
-      **Caution**: `pred_probs` from your model must be out-of-sample!
-      You should never provide predictions on the same examples used to train the model,
-      as these will be overfit and unsuitable for finding label-errors.
-      To obtain out-of-sample predicted probabilities for every datapoint in your dataset, you can use :ref:`cross-validation <pred_probs_cross_val>`.
-      Alternatively it is ok if your model was trained on a separate dataset and you are only evaluating
-      data that was previously held-out.
+    **Info**: Returned label issues are most accurate when they are computed based on out-of-sample 'pred_probs' from your model.
+    To obtain out-of-sample predicted probabilities for every datapoint in your dataset, you can use :ref:`cross-validation <pred_probs_cross_val>`.
+    This is encouraged for better performance but not necessary for results.
 
     return_indices_ranked_by : {None, 'self_confidence', 'normalized_margin', 'confidence_weighted_entropy'}, default=None
       Determines what is returned by this method: either a boolean mask or list of indices np.ndarray.
