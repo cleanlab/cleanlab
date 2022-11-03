@@ -1345,6 +1345,7 @@ def get_confident_thresholds(
       For multi-label classification where each example can belong to multiple classes(e.g. ``labels = [[1,2],[1],[0],..]``),
       your labels should instead satisfy: ``len(set(k for l in labels for k in l)) == pred_probs.shape[1])``.
       if multilabel is True, input `labels` is a list of lists (or list of iterable).
+
     pred_probs : np.ndarray
       An array of shape ``(N, K)`` of model-predicted probabilities,
       ``P(label=k|x)``. Each row of this matrix corresponds
