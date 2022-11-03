@@ -361,9 +361,12 @@ def get_majority_vote_label(
 
     # tiebreak 2: using empirical class frequencies
     if len(tied_idx) > 0:
-        num_classes = int(
-            np.nanmax(labels_multiannotator.replace({pd.NA: np.NaN}).astype(float).values) + 1
-        )
+        if pred_probs is not None:
+            num_classes = pred_probs.shape[1]
+        else:
+            num_classes = int(
+                np.nanmax(labels_multiannotator.replace({pd.NA: np.NaN}).astype(float).values) + 1
+            )
         class_frequencies = labels_multiannotator.apply(
             lambda s: np.bincount(s[s.notna()], minlength=num_classes), axis=1
         ).sum()
@@ -824,7 +827,7 @@ def _get_post_pred_probs_and_weights(
         label_counts = np.stack(
             labels_multiannotator.apply(
                 lambda s: np.bincount(s[s.notna()], minlength=num_classes), axis=1
-            )
+            ).to_list()
         )
         post_pred_probs = label_counts / num_annotations.reshape(-1, 1)
 
