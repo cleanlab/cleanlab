@@ -254,7 +254,7 @@ def test_missing_class():
         labels, pred_probs, quality_method="agreement"
     )
     multiannotator_dict = get_label_quality_multiannotator(
-        labels, pred_probs, consensus_methods="majority_vote"
+        labels, pred_probs, consensus_method="majority_vote"
     )
 
 
