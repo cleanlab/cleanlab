@@ -884,18 +884,18 @@ def test_missing_classes():
 def test_missing_classes_multilabel(return_indices_ranked_by):
     pred_probs = np.array(
         [
-            [0.9, 0.1, 0.0, 0.4],
-            [0.7, 0.8, 0.2, 0.3],
-            [0.9, 0.8, 0.4, 0.2],
-            [0.1, 0.1, 0.8, 0.3],
-            [0.4, 0.5, 0.1, 0.1],
-            [0.1, 0.1, 0.2, 0.1],
-            [0.8, 0.1, 0.2, 0.1],
+            [0.9, 0.1, 0.0, 0.4, 0.1],
+            [0.7, 0.8, 0.2, 0.3, 0.1],
+            [0.9, 0.8, 0.4, 0.2, 0.1],
+            [0.1, 0.1, 0.8, 0.3, 0.1],
+            [0.4, 0.5, 0.1, 0.1, 0.1],
+            [0.1, 0.1, 0.2, 0.1, 0.1],
+            [0.8, 0.1, 0.2, 0.1, 0.1],
         ]
     )
     labels = [[0], [0, 1], [0, 1], [2], [0, 2, 3], [], []]
     cj = count.compute_confident_joint(labels=labels, pred_probs=pred_probs, multi_label=True)
-    assert cj.shape == (4, 2, 2)
+    assert cj.shape == (5, 2, 2)
     noise_idx = filter.find_label_issues(
         labels=labels,
         pred_probs=pred_probs,

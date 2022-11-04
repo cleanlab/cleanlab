@@ -87,7 +87,17 @@ def order_label_issues(
       ordered by the label-quality scoring method passed to `rank_by`.
     """
 
-    assert_valid_inputs(X=None, y=labels, pred_probs=pred_probs, multi_label=False)
+    allow_one_class = False
+    if isinstance(labels, np.ndarray):
+        if set(labels) == {0}:
+            allow_one_class = True
+    assert_valid_inputs(
+        X=None,
+        y=labels,
+        pred_probs=pred_probs,
+        multi_label=False,
+        allow_one_class=allow_one_class,
+    )
 
     # Convert bool mask to index mask
     label_issues_idx = np.arange(len(labels))[label_issues_mask]
