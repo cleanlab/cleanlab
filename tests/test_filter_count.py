@@ -22,7 +22,8 @@ from cleanlab.count import (
 from cleanlab.internal.latent_algebra import compute_inv_noise_matrix
 from cleanlab.benchmarking.noise_generation import generate_noise_matrix_from_trace
 from cleanlab.benchmarking.noise_generation import generate_noisy_labels
-from cleanlab.internal.util import value_counts, int2onehot
+from cleanlab.internal.util import value_counts
+from cleanlab.internal.multilabel_utils import int2onehot
 import numpy as np
 import scipy
 import pytest
@@ -817,6 +818,7 @@ def test_issue_158():
     assert not np.any(np.isnan(inv_noise_matrix))
 
 
+@pytest.mark.filterwarnings("ignore:May not flag all label issues")
 def test_missing_classes():
     labels = np.array([0, 0, 2, 2])
     pred_probs = np.array(

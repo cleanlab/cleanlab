@@ -31,13 +31,16 @@ def assert_valid_inputs(
     pred_probs: Optional[np.ndarray] = None,
     multi_label: bool = False,
     allow_missing_classes: bool = True,
+    allow_one_class: bool = False,
 ) -> None:
     """Checks that ``X``, ``labels``, ``pred_probs`` are correctly formatted."""
     if not isinstance(y, (list, np.ndarray, np.generic, pd.Series, pd.DataFrame)):
         raise TypeError("labels should be a numpy array or pandas Series.")
     if not multi_label:
         y = labels_to_array(y)
-        assert_valid_class_labels(y=y, allow_missing_classes=allow_missing_classes)
+        assert_valid_class_labels(
+            y=y, allow_missing_classes=allow_missing_classes, allow_one_class=allow_one_class
+        )
 
     allow_empty_X = True
     if pred_probs is None:
@@ -80,6 +83,17 @@ def assert_valid_inputs(
             raise ValueError("pred_probs and labels must have same length.")
         if len(pred_probs.shape) != 2:
             raise ValueError("pred_probs array must have shape: num_examples x num_classes.")
+        if not multi_label:
+            assert isinstance(y, np.ndarray)
+            highest_class = max(y) + 1
+        else:
+            assert isinstance(y, list)
+            assert all(isinstance(y_i, list) for y_i in y)
+            highest_class = max([max(y_i) for y_i in y]) + 1
+        if pred_probs.shape[1] < highest_class:
+            raise ValueError(
+                f"pred_probs must have at least {highest_class} columns, based on the largest class index which appears in labels."
+            )
         # Check for valid probabilities.
         if (np.min(pred_probs) < 0) or (np.max(pred_probs) > 1):
             raise ValueError("Values in pred_probs must be between 0 and 1.")
@@ -89,19 +103,28 @@ def assert_valid_inputs(
 
 def assert_valid_class_labels(
     y: np.ndarray,
-    allow_missing_classes: bool = False,
+    allow_missing_classes: bool = True,
+    allow_one_class: bool = False,
 ) -> None:
     """Checks that ``labels`` is properly formatted, i.e. a 1D numpy array where labels are zero-based
     integers (not multi-label).
     """
     if y.ndim != 1:
-        raise ValueError("labels must be 1D numpy array.")
+        raise ValueError("Labels must be 1D numpy array.")
+    if any([isinstance(label, str) for label in y]):
+        raise ValueError(
+            "Labels cannot be strings, they must be zero-indexed integers corresponding to class indices."
+        )
+    if not np.equal(np.mod(y, 1), 0).all():  # check that labels are integers
+        raise ValueError("Labels must be zero-indexed integers corresponding to class indices.")
+    if min(y) < 0:
+        raise ValueError("Labels must be positive integers corresponding to class indices.")
+
+    unique_classes = np.unique(y)
+    if (not allow_one_class) and (len(unique_classes) < 2):
+        raise ValueError("Labels must contain at least 2 classes.")
 
     if not allow_missing_classes:
-        unique_classes = np.unique(y)
-        if len(unique_classes) < 2:
-            raise ValueError("Labels must contain at least 2 classes.")
-
         if (unique_classes != np.arange(len(unique_classes))).any():
             msg = "cleanlab requires zero-indexed integer labels (0,1,2,..,K-1), but in "
             msg += "your case: np.unique(labels) = {}. ".format(str(unique_classes))

@@ -17,10 +17,11 @@
 """
 Helper functions used internally for multi-label classification tasks.
 """
+from typing import Tuple, Optional, List
 
 import numpy as np
 
-from cleanlab.internal.util import get_num_classes, int2onehot
+from cleanlab.internal.util import get_num_classes
 
 
 def _is_multilabel(y: np.ndarray) -> bool:
@@ -54,7 +55,9 @@ def stack_complement(pred_prob_slice: np.ndarray) -> np.ndarray:
     return np.vstack((1 - pred_prob_slice, pred_prob_slice)).T
 
 
-def get_onehot_num_classes(labels, pred_probs=None):
+def get_onehot_num_classes(
+    labels: list, pred_probs: Optional[np.ndarray] = None
+) -> Tuple[np.ndarray, int]:
     """Returns OneHot encoding of MultiLabel Data, and number of classes"""
     num_classes = get_num_classes(labels=labels, pred_probs=pred_probs)
     try:
@@ -64,3 +67,39 @@ def get_onehot_num_classes(labels, pred_probs=None):
             "wrong format for labels, should be a list of list[indices], please check the documentation in find_label_issues for further information"
         )
     return y_one, num_classes
+
+
+def int2onehot(labels: list, K: int) -> np.ndarray:
+    """Convert multi-label classification `labels` from a ``List[List[int]]`` format to a onehot matrix.
+    This returns a binarized format of the labels as a multi-hot vector for each example, where the entries in this vector are 1 for each class that applies to this example and 0 otherwise.
+
+    Parameters
+    ----------
+    labels: list of lists of integers
+      e.g. [[0,1], [3], [1,2,3], [1], [2]]
+      All integers from 0,1,...,K-1 must be represented.
+    K: int
+      The number of classes."""
+
+    from sklearn.preprocessing import MultiLabelBinarizer
+
+    mlb = MultiLabelBinarizer(classes=range(K))
+    return mlb.fit_transform(labels)
+
+
+def onehot2int(onehot_matrix: np.ndarray) -> List[List[int]]:
+    """Convert multi-label classification `labels` from a onehot matrix format to a ``List[List[int]]`` format that can be used with other cleanlab functions.
+
+    Parameters
+    ----------
+    onehot_matrix: 2D np.ndarray of 0s and 1s
+      A matrix representation of multi-label classification labels in a binarized format as a multi-hot vector for each example.
+      The entries in this vector are 1 for each class that applies to this example and 0 otherwise.
+
+    Returns
+    -------
+    labels: list of lists of integers
+      e.g. [[0,1], [3], [1,2,3], [1], [2]]
+      All integers from 0,1,...,K-1 must be represented."""
+
+    return [list(np.where(row == 1)[0]) for row in onehot_matrix]

@@ -181,7 +181,9 @@ def get_label_quality_scores(
     get_confidence_weighted_entropy_for_each_label
     """
 
-    assert_valid_inputs(X=None, y=labels, pred_probs=pred_probs, multi_label=False)
+    assert_valid_inputs(
+        X=None, y=labels, pred_probs=pred_probs, multi_label=False, allow_one_class=True
+    )
 
     # Available scoring functions to choose from
     scoring_funcs = {

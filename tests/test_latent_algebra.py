@@ -27,29 +27,34 @@ def test_latent_py_ps_inv():
     ps, py, inv = latent_algebra.compute_ps_py_inv_noise_matrix(s, nm)
     assert all(abs(np.dot(inv, ps) - py) < 1e-3)
     assert all(abs(np.dot(nm, py) - ps) < 1e-3)
+
+
+def get_latent_py_ps_inv():
+    ps, py, inv = latent_algebra.compute_ps_py_inv_noise_matrix(s, nm)
+
     return ps, py, inv
 
 
 def test_latent_inv():
-    ps, py, inv = test_latent_py_ps_inv()
+    ps, py, inv = get_latent_py_ps_inv()
     inv2 = latent_algebra.compute_inv_noise_matrix(py, nm)
     assert np.all(abs(inv - inv2) < 1e-3)
 
 
 def test_latent_nm():
-    ps, py, inv = test_latent_py_ps_inv()
+    ps, py, inv = get_latent_py_ps_inv()
     nm2 = latent_algebra.compute_noise_matrix_from_inverse(ps, inv, py=py)
     assert np.all(abs(nm - nm2) < 1e-3)
 
 
 def test_latent_py():
-    ps, py, inv = test_latent_py_ps_inv()
+    ps, py, inv = get_latent_py_ps_inv()
     py2 = latent_algebra.compute_py(ps, nm, inv)
     assert np.all(abs(py - py2) < 1e-3)
 
 
 def test_latent_py_warning():
-    ps, py, inv = test_latent_py_ps_inv()
+    ps, py, inv = get_latent_py_ps_inv()
     with pytest.raises(TypeError) as e:
         with pytest.warns(UserWarning) as w:
             py2 = latent_algebra.compute_py(
@@ -65,7 +70,7 @@ def test_latent_py_warning():
 
 
 def test_compute_py_err():
-    ps, py, inv = test_latent_py_ps_inv()
+    ps, py, inv = get_latent_py_ps_inv()
     try:
         py = latent_algebra.compute_py(
             ps=ps,
@@ -85,7 +90,7 @@ def test_compute_py_err():
 
 
 def test_compute_py_marginal_ps():
-    ps, py, inv = test_latent_py_ps_inv()
+    ps, py, inv = get_latent_py_ps_inv()
     cj = nm * ps * len(s)
     true_labels_class_counts = cj.sum(axis=0)
     py2 = latent_algebra.compute_py(
@@ -108,14 +113,14 @@ def test_pyx():
             [0.1, 0.8, 0.1],
         ]
     )
-    ps, py, inv = test_latent_py_ps_inv()
+    ps, py, inv = get_latent_py_ps_inv()
     pyx = latent_algebra.compute_pyx(pred_probs, nm, inv)
     assert np.all(np.sum(pyx, axis=1) - 1 < 1e-4)
 
 
 def test_pyx_error():
     pred_probs = np.array([0.1, 0.3, 0.6])
-    ps, py, inv = test_latent_py_ps_inv()
+    ps, py, inv = get_latent_py_ps_inv()
     try:
         pyx = latent_algebra.compute_pyx(pred_probs, nm, inverse_noise_matrix=inv)
     except ValueError as e:
@@ -125,7 +130,7 @@ def test_pyx_error():
 
 
 def test_compute_py_method_marginal_true_labels_class_counts_none_error():
-    ps, py, inv = test_latent_py_ps_inv()
+    ps, py, inv = get_latent_py_ps_inv()
     with pytest.raises(ValueError) as e:
         _ = latent_algebra.compute_py(
             ps=ps,
