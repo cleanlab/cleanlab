@@ -75,6 +75,8 @@ def num_label_issues(
     labels :
       An array of shape ``(N,)`` of noisy labels, i.e. some labels may be erroneous.
       Elements must be in the set 0, 1, ..., K-1, where K is the number of classes.
+      For multi-label classification where each example can belong to multiple classes,
+      refer to documentation for this argument in filter.find_label_issues() for details.
 
     pred_probs :
       An array of shape ``(N, K)`` of model-predicted probabilities,
@@ -91,6 +93,8 @@ def num_label_issues(
       Entry ``(j, k)`` in the matrix is the number of examples confidently counted into the pair of ``(noisy label=j, true label=k)`` classes.
       The `confident_joint` can be computed using :py:func:`count.compute_confident_joint <cleanlab.count.compute_confident_joint>`.
       If not provided, it is computed from the given (noisy) `labels` and `pred_probs`.
+      If `multi_label` is True, then the `confident_joint` should be a one-vs-rest array of shape ``(K, 2, 2)``, refer to filter.find_label_issues() for details.
+
 
     estimation_method :
       Method for estimating the number of label issues in dataset by counting the examples in the off-diagonal of the `confident_joint` ``P(label=i, true_label=j)``.
@@ -105,6 +109,10 @@ def num_label_issues(
           2. If you have a custom score to rank your data by label quality and you just need to know the cut-off of likely label issues.
 
        TL;DR: use this method to get the most accurate estimate of number of label issues when you don't need the indices of the label issues.
+
+    multi_label : bool, optional
+       Refer to documentation for this argument in ``count.compute_confident_joint()`` with `multi_label=True` for details.
+
 
     Returns
     -------
@@ -154,23 +162,21 @@ def _num_label_issues_multilabel(
     pred_probs: np.ndarray,
     confident_joint: Optional[np.ndarray] = None,
 ) -> int:
-    """Parameters
-     ----------
-     labels : list
-      Refer to documentation for this argument in filter.find_label_issues() for details.
-
-     pred_probs : np.ndarray
-       Refer to documentation for this argument in count.estimate_joint() for details.
-
-    confident_joint : np.ndarray, optional
-       Refer to documentation for this argument in filter.find_label_issues() with multi_label=True for details.
-
-     Returns
-     -------
-     num_issues : int
-     The estimated number of examples with label issues in the multilabel dataset.
     """
-    
+    Parameters
+    ----------
+
+    labels: list
+       Refer to documentation for this argument in ``count.calibrate_confident_joint()`` with `multi_label=True` for details.
+    pred_probs : np.ndarray
+       Predicted-probabilities in the same format expected by the :py:func:`get_confident_thresholds <cleanlab.count.get_confident_thresholds>` function.
+
+    Returns
+    -------
+    num_issues : int
+       The estimated number of examples with label issues in the multilabel dataset.
+    """
+
     from cleanlab.filter import find_label_issues
 
     issues_idx = find_label_issues(
