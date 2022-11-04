@@ -221,6 +221,43 @@ def test_label_quality_scores_multiannotator():
         assert "cannot have columns with all NaN" in str(e)
 
 
+def test_missing_class():
+    labels = np.array(
+        [
+            [1, np.NaN, 2],
+            [1, 1, 2],
+            [2, 2, 1],
+            [np.NaN, 2, 2],
+            [np.NaN, 2, 1],
+            [np.NaN, 2, 2],
+        ]
+    )
+
+    pred_probs = np.array(
+        [
+            [0.4, 0.4, 0.2],
+            [0.3, 0.6, 0.1],
+            [0.05, 0.2, 0.75],
+            [0.1, 0.4, 0.5],
+            [0.2, 0.4, 0.4],
+            [0.2, 0.4, 0.4],
+        ]
+    )
+
+    # test default case
+    consensus_label = get_majority_vote_label(labels)
+    consensus_label = get_majority_vote_label(labels, pred_probs)
+    multiannotator_dict = get_label_quality_multiannotator(labels, pred_probs)
+
+    # test other consensus and quality methods
+    multiannotator_dict = get_label_quality_multiannotator(
+        labels, pred_probs, quality_method="agreement"
+    )
+    multiannotator_dict = get_label_quality_multiannotator(
+        labels, pred_probs, consensus_method="majority_vote"
+    )
+
+
 @pytest.mark.filterwarnings("ignore::UserWarning")
 def test_rare_class():
     labels = np.array(
@@ -262,7 +299,7 @@ def test_rare_class():
     try:
         multiannotator_dict = get_label_quality_multiannotator(labels, pred_probs_missing)
     except ValueError as e:
-        assert "do not match the number of classes in pred_probs" in str(e)
+        assert "pred_probs must have at least 3 columns" in str(e)
 
 
 @pytest.mark.filterwarnings("ignore::UserWarning")
