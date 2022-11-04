@@ -856,6 +856,53 @@ def test_missing_classes():
         assert all(filter.find_label_issues(labels, pred_probs, filter_by=fb) == issues)
 
 
+@pytest.mark.parametrize(
+    "return_indices_ranked_by",
+    [None, "self_confidence", "normalized_margin", "confidence_weighted_entropy"],
+)
+@pytest.mark.filterwarnings("ignore::UserWarning")
+def test_missing_classes_multilabel(return_indices_ranked_by):
+    pred_probs = np.array(
+        [
+            [0.9, 0.1, 0.0, 0.4],
+            [0.7, 0.8, 0.2, 0.3],
+            [0.9, 0.8, 0.4, 0.2],
+            [0.1, 0.1, 0.8, 0.3],
+            [0.4, 0.5, 0.1, 0.1],
+            [0.1, 0.1, 0.2, 0.1],
+            [0.8, 0.1, 0.2, 0.1],
+        ]
+    )
+    labels = [[0], [0, 1], [0, 1], [2], [0, 2, 3], [], []]
+    cj = count.compute_confident_joint(labels=labels, pred_probs=pred_probs, multi_label=True)
+    assert cj.shape == (4, 2, 2)
+    noise_idx = filter.find_label_issues(
+        labels=labels,
+        pred_probs=pred_probs,
+        multi_label=True,
+        return_indices_ranked_by=return_indices_ranked_by,
+    )
+    noise_idx2 = filter.find_label_issues(
+        labels=labels,
+        pred_probs=pred_probs,
+        multi_label=True,
+        confident_joint=cj,
+        return_indices_ranked_by=return_indices_ranked_by,
+    )
+
+    def _idx_to_bool(idx):
+        noise_bool = np.zeros(len(labels)).astype(bool)
+        noise_bool[idx] = True
+        return noise_bool
+
+    if return_indices_ranked_by is not None:
+        noise_idx = _idx_to_bool(noise_idx)
+        noise_idx2 = _idx_to_bool(noise_idx2)
+
+    expected_output = [False, False, False, False, True, False, True]
+    assert noise_idx.tolist() == noise_idx2.tolist() == expected_output
+
+
 def test_removing_class_consistent_results():
     # Note that only one label is class 1 (we're going to change it to class 2 later...)
     labels = np.array([0, 0, 0, 0, 1, 2, 2, 2])
