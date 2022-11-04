@@ -778,9 +778,13 @@ def _get_post_pred_probs_and_weights(
         prior_pred_probs_subset = prior_pred_probs[mask]
 
         # compute most likely class error
-        most_likely_class_error = np.mean(
-            consensus_label_subset
-            != np.argmax(np.bincount(consensus_label_subset, minlength=num_classes))
+        most_likely_class_error = np.clip(
+            np.mean(
+                consensus_label_subset
+                != np.argmax(np.bincount(consensus_label_subset, minlength=num_classes))
+            ),
+            a_min=1e-6,
+            a_max=None,
         )
 
         # compute adjusted annotator agreement (used as annotator weights)
