@@ -33,7 +33,7 @@ Get started with: [documentation](https://docs.cleanlab.ai/), [tutorials](https:
 [![docs](https://img.shields.io/static/v1?logo=github&style=flat&color=pink&label=docs&message=cleanlab)](https://docs.cleanlab.ai/)
 [![Slack Community](https://img.shields.io/static/v1?logo=slack&style=flat&color=white&label=slack&message=community)](https://cleanlab.ai/slack)
 [![Twitter](https://img.shields.io/twitter/follow/CleanlabAI?style=social)](https://twitter.com/CleanlabAI)
-[![Cleanlab Studio](https://tinyurl.com/studio-shield-link)](https://cleanlab.ai/studio)
+[![Cleanlab Studio](https://raw.githubusercontent.com/cleanlab/assets/master/shields/cl-studio-shield.svg)](https://cleanlab.ai/studio)
 
 -----
 
