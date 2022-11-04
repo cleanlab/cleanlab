@@ -831,8 +831,8 @@ def _get_post_pred_probs_and_weights(
         num_classes = get_num_classes(pred_probs=prior_pred_probs)
         label_counts = labels_multiannotator.apply(
             lambda s: np.bincount(s[s.notna()], minlength=num_classes), axis=1
-        )
-        post_pred_probs = np.stack(label_counts.to_list()) / num_annotations.reshape(-1, 1)
+        ).to_list()
+        post_pred_probs = np.stack(label_counts) / num_annotations.reshape(-1, 1)
 
     else:
         raise ValueError(
