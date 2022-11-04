@@ -110,7 +110,11 @@ def assert_valid_class_labels(
     integers (not multi-label).
     """
     if y.ndim != 1:
-        raise ValueError("labels must be 1D numpy array.")
+        raise ValueError("Labels must be 1D numpy array.")
+    if any([isinstance(label, str) for label in y]):
+        raise ValueError(
+            "Labels cannot be strings, they must be zero-indexed integers corresponding to class indices."
+        )
     if not np.equal(np.mod(y, 1), 0).all():  # check that labels are integers
         raise ValueError("Labels must be zero-indexed integers corresponding to class indices.")
     if min(y) < 0:
