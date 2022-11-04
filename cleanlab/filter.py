@@ -222,16 +222,13 @@ def find_label_issues(
     if isinstance(labels, np.ndarray):
         if set(labels) == {0}:
             allow_one_class = True
-    try:
-        assert_valid_inputs(
-            X=None,
-            y=labels,
-            pred_probs=pred_probs,
-            multi_label=multi_label,
-            allow_one_class=allow_one_class,
-        )
-    except:
-        breakpoint()
+    assert_valid_inputs(
+        X=None,
+        y=labels,
+        pred_probs=pred_probs,
+        multi_label=multi_label,
+        allow_one_class=allow_one_class,
+    )
 
     if filter_by in ["confident_learning", "predicted_neq_given"] and (
         frac_noise != 1.0 or num_to_remove_per_class is not None
