@@ -219,8 +219,8 @@ def find_label_issues(
         "predicted_neq_given",
     ]  # TODO: change default to confident_learning ?
     allow_one_class = False
-    if isinstance(labels, np.ndarray):
-        if set(labels) == {0}:
+    if isinstance(labels, np.ndarray) or all(isinstance(lab, int) for lab in labels):
+        if set(labels) == {0}:  # occurs with missing classes in multi-label settings
             allow_one_class = True
     assert_valid_inputs(
         X=None,

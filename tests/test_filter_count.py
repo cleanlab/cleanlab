@@ -795,7 +795,6 @@ def test_num_label_issues_multilabel(confident_joint):
         confident_joint=dataset["cj"] if confident_joint else None,
         multi_label=True,
     )
-    assert sum(f) == 53
     assert sum(f) == n
 
 
