@@ -89,7 +89,7 @@ def assert_valid_inputs(
         else:
             assert isinstance(y, list)
             assert all(isinstance(y_i, list) for y_i in y)
-            highest_class = max([max(y_i) for y_i in y]) + 1
+            highest_class = max([max(y_i) for y_i in y if len(y_i) != 0]) + 1
         if pred_probs.shape[1] < highest_class:
             raise ValueError(
                 f"pred_probs must have at least {highest_class} columns, based on the largest class index which appears in labels."

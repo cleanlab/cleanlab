@@ -65,6 +65,7 @@ def num_label_issues(
     *,
     confident_joint: Optional[np.ndarray] = None,
     estimation_method: str = "off_diagonal",
+    multi_label: bool = False,
 ) -> int:
     """Estimates the number of label issues in the `labels` of a dataset. Use this method to get the most accurate
     estimate of number of label issues when you don't need the indices of the label issues.
@@ -74,6 +75,8 @@ def num_label_issues(
     labels :
       An array of shape ``(N,)`` of noisy labels, i.e. some labels may be erroneous.
       Elements must be in the set 0, 1, ..., K-1, where K is the number of classes.
+      For multi-label classification where each example can belong to multiple classes,
+      refer to documentation for this argument in :py:func:`find_label_issues <cleanlab.filter.find_label_issues>` for details.
 
     pred_probs :
       An array of shape ``(N, K)`` of model-predicted probabilities,
@@ -90,6 +93,8 @@ def num_label_issues(
       Entry ``(j, k)`` in the matrix is the number of examples confidently counted into the pair of ``(noisy label=j, true label=k)`` classes.
       The `confident_joint` can be computed using :py:func:`count.compute_confident_joint <cleanlab.count.compute_confident_joint>`.
       If not provided, it is computed from the given (noisy) `labels` and `pred_probs`.
+      If `multi_label` is True, then the `confident_joint` should be a one-vs-rest array of shape ``(K, 2, 2)``, refer to :py:func:`find_label_issues <cleanlab.filter.find_label_issues>` for details.
+
 
     estimation_method :
       Method for estimating the number of label issues in dataset by counting the examples in the off-diagonal of the `confident_joint` ``P(label=i, true_label=j)``.
@@ -105,13 +110,22 @@ def num_label_issues(
 
        TL;DR: use this method to get the most accurate estimate of number of label issues when you don't need the indices of the label issues.
 
+    multi_label : bool, optional
+       Refer to documentation for this argument in :py:func:`compute_confident_joint <cleanlab.count.compute_confident_joint>` with `multi_label=True` for details.
+
+
     Returns
     -------
     num_issues :
       The estimated number of examples with label issues in the dataset.
     """
     valid_methods = ["off_diagonal", "off_diagonal_calibrated"]
-
+    if multi_label:
+        return _num_label_issues_multilabel(
+            labels=labels,
+            pred_probs=pred_probs,
+            confident_joint=confident_joint,
+        )
     labels = labels_to_array(labels)
     assert_valid_inputs(X=None, y=labels, pred_probs=pred_probs)
 
@@ -141,6 +155,34 @@ def num_label_issues(
         )
 
     return num_issues
+
+
+def _num_label_issues_multilabel(
+    labels: LabelLike,
+    pred_probs: np.ndarray,
+    confident_joint: Optional[np.ndarray] = None,
+) -> int:
+    """
+    Parameters
+    ----------
+
+    labels: list
+       Refer to documentation for this argument in ``count.calibrate_confident_joint()`` with `multi_label=True` for details.
+    pred_probs : np.ndarray
+       Predicted-probabilities in the same format expected by the :py:func:`get_confident_thresholds <cleanlab.count.get_confident_thresholds>` function.
+
+    Returns
+    -------
+    num_issues : int
+       The estimated number of examples with label issues in the multilabel dataset.
+    """
+
+    from cleanlab.filter import find_label_issues
+
+    issues_idx = find_label_issues(
+        labels=labels, pred_probs=pred_probs, confident_joint=confident_joint, multi_label=True
+    )
+    return sum(issues_idx)
 
 
 def calibrate_confident_joint(confident_joint, labels, *, multi_label=False) -> np.ndarray:
@@ -241,7 +283,6 @@ def _calibrate_confident_joint_multilabel(confident_joint: np.ndarray, labels: l
       An array of shape ``(K, 2, 2)`` of type float representing a valid
       estimate of the joint *counts* of noisy and true labels in a one-vs-rest fashion."""
     y_one, num_classes = get_onehot_num_classes(labels)
-    num_classes = len(confident_joint)
     calibrate_confident_joint_list: np.ndarray = np.ndarray(
         shape=(num_classes, 2, 2), dtype=np.int64
     )

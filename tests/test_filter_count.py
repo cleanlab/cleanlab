@@ -779,6 +779,25 @@ def test_num_label_issues(confident_joint):
             )
 
 
+@pytest.mark.parametrize("confident_joint", [None, True])
+def test_num_label_issues_multilabel(confident_joint):
+    dataset = multilabel_data
+    n = count.num_label_issues(
+        labels=dataset["labels"],
+        pred_probs=dataset["pred_probs"],
+        confident_joint=dataset["cj"] if confident_joint else None,
+        estimation_method="off_diagonal",
+        multi_label=True,
+    )
+    f = filter.find_label_issues(
+        labels=dataset["labels"],
+        pred_probs=dataset["pred_probs"],
+        confident_joint=dataset["cj"] if confident_joint else None,
+        multi_label=True,
+    )
+    assert sum(f) == n
+
+
 def test_issue_158():
     # ref: https://github.com/cleanlab/cleanlab/issues/158
     pred_probs = np.array(
@@ -854,6 +873,53 @@ def test_missing_classes():
         "predicted_neq_given",
     ]:
         assert all(filter.find_label_issues(labels, pred_probs, filter_by=fb) == issues)
+
+
+@pytest.mark.parametrize(
+    "return_indices_ranked_by",
+    [None, "self_confidence", "normalized_margin", "confidence_weighted_entropy"],
+)
+@pytest.mark.filterwarnings("ignore::UserWarning")
+def test_missing_classes_multilabel(return_indices_ranked_by):
+    pred_probs = np.array(
+        [
+            [0.9, 0.1, 0.0, 0.4, 0.1],
+            [0.7, 0.8, 0.2, 0.3, 0.1],
+            [0.9, 0.8, 0.4, 0.2, 0.1],
+            [0.1, 0.1, 0.8, 0.3, 0.1],
+            [0.4, 0.5, 0.1, 0.1, 0.1],
+            [0.1, 0.1, 0.2, 0.1, 0.1],
+            [0.8, 0.1, 0.2, 0.1, 0.1],
+        ]
+    )
+    labels = [[0], [0, 1], [0, 1], [2], [0, 2, 3], [], []]
+    cj = count.compute_confident_joint(labels=labels, pred_probs=pred_probs, multi_label=True)
+    assert cj.shape == (5, 2, 2)
+    noise_idx = filter.find_label_issues(
+        labels=labels,
+        pred_probs=pred_probs,
+        multi_label=True,
+        return_indices_ranked_by=return_indices_ranked_by,
+    )
+    noise_idx2 = filter.find_label_issues(
+        labels=labels,
+        pred_probs=pred_probs,
+        multi_label=True,
+        confident_joint=cj,
+        return_indices_ranked_by=return_indices_ranked_by,
+    )
+
+    def _idx_to_bool(idx):
+        noise_bool = np.zeros(len(labels)).astype(bool)
+        noise_bool[idx] = True
+        return noise_bool
+
+    if return_indices_ranked_by is not None:
+        noise_idx = _idx_to_bool(noise_idx)
+        noise_idx2 = _idx_to_bool(noise_idx2)
+
+    expected_output = [False, False, False, False, True, False, True]
+    assert noise_idx.tolist() == noise_idx2.tolist() == expected_output
 
 
 def test_removing_class_consistent_results():
