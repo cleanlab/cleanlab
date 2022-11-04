@@ -25,6 +25,7 @@ Methods for analysis of classification data labeled by multiple annotators, incl
 The underlying algorithms are described in `the CROWDLAB paper <https://arxiv.org/abs/2210.06812>`_.
 """
 
+from typing_extensions import reveal_type
 import warnings
 import numpy as np
 import pandas as pd
@@ -828,12 +829,10 @@ def _get_post_pred_probs_and_weights(
 
     elif quality_method == "agreement":
         num_classes = get_num_classes(pred_probs=prior_pred_probs)
-        label_counts = np.stack(
-            labels_multiannotator.apply(
-                lambda s: np.bincount(s[s.notna()].to_numpy(), minlength=num_classes), axis=1
-            ).to_list()
+        label_counts = labels_multiannotator.apply(
+            lambda s: np.bincount(s[s.notna()], minlength=num_classes), axis=1
         )
-        post_pred_probs = label_counts / num_annotations.reshape(-1, 1)
+        post_pred_probs = np.stack(label_counts.to_list()) / num_annotations.reshape(-1, 1)
 
     else:
         raise ValueError(
