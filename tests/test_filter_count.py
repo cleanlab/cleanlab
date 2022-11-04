@@ -779,6 +779,26 @@ def test_num_label_issues(confident_joint):
             )
 
 
+@pytest.mark.parametrize("confident_joint", [None, True])
+def test_num_label_issues_multilabel(confident_joint):
+    dataset = multilabel_data
+    n = count.num_label_issues(
+        labels=dataset["labels"],
+        pred_probs=dataset["pred_probs"],
+        confident_joint=dataset["cj"] if confident_joint else None,
+        estimation_method="off_diagonal",
+        multi_label=True,
+    )
+    f = filter.find_label_issues(
+        labels=dataset["labels"],
+        pred_probs=dataset["pred_probs"],
+        confident_joint=dataset["cj"] if confident_joint else None,
+        multi_label=True,
+    )
+    assert sum(f) == 53
+    assert sum(f) == n
+
+
 def test_issue_158():
     # ref: https://github.com/cleanlab/cleanlab/issues/158
     pred_probs = np.array(
