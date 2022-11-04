@@ -31,6 +31,16 @@ def assert_valid_inputs_multiannotator(
     pred_probs: Optional[np.ndarray] = None,
 ) -> None:
     """Validate format of multi-annotator labels"""
+    # Raise error if labels are not formatted properly
+    if any([isinstance(label, str) for label in labels_multiannotator.values.ravel()]):
+        raise ValueError(
+            "Labels cannot be strings, they must be zero-indexed integers corresponding to class indices."
+        )
+
+    all_labels_flatten = labels_multiannotator.replace({pd.NA: np.NaN}).astype(float).values.ravel()
+    all_labels_flatten = all_labels_flatten[~np.isnan(all_labels_flatten)]
+    assert_valid_class_labels(all_labels_flatten, allow_one_class=True)
+
     # Raise error if number of classes in labels_multiannoator does not match number of classes in pred_probs
     if pred_probs is not None:
         num_classes = pred_probs.shape[1]
@@ -44,11 +54,6 @@ def assert_valid_inputs_multiannotator(
                 f"""pred_probs must have at least {int(highest_class)} columns based on the largest class label which appears in labels_multiannotator.
             Perhaps some rarely-annotated classes were lost while establishing consensus labels used to train your classifier."""
             )
-
-    # Raise error if labels are not formatted properly
-    all_labels_flatten = labels_multiannotator.replace({pd.NA: np.NaN}).astype(float).values.ravel()
-    all_labels_flatten = all_labels_flatten[~np.isnan(all_labels_flatten)]
-    assert_valid_class_labels(all_labels_flatten, allow_one_class=True)
 
     # Raise error if labels_multiannotator has NaN rows
     if labels_multiannotator.isna().all(axis=1).any():
