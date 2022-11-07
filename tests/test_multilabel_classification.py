@@ -305,17 +305,38 @@ def test_get_cross_validated_multilabel_pred_probs(dummy_features, labels, cv, p
     assert np.allclose(pred_probs, pred_probs_gold, atol=5e-4)
 
 
-@pytest.mark.parametrize("alpha", [0.5, None])
-def test_exponential_moving_average(alpha):
-    # Test that the exponential moving average is correct
-    # for a simple example.
-    for x, expected_ema in zip(
-        [
-            np.ones(5).reshape(1, -1),
-            np.array([[0.1, 0.2, 0.3]]),
-            np.array([x / 10 for x in range(1, 7)]).reshape(2, 3),
-        ],
-        [1, 0.175, np.array([0.175, 0.475])],
-    ):
-        ema = ml_scorer.exponential_moving_average(x, alpha=alpha)
+class TestExponentialMovingAverage:
+    """Test the ml_scorer.expontential_moving_average function."""
+
+    @pytest.mark.parametrize("alpha", [0.5, None])
+    def test_valid_alpha(self, alpha):
+        # Test valid alpha values
+        for x, expected_ema in zip(
+            [
+                np.ones(5).reshape(1, -1),
+                np.array([[0.1, 0.2, 0.3]]),
+                np.array([x / 10 for x in range(1, 7)]).reshape(2, 3),
+            ],
+            [1, 0.175, np.array([0.175, 0.475])],
+        ):
+            ema = ml_scorer.exponential_moving_average(x, alpha=alpha)
+            assert np.allclose(ema, expected_ema, atol=1e-4)
+
+    @pytest.mark.parametrize(
+        "alpha,expected_ema",
+        [[0, 0.3], [1, 0.1]],
+        ids=["alpha=0", "alpha=1"],
+    )
+    def test_alpha_boundary(self, alpha, expected_ema):
+        # alpha = 0(1) should return the largest(smallest) value
+        X = np.array([[0.1, 0.2, 0.3]])
+        ema = ml_scorer.exponential_moving_average(X, alpha=alpha)
         assert np.allclose(ema, expected_ema, atol=1e-4)
+
+    def test_invalid_alpha(self):
+        # Test that the exponential moving average raises an error
+        # when alpha is not in the interval [0, 1].
+        partial_error_msg = r"alpha must be in the interval \[0, 1\]"
+        for alpha in [-0.5, 1.5]:
+            with pytest.raises(ValueError, match=partial_error_msg):
+                ml_scorer.exponential_moving_average(np.ones(5).reshape(1, -1), alpha=alpha)

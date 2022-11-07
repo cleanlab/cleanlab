@@ -215,7 +215,7 @@ def exponential_moving_average(
 
     .. math::
 
-        \\text{EMA}_t = \\alpha \cdot s_t + (1 - \\alpha) \cdot \\text{EMA}_{t-1},
+        \\text{EMA}_t = \\alpha \cdot s_t + (1 - \\alpha) \cdot \\text{EMA}_{t-1}, \\qquad 0 \\leq \\alpha \\leq 1
 
     We set :math:`\\text{EMA}_1 = s_1` as the largest score in the sorted vector s.
 
@@ -231,6 +231,8 @@ def exponential_moving_average(
         Discount factor that determines the weight of the previous EMA score.
         Higher alpha means that the previous EMA score has a lower weight while
         the current score has a higher weight.
+
+        Its value must be in the interval [0, 1].
 
         If alpha is None, it is set to 2 / (K + 1) where K is the number of scores.
 
@@ -255,6 +257,8 @@ def exponential_moving_average(
     if alpha is None:
         # One conventional choice for alpha is 2/(K + 1), where K is the number of periods in the moving average.
         alpha = float(2 / (K + 1))
+    if not (0 <= alpha <= 1):
+        raise ValueError(f"alpha must be in the interval [0, 1], got {alpha}")
     s_T = s_sorted.T
     s_ema, s_next = s_T[0], s_T[1:]
     for s_i in s_next:
