@@ -107,7 +107,7 @@ def find_label_issues(
 
     **Note**: Returned label issues are most accurate when they are computed based on out-of-sample `pred_probs` from your model.
     To obtain out-of-sample predicted probabilities for every datapoint in your dataset, you can use :ref:`cross-validation <pred_probs_cross_val>`.
-    This is encouraged for better performance but not necessary for results.
+    This is encouraged to get better results.
 
     return_indices_ranked_by : {None, 'self_confidence', 'normalized_margin', 'confidence_weighted_entropy'}, default=None
       Determines what is returned by this method: either a boolean mask or list of indices np.ndarray.
