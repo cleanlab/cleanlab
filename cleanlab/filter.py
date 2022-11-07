@@ -105,7 +105,7 @@ def find_label_issues(
       columns must be ordered such that these probabilities correspond to
       class 0, 1, ..., K-1.
 
-    **Info**: Returned label issues are most accurate when they are computed based on out-of-sample 'pred_probs' from your model.
+    **Note**: Returned label issues are most accurate when they are computed based on out-of-sample `pred_probs` from your model.
     To obtain out-of-sample predicted probabilities for every datapoint in your dataset, you can use :ref:`cross-validation <pred_probs_cross_val>`.
     This is encouraged for better performance but not necessary for results.
 
