@@ -497,11 +497,13 @@ While this open-source library **finds** data issues, an interface is needed to 
 
 * Have ideas for the future of cleanlab? How are you using cleanlab? [Join the discussion](https://github.com/cleanlab/cleanlab/discussions) and check out [our active/planned Projects and what we could use your help with](https://github.com/cleanlab/cleanlab/projects).
 
-* Have code improvements for cleanlab? See the [development guide](DEVELOPMENT.md) and [submit a pull request](CONTRIBUTING.md).
+* Interested in contributing? See the [contributing guide](https://github.com/cleanlab/cleanlab/blob/master/CONTRIBUTING.md) and [ideas on useful contributions](https://github.com/cleanlab/cleanlab/wiki#ideas-for-contributing-to-cleanlab).
+
+* Have code improvements for cleanlab? See the [development guide](DEVELOPMENT.md).
 
 * Have an issue with cleanlab? [Search existing issues](https://github.com/cleanlab/cleanlab/issues?q=is%3Aissue) or [submit a new issue](https://github.com/cleanlab/cleanlab/issues/new).
 
-* Need professional help with cleanlab? 
+* Need professional help with cleanlab?
 Join our [\#help Slack channel](https://cleanlab.ai/slack) and message one of our core developers, Jonas Mueller, or schedule a meeting via email: team@cleanlab.ai
 
 ## License
