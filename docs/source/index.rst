@@ -50,7 +50,7 @@ If you're using a scikit-learn-compatible model (option 1), you don't need to tr
     # Option 2 - works with ANY ML model - just input the model's predicted probabilities
     ordered_label_issues = find_label_issues(
         labels=labels,
-        pred_probs=pred_probs,  # predicted probabilities from any model
+        pred_probs=pred_probs,  # predicted probabilities from any model (ideally out-of-sample predictions)
         return_indices_ranked_by='self_confidence',
     )
 
