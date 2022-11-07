@@ -26,8 +26,8 @@ indices of individual datapoints based on their quality.
 Note: multi-label classification is not supported by most methods in this module,
 each example must belong to a single class, e.g. format: ``labels = np.ndarray([1,0,2,1,1,0...])``.
 
-INFO: Label quality scores are most accurate when they are computed based on out-of-sample 'pred_probs' from your model.
-To obtain out-of-sample predicted probabilities for every datapoint in your dataset, you can use :ref:`cross-validation <pred_probs_cross_val>`. This is encouraged for better performance but not necessary for results.
+Note: Label quality scores are most accurate when they are computed based on out-of-sample `pred_probs` from your model.
+To obtain out-of-sample predicted probabilities for every datapoint in your dataset, you can use :ref:`cross-validation <pred_probs_cross_val>`. This is encouraged to get better results.
 """
 
 import numpy as np
