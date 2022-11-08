@@ -32,7 +32,7 @@ To obtain out-of-sample predicted probabilities for every datapoint in your data
 
 import numpy as np
 from sklearn.metrics import log_loss
-from typing import List
+from typing import List, Optional
 import warnings
 
 from cleanlab.internal.validation import assert_valid_inputs
@@ -231,7 +231,7 @@ def get_label_quality_ensemble_scores(
     method: str = "self_confidence",
     adjust_pred_probs: bool = False,
     weight_ensemble_members_by: str = "accuracy",
-    custom_weights: np.ndarray = None,
+    custom_weights: Optional[np.ndarray] = None,
     log_loss_search_T_values: List[float] = [1e-4, 1e-3, 1e-2, 1e-1, 1e0, 1e1, 1e2, 2e2],
     verbose: bool = True,
 ) -> np.ndarray:

@@ -424,10 +424,10 @@ def _find_label_issues_multilabel(
     rank_by_kwargs={},
     filter_by: str = "prune_by_noise_rate",
     frac_noise: float = 1.0,
-    num_to_remove_per_class: int = None,
+    num_to_remove_per_class: Optional[int] = None,
     min_examples_per_class=1,
     confident_joint: Optional[np.ndarray] = None,
-    n_jobs: int = None,
+    n_jobs: Optional[int] = None,
     verbose: bool = False,
 ) -> np.ndarray:
     """
@@ -475,10 +475,10 @@ def _find_multilabel_issues_per_class(
     rank_by_kwargs={},
     filter_by: str = "prune_by_noise_rate",
     frac_noise: float = 1.0,
-    num_to_remove_per_class: int = None,
+    num_to_remove_per_class: Optional[int] = None,
     min_examples_per_class=1,
     confident_joint: Optional[np.ndarray] = None,
-    n_jobs: int = None,
+    n_jobs: Optional[int] = None,
     verbose: bool = False,
 ) -> Union[np.ndarray, Tuple[List[np.ndarray], List[Any], List[np.ndarray]]]:
     """
@@ -823,7 +823,7 @@ mp_params: Dict[str, Any] = {}  # Globals to be shared across threads in multipr
 
 
 def _to_np_array(
-    mp_arr: bytearray, dtype="int32", shape: Tuple[int, int] = None
+    mp_arr: bytearray, dtype="int32", shape: Optional[Tuple[int, int]] = None
 ) -> np.ndarray:  # pragma: no cover
     """multipropecessing Helper function to convert a multiprocessing
     RawArray to a numpy array."""
