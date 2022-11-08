@@ -29,7 +29,7 @@ import warnings
 import numpy as np
 import pandas as pd
 
-from typing import List, Dict, Any, Union, Tuple
+from typing import List, Dict, Any, Union, Tuple, Optional
 
 from cleanlab.rank import get_label_quality_scores
 from cleanlab.internal.util import get_num_classes, value_counts
@@ -299,7 +299,7 @@ def get_label_quality_multiannotator(
 
 def get_majority_vote_label(
     labels_multiannotator: Union[pd.DataFrame, np.ndarray],
-    pred_probs: np.ndarray = None,
+    pred_probs: Optional[np.ndarray] = None,
     verbose: bool = True,
 ) -> np.ndarray:
     """Returns the majority vote label for each example, aggregated from the labels given by multiple annotators.
