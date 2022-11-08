@@ -109,7 +109,6 @@ Please see our `contributing guidelines <https://github.com/cleanlab/cleanlab/bl
    :hidden:
 
    Quickstart <self>
-   How to contribute <https://github.com/cleanlab/cleanlab/blob/master/CONTRIBUTING.md>
 
 .. toctree::
    :hidden:
@@ -147,7 +146,8 @@ Please see our `contributing guidelines <https://github.com/cleanlab/cleanlab/bl
 .. toctree::
    :caption: Guides
    :hidden:
-
+   
+   How to contribute <https://github.com/cleanlab/cleanlab/blob/master/CONTRIBUTING.md>
    Migrating to v2.x <migrating/migrate_v2>
 
 .. toctree::
