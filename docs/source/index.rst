@@ -43,23 +43,23 @@ If you're using a scikit-learn-compatible model (option 1), you don't need to tr
 
     from cleanlab.classification import CleanLearning
     from cleanlab.filter import find_label_issues
-    
+
     # Option 1 - works with sklearn-compatible models - just input the data and labels ツ
     label_issues_info = CleanLearning(clf=sklearn_compatible_model).find_label_issues(data, labels)
 
     # Option 2 - works with ANY ML model - just input the model's predicted probabilities
     ordered_label_issues = find_label_issues(
         labels=labels,
-        pred_probs=pred_probs,  # out-of-sample predicted probabilities from any model
+        pred_probs=pred_probs,  # predicted probabilities from any model (ideally out-of-sample predictions)
         return_indices_ranked_by='self_confidence',
     )
 
-:py:class:`CleanLearning <cleanlab.classification.CleanLearning>` (option 1) also works with models from most standard ML frameworks by wrapping the model for scikit-learn compliance, e.g. huggingface/tensorflow/keras (using our KerasWrapperModel), pytorch (using skorch package), etc. 
+:py:class:`CleanLearning <cleanlab.classification.CleanLearning>` (option 1) also works with models from most standard ML frameworks by wrapping the model for scikit-learn compliance, e.g. huggingface/tensorflow/keras (using our KerasWrapperModel), pytorch (using skorch package), etc.
 
 By default, :py:meth:`find_label_issues <cleanlab.filter.find_label_issues>` returns a boolean mask of label issues. You can instead return the indices of potential mislabeled examples by setting `return_indices_ranked_by` in :py:meth:`find_label_issues <cleanlab.filter.find_label_issues>`. The indices are ordered by likelihood of a label error (estimated via :py:meth:`rank.get_label_quality_scores <cleanlab.rank.get_label_quality_scores>`).
 
 .. important::
-   The predicted probabilities, ``pred_probs``, from your model **must be out-of-sample**. Never provide predictions on the same data points used to train the model -- these predictions are overfit and unsuitable for finding label errors. Details on how to compute out-of-sample predicted probabilities for your entire dataset are :ref:`here <pred_probs_cross_val>`.
+   Cleanlab performs better if the ``pred_probs`` from your model are **out-of-sample**. Details on how to compute out-of-sample predicted probabilities for your entire dataset are :ref:`here <pred_probs_cross_val>`.
 
 ..
    TODO - include the url for tf and torch beginner tutorials
@@ -83,7 +83,7 @@ When the :py:meth:`.fit() <cleanlab.classification.CleanLearning.fit>` method is
    predictions = cl.predict(test_data)
 
 
-4. Dataset curation: fix dataset-level issues 
+4. Dataset curation: fix dataset-level issues
 ---------------------------------------------
 
 cleanlab's :py:mod:`dataset <cleanlab.dataset>` module helps you deal with dataset-level issues by  :ref:`finding overlapping classes <cleanlab.dataset.find_overlapping_classes>` (classes to merge), :ref:`rank class-level label quality <cleanlab.dataset.rank_classes_by_label_quality>` (classes to keep/delete), and :ref:`measure overall dataset health <cleanlab.dataset.overall_label_health_score>` (to track dataset quality as you make adjustments).

@@ -295,7 +295,7 @@ Many methods and their default parameters are not covered here. Check out the [d
 
 ## Use any custom model's predicted probabilities to find label errors in 1 line of code
 
-pred_probs (num_examples x num_classes matrix of predicted probabilities) should already be computed on your own, with any classifier. pred_probs must be obtained in a holdout/out-of-sample manner (e.g. via cross-validation).
+pred_probs (num_examples x num_classes matrix of predicted probabilities) should already be computed on your own, with any classifier. For best results, pred_probs should be obtained in a holdout/out-of-sample manner (e.g. via cross-validation).
 * cleanlab can do this for you via [`cleanlab.count.estimate_cv_predicted_probabilities`](https://docs.cleanlab.ai/master/cleanlab/count.html)]
 * Tutorial with more info: [[here](https://docs.cleanlab.ai/stable/tutorials/pred_probs_cross_val.html)]
 * Examples how to compute pred_probs with: [[CNN image classifier (PyTorch)](https://docs.cleanlab.ai/stable/tutorials/image.html)], [[NN text classifier (TensorFlow)](https://docs.cleanlab.ai/stable/tutorials/text.html)]

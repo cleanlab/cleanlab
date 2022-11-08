@@ -26,12 +26,8 @@ indices of individual datapoints based on their quality.
 Note: multi-label classification is not supported by most methods in this module,
 each example must belong to a single class, e.g. format: ``labels = np.ndarray([1,0,2,1,1,0...])``.
 
-CAUTION: These label quality scores are computed based on `pred_probs` from your model that must be out-of-sample!
-You should never provide predictions on the same examples used to train the model,
-as these will be overfit and unsuitable for finding label-errors.
-To obtain out-of-sample predicted probabilities for every datapoint in your dataset, you can use :ref:`cross-validation <pred_probs_cross_val>`.
-Alternatively it is ok if your model was trained on a separate dataset and you are only evaluating
-labels in data that was previously held-out.
+Note: Label quality scores are most accurate when they are computed based on out-of-sample `pred_probs` from your model.
+To obtain out-of-sample predicted probabilities for every datapoint in your dataset, you can use :ref:`cross-validation <pred_probs_cross_val>`. This is encouraged to get better results.
 """
 
 import numpy as np
@@ -146,12 +142,9 @@ def get_label_quality_scores(
       columns must be ordered such that these probabilities correspond to
       class 0, 1, ..., K-1.
 
-      **Caution**: `pred_probs` from your model must be out-of-sample!
-      You should never provide predictions on the same examples used to train the model,
-      as these will be overfit and unsuitable for finding label-errors.
+      **Note**: Returned label issues are most accurate when they are computed based on out-of-sample `pred_probs` from your model.
       To obtain out-of-sample predicted probabilities for every datapoint in your dataset, you can use :ref:`cross-validation <pred_probs_cross_val>`.
-      Alternatively it is ok if your model was trained on a separate dataset and you are only evaluating
-      data that was previously held-out.
+      This is encouraged to get better results.
 
     method : {"self_confidence", "normalized_margin", "confidence_weighted_entropy"}, default="self_confidence"
       Label quality scoring method.
