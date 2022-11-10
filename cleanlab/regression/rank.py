@@ -1,6 +1,6 @@
 import numpy as np
 
-""" generate label quality score for regression dataset"""
+""" generate label quality score for regression dataset """
 
 
 def get_label_quality_scores(labels: np.ndarray, pred_labels: np.ndarray) -> np.ndarray:
@@ -38,6 +38,9 @@ def get_label_quality_scores(labels: np.ndarray, pred_labels: np.ndarray) -> np.
     >>> label_quality_scores
     array([0.36787944, 1.        , 0.13533528, 0.90483742])
     """
+
+    if not isinstance(labels, np.ndarray) or not isinstance(pred_labels, np.ndarray):
+        raise TypeError("labels and pred_labels must be of type np.ndarray")
 
     assert (
         labels.shape == pred_labels.shape
