@@ -9,3 +9,4 @@ from . import multiannotator
 from . import outlier
 from . import token_classification
 from . import multilabel_classification
+from . import regression
