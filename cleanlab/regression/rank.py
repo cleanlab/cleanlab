@@ -1,5 +1,7 @@
 import numpy as np
 
+""" generate label quality score for regression dataset"""
+
 
 def get_label_quality_scores(labels: np.ndarray, pred_labels: np.ndarray) -> np.ndarray:
     """

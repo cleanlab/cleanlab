@@ -15,3 +15,4 @@ Tutorials
    token_classification
    pred_probs_cross_val
    faq
+   regression
