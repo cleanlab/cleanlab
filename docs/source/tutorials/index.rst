@@ -13,6 +13,7 @@ Tutorials
    outliers
    multiannotator
    token_classification
+   regression
    pred_probs_cross_val
    faq
-   regression
+
