@@ -122,6 +122,7 @@ Please see our `contributing guidelines <https://github.com/cleanlab/cleanlab/bl
    tutorials/dataset_health
    tutorials/outliers
    tutorials/multiannotator
+   tutorials/multilabel_classification
    tutorials/token_classification
    tutorials/pred_probs_cross_val
    tutorials/faq
