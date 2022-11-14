@@ -12,6 +12,7 @@ Tutorials
    dataset_health
    outliers
    multiannotator
+   multilabel_classification
    token_classification
    pred_probs_cross_val
    faq
