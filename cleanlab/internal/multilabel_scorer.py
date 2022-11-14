@@ -419,7 +419,7 @@ def get_label_quality_scores(
 
     Examples
     --------
-    >>> import cleanlab.internal.multilabel_utils as ml_scorer
+    >>> import cleanlab.internal.multilabel_scorer as ml_scorer
     >>> import numpy as np
     >>> labels = np.array([[0, 1, 0], [1, 0, 1]])
     >>> pred_probs = np.array([[0.1, 0.9, 0.1], [0.4, 0.1, 0.9]])
@@ -449,23 +449,34 @@ def multilabel_py(y: np.ndarray) -> np.ndarray:
     Returns
     -------
     py :
-        A 1d array of prior probabilities of shape (2**K,) where 2**K is the number of possible class-assignment configurations.
+        A 2d array of prior probabilities of shape (K,2) where the first column is the probability of the label being 0
+        and the second column is the probability of the label being 1 for each class.
 
     Examples
     --------
+    >>> from cleanlab.internal.multilabel_scorer import multilabel_py
+    >>> import numpy as np
     >>> y = np.array([[0, 0], [0, 1], [1, 0], [1, 1]])
     >>> multilabel_py(y)
-    array([0.25, 0.25, 0.25, 0.25])
-    >>> y = np.array([[0, 0], [0, 1], [1, 0], [1, 1], [1, 0]])
+    array([[0.5, 0.5],
+           [0.5, 0.5]])
+    >>> y = np.array([[0, 0], [0, 1], [1, 0], [1, 0], [1, 0]])
     >>> multilabel_py(y)
-    array([0.2, 0.2, 0.4, 0.2])
+    array([[0.4, 0.6],
+           [0.8, 0.2]])
     """
-    # Count the number of unique class-assignment configurations/labels
-    # and the number of times each configuration occurs.
-    N, K = y.shape
-    unique_labels, counts = np.unique(y, axis=0, return_counts=True)
-    counts = _fix_missing_class_count(K, unique_labels, counts)
-    py = counts / N
+
+    def compute_class_py(y_slice: np.ndarray) -> np.ndarray:
+        # Should only consider a single class at a time
+        assert y_slice.ndim == 1
+        unique_values, counts = np.unique(y_slice, axis=0, return_counts=True)
+        N = y_slice.shape[0]
+        if len(unique_values) == 1:
+            # Should be 0 and 1, pad with 0 probability if either is missing.
+            counts = np.array([0, N] if unique_values[0] == 1 else [N, 0])
+        return counts / N
+
+    py = np.apply_along_axis(compute_class_py, axis=1, arr=y.T)
     return py
 
 
