@@ -480,22 +480,6 @@ def multilabel_py(y: np.ndarray) -> np.ndarray:
     return py
 
 
-def _fix_missing_class_count(K: int, unique_labels: np.ndarray, counts: np.ndarray) -> np.ndarray:
-    """If there are missing configurations, i.e. fewer than 2**K unique label, add them with a count of 0."""
-    if unique_labels.shape[0] < 2**K:
-        # Get the missing labels.
-        all_configurations = itertools.product([0, 1], repeat=K)
-        missing_labels = np.array(list(set(all_configurations) - set(map(tuple, unique_labels))))
-        # Add the missing labels with a count of 0.
-        unique_labels = np.vstack((unique_labels, missing_labels))
-        counts = np.hstack((counts, np.zeros(missing_labels.shape[0])))
-        # Sort the labels and counts by binary representation in
-        # 'big' bit order:  [0, 0] < [0, 1] < [1, 0] < [1, 1])
-        sorted_ids = np.argsort(np.sum(unique_labels * 2 ** np.arange(K)[::-1], axis=1))
-        counts = counts[sorted_ids]
-    return counts
-
-
 # Cross-validation helpers
 
 
