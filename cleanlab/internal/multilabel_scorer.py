@@ -18,7 +18,6 @@ Helper classes and functions used internally to compute label quality scores in 
 """
 
 from enum import Enum
-import itertools
 from typing import Callable, Optional, Union
 
 import numpy as np
