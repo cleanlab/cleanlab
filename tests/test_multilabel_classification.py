@@ -204,13 +204,13 @@ def test_get_label_quality_scores_output(labels, pred_probs, scorer):
     [
         (
             pytest.lazy_fixture("labels"),
-            np.array([1 / 10, 1 / 10, 2 / 10, 1 / 10, 1 / 10, 2 / 10, 1 / 10, 1 / 10]),
+            np.full((3, 2), 0.5),
         ),
-        (np.array([[0, 1], [0, 0], [1, 1]]), np.array([1 / 3, 1 / 3, 0, 1 / 3])),
-        (np.array([[0, 1], [0, 0], [0, 1], [0, 1]]), np.array([1 / 4, 3 / 4, 0, 0])),
+        (np.array([[0, 1], [0, 0], [1, 1]]), np.array([[2 / 3, 1 / 3], [1 / 3, 2 / 3]])),
+        (np.array([[0, 1], [0, 0], [0, 1], [0, 1]]), np.array([[4 / 4, 0 / 4], [1 / 4, 3 / 4]])),
         (
             np.array([[0, 1, 0, 0, 0, 0, 0, 0, 0]]),
-            np.array([0 if i != 2**7 else 1 for i in range(2**9)]),
+            np.array([[1, 0] if i != 1 else [0, 1] for i in range(9)]),
         ),
     ],
     ids=[
@@ -223,7 +223,7 @@ def test_get_label_quality_scores_output(labels, pred_probs, scorer):
 def test_multilabel_py(given_labels, expected):
     py = ml_scorer.multilabel_py(given_labels)
     assert isinstance(py, np.ndarray)
-    assert py.shape == (2 ** given_labels.shape[1],)
+    assert py.shape == (given_labels.shape[1], 2)
     assert np.isclose(py, expected).all()
 
 
