@@ -447,6 +447,10 @@ def get_label_quality_multiannotator_ensemble(
     return labels_info
 
 
+# def get_active_learning_scores():
+#     pass
+
+
 def get_majority_vote_label(
     labels_multiannotator: Union[pd.DataFrame, np.ndarray],
     pred_probs: Optional[np.ndarray] = None,

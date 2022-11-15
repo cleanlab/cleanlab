@@ -45,13 +45,12 @@ def assert_valid_inputs_multiannotator(
 
     # Raise error if number of classes in labels_multiannoator does not match number of classes in pred_probs
     if pred_probs is not None:
-        # if 3d pred_probs, flatten it into 2d array
         if ensemble:
             assert pred_probs.ndim == 3
-            pred_probs = np.mean(pred_probs, axis=0)
-
-        assert pred_probs.ndim == 2
-        num_classes = pred_probs.shape[1]
+            num_classes = pred_probs.shape[2]
+        else:
+            assert pred_probs.ndim == 2
+            num_classes = pred_probs.shape[1]
         highest_class = (
             np.nanmax(labels_multiannotator.replace({pd.NA: np.NaN}).astype(float).values) + 1
         )
