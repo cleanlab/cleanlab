@@ -202,6 +202,9 @@ def test_label_quality_scores_multiannotator():
         labels_string_names, pred_probs, return_detailed_quality=False
     )
 
+    # test temperature scaling
+    multiannotator_dict = get_label_quality_multiannotator(labels, pred_probs, temp_scale=True)
+
     # test incorrect consensus_method
     try:
         multiannotator_dict = get_label_quality_multiannotator(

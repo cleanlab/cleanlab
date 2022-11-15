@@ -30,6 +30,7 @@ from cleanlab.internal.util import get_num_classes, value_counts
 def assert_valid_inputs_multiannotator(
     labels_multiannotator: pd.DataFrame,
     pred_probs: Optional[np.ndarray] = None,
+    ensemble: bool = False,
 ) -> None:
     """Validate format of multi-annotator labels"""
     # Raise error if labels are not formatted properly
@@ -44,7 +45,13 @@ def assert_valid_inputs_multiannotator(
 
     # Raise error if number of classes in labels_multiannoator does not match number of classes in pred_probs
     if pred_probs is not None:
-        num_classes = pred_probs.shape[-1]  # to support 3d pred_probs for ensemble models
+        # if 3d pred_probs, flatten it into 2d array
+        if ensemble:
+            assert pred_probs.ndim == 3
+            pred_probs = np.mean(pred_probs, axis=0)
+
+        assert pred_probs.ndim == 2
+        num_classes = pred_probs.shape[1]
         highest_class = (
             np.nanmax(labels_multiannotator.replace({pd.NA: np.NaN}).astype(float).values) + 1
         )
@@ -239,5 +246,8 @@ def temp_scale_pred_probs(
     """Scales pred_probs by the given temperature factor. Temperature of <1 will sharpen the pred_probs while temperatures of >1 will smoothen it."""
     log_pred_probs = np.log(pred_probs) / temp
     scaled_pred_probs = np.exp(log_pred_probs) / np.sum(np.exp(log_pred_probs))  # softmax
+    scaled_pred_probs = (
+        scaled_pred_probs / np.sum(scaled_pred_probs, axis=1)[:, np.newaxis]
+    )  # normalize
 
     return scaled_pred_probs
