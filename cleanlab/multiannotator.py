@@ -33,7 +33,12 @@ from typing import List, Dict, Any, Union, Tuple, Optional
 
 from cleanlab.rank import get_label_quality_scores
 from cleanlab.internal.util import get_num_classes, value_counts
-from cleanlab.internal.multiannotator_utils import assert_valid_inputs_multiannotator
+from cleanlab.internal.multiannotator_utils import (
+    assert_valid_inputs_multiannotator,
+    check_consensus_label_classes,
+    find_best_temp_scaler,
+    temp_scale_pred_probs,
+)
 
 
 def get_label_quality_multiannotator(
@@ -44,9 +49,11 @@ def get_label_quality_multiannotator(
     quality_method: str = "crowdlab",
     return_detailed_quality: bool = True,
     return_annotator_stats: bool = True,
+    return_model_annotator_weights: bool = False,
     verbose: bool = True,
+    temp_scale: bool = False,
     label_quality_score_kwargs: dict = {},
-) -> Dict[str, pd.DataFrame]:
+) -> Dict[str, Any]:
     """Returns label quality scores for each example and for each annotator.
 
     This function is for multiclass classification datasets where examples have been labeled by
@@ -96,8 +103,14 @@ def get_label_quality_multiannotator(
         Boolean to specify if `detailed_label_quality` is returned.
     return_annotator_stats : bool, default = True
         Boolean to specify if `annotator_stats` is returned.
+    return_model_annotator_weights : bool, default = False
+        Boolean to specify if `model_weight` and `annotator_weight` is returned.
+        Model and annotator weights are applicable for ``quality_method == crowdlab``, will return ``None`` for any other quality methods.
     verbose : bool, default = True
         Important warnings and other printed statements may be suppressed if ``verbose`` is set to ``False``.
+    temp_scale : bool, default = False
+        Boolean value that specifies if the pred_probs will be temperature scaled to better match the annotators' empirical label distribution.
+        This is especially relevant in active learning to prevent overconfident models.
     label_quality_score_kwargs : dict, optional
         Keyword arguments to pass into :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>`.
 
@@ -135,6 +148,11 @@ def get_label_quality_multiannotator(
 
     # Count number of non-NaN values for each example
     num_annotations = labels_multiannotator.count(axis=1).to_numpy()
+
+    # temperature scale pred_probs
+    if temp_scale:
+        optimal_temp = find_best_temp_scaler(labels_multiannotator, pred_probs)
+        pred_probs = temp_scale_pred_probs(pred_probs, optimal_temp)
 
     if not isinstance(consensus_method, list):
         consensus_method = [consensus_method]
@@ -213,7 +231,7 @@ def get_label_quality_multiannotator(
 
         if verbose:
             # check if any classes no longer appear in the set of consensus labels
-            _check_consensus_label_classes(
+            check_consensus_label_classes(
                 labels_multiannotator=labels_multiannotator,
                 consensus_label=consensus_label,
                 consensus_method=curr_method,
@@ -275,26 +293,19 @@ def get_label_quality_multiannotator(
                 annotator_agreement,
             )
 
-    if return_detailed_quality and return_annotator_stats:
-        return {
-            "label_quality": label_quality,
-            "detailed_label_quality": detailed_label_quality,
-            "annotator_stats": annotator_stats,
-        }
-    elif return_detailed_quality:
-        return {
-            "label_quality": label_quality,
-            "detailed_label_quality": detailed_label_quality,
-        }
-    elif return_annotator_stats:
-        return {
-            "label_quality": label_quality,
-            "annotator_stats": annotator_stats,
-        }
-    else:
-        return {
-            "label_quality": label_quality,
-        }
+    labels_info = {
+        "label_quality": label_quality,
+    }
+
+    if return_detailed_quality:
+        labels_info["detailed_label_quality"] = detailed_label_quality
+    if return_annotator_stats:
+        labels_info["annotator_stats"] = annotator_stats
+    if return_model_annotator_weights:
+        labels_info["model_weight"] = model_weight
+        labels_info["annotator_weight"] = annotator_weight
+
+    return labels_info
 
 
 def get_majority_vote_label(
@@ -349,6 +360,10 @@ def get_majority_vote_label(
 
     # tiebreak 1: using pred_probs (if provided)
     if pred_probs is not None and len(tied_idx) > 0:
+        # # when there is more than one classifier, take the average pred_probs
+        # if pred_probs.ndim == 3:
+        #     pred_probs = np.mean(pred_probs, axis=0)
+
         for idx, label_mode in tied_idx.copy().items():
             max_pred_probs = np.where(
                 pred_probs[idx, label_mode] == np.max(pred_probs[idx, label_mode])
@@ -418,7 +433,7 @@ def get_majority_vote_label(
 
     if verbose:
         # check if any classes no longer appear in the set of consensus labels
-        _check_consensus_label_classes(
+        check_consensus_label_classes(
             labels_multiannotator=labels_multiannotator,
             consensus_label=majority_vote_label,
             consensus_method="majority_vote",
@@ -720,7 +735,6 @@ def _get_post_pred_probs_and_weights(
     verbose: bool = True,
 ) -> Tuple[np.ndarray, Any, Any]:
     """Return the posterior predicted probabilites of each example given a specified quality method.
-
     Parameters
     ----------
     labels_multiannotator : pd.DataFrame
@@ -746,15 +760,12 @@ def _get_post_pred_probs_and_weights(
     -------
     post_pred_probs : np.ndarray
         An array of shape ``(N, K)`` with the posterior predicted probabilities.
-
     model_weight : float
         float specifying the model weight used in weighted averages,
         None if model weight is not used to compute quality scores
-
     annotator_weight : np.ndarray
         An array of shape ``(M,)`` where M is the number of annotators, specifying the annotator weights used in weighted averages,
         None if annotator weights are not used to compute quality scores
-
     """
     valid_methods = [
         "crowdlab",
@@ -828,6 +839,146 @@ def _get_post_pred_probs_and_weights(
 
     elif quality_method == "agreement":
         num_classes = get_num_classes(pred_probs=prior_pred_probs)
+        label_counts = np.full((len(labels_multiannotator), num_classes), np.NaN)
+        for i in range(len(labels_multiannotator)):
+            s = labels_multiannotator.iloc[i]
+            label_counts[i, :] = value_counts(s.dropna(), num_classes=num_classes)
+        post_pred_probs = label_counts / num_annotations.reshape(-1, 1)
+
+    else:
+        raise ValueError(
+            f"""
+            {quality_method} is not a valid quality method!
+            Please choose a valid quality_method: {valid_methods}
+            """
+        )
+
+    return post_pred_probs, return_model_weight, return_annotator_weight
+
+
+def _get_post_pred_probs_and_weights_ensemble(
+    labels_multiannotator: pd.DataFrame,
+    consensus_label: np.ndarray,
+    prior_pred_probs: np.ndarray,
+    num_annotations: np.ndarray,
+    annotator_agreement: np.ndarray,
+    quality_method: str = "crowdlab",
+    verbose: bool = True,
+) -> Tuple[np.ndarray, Any, Any]:
+    """Return the posterior predicted probabilites of each example given a specified quality method.
+
+    Parameters
+    ----------
+    labels_multiannotator : pd.DataFrame
+        2D pandas DataFrame of multiple given labels for each example with shape ``(N, M)``,
+        where N is the number of examples and M is the number of annotators.
+        For more details, labels in the same format expected by the :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>`.
+    consensus_label : np.ndarray
+        An array of shape ``(N,)`` with the consensus labels aggregated from all annotators.
+    prior_pred_probs : np.ndarray
+        An array of shape ``(N, K)`` of prior predicted probabilities, ``P(label=k|x)``, usually the out-of-sample predicted probability computed by a model.
+        For details, predicted probabilities in the same format expected by the :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>`.
+    num_annotations : np.ndarray
+        An array of shape ``(N,)`` with the number of annotators that have labeled each example.
+    annotator_agreement : np.ndarray
+        An array of shape ``(N,)`` with the fraction of annotators that agree with each consensus label.
+    quality_method : str, default = "crowdlab" (Options: ["crowdlab", "agreement"])
+        Specifies the method used to calculate the quality of the consensus label.
+        For valid quality methods, view :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>`
+    verbose : bool, default = True
+        Certain warnings and notes will be printed if ``verbose`` is set to ``True``.
+
+    Returns
+    -------
+    post_pred_probs : np.ndarray
+        An array of shape ``(N, K)`` with the posterior predicted probabilities.
+
+    model_weight : float
+        float specifying the model weight used in weighted averages,
+        None if model weight is not used to compute quality scores
+
+    annotator_weight : np.ndarray
+        An array of shape ``(M,)`` where M is the number of annotators, specifying the annotator weights used in weighted averages,
+        None if annotator weights are not used to compute quality scores
+
+    """
+    valid_methods = [
+        "crowdlab",
+        "agreement",
+    ]
+
+    # setting dummy variables for model and annotator weights that will be returned
+    # only relevant for quality_method == crowdlab, return None for all other methods
+    return_model_weight = None
+    return_annotator_weight = None
+
+    num_classes = get_num_classes(pred_probs=prior_pred_probs[0])
+
+    if quality_method == "crowdlab":
+        likelihood = np.mean(
+            annotator_agreement[num_annotations != 1]
+        )  # likelihood that any annotator will annotate the consensus label for any example
+
+        # subsetting the dataset to only includes examples with more than one annotation
+        mask = num_annotations != 1
+        consensus_label_subset = consensus_label[mask]
+
+        # compute most likely class error
+        most_likely_class_error = np.clip(
+            np.mean(
+                consensus_label_subset
+                != np.argmax(np.bincount(consensus_label_subset, minlength=num_classes))
+            ),
+            a_min=1e-6,
+            a_max=None,
+        )
+
+        # compute adjusted annotator agreement (used as annotator weights)
+        annotator_agreement_with_annotators = _get_annotator_agreement_with_annotators(
+            labels_multiannotator, num_annotations, verbose
+        )
+        annotator_error = 1 - annotator_agreement_with_annotators
+        adjusted_annotator_agreement = np.clip(
+            1 - (annotator_error / most_likely_class_error), a_min=1e-6, a_max=None
+        )
+
+        # compute model weight
+        model_weight = np.full(prior_pred_probs.shape[0], np.nan)
+        for idx in range(prior_pred_probs.shape[0]):
+            prior_pred_probs_subset = prior_pred_probs[idx][mask]
+
+            model_error = np.mean(
+                np.argmax(prior_pred_probs_subset, axis=1) != consensus_label_subset
+            )
+            model_weight[idx] = np.max(
+                [(1 - (model_error / most_likely_class_error)), 1e-6]
+            ) * np.sqrt(np.mean(num_annotations))
+
+        # compute weighted average
+        post_pred_probs = np.full(prior_pred_probs.shape, np.nan)
+        for i in range(len(labels_multiannotator)):
+            example_mask = labels_multiannotator.iloc[i].notna()
+            example = labels_multiannotator.iloc[i][example_mask]
+            post_pred_probs[i] = [
+                np.average(
+                    [prior_pred_probs[i, true_label]]
+                    + [
+                        likelihood
+                        if annotator_label == true_label
+                        else (1 - likelihood) / (num_classes - 1)
+                        for annotator_label in example
+                    ],
+                    weights=np.concatenate(
+                        (model_weight, adjusted_annotator_agreement[example_mask])
+                    ),
+                )
+                for true_label in range(num_classes)
+            ]
+
+        return_model_weight = model_weight
+        return_annotator_weight = adjusted_annotator_agreement
+
+    elif quality_method == "agreement":
         label_counts = np.full((len(labels_multiannotator), num_classes), np.NaN)
         for i in range(len(labels_multiannotator)):
             s = labels_multiannotator.iloc[i]
@@ -1080,23 +1231,3 @@ def _get_annotator_worst_class(
     )
 
     return worst_class
-
-
-def _check_consensus_label_classes(
-    labels_multiannotator: pd.DataFrame,
-    consensus_label: np.ndarray,
-    consensus_method: str,
-) -> None:
-    """Check if any classes no longer appear in the set of consensus labels (established using the consensus_method stated)"""
-    unique_ma_labels = np.unique(labels_multiannotator.replace({pd.NA: np.NaN}).astype(float))
-    unique_ma_labels = unique_ma_labels[~np.isnan(unique_ma_labels)]
-    labels_set_difference = set(unique_ma_labels) - set(consensus_label)
-
-    if len(labels_set_difference) > 0:
-        print(
-            f"""CAUTION: Number of unique classes has been reduced from the original data when establishing consensus labels
-            using consensus method "{consensus_method}", likely due to some classes being rarely annotated.
-            If training a classifier on these consensus labels, it will never see any of the omitted classes unless you
-            manually replace some of the consensus labels.
-            Classes in the original data but not in consensus labels: {list(map(int, labels_set_difference))}"""
-        )
