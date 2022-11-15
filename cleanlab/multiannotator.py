@@ -914,12 +914,15 @@ def _get_post_pred_probs_and_weights(
     -------
     post_pred_probs : np.ndarray
         An array of shape ``(N, K)`` with the posterior predicted probabilities.
+
     model_weight : float
         float specifying the model weight used in weighted averages,
         None if model weight is not used to compute quality scores
+
     annotator_weight : np.ndarray
         An array of shape ``(M,)`` where M is the number of annotators, specifying the annotator weights used in weighted averages,
         None if annotator weights are not used to compute quality scores
+
     """
     valid_methods = [
         "crowdlab",
