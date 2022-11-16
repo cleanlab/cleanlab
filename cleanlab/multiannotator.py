@@ -447,8 +447,65 @@ def get_label_quality_multiannotator_ensemble(
     return labels_info
 
 
-# def get_active_learning_scores():
-#     pass
+def get_active_learning_scores(
+    labels_multiannotator: Union[pd.DataFrame, np.ndarray],
+    pred_probs: np.ndarray,
+) -> np.ndarray:
+    labels_multiannotator.reset_index(drop=True, inplace=True)  # make sure indices are 0 to N-1
+    unlabeled_mask = labels_multiannotator.isna().all(axis=1)
+    labeled_index = labels_multiannotator.index[~unlabeled_mask].to_numpy()
+    unlabeled_index = labels_multiannotator.index[unlabeled_mask].to_numpy()
+
+    labels_multiannotator_labeled = labels_multiannotator.iloc[labeled_index]
+    pred_probs_labeled = pred_probs[labeled_index]
+
+    num_classes = get_num_classes(pred_probs=pred_probs)
+    multiannotator_info = get_label_quality_multiannotator(
+        labels_multiannotator_labeled,
+        pred_probs_labeled,
+        return_annotator_stats=False,
+        return_detailed_quality=False,
+        return_weights=True,
+    )
+
+    quality_of_consensus_labeled = multiannotator_info["label_quality"]["consensus_quality_score"]
+    model_weight = multiannotator_info["model_weight"]
+    annotator_weight = multiannotator_info["annotator_weight"]
+    avg_annotator_weight = np.mean(annotator_weight)
+
+    active_learning_scores = np.full(len(labels_multiannotator), np.nan)
+    active_learning_scores_labeled = np.full(len(labeled_index), np.nan)
+
+    for i in range(len(active_learning_scores_labeled)):
+        annotator_labels = labels_multiannotator_labeled.iloc[i]
+        active_learning_scores_labeled[i] = np.average(
+            (quality_of_consensus_labeled[i], 1 / num_classes),
+            weights=(
+                np.sum(annotator_weight[annotator_labels.notna()]) + model_weight,
+                avg_annotator_weight,
+            ),
+        )
+
+    active_learning_scores[labeled_index] = active_learning_scores_labeled
+
+    if len(unlabeled_index) > 0:
+        pred_probs_unlabeled = pred_probs[unlabeled_index]
+        quality_of_consensus_unlabeled = np.max(pred_probs_unlabeled, axis=1)
+
+        active_learning_scores_unlabeled = np.average(
+            np.stack(
+                [
+                    quality_of_consensus_unlabeled,
+                    np.full(len(quality_of_consensus_unlabeled), 1 / num_classes),
+                ]
+            ),
+            weights=[model_weight, avg_annotator_weight],
+            axis=0,
+        )
+
+        active_learning_scores[unlabeled_index] = active_learning_scores_unlabeled
+
+    return active_learning_scores
 
 
 def get_majority_vote_label(
