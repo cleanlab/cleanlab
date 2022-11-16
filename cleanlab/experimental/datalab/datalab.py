@@ -64,7 +64,11 @@ class Datalab:
 
         self.data = data
         self.label_name = label_name
+        self.data.set_format(
+            type="numpy"
+        )  # TODO: figure out if we are setting all features to numpy, maybe exclude label_name?
         self.issues: Optional[pd.DataFrame] = None
+        self.summary: Optional[dict] = None
         self.results = None
         self._labels, self._label_map = self._extract_labels(self.label_name)
         class_names = self.data.unique(self.label_name)  # TODO
@@ -72,6 +76,7 @@ class Datalab:
             "num_examples": len(self.data),
             "class_names": class_names,
             "num_classes": len(class_names),
+            "multi_label": False,  # TODO: Add multi-label support.
         }
         self._silo = self.info.copy()
 
@@ -124,6 +129,25 @@ class Datalab:
 
         if pred_probs is not None:
             self.issues = cl.find_label_issues(labels=self._labels, pred_probs=pred_probs)
+            self.summary = self._health_summary(pred_probs=pred_probs, verbose=False)
+
+    def get_health_score(self) -> float:
+        if isinstance(self.summary, dict):
+            return self.summary["overall_label_health_score"]
+        else:
+            raise ValueError(
+                "Health summary has not been computed, call self.find_issues first. "
+                "See help(Datalab.find_issues)."
+            )
+
+    def get_label_quality_score(self) -> np.ndarray:
+        if isinstance(self.issues, pd.DataFrame):
+            return self.issues["label_quality"].to_numpy()
+        else:
+            raise ValueError(
+                "Labels errors have not been found yet, call self.find_issues first. "
+                "See help(Datalab.find_issues)."
+            )
 
     def _extract_labels(self, label_name: Union[str, list[str]]) -> tuple[np.ndarray, Mapping]:
         """
@@ -295,3 +319,26 @@ class Datalab:
                 f"Saved Datalab was created using different version of cleanlab ({datalab.cleanlab_version}) than current version ({current_version}). Things may be broken!"
             )
         return datalab
+
+    def _health_summary(self, pred_probs, **kwargs) -> dict:
+        """Returns a short summary of the health of this Lab."""
+        from cleanlab.dataset import health_summary
+
+        # Validate input
+        self._validate_pred_probs(pred_probs)
+
+        class_names = list(self._label_map.values())
+        summary = health_summary(self._labels, pred_probs, class_names=class_names, **kwargs)
+        return summary
+
+    def _validate_pred_probs(self, pred_probs) -> None:
+        if not isinstance(pred_probs, np.ndarray):
+            raise ValueError("pred_probs must be a numpy array.")
+        if pred_probs.ndim != 2:
+            raise ValueError("pred_probs must be a 2D numpy array.")
+
+        num_classes = self.get_info("num_classes")
+        if num_classes is not None and pred_probs.shape[1] != num_classes:
+            raise ValueError(
+                f"pred_probs must have shape (num_examples, num_classes={num_classes})."
+            )
