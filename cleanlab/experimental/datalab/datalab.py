@@ -26,7 +26,7 @@ import pandas as pd
 import numpy as np
 
 import datasets
-from datasets import Dataset
+from datasets.arrow_dataset import Dataset
 
 from cleanlab.classification import CleanLearning
 from cleanlab.internal.validation import labels_to_array
@@ -41,8 +41,8 @@ class Datalab:
 
     Parameters
     ----------
-    ... : ...
-        ...
+    data :
+        A Hugging Face Dataset object.
     """
 
     # Constants:
