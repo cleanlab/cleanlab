@@ -68,7 +68,6 @@ class Datalab:
             type="numpy"
         )  # TODO: figure out if we are setting all features to numpy, maybe exclude label_name?
         self.issues: Optional[pd.DataFrame] = None
-        self.summary: Optional[dict] = None
         self.results = None
         self._labels, self._label_map = self._extract_labels(self.label_name)
         class_names = self.data.unique(self.label_name)  # TODO
@@ -129,11 +128,11 @@ class Datalab:
 
         if pred_probs is not None:
             self.issues = cl.find_label_issues(labels=self._labels, pred_probs=pred_probs)
-            self.summary = self._health_summary(pred_probs=pred_probs, verbose=False)
+            self.results = self._health_summary(pred_probs=pred_probs, verbose=False)
 
     def get_health_score(self) -> float:
-        if isinstance(self.summary, dict):
-            return self.summary["overall_label_health_score"]
+        if isinstance(self.results, dict):
+            return self.results["overall_label_health_score"]
         else:
             raise ValueError(
                 "Health summary has not been computed, call self.find_issues first. "
