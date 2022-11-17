@@ -582,6 +582,7 @@ def get_active_learning_scores(
         return_annotator_stats=False,
         return_detailed_quality=False,
         return_weights=True,
+        temp_scale=True,
     )
 
     quality_of_consensus_labeled = multiannotator_info["label_quality"]["consensus_quality_score"]
@@ -680,6 +681,7 @@ def get_active_learning_scores_ensemble(
         return_annotator_stats=False,
         return_detailed_quality=False,
         return_weights=True,
+        temp_scale=True,
     )
 
     quality_of_consensus_labeled = multiannotator_info["label_quality"]["consensus_quality_score"]
