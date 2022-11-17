@@ -131,6 +131,21 @@ class Datalab:
             self.results = self._health_summary(pred_probs=pred_probs, verbose=False)
 
     def get_health_score(self) -> float:
+        """Get the health score of the dataset.
+
+        Note
+        ----
+        This requires that ``find_issues`` has been called first.
+
+        Returns
+        -------
+        health_score :
+            The health score of the dataset.
+
+        See Also
+        --------
+        Datalab.find_issues
+        """
         if isinstance(self.results, dict):
             return self.results["overall_label_health_score"]
         else:
@@ -139,7 +154,23 @@ class Datalab:
                 "See help(Datalab.find_issues)."
             )
 
-    def get_label_quality_score(self) -> np.ndarray:
+    def get_label_quality_scores(self) -> np.ndarray:
+        """Get label quality scores for each example in the dataset.
+
+        Note
+        ----
+        This requires that ``find_issues`` has been called first.
+
+        Returns
+        -------
+        quality_scores :
+            A vector of label quality scores for each example in the dataset.
+
+        See Also
+        --------
+        Datalab.find_issues
+        """
+
         if isinstance(self.issues, pd.DataFrame):
             return self.issues["label_quality"].to_numpy()
         else:

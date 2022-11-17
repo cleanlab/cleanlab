@@ -138,10 +138,14 @@ def test_getter_methods(lab, pred_probs):
         assert "Health summary has not been computed" in str(e)
 
     with pytest.raises(ValueError) as e:
-        lab.get_label_quality_score()
+        lab.get_label_quality_scores()
         assert "Labels errors have not been found yet" in str(e)
 
     # Call self.find_issues and check outputs
     lab.find_issues(pred_probs=pred_probs)
-    assert isinstance(lab.get_health_score(), float)
-    assert isinstance(lab.get_label_quality_score(), np.ndarray)
+    health_score = lab.get_health_score()
+    assert isinstance(health_score, float)
+
+    quality_scores = lab.get_label_quality_scores()
+    assert isinstance(quality_scores, np.ndarray)
+    assert quality_scores.shape == (5,)
