@@ -6,8 +6,11 @@ from cleanlab.benchmarking.noise_generation import generate_noisy_labels
 from cleanlab import count
 from cleanlab.multiannotator import (
     get_label_quality_multiannotator,
-    convert_long_to_wide_dataset,
+    get_label_quality_multiannotator_ensemble,
+    get_active_learning_scores,
+    get_active_learning_scores_ensemble,
     get_majority_vote_label,
+    convert_long_to_wide_dataset,
 )
 from cleanlab.internal.multiannotator_utils import format_multiannotator_labels
 import pandas as pd
@@ -160,6 +163,7 @@ def make_data_long(data):
 
 # Global to be used by all test methods. Only compute this once for speed.
 data = make_data()
+ensemble_data = make_ensemble_data()
 
 
 def test_convert_long_to_wide():
@@ -256,6 +260,12 @@ def test_label_quality_scores_multiannotator():
     assert len(multiannotator_dict) == 1
     assert isinstance(multiannotator_dict["label_quality"], pd.DataFrame)
 
+    # test return model and annotator weights
+    multiannotator_dict = get_label_quality_multiannotator(labels, pred_probs, return_weights=True)
+    assert len(multiannotator_dict) == 5
+    assert isinstance(multiannotator_dict["model_weight"], float)
+    assert isinstance(multiannotator_dict["annotator_weight"], np.ndarray)
+
     # test non-numeric annotator names
     labels_string_names = labels.add_prefix("anno_")
     multiannotator_dict = get_label_quality_multiannotator(
@@ -282,6 +292,78 @@ def test_label_quality_scores_multiannotator():
         )
     except ValueError as e:
         assert "cannot have columns with all NaN" in str(e)
+
+
+def test_label_quality_scores_multiannotator_ensemble():
+    labels = ensemble_data["labels"]
+    pred_probs = ensemble_data["pred_probs"]
+
+    multiannotator_dict = get_label_quality_multiannotator_ensemble(
+        labels, pred_probs, return_weights=True
+    )
+    assert isinstance(multiannotator_dict, dict)
+    assert len(multiannotator_dict) == 5
+    assert isinstance(multiannotator_dict["label_quality"], pd.DataFrame)
+    assert isinstance(multiannotator_dict["annotator_stats"], pd.DataFrame)
+    assert isinstance(multiannotator_dict["detailed_label_quality"], pd.DataFrame)
+    assert isinstance(multiannotator_dict["model_weight"], np.ndarray)
+    assert isinstance(multiannotator_dict["annotator_weight"], np.ndarray)
+
+
+def test_get_active_learning_scores():
+    labels = data["labels"]
+    pred_probs = data["pred_probs"]
+    labels_unlabeled = data["labels_unlabeled"]
+    pred_probs_unlabeled = data["pred_probs_unlabeled"]
+
+    labels_combined = np.concatenate((labels, labels_unlabeled))
+    pred_probs_combined = np.concatenate((pred_probs, pred_probs_unlabeled))
+
+    # test default case
+    active_learning_scores = get_active_learning_scores(labels_combined, pred_probs_combined)
+    assert isinstance(active_learning_scores, np.ndarray)
+    assert len(active_learning_scores) == len(labels_combined)
+
+    # test case where all examples are already labeled
+    active_learning_scores = get_active_learning_scores(labels, pred_probs)
+    assert isinstance(active_learning_scores, np.ndarray)
+    assert len(active_learning_scores) == len(labels)
+
+    # test case where all examples are not labeled (should throw error)
+    try:
+        active_learning_scores = get_active_learning_scores(labels_unlabeled, pred_probs_unlabeled)
+    except ValueError as e:
+        assert "No examples in this dataset have been labeled" in str(e)
+
+
+def test_get_active_learning_scores_ensemble():
+    labels = ensemble_data["labels"]
+    pred_probs = ensemble_data["pred_probs"]
+    labels_unlabeled = ensemble_data["labels_unlabeled"]
+    pred_probs_unlabeled = ensemble_data["pred_probs_unlabeled"]
+
+    labels_combined = np.concatenate((labels, labels_unlabeled))
+    pred_probs_combined = np.hstack((pred_probs, pred_probs_unlabeled))
+
+    # test default case
+    active_learning_scores = get_active_learning_scores_ensemble(
+        labels_combined, pred_probs_combined
+    )
+    assert isinstance(active_learning_scores, np.ndarray)
+    assert len(active_learning_scores) == len(labels_combined)
+
+    # test case where all examples are already labeled
+    active_learning_scores = get_active_learning_scores_ensemble(labels, pred_probs)
+    assert isinstance(active_learning_scores, np.ndarray)
+    assert len(active_learning_scores) == len(labels)
+
+    # test case where all examples are not labeled (should throw error)
+    try:
+        active_learning_scores = get_active_learning_scores_ensemble(
+            labels_unlabeled, pred_probs_unlabeled
+        )
+    except ValueError as e:
+        assert "No examples in this dataset have been labeled" in str(e)
 
 
 def test_missing_class():

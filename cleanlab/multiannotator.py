@@ -635,7 +635,7 @@ def get_active_learning_scores_ensemble(
     * 1 - confident example, no additional labeling is required.
     * 0 - unconfident example, it is suggested to collect more labels for this example.
 
-    This function allows for an ensemble of mo
+    This function allows for an ensemble of models to be trained and will use the aggregation of predictions from the multiple models to compute the active learning score.
 
     Parameters
     ----------
