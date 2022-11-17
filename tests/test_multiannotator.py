@@ -309,6 +309,11 @@ def test_label_quality_scores_multiannotator_ensemble():
     assert isinstance(multiannotator_dict["model_weight"], np.ndarray)
     assert isinstance(multiannotator_dict["annotator_weight"], np.ndarray)
 
+    # test numpy arrays and temp scaling
+    multiannotator_dict = get_label_quality_multiannotator_ensemble(
+        np.array(labels), pred_probs, temp_scale=True
+    )
+
 
 def test_get_active_learning_scores():
     labels = data["labels"]
