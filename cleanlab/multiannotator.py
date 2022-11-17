@@ -139,6 +139,13 @@ def get_label_quality_multiannotator(
             * ``num_examples_labeled``: number of examples annotated by a given annotator.
             * ``agreement_with_consensus``: fraction of examples where a given annotator agrees with the consensus label.
             * ``worst_class``: the class that is most frequently mislabeled by a given annotator.
+
+        ``model_weight`` : float (returned if `return_weights=True`)
+            float specifying the model weight used in weighted averages (only applicable for ``quality_method == crowdlab``), ``None`` otherwise
+
+        ``annotator_weight`` : np.ndarray (returned if `return_weights=True`)
+            An array of shape ``(M,)`` where M is the number of annotators, specifying the annotator weights used in weighted averages
+            (only applicable for ``quality_method == crowdlab``), ``None`` otherwise
     """
 
     if isinstance(labels_multiannotator, np.ndarray):
@@ -319,6 +326,81 @@ def get_label_quality_multiannotator_ensemble(
     temp_scale: bool = False,
     label_quality_score_kwargs: dict = {},
 ) -> Dict[str, Any]:
+    """Returns label quality scores for each example and for each annotator.
+
+    This function is for multiclass classification datasets where examples have been labeled by
+    multiple annotators (not necessarily the same number of annotators per example).
+
+    It computes one consensus label for each example that best accounts for the labels chosen by each
+    annotator (and their quality), as well as a score for how confident we are that this consensus label is actually correct.
+    It also computes the the quality scores for each annotator's individual labels, and the quality of each annotator.
+    This function allows for an ensemble of models to be trained, the models' predictions and confidences will be used to compute the
+    consensus label and annotator quality.
+
+    The score is between 0 and 1; lower scores indicate labels less likely to be correct. For example:
+
+    * 1 - clean label (the given label is likely correct).
+    * 0 - dirty label (the given label is unlikely correct).
+
+    Parameters
+    ----------
+    labels_multiannotator : pd.DataFrame of np.ndarray
+        2D pandas DataFrame or array of multiple given labels for each example with shape ``(N, M)``,
+        where N is the number of examples and M is the number of annotators.
+        ``labels_multiannotator[n][m]`` = label for n-th example given by m-th annotator.
+
+        For a dataset with K classes, each given label must be an integer in 0, 1, ..., K-1 or ``NaN`` if this annotator did not label a particular example.
+        If you have string or other differently formatted labels, you can convert them to the proper format using :py:func:`format_multiannotator_labels <cleanlab.internal.multiannotator_utils.format_multiannotator_labels>`.
+        If pd.DataFrame, column names should correspond to each annotator's ID.
+    pred_probs : np.ndarray
+        An array of shape ``(P, N, K)`` where P is the number of models, consisting of predicted class probabilities from the ensemble models.
+        Each set of predicted probabilities with shape ``(N, K)`` is in the same format expected by the :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>`.
+    return_detailed_quality: bool, default = True
+        Boolean to specify if `detailed_label_quality` is returned.
+    return_annotator_stats : bool, default = True
+        Boolean to specify if `annotator_stats` is returned.
+    return_weights : bool, default = False
+        Boolean to specify if `model_weight` and `annotator_weight` is returned.
+    verbose : bool, default = True
+        Important warnings and other printed statements may be suppressed if ``verbose`` is set to ``False``.
+    temp_scale : bool, default = False
+        Boolean value that specifies if the pred_probs will be temperature scaled to better match the annotators' empirical label distribution.
+        This is especially relevant in active learning to prevent overconfident models.
+    label_quality_score_kwargs : dict, optional
+        Keyword arguments to pass into :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>`.
+
+    Returns
+    -------
+    labels_info : dict
+        Dictionary containing up to 3 pandas DataFrame with keys as below:
+
+        ``label_quality`` : pandas.DataFrame
+            pandas DataFrame in which each row corresponds to one example, with columns:
+
+            * ``num_annotations``: the number of annotators that have labeled each example.
+            * ``consensus_label``: the single label that is best for each example.
+            * ``annotator_agreement``: the fraction of annotators that agree with the consensus label (only consider the annotators that labeled that particular example).
+            * ``consensus_quality_score``: label quality score for consensus label, calculated using the crowdlab method.
+
+        ``detailed_label_quality`` : pandas.DataFrame (returned if `return_detailed_quality=True`)
+            Returns a pandas DataFrame with columns `quality_annotator_1`, `quality_annotator_2`, ..., `quality_annotator_M` where each entry is
+            the label quality score for the labels provided by each annotator (is ``NaN`` for examples which this annotator did not label).
+
+        ``annotator_stats`` : pandas.DataFrame (returned if `return_annotator_stats=True`)
+            Returns overall statistics about each annotator, sorted by lowest annotator_quality first.
+            pandas DataFrame in which each row corresponds to one annotator (the row IDs correspond to annotator IDs), with columns:
+
+            * ``annotator_quality``: overall quality of a given annotator's labels, calculated using the crowdlab method`.
+            * ``num_examples_labeled``: number of examples annotated by a given annotator.
+            * ``agreement_with_consensus``: fraction of examples where a given annotator agrees with the consensus label.
+            * ``worst_class``: the class that is most frequently mislabeled by a given annotator.
+
+        ``model_weight`` : np.ndarray (returned if `return_weights=True`)
+            An array of shape ``(P,)`` where is the number of models in the ensemble, specifying the model weight used in weighted averages
+
+        ``annotator_weight`` : np.ndarray (returned if `return_weights=True`)
+            An array of shape ``(M,)`` where M is the number of annotators, specifying the annotator weights used in weighted averages
+    """
     if isinstance(labels_multiannotator, np.ndarray):
         labels_multiannotator = pd.DataFrame(labels_multiannotator)
 
@@ -451,10 +533,44 @@ def get_active_learning_scores(
     labels_multiannotator: Union[pd.DataFrame, np.ndarray],
     pred_probs: np.ndarray,
 ) -> np.ndarray:
+    """Returns an active learning score for each example in the dataset. The score is in between 0 and 1; lower scores indicate less confidence on the examples
+    and that additional labels should be collected for those examples. For example:
+
+    * 1 - confident example, no additional labeling is required.
+    * 0 - unconfident example, it is suggested to collect more labels for this example.
+
+    Parameters
+    ----------
+    labels_multiannotator : pd.DataFrame of np.ndarray
+        2D pandas DataFrame or array of multiple given labels for each example with shape ``(N, M)``,
+        where N is the number of examples and M is the number of annotators.
+        ``labels_multiannotator[n][m]`` = label for n-th example given by m-th annotator.
+
+        For a dataset with K classes, each given label must be an integer in 0, 1, ..., K-1 or ``NaN`` if this annotator did not label a particular example.
+        If you have string or other differently formatted labels, you can convert them to the proper format using :py:func:`format_multiannotator_labels <cleanlab.internal.multiannotator_utils.format_multiannotator_labels>`.
+        If pd.DataFrame, column names should correspond to each annotator's ID.
+    pred_probs : np.ndarray
+        An array of shape ``(N, K)`` of predicted class probabilities from a trained classifier model.
+        Predicted probabilities in the same format expected by the :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>`.
+
+    Returns
+    -------
+    active_learning_scores : np.ndarray
+        Array of shape ``(N,)`` indicating the active learning confidence scores for each example.
+    """
+
+    if isinstance(labels_multiannotator, np.ndarray):
+        labels_multiannotator = pd.DataFrame(labels_multiannotator)
     labels_multiannotator.reset_index(drop=True, inplace=True)  # make sure indices are 0 to N-1
+
     unlabeled_mask = labels_multiannotator.isna().all(axis=1)
     labeled_index = labels_multiannotator.index[~unlabeled_mask].to_numpy()
     unlabeled_index = labels_multiannotator.index[unlabeled_mask].to_numpy()
+
+    if len(labeled_index) == 0:
+        raise ValueError(
+            "No examples in this dataset have been labeled, label at least one example before computing active learning scores"
+        )
 
     labels_multiannotator_labeled = labels_multiannotator.iloc[labeled_index]
     pred_probs_labeled = pred_probs[labeled_index]
@@ -513,10 +629,46 @@ def get_active_learning_scores_ensemble(
     labels_multiannotator: Union[pd.DataFrame, np.ndarray],
     pred_probs: np.ndarray,
 ) -> np.ndarray:
+    """Returns an active learning score for each example in the dataset. The score is in between 0 and 1; lower scores indicate less confidence on the examples
+    and that additional labels should be collected for those examples. For example:
+
+    * 1 - confident example, no additional labeling is required.
+    * 0 - unconfident example, it is suggested to collect more labels for this example.
+
+    This function allows for an ensemble of mo
+
+    Parameters
+    ----------
+    labels_multiannotator : pd.DataFrame of np.ndarray
+        2D pandas DataFrame or array of multiple given labels for each example with shape ``(N, M)``,
+        where N is the number of examples and M is the number of annotators.
+        ``labels_multiannotator[n][m]`` = label for n-th example given by m-th annotator.
+
+        For a dataset with K classes, each given label must be an integer in 0, 1, ..., K-1 or ``NaN`` if this annotator did not label a particular example.
+        If you have string or other differently formatted labels, you can convert them to the proper format using :py:func:`format_multiannotator_labels <cleanlab.internal.multiannotator_utils.format_multiannotator_labels>`.
+        If pd.DataFrame, column names should correspond to each annotator's ID.
+    pred_probs : np.ndarray
+        An array of shape ``(P, N, K)`` where P is the number of models, consisting of predicted class probabilities from the ensemble models.
+        Each set of predicted probabilities with shape ``(N, K)`` is in the same format expected by the :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>`.
+
+    Returns
+    -------
+    active_learning_scores : np.ndarray
+        Array of shape ``(N,)`` indicating the active learning confidence scores for each example.
+    """
+
+    if isinstance(labels_multiannotator, np.ndarray):
+        labels_multiannotator = pd.DataFrame(labels_multiannotator)
     labels_multiannotator.reset_index(drop=True, inplace=True)  # make sure indices are 0 to N-1
+
     unlabeled_mask = labels_multiannotator.isna().all(axis=1)
     labeled_index = labels_multiannotator.index[~unlabeled_mask].to_numpy()
     unlabeled_index = labels_multiannotator.index[unlabeled_mask].to_numpy()
+
+    if len(labeled_index) == 0:
+        raise ValueError(
+            "No examples in this dataset have been labeled, label at least one example before computing active learning scores"
+        )
 
     labels_multiannotator_labeled = labels_multiannotator.iloc[labeled_index]
     pred_probs_labeled = pred_probs[:, labeled_index]
@@ -592,7 +744,7 @@ def get_majority_vote_label(
         For more details, labels in the same format expected by the :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>`.
     pred_probs : np.ndarray, optional
         An array of shape ``(N, K)`` of model-predicted probabilities, ``P(label=k|x)``.
-        For details, predicted probabilities in the same format expected by the :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>`.
+        For details, predicted probabilities in the same format expected by :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>`.
     verbose : bool, optional
         Important warnings and other printed statements may be suppressed if ``verbose`` is set to ``False``.
     Returns
@@ -710,9 +862,35 @@ def get_majority_vote_label(
 
 def get_majority_vote_label_ensemble(
     labels_multiannotator: Union[pd.DataFrame, np.ndarray],
-    pred_probs: Optional[np.ndarray] = None,
+    pred_probs: np.ndarray,
     verbose: bool = True,
 ) -> np.ndarray:
+    """Returns the majority vote label for each example, aggregated from the labels given by multiple annotators.
+    This function allows for more than one model's predicted probabilites to be pass in to be used as a tie-breaking stategy.
+
+    Parameters
+    ----------
+    labels_multiannotator : pd.DataFrame or np.ndarray
+        2D pandas DataFrame or array of multiple given labels for each example with shape ``(N, M)``,
+        where N is the number of examples and M is the number of annotators.
+        For more details, labels in the same format expected by the :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>`.
+    pred_probs : np.ndarray
+        An array of shape ``(P, N, K)`` where P is the number of models, consisting of predicted class probabilities from the ensemble models.
+        Each set of model-predicted probabilities, ``P(label=k|x)`` has shape ``(N, K)``, and is in the same format expected by :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>`.
+
+    verbose : bool, optional
+        Important warnings and other printed statements may be suppressed if ``verbose`` is set to ``False``.
+    Returns
+    -------
+    consensus_label: np.ndarray
+        An array of shape ``(N,)`` with the majority vote label aggregated from all annotators.
+
+        In the event of majority vote ties, ties are broken in the following order:
+        using the average model ``pred_probs`` and selecting the class with highest predicted probability,
+        using the empirical class frequencies and selecting the class with highest frequency,
+        using an initial annotator quality score and selecting the class that has been labeled by annotators with higher quality,
+        and lastly by random selection.
+    """
 
     if pred_probs.ndim != 3:
         raise ValueError(

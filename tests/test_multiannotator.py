@@ -11,12 +11,14 @@ from cleanlab.multiannotator import (
 )
 from cleanlab.internal.multiannotator_utils import format_multiannotator_labels
 import pandas as pd
+from sklearn.neighbors import KNeighborsClassifier
 
 
 def make_data(
     means=[[3, 2], [7, 7], [0, 8]],
     covs=[[[5, -1.5], [-1.5, 1]], [[1, 0.5], [0.5, 4]], [[5, 1], [1, 5]]],
-    sizes=[80, 40, 40],
+    labeled_sizes=[80, 40, 40],
+    unlabeled_sizes=[20, 10, 10],
     avg_trace=0.8,
     num_annotators=50,
     seed=1,  # set to None for non-reproducible randomness
@@ -24,25 +26,25 @@ def make_data(
     np.random.seed(seed=seed)
 
     m = len(means)  # number of classes
-    n = sum(sizes)
+    n = sum(labeled_sizes)
     local_data = []
     labels = []
-    test_data = []
-    test_labels = []
+    unlabeled_data = []
+    unlabeled_labels = []
 
     for idx in range(m):
         local_data.append(
-            np.random.multivariate_normal(mean=means[idx], cov=covs[idx], size=sizes[idx])
+            np.random.multivariate_normal(mean=means[idx], cov=covs[idx], size=labeled_sizes[idx])
         )
-        test_data.append(
-            np.random.multivariate_normal(mean=means[idx], cov=covs[idx], size=sizes[idx])
+        unlabeled_data.append(
+            np.random.multivariate_normal(mean=means[idx], cov=covs[idx], size=unlabeled_sizes[idx])
         )
-        labels.append(np.array([idx for i in range(sizes[idx])]))
-        test_labels.append(np.array([idx for i in range(sizes[idx])]))
+        labels.append(np.array([idx for i in range(labeled_sizes[idx])]))
+        unlabeled_labels.append(np.array([idx for i in range(unlabeled_sizes[idx])]))
     X_train = np.vstack(local_data)
+    X_train_unlabeled = np.vstack(unlabeled_data)
     true_labels_train = np.hstack(labels)
-    X_test = np.vstack(test_data)
-    true_labels_test = np.hstack(test_labels)
+    true_labels_train_unlabeled = np.hstack(unlabeled_labels)
 
     # Compute p(true_label=k)
     py = np.bincount(true_labels_train) / float(len(true_labels_train))
@@ -76,18 +78,76 @@ def make_data(
         labels=true_labels_train,
         cv_n_folds=3,
     )
+    latent_unlabeled = count.estimate_py_noise_matrices_and_cv_pred_proba(
+        X=X_train_unlabeled,
+        labels=true_labels_train_unlabeled,
+        cv_n_folds=3,
+    )
 
     row_NA_check = pd.notna(s).any(axis=1)
 
     return {
         "X_train": X_train[row_NA_check],
+        "X_train_unlabeled": X_train_unlabeled,
         "true_labels_train": true_labels_train[row_NA_check],
-        "X_test": X_test[row_NA_check],
-        "true_labels_test": true_labels_test[row_NA_check],
+        "true_labels_train_unlabeled": true_labels_train_unlabeled,
         "labels": s[row_NA_check].reset_index(drop=True),
+        "labels_unlabeled": pd.DataFrame(
+            np.full((len(true_labels_train_unlabeled), num_annotators), np.NaN)
+        ),
         "complete_labels": complete_labels,
         "pred_probs": latent[4][row_NA_check],
+        "pred_probs_unlabeled": latent_unlabeled[4],
         "noise_matrix": noise_matrix,
+    }
+
+
+def make_ensemble_data(
+    means=[[3, 2], [7, 7], [0, 8]],
+    covs=[[[5, -1.5], [-1.5, 1]], [[1, 0.5], [0.5, 4]], [[5, 1], [1, 5]]],
+    unlabeled_sizes=[20, 10, 10],
+    avg_trace=0.8,
+    num_annotators=50,
+    seed=1,  # set to None for non-reproducible randomness
+):
+    np.random.seed(seed=seed)
+
+    data = make_data()
+
+    X_train = data["X_train"]
+    true_labels_train = data["true_labels_train"]
+    X_train_unlabeled = data["X_train_unlabeled"]
+    true_labels_train_unlabeled = data["true_labels_train_unlabeled"]
+
+    # Estimate pred_probs for unlabeled data
+    pred_probs_extra = count.estimate_py_noise_matrices_and_cv_pred_proba(
+        X=X_train,
+        labels=true_labels_train,
+        cv_n_folds=3,
+        clf=KNeighborsClassifier(weights="distance"),
+    )[4]
+    pred_probs_labeled = np.array([data["pred_probs"], pred_probs_extra])
+
+    # Estimate pred_probs for labeled data
+    pred_probs_extra_unlabeled = count.estimate_py_noise_matrices_and_cv_pred_proba(
+        X=X_train_unlabeled,
+        labels=true_labels_train_unlabeled,
+        cv_n_folds=3,
+        clf=KNeighborsClassifier(weights="distance"),
+    )[4]
+    pred_probs_unlabeled = np.array([data["pred_probs_unlabeled"], pred_probs_extra_unlabeled])
+
+    return {
+        "X_train": data["X_train"],
+        "X_train_unlabeled": data["X_train_unlabeled"],
+        "true_labels_train": data["true_labels_train"],
+        "true_labels_train_unlabeled": data["true_labels_train_unlabeled"],
+        "labels": data["labels"],
+        "labels_unlabeled": data["labels_unlabeled"],
+        "complete_labels": data["complete_labels"],
+        "pred_probs": pred_probs_labeled,
+        "pred_probs_unlabeled": pred_probs_unlabeled,
+        "noise_matrix": data["noise_matrix"],
     }
 
 
