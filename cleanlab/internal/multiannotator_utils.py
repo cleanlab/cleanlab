@@ -195,6 +195,7 @@ def find_best_temp_scaler(
     soft_cross_entropy_coarse = np.full(len(grid_search_coarse_range), np.NaN)
     for i in range(len(grid_search_coarse_range)):
         curr_temp = grid_search_coarse_range[i]
+        # TODO: should we clip the pred_probs here before taking the log? otherwose warning will pop up if pred_probs=0
         log_pred_probs = np.log(pred_probs) / curr_temp
         scaled_pred_probs = np.exp(log_pred_probs) / np.sum(np.exp(log_pred_probs))  # softmax
         soft_cross_entropy_coarse[i] = np.mean(

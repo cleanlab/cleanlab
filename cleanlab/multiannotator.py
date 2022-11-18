@@ -47,11 +47,11 @@ def get_label_quality_multiannotator(
     *,
     consensus_method: Union[str, List[str]] = "best_quality",
     quality_method: str = "crowdlab",
+    temp_scale: bool = False,
     return_detailed_quality: bool = True,
     return_annotator_stats: bool = True,
     return_weights: bool = False,
     verbose: bool = True,
-    temp_scale: bool = False,
     label_quality_score_kwargs: dict = {},
 ) -> Dict[str, Any]:
     """Returns label quality scores for each example and for each annotator.
@@ -99,6 +99,9 @@ def get_label_quality_multiannotator(
 
         * ``crowdlab``: an emsemble method that weighs both the annotators' labels as well as the model's prediction.
         * ``agreement``: the fraction of annotators that agree with the consensus label.
+    temp_scale : bool, default = False
+        Boolean value that specifies if the pred_probs will be temperature scaled to better match the annotators' empirical label distribution.
+        This is especially relevant in active learning to prevent overconfident models.
     return_detailed_quality: bool, default = True
         Boolean to specify if `detailed_label_quality` is returned.
     return_annotator_stats : bool, default = True
@@ -108,9 +111,6 @@ def get_label_quality_multiannotator(
         Model and annotator weights are applicable for ``quality_method == crowdlab``, will return ``None`` for any other quality methods.
     verbose : bool, default = True
         Important warnings and other printed statements may be suppressed if ``verbose`` is set to ``False``.
-    temp_scale : bool, default = False
-        Boolean value that specifies if the pred_probs will be temperature scaled to better match the annotators' empirical label distribution.
-        This is especially relevant in active learning to prevent overconfident models.
     label_quality_score_kwargs : dict, optional
         Keyword arguments to pass into :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>`.
 
@@ -319,11 +319,11 @@ def get_label_quality_multiannotator_ensemble(
     labels_multiannotator: Union[pd.DataFrame, np.ndarray],
     pred_probs: np.ndarray,
     *,
+    temp_scale: bool = False,
     return_detailed_quality: bool = True,
     return_annotator_stats: bool = True,
     return_weights: bool = False,
     verbose: bool = True,
-    temp_scale: bool = False,
     label_quality_score_kwargs: dict = {},
 ) -> Dict[str, Any]:
     """Returns label quality scores for each example and for each annotator.
@@ -355,6 +355,9 @@ def get_label_quality_multiannotator_ensemble(
     pred_probs : np.ndarray
         An array of shape ``(P, N, K)`` where P is the number of models, consisting of predicted class probabilities from the ensemble models.
         Each set of predicted probabilities with shape ``(N, K)`` is in the same format expected by the :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>`.
+    temp_scale : bool, default = False
+        Boolean value that specifies if the pred_probs will be temperature scaled to better match the annotators' empirical label distribution.
+        This is especially relevant in active learning to prevent overconfident models.
     return_detailed_quality: bool, default = True
         Boolean to specify if `detailed_label_quality` is returned.
     return_annotator_stats : bool, default = True
@@ -363,9 +366,6 @@ def get_label_quality_multiannotator_ensemble(
         Boolean to specify if `model_weight` and `annotator_weight` is returned.
     verbose : bool, default = True
         Important warnings and other printed statements may be suppressed if ``verbose`` is set to ``False``.
-    temp_scale : bool, default = False
-        Boolean value that specifies if the pred_probs will be temperature scaled to better match the annotators' empirical label distribution.
-        This is especially relevant in active learning to prevent overconfident models.
     label_quality_score_kwargs : dict, optional
         Keyword arguments to pass into :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>`.
 
@@ -608,6 +608,8 @@ def get_active_learning_scores(
     # compute scores for unlabeled data
     if len(unlabeled_index) > 0:
         pred_probs_unlabeled = pred_probs[unlabeled_index]
+        optimal_temp = find_best_temp_scaler(labels_multiannotator_labeled, pred_probs_labeled)
+        pred_probs_unlabeled = temp_scale_pred_probs(pred_probs_unlabeled, optimal_temp)
         quality_of_consensus_unlabeled = np.max(pred_probs_unlabeled, axis=1)
 
         active_learning_scores_unlabeled = np.average(
@@ -707,6 +709,12 @@ def get_active_learning_scores_ensemble(
     # compute scores for unlabeled data
     if len(unlabeled_index) > 0:
         pred_probs_unlabeled = pred_probs[:, unlabeled_index]
+        for p in range(len(pred_probs_unlabeled)):
+            optimal_temp = find_best_temp_scaler(
+                labels_multiannotator_labeled, pred_probs_labeled[p]
+            )
+            pred_probs_unlabeled[p] = temp_scale_pred_probs(pred_probs_unlabeled[p], optimal_temp)
+
         consensus_label_unlabeled = get_majority_vote_label_ensemble(
             np.argmax(pred_probs_unlabeled, axis=2).T,
             pred_probs_unlabeled,

@@ -14,7 +14,7 @@ from cleanlab.multiannotator import (
 )
 from cleanlab.internal.multiannotator_utils import format_multiannotator_labels
 import pandas as pd
-from sklearn.neighbors import KNeighborsClassifier
+from sklearn.linear_model import LogisticRegression
 
 
 def make_data(
@@ -127,7 +127,8 @@ def make_ensemble_data(
         X=X_train,
         labels=true_labels_train,
         cv_n_folds=3,
-        clf=KNeighborsClassifier(weights="distance"),
+        # clf=KNeighborsClassifier(weights="distance"),
+        clf=LogisticRegression(),
     )[4]
     pred_probs_labeled = np.array([data["pred_probs"], pred_probs_extra])
 
@@ -136,7 +137,8 @@ def make_ensemble_data(
         X=X_train_unlabeled,
         labels=true_labels_train_unlabeled,
         cv_n_folds=3,
-        clf=KNeighborsClassifier(weights="distance"),
+        # clf=KNeighborsClassifier(weights="distance"),
+        clf=LogisticRegression(),
     )[4]
     pred_probs_unlabeled = np.array([data["pred_probs_unlabeled"], pred_probs_extra_unlabeled])
 
