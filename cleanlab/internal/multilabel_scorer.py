@@ -315,7 +315,7 @@ class MultilabelScorer:
         """
         Computes a quality score for each label in a multi-label classification problem
         based on out-of-sample predicted probabilities.
-        The score is computed by averaging the base_scorer over all labels.
+        For each datapoint, the base label quality scores for each class are aggregated into a single score.
 
         Parameters
         ----------
