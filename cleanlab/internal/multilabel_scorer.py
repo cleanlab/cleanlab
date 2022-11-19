@@ -187,7 +187,8 @@ class Aggregator:
         """
         self._validate_scores(scores)
         kwargs["axis"] = 1
-        return self.method(scores, **{**kwargs, **self.kwargs})
+        updated_kwargs = {**self.kwargs, **kwargs}
+        return self.method(scores, **updated_kwargs)
 
     def __repr__(self):
         return f"Aggregator(method={self.method.__name__}, kwargs={self.kwargs})"
