@@ -98,27 +98,70 @@ def dummy_features(labels):
     return np.random.rand(labels.shape[0], 2)
 
 
-@pytest.mark.parametrize("base_scorer", [scorer for scorer in ml_scorer.ClassLabelScorer])
-@pytest.mark.parametrize("aggregator", [np.min, np.max, np.mean])
-@pytest.mark.parametrize("strict", [True, False])
-def test_multilabel_scorer(base_scorer, aggregator, strict, labels, pred_probs):
-    scorer = ml_scorer.MultilabelScorer(base_scorer, aggregator, strict=strict)
-    assert callable(scorer)
+class TestMultilabelScorer:
+    """Test the MultilabelScorer class."""
 
-    test_scores = scorer(labels, pred_probs)
-    assert isinstance(test_scores, np.ndarray)
-    assert test_scores.shape == (labels.shape[0],)
+    @pytest.fixture
+    def docs_labels(self):
+        return np.array([[0, 1, 0], [1, 0, 1]])
 
-    # Test base_scorer_kwargs
-    base_scorer_kwargs = {"adjust_pred_probs": True}
-    if scorer.base_scorer is not ml_scorer.ClassLabelScorer.CONFIDENCE_WEIGHTED_ENTROPY:
-        test_scores = scorer(labels, pred_probs, base_scorer_kwargs=base_scorer_kwargs)
+    @pytest.fixture
+    def docs_pred_probs(self):
+        return np.array([[0.1, 0.9, 0.7], [0.4, 0.1, 0.6]])
+
+    @pytest.fixture
+    def default_scorer(self):
+        return ml_scorer.MultilabelScorer()
+
+    @pytest.mark.parametrize(
+        "base_scorer", [scorer for scorer in ml_scorer.ClassLabelScorer], ids=lambda x: x.name
+    )
+    @pytest.mark.parametrize("aggregator", [np.min, np.max, np.mean])
+    @pytest.mark.parametrize("strict", [True, False], ids=["strict", ""])
+    def test_call(self, base_scorer, aggregator, strict, labels, pred_probs):
+        scorer = ml_scorer.MultilabelScorer(base_scorer, aggregator, strict=strict)
+        assert callable(scorer)
+
+        test_scores = scorer(labels, pred_probs)
         assert isinstance(test_scores, np.ndarray)
         assert test_scores.shape == (labels.shape[0],)
-    else:
-        with pytest.raises(ValueError) as e:
-            scorer(labels, pred_probs, base_scorer_kwargs=base_scorer_kwargs)
-            assert "adjust_pred_probs is not currently supported for" in str(e)
+
+        # Test base_scorer_kwargs
+        base_scorer_kwargs = {"adjust_pred_probs": True}
+        if scorer.base_scorer is not ml_scorer.ClassLabelScorer.CONFIDENCE_WEIGHTED_ENTROPY:
+            test_scores = scorer(labels, pred_probs, base_scorer_kwargs=base_scorer_kwargs)
+            assert isinstance(test_scores, np.ndarray)
+            assert test_scores.shape == (labels.shape[0],)
+        else:
+            with pytest.raises(ValueError) as e:
+                scorer(labels, pred_probs, base_scorer_kwargs=base_scorer_kwargs)
+                assert "adjust_pred_probs is not currently supported for" in str(e)
+
+    @pytest.mark.parametrize(
+        "base_scorer", [scorer for scorer in ml_scorer.ClassLabelScorer], ids=lambda x: x.name
+    )
+    def test_aggregate_kwargs(self, base_scorer):
+        """Make sure the instatiated aggregator kwargs can be overridden.
+        I.e. switching from a forgetting-factor 1.0 to 0.5.
+        """
+        class_label_quality_scores = np.array([[0.9, 0.9, 0.3], [0.4, 0.9, 0.6]])
+        aggregator = ml_scorer.Aggregator(ml_scorer.exponential_moving_average, alpha=1.0)
+        scorer = ml_scorer.MultilabelScorer(
+            base_scorer=base_scorer,
+            aggregator=aggregator,
+        )
+        scores = scorer.aggregate(class_label_quality_scores)
+        assert np.allclose(scores, np.array([0.3, 0.4]))
+        # Use different alpha, should change scores
+        new_scores = scorer.aggregate(class_label_quality_scores, alpha=0.0)
+        assert np.allclose(new_scores, np.array([0.9, 0.9]))
+
+    def test_get_class_label_quality_scores(self, default_scorer, docs_labels, docs_pred_probs):
+        """Test the get_class_label_quality_scores method."""
+        class_label_quality_scores = default_scorer.get_class_label_quality_scores(
+            docs_labels, docs_pred_probs
+        )
+        assert np.allclose(class_label_quality_scores, np.array([[0.9, 0.9, 0.3], [0.4, 0.9, 0.6]]))
 
 
 @pytest.mark.parametrize(
