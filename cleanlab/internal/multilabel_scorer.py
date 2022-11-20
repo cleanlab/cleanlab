@@ -187,7 +187,8 @@ class Aggregator:
         """
         self._validate_scores(scores)
         kwargs["axis"] = 1
-        return self.method(scores, **{**kwargs, **self.kwargs})
+        updated_kwargs = {**self.kwargs, **kwargs}
+        return self.method(scores, **updated_kwargs)
 
     def __repr__(self):
         return f"Aggregator(method={self.method.__name__}, kwargs={self.kwargs})"
@@ -314,7 +315,7 @@ class MultilabelScorer:
         """
         Computes a quality score for each label in a multi-label classification problem
         based on out-of-sample predicted probabilities.
-        The score is computed by averaging the base_scorer over all labels.
+        For each example, the label quality scores for each class are aggregated into a single overall label quality score.
 
         Parameters
         ----------
@@ -359,14 +360,98 @@ class MultilabelScorer:
         """
         if self.strict:
             self._validate_labels_and_pred_probs(labels, pred_probs)
-        scores = np.zeros(shape=labels.shape)
+        scores = self.get_class_label_quality_scores(labels, pred_probs, base_scorer_kwargs)
+        return self.aggregate(scores, **aggregator_kwargs)
+
+    def aggregate(
+        self,
+        class_label_quality_scores: np.ndarray,
+        **kwargs,
+    ) -> np.ndarray:
+        """Aggregates the label quality scores for each class into a single overall label quality score for each example.
+
+        Parameters
+        ----------
+        class_label_quality_scores:
+            A 2D array of shape (n_samples, n_labels) with the label quality scores for each class.
+
+            See also
+            --------
+            get_class_label_quality_scores
+
+        kwargs:
+            Additional keyword arguments to pass to the aggregator.
+
+        Returns
+        -------
+        scores:
+            A 1D array of shape (n_samples,) with the quality scores for each datapoint.
+
+        Examples
+        --------
+        >>> from cleanlab.internal.multilabel_scorer import MultilabelScorer
+        >>> import numpy as np
+        >>> class_label_quality_scores = np.array([[0.9, 0.9, 0.3],[0.4, 0.9, 0.6]])
+        >>> scorer = MultilabelScorer() # Use the default aggregator (exponential moving average) with default parameters.
+        >>> scores = scorer.aggregate(class_label_quality_scores)
+        >>> scores
+        array([0.42, 0.452])
+        >>> new_scores = scorer.aggregate(class_label_quality_scores, alpha=0.5) # Use the default aggregator with custom parameters.
+        >>> new_scores
+        array([0.6, 0.575])
+
+        Warning
+        -------
+        Make sure that keyword arguments correspond to the aggregation function used.
+        I.e. the ``exponential_moving_average`` function supports an ``alpha`` keyword argument, but ``np.min`` does not.
+        """
+        return self.aggregator(class_label_quality_scores, **kwargs)
+
+    def get_class_label_quality_scores(
+        self,
+        labels: np.ndarray,
+        pred_probs: np.ndarray,
+        base_scorer_kwargs: Optional[dict] = None,
+    ) -> np.ndarray:
+        """Computes separate label quality scores for each class.
+
+        Parameters
+        ----------
+        labels:
+            A 2D array of shape (n_samples, n_labels) with binary labels.
+
+        pred_probs:
+            A 2D array of shape (n_samples, n_labels) with predicted probabilities.
+
+        base_scorer_kwargs:
+            Keyword arguments to pass to the base scoring-function.
+
+        Returns
+        -------
+        class_label_quality_scores:
+            A 2D array of shape (n_samples, n_labels) with the quality scores for each label.
+
+        Examples
+        --------
+        >>> from cleanlab.internal.multilabel_scorer import MultilabelScorer
+        >>> import numpy as np
+        >>> labels = np.array([[0, 1, 0], [1, 0, 1]])
+        >>> pred_probs = np.array([[0.1, 0.9, 0.7], [0.4, 0.1, 0.6]])
+        >>> scorer = MultilabelScorer() # Use the default base scorer (SELF_CONFIDENCE)
+        >>> class_label_quality_scores = scorer.get_class_label_quality_scores(labels, pred_probs)
+        >>> class_label_quality_scores
+        array([[0.9, 0.9, 0.3],
+               [0.4, 0.9, 0.6]])
+        """
+        class_label_quality_scores = np.zeros(shape=labels.shape)
         if base_scorer_kwargs is None:
             base_scorer_kwargs = {}
         for i, (label_i, pred_prob_i) in enumerate(zip(labels.T, pred_probs.T)):
             pred_prob_i_two_columns = stack_complement(pred_prob_i)
-            scores[:, i] = self.base_scorer(label_i, pred_prob_i_two_columns, **base_scorer_kwargs)
-
-        return self.aggregator(scores, **aggregator_kwargs)
+            class_label_quality_scores[:, i] = self.base_scorer(
+                label_i, pred_prob_i_two_columns, **base_scorer_kwargs
+            )
+        return class_label_quality_scores
 
     @staticmethod
     def _validate_labels_and_pred_probs(labels: np.ndarray, pred_probs: np.ndarray) -> None:
