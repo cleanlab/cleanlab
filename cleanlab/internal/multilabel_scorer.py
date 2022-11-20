@@ -368,7 +368,7 @@ class MultilabelScorer:
         class_label_quality_scores: np.ndarray,
         **kwargs,
     ) -> np.ndarray:
-        """Aggregates the label quality scores for each class into a single score for each datapoint.
+        """Aggregates the label quality scores for each class into a single overall label quality score for each example.
 
         Parameters
         ----------
