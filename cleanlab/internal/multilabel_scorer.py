@@ -413,7 +413,7 @@ class MultilabelScorer:
         pred_probs: np.ndarray,
         base_scorer_kwargs: Optional[dict] = None,
     ) -> np.ndarray:
-        """Computes the label quality scores for each class.
+        """Computes separate label quality scores for each class.
 
         Parameters
         ----------
