@@ -286,7 +286,8 @@ class Aggregator:
 
     @staticmethod
     def _validate_method(method) -> None:
-        assert callable(method), f"Expected callable method, got {type(method)}"
+        if not callable(method):
+            raise TypeError(f"Expected callable method, got {type(method)}")
 
     @staticmethod
     def _validate_scores(scores: np.ndarray) -> None:

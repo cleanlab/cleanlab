@@ -159,6 +159,59 @@ def test_public_label_quality_scores(labels, pred_probs):
         assert "Invalid aggregation method specified: 'invalid'" in str(e.value)
 
 
+class TestAggregator:
+    """Test the Aggregator class."""
+
+    @pytest.fixture
+    def base_scores(self):
+        return np.array([[0.6, 0.3, 0.7, 0.1, 0.9]])
+
+    @pytest.mark.parametrize(
+        "method",
+        [np.min, np.max, np.mean, np.median, "exponential_moving_average", "softmin"],
+        ids=lambda x: x.__name__ if callable(x) else str(x),
+    )
+    def test_aggregator_callable(self, method):
+        aggregator = multilabel_classfication.Aggregator(method=method)
+        assert callable(aggregator.method), "Aggregator should store a callable method"
+        assert callable(aggregator), "Aggregator should be callable"
+
+    @pytest.mark.parametrize(
+        "method,expected_score",
+        [
+            (np.min, 0.1),
+            (np.max, 0.9),
+            (np.mean, 0.52),
+            (np.median, 0.6),
+            ("exponential_moving_average", 0.436),
+            ("softmin", 0.128),
+        ],
+        ids=["min", "max", "mean", "median", "exponential_moving_average", "softmin"],
+    )
+    def test_aggregator_score(self, base_scores, method, expected_score):
+        aggregator = multilabel_classfication.Aggregator(method=method)
+        scores = aggregator(base_scores)
+        assert np.isclose(scores, np.array([expected_score]), rtol=1e-3).all()
+        assert scores.shape == (1,)
+
+    def test_invalid_method(self):
+        with pytest.raises(ValueError) as e:
+            _ = multilabel_classfication.Aggregator(method="invalid_method")
+            assert "Invalid aggregation method specified: 'invalid_method'" in str(
+                e.value
+            ), "String constructor has limited options"
+
+        with pytest.raises(TypeError) as e:
+            _ = multilabel_classfication.Aggregator(method=1)
+            assert "Expected callable method" in str(e.value), "Non-callable methods are not valid"
+
+    def test_invalid_score(self, base_scores):
+        aggregator = multilabel_classfication.Aggregator(method=np.min)
+        with pytest.raises(ValueError) as e:
+            _ = aggregator(base_scores[0])
+            assert "Expected 2D array" in str(e.value), "Aggregator expects 2D array"
+
+
 class TestMultilabelScorer:
     """Test the MultilabelScorer class."""
 
