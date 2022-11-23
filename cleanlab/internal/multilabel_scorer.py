@@ -233,8 +233,8 @@ def softmin(
     Returns:
         Softmin score.
     """
-    if temperature is None:
-        temperature = 1.0
+    if temperature is None:  # pragma: no cover
+        temperature = 1.0  # this primarily exists to satisfy mypy
 
     def softmax(scores: np.ndarray) -> np.ndarray:
         """Softmax function."""
