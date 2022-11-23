@@ -145,18 +145,18 @@ def test_public_label_quality_scores(labels, pred_probs):
         aggregator_kwargs={"method": np.min},
     )
     assert np.isclose(scores6, scores7, rtol=1e-3).all()
-    try:
+
+    with pytest.raises(ValueError) as e:
         _ = multilabel_classfication.get_label_quality_scores(
             formatted_labels, pred_probs, method="badchoice"
         )
-    except Exception as e:
-        assert "Invalid" in str(e)
-    try:
+        assert "Invalid method name: badchoice" in str(e.value)
+
+    with pytest.raises(ValueError) as e:
         _ = multilabel_classfication.get_label_quality_scores(
             formatted_labels, pred_probs, aggregator_kwargs={"method": "invalid"}
         )
-    except Exception as e:
-        assert "Invalid" in str(e)
+        assert "Invalid aggregation method specified: 'invalid'" in str(e.value)
 
 
 class TestMultilabelScorer:
