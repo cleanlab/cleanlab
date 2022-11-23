@@ -24,7 +24,8 @@ from sklearn.multiclass import OneVsRestClassifier
 from sklearn.linear_model import LogisticRegression
 
 from cleanlab.internal import multilabel_scorer as ml_scorer
-from cleanlab.internal.multilabel_utils import stack_complement, get_onehot_num_classes
+from cleanlab.internal.multilabel_utils import stack_complement, get_onehot_num_classes, onehot2int
+from cleanlab import multilabel_classification as multilabel_classfication
 
 
 @pytest.fixture
@@ -98,6 +99,66 @@ def dummy_features(labels):
     return np.random.rand(labels.shape[0], 2)
 
 
+def test_public_label_quality_scores(labels, pred_probs):
+    formatted_labels = onehot2int(labels)
+    assert isinstance(formatted_labels, list)
+    scores1 = multilabel_classfication.get_label_quality_scores(formatted_labels, pred_probs)
+    assert len(scores1) == len(labels)
+    assert (scores1 >= 0).all() and (scores1 <= 1).all()
+    scores2 = multilabel_classfication.get_label_quality_scores(
+        formatted_labels, pred_probs, method="confidence_weighted_entropy"
+    )
+    assert not np.isclose(scores1, scores2).all()
+    scores3 = multilabel_classfication.get_label_quality_scores(
+        formatted_labels, pred_probs, adjust_pred_probs=True
+    )
+    assert not np.isclose(scores1, scores3).all()
+    scores4 = multilabel_classfication.get_label_quality_scores(
+        formatted_labels,
+        pred_probs,
+        method="normalized_margin",
+        adjust_pred_probs=True,
+        aggregator_kwargs={"method": "exponential_moving_average"},
+    )
+    assert not np.isclose(scores1, scores4).all()
+    scores5 = multilabel_classfication.get_label_quality_scores(
+        formatted_labels,
+        pred_probs,
+        method="normalized_margin",
+        adjust_pred_probs=True,
+        aggregator_kwargs={"method": "softmin"},
+    )
+    assert not np.isclose(scores4, scores5).all()
+    scores6 = multilabel_classfication.get_label_quality_scores(
+        formatted_labels,
+        pred_probs,
+        method="normalized_margin",
+        adjust_pred_probs=True,
+        aggregator_kwargs={"method": "softmin", "temperature": 0.002},
+    )
+    assert not np.isclose(scores5, scores6).all()
+    scores7 = multilabel_classfication.get_label_quality_scores(
+        formatted_labels,
+        pred_probs,
+        method="normalized_margin",
+        adjust_pred_probs=True,
+        aggregator_kwargs={"method": np.min},
+    )
+    assert np.isclose(scores6, scores7, rtol=1e-3).all()
+    try:
+        _ = multilabel_classfication.get_label_quality_scores(
+            formatted_labels, pred_probs, method="badchoice"
+        )
+    except Exception as e:
+        assert "Invalid" in str(e)
+    try:
+        _ = multilabel_classfication.get_label_quality_scores(
+            formatted_labels, pred_probs, aggregator_kwargs={"method": "invalid"}
+        )
+    except Exception as e:
+        assert "Invalid" in str(e)
+
+
 class TestMultilabelScorer:
     """Test the MultilabelScorer class."""
 
@@ -116,7 +177,9 @@ class TestMultilabelScorer:
     @pytest.mark.parametrize(
         "base_scorer", [scorer for scorer in ml_scorer.ClassLabelScorer], ids=lambda x: x.name
     )
-    @pytest.mark.parametrize("aggregator", [np.min, np.max, np.mean])
+    @pytest.mark.parametrize(
+        "aggregator", [np.min, np.max, np.mean, "exponential_moving_average", "softmin"]
+    )
     @pytest.mark.parametrize("strict", [True, False], ids=["strict", ""])
     def test_call(self, base_scorer, aggregator, strict, labels, pred_probs):
         scorer = ml_scorer.MultilabelScorer(base_scorer, aggregator, strict=strict)
