@@ -225,12 +225,19 @@ def softmin(
 ) -> np.ndarray:
     """Softmin score aggregation function.
 
-    Args:
-        s: Input array.
-        temperature: Temperature parameter. Too small values may cause numerical underflow and NaN scores.
-        axis: Axis along which to apply the function.
+    Parameters
+    ----------
+    s :
+        Input array.
 
-    Returns:
+    temperature :
+        Temperature parameter. Too small values may cause numerical underflow and NaN scores.
+
+    axis :
+        Axis along which to apply the function.
+
+    Returns
+    -------
         Softmin score.
     """
     if temperature is None:  # pragma: no cover
