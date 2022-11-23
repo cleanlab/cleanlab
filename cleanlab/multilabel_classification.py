@@ -51,7 +51,10 @@ def get_label_quality_scores(
     labels : List[List[int]]
       Multi-label classification labels for each example, which is allowed to belong to multiple classes.
       The i-th element of `labels` corresponds to list of classes that i-th example belongs to (e.g. ``labels = [[1,2],[1],[0],..]``).
-      *Format requirements*: for dataset with K classes, individual class labels must be integers in 0, 1, ..., K-1.
+
+      Important
+      ---------
+      *Format requirements*: For dataset with K classes, individual class labels must be integers in 0, 1, ..., K-1.
 
     pred_probs : np.ndarray
       An array of shape ``(N, K)`` of model-predicted probabilities,
@@ -61,7 +64,9 @@ def get_label_quality_scores(
       columns must be ordered such that these probabilities correspond to
       class 0, 1, ..., K-1. In multi-label classification, the rows of `pred_probs` need not sum to 1.
 
-      **Note**: Estimated label quality scores are most accurate when they are computed based on out-of-sample `pred_probs` from your model.
+      Note
+      ----
+      Estimated label quality scores are most accurate when they are computed based on out-of-sample ``pred_probs`` from your model.
       To obtain out-of-sample predicted probabilities for every example in your dataset, you can use :ref:`cross-validation <pred_probs_cross_val>`.
       This is encouraged to get better results.
 
@@ -69,7 +74,10 @@ def get_label_quality_scores(
       Method to calculate separate per class annotation scores that are subsequently aggregated to form an overall label quality score.
       These scores are separately calculated for each class based on the corresponding column of `pred_probs` in a one-vs-rest manner,
       and are standard label quality scores for multi-class classification.
-      See :py:func:`rank.get_label_quality_scores <cleanlab.rank.get_label_quality_scores>` function for details about each option.
+
+      See also
+      --------
+      :py:func:`rank.get_label_quality_scores <cleanlab.rank.get_label_quality_scores>` function for details about each option.
 
     adjust_pred_probs : bool, default = False
       Account for class imbalance in the label-quality scoring by adjusting predicted probabilities
