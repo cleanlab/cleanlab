@@ -320,27 +320,39 @@ def test_label_quality_scores_multiannotator_ensemble():
 def test_get_active_learning_scores():
     labels = data["labels"]
     pred_probs = data["pred_probs"]
-    labels_unlabeled = data["labels_unlabeled"]
     pred_probs_unlabeled = data["pred_probs_unlabeled"]
 
-    labels_combined = np.concatenate((labels, labels_unlabeled))
-    pred_probs_combined = np.concatenate((pred_probs, pred_probs_unlabeled))
-
     # test default case
-    active_learning_scores = get_active_learning_scores(labels_combined, pred_probs_combined)
+    active_learning_scores, active_learning_scores_unlabeled = get_active_learning_scores(
+        labels, pred_probs, pred_probs_unlabeled
+    )
     assert isinstance(active_learning_scores, np.ndarray)
-    assert len(active_learning_scores) == len(labels_combined)
+    assert len(active_learning_scores) == len(pred_probs)
+    assert len(active_learning_scores_unlabeled) == len(pred_probs_unlabeled)
 
     # test case where all examples are already labeled
-    active_learning_scores = get_active_learning_scores(labels, pred_probs)
+    active_learning_scores, active_learning_scores_unlabeled = get_active_learning_scores(
+        labels, pred_probs
+    )
     assert isinstance(active_learning_scores, np.ndarray)
-    assert len(active_learning_scores) == len(labels)
+    assert len(active_learning_scores) == len(pred_probs)
+    assert len(active_learning_scores_unlabeled) == 0
 
-    # test case where all examples are not labeled (should throw error)
+    # test case where all examples are already labeled, pass in empty pred_probs_unlabeled array
+    active_learning_scores, active_learning_scores_unlabeled = get_active_learning_scores(
+        labels, pred_probs, np.array([])
+    )
+    assert isinstance(active_learning_scores, np.ndarray)
+    assert len(active_learning_scores) == len(pred_probs)
+    assert len(active_learning_scores_unlabeled) == 0
+
+    # test case where number of classes do not match
     try:
-        active_learning_scores = get_active_learning_scores(labels_unlabeled, pred_probs_unlabeled)
+        active_learning_scores, active_learning_scores_unlabeled = get_active_learning_scores(
+            labels, pred_probs, pred_probs_unlabeled[:, :-1]
+        )
     except ValueError as e:
-        assert "No examples in this dataset have been labeled" in str(e)
+        assert "must have the same number of classes" in str(e)
 
 
 def test_get_active_learning_scores_ensemble():
@@ -349,28 +361,38 @@ def test_get_active_learning_scores_ensemble():
     labels_unlabeled = ensemble_data["labels_unlabeled"]
     pred_probs_unlabeled = ensemble_data["pred_probs_unlabeled"]
 
-    labels_combined = np.concatenate((labels, labels_unlabeled))
-    pred_probs_combined = np.hstack((pred_probs, pred_probs_unlabeled))
-
     # test default case
-    active_learning_scores = get_active_learning_scores_ensemble(
-        labels_combined, pred_probs_combined
+    active_learning_scores, active_learning_scores_unlabeled = get_active_learning_scores_ensemble(
+        labels, pred_probs, pred_probs_unlabeled
     )
     assert isinstance(active_learning_scores, np.ndarray)
-    assert len(active_learning_scores) == len(labels_combined)
+    assert len(active_learning_scores) == len(labels)
+    assert len(active_learning_scores_unlabeled) == pred_probs_unlabeled.shape[1]
 
     # test case where all examples are already labeled
-    active_learning_scores = get_active_learning_scores_ensemble(labels, pred_probs)
+    active_learning_scores, active_learning_scores_unlabeled = get_active_learning_scores_ensemble(
+        labels, pred_probs
+    )
     assert isinstance(active_learning_scores, np.ndarray)
     assert len(active_learning_scores) == len(labels)
+    assert len(active_learning_scores_unlabeled) == 0
 
-    # test case where all examples are not labeled (should throw error)
+    # test case where all examples are already labeled, pass in empty pred_probs_unlabeled array
+    active_learning_scores, active_learning_scores_unlabeled = get_active_learning_scores_ensemble(
+        labels, pred_probs, np.array([])
+    )
+    assert isinstance(active_learning_scores, np.ndarray)
+    assert len(active_learning_scores) == len(labels)
+    assert len(active_learning_scores_unlabeled) == 0
+
+    # test case where number of classes do not match
     try:
-        active_learning_scores = get_active_learning_scores_ensemble(
-            labels_unlabeled, pred_probs_unlabeled
-        )
+        (
+            active_learning_scores,
+            active_learning_scores_unlabeled,
+        ) = get_active_learning_scores_ensemble(labels, pred_probs, pred_probs_unlabeled[:, :-1])
     except ValueError as e:
-        assert "No examples in this dataset have been labeled" in str(e)
+        assert "must have the same number of classes" in str(e)
 
 
 def test_missing_class():
