@@ -251,9 +251,12 @@ class Aggregator:
     ----------
     method:
         The method to compute the label quality scores for each class.
+        If passed as a callable, your function should take in a 1D array of K scores and return a single aggregated score.
+        See :py:func:`exponential_moving_average <cleanlab.internal.multilabel_scorer.exponential_moving_average>` for an example of such a function.
+        Alternatively, this can be a str value to specify a built-in function, possible values are the keys of the ``Aggregator``'s `possible_methods` attribute.
 
     kwargs:
-        Additional keyword arguments to pass to the method when called.
+        Additional keyword arguments to pass to the aggregation function when it is called.
     """
 
     possible_methods = {

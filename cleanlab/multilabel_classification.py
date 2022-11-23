@@ -80,7 +80,7 @@ def get_label_quality_scores(
     aggregator_kwargs : dict, default = {"method": "exponential_moving_average", "alpha": 0.8}
       A dictionary of hyperparameter values for aggregating per class scores into an overall label quality score for each example.
       Options for ``"method"`` include: ``"exponential_moving_average"`` or ``"softmin"`` or your own callable function.
-      See :py::class:`internal.multilabel_scorer.Aggregator <cleanlab.internal.multilabel_scorer.Aggregator>` for details about each option and other possible hyperparameters.
+      See :py:class:`internal.multilabel_scorer.Aggregator <cleanlab.internal.multilabel_scorer.Aggregator>` for details about each option and other possible hyperparameters.
 
     Returns
     -------
