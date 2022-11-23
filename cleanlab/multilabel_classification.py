@@ -93,7 +93,7 @@ def get_label_quality_scores(
     Returns
     -------
     label_quality_scores : np.ndarray
-      A 1D array of shape (n_examples,) with a label quality score (between 0 and 1) for each example in the dataset.
+      A 1D array of shape ``(N,)`` with a label quality score (between 0 and 1) for each example in the dataset.
       Lower scores indicate examples whose label is more likely to contain annotation errors.
 
 
