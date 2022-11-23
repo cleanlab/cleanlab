@@ -98,10 +98,14 @@ def test_data_features_and_labels(dataset):
 
 def test_find_issues(lab, pred_probs):
     assert lab.issues is None
+    assert lab.results is None, "Results should be None before calling find_issues"
     lab.find_issues(pred_probs=pred_probs)
     assert lab.issues is not None, "Issues weren't updated"
     assert isinstance(lab.issues, pd.DataFrame), "Issues should by in a dataframe"
     assert all(lab.issues.predicted_label == np.array([1, 0, 1, 2, 0]))
+
+    assert isinstance(lab.results, float), "Results should be a float"
+    assert isinstance(lab.info.get("summary", None), dict), "Summary should be a dict"
 
 
 def test_health_summary(lab, pred_probs):
@@ -129,23 +133,3 @@ def test_health_summary(lab, pred_probs):
     assert (
         label_quality_df["Class Index"].map(lab._label_map).equals(label_quality_df["Class Name"])
     ), "Class indices don't match class names in dataframe"
-
-
-def test_getter_methods(lab, pred_probs):
-    # Expect errors if we call getters before calling self.find_issues
-    with pytest.raises(ValueError) as e:
-        lab.get_health_score()
-        assert "Health summary has not been computed" in str(e)
-
-    with pytest.raises(ValueError) as e:
-        lab.get_label_quality_scores()
-        assert "Labels errors have not been found yet" in str(e)
-
-    # Call self.find_issues and check outputs
-    lab.find_issues(pred_probs=pred_probs)
-    health_score = lab.get_health_score()
-    assert isinstance(health_score, float)
-
-    quality_scores = lab.get_label_quality_scores()
-    assert isinstance(quality_scores, np.ndarray)
-    assert quality_scores.shape == (5,)

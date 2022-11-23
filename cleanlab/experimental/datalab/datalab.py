@@ -28,8 +28,17 @@ import numpy as np
 import datasets
 from datasets.arrow_dataset import Dataset
 
+import cleanlab
 from cleanlab.classification import CleanLearning
 from cleanlab.internal.validation import labels_to_array
+
+__all__ = ["DataLab"]
+
+# Constants:
+OBJECT_FILENAME = "datalab.p"
+ISSUES_FILENAME = "issues.csv"
+RESULTS_FILENAME = "results.csv"
+INFO_FILENAME = "info.json"
 
 
 class Datalab:
@@ -44,12 +53,6 @@ class Datalab:
     data :
         A Hugging Face Dataset object.
     """
-
-    # Constants:
-    OBJECT_FILENAME = "datalab.p"
-    ISSUES_FILENAME = "issues.csv"
-    RESULTS_FILENAME = "results.csv"
-    INFO_FILENAME = "info.json"
 
     def __init__(
         self,
@@ -77,7 +80,10 @@ class Datalab:
             "num_classes": len(class_names),
             "multi_label": False,  # TODO: Add multi-label support.
         }
-        self._silo = self.info.copy()
+        self._silo = (
+            self.info.copy()
+        )  # Question: What should we do with _silo that isn't first done in info?
+        self.cleanlab_version = cleanlab.__version__
 
     def find_issues(
         self,
@@ -128,56 +134,9 @@ class Datalab:
 
         if pred_probs is not None:
             self.issues = cl.find_label_issues(labels=self._labels, pred_probs=pred_probs)
-            self.results = self._health_summary(pred_probs=pred_probs, verbose=False)
-
-    def get_health_score(self) -> float:
-        """Get the health score of the dataset.
-
-        Note
-        ----
-        This requires that ``find_issues`` has been called first.
-
-        Returns
-        -------
-        health_score :
-            The health score of the dataset.
-
-        See Also
-        --------
-        Datalab.find_issues
-        """
-        if isinstance(self.results, dict):
-            return self.results["overall_label_health_score"]
-        else:
-            raise ValueError(
-                "Health summary has not been computed, call self.find_issues first. "
-                "See help(Datalab.find_issues)."
-            )
-
-    def get_label_quality_scores(self) -> np.ndarray:
-        """Get label quality scores for each example in the dataset.
-
-        Note
-        ----
-        This requires that ``find_issues`` has been called first.
-
-        Returns
-        -------
-        quality_scores :
-            A vector of label quality scores for each example in the dataset.
-
-        See Also
-        --------
-        Datalab.find_issues
-        """
-
-        if isinstance(self.issues, pd.DataFrame):
-            return self.issues["label_quality"].to_numpy()
-        else:
-            raise ValueError(
-                "Labels errors have not been found yet, call self.find_issues first. "
-                "See help(Datalab.find_issues)."
-            )
+            summary_dict = self._health_summary(pred_probs=pred_probs, verbose=False)
+            self.results = summary_dict["overall_label_health_score"]
+            self.info["summary"] = summary_dict
 
     def _extract_labels(self, label_name: Union[str, list[str]]) -> tuple[np.ndarray, Mapping]:
         """
@@ -268,6 +227,7 @@ class Datalab:
 
         You have to save the Dataset yourself if you want it saved to file!
         """
+        # TODO: Try using a custom context manager to save the object and the heavy attributes safely.
         if os.path.exists(path):
             print(f"WARNING: Existing files will be overwritten by newly saved files at: {path}")
         else:
@@ -300,7 +260,7 @@ class Datalab:
         # save trimmed version of this object
         object_file = os.path.join(path, OBJECT_FILENAME)
         with open(object_file, "wb") as f:
-            pickle.dumps(self, f)
+            pickle.dump(self, f)
 
         # revert object back to original state
         self.info = stored_info
