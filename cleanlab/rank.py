@@ -131,7 +131,6 @@ def get_label_quality_scores(
     labels : np.ndarray
       A discrete vector of noisy labels, i.e. some labels may be erroneous.
       *Format requirements*: for dataset with K classes, labels must be in 0, 1, ..., K-1.
-      All the classes (0, 1, ..., and K-1) MUST be present in ``labels``, such that: ``len(set(labels)) == pred_probs.shape[1]``
       Note: multi-label classification is not supported by this method, each example must belong to a single class, e.g. format: ``labels = np.ndarray([1,0,2,1,1,0...])``.
 
     pred_probs : np.ndarray, optional
