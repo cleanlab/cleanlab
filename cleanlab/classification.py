@@ -15,9 +15,10 @@
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
 """
-cleanlab can be used for multiclass (or multi-label) learning with noisy labels for any dataset and model.
+cleanlab can be used for learning with noisy labels for any dataset and model.
 
-The :py:class:`CleanLearning <cleanlab.classification.CleanLearning>` class wraps an instance of an
+For regular (multi-class) classification tasks,
+the :py:class:`CleanLearning <cleanlab.classification.CleanLearning>` class wraps an instance of an
 sklearn classifier. The wrapped classifier must adhere to the `sklearn estimator API
 <https://scikit-learn.org/stable/developers/develop.html#rolling-your-own-estimator>`_,
 meaning it must define four functions:
@@ -156,7 +157,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
     Automated and robust learning with noisy labels using any dataset and any model. This class
     trains a model `clf` with error-prone, noisy labels as if the model had been instead trained
     on a dataset with perfect labels. It achieves this by cleaning out the error and providing
-    cleaned data while training.
+    cleaned data while training. This class is currently intended for standard (multi-class) classification tasks.
 
     Parameters
     ----------
@@ -306,8 +307,8 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
           and no other order-destroying operation (eg. ``repeat()``) has been applied.
 
         labels : array_like
-          An array of shape ``(N,)`` of noisy labels, i.e. some labels may be erroneous.
-          Elements must be in the set 0, 1, ..., K-1, where K is the number of classes.
+          An array of shape ``(N,)`` of noisy classification labels, where some labels may be erroneous.
+          Elements must be integers in the set 0, 1, ..., K-1, where K is the number of classes.
           Supported `array_like` types include: ``np.ndarray``, ``pd.Series``, or ``list``.
 
         pred_probs : np.ndarray, optional
