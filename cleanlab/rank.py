@@ -16,19 +16,18 @@
 
 
 """
-Methods to rank examples in a multi-class classification dataset by cleanlab's `label quality score`.
+Methods to rank/order data by cleanlab's `label quality score`.
 Except for :py:func:`order_label_issues <cleanlab.rank.order_label_issues>`, which operates only on the subset of the data identified
 as potential label issues/errors, the methods in this module can be used on whichever subset
 of the dataset you choose (including the entire dataset) and provide a `label quality score` for
-every example. You can then do something like: ``find_top_issues(label_quality_scores)`` or ``np.argsort(label_quality_scores)``
-in order to obtain ranked indices of individual datapoints based on their quality.
-The documentation below assumes a dataset with ``N`` examples, each of which is labeled with one of ``K`` classes.
+every example. You can then do something like: ``np.argsort(label_quality_score)`` to obtain ranked
+indices of individual datapoints based on their quality.
+
+Note: multi-label classification is not supported by most methods in this module,
+each example must belong to a single class, e.g. format: ``labels = np.ndarray([1,0,2,1,1,0...])``.
 
 Note: Label quality scores are most accurate when they are computed based on out-of-sample `pred_probs` from your model.
 To obtain out-of-sample predicted probabilities for every datapoint in your dataset, you can use :ref:`cross-validation <pred_probs_cross_val>`. This is encouraged to get better results.
-
-Note: Multi-label classification is not supported by most methods in this module,
-each example must belong to a single class, e.g. the format should be: ``labels = np.ndarray([1,0,2,1,1,0...])``.
 """
 
 import numpy as np
@@ -51,7 +50,7 @@ def order_label_issues(
     rank_by: str = "self_confidence",
     rank_by_kwargs: dict = {},
 ) -> np.ndarray:
-    """Sorts examples identified with label issues by their label quality score.
+    """Sorts label issues by label quality score.
 
     Default label quality score is "self_confidence".
 
@@ -59,29 +58,28 @@ def order_label_issues(
     ----------
     label_issues_mask : np.ndarray
       A boolean mask for the entire dataset where ``True`` represents a label
-      issue and ``False`` represents an example that is correctly labeled with
+      issue and ``False`` represents an example that is accurately labeled with
       high confidence.
 
     labels : np.ndarray
-      Classification labels in the same format expected by the :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>` function.
+      Labels in the same format expected by the :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>` function.
 
     pred_probs : np.ndarray (shape (N, K))
-      Predicted class probabilities in the same format expected by the :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>` function.
+      Predicted-probabilities in the same format expected by the :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>` function.
 
     rank_by : str, optional
-      Score by which to order indices (in increasing order). See
+      Score by which to order label error indices (in increasing order). See
       the `method` argument of :py:func:`get_label_quality_scores
       <cleanlab.rank.get_label_quality_scores>`.
 
     rank_by_kwargs : dict, optional
-      Optional keyword arguments to pass into :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>` function
-      which affect the scores used for sorting.
+      Optional keyword arguments to pass into :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>` function.
       Accepted args include `adjust_pred_probs`.
 
     Returns
     -------
     label_issues_idx : np.ndarray
-      An array of the indices of the examples with label issues,
+      Return an array of the indices of the examples with label issues,
       ordered by the label-quality scoring method passed to `rank_by`.
     """
 
@@ -118,9 +116,12 @@ def get_label_quality_scores(
     method: str = "self_confidence",
     adjust_pred_probs: bool = False,
 ) -> np.ndarray:
-    """Returns a label quality score for each example in a multi-class classification dataset.
+    """Returns a label quality score for each datapoint.
 
-    Scores are between 0 and 1, where lower scores indicate labels less likely to be correct.
+    This is a function to compute label quality scores for multi-class classification datasets,
+    where lower scores indicate labels less likely to be correct.
+
+    Score is between 0 and 1.
 
     1 - clean label (given label is likely correct).
     0 - dirty label (given label is likely incorrect).
@@ -128,9 +129,10 @@ def get_label_quality_scores(
     Parameters
     ----------
     labels : np.ndarray
-      A discrete vector of noisy labels for the classification dataset, i.e. some labels may be erroneous.
-      *Format requirements*: For dataset with K classes, each label must be an integer in 0, 1, ..., K-1.
-      For a dataset with ``N`` examples, `labels` should be a 1D array of shape ``(N,)``.
+      A discrete vector of noisy labels, i.e. some labels may be erroneous.
+      *Format requirements*: for dataset with K classes, labels must be in 0, 1, ..., K-1.
+      All the classes (0, 1, ..., and K-1) MUST be present in ``labels``, such that: ``len(set(labels)) == pred_probs.shape[1]``
+      Note: multi-label classification is not supported by this method, each example must belong to a single class, e.g. format: ``labels = np.ndarray([1,0,2,1,1,0...])``.
 
     pred_probs : np.ndarray, optional
       An array of shape ``(N, K)`` of model-predicted probabilities,
@@ -140,7 +142,7 @@ def get_label_quality_scores(
       columns must be ordered such that these probabilities correspond to
       class 0, 1, ..., K-1.
 
-      **Note**: Returned label quality scores are most accurate when they are computed based on out-of-sample `pred_probs` from your model.
+      **Note**: Returned label issues are most accurate when they are computed based on out-of-sample `pred_probs` from your model.
       To obtain out-of-sample predicted probabilities for every datapoint in your dataset, you can use :ref:`cross-validation <pred_probs_cross_val>`.
       This is encouraged to get better results.
 
@@ -172,8 +174,8 @@ def get_label_quality_scores(
     Returns
     -------
     label_quality_scores : np.ndarray
-      A 1D array of shape ``(N,)`` containing one score (between 0 and 1) per example in the dataset.
-      Lower scores indicate examples that are more likely mislabeled.
+      Contains one score (between 0 and 1) per example.
+      Lower scores indicate more likely mislabeled examples.
 
     See Also
     --------
@@ -233,14 +235,20 @@ def get_label_quality_ensemble_scores(
     log_loss_search_T_values: List[float] = [1e-4, 1e-3, 1e-2, 1e-1, 1e0, 1e1, 1e2, 2e2],
     verbose: bool = True,
 ) -> np.ndarray:
-    """Returns a label quality score for each example in a classification dataset based on predictions from an ensemble of models.
+    """Returns label quality scores based on predictions from an ensemble of models.
 
-    The scores are of the same format/meaning as those returned by the :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>` function.
+    This is a function to compute label-quality scores for classification datasets,
+    where lower scores indicate labels less likely to be correct.
 
-    Ensemble scoring requires a list of `pred_probs` from each model in the ensemble.
-    By leveraging multiple predictive models, this method can often more accurately score label quality.
-    For each `pred_probs` in provided list, we compute a separate label quality score and return a
-    weighted average of these scores based on weighting scheme determined by `weight_ensemble_members_by`.
+    Ensemble scoring requires a list of pred_probs from each model in the ensemble.
+
+    For each pred_probs in list, compute label quality score.
+    Take the average of the scores with the chosen weighting scheme determined by `weight_ensemble_members_by`.
+
+    Score is between 0 and 1:
+
+    - 1 --- clean label (given label is likely correct).
+    - 0 --- dirty label (given label is likely incorrect).
 
     Parameters
     ----------
@@ -248,35 +256,32 @@ def get_label_quality_ensemble_scores(
       Labels in the same format expected by the :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>` function.
 
     pred_probs_list : List[np.ndarray]
-      Each element in this list should be an array of `pred_probs` in the same format
+      Each element in this list should be an array of pred_probs in the same format
       expected by the :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>` function.
-      Each element of `pred_probs_list` corresponds to the (probabilistic) predictions from one model for all examples.
-      Ideally out-of-sample predictions from each model are provided here, as for :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>`.
+      Each element of `pred_probs_list` corresponds to the predictions from one model for all examples.
 
     method : {"self_confidence", "normalized_margin", "confidence_weighted_entropy"}, default="self_confidence"
       Label quality scoring method. See :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>`
-      for details.
+      for scenarios on when to use each method.
 
     adjust_pred_probs : bool, optional
-      Whether to account for class imbalance or not. See :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>` for details.
+      `adjust_pred_probs` in the same format expected by the :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>` function.
 
     weight_ensemble_members_by : {"uniform", "accuracy", "log_loss_search", "custom"}, default="accuracy"
-      Weighting scheme used to aggregate label quality scores computed with respect to each model into an overall score:
+      Weighting scheme used to aggregate scores from each model:
 
       - "uniform": Take the simple average of scores.
       - "accuracy": Take weighted average of scores, weighted by model accuracy.
-      - "log_loss_search": Take weighted average of scores, weighted by ``exp(t * -log_loss)``
-        where ``t`` is selected from `log_loss_search_T_values` parameter and `log_loss` is the log-loss between a model's `pred_probs` and the given labels.
-      - "custom": Take weighted average of scores using custom weights that the user passes to the `custom_weights` parameter.
+      - "log_loss_search": Take weighted average of scores, weighted by exp(t * -log_loss) where t is selected from log_loss_search_T_values parameter and log_loss is the log-loss between a model's pred_probs and the given labels.
+      - "custom": Take weighted average of scores using custom weights that the user passes to the custom_weights parameter.
 
     custom_weights : np.ndarray, default=None
-      Pre-specified weights used to aggregate scores from each model if ``weight_ensemble_members_by="custom"``.
-      Length of this array must match the number of models: ``len(pred_probs_list)``.
+      Weights used to aggregate scores from each model if weight_ensemble_members_by="custom".
+      Length of this array must match the number of models: len(pred_probs_list).
 
     log_loss_search_T_values : List, default=[1e-4, 1e-3, 1e-2, 1e-1, 1e0, 1e1, 1e2, 2e2]
-      List of ``t`` values considered if ``weight_ensemble_members_by="log_loss_search"``.
-      We choose the value of ``t`` that leads to weights which produce the best predictive log-loss
-      when used to form a weighted average of `pred_probs` from the models.
+      List of t values considered if weight_ensemble_members_by="log_loss_search".
+      We will choose the value of t that leads to weights which produce the best log-loss when used to form a weighted average of pred_probs from the models.
 
     verbose : bool, default=True
       Set to ``False`` to suppress all print statements.
@@ -284,9 +289,8 @@ def get_label_quality_ensemble_scores(
     Returns
     -------
     label_quality_scores : np.ndarray
-      A 1D array of shape ``(N,)`` containing one score (between 0 and 1) per example in the dataset.
-      Has same format/meaning as scores returned by the :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>` function.
-      Lower scores indicate examples that are more likely mislabeled.
+      Contains one score (between 0 and 1) per example.
+      Lower scores indicate more likely mislabeled examples.
 
     See Also
     --------
@@ -463,8 +467,8 @@ def get_self_confidence_for_each_label(
     Returns
     -------
     label_quality_scores : np.ndarray
-      A 1D array of shape ``(N,)`` containing one score (between 0 and 1) per example in the dataset.
-      Lower scores indicate examples that are more likely mislabeled.
+      Contains one score (between 0 and 1) per example.
+      Lower scores indicate more likely mislabeled examples.
     """
 
     # np.mean is used so that this works for multi-labels (list of lists)
@@ -502,8 +506,8 @@ def get_normalized_margin_for_each_label(
     Returns
     -------
     label_quality_scores : np.ndarray
-      A 1D array of shape ``(N,)`` containing one score (between 0 and 1) per example in the dataset.
-      Lower scores indicate examples that are more likely mislabeled.
+      Contains one score (between 0 and 1) per example.
+      Lower scores indicate more likely mislabeled examples.
     """
 
     self_confidence = get_self_confidence_for_each_label(labels, pred_probs)
@@ -535,8 +539,8 @@ def get_confidence_weighted_entropy_for_each_label(
     Returns
     -------
     label_quality_scores : np.ndarray
-      A 1D array of shape ``(N,)`` containing one score (between 0 and 1) per example in the dataset.
-      Lower scores indicate examples that are more likely mislabeled.
+      Contains one score (between 0 and 1) per example.
+      Lower scores indicate more likely mislabeled examples.
     """
 
     MIN_ALLOWED = 1e-6  # lower-bound clipping threshold to prevents 0 in logs and division
@@ -565,8 +569,7 @@ def find_top_issues(quality_scores: np.ndarray, *, top: int = 10) -> np.ndarray:
     Parameters
     ----------
     quality_scores :
-      1D array of shape ``(N,)``, where N is the number of examples in dataset,
-      containing one label quality score for each example in the dataset.
+      Array of shape ``(N,)``, where N is the number of examples, containing one quality score for each example in the dataset.
 
     top :
       The number of indices to return.
@@ -574,7 +577,7 @@ def find_top_issues(quality_scores: np.ndarray, *, top: int = 10) -> np.ndarray:
     Returns
     -------
     top_issue_indices :
-      1D array of shape ``(top,)`` containing indices of top examples most likely to suffer from an issue (i.e. ranked by issue severity)."""
+      Indices of top examples most likely to suffer from an issue (ranked by issue severity)."""
 
     if top is None or top > len(quality_scores):
         top = len(quality_scores)

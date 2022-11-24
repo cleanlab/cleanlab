@@ -152,11 +152,11 @@ def find_overlapping_classes(
     Parameters
     ----------
     labels : np.ndarray, optional
-      An array of shape ``(N,)`` of noisy labels, i.e. some labels may be erroneous.
-      Elements must be in the set 0, 1, ..., K-1, where K is the number of classes.
-      All the classes (0, 1, ..., and K-1) MUST be present in ``labels``, such that
+      An array of shape ``(N,)`` of noisy labels for the dataset, i.e. some labels may be erroneous.
+      Elements must be integers in the set 0, 1, ..., K-1, where K is the number of classes.
+      All the classes (0, 1, ..., and K-1) should be present in ``labels``, such that
       ``len(set(labels)) == pred_probs.shape[1]`` for standard multi-class classification with single-labeled data (e.g. ``labels =  [1,0,2,1,1,0...]``).
-      For multi-label classification where each example can belong to multiple classes(e.g. ``labels = [[1,2],[1],[0],..]``),
+      For multi-label classification where each example can belong to multiple classes (e.g. ``labels = [[1,2],[1],[0],[],...]``),
       your labels should instead satisfy: ``len(set(k for l in labels for k in l)) == pred_probs.shape[1])``.
 
     pred_probs : np.ndarray, optional
