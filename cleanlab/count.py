@@ -22,7 +22,10 @@ Methods to estimate latent structures used for confident learning, including:
 * Latent inverse noise matrix characterizing the flipping process: `inv`: ``P(true label | given label)``
 * Latent `confident_joint`, an un-normalized matrix that counts the confident subset of label errors under the joint distribution for true/given label
 
-These are estimated from a classification dataset.
+These are estimated from a classification dataset. This module considers two types of datasets:
+
+* standard (multi-class) classification where each example is labeled as belonging to exactly one of K classes (e.g. ``labels = np.array([0,0,1,0,2,1])``)
+* multi-label classification where each example can be labeled as belonging to multiple classes (e.g. ``labels = [[1,2],[1],[0],[],...]``)
 """
 
 from sklearn.linear_model import LogisticRegression as LogReg
@@ -101,8 +104,9 @@ def num_label_issues(
        TL;DR: use this method to get the most accurate estimate of number of label issues when you don't need the indices of the label issues.
 
     multi_label : bool, optional
-      Whether dataset is for multi-label classification or multi-class classfication,
-      see documentation of :py:func:`compute_confident_joint <cleanlab.count.compute_confident_joint>` for details.
+      Set ``False`` if your dataset is for regular (multi-class) classification, where each example belongs to exactly one class.
+      Set ``True`` if your dataset is for multi-label classification, where each example can belong to multiple classes.
+      See documentation of :py:func:`compute_confident_joint <cleanlab.count.compute_confident_joint>` for details.
 
     Returns
     -------
@@ -194,7 +198,6 @@ def calibrate_confident_joint(
       An array of shape ``(K, K)`` representing the confident joint, the matrix used for identifying label issues, which
       estimates a confident subset of the joint distribution of the noisy and true labels, ``P_{noisy label, true label}``.
       Entry ``(j, k)`` in the matrix is the number of examples confidently counted into the pair of ``(noisy label=j, true label=k)`` classes.
-      This should be in same format expected by :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` function.
       The `confident_joint` can be computed using :py:func:`count.compute_confident_joint <cleanlab.count.compute_confident_joint>`.
       If not provided, it is computed from the given (noisy) `labels` and `pred_probs`.
       If `multi_label` is True, then the `confident_joint` should be a one-vs-rest array of shape ``(K, 2, 2)``, and an array of the same shape will be returned.
@@ -204,8 +207,9 @@ def calibrate_confident_joint(
       in same format expected by :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` function.
 
     multi_label : bool, optional
-      Whether dataset is for multi-label classification or multi-class classfication,
-      see documentation of :py:func:`compute_confident_joint <cleanlab.count.compute_confident_joint>` for details.
+      If ``False``, dataset is for regular (multi-class) classification, where each example belongs to exactly one class.
+      If ``True``, dataset is for multi-label classification, where each example can belong to multiple classes.
+      See documentation of :py:func:`compute_confident_joint <cleanlab.count.compute_confident_joint>` for details.
       In multi-label classification, the confident/calibrated joint arrays have shape ``(K, 2, 2)``
       formatted in a one-vs-rest fashion such that they contain a 2x2 matrix for each class
       that counts examples which are correctly/incorrectly labeled as belonging to that class.
@@ -313,8 +317,9 @@ def estimate_joint(
       If not provided, it is internally computed from the given (noisy) `labels` and `pred_probs`.
 
     multi_label : bool, optional
-      Whether dataset is for multi-label classification or multi-class classfication,
-      see documentation of :py:func:`compute_confident_joint <cleanlab.count.compute_confident_joint>` for details.
+      If ``False``, dataset is for regular (multi-class) classification, where each example belongs to exactly one class.
+      If ``True``, dataset is for multi-label classification, where each example can belong to multiple classes.
+      See documentation of :py:func:`compute_confident_joint <cleanlab.count.compute_confident_joint>` for details.
 
     Returns
     -------
@@ -442,8 +447,8 @@ def compute_confident_joint(
         the latent true joint counts of noisy and true labels.
 
     multi_label : bool, optional
-      If ``True``, this is multi-label classification rather than multi-class classifiction dataset,
-      where each example can belong to more than one class.
+      If ``True``, this is multi-label classification dataset (where each example can belong to more than one class)
+      rather than a regular (multi-class) classifiction dataset.
       In this case, `labels` should be an iterable (e.g. list) of iterables (e.g. ``List[List[int]]``),
       containing the list of classes to which each example belongs, instead of just a single class.
       Example of `labels` for a multi-label classification dataset: ``[[0,1], [1], [0,2], [0,1,2], [0], [1], [], ...]``.
@@ -676,7 +681,7 @@ def estimate_latent(
       If not provided, it is computed from the given (noisy) `labels` and `pred_probs`.
 
     labels : np.ndarray
-      A 1D array of shape ``(N,)`` containing class labels for a multi-class classification dataset. Some given labels may be erroneous.
+      A 1D array of shape ``(N,)`` containing class labels for a standard (multi-class) classification dataset. Some given labels may be erroneous.
       Elements must be integers in the set 0, 1, ..., K-1, where K is the number of classes.
 
     py_method : {"cnt", "eqn", "marginal", "marginal_ps"}, default="cnt"
@@ -765,7 +770,7 @@ def estimate_py_and_noise_matrices_from_probabilities(
     Parameters
     ----------
     labels : np.ndarray
-      A 1D array of shape ``(N,)`` containing class labels for a multi-class classification dataset. Some given labels may be erroneous.
+      A 1D array of shape ``(N,)`` containing class labels for a standard (multi-class) classification dataset. Some given labels may be erroneous.
       Elements must be integers in the set 0, 1, ..., K-1, where K is the number of classes.
 
     pred_probs : np.ndarray
@@ -867,7 +872,7 @@ def estimate_confident_joint_and_cv_pred_proba(
           ``clf``, must be able to fit() and predict() data with this format.
 
     labels : np.ndarray or pd.Series
-      A 1D array of shape ``(N,)`` containing class labels for a multi-class classification dataset.
+      A 1D array of shape ``(N,)`` containing class labels for a standard (multi-class) classification dataset.
       Some given labels may be erroneous.
       Elements must be integers in the set 0, 1, ..., K-1, where K is the number of classes.
       All classes must be present in the dataset.
@@ -1044,7 +1049,7 @@ def estimate_py_noise_matrices_and_cv_pred_proba(
       `clf`, must be able to handle data with this shape.
 
     labels : np.ndarray
-      A 1D array of shape ``(N,)`` containing class labels for a multi-class classification dataset.
+      A 1D array of shape ``(N,)`` containing class labels for a standard (multi-class) classification dataset.
       Some given labels may be erroneous.
       Elements must be integers in the set 0, 1, ..., K-1, where K is the number of classes.
       All classes must be present in the dataset.
@@ -1145,7 +1150,7 @@ def estimate_cv_predicted_probabilities(
       `clf`, must be able to handle data with this shape.
 
     labels : np.ndarray
-      A 1D array of shape ``(N,)`` containing class labels for a multi-class classification dataset.
+      A 1D array of shape ``(N,)`` containing class labels for a standard (multi-class) classification dataset.
       Some given labels may be erroneous.
       Elements must be integers in the set 0, 1, ..., K-1, where K is the number of classes.
       All classes must be present in the dataset.
@@ -1369,9 +1374,10 @@ def get_confident_thresholds(
       Model-predicted class probabilities for each example in the dataset,
       in same format expected by :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` function.
 
-    multi_label : bool, optional
-      Whether dataset is for multi-label classification or multi-class classfication,
-      see documentation of :py:func:`compute_confident_joint <cleanlab.count.compute_confident_joint>` for details.
+    multi_label : bool, default = False
+      Set ``False`` if your dataset is for regular (multi-class) classification, where each example belongs to exactly one class.
+      Set ``True`` if your dataset is for multi-label classification, where each example can belong to multiple classes.
+      See documentation of :py:func:`compute_confident_joint <cleanlab.count.compute_confident_joint>` for details.
 
     Returns
     -------

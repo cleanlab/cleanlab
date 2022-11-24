@@ -17,6 +17,10 @@
 """
 Methods to identify which examples have label issues in a classification dataset.
 The documentation below assumes a dataset with ``N`` examples and ``K`` classes.
+This module considers two types of datasets:
+
+* standard (multi-class) classification where each example is labeled as belonging to exactly one of K classes (e.g. ``labels = np.array([0,0,1,0,2,1])``)
+* multi-label classification where each example can be labeled as belonging to multiple classes (e.g. ``labels = [[1,2],[1],[0],[],...]``)
 """
 
 import numpy as np
@@ -93,10 +97,10 @@ def find_label_issues(
     labels : np.ndarray or list
       A discrete vector of noisy labels for a classification dataset, i.e. some labels may be erroneous.
       *Format requirements*: for dataset with K classes, each label must be integer in 0, 1, ..., K-1.
-      For a multi-class classification dataset where each example is labeled with one class,
+      For a standard (multi-class) classification dataset where each example is labeled with one class,
       `labels` should be 1D array of shape ``(N,)``, for example: ``labels = [1,0,2,1,1,0...]``.
       For a multi-label classification dataset where each example can belong to multiple (or no) classes,
-      `labels` should be an iterable of iterables (e.g. ``List[List[int]]``) whose i-th element corresponds to list of classes that i-th example belongs to (e.g. ``labels = [[1,2],[1],[0],..]``).
+      `labels` should be an iterable of iterables (e.g. ``List[List[int]]``) whose i-th element corresponds to list of classes that i-th example belongs to (e.g. ``labels = [[1,2],[1],[0],[],...]``).
 
     pred_probs : np.ndarray, optional
       An array of shape ``(N, K)`` of model-predicted class probabilities,
@@ -485,8 +489,7 @@ def _find_multilabel_issues_per_class(
     Parameters
     ----------
     labels : List[List[int]]
-      List of noisy labels for multi-label classification where each example can belong to multiple classes (e.g. ``labels = [[1,2],[1],[0],..]`` indicates the first example in dataset belongs to both class 1 and class 2.
-      For multi-label settings, your `labels` should instead satisfy: ``len(set(k for l in labels for k in l)) == pred_probs.shape[1])``.
+      List of noisy labels for multi-label classification where each example can belong to multiple classes (e.g. ``labels = [[1,2],[1],[0],[],...]`` indicates the first example in dataset belongs to both class 1 and class 2.
 
 
     pred_probs : np.ndarray
@@ -733,8 +736,8 @@ def _find_predicted_neq_given_multilabel(labels: list, pred_probs: np.ndarray) -
     Parameters
      ----------
      labels : list
-       List of noisy labels for multi-label classification where each example can belong to multiple classes (e.g. ``labels = [[1,2],[1],[0],..]`` indicates the first example in dataset belongs to both class 1 and class 2.
-       For multi-label settings, your `labels` should instead satisfy: ``len(set(k for l in labels for k in l)) == pred_probs.shape[1])``.
+       List of noisy labels for multi-label classification where each example can belong to multiple classes
+       (e.g. ``labels = [[1,2],[1],[0],[],...]`` indicates the first example in dataset belongs to both class 1 and class 2).
 
      pred_probs : np.ndarray
        Predicted-probabilities in the same format expected by the :py:func:`find_label_issues <cleanlab.filter.find_label_issues>` function.

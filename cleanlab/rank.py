@@ -16,7 +16,7 @@
 
 
 """
-Methods to rank/order data by cleanlab's `label quality score`.
+Methods to rank examples in standard (multi-class) classification datasets by cleanlab's `label quality score`.
 Except for :py:func:`order_label_issues <cleanlab.rank.order_label_issues>`, which operates only on the subset of the data identified
 as potential label issues/errors, the methods in this module can be used on whichever subset
 of the dataset you choose (including the entire dataset) and provide a `label quality score` for
@@ -24,7 +24,7 @@ every example. You can then do something like: ``np.argsort(label_quality_score)
 indices of individual datapoints based on their quality.
 
 Note: multi-label classification is not supported by most methods in this module,
-each example must belong to a single class, e.g. format: ``labels = np.ndarray([1,0,2,1,1,0...])``.
+each example must be labeled as belonging to a single class, e.g. format: ``labels = np.ndarray([1,0,2,1,1,0...])``.
 
 Note: Label quality scores are most accurate when they are computed based on out-of-sample `pred_probs` from your model.
 To obtain out-of-sample predicted probabilities for every datapoint in your dataset, you can use :ref:`cross-validation <pred_probs_cross_val>`. This is encouraged to get better results.
@@ -118,7 +118,7 @@ def get_label_quality_scores(
 ) -> np.ndarray:
     """Returns a label quality score for each datapoint.
 
-    This is a function to compute label quality scores for multi-class classification datasets,
+    This is a function to compute label quality scores for standard (multi-class) classification datasets,
     where lower scores indicate labels less likely to be correct.
 
     Score is between 0 and 1.

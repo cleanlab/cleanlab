@@ -16,7 +16,10 @@
 
 
 """
-Provides dataset-level and class-level overviews of issues in your dataset. If your task allows you to modify the classes in your dataset, this module can help you determine which classes to remove (see :py:func:`rank_classes_by_label_quality <cleanlab.dataset.rank_classes_by_label_quality>`) and which classes to merge (see :py:func:`find_overlapping_classes <cleanlab.dataset.find_overlapping_classes>`).
+Provides dataset-level and class-level overviews of issues in your classification dataset.
+If your task allows you to modify the classes in your dataset, this module can help you determine
+which classes to remove (see :py:func:`rank_classes_by_label_quality <cleanlab.dataset.rank_classes_by_label_quality>`)
+and which classes to merge (see :py:func:`find_overlapping_classes <cleanlab.dataset.find_overlapping_classes>`).
 """
 
 import numpy as np
@@ -151,8 +154,8 @@ def find_overlapping_classes(
 
     Parameters
     ----------
-    labels : np.ndarray, optional
-      An array of shape ``(N,)`` of noisy labels for the dataset, i.e. some labels may be erroneous.
+    labels : np.ndarray or list, optional
+      An array_like (of length N) of noisy labels for the classification dataset, i.e. some labels may be erroneous.
       Elements must be integers in the set 0, 1, ..., K-1, where K is the number of classes.
       All the classes (0, 1, ..., and K-1) should be present in ``labels``, such that
       ``len(set(labels)) == pred_probs.shape[1]`` for standard multi-class classification with single-labeled data (e.g. ``labels =  [1,0,2,1,1,0...]``).
