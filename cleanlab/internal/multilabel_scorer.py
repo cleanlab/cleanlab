@@ -219,7 +219,7 @@ def exponential_moving_average(
 def softmin(
     s: np.ndarray,
     *,
-    temperature: Optional[float] = 0.1,
+    temperature: float = 0.1,
     axis: int = 1,
     **_,
 ) -> np.ndarray:
@@ -240,8 +240,6 @@ def softmin(
     -------
         Softmin score.
     """
-    if temperature is None:  # pragma: no cover
-        temperature = 1.0  # this primarily exists to satisfy mypy
 
     def softmax(scores: np.ndarray) -> np.ndarray:
         """Softmax function."""
@@ -266,7 +264,7 @@ class Aggregator:
         Additional keyword arguments to pass to the aggregation function when it is called.
     """
 
-    possible_methods = {
+    possible_methods: dict[str, Callable[..., np.ndarray]] = {
         "exponential_moving_average": exponential_moving_average,
         "softmin": softmin,
     }
