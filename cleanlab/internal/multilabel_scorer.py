@@ -264,7 +264,7 @@ class Aggregator:
         Additional keyword arguments to pass to the aggregation function when it is called.
     """
 
-    possible_methods: dict[str, Callable[..., np.ndarray]] = {
+    possible_methods: dict[str, Callable] = {
         "exponential_moving_average": exponential_moving_average,
         "softmin": softmin,
     }
