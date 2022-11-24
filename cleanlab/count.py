@@ -34,7 +34,7 @@ import warnings
 from typing import Tuple, Union, Optional
 
 from cleanlab.typing import LabelLike
-
+from cleanlab.internal.multilabel_utils import stack_complement, get_onehot_num_classes
 from cleanlab.internal.util import (
     value_counts_fill_missing_classes,
     clip_values,
@@ -48,8 +48,6 @@ from cleanlab.internal.util import (
     is_tensorflow_dataset,
     TINY_VALUE,
 )
-from cleanlab.internal.multilabel_utils import stack_complement, get_onehot_num_classes
-
 from cleanlab.internal.latent_algebra import (
     compute_inv_noise_matrix,
     compute_py,
@@ -74,7 +72,7 @@ def num_label_issues(
 
     Parameters
     ----------
-    labels :
+    labels : np.ndarray or list
       Given class labels for each example in the dataset, some of which may be erroneous,
       in same format expected by :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` function.
 
@@ -177,7 +175,9 @@ def _num_label_issues_multilabel(
     return sum(issues_idx)
 
 
-def calibrate_confident_joint(confident_joint, labels, *, multi_label=False) -> np.ndarray:
+def calibrate_confident_joint(
+    confident_joint: np.ndarray, labels: LabelLike, *, multi_label: bool = False
+) -> np.ndarray:
     """Calibrates any confident joint estimate ``P(label=i, true_label=j)`` such that
     ``np.sum(cj) == len(labels)`` and ``np.sum(cj, axis = 1) == np.bincount(labels)``.
 
@@ -199,7 +199,7 @@ def calibrate_confident_joint(confident_joint, labels, *, multi_label=False) -> 
       If not provided, it is computed from the given (noisy) `labels` and `pred_probs`.
       If `multi_label` is True, then the `confident_joint` should be a one-vs-rest array of shape ``(K, 2, 2)``, and an array of the same shape will be returned.
 
-    labels : np.ndarray
+    labels : np.ndarray or list
       Given class labels for each example in the dataset, some of which may be erroneous,
       in same format expected by :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` function.
 
@@ -224,7 +224,10 @@ def calibrate_confident_joint(confident_joint, labels, *, multi_label=False) -> 
     """
 
     if multi_label:
-        return _calibrate_confident_joint_multilabel(confident_joint, labels)
+        if not isinstance(labels, list):
+            raise TypeError("`labels` must be list when `multi_label=True`.")
+        else:
+            return _calibrate_confident_joint_multilabel(confident_joint, labels)
     else:
         num_classes = len(confident_joint)
         label_counts = value_counts_fill_missing_classes(labels, num_classes, multi_label=False)
@@ -259,7 +262,7 @@ def _calibrate_confident_joint_multilabel(confident_joint: np.ndarray, labels: l
     confident_joint : np.ndarray
         Refer to documentation for this argument in count.calibrate_confident_joint() for details.
 
-    labels : np.ndarray
+    labels : list
         Refer to documentation for this argument in count.calibrate_confident_joint() for details.
 
     multi_label : bool, optional
@@ -280,7 +283,13 @@ def _calibrate_confident_joint_multilabel(confident_joint: np.ndarray, labels: l
     return calibrate_confident_joint_list
 
 
-def estimate_joint(labels, pred_probs, *, confident_joint=None, multi_label=False) -> np.ndarray:
+def estimate_joint(
+    labels: LabelLike,
+    pred_probs: np.ndarray,
+    *,
+    confident_joint: Optional[np.ndarray] = None,
+    multi_label: bool = False,
+) -> np.ndarray:
     """
     Estimates the joint distribution of label noise ``P(label=i, true_label=j)`` guaranteed to:
 
@@ -289,7 +298,7 @@ def estimate_joint(labels, pred_probs, *, confident_joint=None, multi_label=Fals
 
     Parameters
     ----------
-    labels : np.ndarray
+    labels : np.ndarray or list
       Given class labels for each example in the dataset, some of which may be erroneous,
       in same format expected by :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` function.
 
@@ -331,14 +340,19 @@ def estimate_joint(labels, pred_probs, *, confident_joint=None, multi_label=Fals
 
     assert isinstance(calibrated_cj, np.ndarray)
     if multi_label:
-        return _estimate_joint_multilabel(
-            labels=labels, pred_probs=pred_probs, confident_joint=confident_joint
-        )
+        if not isinstance(labels, list):
+            raise TypeError("`labels` must be list when `multi_label=True`.")
+        else:
+            return _estimate_joint_multilabel(
+                labels=labels, pred_probs=pred_probs, confident_joint=confident_joint
+            )
     else:
         return calibrated_cj / np.clip(float(np.sum(calibrated_cj)), a_min=TINY_VALUE, a_max=None)
 
 
-def _estimate_joint_multilabel(labels, pred_probs, *, confident_joint=None) -> np.ndarray:
+def _estimate_joint_multilabel(
+    labels: list, pred_probs: np.ndarray, *, confident_joint: Optional[np.ndarray] = None
+) -> np.ndarray:
     """Parameters
      ----------
      labels : list
@@ -366,6 +380,7 @@ def _estimate_joint_multilabel(labels, pred_probs, *, confident_joint=None) -> n
         )
     else:
         calibrated_cj = confident_joint
+    assert isinstance(calibrated_cj, np.ndarray)
     calibrated_cf: np.ndarray = np.ndarray((num_classes, 2, 2))
     for class_num, (label, pred_prob_for_class) in enumerate(zip(y_one.T, pred_probs.T)):
         pred_probs_binary = stack_complement(pred_prob_for_class)
@@ -379,13 +394,13 @@ def _estimate_joint_multilabel(labels, pred_probs, *, confident_joint=None) -> n
 
 
 def compute_confident_joint(
-    labels,
-    pred_probs,
+    labels: LabelLike,
+    pred_probs: np.ndarray,
     *,
-    thresholds=None,
-    calibrate=True,
-    multi_label=False,
-    return_indices_of_off_diagonals=False,
+    thresholds: Optional[Union[np.ndarray, list]] = None,
+    calibrate: bool = True,
+    multi_label: bool = False,
+    return_indices_of_off_diagonals: bool = False,
 ) -> Union[np.ndarray, Tuple[np.ndarray, list]]:
     """Estimates the confident counts of latent true vs observed noisy labels
     for the examples in our dataset. This array of shape ``(K, K)`` is called the **confident joint**
@@ -399,11 +414,11 @@ def compute_confident_joint(
 
     Parameters
     ----------
-    labels : np.ndarray
+    labels : np.ndarray or list
       Given class labels for each example in the dataset, some of which may be erroneous,
       in same format expected by :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` function.
 
-    pred_probs : np.ndarray, optional
+    pred_probs : np.ndarray
       Model-predicted class probabilities for each example in the dataset,
       in same format expected by :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` function.
 
@@ -459,7 +474,6 @@ def compute_confident_joint(
 
     Note
     ----
-
     We provide a for-loop based simplification of the confident joint
     below. This implementation is not efficient, not used in practice, and
     not complete, but covers the gist of how the confident joint is computed:
@@ -491,6 +505,9 @@ def compute_confident_joint(
     """
 
     if multi_label:
+        if not isinstance(labels, list):
+            raise TypeError("`labels` must be list when `multi_label=True`.")
+
         return _compute_confident_joint_multi_label(
             labels=labels,
             pred_probs=pred_probs,
@@ -548,12 +565,12 @@ def compute_confident_joint(
 
 
 def _compute_confident_joint_multi_label(
-    labels,
-    pred_probs,
+    labels: list,
+    pred_probs: np.ndarray,
     *,
-    thresholds=None,
-    calibrate=True,
-    return_indices_of_off_diagonals=False,
+    thresholds: Optional[Union[np.ndarray, list]] = None,
+    calibrate: bool = True,
+    return_indices_of_off_diagonals: bool = False,
 ) -> Union[np.ndarray, Tuple[np.ndarray, list]]:
     """Computes the confident joint for multi_labeled data. Thus,
     input `labels` is a list of lists (or list of iterable).
@@ -638,11 +655,11 @@ def _compute_confident_joint_multi_label(
 
 
 def estimate_latent(
-    confident_joint,
-    labels,
+    confident_joint: np.ndarray,
+    labels: np.ndarray,
     *,
-    py_method="cnt",
-    converge_latent_estimates=False,
+    py_method: str = "cnt",
+    converge_latent_estimates: bool = False,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Computes the latent prior ``p(y)``, the noise matrix ``P(labels|y)`` and the
     inverse noise matrix ``P(y|labels)`` from the `confident_joint` ``count(labels, y)``. The
@@ -722,13 +739,13 @@ def estimate_latent(
 
 
 def estimate_py_and_noise_matrices_from_probabilities(
-    labels,
-    pred_probs,
+    labels: np.ndarray,
+    pred_probs: np.ndarray,
     *,
-    thresholds=None,
-    converge_latent_estimates=True,
-    py_method="cnt",
-    calibrate=True,
+    thresholds: Union[np.ndarray, list] = None,
+    converge_latent_estimates: bool = True,
+    py_method: str = "cnt",
+    calibrate: bool = True,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """Computes the confident counts
     estimate of latent variables `py` and the noise rates
@@ -798,6 +815,7 @@ def estimate_py_and_noise_matrices_from_probabilities(
         thresholds=thresholds,
         calibrate=calibrate,
     )
+    assert isinstance(confident_joint, np.ndarray)
     py, noise_matrix, inv_noise_matrix = estimate_latent(
         confident_joint=confident_joint,
         labels=labels,
@@ -1198,7 +1216,7 @@ def estimate_noise_matrices(
 
     labels : np.ndarray
       An array of shape ``(N,)`` of noisy labels, i.e. some labels may be erroneous.
-      Elements must be in the set 0, 1, ..., K-1, where K is the number of classes.
+      Elements must be integers in the set 0, 1, ..., K-1, where K is the number of classes.
 
     clf : estimator instance, optional
       A classifier implementing the `sklearn estimator API
@@ -1256,13 +1274,13 @@ def estimate_noise_matrices(
 
 
 def _converge_estimates(
-    ps,
-    py,
-    noise_matrix,
-    inverse_noise_matrix,
+    ps: np.ndarray,
+    py: np.ndarray,
+    noise_matrix: np.ndarray,
+    inverse_noise_matrix: np.ndarray,
     *,
-    inv_noise_matrix_iterations=5,
-    noise_matrix_iterations=3,
+    inv_noise_matrix_iterations: int = 5,
+    noise_matrix_iterations: int = 3,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Updates py := P(true_label=k) and both `noise_matrix` and `inverse_noise_matrix`
     to be numerically consistent with each other, by iteratively updating their estimates based on
@@ -1332,7 +1350,7 @@ def _converge_estimates(
 
 
 def get_confident_thresholds(
-    labels: Union[np.ndarray, list],
+    labels: LabelLike,
     pred_probs: np.ndarray,
     multi_label: bool = False,
 ) -> np.ndarray:
@@ -1343,7 +1361,7 @@ def get_confident_thresholds(
 
     Parameters
     ----------
-    labels : np.ndarray
+    labels : np.ndarray or list
       Given class labels for each example in the dataset, some of which may be erroneous,
       in same format expected by :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` function.
 

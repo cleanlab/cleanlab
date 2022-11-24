@@ -27,20 +27,20 @@ import sys
 import warnings
 from typing import Any, Dict, List, Optional, Tuple, Union
 from functools import reduce
+
 from cleanlab.count import calibrate_confident_joint
 from cleanlab.rank import (
     order_label_issues,
 )
 import cleanlab.internal.multilabel_scorer as ml_scorer
-
 from cleanlab.internal.validation import assert_valid_inputs
 from cleanlab.internal.util import (
     value_counts_fill_missing_classes,
     round_preserving_row_totals,
     get_num_classes,
 )
-
 from cleanlab.internal.multilabel_utils import stack_complement, get_onehot_num_classes, int2onehot
+from cleanlab.typing import LabelLike
 
 # tqdm is a module used to print time-to-complete when multiprocessing is used.
 # This module is not necessary, and therefore is not a package dependency, but
@@ -57,7 +57,7 @@ except ImportError as e:  # pragma: no cover
 
 
 def find_label_issues(
-    labels,
+    labels: LabelLike,
     pred_probs: np.ndarray,
     *,
     return_indices_ranked_by: Optional[str] = None,
@@ -250,6 +250,9 @@ def find_label_issues(
         assert n_jobs >= 1
 
     if multi_label:
+        if not isinstance(labels, list):
+            raise TypeError("`labels` must be list when `multi_label=True`.")
+
         return _find_label_issues_multilabel(
             labels,
             pred_probs,
@@ -691,7 +694,7 @@ def _reduce_prune_counts(prune_count_matrix: np.ndarray, frac_noise: float = 1.0
 
 
 def find_predicted_neq_given(
-    labels: np.ndarray, pred_probs: np.ndarray, *, multi_label: bool = False
+    labels: LabelLike, pred_probs: np.ndarray, *, multi_label: bool = False
 ) -> np.ndarray:
     """A simple baseline approach that considers ``argmax(pred_probs) != labels`` as the examples with label issues.
 
@@ -716,11 +719,15 @@ def find_predicted_neq_given(
 
     assert_valid_inputs(X=None, y=labels, pred_probs=pred_probs, multi_label=multi_label)
     if multi_label:
-        return _find_predicted_neq_given_multilabel(labels=labels, pred_probs=pred_probs)
-    return np.argmax(pred_probs, axis=1) != np.asarray(labels)
+        if not isinstance(labels, list):
+            raise TypeError("`labels` must be list when `multi_label=True`.")
+        else:
+            return _find_predicted_neq_given_multilabel(labels=labels, pred_probs=pred_probs)
+    else:
+        return np.argmax(pred_probs, axis=1) != np.asarray(labels)
 
 
-def _find_predicted_neq_given_multilabel(labels, pred_probs) -> np.ndarray:
+def _find_predicted_neq_given_multilabel(labels: list, pred_probs: np.ndarray) -> np.ndarray:
     """
 
     Parameters
@@ -754,8 +761,8 @@ def find_label_issues_using_argmax_confusion_matrix(
     labels: np.ndarray,
     pred_probs: np.ndarray,
     *,
-    calibrate=True,
-    filter_by="prune_by_noise_rate",
+    calibrate: bool = True,
+    filter_by: str = "prune_by_noise_rate",
 ) -> np.ndarray:
     """A baseline approach that uses the confusion matrix
     of ``argmax(pred_probs)`` and labels as the confident joint and then uses cleanlab
@@ -979,7 +986,9 @@ def _prune_by_count(k: int, args=None) -> np.ndarray:
 
 
 # TODO: decide if we want to keep this based on TODO above. If so move to utils. Add unit test for this.
-def _multiclass_crossval_predict(labels, pred_probs) -> np.ndarray:  # pragma: no cover
+def _multiclass_crossval_predict(
+    labels: list, pred_probs: np.ndarray
+) -> np.ndarray:  # pragma: no cover
     """Returns a numpy 2D array of one-hot encoded
     multiclass predictions. Each row in the array
     provides the predictions for a particular example.
