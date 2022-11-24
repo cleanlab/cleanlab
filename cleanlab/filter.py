@@ -703,7 +703,7 @@ def find_predicted_neq_given(
 
     Parameters
     ----------
-    labels : np.ndarray
+    labels : np.ndarray or list
       Labels in the same format expected by the :py:func:`find_label_issues <cleanlab.filter.find_label_issues>` function.
 
     pred_probs : np.ndarray
