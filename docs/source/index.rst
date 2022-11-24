@@ -139,6 +139,7 @@ Please see our `contributing guidelines <https://github.com/cleanlab/cleanlab/bl
    cleanlab/dataset
    cleanlab/outlier
    cleanlab/multiannotator
+   cleanlab/multilabel_classification
    cleanlab/token_classification/index
    cleanlab/benchmarking/index
    cleanlab/experimental/index

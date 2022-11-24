@@ -18,7 +18,7 @@ Helper classes and functions used internally to compute label quality scores in 
 """
 
 from enum import Enum
-from typing import Callable, Optional, Union
+from typing import Callable, Dict, Optional, Union
 
 import numpy as np
 from sklearn.model_selection import cross_val_predict
@@ -144,56 +144,6 @@ class ClassLabelScorer(Enum):
             raise ValueError(f"Invalid method name: {method}")
 
 
-class Aggregator:
-    """Helper class for aggregating the label quality scores for each class into a single score for each datapoint.
-
-    Parameters
-    ----------
-    method:
-        The method to compute the label quality scores for each class.
-
-    kwargs:
-        Additional keyword arguments to pass to the method when called.
-    """
-
-    def __init__(self, method, **kwargs):
-        self._validate_method(method)
-        self.method = method
-        self.kwargs = kwargs
-
-    @staticmethod
-    def _validate_method(method) -> None:
-        assert callable(method), f"Expected callable method, got {type(method)}"
-
-    @staticmethod
-    def _validate_scores(scores: np.ndarray) -> None:
-        if not (isinstance(scores, np.ndarray) and scores.ndim == 2):
-            raise ValueError(
-                f"Expected 2D array for scores, got {type(scores)} with shape {scores.shape}"
-            )
-
-    def __call__(self, scores: np.ndarray, **kwargs) -> np.ndarray:
-        """Returns the label quality scores for each datapoint based on the given label quality scores for each class.
-
-        Parameters
-        ----------
-        scores:
-            The label quality scores for each class.
-
-        Returns
-        -------
-        aggregated_scores:
-            A single label quality score for each datapoint.
-        """
-        self._validate_scores(scores)
-        kwargs["axis"] = 1
-        updated_kwargs = {**self.kwargs, **kwargs}
-        return self.method(scores, **updated_kwargs)
-
-    def __repr__(self):
-        return f"Aggregator(method={self.method.__name__}, kwargs={self.kwargs})"
-
-
 def exponential_moving_average(
     s: np.ndarray,
     *,
@@ -201,7 +151,7 @@ def exponential_moving_average(
     axis: int = 1,
     **_,
 ) -> np.ndarray:
-    """Exponential moving average (EMA) score function.
+    r"""Exponential moving average (EMA) score aggregation function.
 
     For a score vector s = (s_1, ..., s_K) with K scores, the values
     are sorted in *descending* order and the exponential moving average
@@ -264,6 +214,106 @@ def exponential_moving_average(
     for s_i in s_next:
         s_ema = alpha * s_i + (1 - alpha) * s_ema
     return s_ema
+
+
+def softmin(
+    s: np.ndarray,
+    *,
+    temperature: float = 0.1,
+    axis: int = 1,
+    **_,
+) -> np.ndarray:
+    """Softmin score aggregation function.
+
+    Parameters
+    ----------
+    s :
+        Input array.
+
+    temperature :
+        Temperature parameter. Too small values may cause numerical underflow and NaN scores.
+
+    axis :
+        Axis along which to apply the function.
+
+    Returns
+    -------
+        Softmin score.
+    """
+
+    def softmax(scores: np.ndarray) -> np.ndarray:
+        """Softmax function."""
+        exp_scores = np.exp(scores / temperature)
+        return exp_scores / np.sum(exp_scores, axis=axis, keepdims=True)
+
+    return np.einsum("ij,ij->i", s, softmax(1 - s))
+
+
+class Aggregator:
+    """Helper class for aggregating the label quality scores for each class into a single score for each datapoint.
+
+    Parameters
+    ----------
+    method:
+        The method to compute the label quality scores for each class.
+        If passed as a callable, your function should take in a 1D array of K scores and return a single aggregated score.
+        See :py:func:`exponential_moving_average <cleanlab.internal.multilabel_scorer.exponential_moving_average>` for an example of such a function.
+        Alternatively, this can be a str value to specify a built-in function, possible values are the keys of the ``Aggregator``'s `possible_methods` attribute.
+
+    kwargs:
+        Additional keyword arguments to pass to the aggregation function when it is called.
+    """
+
+    possible_methods: Dict[str, Callable[..., np.ndarray]] = {
+        "exponential_moving_average": exponential_moving_average,
+        "softmin": softmin,
+    }
+
+    def __init__(self, method: Union[str, Callable], **kwargs):
+        if isinstance(method, str):  # convert to callable
+            if method in self.possible_methods:
+                method = self.possible_methods[method]
+            else:
+                raise ValueError(
+                    f"Invalid aggregation method specified: '{method}', must be one of the following: {list(self.possible_methods.keys())}"
+                )
+
+        self._validate_method(method)
+        self.method = method
+        self.kwargs = kwargs
+
+    @staticmethod
+    def _validate_method(method) -> None:
+        if not callable(method):
+            raise TypeError(f"Expected callable method, got {type(method)}")
+
+    @staticmethod
+    def _validate_scores(scores: np.ndarray) -> None:
+        if not (isinstance(scores, np.ndarray) and scores.ndim == 2):
+            raise ValueError(
+                f"Expected 2D array for scores, got {type(scores)} with shape {scores.shape}"
+            )
+
+    def __call__(self, scores: np.ndarray, **kwargs) -> np.ndarray:
+        """Returns the label quality scores for each datapoint based on the given label quality scores for each class.
+
+        Parameters
+        ----------
+        scores:
+            The label quality scores for each class.
+
+        Returns
+        -------
+        aggregated_scores:
+            A single label quality score for each datapoint.
+        """
+        self._validate_scores(scores)
+        kwargs["axis"] = 1
+        updated_kwargs = {**self.kwargs, **kwargs}
+        return self.method(scores, **updated_kwargs)
+
+    def __repr__(self):
+        return f"Aggregator(method={self.method.__name__}, kwargs={self.kwargs})"
 
 
 class MultilabelScorer:
