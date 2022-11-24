@@ -18,7 +18,7 @@ Helper classes and functions used internally to compute label quality scores in 
 """
 
 from enum import Enum
-from typing import Callable, Optional, Union
+from typing import Callable, Dict, Optional, Union
 
 import numpy as np
 from sklearn.model_selection import cross_val_predict
@@ -264,7 +264,7 @@ class Aggregator:
         Additional keyword arguments to pass to the aggregation function when it is called.
     """
 
-    possible_methods: dict[str, Callable] = {
+    possible_methods: Dict[str, Callable[..., np.ndarray]] = {
         "exponential_moving_average": exponential_moving_average,
         "softmin": softmin,
     }
