@@ -747,7 +747,7 @@ def estimate_py_and_noise_matrices_from_probabilities(
     labels: np.ndarray,
     pred_probs: np.ndarray,
     *,
-    thresholds: Union[np.ndarray, list] = None,
+    thresholds: Optional[Union[np.ndarray, list]] = None,
     converge_latent_estimates: bool = True,
     py_method: str = "cnt",
     calibrate: bool = True,
