@@ -3,7 +3,7 @@ on:
   push:
   pull_request:
   schedule:
-    - cron: '0 8 * * 6'
+    - cron: '0 12 * * 1'
 jobs:
   test:
     name: "Test: Python ${{ matrix.python }} on ${{ matrix.os }}"
