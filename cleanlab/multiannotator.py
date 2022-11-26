@@ -368,7 +368,7 @@ def get_majority_vote_label(
                 np.nanmax(labels_multiannotator.replace({pd.NA: np.NaN}).astype(float).values) + 1
             )
         class_frequencies = labels_multiannotator.apply(
-            lambda s: np.bincount(s[s.notna()], minlength=num_classes), axis=1
+            lambda s: pd.Series(np.bincount(s[s.notna()], minlength=num_classes)), axis=1
         ).sum()
         for idx, label_mode in tied_idx.copy().items():
             max_frequency = np.where(
@@ -908,7 +908,7 @@ def _get_annotator_label_quality_score(
     annotator_label: pd.Series,
     pred_probs: np.ndarray,
     label_quality_score_kwargs: dict = {},
-) -> np.ndarray:
+) -> pd.Series:
     """Returns quality scores for each datapoint.
     Very similar functionality as ``_get_consensus_quality_score`` with additional support for annotator labels that contain NaN values.
     For more info about parameters and returns, see the docstring of :py:func:`_get_consensus_quality_score <cleanlab.multiannotator._get_consensus_quality_score>`.
@@ -923,7 +923,7 @@ def _get_annotator_label_quality_score(
 
     annotator_label_quality_score = np.full(len(annotator_label), np.nan)
     annotator_label_quality_score[mask] = annotator_label_quality_score_subset
-    return annotator_label_quality_score
+    return pd.Series(annotator_label_quality_score)
 
 
 def _get_annotator_quality(
