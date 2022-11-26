@@ -53,7 +53,7 @@ jobs:
           pip install .  # install dependencies
           pip install -r requirements-dev.txt  # install development dependencies and type stubs
       - name: Type check
-        run: mypy --install-types --non-interactive --allow-redefinition cleanlab
+        run: mypy --install-types --non-interactive cleanlab
   fmt:
     name: Format
     runs-on: ubuntu-latest
