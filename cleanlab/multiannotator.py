@@ -158,7 +158,7 @@ def get_label_quality_multiannotator(
             consensus_label=majority_vote_label,
             quality_method=quality_method,
             verbose=verbose,
-            **label_quality_score_kwargs,
+            label_quality_score_kwargs=label_quality_score_kwargs,
         )
 
     label_quality = pd.DataFrame({"num_annotations": num_annotations})
@@ -200,7 +200,7 @@ def get_label_quality_multiannotator(
                 consensus_label=consensus_label,
                 quality_method=quality_method,
                 verbose=verbose,
-                **label_quality_score_kwargs,
+                label_quality_score_kwargs=label_quality_score_kwargs,
             )
 
         else:
@@ -245,7 +245,7 @@ def get_label_quality_multiannotator(
                 detailed_label_quality = labels_multiannotator.apply(
                     _get_annotator_label_quality_score,
                     pred_probs=post_pred_probs,
-                    **label_quality_score_kwargs,
+                    label_quality_score_kwargs=label_quality_score_kwargs,
                 )
                 detailed_label_quality = detailed_label_quality.add_prefix("quality_annotator_")
 
@@ -519,7 +519,7 @@ def _get_consensus_stats(
         num_annotations=num_annotations,
         annotator_agreement=annotator_agreement,
         quality_method=quality_method,
-        **label_quality_score_kwargs,
+        label_quality_score_kwargs=label_quality_score_kwargs,
     )
 
     return (
