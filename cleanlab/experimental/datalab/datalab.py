@@ -300,7 +300,7 @@ class Datalab:
             datalab.issues = pd.read_csv(issues_file)
 
         results_file = os.path.join(path, RESULTS_FILENAME)
-        with open(info_file, "rb") as f:
+        with open(results_file, "rb") as f:
             datalab.results = pickle.load(f)
 
         if data is not None:
