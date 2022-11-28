@@ -195,7 +195,11 @@ def find_best_temp_scaler(
     soft_cross_entropy_coarse = np.full(len(grid_search_coarse_range), np.NaN)
     for i in range(len(grid_search_coarse_range)):
         curr_temp = grid_search_coarse_range[i]
-        # TODO: should we clip the pred_probs here before taking the log? otherwose warning will pop up if pred_probs=0
+
+        # clip pred_probs to prevent taking log of 0
+        pred_probs = np.clip(pred_probs, a_min=1e-10, a_max=None)
+        pred_probs = pred_probs / np.sum(pred_probs, axis=1)[:, np.newaxis]
+
         log_pred_probs = np.log(pred_probs) / curr_temp
         scaled_pred_probs = np.exp(log_pred_probs) / np.sum(np.exp(log_pred_probs))  # softmax
         soft_cross_entropy_coarse[i] = np.mean(
@@ -244,6 +248,11 @@ def temp_scale_pred_probs(
     temp: float,
 ) -> np.ndarray:
     """Scales pred_probs by the given temperature factor. Temperature of <1 will sharpen the pred_probs while temperatures of >1 will smoothen it."""
+    # clip pred_probs to prevent taking log of 0
+    pred_probs = np.clip(pred_probs, a_min=1e-10, a_max=None)
+    pred_probs = pred_probs / np.sum(pred_probs, axis=1)[:, np.newaxis]
+
+    # apply temperate scale
     log_pred_probs = np.log(pred_probs) / temp
     scaled_pred_probs = np.exp(log_pred_probs) / np.sum(np.exp(log_pred_probs))  # softmax
     scaled_pred_probs = (
