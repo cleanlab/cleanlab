@@ -17,7 +17,7 @@
 """
 Methods to rank the severity of label issues in multi-label classification datasets.
 Here each example can belong to one or more classes, or none of the classes at all.
-Unlike in multi-class classification, predicted class probabilities from model need not sum to 1 for each row.
+Unlike in standard multi-class classification, predicted class probabilities from model need not sum to 1 for each row in multi-label classification.
 """
 
 import numpy as np
@@ -37,14 +37,14 @@ def get_label_quality_scores(
     adjust_pred_probs: bool = False,
     aggregator_kwargs: dict = {"method": "exponential_moving_average", "alpha": 0.8}
 ) -> np.ndarray:
-    """Returns a label quality score for each datapoint.
+    """Computes a label quality score each example in a multi-label classification dataset.
 
-    This is a function to compute label quality scores for multi-label classification datasets,
-    where lower scores indicate labels more likely to contain an error.
-
-    Score is between 0 and 1 with lower values indicating labels inferred to be worse.
+    Scores are between 0 and 1 with lower scores indicating examples whose label more likely contains an error.
     For each example, this method internally computes a separate score for each individual class
     and then aggregates these per-class scores into an overall label quality score for the example.
+    
+    To estimate exactly which examples are mislabeled in a multi-label classification dataset,
+    you can also use :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` with argument ``multi_label=True``.  
 
     Parameters
     ----------
