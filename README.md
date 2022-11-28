@@ -40,7 +40,7 @@ Get started with: [documentation](https://docs.cleanlab.ai/), [tutorials](https:
 <details><summary><b>News! (2022) </b> -- cleanlab made accessible for everybody, not just ML researchers (<b>click to learn more</b>) </summary>
 <p>
 <ul>
-<li> <b>Nov 2022 📖</b> cleanlab 2.2.0 released! Added better algorithms for: detecting/scoring label issues in multi-label classification, running cleanlab on data with some classes absent, and estimating the number of label errors in classification datasets. </li>
+<li> <b>Nov 2022 📖</b> cleanlab 2.2.0 released! Added better algorithms for: label issues in multi-label classification, data with some classes absent, and estimating the number of label errors in a dataset. </li>
 <li> <b>Sep 2022 📖</b> cleanlab 2.1.0 released! Added support for: data labeled by multiple annotators in cleanlab.multiannotator, token classification with text data in cleanlab.token_classification, out-of-distribution detection in cleanlab.outlier, and CleanLearning with non-numpy-array data (e.g. pandas dataframes, tensorflow/pytorch datasets, etc) in cleanlab.classification.CleanLearning. </li>
 <li> <b>April 2022 📖</b> cleanlab 2.0.0 released! Lays foundations for this library to grow into a general-purpose data-centric AI toolkit. </li>
 <li> <b>March 2022 📖</b>  Documentation migrated to new website: <a href="https://docs.cleanlab.ai/">docs.cleanlab.ai</a> with quickstart tutorials for image/text/audio/tabular data.</li>
@@ -432,7 +432,7 @@ Now that you have `indices_of_label_errors`, you can remove those label issues a
 <br/>
 </details>
 
-+ Many other practical applications demonstrated in our [Example Notebooks](https://github.com/cleanlab/examples)
+Many other practical applications are demonstrated in our [Example Notebooks](https://github.com/cleanlab/examples)
 
 ## Citation and related publications
 
