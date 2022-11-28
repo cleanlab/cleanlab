@@ -18,7 +18,7 @@
 __version__ = "2.2.0"
 
 
-# 2.2.0 - Re-invented algorithms for multi-label classification and support for datasets with missing classes 
+# 2.2.0 - Re-invented algorithms for multi-label classification and support for datasets with missing classes
 #
 #   For detecting label errors in multi-label classification datasets (e.g. image/document tagging):
 #   - Added cleanlab.multilabel_classification module for label quality scoring.
@@ -27,7 +27,7 @@ __version__ = "2.2.0"
 #
 #   Additional improvements:
 #   - cleanlab now works much better for datasets in which some classes happen to not be present.
-#   - Algorithmic improvements to ensure count.num_label_issues() returns more accurate estimates.  
+#   - Algorithmic improvements to ensure count.num_label_issues() returns more accurate estimates.
 #   - For developers: introduction of flake8 code linter and more comprehensive mypy type annotations.
 #
 #   See release for a full changelog.
