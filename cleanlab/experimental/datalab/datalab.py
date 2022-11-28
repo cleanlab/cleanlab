@@ -24,6 +24,7 @@ import pickle
 import json
 import pandas as pd
 import numpy as np
+import warnings
 
 import datasets
 from datasets.arrow_dataset import Dataset
@@ -35,10 +36,10 @@ from cleanlab.internal.validation import labels_to_array
 __all__ = ["DataLab"]
 
 # Constants:
-OBJECT_FILENAME = "datalab.p"
+OBJECT_FILENAME = "datalab.pkl"
 ISSUES_FILENAME = "issues.csv"
-RESULTS_FILENAME = "results.csv"
-INFO_FILENAME = "info.json"
+RESULTS_FILENAME = "results.pkl"
+INFO_FILENAME = "info.pkl"
 
 
 class Datalab:
@@ -240,8 +241,9 @@ class Datalab:
             stored_info = self.info
             self.info = None
             info_file = os.path.join(path, INFO_FILENAME)
-            with open(info_file, "w") as f:
-                json.dump(stored_info, f)
+            with open(info_file, "wb") as f:
+                # json.dump(stored_info, f)
+                pickle.dump(stored_info, f)
 
         stored_issues = None
         if self.issues is not None:
@@ -255,7 +257,9 @@ class Datalab:
             stored_results = self.results
             self.results = None
             results_file = os.path.join(path, RESULTS_FILENAME)
-            stored_results.to_csv(results_file)
+            # stored_results.to_csv(results_file)
+            with open(results_file, "wb") as f:
+                pickle.dump(stored_results, f)
 
         # save trimmed version of this object
         object_file = os.path.join(path, OBJECT_FILENAME)
@@ -288,16 +292,16 @@ class Datalab:
             datalab = pickle.load(f)
 
         info_file = os.path.join(path, INFO_FILENAME)
-        with open(info_file, "r") as f:
-            datalab.info = json.load(f)
+        with open(info_file, "rb") as f:
+            datalab.info = pickle.load(f)
 
         issues_file = os.path.join(path, ISSUES_FILENAME)
         if os.path.exists(issues_file):
             datalab.issues = pd.read_csv(issues_file)
 
         results_file = os.path.join(path, RESULTS_FILENAME)
-        if os.path.exists(results_file):
-            datalab.results = pd.read_csv(results_file)
+        with open(info_file, "rb") as f:
+            datalab.results = pickle.load(f)
 
         if data is not None:
             datalab.data = data
