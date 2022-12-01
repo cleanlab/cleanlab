@@ -97,7 +97,7 @@ The example below shows how to view all dataset-level issues in one line of code
    health_summary(labels, pred_probs, class_names=class_names)
 
 
-Contributing 
+Contributing
 ------------
 
 As cleanlab is an open-source project, we welcome contributions from the community.
@@ -114,7 +114,7 @@ Please see our `contributing guidelines <https://github.com/cleanlab/cleanlab/bl
    :hidden:
    :caption: Tutorials
 
-   tutorials/indepth_overview
+   Indepth Overview <tutorials/indepth_overview>
    tutorials/image
    tutorials/text
    tutorials/tabular
@@ -148,7 +148,7 @@ Please see our `contributing guidelines <https://github.com/cleanlab/cleanlab/bl
 .. toctree::
    :caption: Guides
    :hidden:
-   
+
    How to contribute <https://github.com/cleanlab/cleanlab/blob/master/CONTRIBUTING.md>
    Migrating to v2.x <migrating/migrate_v2>
 
