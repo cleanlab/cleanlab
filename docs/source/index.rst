@@ -115,14 +115,14 @@ Please see our `contributing guidelines <https://github.com/cleanlab/cleanlab/bl
    :caption: Tutorials
 
    Getting Started With Cleanlab <tutorials/indepth_overview>
-   Image Classification with Pytorch <tutorials/image>
-   Text Classification with Tensorflow <tutorials/text>
-   Tabular Classification with Scikit-Learn <tutorials/tabular>
-   Audio Classification with Speechbrain <tutorials/audio>
+   Image Classification (Pytorch) <tutorials/image>
+   Text Classification (Tensorflow) <tutorials/text>
+   Tabular Classification (Scikit-Learn) <tutorials/tabular>
+   Audio Classification (Speechbrain) <tutorials/audio>
    Find Dataset-level Issues <tutorials/dataset_health>
-   Identify Image Outliers with Pytorch <tutorials/outliers>
-   Improve Consensus Labels for Multiannotator Data <tutorials/multiannotator>
-   Multi-Label Classification with Scikit-Learn <tutorials/multilabel_classification>
+   Identifying Outliers (Pytorch) <tutorials/outliers>
+   Improving Consensus Labels for Multiannotator Data <tutorials/multiannotator>
+   Multi-Label Classification (Scikit-Learn) <tutorials/multilabel_classification>
    Token Classification <tutorials/token_classification>
    Out-of-Sample Predicted Probabilities via Cross Validation <tutorials/pred_probs_cross_val>
    FAQ <tutorials/faq>
