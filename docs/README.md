@@ -75,7 +75,7 @@ pip install -r docs/requirements.txt
 
    2. move the notebook to ignore from local build to the newly created folder
    ```
-   mv docs/source/tutorials/audio.ipynb ../ignore_notebooks 
+   mv docs/source/tutorials/audio.ipynb ../ignore_notebooks
    ```
 
    3. build the docs locally, using `sphinx-build` as it does not require you to commit your changes
@@ -282,9 +282,9 @@ instead of containing your own virtualenv in there. CI will FAIL if you instead 
    - Add a comment in hidden cell not displayed on docs.cleanlab.ai stating which version of dependencies you used.
    - Think carefully whether each dependency is really necessary and if its future versions will be stable / compatible with future versions of existing dependencies.
 
-6. Don't forget to update **docs/source/index.rst** and **docs/source/tutorials/index.rst** to ensure your tutorial properly linked. Otherwise it will not appear on docs.cleanlab.ai!
+6. Don't forget to update **docs/source/index.rst** with a short title and **docs/source/tutorials/index.rst** to ensure your tutorial properly linked. Otherwise it will not appear on docs.cleanlab.ai!
 
-7. Ask yourself: 
+7. Ask yourself:
 - How can I make this tutorial run faster without sacrificing educational value?  Perhaps use smaller subsample of the dataset, smaller/pretrained model, etc.
 - What sections of this tutorial are least vital?  Consider creating a separate [Examples](https://github.com/cleanlab/examples) notebook that features those.
 
