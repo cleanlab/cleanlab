@@ -117,7 +117,7 @@ Please see our `contributing guidelines <https://github.com/cleanlab/cleanlab/bl
    Getting Started With Cleanlab <tutorials/indepth_overview>
    Image Classification (Pytorch) <tutorials/image>
    Text Classification (Tensorflow) <tutorials/text>
-   Tabular Classification (Scikit-Learn) <tutorials/tabular>
+   Tabular Classification     (Scikit-Learn) <tutorials/tabular>
    Audio Classification (Speechbrain) <tutorials/audio>
    Find Dataset-level Issues <tutorials/dataset_health>
    Identifying Outliers (Pytorch) <tutorials/outliers>
