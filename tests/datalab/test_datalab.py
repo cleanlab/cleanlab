@@ -15,12 +15,22 @@
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
 
-from cleanlab.experimental.datalab.datalab import Datalab
+import os
+import pickle
+from cleanlab.experimental.datalab.datalab import (
+    Datalab,
+    IssueManager,
+    HealthIssueManager,
+    LabelIssueManager,
+    _IssueManagerFactory,
+)
 
 from datasets.arrow_dataset import Dataset
 from datasets.dataset_dict import DatasetDict
 import numpy as np
 import pandas as pd
+
+from pathlib import Path
 
 import pytest
 
@@ -96,16 +106,76 @@ def test_data_features_and_labels(dataset):
     assert all(lab._labels == np.array([1, 1, 2, 0, 2]))
 
 
-def test_find_issues(lab, pred_probs):
-    assert lab.issues is None
-    assert lab.results is None, "Results should be None before calling find_issues"
-    lab.find_issues(pred_probs=pred_probs)
-    assert lab.issues is not None, "Issues weren't updated"
-    assert isinstance(lab.issues, pd.DataFrame), "Issues should by in a dataframe"
-    assert all(lab.issues.predicted_label == np.array([1, 0, 1, 2, 0]))
+class TestDatalab:
+    """Tests for the Datalab class."""
 
-    assert isinstance(lab.results, float), "Results should be a float"
-    assert isinstance(lab.info.get("summary", None), dict), "Summary should be a dict"
+    @pytest.fixture
+    def lab(self, dataset):
+        return Datalab(data=dataset, label_name=LABEL_NAME)
+
+    def tmp_path(self):
+        # A path for temporarily saving the instance during tests.
+        # This is a workaround for the fact that the Datalab class
+        # does not have a save method.
+        return Path(__file__).parent / "tmp.pkl"
+
+    def test_attributes(self, dataset):
+        lab = Datalab(dataset, LABEL_NAME)
+        # Has the right attributes
+        for attr in ["data", "label_name", "_labels", "info", "issues", "_silo"]:
+            assert hasattr(lab, attr), f"Missing attribute {attr}"
+
+    def test_get_info(self, lab):
+        """Test that the method fetches the values from the info dict."""
+        num_classes = lab.get_info("num_classes")
+        assert num_classes == 3
+        lab.info["num_classes"] = 4
+        num_classes = lab.get_info("num_classes")
+        assert num_classes == 4
+
+    @pytest.mark.parametrize(
+        "issue_types",
+        [None, {"label": True}],
+        ids=["Default issues", "Only label issues"],
+    )
+    def test_find_issues(self, lab, pred_probs, issue_types):
+        assert lab.issues is None
+        assert lab.results is None, "Results should be None before calling find_issues"
+        lab.find_issues(pred_probs=pred_probs, issue_types=issue_types)
+        assert lab.issues is not None, "Issues weren't updated"
+        assert isinstance(lab.issues, pd.DataFrame), "Issues should by in a dataframe"
+        assert all(lab.issues.predicted_label == np.array([1, 0, 1, 2, 0]))
+
+        if issue_types is None:
+            assert isinstance(lab.results, float), "Results should be a float"
+            assert isinstance(lab.info.get("summary", None), dict), "Summary should be a dict"
+
+    def test_save(self, lab, tmp_path):
+        """Test that the save and load methods work."""
+        lab.save(tmp_path)
+        assert tmp_path.exists(), "File was not saved"
+
+    def test_pickle(self, lab, tmp_path):
+        """Test that the class can be pickled."""
+        pickle_file = os.path.join(tmp_path, "lab.pkl")
+        with open(pickle_file, "wb") as f:
+            pickle.dump(lab, f)
+        with open(pickle_file, "rb") as f:
+            lab2 = pickle.load(f)
+
+        assert lab2.label_name == "star"
+
+    def test_load(self, lab, tmp_path):
+        """Test that the save and load methods work."""
+        lab.save(tmp_path)
+        loaded_lab = Datalab.load(tmp_path)
+        assert loaded_lab.data.data == lab.data.data
+        assert loaded_lab.label_name == lab.label_name
+        assert all(loaded_lab._labels == lab._labels)
+        assert loaded_lab._label_map == lab._label_map
+        assert loaded_lab.info == lab.info
+        assert loaded_lab.issues == lab.issues
+        assert loaded_lab._silo == lab._silo
 
 
 def test_health_summary(lab, pred_probs):
@@ -133,3 +203,34 @@ def test_health_summary(lab, pred_probs):
     assert (
         label_quality_df["Class Index"].map(lab._label_map).equals(label_quality_df["Class Name"])
     ), "Class indices don't match class names in dataframe"
+
+
+@pytest.mark.parametrize(
+    "issue_manager_class",
+    [HealthIssueManager, LabelIssueManager],
+    ids=["HealthIssueManager", "LabelIssueManager"],
+)
+class TestIssueManager:
+    @pytest.fixture
+    def issue_manager(self, lab, issue_manager_class):
+        return issue_manager_class(datalab=lab)
+
+    def test_init(self, lab, issue_manager_class):
+        """Test that the init method works."""
+        issue_manager = issue_manager_class(datalab=lab)
+        assert issue_manager.datalab == lab
+
+    def test_find_issues(self, lab, pred_probs, issue_manager):
+        """Test that the find_issues method works."""
+        info_before = lab.info.copy()
+        _ = issue_manager.find_issues(pred_probs=pred_probs)
+
+        assert lab.info != info_before, "Info should be updated"
+
+    def test_update_info(self, lab, pred_probs, issue_manager):
+        """Test that the update_info method works."""
+        info_before = lab.info.copy()
+        issues = issue_manager.find_issues(pred_probs=pred_probs)
+        issue_manager.update_info(issues=issues)
+
+        assert lab.info != info_before, "Info should be updated"
