@@ -123,7 +123,7 @@ Please see our `contributing guidelines <https://github.com/cleanlab/cleanlab/bl
    Identifying Outliers (Pytorch) <tutorials/outliers>
    Improving Consensus Labels for Multiannotator Data <tutorials/multiannotator>
    Multi-Label Classification <tutorials/multilabel_classification>
-   Token Classification <tutorials/token_classification>
+   Token Classification (text) <tutorials/token_classification>
    Out-of-Sample Predicted Probabilities via Cross Validation <tutorials/pred_probs_cross_val>
    FAQ <tutorials/faq>
 
