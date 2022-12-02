@@ -114,7 +114,7 @@ Please see our `contributing guidelines <https://github.com/cleanlab/cleanlab/bl
    :hidden:
    :caption: Tutorials
 
-   Getting Started With Cleanlab <tutorials/indepth_overview>
+   Workflows of Data-Centric AI <tutorials/indepth_overview>
    Image Classification (Pytorch) <tutorials/image>
    Text Classification (Tensorflow) <tutorials/text>
    Tabular Classification     (Scikit-Learn) <tutorials/tabular>
