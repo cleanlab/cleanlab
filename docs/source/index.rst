@@ -115,16 +115,16 @@ Please see our `contributing guidelines <https://github.com/cleanlab/cleanlab/bl
    :caption: Tutorials
 
    Workflows of Data-Centric AI <tutorials/indepth_overview>
-   Image Classification (Pytorch) <tutorials/image>
-   Text Classification (Tensorflow) <tutorials/text>
-   Tabular Classification     (Scikit-Learn) <tutorials/tabular>
-   Audio Classification (Speechbrain) <tutorials/audio>
+   Image Classification (pytorch) <tutorials/image>
+   Text Classification (tensorflow) <tutorials/text>
+   Tabular Classification (sklearn) <tutorials/tabular>
+   Audio Classification (speechbrain) <tutorials/audio>
    Find Dataset-level Issues <tutorials/dataset_health>
-   Identifying Outliers (Pytorch) <tutorials/outliers>
+   Identifying Outliers (pytorch) <tutorials/outliers>
    Improving Consensus Labels for Multiannotator Data <tutorials/multiannotator>
    Multi-Label Classification <tutorials/multilabel_classification>
    Token Classification (text) <tutorials/token_classification>
-   Out-of-Sample Predicted Probabilities via Cross Validation <tutorials/pred_probs_cross_val>
+   Predicted Probabilities via Cross Validation <tutorials/pred_probs_cross_val>
    FAQ <tutorials/faq>
 
 .. toctree::
