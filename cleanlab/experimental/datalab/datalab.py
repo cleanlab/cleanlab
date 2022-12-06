@@ -383,7 +383,24 @@ class Datalab:
 
 
 class IssueManager(ABC):
-    """Base class for managing issues in a Datalab."""
+    """ Base class for managing issues in a Datalab.
+    
+        For each example in a dataset, the IssueManager for a particular type of issue should compute:
+        - A numeric severity score between 0 and 1, with values near 0 indicating severe instances of the issue.
+        - A boolean `is_issue` value, which is True if we believe this example suffers from the issue in question.
+          `is_issue` may be determined by thresholding the severity score (with an a priori determined reasonable threshold value),
+          or via some other means (e.g. Confident Learning for flagging label issues).
+              
+        The IssueManager should also report:
+        - A global value between 0 and 1 summarizing how severe this issue is in the dataset overall
+          (e.g. the average severity across all examples in dataset or count of examples where `is_issue=True`).
+        - Other interesting `info` about the issue and examples in the dataset,
+          and statistics estimated from current dataset that may be reused to score this issue in future data.
+          For example, `info` for label issues could contain the:
+          confident_thresholds, confident_joint, predicted label for each example, etc.
+          Another example is for (near)-duplicate detection issue, where `info` could contain:
+          which set of examples in the dataset are all (nearly) identical.
+    """
 
     def __init__(self, datalab: Datalab):
         self.datalab = datalab
