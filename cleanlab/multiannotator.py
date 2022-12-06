@@ -501,7 +501,7 @@ def _get_consensus_stats(
         consensus_label=consensus_label,
     )
 
-    # compute posterior predicted probabilites
+    # compute posterior predicted probabilities
     post_pred_probs, model_weight, annotator_weight = _get_post_pred_probs_and_weights(
         labels_multiannotator=labels_multiannotator,
         consensus_label=consensus_label,
@@ -719,7 +719,7 @@ def _get_post_pred_probs_and_weights(
     quality_method: str = "crowdlab",
     verbose: bool = True,
 ) -> Tuple[np.ndarray, Any, Any]:
-    """Return the posterior predicted probabilites of each example given a specified quality method.
+    """Return the posterior predicted probabilities of each example given a specified quality method.
 
     Parameters
     ----------
