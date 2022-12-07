@@ -15,11 +15,15 @@
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
 from cleanlab import count, filter
-from cleanlab.count import get_confident_thresholds
+from cleanlab.count import (
+    get_confident_thresholds,
+    estimate_py_and_noise_matrices_from_probabilities,
+)
 from cleanlab.internal.latent_algebra import compute_inv_noise_matrix
 from cleanlab.benchmarking.noise_generation import generate_noise_matrix_from_trace
 from cleanlab.benchmarking.noise_generation import generate_noisy_labels
-from cleanlab.internal.util import value_counts, int2onehot
+from cleanlab.internal.util import value_counts
+from cleanlab.internal.multilabel_utils import int2onehot
 import numpy as np
 import scipy
 import pytest
@@ -117,7 +121,8 @@ def make_multilabel_data(
     seed=1,
 ):
     np.random.seed(seed=seed)
-    m = len(means) + len(
+    num_classes = len(means)
+    m = num_classes + len(
         box_multilabels
     )  # number of classes by treating each multilabel as 1 unique label
     n = sum(sizes)
@@ -172,7 +177,7 @@ def make_multilabel_data(
     ps = np.bincount(labels_idx) / float(len(labels_idx))
     inv = compute_inv_noise_matrix(py, noise_matrix, ps=ps)
 
-    y_train = int2onehot(noisy_labels)
+    y_train = int2onehot(noisy_labels, K=num_classes)
     clf = MultiOutputClassifier(LogisticRegression())
     pyi = cross_val_predict(clf, X_train, y_train, method="predict_proba")
     pred_probs = np.zeros(y_train.shape)
@@ -310,7 +315,7 @@ def test_calibrate_joint_multilabel():
         labels=dataset["labels"],
         multi_label=True,
     )
-    y_one = int2onehot(dataset["labels"])
+    y_one = int2onehot(dataset["labels"], K=dataset["pred_probs"].shape[1])
     # Check calibration
     for class_num in range(0, len(calibrated_cj)):
         label_counts = np.bincount(y_one[:, class_num])
@@ -774,6 +779,25 @@ def test_num_label_issues(confident_joint):
             )
 
 
+@pytest.mark.parametrize("confident_joint", [None, True])
+def test_num_label_issues_multilabel(confident_joint):
+    dataset = multilabel_data
+    n = count.num_label_issues(
+        labels=dataset["labels"],
+        pred_probs=dataset["pred_probs"],
+        confident_joint=dataset["cj"] if confident_joint else None,
+        estimation_method="off_diagonal",
+        multi_label=True,
+    )
+    f = filter.find_label_issues(
+        labels=dataset["labels"],
+        pred_probs=dataset["pred_probs"],
+        confident_joint=dataset["cj"] if confident_joint else None,
+        multi_label=True,
+    )
+    assert sum(f) == n
+
+
 def test_issue_158():
     # ref: https://github.com/cleanlab/cleanlab/issues/158
     pred_probs = np.array(
@@ -813,25 +837,174 @@ def test_issue_158():
     assert not np.any(np.isnan(inv_noise_matrix))
 
 
-def test_toofew_classes():
-    try:
-        labels = np.array([0, 0])
-        pred_probs = np.array([[0.3, 0.7], [0.2, 0.8]])
-        issues = filter.find_label_issues(labels, pred_probs)
-        assert False
-    except ValueError as e:
-        assert "must contain at least 2 classes" in str(e)
-    else:
-        raise Exception("expected test to raise ValueError")
+@pytest.mark.filterwarnings("ignore:May not flag all label issues")
+def test_missing_classes():
+    labels = np.array([0, 0, 2, 2])
+    pred_probs = np.array(
+        [[0.9, 0.0, 0.1, 0.0], [0.8, 0.0, 0.2, 0.0], [0.1, 0.0, 0.9, 0.0], [0.95, 0.0, 0.05, 0.0]]
+    )
+    issues = filter.find_label_issues(labels, pred_probs)
+    assert np.all(issues == np.array([False, False, False, True]))
+    # check results with pred-prob on missing classes = 0 match results without these missing classes in pred_probs
+    pred_probs2 = pred_probs[:, list(sorted(np.unique(labels)))]
+    labels2 = np.array([0, 0, 1, 1])
+    issues2 = filter.find_label_issues(labels2, pred_probs2)
+    assert all(issues2 == issues)
+    # check this still works with nonzero pred_prob on missing class
+    pred_probs3 = np.array(
+        [
+            [0.9, 0.1, 0.0, 0.0],
+            [0.8, 0.1, 0.1, 0.0],
+            [0.1, 0.0, 0.9, 0.0],
+            [0.9, 0.025, 0.025, 0.05],
+        ]
+    )
+    issues3 = filter.find_label_issues(labels, pred_probs3)
+    assert all(issues3 == issues)
+    # check this works with n_jobs = 1
+    issues4 = filter.find_label_issues(labels, pred_probs, n_jobs=1)
+    assert all(issues4 == issues)
+    # check this works with different filter_by
+    for fb in [
+        "prune_by_class",
+        "prune_by_noise_rate",
+        "both",
+        "confident_learning",
+        "predicted_neq_given",
+    ]:
+        assert all(filter.find_label_issues(labels, pred_probs, filter_by=fb) == issues)
 
 
-def test_missing_classes():  # TODO: can remove this test once missing classes are supported
-    try:
-        labels = np.array([0, 0, 1, 1])
-        pred_probs = np.array([[0.1, 0.7, 0.2], [0.1, 0.8, 0.1], [0.7, 0.2, 0.1], [0.8, 0.1, 0.1]])
-        issues = filter.find_label_issues(labels, pred_probs)
-        assert False
-    except ValueError as e:
-        assert "All classes" in str(e)
-    else:
-        raise Exception("expected test to raise ValueError")
+@pytest.mark.parametrize(
+    "return_indices_ranked_by",
+    [None, "self_confidence", "normalized_margin", "confidence_weighted_entropy"],
+)
+@pytest.mark.filterwarnings("ignore::UserWarning")
+def test_missing_classes_multilabel(return_indices_ranked_by):
+    pred_probs = np.array(
+        [
+            [0.9, 0.1, 0.0, 0.4, 0.1],
+            [0.7, 0.8, 0.2, 0.3, 0.1],
+            [0.9, 0.8, 0.4, 0.2, 0.1],
+            [0.1, 0.1, 0.8, 0.3, 0.1],
+            [0.4, 0.5, 0.1, 0.1, 0.1],
+            [0.1, 0.1, 0.2, 0.1, 0.1],
+            [0.8, 0.1, 0.2, 0.1, 0.1],
+        ]
+    )
+    labels = [[0], [0, 1], [0, 1], [2], [0, 2, 3], [], []]
+    cj = count.compute_confident_joint(labels=labels, pred_probs=pred_probs, multi_label=True)
+    assert cj.shape == (5, 2, 2)
+    noise_idx = filter.find_label_issues(
+        labels=labels,
+        pred_probs=pred_probs,
+        multi_label=True,
+        return_indices_ranked_by=return_indices_ranked_by,
+    )
+    noise_idx2 = filter.find_label_issues(
+        labels=labels,
+        pred_probs=pred_probs,
+        multi_label=True,
+        confident_joint=cj,
+        return_indices_ranked_by=return_indices_ranked_by,
+    )
+
+    def _idx_to_bool(idx):
+        noise_bool = np.zeros(len(labels)).astype(bool)
+        noise_bool[idx] = True
+        return noise_bool
+
+    if return_indices_ranked_by is not None:
+        noise_idx = _idx_to_bool(noise_idx)
+        noise_idx2 = _idx_to_bool(noise_idx2)
+
+    expected_output = [False, False, False, False, True, False, True]
+    assert noise_idx.tolist() == noise_idx2.tolist() == expected_output
+
+
+def test_removing_class_consistent_results():
+    # Note that only one label is class 1 (we're going to change it to class 2 later...)
+    labels = np.array([0, 0, 0, 0, 1, 2, 2, 2])
+    # Third example is a label error
+    pred_probs = np.array(
+        [
+            [0.9, 0.1, 0.0],
+            [0.8, 0.1, 0.1],
+            [0.1, 0.0, 0.9],
+            [0.9, 0.0, 0.1],
+            [0.1, 0.3, 0.6],
+            [0.1, 0.0, 0.9],
+            [0.1, 0.0, 0.9],
+            [0.1, 0.0, 0.9],
+        ]
+    )
+    cj_with1 = count.compute_confident_joint(labels, pred_probs)
+    issues_with1 = filter.find_label_issues(labels, pred_probs)
+
+    labels_no1 = labels = np.array([0, 0, 0, 0, 2, 2, 2, 2])  # change 1 to 2 (class 1 is missing!)
+    cj_no1 = count.compute_confident_joint(labels, pred_probs)
+    issues_no1 = filter.find_label_issues(labels, pred_probs)
+
+    assert np.all(issues_with1 == issues_no1)
+    assert np.all(
+        cj_with1
+        == [
+            [3, 0, 1],
+            [0, 1, 0],
+            [0, 0, 3],
+        ]
+    )
+    # Check that the 1, 1 entry goes away and moves to 2, 2 (since we changed label 1 to 2)
+    assert np.all(
+        cj_no1
+        == [
+            [3, 0, 1],
+            [0, 0, 0],
+            [0, 0, 4],
+        ]
+    )
+
+
+def test_estimate_py_and_noise_matrices_missing_classes():
+    labels = np.array([0, 0, 2, 2])
+    pred_probs = np.array(
+        [[0.9, 0.0, 0.1, 0.0], [0.8, 0.0, 0.2, 0.0], [0.1, 0.0, 0.9, 0.0], [0.95, 0.0, 0.05, 0.0]]
+    )
+    (
+        py,
+        noise_matrix,
+        inverse_noise_matrix,
+        confident_joint,
+    ) = estimate_py_and_noise_matrices_from_probabilities(labels, pred_probs)
+    # check results with pred-prob on missing classes = 0 match results without these missing classes in pred_probs
+    present_classes = list(sorted(np.unique(labels)))
+    pred_probs2 = pred_probs[:, present_classes]
+    labels2 = np.array([0, 0, 1, 1])
+    (
+        py2,
+        noise_matrix2,
+        inverse_noise_matrix2,
+        confident_joint2,
+    ) = estimate_py_and_noise_matrices_from_probabilities(labels2, pred_probs2)
+    # These may be slightly off due to clipping to prevent division by 0:
+    assert (np.isclose(py[present_classes], py2, atol=1e-5)).all()
+    assert (
+        np.isclose(confident_joint[np.ix_(present_classes, present_classes)], confident_joint2)
+    ).all()
+    assert (np.isclose(noise_matrix[np.ix_(present_classes, present_classes)], noise_matrix2)).all()
+    assert (
+        np.isclose(
+            inverse_noise_matrix[np.ix_(present_classes, present_classes)], inverse_noise_matrix2
+        )
+    ).all()
+
+    # check this still works with nonzero pred_prob on missing class
+    pred_probs3 = np.array(
+        [
+            [0.9, 0.1, 0.0, 0.0],
+            [0.8, 0.1, 0.1, 0.0],
+            [0.1, 0.0, 0.9, 0.0],
+            [0.9, 0.025, 0.025, 0.05],
+        ]
+    )
+    _ = estimate_py_and_noise_matrices_from_probabilities(labels, pred_probs3)

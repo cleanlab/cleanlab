@@ -89,10 +89,14 @@ jobs:
 
       - name: Run Sphinx with sphinx-multiversion wrapper - branch trigger
         if: ${{ github.ref_type == 'branch' }}
+        env:
+          TF_CPP_MIN_LOG_LEVEL: 3
         run: sphinx-multiversion docs/source cleanlab-docs -D smv_branch_whitelist=${{ github.ref_name }} -D smv_tag_whitelist=None
 
       - name: Run Sphinx with sphinx-multiversion wrapper - tag trigger
         if: ${{ github.ref_type == 'tag' }}
+        env:
+          TF_CPP_MIN_LOG_LEVEL: 3
         run: sphinx-multiversion docs/source cleanlab-docs -D smv_branch_whitelist=None -D smv_tag_whitelist=${{ github.ref_name }}
 
       - name: Get latest stable release

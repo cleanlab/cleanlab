@@ -9,6 +9,7 @@ from cleanlab.multiannotator import (
     convert_long_to_wide_dataset,
     get_majority_vote_label,
 )
+from cleanlab.internal.multiannotator_utils import format_multiannotator_labels
 import pandas as pd
 
 
@@ -163,6 +164,11 @@ def test_label_quality_scores_multiannotator():
         labels, pred_probs, consensus_method=["majority_vote", "best_quality"]
     )
 
+    # test passing arguments for get_label_quality_scores
+    multiannotator_dict = get_label_quality_multiannotator(
+        labels, pred_probs, label_quality_score_kwargs={"method": "normalized_margin"}
+    )
+
     # test different quality_methods
     # also testing passing labels as np.ndarray
     multiannotator_dict = get_label_quality_multiannotator(
@@ -220,6 +226,43 @@ def test_label_quality_scores_multiannotator():
         assert "cannot have columns with all NaN" in str(e)
 
 
+def test_missing_class():
+    labels = np.array(
+        [
+            [1, np.NaN, 2],
+            [1, 1, 2],
+            [2, 2, 1],
+            [np.NaN, 2, 2],
+            [np.NaN, 2, 1],
+            [np.NaN, 2, 2],
+        ]
+    )
+
+    pred_probs = np.array(
+        [
+            [0.4, 0.4, 0.2],
+            [0.3, 0.6, 0.1],
+            [0.05, 0.2, 0.75],
+            [0.1, 0.4, 0.5],
+            [0.2, 0.4, 0.4],
+            [0.2, 0.4, 0.4],
+        ]
+    )
+
+    # test default case
+    consensus_label = get_majority_vote_label(labels)
+    consensus_label = get_majority_vote_label(labels, pred_probs)
+    multiannotator_dict = get_label_quality_multiannotator(labels, pred_probs)
+
+    # test other consensus and quality methods
+    multiannotator_dict = get_label_quality_multiannotator(
+        labels, pred_probs, quality_method="agreement"
+    )
+    multiannotator_dict = get_label_quality_multiannotator(
+        labels, pred_probs, consensus_method="majority_vote"
+    )
+
+
 @pytest.mark.filterwarnings("ignore::UserWarning")
 def test_rare_class():
     labels = np.array(
@@ -261,7 +304,7 @@ def test_rare_class():
     try:
         multiannotator_dict = get_label_quality_multiannotator(labels, pred_probs_missing)
     except ValueError as e:
-        assert "do not match the number of classes in pred_probs" in str(e)
+        assert "pred_probs must have at least 3 columns" in str(e)
 
 
 @pytest.mark.filterwarnings("ignore::UserWarning")
@@ -311,3 +354,27 @@ def test_impute_nonoverlaping_annotators():
     )
 
     multiannotator_dict = get_label_quality_multiannotator(labels, pred_probs)
+
+
+def test_format_multiannotator_labels():
+    str_labels = np.array(
+        [
+            ["a", "b", "c"],
+            ["b", "b", np.NaN],
+            ["z", np.NaN, "c"],
+        ]
+    )
+    labels, label_map = format_multiannotator_labels(str_labels)
+
+    assert isinstance(labels, pd.DataFrame)
+    assert label_map[0] == "a"
+    assert label_map[3] == "z"
+
+    num_labels = pd.DataFrame(
+        [
+            [3, 2, 1],
+            [1, 2, np.NaN],
+            [3, np.NaN, 3],
+        ]
+    )
+    labels, label_map = format_multiannotator_labels(num_labels)

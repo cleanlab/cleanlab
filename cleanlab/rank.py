@@ -16,7 +16,7 @@
 
 
 """
-Methods to rank/order data by cleanlab's `label quality score`.
+Methods to rank examples in standard (multi-class) classification datasets by cleanlab's `label quality score`.
 Except for :py:func:`order_label_issues <cleanlab.rank.order_label_issues>`, which operates only on the subset of the data identified
 as potential label issues/errors, the methods in this module can be used on whichever subset
 of the dataset you choose (including the entire dataset) and provide a `label quality score` for
@@ -24,19 +24,15 @@ every example. You can then do something like: ``np.argsort(label_quality_score)
 indices of individual datapoints based on their quality.
 
 Note: multi-label classification is not supported by most methods in this module,
-each example must belong to a single class, e.g. format: ``labels = np.ndarray([1,0,2,1,1,0...])``.
+each example must be labeled as belonging to a single class, e.g. format: ``labels = np.ndarray([1,0,2,1,1,0...])``.
 
-CAUTION: These label quality scores are computed based on `pred_probs` from your model that must be out-of-sample!
-You should never provide predictions on the same examples used to train the model,
-as these will be overfit and unsuitable for finding label-errors.
-To obtain out-of-sample predicted probabilities for every datapoint in your dataset, you can use :ref:`cross-validation <pred_probs_cross_val>`.
-Alternatively it is ok if your model was trained on a separate dataset and you are only evaluating
-labels in data that was previously held-out.
+Note: Label quality scores are most accurate when they are computed based on out-of-sample `pred_probs` from your model.
+To obtain out-of-sample predicted probabilities for every datapoint in your dataset, you can use :ref:`cross-validation <pred_probs_cross_val>`. This is encouraged to get better results.
 """
 
 import numpy as np
 from sklearn.metrics import log_loss
-from typing import List
+from typing import List, Optional
 import warnings
 
 from cleanlab.internal.validation import assert_valid_inputs
@@ -87,7 +83,17 @@ def order_label_issues(
       ordered by the label-quality scoring method passed to `rank_by`.
     """
 
-    assert_valid_inputs(X=None, y=labels, pred_probs=pred_probs, multi_label=False)
+    allow_one_class = False
+    if isinstance(labels, np.ndarray) or all(isinstance(lab, int) for lab in labels):
+        if set(labels) == {0}:  # occurs with missing classes in multi-label settings
+            allow_one_class = True
+    assert_valid_inputs(
+        X=None,
+        y=labels,
+        pred_probs=pred_probs,
+        multi_label=False,
+        allow_one_class=allow_one_class,
+    )
 
     # Convert bool mask to index mask
     label_issues_idx = np.arange(len(labels))[label_issues_mask]
@@ -110,9 +116,9 @@ def get_label_quality_scores(
     method: str = "self_confidence",
     adjust_pred_probs: bool = False,
 ) -> np.ndarray:
-    """Returns label quality scores for each datapoint.
+    """Returns a label quality score for each datapoint.
 
-    This is a function to compute label-quality scores for classification datasets,
+    This is a function to compute label quality scores for standard (multi-class) classification datasets,
     where lower scores indicate labels less likely to be correct.
 
     Score is between 0 and 1.
@@ -125,7 +131,6 @@ def get_label_quality_scores(
     labels : np.ndarray
       A discrete vector of noisy labels, i.e. some labels may be erroneous.
       *Format requirements*: for dataset with K classes, labels must be in 0, 1, ..., K-1.
-      All the classes (0, 1, ..., and K-1) MUST be present in ``labels``, such that: ``len(set(labels)) == pred_probs.shape[1]``
       Note: multi-label classification is not supported by this method, each example must belong to a single class, e.g. format: ``labels = np.ndarray([1,0,2,1,1,0...])``.
 
     pred_probs : np.ndarray, optional
@@ -136,12 +141,9 @@ def get_label_quality_scores(
       columns must be ordered such that these probabilities correspond to
       class 0, 1, ..., K-1.
 
-      **Caution**: `pred_probs` from your model must be out-of-sample!
-      You should never provide predictions on the same examples used to train the model,
-      as these will be overfit and unsuitable for finding label-errors.
+      **Note**: Returned label issues are most accurate when they are computed based on out-of-sample `pred_probs` from your model.
       To obtain out-of-sample predicted probabilities for every datapoint in your dataset, you can use :ref:`cross-validation <pred_probs_cross_val>`.
-      Alternatively it is ok if your model was trained on a separate dataset and you are only evaluating
-      data that was previously held-out.
+      This is encouraged to get better results.
 
     method : {"self_confidence", "normalized_margin", "confidence_weighted_entropy"}, default="self_confidence"
       Label quality scoring method.
@@ -181,9 +183,8 @@ def get_label_quality_scores(
     get_confidence_weighted_entropy_for_each_label
     """
 
-    # TODO: remove allow_missing_classes once supported
     assert_valid_inputs(
-        X=None, y=labels, pred_probs=pred_probs, multi_label=False, allow_missing_classes=True
+        X=None, y=labels, pred_probs=pred_probs, multi_label=False, allow_one_class=True
     )
 
     # Available scoring functions to choose from
@@ -229,7 +230,7 @@ def get_label_quality_ensemble_scores(
     method: str = "self_confidence",
     adjust_pred_probs: bool = False,
     weight_ensemble_members_by: str = "accuracy",
-    custom_weights: np.ndarray = None,
+    custom_weights: Optional[np.ndarray] = None,
     log_loss_search_T_values: List[float] = [1e-4, 1e-3, 1e-2, 1e-1, 1e0, 1e1, 1e2, 2e2],
     verbose: bool = True,
 ) -> np.ndarray:

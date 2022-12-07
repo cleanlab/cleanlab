@@ -28,7 +28,7 @@ import warnings
 import numpy as np
 from typing import Tuple, Any
 
-from cleanlab.internal.util import value_counts, clip_values, clip_noise_rates
+from cleanlab.internal.util import value_counts, clip_values, clip_noise_rates, TINY_VALUE
 
 
 def compute_ps_py_inv_noise_matrix(
@@ -123,7 +123,7 @@ def compute_inv_noise_matrix(py, noise_matrix, *, ps=None) -> np.ndarray[Any]:
 
     joint = noise_matrix * py
     ps = joint.sum(axis=1) if ps is None else ps
-    inverse_noise_matrix = joint.T / ps
+    inverse_noise_matrix = joint.T / np.clip(ps, a_min=TINY_VALUE, a_max=None)
 
     # Clip inverse noise rates P(true_label=k_s|true_label=k_y) into proper range [0,1)
     return clip_noise_rates(inverse_noise_matrix)
@@ -183,7 +183,7 @@ def compute_noise_matrix_from_inverse(ps, inverse_noise_matrix, *, py=None) -> n
 
     joint = (inverse_noise_matrix * ps).T
     py = joint.sum(axis=0) if py is None else py
-    noise_matrix = joint / py
+    noise_matrix = joint / np.clip(py, a_min=TINY_VALUE, a_max=None)
 
     # Clip inverse noise rates P(true_label=k_y|true_label=k_s) into proper range [0,1)
     return clip_noise_rates(noise_matrix)
@@ -248,13 +248,18 @@ def compute_py(
     if py_method == "cnt":
         # Computing py this way avoids dividing by zero noise rates.
         # More robust bc error est_p(true_label|labels) / est_p(labels|y) ~ p(true_label|labels) / p(labels|y)
-        py = inverse_noise_matrix.diagonal() / noise_matrix.diagonal() * ps
-        # Equivalently,
-        # py = (true_labels_class_counts / labels_class_counts) * ps
+        py = (
+            inverse_noise_matrix.diagonal()
+            / np.clip(noise_matrix.diagonal(), a_min=TINY_VALUE, a_max=None)
+            * ps
+        )
+        # Equivalently: py = (true_labels_class_counts / labels_class_counts) * ps
     elif py_method == "eqn":
         py = np.linalg.inv(noise_matrix).dot(ps)
     elif py_method == "marginal":
-        py = true_labels_class_counts / float(sum(true_labels_class_counts))
+        py = true_labels_class_counts / np.clip(
+            float(sum(true_labels_class_counts)), a_min=TINY_VALUE, a_max=None
+        )
     elif py_method == "marginal_ps":
         py = np.dot(inverse_noise_matrix, ps)
     else:
@@ -316,7 +321,11 @@ def compute_pyx(
             + ", but shape should be (N, K)"
         )
 
-    pyx = pred_probs * inverse_noise_matrix.diagonal() / noise_matrix.diagonal()
+    pyx = (
+        pred_probs
+        * inverse_noise_matrix.diagonal()
+        / np.clip(noise_matrix.diagonal(), a_min=TINY_VALUE, a_max=None)
+    )
     # Make sure valid probabilities that sum to 1.0
     return np.apply_along_axis(
         func1d=clip_values, axis=1, arr=pyx, **{"low": 0.0, "high": 1.0, "new_sum": 1.0}

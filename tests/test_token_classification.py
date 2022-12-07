@@ -5,6 +5,7 @@ from cleanlab.internal.token_classification_utils import (
     mapping,
     merge_probs,
     color_sentence,
+    _replace_sentence,
 )
 from cleanlab.token_classification.filter import find_label_issues
 from cleanlab.token_classification.rank import (
@@ -134,6 +135,7 @@ C_L, C_R = "\x1b[31m", "\x1b[0m"
     "sentence,word,expected",
     [
         ("Hello World", "World", f"Hello {C_L}World{C_R}"),
+        ("Hello World", "help", "Hello World"),
         ("If you and I were to meet", "I", f"If you and {C_L}I{C_R} were to meet"),
         ("If you and I were to meet", "If you and I", f"{C_L}If you and I{C_R} were to meet"),
         ("If you and I were to meet", "If you and I w", f"{C_L}If you and I w{C_R}ere to meet"),
@@ -149,6 +151,7 @@ C_L, C_R = "\x1b[31m", "\x1b[0m"
     ],
     ids=[
         "single_word",
+        "no_match",
         "ignore_subwords",
         "multi-token_match",
         "substring_replacement",
@@ -159,9 +162,47 @@ C_L, C_R = "\x1b[31m", "\x1b[0m"
         "issue_403-escape_special_regex_characters",
     ],
 )
-def test_color_sentence(sentence, word, expected):
+def test_color_sentence(monkeypatch: pytest.MonkeyPatch, sentence, word, expected):
+    monkeypatch.setattr("sys.stdout.isatty", lambda: True)
+
     colored = color_sentence(sentence, word)
     assert colored == expected
+
+
+@pytest.mark.parametrize(
+    "sentence,word,expected",
+    [
+        ("Hello World", "World", "Hello [EXPECTED]"),
+        ("Hello World", "help", "Hello World"),
+        ("If you and I were to meet", "I", "If you and [EXPECTED] were to meet"),
+        ("If you and I were to meet", "If you and I", "[EXPECTED] were to meet"),
+        ("If you and I were to meet", "If you and I w", "[EXPECTED]ere to meet"),
+        ("I think I know this", "I", "[EXPECTED] think [EXPECTED] know this"),
+        ("A good reason for a test", "a", "A good reason for [EXPECTED] test"),
+        ("ab ab a b ab", "ab a", "ab [EXPECTED] b ab"),
+        ("ab ab ab ab", "ab a", "[EXPECTED]b [EXPECTED]b"),
+        (
+            "Alan John Percivale (A.j.p.) Taylor died",
+            "(",
+            "Alan John Percivale [EXPECTED]A.j.p.) Taylor died",
+        ),
+    ],
+    ids=[
+        "single_word",
+        "no_match",
+        "ignore_subwords",
+        "multi-token_match",
+        "substring_replacement",
+        "multiple_matches",
+        "case_sensitive",
+        "only_word_boundary",
+        "non_overlapping_substrings",
+        "issue_403-escape_special_regex_characters",
+    ],
+)
+def test_replace_sentence(sentence, word, expected):
+    new_sentence = _replace_sentence(sentence, word, "[EXPECTED]")
+    assert new_sentence == expected
 
 
 issues = find_label_issues(labels, pred_probs)
