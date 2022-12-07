@@ -99,7 +99,7 @@ def assert_valid_inputs(
 
 
 def assert_valid_class_labels(
-    y: np.ndarray,
+    y: np.ndarray[Any],
     allow_missing_classes: bool = False,
 ) -> None:
     """Checks that ``labels`` is properly formatted, i.e. a 1D array that is
@@ -154,7 +154,7 @@ def assert_indexing_works(
             import torch
 
             if isinstance(X, torch.utils.data.Dataset):  # special indexing for pytorch Dataset
-                _ = torch.utils.data.Subset(X, idx)  # type: ignore[call-overload]
+                _ = torch.utils.data.Subset(X, idx)
                 is_indexed = True
         except Exception:
             pass
@@ -168,7 +168,7 @@ def assert_indexing_works(
             pass
     if not is_indexed:
         try:
-            _ = X[idx]  # type: ignore[call-overload]
+            _ = X[idx]
         except Exception:
             msg = (
                 "Data features X must support list-based indexing; i.e. one of these must work: \n"
@@ -178,7 +178,7 @@ def assert_indexing_works(
             raise TypeError(msg)
 
 
-def labels_to_array(y: Union[LabelLike, np.generic]) -> np.ndarray:
+def labels_to_array(y: Union[LabelLike, np.generic]) -> np.ndarray[Any]:
     """Converts different types of label objects to 1D numpy array and checks their validity.
 
     Parameters
@@ -192,7 +192,7 @@ def labels_to_array(y: Union[LabelLike, np.generic]) -> np.ndarray:
         1D numpy array of labels.
     """
     if isinstance(y, pd.Series):
-        y_series: np.ndarray = y.to_numpy()
+        y_series: np.ndarray[Any] = y.to_numpy()
         return y_series
     elif isinstance(y, pd.DataFrame):
         y_arr = y.values
@@ -211,7 +211,7 @@ def labels_to_array(y: Union[LabelLike, np.generic]) -> np.ndarray:
 
 def assert_valid_inputs_multiannotator(
     labels_multiannotator: pd.DataFrame,
-    pred_probs: Optional[np.ndarray] = None,
+    pred_probs: Optional[np.ndarray[Any]] = None,
 ) -> None:
     """Validate multi-annotator labels"""
     # Raise error if number of classes in labels_multiannoator does not match number of classes in pred_probs

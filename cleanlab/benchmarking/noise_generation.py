@@ -26,9 +26,10 @@ from typing import Optional
 
 import numpy as np
 from cleanlab.internal.util import value_counts
+from typing import Any
 
 
-def noise_matrix_is_valid(noise_matrix, py, *, verbose=False) -> bool:
+def noise_matrix_is_valid(noise_matrix, py: np.ndarray[Any], *, verbose=False) -> bool:
     """Given a prior `py` representing ``p(true_label=k)``, checks if the given `noise_matrix` is a
     learnable matrix. Learnability means that it is possible to achieve
     better than random performance, on average, for the amount of noise in
@@ -106,7 +107,7 @@ def noise_matrix_is_valid(noise_matrix, py, *, verbose=False) -> bool:
     return True
 
 
-def generate_noisy_labels(true_labels, noise_matrix) -> np.ndarray:
+def generate_noisy_labels(true_labels, noise_matrix) -> np.ndarray[Any]:
     """Generates noisy `labels` from perfect labels `true_labels`,
     "exactly" yielding the provided `noise_matrix` between `labels` and `true_labels`.
 
@@ -189,8 +190,8 @@ def generate_noisy_labels(true_labels, noise_matrix) -> np.ndarray:
 
 
 def generate_noise_matrix_from_trace(
-    K,
-    trace,
+    K: int,
+    trace: float,
     *,
     max_trace_prob=1.0,
     min_trace_prob=1e-5,
@@ -201,7 +202,7 @@ def generate_noise_matrix_from_trace(
     frac_zero_noise_rates=0.0,
     seed=0,
     max_iter=10000,
-) -> Optional[np.ndarray]:
+) -> Optional[np.ndarray[Any]]:
     """Generates a ``K x K`` noise matrix ``P(label=k_s|true_label=k_y)`` with
     ``np.sum(np.diagonal(noise_matrix))`` equal to the given `trace`.
 
@@ -354,12 +355,12 @@ def generate_noise_matrix_from_trace(
 
 
 def generate_n_rand_probabilities_that_sum_to_m(
-    n,
-    m,
+    n: int,
+    m: float,
     *,
     max_prob=1.0,
     min_prob=0.0,
-) -> np.ndarray:
+) -> np.ndarray[Any]:
     """
     Generates `n` random probabilities that sum to `m`.
 

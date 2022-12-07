@@ -26,14 +26,14 @@ Throughout `K` denotes the number of classes in the classification task.
 
 import warnings
 import numpy as np
-from typing import Tuple
+from typing import Tuple, Any
 
 from cleanlab.internal.util import value_counts, clip_values, clip_noise_rates
 
 
 def compute_ps_py_inv_noise_matrix(
-    labels, noise_matrix
-) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    labels: np.ndarray[Any], noise_matrix
+) -> Tuple[np.ndarray[Any], np.ndarray[Any], np.ndarray[Any]]:
     """Compute ``ps := P(labels=k), py := P(true_labels=k)``, and the inverse noise matrix.
 
     Parameters
@@ -52,7 +52,7 @@ def compute_ps_py_inv_noise_matrix(
     return ps, py, inverse_noise_matrix
 
 
-def compute_py_inv_noise_matrix(ps, noise_matrix) -> Tuple[np.ndarray, np.ndarray]:
+def compute_py_inv_noise_matrix(ps, noise_matrix) -> Tuple[np.ndarray[Any], np.ndarray[Any]]:
     """Compute py := P(true_label=k), and the inverse noise matrix.
 
     Parameters
@@ -79,7 +79,7 @@ def compute_py_inv_noise_matrix(ps, noise_matrix) -> Tuple[np.ndarray, np.ndarra
     return py, compute_inv_noise_matrix(py=py, noise_matrix=noise_matrix, ps=ps)
 
 
-def compute_inv_noise_matrix(py, noise_matrix, *, ps=None) -> np.ndarray:
+def compute_inv_noise_matrix(py, noise_matrix, *, ps=None) -> np.ndarray[Any]:
     """Compute the inverse noise matrix if py := P(true_label=k) is given.
 
     Parameters
@@ -129,7 +129,7 @@ def compute_inv_noise_matrix(py, noise_matrix, *, ps=None) -> np.ndarray:
     return clip_noise_rates(inverse_noise_matrix)
 
 
-def compute_noise_matrix_from_inverse(ps, inverse_noise_matrix, *, py=None) -> np.ndarray:
+def compute_noise_matrix_from_inverse(ps, inverse_noise_matrix, *, py=None) -> np.ndarray[Any]:
     """Compute the noise matrix ``P(label=k_s|true_label=k_y)``.
 
     Parameters
@@ -191,7 +191,7 @@ def compute_noise_matrix_from_inverse(ps, inverse_noise_matrix, *, py=None) -> n
 
 def compute_py(
     ps, noise_matrix, inverse_noise_matrix, *, py_method="cnt", true_labels_class_counts=None
-) -> np.ndarray:
+) -> np.ndarray[Any]:
     """Compute ``py := P(true_labels=k)`` from ``ps := P(labels=k)``, `noise_matrix`, and
     `inverse_noise_matrix`.
 
@@ -267,7 +267,11 @@ def compute_py(
     return py
 
 
-def compute_pyx(pred_probs, noise_matrix, inverse_noise_matrix):
+def compute_pyx(
+    pred_probs: np.ndarray[Any], 
+    noise_matrix: np.ndarray[Any], 
+    inverse_noise_matrix: np.ndarray[Any]
+    ):
     """Compute ``pyx := P(true_label=k|x)`` from ``pred_probs := P(label=k|x)``, `noise_matrix` and
     `inverse_noise_matrix`.
 

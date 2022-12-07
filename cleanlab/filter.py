@@ -876,7 +876,7 @@ def _get_shared_data() -> Any:  # pragma: no cover
     )
     min_examples_per_class = mp_params["min_examples_per_class"]
     multi_label = mp_params["multi_label"]
-    labels = _to_np_array(mp_params["labels"])  # type: ignore
+    labels = _to_np_array(mp_params["labels"])
     return (
         labels,
         label_counts,

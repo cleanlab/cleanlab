@@ -26,7 +26,7 @@ from typing import Any, Union, Tuple
 from cleanlab.typing import DatasetLike, LabelLike
 
 
-def remove_noise_from_class(noise_matrix, class_without_noise) -> np.ndarray:
+def remove_noise_from_class(noise_matrix, class_without_noise) -> np.ndarray[Any]:
     """A helper function in the setting of PU learning.
     Sets all P(label=class_without_noise|true_label=any_other_class) = 0
     in noise_matrix for pulearning setting, where we have
@@ -61,7 +61,7 @@ def remove_noise_from_class(noise_matrix, class_without_noise) -> np.ndarray:
     return x
 
 
-def clip_noise_rates(noise_matrix) -> np.ndarray:
+def clip_noise_rates(noise_matrix) -> np.ndarray[Any]:
     """Clip all noise rates to proper range [0,1), but
     do not modify the diagonal terms because they are not
     noise rates.
@@ -99,7 +99,7 @@ def clip_noise_rates(noise_matrix) -> np.ndarray:
     return noise_matrix
 
 
-def clip_values(x, low=0.0, high=1.0, new_sum=None) -> np.ndarray:
+def clip_values(x, low=0.0, high=1.0, new_sum=None) -> np.ndarray[Any]:
     """Clip all values in p to range [low,high].
     Preserves sum of x.
 
@@ -171,7 +171,7 @@ def value_counts(x) -> Any:
             return np.unique(x, return_counts=True)[1]
 
 
-def round_preserving_sum(iterable) -> np.ndarray:
+def round_preserving_sum(iterable) -> np.ndarray[Any]:
     """Rounds an iterable of floats while retaining the original summed value.
     The name of each parameter is required. The type and description of each
     parameter is optional, but should be included if not obvious.
@@ -206,7 +206,7 @@ def round_preserving_sum(iterable) -> np.ndarray:
     return ints.astype(int)
 
 
-def round_preserving_row_totals(confident_joint) -> np.ndarray:
+def round_preserving_row_totals(confident_joint) -> np.ndarray[Any]:
     """Rounds confident_joint cj to type int
     while preserving the totals of reach row.
     Assumes that cj is a 2D np.ndarray of type float.
@@ -228,7 +228,7 @@ def round_preserving_row_totals(confident_joint) -> np.ndarray:
     ).astype(int)
 
 
-def int2onehot(labels) -> np.ndarray:
+def int2onehot(labels) -> np.ndarray[Any]:
     """Convert list of lists to a onehot matrix for multi-labels
 
     Parameters
@@ -243,7 +243,7 @@ def int2onehot(labels) -> np.ndarray:
     return mlb.fit_transform(labels)
 
 
-def onehot2int(onehot_matrix) -> list:
+def onehot2int(onehot_matrix) -> list[Any]:
     """Convert a onehot matrix for multi-labels to a list of lists of ints
 
     Parameters
@@ -283,7 +283,7 @@ def estimate_pu_f1(s, prob_s_eq_1) -> float:
     return recall**2 / (2.0 * frac_positive) if frac_positive != 0 else np.nan
 
 
-def confusion_matrix(true, pred) -> np.ndarray:
+def confusion_matrix(true, pred) -> np.ndarray[Any]:
     """Implements a confusion matrix for true labels
     and predicted labels. true and pred MUST BE the same length
     and have the same distinct set of class labels represented.
@@ -366,34 +366,37 @@ def print_square_matrix(
 
 def print_noise_matrix(noise_matrix, round_places=2):
     """Pretty prints the noise matrix."""
-    print_square_matrix(
-        noise_matrix,
-        title=" Noise Matrix (aka Noisy Channel) P(given_label|true_label)",
-        short_title="p(s|y)",
-        round_places=round_places,
-    )
+    # untyped function.
+    # print_square_matrix(
+    #     noise_matrix,
+    #     title=" Noise Matrix (aka Noisy Channel) P(given_label|true_label)",
+    #     short_title="p(s|y)",
+    #     round_places=round_places,
+    # )
 
 
 def print_inverse_noise_matrix(inverse_noise_matrix, round_places=2):
     """Pretty prints the inverse noise matrix."""
-    print_square_matrix(
-        inverse_noise_matrix,
-        left_name="y",
-        top_name="s",
-        title=" Inverse Noise Matrix P(true_label|given_label)",
-        short_title="p(y|s)",
-        round_places=round_places,
-    )
+    # untyped function.
+    # print_square_matrix(
+    #     inverse_noise_matrix,
+    #     left_name="y",
+    #     top_name="s",
+    #     title=" Inverse Noise Matrix P(true_label|given_label)",
+    #     short_title="p(y|s)",
+    #     round_places=round_places,
+    # )
 
 
 def print_joint_matrix(joint_matrix, round_places=2):
     """Pretty prints the joint label noise matrix."""
-    print_square_matrix(
-        joint_matrix,
-        title=" Joint Label Noise Distribution Matrix P(given_label, true_label)",
-        short_title="p(s,y)",
-        round_places=round_places,
-    )
+    # untyped function.
+    # print_square_matrix(
+    #     joint_matrix,
+    #     title=" Joint Label Noise Distribution Matrix P(given_label, true_label)",
+    #     short_title="p(s,y)",
+    #     round_places=round_places,
+    # )
 
 
 def compress_int_array(int_array, num_possible_values) -> np.ndarray:

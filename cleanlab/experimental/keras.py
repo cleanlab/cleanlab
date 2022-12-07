@@ -37,7 +37,7 @@ Tips:
 
 import tensorflow as tf
 import numpy as np
-from typing import Callable
+from typing import Callable, Dict, Any
 
 
 class KerasWrapperModel:
@@ -68,9 +68,9 @@ class KerasWrapperModel:
 
     def __init__(
         self,
-        model: Callable,
-        model_kwargs: dict = {},
-        compile_kwargs: dict = {
+        model: Callable[[],None],
+        model_kwargs: Dict[str, Any] = {},
+        compile_kwargs: Dict[str, Any] = {
             "loss": tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
         },
     ):
@@ -79,14 +79,15 @@ class KerasWrapperModel:
         self.compile_kwargs = compile_kwargs
         self.net = None
 
-    def get_params(self, deep=True):
+    # return type should be replaced with a named tuple.
+    def get_params(self, deep: bool = True) -> Dict[str, Any]:
         return {
             "model": self.model,
             "model_kwargs": self.model_kwargs,
             "compile_kwargs": self.compile_kwargs,
         }
 
-    def fit(self, X, y=None, **kwargs):
+    def fit(self, X, y=None, **kwargs: Any) -> None:
         """Note that `X` dataset object must already contain the labels as is required for standard Keras fit.
         You can optionally provide the labels again here as argument `y` to be compatible with sklearn, but they are ignored.
         """
@@ -94,7 +95,7 @@ class KerasWrapperModel:
         self.net.compile(**self.compile_kwargs)
         self.net.fit(X, **kwargs)
 
-    def predict_proba(self, X, *, apply_softmax=True, **kwargs):
+    def predict_proba(self, X, *, apply_softmax: bool = True, **kwargs: Any) -> None:
         """Set extra argument `apply_softmax` to True to indicate your network only outputs logits not probabilities."""
         if self.net is None:
             raise ValueError("must call fit() before predict()")
@@ -103,11 +104,11 @@ class KerasWrapperModel:
             pred_probs = tf.nn.softmax(pred_probs, axis=1)
         return pred_probs
 
-    def predict(self, X, **kwargs):
+    def predict(self, X, **kwargs: Any) -> None:
         pred_probs = self.predict_proba(X, **kwargs)
         return np.argmax(pred_probs, axis=1)
 
-    def summary(self, **kwargs):
+    def summary(self, **kwargs: Any) -> None:
         self.net.summary(**kwargs)
 
 
@@ -134,7 +135,7 @@ class KerasWrapperSequential:
         self,
         layers: list = None,
         name: str = None,
-        compile_kwargs: dict = {
+        compile_kwargs: Dict[str, Any] = {
             "loss": tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
         },
     ):
