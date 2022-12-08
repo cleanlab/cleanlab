@@ -97,7 +97,7 @@ The example below shows how to view all dataset-level issues in one line of code
    health_summary(labels, pred_probs, class_names=class_names)
 
 
-Contributing 
+Contributing
 ------------
 
 As cleanlab is an open-source project, we welcome contributions from the community.
@@ -114,18 +114,18 @@ Please see our `contributing guidelines <https://github.com/cleanlab/cleanlab/bl
    :hidden:
    :caption: Tutorials
 
-   tutorials/indepth_overview
-   tutorials/image
-   tutorials/text
-   tutorials/tabular
-   tutorials/audio
-   tutorials/dataset_health
-   tutorials/outliers
-   tutorials/multiannotator
-   tutorials/multilabel_classification
-   tutorials/token_classification
-   tutorials/pred_probs_cross_val
-   tutorials/faq
+   Workflows of Data-Centric AI <tutorials/indepth_overview>
+   Image Classification (pytorch) <tutorials/image>
+   Text Classification (tensorflow) <tutorials/text>
+   Tabular Classification (sklearn) <tutorials/tabular>
+   Audio Classification (speechbrain) <tutorials/audio>
+   Find Dataset-level Issues <tutorials/dataset_health>
+   Identifying Outliers (pytorch) <tutorials/outliers>
+   Improving Consensus Labels for Multiannotator Data <tutorials/multiannotator>
+   Multi-Label Classification <tutorials/multilabel_classification>
+   Token Classification (text) <tutorials/token_classification>
+   Predicted Probabilities via Cross Validation <tutorials/pred_probs_cross_val>
+   FAQ <tutorials/faq>
 
 .. toctree::
    :caption: API Reference
@@ -148,7 +148,7 @@ Please see our `contributing guidelines <https://github.com/cleanlab/cleanlab/bl
 .. toctree::
    :caption: Guides
    :hidden:
-   
+
    How to contribute <https://github.com/cleanlab/cleanlab/blob/master/CONTRIBUTING.md>
    Migrating to v2.x <migrating/migrate_v2>
 
