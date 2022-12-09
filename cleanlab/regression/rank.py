@@ -1,6 +1,7 @@
 import numpy as np
 from cleanlab.outlier import OutOfDistribution
 from sklearn.neighbors import NearestNeighbors
+from cleanlab.internal.regression_utils import assert_valid_inputs
 
 """ Generates label quality scores for every sample in regression dataset """
 
@@ -48,13 +49,8 @@ def get_label_quality_scores(
     array([0.36787944, 1.        , 0.13533528, 0.90483742])
     """
 
-    # TODO - add error trigger function in utils.
-    if not isinstance(labels, np.ndarray) or not isinstance(pred_labels, np.ndarray):
-        raise TypeError("labels and pred_labels must be of type np.ndarray")
-
-    assert (
-        labels.shape == pred_labels.shape
-    ), f"shape of label {labels.shape} and predicted labels {pred_labels.shape} are not same."
+    # Check if inputs are valid
+    assert_valid_inputs(labels=labels, pred_labels=pred_labels, method=method)
 
     scoring_funcs = {
         "residual": get_residual_score_for_each_label,
