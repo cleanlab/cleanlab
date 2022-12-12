@@ -8,7 +8,7 @@ from cleanlab.internal.regression_utils import assert_valid_inputs
 
 def get_label_quality_scores(
     labels: np.ndarray,
-    pred_labels: np.ndarray,
+    predictions: np.ndarray,
     *,
     method: str = "residual",
 ) -> np.ndarray:
@@ -25,7 +25,7 @@ def get_label_quality_scores(
         Raw labels from original dataset.
         Array of shape ``(N, )`` consisting given labels, where N is number of datapoints in the regression dataset.
 
-    pred_labels : np.ndarray
+    predictions : np.ndarray
         Predicated labels from regressor fitted on the dataset.
         Array of shape ``(N,)`` consisting predicted labels, where N is number of datapoints in the regression dataset.
 
@@ -43,14 +43,14 @@ def get_label_quality_scores(
     >>> import numpy as np
     >>> from cleanlab.regression.rank import get_label_quality_scores
     >>> labels = np.array([1,2,3,4])
-    >>> pred_labels = np.array([2,2,5,4.1])
-    >>> label_quality_scores = get_label_quality_scores(labels, pred_labels)
+    >>> predictions = np.array([2,2,5,4.1])
+    >>> label_quality_scores = get_label_quality_scores(labels, predictions)
     >>> label_quality_scores
     array([0.36787944, 1.        , 0.13533528, 0.90483742])
     """
 
     # Check if inputs are valid
-    assert_valid_inputs(labels=labels, pred_labels=pred_labels, method=method)
+    assert_valid_inputs(labels=labels, predictions=predictions, method=method)
 
     scoring_funcs = {
         "residual": get_residual_score_for_each_label,
@@ -69,13 +69,13 @@ def get_label_quality_scores(
         )
 
     # Calculate scores
-    label_quality_score = scoring_func(labels, pred_labels)
+    label_quality_score = scoring_func(labels, predictions)
     return label_quality_score
 
 
 def get_residual_score_for_each_label(
     labels: np.ndarray,
-    pred_labels: np.ndarray,
+    predictions: np.ndarray,
 ) -> np.ndarray:
     """Returns the residual based label-quality scores for each datapoints.
 
@@ -90,7 +90,7 @@ def get_residual_score_for_each_label(
     labels: np.ndarray
         Labels in the same format expected by the :py:func:`get_label_quality_scores <cleanlab.regression.rank.get_label_quality_scores>` function.
 
-    pred_labels: np.ndarray
+    predictions: np.ndarray
         Predicted labels in the same format expected by the :py:func:`get_label_quality_scores <cleanlab.regression.rank.get_label_quality_scores>` function.
 
     Returns
@@ -100,7 +100,7 @@ def get_residual_score_for_each_label(
         Lower scores indicate more likely mislabled examples.
 
     """
-    residual = pred_labels - labels
+    residual = predictions - labels
     label_quality_scores = np.exp(-abs(residual))
     return label_quality_scores
 
@@ -108,7 +108,7 @@ def get_residual_score_for_each_label(
 # TODO - change name of the function
 def get_score_to_named_for_each_label(
     label: np.ndarray,
-    pred_labels: np.ndarray,
+    predictions: np.ndarray,
     *,
     variance: float = 10,
 ) -> np.ndarray:
@@ -122,7 +122,7 @@ def get_score_to_named_for_each_label(
     labels: np.ndarray
         Labels in the same format expected by the :py:func:`get_label_quality_scores <cleanlab.regression.rank.get_label_quality_scores>` function.
 
-    pred_labels: np.ndarray
+    predictions: np.ndarray
         Predicted labels in the same format expected by the :py:func:`get_label_quality_scores <cleanlab.regression.rank.get_label_quality_scores>` function.
 
     variance: float, default = 10
@@ -136,10 +136,9 @@ def get_score_to_named_for_each_label(
     """
 
     neighbors = int(np.ceil(0.1 * label.shape[0]))
-    print(neighbors)
     knn = NearestNeighbors(n_neighbors=neighbors, metric="euclidean")
 
-    residual = pred_labels - label
+    residual = predictions - label
 
     label = (label - label.mean()) / label.std()
     residual = np.sqrt(variance) * ((residual - residual.mean()) / residual.std())
