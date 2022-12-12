@@ -165,11 +165,11 @@ def exponential_moving_average(
 
     .. math::
 
-        \\text{EMA}_t = \\alpha \cdot s_t + (1 - \\alpha) \cdot \\text{EMA}_{t-1}, \\qquad 0 \\leq \\alpha \\leq 1
+        \text{EMA}_t = \alpha \cdot s_t + (1 - \alpha) \cdot \text{EMA}_{t-1}, \qquad 0 \leq \alpha \leq 1
 
-    We set :math:`\\text{EMA}_1 = s_1` as the largest score in the sorted vector s.
+    We set :math:`\text{EMA}_1 = s_1` as the largest score in the sorted vector s.
 
-    :math:`\\alpha` is the "forgetting factor" that gives more weight to the
+    :math:`\alpha` is the "forgetting factor" that gives more weight to the
     most recent scores, and successively less weight to the previous scores.
 
     Parameters
