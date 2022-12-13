@@ -249,6 +249,10 @@ class Datalab:
             state["issues"] = os.path.join(save_path, ISSUES_FILENAME)
             self.issues.to_csv(state["issues"])
 
+        # Save the dataset to disk
+        if self.data is not None:
+            state["data"] = os.path.join(save_path, DATA_DIRNAME)
+            self.data.save_to_disk(state["data"])
         # if self.info is not None:
         #     state["info"] = os.path.join(save_path, INFO_FILENAME)
         #     # Pickle the info dict.
@@ -268,6 +272,10 @@ class Datalab:
             issues_path = state["issues"]
             if isinstance(issues_path, str) and os.path.exists(issues_path):
                 state["issues"] = pd.read_csv(issues_path)
+
+            data_path = state["data"]
+            if isinstance(data_path, str) and os.path.exists(data_path):
+                state["data"] = load_from_disk(data_path)
 
             # info_path = state["info"]
             # if isinstance(info_path, str) and os.path.exists(info_path):

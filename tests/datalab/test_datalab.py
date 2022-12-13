@@ -154,6 +154,12 @@ class TestDatalab:
         """Test that the save and load methods work."""
         lab.save(tmp_path)
         assert tmp_path.exists(), "File was not saved"
+        assert (tmp_path / "data").is_dir(), "Data directory was not saved"
+
+        # Mock the issues dataframe
+        lab.issues = pd.DataFrame({"a": [1, 2, 3]})
+        lab.save(tmp_path)
+        assert (tmp_path / "issues.csv").exists(), "Issues file was not saved"
 
     def test_pickle(self, lab, tmp_path):
         """Test that the class can be pickled."""
