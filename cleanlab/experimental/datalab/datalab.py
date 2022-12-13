@@ -180,9 +180,11 @@ class Datalab:
 
     @staticmethod
     def _validate_data(data) -> None:
-        assert not isinstance(
-            data, datasets.DatasetDict
-        ), "Please pass a single dataset, not a DatasetDict. Try initializing with data['train'] instead."
+        if isinstance(data, datasets.DatasetDict):
+            raise ValueError(
+                "Please pass a single dataset, not a DatasetDict. "
+                "Try initializing with data['train'] instead."
+            )
 
         assert isinstance(data, Dataset)
 

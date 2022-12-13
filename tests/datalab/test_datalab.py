@@ -95,7 +95,7 @@ def test_datalab_class(dataset):
 
 
 def test_datalab_invalid_datasetdict():
-    with pytest.raises(AssertionError) as e:
+    with pytest.raises(ValueError) as e:
         datadict = DatasetDict({"train": dataset, "test": dataset})
         Datalab(datadict, LABEL_NAME)  # type: ignore
         assert "Please pass a single dataset, not a DatasetDict." in str(e)
