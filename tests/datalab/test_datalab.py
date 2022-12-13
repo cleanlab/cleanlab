@@ -90,7 +90,7 @@ def pred_probs(dataset):
 def test_datalab_class(dataset):
     lab = Datalab(dataset, LABEL_NAME)
     # Has the right attributes
-    for attr in ["data", "label_name", "_labels", "info", "issues", "_silo"]:
+    for attr in ["data", "label_name", "_labels", "info", "issues"]:
         assert hasattr(lab, attr), f"Missing attribute {attr}"
 
 
@@ -122,7 +122,7 @@ class TestDatalab:
     def test_attributes(self, dataset):
         lab = Datalab(dataset, LABEL_NAME)
         # Has the right attributes
-        for attr in ["data", "label_name", "_labels", "info", "issues", "_silo"]:
+        for attr in ["data", "label_name", "_labels", "info", "issues"]:
             assert hasattr(lab, attr), f"Missing attribute {attr}"
 
     def test_get_info(self, lab):
@@ -175,7 +175,6 @@ class TestDatalab:
         assert loaded_lab._label_map == lab._label_map
         assert loaded_lab.info == lab.info
         assert loaded_lab.issues == lab.issues
-        assert loaded_lab._silo == lab._silo
 
 
 def test_health_summary(lab, pred_probs):
