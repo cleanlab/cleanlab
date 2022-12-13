@@ -15,7 +15,8 @@ matplotlib==3.5.1
 skorch==0.11.0
 tensorflow-datasets==4.5.2
 tensorflow==2.9.1
-scikeras==0.6.1
+scikeras==0.9.0
+scikit-learn<1.2.0
 speechbrain==0.5.12
 tensorflow-io==0.26.0
 huggingface_hub==0.7
