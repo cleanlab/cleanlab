@@ -10,7 +10,6 @@ from cleanlab.multiannotator import (
     get_active_learning_scores,
     get_active_learning_scores_ensemble,
     get_majority_vote_label,
-    get_majority_vote_label_ensemble,
     convert_long_to_wide_dataset,
 )
 from cleanlab.internal.multiannotator_utils import format_multiannotator_labels
