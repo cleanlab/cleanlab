@@ -15,16 +15,33 @@
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
 
-__version__ = "2.1.1"
+__version__ = "2.2.0"
 
-# 2.1.1 - Not yet released, you are using a developer version.
+
+# 2.2.0 - Re-invented algorithms for multi-label classification and support for datasets with missing classes
+#
+#   For detecting label errors in multi-label classification datasets (e.g. image/document tagging):
+#   - Added cleanlab.multilabel_classification module for label quality scoring.
+#   - Re-invented better algorithms and published paper describing how the new algorithms work and benchmarking their effectiveness.
+#   - Provided new quickstart tutorials and examples on how to use cleanlab for multi-label datasets and train effective models for them.
+#
+#   Additional improvements:
+#   - cleanlab now works much better for datasets in which some classes happen to not be present.
+#   - Algorithmic improvements to ensure count.num_label_issues() returns more accurate estimates.
+#   - For developers: introduction of flake8 code linter and more comprehensive mypy type annotations.
+#
+#   See release for a full changelog.
+
+# ------------------------------------------
+# | PREVIOUS VERSION RELEASE NOTES SUMMARY |
+# ------------------------------------------
 
 # 2.1.0 - "Multiannotator, Outlier detection, and Token Classification" - Cleanlab supports several new features
 #
 #   For users (+ sometimes developers):
 #   - Improved CleanLearning. Added support for pd.DataFrame, tf.keras.dataset, and other types of data besides np.ndarray
-#   - Added cleanlab.multiannotator module for working with data labeled by multiple annotators
-#   - Added cleanlab.token_classification for token classification with text data
+#   - Added cleanlab.multiannotator module for working with data labeled by multiple annotators.
+#   - Added cleanlab.token_classification for token classification with text data.
 #   - Added cleanlab.outlier for out-of-distribution detection (includes outlier/anomaly detection)
 #
 #   For developers:
@@ -32,12 +49,6 @@ __version__ = "2.1.1"
 #   - Tutorials for all new modules added to https://docs.cleanlab.ai
 #   - Contributing resources added to https://github.com/cleanlab/cleanlab/blob/master/CONTRIBUTING.md
 #   - Contributing ideas added to https://github.com/cleanlab/cleanlab/wiki#ideas-for-contributing-to-cleanlab
-#
-#   See release for a full changelog.
-
-# ----------------------------------
-# | PREVIOUS VERSION RELEASE NOTES |
-# ----------------------------------
 
 # 2.0.0 - "Data-centric AI Ready" - Complete re-architecture of cleanlab API.
 #
@@ -82,7 +93,7 @@ __version__ = "2.1.1"
 #   - cleanlab built in support with handwritten datasets (besides MNIST)
 #   - cleanlab built in support for CIFAR dataset
 #   - Multiprocessing fixed for windows systems
-#   - Adhered all core modules to PEP-8 styling.
+#   - Adhered all core modules to PEP-8 styling
 #   - Extensive benchmarking of cleanlab methods published.
 #   - Future features planned are now supported in cleanlab/version.py
 #   - Added confidentlearning-reproduce as a separate repo to reproduce state-of-the-art results.

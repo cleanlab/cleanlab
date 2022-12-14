@@ -230,6 +230,11 @@ def test_label_quality_scores_multiannotator():
         labels, pred_probs, consensus_method=["majority_vote", "best_quality"]
     )
 
+    # test passing arguments for get_label_quality_scores
+    multiannotator_dict = get_label_quality_multiannotator(
+        labels, pred_probs, label_quality_score_kwargs={"method": "normalized_margin"}
+    )
+
     # test different quality_methods
     # also testing passing labels as np.ndarray
     multiannotator_dict = get_label_quality_multiannotator(

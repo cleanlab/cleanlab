@@ -183,7 +183,7 @@ def get_label_quality_multiannotator(
             consensus_label=majority_vote_label,
             quality_method=quality_method,
             verbose=verbose,
-            **label_quality_score_kwargs,
+            label_quality_score_kwargs=label_quality_score_kwargs,
         )
 
     label_quality = pd.DataFrame({"num_annotations": num_annotations})
@@ -225,7 +225,7 @@ def get_label_quality_multiannotator(
                 consensus_label=consensus_label,
                 quality_method=quality_method,
                 verbose=verbose,
-                **label_quality_score_kwargs,
+                label_quality_score_kwargs=label_quality_score_kwargs,
             )
 
         else:
@@ -270,7 +270,7 @@ def get_label_quality_multiannotator(
                 detailed_label_quality = labels_multiannotator.apply(
                     _get_annotator_label_quality_score,
                     pred_probs=post_pred_probs,
-                    **label_quality_score_kwargs,
+                    label_quality_score_kwargs=label_quality_score_kwargs,
                 )
                 detailed_label_quality = detailed_label_quality.add_prefix("quality_annotator_")
 
@@ -807,7 +807,7 @@ def get_majority_vote_label(
                 np.nanmax(labels_multiannotator.replace({pd.NA: np.NaN}).astype(float).values) + 1
             )
         class_frequencies = labels_multiannotator.apply(
-            lambda s: np.bincount(s[s.notna()], minlength=num_classes), axis=1
+            lambda s: pd.Series(np.bincount(s[s.notna()], minlength=num_classes)), axis=1
         ).sum()
         for idx, label_mode in tied_idx.copy().items():
             max_frequency = np.where(
@@ -1006,6 +1006,7 @@ def _get_consensus_stats(
             verbose=verbose,
         )
 
+
     # compute quality of the consensus labels
     consensus_quality_score = _get_consensus_quality_score(
         consensus_label=consensus_label,
@@ -1013,7 +1014,7 @@ def _get_consensus_stats(
         num_annotations=num_annotations,
         annotator_agreement=annotator_agreement,
         quality_method=quality_method,
-        **label_quality_score_kwargs,
+        label_quality_score_kwargs=label_quality_score_kwargs,
     )
 
     return (
@@ -1213,7 +1214,9 @@ def _get_post_pred_probs_and_weights(
     quality_method: str = "crowdlab",
     verbose: bool = True,
 ) -> Tuple[np.ndarray, Any, Any]:
-    """Return the posterior predicted probabilites of each example given a specified quality method.
+
+    """Return the posterior predicted probabilities of each example given a specified quality method.
+
     Parameters
     ----------
     labels_multiannotator : pd.DataFrame
@@ -1512,7 +1515,7 @@ def _get_annotator_label_quality_score(
     annotator_label: pd.Series,
     pred_probs: np.ndarray,
     label_quality_score_kwargs: dict = {},
-) -> np.ndarray:
+) -> pd.Series:
     """Returns quality scores for each datapoint.
     Very similar functionality as ``_get_consensus_quality_score`` with additional support for annotator labels that contain NaN values.
     For more info about parameters and returns, see the docstring of :py:func:`_get_consensus_quality_score <cleanlab.multiannotator._get_consensus_quality_score>`.
@@ -1527,7 +1530,7 @@ def _get_annotator_label_quality_score(
 
     annotator_label_quality_score = np.full(len(annotator_label), np.nan)
     annotator_label_quality_score[mask] = annotator_label_quality_score_subset
-    return annotator_label_quality_score
+    return pd.Series(annotator_label_quality_score)
 
 
 def _get_annotator_quality(
