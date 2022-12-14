@@ -10,6 +10,7 @@ from cleanlab.multiannotator import (
     get_active_learning_scores,
     get_active_learning_scores_ensemble,
     get_majority_vote_label,
+    get_majority_vote_label_ensemble,
     convert_long_to_wide_dataset,
 )
 from cleanlab.internal.multiannotator_utils import format_multiannotator_labels
@@ -127,7 +128,6 @@ def make_ensemble_data(
         X=X_train,
         labels=true_labels_train,
         cv_n_folds=3,
-        # clf=KNeighborsClassifier(weights="distance"),
         clf=LogisticRegression(),
     )[4]
     pred_probs_labeled = np.array([data["pred_probs"], pred_probs_extra])
@@ -137,7 +137,6 @@ def make_ensemble_data(
         X=X_train_unlabeled,
         labels=true_labels_train_unlabeled,
         cv_n_folds=3,
-        # clf=KNeighborsClassifier(weights="distance"),
         clf=LogisticRegression(),
     )[4]
     pred_probs_unlabeled = np.array([data["pred_probs_unlabeled"], pred_probs_extra_unlabeled])
@@ -300,7 +299,16 @@ def test_label_quality_scores_multiannotator():
     except ValueError as e:
         assert "cannot have columns with all NaN" in str(e)
 
+    # test error when using wrong function
+    try:
+        multiannotator_dict = get_label_quality_multiannotator(
+            labels, np.array([pred_probs, pred_probs]), return_weights=True
+        )
+    except ValueError as e:
+        assert "use the ensemble version of this function" in str(e)
 
+
+@pytest.mark.filterwarnings("ignore::UserWarning")
 def test_label_quality_scores_multiannotator_ensemble():
     labels = ensemble_data["labels"]
     pred_probs = ensemble_data["pred_probs"]
@@ -316,10 +324,52 @@ def test_label_quality_scores_multiannotator_ensemble():
     assert isinstance(multiannotator_dict["model_weight"], np.ndarray)
     assert isinstance(multiannotator_dict["annotator_weight"], np.ndarray)
 
+    # test non-numeric annotator names
+    labels_string_names = labels.add_prefix("anno_")
+    multiannotator_dict = get_label_quality_multiannotator_ensemble(
+        labels_string_names, pred_probs, return_detailed_quality=False
+    )
+
+    # test return model and annotator weights
+    multiannotator_dict = get_label_quality_multiannotator_ensemble(
+        labels, pred_probs, return_weights=True
+    )
+    assert len(multiannotator_dict) == 5
+    assert isinstance(multiannotator_dict["model_weight"], np.ndarray)
+    assert isinstance(multiannotator_dict["annotator_weight"], np.ndarray)
+
     # test numpy arrays and temp scaling
     multiannotator_dict = get_label_quality_multiannotator_ensemble(
         np.array(labels), pred_probs, temp_scale=True
     )
+
+    # testing tiebreaks in ensemble
+    labels_tiebreaks = np.array([[1, 2, 0], [1, 1, 0], [1, 0, 0], [2, 2, 2], [1, 2, 0], [1, 2, 0]])
+    pred_probs_tiebreaks = np.array(
+        [
+            [0.4, 0.4, 0.2],
+            [0.3, 0.6, 0.1],
+            [0.75, 0.2, 0.05],
+            [0.1, 0.4, 0.5],
+            [0.2, 0.4, 0.4],
+            [0.2, 0.4, 0.4],
+        ]
+    )
+    pred_probs_tiebreaks_ensemble = np.array(
+        [pred_probs_tiebreaks, pred_probs_tiebreaks, pred_probs_tiebreaks]
+    )
+
+    consensus_label = get_label_quality_multiannotator_ensemble(
+        labels_tiebreaks, pred_probs_tiebreaks_ensemble
+    )
+
+    # test error when using wrong function
+    try:
+        multiannotator_dict = get_label_quality_multiannotator_ensemble(
+            labels, pred_probs[0], return_weights=True
+        )
+    except ValueError as e:
+        assert "use the non-ensemble version of this function" in str(e)
 
 
 def test_get_active_learning_scores():
@@ -344,8 +394,9 @@ def test_get_active_learning_scores():
     assert len(active_learning_scores_unlabeled) == 0
 
     # test case where all examples are already labeled, pass in empty pred_probs_unlabeled array
+    # also tests passing labels as np array
     active_learning_scores, active_learning_scores_unlabeled = get_active_learning_scores(
-        labels, pred_probs, np.array([])
+        np.array(labels), pred_probs, np.array([])
     )
     assert isinstance(active_learning_scores, np.ndarray)
     assert len(active_learning_scores) == len(pred_probs)
@@ -383,8 +434,9 @@ def test_get_active_learning_scores_ensemble():
     assert len(active_learning_scores_unlabeled) == 0
 
     # test case where all examples are already labeled, pass in empty pred_probs_unlabeled array
+    # also tests passing labels as np array
     active_learning_scores, active_learning_scores_unlabeled = get_active_learning_scores_ensemble(
-        labels, pred_probs, np.array([])
+        np.array(labels), pred_probs, np.array([])
     )
     assert isinstance(active_learning_scores, np.ndarray)
     assert len(active_learning_scores) == len(labels)

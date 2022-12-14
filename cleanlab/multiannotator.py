@@ -1006,7 +1006,6 @@ def _get_consensus_stats(
             verbose=verbose,
         )
 
-
     # compute quality of the consensus labels
     consensus_quality_score = _get_consensus_quality_score(
         consensus_label=consensus_label,

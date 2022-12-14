@@ -46,10 +46,18 @@ def assert_valid_inputs_multiannotator(
     # Raise error if number of classes in labels_multiannoator does not match number of classes in pred_probs
     if pred_probs is not None:
         if ensemble:
-            assert pred_probs.ndim == 3
+            if pred_probs.ndim != 3:
+                error_message = "pred_probs must be a 3d array."
+                if pred_probs.ndim == 2:
+                    error_message += "\nIf you have a 2d pred_probs array, use the non-ensemble version of this function."
+                raise ValueError(error_message)
             num_classes = pred_probs.shape[2]
         else:
-            assert pred_probs.ndim == 2
+            if pred_probs.ndim != 2:
+                error_message = "pred_probs must be a 2d array."
+                if pred_probs.ndim == 3:
+                    error_message += "\nIf you have a 3d pred_probs array, use the ensemble version of this function."
+                raise ValueError(error_message)
             num_classes = pred_probs.shape[1]
         highest_class = (
             np.nanmax(labels_multiannotator.replace({pd.NA: np.NaN}).astype(float).values) + 1
@@ -58,8 +66,9 @@ def assert_valid_inputs_multiannotator(
         # this allows for missing labels, but not missing columns in pred_probs
         if num_classes < highest_class:
             raise ValueError(
-                f"""pred_probs must have at least {int(highest_class)} columns based on the largest class label which appears in labels_multiannotator.
-            Perhaps some rarely-annotated classes were lost while establishing consensus labels used to train your classifier."""
+                f"pred_probs must have at least {int(highest_class)} columns based on the largest class label"
+                "which appears in labels_multiannotator. Perhaps some rarely-annotated classes were lost while"
+                "establishing consensus labels used to train your classifier."
             )
 
     # Raise error if labels_multiannotator has NaN rows
@@ -72,22 +81,22 @@ def assert_valid_inputs_multiannotator(
             labels_multiannotator.columns[labels_multiannotator.isna().all() == True]
         )
         raise ValueError(
-            f"""labels_multiannotator cannot have columns with all NaN.
-        Annotators {nan_columns} did not label any examples."""
+            "labels_multiannotator cannot have columns with all NaN."
+            f"Annotators {nan_columns} did not label any examples."
         )
 
     # Raise error if labels_multiannotator has <= 1 column
     if len(labels_multiannotator.columns) <= 1:
         raise ValueError(
-            """labels_multiannotator must have more than one column. 
-        If there is only one annotator, use cleanlab.rank.get_label_quality_scores instead"""
+            "labels_multiannotator must have more than one column."
+            "If there is only one annotator, use cleanlab.rank.get_label_quality_scores instead"
         )
 
     # Raise error if labels_multiannotator only has 1 label per example
     if labels_multiannotator.apply(lambda s: len(s.dropna()) == 1, axis=1).all():
         raise ValueError(
-            """Each example only has one label, collapse the labels into a 1-D array and use
-        cleanlab.rank.get_label_quality_scores instead"""
+            "Each example only has one label, collapse the labels into a 1-D array and use"
+            "cleanlab.rank.get_label_quality_scores instead"
         )
 
     # Raise warning if no examples with 2 or more annotators agree
@@ -155,11 +164,11 @@ def check_consensus_label_classes(
 
     if len(labels_set_difference) > 0:
         print(
-            f"""CAUTION: Number of unique classes has been reduced from the original data when establishing consensus labels
-            using consensus method "{consensus_method}", likely due to some classes being rarely annotated.
-            If training a classifier on these consensus labels, it will never see any of the omitted classes unless you
-            manually replace some of the consensus labels.
-            Classes in the original data but not in consensus labels: {list(map(int, labels_set_difference))}"""
+            "CAUTION: Number of unique classes has been reduced from the original data when establishing consensus labels"
+            f"using consensus method '{consensus_method}', likely due to some classes being rarely annotated."
+            "If training a classifier on these consensus labels, it will never see any of the omitted classes unless you"
+            "manually replace some of the consensus labels."
+            f"Classes in the original data but not in consensus labels: {list(map(int, labels_set_difference))}"
         )
 
 
@@ -197,7 +206,7 @@ def find_best_temp_scaler(
         curr_temp = grid_search_coarse_range[i]
 
         # clip pred_probs to prevent taking log of 0
-        pred_probs = np.clip(pred_probs, a_min=1e-10, a_max=None)
+        pred_probs = np.clip(pred_probs, a_min=1e-30, a_max=None)
         pred_probs = pred_probs / np.sum(pred_probs, axis=1)[:, np.newaxis]
 
         log_pred_probs = np.log(pred_probs) / curr_temp
@@ -249,7 +258,7 @@ def temp_scale_pred_probs(
 ) -> np.ndarray:
     """Scales pred_probs by the given temperature factor. Temperature of <1 will sharpen the pred_probs while temperatures of >1 will smoothen it."""
     # clip pred_probs to prevent taking log of 0
-    pred_probs = np.clip(pred_probs, a_min=1e-10, a_max=None)
+    pred_probs = np.clip(pred_probs, a_min=1e-30, a_max=None)
     pred_probs = pred_probs / np.sum(pred_probs, axis=1)[:, np.newaxis]
 
     # apply temperate scale
