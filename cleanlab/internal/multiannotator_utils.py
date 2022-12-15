@@ -277,7 +277,7 @@ def calibrate_pred_probs(
     search_config: dict = {},
     temp: Optional[float] = None,
     return_temp: Optional[bool] = False,
-) -> Union[np.ndarray, tuple[np.ndarray, float]]:
+) -> Union[np.ndarray, Tuple[np.ndarray, float]]:
     if temp is None:
         temp = find_best_temp_scaler(
             labels_multiannotator,
