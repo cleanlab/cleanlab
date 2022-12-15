@@ -277,8 +277,10 @@ def test_label_quality_scores_multiannotator():
         labels_string_names, pred_probs, return_detailed_quality=False
     )
 
-    # test temperature scaling
-    multiannotator_dict = get_label_quality_multiannotator(labels, pred_probs, temp_scale=True)
+    # test calibration
+    multiannotator_dict = get_label_quality_multiannotator(
+        labels, pred_probs, calibrate_pred_probs=True
+    )
 
     # test incorrect consensus_method
     try:
@@ -337,9 +339,9 @@ def test_label_quality_scores_multiannotator_ensemble():
     assert isinstance(multiannotator_dict["model_weight"], np.ndarray)
     assert isinstance(multiannotator_dict["annotator_weight"], np.ndarray)
 
-    # test numpy arrays and temp scaling
+    # test numpy arrays and calibrationg
     multiannotator_dict = get_label_quality_multiannotator_ensemble(
-        np.array(labels), pred_probs, temp_scale=True
+        np.array(labels), pred_probs, calibrate_pred_probs=True
     )
 
     # testing tiebreaks in ensemble
