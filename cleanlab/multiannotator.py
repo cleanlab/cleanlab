@@ -100,8 +100,8 @@ def get_label_quality_multiannotator(
         * ``crowdlab``: an emsemble method that weighs both the annotators' labels as well as the model's prediction.
         * ``agreement``: the fraction of annotators that agree with the consensus label.
     temp_scale : bool, default = False
-        Boolean value that specifies if the pred_probs will be temperature scaled to better match the annotators' empirical label distribution.
-        This is especially relevant in active learning to prevent overconfident models.
+        Boolean value that specifies whether the provided `pred_probs` should be re-calibrated to better match the annotators' empirical label distribution.
+        We recommend setting this to True in active learning applications, in order to prevent overconfident models from suggesting the wrong examples to collect labels for.
     return_detailed_quality: bool, default = True
         Boolean to specify if `detailed_label_quality` is returned.
     return_annotator_stats : bool, default = True
@@ -140,11 +140,11 @@ def get_label_quality_multiannotator(
             * ``agreement_with_consensus``: fraction of examples where a given annotator agrees with the consensus label.
             * ``worst_class``: the class that is most frequently mislabeled by a given annotator.
 
-        ``model_weight`` : float (returned if `return_weights=True`)
-            float specifying the model weight used in weighted averages (only applicable for ``quality_method == crowdlab``), ``None`` otherwise
+        ``model_weight`` : float
+            Only returned if `return_weights=True`, this number specifies the weight of classifier model in weighted averages used to estimate label quality (only applicable for ``quality_method == crowdlab``), ``None`` otherwise. This number is an estimate of how trustworthy the model is relative the annotators.
 
         ``annotator_weight`` : np.ndarray (returned if `return_weights=True`)
-            An array of shape ``(M,)`` where M is the number of annotators, specifying the annotator weights used in weighted averages
+            An array of shape ``(M,)`` where M is the number of annotators, specifying the weight of each annotator in weighted averages used to estimate label quality.  These weights are estimates of how trustworthy each annotator is relative to the other annotators.
             (only applicable for ``quality_method == crowdlab``), ``None`` otherwise
     """
 
@@ -328,14 +328,10 @@ def get_label_quality_multiannotator_ensemble(
 ) -> Dict[str, Any]:
     """Returns label quality scores for each example and for each annotator.
 
-    This function is for multiclass classification datasets where examples have been labeled by
-    multiple annotators (not necessarily the same number of annotators per example).
-
-    It computes one consensus label for each example that best accounts for the labels chosen by each
-    annotator (and their quality), as well as a score for how confident we are that this consensus label is actually correct.
-    It also computes the the quality scores for each annotator's individual labels, and the quality of each annotator.
-    This function allows for an ensemble of models to be trained, the models' predictions and confidences will be used to compute the
-    consensus label and annotator quality.
+    This function is similar to :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>` but for settings where you have trained an ensemble of multiple classifier models rather than a single model.
+    For multiclass classification datasets where examples have been labeled by
+    multiple annotators, this function computes: a consensus label for each example, a score for how confident we are that this consensus label is actually correct, and quality scores for each annotator's individual labels as well as the quality of each annotator.
+    Assuming an ensemble of multiple classifier models has been trained, all of the models' predictions and confidences are used to estimate consensus label and annotator quality in an aggregated fashion that can produce more accurate estimates than only training a single classifier model.
 
     The score is between 0 and 1; lower scores indicate labels less likely to be correct. For example:
 
@@ -400,6 +396,9 @@ def get_label_quality_multiannotator_ensemble(
 
         ``annotator_weight`` : np.ndarray (returned if `return_weights=True`)
             An array of shape ``(M,)`` where M is the number of annotators, specifying the annotator weights used in weighted averages
+    See Also
+    --------
+    get_label_quality_multiannotator
     """
     if isinstance(labels_multiannotator, np.ndarray):
         labels_multiannotator = pd.DataFrame(labels_multiannotator)
@@ -509,7 +508,7 @@ def get_label_quality_multiannotator_ensemble(
             consensus_label=consensus_label,
             num_annotations=num_annotations,
             annotator_agreement=annotator_agreement,
-            model_weight=np.mean(model_weight),  # take mean model weight
+            model_weight=np.mean(model_weight),  # use average model weight when scoring annotators
             annotator_weight=annotator_weight,
             consensus_quality_score=consensus_quality_score,
         )
@@ -632,17 +631,16 @@ def get_active_learning_scores_ensemble(
     pred_probs: np.ndarray,
     pred_probs_unlabeled: Optional[np.ndarray] = None,
 ) -> Tuple[np.ndarray, np.ndarray]:
-    """Returns an active learning score for each example in the dataset. The score is in between 0 and 1; lower scores indicate less confidence on the examples
-    and that additional labels should be collected for those examples. For example:
+    """Returns an active learning score for each example in the dataset, which can be used to prioritize what data to collect additional labels for. We consider settings where one example can be labeled by multiple annotators and some examples have no labels at all so far. The score is in between 0 and 1; lower scores indicate examples whose true label we are less confident about based on the current data (the examples with lowest scores are those for which additional labels should be collected). For example:
 
-    * 1 - confident example, no additional labeling is required.
-    * 0 - unconfident example, it is suggested to collect more labels for this example.
+    * 1 - confidently-labeled example, no additional labeling is required.
+    * 0 - unconfident example, want to collect more labels for this example (either because it is currently unlabeled and very different than other examples, it has only received few annotations from less reliable annotators, or the annotations it has received don't agree with each other).
 
-    This function allows for an ensemble of models to be trained and will use the aggregation of predictions from the multiple models to compute the active learning score.
+    This function allows for an ensemble of multiple classifier models to be trained and will aggregate predictions from the models to compute the active learning score.
 
     Parameters
     ----------
-    labels_multiannotator : pd.DataFrame of np.ndarray
+    labels_multiannotator : pd.DataFrame or np.ndarray
         2D pandas DataFrame or array of multiple given labels for each example with shape ``(N, M)``,
         where N is the number of examples and M is the number of annotators.
         ``labels_multiannotator[n][m]`` = label for n-th example given by m-th annotator.
@@ -654,15 +652,17 @@ def get_active_learning_scores_ensemble(
         An array of shape ``(P, N, K)`` where P is the number of models, consisting of predicted class probabilities from the ensemble models.
         Each set of predicted probabilities with shape ``(N, K)`` is in the same format expected by the :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>`.
     pred_probs_unlabeled : np.ndarray, optional
-        An array of shape ``(N, K)`` of predicted class probabilities from a trained classifier model for examples that have no annotator labels.
+        An array of shape ``(N, K)`` of predicted class probabilities from a trained classifier model for examples that have no annotated labels so far (but which we may want to label in the future, and hence compute active learning scores for).
 
     Returns
     -------
     active_learning_scores : np.ndarray
         Array of shape ``(N,)`` indicating the active learning confidence scores for each example.
+        Examples with the lowest scores are those we should label next in order to maximally improve our classifier model. 
     active_learning_scores_unlabeled : np.ndarray
         Array of shape ``(N,)`` indicating the active learning confidence scores for each unlabeled example.
         Returns an empty array if no unlabeled data is provided.
+        Examples with the lowest scores are those we should label next in order to maximally improve our classifier model (scores for unlabeled data are directly comparable with the `active_learning_scores` for labeled data).
     """
 
     if isinstance(labels_multiannotator, np.ndarray):
@@ -1349,7 +1349,7 @@ def _get_post_pred_probs_and_weights_ensemble(
     quality_method: str = "crowdlab",
     verbose: bool = True,
 ) -> Tuple[np.ndarray, Any, Any]:
-    """Return the posterior predicted probabilites of each example given a specified quality method.
+    """Return the posterior predicted class probabilites of each example given a specified quality method and prior predicted class probabilities from an ensemble of multiple classifier models.
 
     Parameters
     ----------
