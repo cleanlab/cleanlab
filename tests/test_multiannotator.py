@@ -278,9 +278,7 @@ def test_label_quality_scores_multiannotator():
     )
 
     # test calibration
-    multiannotator_dict = get_label_quality_multiannotator(
-        labels, pred_probs, calibrate_pred_probs=True
-    )
+    multiannotator_dict = get_label_quality_multiannotator(labels, pred_probs, calibrate_probs=True)
 
     # test incorrect consensus_method
     try:
@@ -341,7 +339,7 @@ def test_label_quality_scores_multiannotator_ensemble():
 
     # test numpy arrays and calibrationg
     multiannotator_dict = get_label_quality_multiannotator_ensemble(
-        np.array(labels), pred_probs, calibrate_pred_probs=True
+        np.array(labels), pred_probs, calibrate_probs=True
     )
 
     # testing tiebreaks in ensemble

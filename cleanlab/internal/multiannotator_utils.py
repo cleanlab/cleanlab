@@ -199,8 +199,8 @@ def compute_soft_cross_entropy(
 def find_best_temp_scaler(
     labels_multiannotator: pd.DataFrame,
     pred_probs: np.ndarray,
-    coarse_search_range: np.ndarray = np.array([0.1, 0.2, 0.5, 0.8, 1, 2, 3, 5, 8]),
-    fine_search_size: float = 4,
+    coarse_search_range: list = [0.1, 0.2, 0.5, 0.8, 1, 2, 3, 5, 8],
+    fine_search_size: int = 4,
 ) -> float:
     """Find the best temperature scaling factor that minimizes the soft cross entropy between the annotators' empirical label distribution
     and model pred_probs"""
@@ -269,21 +269,3 @@ def temp_scale_pred_probs(
     )  # normalize
 
     return scaled_pred_probs
-
-
-def calibrate_pred_probs(
-    labels_multiannotator: pd.DataFrame,
-    pred_probs: np.ndarray,
-    search_config: dict = {},
-    temp: Optional[float] = None,
-    return_temp: Optional[bool] = False,
-) -> Union[np.ndarray, Tuple[np.ndarray, float]]:
-    if temp is None:
-        temp = find_best_temp_scaler(
-            labels_multiannotator,
-            pred_probs,
-            **search_config,
-        )
-    if return_temp:
-        temp_scale_pred_probs(pred_probs, temp), temp
-    return temp_scale_pred_probs(pred_probs, temp)

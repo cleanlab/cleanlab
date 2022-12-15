@@ -47,7 +47,7 @@ def get_label_quality_multiannotator(
     *,
     consensus_method: Union[str, List[str]] = "best_quality",
     quality_method: str = "crowdlab",
-    calibrate_pred_probs: bool = False,
+    calibrate_probs: bool = False,
     return_detailed_quality: bool = True,
     return_annotator_stats: bool = True,
     return_weights: bool = False,
@@ -99,7 +99,7 @@ def get_label_quality_multiannotator(
 
         * ``crowdlab``: an emsemble method that weighs both the annotators' labels as well as the model's prediction.
         * ``agreement``: the fraction of annotators that agree with the consensus label.
-    calibrate_pred_probs : bool, default = False
+    calibrate_probs : bool, default = False
         Boolean value that specifies whether the provided `pred_probs` should be re-calibrated to better match the annotators' empirical label distribution.
         We recommend setting this to True in active learning applications, in order to prevent overconfident models from suggesting the wrong examples to collect labels for.
     return_detailed_quality: bool, default = True
@@ -157,7 +157,7 @@ def get_label_quality_multiannotator(
     num_annotations = labels_multiannotator.count(axis=1).to_numpy()
 
     # calibrate pred_probs
-    if calibrate_pred_probs:
+    if calibrate_probs:
         optimal_temp = find_best_temp_scaler(labels_multiannotator, pred_probs)
         pred_probs = temp_scale_pred_probs(pred_probs, optimal_temp)
 
@@ -319,7 +319,7 @@ def get_label_quality_multiannotator_ensemble(
     labels_multiannotator: Union[pd.DataFrame, np.ndarray],
     pred_probs: np.ndarray,
     *,
-    calibrate_pred_probs: bool = False,
+    calibrate_probs: bool = False,
     return_detailed_quality: bool = True,
     return_annotator_stats: bool = True,
     return_weights: bool = False,
@@ -351,7 +351,7 @@ def get_label_quality_multiannotator_ensemble(
     pred_probs : np.ndarray
         An array of shape ``(P, N, K)`` where P is the number of models, consisting of predicted class probabilities from the ensemble models.
         Each set of predicted probabilities with shape ``(N, K)`` is in the same format expected by the :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>`.
-    calibrate_pred_probs : bool, default = False
+    calibrate_probs : bool, default = False
         Boolean value that specifies if the pred_probs will be temperature scaled to better match the annotators' empirical label distribution.
         This is especially relevant in active learning to prevent overconfident models.
     return_detailed_quality: bool, default = True
@@ -409,7 +409,7 @@ def get_label_quality_multiannotator_ensemble(
     num_annotations = labels_multiannotator.count(axis=1).to_numpy()
 
     # temp scale pred_probs
-    if calibrate_pred_probs:
+    if calibrate_probs:
         for i in range(len(pred_probs)):
             curr_pred_probs = pred_probs[i]
             optimal_temp = find_best_temp_scaler(labels_multiannotator, curr_pred_probs)
@@ -570,13 +570,16 @@ def get_active_learning_scores(
         labels_multiannotator = pd.DataFrame(labels_multiannotator)
 
     num_classes = get_num_classes(pred_probs=pred_probs)
+
+    optimal_temp = find_best_temp_scaler(labels_multiannotator, pred_probs)
+    pred_probs = temp_scale_pred_probs(pred_probs, optimal_temp)
+
     multiannotator_info = get_label_quality_multiannotator(
         labels_multiannotator,
         pred_probs,
         return_annotator_stats=False,
         return_detailed_quality=False,
         return_weights=True,
-        calibrate_pred_probs=True,
     )
 
     quality_of_consensus_labeled = multiannotator_info["label_quality"]["consensus_quality_score"]
@@ -606,7 +609,6 @@ def get_active_learning_scores(
                 "pred_probs and pred_probs_unlabeled must have the same number of classes"
             )
 
-        optimal_temp = find_best_temp_scaler(labels_multiannotator, pred_probs)
         pred_probs_unlabeled = temp_scale_pred_probs(pred_probs_unlabeled, optimal_temp)
         quality_of_consensus_unlabeled = np.max(pred_probs_unlabeled, axis=1)
 
@@ -670,13 +672,21 @@ def get_active_learning_scores_ensemble(
         labels_multiannotator = pd.DataFrame(labels_multiannotator)
 
     num_classes = get_num_classes(pred_probs=pred_probs)
+
+    # temp scale pred_probs
+    optimal_temp = np.full(len(pred_probs), np.NaN)
+    for i in range(len(pred_probs)):
+        curr_pred_probs = pred_probs[i]
+        curr_optimal_temp = find_best_temp_scaler(labels_multiannotator, curr_pred_probs)
+        pred_probs[i] = temp_scale_pred_probs(curr_pred_probs, curr_optimal_temp)
+        optimal_temp[i] = curr_optimal_temp
+
     multiannotator_info = get_label_quality_multiannotator_ensemble(
         labels_multiannotator,
         pred_probs,
         return_annotator_stats=False,
         return_detailed_quality=False,
         return_weights=True,
-        calibrate_pred_probs=True,
     )
 
     quality_of_consensus_labeled = multiannotator_info["label_quality"]["consensus_quality_score"]
@@ -708,9 +718,10 @@ def get_active_learning_scores_ensemble(
                 "pred_probs and pred_probs_unlabeled must have the same number of classes"
             )
 
-        for p in range(len(pred_probs_unlabeled)):
-            optimal_temp = find_best_temp_scaler(labels_multiannotator, pred_probs[p])
-            pred_probs_unlabeled[p] = temp_scale_pred_probs(pred_probs_unlabeled[p], optimal_temp)
+        for i in range(len(pred_probs_unlabeled)):
+            pred_probs_unlabeled[i] = temp_scale_pred_probs(
+                pred_probs_unlabeled[i], optimal_temp[i]
+            )
 
         avg_pred_probs_unlabeled = np.mean(pred_probs_unlabeled, axis=0)
         consensus_label_unlabeled = get_majority_vote_label(
