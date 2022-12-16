@@ -288,6 +288,17 @@ def test_label_quality_scores_multiannotator():
     except ValueError as e:
         assert "not a valid consensus method" in str(e)
 
+    # test error when return_weights == True and quality_method != "crowdlab"
+    try:
+        multiannotator_dict = get_label_quality_multiannotator(
+            labels, pred_probs, return_weights=True, quality_method="agreement"
+        )
+    except ValueError as e:
+        assert (
+            "Model and annotator weights are only applicable to the crowdlab quality method"
+            in str(e)
+        )
+
     # test error catching when labels_multiannotator has NaN columns
     labels_NA = deepcopy(labels)
     labels_NA[0] = pd.NA
@@ -385,17 +396,9 @@ def test_get_active_learning_scores():
     assert len(active_learning_scores_unlabeled) == len(pred_probs_unlabeled)
 
     # test case where all examples are already labeled
-    active_learning_scores, active_learning_scores_unlabeled = get_active_learning_scores(
-        labels, pred_probs
-    )
-    assert isinstance(active_learning_scores, np.ndarray)
-    assert len(active_learning_scores) == len(pred_probs)
-    assert len(active_learning_scores_unlabeled) == 0
-
-    # test case where all examples are already labeled, pass in empty pred_probs_unlabeled array
     # also tests passing labels as np array
     active_learning_scores, active_learning_scores_unlabeled = get_active_learning_scores(
-        np.array(labels), pred_probs, np.array([])
+        np.array(labels), pred_probs
     )
     assert isinstance(active_learning_scores, np.ndarray)
     assert len(active_learning_scores) == len(pred_probs)
@@ -408,6 +411,29 @@ def test_get_active_learning_scores():
         )
     except ValueError as e:
         assert "must have the same number of classes" in str(e)
+
+    # test starting with single labeled example + one unlabeled example
+    single_labels = data["complete_labels"].iloc[[0]]
+    singe_pred_probs = pred_probs[[0]]
+    singe_pred_probs_unlabeled = pred_probs_unlabeled[[0]]
+    get_active_learning_scores(single_labels, singe_pred_probs, singe_pred_probs_unlabeled)
+
+    # test error when each example is only labeled by one annotator
+    labels = pd.DataFrame(
+        [
+            [0, np.NaN, np.NaN],
+            [np.NaN, 1, np.NaN],
+            [np.NaN, np.NaN, 2],
+            [np.NaN, 1, np.NaN],
+            [np.NaN, np.NaN, 2],
+        ]
+    )
+    pred_probs = np.random.random((5, 3))
+
+    try:
+        get_active_learning_scores(labels, pred_probs)
+    except ValueError as e:
+        assert "Each example only has one label" in str(e)
 
 
 def test_get_active_learning_scores_ensemble():
@@ -425,17 +451,9 @@ def test_get_active_learning_scores_ensemble():
     assert len(active_learning_scores_unlabeled) == pred_probs_unlabeled.shape[1]
 
     # test case where all examples are already labeled
-    active_learning_scores, active_learning_scores_unlabeled = get_active_learning_scores_ensemble(
-        labels, pred_probs
-    )
-    assert isinstance(active_learning_scores, np.ndarray)
-    assert len(active_learning_scores) == len(labels)
-    assert len(active_learning_scores_unlabeled) == 0
-
-    # test case where all examples are already labeled, pass in empty pred_probs_unlabeled array
     # also tests passing labels as np array
     active_learning_scores, active_learning_scores_unlabeled = get_active_learning_scores_ensemble(
-        np.array(labels), pred_probs, np.array([])
+        np.array(labels), pred_probs
     )
     assert isinstance(active_learning_scores, np.ndarray)
     assert len(active_learning_scores) == len(labels)
@@ -449,6 +467,29 @@ def test_get_active_learning_scores_ensemble():
         ) = get_active_learning_scores_ensemble(labels, pred_probs, pred_probs_unlabeled[:, :-1])
     except ValueError as e:
         assert "must have the same number of classes" in str(e)
+
+    # test starting with single labeled example + one unlabeled example
+    single_labels = ensemble_data["complete_labels"].iloc[[0]]
+    singe_pred_probs = pred_probs[:, [0]]
+    singe_pred_probs_unlabeled = pred_probs_unlabeled[:, [0]]
+    get_active_learning_scores_ensemble(single_labels, singe_pred_probs, singe_pred_probs_unlabeled)
+
+    # test error when each example is only labeled by one annotator
+    labels = pd.DataFrame(
+        [
+            [0, np.NaN, np.NaN],
+            [np.NaN, 1, np.NaN],
+            [np.NaN, np.NaN, 2],
+            [np.NaN, 1, np.NaN],
+            [np.NaN, np.NaN, 2],
+        ]
+    )
+    pred_probs = np.random.random((2, 5, 3))
+
+    try:
+        get_active_learning_scores_ensemble(labels, pred_probs)
+    except ValueError as e:
+        assert "Each example only has one label" in str(e)
 
 
 def test_missing_class():

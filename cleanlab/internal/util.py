@@ -21,7 +21,7 @@ Ancillary helper methods used internally throughout this package; mostly related
 import warnings
 import numpy as np
 import pandas as pd
-from typing import Tuple
+from typing import Tuple, Union
 
 from cleanlab.typing import DatasetLike, LabelLike
 from cleanlab.internal.validation import labels_to_array

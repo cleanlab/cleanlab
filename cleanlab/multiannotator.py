@@ -35,6 +35,7 @@ from cleanlab.rank import get_label_quality_scores
 from cleanlab.internal.util import get_num_classes, value_counts
 from cleanlab.internal.multiannotator_utils import (
     assert_valid_inputs_multiannotator,
+    assert_valid_pred_probs,
     check_consensus_label_classes,
     find_best_temp_scaler,
     temp_scale_pred_probs,
@@ -143,12 +144,12 @@ def get_label_quality_multiannotator(
             * ``worst_class``: the class that is most frequently mislabeled by a given annotator.
 
         ``model_weight`` : float
-            Only returned if `return_weights=True`, only applicable for ``quality_method == crowdlab``, ``None`` otherwise.
-            This number specifies the weight of classifier model in weighted averages used to estimate label quality
+            Only returned if `return_weights=True`. It is only applicable for ``quality_method == crowdlab``.
+            The model weight specifies the weight of classifier model in weighted averages used to estimate label quality
             This number is an estimate of how trustworthy the model is relative the annotators.
 
         ``annotator_weight`` : np.ndarray
-            Only returned if `return_weights=True`, only applicable for ``quality_method == crowdlab``, ``None`` otherwise.
+            Only returned if `return_weights=True`. It is only applicable for ``quality_method == crowdlab``.
             An array of shape ``(M,)`` where M is the number of annotators, specifying the weight of each annotator in weighted averages used to estimate label quality.
             These weights are estimates of how trustworthy each annotator is relative to the other annotators.
 
@@ -156,6 +157,12 @@ def get_label_quality_multiannotator(
 
     if isinstance(labels_multiannotator, np.ndarray):
         labels_multiannotator = pd.DataFrame(labels_multiannotator)
+
+    if return_weights == True and quality_method != "crowdlab":
+        raise ValueError(
+            "Model and annotator weights are only applicable to the crowdlab quality method. "
+            "Either set return_weights=False or quality_method='crowdlab'."
+        )
 
     assert_valid_inputs_multiannotator(labels_multiannotator, pred_probs)
 
@@ -381,12 +388,13 @@ def get_label_quality_multiannotator_ensemble(
             Similar to :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>`
 
         ``model_weight`` : np.ndarray
-            Only returned if `return_weights=True`, only applicable for ``quality_method == crowdlab``, ``None`` otherwise.
+            Only returned if `return_weights=True`.
             An array of shape ``(P,)`` where is the number of models in the ensemble, specifying the weight of each classifier model in weighted averages used to estimate label quality.
             These weigthts is an estimate of how trustworthy the model is relative the annotators.
             An array of shape ``(P,)`` where is the number of models in the ensemble, specifying the model weight used in weighted averages
 
         ``annotator_weight`` : np.ndarray
+            Only returned if `return_weights=True`.
             Similar to :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>`
 
     See Also
@@ -559,6 +567,8 @@ def get_active_learning_scores(
     if isinstance(labels_multiannotator, np.ndarray):
         labels_multiannotator = pd.DataFrame(labels_multiannotator)
 
+    assert_valid_pred_probs(pred_probs=pred_probs, pred_probs_unlabeled=pred_probs_unlabeled)
+
     num_classes = get_num_classes(pred_probs=pred_probs)
 
     optimal_temp = find_best_temp_scaler(labels_multiannotator, pred_probs)
@@ -590,15 +600,7 @@ def get_active_learning_scores(
         )
 
     # compute scores for unlabeled data
-    if pred_probs_unlabeled is None:
-        pred_probs_unlabeled = np.array([])
-
-    if len(pred_probs_unlabeled) > 0:
-        if pred_probs.shape[1] != pred_probs_unlabeled.shape[1]:
-            raise ValueError(
-                "pred_probs and pred_probs_unlabeled must have the same number of classes"
-            )
-
+    if pred_probs_unlabeled is not None:
         pred_probs_unlabeled = temp_scale_pred_probs(pred_probs_unlabeled, optimal_temp)
         quality_of_consensus_unlabeled = np.max(pred_probs_unlabeled, axis=1)
 
@@ -642,7 +644,8 @@ def get_active_learning_scores_ensemble(
         An array of shape ``(P, N, K)`` where P is the number of models, consisting of predicted class probabilities from the ensemble models.
         Each set of predicted probabilities with shape ``(N, K)`` is in the same format expected by the :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>`.
     pred_probs_unlabeled : np.ndarray, optional
-        An array of shape ``(N, K)`` of predicted class probabilities from a trained classifier model for examples that have no annotated labels so far (but which we may want to label in the future, and hence compute active learning quality scores for).
+        An array of shape ``(P, N, K)`` where P is the number of models, consisting of predicted class probabilities from a trained classifier model
+        for examples that have no annotated labels so far (but which we may want to label in the future, and hence compute active learning quality scores for).
 
     Returns
     -------
@@ -658,7 +661,11 @@ def get_active_learning_scores_ensemble(
     if isinstance(labels_multiannotator, np.ndarray):
         labels_multiannotator = pd.DataFrame(labels_multiannotator)
 
-    num_classes = get_num_classes(pred_probs=pred_probs)
+    assert_valid_pred_probs(
+        pred_probs=pred_probs, pred_probs_unlabeled=pred_probs_unlabeled, ensemble=True
+    )
+
+    num_classes = get_num_classes(pred_probs=pred_probs[0])
 
     # temp scale pred_probs
     optimal_temp = np.full(len(pred_probs), np.NaN)
@@ -696,15 +703,7 @@ def get_active_learning_scores_ensemble(
         )
 
     # compute scores for unlabeled data
-    if pred_probs_unlabeled is None:
-        pred_probs_unlabeled = np.array([])
-
-    if len(pred_probs_unlabeled) > 0:
-        if pred_probs.shape[2] != pred_probs_unlabeled.shape[2]:
-            raise ValueError(
-                "pred_probs and pred_probs_unlabeled must have the same number of classes"
-            )
-
+    if pred_probs_unlabeled is not None:
         for i in range(len(pred_probs_unlabeled)):
             pred_probs_unlabeled[i] = temp_scale_pred_probs(
                 pred_probs_unlabeled[i], optimal_temp[i]

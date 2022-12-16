@@ -19,7 +19,7 @@ Helper methods used internally in cleanlab.multiannotator
 """
 
 from cleanlab.typing import LabelLike
-from typing import Optional, Tuple, Union
+from typing import Optional, Tuple
 import warnings
 import numpy as np
 import pandas as pd
@@ -41,6 +41,41 @@ def assert_valid_inputs_multiannotator(
             "Labels cannot be strings, they must be zero-indexed integers corresponding to class indices."
         )
 
+    # Raise error if labels_multiannotator has NaN rows
+    if labels_multiannotator.isna().all(axis=1).any():
+        nan_rows = list(
+            labels_multiannotator[labels_multiannotator.isna().all(axis=1) == True].index
+        )
+        raise ValueError(
+            "labels_multiannotator cannot have rows with all NaN, each example must have at least one label.\n"
+            f"Examples {nan_rows} did not label any labels."
+        )
+
+    # Raise error if labels_multiannotator has NaN columns
+    if labels_multiannotator.isna().all().any():
+        nan_columns = list(
+            labels_multiannotator.columns[labels_multiannotator.isna().all() == True]
+        )
+        raise ValueError(
+            "labels_multiannotator cannot have columns with all NaN, each annotator must annotator at least one example.\n"
+            f"Annotators {nan_columns} did not label any examples."
+        )
+
+    # Raise error if labels_multiannotator has <= 1 column
+    if len(labels_multiannotator.columns) <= 1:
+        raise ValueError(
+            "labels_multiannotator must have more than one column.\n"
+            "If there is only one annotator, use cleanlab.rank.get_label_quality_scores instead"
+        )
+
+    # Raise error if labels_multiannotator only has 1 label per example
+    if labels_multiannotator.apply(lambda s: len(s.dropna()) == 1, axis=1).all():
+        raise ValueError(
+            "Each example only has one label, collapse the labels into a 1-D array and use "
+            "cleanlab.rank.get_label_quality_scores instead"
+        )
+
+    # Check labels
     all_labels_flatten = labels_multiannotator.replace({pd.NA: np.NaN}).astype(float).values.ravel()
     all_labels_flatten = all_labels_flatten[~np.isnan(all_labels_flatten)]
     assert_valid_class_labels(all_labels_flatten, allow_one_class=True)
@@ -51,16 +86,26 @@ def assert_valid_inputs_multiannotator(
             if pred_probs.ndim != 3:
                 error_message = "pred_probs must be a 3d array."
                 if pred_probs.ndim == 2:
-                    error_message += "\nIf you have a 2d pred_probs array, use the non-ensemble version of this function."
+                    error_message += " If you have a 2d pred_probs array, use the non-ensemble version of this function."
                 raise ValueError(error_message)
+
+            if pred_probs.shape[1] != len(labels_multiannotator):
+                raise ValueError("each pred_probs and labels_multiannotator must have same length.")
+
             num_classes = pred_probs.shape[2]
+
         else:
             if pred_probs.ndim != 2:
                 error_message = "pred_probs must be a 2d array."
                 if pred_probs.ndim == 3:
-                    error_message += "\nIf you have a 3d pred_probs array, use the ensemble version of this function."
+                    error_message += " If you have a 3d pred_probs array, use the ensemble version of this function."
                 raise ValueError(error_message)
+
+            if len(pred_probs) != len(labels_multiannotator):
+                raise ValueError("pred_probs and labels_multiannotator must have same length.")
+
             num_classes = pred_probs.shape[1]
+
         highest_class = (
             np.nanmax(labels_multiannotator.replace({pd.NA: np.NaN}).astype(float).values) + 1
         )
@@ -68,38 +113,10 @@ def assert_valid_inputs_multiannotator(
         # this allows for missing labels, but not missing columns in pred_probs
         if num_classes < highest_class:
             raise ValueError(
-                f"pred_probs must have at least {int(highest_class)} columns based on the largest class label"
-                "which appears in labels_multiannotator. Perhaps some rarely-annotated classes were lost while"
+                f"pred_probs must have at least {int(highest_class)} columns based on the largest class label "
+                "which appears in labels_multiannotator. Perhaps some rarely-annotated classes were lost while "
                 "establishing consensus labels used to train your classifier."
             )
-
-    # Raise error if labels_multiannotator has NaN rows
-    if labels_multiannotator.isna().all(axis=1).any():
-        raise ValueError("labels_multiannotator cannot have rows with all NaN.")
-
-    # Raise error if labels_multiannotator has NaN columns
-    if labels_multiannotator.isna().all().any():
-        nan_columns = list(
-            labels_multiannotator.columns[labels_multiannotator.isna().all() == True]
-        )
-        raise ValueError(
-            "labels_multiannotator cannot have columns with all NaN."
-            f"Annotators {nan_columns} did not label any examples."
-        )
-
-    # Raise error if labels_multiannotator has <= 1 column
-    if len(labels_multiannotator.columns) <= 1:
-        raise ValueError(
-            "labels_multiannotator must have more than one column."
-            "If there is only one annotator, use cleanlab.rank.get_label_quality_scores instead"
-        )
-
-    # Raise error if labels_multiannotator only has 1 label per example
-    if labels_multiannotator.apply(lambda s: len(s.dropna()) == 1, axis=1).all():
-        raise ValueError(
-            "Each example only has one label, collapse the labels into a 1-D array and use"
-            "cleanlab.rank.get_label_quality_scores instead"
-        )
 
     # Raise warning if no examples with 2 or more annotators agree
     # TODO: might shift this later in the code to avoid extra compute
@@ -107,6 +124,52 @@ def assert_valid_inputs_multiannotator(
         lambda s: np.array_equal(s.dropna().unique(), s.dropna()), axis=1
     ).all():
         warnings.warn("Annotators do not agree on any example. Check input data.")
+
+
+def assert_valid_pred_probs(
+    pred_probs: np.ndarray,
+    pred_probs_unlabeled: Optional[np.ndarray] = None,
+    ensemble: bool = False,
+):
+    if ensemble:
+        if pred_probs.ndim != 3:
+            error_message = "pred_probs must be a 3d array."
+            if pred_probs.ndim == 2:
+                error_message += " If you have a 2d pred_probs array, use the non-ensemble version of this function."
+            raise ValueError(error_message)
+
+        if pred_probs_unlabeled is not None:
+            if pred_probs_unlabeled.ndim != 3:
+                error_message = "pred_probs_unlabeled must be a 3d array."
+                if pred_probs_unlabeled.ndim == 2:
+                    error_message += " If you have a 2d pred_probs_unlabeled array, use the non-ensemble version of this function."
+                raise ValueError(error_message)
+
+            if pred_probs.shape[2] != pred_probs_unlabeled.shape[2]:
+                raise ValueError(
+                    "pred_probs and pred_probs_unlabeled must have the same number of classes"
+                )
+
+    else:
+        if pred_probs.ndim != 2:
+            error_message = "pred_probs must be a 2d array."
+            if pred_probs.ndim == 3:
+                error_message += (
+                    " If you have a 3d pred_probs array, use the ensemble version of this function."
+                )
+            raise ValueError(error_message)
+
+        if pred_probs_unlabeled is not None:
+            if pred_probs_unlabeled.ndim != 2:
+                error_message = "pred_probs_unlabeled must be a 2d array."
+                if pred_probs_unlabeled.ndim == 3:
+                    error_message += " If you have a 3d pred_probs_unlabeled array, use the non-ensemble version of this function."
+                raise ValueError(error_message)
+
+            if pred_probs.shape[1] != pred_probs_unlabeled.shape[1]:
+                raise ValueError(
+                    "pred_probs and pred_probs_unlabeled must have the same number of classes"
+                )
 
 
 def format_multiannotator_labels(labels: LabelLike) -> Tuple[pd.DataFrame, dict]:
@@ -166,10 +229,10 @@ def check_consensus_label_classes(
 
     if len(labels_set_difference) > 0:
         print(
-            "CAUTION: Number of unique classes has been reduced from the original data when establishing consensus labels"
-            f"using consensus method '{consensus_method}', likely due to some classes being rarely annotated."
-            "If training a classifier on these consensus labels, it will never see any of the omitted classes unless you"
-            "manually replace some of the consensus labels."
+            "CAUTION: Number of unique classes has been reduced from the original data when establishing consensus labels "
+            f"using consensus method '{consensus_method}', likely due to some classes being rarely annotated. "
+            "If training a classifier on these consensus labels, it will never see any of the omitted classes unless you "
+            "manually replace some of the consensus labels.\n"
             f"Classes in the original data but not in consensus labels: {list(map(int, labels_set_difference))}"
         )
 
