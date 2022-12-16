@@ -17,30 +17,32 @@
 Implements cleanlab's DataLab interface as a one-stop-shop for tracking
 and managing all kinds of issues in datasets.
 """
+from __future__ import annotations
 
-from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional, Type, Union, Mapping
 import os
 import pickle
-import json
-import pandas as pd
-import numpy as np
 import warnings
+from typing import Any, Dict, Mapping, Optional, Union
 
 import datasets
+import numpy as np
+import pandas as pd
+from datasets import load_from_disk
 from datasets.arrow_dataset import Dataset
 
 import cleanlab
-from cleanlab.classification import CleanLearning
-from cleanlab.internal.validation import labels_to_array, assert_valid_inputs
+from cleanlab.experimental.datalab.factory import _IssueManagerFactory
+from cleanlab.experimental.datalab.issue_manager import IssueManager
+from cleanlab.internal.validation import assert_valid_inputs, labels_to_array
 
 __all__ = ["DataLab"]
 
 # Constants:
 OBJECT_FILENAME = "datalab.pkl"
 ISSUES_FILENAME = "issues.csv"
-RESULTS_FILENAME = "results.pkl"
+ISSUE_SUMMARY_FILENAME = "summary.csv"
 INFO_FILENAME = "info.pkl"
+DATA_DIRNAME = "data"
 
 
 class Datalab:
@@ -68,12 +70,13 @@ class Datalab:
             raise NotImplementedError("TODO: multi-label support.")
 
         self.data = data
+        self._data_hash = hash(data)
         self.label_name = label_name
         self.data.set_format(
             type="numpy"
         )  # TODO: figure out if we are setting all features to numpy, maybe exclude label_name?
         self.issues: Optional[pd.DataFrame] = None  # TODO: Keep track of all issue types,
-        self.results = None  # TODO: For each issue type, add a score
+        self.issue_summary = None  # TODO: For each issue type, add a score
         self._labels, self._label_map = self._extract_labels(self.label_name)
         class_names = self.data.unique(self.label_name)  # TODO
         self.info = {
@@ -93,6 +96,7 @@ class Datalab:
         issue_types: Optional[Dict["str", Any]] = None,
         feature_values=None,  # embeddings of data
         model=None,  # sklearn.Estimator compatible object
+        issue_init_kwargs: Optional[Dict[str, Dict[str, Any]]] = None,
     ) -> Any:
         """
         Checks for all sorts of issues in the data, including in labels and in features.
@@ -124,6 +128,33 @@ class Datalab:
             WARNING
             -------
             This is not yet implemented.
+
+        issue_init_kwargs :
+            # Add path to IssueManager class docstring.
+            Keyword arguments to pass to the IssueManager constructor.
+
+            See Also
+            --------
+            IssueManager
+
+
+            It is a dictionary of dictionaries, where the keys are the issue types
+            and the values are dictionaries of keyword arguments to pass to the
+            IssueManager constructor.
+
+            For example, if you want to pass the keyword argument "clean_learning_kwargs"
+            to the constructor of the LabelIssueManager, you would pass:
+
+            .. code-block:: python
+
+                issue_init_kwargs = {
+                    "label": {
+                        "clean_learning_kwargs": {
+                            "prune_method": "prune_by_noise_rate",
+                        }
+                    }
+                }
+
         """
 
         issue_kwargs = {
@@ -135,18 +166,61 @@ class Datalab:
         if issue_types is None:
             issue_types = {
                 "label": True,
-                "health": True,
+                # "health": True,
             }
+        issue_keys = list(issue_types.keys())
         issue_managers = [
             factory(datalab=self)
-            for factory in _IssueManagerFactory.from_list(list(issue_types.keys()))
+            for (factory, issue_key) in zip(_IssueManagerFactory.from_list(issue_keys), issue_keys)
         ]
 
         if issue_types is not None and not issue_types["label"]:
             raise NotImplementedError("TODO: issue_types is not yet supported.")
 
         for issue_manager in issue_managers:
+            # TODO: find_issues should return None, set self.issues in a set_issues(issue_manager) method
             issue_manager.find_issues(**issue_kwargs)
+            self.collect_results_from_issue_manager(issue_manager)
+
+    def collect_results_from_issue_manager(self, issue_manager: IssueManager) -> None:
+        """
+        Collects results from an IssueManager and update the corresponding
+        attributes of the Datalab object.
+
+        This includes:
+        - self.issues
+        - self.issue_summary
+        - self.info
+
+        Parameters
+        ----------
+        issue_manager :
+            IssueManager object to collect results from.
+        """
+
+        self.info[issue_manager.issue_key] = issue_manager.info
+
+        # Add issues dataframe from issue_manager to existing issues dataframe
+        if self.issues is None:
+            self.issues = issue_manager.issues
+        else:
+            if not isinstance(issue_manager.issues, pd.DataFrame):
+                raise TypeError(
+                    f"Expected issue_manager.issues to be a pandas DataFrame, but got {type(issue_manager.issues)}"
+                )
+            # Join on index
+            self.issues = self.issues.join(issue_manager.issues, how="inner")
+
+        # Update issue summary dataframe
+        if self.issue_summary is None:
+            self.issue_summary = issue_manager.summary
+        else:
+
+            self.issue_summary = pd.concat(
+                [self.issue_summary, issue_manager.summary],
+                axis=0,
+                ignore_index=True,
+            )
 
     def _extract_labels(self, label_name: Union[str, list[str]]) -> tuple[np.ndarray, Mapping]:
         """
@@ -213,6 +287,11 @@ class Datalab:
     def report(self) -> None:
         """Prints helpful summary of all issues."""
         print("Issues will be summarized here.")  # TODO
+        # Show summary of issues
+        # Sort issues base on the score
+        # Show top K issues
+        # Show the info (get_info) with some verbosity level
+        #   E.g. for label issues, only show the confident joint computed with the health_summary
 
     def __repr__(self) -> str:
         """What is displayed in console if user executes: >>> datalab"""
@@ -247,7 +326,12 @@ class Datalab:
         # Update the issues to be the path to the exported file.
         if self.issues is not None:
             state["issues"] = os.path.join(save_path, ISSUES_FILENAME)
-            self.issues.to_csv(state["issues"])
+            self.issues.to_csv(state["issues"], index=False)
+
+        # Update the issue summary to be the path to the exported file.
+        if self.issue_summary is not None:
+            state["issue_summary"] = os.path.join(save_path, ISSUE_SUMMARY_FILENAME)
+            self.issue_summary.to_csv(state["issue_summary"], index=False)
 
         # Save the dataset to disk
         if self.data is not None:
@@ -272,6 +356,10 @@ class Datalab:
             issues_path = state["issues"]
             if isinstance(issues_path, str) and os.path.exists(issues_path):
                 state["issues"] = pd.read_csv(issues_path)
+
+            issue_summary_path = state["issue_summary"]
+            if isinstance(issue_summary_path, str) and os.path.exists(issue_summary_path):
+                state["issue_summary"] = pd.read_csv(issue_summary_path)
 
             data_path = state["data"]
             if isinstance(data_path, str) and os.path.exists(data_path):
@@ -316,9 +404,9 @@ class Datalab:
         #     self.issues.to_csv(os.path.join(self.path, ISSUES_FILENAME), index=False)
 
         # stored_results = None
-        # if self.results is not None:
-        #     stored_results = self.results
-        #     self.results = None
+        # if self.issue_summary is not None:
+        #     stored_results = self.issue_summary
+        #     self.issue_summary = None
         #     results_file = os.path.join(self.path, RESULTS_FILENAME)
         #     # stored_results.to_csv(results_file)
         #     with open(results_file, "wb") as f:
@@ -331,14 +419,14 @@ class Datalab:
 
         # revert object back to original state
         # self.info = stored_info
-        # self.results = stored_results
+        # self.issue_summary = stored_results
         print(f"Saved Datalab to folder: {path}")
         print(
             f"The Dataset must be saved/loaded separately to access it after reloading this Datalab."
         )
 
     @classmethod
-    def load(cls, path: str, data: Dataset = None) -> "Datalab":
+    def load(cls, path: str, data: Optional[Dataset] = None) -> "Datalab":
         """Loads Lab from file. Folder could ideally be zipped or unzipped.
         Checks which cleanlab version Lab was previously saved from and raises warning if they dont match.
         path is path to saved Datalab, not Dataset.
@@ -367,8 +455,18 @@ class Datalab:
         #         datalab.results = pickle.load(f)
 
         if data is not None:
-            datalab.data = data
             # TODO: check this matches any of the other attributes, ie. is the Dataset that was used before
+            if hash(data) != datalab._data_hash:
+                raise ValueError(
+                    "Data has been modified since Lab was saved. Cannot load Lab with modified data."
+                )
+
+            if len(data) != len(datalab._labels):
+                raise ValueError(
+                    f"Length of data ({len(data)}) does not match length of labels ({len(datalab._labels)})"
+                )
+
+            datalab.data = data
 
         current_version = cleanlab.__version__
         if current_version != datalab.cleanlab_version:
@@ -390,140 +488,3 @@ class Datalab:
 
     def _validate_pred_probs(self, pred_probs) -> None:
         assert_valid_inputs(X=None, y=self._labels, pred_probs=pred_probs)
-
-
-class IssueManager(ABC):
-    """ Base class for managing issues in a Datalab.
-    
-        For each example in a dataset, the IssueManager for a particular type of issue should compute:
-        - A numeric severity score between 0 and 1, with values near 0 indicating severe instances of the issue.
-        - A boolean `is_issue` value, which is True if we believe this example suffers from the issue in question.
-          `is_issue` may be determined by thresholding the severity score (with an a priori determined reasonable threshold value),
-          or via some other means (e.g. Confident Learning for flagging label issues).
-              
-        The IssueManager should also report:
-        - A global value between 0 and 1 summarizing how severe this issue is in the dataset overall
-          (e.g. the average severity across all examples in dataset or count of examples where `is_issue=True`).
-        - Other interesting `info` about the issue and examples in the dataset,
-          and statistics estimated from current dataset that may be reused to score this issue in future data.
-          For example, `info` for label issues could contain the:
-          confident_thresholds, confident_joint, predicted label for each example, etc.
-          Another example is for (near)-duplicate detection issue, where `info` could contain:
-          which set of examples in the dataset are all (nearly) identical.
-    """
-
-    def __init__(self, datalab: Datalab):
-        self.datalab = datalab
-
-    def __repr__(self):
-        class_name = self.__class__.__name__
-        return class_name
-
-    @abstractmethod
-    def find_issues(self, /, *args, **kwargs) -> Union[dict, pd.DataFrame]:
-        """Finds issues in this Lab."""
-        raise NotImplementedError
-
-    @abstractmethod
-    def update_info(self, /, *args, **kwargs) -> None:
-        """Updates the info attribute of this Lab."""
-        raise NotImplementedError
-
-
-class HealthIssueManager(IssueManager):
-
-    info_keys = ["summary"]
-
-    def find_issues(self, pred_probs: np.ndarray, **kwargs) -> dict:
-        health_summary = self._health_summary(pred_probs=pred_probs, **kwargs)
-        self.update_info(summary=health_summary)
-        return health_summary
-
-    def update_info(self, summary: Dict[str, Any], **kwargs) -> None:
-        """Updates the info attribute of this Lab."""
-        self.datalab.results = summary["overall_label_health_score"]
-        for key in self.info_keys:
-            if key == "summary":
-                self.datalab.info[key] = summary
-        self.datalab.info["summary"] = summary
-
-    def _health_summary(self, pred_probs, summary_kwargs=None, **kwargs) -> dict:
-        """Returns a short summary of the health of this Lab."""
-        from cleanlab.dataset import health_summary
-
-        # Validate input
-        self._validate_pred_probs(pred_probs)
-
-        if summary_kwargs is None:
-            summary_kwargs = {}
-
-        kwargs_copy = kwargs.copy()
-        for k in kwargs_copy:
-            if k not in [
-                "asymmetric",
-                "class_names",
-                "num_examples",
-                "joint",
-                "confident_joint",
-                "multi_label",
-                "verbose",
-            ]:
-                del kwargs[k]
-
-        summary_kwargs.update(kwargs)
-
-        class_names = list(self.datalab._label_map.values())
-        summary = health_summary(
-            self.datalab._labels, pred_probs, class_names=class_names, **summary_kwargs
-        )
-        return summary
-
-    def _validate_pred_probs(self, pred_probs) -> None:
-        assert_valid_inputs(X=None, y=self.datalab._labels, pred_probs=pred_probs)
-
-
-class LabelIssueManager(IssueManager):
-
-    # TODO: Add `results_key = "label"` to this class
-    # TODO: Add `info_keys = ["label"]` to this class
-    def __init__(self, datalab: Datalab):
-        super().__init__(datalab)
-        self.cl = CleanLearning()
-
-    def find_issues(self, pred_probs: np.ndarray, model=None, **kwargs) -> pd.DataFrame:
-        if pred_probs is None and model is not None:
-            raise NotImplementedError("TODO: We assume pred_probs is provided.")
-
-        issues = self.cl.find_label_issues(labels=self.datalab._labels, pred_probs=pred_probs)
-        self.update_info(issues=issues)
-        self.datalab.issues = issues
-        return issues
-
-    def update_info(self, issues, **kwargs) -> None:
-        self.datalab.info["num_label_issues"] = len(issues)
-
-
-# Construct concrete issue manager with a from_str method
-class _IssueManagerFactory:
-    """Factory class for constructing concrete issue managers."""
-
-    types = {
-        "health": HealthIssueManager,
-        "label": LabelIssueManager,
-    }
-
-    @classmethod
-    def from_str(cls, issue_type: str) -> Type[IssueManager]:
-        """Constructs a concrete issue manager from a string."""
-        if isinstance(issue_type, list):
-            raise ValueError(
-                "issue_type must be a string, not a list. Try using from_list instead."
-            )
-        if issue_type not in cls.types:
-            raise ValueError(f"Invalid issue type: {issue_type}")
-        return cls.types[issue_type]
-
-    @classmethod
-    def from_list(cls, issue_types: List[str]) -> List[Type[IssueManager]]:
-        """Constructs a list of concrete issue managers from a list of strings."""
-        return [cls.from_str(issue_type) for issue_type in issue_types]

@@ -17,15 +17,9 @@
 
 import os
 import pickle
-from cleanlab.experimental.datalab.datalab import (
-    Datalab,
-    IssueManager,
-    HealthIssueManager,
-    LabelIssueManager,
-    _IssueManagerFactory,
-)
+from cleanlab.experimental.datalab.datalab import Datalab
 
-from datasets.arrow_dataset import Dataset
+
 from datasets.dataset_dict import DatasetDict
 import numpy as np
 import pandas as pd
@@ -35,83 +29,25 @@ from pathlib import Path
 import pytest
 
 
-LABEL_NAME = "star"
-SEED = 42
-
-
-@pytest.fixture
-def dataset():
-    data_dict = {
-        "id": [
-            "7bd227d9-afc9-11e6-aba1-c4b301cdf627",
-            "7bd22905-afc9-11e6-a5dc-c4b301cdf627",
-            "7bd2299c-afc9-11e6-85d6-c4b301cdf627",
-            "7bd22a26-afc9-11e6-9309-c4b301cdf627",
-            "7bd22aba-afc9-11e6-8293-c4b301cdf627",
-        ],
-        "package_name": [
-            "com.mantz_it.rfanalyzer",
-            "com.mantz_it.rfanalyzer",
-            "com.mantz_it.rfanalyzer",
-            "com.mantz_it.rfanalyzer",
-            "com.mantz_it.rfanalyzer",
-        ],
-        "review": [
-            "Great app! The new version now works on my Bravia Android TV which is great as it's right by my rooftop aerial cable. The scan feature would be useful...any ETA on when this will be available? Also the option to import a list of bookmarks e.g. from a simple properties file would be useful.",
-            "Great It's not fully optimised and has some issues with crashing but still a nice app  especially considering the price and it's open source.",
-            "Works on a Nexus 6p I'm still messing around with my hackrf but it works with my Nexus 6p  Trond usb-c to usb host adapter. Thanks!",
-            "The bandwidth seemed to be limited to maximum 2 MHz or so. I tried to increase the bandwidth but not possible. I purchased this is because one of the pictures in the advertisement showed the 2.4GHz band with around 10MHz or more bandwidth. Is it not possible to increase the bandwidth? If not  it is just the same performance as other free APPs.",
-            "Works well with my Hackrf Hopefully new updates will arrive for extra functions",
-        ],
-        "date": [
-            "October 12 2016",
-            "August 23 2016",
-            "August 04 2016",
-            "July 25 2016",
-            "July 22 2016",
-        ],
-        "star": [4, 4, 5, 3, 5],
-        "version_id": [1487, 1487, 1487, 1487, 1487],
-    }
-    return Dataset.from_dict(data_dict)
-
-
-@pytest.fixture
-def lab(dataset):
-    return Datalab(data=dataset, label_name=LABEL_NAME)
-
-
-@pytest.fixture
-def pred_probs(dataset):
-    np.random.seed(SEED)
-    return np.random.rand(len(dataset), 3)
-
-
-def test_datalab_class(dataset):
-    lab = Datalab(dataset, LABEL_NAME)
-    # Has the right attributes
-    for attr in ["data", "label_name", "_labels", "info", "issues"]:
-        assert hasattr(lab, attr), f"Missing attribute {attr}"
-
-
-def test_datalab_invalid_datasetdict():
+def test_datalab_invalid_datasetdict(dataset, label_name):
     with pytest.raises(ValueError) as e:
         datadict = DatasetDict({"train": dataset, "test": dataset})
-        Datalab(datadict, LABEL_NAME)  # type: ignore
+        Datalab(datadict, label_name)  # type: ignore
         assert "Please pass a single dataset, not a DatasetDict." in str(e)
-
-
-def test_data_features_and_labels(dataset):
-    lab = Datalab(dataset, LABEL_NAME)
-    assert all(lab._labels == np.array([1, 1, 2, 0, 2]))
 
 
 class TestDatalab:
     """Tests for the Datalab class."""
 
     @pytest.fixture
-    def lab(self, dataset):
-        return Datalab(data=dataset, label_name=LABEL_NAME)
+    def lab(self, dataset, label_name):
+        return Datalab(data=dataset, label_name=label_name)
+
+    def test_print(self, lab, capsys):
+        # Can print the object
+        print(lab)
+        captured = capsys.readouterr()
+        assert "Datalab\n" == captured.out
 
     def tmp_path(self):
         # A path for temporarily saving the instance during tests.
@@ -119,11 +55,12 @@ class TestDatalab:
         # does not have a save method.
         return Path(__file__).parent / "tmp.pkl"
 
-    def test_attributes(self, dataset):
-        lab = Datalab(dataset, LABEL_NAME)
+    def test_attributes(self, lab):
         # Has the right attributes
         for attr in ["data", "label_name", "_labels", "info", "issues"]:
             assert hasattr(lab, attr), f"Missing attribute {attr}"
+
+        assert all(lab._labels == np.array([1, 1, 2, 0, 2]))
 
     def test_get_info(self, lab):
         """Test that the method fetches the values from the info dict."""
@@ -140,26 +77,90 @@ class TestDatalab:
     )
     def test_find_issues(self, lab, pred_probs, issue_types):
         assert lab.issues is None
-        assert lab.results is None, "Results should be None before calling find_issues"
+        assert lab.issue_summary is None, "Results should be None before calling find_issues"
         lab.find_issues(pred_probs=pred_probs, issue_types=issue_types)
         assert lab.issues is not None, "Issues weren't updated"
         assert isinstance(lab.issues, pd.DataFrame), "Issues should by in a dataframe"
-        assert all(lab.issues.predicted_label == np.array([1, 0, 1, 2, 0]))
 
         if issue_types is None:
-            assert isinstance(lab.results, float), "Results should be a float"
-            assert isinstance(lab.info.get("summary", None), dict), "Summary should be a dict"
+            assert isinstance(
+                lab.issue_summary, pd.DataFrame
+            ), "Issue summary should be a dataframe"
 
-    def test_save(self, lab, tmp_path):
+    # Mock the lab.issues dataframe to have some pre-existing issues
+    def test_update_issues(self, lab, pred_probs, monkeypatch):
+        """If there are pre-existing issues in the lab,
+        find_issues should add columns to the issues dataframe for each example.
+        """
+        mock_issues = pd.DataFrame(
+            {
+                "is_foo_issue": [False, True, False, False, False],
+                "foo_score": [0.6, 0.8, 0.7, 0.7, 0.8],
+            }
+        )
+        monkeypatch.setattr(lab, "issues", mock_issues)
+        mock_issue_summary = pd.DataFrame(
+            {
+                "issue_type": ["foo"],
+                "score": [0.72],
+            }
+        )
+        monkeypatch.setattr(lab, "issue_summary", mock_issue_summary)
+
+        lab.find_issues(pred_probs=pred_probs)
+        # Check that the issues dataframe has the right columns
+        expected_issues_df = pd.DataFrame(
+            {
+                "is_foo_issue": mock_issues.is_foo_issue,
+                "foo_score": mock_issues.foo_score,
+                "is_label_issue": [False, False, False, False, False],
+                "label_quality": [0.95071431, 0.15601864, 0.60111501, 0.70807258, 0.18182497],
+            }
+        )
+        pd.testing.assert_frame_equal(lab.issues, expected_issues_df, check_exact=False)
+
+        expected_issue_summary_df = pd.DataFrame(
+            {
+                "issue_type": ["foo", "label"],
+                "score": [0.72, 0.6],
+            }
+        )
+        pd.testing.assert_frame_equal(
+            lab.issue_summary, expected_issue_summary_df, check_exact=False
+        )
+
+    def test_save(self, lab, tmp_path, monkeypatch):
         """Test that the save and load methods work."""
         lab.save(tmp_path)
         assert tmp_path.exists(), "File was not saved"
         assert (tmp_path / "data").is_dir(), "Data directory was not saved"
 
         # Mock the issues dataframe
-        lab.issues = pd.DataFrame({"a": [1, 2, 3]})
+        mock_issues = pd.DataFrame(
+            {
+                "is_foo_issue": [False, True, False, False, False],
+                "foo_score": [0.6, 0.8, 0.7, 0.7, 0.8],
+            }
+        )
+        monkeypatch.setattr(lab, "issues", mock_issues)
+
+        # Mock the issue summary dataframe
+        mock_issue_summary = pd.DataFrame(
+            {
+                "issue_type": ["foo"],
+                "score": [0.72],
+            }
+        )
+        monkeypatch.setattr(lab, "issue_summary", mock_issue_summary)
         lab.save(tmp_path)
         assert (tmp_path / "issues.csv").exists(), "Issues file was not saved"
+        assert (tmp_path / "summary.csv").exists(), "Issue summary file was not saved"
+
+        # Save works in an arbitrary directory, that should be created if it doesn't exist
+        new_dir = tmp_path / "subdir"
+        assert not new_dir.exists(), "Directory should not exist"
+        lab.save(new_dir)
+        assert new_dir.exists(), "Directory was not created"
 
     def test_pickle(self, lab, tmp_path):
         """Test that the class can be pickled."""
@@ -171,16 +172,54 @@ class TestDatalab:
 
         assert lab2.label_name == "star"
 
-    def test_load(self, lab, tmp_path):
+    def test_load(self, lab, tmp_path, dataset, monkeypatch):
         """Test that the save and load methods work."""
+
+        # Mock the issues dataframe
+        mock_issues = pd.DataFrame(
+            {
+                "is_foo_issue": [False, True, False, False, False],
+                "foo_score": [0.6, 0.8, 0.7, 0.7, 0.8],
+            }
+        )
+        monkeypatch.setattr(lab, "issues", mock_issues)
+
+        # Mock the issue summary dataframe
+        mock_issue_summary = pd.DataFrame(
+            {
+                "issue_type": ["foo"],
+                "score": [0.72],
+            }
+        )
+        monkeypatch.setattr(lab, "issue_summary", mock_issue_summary)
+
         lab.save(tmp_path)
+
         loaded_lab = Datalab.load(tmp_path)
         assert loaded_lab.data.data == lab.data.data
         assert loaded_lab.label_name == lab.label_name
         assert all(loaded_lab._labels == lab._labels)
         assert loaded_lab._label_map == lab._label_map
         assert loaded_lab.info == lab.info
-        assert loaded_lab.issues == lab.issues
+        pd.testing.assert_frame_equal(loaded_lab.issues, mock_issues)
+        pd.testing.assert_frame_equal(loaded_lab.issue_summary, mock_issue_summary)
+
+        # Load accepts a `Dataset`.
+        loaded_lab = Datalab.load(tmp_path, data=dataset)
+        assert loaded_lab.data.data == dataset.data
+
+        # Misaligned dataset raises a ValueError
+        with pytest.raises(ValueError) as excinfo:
+            Datalab.load(tmp_path, data=dataset[:2])
+            expected_error_msg = "Length of data (2) does not match length of labels (5)"
+            assert expected_error_msg == str(excinfo.value)
+
+        with pytest.raises(ValueError) as excinfo:
+            Datalab.load(tmp_path, data=dataset.shuffle())
+            expected_error_msg = (
+                "Data has been modified since Lab was saved. Cannot load Lab with modified data."
+            )
+            assert expected_error_msg == str(excinfo.value)
 
 
 def test_health_summary(lab, pred_probs):
@@ -208,34 +247,3 @@ def test_health_summary(lab, pred_probs):
     assert (
         label_quality_df["Class Index"].map(lab._label_map).equals(label_quality_df["Class Name"])
     ), "Class indices don't match class names in dataframe"
-
-
-@pytest.mark.parametrize(
-    "issue_manager_class",
-    [HealthIssueManager, LabelIssueManager],
-    ids=["HealthIssueManager", "LabelIssueManager"],
-)
-class TestIssueManager:
-    @pytest.fixture
-    def issue_manager(self, lab, issue_manager_class):
-        return issue_manager_class(datalab=lab)
-
-    def test_init(self, lab, issue_manager_class):
-        """Test that the init method works."""
-        issue_manager = issue_manager_class(datalab=lab)
-        assert issue_manager.datalab == lab
-
-    def test_find_issues(self, lab, pred_probs, issue_manager):
-        """Test that the find_issues method works."""
-        info_before = lab.info.copy()
-        _ = issue_manager.find_issues(pred_probs=pred_probs)
-
-        assert lab.info != info_before, "Info should be updated"
-
-    def test_update_info(self, lab, pred_probs, issue_manager):
-        """Test that the update_info method works."""
-        info_before = lab.info.copy()
-        issues = issue_manager.find_issues(pred_probs=pred_probs)
-        issue_manager.update_info(issues=issues)
-
-        assert lab.info != info_before, "Info should be updated"
