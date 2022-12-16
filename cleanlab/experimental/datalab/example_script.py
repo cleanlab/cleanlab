@@ -2,7 +2,6 @@
 Local test script for datalab.py
 """
 
-import cleanlab
 from cleanlab import Datalab
 from datasets import load_dataset
 import pandas as pd

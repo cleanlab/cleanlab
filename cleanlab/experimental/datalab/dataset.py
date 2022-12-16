@@ -15,8 +15,9 @@
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
 """
-Implements cleanlab's Dataset class for storing ML datasets and 
-working with them in a :py:func:`Datalab <cleanlab.experimental.datalab.datalab.Datalab>` object.
+Implements cleanlab's Dataset class for storing ML datasets and
+working with them in a
+:py:func:`Datalab <cleanlab.experimental.datalab.datalab.Datalab>` object.
 """
 
 

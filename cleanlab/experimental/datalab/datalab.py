@@ -35,7 +35,7 @@ from cleanlab.experimental.datalab.factory import _IssueManagerFactory
 from cleanlab.experimental.datalab.issue_manager import IssueManager
 from cleanlab.internal.validation import assert_valid_inputs, labels_to_array
 
-__all__ = ["DataLab"]
+__all__ = ["Datalab"]
 
 # Constants:
 OBJECT_FILENAME = "datalab.pkl"
@@ -123,7 +123,8 @@ class Datalab:
             This is not yet implemented.
 
         model :
-            sklearn compatible model used to compute out-of-sample predicted probability for the labels.
+            sklearn compatible model used to compute out-of-sample
+            predicted probability for the labels.
 
             WARNING
             -------
@@ -178,7 +179,7 @@ class Datalab:
             raise NotImplementedError("TODO: issue_types is not yet supported.")
 
         for issue_manager in issue_managers:
-            # TODO: find_issues should return None, set self.issues in a set_issues(issue_manager) method
+            # TODO: find_issues should return None, set self.issues in a set_issues(issue_manager) method  # noqa: E501
             issue_manager.find_issues(**issue_kwargs)
             self.collect_results_from_issue_manager(issue_manager)
 
@@ -206,7 +207,8 @@ class Datalab:
         else:
             if not isinstance(issue_manager.issues, pd.DataFrame):
                 raise TypeError(
-                    f"Expected issue_manager.issues to be a pandas DataFrame, but got {type(issue_manager.issues)}"
+                    f"Expected issue_manager.issues to be a pandas DataFrame, "
+                    f"but got {type(issue_manager.issues)}"
                 )
             # Join on index
             self.issues = self.issues.join(issue_manager.issues, how="inner")
@@ -247,7 +249,7 @@ class Datalab:
         unique_labels = np.unique(_labels)
         label_map = {label: i for i, label in enumerate(unique_labels)}
         # labels 0, 1, ..., K-1
-        formatted_labels = np.array([label_map[l] for l in _labels])
+        formatted_labels = np.array([label_map[label] for label in _labels])
         inverse_map = {i: label for label, i in label_map.items()}
 
         return formatted_labels, inverse_map
@@ -273,7 +275,8 @@ class Datalab:
     def get_info(self, issue_name) -> Any:
         """Returns dict of info about a specific issue, or None if this issue does not exist in self.info.
         Internally fetched from self.info[issue_name] and prettified.
-        Keys might include: number of examples suffering from issue, indicates of top-K examples most severely suffering,
+        Keys might include: number of examples suffering from issue,
+        indicates of top-K examples most severely suffering,
         other misc stuff like which sets of examples are duplicates if the issue=="duplicated".
         """
         if issue_name in self.info:
@@ -282,7 +285,8 @@ class Datalab:
             raise ValueError(
                 f"issue_name {issue_name} not found in self.info. These have not been computed yet."
             )
-            # could alternatively consider: raise ValueError("issue_name must be a valid key in Datalab.info dict.")
+            # could alternatively consider:
+            # raise ValueError("issue_name must be a valid key in Datalab.info dict.")
 
     def report(self) -> None:
         """Prints helpful summary of all issues."""
@@ -306,7 +310,8 @@ class Datalab:
         if display_str[-1] == ",":  # delete trailing comma
             display_str = display_str[:-1]
 
-        # Useful info could be: num_examples, task, issues_identified (numeric or None if issue-finding not run yet).
+        # Useful info could be: num_examples, task, issues_identified
+        # (numeric or None if issue-finding not run yet).
         return f"Datalab({display_str})"
 
     def __str__(self) -> str:
@@ -378,7 +383,6 @@ class Datalab:
 
         You have to save the Dataset yourself if you want it saved to file!
         """
-        # TODO: Try using a custom context manager to save the object and the heavy attributes safely.
         if os.path.exists(path):
             print(f"WARNING: Existing files will be overwritten by newly saved files at: {path}")
         else:
@@ -422,17 +426,20 @@ class Datalab:
         # self.issue_summary = stored_results
         print(f"Saved Datalab to folder: {path}")
         print(
-            f"The Dataset must be saved/loaded separately to access it after reloading this Datalab."
+            "The Dataset must be saved/loaded separately "
+            "to access it after reloading this Datalab."
         )
 
     @classmethod
     def load(cls, path: str, data: Optional[Dataset] = None) -> "Datalab":
         """Loads Lab from file. Folder could ideally be zipped or unzipped.
-        Checks which cleanlab version Lab was previously saved from and raises warning if they dont match.
-        path is path to saved Datalab, not Dataset.
+        Checks which cleanlab version Lab was previously saved from
+            and raises warning if they dont match.
+        `path` is the path to the saved Datalab, not Dataset.
 
         Dataset should be the same one used before saving.
-        If data is None, the self.data attribute of this object will be empty and some functionality may not work.
+        If data is None, the self.data attribute of this object
+            will be empty and some functionality may not work.
         """
         if not os.path.exists(path):
             raise ValueError(f"No folder found at specified path: {path}")
@@ -455,23 +462,27 @@ class Datalab:
         #         datalab.results = pickle.load(f)
 
         if data is not None:
-            # TODO: check this matches any of the other attributes, ie. is the Dataset that was used before
             if hash(data) != datalab._data_hash:
                 raise ValueError(
-                    "Data has been modified since Lab was saved. Cannot load Lab with modified data."
+                    "Data has been modified since Lab was saved. "
+                    "Cannot load Lab with modified data."
                 )
 
-            if len(data) != len(datalab._labels):
+            labels = datalab._labels
+            if len(data) != len(labels):
                 raise ValueError(
-                    f"Length of data ({len(data)}) does not match length of labels ({len(datalab._labels)})"
+                    f"Length of data ({len(data)}) does not match length of labels ({len(labels)})"
                 )
 
             datalab.data = data
 
         current_version = cleanlab.__version__
-        if current_version != datalab.cleanlab_version:
+        datalab_version = datalab.cleanlab_version
+        if current_version != datalab_version:
             warnings.warn(
-                f"Saved Datalab was created using different version of cleanlab ({datalab.cleanlab_version}) than current version ({current_version}). Things may be broken!"
+                f"Saved Datalab was created using different version of cleanlab "
+                f"({datalab_version}) than current version ({current_version}). "
+                f"Things may be broken!"
             )
         return datalab
 
