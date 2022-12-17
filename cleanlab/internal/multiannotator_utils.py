@@ -33,6 +33,7 @@ def assert_valid_inputs_multiannotator(
     labels_multiannotator: pd.DataFrame,
     pred_probs: Optional[np.ndarray] = None,
     ensemble: bool = False,
+    allow_single_label: bool = False,
 ) -> None:
     """Validate format of multi-annotator labels"""
     # Raise error if labels are not formatted properly
@@ -68,12 +69,20 @@ def assert_valid_inputs_multiannotator(
             "If there is only one annotator, use cleanlab.rank.get_label_quality_scores instead"
         )
 
-    # Raise error if labels_multiannotator only has 1 label per example
-    if labels_multiannotator.apply(lambda s: len(s.dropna()) == 1, axis=1).all():
-        raise ValueError(
-            "Each example only has one label, collapse the labels into a 1-D array and use "
-            "cleanlab.rank.get_label_quality_scores instead"
-        )
+    if not allow_single_label:
+        # Raise error if labels_multiannotator only has 1 label per example
+        if labels_multiannotator.apply(lambda s: len(s.dropna()) == 1, axis=1).all():
+            raise ValueError(
+                "Each example only has one label, collapse the labels into a 1-D array and use "
+                "cleanlab.rank.get_label_quality_scores instead"
+            )
+
+        # Raise warning if no examples with 2 or more annotators agree
+        # TODO: might shift this later in the code to avoid extra compute
+        if labels_multiannotator.apply(
+            lambda s: np.array_equal(s.dropna().unique(), s.dropna()), axis=1
+        ).all():
+            warnings.warn("Annotators do not agree on any example. Check input data.")
 
     # Check labels
     all_labels_flatten = labels_multiannotator.replace({pd.NA: np.NaN}).astype(float).values.ravel()
@@ -117,13 +126,6 @@ def assert_valid_inputs_multiannotator(
                 "which appears in labels_multiannotator. Perhaps some rarely-annotated classes were lost while "
                 "establishing consensus labels used to train your classifier."
             )
-
-    # Raise warning if no examples with 2 or more annotators agree
-    # TODO: might shift this later in the code to avoid extra compute
-    if labels_multiannotator.apply(
-        lambda s: np.array_equal(s.dropna().unique(), s.dropna()), axis=1
-    ).all():
-        warnings.warn("Annotators do not agree on any example. Check input data.")
 
 
 def assert_valid_pred_probs(

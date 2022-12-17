@@ -418,7 +418,7 @@ def test_get_active_learning_scores():
     singe_pred_probs_unlabeled = pred_probs_unlabeled[[0]]
     get_active_learning_scores(single_labels, singe_pred_probs, singe_pred_probs_unlabeled)
 
-    # test error when each example is only labeled by one annotator
+    # test when each example is only labeled by one annotator
     labels = pd.DataFrame(
         [
             [0, np.NaN, np.NaN],
@@ -429,11 +429,7 @@ def test_get_active_learning_scores():
         ]
     )
     pred_probs = np.random.random((5, 3))
-
-    try:
-        get_active_learning_scores(labels, pred_probs)
-    except ValueError as e:
-        assert "Each example only has one label" in str(e)
+    get_active_learning_scores(labels, pred_probs, pred_probs)
 
 
 def test_get_active_learning_scores_ensemble():
@@ -474,7 +470,7 @@ def test_get_active_learning_scores_ensemble():
     singe_pred_probs_unlabeled = pred_probs_unlabeled[:, [0]]
     get_active_learning_scores_ensemble(single_labels, singe_pred_probs, singe_pred_probs_unlabeled)
 
-    # test error when each example is only labeled by one annotator
+    # test when each example is only labeled by one annotator
     labels = pd.DataFrame(
         [
             [0, np.NaN, np.NaN],
@@ -486,10 +482,7 @@ def test_get_active_learning_scores_ensemble():
     )
     pred_probs = np.random.random((2, 5, 3))
 
-    try:
-        get_active_learning_scores_ensemble(labels, pred_probs)
-    except ValueError as e:
-        assert "Each example only has one label" in str(e)
+    get_active_learning_scores_ensemble(labels, pred_probs)
 
 
 def test_missing_class():

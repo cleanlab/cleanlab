@@ -574,18 +574,37 @@ def get_active_learning_scores(
     optimal_temp = find_best_temp_scaler(labels_multiannotator, pred_probs)
     pred_probs = temp_scale_pred_probs(pred_probs, optimal_temp)
 
-    multiannotator_info = get_label_quality_multiannotator(
-        labels_multiannotator,
-        pred_probs,
-        return_annotator_stats=False,
-        return_detailed_quality=False,
-        return_weights=True,
-    )
+    # if all examples are only labeled by a single annotator
+    if labels_multiannotator.apply(lambda s: len(s.dropna()) == 1, axis=1).all():
+        assert_valid_inputs_multiannotator(
+            labels_multiannotator, pred_probs, allow_single_label=True
+        )
 
-    quality_of_consensus_labeled = multiannotator_info["label_quality"]["consensus_quality_score"]
-    model_weight = multiannotator_info["model_weight"]
-    annotator_weight = multiannotator_info["annotator_weight"]
-    avg_annotator_weight = np.mean(annotator_weight)
+        consensus_label = get_majority_vote_label(
+            labels_multiannotator=labels_multiannotator,
+            pred_probs=pred_probs,
+            verbose=False,
+        )
+        quality_of_consensus_labeled = get_label_quality_scores(consensus_label, pred_probs)
+        model_weight = 1
+        annotator_weight = np.full(labels_multiannotator.shape[1], 1)
+        avg_annotator_weight = np.mean(annotator_weight)
+
+    else:
+        multiannotator_info = get_label_quality_multiannotator(
+            labels_multiannotator,
+            pred_probs,
+            return_annotator_stats=False,
+            return_detailed_quality=False,
+            return_weights=True,
+        )
+
+        quality_of_consensus_labeled = multiannotator_info["label_quality"][
+            "consensus_quality_score"
+        ]
+        model_weight = multiannotator_info["model_weight"]
+        annotator_weight = multiannotator_info["annotator_weight"]
+        avg_annotator_weight = np.mean(annotator_weight)
 
     # compute scores for labeled data
     active_learning_scores = np.full(len(labels_multiannotator), np.nan)
@@ -675,20 +694,38 @@ def get_active_learning_scores_ensemble(
         pred_probs[i] = temp_scale_pred_probs(curr_pred_probs, curr_optimal_temp)
         optimal_temp[i] = curr_optimal_temp
 
-    multiannotator_info = get_label_quality_multiannotator_ensemble(
-        labels_multiannotator,
-        pred_probs,
-        return_annotator_stats=False,
-        return_detailed_quality=False,
-        return_weights=True,
-    )
+    # if all examples are only labeled by a single annotator
+    if labels_multiannotator.apply(lambda s: len(s.dropna()) == 1, axis=1).all():
+        assert_valid_inputs_multiannotator(
+            labels_multiannotator, pred_probs, ensemble=True, allow_single_label=True
+        )
 
-    quality_of_consensus_labeled = multiannotator_info["label_quality"]["consensus_quality_score"]
-    model_weight = multiannotator_info["model_weight"]
-    annotator_weight = multiannotator_info["annotator_weight"]
-    avg_annotator_weight = np.mean(annotator_weight)
+        avg_pred_probs = np.mean(pred_probs, axis=0)
+        consensus_label = get_majority_vote_label(
+            labels_multiannotator=labels_multiannotator,
+            pred_probs=avg_pred_probs,
+            verbose=False,
+        )
+        quality_of_consensus_labeled = get_label_quality_scores(consensus_label, avg_pred_probs)
+        model_weight = np.full(len(pred_probs), 1)
+        annotator_weight = np.full(labels_multiannotator.shape[1], 1)
+        avg_annotator_weight = np.mean(annotator_weight)
 
-    active_learning_scores = np.full(len(labels_multiannotator), np.nan)
+    else:
+        multiannotator_info = get_label_quality_multiannotator_ensemble(
+            labels_multiannotator,
+            pred_probs,
+            return_annotator_stats=False,
+            return_detailed_quality=False,
+            return_weights=True,
+        )
+
+        quality_of_consensus_labeled = multiannotator_info["label_quality"][
+            "consensus_quality_score"
+        ]
+        model_weight = multiannotator_info["model_weight"]
+        annotator_weight = multiannotator_info["annotator_weight"]
+        avg_annotator_weight = np.mean(annotator_weight)
 
     # compute scores for labeled data
     active_learning_scores = np.full(len(labels_multiannotator), np.nan)
@@ -768,7 +805,9 @@ def get_majority_vote_label(
         labels_multiannotator = pd.DataFrame(labels_multiannotator)
 
     if verbose:
-        assert_valid_inputs_multiannotator(labels_multiannotator, pred_probs)
+        assert_valid_inputs_multiannotator(
+            labels_multiannotator, pred_probs, allow_single_label=True
+        )
 
     majority_vote_label = np.full(len(labels_multiannotator), np.nan)
     mode_labels_multiannotator = labels_multiannotator.mode(axis=1)
