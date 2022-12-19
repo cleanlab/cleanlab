@@ -133,6 +133,7 @@ def assert_valid_pred_probs(
     pred_probs_unlabeled: Optional[np.ndarray] = None,
     ensemble: bool = False,
 ):
+    """Validate format of pred_probs for multiannotator functions"""
     if ensemble:
         if pred_probs.ndim != 3:
             error_message = "pred_probs must be a 3d array."

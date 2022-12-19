@@ -15,14 +15,26 @@
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
 """
-Methods for analysis of classification data labeled by multiple annotators, including computation of:
+Methods for analysis of classification data labeled by multiple annotators.
+
+This module consists of two main functions which can both be applied to datasets that have been trained using a single model, 
+or datasets that have been trained on an ensemble of multiple models.
+
+The :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>` function performs analysis on data 
+that has been labeled by multiple annotators, it includes computation of:
 
 * A consensus label for each example that aggregates the individual annotations more accurately than alternative aggregation via majority-vote or other algorithms used in crowdsourcing.
 * A quality score for each consensus label which measures our confidence that this label is correct.
 * An analogous label quality score for each individual label chosen by one annotator for a particular example.
 * An overall quality score for each annotator which measures our confidence in the overall correctness of labels obtained from this annotator.
 
-The underlying algorithms are described in `the CROWDLAB paper <https://arxiv.org/abs/2210.06812>`_.
+The underlying algorithms used to compute the statistics are described in `the CROWDLAB paper <https://arxiv.org/abs/2210.06812>`_.
+
+The :py:func:`get_active_learning_score <cleanlab.multiannotator.get_active_learning_score>` function focuses on the active learning setting.
+In the setting, any example can be labeled by one or more annotators, while some examples can have no labels at all. 
+The function computes an active learning quality score for each example, the score can be used to determine which examples
+to collect additional labels for.
+
 """
 
 import warnings
@@ -527,14 +539,15 @@ def get_active_learning_scores(
     pred_probs_unlabeled: Optional[np.ndarray] = None,
 ) -> Tuple[np.ndarray, np.ndarray]:
     """Returns an active learning quality score for each example in the dataset.
+
     We consider settings where one example can be labeled by multiple annotators and some examples have no labels at all so far.
+
     The score is in between 0 and 1, and can be used to prioritize what data to collect additional labels for; lower scores indicate less confidence
     on the examples and that additional labels should be collected for those examples.
     For example:
 
     * 1 - confident example, no additional labeling is required.
     * 0 - unconfident example, want to collect more labels for this example (either because it is currently unlabeled and very different than other examples, it has only received few annotations from less reliable annotators, or the annotations it has received don't agree with each other).
-
 
     Parameters
     ----------
