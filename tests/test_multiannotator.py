@@ -92,6 +92,7 @@ def make_data(
     return {
         "X_train": X_train[row_NA_check],
         "X_train_unlabeled": X_train_unlabeled,
+        "X_train_complete": X_train,
         "true_labels_train": true_labels_train[row_NA_check],
         "true_labels_train_unlabeled": true_labels_train_unlabeled,
         "labels": s[row_NA_check].reset_index(drop=True),
@@ -101,6 +102,7 @@ def make_data(
         "complete_labels": complete_labels,
         "pred_probs": latent[4][row_NA_check],
         "pred_probs_unlabeled": latent_unlabeled[4],
+        "pred_probs_complete": latent[4],
         "noise_matrix": noise_matrix,
     }
 
@@ -164,6 +166,11 @@ def make_data_long(data):
 # Global to be used by all test methods. Only compute this once for speed.
 data = make_data()
 ensemble_data = make_ensemble_data()
+small_data = make_data(
+    labeled_sizes=[5, 5, 5],
+    unlabeled_sizes=[5, 5, 5],
+    num_annotators=1,
+)
 
 
 def test_convert_long_to_wide():
@@ -483,6 +490,30 @@ def test_get_active_learning_scores_ensemble():
     pred_probs = np.random.random((2, 5, 3))
 
     get_active_learning_scores_ensemble(labels, pred_probs)
+
+
+def test_single_label_active_learning():
+    labels = np.array(small_data["complete_labels"])
+    labels_unlabeled = small_data["true_labels_train_unlabeled"]
+    pred_probs = small_data["pred_probs_complete"]
+    pred_probs_unlabeled = small_data["pred_probs_unlabeled"]
+
+    assert len(labels) == 15
+
+    # test 5 rounds of active learning
+    for i in range(5):
+        active_learning_scores, active_learning_scores_unlabeled = get_active_learning_scores(
+            labels, pred_probs, pred_probs_unlabeled
+        )
+
+        min_ind = np.argmin(active_learning_scores_unlabeled)
+
+        labels = np.append(labels, labels_unlabeled[min_ind])
+        pred_probs = np.append(pred_probs, pred_probs_unlabeled[min_ind].reshape(1, -1), axis=0)
+        labels_unlabeled = np.delete(labels_unlabeled, min_ind)
+        pred_probs_unlabeled = np.delete(pred_probs_unlabeled, min_ind, axis=0)
+
+    assert len(labels) == 20
 
 
 def test_missing_class():

@@ -62,14 +62,14 @@ def assert_valid_inputs_multiannotator(
             f"Annotators {nan_columns} did not label any examples."
         )
 
-    # Raise error if labels_multiannotator has <= 1 column
-    if len(labels_multiannotator.columns) <= 1:
-        raise ValueError(
-            "labels_multiannotator must have more than one column.\n"
-            "If there is only one annotator, use cleanlab.rank.get_label_quality_scores instead"
-        )
-
     if not allow_single_label:
+        # Raise error if labels_multiannotator has <= 1 column
+        if len(labels_multiannotator.columns) <= 1:
+            raise ValueError(
+                "labels_multiannotator must have more than one column.\n"
+                "If there is only one annotator, use cleanlab.rank.get_label_quality_scores instead"
+            )
+
         # Raise error if labels_multiannotator only has 1 label per example
         if labels_multiannotator.apply(lambda s: len(s.dropna()) == 1, axis=1).all():
             raise ValueError(
