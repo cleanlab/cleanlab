@@ -339,39 +339,30 @@ def get_label_quality_multiannotator_ensemble(
     verbose: bool = True,
     label_quality_score_kwargs: dict = {},
 ) -> Dict[str, Any]:
-    """Returns label quality scores for each example and for each annotator.
+    """Returns label quality scores for each example and for each annotator, based on predictions from an ensemble of models.
 
     This function is similar to :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>` but for settings where
     you have trained an ensemble of multiple classifier models rather than a single model.
-    For multiclass classification datasets where examples have been labeled by multiple annotators, this function computes:
-    a consensus label for each example, a score for how confident we are that this consensus label is actually correct, and quality scores for each annotator's individual labels as well as the quality of each annotator.
-    Assuming an ensemble of multiple classifier models has been trained, all of the models' predictions and confidences are used to estimate consensus label
-    and annotator quality in an aggregated fashion that can produce more accurate estimates than only training a single classifier model.
-
-    The score is between 0 and 1; lower scores indicate labels less likely to be correct. For example:
-
-    * 1 - clean label (the given label is likely correct).
-    * 0 - dirty label (the given label is unlikely correct).
 
     Parameters
     ----------
     labels_multiannotator : pd.DataFrame of np.ndarray
-        Similar to :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>`
+        Multiannotator labels in the same format expected by :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>`.
     pred_probs : np.ndarray
         An array of shape ``(P, N, K)`` where P is the number of models, consisting of predicted class probabilities from the ensemble models.
         Each set of predicted probabilities with shape ``(N, K)`` is in the same format expected by the :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>`.
     calibrate_probs : bool, default = False
-        Similar to :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>`
+        Boolean value as expected by :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>`.
     return_detailed_quality: bool, default = True
-        Similar to :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>`
+        Boolean value as expected by :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>`.
     return_annotator_stats : bool, default = True
-        Similar to :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>`
+        Boolean value as expected by :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>`.
     return_weights : bool, default = False
-        Similar to :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>`
+        Boolean value as expected by :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>`.
     verbose : bool, default = True
-        Similar to :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>`
+        Boolean value as expected by :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>`.
     label_quality_score_kwargs : dict, optional
-        Similar to :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>`
+        Keyword arguments in the same format expected by py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>`.
 
     Returns
     -------
@@ -379,23 +370,23 @@ def get_label_quality_multiannotator_ensemble(
         Dictionary containing up to 5 pandas DataFrame with keys as below:
 
         ``label_quality`` : pandas.DataFrame
-            Similar to :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>`
+            Similar to output as :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>`.
 
         ``detailed_label_quality`` : pandas.DataFrame
-            Similar to :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>`
+            Similar to output as :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>`.
 
         ``annotator_stats`` : pandas.DataFrame
-            Similar to :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>`
+            Similar to output as :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>`.
 
         ``model_weight`` : np.ndarray
             Only returned if `return_weights=True`.
             An array of shape ``(P,)`` where is the number of models in the ensemble, specifying the weight of each classifier model in weighted averages used to estimate label quality.
             These weigthts is an estimate of how trustworthy the model is relative the annotators.
-            An array of shape ``(P,)`` where is the number of models in the ensemble, specifying the model weight used in weighted averages
+            An array of shape ``(P,)`` where is the number of models in the ensemble, specifying the model weight used in weighted averages.
 
         ``annotator_weight`` : np.ndarray
             Only returned if `return_weights=True`.
-            Similar to :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>`
+            Similar to output as :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>`.
 
     See Also
     --------
@@ -535,11 +526,15 @@ def get_active_learning_scores(
     pred_probs: np.ndarray,
     pred_probs_unlabeled: Optional[np.ndarray] = None,
 ) -> Tuple[np.ndarray, np.ndarray]:
-    """Returns an active learning quality score for each example in the dataset. The score is in between 0 and 1; lower scores indicate less confidence on the examples
-    and that additional labels should be collected for those examples. For example:
+    """Returns an active learning quality score for each example in the dataset.
+    We consider settings where one example can be labeled by multiple annotators and some examples have no labels at all so far.
+    The score is in between 0 and 1, and can be used to prioritize what data to collect additional labels for; lower scores indicate less confidence
+    on the examples and that additional labels should be collected for those examples.
+    For example:
 
     * 1 - confident example, no additional labeling is required.
-    * 0 - unconfident example, it is suggested to collect more labels for this example.
+    * 0 - unconfident example, want to collect more labels for this example (either because it is currently unlabeled and very different than other examples, it has only received few annotations from less reliable annotators, or the annotations it has received don't agree with each other).
+
 
     Parameters
     ----------
@@ -553,15 +548,19 @@ def get_active_learning_scores(
         Predicted probabilities in the same format expected by the :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>`.
     pred_probs_unlabeled : np.ndarray, optional
         An array of shape ``(N, K)`` of predicted class probabilities from a trained classifier model for examples that have no annotator labels.
+        Predicted probabilities in the same format expected by the :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>`.
 
     Returns
     -------
     active_learning_scores : np.ndarray
         Array of shape ``(N,)`` indicating the active learning quality scores for each example.
+        Examples with the lowest scores are those we should label next in order to maximally improve our classifier model.
 
     active_learning_scores_unlabeled : np.ndarray
         Array of shape ``(N,)`` indicating the active learning quality scores for each unlabeled example.
         Returns an empty array if no unlabeled data is provided.
+        Examples with the lowest scores are those we should label next in order to maximally improve our classifier model
+        (scores for unlabeled data are directly comparable with the `active_learning_scores` for labeled data).
     """
 
     if isinstance(labels_multiannotator, np.ndarray):
@@ -645,36 +644,33 @@ def get_active_learning_scores_ensemble(
     pred_probs: np.ndarray,
     pred_probs_unlabeled: Optional[np.ndarray] = None,
 ) -> Tuple[np.ndarray, np.ndarray]:
-    """Returns an active learning qualityscore for each example in the dataset, which can be used to prioritize what data to collect additional labels for. We consider settings where one example can be labeled by multiple annotators and some examples have no labels at all so far. The score is in between 0 and 1; lower scores indicate examples whose true label we are less confident about based on the current data (the examples with lowest scores are those for which additional labels should be collected). For example:
+    """Returns an active learning quality score for each example in the dataset, based on predictions from an ensemble of models.
 
-    * 1 - confidently-labeled example, no additional labeling is required.
-    * 0 - unconfident example, want to collect more labels for this example (either because it is currently unlabeled and very different than other examples, it has only received few annotations from less reliable annotators, or the annotations it has received don't agree with each other).
-
-    This function allows for an ensemble of multiple classifier models to be trained and will aggregate predictions from the models to compute the active learning quality score.
+    This function is similar to :py:func:`get_active_learning_scores <cleanlab.multiannotator.get_active_learning_scores>` but allows for an
+    ensemble of multiple classifier models to be trained and will aggregate predictions from the models to compute the active learning quality score.
 
     Parameters
     ----------
     labels_multiannotator : pd.DataFrame or np.ndarray
-        2D pandas DataFrame or array of multiple given labels for each example with shape ``(N, M)``,
-        where N is the number of examples and M is the number of annotators.
-        For more details, labels in the same format expected by the :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>`.
-        Note that examples that have no annotator labels should not be included in this DataFrame/array.
+        Multiannotator labels in the same format expected by :py:func:`get_active_learning_scores <cleanlab.multiannotator.get_active_learning_scores>`.
     pred_probs : np.ndarray
         An array of shape ``(P, N, K)`` where P is the number of models, consisting of predicted class probabilities from the ensemble models.
         Each set of predicted probabilities with shape ``(N, K)`` is in the same format expected by the :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>`.
     pred_probs_unlabeled : np.ndarray, optional
         An array of shape ``(P, N, K)`` where P is the number of models, consisting of predicted class probabilities from a trained classifier model
         for examples that have no annotated labels so far (but which we may want to label in the future, and hence compute active learning quality scores for).
+        Each set of predicted probabilities with shape ``(N, K)`` is in the same format expected by the :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>`.
 
     Returns
     -------
     active_learning_scores : np.ndarray
-        Array of shape ``(N,)`` indicating the active learning quality scores for each example.
-        Examples with the lowest scores are those we should label next in order to maximally improve our classifier model.
+        Similar to output as :py:func:`get_label_quality_scores <cleanlab.multiannotator.get_label_quality_scores>`.
     active_learning_scores_unlabeled : np.ndarray
-        Array of shape ``(N,)`` indicating the active learning quality scores for each unlabeled example.
-        Returns an empty array if no unlabeled data is provided.
-        Examples with the lowest scores are those we should label next in order to maximally improve our classifier model (scores for unlabeled data are directly comparable with the `active_learning_scores` for labeled data).
+        Similar to output as :py:func:`get_label_quality_scores <cleanlab.multiannotator.get_label_quality_scores>`.
+
+    See Also
+    --------
+    get_active_learning_scores
     """
 
     if isinstance(labels_multiannotator, np.ndarray):
