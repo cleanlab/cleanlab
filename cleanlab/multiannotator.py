@@ -758,7 +758,7 @@ def get_active_learning_scores_ensemble(
                     np.full(pred_probs_unlabeled.shape[1:], 1 / num_classes)[np.newaxis, :, :],
                 )
             ),
-            weights=np.concatenate((model_weight, [avg_annotator_weight])),
+            weights=np.concatenate((model_weight, np.array([avg_annotator_weight]))),
             axis=0,
         )
 
