@@ -90,7 +90,7 @@ class Datalab:
             "multi_label": False,  # TODO: Add multi-label support.
             "health_score": None,
         }
-        self.cleanlab_version = cleanlab.__version__
+        self.cleanlab_version = cleanlab.version.__version__
         self.path = ""
 
     def find_issues(
