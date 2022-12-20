@@ -217,30 +217,3 @@ class TestDatalab:
                 "Data has been modified since Lab was saved. Cannot load Lab with modified data."
             )
             assert expected_error_msg == str(excinfo.value)
-
-
-def test_health_summary(lab, pred_probs):
-    summary = lab._health_summary(pred_probs=pred_probs)
-    assert isinstance(summary, dict), "Summary should be a dict"
-    # Check that the summary has the right keys
-    for key in [
-        "overall_label_health_score",
-        "joint",
-        "classes_by_label_quality",
-        "overlapping_classes",
-    ]:
-        assert key in summary.keys(), f"Summary missing key {key}"
-
-    label_quality_df = summary["classes_by_label_quality"]
-    class_names_in_df = label_quality_df["Class Name"].values
-    # Make sure the class names appear in the dataframe
-    assert (
-        len(set(class_names_in_df) - set([4, 5, 3])) == 0
-    ), "Class names don't match class indices in dataframe"
-    assert (
-        len(set(label_quality_df["Class Index"].values) - set([0, 1, 2])) == 0
-    ), "Class indices don't match class indices in dataframe"
-    # Make sure the class indices are properly mapped to class names in the dataframe
-    assert (
-        label_quality_df["Class Index"].map(lab._label_map).equals(label_quality_df["Class Name"])
-    ), "Class indices don't match class names in dataframe"

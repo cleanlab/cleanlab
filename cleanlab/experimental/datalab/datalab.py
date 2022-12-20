@@ -469,17 +469,3 @@ class Datalab:
                 f"Things may be broken!"
             )
         return datalab
-
-    def _health_summary(self, pred_probs, **kwargs) -> dict:
-        """Returns a short summary of the health of this Lab."""
-        from cleanlab.dataset import health_summary
-
-        # Validate input
-        self._validate_pred_probs(pred_probs)
-
-        class_names = list(self._label_map.values())
-        summary = health_summary(self._labels, pred_probs, class_names=class_names, **kwargs)
-        return summary
-
-    def _validate_pred_probs(self, pred_probs) -> None:
-        assert_valid_inputs(X=None, y=self._labels, pred_probs=pred_probs)
