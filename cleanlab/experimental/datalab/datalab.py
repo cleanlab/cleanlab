@@ -101,7 +101,7 @@ class Datalab:
         feature_values=None,  # embeddings of data
         model=None,  # sklearn.Estimator compatible object
         issue_init_kwargs: Optional[Dict[str, Dict[str, Any]]] = None,
-    ) -> Any:
+    ) -> None:
         """
         Checks for all sorts of issues in the data, including in labels and in features.
 

@@ -21,8 +21,8 @@ class TestIssueManager:
 
     def test_find_issues(self, pred_probs, issue_manager):
         """Test that the find_issues method works."""
-        issues, summary, info = issue_manager.find_issues(pred_probs=pred_probs)
-
+        issue_manager.find_issues(pred_probs=pred_probs)
+        issues, summary, info = issue_manager.issues, issue_manager.summary, issue_manager.info
         assert isinstance(issues, pd.DataFrame), "Issues should be a dataframe"
         is_issue_key = "_".join(["is", issue_manager.issue_key, "issue"])
         assert is_issue_key in issues.columns, "Issues should have an is_<issue_key>_issue column"
@@ -42,7 +42,8 @@ class TestLabelIssueManager:
 
     def test_find_issues(self, pred_probs, issue_manager):
         """Test that the find_issues method works."""
-        issues, summary, info = issue_manager.find_issues(pred_probs=pred_probs)
+        issue_manager.find_issues(pred_probs=pred_probs)
+        issues, summary, info = issue_manager.issues, issue_manager.summary, issue_manager.info
         assert isinstance(issues, pd.DataFrame), "Issues should be a dataframe"
 
         assert isinstance(summary, pd.DataFrame), "Summary should be a dataframe"
