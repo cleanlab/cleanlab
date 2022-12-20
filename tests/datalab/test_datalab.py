@@ -61,6 +61,8 @@ class TestDatalab:
             assert hasattr(lab, attr), f"Missing attribute {attr}"
 
         assert all(lab._labels == np.array([1, 1, 2, 0, 2]))
+        assert isinstance(lab.issues, pd.DataFrame), "Issues should by in a dataframe"
+        assert isinstance(lab.issue_summary, pd.DataFrame), "Issue summary should be a dataframe"
 
     def test_get_info(self, lab):
         """Test that the method fetches the values from the info dict."""
@@ -76,16 +78,11 @@ class TestDatalab:
         ids=["Default issues", "Only label issues"],
     )
     def test_find_issues(self, lab, pred_probs, issue_types):
-        assert lab.issues is None
-        assert lab.issue_summary is None, "Results should be None before calling find_issues"
+        assert lab.issues.empty, "Issues should be empty before calling find_issues"
+        assert lab.issue_summary.empty, "Issue summary should be empty before calling find_issues"
         lab.find_issues(pred_probs=pred_probs, issue_types=issue_types)
-        assert lab.issues is not None, "Issues weren't updated"
-        assert isinstance(lab.issues, pd.DataFrame), "Issues should by in a dataframe"
-
-        if issue_types is None:
-            assert isinstance(
-                lab.issue_summary, pd.DataFrame
-            ), "Issue summary should be a dataframe"
+        assert not lab.issues.empty, "Issues weren't updated"
+        assert not lab.issue_summary.empty, "Issue summary wasn't updated"
 
     # Mock the lab.issues dataframe to have some pre-existing issues
     def test_update_issues(self, lab, pred_probs, monkeypatch):

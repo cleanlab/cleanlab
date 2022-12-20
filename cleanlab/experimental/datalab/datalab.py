@@ -75,8 +75,12 @@ class Datalab:
         self.data.set_format(
             type="numpy"
         )  # TODO: figure out if we are setting all features to numpy, maybe exclude label_name?
-        self.issues: Optional[pd.DataFrame] = None  # TODO: Keep track of all issue types,
-        self.issue_summary = None  # TODO: For each issue type, add a score
+        self.issues: pd.DataFrame = pd.DataFrame(
+            index=range(len(self.data))
+        )  # TODO: Keep track of all issue types,
+        self.issue_summary: pd.DataFrame = pd.DataFrame(
+            columns=["issue_type", "score"]
+        )  # TODO: For each issue type, add a score
         self._labels, self._label_map = self._extract_labels(self.label_name)
         class_names = self.data.unique(self.label_name)  # TODO
         self.info = {
@@ -198,31 +202,13 @@ class Datalab:
         issue_manager :
             IssueManager object to collect results from.
         """
-
+        self.issues = self.issues.join(issue_manager.issues, how="inner")
+        self.issue_summary = pd.concat(
+            [self.issue_summary, issue_manager.summary],
+            axis=0,
+            ignore_index=True,
+        )
         self.info[issue_manager.issue_key] = issue_manager.info
-
-        # Add issues dataframe from issue_manager to existing issues dataframe
-        if self.issues is None:
-            self.issues = issue_manager.issues
-        else:
-            if not isinstance(issue_manager.issues, pd.DataFrame):
-                raise TypeError(
-                    f"Expected issue_manager.issues to be a pandas DataFrame, "
-                    f"but got {type(issue_manager.issues)}"
-                )
-            # Join on index
-            self.issues = self.issues.join(issue_manager.issues, how="inner")
-
-        # Update issue summary dataframe
-        if self.issue_summary is None:
-            self.issue_summary = issue_manager.summary
-        else:
-
-            self.issue_summary = pd.concat(
-                [self.issue_summary, issue_manager.summary],
-                axis=0,
-                ignore_index=True,
-            )
 
     def _extract_labels(self, label_name: Union[str, list[str]]) -> tuple[np.ndarray, Mapping]:
         """
@@ -329,14 +315,12 @@ class Datalab:
         save_path = self.path
 
         # Update the issues to be the path to the exported file.
-        if self.issues is not None:
-            state["issues"] = os.path.join(save_path, ISSUES_FILENAME)
-            self.issues.to_csv(state["issues"], index=False)
+        state["issues"] = os.path.join(save_path, ISSUES_FILENAME)
+        self.issues.to_csv(state["issues"], index=False)
 
         # Update the issue summary to be the path to the exported file.
-        if self.issue_summary is not None:
-            state["issue_summary"] = os.path.join(save_path, ISSUE_SUMMARY_FILENAME)
-            self.issue_summary.to_csv(state["issue_summary"], index=False)
+        state["issue_summary"] = os.path.join(save_path, ISSUE_SUMMARY_FILENAME)
+        self.issue_summary.to_csv(state["issue_summary"], index=False)
 
         # Save the dataset to disk
         if self.data is not None:
