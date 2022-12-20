@@ -207,7 +207,7 @@ class TestDatalab:
 
         # Misaligned dataset raises a ValueError
         with pytest.raises(ValueError) as excinfo:
-            Datalab.load(tmp_path, data=dataset[:2])
+            Datalab.load(tmp_path, data=dataset.shard(2, 0))
             expected_error_msg = "Length of data (2) does not match length of labels (5)"
             assert expected_error_msg == str(excinfo.value)
 
