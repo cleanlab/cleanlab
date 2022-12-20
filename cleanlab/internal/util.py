@@ -268,9 +268,7 @@ def round_preserving_row_totals(confident_joint: np.ndarray) -> np.ndarray:
     ).astype(int)
 
 
-<<<<<<< HEAD
-def estimate_pu_f1(s, prob_s_eq_1) -> float:
-=======
+
 def int2onehot(labels: List[List[int]]) -> NDArray:
     """Convert list of lists to a onehot matrix for multi-labels
 
@@ -305,7 +303,6 @@ def onehot2int(onehot_matrix: NDArray) -> List[List[int]]:
 
 
 def estimate_pu_f1(s: Iterable[Any], prob_s_eq_1: Iterable[Any]) -> float:
->>>>>>> d7ed306 (More annotations, in 9 files.)
     """Computes Claesen's estimate of f1 in the pulearning setting.
 
     Parameters
