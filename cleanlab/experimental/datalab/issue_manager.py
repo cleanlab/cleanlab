@@ -10,8 +10,8 @@ import numpy as np
 
 from cleanlab.internal.validation import assert_valid_inputs
 
-if TYPE_CHECKING:
-    from cleanlab.experimental.datalab.datalab import Datalab
+if TYPE_CHECKING:  # pragma: no cover
+    from cleanlab.experimental.datalab.datalab import Datalab  # pragma: no cover
 
 
 class IssueManager(ABC):
