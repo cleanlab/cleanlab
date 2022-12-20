@@ -36,8 +36,9 @@ import numpy as np
 import warnings
 from typing import Tuple, Union, Optional
 
-from cleanlab.typing import LabelLike
+from cleanlab.cl_typing import LabelLike
 from cleanlab.internal.multilabel_utils import stack_complement, get_onehot_num_classes
+
 from cleanlab.internal.util import (
     value_counts_fill_missing_classes,
     clip_values,

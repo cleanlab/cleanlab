@@ -31,7 +31,7 @@ from cleanlab.internal.label_quality_utils import (
     get_normalized_entropy,
 )
 from cleanlab.internal.validation import assert_valid_inputs, labels_to_array
-from cleanlab.typing import LabelLike
+from cleanlab.cl_typing import LabelLike
 
 
 class OutOfDistribution:

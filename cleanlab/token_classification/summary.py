@@ -19,6 +19,7 @@ Methods to display sentences and their label issues in a token classification da
 """
 
 from typing import Any, Dict, List, Optional, Tuple
+from numpy.typing import NDArray
 
 import numpy as np
 import pandas as pd
@@ -27,11 +28,11 @@ from cleanlab.internal.token_classification_utils import color_sentence, get_sen
 
 
 def display_issues(
-    issues: list,
+    issues: List[Tuple[int, int]],
     tokens: List[List[str]],
     *,
     labels: Optional[List[Any]] = None,
-    pred_probs: Optional[List[np.array]] = None,
+    pred_probs: Optional[List[NDArray]] = None,
     exclude: List[Tuple[int, int]] = [],
     class_names: Optional[List[str]] = None,
     top: int = 20
@@ -155,7 +156,7 @@ def common_label_issues(
     tokens: List[List[str]],
     *,
     labels: Optional[List[Any]] = None,
-    pred_probs: Optional[List[np.array]] = None,
+    pred_probs: Optional[List[np.ndarray]] = None,
     class_names: Optional[List[str]] = None,
     top: int = 10,
     exclude: List[Tuple[int, int]] = [],

@@ -28,7 +28,7 @@ import pandas as pd
 def assert_valid_inputs(
     X: DatasetLike,
     y: LabelLike,
-    pred_probs: Optional[np.ndarray] = None,
+    pred_probs: Optional[np.ndarray[float]] = None,
     multi_label: bool = False,
     allow_missing_classes: bool = True,
     allow_one_class: bool = False,

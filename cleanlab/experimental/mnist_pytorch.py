@@ -31,6 +31,9 @@ from torchvision import datasets, transforms
 from torch.autograd import Variable
 from torch.utils.data.sampler import SubsetRandomSampler
 import numpy as np
+from numpy.typing import NDArray
+from typing import Any, List, Optional
+from cl_typing import LabelLike
 
 
 MNIST_TRAIN_SIZE = 60000
@@ -70,12 +73,12 @@ def get_sklearn_digits_dataset(loader):
     class TorchDataset(Dataset):
         """Abstracts a numpy array as a PyTorch dataset."""
 
-        def __init__(self, data, targets, transform=None):
+        def __init__(self, data: NDArray, targets: NDArray, transform: Optional[Any]=None):
             self.data = torch.from_numpy(data).float()
             self.targets = torch.from_numpy(targets).long()
             self.transform = transform
 
-        def __getitem__(self, index):
+        def __getitem__(self, index: int):
             x = self.data[index]
             y = self.targets[index]
             if self.transform:
@@ -111,7 +114,7 @@ def get_sklearn_digits_dataset(loader):
 class SimpleNet(nn.Module):
     """Basic Pytorch CNN for MNIST-like data."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super(SimpleNet, self).__init__()
         self.conv1 = nn.Conv2d(1, 10, kernel_size=5)
         self.conv2 = nn.Conv2d(10, 20, kernel_size=5)
@@ -253,7 +256,7 @@ class CNN(BaseEstimator):  # Inherits sklearn classifier
             "dataset": self.dataset,
         }
 
-    def set_params(self, **parameters):  # pragma: no cover
+    def set_params(self, **parameters: Any):  # pragma: no cover
         for parameter, value in parameters.items():
             if parameter != "dataset":
                 setattr(self, parameter, value)
@@ -261,7 +264,7 @@ class CNN(BaseEstimator):  # Inherits sklearn classifier
             self._set_dataset(parameters["dataset"])
         return self
 
-    def fit(self, train_idx, train_labels=None, sample_weight=None, loader="train"):
+    def fit(self, train_idx: List[LabelLike], train_labels: List[LabelLike]=None, sample_weight: List[Any]=None, loader="train") -> None:
         """This function adheres to sklearn's "fit(X, y)" format for
         compatibility with scikit-learn. ** All inputs should be numpy
         arrays, not pyTorch Tensors train_idx is not X, but instead a list of
@@ -321,7 +324,7 @@ class CNN(BaseEstimator):  # Inherits sklearn classifier
                 optimizer.zero_grad()
                 output = self.model(data)
                 loss = F.nll_loss(output, target, class_weight)
-                loss.backward()
+                loss.backward() # pragma: untyped
                 optimizer.step()
                 if self.log_interval is not None and batch_idx % self.log_interval == 0:
                     print(
@@ -340,7 +343,7 @@ class CNN(BaseEstimator):  # Inherits sklearn classifier
         probs = self.predict_proba(idx, loader)
         return probs.argmax(axis=1)
 
-    def predict_proba(self, idx=None, loader=None):
+    def predict_proba(self, idx: List[int]=None, loader: Optional[str]=None) -> NDArray:
         if self.loader is not None:
             loader = self.loader
         if loader is None:

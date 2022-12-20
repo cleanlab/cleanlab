@@ -25,9 +25,10 @@ You must have PyTorch installed: https://pytorch.org/get-started/locally/
 
 import torch.nn as nn
 import torch.nn.functional as F
+from typing import Any, Callable
 
-
-def call_bn(bn, x):
+# FIXME: add type annotation for bn
+def call_bn(bn: Callable[[float], Any], x: float) -> Any:
     return bn(x)
 
 
@@ -46,7 +47,7 @@ class CNN(nn.Module):
     forward
       forward pass in PyTorch"""
 
-    def __init__(self, input_channel=3, n_outputs=10, dropout_rate=0.25, top_bn=False):
+    def __init__(self, input_channel=3, n_outputs=10, dropout_rate=0.25, top_bn=False) -> None:
         self.dropout_rate = dropout_rate
         self.top_bn = top_bn
         super(CNN, self).__init__()
@@ -72,7 +73,7 @@ class CNN(nn.Module):
 
     def forward(
         self,
-        x,
+        x: float,
     ):
         h = x
         h = self.c1(h)

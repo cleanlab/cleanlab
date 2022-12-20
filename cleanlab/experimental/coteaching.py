@@ -28,8 +28,12 @@ for learning with noisy labels is provided within: https://github.com/cleanlab/e
 # https://github.com/bhanML/Co-teaching/blob/master/loss.py
 # See (Han et al., 2018).
 
+from typing import Callable, List, Tuple
+
 import torch
 import torch.nn.functional as F
+from torch.nn import Module
+from torch.optim import Adam
 from torch.autograd import Variable
 import numpy as np
 
@@ -66,7 +70,7 @@ def loss_coteaching(
 
     loss_1 = F.cross_entropy(y_1, t, reduce=False, weight=class_weights)
     ind_1_sorted = np.argsort(loss_1.data.cpu())
-    loss_1_sorted = loss_1[ind_1_sorted]
+    loss_1_sorted = loss_1[ind_1_sorted.tolist()]
 
     loss_2 = F.cross_entropy(y_2, t, reduce=False, weight=class_weights)
     ind_2_sorted = np.argsort(loss_2.data.cpu())
@@ -87,7 +91,7 @@ def loss_coteaching(
     )
 
 
-def initialize_lr_scheduler(lr=0.001, epochs=250, epoch_decay_start=80):
+def initialize_lr_scheduler(lr=0.001, epochs=250, epoch_decay_start=80) -> Tuple[List[float]]:
     """Scheduler to adjust learning rate and betas for Adam Optimizer"""
     mom1 = 0.9
     mom2 = 0.9  # Original author had this set to 0.1
@@ -117,15 +121,15 @@ def forget_rate_scheduler(epochs, forget_rate, num_gradual, exponent):
 # Train the Model
 def train(
     train_loader,
-    epoch,
-    model1,
-    optimizer1,
-    model2,
-    optimizer2,
+    epoch: int,
+    model1: Module,
+    optimizer1: Adam,
+    model2: Module,
+    optimizer2: Adam,
     args,
     forget_rate_schedule,
     class_weights,
-    accuracy,
+    accuracy: Callable,
 ):
     """PyTorch training function.
 

@@ -20,15 +20,15 @@ Ancillary helper methods used internally throughout this package; mostly related
 
 import warnings
 import numpy as np
+from numpy.typing import NDArray
 import pandas as pd
-from typing import Union, Tuple
+from typing import Any, Union, Tuple, List, Iterable
 
-from cleanlab.typing import DatasetLike, LabelLike
+from cl_typing import DatasetLike, LabelLike
 from cleanlab.internal.validation import labels_to_array
 
-
+from cl_typing import DatasetLike, LabelLike
 TINY_VALUE = 1e-100
-
 
 def remove_noise_from_class(noise_matrix, class_without_noise) -> np.ndarray[Any]:
     """A helper function in the setting of PU learning.
@@ -65,7 +65,7 @@ def remove_noise_from_class(noise_matrix, class_without_noise) -> np.ndarray[Any
     return x
 
 
-def clip_noise_rates(noise_matrix) -> np.ndarray[Any]:
+def clip_noise_rates(noise_matrix) -> np.ndarray:
     """Clip all noise rates to proper range [0,1), but
     do not modify the diagonal terms because they are not
     noise rates.
@@ -102,7 +102,7 @@ def clip_noise_rates(noise_matrix) -> np.ndarray[Any]:
     return noise_matrix
 
 
-def clip_values(x, low=0.0, high=1.0, new_sum=None) -> np.ndarray[Any]:
+def clip_values(x: np.ndarray[float], low=0.0, high=1.0, new_sum=None) -> np.ndarray[float]:
     """Clip all values in p to range [low,high].
     Preserves sum of x.
 
@@ -211,7 +211,7 @@ def get_missing_classes(labels, *, pred_probs=None, num_classes=None, multi_labe
     return sorted(set(range(num_classes)).difference(unique_classes))
 
 
-def round_preserving_sum(iterable) -> np.ndarray[Any]:
+def round_preserving_sum(iterable: Union[List[float], np.ndarray[float]]) -> Union[List[int], np.ndarray[int]]:
     """Rounds an iterable of floats while retaining the original summed value.
     The name of each parameter is required. The type and description of each
     parameter is optional, but should be included if not obvious.
@@ -246,7 +246,7 @@ def round_preserving_sum(iterable) -> np.ndarray[Any]:
     return ints.astype(int)
 
 
-def round_preserving_row_totals(confident_joint) -> np.ndarray[Any]:
+def round_preserving_row_totals(confident_joint: np.ndarray) -> np.ndarray:
     """Rounds confident_joint cj to type int
     while preserving the totals of reach row.
     Assumes that cj is a 2D np.ndarray of type float.
@@ -268,7 +268,44 @@ def round_preserving_row_totals(confident_joint) -> np.ndarray[Any]:
     ).astype(int)
 
 
+<<<<<<< HEAD
 def estimate_pu_f1(s, prob_s_eq_1) -> float:
+=======
+def int2onehot(labels: List[List[int]]) -> NDArray:
+    """Convert list of lists to a onehot matrix for multi-labels
+
+    Parameters
+    ----------
+    labels: list of lists of integers
+      e.g. [[0,1], [3], [1,2,3], [1], [2]]
+      All integers from 0,1,...,K-1 must be represented."""
+
+    from sklearn.preprocessing import MultiLabelBinarizer
+
+    mlb = MultiLabelBinarizer()
+    return mlb.fit_transform(labels)
+
+# using generic NDArray,
+# if someone knows how to properly annotate 2D numpy arrays feel free.
+def onehot2int(onehot_matrix: NDArray) -> List[List[int]]:
+    """Convert a onehot matrix for multi-labels to a list of lists of ints
+
+    Parameters
+    ----------
+    onehot_matrix: 2D np.ndarray of 0s and 1s
+      A one hot encoded matrix representation of multi-labels.
+
+    Returns
+    -------
+    labels: list of lists of integers
+      e.g. [[0,1], [3], [1,2,3], [1], [2]]
+      All integers from 0,1,...,K-1 must be represented."""
+
+    return [list(np.where(row == 1)[0]) for row in onehot_matrix]
+
+
+def estimate_pu_f1(s: Iterable[Any], prob_s_eq_1: Iterable[Any]) -> float:
+>>>>>>> d7ed306 (More annotations, in 9 files.)
     """Computes Claesen's estimate of f1 in the pulearning setting.
 
     Parameters
@@ -291,7 +328,7 @@ def estimate_pu_f1(s, prob_s_eq_1) -> float:
     return recall**2 / (2.0 * frac_positive) if frac_positive != 0 else np.nan
 
 
-def confusion_matrix(true, pred) -> np.ndarray[Any]:
+def confusion_matrix(true: np.ndarray[LabelLike], pred: np.ndarray[LabelLike]) -> np.ndarray[Any]:
     """Implements a confusion matrix for true labels
     and predicted labels. true and pred MUST BE the same length
     and have the same distinct set of class labels represented.
@@ -332,7 +369,7 @@ def confusion_matrix(true, pred) -> np.ndarray[Any]:
 
 
 def print_square_matrix(
-    matrix,
+    matrix: np.ndarray[Any],
     left_name="s",
     top_name="y",
     title=" A square matrix",
@@ -372,42 +409,39 @@ def print_square_matrix(
     print()
 
 
-def print_noise_matrix(noise_matrix, round_places=2):
+def print_noise_matrix(noise_matrix: NDArray, round_places=2):
     """Pretty prints the noise matrix."""
-    # untyped function.
-    # print_square_matrix(
-    #     noise_matrix,
-    #     title=" Noise Matrix (aka Noisy Channel) P(given_label|true_label)",
-    #     short_title="p(s|y)",
-    #     round_places=round_places,
-    # )
+    print_square_matrix(
+        noise_matrix,
+        title=" Noise Matrix (aka Noisy Channel) P(given_label|true_label)",
+        short_title="p(s|y)",
+        round_places=round_places,
+    )
 
 
-def print_inverse_noise_matrix(inverse_noise_matrix, round_places=2):
+def print_inverse_noise_matrix(inverse_noise_matrix: NDArray, round_places=2):
     """Pretty prints the inverse noise matrix."""
-    # untyped function.
-    # print_square_matrix(
-    #     inverse_noise_matrix,
-    #     left_name="y",
-    #     top_name="s",
-    #     title=" Inverse Noise Matrix P(true_label|given_label)",
-    #     short_title="p(y|s)",
-    #     round_places=round_places,
-    # )
+    print_square_matrix(
+        inverse_noise_matrix,
+        left_name="y",
+        top_name="s",
+        title=" Inverse Noise Matrix P(true_label|given_label)",
+        short_title="p(y|s)",
+        round_places=round_places,
+    )
 
 
 def print_joint_matrix(joint_matrix, round_places=2):
     """Pretty prints the joint label noise matrix."""
-    # untyped function.
-    # print_square_matrix(
-    #     joint_matrix,
-    #     title=" Joint Label Noise Distribution Matrix P(given_label, true_label)",
-    #     short_title="p(s,y)",
-    #     round_places=round_places,
-    # )
+    print_square_matrix(
+        joint_matrix,
+        title=" Joint Label Noise Distribution Matrix P(given_label, true_label)",
+        short_title="p(s,y)",
+        round_places=round_places,
+    )
 
 
-def compress_int_array(int_array, num_possible_values) -> np.ndarray:
+def compress_int_array(int_array: np.ndarray[int], num_possible_values: int) -> np.ndarray:
     """Compresses dtype of np.ndarray<int> if num_possible_values is small enough."""
     try:
         compressed_type = None
@@ -467,14 +501,13 @@ def train_val_split(
     return X_train, X_holdout, labels_train, labels_holdout
 
 
-def subset_X_y(X, labels, mask) -> Tuple[DatasetLike, LabelLike]:
+def subset_X_y(X: List[LabelLike], labels: List[LabelLike], mask: Any) -> Tuple[DatasetLike, LabelLike]:
     """Extracts subset of features/labels where mask is True"""
     labels = subset_labels(labels, mask)
     X = subset_data(X, mask)
     return X, labels
 
-
-def subset_labels(labels, mask) -> Union[list, np.ndarray, pd.Series]:
+def subset_labels(labels: List[LabelLike], mask: Any) -> Union[List[LabelLike], np.ndarray, pd.Series]:
     """Extracts subset of labels where mask is True"""
     try:  # filtering labels as if it is array or DataFrame
         return labels[mask]
@@ -484,8 +517,11 @@ def subset_labels(labels, mask) -> Union[list, np.ndarray, pd.Series]:
         except Exception:
             raise TypeError("labels must be 1D np.ndarray, list, or pd.Series.")
 
-
-def subset_data(X, mask) -> DatasetLike:
+# FIXME: add annoatation for mask
+def subset_data(
+    X: Union[torch.utils.data.Dataset, tensorflow.data.Dataset],
+    mask: Any
+    ) -> DatasetLike:
     """Extracts subset of data examples where mask (np.ndarray) is True"""
     try:
         import torch
@@ -618,7 +654,7 @@ def is_torch_dataset(X) -> bool:
     return False  # assumes this cannot be torch dataset if torch cannot be imported
 
 
-def is_tensorflow_dataset(X) -> bool:
+def is_tensorflow_dataset(X: Any) -> bool:
     try:
         import tensorflow
 
@@ -629,7 +665,7 @@ def is_tensorflow_dataset(X) -> bool:
     return False  # assumes this cannot be tensorflow dataset if tensorflow cannot be imported
 
 
-def csr_vstack(a, b) -> DatasetLike:
+def csr_vstack(a: NDArray, b: NDArray) -> DatasetLike:
     """Takes in 2 csr_matrices and appends the second one to the bottom of the first one.
     Alternative to scipy.sparse.vstack. Returns a sparse matrix.
     """

@@ -171,7 +171,7 @@ def mapping(entities: List[int], maps: List[int]) -> List[int]:
     return list(map(f, entities))
 
 
-def merge_probs(probs: np.ndarray, maps: List[int]) -> np.ndarray:
+def merge_probs(probs: np.ndarray[List[float]], maps: List[int]) -> np.ndarray:
     """
     Merges model-predictive probabilities with desired mapping
 
