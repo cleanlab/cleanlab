@@ -137,14 +137,14 @@ def assert_valid_pred_probs(
     if ensemble:
         if pred_probs.ndim != 3:
             error_message = "pred_probs must be a 3d array."
-            if pred_probs.ndim == 2:
+            if pred_probs.ndim == 2:  # pragma: no cover
                 error_message += " If you have a 2d pred_probs array, use the non-ensemble version of this function."
             raise ValueError(error_message)
 
         if pred_probs_unlabeled is not None:
             if pred_probs_unlabeled.ndim != 3:
                 error_message = "pred_probs_unlabeled must be a 3d array."
-                if pred_probs_unlabeled.ndim == 2:
+                if pred_probs_unlabeled.ndim == 2:  # pragma: no cover
                     error_message += " If you have a 2d pred_probs_unlabeled array, use the non-ensemble version of this function."
                 raise ValueError(error_message)
 
@@ -156,7 +156,7 @@ def assert_valid_pred_probs(
     else:
         if pred_probs.ndim != 2:
             error_message = "pred_probs must be a 2d array."
-            if pred_probs.ndim == 3:
+            if pred_probs.ndim == 3:  # pragma: no cover
                 error_message += (
                     " If you have a 3d pred_probs array, use the ensemble version of this function."
                 )
@@ -165,7 +165,7 @@ def assert_valid_pred_probs(
         if pred_probs_unlabeled is not None:
             if pred_probs_unlabeled.ndim != 2:
                 error_message = "pred_probs_unlabeled must be a 2d array."
-                if pred_probs_unlabeled.ndim == 3:
+                if pred_probs_unlabeled.ndim == 3:  # pragma: no cover
                     error_message += " If you have a 3d pred_probs_unlabeled array, use the non-ensemble version of this function."
                 raise ValueError(error_message)
 
