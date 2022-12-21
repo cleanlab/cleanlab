@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional, TYPE_CHECKING
+from typing import Any, Dict, List, Optional, TYPE_CHECKING, Union
 
 from cleanlab.classification import CleanLearning
+from cleanlab.outlier import OutOfDistribution
 
 import pandas as pd
 import numpy as np
@@ -72,7 +73,7 @@ class IssueManager(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def collect_info(self, /, *args, **kwargs) -> None:
+    def collect_info(self, /, *args, **kwargs) -> dict:
         """Collects data for the info attribute of the Datalab.
 
         NOTE
@@ -89,8 +90,9 @@ class IssueManager(ABC):
 
 
 class HealthIssueManager(IssueManager):
+    @classmethod
     @property
-    def issue_key(self) -> str:
+    def issue_key(cls) -> str:
         return "health"
 
     def find_issues(self, pred_probs: np.ndarray, **kwargs) -> dict:
@@ -301,3 +303,88 @@ class LabelIssueManager(IssueManager):
             1: "Bar",
             2: "Baz",
         }
+
+
+class OutOfDistributionIssueManager(IssueManager):
+    """Manages issues related to out-of-distribution examples."""
+
+    @classmethod
+    @property
+    def issue_key(cls) -> str:
+        return "ood"
+
+    @classmethod
+    @property
+    def info_keys(cls) -> List[str]:
+        return []
+
+    def __init__(
+        self,
+        datalab: Datalab,
+        ood_kwargs: Optional[Dict[str, Any]] = None,
+        threshold: Optional[float] = None,
+    ):
+        super().__init__(datalab)
+        self.ood: OutOfDistribution = OutOfDistribution(**(ood_kwargs or {}))
+        self.threshold = threshold
+
+    def find_issues(
+        self,
+        features: Optional[List[str]] = None,
+        pred_probs: Optional[np.ndarray] = None,
+        **kwargs,
+    ) -> None:
+
+        if pred_probs is not None and features is None:
+            scores = self._score_with_pred_probs(pred_probs, **kwargs)
+        elif pred_probs is None and features is not None:
+            scores = self._score_with_features(features, **kwargs)
+        else:
+            raise ValueError("Either pred_probs or features must be provided.")
+
+        if self.threshold is None:
+            # 10th percentile of scores
+            self.threshold = np.percentile(scores, 10)
+
+        self.issues = pd.DataFrame(
+            {
+                "is_ood_issue": scores < self.threshold,
+                "ood_score": scores,
+            },
+        )
+
+        self.summary = pd.DataFrame(
+            {
+                "issue_type": [self.issue_key],
+                "score": [scores.mean()],
+            },
+        )
+
+        self.info = self.collect_info()
+
+    def _score_with_pred_probs(self, pred_probs: np.ndarray, **kwargs) -> np.ndarray:
+        scores = self.ood.fit_score(pred_probs=pred_probs, labels=self.datalab._labels, **kwargs)
+        return scores
+
+    def _score_with_features(self, features: List[str], **kwargs) -> np.ndarray:
+        embeddings = self._extract_embeddings(columns=features, **kwargs)
+
+        scores = self.ood.fit_score(features=embeddings)
+        return scores
+
+    def collect_info(self) -> dict:
+        info_dict = {
+            **self.ood.params,
+        }
+        return info_dict
+
+    # TODO: Update annotation for columns and related args in other methods
+    def _extract_embeddings(self, columns: Union[str, List[str]], **kwargs) -> np.ndarray:
+        """Extracts embeddings for the given columns."""
+
+        if isinstance(columns, list):
+            raise NotImplementedError("TODO: Support list of columns.")
+
+        format_kwargs = kwargs.get("format_kwargs", {})
+
+        return self.datalab.data.with_format("numpy", **format_kwargs)[columns]

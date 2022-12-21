@@ -2,7 +2,13 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from cleanlab.experimental.datalab.issue_manager import LabelIssueManager
+from cleanlab.experimental.datalab.issue_manager import (
+    LabelIssueManager,
+    OutOfDistributionIssueManager,
+)
+from cleanlab.outlier import OutOfDistribution
+
+SEED = 42
 
 
 class TestLabelIssueManager:
@@ -109,3 +115,60 @@ class TestLabelIssueManager:
         summary_parameters.pop("pred_probs")
         expected_parameters.pop("pred_probs")
         assert summary_parameters == expected_parameters
+
+
+class TestOutOfDistributionIssueManager:
+    @pytest.fixture
+    def embeddings(self, lab):
+        np.random.seed(SEED)
+        embeddings_array = 0.5 + 0.1 * np.random.rand(lab.get_info("num_examples"), 2)
+        embeddings_array[4, :] = -1
+        return {"embedding": embeddings_array}
+
+    @pytest.fixture
+    def issue_manager(self, lab, embeddings, monkeypatch):
+        mock_data = lab.data.from_dict({**lab.data.to_dict(), **embeddings})
+        monkeypatch.setattr(lab, "data", mock_data)
+        return OutOfDistributionIssueManager(datalab=lab, ood_kwargs={"params": {"k": 3}})
+
+    def test_init(self, issue_manager):
+        assert isinstance(issue_manager.ood, OutOfDistribution)
+        assert issue_manager.ood.params["k"] == 3
+
+    def test_extract_embeddings(self, issue_manager, embeddings):
+        extracted_embeddings = issue_manager._extract_embeddings(
+            columns="embedding", format_kwargs={"dtype": np.float64}
+        )
+        assert isinstance(extracted_embeddings, np.ndarray), "Should be a numpy array"
+        assert np.all(extracted_embeddings == embeddings["embedding"]), "Embeddings should match"
+
+    def test_find_issues(self, issue_manager):
+        issue_manager.find_issues(features="embedding")
+        issues, summary, info = issue_manager.issues, issue_manager.summary, issue_manager.info
+        expected_issue_mask = np.array([False] * 4 + [True])
+        assert np.all(issues["is_ood_issue"] == expected_issue_mask), "Issue mask should be correct"
+        assert summary["issue_type"][0] == "ood"
+        assert summary["score"][0] == pytest.approx(expected=0.8257756, rel=1e-7)
+
+        assert info.get("knn", None) is not None, "Should have knn info"
+
+    def test_find_issues_with_pred_probs(self, issue_manager):
+        pred_probs = np.array(
+            [
+                [0.1, 0.85, 0.05],
+                [0.15, 0.8, 0.05],
+                [0.05, 0.05, 0.9],
+                [0.1, 0.05, 0.85],
+                [0.1, 0.65, 0.25],
+            ]
+        )
+        issue_manager.find_issues(pred_probs=pred_probs)
+        issues, summary, info = issue_manager.issues, issue_manager.summary, issue_manager.info
+        expected_issue_mask = np.array([False] * 4 + [True])
+        assert np.all(issues["is_ood_issue"] == expected_issue_mask), "Issue mask should be correct"
+        assert summary["issue_type"][0] == "ood"
+        assert summary["score"][0] == pytest.approx(expected=0.151, rel=1e-3)
+
+        assert np.all(
+            info.get("confident_thresholds", None) == [0.1, 0.825, 0.575]
+        ), "Should have confident_joint info"
