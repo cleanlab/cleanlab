@@ -311,10 +311,33 @@ def test_label_quality_scores_multiannotator():
     labels_NA[0] = pd.NA
     try:
         multiannotator_dict = get_label_quality_multiannotator(
-            labels_NA, pred_probs, return_annotator_stats=True
+            labels_NA,
+            pred_probs,
         )
     except ValueError as e:
         assert "cannot have columns with all NaN" in str(e)
+        assert "Annotators [0] did not label any examples." in str(e)
+
+    # test error catching when labels_multiannotator has NaN rows
+    labels_nan = pd.DataFrame(
+        [
+            [0, np.NaN, np.NaN],
+            [np.NaN, 1, np.NaN],
+            [np.NaN, np.NaN, 2],
+            [np.NaN, np.NaN, np.NaN],
+            [np.NaN, np.NaN, 2],
+        ]
+    )
+    pred_probs = np.random.random((5, 3))
+
+    try:
+        multiannotator_dict = get_label_quality_multiannotator(
+            labels_nan,
+            pred_probs,
+        )
+    except ValueError as e:
+        assert "cannot have rows with all NaN" in str(e)
+        assert "Examples [3] do not have any labels." in str(e)
 
     # test error when using wrong function
     try:

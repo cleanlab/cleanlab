@@ -49,7 +49,7 @@ def assert_valid_inputs_multiannotator(
         )
         raise ValueError(
             "labels_multiannotator cannot have rows with all NaN, each example must have at least one label.\n"
-            f"Examples {nan_rows} did not label any labels."
+            f"Examples {nan_rows} do not have any labels."
         )
 
     # Raise error if labels_multiannotator has NaN columns
