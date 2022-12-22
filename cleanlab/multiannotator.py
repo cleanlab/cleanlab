@@ -28,7 +28,7 @@ To analyze a fixed dataset labeled by multiple annotators, use the
 The underlying algorithms used to compute the statistics are described in `the CROWDLAB paper <https://arxiv.org/abs/2210.06812>`_.
 
 If you have some labeled and unlabeled data (with multiple annotators for some labeled examples) and want to decide what data to collect additional labels for,
-use the :py:func:`get_active_learning_score <cleanlab.multiannotator.get_active_learning_score>` function, which is intended for active learning. 
+use the :py:func:`get_active_learning_scores <cleanlab.multiannotator.get_active_learning_scores>` function, which is intended for active learning. 
 This function estimates an active learning quality score for each example,
 which can be used to prioritize which examples are most informative to collect additional labels for.
 This function is effective for settings where some examples have been labeled by one or more annotators and other examples can have no labels at all so far,
@@ -78,7 +78,7 @@ def get_label_quality_multiannotator(
     It also computes similar quality scores for each annotator's individual labels, and the quality of each annotator.
     Scores are between 0 and 1; lower scores indicate labels/annotators less likely to be correct.
     
-    To decide what data to collect additional labels for, try the :py:func:`get_active_learning_score <cleanlab.multiannotator.get_active_learning_score>`
+    To decide what data to collect additional labels for, try the :py:func:`get_active_learning_scores <cleanlab.multiannotator.get_active_learning_scores>`
     function, which is intended for active learning with multiple annotators.
 
     Parameters
