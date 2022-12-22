@@ -10,7 +10,7 @@ def get_label_quality_scores(
     labels: np.ndarray,
     predictions: np.ndarray,
     *,
-    method: str = "residual",
+    method: str = "TO_BE_NAMED",  # TODO update name once finalised
 ) -> np.ndarray:
     """
     Returns label quality score for each example in the regression dataset.
@@ -64,13 +64,13 @@ def get_label_quality_scores(
         raise ValueError(
             f"""
             {method} is not a valid scoring method.
-            Please choose a valid scoring technique: residual, TO_BE_NAMED.
+            Please choose a valid scoring technique: {scoring_funcs.keys()}.
             """
         )
 
     # Calculate scores
-    label_quality_score = scoring_func(labels, predictions)
-    return label_quality_score
+    label_quality_scores = scoring_func(labels, predictions)
+    return label_quality_scores
 
 
 def get_residual_score_for_each_label(
@@ -106,8 +106,9 @@ def get_residual_score_for_each_label(
 
 
 # TODO - change name of the function
+# TODO - change name of function in test
 def get_score_to_named_for_each_label(
-    label: np.ndarray,
+    labels: np.ndarray,
     predictions: np.ndarray,
     *,
     variance: float = 10,
@@ -135,16 +136,16 @@ def get_score_to_named_for_each_label(
         Lower scores indicate more likely mislabled examples.
     """
 
-    neighbors = int(np.ceil(0.1 * label.shape[0]))
+    neighbors = int(np.ceil(0.1 * labels.shape[0]))
     knn = NearestNeighbors(n_neighbors=neighbors, metric="euclidean")
 
-    residual = predictions - label
+    residual = predictions - labels
 
-    label = (label - label.mean()) / label.std()
+    labels = (labels - labels.mean()) / labels.std()
     residual = np.sqrt(variance) * ((residual - residual.mean()) / residual.std())
 
     # 2D features by combining labels and residual
-    features = np.array([label, residual]).T
+    features = np.array([labels, residual]).T
 
     knn.fit(features)
     ood = OutOfDistribution(params={"knn": knn})
