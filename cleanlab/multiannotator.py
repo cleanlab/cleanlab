@@ -28,7 +28,7 @@ To analyze a fixed dataset labeled by multiple annotators, use the
 The underlying algorithms used to compute the statistics are described in `the CROWDLAB paper <https://arxiv.org/abs/2210.06812>`_.
 
 If you have some labeled and unlabeled data (with multiple annotators for some labeled examples) and want to decide what data to collect additional labels for,
-use the :py:func:`get_active_learning_score <cleanlab.multiannotator.get_active_learning_score>` function, which is intended for active learning. 
+use the :py:func:`get_active_learning_scores <cleanlab.multiannotator.get_active_learning_scores>` function, which is intended for active learning. 
 This function estimates an active learning quality score for each example,
 which can be used to prioritize which examples are most informative to collect additional labels for.
 This function is effective for settings where some examples have been labeled by one or more annotators and other examples can have no labels at all so far,
@@ -74,13 +74,12 @@ def get_label_quality_multiannotator(
     multiple annotators (not necessarily the same number of annotators per example).
 
     It computes one consensus label for each example that best accounts for the labels chosen by each
-    annotator (and their quality), as well as a score for how confident we are that this consensus label is actually correct.
-    It also computes the the quality scores for each annotator's individual labels, and the quality of each annotator.
-
-    The score is between 0 and 1; lower scores indicate labels less likely to be correct. For example:
-
-    * 1 - clean label (the given label is likely correct).
-    * 0 - dirty label (the given label is unlikely correct).
+    annotator (and their quality), as well as a consensus quality score for how confident we are that this consensus label is actually correct.
+    It also computes similar quality scores for each annotator's individual labels, and the quality of each annotator.
+    Scores are between 0 and 1; lower scores indicate labels/annotators less likely to be correct.
+    
+    To decide what data to collect additional labels for, try the :py:func:`get_active_learning_scores <cleanlab.multiannotator.get_active_learning_scores>`
+    function, which is intended for active learning with multiple annotators.
 
     Parameters
     ----------
@@ -543,13 +542,15 @@ def get_active_learning_scores(
 
     We consider settings where one example can be labeled by multiple annotators and some examples have no labels at all so far.
 
-    The score is in between 0 and 1, and can be used to prioritize what data to collect additional labels for; lower scores indicate less confidence
-    on the examples and that additional labels should be collected for those examples.
-    For example:
-
-    * 1 - confident example, no additional labeling is required.
-    * 0 - unconfident example, want to collect more labels for this example (either because it is currently unlabeled and very different than other examples, it has only received few annotations from less reliable annotators, or the annotations it has received don't agree with each other).
-
+    The score is in between 0 and 1, and can be used to prioritize what data to collect additional labels for.
+    Lower scores indicate examples whose true label we are least confident about based on the current data;
+    collecting additional labels for these low-scoring examples will be more informative than collecting labels for other examples.
+    To use an annotation budget most efficiently, select a batch of examples with the lowest scores and collect one additional label for each example,
+    and repeat this process after retraining your classifier.
+    
+    To analyze a fixed dataset labeled by multiple annotators rather than collecting additional labels, try the
+    :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>` function instead. 
+    
     Parameters
     ----------
     labels_multiannotator : pd.DataFrame of np.ndarray
