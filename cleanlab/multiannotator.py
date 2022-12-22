@@ -77,7 +77,7 @@ def get_label_quality_multiannotator(
     annotator (and their quality), as well as a consensus quality score for how confident we are that this consensus label is actually correct.
     It also computes similar quality scores for each annotator's individual labels, and the quality of each annotator.
     Scores are between 0 and 1; lower scores indicate labels/annotators less likely to be correct.
-    
+
     To decide what data to collect additional labels for, try the :py:func:`get_active_learning_scores <cleanlab.multiannotator.get_active_learning_scores>`
     function, which is intended for active learning with multiple annotators.
 
@@ -547,10 +547,10 @@ def get_active_learning_scores(
     collecting additional labels for these low-scoring examples will be more informative than collecting labels for other examples.
     To use an annotation budget most efficiently, select a batch of examples with the lowest scores and collect one additional label for each example,
     and repeat this process after retraining your classifier.
-    
+
     To analyze a fixed dataset labeled by multiple annotators rather than collecting additional labels, try the
-    :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>` function instead. 
-    
+    :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>` function instead.
+
     Parameters
     ----------
     labels_multiannotator : pd.DataFrame of np.ndarray
