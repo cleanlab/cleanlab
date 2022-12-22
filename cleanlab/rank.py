@@ -42,73 +42,6 @@ from cleanlab.internal.label_quality_utils import (
 )
 
 
-def order_label_issues(
-    label_issues_mask: np.ndarray,
-    labels: np.ndarray,
-    pred_probs: np.ndarray,
-    *,
-    rank_by: str = "self_confidence",
-    rank_by_kwargs: dict = {},
-) -> np.ndarray:
-    """Sorts label issues by label quality score.
-
-    Default label quality score is "self_confidence".
-
-    Parameters
-    ----------
-    label_issues_mask : np.ndarray
-      A boolean mask for the entire dataset where ``True`` represents a label
-      issue and ``False`` represents an example that is accurately labeled with
-      high confidence.
-
-    labels : np.ndarray
-      Labels in the same format expected by the :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>` function.
-
-    pred_probs : np.ndarray (shape (N, K))
-      Predicted-probabilities in the same format expected by the :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>` function.
-
-    rank_by : str, optional
-      Score by which to order label error indices (in increasing order). See
-      the `method` argument of :py:func:`get_label_quality_scores
-      <cleanlab.rank.get_label_quality_scores>`.
-
-    rank_by_kwargs : dict, optional
-      Optional keyword arguments to pass into :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>` function.
-      Accepted args include `adjust_pred_probs`.
-
-    Returns
-    -------
-    label_issues_idx : np.ndarray
-      Return an array of the indices of the examples with label issues,
-      ordered by the label-quality scoring method passed to `rank_by`.
-    """
-
-    allow_one_class = False
-    if isinstance(labels, np.ndarray) or all(isinstance(lab, int) for lab in labels):
-        if set(labels) == {0}:  # occurs with missing classes in multi-label settings
-            allow_one_class = True
-    assert_valid_inputs(
-        X=None,
-        y=labels,
-        pred_probs=pred_probs,
-        multi_label=False,
-        allow_one_class=allow_one_class,
-    )
-
-    # Convert bool mask to index mask
-    label_issues_idx = np.arange(len(labels))[label_issues_mask]
-
-    # Calculate label quality scores
-    label_quality_scores = get_label_quality_scores(
-        labels, pred_probs, method=rank_by, **rank_by_kwargs
-    )
-
-    # Get label quality scores for label issues
-    label_quality_scores_issues = label_quality_scores[label_issues_mask]
-
-    return label_issues_idx[np.argsort(label_quality_scores_issues)]
-
-
 def get_label_quality_scores(
     labels: np.ndarray,
     pred_probs: np.ndarray,
@@ -583,3 +516,70 @@ def find_top_issues(quality_scores: np.ndarray, *, top: int = 10) -> np.ndarray:
 
     top_outlier_indices = quality_scores.argsort()[:top]
     return top_outlier_indices
+
+
+def order_label_issues(
+    label_issues_mask: np.ndarray,
+    labels: np.ndarray,
+    pred_probs: np.ndarray,
+    *,
+    rank_by: str = "self_confidence",
+    rank_by_kwargs: dict = {},
+) -> np.ndarray:
+    """Sorts label issues by label quality score.
+
+    Default label quality score is "self_confidence".
+
+    Parameters
+    ----------
+    label_issues_mask : np.ndarray
+      A boolean mask for the entire dataset where ``True`` represents a label
+      issue and ``False`` represents an example that is accurately labeled with
+      high confidence.
+
+    labels : np.ndarray
+      Labels in the same format expected by the :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>` function.
+
+    pred_probs : np.ndarray (shape (N, K))
+      Predicted-probabilities in the same format expected by the :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>` function.
+
+    rank_by : str, optional
+      Score by which to order label error indices (in increasing order). See
+      the `method` argument of :py:func:`get_label_quality_scores
+      <cleanlab.rank.get_label_quality_scores>`.
+
+    rank_by_kwargs : dict, optional
+      Optional keyword arguments to pass into :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>` function.
+      Accepted args include `adjust_pred_probs`.
+
+    Returns
+    -------
+    label_issues_idx : np.ndarray
+      Return an array of the indices of the examples with label issues,
+      ordered by the label-quality scoring method passed to `rank_by`.
+    """
+
+    allow_one_class = False
+    if isinstance(labels, np.ndarray) or all(isinstance(lab, int) for lab in labels):
+        if set(labels) == {0}:  # occurs with missing classes in multi-label settings
+            allow_one_class = True
+    assert_valid_inputs(
+        X=None,
+        y=labels,
+        pred_probs=pred_probs,
+        multi_label=False,
+        allow_one_class=allow_one_class,
+    )
+
+    # Convert bool mask to index mask
+    label_issues_idx = np.arange(len(labels))[label_issues_mask]
+
+    # Calculate label quality scores
+    label_quality_scores = get_label_quality_scores(
+        labels, pred_probs, method=rank_by, **rank_by_kwargs
+    )
+
+    # Get label quality scores for label issues
+    label_quality_scores_issues = label_quality_scores[label_issues_mask]
+
+    return label_issues_idx[np.argsort(label_quality_scores_issues)]
