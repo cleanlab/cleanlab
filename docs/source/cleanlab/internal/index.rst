@@ -15,5 +15,7 @@ internal
     util
     latent_algebra
     label_quality_utils
+    multilabel_utils
+    multilabel_scorer
     token_classification_utils
     validation

@@ -249,10 +249,35 @@ def color_sentence(sentence: str, word: str) -> str:
     'This is a \x1b[31msentence\x1b[0m. This is another \x1b[31msentence\x1b[0m.'
     """
     colored_word = colored(word, "red")
-    colored_sentence, number_of_substitions = re.subn(
-        r"\b{}\b".format(re.escape(word)), colored_word, sentence
+    return _replace_sentence(sentence=sentence, word=word, new_word=colored_word)
+
+
+def _replace_sentence(sentence: str, word: str, new_word: str) -> str:
+    """
+    Searches for a given token in the sentence and returns the sentence where the given token has been replaced by
+    `new_word`.
+
+    Parameters
+    ----------
+    sentence:
+        a sentence where the word is searched
+
+    word:
+        keyword to find in `sentence`. Assumes the word exists in the sentence.
+
+    new_word:
+        the word to replace the keyword with
+
+    Returns
+    ---------
+    new_sentence:
+        `sentence` where the every occurrence of the word is replaced by `colored_word`
+    """
+
+    new_sentence, number_of_substitions = re.subn(
+        r"\b{}\b".format(re.escape(word)), new_word, sentence
     )
     if number_of_substitions == 0:
         # Use basic string manipulation if regex fails
-        colored_sentence = sentence.replace(word, colored_word)
-    return colored_sentence
+        new_sentence = sentence.replace(word, new_word)
+    return new_sentence

@@ -3,6 +3,10 @@
 from cleanlab.internal import util
 import numpy as np
 
+from cleanlab.internal.util import num_unique_classes, format_labels, get_missing_classes
+from cleanlab.internal.multilabel_utils import int2onehot, onehot2int
+from cleanlab.internal.validation import assert_valid_class_labels
+
 
 noise_matrix = np.array([[1.0, 0.0, 0.2], [0.0, 0.7, 0.2], [0.0, 0.3, 0.6]])
 
@@ -76,6 +80,23 @@ def test_round_preserving_sum():
     assert sum(ints) == 11
 
 
+def test_one_hot():
+    num_classes = 4
+    labels = [[0], [0, 1], [0, 1], [2], [0, 2, 3]]
+    assert onehot2int(int2onehot(labels, K=num_classes)) == labels
+
+
+def test_num_unique():
+    labels = [[0], [0, 1], [0, 1], [2], [0, 2, 3]]
+    assert num_unique_classes(labels) == 4
+
+
+def test_missing_classes():
+    labels = [0, 1]  # class 2 is missing
+    pred_probs = np.array([[0.8, 0.1, 0.1], [0.4, 0.5, 0.1]])
+    assert get_missing_classes(labels, pred_probs=pred_probs) == [2]
+
+
 def test_round_preserving_row_totals():
     mat = np.array(
         [
@@ -114,3 +135,14 @@ def test_confusion_matrix_nonconsecutive():
     assert cmat[0][1] == 2
     assert cmat[1][0] == 0
     assert cmat[1][1] == 1
+
+
+def test_format_labels():
+    # test 1D labels
+    str_labels = np.array(["b", "b", "a", "c", "a"])
+    labels, label_map = format_labels(str_labels)
+    assert all(labels == np.array([1, 1, 0, 2, 0]))
+    assert label_map[0] == "a"
+    assert label_map[1] == "b"
+    assert label_map[2] == "c"
+    assert_valid_class_labels(labels)

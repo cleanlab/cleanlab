@@ -21,9 +21,13 @@ Ancillary helper methods used internally throughout this package; mostly related
 import warnings
 import numpy as np
 import pandas as pd
-from typing import Any, Union, Tuple
+from typing import Union, Tuple
 
 from cleanlab.typing import DatasetLike, LabelLike
+from cleanlab.internal.validation import labels_to_array
+
+
+TINY_VALUE = 1e-100
 
 
 def remove_noise_from_class(noise_matrix, class_without_noise) -> np.ndarray:
@@ -94,8 +98,7 @@ def clip_noise_rates(noise_matrix) -> np.ndarray:
     np.fill_diagonal(noise_matrix, diagonal)
 
     # Re-normalized noise_matrix so that columns sum to one.
-    noise_matrix = noise_matrix / noise_matrix.sum(axis=0)
-
+    noise_matrix = noise_matrix / np.clip(noise_matrix.sum(axis=0), a_min=TINY_VALUE, a_max=None)
     return noise_matrix
 
 
@@ -131,44 +134,81 @@ def clip_values(x, low=0.0, high=1.0, new_sum=None) -> np.ndarray:
     )  # Vectorize clip_range for efficiency with np.ndarrays
     prev_sum = sum(x) if new_sum is None else new_sum  # Store previous sum
     x = vectorized_clip(x)  # Clip all values (efficiently)
-    x = x * prev_sum / float(sum(x))  # Re-normalized values to sum to previous sum
+    x = (
+        x * prev_sum / np.clip(float(sum(x)), a_min=TINY_VALUE, a_max=None)
+    )  # Re-normalized values to sum to previous sum
     return x
 
 
-def value_counts(x) -> Any:
+def value_counts(x, *, num_classes=None, multi_label=False) -> np.ndarray:
     """Returns an np.ndarray of shape (K, 1), with the
     value counts for every unique item in the labels list/array,
     where K is the number of unique entries in labels.
 
-    Why this matters? Here is an example:
-
-    .. code:: python
-
-        x = [np.random.randint(0,100) for i in range(100000)]
-
-    .. code:: ipython3
-
-        %timeit np.bincount(x)
-        # Result: 100 loops, best of 3: 3.9 ms per loop
-
-    .. code:: ipython3
-
-        %timeit np.unique(x, return_counts=True)[1]
-        # Result: 100 loops, best of 3: 7.47 ms per loop
+    Works for both single-labeled and multi-labeled data.
 
     Parameters
     ----------
     x : list or np.ndarray (one dimensional)
         A list of discrete objects, like lists or strings, for
         example, class labels 'y' when training a classifier.
-        e.g. ["dog","dog","cat"] or [1,2,0,1,1,0,2]"""
-    try:
-        return x.value_counts()
-    except Exception:
-        if type(x[0]) is int and (np.array(x) >= 0).all():
-            return np.bincount(x)
-        else:
-            return np.unique(x, return_counts=True)[1]
+        e.g. ["dog","dog","cat"] or [1,2,0,1,1,0,2]
+
+    num_classes : int (default: None)
+        Setting this fills the value counts for missing classes with zeros.
+        For example, if x = [0, 0, 1, 1, 3] then setting ``num_classes=5`` returns
+        [2, 2, 0, 1, 0] whereas setting ``num_classes=None`` would return [2, 2, 1]. This assumes
+        your labels come from the set [0, 1,... num_classes=1] even if some classes are missing.
+
+    multi_label : bool, optional
+      If ``True``, labels should be an iterable (e.g. list) of iterables, containing a
+      list of labels for each example, instead of just a single label.
+      Assumes all classes in pred_probs.shape[1] are represented in labels.
+      The multi-label setting supports classification tasks where an example has 1 or more labels.
+      Example of a multi-labeled `labels` input: ``[[0,1], [1], [0,2], [0,1,2], [0], [1], ...]``.
+      The major difference in how this is calibrated versus single-label is that
+      the total number of errors considered is based on the number of labels,
+      not the number of examples. So, the calibrated `confident_joint` will sum
+      to the number of total labels."""
+
+    # Efficient method if x is pd.Series, np.ndarray, or list
+    if multi_label:
+        x = [z for lst in x for z in lst]  # Flatten
+    unique_classes, counts = np.unique(x, return_counts=True)
+    if num_classes is None or num_classes == len(unique_classes):
+        return counts
+    # Else, there are missing classes
+    if num_classes <= max(unique_classes):
+        raise ValueError(f"Required: num_classes > max(x), but {num_classes} <= {max(x)}.")
+    # Add zero counts for all missing classes in [0, 1,..., num_classes-1]
+    # multi_label=False regardless because x was flattened.
+    missing_classes = get_missing_classes(x, num_classes=num_classes, multi_label=False)
+    missing_counts = [(z, 0) for z in missing_classes]
+    # Return counts with zeros for all missing classes.
+    return np.array(list(zip(*sorted(list(zip(unique_classes, counts)) + missing_counts)))[1])
+
+
+def value_counts_fill_missing_classes(x, num_classes, *, multi_label=False) -> np.ndarray:
+    """Same as ``internal.util.value_counts`` but requires that num_classes is provided and
+    always fills missing classes with zero counts.
+
+    See ``internal.util.value_counts`` for parameter docstrings."""
+
+    return value_counts(x, num_classes=num_classes, multi_label=multi_label)
+
+
+def get_missing_classes(labels, *, pred_probs=None, num_classes=None, multi_label=False):
+    """Find which classes are present in ``pred_probs`` but not present in ``labels``.
+
+    See ``count.compute_confident_joint`` for parameter docstrings."""
+    if pred_probs is None and num_classes is None:
+        raise ValueError("Both pred_probs and num_classes are None. You must provide exactly one.")
+    if pred_probs is not None and num_classes is not None:
+        raise ValueError("Both pred_probs and num_classes are not None. Only one may be provided.")
+    if num_classes is None:
+        num_classes = pred_probs.shape[1]
+    unique_classes = get_unique_classes(labels, multi_label=multi_label)
+    return sorted(set(range(num_classes)).difference(unique_classes))
 
 
 def round_preserving_sum(iterable) -> np.ndarray:
@@ -226,38 +266,6 @@ def round_preserving_row_totals(confident_joint) -> np.ndarray:
         axis=1,
         arr=confident_joint,
     ).astype(int)
-
-
-def int2onehot(labels) -> np.ndarray:
-    """Convert list of lists to a onehot matrix for multi-labels
-
-    Parameters
-    ----------
-    labels: list of lists of integers
-      e.g. [[0,1], [3], [1,2,3], [1], [2]]
-      All integers from 0,1,...,K-1 must be represented."""
-
-    from sklearn.preprocessing import MultiLabelBinarizer
-
-    mlb = MultiLabelBinarizer()
-    return mlb.fit_transform(labels)
-
-
-def onehot2int(onehot_matrix) -> list:
-    """Convert a onehot matrix for multi-labels to a list of lists of ints
-
-    Parameters
-    ----------
-    onehot_matrix: 2D np.ndarray of 0s and 1s
-      A one hot encoded matrix representation of multi-labels.
-
-    Returns
-    -------
-    labels: list of lists of integers
-      e.g. [[0,1], [3], [1,2,3], [1], [2]]
-      All integers from 0,1,...,K-1 must be represented."""
-
-    return [list(np.where(row == 1)[0]) for row in onehot_matrix]
 
 
 def estimate_pu_f1(s, prob_s_eq_1) -> float:
@@ -537,7 +545,8 @@ def extract_indices_tf(X, idx, allow_shuffle) -> DatasetLike:
     keys_tensor = tensorflow.constant(idx)
     vals_tensor = tensorflow.ones_like(keys_tensor)  # Ones will be casted to True
     table = tensorflow.lookup.StaticHashTable(
-        tensorflow.lookup.KeyValueTensorInitializer(keys_tensor, vals_tensor), default_value=0
+        tensorflow.lookup.KeyValueTensorInitializer(keys_tensor, vals_tensor),
+        default_value=0,
     )  # If index not in table, return 0
 
     def hash_table_filter(index, value):
@@ -573,7 +582,7 @@ def unshuffle_tensorflow_dataset(X) -> tuple:
         or ``len(pre_X)`` if buffer_size cannot be determined, or None if no ShuffleDataset found.
     """
     try:
-        from tensorflow.python.data.ops.dataset_ops import (  # pylint: disable=no-name-in-module
+        from tensorflow.python.data.ops.dataset_ops import (
             ShuffleDataset,
         )
 
@@ -680,12 +689,47 @@ def num_unique_classes(labels, multi_label=None) -> int:
     the format of labels.
     This allows for a more general form of multiclass labels that looks
     like this: [1, [1,2], [0], [0, 1], 2, 1]"""
+    return len(get_unique_classes(labels, multi_label))
+
+
+def get_unique_classes(labels, multi_label=None) -> set:
+    """Returns the set of unique classes for both single-labeled
+    and multi-labeled labels. If multi_label is set to None (default)
+    this method will infer if multi_label is True or False based on
+    the format of labels.
+    This allows for a more general form of multiclass labels that looks
+    like this: [1, [1,2], [0], [0, 1], 2, 1]"""
     if multi_label is None:
         multi_label = any(isinstance(l, list) for l in labels)
     if multi_label:
-        return len(set(l for grp in labels for l in list(grp)))
+        return set(l for grp in labels for l in list(grp))
     else:
-        return len(set(labels))
+        return set(labels)
+
+
+def format_labels(labels: LabelLike) -> Tuple[np.ndarray, dict]:
+    """Takes an array of labels and formats it such that labels are in the set ``0, 1, ..., K-1``,
+    where ``K`` is the number of classes. The labels are assigned based on lexicographic order.
+    This is useful for mapping string class labels to the integer format required by many cleanlab (and sklearn) functions.
+
+    Returns
+    -------
+    formatted_labels
+        Returns np.ndarray of shape ``(N,)``. The return labels will be properly formatted and can be passed to other cleanlab functions.
+
+    mapping
+        A dictionary showing the mapping of new to old labels, such that ``mapping[k]`` returns the name of the k-th class.
+    """
+    labels = labels_to_array(labels)
+    if labels.ndim != 1:
+        raise ValueError("labels must be 1D numpy array.")
+
+    unique_labels = np.unique(labels)
+    label_map = {label: i for i, label in enumerate(unique_labels)}
+    formatted_labels = np.array([label_map[l] for l in labels])
+    inverse_map = {i: label for label, i in label_map.items()}
+
+    return formatted_labels, inverse_map
 
 
 def smart_display_dataframe(df):  # pragma: no cover

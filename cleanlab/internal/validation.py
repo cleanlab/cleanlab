@@ -19,27 +19,28 @@ Checks to ensure valid inputs for various methods.
 """
 
 from cleanlab.typing import LabelLike, DatasetLike
-from cleanlab.internal.util import get_num_classes
 from typing import Any, List, Optional, Union
 import warnings
 import numpy as np
 import pandas as pd
 
 
-# TODO: remove allow_missing_classes once supported
 def assert_valid_inputs(
     X: DatasetLike,
     y: LabelLike,
     pred_probs: Optional[np.ndarray] = None,
     multi_label: bool = False,
-    allow_missing_classes: bool = False,
+    allow_missing_classes: bool = True,
+    allow_one_class: bool = False,
 ) -> None:
     """Checks that ``X``, ``labels``, ``pred_probs`` are correctly formatted."""
     if not isinstance(y, (list, np.ndarray, np.generic, pd.Series, pd.DataFrame)):
         raise TypeError("labels should be a numpy array or pandas Series.")
     if not multi_label:
         y = labels_to_array(y)
-        assert_valid_class_labels(y=y, allow_missing_classes=allow_missing_classes)
+        assert_valid_class_labels(
+            y=y, allow_missing_classes=allow_missing_classes, allow_one_class=allow_one_class
+        )
 
     allow_empty_X = True
     if pred_probs is None:
@@ -82,39 +83,48 @@ def assert_valid_inputs(
             raise ValueError("pred_probs and labels must have same length.")
         if len(pred_probs.shape) != 2:
             raise ValueError("pred_probs array must have shape: num_examples x num_classes.")
+        if not multi_label:
+            assert isinstance(y, np.ndarray)
+            highest_class = max(y) + 1
+        else:
+            assert isinstance(y, list)
+            assert all(isinstance(y_i, list) for y_i in y)
+            highest_class = max([max(y_i) for y_i in y if len(y_i) != 0]) + 1
+        if pred_probs.shape[1] < highest_class:
+            raise ValueError(
+                f"pred_probs must have at least {highest_class} columns, based on the largest class index which appears in labels."
+            )
         # Check for valid probabilities.
         if (np.min(pred_probs) < 0) or (np.max(pred_probs) > 1):
             raise ValueError("Values in pred_probs must be between 0 and 1.")
         if X is not None:
-            warnings.warn("When X and pred_probs are both provided, former may be ignored.")
-        # TODO: can remove this clause once missing classes are supported
-        if not allow_missing_classes and not multi_label:
-            num_unique_labels = len(np.unique(y))
-            if num_unique_labels != pred_probs.shape[1]:
-                raise ValueError(
-                    "All classes in (0,1,2,...,K-1) must be present in labels "
-                    f"with K = pred_probs.shape[1] = {pred_probs.shape[1]} in your case, "
-                    f"but your labels only contain {num_unique_labels} unique values."
-                )
+            warnings.warn("When X and pred_probs are both provided, the former may be ignored.")
 
 
 def assert_valid_class_labels(
     y: np.ndarray,
-    allow_missing_classes: bool = False,
+    allow_missing_classes: bool = True,
+    allow_one_class: bool = False,
 ) -> None:
-    """Checks that ``labels`` is properly formatted, i.e. a 1D array that is
-    zero-indexed (first label is 0) with all classes present (if ``allow_missing_classes is False``).
-    Assumes ``labels`` is a 1D numpy array (not multi-label).
+    """Checks that ``labels`` is properly formatted, i.e. a 1D numpy array where labels are zero-based
+    integers (not multi-label).
     """
     if y.ndim != 1:
-        raise ValueError("labels must be 1D numpy array.")
+        raise ValueError("Labels must be 1D numpy array.")
+    if any([isinstance(label, str) for label in y]):
+        raise ValueError(
+            "Labels cannot be strings, they must be zero-indexed integers corresponding to class indices."
+        )
+    if not np.equal(np.mod(y, 1), 0).all():  # check that labels are integers
+        raise ValueError("Labels must be zero-indexed integers corresponding to class indices.")
+    if min(y) < 0:
+        raise ValueError("Labels must be positive integers corresponding to class indices.")
 
-    # TODO: can remove this clause once missing classes are supported
+    unique_classes = np.unique(y)
+    if (not allow_one_class) and (len(unique_classes) < 2):
+        raise ValueError("Labels must contain at least 2 classes.")
+
     if not allow_missing_classes:
-        unique_classes = np.unique(y)
-        if len(unique_classes) < 2:
-            raise ValueError("Labels must contain at least 2 classes.")
-
         if (unique_classes != np.arange(len(unique_classes))).any():
             msg = "cleanlab requires zero-indexed integer labels (0,1,2,..,K-1), but in "
             msg += "your case: np.unique(labels) = {}. ".format(str(unique_classes))
@@ -153,7 +163,7 @@ def assert_indexing_works(
         try:  # check if X is pytorch Dataset object using lazy import
             import torch
 
-            if isinstance(X, torch.utils.data.Dataset):  # special indexing for pytorch Dataset
+            if isinstance(X, torch.utils.data.Dataset):  # indexing for pytorch Dataset
                 _ = torch.utils.data.Subset(X, idx)  # type: ignore[call-overload]
                 is_indexed = True
         except Exception:
@@ -163,7 +173,7 @@ def assert_indexing_works(
             import tensorflow as tf
 
             if isinstance(X, tf.data.Dataset):
-                is_indexed = True  # skip check for tensorflow Dataset (too compute-intensive)
+                is_indexed = True  # skip check for tensorflow Dataset (too expensive)
         except Exception:
             pass
     if not is_indexed:
@@ -207,55 +217,3 @@ def labels_to_array(y: Union[LabelLike, np.generic]) -> np.ndarray:
             raise ValueError(
                 "List of labels must be convertable to 1D numpy array via: np.ndarray(labels)."
             )
-
-
-def assert_valid_inputs_multiannotator(
-    labels_multiannotator: pd.DataFrame,
-    pred_probs: Optional[np.ndarray] = None,
-) -> None:
-    """Validate multi-annotator labels"""
-    # Raise error if number of classes in labels_multiannoator does not match number of classes in pred_probs
-    if pred_probs is not None:
-        num_classes = get_num_classes(pred_probs=pred_probs)
-        unique_ma_labels = np.unique(labels_multiannotator.replace({pd.NA: np.NaN}).astype(float))
-        unique_ma_labels = unique_ma_labels[~np.isnan(unique_ma_labels)]
-        if num_classes != len(unique_ma_labels):
-            raise ValueError(
-                """The number of unique classes in labels_multiannotator do not match the number of classes in pred_probs.
-                Perhaps some rarely-annotated classes were lost while establishing consensus labels used to train your classifier."""
-            )
-
-    # Raise error if labels_multiannotator has NaN rows
-    if labels_multiannotator.isna().all(axis=1).any():
-        raise ValueError("labels_multiannotator cannot have rows with all NaN.")
-
-    # Raise error if labels_multiannotator has NaN columns
-    if labels_multiannotator.isna().all().any():
-        nan_columns = list(
-            labels_multiannotator.columns[labels_multiannotator.isna().all() == True]
-        )
-        raise ValueError(
-            f"""labels_multiannotator cannot have columns with all NaN.
-            Annotators {nan_columns} did not label any examples."""
-        )
-
-    # Raise error if labels_multiannotator has <= 1 column
-    if len(labels_multiannotator.columns) <= 1:
-        raise ValueError(
-            """labels_multiannotator must have more than one column. 
-            If there is only one annotator, use cleanlab.rank.get_label_quality_scores instead"""
-        )
-
-    # Raise error if labels_multiannotator only has 1 label per example
-    if labels_multiannotator.apply(lambda s: len(s.dropna()) == 1, axis=1).all():
-        raise ValueError(
-            """Each example only has one label, collapse the labels into a 1-D array and use
-            cleanlab.rank.get_label_quality_scores instead"""
-        )
-
-    # Raise warning if no examples with 2 or more annotators agree
-    # TODO: might shift this later in the code to avoid extra compute
-    if labels_multiannotator.apply(
-        lambda s: np.array_equal(s.dropna().unique(), s.dropna()), axis=1
-    ).all():
-        warnings.warn("Annotators do not agree on any example. Check input data.")

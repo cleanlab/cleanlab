@@ -10,3 +10,8 @@ exclude = '''
  | docs
  )/
 '''
+
+[tool.pytest.ini_options]
+filterwarnings = [
+  "ignore:.*The least populated class in y has only 1 members,*"
+]

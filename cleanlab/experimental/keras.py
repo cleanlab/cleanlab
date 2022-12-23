@@ -37,7 +37,7 @@ Tips:
 
 import tensorflow as tf
 import numpy as np
-from typing import Callable
+from typing import Callable, Optional
 
 
 class KerasWrapperModel:
@@ -132,8 +132,8 @@ class KerasWrapperSequential:
 
     def __init__(
         self,
-        layers: list = None,
-        name: str = None,
+        layers: Optional[list] = None,
+        name: Optional[str] = None,
         compile_kwargs: dict = {
             "loss": tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
         },

@@ -16,6 +16,8 @@
 
 """
 Methods to find label issues in token classification datasets (text data), where each token in a sentence receives its own class label.
+
+The underlying algorithms are described in `this paper <https://arxiv.org/abs/2210.03920>`_.
 """
 
 import numpy as np
@@ -42,7 +44,7 @@ def find_label_issues(
     labels:
         Nested list of given labels for all tokens, such that `labels[i]` is a list of labels, one for each token in the `i`-th sentence.
 
-        For a dataset with K classes, each label must be in 0, 1, ..., K-1. All classes must be present in the dataset.
+        For a dataset with K classes, each class label must be integer in 0, 1, ..., K-1.
 
     pred_probs:
         List of np arrays, such that `pred_probs[i]` has shape ``(T, K)`` if the `i`-th sentence contains T tokens.
