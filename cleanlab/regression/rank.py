@@ -115,8 +115,8 @@ def get_score_to_named_for_each_label(
 ) -> np.ndarray:
     """Returns label-quality scores.
 
-    This is function to compute label-quality scores for regression datasets,
-    where lower score indicate labels less likely to be correct.
+    This function computes label-quality scores for regression datasets,
+    where a lower score indicates labels that are less likely to be correct.
 
     Parameters
     ----------
