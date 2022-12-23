@@ -29,7 +29,7 @@ def get_label_quality_scores(
         Predicated labels from regressor fitted on the dataset.
         Array of shape ``(N,)`` consisting predicted labels, where N is number of datapoints in the regression dataset.
 
-    method : {"residual", "TO_BE_NAMED"}, default="residual" #TODO - update name once finalised
+    method : {"residual", "TO_BE_NAMED"}, default="TO_BE_NAMED" #TODO - update name once finalised
 
     Returns
     -------
