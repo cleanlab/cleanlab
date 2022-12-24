@@ -467,6 +467,51 @@ cleanlab is based on peer-reviewed research. Here are relevant papers to cite if
 
 </details>
 
+<details><summary><a href="https://people.csail.mit.edu/jonasmueller/info/LabelQuality_icml.pdf"> Label Quality Scoring (ICML '22)</a> (<b>click to show bibtex</b>) </summary>
+
+    @inproceedings{kuan2022labelquality,
+        title={Model-agnostic label quality scoring to detect real-world label errors},
+        author={Kuan, Johnson and Mueller, Jonas},
+        booktitle={ICML DataPerf Workshop},
+        year={2022}
+    }
+
+</details>
+
+<details><summary><a href="https://arxiv.org/abs/2207.03061"> Out-of-Distribution Detection (ICML '22)</a> (<b>click to show bibtex</b>) </summary>
+
+    @inproceedings{kuan2022ood,
+        title={Back to the Basics: Revisiting Out-of-Distribution Detection Baselines},
+        author={Kuan, Johnson and Mueller, Jonas},
+        booktitle={ICML Workshop on Principles of Distribution Shift},
+        year={2022}
+    }
+
+</details>
+
+<details><summary><a href="https://arxiv.org/abs/2210.03920"> Token Classification Label Errors (NeurIPS '22)</a> (<b>click to show bibtex</b>) </summary>
+    
+    @inproceedings{wang2022tokenerrors,
+        title={Detecting label errors in token classification data},
+        author={Wang, Wei-Chen and Mueller, Jonas},
+        booktitle={NeurIPS Workshop on Interactive Learning for Natural Language Processing (InterNLP)},
+        year={2022}
+    }
+
+</details>
+
+<details><summary><a href="https://arxiv.org/abs/2210.06812"> CROWDLAB for data with multiple annotators (NeurIPS '22)</a> (<b>click to show bibtex</b>) </summary>
+    
+    @inproceedings{goh2022crowdlab,
+        title={Utilizing supervised models to infer consensus labels and their quality from data with multiple annotators},
+        author={Goh, Hui Wen and Tkachenko, Ulyana and Mueller, Jonas},
+        booktitle={NeurIPS Human in the Loop Learning Workshop},
+        year={2022}
+    }
+
+</details>
+
+
 To understand/cite other cleanlab functionality not described in these papers, check out our [additional publications](https://cleanlab.ai/research/).
 
 
