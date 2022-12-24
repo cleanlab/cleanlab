@@ -27,12 +27,13 @@ def get_label_quality_scores(
     ----------
     labels : array_like
         Raw labels from original dataset.
-        1D array of shape ``(N, )`` containing the given labels for each example (aka. Y-value, response, target, dependent variable, ...), where N is number of examples in the dataset.
+        1D array of shape ``(N, )`` containing the given labels for each example (aka. Y-value, response, target, dependent variable, ...), where N is number of examples in the dataset.
 
     predictions : np.ndarray
         1D array of shape ``(N,)`` containing the predicted label for each example in the dataset.  These should be out-of-sample predictions from a trained regression model, which you can obtain for every example in your dataset via :ref:`cross-validation <pred_probs_cross_val>`.
 
     method : {"residual", "outre"}, default="outre"
+        String specifying which method to use for scoring the quality of each label and identifying which labels appear most noisy.
 
     Returns
     -------
