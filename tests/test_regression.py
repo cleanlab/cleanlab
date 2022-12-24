@@ -29,11 +29,10 @@ def test_assertion_error_for_input_shape():
         _ = rank.get_label_quality_scores(labels=labels, predictions=predictions[:-1])
 
 
-# TODO - change name once finalised
 # test individual scoring functions
 @pytest.mark.parametrize(
     "scoring_funcs",
-    [rank.get_residual_score_for_each_label, rank.get_score_to_named_for_each_label],
+    [rank.get_residual_score_for_each_label, rank.get_outre_score_for_each_label],
 )
 def test_individual_scoring_functions(scoring_funcs):
     scores = scoring_funcs(labels=labels, predictions=predictions)
@@ -41,13 +40,12 @@ def test_individual_scoring_functions(scoring_funcs):
     assert isinstance(scores, np.ndarray)
 
 
-# TODO - change name once finalised
 # test for method argument
 @pytest.mark.parametrize(
     "method",
     [
         "residual",
-        "TO_BE_NAMED",
+        "outre",
     ],
 )
 def test_method_pass_get_label_quality_scores(method):

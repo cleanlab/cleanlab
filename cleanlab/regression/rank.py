@@ -11,7 +11,7 @@ def get_label_quality_scores(
     labels: np.ndarray,
     predictions: np.ndarray,
     *,
-    method: str = "TO_BE_NAMED",  # TODO update name once finalised
+    method: str = "outre",  # TODO update name once finalised
 ) -> np.ndarray:
     """
     Returns label quality score for each example in the regression dataset.
@@ -30,7 +30,7 @@ def get_label_quality_scores(
         Predicated labels from regressor fitted on the dataset.
         Array of shape ``(N,)`` consisting predicted labels, where N is number of datapoints in the regression dataset.
 
-    method : {"residual", "TO_BE_NAMED"}, default="TO_BE_NAMED" #TODO - update name once finalised
+    method : {"residual", "outre"}, default="outre"
 
     Returns
     -------
@@ -55,10 +55,9 @@ def get_label_quality_scores(
 
     scoring_funcs: Dict[str, Callable[[np.ndarray, np.ndarray], np.ndarray]] = {
         "residual": get_residual_score_for_each_label,
-        "TO_BE_NAMED": get_score_to_named_for_each_label,  # TODO - update name once finalised
+        "outre": get_outre_score_for_each_label,
     }
 
-    # TODO - update name once finalised
     scoring_func = scoring_funcs.get(method, None)
     if not scoring_func:
         raise ValueError(
@@ -105,15 +104,14 @@ def get_residual_score_for_each_label(
     return label_quality_scores
 
 
-# TODO - change name of the function
 # TODO - change name of function in test
-def get_score_to_named_for_each_label(
+def get_outre_score_for_each_label(
     labels: np.ndarray,
     predictions: np.ndarray,
     *,
     variance: float = 10,
 ) -> np.ndarray:
-    """Returns label-quality scores.
+    """Returns OUTRE based label-quality scores.
 
     This function computes label-quality scores for regression datasets,
     where a lower score indicates labels that are less likely to be correct.
