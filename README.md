@@ -156,11 +156,11 @@ Note, some libraries exist to give you sklearn-compatibility for free. For PyTor
 </details>
 
 cleanlab is useful across a wide variety of Machine Learning tasks. Specific tasks this package offers dedicated functionality for include: 
-- [binary and multi-class classification](https://docs.cleanlab.ai/stable/tutorials/indepth_overview.html)
-- [multi-label classification](https://docs.cleanlab.ai/stable/tutorials/multilabel_classification.html) (e.g. image/document tagging)
-- [token classification](https://docs.cleanlab.ai/stable/tutorials/token_classification.html) (e.g. entity recognition in text)
-- [classification with data labeled by multiple annotators](https://docs.cleanlab.ai/stable/tutorials/multiannotator.html)
-- [out of distribution detection](https://docs.cleanlab.ai/stable/tutorials/outliers.html)
+1. [Binary and multi-class classification](https://docs.cleanlab.ai/stable/tutorials/indepth_overview.html)
+2. [Multi-label classification](https://docs.cleanlab.ai/stable/tutorials/multilabel_classification.html) (e.g. image/document tagging)
+3. [Token classification](https://docs.cleanlab.ai/stable/tutorials/token_classification.html) (e.g. entity recognition in text)
+4. [Classification with data labeled by multiple annotators](https://docs.cleanlab.ai/stable/tutorials/multiannotator.html)
+5. [Out of distribution detection](https://docs.cleanlab.ai/stable/tutorials/outliers.html)
 
 For many other ML tasks, cleanlab can still help you improve your dataset if appropriately applied.
 
