@@ -22,7 +22,7 @@ cleanlab.dataset.health_summary(labels, confident_joint=cl.confident_joint)
 
 Get started with: [documentation](https://docs.cleanlab.ai/), [tutorials](https://docs.cleanlab.ai/stable/tutorials/image.html), [examples](https://github.com/cleanlab/examples), and [blogs](https://cleanlab.ai/blog/).
 
- - Learn to run cleanlab on your own data in 5 minutes for classification with: [image](https://docs.cleanlab.ai/stable/tutorials/image.html), [text](https://docs.cleanlab.ai/stable/tutorials/text.html), [audio](https://docs.cleanlab.ai/stable/tutorials/audio.html), and [tabular](https://docs.cleanlab.ai/stable/tutorials/tabular.html) data.
+ - Learn to run cleanlab on your data in 5 minutes for classification with: [image](https://docs.cleanlab.ai/stable/tutorials/image.html), [text](https://docs.cleanlab.ai/stable/tutorials/text.html), [audio](https://docs.cleanlab.ai/stable/tutorials/audio.html), or [tabular](https://docs.cleanlab.ai/stable/tutorials/tabular.html) data.
 
 
 [![pypi](https://img.shields.io/pypi/v/cleanlab.svg)](https://pypi.org/pypi/cleanlab/)
@@ -83,11 +83,11 @@ cleanlab **clean**s your data's **lab**els via state-of-the-art *confident learn
 cleanlab is:
 
 1. **backed by theory**
-   - with [provable guarantees](https://arxiv.org/abs/1911.00068) of exact noise and label error estimation in realistic cases with imperfect models.
+   - with [provable guarantees](https://arxiv.org/abs/1911.00068) of exact estimation of noise and label errors, even with imperfect models.
 2. **fast**
    - Code is parallelized (< 1 second to find label issues in ImageNet with pre-computed predictions).
 4. **easy-to-use**
-   - Find label issues or train noise-robust models in one line of code. No hyperparameters required by default.
+   - Find label issues or train noise-robust models in one line of code (no hyperparameters by default).
 6. **general**
    - Works with **[any dataset](https://labelerrors.com/)** and **any model**, e.g., TensorFlow, PyTorch, sklearn, XGBoost, Huggingface, etc.
 <br/>
