@@ -2,6 +2,7 @@ import numpy as np
 from cleanlab.outlier import OutOfDistribution
 from sklearn.neighbors import NearestNeighbors
 from cleanlab.internal.regression_utils import assert_valid_inputs
+from typing import Dict, Callable
 
 """ Generates label quality scores for every sample in regression dataset """
 
@@ -52,15 +53,14 @@ def get_label_quality_scores(
     # Check if inputs are valid
     assert_valid_inputs(labels=labels, predictions=predictions, method=method)
 
-    scoring_funcs = {
+    scoring_funcs: Dict[str, Callable[[np.ndarray, np.ndarray], np.ndarray]] = {
         "residual": get_residual_score_for_each_label,
         "TO_BE_NAMED": get_score_to_named_for_each_label,  # TODO - update name once finalised
     }
 
     # TODO - update name once finalised
-    try:
-        scoring_func = scoring_funcs[method]
-    except KeyError:
+    scoring_func = scoring_funcs.get(method, None)
+    if not scoring_func:
         raise ValueError(
             f"""
             {method} is not a valid scoring method.
@@ -121,10 +121,10 @@ def get_score_to_named_for_each_label(
     Parameters
     ----------
     labels: np.ndarray
-        Labels in the same format expected by the :py:func:`get_label_quality_scores <cleanlab.regression.rank.get_label_quality_scores>` function.
+        Labels in the same format as expected by the :py:func:`get_label_quality_scores <cleanlab.regression.rank.get_label_quality_scores>` function.
 
     predictions: np.ndarray
-        Predicted labels in the same format expected by the :py:func:`get_label_quality_scores <cleanlab.regression.rank.get_label_quality_scores>` function.
+        Predicted labels in the same format as expected by the :py:func:`get_label_quality_scores <cleanlab.regression.rank.get_label_quality_scores>` function.
 
     variance: float, default = 10
         Manipulates variance of the distribution of residual.
@@ -135,19 +135,16 @@ def get_score_to_named_for_each_label(
         Contains one score (between 0 and 1) per example.
         Lower scores indicate more likely mislabled examples.
     """
-
-    neighbors = int(np.ceil(0.1 * labels.shape[0]))
-    knn = NearestNeighbors(n_neighbors=neighbors, metric="euclidean")
-
     residual = predictions - labels
-
     labels = (labels - labels.mean()) / labels.std()
     residual = np.sqrt(variance) * ((residual - residual.mean()) / residual.std())
 
     # 2D features by combining labels and residual
     features = np.array([labels, residual]).T
 
-    knn.fit(features)
+    neighbors = int(np.ceil(0.1 * labels.shape[0]))
+    knn = NearestNeighbors(n_neighbors=neighbors, metric="euclidean").fit(features)
     ood = OutOfDistribution(params={"knn": knn})
+
     label_quality_scores = ood.score(features=features)
     return label_quality_scores
