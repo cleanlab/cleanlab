@@ -38,9 +38,9 @@ def get_label_quality_scores(
     Returns
     -------
     label_quality_scores:
-        Array of shape ``(N, )`` of scores between 0 and 1, one per datapoint in the dataset.
+        Array of shape ``(N, )`` of scores between 0 and 1, one per example in the dataset.
 
-        Lower scores indicate datapoints more likely to contain a label issue.
+        Lower scores indicate examples more likely to contain a label issue.
 
     Examples
     --------
@@ -84,7 +84,7 @@ def get_residual_score_for_each_label(
     labels: np.ndarray,
     predictions: np.ndarray,
 ) -> np.ndarray:
-    """Returns a residual label-quality score for each datapoint.
+    """Returns a residual label-quality score for each example.
 
     This is function to compute label-quality scores for regression datasets,
     where lower score indicate labels less likely to be correct.
@@ -137,7 +137,7 @@ def get_outre_score_for_each_label(
         Manipulates scale of the distribution of residual.
 
     frac_neighbors: float, default = 0.1
-        Fraction of datapoints that should be considered as n_neighbors to NearestNeighbors.
+        Fraction of examples that should be considered as n_neighbors to NearestNeighbors.
 
     neighbor_metric: str, default = "euclidean"
         The parameter is passed to sklearn NearestNeighbors. # TODO add reference to sklearn.NearestNeighbor?
