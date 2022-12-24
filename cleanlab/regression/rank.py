@@ -24,11 +24,10 @@ def get_label_quality_scores(
     ----------
     labels : np.ndarray
         Raw labels from original dataset.
-        Array of shape ``(N, )`` consisting given labels, where N is number of datapoints in the regression dataset.
+        1D array of shape ``(N, )`` containing the given labels for each example (aka. Y-value, response, target, dependent variable, ...), where N is number of examples in the dataset.
 
     predictions : np.ndarray
-        Predicated labels from regressor fitted on the dataset.
-        Array of shape ``(N,)`` consisting predicted labels, where N is number of datapoints in the regression dataset.
+        1D array of shape ``(N,)`` containing the predicted label for each example in the dataset.  These should be out-of-sample predictions from a trained regression model, which you can obtain for every example in your dataset via :ref:`cross-validation <pred_probs_cross_val>`.
 
     method : {"residual", "outre"}, default="outre"
 
@@ -37,7 +36,7 @@ def get_label_quality_scores(
     label_quality_scores:
         Array of shape ``(N, )`` of scores between 0 and 1, one per datapoint in the dataset.
 
-        Lower scores indicate datapoint more likely to contain a label issue.
+        Lower scores indicate datapoints more likely to contain a label issue.
 
     Examples
     --------
@@ -76,7 +75,7 @@ def get_residual_score_for_each_label(
     labels: np.ndarray,
     predictions: np.ndarray,
 ) -> np.ndarray:
-    """Returns the residual based label-quality scores for each datapoints.
+    """Returns a residual label-quality score for each datapoint.
 
     This is function to compute label-quality scores for regression datasets,
     where lower score indicate labels less likely to be correct.
