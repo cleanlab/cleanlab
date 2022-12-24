@@ -22,7 +22,7 @@ cleanlab.dataset.health_summary(labels, confident_joint=cl.confident_joint)
 
 Get started with: [documentation](https://docs.cleanlab.ai/), [tutorials](https://docs.cleanlab.ai/stable/tutorials/image.html), [examples](https://github.com/cleanlab/examples), and [blogs](https://cleanlab.ai/blog/).
 
- - Learn how to run cleanlab on your own data in 5 minutes for classification with: [image](https://docs.cleanlab.ai/stable/tutorials/image.html), [text](https://docs.cleanlab.ai/stable/tutorials/text.html), [audio](https://docs.cleanlab.ai/stable/tutorials/audio.html), and [tabular](https://docs.cleanlab.ai/stable/tutorials/tabular.html) data.
+ - Learn to run cleanlab on your own data in 5 minutes for classification with: [image](https://docs.cleanlab.ai/stable/tutorials/image.html), [text](https://docs.cleanlab.ai/stable/tutorials/text.html), [audio](https://docs.cleanlab.ai/stable/tutorials/audio.html), and [tabular](https://docs.cleanlab.ai/stable/tutorials/tabular.html) data.
 
 
 [![pypi](https://img.shields.io/pypi/v/cleanlab.svg)](https://pypi.org/pypi/cleanlab/)
@@ -60,7 +60,7 @@ Get started with: [documentation](https://docs.cleanlab.ai/), [tutorials](https:
 </p>
 </details>
 
-<details><summary><b>News! (2020) </b> -- cleanlab adds support for all OS, achieves state-of-the-art, supports co-teaching and more (<b>click to learn more</b>) </summary>
+<details><summary><b>News! (2020) </b> -- cleanlab supports all OS, achieves state-of-the-art performance (<b>click to learn more</b>) </summary>
 <p>
 <ul>
 <li> <b>Dec 2020 🎉</b>  cleanlab supports NeurIPS workshop paper <a href="https://securedata.lol/camera_ready/28.pdf">(Northcutt, Athalye, & Lin, 2020)</a>.</li>
@@ -83,13 +83,13 @@ cleanlab **clean**s your data's **lab**els via state-of-the-art *confident learn
 cleanlab is:
 
 1. **backed by theory**
-   - with [provable guarantees](https://arxiv.org/abs/1911.00068) of exact noise estimation and label error finding in realistic cases with imperfect models.
+   - with [provable guarantees](https://arxiv.org/abs/1911.00068) of exact noise and label error estimation in realistic cases with imperfect models.
 2. **fast**
-   - Code is optimized and parallel-threaded (< 1 second to find label issues in ImageNet with pre-computed probabilities).
+   - Code is parallelized (< 1 second to find label issues in ImageNet with pre-computed predictions).
 4. **easy-to-use**
-   - Find label issues or train noise-robust models in one line of code. By default, cleanlab requires no hyper-parameters.
+   - Find label issues or train noise-robust models in one line of code. No hyperparameters required by default.
 6. **general**
-   - Works with **[any dataset](https://labelerrors.com/)** and **any model**, e.g., TensorFlow, PyTorch, sklearn, xgboost, etc.
+   - Works with **[any dataset](https://labelerrors.com/)** and **any model**, e.g., TensorFlow, PyTorch, sklearn, XGBoost, Huggingface, etc.
 <br/>
 
 ![](https://raw.githubusercontent.com/cleanlab/assets/master/cleanlab/label-errors-examples.png)
@@ -102,7 +102,7 @@ Examples of incorrect given labels in various image datasets <a href="https://l7
 cleanlab supports Linux, macOS, and Windows and runs on Python 3.6+.
 
 - Get started [here](https://docs.cleanlab.ai/)! Install via `pip` or `conda` as described [here](https://docs.cleanlab.ai/).
-- Developers who install the bleeding-edge master branch from source should refer to [this master version of documentation](https://docs.cleanlab.ai/master/index.html).
+- Developers who install the bleeding-edge from source should refer to [this master branch documentation](https://docs.cleanlab.ai/master/index.html).
 
 
 ## Use cleanlab with any model for most ML tasks
