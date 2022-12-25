@@ -63,6 +63,272 @@ tqdm_exists = False
 #    w = """To see estimated completion times for methods in cleanlab.filter, "pip install tqdm"."""
 #    warnings.warn(w)
 
+#def _make_global(
+#    _labels,
+#    _label_counts,
+#    _prune_count_matrix,
+#    _pred_probs,
+#    _min_examples,
+#):  # pragma: no cover
+#    '''Shares memory objects across child processes.
+#    ASSUMES none of these will change!'''
+#
+#    global labels, label_counts, prune_count_matrix, pred_probs
+#    labels = _labels
+#    label_counts = _label_counts
+#    prune_count_matrix = _prune_count_matrix
+#    pred_probs = _pred_probs
+#    _min_examples_per_class = _min_examples
+
+# naive implementation: relies on fork only
+# does not even make separate data structures
+def find_label_issues_naive(
+    labels: LabelLike,
+    pred_probs: np.ndarray,
+    *,
+    return_indices_ranked_by: Optional[str] = None,
+    rank_by_kwargs: Optional[Dict[str, Any]] = None,
+    filter_by: str = "prune_by_noise_rate",
+    multi_label: bool = False,
+    frac_noise: float = 1.0,
+    num_to_remove_per_class: Optional[int] = None,
+    min_examples_per_class=1,
+    confident_joint: Optional[np.ndarray] = None,
+    n_jobs: Optional[int] = None,
+    verbose: bool = False,
+) -> Tuple[np.ndarray, np.ndarray]:
+
+    nt = 9
+    times = np.zeros(nt)
+    time_ints = np.zeros(nt)
+    t_idx = 0
+    start = time.time()
+
+    if not rank_by_kwargs:
+        rank_by_kwargs = {}
+
+    assert filter_by in [
+        "prune_by_noise_rate",
+        "prune_by_class",
+        "both",
+        "confident_learning",
+        "predicted_neq_given",
+    ]  # TODO: change default to confident_learning ?
+    allow_one_class = False
+    if isinstance(labels, np.ndarray) or all(isinstance(lab, int) for lab in labels):
+        if set(labels) == {0}:  # occurs with missing classes in multi-label settings
+            allow_one_class = True
+    assert_valid_inputs(
+        X=None,
+        y=labels,
+        pred_probs=pred_probs,
+        multi_label=multi_label,
+        allow_one_class=allow_one_class,
+    )
+
+    if filter_by in ["confident_learning", "predicted_neq_given"] and (
+        frac_noise != 1.0 or num_to_remove_per_class is not None
+    ):
+        warn_str = (
+            "WARNING! frac_noise and num_to_remove_per_class parameters are only supported"
+            " for filter_by 'prune_by_noise_rate', 'prune_by_class', and 'both'. They "
+            "are not supported for methods 'confident_learning' or "
+            "'predicted_neq_given'."
+        )
+        warnings.warn(warn_str)
+    if (num_to_remove_per_class is not None) and (
+        filter_by in ["confident_learning", "predicted_neq_given"]
+    ):
+        # TODO - add support for these two filters
+        raise ValueError(
+            "filter_by 'confident_learning' or 'predicted_neq_given' is not supported (yet) when setting 'num_to_remove_per_class'"
+        )
+
+    # Set-up number of multiprocessing threads
+    if n_jobs is None:
+        n_jobs = multiprocessing.cpu_count()
+    else:
+        assert n_jobs >= 1
+
+    if multi_label:
+      raise ValueError("not using multi label")
+
+
+    # Else this is standard multi-class classification
+    K = get_num_classes(
+        labels=labels, pred_probs=pred_probs, label_matrix=confident_joint, multi_label=multi_label
+    )
+    # Number of examples in each class of labels
+    label_counts = value_counts_fill_missing_classes(labels, K, multi_label=multi_label)
+    # Boolean set to true if dataset is large
+    big_dataset = K * len(labels) > 1e8
+    # Ensure labels are of type np.ndarray()
+    labels = np.asarray(labels)
+
+    # finish checks, record time
+    times[t_idx] = time.time()
+    timelapse = times[t_idx] - start
+    time_ints[t_idx] = timelapse
+    t_idx += 1
+    #print(f"finished checks, took {timelapse}")
+
+    if confident_joint is None or filter_by == "confident_learning":
+        from cleanlab.count import compute_confident_joint
+
+        confident_joint, cl_error_indices = compute_confident_joint(
+            labels=labels,
+            pred_probs=pred_probs,
+            multi_label=multi_label,
+            return_indices_of_off_diagonals=True,
+        )
+
+    # calculate confident_joint, record time
+    times[t_idx] = time.time()
+    timelapse = times[t_idx] - times[t_idx-1]
+    time_ints[t_idx] = timelapse
+    t_idx += 1
+    #print(f"calculated confident joint, took {timelapse}")
+
+    if filter_by in ["prune_by_noise_rate", "prune_by_class", "both"]:
+        # Create `prune_count_matrix` with the number of examples to remove in each class and
+        # leave at least min_examples_per_class examples per class.
+        # `prune_count_matrix` is transposed relative to the confident_joint.
+        prune_count_matrix = _keep_at_least_n_per_class(
+            prune_count_matrix=confident_joint.T,
+            n=min_examples_per_class,
+            frac_noise=frac_noise,
+        )
+
+        if num_to_remove_per_class is not None:
+            # Estimate joint probability distribution over label issues
+            psy = prune_count_matrix / np.sum(prune_count_matrix, axis=1)
+            noise_per_s = psy.sum(axis=1) - psy.diagonal()
+            # Calibrate labels.t. noise rates sum to num_to_remove_per_class
+            tmp = (psy.T * num_to_remove_per_class / noise_per_s).T
+            np.fill_diagonal(tmp, label_counts - num_to_remove_per_class)
+            prune_count_matrix = round_preserving_row_totals(tmp)
+
+        times[t_idx] = time.time()
+        time_ints[t_idx] = times[t_idx] - times[t_idx-1]
+        #print(f"finished preproc, took {time_ints[t_idx]}")
+        t_idx += 1
+
+    # Make static data global for use in multiprocessing or sub-functions
+    global _labels, _label_counts, _prune_count_matrix, _pred_probs, _min_examples_per_class
+    _labels = labels
+    _label_counts = label_counts
+    _prune_count_matrix = prune_count_matrix
+    _pred_probs = pred_probs
+    _min_examples_per_class = min_examples_per_class
+
+    # finish preprocess for prunes, record time
+    times[t_idx] = time.time()
+    time_ints[t_idx] = times[t_idx] - times[t_idx-1]
+    #print(f"finished preproc, took {time_ints[t_idx]}")
+    t_idx += 1
+
+    # Perform Pruning with threshold probabilities from BFPRT algorithm in O(n)
+    # Operations are parallelized across all CPU processes
+    if filter_by == "prune_by_class" or filter_by == "both":
+        if n_jobs > 1:  # parallelize
+            with multiprocessing.Pool(n_jobs) as p:
+                if verbose:  # pragma: no cover
+                    print("Parallel processing label issues by class.")
+                sys.stdout.flush()
+                if big_dataset and tqdm_exists:
+                    label_issues_masks_per_class = list(
+                        tqdm.tqdm(p.imap(_prune_by_class, range(K)), total=K),
+                    )
+                else:
+                    label_issues_masks_per_class = p.map(_prune_by_class_naive, range(K))
+        else:  # n_jobs = 1, so no parallelization
+            label_issues_masks_per_class = [_prune_by_class_naive(k) for k in range(K)]
+        label_issues_mask = np.stack(label_issues_masks_per_class).any(axis=0)
+
+    # finish prune by class, record time
+    times[t_idx] = time.time()
+    time_ints[t_idx] = times[t_idx] - times[t_idx-1]
+    #print(f"finished prune by class, took {time_ints[t_idx]}")
+    t_idx += 1
+
+    if filter_by == "both":
+        label_issues_mask_by_class = label_issues_mask
+
+    if filter_by == "prune_by_noise_rate" or filter_by == "both":
+        if n_jobs > 1:  # parallelize
+            with multiprocessing.Pool(n_jobs) as p:
+                if verbose:  # pragma: no cover
+                    print("Parallel processing label issues by noise rate.")
+                sys.stdout.flush()
+                if big_dataset and tqdm_exists:
+                    label_issues_masks_per_class = list(
+                        tqdm.tqdm(p.imap(_prune_by_count, range(K)), total=K)
+                    )
+                else:
+                    label_issues_masks_per_class = p.map(_prune_by_count_naive, range(K))
+        else:  # n_jobs = 1, so no parallelization
+            label_issues_masks_per_class = [_prune_by_count_naive(k) for k in range(K)]
+
+        # finish prune by count, record time
+        times[t_idx] = time.time()
+        time_ints[t_idx] = times[t_idx] - times[t_idx-1]
+        #print(f"finished prune by count, took {time_ints[t_idx]}")
+        t_idx += 1
+
+        label_issues_mask = np.stack(label_issues_masks_per_class).any(axis=0)
+
+
+    if filter_by == "both":
+        label_issues_mask = label_issues_mask & label_issues_mask_by_class
+
+    if filter_by == "confident_learning":
+        label_issues_mask = np.zeros(len(labels), dtype=bool)
+        for idx in cl_error_indices:
+            label_issues_mask[idx] = True
+
+    # finish confident learning, record time
+    times[t_idx] = time.time()
+    time_ints[t_idx] = times[t_idx] - times[t_idx-1]
+    #print(f"finished confident learning, took {time_ints[t_idx]}")
+    t_idx += 1
+
+    if filter_by == "predicted_neq_given":
+        label_issues_mask = find_predicted_neq_given(labels, pred_probs, multi_label=multi_label)
+
+    # finish pred neq, record time
+    times[t_idx] = time.time()
+    time_ints[t_idx] = times[t_idx] - times[t_idx-1]
+    #print(f"finished pred neq, took {time_ints[t_idx]}")
+    t_idx += 1
+
+    # Remove label issues if given label == model prediction
+    # TODO: consider use of _multiclass_crossval_predict() here
+    pred = pred_probs.argmax(axis=1)
+    for i, pred_label in enumerate(pred):
+        if pred_label == labels[i]:
+            label_issues_mask[i] = False
+
+    if verbose:
+        print("Number of label issues found: {}".format(sum(label_issues_mask)))
+
+    # about to return, record time
+    times[t_idx] = time.time()
+    time_ints[t_idx] = times[t_idx] - times[t_idx-1]
+    #print(f"done, took {time_ints[t_idx]}")
+    t_idx += 1
+
+    # TODO: run count.num_label_issues() and adjust the total issues found here to match
+    if return_indices_ranked_by is not None:
+        er = order_label_issues(
+            label_issues_mask=label_issues_mask,
+            labels=labels,
+            pred_probs=pred_probs,
+            rank_by=return_indices_ranked_by,
+            rank_by_kwargs=rank_by_kwargs,
+        )
+        return (0, er)
+    return (label_issues_mask, time_ints)
+
 # a bare bones version
 # that ignores multi labels
 # does not use shared memory
@@ -241,9 +507,9 @@ def find_label_issues_cow(
                         tqdm.tqdm(p.imap(_prune_by_class, range(K)), total=K),
                     )
                 else:
-                    label_issues_masks_per_class = p.map(_prune_by_class_naive, range(K))
+                    label_issues_masks_per_class = p.map(_prune_by_class_cow, range(K))
         else:  # n_jobs = 1, so no parallelization
-            label_issues_masks_per_class = [_prune_by_class_naive(k) for k in range(K)]
+            label_issues_masks_per_class = [_prune_by_class_cow(k) for k in range(K)]
         label_issues_mask = np.zeros((len(labels), K), dtype=bool)
         for k in range(K):
             if len(label_issues_masks_per_class[k].shape) > 1:
@@ -269,19 +535,26 @@ def find_label_issues_cow(
                         tqdm.tqdm(p.imap(_prune_by_count, range(K)), total=K)
                     )
                 else:
-                    label_issues_masks_per_class = p.map(_prune_by_count_naive, range(K))
+                    label_issues_masks_per_class = p.map(_prune_by_count_cow, range(K))
         else:  # n_jobs = 1, so no parallelization
-            label_issues_masks_per_class = [_prune_by_count_naive(k) for k in range(K)]
+            label_issues_masks_per_class = [_prune_by_count_cow(k) for k in range(K)]
+
+        # finish prune by count, record time
+        times[t_idx] = time.time()
+        time_ints[t_idx] = times[t_idx] - times[t_idx-1]
+        #print(f"finished prune by count, took {time_ints[t_idx]}")
+        t_idx += 1
+
         label_issues_mask = np.zeros((len(labels), K), dtype=bool)
         for k in range(K):
             if len(label_issues_masks_per_class[k].shape) > 1:
                 label_issues_mask[labels==k] = label_issues_masks_per_class[k]
 
-    # finish prune by count, record time
+    # finish recording label_issues_mask after prune by count, record time
     times[t_idx] = time.time()
     time_ints[t_idx] = times[t_idx] - times[t_idx-1]
-    #print(f"finished prune by count, took {time_ints[t_idx]}")
     t_idx += 1
+
 
     if filter_by == "both":
         label_issues_mask = label_issues_mask & label_issues_mask_by_class
@@ -291,11 +564,6 @@ def find_label_issues_cow(
         for idx in cl_error_indices:
             label_issues_mask[idx] = True
 
-    # finish confident learning, record time
-    times[t_idx] = time.time()
-    time_ints[t_idx] = times[t_idx] - times[t_idx-1]
-    #print(f"finished confident learning, took {time_ints[t_idx]}")
-    t_idx += 1
 
     if filter_by == "predicted_neq_given":
         label_issues_mask = find_predicted_neq_given(labels, pred_probs, multi_label=multi_label)
@@ -1226,8 +1494,21 @@ def _get_shared_data() -> Any:  # pragma: no cover
         min_examples_per_class,
     )
 
-
 def _prune_by_class_naive(k:int) -> np.ndarray:
+    if _label_counts[k] > _min_examples_per_class:  # No prune if not at least min_examples_per_class
+        num_issues = _label_counts[k] - _prune_count_matrix[k][k]
+        # Get return_indices_ranked_by of the smallest prob of class k for examples with noisy label k
+        label_filter = _labels == k
+        class_probs = _pred_probs[:, k]
+        rank = np.partition(class_probs[label_filter], num_issues)[num_issues]
+        return label_filter & (class_probs < rank)
+    else:
+        warnings.warn(
+            f"May not flag all label issues in class: {k}, it has too few examples (see argument: `min_examples_per_class`)"
+        )
+        return np.zeros(len(_labels), dtype=bool)
+
+def _prune_by_class_cow(k:int) -> np.ndarray:
     pred_probs_k = pred_probs_by_class[k]
     label_counts = pred_probs_k.shape[0]
     if label_counts > _min_examples_per_class:
@@ -1284,8 +1565,29 @@ def _prune_by_class(k: int, args=None) -> np.ndarray:
         )
         return np.zeros(len(labels), dtype=bool)
 
+def _prune_by_count_naive(k:int) ->np.ndarray:
+    label_issues_mask = np.zeros(len(_pred_probs), dtype=bool)
+    pred_probs_k = _pred_probs[:, k]
+    K = get_num_classes(_labels, _pred_probs)
+    if _label_counts[k] <= _min_examples_per_class:  # No prune if not at least min_examples_per_class
+        warnings.warn(
+            f"May not flag all label issues in class: {k}, it has too few examples (see `min_examples_per_class` argument)"
+        )
+        return np.zeros(len(_labels), dtype=bool)
+    for j in range(K):  # j is true label index (k is noisy label index)
+        num2prune = _prune_count_matrix[j][k]
+        # Only prune for noise rates, not diagonal entries
+        if k != j and num2prune > 0:
+            # num2prune's largest p(true class k) - p(noisy class k)
+            # for x with true label j
+            margin = _pred_probs[:, j] - pred_probs_k
+            label_filter = _labels == k
+            cut = -np.partition(-margin[label_filter], num2prune - 1)[num2prune - 1]
+            label_issues_mask = label_issues_mask | (label_filter & (margin >= cut))
+    return label_issues_mask
 
-def _prune_by_count_naive(k:int) -> np.ndarray:
+
+def _prune_by_count_cow(k:int) -> np.ndarray:
     pred_probs_k = pred_probs_by_class[k]
     label_counts = pred_probs_k.shape[0]
     label_issues_mask = np.zeros(label_counts, dtype=bool)

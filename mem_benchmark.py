@@ -1,4 +1,4 @@
-from cleanlab.filter_copy import find_label_issues_bench, find_label_issues_cow
+from cleanlab.filter_copy import find_label_issues_bench, find_label_issues_cow, find_label_issues_naive
 #from old_filter_code import get_noise_indices
 import numpy as np
 np.set_printoptions(suppress=True)
@@ -27,7 +27,7 @@ if __name__=='__main__':
     multiprocessing.set_start_method('fork')
     for n_jobs in range(ncores):
         print(f"starting job {n_jobs}")
-        _, times = find_label_issues_cow(pred_probs=pred_probs, labels=labels, n_jobs=n_jobs+1)
+        _, times = find_label_issues_naive(pred_probs=pred_probs, labels=labels, n_jobs=n_jobs+1)
         #_ = get_noise_indices(psx=pred_probs, s=labels, prune_method='prune_by_noise_rate', n_jobs=n_jobs+1)
         print(f"finish job {n_jobs}")
-    #print(f"total time: {time() - start_time}")
+    print(f"total time: {time() - start_time}")
