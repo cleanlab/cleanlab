@@ -761,7 +761,7 @@ def find_label_issues_cow(
 
         label_issues_mask = np.zeros(len(labels), dtype=bool)
         for k in range(K):
-            if len(label_issues_masks_per_class[k].shape) > 1:
+            if len(label_issues_masks_per_class[k]) > 1:
                 label_issues_mask[labels==k] = label_issues_masks_per_class[k]
 
     # finish recording label_issues_mask after prune by count, record time
