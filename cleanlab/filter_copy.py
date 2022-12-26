@@ -751,6 +751,7 @@ def find_label_issues_cow(
                     label_issues_masks_per_class = p.map(_prune_by_count_cow, range(K))
         else:  # n_jobs = 1, so no parallelization
             label_issues_masks_per_class = [_prune_by_count_cow(k) for k in range(K)]
+        #print(f"in issues_cow, label issues per class shapes are {[arr.shape for arr in label_issues_masks_per_class]}")
 
         # finish prune by count, record time
         times[t_idx] = time.time()
@@ -758,7 +759,7 @@ def find_label_issues_cow(
         #print(f"finished prune by count, took {time_ints[t_idx]}")
         t_idx += 1
 
-        label_issues_mask = np.zeros((len(labels), K), dtype=bool)
+        label_issues_mask = np.zeros(len(labels), dtype=bool)
         for k in range(K):
             if len(label_issues_masks_per_class[k].shape) > 1:
                 label_issues_mask[labels==k] = label_issues_masks_per_class[k]
