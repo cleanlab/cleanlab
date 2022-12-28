@@ -1,12 +1,24 @@
 import numpy as np
-import pandas as pd
+
+# import pandas as pd
 import pytest
+from typing import Union, Sequence
 
 from cleanlab.regression import rank
+
+ArrayLike = Union[np.ndarray, Sequence]
 
 # To be used for all the tests
 labels = np.array([1, 2, 3, 4])
 predictions = np.array([1, 3, 4, 5])
+
+# Inputs that are not array like
+aConstant = 1
+aString = "predictions_non_array"
+aDict = {"labels": [1, 2], "predictions": [2, 3]}
+aSet = {1, 2, 3, 4}
+aBool = True
+
 
 # test with deafault parameters
 def test_output_shape_type():
@@ -15,18 +27,43 @@ def test_output_shape_type():
     assert isinstance(scores, np.ndarray)
 
 
-# test for acceptable datatypes
-@pytest.mark.parametrize("format", [pd.Series, pd.DataFrame, list])
-def test_type_error_for_input_types(format):
-    with pytest.raises(TypeError) as error:
-        _ = rank.get_label_quality_scores(labels=format(labels), predictions=format(predictions))
+@pytest.mark.parametrize(
+    "aInput",
+    [aConstant, aString, aDict, aSet, aBool],
+)
+def test_labels_are_arraylike(aInput):
+    with pytest.raises(ValueError) as error:
+        rank.get_label_quality_scores(labels=aInput, predictions=predictions)
+        assert error.type == ValueError
+
+
+@pytest.mark.parametrize(
+    "aInput",
+    [aConstant, aString, aDict, aSet, aBool],
+)
+def test_predictionns_are_arraylike(aInput):
+    with pytest.raises(ValueError) as error:
+        rank.get_label_quality_scores(labels=labels, predictions=aInput)
+        assert error.type == ValueError
 
 
 # test for input shapes
-def test_assertion_error_for_input_shape():
+def test_input_shape_labels():
     with pytest.raises(AssertionError) as error:
-        _ = rank.get_label_quality_scores(labels=labels[:-1], predictions=predictions)
-        _ = rank.get_label_quality_scores(labels=labels, predictions=predictions[:-1])
+        rank.get_label_quality_scores(labels=labels[:-1], predictions=predictions)
+    assert (
+        str(error.value)
+        == f"Number of examples in labels {labels[:-1].shape} and predictions {predictions.shape} are not same."
+    )
+
+
+def test_input_shape_predictions():
+    with pytest.raises(AssertionError) as error:
+        rank.get_label_quality_scores(labels=labels, predictions=predictions[:-1])
+    assert (
+        str(error.value)
+        == f"Number of examples in labels {labels.shape} and predictions {predictions[:-1].shape} are not same."
+    )
 
 
 # test individual scoring functions
