@@ -1,9 +1,9 @@
 import numpy as np
 from cleanlab.outlier import OutOfDistribution
 from sklearn.neighbors import NearestNeighbors
-from cleanlab.internal.regression_utils import assert_valid_inputs, check_dimensions
+from cleanlab.internal.regression_utils import assert_valid_inputs
 from typing import Dict, Callable, Optional
-from cleanlab.typing import LabelLike
+from numpy.typing import ArrayLike
 
 """ Generates label quality scores for every sample in regression dataset """
 
@@ -11,8 +11,8 @@ EPS = 1e-30
 
 
 def get_label_quality_scores(
-    labels: Optional[LabelLike],
-    predictions: Optional[LabelLike],
+    labels: ArrayLike,
+    predictions: ArrayLike,
     *,
     method: str = "outre",
 ) -> np.ndarray:
@@ -54,12 +54,7 @@ def get_label_quality_scores(
     """
 
     # Check if inputs are valid
-    assert_valid_inputs(labels=labels, predictions=predictions, method=method)
-
-    # Convert to numpy array and check if they are 1-D array.
-    labels = np.asarray(labels)
-    predictions = np.asarray(predictions)
-    check_dimensions(labels, predictions)
+    labels, predictions = assert_valid_inputs(labels=labels, predictions=predictions, method=method)
 
     scoring_funcs: Dict[str, Callable[[np.ndarray, np.ndarray], np.ndarray]] = {
         "residual": get_residual_score_for_each_label,
