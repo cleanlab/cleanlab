@@ -3,84 +3,88 @@ Helper function internally used in cleanlab.regression
 """
 
 import numpy as np
-import pandas as pd
-from pandas.api.types import is_numeric_dtype
-from cleanlab.typing import LabelLike
-from typing import Optional
+from numpy.typing import ArrayLike
+from typing import Tuple, Optional
 
 
 def assert_valid_inputs(
-    labels: Optional[LabelLike],
-    predictions: Optional[LabelLike],
+    labels: ArrayLike,
+    predictions: ArrayLike,
     method: str,
-) -> None:
+) -> Tuple[np.ndarray, np.ndarray]:
     """Checks that ``labels``, ``predictions``, ``method`` are correctly formatted."""
 
-    supported_types = (list, np.ndarray, pd.Series, pd.DataFrame)
+    # Load array_like input as numpy array. If not raise error.
+    try:
+        labels = np.asarray(labels)
+    except:
+        raise ValueError(f"labels must be array_like.")
 
-    # Check if labels and predictions are of supported types
-    if not isinstance(labels, supported_types) and not isinstance(predictions, supported_types):
-        raise TypeError(
-            f"Expected labels and predictions to be either of {supported_types}, Got labels of type {type(labels)}, and predictions of type {type(predictions)}",
-        )
+    try:
+        predictions = np.asarray(predictions)
+    except:
+        raise ValueError(f"predictions must be array_like.")
 
-    # check if labels and predictions are 1-D and numeric
-    check_dimension_and_datatype(check_input=labels, text = "labels")
-    check_dimension_and_datatype(check_input=predictions, text = "predictions")
+    # Check if labels and predictions are 1-D and numeric
+    valid_labels = check_dimension_and_datatype(check_input=labels, text="labels")
+    valid_predictions = check_dimension_and_datatype(check_input=predictions, text="predictions")
 
-    # check if number of examples are same.
-    assert len(labels) == len(
-        predictions
-    ), f"Length of labels {len(labels)} and predictions {len(predictions)} are not same."
+    # Check if number of examples are same.
+    assert (
+        valid_labels.shape == valid_predictions.shape
+    ), f"Number of examples in labels {labels.shape} and predictions {predictions.shape} are not same."
+
+    # Check if inputs have missing values
+    check_missing_values(valid_labels, text="labels")
+    check_missing_values(valid_predictions, text="predictions")
 
     # Check if method is among allowed scoring method
     scoring_methods = ["residual", "outre"]
     if method not in scoring_methods:
         raise ValueError(
-            f"Passed method is not among allowed method. Expected either of {scoring_methods}, got {method}"
+            f"Passed method is not among allowed methods. Expected either of {scoring_methods}, got {method}."
         )
 
+    # return 1-D numpy array
+    return valid_labels, valid_predictions
 
-def check_dimension_and_datatype(check_input: Optional[LabelLike], text : str):
-    # check if input is empty
-    if not len(check_input):
+
+def check_dimension_and_datatype(check_input: np.ndarray, text: str) -> np.ndarray:
+    """
+    Raises errors related to:
+    1. If input is empty
+    2. If input is not 1-D
+    3. If input is not numeric
+
+    If all the checks are passed, it returns the squeezed 1-D array required by the main algorithm.
+    """
+
+    assert isinstance(
+        check_input, np.ndarray
+    ), f"{text} could not be converted to numpy array, check input."
+
+    # Check if input is empty
+    if not check_input.size:
+        raise ValueError(f"{text} is Empty, check input.")
+
+    # Remove axis with length one
+    check_input = np.squeeze(check_input)
+
+    # Check if input is 1-D
+    if check_input.ndim != 1:
         raise ValueError(
-            f"{text} is Empty, check input."
+            f"Expected 1-Dimensional inputs for {text}, got {check_input.ndim} dimensions."
         )
 
-    if isinstance(check_input, list):
-        if isinstance(check_input[0], list):
-            raise ValueError(f"{text} must be 1-D. List of List is not supported.")
-        elif not all(isinstance(x, (int, float)) for x in check_input):
-            raise ValueError(
-                f"All element of {text} must be of type numeric i.e., integer or float"
-            )
+    # Check if datatype is numeric
+    if not np.issubdtype(check_input.dtype, np.number):
+        raise ValueError(f"Expected {text} to be Numeric, got {check_input.dtype}.")
 
-    elif isinstance(check_input, pd.DataFrame):
-        if check_input.shape[1] != 1:
-            raise ValueError(
-                f"{text} must be 1-D. For DataFrame, second dimension must be 1, got {check_input.shape}."
-            )
-        elif check_input.shape[1] == 1:
-            if not is_numeric_dtype(check_input):
-                raise ValueError(f"{text} must be 1-D and numeric type. got {check_input.dtype}.")
-    elif isinstance(check_input, (np.ndarray, pd.Series)):
-        if len(check_input.shape) != 1:
-            raise ValueError(f"{text} must be 1-D {type(check_input)}, got {check_input.shape}")
-        elif len(check_input.shape) == 1:
-            if isinstance(check_input, pd.Series) and not is_numeric_dtype(check_input):
-                raise ValueError(f"{text} must be 1-D and numeric type. got {check_input.dtype}.")
-            elif isinstance(check_input, np.ndarray):
-                if not all(isinstance(x, (int, float)) for x in check_input.tolist()):
-                    raise ValueError(f"{text} must be 1-d and numeric type i.e., integer or float.")
+    return check_input
 
 
-def check_dimensions(labels: np.ndarray, predictions: np.ndarray) -> None:
-    if labels.ndim != 1:
-        raise ValueError(
-            f"labels have dimensions {labels.ndim}, Expected 1-D array as input for labels"
-        )
-    if predictions.ndim != 1:
-        raise ValueError(
-            f"predictions have dimensions {labels.ndim}, Expected 1-D array as input for predictions"
-        )
+def check_missing_values(check_input: np.ndarray, text: str):
+    """Raise error if there are any missing values in Numpy array."""
+
+    if np.isnan(check_input).any():
+        raise ValueError(f"{text} has missing values, check input.")
