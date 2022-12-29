@@ -367,14 +367,20 @@ class Datalab:
             # could alternatively consider:
             # raise ValueError("issue_name must be a valid key in Datalab.info dict.")
 
-    def report(self) -> None:
+    def report(self, k: int = 5, verbosity: int = 0) -> None:
         """Prints helpful summary of all issues."""
-        print("Issues will be summarized here.")  # TODO
         # Show summary of issues
-        # Sort issues base on the score
+        # Sort issues based on the score
         # Show top K issues
         # Show the info (get_info) with some verbosity level
         #   E.g. for label issues, only show the confident joint computed with the health_summary
+        issue_type_argsort = self.issue_summary["score"].argsort().values
+        issue_type_sorted_keys = self.issue_summary["issue_type"].values[issue_type_argsort]
+        issue_managers = [self.issue_managers[i] for i in issue_type_sorted_keys]
+        report_str = ""
+        for issue_manager in issue_managers:
+            report_str += issue_manager.report(k=k, verbosity=verbosity) + "\n\n"
+        print(report_str)
 
     def __repr__(self) -> str:
         """What is displayed in console if user executes: >>> datalab"""

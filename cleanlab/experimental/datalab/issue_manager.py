@@ -52,6 +52,7 @@ class IssueManager(ABC):
         self.info: Dict[str, Any] = {}
         self.issues: pd.DataFrame = pd.DataFrame()
         self.summary: pd.DataFrame = pd.DataFrame()
+        # TODO: Split info into two attributes: "local" info and "global" statistics (should be checked at the start of `find_issues`, but overwritten by `collect_info`).
 
     def __repr__(self):
         class_name = self.__class__.__name__
@@ -90,62 +91,85 @@ class IssueManager(ABC):
         """
         raise NotImplementedError
 
+    # TODO: Add a `collect_global_info` method for storing useful statistics that can be used by other IssueManagers.
+
     def get_summary(self):
         assert not self.issues.empty
         assert len(self.info) > 0
 
+    def report(self, k: int, verbosity: int = 0) -> str:
+        """Returns a report of the issues found by this IssueManager.
 
-class HealthIssueManager(IssueManager):
-    @classmethod
+        Parameters
+        ----------
+        k :
+            The number of examples to report.
+
+        verbosity :
+            The level of verbosity for the report. Higher values mean more information.
+
+        Returns
+        -------
+        report :
+            A string containing the report.
+        """
+        if verbosity not in self.verbosity_levels:
+            raise ValueError(
+                f"Verbosity level {verbosity} not supported. "
+                f"Supported levels: {self.verbosity_levels.keys()}"
+            )
+        if self.issues.empty:
+            print(f"No issues found")
+
+        topk_ids = self.issues.sort_values(by=self.issue_score_key, ascending=True).index[:k]
+
+        report = f"{self.issue_key:-^80}\n\n"
+        columns = {}
+        for level, verbosity_dict in self.verbosity_levels.items():
+            if level <= verbosity:
+                for key, values in verbosity_dict.items():
+                    if key == "issue":
+                        # Add the issue-specific info, with the top k ids
+                        new_columns = {
+                            col: np.array(self.info[col])[topk_ids]
+                            for col in values
+                            if self.info.get(col, None) is not None
+                        }
+                        columns.update(new_columns)
+                    elif key == "summary":
+                        for value in values:
+                            report += f"{value}:\n{self.info[value]}\n\n"
+        report += self.issues.loc[topk_ids].copy().assign(**columns).to_string()
+        return report
+
     @property
-    def issue_key(cls) -> str:
-        return "health"
+    def verbosity_levels(self) -> Dict[int, Dict[str, List[str]]]:
+        """Returns a dictionary of verbosity levels and their corresponding dictionaries of
+        report items to print.
 
-    def find_issues(self, pred_probs: np.ndarray, **kwargs) -> dict:
-        health_summary = self._health_summary(pred_probs=pred_probs, **kwargs)
-        self.collect_info(summary=health_summary)
-        return health_summary
+        Example
+        -------
 
-    def collect_info(self, summary: Dict[str, Any], **kwargs) -> None:
-        self.datalab.results = summary["overall_label_health_score"]
-        for key in self.info_keys:
-            if key == "summary":
-                self.datalab.info[key] = summary
-        self.datalab.info["summary"] = summary
+        >>> verbosity_levels = {
+        ...     0: {},
+        ...     1: {"summary": ["some_info_key"]},
+        ...     2: {
+        ...         "summary": ["additional_info_key"],
+        ...         "issues": ["issue_column_1", "issue_column_2"],
+        ...     },
+        ... }
 
-    def _health_summary(self, pred_probs, summary_kwargs=None, **kwargs) -> dict:
-        """Returns a short summary of the health of this Lab."""
-        from cleanlab.dataset import health_summary
-
-        # Validate input
-        self._validate_pred_probs(pred_probs)
-
-        if summary_kwargs is None:
-            summary_kwargs = {}
-
-        kwargs_copy = kwargs.copy()
-        for k in kwargs_copy:
-            if k not in [
-                "asymmetric",
-                "class_names",
-                "num_examples",
-                "joint",
-                "confident_joint",
-                "multi_label",
-                "verbose",
-            ]:
-                del kwargs[k]
-
-        summary_kwargs.update(kwargs)
-
-        class_names = list(self.datalab._label_map.values())
-        summary = health_summary(
-            self.datalab._labels, pred_probs, class_names=class_names, **summary_kwargs
-        )
-        return summary
-
-    def _validate_pred_probs(self, pred_probs) -> None:
-        assert_valid_inputs(X=None, y=self.datalab._labels, pred_probs=pred_probs)
+        Returns
+        -------
+        verbosity_levels :
+            A dictionary of verbosity levels and their corresponding dictionaries of
+            report items to print.
+        """
+        return {
+            0: {},
+            1: {},
+            2: {},
+        }
 
 
 class LabelIssueManager(IssueManager):
@@ -449,3 +473,11 @@ class OutOfDistributionIssueManager(IssueManager):
         format_kwargs = kwargs.get("format_kwargs", {})
 
         return self.datalab.data.with_format("numpy", **format_kwargs)[columns]
+
+    @property
+    def verbosity_levels(self) -> Dict[int, Any]:
+        return {
+            0: {},
+            1: {"summary": ["num_ood_issues"], "issue": ["nearest_neighbour"]},
+            2: {"issue": ["distance_to_nearest_neighbour"]},
+        }
