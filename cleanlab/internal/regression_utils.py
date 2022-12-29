@@ -4,7 +4,7 @@ Helper function internally used in cleanlab.regression
 
 import numpy as np
 from numpy.typing import ArrayLike
-from typing import Tuple, Optional
+from typing import Tuple
 
 
 def assert_valid_inputs(

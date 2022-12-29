@@ -2,7 +2,7 @@ import numpy as np
 from cleanlab.outlier import OutOfDistribution
 from sklearn.neighbors import NearestNeighbors
 from cleanlab.internal.regression_utils import assert_valid_inputs
-from typing import Dict, Callable, Optional
+from typing import Dict, Callable
 from numpy.typing import ArrayLike
 
 """ Generates label quality scores for every sample in regression dataset """
