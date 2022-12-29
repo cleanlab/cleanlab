@@ -56,7 +56,6 @@ setup(
         "Natural Language :: English",
         # We believe this package works will these versions, but we do not guarantee it!
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
@@ -71,7 +70,7 @@ setup(
         "Topic :: Software Development :: Libraries",
         "Topic :: Software Development :: Libraries :: Python Modules",
     ],
-    python_requires=">=3.6",
+    python_requires=">=3.7",
     # What does your project relate to?
     keywords="machine_learning data_cleaning confident_learning classification weak_supervision "
     "learning_with_noisy_labels unsupervised_learning datacentric_ai, datacentric",
@@ -97,20 +96,3 @@ setup(
         "termcolor>=1.1.0",
     ],
 )
-
-"""
-Curtis G. Northcutt notes on how to perform pypi upload:
-
-1. python setup.py check -m -s
-2. rm -rf dist build
-3. python setup.py sdist bdist_wheel
-4. twine check dist/*
-5. python3 -m twine upload dist/*
-
-For conda upload (after pypi upload)
-# if this fails, try conda update --force conda; conda update conda
-1. cd ~; conda skeleton pypi cleanlab --noarch-python --python-version 3.6
-2. conda-build cleanlab
-3. anaconda upload --user cleanlab LOCATION/cleanlab-x.x.x_0.tar.bz2  # location printed by previous command
-4. cd ~; rm -r cleanlab  # clean-up meta data created by anaconda for upload
-"""
