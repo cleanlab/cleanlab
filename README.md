@@ -27,7 +27,7 @@ Get started with: [documentation](https://docs.cleanlab.ai/), [tutorials](https:
 
 [![pypi](https://img.shields.io/pypi/v/cleanlab.svg)](https://pypi.org/pypi/cleanlab/)
 [![os](https://img.shields.io/badge/platform-noarch-lightgrey)](https://pypi.org/pypi/cleanlab/)
-[![py\_versions](https://img.shields.io/badge/python-3.6%2B-blue)](https://pypi.org/pypi/cleanlab/)
+[![py\_versions](https://img.shields.io/badge/python-3.7%2B-blue)](https://pypi.org/pypi/cleanlab/)
 [![build\_status](https://github.com/cleanlab/cleanlab/workflows/CI/badge.svg)](https://github.com/cleanlab/cleanlab/actions?query=workflow%3ACI)
 [![coverage](https://codecov.io/gh/cleanlab/cleanlab/branch/master/graph/badge.svg)](https://app.codecov.io/gh/cleanlab/cleanlab)
 [![docs](https://img.shields.io/static/v1?logo=github&style=flat&color=pink&label=docs&message=cleanlab)](https://docs.cleanlab.ai/)
@@ -99,7 +99,7 @@ Examples of incorrect given labels in various image datasets <a href="https://l7
 
 ## Run cleanlab
 
-cleanlab supports Linux, macOS, and Windows and runs on Python 3.6+.
+cleanlab supports Linux, macOS, and Windows and runs on Python 3.7+.
 
 - Get started [here](https://docs.cleanlab.ai/)! Install via `pip` or `conda` as described [here](https://docs.cleanlab.ai/).
 - Developers who install the bleeding-edge from source should refer to [this master branch documentation](https://docs.cleanlab.ai/master/index.html).
@@ -155,7 +155,7 @@ Note, some libraries exist to give you sklearn-compatibility for free. For PyTor
 <br/>
 </details>
 
-cleanlab is useful across a wide variety of Machine Learning tasks. Specific tasks this package offers dedicated functionality for include: 
+cleanlab is useful across a wide variety of Machine Learning tasks. Specific tasks this package offers dedicated functionality for include:
 1. [Binary and multi-class classification](https://docs.cleanlab.ai/stable/tutorials/indepth_overview.html)
 2. [Multi-label classification](https://docs.cleanlab.ai/stable/tutorials/multilabel_classification.html) (e.g. image/document tagging)
 3. [Token classification](https://docs.cleanlab.ai/stable/tutorials/token_classification.html) (e.g. entity recognition in text)
@@ -500,7 +500,7 @@ cleanlab is based on peer-reviewed research. Here are relevant papers to cite if
 </details>
 
 <details><summary><a href="https://arxiv.org/abs/2210.03920"> Token Classification Label Errors (NeurIPS '22)</a> (<b>click to show bibtex</b>) </summary>
-    
+
     @inproceedings{wang2022tokenerrors,
         title={Detecting label errors in token classification data},
         author={Wang, Wei-Chen and Mueller, Jonas},
@@ -511,7 +511,7 @@ cleanlab is based on peer-reviewed research. Here are relevant papers to cite if
 </details>
 
 <details><summary><a href="https://arxiv.org/abs/2210.06812"> CROWDLAB for data with multiple annotators (NeurIPS '22)</a> (<b>click to show bibtex</b>) </summary>
-    
+
     @inproceedings{goh2022crowdlab,
         title={Utilizing supervised models to infer consensus labels and their quality from data with multiple annotators},
         author={Goh, Hui Wen and Tkachenko, Ulyana and Mueller, Jonas},
