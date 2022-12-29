@@ -19,7 +19,7 @@ import os
 import pickle
 from cleanlab.experimental.datalab.datalab import Datalab
 
-
+from sklearn.neighbors import NearestNeighbors
 from datasets.dataset_dict import DatasetDict
 import numpy as np
 import pandas as pd
@@ -66,15 +66,15 @@ class TestDatalab:
 
     def test_get_info(self, lab):
         """Test that the method fetches the values from the info dict."""
-        num_classes = lab.get_info("num_classes")
+        num_classes = lab.get_info("data", "num_classes")
         assert num_classes == 3
-        lab.info["num_classes"] = 4
-        num_classes = lab.get_info("num_classes")
+        lab.info["data"]["num_classes"] = 4
+        num_classes = lab.get_info("data", "num_classes")
         assert num_classes == 4
 
     @pytest.mark.parametrize(
         "issue_types",
-        [None, {"label": True}],
+        [None, {"label": {}}],
         ids=["Default issues", "Only label issues"],
     )
     def test_find_issues(self, lab, pred_probs, issue_types):
@@ -83,6 +83,83 @@ class TestDatalab:
         lab.find_issues(pred_probs=pred_probs, issue_types=issue_types)
         assert not lab.issues.empty, "Issues weren't updated"
         assert not lab.issue_summary.empty, "Issue summary wasn't updated"
+
+        if issue_types is None:
+            # Test default issue types
+            assert all(
+                lab.issues.columns
+                == ["is_label_issue", "label_quality", "is_ood_issue", "ood_score"]
+            )
+
+    def test_find_issues_with_custom_hyperparams(self, lab, pred_probs, monkeypatch):
+        def mock_extract_embeddings(*args, **kwargs):
+            # Return a dummy embedding matrix that matches the size of the dataset
+            dataset_size = lab.get_info("data", "num_examples")
+            embedding_size = 2
+            return np.random.rand(dataset_size, embedding_size)
+
+        monkeypatch.setattr(
+            "cleanlab.experimental.datalab.issue_manager.OutOfDistributionIssueManager._extract_embeddings",
+            mock_extract_embeddings,
+        )
+
+        knn = NearestNeighbors(n_neighbors=3, metric="euclidean")
+        issue_manager_init_kwargs = {
+            "ood": {
+                "ood_kwargs": {"params": {"knn": knn}},
+            },
+        }
+        lab.find_issues(
+            pred_probs=pred_probs,
+            features="features",
+            issue_types={"ood": {}},
+            issue_manager_init_kwargs=issue_manager_init_kwargs,
+        )
+        set_knn = lab.issue_managers["ood"].ood.params["knn"]
+        assert set_knn == knn
+
+    def test_validate_issue_types_dict(self, lab, monkeypatch):
+        issue_types = {
+            "issue_type_1": {f"arg_{i}": f"value_{i}" for i in range(1, 3)},
+            "issue_type_2": {f"arg_{i}": f"value_{i}" for i in range(1, 4)},
+        }
+        defaults_dict = issue_types.copy()
+
+        issue_types["issue_type_2"][
+            "arg_2"
+        ] = "another_value_2"  # Should be in default, but not affect the test
+        issue_types["issue_type_2"][
+            "arg_4"
+        ] = "value_4"  # Additional arg not in defaults should be allowed (ignored)
+
+        with monkeypatch.context() as m:
+            m.setitem(issue_types, "issue_type_1", {})
+            with pytest.raises(ValueError) as e:
+                lab._validate_issue_types_dict(issue_types, defaults_dict)
+            assert all([string in str(e.value) for string in ["issue_type_1", "arg_1", "arg_2"]])
+
+    @pytest.mark.parametrize(
+        "defaults_dict",
+        [
+            {"issue_type_1": {"arg_1": "default_value_1"}},
+        ],
+    )
+    @pytest.mark.parametrize(
+        "issue_types",
+        [{"issue_type_1": {"arg_1": "value_1", "arg_2": "value_2"}}, {"issue_type_1": {}}],
+    )
+    def test_set_issue_types(self, lab, issue_types, defaults_dict, monkeypatch):
+        """Test that the issue_types dict is set correctly."""
+        with monkeypatch.context() as m:
+            # Mock the validation method to do nothing
+            m.setattr(lab, "_validate_issue_types_dict", lambda x, y: None)
+            issue_types_copy = lab._set_issue_types(issue_types, defaults_dict)
+
+            # For each argument in issue_types missing from defaults_dict, it should be added to the defaults dict
+            for issue_type, args in issue_types.items():
+                missing_args = set(args.keys()) - set(defaults_dict[issue_type].keys())
+                for arg in missing_args:
+                    assert issue_types_copy[issue_type][arg] == args[arg]
 
     # Mock the lab.issues dataframe to have some pre-existing issues
     def test_update_issues(self, lab, pred_probs, monkeypatch):
@@ -104,7 +181,7 @@ class TestDatalab:
         )
         monkeypatch.setattr(lab, "issue_summary", mock_issue_summary)
 
-        lab.find_issues(pred_probs=pred_probs)
+        lab.find_issues(pred_probs=pred_probs, issue_types={"label": {}})
         # Check that the issues dataframe has the right columns
         expected_issues_df = pd.DataFrame(
             {

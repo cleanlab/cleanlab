@@ -3,9 +3,9 @@ from __future__ import annotations
 from typing import List, Type
 
 from cleanlab.experimental.datalab.issue_manager import (
-    HealthIssueManager,
     IssueManager,
     LabelIssueManager,
+    OutOfDistributionIssueManager,
 )
 
 
@@ -14,7 +14,7 @@ class _IssueManagerFactory:
     """Factory class for constructing concrete issue managers."""
 
     types = {
-        "health": HealthIssueManager,
+        "ood": OutOfDistributionIssueManager,
         "label": LabelIssueManager,
     }
 

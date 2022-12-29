@@ -33,7 +33,7 @@ from datasets.arrow_dataset import Dataset
 import cleanlab
 from cleanlab.experimental.datalab.factory import _IssueManagerFactory
 from cleanlab.experimental.datalab.issue_manager import IssueManager
-from cleanlab.internal.validation import assert_valid_inputs, labels_to_array
+from cleanlab.internal.validation import labels_to_array
 
 __all__ = ["Datalab"]
 
@@ -94,15 +94,16 @@ class Datalab:
         }
         self.cleanlab_version = cleanlab.version.__version__
         self.path = ""
+        self.issue_managers: Dict[str, IssueManager] = {}
 
     def find_issues(
         self,
         *,
-        pred_probs=None,
-        issue_types: Optional[Dict["str", Any]] = None,
-        feature_values=None,  # embeddings of data
-        model=None,  # sklearn.Estimator compatible object
-        issue_init_kwargs: Optional[Dict[str, Dict[str, Any]]] = None,
+        pred_probs: Optional[np.ndarray] = None,
+        issue_types: Optional[Dict[str, Any]] = None,
+        features: Optional[str] = None,  # embeddings of data
+        model=None,  # sklearn.Estimator compatible object  # noqa: F821
+        issue_manager_init_kwargs: Optional[Dict[str, Dict[str, Any]]] = None,
     ) -> None:
         """
         Checks for all sorts of issues in the data, including in labels and in features.
@@ -121,8 +122,8 @@ class Datalab:
         issue_types :
             Collection of the types of issues to search for.
 
-        feature_values :
-            Precomputed embeddings of the features in the dataset.
+        features :
+            Name of column containing precomputed embeddings.
 
             WARNING
             -------
@@ -164,30 +165,88 @@ class Datalab:
 
         """
 
-        issue_kwargs = {
-            "pred_probs": pred_probs,
-            "feature_values": feature_values,
-            "model": model,
+        required_args_per_issue_type = {
+            "label": {"pred_probs": pred_probs, "model": model},
+            "ood": {"pred_probs": pred_probs, "features": features},
         }
 
-        if issue_types is None:
-            issue_types = {
-                "label": True,
-                # "health": True,
-            }
-        issue_keys = list(issue_types.keys())
-        issue_managers = [
-            factory(datalab=self)
-            for (factory, issue_key) in zip(_IssueManagerFactory.from_list(issue_keys), issue_keys)
+        issue_types_copy = self._set_issue_types(issue_types, required_args_per_issue_type)
+
+        issue_manager_init_kwargs = issue_manager_init_kwargs or {}
+
+        new_issue_managers = [
+            factory(datalab=self, **issue_manager_init_kwargs.get(factory.issue_key, {}))
+            for factory in _IssueManagerFactory.from_list(list(issue_types_copy.keys()))
         ]
 
-        if issue_types is not None and not issue_types["label"]:
-            raise NotImplementedError("TODO: issue_types is not yet supported.")
-
-        for issue_manager in issue_managers:
-            # TODO: find_issues should return None, set self.issues in a set_issues(issue_manager) method  # noqa: E501
-            issue_manager.find_issues(**issue_kwargs)
+        for issue_manager, arg_dict in zip(new_issue_managers, issue_types_copy.values()):
+            issue_manager.find_issues(**arg_dict)
             self.collect_results_from_issue_manager(issue_manager)
+
+        self.issue_managers.update({im.issue_key: im for im in new_issue_managers})
+
+    def _set_issue_types(
+        self,
+        issue_types: Optional[Dict[str, Any]],
+        required_defaults_dict: Dict[str, Any],
+    ) -> Dict[str, Any]:
+        """Set necessary configuration for each IssueManager in a dictionary.
+
+        While each IssueManager defines default values for its arguments,
+        the Datalab class needs to organize the calls to each IssueManager
+        with different arguments, some of which may be
+
+        Parameters
+        ----------
+        issue_types :
+            Dictionary of issue types and argument configuration for their respective IssueManagers.
+            If None, then the `required_defaults_dict` is used.
+
+        required_defaults_dict :
+            Dictionary of default parameter configuration for each issue type.
+
+        Returns
+        -------
+        issue_types_copy :
+            Dictionary of issue types and their parameter configuration.
+            The input `issue_types` is copied and updated with the necessary default values.
+        """
+        issue_types_copy = (
+            issue_types.copy() if issue_types is not None else required_defaults_dict.copy()
+        )
+        if issue_types is not None:
+            for key, issue_type_value in issue_types_copy.items():
+                missing_args = set(required_defaults_dict[key]) - set(issue_type_value.keys())
+                # Impute missing arguments with default values.
+                missing_dict = {
+                    missing_arg: required_defaults_dict[key][missing_arg]
+                    for missing_arg in missing_args
+                }
+                issue_types_copy[key].update(missing_dict)
+        # Check that all required arguments are provided.
+        self._validate_issue_types_dict(issue_types_copy, required_defaults_dict)
+
+        # Remove None values from argument list, rely on default values in IssueManager
+        for arg_dict in issue_types_copy.values():
+            for k, v in arg_dict.copy().items():
+                if v is None:
+                    del arg_dict[k]
+        return issue_types_copy
+
+    def _validate_issue_types_dict(
+        self, issue_types: Dict[str, Any], required_defaults_dict: Dict[str, Any]
+    ) -> None:
+        missing_required_args_dict = {}
+        for issue_key, required_args in required_defaults_dict.items():
+            if issue_key in issue_types:
+                missing_args = set(required_args.keys()) - set(issue_types[issue_key].keys())
+                if missing_args:
+                    missing_required_args_dict[issue_key] = missing_args
+        if any(missing_required_args_dict.values()):
+            error_message = ""
+            for issue_key, missing_required_args in missing_required_args_dict.items():
+                error_message += f"Required argument {missing_required_args} for issue type {issue_key} was not provided.\n"
+            raise ValueError(error_message)
 
     def collect_results_from_issue_manager(self, issue_manager: IssueManager) -> None:
         """
@@ -204,12 +263,34 @@ class Datalab:
         issue_manager :
             IssueManager object to collect results from.
         """
-        self.issues = self.issues.join(issue_manager.issues, how="inner")
+        overlapping_columns = list(set(self.issues.columns) & set(issue_manager.issues.columns))
+        if overlapping_columns:
+            warnings.warn(
+                f"Overwriting columns {overlapping_columns} in self.issues with "
+                f"columns from issue manager {issue_manager}."
+            )
+            self.issues.drop(columns=overlapping_columns, inplace=True)
+        self.issues = self.issues.join(issue_manager.issues, how="outer")
+
+        if issue_manager.issue_key in self.issue_summary["issue_type"].values:
+            warnings.warn(
+                f"Overwriting row in self.issue_summary with "
+                f"row from issue manager {issue_manager}."
+            )
+            self.issue_summary = self.issue_summary[
+                self.issue_summary["issue_type"] != issue_manager.issue_key
+            ]
         self.issue_summary = pd.concat(
             [self.issue_summary, issue_manager.summary],
             axis=0,
             ignore_index=True,
         )
+
+        if issue_manager.issue_key in self.info:
+            warnings.warn(
+                f"Overwriting key {issue_manager.issue_key} in self.info with "
+                f"key from issue manager {issue_manager}."
+            )
         self.info[issue_manager.issue_key] = issue_manager.info
 
     def _extract_labels(self, label_name: Union[str, list[str]]) -> tuple[np.ndarray, Mapping]:
@@ -260,7 +341,7 @@ class Datalab:
         if isinstance(labels, str):
             pass
 
-    def get_info(self, issue_name) -> Any:
+    def get_info(self, issue_name, *subkeys) -> Any:
         """Returns dict of info about a specific issue, or None if this issue does not exist in self.info.
         Internally fetched from self.info[issue_name] and prettified.
         Keys might include: number of examples suffering from issue,
@@ -268,7 +349,17 @@ class Datalab:
         other misc stuff like which sets of examples are duplicates if the issue=="duplicated".
         """
         if issue_name in self.info:
-            return self.info[issue_name]
+            info = self.info[issue_name]
+            if subkeys:
+                for sub_id, subkey in enumerate(subkeys):
+                    if not isinstance(info, dict):
+                        raise ValueError(
+                            f"subkey {subkey} at index {sub_id} is not a valid key in info dict."
+                            f"info is {info} and remaining subkeys are {subkeys[sub_id:]}."
+                        )
+                    sub_info = info.get(subkey)
+                    info = sub_info
+            return info
         else:
             raise ValueError(
                 f"issue_name {issue_name} not found in self.info. These have not been computed yet."
@@ -289,10 +380,10 @@ class Datalab:
         """What is displayed in console if user executes: >>> datalab"""
         checks_run = self.issues is None
         display_str = f"checks_run={checks_run},"
-        num_examples = self.get_info("num_examples")
+        num_examples = self.get_info("data", "num_examples")
         if num_examples is not None:
             display_str += f"num_examples={num_examples},"
-        num_classes = self.get_info("num_classes")
+        num_classes = self.get_info("data", "num_classes")
         if num_classes is not None:
             display_str += f"num_classes={num_classes},"
         if display_str[-1] == ",":  # delete trailing comma

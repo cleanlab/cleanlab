@@ -61,8 +61,15 @@ class IssueManager(ABC):
     @property
     @abstractmethod
     def issue_key(cls) -> str:
-        """Returns a key that is used to store issue summary results about this Lab."""
+        """Returns a key that is used to store issue summary results about the assigned Lab."""
         raise NotImplementedError
+
+    @classmethod
+    @property
+    def issue_score_key(cls) -> str:
+        """Returns a key that is used to store issue score results about the assigned Lab."""
+        # TODO: The score key should just be f"{cls.issue_key}_score" or f"{cls.issue_key}_quality_score", f"{cls.issue_key}_quality"
+        return f"{cls.issue_key}_score"
 
     @abstractmethod
     def find_issues(self, /, *args, **kwargs) -> None:
@@ -86,7 +93,6 @@ class IssueManager(ABC):
     def get_summary(self):
         assert not self.issues.empty
         assert len(self.info) > 0
-        pass
 
 
 class HealthIssueManager(IssueManager):
@@ -161,26 +167,42 @@ class LabelIssueManager(IssueManager):
 
     @classmethod
     @property
+    def issue_score_key(cls) -> str:
+        return "label_quality"
+
+    @classmethod
+    @property
     def info_keys(cls) -> List[str]:
         return ["given_label", "predicted_label"]
 
     def __init__(
         self,
         datalab: Datalab,
-        clean_learning_kwargs: Optional[dict] = None,
+        clean_learning_kwargs: Optional[Dict[str, Any]] = None,
+        health_summary_parameters: Optional[Dict[str, Any]] = None,
     ):
         super().__init__(datalab)
         self.cl = CleanLearning(**(clean_learning_kwargs or {}))
-        # Fetch relevant info from the datalab, if available
-        self.health_summary_parameters = {
-            "labels": self.datalab._labels,
-            "asymmetric": self.datalab.info.get("asymmetric", None),
-            "class_names": list(self.datalab._label_map.values()),
-            "num_examples": self.datalab.info.get("num_examples"),
-            "joint": self.datalab.info.get("joint", None),
-            "confident_joint": self.datalab.info.get("confident_joint", None),
-            "multi_label": self.datalab.info.get("multi_label", None),
-        }
+        self.health_summary_parameters: Dict[str, Any] = health_summary_parameters or {}
+        self.reset()
+
+    def reset(self) -> None:
+        """Reset the attributes of this manager based on the available datalab info
+        and the keyword arguments stored as instance attributes.
+
+        This allows the builder to use pre-computed info from the datalab to speed up
+        some computations in the `find_issues` method.
+        """
+        if not self.health_summary_parameters:
+            self.health_summary_parameters = {
+                "labels": self.datalab._labels,
+                "asymmetric": self.datalab.info["data"].get("asymmetric", None),
+                "class_names": list(self.datalab._label_map.values()),
+                "num_examples": self.datalab.info["data"].get("num_examples"),
+                "joint": self.datalab.info["data"].get("joint", None),
+                "confident_joint": self.datalab.info["data"].get("confident_joint", None),
+                "multi_label": self.datalab.info["data"].get("multi_label", None),
+            }
         self.health_summary_parameters = {
             k: v for k, v in self.health_summary_parameters.items() if v is not None
         }
@@ -267,8 +289,8 @@ class LabelIssueManager(IssueManager):
 
     def collect_info(self, issues: pd.DataFrame, summary_dict: dict) -> dict:
         issues_info = {
-            "num_label_issues": sum(issues["is_label_issue"]),
-            "average_label_quality": issues["label_quality"].mean(),
+            "num_label_issues": sum(issues[f"is_{self.issue_key}_issue"]),
+            "average_label_quality": issues[self.issue_score_key].mean(),
             "given_label": issues["given_label"].tolist(),
             "predicted_label": issues["predicted_label"].tolist(),
         }
@@ -299,9 +321,9 @@ class LabelIssueManager(IssueManager):
     @property
     def verbosity_levels(self) -> Dict[int, Any]:
         return {
-            0: "Foo",
-            1: "Bar",
-            2: "Baz",
+            0: {},
+            1: {"summary": ["confident_joint"]},
+            2: {"issue": ["given_label", "predicted_label"]},
         }
 
 
@@ -312,6 +334,11 @@ class OutOfDistributionIssueManager(IssueManager):
     @property
     def issue_key(cls) -> str:
         return "ood"
+
+    @classmethod
+    @property
+    def issue_score_key(cls) -> str:
+        return "ood_score"
 
     @classmethod
     @property
@@ -335,12 +362,12 @@ class OutOfDistributionIssueManager(IssueManager):
         **kwargs,
     ) -> None:
 
-        if pred_probs is not None and features is None:
-            scores = self._score_with_pred_probs(pred_probs, **kwargs)
-        elif pred_probs is None and features is not None:
+        if features is not None:
             scores = self._score_with_features(features, **kwargs)
+        elif pred_probs is not None:
+            scores = self._score_with_pred_probs(pred_probs, **kwargs)
         else:
-            raise ValueError("Either pred_probs or features must be provided.")
+            raise ValueError(f"Either features or pred_probs must be provided.")
 
         if self.threshold is None:
             # 10th percentile of scores
@@ -349,7 +376,7 @@ class OutOfDistributionIssueManager(IssueManager):
         self.issues = pd.DataFrame(
             {
                 "is_ood_issue": scores < self.threshold,
-                "ood_score": scores,
+                self.issue_score_key: scores,
             },
         )
 
@@ -373,8 +400,42 @@ class OutOfDistributionIssueManager(IssueManager):
         return scores
 
     def collect_info(self) -> dict:
+
+        issues_dict = {
+            "num_ood_issues": sum(self.issues["is_ood_issue"]),
+            "average_ood_score": self.issues[self.issue_score_key].mean(),
+        }
+        pred_probs_issues_dict = {}  # TODO: Implement collect_info for pred_probs related issues
+        feature_issues_dict = {}
+
+        # Compute
+        if self.ood.params["knn"] is not None:
+            knn = self.ood.params["knn"]
+            dists, nn_ids = [array[:, 0] for array in knn.kneighbors()]
+            weighted_knn_graph = knn.kneighbors_graph(mode="distance").toarray()
+
+            # TODO: Reverse the order of the calls to knn.kneighbors() and knn.kneighbors_graph()
+            #   to avoid computing the (distance, id) pairs twice.
+            feature_issues_dict.update(
+                {
+                    "nearest_neighbour": nn_ids[:, 0].tolist(),
+                    "distance_to_nearest_neighbour": dists[:, 0].tolist(),
+                    # TODO Check scipy-dependency
+                    "weighted_knn_graph": weighted_knn_graph.tolist(),
+                }
+            )
+
+        if self.ood.params["confident_thresholds"] is not None:
+            pass  #
+        ood_params_dict = self.ood.params
+        knn_dict = {
+            **pred_probs_issues_dict,
+            **feature_issues_dict,
+        }
         info_dict = {
-            **self.ood.params,
+            **issues_dict,
+            **ood_params_dict,
+            **knn_dict,
         }
         return info_dict
 
