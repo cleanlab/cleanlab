@@ -96,20 +96,3 @@ setup(
         "termcolor>=1.1.0",
     ],
 )
-
-"""
-Curtis G. Northcutt notes on how to perform pypi upload:
-
-1. python setup.py check -m -s
-2. rm -rf dist build
-3. python setup.py sdist bdist_wheel
-4. twine check dist/*
-5. python3 -m twine upload dist/*
-
-For conda upload (after pypi upload)
-# if this fails, try conda update --force conda; conda update conda
-1. cd ~; conda skeleton pypi cleanlab --noarch-python --python-version 3.7
-2. conda-build cleanlab
-3. anaconda upload --user cleanlab LOCATION/cleanlab-x.x.x_0.tar.bz2  # location printed by previous command
-4. cd ~; rm -r cleanlab  # clean-up meta data created by anaconda for upload
-"""
