@@ -84,11 +84,13 @@ class Datalab:
         self._labels, self._label_map = self._extract_labels(self.label_name)
         class_names = self.data.unique(self.label_name)  # TODO
         self.info = {
-            "num_examples": len(self.data),
-            "class_names": class_names,
-            "num_classes": len(class_names),
-            "multi_label": False,  # TODO: Add multi-label support.
-            "health_score": None,
+            "data": {
+                "num_examples": len(self.data),
+                "class_names": class_names,
+                "num_classes": len(class_names),
+                "multi_label": False,  # TODO: Add multi-label support.
+                "health_score": None,
+            }
         }
         self.cleanlab_version = cleanlab.version.__version__
         self.path = ""
