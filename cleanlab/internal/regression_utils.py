@@ -58,9 +58,7 @@ def assert_valid_inputs(
     # Check if method is among allowed scoring method
     scoring_methods = ["residual", "outre"]
     if method not in scoring_methods:
-        raise ValueError(
-            f"Specified method '{method}' must be one of: {scoring_methods}."
-        )
+        raise ValueError(f"Specified method '{method}' must be one of: {scoring_methods}.")
 
     # return 1-D numpy array
     return valid_labels, valid_predictions
@@ -95,7 +93,9 @@ def check_dimension_and_datatype(check_input: np.ndarray, text: str) -> np.ndarr
 
     # Check if datatype is numeric
     if not np.issubdtype(check_input.dtype, np.number):
-        raise ValueError(f"Expected {text} to contain numeric values, got values of type {check_input.dtype}.")
+        raise ValueError(
+            f"Expected {text} to contain numeric values, got values of type {check_input.dtype}."
+        )
 
     return check_input
 
