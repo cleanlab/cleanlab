@@ -372,8 +372,11 @@ def find_label_issues_cow_spawn(
         t_idx += 1
 
         # Prepare multiprocessing shared data
-        os_name = platform.system()
-        if n_jobs == 1 or os_name == 'Linux':
+        # want to test spawn, but can only test on linux
+        # so forcing spawn right now
+        #os_name = platform.system()
+        #if n_jobs == 1 or os_name == 'Linux':
+        if n_jobs == 1:
             global pred_probs_by_class
             pred_probs_by_class = {k: pred_probs[labels==k] for k in range(K)}
             global prune_count_matrix_cols
@@ -2221,17 +2224,18 @@ def _prune_by_count_thread(k:int)->Tuple[int, np.ndarray]:
             raise ValueError("Must have at least 1 class.")
         nums2prune = prune_count_matrix_cols[k]
         prune_mask = (nums2prune > 0) & (np.arange(K) != k)
-        #print(f"nums2prune {nums2prune}, time={time.time()-start}")
+        if np.sum(prune_mask) < 1:
+            return (k, label_issues_mask)
+        #print(f"prune mask valid = {np.sum(prune_mask)}")
         margins = pred_probs_k - pred_probs_k[:, k, None]
-        #print(f"margins shape {margins.shape}, time={time.time()-start}")
+        #print(f"margins shape {margins.shape}")
         #start = time.time()
         #cuts = -np.partition(-margins, nums2prune - 1, axis=0)
         cuts = -np.sort(-margins, axis=0)
-        #print(f"cuts partition, time={time.time()-start}")
+        #print(f"cuts partition shape {cuts.shape}")
         #start = time.time()
         cuts = cuts[:, prune_mask]
-        #print(f"cuts index, time={time.time()-start}")
-        cuts = np.choose(nums2prune[prune_mask]-1, cuts)
+        cuts = cuts[(nums2prune[prune_mask]-1), np.arange(cuts.shape[1])]
         #print(f"cuts shape {cuts.shape}, time={time.time()-start}")
         label_issues_mask = (margins[:, prune_mask] >= cuts).any(axis=1)
         #print(f"mask shape = {label_issues_mask.shape}, returning, time={time.time()-start}")
