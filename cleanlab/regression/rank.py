@@ -1,10 +1,3 @@
-import numpy as np
-from cleanlab.outlier import OutOfDistribution
-from sklearn.neighbors import NearestNeighbors
-from cleanlab.internal.regression_utils import assert_valid_inputs
-from typing import Dict, Callable
-from numpy.typing import ArrayLike
-
 # Copyright (C) 2017-2022  Cleanlab Inc.
 # This file is part of cleanlab.
 #
@@ -29,6 +22,15 @@ Note: Label quality scores are most accurate when they are computed based on out
 To obtain out-of-sample predictions for every datapoint in your dataset, you can use :ref:`cross-validation <pred_probs_cross_val>`. This is encouraged to get better results.
 """
 
+from typing import Dict, Callable
+import numpy as np
+from numpy.typing import ArrayLike
+from sklearn.neighbors import NearestNeighbors
+
+from cleanlab.outlier import OutOfDistribution
+from cleanlab.internal.regression_utils import assert_valid_inputs
+
+# Small value used to prevent division by zero
 EPS = 1e-30
 
 
