@@ -4,7 +4,12 @@ from cleanlab.regression import rank
 
 # To be used for all the tests
 labels = np.array([1, 2, 3, 4])
-predictions = np.array([1, 3, 4, 5])
+predictions = np.array([2, 2, 5, 4.1])
+
+# Used for characterization tests
+expected_score_outre = np.array([0.00323821, 0.33692597, 0.00191686, 0.33692597])
+expected_score_residual = np.array([0.36787944, 1.0, 0.13533528, 0.90483742])
+expected_scores = {"outre": expected_score_outre, "residual": expected_score_residual}
 
 # Inputs that are not array like
 aConstant = 1
@@ -14,6 +19,11 @@ aSet = {1, 2, 3, 4}
 aBool = True
 
 
+@pytest.fixture
+def non_array_input():
+    return [aConstant, aString, aDict, aSet, aBool]
+
+
 # test with deafault parameters
 def test_output_shape_type():
     scores = rank.get_label_quality_scores(labels=labels, predictions=predictions)
@@ -21,24 +31,18 @@ def test_output_shape_type():
     assert isinstance(scores, np.ndarray)
 
 
-@pytest.mark.parametrize(
-    "aInput",
-    [aConstant, aString, aDict, aSet, aBool],
-)
-def test_labels_are_arraylike(aInput):
-    with pytest.raises(ValueError) as error:
-        rank.get_label_quality_scores(labels=aInput, predictions=predictions)
-        assert error.type == ValueError
+def test_labels_are_arraylike(non_array_input):
+    for new_input in non_array_input:
+        with pytest.raises(ValueError) as error:
+            rank.get_label_quality_scores(labels=new_input, predictions=predictions)
+            assert error.type == ValueError
 
 
-@pytest.mark.parametrize(
-    "aInput",
-    [aConstant, aString, aDict, aSet, aBool],
-)
-def test_predictionns_are_arraylike(aInput):
-    with pytest.raises(ValueError) as error:
-        rank.get_label_quality_scores(labels=labels, predictions=aInput)
-        assert error.type == ValueError
+def test_predictionns_are_arraylike(non_array_input):
+    for new_input in non_array_input:
+        with pytest.raises(ValueError) as error:
+            rank.get_label_quality_scores(labels=labels, predictions=new_input)
+            assert error.type == ValueError
 
 
 # test for input shapes
@@ -83,3 +87,15 @@ def test_method_pass_get_label_quality_scores(method):
     scores = rank.get_label_quality_scores(labels=labels, predictions=predictions, method=method)
     assert labels.shape == scores.shape
     assert isinstance(scores, np.ndarray)
+
+
+@pytest.mark.parametrize(
+    "method",
+    [
+        "residual",
+        "outre",
+    ],
+)
+def test_expected_scores(method):
+    scores = rank.get_label_quality_scores(labels=labels, predictions=predictions, method=method)
+    assert np.allclose(scores, expected_scores[method], atol=1e-08)
