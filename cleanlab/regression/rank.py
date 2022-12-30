@@ -112,7 +112,7 @@ def get_outre_score_for_each_label(
     predictions: np.ndarray,
     *,
     residual_scale: float = 10,
-    frac_neighbors: float = 0.1,
+    frac_neighbors: float = 0.5,
     neighbor_metric: str = "euclidean",
 ) -> np.ndarray:
     """Returns OUTRE based label-quality scores.
