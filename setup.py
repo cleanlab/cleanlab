@@ -28,7 +28,6 @@ with open(path.join(here, "README.md"), encoding="utf-8") as f:
 # Get version number and store it in __version__
 exec(open("cleanlab/version.py").read())
 
-
 setup(
     name="cleanlab",
     version=__version__,
@@ -89,10 +88,10 @@ setup(
     # requirements files see:
     # https://packaging.python.org/en/latest/discussions/install-requires-vs-requirements/
     install_requires=[
-        "numpy>=1.11.3",
-        "scikit-learn>=0.18",
+        "numpy>=1.20.0",
+        "scikit-learn>=1.0",
         "tqdm>=4.53.0",
-        "pandas>=1.0.0",
-        "termcolor>=1.1.0",
+        "pandas>=1.2.0",
+        "termcolor>=2.0.0",
     ],
 )
