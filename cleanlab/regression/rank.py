@@ -74,7 +74,7 @@ def get_label_quality_scores(
     >>> predictions = np.array([2,2,5,4.1])
     >>> label_quality_scores = get_label_quality_scores(labels, predictions)
     >>> label_quality_scores
-    array([0.36787944, 1.        , 0.13533528, 0.90483742])
+    array([0.00323821, 0.33692597, 0.00191686, 0.33692597])
     """
 
     # Check if inputs are valid
