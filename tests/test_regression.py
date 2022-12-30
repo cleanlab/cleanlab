@@ -1,12 +1,6 @@
-import numpy as np
-
-# import pandas as pd
 import pytest
-from typing import Union, Sequence
-
+import numpy as np
 from cleanlab.regression import rank
-
-ArrayLike = Union[np.ndarray, Sequence]
 
 # To be used for all the tests
 labels = np.array([1, 2, 3, 4])
