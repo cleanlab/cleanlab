@@ -59,7 +59,7 @@ def assert_valid_inputs(
     scoring_methods = ["residual", "outre"]
     if method not in scoring_methods:
         raise ValueError(
-            f"Passed method is not among allowed methods. Expected either of {scoring_methods}, got {method}."
+            f"Specified method '{method}' must be one of: {scoring_methods}."
         )
 
     # return 1-D numpy array
@@ -82,7 +82,7 @@ def check_dimension_and_datatype(check_input: np.ndarray, text: str) -> np.ndarr
 
     # Check if input is empty
     if not check_input.size:
-        raise ValueError(f"{text} is Empty, check input.")
+        raise ValueError(f"{text} cannot be empty array.")
 
     # Remove axis with length one
     check_input = np.squeeze(check_input)
@@ -95,7 +95,7 @@ def check_dimension_and_datatype(check_input: np.ndarray, text: str) -> np.ndarr
 
     # Check if datatype is numeric
     if not np.issubdtype(check_input.dtype, np.number):
-        raise ValueError(f"Expected {text} to be Numeric, got {check_input.dtype}.")
+        raise ValueError(f"Expected {text} to contain numeric values, got values of type {check_input.dtype}.")
 
     return check_input
 
@@ -104,4 +104,4 @@ def check_missing_values(check_input: np.ndarray, text: str):
     """Raise error if there are any missing values in Numpy array."""
 
     if np.isnan(check_input).any():
-        raise ValueError(f"{text} has missing values, check input.")
+        raise ValueError(f"{text} cannot contain missing values.")
