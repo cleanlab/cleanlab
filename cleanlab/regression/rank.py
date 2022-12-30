@@ -5,7 +5,29 @@ from cleanlab.internal.regression_utils import assert_valid_inputs
 from typing import Dict, Callable
 from numpy.typing import ArrayLike
 
-""" Generates label quality scores for every sample in regression dataset """
+# Copyright (C) 2017-2022  Cleanlab Inc.
+# This file is part of cleanlab.
+#
+# cleanlab is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published
+# by the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# cleanlab is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
+
+
+"""
+Methods to score the quality of each label in a regression dataset. These can be used to rank the examples whose Y-value most likely has an error.
+
+Note: Label quality scores are most accurate when they are computed based on out-of-sample `predictions` from your regression model.
+To obtain out-of-sample predictions for every datapoint in your dataset, you can use :ref:`cross-validation <pred_probs_cross_val>`. This is encouraged to get better results.
+"""
 
 EPS = 1e-30
 
