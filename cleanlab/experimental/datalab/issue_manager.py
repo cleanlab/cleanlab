@@ -442,8 +442,8 @@ class OutOfDistributionIssueManager(IssueManager):
             #   to avoid computing the (distance, id) pairs twice.
             feature_issues_dict.update(
                 {
-                    "nearest_neighbour": nn_ids[:, 0].tolist(),
-                    "distance_to_nearest_neighbour": dists[:, 0].tolist(),
+                    "nearest_neighbour": nn_ids.tolist(),
+                    "distance_to_nearest_neighbour": dists.tolist(),
                     # TODO Check scipy-dependency
                     "weighted_knn_graph": weighted_knn_graph.tolist(),
                 }
