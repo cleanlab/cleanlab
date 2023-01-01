@@ -1,6 +1,6 @@
 ![](https://raw.githubusercontent.com/cleanlab/assets/master/cleanlab/cleanlab_logo_open_source_transparent_optimized_size.png)
 
-cleanlab automatically finds and fixes errors in any ML dataset. This data-centric AI package facilitates **machine learning with messy, real-world data** by providing **clean lab**els during training.
+cleanlab automatically detects problems in a ML dataset. This data-centric AI package facilitates **machine learning with messy, real-world data** by providing **clean lab**els for robust training and flagging errors in your data.
 
 ```python
 
@@ -23,6 +23,7 @@ cleanlab.dataset.health_summary(labels, confident_joint=cl.confident_joint)
 Get started with: [documentation](https://docs.cleanlab.ai/), [tutorials](https://docs.cleanlab.ai/stable/tutorials/image.html), [examples](https://github.com/cleanlab/examples), and [blogs](https://cleanlab.ai/blog/).
 
  - Learn to run cleanlab on your data in 5 minutes for classification with: [image](https://docs.cleanlab.ai/stable/tutorials/image.html), [text](https://docs.cleanlab.ai/stable/tutorials/text.html), [audio](https://docs.cleanlab.ai/stable/tutorials/audio.html), or [tabular](https://docs.cleanlab.ai/stable/tutorials/tabular.html) data.
+- Use cleanlab to automatically: [find mislabeled data + train robust models](https://docs.cleanlab.ai/stable/tutorials/indepth_overview.html), [detect outliers](https://docs.cleanlab.ai/stable/tutorials/outliers.html), [estimate consensus + annotator-quality for multi-annotator datasets](https://docs.cleanlab.ai/stable/tutorials/multiannotator.html), [decide what data is best to (re)label next](https://github.com/cleanlab/examples/blob/master/active_learning_multiannotator/active_learning.ipynb). 
 
 
 [![pypi](https://img.shields.io/pypi/v/cleanlab.svg)](https://pypi.org/pypi/cleanlab/)
@@ -160,7 +161,8 @@ cleanlab is useful across a wide variety of Machine Learning tasks. Specific tas
 2. [Multi-label classification](https://docs.cleanlab.ai/stable/tutorials/multilabel_classification.html) (e.g. image/document tagging)
 3. [Token classification](https://docs.cleanlab.ai/stable/tutorials/token_classification.html) (e.g. entity recognition in text)
 4. [Classification with data labeled by multiple annotators](https://docs.cleanlab.ai/stable/tutorials/multiannotator.html)
-5. [Out of distribution detection](https://docs.cleanlab.ai/stable/tutorials/outliers.html)
+5. [Active learning with multiple annotators](https://github.com/cleanlab/examples/blob/master/active_learning_multiannotator/active_learning.ipynb) (decide which data to label or re-label to improve model most)
+6. [Out of distribution detection](https://docs.cleanlab.ai/stable/tutorials/outliers.html)
 
 For many other ML tasks, cleanlab can still help you improve your dataset if appropriately applied.
 
