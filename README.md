@@ -1,6 +1,6 @@
 ![](https://raw.githubusercontent.com/cleanlab/assets/master/cleanlab/cleanlab_logo_open_source_transparent_optimized_size.png)
 
-cleanlab automatically detects various problems in any ML dataset. This data-centric AI package facilitates **machine learning with messy, real-world data** by providing **clean lab**els for robust training and flagging errors lurking in your data.
+cleanlab automatically detects problems in any ML dataset. This data-centric AI package facilitates **machine learning with messy, real-world data** by providing **clean lab**els for robust training and flagging errors in your data.
 
 ```python
 
