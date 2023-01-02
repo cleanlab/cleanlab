@@ -425,14 +425,16 @@ class OutOfDistributionIssueManager(IssueManager):
             "num_ood_issues": sum(self.issues["is_ood_issue"]),
             "average_ood_score": self.issues[self.issue_score_key].mean(),
         }
-        pred_probs_issues_dict = {}  # TODO: Implement collect_info for pred_probs related issues
+        pred_probs_issues_dict: Dict[
+            str, Any
+        ] = {}  # TODO: Implement collect_info for pred_probs related issues
         feature_issues_dict = {}
 
         # Compute
         if self.ood.params["knn"] is not None:
             knn = self.ood.params["knn"]
-            dists, nn_ids = [array[:, 0] for array in knn.kneighbors()]
-            weighted_knn_graph = knn.kneighbors_graph(mode="distance").toarray()
+            dists, nn_ids = [array[:, 0] for array in knn.kneighbors()]  # type: ignore[union-attr]
+            weighted_knn_graph = knn.kneighbors_graph(mode="distance").toarray()  # type: ignore[union-attr]
 
             # TODO: Reverse the order of the calls to knn.kneighbors() and knn.kneighbors_graph()
             #   to avoid computing the (distance, id) pairs twice.
