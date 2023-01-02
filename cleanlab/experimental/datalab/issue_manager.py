@@ -384,7 +384,7 @@ class OutOfDistributionIssueManager(IssueManager):
 
         self.issues = pd.DataFrame(
             {
-                "is_ood_issue": scores < self.threshold,
+                f"is_{self.issue_name}_issue": scores < self.threshold,
                 self.issue_score_key: scores,
             },
         )
