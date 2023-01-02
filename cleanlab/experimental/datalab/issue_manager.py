@@ -389,12 +389,7 @@ class OutOfDistributionIssueManager(IssueManager):
             },
         )
 
-        self.summary = pd.DataFrame(
-            {
-                "issue_type": [self.issue_name],
-                "score": [scores.mean()],
-            },
-        )
+        self.summary = self.get_summary(score=scores.mean())
 
         self.info = self.collect_info()
 
