@@ -93,9 +93,20 @@ class IssueManager(ABC):
 
     # TODO: Add a `collect_global_info` method for storing useful statistics that can be used by other IssueManagers.
 
-    def get_summary(self):
-        assert not self.issues.empty
-        assert len(self.info) > 0
+    def get_summary(self, score: float) -> pd.DataFrame:
+        """Sets the summary attribute of this IssueManager.
+
+        Parameters
+        ----------
+        score :
+            The overall score for this issue.
+        """
+        return pd.DataFrame(
+            {
+                "issue_type": [self.issue_name],
+                "score": [score],
+            },
+        )
 
     def report(self, k: int, verbosity: int = 0) -> str:
         """Returns a report of the issues found by this IssueManager.
@@ -251,12 +262,7 @@ class LabelIssueManager(IssueManager):
         )
 
         # Get a summarized dataframe of the label issues
-        self.summary = pd.DataFrame(
-            {
-                "issue_type": [self.issue_name],
-                "score": [summary_dict["overall_label_health_score"]],
-            },
-        )
+        self.summary = self.get_summary(score=summary_dict["overall_label_health_score"])
 
         # Collect info about the label issues
         self.info = self.collect_info(issues=self.issues, summary_dict=summary_dict)
