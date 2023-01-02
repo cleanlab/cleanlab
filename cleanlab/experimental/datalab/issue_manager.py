@@ -393,16 +393,6 @@ class OutOfDistributionIssueManager(IssueManager):
 
         self.info = self.collect_info()
 
-    def _score_with_pred_probs(self, pred_probs: np.ndarray, **kwargs) -> np.ndarray:
-        scores = self.ood.fit_score(pred_probs=pred_probs, labels=self.datalab._labels, **kwargs)
-        return scores
-
-    def _score_with_features(self, features: List[str], **kwargs) -> np.ndarray:
-        embeddings = self._extract_embeddings(columns=features, **kwargs)
-
-        scores = self.ood.fit_score(features=embeddings)
-        return scores
-
     def collect_info(self) -> dict:
 
         issues_dict = {
@@ -444,6 +434,16 @@ class OutOfDistributionIssueManager(IssueManager):
             **knn_dict,
         }
         return info_dict
+
+    def _score_with_pred_probs(self, pred_probs: np.ndarray, **kwargs) -> np.ndarray:
+        scores = self.ood.fit_score(pred_probs=pred_probs, labels=self.datalab._labels, **kwargs)
+        return scores
+
+    def _score_with_features(self, features: List[str], **kwargs) -> np.ndarray:
+        embeddings = self._extract_embeddings(columns=features, **kwargs)
+
+        scores = self.ood.fit_score(features=embeddings)
+        return scores
 
     # TODO: Update annotation for columns and related args in other methods
     def _extract_embeddings(self, columns: Union[str, List[str]], **kwargs) -> np.ndarray:
