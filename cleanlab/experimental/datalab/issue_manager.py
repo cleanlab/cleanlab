@@ -193,13 +193,7 @@ class LabelIssueManager(IssueManager):
         Keyword arguments to pass to the CleanLearning constructor.
     """
 
-    @property
-    def issue_name(self) -> str:
-        return "label"
-
-    @property
-    def issue_score_key(self) -> str:
-        return "label_quality"
+    issue_name: str = "label"
 
     def __init__(
         self,
@@ -247,6 +241,7 @@ class LabelIssueManager(IssueManager):
         self.health_summary_parameters.update({"pred_probs": pred_probs})
         # Find examples with label issues
         self.issues = self.cl.find_label_issues(labels=self.datalab._labels, pred_probs=pred_probs)
+        self.issues.rename(columns={"label_quality": self.issue_score_key}, inplace=True)
 
         summary_dict = self.get_health_summary(
             pred_probs=pred_probs, **(health_summary_kwargs or {})
@@ -356,13 +351,7 @@ class LabelIssueManager(IssueManager):
 class OutOfDistributionIssueManager(IssueManager):
     """Manages issues related to out-of-distribution examples."""
 
-    @property
-    def issue_name(self) -> str:
-        return "ood"
-
-    @property
-    def issue_score_key(self) -> str:
-        return "ood_score"
+    issue_name: str = "ood"
 
     def __init__(
         self,

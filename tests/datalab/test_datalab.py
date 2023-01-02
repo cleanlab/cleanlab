@@ -86,10 +86,10 @@ class TestDatalab:
 
         if issue_types is None:
             # Test default issue types
-            assert all(
-                lab.issues.columns
-                == ["is_label_issue", "label_quality", "is_ood_issue", "ood_score"]
-            )
+            columns = lab.issues.columns
+            for issue_type in ["label", "ood"]:
+                assert f"is_{issue_type}_issue" in columns
+                assert f"{issue_type}_score" in columns
 
     def test_find_issues_with_custom_hyperparams(self, lab, pred_probs, monkeypatch):
         def mock_extract_embeddings(*args, **kwargs):
@@ -187,7 +187,7 @@ class TestDatalab:
                 "is_foo_issue": mock_issues.is_foo_issue,
                 "foo_score": mock_issues.foo_score,
                 "is_label_issue": [False, False, False, False, False],
-                "label_quality": [0.95071431, 0.15601864, 0.60111501, 0.70807258, 0.18182497],
+                "label_score": [0.95071431, 0.15601864, 0.60111501, 0.70807258, 0.18182497],
             }
         )
         pd.testing.assert_frame_equal(lab.issues, expected_issues_df, check_exact=False)
