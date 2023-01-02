@@ -204,6 +204,7 @@ class LabelIssueManager(IssueManager):
         datalab: Datalab,
         clean_learning_kwargs: Optional[Dict[str, Any]] = None,
         health_summary_parameters: Optional[Dict[str, Any]] = None,
+        **_,
     ):
         super().__init__(datalab)
         self.cl = CleanLearning(**(clean_learning_kwargs or {}))
@@ -231,7 +232,13 @@ class LabelIssueManager(IssueManager):
             k: v for k, v in self.health_summary_parameters.items() if v is not None
         }
 
-    def find_issues(self, pred_probs: np.ndarray, model=None, **kwargs) -> None:
+    def find_issues(
+        self,
+        pred_probs: np.ndarray,
+        model=None,
+        health_summary_kwargs: Optional[Dict[str, Any]] = None,
+        **_,
+    ) -> None:
         if pred_probs is None and model is not None:
             raise NotImplementedError("TODO: We assume pred_probs is provided.")
 
@@ -239,7 +246,9 @@ class LabelIssueManager(IssueManager):
         # Find examples with label issues
         self.issues = self.cl.find_label_issues(labels=self.datalab._labels, pred_probs=pred_probs)
 
-        summary_dict = self.get_health_summary(pred_probs=pred_probs, **kwargs)
+        summary_dict = self.get_health_summary(
+            pred_probs=pred_probs, **(health_summary_kwargs or {})
+        )
 
         # Get a summarized dataframe of the label issues
         self.summary = pd.DataFrame(
@@ -287,13 +296,9 @@ class LabelIssueManager(IssueManager):
             summary_parameters = {
                 "confident_joint": self.health_summary_parameters["confident_joint"]
             }
-        elif (
-            "joint" in self.health_summary_parameters
-            and "num_examples" in self.health_summary_parameters
-        ):
+        elif all([x in self.health_summary_parameters for x in ["joint", "num_examples"]]):
             summary_parameters = {
-                "joint": self.health_summary_parameters["joint"],
-                "num_examples": self.health_summary_parameters["num_examples"],
+                k: self.health_summary_parameters[k] for k in ["joint", "num_examples"]
             }
         else:
             summary_parameters = {
@@ -374,6 +379,7 @@ class OutOfDistributionIssueManager(IssueManager):
         datalab: Datalab,
         ood_kwargs: Optional[Dict[str, Any]] = None,
         threshold: Optional[float] = None,
+        **_,
     ):
         super().__init__(datalab)
         self.ood: OutOfDistribution = OutOfDistribution(**(ood_kwargs or {}))

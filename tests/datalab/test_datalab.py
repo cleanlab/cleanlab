@@ -104,7 +104,7 @@ class TestDatalab:
         )
 
         knn = NearestNeighbors(n_neighbors=3, metric="euclidean")
-        issue_manager_init_kwargs = {
+        issue_types = {
             "ood": {
                 "ood_kwargs": {"params": {"knn": knn}},
             },
@@ -112,8 +112,7 @@ class TestDatalab:
         lab.find_issues(
             pred_probs=pred_probs,
             features="features",
-            issue_types={"ood": {}},
-            issue_manager_init_kwargs=issue_manager_init_kwargs,
+            issue_types=issue_types,
         )
         set_knn = lab.issue_managers["ood"].ood.params["knn"]
         assert set_knn == knn

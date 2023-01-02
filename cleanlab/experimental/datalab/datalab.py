@@ -103,7 +103,6 @@ class Datalab:
         issue_types: Optional[Dict[str, Any]] = None,
         features: Optional[str] = None,  # embeddings of data
         model=None,  # sklearn.Estimator compatible object  # noqa: F821
-        issue_manager_init_kwargs: Optional[Dict[str, Dict[str, Any]]] = None,
     ) -> None:
         """
         Checks for all sorts of issues in the data, including in labels and in features.
@@ -172,10 +171,8 @@ class Datalab:
 
         issue_types_copy = self._set_issue_types(issue_types, required_args_per_issue_type)
 
-        issue_manager_init_kwargs = issue_manager_init_kwargs or {}
-
         new_issue_managers = [
-            factory(datalab=self, **issue_manager_init_kwargs.get(factory.issue_key, {}))
+            factory(datalab=self, **issue_types_copy.get(factory.issue_key, {}))
             for factory in _IssueManagerFactory.from_list(list(issue_types_copy.keys()))
         ]
 
