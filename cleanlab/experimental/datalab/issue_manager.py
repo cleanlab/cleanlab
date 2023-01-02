@@ -40,7 +40,7 @@ class IssueManager(ABC):
       which set of examples in the dataset are all (nearly) identical.
 
     Implementing a new IssueManager:
-    - Define the `issue_key` class attribute, e.g. "label", "duplicate", "ood", etc.
+    - Define the `issue_name` class attribute, e.g. "label", "duplicate", "ood", etc.
     - Implement the abstract methods `find_issues` and `collect_info`.
       - `find_issues` is responsible for computing computing the `issues` and `summary` dataframes.
       - `collect_info` is responsible for computing the `info` dict. It is called by `find_issues`,
@@ -61,7 +61,7 @@ class IssueManager(ABC):
     @classmethod
     @property
     @abstractmethod
-    def issue_key(cls) -> str:
+    def issue_name(cls) -> str:
         """Returns a key that is used to store issue summary results about the assigned Lab."""
         raise NotImplementedError
 
@@ -69,8 +69,8 @@ class IssueManager(ABC):
     @property
     def issue_score_key(cls) -> str:
         """Returns a key that is used to store issue score results about the assigned Lab."""
-        # TODO: The score key should just be f"{cls.issue_key}_score" or f"{cls.issue_key}_quality_score", f"{cls.issue_key}_quality"
-        return f"{cls.issue_key}_score"
+        # TODO: The score key should just be f"{cls.issue_name}_score" or f"{cls.issue_name}_quality_score", f"{cls.issue_name}_quality"
+        return f"{cls.issue_name}_score"
 
     @abstractmethod
     def find_issues(self, /, *args, **kwargs) -> None:
@@ -123,7 +123,7 @@ class IssueManager(ABC):
 
         topk_ids = self.issues.sort_values(by=self.issue_score_key, ascending=True).index[:k]
 
-        report = f"{self.issue_key:-^80}\n\n"
+        report = f"{self.issue_name:-^80}\n\n"
         columns = {}
         for level, verbosity_dict in self.verbosity_levels.items():
             if level <= verbosity:
@@ -186,7 +186,7 @@ class LabelIssueManager(IssueManager):
 
     @classmethod
     @property
-    def issue_key(cls) -> str:
+    def issue_name(cls) -> str:
         return "label"
 
     @classmethod
@@ -253,7 +253,7 @@ class LabelIssueManager(IssueManager):
         # Get a summarized dataframe of the label issues
         self.summary = pd.DataFrame(
             {
-                "issue_type": [self.issue_key],
+                "issue_type": [self.issue_name],
                 "score": [summary_dict["overall_label_health_score"]],
             },
         )
@@ -318,7 +318,7 @@ class LabelIssueManager(IssueManager):
 
     def collect_info(self, issues: pd.DataFrame, summary_dict: dict) -> dict:
         issues_info = {
-            "num_label_issues": sum(issues[f"is_{self.issue_key}_issue"]),
+            "num_label_issues": sum(issues[f"is_{self.issue_name}_issue"]),
             "average_label_quality": issues[self.issue_score_key].mean(),
             "given_label": issues["given_label"].tolist(),
             "predicted_label": issues["predicted_label"].tolist(),
@@ -361,7 +361,7 @@ class OutOfDistributionIssueManager(IssueManager):
 
     @classmethod
     @property
-    def issue_key(cls) -> str:
+    def issue_name(cls) -> str:
         return "ood"
 
     @classmethod
@@ -412,7 +412,7 @@ class OutOfDistributionIssueManager(IssueManager):
 
         self.summary = pd.DataFrame(
             {
-                "issue_type": [self.issue_key],
+                "issue_type": [self.issue_name],
                 "score": [scores.mean()],
             },
         )

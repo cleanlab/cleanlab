@@ -172,7 +172,7 @@ class Datalab:
         issue_types_copy = self._set_issue_types(issue_types, required_args_per_issue_type)
 
         new_issue_managers = [
-            factory(datalab=self, **issue_types_copy.get(factory.issue_key, {}))
+            factory(datalab=self, **issue_types_copy.get(factory.issue_name, {}))
             for factory in _IssueManagerFactory.from_list(list(issue_types_copy.keys()))
         ]
 
@@ -180,7 +180,7 @@ class Datalab:
             issue_manager.find_issues(**arg_dict)
             self.collect_results_from_issue_manager(issue_manager)
 
-        self.issue_managers.update({im.issue_key: im for im in new_issue_managers})
+        self.issue_managers.update({im.issue_name: im for im in new_issue_managers})
 
     def _set_issue_types(
         self,
@@ -234,15 +234,15 @@ class Datalab:
         self, issue_types: Dict[str, Any], required_defaults_dict: Dict[str, Any]
     ) -> None:
         missing_required_args_dict = {}
-        for issue_key, required_args in required_defaults_dict.items():
-            if issue_key in issue_types:
-                missing_args = set(required_args.keys()) - set(issue_types[issue_key].keys())
+        for issue_name, required_args in required_defaults_dict.items():
+            if issue_name in issue_types:
+                missing_args = set(required_args.keys()) - set(issue_types[issue_name].keys())
                 if missing_args:
-                    missing_required_args_dict[issue_key] = missing_args
+                    missing_required_args_dict[issue_name] = missing_args
         if any(missing_required_args_dict.values()):
             error_message = ""
-            for issue_key, missing_required_args in missing_required_args_dict.items():
-                error_message += f"Required argument {missing_required_args} for issue type {issue_key} was not provided.\n"
+            for issue_name, missing_required_args in missing_required_args_dict.items():
+                error_message += f"Required argument {missing_required_args} for issue type {issue_name} was not provided.\n"
             raise ValueError(error_message)
 
     def collect_results_from_issue_manager(self, issue_manager: IssueManager) -> None:
@@ -269,13 +269,13 @@ class Datalab:
             self.issues.drop(columns=overlapping_columns, inplace=True)
         self.issues = self.issues.join(issue_manager.issues, how="outer")
 
-        if issue_manager.issue_key in self.issue_summary["issue_type"].values:
+        if issue_manager.issue_name in self.issue_summary["issue_type"].values:
             warnings.warn(
                 f"Overwriting row in self.issue_summary with "
                 f"row from issue manager {issue_manager}."
             )
             self.issue_summary = self.issue_summary[
-                self.issue_summary["issue_type"] != issue_manager.issue_key
+                self.issue_summary["issue_type"] != issue_manager.issue_name
             ]
         self.issue_summary = pd.concat(
             [self.issue_summary, issue_manager.summary],
@@ -283,12 +283,12 @@ class Datalab:
             ignore_index=True,
         )
 
-        if issue_manager.issue_key in self.info:
+        if issue_manager.issue_name in self.info:
             warnings.warn(
-                f"Overwriting key {issue_manager.issue_key} in self.info with "
+                f"Overwriting key {issue_manager.issue_name} in self.info with "
                 f"key from issue manager {issue_manager}."
             )
-        self.info[issue_manager.issue_key] = issue_manager.info
+        self.info[issue_manager.issue_name] = issue_manager.info
 
     def _extract_labels(self, label_name: Union[str, list[str]]) -> tuple[np.ndarray, Mapping]:
         """
