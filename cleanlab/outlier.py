@@ -55,7 +55,8 @@ class OutOfDistribution:
              You can also pass in a subclass of ``sklearn.neighbors.NearestNeighbors`` which allows you to use faster
              approximate neighbor libraries as long as you wrap them behind the same sklearn API.
              If you specify ``knn`` here, there is no need to later call ``fit()`` before calling ``score()``.
-             If ``knn = None``, then by default: ``knn = sklearn.neighbors.NearestNeighbors(n_neighbors=k, metric="cosine").fit(features)``
+             If ``knn = None``, then by default: ``knn = sklearn.neighbors.NearestNeighbors(n_neighbors=k, metric=dist_metric).fit(features)``
+             where ``dist_metric == "cosine"`` if ``dim(features) > 3`` or ``dist_metric == "minkowski"`` otherwise.
              See: https://scikit-learn.org/stable/modules/neighbors.html
        *  k : int, default=None
              Optional number of neighbors to use when calculating outlier score (average distance to neighbors).
@@ -411,8 +412,15 @@ def _get_ood_features_scores(
             raise ValueError(
                 f"Number of nearest neighbors k={k} cannot exceed the number of examples N={len(features)} passed into the estimator (knn)."
             )
-        knn = NearestNeighbors(n_neighbors=k, metric="cosine").fit(features)
+
+        if features.shape[1] > 3:  # use euclidean distance for lower dimensional spaces
+            metric = "cosine"
+        else:
+            metric = "minkowski"
+
+        knn = NearestNeighbors(n_neighbors=k, metric=metric).fit(features)
         features = None  # features should be None in knn.kneighbors(features) to avoid counting duplicate data points
+
     elif k is None:
         k = knn.n_neighbors
 
