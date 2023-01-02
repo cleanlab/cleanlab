@@ -205,11 +205,6 @@ class LabelIssueManager(IssueManager):
     def issue_score_key(cls) -> str:
         return "label_quality"
 
-    @classmethod
-    @property
-    def info_keys(cls) -> List[str]:
-        return ["given_label", "predicted_label"]
-
     def __init__(
         self,
         datalab: Datalab,
@@ -268,7 +263,7 @@ class LabelIssueManager(IssueManager):
         self.info = self.collect_info(issues=self.issues, summary_dict=summary_dict)
 
         # Drop drop column from issues that are in the info
-        self.issues = self.issues.drop(columns=self.info_keys)
+        self.issues = self.issues.drop(columns=["given_label", "predicted_label"])
 
     def get_health_summary(self, pred_probs, **kwargs) -> dict:
         """Returns a short summary of the health of this Lab."""
@@ -374,11 +369,6 @@ class OutOfDistributionIssueManager(IssueManager):
     @property
     def issue_score_key(cls) -> str:
         return "ood_score"
-
-    @classmethod
-    @property
-    def info_keys(cls) -> List[str]:
-        return []
 
     def __init__(
         self,
