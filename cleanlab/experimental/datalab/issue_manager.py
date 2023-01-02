@@ -58,19 +58,17 @@ class IssueManager(ABC):
         class_name = self.__class__.__name__
         return class_name
 
-    @classmethod
     @property
     @abstractmethod
-    def issue_name(cls) -> str:
+    def issue_name(self) -> str:
         """Returns a key that is used to store issue summary results about the assigned Lab."""
         raise NotImplementedError
 
-    @classmethod
     @property
-    def issue_score_key(cls) -> str:
+    def issue_score_key(self) -> str:
         """Returns a key that is used to store issue score results about the assigned Lab."""
-        # TODO: The score key should just be f"{cls.issue_name}_score" or f"{cls.issue_name}_quality_score", f"{cls.issue_name}_quality"
-        return f"{cls.issue_name}_score"
+        # TODO: The score key should just be f"{self.issue_name}_score" or f"{self.issue_name}_quality_score", f"{self.issue_name}_quality"
+        return f"{self.issue_name}_score"
 
     @abstractmethod
     def find_issues(self, /, *args, **kwargs) -> None:
@@ -195,14 +193,12 @@ class LabelIssueManager(IssueManager):
         Keyword arguments to pass to the CleanLearning constructor.
     """
 
-    @classmethod
     @property
-    def issue_name(cls) -> str:
+    def issue_name(self) -> str:
         return "label"
 
-    @classmethod
     @property
-    def issue_score_key(cls) -> str:
+    def issue_score_key(self) -> str:
         return "label_quality"
 
     def __init__(
@@ -360,14 +356,12 @@ class LabelIssueManager(IssueManager):
 class OutOfDistributionIssueManager(IssueManager):
     """Manages issues related to out-of-distribution examples."""
 
-    @classmethod
     @property
-    def issue_name(cls) -> str:
+    def issue_name(self) -> str:
         return "ood"
 
-    @classmethod
     @property
-    def issue_score_key(cls) -> str:
+    def issue_score_key(self) -> str:
         return "ood_score"
 
     def __init__(
