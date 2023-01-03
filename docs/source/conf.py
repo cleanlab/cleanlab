@@ -105,6 +105,9 @@ autodoc_default_options = {
 # Subclasses should show parent classes docstrings if they don't override them.
 autodoc_inherit_docstrings = True
 
+# Order functions displayed by the order of source code
+autodoc_member_order = "bysource"
+
 # -- Options for copybutton extension -----------------------------------------
 
 # Strip input prompts when copying code blocks. Supports:

@@ -1,6 +1,6 @@
 ![](https://raw.githubusercontent.com/cleanlab/assets/master/cleanlab/cleanlab_logo_open_source_transparent_optimized_size.png)
 
-cleanlab automatically finds and fixes errors in any ML dataset. This data-centric AI package facilitates **machine learning with messy, real-world data** by providing **clean lab**els during training.
+cleanlab automatically detects problems in a ML dataset. This data-centric AI package facilitates **machine learning with messy, real-world data** by providing **clean lab**els for robust training and flagging errors in your data.
 
 ```python
 
@@ -22,12 +22,13 @@ cleanlab.dataset.health_summary(labels, confident_joint=cl.confident_joint)
 
 Get started with: [documentation](https://docs.cleanlab.ai/), [tutorials](https://docs.cleanlab.ai/stable/tutorials/image.html), [examples](https://github.com/cleanlab/examples), and [blogs](https://cleanlab.ai/blog/).
 
- - Learn how to run cleanlab on your own data in just 5 minutes for classification with: [image](https://docs.cleanlab.ai/stable/tutorials/image.html), [text](https://docs.cleanlab.ai/stable/tutorials/text.html), [audio](https://docs.cleanlab.ai/stable/tutorials/audio.html), and [tabular](https://docs.cleanlab.ai/stable/tutorials/tabular.html) data.
+ - Learn to run cleanlab on your data in 5 minutes for classification with: [image](https://docs.cleanlab.ai/stable/tutorials/image.html), [text](https://docs.cleanlab.ai/stable/tutorials/text.html), [audio](https://docs.cleanlab.ai/stable/tutorials/audio.html), or [tabular](https://docs.cleanlab.ai/stable/tutorials/tabular.html) data.
+- Use cleanlab to automatically: [find mislabeled data + train robust models](https://docs.cleanlab.ai/stable/tutorials/indepth_overview.html), [detect outliers](https://docs.cleanlab.ai/stable/tutorials/outliers.html), [estimate consensus + annotator-quality for multi-annotator datasets](https://docs.cleanlab.ai/stable/tutorials/multiannotator.html), [decide what data is best to (re)label next](https://github.com/cleanlab/examples/blob/master/active_learning_multiannotator/active_learning.ipynb). 
 
 
 [![pypi](https://img.shields.io/pypi/v/cleanlab.svg)](https://pypi.org/pypi/cleanlab/)
 [![os](https://img.shields.io/badge/platform-noarch-lightgrey)](https://pypi.org/pypi/cleanlab/)
-[![py\_versions](https://img.shields.io/badge/python-3.6%2B-blue)](https://pypi.org/pypi/cleanlab/)
+[![py\_versions](https://img.shields.io/badge/python-3.7%2B-blue)](https://pypi.org/pypi/cleanlab/)
 [![build\_status](https://github.com/cleanlab/cleanlab/workflows/CI/badge.svg)](https://github.com/cleanlab/cleanlab/actions?query=workflow%3ACI)
 [![coverage](https://codecov.io/gh/cleanlab/cleanlab/branch/master/graph/badge.svg)](https://app.codecov.io/gh/cleanlab/cleanlab)
 [![docs](https://img.shields.io/static/v1?logo=github&style=flat&color=pink&label=docs&message=cleanlab)](https://docs.cleanlab.ai/)
@@ -60,7 +61,7 @@ Get started with: [documentation](https://docs.cleanlab.ai/), [tutorials](https:
 </p>
 </details>
 
-<details><summary><b>News! (2020) </b> -- cleanlab adds support for all OS, achieves state-of-the-art, supports co-teaching and more (<b>click to learn more</b>) </summary>
+<details><summary><b>News! (2020) </b> -- cleanlab supports all OS, achieves state-of-the-art performance (<b>click to learn more</b>) </summary>
 <p>
 <ul>
 <li> <b>Dec 2020 🎉</b>  cleanlab supports NeurIPS workshop paper <a href="https://securedata.lol/camera_ready/28.pdf">(Northcutt, Athalye, & Lin, 2020)</a>.</li>
@@ -78,18 +79,18 @@ Details behind updates are explained in our [blog](https://cleanlab.ai/blog/) an
 
 ## So fresh, so cleanlab
 
-cleanlab **clean**s your data's **lab**els via state-of-the-art *confident learning* algorithms, published in this [paper](https://jair.org/index.php/jair/article/view/12125) and [blog](https://l7.curtisnorthcutt.com/confident-learning). See some of the datasets cleaned with cleanlab at [labelerrors.com](https://labelerrors.com). This package helps you find data and label issues so that you can train more reliable ML models.
+cleanlab **clean**s your data's **lab**els via state-of-the-art *confident learning* algorithms, published in this [paper](https://jair.org/index.php/jair/article/view/12125) and [blog](https://l7.curtisnorthcutt.com/confident-learning). See some of the datasets cleaned with cleanlab at [labelerrors.com](https://labelerrors.com). This package helps you find data and label issues so you can train reliable ML models.
 
 cleanlab is:
 
 1. **backed by theory**
-   - with [provable guarantees](https://arxiv.org/abs/1911.00068) of exact noise estimation and label error finding in realistic cases with imperfect models.
+   - with [provable guarantees](https://arxiv.org/abs/1911.00068) of exact estimation of noise and label errors, even with imperfect models.
 2. **fast**
-   - Code is optimized and parallel-threaded (< 1 second to find label issues in ImageNet with pre-computed probabilities).
+   - Code is parallelized (< 1 second to find label issues in ImageNet with pre-computed predictions).
 4. **easy-to-use**
-   - Find label issues or train noise-robust models in one line of code. By default, cleanlab requires no hyper-parameters.
+   - Find label issues or train noise-robust models in one line of code (no hyperparameters by default).
 6. **general**
-   - Works with **[any dataset](https://labelerrors.com/)** and **any model**, e.g., TensorFlow, PyTorch, sklearn, xgboost, etc.
+   - Works with **[any dataset](https://labelerrors.com/)** and **any model**, e.g., TensorFlow, PyTorch, sklearn, XGBoost, Huggingface, etc.
 <br/>
 
 ![](https://raw.githubusercontent.com/cleanlab/assets/master/cleanlab/label-errors-examples.png)
@@ -99,22 +100,25 @@ Examples of incorrect given labels in various image datasets <a href="https://l7
 
 ## Run cleanlab
 
-cleanlab supports Linux, macOS, and Windows and runs on Python 3.6+.
+cleanlab supports Linux, macOS, and Windows and runs on Python 3.7+.
 
 - Get started [here](https://docs.cleanlab.ai/)! Install via `pip` or `conda` as described [here](https://docs.cleanlab.ai/).
-- Developers who install the bleeding-edge master branch from source should refer to [this master version of documentation](https://docs.cleanlab.ai/master/index.html).
+- Developers who install the bleeding-edge from source should refer to [this master branch documentation](https://docs.cleanlab.ai/master/index.html).
 
 
-## Use cleanlab with any model (TensorFlow, PyTorch, sklearn, xgboost, etc.)
+## Use cleanlab with any model for most ML tasks
 
 All features of cleanlab work with **any dataset** and **any model**. Yes, any model: scikit-learn, PyTorch, Tensorflow, Keras, JAX, HuggingFace, MXNet, XGBoost, etc.
-If you use a sklearn-compatible classifier, cleanlab methods work out-of-the-box.
+If you use a sklearn-compatible classifier, all cleanlab methods work out-of-the-box.
 
 <details><summary>
 It’s also easy to use your favorite non-sklearn-compatible model (<b>click to learn more</b>)
 </summary>
 <br/>
 
+cleanlab can find label issues from any model's predicted class probabilities if you can produce them yourself.
+
+Some other cleanlab functionality requires your model to be sklearn-compatible.
 There's nothing you need to do if your model already has `.fit()`, `.predict()`, and `.predict_proba()` methods.
 Otherwise, just wrap your custom model into a Python class that inherits the `sklearn.base.BaseEstimator`:
 
@@ -152,7 +156,15 @@ Note, some libraries exist to give you sklearn-compatibility for free. For PyTor
 <br/>
 </details>
 
-cleanlab can be useful across a wide variety of Machine Learning tasks. Some specific tasks this package offers dedicated functionality for include: binary and multi-class classification, multi-label classification (e.g. image/document tagging), classification with data labeled by multiple annotators, token classification (e.g. entity recognition in text), and out of distribution detection. For many other tasks, cleanlab can still be useful if used appropriately.
+cleanlab is useful across a wide variety of Machine Learning tasks. Specific tasks this package offers dedicated functionality for include:
+1. [Binary and multi-class classification](https://docs.cleanlab.ai/stable/tutorials/indepth_overview.html)
+2. [Multi-label classification](https://docs.cleanlab.ai/stable/tutorials/multilabel_classification.html) (e.g. image/document tagging)
+3. [Token classification](https://docs.cleanlab.ai/stable/tutorials/token_classification.html) (e.g. entity recognition in text)
+4. [Classification with data labeled by multiple annotators](https://docs.cleanlab.ai/stable/tutorials/multiannotator.html)
+5. [Active learning with multiple annotators](https://github.com/cleanlab/examples/blob/master/active_learning_multiannotator/active_learning.ipynb) (decide which data to label or re-label to improve model most)
+6. [Out of distribution detection](https://docs.cleanlab.ai/stable/tutorials/outliers.html)
+
+For many other ML tasks, cleanlab can still help you improve your dataset if appropriately applied.
 
 
 ## Cool cleanlab applications
@@ -196,7 +208,7 @@ Top 24 least-confident labels in the original MNIST **train** dataset, algorithm
 </details>
 
 <details><summary>
-cleanlab performance across 4 data distributions and 9 classifiers
+Learning with noisy labels across 4 data distributions and 9 classifiers
 (<b>click to learn more</b>)
 </summary>
 <br/>
@@ -370,7 +382,7 @@ joint = estimate_joint(
 </details>
 
 <details><summary>
-Positive-Unlabeled learning with cleanlab
+Positive-Unlabeled Learning
 (<b>click to learn more</b>)
 </summary>
 <br/>
@@ -467,7 +479,52 @@ cleanlab is based on peer-reviewed research. Here are relevant papers to cite if
 
 </details>
 
-To understand/cite other cleanlab functionality not described in these papers, check out our [additional publications](https://cleanlab.ai/research/).
+<details><summary><a href="https://people.csail.mit.edu/jonasmueller/info/LabelQuality_icml.pdf"> Label Quality Scoring (ICML '22)</a> (<b>click to show bibtex</b>) </summary>
+
+    @inproceedings{kuan2022labelquality,
+        title={Model-agnostic label quality scoring to detect real-world label errors},
+        author={Kuan, Johnson and Mueller, Jonas},
+        booktitle={ICML DataPerf Workshop},
+        year={2022}
+    }
+
+</details>
+
+<details><summary><a href="https://arxiv.org/abs/2207.03061"> Out-of-Distribution Detection (ICML '22)</a> (<b>click to show bibtex</b>) </summary>
+
+    @inproceedings{kuan2022ood,
+        title={Back to the Basics: Revisiting Out-of-Distribution Detection Baselines},
+        author={Kuan, Johnson and Mueller, Jonas},
+        booktitle={ICML Workshop on Principles of Distribution Shift},
+        year={2022}
+    }
+
+</details>
+
+<details><summary><a href="https://arxiv.org/abs/2210.03920"> Token Classification Label Errors (NeurIPS '22)</a> (<b>click to show bibtex</b>) </summary>
+
+    @inproceedings{wang2022tokenerrors,
+        title={Detecting label errors in token classification data},
+        author={Wang, Wei-Chen and Mueller, Jonas},
+        booktitle={NeurIPS Workshop on Interactive Learning for Natural Language Processing (InterNLP)},
+        year={2022}
+    }
+
+</details>
+
+<details><summary><a href="https://arxiv.org/abs/2210.06812"> CROWDLAB for data with multiple annotators (NeurIPS '22)</a> (<b>click to show bibtex</b>) </summary>
+
+    @inproceedings{goh2022crowdlab,
+        title={Utilizing supervised models to infer consensus labels and their quality from data with multiple annotators},
+        author={Goh, Hui Wen and Tkachenko, Ulyana and Mueller, Jonas},
+        booktitle={NeurIPS Human in the Loop Learning Workshop},
+        year={2022}
+    }
+
+</details>
+
+
+To understand/cite other cleanlab functionality not described above, check out our [additional publications](https://cleanlab.ai/research/).
 
 
 ## Other resources
@@ -488,7 +545,7 @@ While this open-source library **finds** data issues, an interface is needed to 
 
 * Have ideas for the future of cleanlab? How are you using cleanlab? [Join the discussion](https://github.com/cleanlab/cleanlab/discussions) and check out [our active/planned Projects and what we could use your help with](https://github.com/cleanlab/cleanlab/projects).
 
-* Interested in contributing? See the [contributing guide](https://github.com/cleanlab/cleanlab/blob/master/CONTRIBUTING.md) and [ideas on useful contributions](https://github.com/cleanlab/cleanlab/wiki#ideas-for-contributing-to-cleanlab).
+* Interested in contributing? See the [contributing guide](CONTRIBUTING.md) and [ideas on useful contributions](https://github.com/cleanlab/cleanlab/wiki#ideas-for-contributing-to-cleanlab). We welcome your help building a standard open-source library for data-centric AI!
 
 * Have code improvements for cleanlab? See the [development guide](DEVELOPMENT.md).
 

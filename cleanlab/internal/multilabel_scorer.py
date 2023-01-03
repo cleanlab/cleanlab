@@ -198,7 +198,7 @@ def exponential_moving_average(
     --------
     >>> from cleanlab.internal.multilabel_scorer import exponential_moving_average
     >>> import numpy as np
-    >>> s = np.array([0.1, 0.2, 0.3])
+    >>> s = np.array([[0.1, 0.2, 0.3]])
     >>> exponential_moving_average(s, alpha=0.5)
     np.array([0.175])
     """
