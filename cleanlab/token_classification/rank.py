@@ -154,9 +154,11 @@ def issues_from_scores(
     Converts scores output by :py:func:`token_classification.rank.get_label_quality_scores <cleanlab.token_classification.rank.get_label_quality_scores>`
     to a list of issues of similar format as output by :py:func:`token_classification.filter.find_label_issues <cleanlab.token_classification.filter.find_label_issues>`.
 
-    Only considers as issues those tokens with label quality score lower than `threshold`.
+    Issues are sorted by label quality score, from most to least severe.
 
-    Issues are sorted by label quality score, from most severe to least.
+    Only considers as issues those tokens with label quality score lower than `threshold`,
+    so this parameter determines the number of issues that are returned.
+    This method does not estimate the number of label errors, for that instead use :py:func:`token_classification.filter.find_label_issues <cleanlab.token_classification.filter.find_label_issues>`.
 
     Parameters
     ----------
