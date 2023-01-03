@@ -56,7 +56,7 @@ class OutOfDistribution:
              approximate neighbor libraries as long as you wrap them behind the same sklearn API.
              If you specify ``knn`` here, there is no need to later call ``fit()`` before calling ``score()``.
              If ``knn = None``, then by default: ``knn = sklearn.neighbors.NearestNeighbors(n_neighbors=k, metric=dist_metric).fit(features)``
-             where ``dist_metric == "cosine"`` if ``dim(features) > 3`` or ``dist_metric == "minkowski"`` otherwise.
+             where ``dist_metric == "cosine"`` if ``dim(features) > 3`` or ``dist_metric == "euclidean"`` otherwise.
              See: https://scikit-learn.org/stable/modules/neighbors.html
        *  k : int, default=None
              Optional number of neighbors to use when calculating outlier score (average distance to neighbors).
@@ -416,7 +416,7 @@ def _get_ood_features_scores(
         if features.shape[1] > 3:  # use euclidean distance for lower dimensional spaces
             metric = "cosine"
         else:
-            metric = "minkowski"
+            metric = "euclidean"
 
         knn = NearestNeighbors(n_neighbors=k, metric=metric).fit(features)
         features = None  # features should be None in knn.kneighbors(features) to avoid counting duplicate data points

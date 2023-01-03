@@ -272,9 +272,9 @@ def test_class_public_func():
 
     # Testing fit with correct metrics given feature-space size
     X_small = np.random.rand(20, 3)
-    OOD_minkowski = OutOfDistribution()
-    OOD_minkowski.fit(features=X_small)
-    assert OOD_minkowski.params["knn"].metric == "minkowski"
+    OOD_euclidean = OutOfDistribution()
+    OOD_euclidean.fit(features=X_small)
+    assert OOD_euclidean.params["knn"].metric == "euclidean"
     X_large = np.random.rand(20, 4)
     OOD_cosine = OutOfDistribution()
     OOD_cosine.fit(features=X_large)
@@ -386,7 +386,7 @@ def test_default_k_and_model_get_ood_features_scores():
     instantiated_k = 10
 
     # Create NN class object with small instantiated k and fit on data
-    knn = NearestNeighbors(n_neighbors=instantiated_k, metric="minkowski").fit(X_with_ood)
+    knn = NearestNeighbors(n_neighbors=instantiated_k, metric="euclidean").fit(X_with_ood)
 
     avg_knn_distances_default_model, _ = outlier._get_ood_features_scores(
         features=X_with_ood,
