@@ -37,7 +37,9 @@ Tips:
 
 import tensorflow as tf
 import numpy as np
+import pandas as pd
 from typing import Callable, Optional
+from cleanlab.internal.validation import assert_valid_inputs
 
 
 class KerasWrapperModel:
@@ -92,6 +94,11 @@ class KerasWrapperModel:
         """
         self.net = self.model(**self.model_kwargs)
         self.net.compile(**self.compile_kwargs)
+
+        if isinstance(X, (np.ndarray, pd.DataFrame)):
+            assert_valid_inputs(X, y)
+            kwargs["y"] = y
+
         self.net.fit(X, **kwargs)
 
     def predict_proba(self, X, *, apply_softmax=True, **kwargs):
@@ -156,6 +163,11 @@ class KerasWrapperSequential:
         """
         self.net = tf.keras.models.Sequential(self.layers, self.name)
         self.net.compile(**self.compile_kwargs)
+
+        if isinstance(X, (np.ndarray, pd.DataFrame)):
+            assert_valid_inputs(X, y)
+            kwargs["y"] = y
+
         self.net.fit(X, **kwargs)
 
     def predict_proba(self, X, *, apply_softmax=True, **kwargs):
