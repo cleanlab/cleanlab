@@ -106,6 +106,8 @@ enforced by CI, so please format your code by invoking `black` before submitting
 Generally aim to follow the [PEP-8 coding style](https://peps.python.org/pep-0008/). 
 Please do not use wildcard `import *` in any files, instead you should always import the specific functions that you need from a module.
 
+All cleanlab code should have a maximum line length of 120 characters.
+
 ### Pre-commit hook
 
 This repo uses the [pre-commit framework](https://pre-commit.com/) to easily
