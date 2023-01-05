@@ -100,11 +100,13 @@ examples/run_all_notebooks.sh
 
 ## How to style new code contributions
 
-cleanlab follows the [Black](https://black.readthedocs.io/) code style. This is
+cleanlab follows the [Black](https://black.readthedocs.io/) code style (see [pyproject.toml](pyproject.toml)). This is
 enforced by CI, so please format your code by invoking `black` before submitting a pull request.
 
 Generally aim to follow the [PEP-8 coding style](https://peps.python.org/pep-0008/). 
 Please do not use wildcard `import *` in any files, instead you should always import the specific functions that you need from a module.
+
+All cleanlab code should have a maximum line length of 100 characters.
 
 ### Pre-commit hook
 
