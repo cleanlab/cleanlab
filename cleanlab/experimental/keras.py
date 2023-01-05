@@ -89,9 +89,19 @@ class KerasWrapperModel:
         }
 
     def fit(self, X, y=None, **kwargs):
-        """Note that `X` dataset object must already contain the labels as is required for standard Keras fit.
-        You can optionally provide the labels again here as argument `y` to be compatible with sklearn, but they are ignored.
+        """Trains a Keras classifier.
+
+        Parameters
+        ----------
+        X : tf.Dataset or np.array or pd.DataFrame
+            If `X` is a tensorflow dataset object, it must already contain the labels as is required for standard Keras fit.
+
+        y : np.array or pd.DataFrame, default = None
+            If `X` is a tensorflow dataset object, you can optionally provide the labels again here as argument `y` to be compatible with sklearn,
+            but they are ignored.
+            If `X` is a numpy array or pandas dataframe, the labels have to be passed in using this argument.
         """
+
         self.net = self.model(**self.model_kwargs)
         self.net.compile(**self.compile_kwargs)
 
@@ -158,8 +168,17 @@ class KerasWrapperSequential:
         }
 
     def fit(self, X, y=None, **kwargs):
-        """Note that `X` dataset object must already contain the labels as is required for standard Keras fit.
-        You can optionally provide the labels again here as argument `y` to be compatible with sklearn, but they are ignored.
+        """Trains a Sequential Keras classifier.
+
+        Parameters
+        ----------
+        X : tf.Dataset or np.array or pd.DataFrame
+            If `X` is a tensorflow dataset object, it must already contain the labels as is required for standard Keras fit.
+
+        y : np.array or pd.DataFrame, default = None
+            If `X` is a tensorflow dataset object, you can optionally provide the labels again here as argument `y` to be compatible with sklearn,
+            but they are ignored.
+            If `X` is a numpy array or pandas dataframe, the labels have to be passed in using this argument.
         """
         self.net = tf.keras.models.Sequential(self.layers, self.name)
         self.net.compile(**self.compile_kwargs)
