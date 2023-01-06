@@ -289,6 +289,7 @@ def test_class_public_func():
     X_large_with_ood = np.vstack([X_large, [999999.0] * 401])
     cosine_score = OOD_cosine.score(features=X_large_with_ood)
     assert (cosine_score <= 1).all()
+    assert (cosine_score >= 0).all()
     assert np.argmin(cosine_score) == (cosine_score.shape[0] - 1)
 
     #### TESTING SCORE
