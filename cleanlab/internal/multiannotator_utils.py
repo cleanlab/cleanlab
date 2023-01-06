@@ -1,4 +1,4 @@
-# Copyright (C) 2017-2022  Cleanlab Inc.
+# Copyright (C) 2017-2023  Cleanlab Inc.
 # This file is part of cleanlab.
 #
 # cleanlab is free software: you can redistribute it and/or modify
@@ -72,7 +72,7 @@ def assert_valid_inputs_multiannotator(
     # Raise error if labels_multiannotator has <= 1 column
     if len(labels_multiannotator.columns) <= 1:
         raise ValueError(
-            """labels_multiannotator must have more than one column. 
+            """labels_multiannotator must have more than one column.
         If there is only one annotator, use cleanlab.rank.get_label_quality_scores instead"""
         )
 
