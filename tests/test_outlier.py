@@ -275,10 +275,20 @@ def test_class_public_func():
     OOD_euclidean = OutOfDistribution()
     OOD_euclidean.fit(features=X_small)
     assert OOD_euclidean.params["knn"].metric == "euclidean"
-    X_large = np.random.rand(20, 4)
+    X_small_with_ood = np.vstack([X_small, [999999.0] * 3])
+    euclidean_score = OOD_euclidean.score(features=X_small_with_ood)
+    assert (euclidean_score <= 1).all()
+    assert np.argmin(euclidean_score) == (euclidean_score.shape[0] - 1)
+
+    # Add OOD datapoint to X_test
+    X_large = np.hstack([np.zeros((200, 400)), np.random.rand(200, 1)])
     OOD_cosine = OutOfDistribution()
     OOD_cosine.fit(features=X_large)
     assert OOD_cosine.params["knn"].metric == "cosine"
+    X_large_with_ood = np.vstack([X_large, [999999.0] * 401])
+    cosine_score = OOD_cosine.score(features=X_large_with_ood)
+    assert (cosine_score <= 1).all()
+    assert np.argmin(cosine_score) == (cosine_score.shape[0] - 1)
 
     #### TESTING SCORE
     ood_score = OOD_ood.score(pred_probs=pred_probs)
@@ -339,14 +349,12 @@ def test_get_ood_features_scores():
     X_test_with_ood = np.vstack([X_test, X_ood])
 
     # Fit nearest neighbors on X_train
-    knn = NearestNeighbors(n_neighbors=5).fit(X_train)
-
+    knn = NearestNeighbors(n_neighbors=5, metric="euclidean").fit(X_train)
     # Get KNN distance as outlier score
     k = 5
     knn_distance_to_score, _ = outlier._get_ood_features_scores(
         features=X_test_with_ood, knn=knn, k=k
     )
-
     # Checking that X_ood has the smallest outlier score among all the datapoints
     assert np.argmin(knn_distance_to_score) == (knn_distance_to_score.shape[0] - 1)
 
