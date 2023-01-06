@@ -61,12 +61,11 @@ def get_label_quality_scores(
       *Format requirements*: For dataset with K classes, individual class labels must be integers in 0, 1, ..., K-1.
 
     pred_probs : np.ndarray
-      An array of shape ``(N, K)`` of model-predicted probabilities,
-      ``P(label=k|x)``. Each row of this matrix corresponds
-      to an example `x` and contains the model-predicted probabilities that
-      `x` belongs to each possible class, for each of the K classes. The
-      columns must be ordered such that these probabilities correspond to
-      class 0, 1, ..., K-1. In multi-label classification, the rows of `pred_probs` need not sum to 1.
+      A 2D array of shape ``(N, K)`` of model-predicted class probabilities ``P(label=k|x)``.
+      Each row of this matrix corresponds to an example `x` and contains the predicted probabilities
+      that `x` belongs to each possible class, for each of the K classes.
+      The columns of this array must be ordered such that these probabilities correspond to class 0, 1, ..., K-1.
+      In multi-label classification (where classes are not mutually exclusive), the rows of `pred_probs` need not sum to 1.
 
       Note
       ----
