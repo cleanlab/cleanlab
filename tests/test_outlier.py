@@ -270,26 +270,24 @@ def test_class_public_func():
         OOD_ood_already_fit.params["confident_thresholds"] == confident_thresholds
     ).all()  # Assert not overwritten
 
-    # Testing fit with correct metrics given feature-space size
+    # Testing fit uses correct metrics given feature dimensionality
     X_small = np.random.rand(20, 3)
     OOD_euclidean = OutOfDistribution()
     OOD_euclidean.fit(features=X_small)
     assert OOD_euclidean.params["knn"].metric == "euclidean"
     X_small_with_ood = np.vstack([X_small, [999999.0] * 3])
     euclidean_score = OOD_euclidean.score(features=X_small_with_ood)
-    assert (euclidean_score <= 1).all()
-    assert (euclidean_score >= 0).all()
+    assert (np.max(euclidean_score) <= 1) and (np.min(euclidean_score) >= 0)
     assert np.argmin(euclidean_score) == (euclidean_score.shape[0] - 1)
 
-    # Re-run with high dimensional dataset to test cosine distance
+    # Re-run tests with high dimensional dataset
     X_large = np.hstack([np.zeros((200, 400)), np.random.rand(200, 1)])
     OOD_cosine = OutOfDistribution()
     OOD_cosine.fit(features=X_large)
     assert OOD_cosine.params["knn"].metric == "cosine"
     X_large_with_ood = np.vstack([X_large, [999999.0] * 401])
     cosine_score = OOD_cosine.score(features=X_large_with_ood)
-    assert (cosine_score <= 1).all()
-    assert (cosine_score >= 0).all()
+    assert (np.max(cosine_score) <= 1) and (np.min(cosine_score) >= 0)
     assert np.argmin(cosine_score) == (cosine_score.shape[0] - 1)
 
     #### TESTING SCORE
