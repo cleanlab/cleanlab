@@ -587,7 +587,7 @@ def get_active_learning_scores(
 
     # if all examples are only labeled by a single annotator
     if labels_multiannotator.apply(lambda s: len(s.dropna()) == 1, axis=1).all():
-        optimal_temp = 1.0  # do not temp scale for single annotator case, defined to be used later
+        optimal_temp = 1.0  # do not temp scale for single annotator case, temperature is defined here for later use
 
         assert_valid_inputs_multiannotator(
             labels_multiannotator, pred_probs, allow_single_label=True
