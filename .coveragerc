@@ -20,6 +20,7 @@ exclude_lines =
     except
     assert
     warnings.warn
+    error_message
     
     # Use print(f"...") for printing out non-pure strings:
     print\(\"
