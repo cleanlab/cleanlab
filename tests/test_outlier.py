@@ -278,6 +278,7 @@ def test_class_public_func():
     X_small_with_ood = np.vstack([X_small, [999999.0] * 3])
     euclidean_score = OOD_euclidean.score(features=X_small_with_ood)
     assert (euclidean_score <= 1).all()
+    assert (euclidean_score >= 0).all()
     assert np.argmin(euclidean_score) == (euclidean_score.shape[0] - 1)
 
     # Re-run with high dimensional dataset to test cosine distance
