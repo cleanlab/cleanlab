@@ -280,7 +280,7 @@ def test_class_public_func():
     assert (euclidean_score <= 1).all()
     assert np.argmin(euclidean_score) == (euclidean_score.shape[0] - 1)
 
-    # Add OOD datapoint to X_test
+    # Re-run with high dimensional dataset to test cosine distance
     X_large = np.hstack([np.zeros((200, 400)), np.random.rand(200, 1)])
     OOD_cosine = OutOfDistribution()
     OOD_cosine.fit(features=X_large)
