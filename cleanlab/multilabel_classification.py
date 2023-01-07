@@ -22,7 +22,7 @@ Unlike in standard multi-class classification, predicted class probabilities fro
 
 import numpy as np  # noqa: F401: Imported for type annotations
 import numpy.typing as npt
-from typing import List, TypeVar
+from typing import List, TypeVar, Dict, Any
 
 from cleanlab.internal.validation import assert_valid_inputs
 from cleanlab.internal.util import get_num_classes
@@ -34,12 +34,12 @@ T = TypeVar("T", bound=npt.NBitBase)
 
 
 def get_label_quality_scores(
-    labels: List,
+    labels: List[List[int]],
     pred_probs: npt.NDArray["np.floating[T]"],
     *,
     method: str = "self_confidence",
     adjust_pred_probs: bool = False,
-    aggregator_kwargs: dict = {"method": "exponential_moving_average", "alpha": 0.8}
+    aggregator_kwargs: Dict[str, Any] = {"method": "exponential_moving_average", "alpha": 0.8}
 ) -> npt.NDArray["np.floating[T]"]:
     """Computes a label quality score each example in a multi-label classification dataset.
 
