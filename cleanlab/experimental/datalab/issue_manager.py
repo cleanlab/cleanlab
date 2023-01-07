@@ -71,7 +71,7 @@ class IssueManager(ABC):
         return f"{self.issue_name}_score"
 
     @abstractmethod
-    def find_issues(self, /, *args, **kwargs) -> None:
+    def find_issues(self, *args, **kwargs) -> None:
         """Finds occurrences of this particular issue in the dataset.
 
         Computes the `issues` and `summary` dataframes. Calls `collect_info` to compute the `info` dict.
@@ -79,7 +79,7 @@ class IssueManager(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def collect_info(self, /, *args, **kwargs) -> dict:
+    def collect_info(self, *args, **kwargs) -> dict:
         """Collects data for the info attribute of the Datalab.
 
         NOTE
