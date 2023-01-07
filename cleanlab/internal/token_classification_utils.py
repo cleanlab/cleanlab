@@ -23,6 +23,7 @@ import string
 import numpy as np
 from termcolor import colored
 from typing import List, Optional, Callable, Tuple
+import numpy.typing as npt
 
 
 def get_sentence(words: List[str]) -> str:
@@ -171,7 +172,7 @@ def mapping(entities: List[int], maps: List[int]) -> List[int]:
     return list(map(f, entities))
 
 
-def merge_probs(probs: np.ndarray, maps: List[int]) -> np.ndarray:
+def merge_probs(probs: npt.NDArray[np.float64], maps: List[int]) -> npt.NDArray[np.float64]:
     """
     Merges model-predictive probabilities with desired mapping
 
