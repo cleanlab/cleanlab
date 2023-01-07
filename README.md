@@ -556,7 +556,7 @@ Join our [\#help Slack channel](https://cleanlab.ai/slack) and message one of ou
 
 ## License
 
-Copyright (c) 2017-2022 Cleanlab Inc.
+Copyright (c) 2017-2023 Cleanlab Inc.
 
 cleanlab is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 
