@@ -285,7 +285,16 @@ def find_label_issues(
     big_dataset = K * len(labels) > 1e8
     # Ensure labels are of type np.ndarray()
     labels = np.asarray(labels)
-    # TODO: It might seem like this new block should be after the next if block so you can re-use confident_joint inside num_label_issues(confident_joint=confident_joint), but that's not the same bc confident_joint is calibrated and by default the method uses an uncalibrated confident_joint. Delete this todo once confirmed this is correct.
+    if confident_joint is None or filter_by == "confident_learning":
+        from cleanlab.count import compute_confident_joint
+
+        confident_joint, cl_error_indices = compute_confident_joint(
+            labels=labels,
+            pred_probs=pred_probs,
+            multi_label=multi_label,
+            return_indices_of_off_diagonals=True,
+        )
+    # TODO: (delete once read and/or make a comment) -- We don't re-use confident_joint inside this method in num_label_issues(confident_joint=confident_joint), bcconfident_joint is calibrated and by default the method uses an uncalibrated confident_joint. Delete this todo once confirmed this is correct.
     if filter_by in ["low_normalized_margin", "low_self_confidence"]:
         from cleanlab.rank import get_label_quality_scores
         from cleanlab.count import num_label_issues
@@ -307,16 +316,6 @@ def find_label_issues(
         # you can end up returning more or less and they aren't ranked in the boolean form so there's no way to drop the highest scores randomlyu
         #     boundary = np.partition(scores, num_errors)[num_errors]  # O(n) solution
         #     label_issues_mask = scores <= boundary
-
-    if confident_joint is None or filter_by == "confident_learning":
-        from cleanlab.count import compute_confident_joint
-
-        confident_joint, cl_error_indices = compute_confident_joint(
-            labels=labels,
-            pred_probs=pred_probs,
-            multi_label=multi_label,
-            return_indices_of_off_diagonals=True,
-        )
     if filter_by in ["prune_by_noise_rate", "prune_by_class", "both"]:
         # Create `prune_count_matrix` with the number of examples to remove in each class and
         # leave at least min_examples_per_class examples per class.
