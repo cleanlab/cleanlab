@@ -132,6 +132,8 @@ def find_label_issues(
     filter_by : {'prune_by_class', 'prune_by_noise_rate', 'both', 'confident_learning', 'predicted_neq_given'}, default='prune_by_noise_rate'
       Method to determine which examples are flagged as having label issue, so you can filter/prune them from the dataset. Options:
 
+      - ``'low_normalized_margin'``: filters the examples with *smallest* normalized margin label quality score. The number of issues returned matches :py:func:`count.num_label_issues <cleanlab.count.num_label_issues>`.
+      - ``'low_self_confidence'``: filters the examples with *smallest* self confidence label quality score. The number of issues returned matches :py:func:`count.num_label_issues <cleanlab.count.num_label_issues>`.
       - ``'prune_by_noise_rate'``: filters examples with *high probability* of being mislabeled for every non-diagonal in the confident joint (see `prune_counts_matrix` in `filter.py`). These are the examples where (with high confidence) the given label is unlikely to match the predicted label for the example.
       - ``'prune_by_class'``: filters the examples with *smallest probability* of belonging to their given class label for every class.
       - ``'both'``: filters only those examples that would be filtered by both ``'prune_by_noise_rate'`` and ``'prune_by_class'``.
@@ -211,6 +213,8 @@ def find_label_issues(
         rank_by_kwargs = {}
 
     assert filter_by in [
+        "low_normalized_margin",
+        "low_self_confidence",
         "prune_by_noise_rate",
         "prune_by_class",
         "both",
@@ -281,6 +285,29 @@ def find_label_issues(
     big_dataset = K * len(labels) > 1e8
     # Ensure labels are of type np.ndarray()
     labels = np.asarray(labels)
+    # TODO: It might seem like this new block should be after the next if block so you can re-use confident_joint inside num_label_issues(confident_joint=confident_joint), but that's not the same bc confident_joint is calibrated and by default the method uses an uncalibrated confident_joint. Delete this todo once confirmed this is correct.
+    if filter_by in ["low_normalized_margin", "low_self_confidence"]:
+        from cleanlab.rank import get_label_quality_scores
+        from cleanlab.count import num_label_issues
+
+        # TODO: consider setting adjust_pred_probs to true based on benchmarks (or adding it kwargs, or ignoring and leaving as false by default)
+        scores = get_label_quality_scores(
+            labels,
+            pred_probs,
+            method=filter_by[7:],
+            adjust_pred_probs=False,
+        )
+        num_errors = num_label_issues(
+            labels, pred_probs, multi_label=multi_label  # TODO: Check usage of multilabel
+        )
+        # Find label issues O(nlogn) solution (mapped to boolean mask later in the method)
+        cl_error_indices = np.argsort(scores)[:num_errors]
+        # TODO: delete the comment below (or keep anything you want in docs/comments)
+        # The following is the O(n) fastest solution (check for one-off errors), but the problem is if lots of the scores are identical you will overcount,
+        # you can end up returning more or less and they aren't ranked in the boolean form so there's no way to drop the highest scores randomlyu
+        #     boundary = np.partition(scores, num_errors)[num_errors]  # O(n) solution
+        #     label_issues_mask = scores <= boundary
+
     if confident_joint is None or filter_by == "confident_learning":
         from cleanlab.count import compute_confident_joint
 
@@ -391,7 +418,7 @@ def find_label_issues(
     if filter_by == "both":
         label_issues_mask = label_issues_mask & label_issues_mask_by_class
 
-    if filter_by == "confident_learning":
+    if filter_by in ["confident_learning", "low_normalized_margin", "low_self_confidence"]:
         label_issues_mask = np.zeros(len(labels), dtype=bool)
         for idx in cl_error_indices:
             label_issues_mask[idx] = True
