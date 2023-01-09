@@ -313,15 +313,17 @@ def find_label_issues(
         # Prepare multiprocessing shared data
         chunksize = max(1, K // n_jobs)
         os_name = platform.system()
-        if n_jobs == 1 or os_name == 'Linux':
+        if n_jobs == 1 or os_name == "Linux":
             global pred_probs_by_class
-            pred_probs_by_class = {k: pred_probs[labels==k] for k in range(K)}
+            pred_probs_by_class = {k: pred_probs[labels == k] for k in range(K)}
             global prune_count_matrix_cols
-            prune_count_matrix_cols = {k: prune_count_matrix[:,k] for k in range(K)}
+            prune_count_matrix_cols = {k: prune_count_matrix[:, k] for k in range(K)}
             args = [[k, min_examples_per_class, None] for k in range(K)]
         else:
-            args = [[k, min_examples_per_class,
-                     [pred_probs[labels==k], prune_count_matrix[:,k]]] for k in range(K)]
+            args = [
+                [k, min_examples_per_class, [pred_probs[labels == k], prune_count_matrix[:, k]]]
+                for k in range(K)
+            ]
 
     # Perform Pruning with threshold probabilities from BFPRT algorithm in O(n)
     # Operations are parallelized across all CPU processes
@@ -343,7 +345,7 @@ def find_label_issues(
         label_issues_mask = np.zeros(len(labels), dtype=bool)
         for k, mask in enumerate(label_issues_masks_per_class):
             if len(mask) > 1:
-                label_issues_mask[labels==k] = mask
+                label_issues_mask[labels == k] = mask
 
     if filter_by == "both":
         label_issues_mask_by_class = label_issues_mask
@@ -356,7 +358,7 @@ def find_label_issues(
                 sys.stdout.flush()
                 if big_dataset and tqdm_exists:
                     label_issues_masks_per_class = list(
-                        tqdm.tqdm(p.imap(_prune_by_count,args, chunksize=chunksize), total=K)
+                        tqdm.tqdm(p.imap(_prune_by_count, args, chunksize=chunksize), total=K)
                     )
                 else:
                     label_issues_masks_per_class = p.map(_prune_by_count, args, chunksize=chunksize)
@@ -366,7 +368,7 @@ def find_label_issues(
         label_issues_mask = np.zeros(len(labels), dtype=bool)
         for k, mask in enumerate(label_issues_masks_per_class):
             if len(mask) > 1:
-                label_issues_mask[labels==k] = mask
+                label_issues_mask[labels == k] = mask
 
     if filter_by == "both":
         label_issues_mask = label_issues_mask & label_issues_mask_by_class
@@ -897,7 +899,7 @@ def _prune_by_class(args: list) -> np.ndarray:
         # Get return_indices_ranked_by of the smallest prob of class k for examples with noisy label k
         class_probs = pred_probs[:, k]
         rank = np.partition(class_probs, num_issues)[num_issues]
-        return (class_probs < rank)
+        return class_probs < rank
     else:
         warnings.warn(
             f"May not flag all label issues in class: {k}, it has too few examples (see argument: `min_examples_per_class`)"
