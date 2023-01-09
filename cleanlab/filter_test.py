@@ -311,6 +311,7 @@ def find_label_issues_test(
             prune_count_matrix = round_preserving_row_totals(tmp)
 
         # Prepare multiprocessing shared data
+        chunksize = max(1, K // n_jobs)
         os_name = platform.system()
         if n_jobs == 1 or os_name == 'Linux':
             global pred_probs_by_class
@@ -321,7 +322,6 @@ def find_label_issues_test(
         else:
             args = [[k, min_examples_per_class,
                      [pred_probs[labels==k], prune_count_matrix[:,k]]] for k in range(K)]
-            chunksize = max(1, K // n_jobs)
 
     # Perform Pruning with threshold probabilities from BFPRT algorithm in O(n)
     # Operations are parallelized across all CPU processes
