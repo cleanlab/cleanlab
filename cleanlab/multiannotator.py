@@ -700,15 +700,12 @@ def get_active_learning_scores_ensemble(
     num_classes = get_num_classes(pred_probs=pred_probs[0])
 
     # temp scale pred_probs
-    optimal_temp = np.full(len(pred_probs), np.NaN)
-    for i in range(len(pred_probs)):
-        curr_pred_probs = pred_probs[i]
-        curr_optimal_temp = find_best_temp_scaler(labels_multiannotator, curr_pred_probs)
-        pred_probs[i] = temp_scale_pred_probs(curr_pred_probs, curr_optimal_temp)
-        optimal_temp[i] = curr_optimal_temp
 
     # if all examples are only labeled by a single annotator
     if labels_multiannotator.apply(lambda s: len(s.dropna()) == 1, axis=1).all():
+        # do not temp scale for single annotator case, temperature is defined here for later use
+        optimal_temp = np.full(len(pred_probs), 1.0)
+
         assert_valid_inputs_multiannotator(
             labels_multiannotator, pred_probs, ensemble=True, allow_single_label=True
         )
@@ -725,6 +722,13 @@ def get_active_learning_scores_ensemble(
         avg_annotator_weight = np.mean(annotator_weight)
 
     else:
+        optimal_temp = np.full(len(pred_probs), np.NaN)
+        for i in range(len(pred_probs)):
+            curr_pred_probs = pred_probs[i]
+            curr_optimal_temp = find_best_temp_scaler(labels_multiannotator, curr_pred_probs)
+            pred_probs[i] = temp_scale_pred_probs(curr_pred_probs, curr_optimal_temp)
+            optimal_temp[i] = curr_optimal_temp
+
         multiannotator_info = get_label_quality_multiannotator_ensemble(
             labels_multiannotator,
             pred_probs,
