@@ -194,7 +194,7 @@ def merge_probs(
     Returns
     ---------
     probs_merged:
-        A 2D np.array of shape ``(N, K')``, where `K` is the number of new classes. Probabilities are merged and
+        A 2D np.array of shape ``(N, K')``, where `K'` is the number of new classes. Probabilities are merged and
         re-normalized if necessary.
 
     Examples
