@@ -25,11 +25,12 @@ This module considers two types of datasets:
 
 import numpy as np
 from sklearn.metrics import confusion_matrix
+import numpy.typing as npt
 import multiprocessing
 from multiprocessing.sharedctypes import RawArray
 import sys
 import warnings
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union, TypeVar
 from functools import reduce
 
 from cleanlab.count import calibrate_confident_joint
@@ -49,6 +50,7 @@ from cleanlab.typing import LabelLike
 # tqdm is a module used to print time-to-complete when multiprocessing is used.
 # This module is not necessary, and therefore is not a package dependency, but
 # when installed it improves user experience for large datasets.
+
 try:
     import tqdm
 
@@ -60,9 +62,11 @@ except ImportError as e:  # pragma: no cover
     warnings.warn(w)
 
 
+T = TypeVar("T", bound=npt.NBitBase)
+
 def find_label_issues(
     labels: LabelLike,
-    pred_probs: np.ndarray,
+    pred_probs: npt.NDArray["np.floating[T]"],
     *,
     return_indices_ranked_by: Optional[str] = None,
     rank_by_kwargs: Optional[Dict[str, Any]] = None,
@@ -70,11 +74,11 @@ def find_label_issues(
     multi_label: bool = False,
     frac_noise: float = 1.0,
     num_to_remove_per_class: Optional[int] = None,
-    min_examples_per_class=1,
-    confident_joint: Optional[np.ndarray] = None,
+    min_examples_per_class: int=1,
+    confident_joint: Optional[npt.NDArray["np.floating[T]"]] = None,
     n_jobs: Optional[int] = None,
     verbose: bool = False,
-) -> np.ndarray:
+) -> npt.NDArray["np.floating[T]"]:
     """
     Identifies potentially bad labels in a classification dataset using confident learning.
 
