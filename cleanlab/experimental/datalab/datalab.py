@@ -213,7 +213,9 @@ class Datalab:
         )
         if issue_types is not None:
             for key, issue_type_value in issue_types_copy.items():
-                missing_args = set(required_defaults_dict[key]) - set(issue_type_value.keys())
+                missing_args = set(required_defaults_dict.get(key, {})) - set(
+                    issue_type_value.keys()
+                )
                 # Impute missing arguments with default values.
                 missing_dict = {
                     missing_arg: required_defaults_dict[key][missing_arg]
