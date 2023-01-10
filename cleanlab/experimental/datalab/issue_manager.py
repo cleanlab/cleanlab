@@ -84,7 +84,6 @@ class IssueManager(ABC):
         """
         raise NotImplementedError
 
-    @abstractmethod
     def collect_info(self, *args, **kwargs) -> dict:
         """Collects data for the info attribute of the Datalab.
 
