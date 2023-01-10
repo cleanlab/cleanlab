@@ -317,6 +317,7 @@ def find_label_issues(
         chunksize = max(1, K // n_jobs)
         os_name = platform.system()
         if n_jobs == 1 or os_name == "Linux":
+            global pred_probs_by_class, prune_count_matrix_cols
             pred_probs_by_class = {k: pred_probs[labels == k] for k in range(K)}
             prune_count_matrix_cols = {k: prune_count_matrix[:, k] for k in range(K)}
             args = [[k, min_examples_per_class, None] for k in range(K)]
