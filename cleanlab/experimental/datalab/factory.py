@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import List, Type
+from typing import Dict, List, Type
 
 from cleanlab.experimental.datalab.issue_manager import (
     IssueManager,
@@ -9,14 +9,14 @@ from cleanlab.experimental.datalab.issue_manager import (
 )
 
 
+REGISTRY: Dict[str, Type[IssueManager]] = {
+    "ood": OutOfDistributionIssueManager,
+    "label": LabelIssueManager,
+}
+
 # Construct concrete issue manager with a from_str method
 class _IssueManagerFactory:
     """Factory class for constructing concrete issue managers."""
-
-    types = {
-        "ood": OutOfDistributionIssueManager,
-        "label": LabelIssueManager,
-    }
 
     @classmethod
     def from_str(cls, issue_type: str) -> Type[IssueManager]:
@@ -25,11 +25,11 @@ class _IssueManagerFactory:
             raise ValueError(
                 "issue_type must be a string, not a list. Try using from_list instead."
             )
-        if issue_type not in cls.types:
+        if issue_type not in REGISTRY:
             raise ValueError(f"Invalid issue type: {issue_type}")
-        return cls.types[issue_type]
+        return REGISTRY[issue_type]
 
     @classmethod
     def from_list(cls, issue_types: List[str]) -> List[Type[IssueManager]]:
         """Constructs a list of concrete issue manager classes from a list of strings."""
-        return [cls.from_str(issue_type) for issue_type in issue_types]
+        return [REGISTRY[issue_type] for issue_type in issue_types]
