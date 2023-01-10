@@ -33,3 +33,18 @@ class _IssueManagerFactory:
     def from_list(cls, issue_types: List[str]) -> List[Type[IssueManager]]:
         """Constructs a list of concrete issue manager classes from a list of strings."""
         return [REGISTRY[issue_type] for issue_type in issue_types]
+
+
+def register(cls: Type[IssueManager]):
+    """Registers the issue manager factory."""
+    name: str = str(cls.issue_name)
+    if name in REGISTRY:
+        # Warn user that they are overwriting an existing issue manager
+        print(
+            f"Warning: Overwriting existing issue manager {name} with {cls}. "
+            "This may cause unexpected behavior."
+        )
+    if not issubclass(cls, IssueManager):
+        raise ValueError(f"Class {cls} must be a subclass of IssueManager")
+    REGISTRY[name] = cls
+    return cls
