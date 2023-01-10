@@ -26,7 +26,6 @@ This module considers two types of datasets:
 import numpy as np
 from sklearn.metrics import confusion_matrix
 import multiprocessing
-from multiprocessing.sharedctypes import RawArray
 import sys
 import warnings
 from typing import Any, Dict, List, Optional, Tuple, Union
@@ -59,6 +58,10 @@ except ImportError as e:  # pragma: no cover
 
     w = """To see estimated completion times for methods in cleanlab.filter, "pip install tqdm"."""
     warnings.warn(w)
+
+# global variable for find_label_issues multiprocessing
+pred_probs_by_class: Dict[int, np.ndarray]
+prune_count_matrix_cols: Dict[int, np.ndarray]
 
 
 def find_label_issues(
@@ -314,9 +317,7 @@ def find_label_issues(
         chunksize = max(1, K // n_jobs)
         os_name = platform.system()
         if n_jobs == 1 or os_name == "Linux":
-            global pred_probs_by_class
             pred_probs_by_class = {k: pred_probs[labels == k] for k in range(K)}
-            global prune_count_matrix_cols
             prune_count_matrix_cols = {k: prune_count_matrix[:, k] for k in range(K)}
             args = [[k, min_examples_per_class, None] for k in range(K)]
         else:
