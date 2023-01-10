@@ -47,6 +47,9 @@ class IssueManager(ABC):
         once the manager has set the `issues` and `summary` dataframes as instance attributes.
     """
 
+    issue_name: str
+    """Returns a key that is used to store issue summary results about the assigned Lab."""
+
     def __init__(self, datalab: Datalab):
         self.datalab = datalab
         self.info: Dict[str, Any] = {}
@@ -58,11 +61,14 @@ class IssueManager(ABC):
         class_name = self.__class__.__name__
         return class_name
 
-    @property
-    @abstractmethod
-    def issue_name(self) -> str:
-        """Returns a key that is used to store issue summary results about the assigned Lab."""
-        raise NotImplementedError
+    @classmethod
+    def __init_subclass__(cls):
+        required_class_variables = [
+            "issue_name",
+        ]
+        for var in required_class_variables:
+            if not hasattr(cls, var):
+                raise NotImplementedError(f"Class {cls.__name__} must define class variable {var}")
 
     @property
     def issue_score_key(self) -> str:
