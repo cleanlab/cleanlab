@@ -111,51 +111,6 @@ class IssueManager(ABC):
             },
         )
 
-    def report(self, k: int, verbosity: int = 0) -> str:
-        """Returns a report of the issues found by this IssueManager.
-
-        Parameters
-        ----------
-        k :
-            The number of examples to report.
-
-        verbosity :
-            The level of verbosity for the report. Higher values mean more information.
-
-        Returns
-        -------
-        report :
-            A string containing the report.
-        """
-        if verbosity not in self.verbosity_levels:
-            raise ValueError(
-                f"Verbosity level {verbosity} not supported. "
-                f"Supported levels: {self.verbosity_levels.keys()}"
-            )
-        if self.issues.empty:
-            print(f"No issues found")
-
-        topk_ids = self.issues.sort_values(by=self.issue_score_key, ascending=True).index[:k]
-
-        report = f"{self.issue_name:-^80}\n\n"
-        columns = {}
-        for level, verbosity_dict in self.verbosity_levels.items():
-            if level <= verbosity:
-                for key, values in verbosity_dict.items():
-                    if key == "issue":
-                        # Add the issue-specific info, with the top k ids
-                        new_columns = {
-                            col: np.array(self.info[col])[topk_ids]
-                            for col in values
-                            if self.info.get(col, None) is not None
-                        }
-                        columns.update(new_columns)
-                    elif key == "summary":
-                        for value in values:
-                            report += f"{value}:\n{self.info[value]}\n\n"
-        report += self.issues.loc[topk_ids].copy().assign(**columns).to_string()
-        return report
-
     @property
     def verbosity_levels(self) -> Dict[int, Dict[str, List[str]]]:
         """Returns a dictionary of verbosity levels and their corresponding dictionaries of

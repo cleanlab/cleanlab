@@ -378,7 +378,37 @@ class Datalab:
         issue_managers = [self.issue_managers[i] for i in issue_type_sorted_keys]
         report_str = ""
         for issue_manager in issue_managers:
-            report_str += issue_manager.report(k=k, verbosity=verbosity) + "\n\n"
+
+            if verbosity not in issue_manager.verbosity_levels:
+                raise ValueError(
+                    f"Verbosity level {verbosity} not supported. "
+                    f"Supported levels: {issue_manager.verbosity_levels.keys()}"
+                )
+            if issue_manager.issues.empty:
+                print(f"No issues found")
+
+            topk_ids = issue_manager.issues.sort_values(
+                by=issue_manager.issue_score_key, ascending=True
+            ).index[:k]
+
+            report = f"{issue_manager.issue_name:-^80}\n\n"
+            columns = {}
+            for level, verbosity_dict in issue_manager.verbosity_levels.items():
+                if level <= verbosity:
+                    for key, values in verbosity_dict.items():
+                        if key == "issue":
+                            # Add the issue-specific info, with the top k ids
+                            new_columns = {
+                                col: np.array(issue_manager.info[col])[topk_ids]
+                                for col in values
+                                if issue_manager.info.get(col, None) is not None
+                            }
+                            columns.update(new_columns)
+                        elif key == "summary":
+                            for value in values:
+                                report += f"{value}:\n{issue_manager.info[value]}\n\n"
+            report += issue_manager.issues.loc[topk_ids].copy().assign(**columns).to_string()
+            report_str += report + "\n\n"
         print(report_str)
 
     def __repr__(self) -> str:
