@@ -252,8 +252,14 @@ def find_label_issues(
         )
 
     # Set-up number of multiprocessing threads
+    # On Windows/macOS, when multi_label is True, multiprocessing is much slower
+    # even for faily large input arrays, so we default to n_jobs=1 in this case
+    os_name = platform.system()
     if n_jobs is None:
-        n_jobs = multiprocessing.cpu_count()
+        if multi_label and os_name != "Linux":
+            n_jobs = 1
+        else:
+            n_jobs = multiprocessing.cpu_count()
     else:
         assert n_jobs >= 1
 
@@ -314,8 +320,11 @@ def find_label_issues(
             prune_count_matrix = round_preserving_row_totals(tmp)
 
         # Prepare multiprocessing shared data
+        # On Linux, multiprocessing is started with fork,
+        # so data can be shared with global vairables + COW
+        # On Window/macOS, processes are started with spawn,
+        # so data will need to be pickled to the subprocesses through input args
         chunksize = max(1, K // n_jobs)
-        os_name = platform.system()
         if n_jobs == 1 or os_name == "Linux":
             global pred_probs_by_class, prune_count_matrix_cols
             pred_probs_by_class = {k: pred_probs[labels == k] for k in range(K)}
@@ -333,7 +342,7 @@ def find_label_issues(
         if n_jobs > 1:
             with multiprocessing.Pool(n_jobs) as p:
                 if verbose:  # pragma: no cover
-                    print("Parallel processing label issues by noise rate.")
+                    print("Parallel processing label issues by class.")
                 sys.stdout.flush()
                 if big_dataset and tqdm_exists:
                     label_issues_masks_per_class = list(
