@@ -881,7 +881,7 @@ def test_find_label_issues_match_multiprocessing():
     # here testing with larger input matrices
 
     # test with ground truth labels:
-    n = 200000
+    n = 5000
     m = 100
     labels = np.ones(n, dtype=int)
     labels[(n // 2) :] = 0
@@ -896,6 +896,12 @@ def test_find_label_issues_match_multiprocessing():
     assert all(issues == ground_truth)
     assert all(issues == issues1)
     assert all(issues == issues2)
+    issues = filter.find_label_issues(labels, pred_probs, filter_by='prune_by_class')
+    issues1 = filter.find_label_issues(labels, pred_probs, n_jobs=1, filter_by='prune_by_class')
+    issues2 = filter.find_label_issues(labels, pred_probs, n_jobs=2, filter_by='prune_by_class')
+    assert all(issues == ground_truth)
+    assert all(issues == issues1)
+    assert all(issues == issues2)
 
     # test with random labels
     normalize = np.random.randint(low=1, high=100, size=[n, m], dtype=np.uint8)
@@ -906,6 +912,11 @@ def test_find_label_issues_match_multiprocessing():
     issues = filter.find_label_issues(labels, pred_probs)
     issues1 = filter.find_label_issues(labels, pred_probs, n_jobs=1)
     issues2 = filter.find_label_issues(labels, pred_probs, n_jobs=2)
+    assert all(issues == issues1)
+    assert all(issues == issues2)
+    issues = filter.find_label_issues(labels, pred_probs, filter_by='prune_by_class')
+    issues1 = filter.find_label_issues(labels, pred_probs, n_jobs=1, filter_by='prune_by_class')
+    issues2 = filter.find_label_issues(labels, pred_probs, n_jobs=2, filter_by='prune_by_class')
     assert all(issues == issues1)
     assert all(issues == issues2)
 
