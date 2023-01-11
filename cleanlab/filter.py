@@ -78,7 +78,7 @@ def find_label_issues(
     confident_joint: Optional[npt.NDArray["np.floating[T]"]] = None,
     n_jobs: Optional[int] = None,
     verbose: bool = False,
-) -> npt.NDArray["np.floating[T]"]:
+) -> npt.NDArray[Union[np.bool_, np.int_]]:
     """
     Identifies potentially bad labels in a classification dataset using confident learning.
 
@@ -107,7 +107,7 @@ def find_label_issues(
       `labels` should be an iterable of iterables (e.g. ``List[List[int]]``) whose i-th element corresponds to list of classes that i-th example belongs to (e.g. ``labels = [[1,2],[1],[0],[],...]``).
 
     pred_probs : np.ndarray, optional
-      An array of shape ``(N, K)`` of model-predicted class probabilities,
+      A 2D array of shape ``(N, K)`` of model-predicted class probabilities,
       ``P(label=k|x)``. Each row of this matrix corresponds
       to an example `x` and contains the model-predicted probabilities that
       `x` belongs to each possible class, for each of the K classes. The
