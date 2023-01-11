@@ -875,6 +875,42 @@ def test_missing_classes():
         assert all(filter.find_label_issues(labels, pred_probs, filter_by=fb) == issues)
 
 
+@pytest.mark.filterwarnings("ignore:WARNING!")
+def test_find_label_issues_match_multiprocessing():
+    # minimal version of this test was run in test_missing_classes
+    # here testing with larger input matrices
+
+    # test with ground truth labels:
+    n = 200000
+    m = 100
+    labels = np.ones(n, dtype=int)
+    labels[(n // 2):] = 0
+    pred_probs = np.zeros((n, 4))
+    pred_probs[:, 0] = 0.95
+    pred_probs[:, 1] = 0.05
+    ground_truth = np.ones(n, dtype=bool)
+    ground_truth[(n // 2):] = False
+    issues = filter.find_label_issues(labels, pred_probs)
+    issues1 = filter.find_label_issues(labels, pred_probs, n_jobs=1)
+    issues2 = filter.find_label_issues(labels, pred_probs, n_jobs=2)
+    assert all(issues == ground_truth)
+    assert all(issues == issues1)
+    assert all(issues == issues2)
+
+    # test with random labels
+    normalize = np.random.randint(low=1, high=100, size=[n, m], dtype=np.uint8)
+    pred_probs = np.zeros((n,m))
+    for i, col in enumerate(normalize):
+        pred_probs[i] = col / np.sum(col)
+    labels = np.repeat(np.arange(m), n // m)
+    issues = filter.find_label_issues(labels, pred_probs)
+    issues1 = filter.find_label_issues(labels, pred_probs, n_jobs=1)
+    issues2 = filter.find_label_issues(labels, pred_probs, n_jobs=2)
+    assert all(issues == issues1)
+    assert all(issues == issues2)
+
+
+
 @pytest.mark.parametrize(
     "return_indices_ranked_by",
     [None, "self_confidence", "normalized_margin", "confidence_weighted_entropy"],
