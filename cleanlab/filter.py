@@ -904,18 +904,21 @@ def _prune_by_class(args: list) -> np.ndarray:
         prune_count_matrix = arrays[1]
 
     label_counts = pred_probs.shape[0]
-    label_issues_mask = np.zeros(label_counts, dtype=bool)
+    label_issues = np.zeros(label_counts, dtype=bool)
     if label_counts > min_examples_per_class:  # No prune if not at least min_examples_per_class
         num_issues = label_counts - prune_count_matrix[k]
         # Get return_indices_ranked_by of the smallest prob of class k for examples with noisy label k
-        class_probs = pred_probs[:, k]
-        rank = np.partition(class_probs, num_issues)[num_issues]
-        return class_probs < rank
-    else:
-        warnings.warn(
-            f"May not flag all label issues in class: {k}, it has too few examples (see argument: `min_examples_per_class`)"
-        )
-        return np.zeros(label_counts, dtype=bool)
+        # rank = np.partition(class_probs, num_issues)[num_issues]
+        if num_issues >= 1:
+            class_probs = pred_probs[:, k]
+            order = np.argsort(class_probs)
+            label_issues[order[:num_issues]] = True
+        return label_issues
+
+    warnings.warn(
+        f"May not flag all label issues in class: {k}, it has too few examples (see argument: `min_examples_per_class`)"
+    )
+    return label_issues
 
 
 # TODO figure out what the types inside args are.
@@ -945,7 +948,7 @@ def _prune_by_count(args: list) -> np.ndarray:
         warnings.warn(
             f"May not flag all label issues in class: {k}, it has too few examples (see `min_examples_per_class` argument)"
         )
-        return np.zeros(label_counts, dtype=bool)
+        return label_issues_mask
 
     K = pred_probs.shape[1]
     if K < 1:
@@ -957,8 +960,8 @@ def _prune_by_count(args: list) -> np.ndarray:
             # num2prune's largest p(true class k) - p(noisy class k)
             # for x with true label j
             margin = pred_probs[:, j] - pred_probs[:, k]
-            cut = -np.partition(-margin, num2prune - 1)[num2prune - 1]
-            label_issues_mask = label_issues_mask | (margin >= cut)
+            order = np.argsort(-margin)
+            label_issues_mask[order[:num2prune]] = True
     return label_issues_mask
 
 
