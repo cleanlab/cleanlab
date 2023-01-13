@@ -20,10 +20,9 @@ Ancillary helper methods used internally throughout this package; mostly related
 
 import warnings
 import numpy as np
-from numpy.typing import NDArray
 import pandas as pd
 from typing import Any, Union, Tuple, List, Iterable
-from numpy.typing import ArrayLike
+from numpy.typing import ArrayLike, NDArray
 
 from cl_typing import DatasetLike, LabelLike
 from cleanlab.internal.validation import labels_to_array
