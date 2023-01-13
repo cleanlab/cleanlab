@@ -23,6 +23,7 @@ import numpy as np
 from numpy.typing import NDArray
 import pandas as pd
 from typing import Any, Union, Tuple, List, Iterable
+from numpy.typing import ArrayLike
 
 from cl_typing import DatasetLike, LabelLike
 from cleanlab.internal.validation import labels_to_array
@@ -30,7 +31,10 @@ from cleanlab.internal.validation import labels_to_array
 from cl_typing import DatasetLike, LabelLike
 TINY_VALUE = 1e-100
 
-def remove_noise_from_class(noise_matrix, class_without_noise) -> np.ndarray[Any]:
+def remove_noise_from_class(
+    noise_matrix: NDArray, 
+    class_without_noise: int
+    ) -> np.ndarray[Any]:
     """A helper function in the setting of PU learning.
     Sets all P(label=class_without_noise|true_label=any_other_class) = 0
     in noise_matrix for pulearning setting, where we have
@@ -65,7 +69,7 @@ def remove_noise_from_class(noise_matrix, class_without_noise) -> np.ndarray[Any
     return x
 
 
-def clip_noise_rates(noise_matrix) -> np.ndarray:
+def clip_noise_rates(noise_matrix: NDArray) -> np.ndarray:
     """Clip all noise rates to proper range [0,1), but
     do not modify the diagonal terms because they are not
     noise rates.
@@ -80,7 +84,7 @@ def clip_noise_rates(noise_matrix) -> np.ndarray:
         Diagonal terms are not noise rates, but are consistency P(label=k|true_label=k)
         Assumes columns of noise_matrix sum to 1"""
 
-    def clip_noise_rate_range(noise_rate) -> float:
+    def clip_noise_rate_range(noise_rate: float) -> float:
         """Clip noise rate P(label=k'|true_label=k) or P(true_label=k|label=k')
         into proper range [0,1)"""
         return min(max(noise_rate, 0.0), 0.9999)
@@ -125,7 +129,7 @@ def clip_values(x: np.ndarray[float], low=0.0, high=1.0, new_sum=None) -> np.nda
     x : np.ndarray
         A list of clipped values, summing to the same sum as x."""
 
-    def clip_range(a, low=low, high=high):
+    def clip_range(a: Union[float, int], low=low, high=high):
         """Clip a into range [low,high]"""
         return min(max(a, low), high)
 
@@ -140,7 +144,12 @@ def clip_values(x: np.ndarray[float], low=0.0, high=1.0, new_sum=None) -> np.nda
     return x
 
 
-def value_counts(x, *, num_classes=None, multi_label=False) -> np.ndarray:
+def value_counts(
+    x: ArrayLike[LabelLike], 
+    *, 
+    num_classes: int = None, 
+    multi_label: bool = False
+    ) -> np.ndarray:
     """Returns an np.ndarray of shape (K, 1), with the
     value counts for every unique item in the labels list/array,
     where K is the number of unique entries in labels.
@@ -197,7 +206,13 @@ def value_counts_fill_missing_classes(x, num_classes, *, multi_label=False) -> n
     return value_counts(x, num_classes=num_classes, multi_label=multi_label)
 
 
-def get_missing_classes(labels, *, pred_probs=None, num_classes=None, multi_label=False):
+def get_missing_classes(
+    labels: LabelLike, 
+    *, 
+    pred_probs=None, 
+    num_classes: int =None, 
+    multi_label: List[LabelLike] = False # very unsure if typing is correct here
+    ) -> List[Any]:
     """Find which classes are present in ``pred_probs`` but not present in ``labels``.
 
     See ``count.compute_confident_joint`` for parameter docstrings."""
@@ -322,7 +337,7 @@ def estimate_pu_f1(s: Iterable[Any], prob_s_eq_1: Iterable[Any]) -> float:
     all_positives = sum(s)
     recall = true_positives / float(all_positives)
     frac_positive = sum(pred) / float(len(s))
-    return recall**2 / (2.0 * frac_positive) if frac_positive != 0 else np.nan
+    return float(recall**2 / (2.0 * frac_positive)) if frac_positive != 0 else np.nan
 
 
 def confusion_matrix(true: np.ndarray[LabelLike], pred: np.ndarray[LabelLike]) -> np.ndarray[Any]:
@@ -428,7 +443,7 @@ def print_inverse_noise_matrix(inverse_noise_matrix: NDArray, round_places=2):
     )
 
 
-def print_joint_matrix(joint_matrix, round_places=2):
+def print_joint_matrix(joint_matrix: NDArray, round_places=2):
     """Pretty prints the joint label noise matrix."""
     print_square_matrix(
         joint_matrix,
@@ -544,7 +559,7 @@ def subset_data(
         raise TypeError("Data features X must be subsettable with boolean mask array: X[mask]")
 
 
-def extract_indices_tf(X, idx, allow_shuffle) -> DatasetLike:
+def extract_indices_tf(X: DatasetLike, idx: ArrayLike, allow_shuffle: bool) -> DatasetLike:
     """Extracts subset of tensorflow dataset corresponding to examples at particular indices.
 
     Args:
@@ -602,7 +617,7 @@ def extract_indices_tf(X, idx, allow_shuffle) -> DatasetLike:
     return X_subset
 
 
-def unshuffle_tensorflow_dataset(X) -> tuple:
+def unshuffle_tensorflow_dataset(X: DatasetLike) -> Tuple[DatasetLike, int]:
     """Applies iterative inverse transformations to dataset to get version before ShuffleDataset was created.
     If no ShuffleDataset is in the transformation-history of this dataset, returns None.
 
