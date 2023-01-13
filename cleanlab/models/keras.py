@@ -82,6 +82,7 @@ class KerasWrapperModel:
         self.net = None
 
     def get_params(self, deep=True):
+        """Returns the parameters of the Keras classifier."""
         return {
             "model": self.model,
             "model_kwargs": self.model_kwargs,
@@ -112,7 +113,9 @@ class KerasWrapperModel:
         self.net.fit(X, **kwargs)
 
     def predict_proba(self, X, *, apply_softmax=True, **kwargs):
-        """Set extra argument `apply_softmax` to True to indicate your network only outputs logits not probabilities."""
+        """Predict class probabilities ``P(true label=k)`` using the wrapped Keras classifier.
+        Set extra argument `apply_softmax` to True to indicate your network only outputs logits not probabilities.
+        """
         if self.net is None:
             raise ValueError("must call fit() before predict()")
         pred_probs = self.net.predict(X, **kwargs)
@@ -121,10 +124,12 @@ class KerasWrapperModel:
         return pred_probs
 
     def predict(self, X, **kwargs):
+        """Predict class labels using the wrapped Keras classifier."""
         pred_probs = self.predict_proba(X, **kwargs)
         return np.argmax(pred_probs, axis=1)
 
     def summary(self, **kwargs):
+        """Returns the summary of the Keras classifier."""
         self.net.summary(**kwargs)
 
 
@@ -161,6 +166,7 @@ class KerasWrapperSequential:
         self.net = None
 
     def get_params(self, deep=True):
+        """Returns the parameters of the Keras classifier."""
         return {
             "layers": self.layers,
             "name": self.name,
@@ -190,7 +196,9 @@ class KerasWrapperSequential:
         self.net.fit(X, **kwargs)
 
     def predict_proba(self, X, *, apply_softmax=True, **kwargs):
-        """Set extra argument `apply_softmax` to True to indicate your network only outputs logits not probabilities."""
+        """Predict class probabilities ``P(true label=k)`` using the wrapped Keras classifier.
+        Set extra argument `apply_softmax` to True to indicate your network only outputs logits not probabilities.
+        """
         if self.net is None:
             raise ValueError("must call fit() before predict()")
         pred_probs = self.net.predict(X, **kwargs)
@@ -199,8 +207,10 @@ class KerasWrapperSequential:
         return pred_probs
 
     def predict(self, X, **kwargs):
+        """Predict class labels using the wrapped Keras classifier."""
         pred_probs = self.predict_proba(X, **kwargs)
         return np.argmax(pred_probs, axis=1)
 
     def summary(self, **kwargs):
+        """Returns the summary of the Keras classifier."""
         self.net.summary(**kwargs)

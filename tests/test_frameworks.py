@@ -40,7 +40,7 @@ import torch
 import skorch
 
 from cleanlab.classification import CleanLearning
-from cleanlab.experimental.keras import KerasWrapperSequential, KerasWrapperModel
+from cleanlab.models.keras import KerasWrapperSequential, KerasWrapperModel
 
 
 def python_version_ok():  # tensorflow and torch do not play nice with older Python
