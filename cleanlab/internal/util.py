@@ -26,8 +26,6 @@ from numpy.typing import ArrayLike, NDArray
 
 from cl_typing import DatasetLike, LabelLike
 from cleanlab.internal.validation import labels_to_array
-
-from cl_typing import DatasetLike, LabelLike
 TINY_VALUE = 1e-100
 
 def remove_noise_from_class(
