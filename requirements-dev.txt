@@ -12,3 +12,5 @@ torch
 torchvision
 skorch
 tensorflow
+fasttext
+wget

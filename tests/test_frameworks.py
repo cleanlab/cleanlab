@@ -15,8 +15,8 @@
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
 """
-Scripts to test cleanlab usage with deep learning frameworks:
-pytorch, skorch, tensorflow, keras
+Scripts to test cleanlab usage with various ML frameworks:
+pytorch, skorch, tensorflow, keras, fasttext
 """
 
 import pytest
@@ -27,6 +27,7 @@ warnings.filterwarnings(action="ignore", category=DeprecationWarning)
 
 import sys
 import os
+import wget
 from copy import deepcopy
 import random
 import numpy as np
@@ -41,6 +42,8 @@ import skorch
 
 from cleanlab.classification import CleanLearning
 from cleanlab.models.keras import KerasWrapperSequential, KerasWrapperModel
+from cleanlab.models.fasttext import FastTextClassifier, data_loader
+from cleanlab.internal.util import format_labels
 
 
 def python_version_ok():  # tensorflow and torch do not play nice with older Python
@@ -286,3 +289,44 @@ def test_torch_rarelabel(data=DATA_RARE_LABEL, hidden_units=8):
     cl = CleanLearning(net)
     cl.fit(dataset, data["y"], clf_kwargs={"epochs": 2})
     pred_probs = cl.predict(dataset)
+
+
+# test fasttext
+def test_fasttext():
+    dir = "tests/fasttext_data"
+    if not os.path.isdir(dir):
+        os.makedirs(dir)
+
+    if not os.path.isfile("tests/fasttext_data/tweets_train.txt"):
+        wget.download(
+            "http://s.cleanlab.ai/tweets_fasttext/tweets_train.txt", "tests/fasttext_data"
+        )
+    if not os.path.isfile("tests/fasttext_data/tweets_test.txt"):
+        wget.download("http://s.cleanlab.ai/tweets_fasttext/tweets_test.txt", "tests/fasttext_data")
+
+    labels = np.ravel([x[0] for x in data_loader("tests/fasttext_data/tweets_train.txt")])
+    labels = [lab[9:] for lab in labels]
+    labels, label_map = format_labels(labels)
+    X = np.array(range(len(labels)))
+
+    # test basic fasttext methods
+    ftc = FastTextClassifier(
+        train_data_fn="tests/fasttext_data/tweets_train.txt",
+        test_data_fn="tests/fasttext_data/tweets_test.txt",
+    )
+    ftc.fit()
+    pred_labels = ftc.predict()
+    pred_probs = ftc.predict_proba()
+
+    # test CleanLearning
+    ftc = FastTextClassifier(
+        train_data_fn="tests/fasttext_data/tweets_train.txt",
+        test_data_fn="tests/fasttext_data/tweets_test.txt",
+    )
+    cl = CleanLearning(ftc)
+
+    known_error_idx = [1, 10, 15]
+    issues = cl.find_label_issues(X=X, labels=labels)
+    assert all(issues.iloc[known_error_idx]["is_label_issue"] == True)
+
+    cl.fit(X=X, labels=labels, label_issues=issues)
