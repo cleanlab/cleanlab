@@ -41,6 +41,8 @@ jobs:
           pip install tensorflow-cpu
       - name: Test with coverage
         run: pytest --verbose --cov=cleanlab/ --cov-config .coveragerc --cov-report=xml
+        env:
+          TEST_FASTTEXT: true
       - uses: codecov/codecov-action@v3
   typecheck:
     name: Type check
