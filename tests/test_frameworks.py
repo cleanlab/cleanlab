@@ -42,7 +42,6 @@ import skorch
 
 from cleanlab.classification import CleanLearning
 from cleanlab.models.keras import KerasWrapperSequential, KerasWrapperModel
-from cleanlab.models.fasttext import FastTextClassifier, data_loader
 from cleanlab.internal.util import format_labels
 
 
@@ -298,6 +297,8 @@ def test_torch_rarelabel(data=DATA_RARE_LABEL, hidden_units=8):
 # test fasttext
 @pytest.mark.skipif("using_windows()", reason="fasttext is not easily pip install-able on windows")
 def test_fasttext():
+    from cleanlab.models.fasttext import FastTextClassifier, data_loader
+
     dir = "tests/fasttext_data"
     if not os.path.isdir(dir):
         os.makedirs(dir)
