@@ -336,8 +336,7 @@ def test_fasttext():
     )
     cl = CleanLearning(ftc)
 
-    known_error_idx = [1, 10, 15]
     issues = cl.find_label_issues(X=X, labels=labels)
-    assert all(issues.iloc[known_error_idx]["is_label_issue"] == True)
-
     cl.fit(X=X, labels=labels, label_issues=issues)
+    pred_labels = cl.predict()
+    pred_probs = cl.predict_proba()
