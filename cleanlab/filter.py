@@ -31,6 +31,7 @@ import warnings
 from typing import Any, Dict, List, Optional, Tuple, Union
 from functools import reduce
 import platform
+import psutil
 
 from cleanlab.count import calibrate_confident_joint
 from cleanlab.rank import (
@@ -259,7 +260,10 @@ def find_label_issues(
         if multi_label and os_name != "Linux":
             n_jobs = 1
         else:
-            n_jobs = multiprocessing.cpu_count()
+            n_jobs = psutil.cpu_count(logical=False)  # physical cores
+            if not n_jobs:
+                # physical cores cannot be determined, switch to logical cores
+                n_jobs = multiprocessing.cpu_count()
     else:
         assert n_jobs >= 1
 
