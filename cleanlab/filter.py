@@ -31,7 +31,6 @@ import warnings
 from typing import Any, Dict, List, Optional, Tuple, Union
 from functools import reduce
 import platform
-import psutil
 
 from cleanlab.count import calibrate_confident_joint
 from cleanlab.rank import (
@@ -58,6 +57,17 @@ except ImportError as e:  # pragma: no cover
     tqdm_exists = False
 
     w = """To see estimated completion times for methods in cleanlab.filter, "pip install tqdm"."""
+    warnings.warn(w)
+
+# psutil used to count physical cores for multiprocessing
+# Module not neccessary, because can always fall back to logical cores
+try:
+    import psutil
+
+    psutil_exists = True
+except ImportError as e:
+    psutil_exists = False
+    w = """To use physical core counts for multiprocessing in cleanlab.filter, "pip install psutil"."""
     warnings.warn(w)
 
 # global variable for find_label_issues multiprocessing
@@ -260,9 +270,11 @@ def find_label_issues(
         if multi_label and os_name != "Linux":
             n_jobs = 1
         else:
-            n_jobs = psutil.cpu_count(logical=False)  # physical cores
+            if psutil_exists:
+                n_jobs = psutil.cpu_count(logical=False)  # physical cores
             if not n_jobs:
-                # physical cores cannot be determined, switch to logical cores
+                # either psutil does not exist
+                # or physical cores cannot be determined, switch to logical cores
                 n_jobs = multiprocessing.cpu_count()
     else:
         assert n_jobs >= 1
