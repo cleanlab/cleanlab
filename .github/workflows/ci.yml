@@ -30,6 +30,10 @@ jobs:
         run: python3 -c "import cleanlab"
       - name: Install development dependencies
         run: pip install -r requirements-dev.txt
+      - name: Install fasttext for non-Windows machines
+        if: matrix.os != 'windows-latest'
+        run: |
+          pip install fasttext
       - name: Overwrite tensorflow version on Windows
         if: matrix.os == 'windows-latest'
         run: |
