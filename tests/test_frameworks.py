@@ -299,7 +299,7 @@ def test_torch_rarelabel(data=DATA_RARE_LABEL, hidden_units=8):
 
 # test fasttext
 @pytest.mark.skipif(
-    "run_fasttext_test()", reason="fasttext is not easily pip install-able on windows"
+    "not run_fasttext_test()", reason="fasttext is not easily pip install-able on windows"
 )
 def test_fasttext():
     from cleanlab.models.fasttext import FastTextClassifier, data_loader
