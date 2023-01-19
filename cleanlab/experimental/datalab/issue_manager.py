@@ -40,7 +40,7 @@ class IssueManager(ABC):
       which set of examples in the dataset are all (nearly) identical.
 
     Implementing a new IssueManager:
-    - Define the `issue_name` class attribute, e.g. "label", "duplicate", "ood", etc.
+    - Define the `issue_name` class attribute, e.g. "label", "duplicate", "outlier", etc.
     - Implement the abstract methods `find_issues` and `collect_info`.
       - `find_issues` is responsible for computing computing the `issues` and `summary` dataframes.
       - `collect_info` is responsible for computing the `info` dict. It is called by `find_issues`,
@@ -311,7 +311,7 @@ class LabelIssueManager(IssueManager):
 class OutOfDistributionIssueManager(IssueManager):
     """Manages issues related to out-of-distribution examples."""
 
-    issue_name: str = "ood"
+    issue_name: str = "outlier"
 
     def __init__(
         self,

@@ -10,7 +10,7 @@ from cleanlab.experimental.datalab.issue_manager import (
 
 
 REGISTRY: Dict[str, Type[IssueManager]] = {
-    "ood": OutOfDistributionIssueManager,
+    "outlier": OutOfDistributionIssueManager,
     "label": LabelIssueManager,
 }
 
