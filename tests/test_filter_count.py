@@ -894,6 +894,7 @@ def test_find_label_issues_match_multiprocessing():
     ground_truth = np.ones(n, dtype=bool)
     ground_truth[(n // 2) :] = False
     ground_truth[0] = False  # leave one example for min_example_per_class
+    # TODO: consider also testing this line without psutil installed
     issues = filter.find_label_issues(labels, pred_probs)
     issues1 = filter.find_label_issues(labels, pred_probs, n_jobs=1)
     issues2 = filter.find_label_issues(labels, pred_probs, n_jobs=2)
