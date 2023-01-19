@@ -160,4 +160,4 @@ Please see our `contributing guidelines <https://github.com/cleanlab/cleanlab/bl
    GitHub <https://github.com/cleanlab/cleanlab>
    PyPI <https://pypi.org/project/cleanlab/>
    Conda <https://anaconda.org/Cleanlab/cleanlab>
-   Cleanlab Studio <https://cleanlab.ai/studio/>
+   Cleanlab Studio <https://cleanlab.ai/studio/?utm_source=github&utm_medium=docs&utm_campaign=clostostudio>
