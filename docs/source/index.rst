@@ -142,6 +142,7 @@ Please see our `contributing guidelines <https://github.com/cleanlab/cleanlab/bl
    cleanlab/multilabel_classification
    cleanlab/token_classification/index
    cleanlab/benchmarking/index
+   cleanlab/models/index
    cleanlab/experimental/index
    cleanlab/internal/index
 
