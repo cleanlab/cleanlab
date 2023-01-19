@@ -21,13 +21,13 @@ This module allows you to easily find label issues in your text datasets.
 You must first ``pip install fasttext``
 """
 
-import time
-import os
 import copy
-import numpy as np
-from sklearn.base import BaseEstimator
-from fasttext import train_supervised, load_model
+import os
+import time
 
+import numpy as np
+from fasttext import load_model, train_supervised
+from sklearn.base import BaseEstimator
 
 LABEL = "__label__"
 NEWLINE = " __newline__ "
@@ -182,7 +182,7 @@ class FastTextClassifier(BaseEstimator):  # Inherits sklearn base classifier
         if self.clf is None:
             self_clf_copy = None
         else:
-            fn = "tmp_{}.fasttext.model".format(int(time.time()))
+            fn = f"tmp_{int(time.time())}.fasttext.model"
             self.clf.save_model(fn)
             self_clf_copy = load_model(fn)
             os.remove(fn)

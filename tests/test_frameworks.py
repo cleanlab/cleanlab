@@ -19,28 +19,30 @@ Scripts to test cleanlab usage with deep learning frameworks:
 pytorch, skorch, tensorflow, keras
 """
 
-import pytest
 import warnings
+
+import pytest
 
 # pytest.mark.filterwarnings is unable to catch filterbuffers library DeprecationWarning
 warnings.filterwarnings(action="ignore", category=DeprecationWarning)
 
-import sys
 import os
-from copy import deepcopy
 import random
+import sys
+from copy import deepcopy
+
 import numpy as np
 
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"  # suppress TF warnings on some systems
 if os.name == "nt":  # check if we are on Windows
     os.environ["CUDA_VISIBLE_DEVICES"] = "-1"  # ensure tensorflows runs on CPU
 
+import skorch
 import tensorflow as tf
 import torch
-import skorch
 
 from cleanlab.classification import CleanLearning
-from cleanlab.experimental.keras import KerasWrapperSequential, KerasWrapperModel
+from cleanlab.experimental.keras import KerasWrapperModel, KerasWrapperSequential
 
 
 def python_version_ok():  # tensorflow and torch do not play nice with older Python

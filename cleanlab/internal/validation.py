@@ -18,11 +18,13 @@
 Checks to ensure valid inputs for various methods.
 """
 
-from cleanlab.typing import LabelLike, DatasetLike
-from typing import Any, List, Optional, Union
 import warnings
+from typing import Any, List, Optional, Union
+
 import numpy as np
 import pandas as pd
+
+from cleanlab.typing import DatasetLike, LabelLike
 
 
 def assert_valid_inputs(
@@ -58,13 +60,13 @@ def assert_valid_inputs(
         try:
             num_examples = len(X)
             len_supported = True
-        except:
+        except Exception:
             len_supported = False
         if not len_supported:
             try:
                 num_examples = X.shape[0]
                 shape_supported = True
-            except:
+            except Exception:
                 shape_supported = False
         if (not len_supported) and (not shape_supported):
             raise TypeError("Data features X must support either: len(X) or X.shape[0]")
@@ -127,7 +129,7 @@ def assert_valid_class_labels(
     if not allow_missing_classes:
         if (unique_classes != np.arange(len(unique_classes))).any():
             msg = "cleanlab requires zero-indexed integer labels (0,1,2,..,K-1), but in "
-            msg += "your case: np.unique(labels) = {}. ".format(str(unique_classes))
+            msg += f"your case: np.unique(labels) = {str(unique_classes)}. "
             msg += "Every class in (0,1,2,..,K-1) must be present in labels as well."
             raise TypeError(msg)
 
@@ -213,7 +215,7 @@ def labels_to_array(y: Union[LabelLike, np.generic]) -> np.ndarray:
     else:  # y is list, np.ndarray, or some other tuple-like object
         try:
             return np.asarray(y)
-        except:
+        except Exception:
             raise ValueError(
                 "List of labels must be convertable to 1D numpy array via: np.ndarray(labels)."
             )

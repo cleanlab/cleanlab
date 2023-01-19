@@ -25,6 +25,7 @@ generating noisy labels given a noise matrix, generating valid noise matrices wi
 from typing import Optional
 
 import numpy as np
+
 from cleanlab.internal.util import value_counts
 
 
@@ -65,7 +66,7 @@ def noise_matrix_is_valid(noise_matrix, py, *, verbose=False) -> bool:
     joint_noise = np.multiply(noise_matrix, py)  # / float(N)
 
     # Check that joint_probs is valid probability matrix
-    if not (abs(joint_noise.sum() - 1.0) < 1e-6):
+    if not abs(joint_noise.sum() - 1.0) < 1e-6:
         return False
 
     # Check that noise_matrix is a valid matrix
@@ -100,7 +101,7 @@ def noise_matrix_is_valid(noise_matrix, py, *, verbose=False) -> bool:
                 ps[i] * py[i] < joint_noise[i][i],
             )
 
-        if not (ps[i] * py[i] < joint_noise[i][i]):
+        if not ps[i] * py[i] < joint_noise[i][i]:
             return False
 
     return True
@@ -259,7 +260,7 @@ def generate_noise_matrix_from_trace(
 
     if valid_noise_matrix and trace <= 1:
         raise ValueError(
-            "trace = {}. trace > 1 is necessary for a".format(trace)
+            f"trace = {trace}. trace > 1 is necessary for a"
             + " valid noise matrix to be returned (valid_noise_matrix == True)"
         )
 
@@ -269,7 +270,7 @@ def generate_noise_matrix_from_trace(
         )
 
     if K <= 1:
-        raise ValueError("K must be >= 2, but K = {}.".format(K))
+        raise ValueError(f"K must be >= 2, but K = {K}.")
 
     if max_iter < 1:
         return None

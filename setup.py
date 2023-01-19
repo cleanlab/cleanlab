@@ -1,9 +1,9 @@
-from setuptools import setup, find_packages
-from setuptools.command.egg_info import egg_info
-
 # To use a consistent encoding
 from codecs import open
 from os import path
+
+from setuptools import find_packages, setup
+from setuptools.command.egg_info import egg_info
 
 
 class egg_info_ex(egg_info):

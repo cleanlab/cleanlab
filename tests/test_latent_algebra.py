@@ -14,10 +14,10 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
-from cleanlab.internal import latent_algebra
 import numpy as np
 import pytest
 
+from cleanlab.internal import latent_algebra
 
 s = [0] * 10 + [1] * 5 + [2] * 15
 nm = np.array([[1.0, 0.0, 0.2], [0.0, 0.7, 0.2], [0.0, 0.3, 0.6]])

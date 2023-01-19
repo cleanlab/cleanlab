@@ -20,15 +20,15 @@ Here each example can belong to one or more classes, or none of the classes at a
 Unlike in standard multi-class classification, predicted class probabilities from model need not sum to 1 for each row in multi-label classification.
 """
 
+from typing import Any, Dict, List, TypeVar
+
 import numpy as np  # noqa: F401: Imported for type annotations
 import numpy.typing as npt
-from typing import List, TypeVar, Dict, Any
 
-from cleanlab.internal.validation import assert_valid_inputs
-from cleanlab.internal.util import get_num_classes
-from cleanlab.internal.multilabel_scorer import MultilabelScorer, ClassLabelScorer, Aggregator
+from cleanlab.internal.multilabel_scorer import Aggregator, ClassLabelScorer, MultilabelScorer
 from cleanlab.internal.multilabel_utils import int2onehot
-
+from cleanlab.internal.util import get_num_classes
+from cleanlab.internal.validation import assert_valid_inputs
 
 T = TypeVar("T", bound=npt.NBitBase)
 

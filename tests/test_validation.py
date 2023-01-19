@@ -1,9 +1,10 @@
 # coding: utf-8
 
-from cleanlab.internal import validation
 import numpy as np
 import pandas as pd
 import pytest
+
+from cleanlab.internal import validation
 
 
 @pytest.mark.parametrize("y_list", [["a", "b", "a"], [0, 1, 2]])

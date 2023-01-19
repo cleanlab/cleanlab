@@ -18,13 +18,15 @@
 Helper methods used internally in cleanlab.multiannotator
 """
 
-from cleanlab.typing import LabelLike
-from typing import Optional, Tuple
 import warnings
+from typing import Optional, Tuple
+
 import numpy as np
 import pandas as pd
-from cleanlab.internal.validation import assert_valid_class_labels
+
 from cleanlab.internal.util import get_num_classes, value_counts
+from cleanlab.internal.validation import assert_valid_class_labels
+from cleanlab.typing import LabelLike
 
 SMALL_CONST = 1e-30
 
@@ -200,7 +202,7 @@ def format_multiannotator_labels(labels: LabelLike) -> Tuple[pd.DataFrame, dict]
     try:
         unique_labels = unique_labels[~np.isnan(unique_labels)]
         unique_labels.sort()
-    except (TypeError):  # np.unique / np.sort cannot handle string values or pd.NA types
+    except TypeError:  # np.unique / np.sort cannot handle string values or pd.NA types
         nan_mask = np.array([(l is np.NaN) or (l is pd.NA) or (l == "nan") for l in unique_labels])
         unique_labels = unique_labels[~nan_mask]
         unique_labels.sort()

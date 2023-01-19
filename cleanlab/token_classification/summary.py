@@ -34,7 +34,7 @@ def display_issues(
     pred_probs: Optional[list] = None,
     exclude: List[Tuple[int, int]] = [],
     class_names: Optional[List[str]] = None,
-    top: int = 20
+    top: int = 20,
 ) -> None:
     """
     Display token classification label issues, showing sentence with problematic token(s) highlighted.
@@ -131,9 +131,9 @@ def display_issues(
             shown += 1
             print("Sentence %d, token %d:" % (i, j))
             if labels and not pred_probs:
-                print("Given label: %s" % str(given))
+                print(f"Given label: {str(given)}")
             elif not labels and pred_probs:
-                print("Predicted label according to provided pred_probs: %s" % str(prediction))
+                print(f"Predicted label according to provided pred_probs: {str(prediction)}")
             elif labels and pred_probs:
                 print(
                     "Given label: %s, predicted label according to provided pred_probs: %s"
@@ -159,7 +159,7 @@ def common_label_issues(
     class_names: Optional[List[str]] = None,
     top: int = 10,
     exclude: List[Tuple[int, int]] = [],
-    verbose: bool = True
+    verbose: bool = True,
 ) -> pd.DataFrame:
     """
     Display the tokens (words) that most commonly have label issues.

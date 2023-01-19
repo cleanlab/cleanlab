@@ -14,22 +14,25 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
-from cleanlab import count, filter
-from cleanlab.count import (
-    get_confident_thresholds,
-    estimate_py_and_noise_matrices_from_probabilities,
-)
-from cleanlab.internal.latent_algebra import compute_inv_noise_matrix
-from cleanlab.benchmarking.noise_generation import generate_noise_matrix_from_trace
-from cleanlab.benchmarking.noise_generation import generate_noisy_labels
-from cleanlab.internal.util import value_counts
-from cleanlab.internal.multilabel_utils import int2onehot
 import numpy as np
-import scipy
 import pytest
-from sklearn.multioutput import MultiOutputClassifier
+import scipy
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import cross_val_predict
+from sklearn.multioutput import MultiOutputClassifier
+
+from cleanlab import count, filter
+from cleanlab.benchmarking.noise_generation import (
+    generate_noise_matrix_from_trace,
+    generate_noisy_labels,
+)
+from cleanlab.count import (
+    estimate_py_and_noise_matrices_from_probabilities,
+    get_confident_thresholds,
+)
+from cleanlab.internal.latent_algebra import compute_inv_noise_matrix
+from cleanlab.internal.multilabel_utils import int2onehot
+from cleanlab.internal.util import value_counts
 
 
 def make_data(

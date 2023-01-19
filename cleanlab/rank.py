@@ -30,16 +30,17 @@ Note: Label quality scores are most accurate when they are computed based on out
 To obtain out-of-sample predicted probabilities for every datapoint in your dataset, you can use :ref:`cross-validation <pred_probs_cross_val>`. This is encouraged to get better results.
 """
 
+import warnings
+from typing import List, Optional
+
 import numpy as np
 from sklearn.metrics import log_loss
-from typing import List, Optional
-import warnings
 
-from cleanlab.internal.validation import assert_valid_inputs
 from cleanlab.internal.label_quality_utils import (
     _subtract_confident_thresholds,
     get_normalized_entropy,
 )
+from cleanlab.internal.validation import assert_valid_inputs
 
 
 def get_label_quality_scores(
@@ -252,7 +253,7 @@ def get_label_quality_ensemble_scores(
     # Raise ValueError if user passed custom_weights array but did not choose weight_ensemble_members_by="custom"
     if custom_weights is not None and weight_ensemble_members_by != "custom":
         raise ValueError(
-            f"""
+            """
             custom_weights provided but weight_ensemble_members_by is not "custom"!
             """
         )

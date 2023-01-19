@@ -20,11 +20,11 @@ Helper methods used internally in cleanlab.token_classification
 
 import re
 import string
-import numpy as np
-from termcolor import colored
-from typing import List, Optional, Callable, Tuple, TypeVar
-import numpy.typing as npt
+from typing import Callable, List, Optional, Tuple, TypeVar
 
+import numpy as np
+import numpy.typing as npt
+from termcolor import colored
 
 T = TypeVar("T", bound=npt.NBitBase)
 

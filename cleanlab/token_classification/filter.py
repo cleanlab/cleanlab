@@ -20,8 +20,9 @@ Methods to find label issues in token classification datasets (text data), where
 The underlying algorithms are described in `this paper <https://arxiv.org/abs/2210.03920>`_.
 """
 
-import numpy as np
 from typing import List, Tuple
+
+import numpy as np
 
 from cleanlab.filter import find_label_issues as find_label_issues_main
 

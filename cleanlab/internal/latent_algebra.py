@@ -25,10 +25,11 @@ Throughout `K` denotes the number of classes in the classification task.
 """
 
 import warnings
-import numpy as np
 from typing import Tuple
 
-from cleanlab.internal.util import value_counts, clip_values, clip_noise_rates, TINY_VALUE
+import numpy as np
+
+from cleanlab.internal.util import TINY_VALUE, clip_noise_rates, clip_values, value_counts
 
 
 def compute_ps_py_inv_noise_matrix(
@@ -263,7 +264,7 @@ def compute_py(
     elif py_method == "marginal_ps":
         py = np.dot(inverse_noise_matrix, ps)
     else:
-        err = "py_method {}".format(py_method)
+        err = f"py_method {py_method}"
         err += " should be in [cnt, eqn, marginal, marginal_ps]"
         raise ValueError(err)
 

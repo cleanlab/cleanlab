@@ -35,10 +35,12 @@ Tips:
 
 """
 
-import tensorflow as tf
+from typing import Callable, Optional
+
 import numpy as np
 import pandas as pd
-from typing import Callable, Optional
+import tensorflow as tf
+
 from cleanlab.internal.validation import assert_valid_inputs
 
 

@@ -10,10 +10,10 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 
-import os
-import sys
 import datetime
+import os
 import shutil
+import sys
 
 sys.path.insert(0, os.path.abspath("../../cleanlab"))
 
@@ -149,7 +149,7 @@ html_context = {
     "RELEASE_VERSIONS": [
         "v2.2.0",
         "v2.1.0",
-        "v2.0.0", 
+        "v2.0.0",
         "v1.0.1",
     ],
     # fmt: on
@@ -178,7 +178,7 @@ nbsphinx_prolog = (
         .dataframe {
             background: #D7D7D7;
         }
-    
+
         th {
             color:black;
         }

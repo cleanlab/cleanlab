@@ -14,17 +14,19 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
-import requests
-import pytest
 import io
+
 import numpy as np
-from cleanlab.dataset import (
-    health_summary,
-    find_overlapping_classes,
-    rank_classes_by_label_quality,
-    overall_label_health_score,
-)
+import pytest
+import requests
+
 from cleanlab.count import estimate_joint
+from cleanlab.dataset import (
+    find_overlapping_classes,
+    health_summary,
+    overall_label_health_score,
+    rank_classes_by_label_quality,
+)
 
 cifar100 = [
     "apple",

@@ -17,15 +17,16 @@
 
 import itertools
 import typing
+
 import numpy as np
 import pytest
 import sklearn
-from sklearn.multiclass import OneVsRestClassifier
 from sklearn.linear_model import LogisticRegression
+from sklearn.multiclass import OneVsRestClassifier
 
-from cleanlab.internal import multilabel_scorer as ml_scorer
-from cleanlab.internal.multilabel_utils import stack_complement, get_onehot_num_classes, onehot2int
 from cleanlab import multilabel_classification as multilabel_classfication
+from cleanlab.internal import multilabel_scorer as ml_scorer
+from cleanlab.internal.multilabel_utils import get_onehot_num_classes, onehot2int, stack_complement
 
 
 @pytest.fixture

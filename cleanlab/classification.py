@@ -113,39 +113,31 @@ to the classifier during training. `labels` denotes the noisy labels instead of
 the :math:`\\tilde{y}` used in confident learning paper.
 """
 
-from sklearn.linear_model import LogisticRegression as LogReg
-from sklearn.metrics import accuracy_score
-from sklearn.base import BaseEstimator
-import numpy as np
-import pandas as pd
 import inspect
 import warnings
-from typing import TypeVar, Optional
+from typing import Optional, TypeVar
 
-from cleanlab.rank import get_label_quality_scores
+import numpy as np
+import pandas as pd
+from sklearn.base import BaseEstimator
+from sklearn.linear_model import LogisticRegression as LogReg
+from sklearn.metrics import accuracy_score
+
 from cleanlab import filter
-from cleanlab.internal.util import (
-    value_counts,
-    compress_int_array,
-    subset_X_y,
-    get_num_classes,
-)
 from cleanlab.count import (
-    estimate_py_noise_matrices_and_cv_pred_proba,
-    estimate_py_and_noise_matrices_from_probabilities,
+    compute_confident_joint,
     estimate_cv_predicted_probabilities,
     estimate_latent,
-    compute_confident_joint,
+    estimate_py_and_noise_matrices_from_probabilities,
+    estimate_py_noise_matrices_and_cv_pred_proba,
 )
 from cleanlab.internal.latent_algebra import (
-    compute_py_inv_noise_matrix,
     compute_noise_matrix_from_inverse,
+    compute_py_inv_noise_matrix,
 )
-from cleanlab.internal.validation import (
-    assert_valid_inputs,
-    labels_to_array,
-)
-
+from cleanlab.internal.util import compress_int_array, get_num_classes, subset_X_y, value_counts
+from cleanlab.internal.validation import assert_valid_inputs, labels_to_array
+from cleanlab.rank import get_label_quality_scores
 
 TCleanLearning = TypeVar("TCleanLearning", bound="CleanLearning")  # self type for the class
 
@@ -732,10 +724,10 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         assert_valid_inputs(X, labels, pred_probs)
         if noise_matrix is not None and np.trace(noise_matrix) <= 1:
             t = np.round(np.trace(noise_matrix), 2)
-            raise ValueError("Trace(noise_matrix) is {}, but must exceed 1.".format(t))
+            raise ValueError(f"Trace(noise_matrix) is {t}, but must exceed 1.")
         if inverse_noise_matrix is not None and (np.trace(inverse_noise_matrix) <= 1):
             t = np.round(np.trace(inverse_noise_matrix), 2)
-            raise ValueError("Trace(inverse_noise_matrix) is {}. Must exceed 1.".format(t))
+            raise ValueError(f"Trace(inverse_noise_matrix) is {t}. Must exceed 1.")
 
         if noise_matrix is not None:
             label_matrix = noise_matrix

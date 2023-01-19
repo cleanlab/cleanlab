@@ -16,13 +16,14 @@
 
 import numpy as np
 import pytest
-from cleanlab import rank
-from cleanlab.internal.label_quality_utils import _subtract_confident_thresholds
-from cleanlab.benchmarking.noise_generation import generate_noise_matrix_from_trace
-from cleanlab.benchmarking.noise_generation import generate_noisy_labels
-from cleanlab import count
-from cleanlab import outlier
 from sklearn.neighbors import NearestNeighbors
+
+from cleanlab import count, outlier, rank
+from cleanlab.benchmarking.noise_generation import (
+    generate_noise_matrix_from_trace,
+    generate_noisy_labels,
+)
+from cleanlab.internal.label_quality_utils import _subtract_confident_thresholds
 
 
 def make_data(
@@ -152,7 +153,7 @@ def test_order_label_issues_using_scoring_func_ranking(scoring_method_func, adju
     # check if method supports adjust_pred_probs
     # do not run the test below if the method does not support adjust_pred_probs
     # confidence_weighted_entropy scoring method does not support adjust_pred_probs
-    if not (adjust_pred_probs == True and method == "confidence_weighted_entropy"):
+    if not (adjust_pred_probs and method == "confidence_weighted_entropy"):
 
         indices = np.arange(len(data["label_errors_mask"]))[
             data["label_errors_mask"]

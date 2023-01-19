@@ -21,11 +21,13 @@ The underlying algorithms are described in `this paper <https://arxiv.org/abs/22
 """
 
 import warnings
+from typing import Dict, Optional, Tuple, Union
+
 import numpy as np
-from cleanlab.count import get_confident_thresholds
-from sklearn.neighbors import NearestNeighbors
 from sklearn.exceptions import NotFittedError
-from typing import Optional, Union, Tuple, Dict
+from sklearn.neighbors import NearestNeighbors
+
+from cleanlab.count import get_confident_thresholds
 from cleanlab.internal.label_quality_utils import (
     _subtract_confident_thresholds,
     get_normalized_entropy,
@@ -250,7 +252,7 @@ class OutOfDistribution:
         if features is not None:
             if self.params["knn"] is None:
                 raise ValueError(
-                    f"OOD estimator needs to be fit on features first. Call `fit()` or `fit_scores()` before this function."
+                    "OOD estimator needs to be fit on features first. Call `fit()` or `fit_scores()` before this function."
                 )
             else:
                 scores, _ = _get_ood_features_scores(
@@ -260,7 +262,7 @@ class OutOfDistribution:
         if pred_probs is not None:
             if self.params["confident_thresholds"] is None and self.params["adjust_pred_probs"]:
                 raise ValueError(
-                    f"OOD estimator needs to be fit on pred_probs first since params['adjust_pred_probs']=True. Call `fit()` or `fit_scores()` before this function."
+                    "OOD estimator needs to be fit on pred_probs first since params['adjust_pred_probs']=True. Call `fit()` or `fit_scores()` before this function."
                 )
             else:
                 scores, _ = _get_ood_predictions_scores(
@@ -294,18 +296,18 @@ class OutOfDistribution:
         """
         if features is None and pred_probs is None:
             raise ValueError(
-                f"Not enough information to compute scores. Pass in either features or pred_probs."
+                "Not enough information to compute scores. Pass in either features or pred_probs."
             )
 
         if features is not None and pred_probs is not None:
             raise ValueError(
-                f"Cannot fit to OOD Estimator to both features and pred_probs. Pass in either one or the other."
+                "Cannot fit to OOD Estimator to both features and pred_probs. Pass in either one or the other."
             )
 
         if features is not None and len(features.shape) != 2:
             raise ValueError(
-                f"Feature array needs to be of shape (N, M), where N is the number of examples and M is the "
-                f"number of features used to represent each example. "
+                "Feature array needs to be of shape (N, M), where N is the number of examples and M is the "
+                "number of features used to represent each example. "
             )
 
     def _shared_fit(
@@ -328,7 +330,7 @@ class OutOfDistribution:
             if self.params["knn"] is not None:
                 # No fitting twice if knn object already fit
                 warnings.warn(
-                    f"A KNN estimator has previously already been fit, call score() to apply it to data, or create a new OutOfDistribution object to fit a different estimator.",
+                    "A KNN estimator has previously already been fit, call score() to apply it to data, or create a new OutOfDistribution object to fit a different estimator.",
                     UserWarning,
                 )
             else:
@@ -344,7 +346,7 @@ class OutOfDistribution:
             if self.params["confident_thresholds"] is not None:
                 # No fitting twice if confident_thresholds object already fit
                 warnings.warn(
-                    f"Confident thresholds have previously already been fit, call score() to apply them to data, or create a new OutOfDistribution object to fit a different estimator.",
+                    "Confident thresholds have previously already been fit, call score() to apply them to data, or create a new OutOfDistribution object to fit a different estimator.",
                     UserWarning,
                 )
             else:
@@ -358,8 +360,8 @@ class OutOfDistribution:
                 )
                 if confident_thresholds is None:
                     warnings.warn(
-                        f"No estimates need to be be fit under the provided params, so you could directly call "
-                        f"score() as an alternative.",
+                        "No estimates need to be be fit under the provided params, so you could directly call "
+                        "score() as an alternative.",
                         UserWarning,
                     )
                 else:
@@ -404,7 +406,7 @@ def _get_ood_features_scores(
         # Make sure both knn and features are not None
         if features is None:
             raise ValueError(
-                f"Both knn and features arguments cannot be None at the same time. Not enough information to compute outlier scores."
+                "Both knn and features arguments cannot be None at the same time. Not enough information to compute outlier scores."
             )
         if k is None:
             k = DEFAULT_K  # use default when knn and k are both None
@@ -496,9 +498,9 @@ def _get_ood_predictions_scores(
 
     if (confident_thresholds is not None or labels is not None) and not adjust_pred_probs:
         warnings.warn(
-            f"OOD scores are not adjusted with confident thresholds. If scores need to be adjusted set "
-            f"params['adjusted_pred_probs'] = True. Otherwise passing in confident_thresholds and/or labels does not change "
-            f"score calculation.",
+            "OOD scores are not adjusted with confident thresholds. If scores need to be adjusted set "
+            "params['adjusted_pred_probs'] = True. Otherwise passing in confident_thresholds and/or labels does not change "
+            "score calculation.",
             UserWarning,
         )
 
@@ -506,8 +508,8 @@ def _get_ood_predictions_scores(
         if confident_thresholds is None:
             if labels is None:
                 raise ValueError(
-                    f"Cannot calculate adjust_pred_probs without labels. Either pass in labels parameter or set "
-                    f"params['adjusted_pred_probs'] = False. "
+                    "Cannot calculate adjust_pred_probs without labels. Either pass in labels parameter or set "
+                    "params['adjusted_pred_probs'] = False. "
                 )
             else:
                 labels = labels_to_array(labels)

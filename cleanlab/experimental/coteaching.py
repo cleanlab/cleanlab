@@ -28,10 +28,10 @@ for learning with noisy labels is provided within: https://github.com/cleanlab/e
 # https://github.com/bhanML/Co-teaching/blob/master/loss.py
 # See (Han et al., 2018).
 
+import numpy as np
 import torch
 import torch.nn.functional as F
 from torch.autograd import Variable
-import numpy as np
 
 MINIMUM_BATCH_SIZE = 16
 

@@ -19,13 +19,13 @@ Ancillary helper methods used internally throughout this package; mostly related
 """
 
 import warnings
+from typing import Tuple, Union
+
 import numpy as np
 import pandas as pd
-from typing import Union, Tuple
 
-from cleanlab.typing import DatasetLike, LabelLike
 from cleanlab.internal.validation import labels_to_array
-
+from cleanlab.typing import DatasetLike, LabelLike
 
 TINY_VALUE = 1e-100
 
@@ -582,9 +582,7 @@ def unshuffle_tensorflow_dataset(X) -> tuple:
         or ``len(pre_X)`` if buffer_size cannot be determined, or None if no ShuffleDataset found.
     """
     try:
-        from tensorflow.python.data.ops.dataset_ops import (
-            ShuffleDataset,
-        )
+        from tensorflow.python.data.ops.dataset_ops import ShuffleDataset
 
         X_inputs = [X]
         while len(X_inputs) == 1:
@@ -642,7 +640,7 @@ def append_extra_datapoint(to_data, from_data, index) -> DatasetLike:
     This datapoint is taken from the data object ``from_data`` at the corresponding index.
     One place this could be useful is ensuring no missing classes after train/validation split.
     """
-    if not (type(from_data) is type(to_data)):
+    if not type(from_data) is type(to_data):
         raise ValueError("Cannot append datapoint from different type of data object.")
 
     if isinstance(to_data, np.ndarray):

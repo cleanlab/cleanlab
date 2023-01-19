@@ -28,7 +28,7 @@ To analyze a fixed dataset labeled by multiple annotators, use the
 The underlying algorithms used to compute the statistics are described in `the CROWDLAB paper <https://arxiv.org/abs/2210.06812>`_.
 
 If you have some labeled and unlabeled data (with multiple annotators for some labeled examples) and want to decide what data to collect additional labels for,
-use the :py:func:`get_active_learning_scores <cleanlab.multiannotator.get_active_learning_scores>` function, which is intended for active learning. 
+use the :py:func:`get_active_learning_scores <cleanlab.multiannotator.get_active_learning_scores>` function, which is intended for active learning.
 This function estimates an active learning quality score for each example,
 which can be used to prioritize which examples are most informative to collect additional labels for.
 This function is effective for settings where some examples have been labeled by one or more annotators and other examples can have no labels at all so far,
@@ -39,13 +39,11 @@ Variants of these functions are provided for settings where you have trained an 
 """
 
 import warnings
+from typing import Any, Dict, List, Optional, Tuple, Union
+
 import numpy as np
 import pandas as pd
 
-from typing import List, Dict, Any, Union, Tuple, Optional
-
-from cleanlab.rank import get_label_quality_scores
-from cleanlab.internal.util import get_num_classes, value_counts
 from cleanlab.internal.multiannotator_utils import (
     assert_valid_inputs_multiannotator,
     assert_valid_pred_probs,
@@ -53,6 +51,8 @@ from cleanlab.internal.multiannotator_utils import (
     find_best_temp_scaler,
     temp_scale_pred_probs,
 )
+from cleanlab.internal.util import get_num_classes, value_counts
+from cleanlab.rank import get_label_quality_scores
 
 
 def get_label_quality_multiannotator(
@@ -1193,7 +1193,7 @@ def _get_annotator_agreement_with_annotators(
             annotator_agreement = np.average(
                 annotator_agreement_per_example, weights=num_annotations - 1
             )
-        except:
+        except Exception:
             annotator_agreement = np.NaN
         return annotator_agreement
 

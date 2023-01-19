@@ -17,14 +17,17 @@
 import numpy as np
 import pandas as pd
 import pytest
-from cleanlab.benchmarking.noise_generation import generate_noise_matrix_from_trace
-from cleanlab.benchmarking.noise_generation import generate_noisy_labels
-from cleanlab import count, outlier
-from cleanlab.count import get_confident_thresholds
-from cleanlab.outlier import OutOfDistribution
-from cleanlab.internal.label_quality_utils import get_normalized_entropy
-from sklearn.neighbors import NearestNeighbors
 from sklearn.linear_model import LogisticRegression as LogReg
+from sklearn.neighbors import NearestNeighbors
+
+from cleanlab import count, outlier
+from cleanlab.benchmarking.noise_generation import (
+    generate_noise_matrix_from_trace,
+    generate_noisy_labels,
+)
+from cleanlab.count import get_confident_thresholds
+from cleanlab.internal.label_quality_utils import get_normalized_entropy
+from cleanlab.outlier import OutOfDistribution
 
 
 def make_data(

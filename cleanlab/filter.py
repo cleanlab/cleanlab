@@ -23,27 +23,26 @@ This module considers two types of datasets:
 * multi-label classification where each example can be labeled as belonging to multiple classes (e.g. ``labels = [[1,2],[1],[0],[],...]``)
 """
 
-import numpy as np
-from sklearn.metrics import confusion_matrix
 import multiprocessing
-from multiprocessing.sharedctypes import RawArray
 import sys
 import warnings
-from typing import Any, Dict, List, Optional, Tuple, Union
 from functools import reduce
+from multiprocessing.sharedctypes import RawArray
+from typing import Any, Dict, List, Optional, Tuple, Union
 
-from cleanlab.count import calibrate_confident_joint
-from cleanlab.rank import (
-    order_label_issues,
-)
+import numpy as np
+from sklearn.metrics import confusion_matrix
+
 import cleanlab.internal.multilabel_scorer as ml_scorer
-from cleanlab.internal.validation import assert_valid_inputs
+from cleanlab.count import calibrate_confident_joint
+from cleanlab.internal.multilabel_utils import get_onehot_num_classes, int2onehot, stack_complement
 from cleanlab.internal.util import (
-    value_counts_fill_missing_classes,
-    round_preserving_row_totals,
     get_num_classes,
+    round_preserving_row_totals,
+    value_counts_fill_missing_classes,
 )
-from cleanlab.internal.multilabel_utils import stack_complement, get_onehot_num_classes, int2onehot
+from cleanlab.internal.validation import assert_valid_inputs
+from cleanlab.rank import order_label_issues
 from cleanlab.typing import LabelLike
 
 # tqdm is a module used to print time-to-complete when multiprocessing is used.
@@ -407,7 +406,7 @@ def find_label_issues(
             label_issues_mask[i] = False
 
     if verbose:
-        print("Number of label issues found: {}".format(sum(label_issues_mask)))
+        print(f"Number of label issues found: {sum(label_issues_mask)}")
 
     # TODO: run count.num_label_issues() and adjust the total issues found here to match
     if return_indices_ranked_by is not None:
@@ -559,7 +558,7 @@ def _find_multilabel_issues_per_class(
         confident_joint_shape = confident_joint.shape
         if confident_joint_shape == (num_classes, num_classes):
             warnings.warn(
-                f"The new recommended format for `confident_joint` in multi_label settings is (num_classes,2,2) as output by compute_confident_joint(...,multi_label=True). Your K x K confident_joint in the old format is being ignored."
+                "The new recommended format for `confident_joint` in multi_label settings is (num_classes,2,2) as output by compute_confident_joint(...,multi_label=True). Your K x K confident_joint in the old format is being ignored."
             )
             confident_joint = None
         elif confident_joint_shape != (num_classes, 2, 2):

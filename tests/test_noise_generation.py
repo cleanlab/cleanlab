@@ -2,8 +2,9 @@
 # coding: utf-8
 
 import numpy as np
-from cleanlab.benchmarking import noise_generation
 import pytest
+
+from cleanlab.benchmarking import noise_generation
 
 seed = 0
 np.random.seed(0)

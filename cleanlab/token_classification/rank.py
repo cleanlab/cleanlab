@@ -20,9 +20,10 @@ Methods to rank and score sentences in a token classification dataset (text data
 The underlying algorithms are described in `this paper <https://arxiv.org/abs/2210.03920>`_.
 """
 
-import pandas as pd
+from typing import List, Optional, Tuple, Union
+
 import numpy as np
-from typing import List, Optional, Union, Tuple
+import pandas as pd
 
 from cleanlab.rank import get_label_quality_scores as main_get_label_quality_scores
 

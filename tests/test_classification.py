@@ -14,21 +14,25 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
-from copy import deepcopy
 import warnings
-from sklearn.linear_model import LogisticRegression
-from sklearn.base import BaseEstimator
-from sklearn.model_selection import GridSearchCV
-import scipy
-import pytest
+from copy import deepcopy
+
 import numpy as np
 import pandas as pd
+import pytest
+import scipy
+from sklearn.base import BaseEstimator
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import GridSearchCV
+
+from cleanlab.benchmarking.noise_generation import (
+    generate_noise_matrix_from_trace,
+    generate_noisy_labels,
+)
 from cleanlab.classification import CleanLearning
-from cleanlab.benchmarking.noise_generation import generate_noise_matrix_from_trace
-from cleanlab.benchmarking.noise_generation import generate_noisy_labels
-from cleanlab.internal.latent_algebra import compute_inv_noise_matrix
 from cleanlab.count import compute_confident_joint, estimate_cv_predicted_probabilities
 from cleanlab.filter import find_label_issues
+from cleanlab.internal.latent_algebra import compute_inv_noise_matrix
 
 SEED = 1
 
@@ -317,7 +321,7 @@ def test_validation_data():
 
 
 def test_raise_error_no_clf_fit():
-    class struct(object):
+    class struct:
         def predict(self):
             pass
 
@@ -333,7 +337,7 @@ def test_raise_error_no_clf_fit():
 
 
 def test_raise_error_no_clf_predict_proba():
-    class struct(object):
+    class struct:
         def fit(self):
             pass
 
@@ -349,7 +353,7 @@ def test_raise_error_no_clf_predict_proba():
 
 
 def test_raise_error_no_clf_predict():
-    class struct(object):
+    class struct:
         def fit(self):
             pass
 

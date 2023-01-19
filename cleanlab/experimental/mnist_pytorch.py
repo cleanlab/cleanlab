@@ -22,16 +22,15 @@ This is a good example to reference for making your own bespoke model compatible
 You must have PyTorch installed: https://pytorch.org/get-started/locally/
 """
 
-from sklearn.base import BaseEstimator
+import numpy as np
 import torch
-import torch.nn as nn
+from torch import nn
 import torch.nn.functional as F
-import torch.optim as optim
-from torchvision import datasets, transforms
+from torch import optim
+from sklearn.base import BaseEstimator
 from torch.autograd import Variable
 from torch.utils.data.sampler import SubsetRandomSampler
-import numpy as np
-
+from torchvision import datasets, transforms
 
 MNIST_TRAIN_SIZE = 60000
 MNIST_TEST_SIZE = 10000
@@ -64,8 +63,8 @@ def get_sklearn_digits_dataset(loader):
     Parameters
     ----------
     loader : str (values: 'train' or 'test')."""
-    from torch.utils.data import Dataset
     from sklearn.datasets import load_digits
+    from torch.utils.data import Dataset
 
     class TorchDataset(Dataset):
         """Abstracts a numpy array as a PyTorch dataset."""
@@ -112,7 +111,7 @@ class SimpleNet(nn.Module):
     """Basic Pytorch CNN for MNIST-like data."""
 
     def __init__(self):
-        super(SimpleNet, self).__init__()
+        super().__init__()
         self.conv1 = nn.Conv2d(1, 10, kernel_size=5)
         self.conv2 = nn.Conv2d(10, 20, kernel_size=5)
         self.conv2_drop = nn.Dropout2d()

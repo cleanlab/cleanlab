@@ -22,12 +22,13 @@ from typing import Callable, Dict, Optional, Union
 
 import numpy as np
 from sklearn.model_selection import cross_val_predict
-from cleanlab.internal.multilabel_utils import _is_multilabel, stack_complement
+
 from cleanlab.internal.label_quality_utils import _subtract_confident_thresholds
+from cleanlab.internal.multilabel_utils import _is_multilabel, stack_complement
 from cleanlab.rank import (
-    get_self_confidence_for_each_label,
-    get_normalized_margin_for_each_label,
     get_confidence_weighted_entropy_for_each_label,
+    get_normalized_margin_for_each_label,
+    get_self_confidence_for_each_label,
 )
 
 
@@ -207,7 +208,7 @@ def exponential_moving_average(
     if alpha is None:
         # One conventional choice for alpha is 2/(K + 1), where K is the number of periods in the moving average.
         alpha = float(2 / (K + 1))
-    if not (0 <= alpha <= 1):
+    if not 0 <= alpha <= 1:
         raise ValueError(f"alpha must be in the interval [0, 1], got {alpha}")
     s_T = s_sorted.T
     s_ema, s_next = s_T[0], s_T[1:]

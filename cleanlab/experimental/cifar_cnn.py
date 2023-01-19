@@ -23,7 +23,7 @@ You must have PyTorch installed: https://pytorch.org/get-started/locally/
 """
 
 
-import torch.nn as nn
+from torch import nn
 import torch.nn.functional as F
 
 
@@ -49,7 +49,7 @@ class CNN(nn.Module):
     def __init__(self, input_channel=3, n_outputs=10, dropout_rate=0.25, top_bn=False):
         self.dropout_rate = dropout_rate
         self.top_bn = top_bn
-        super(CNN, self).__init__()
+        super().__init__()
         self.c1 = nn.Conv2d(input_channel, 128, kernel_size=3, stride=1, padding=1)
         self.c2 = nn.Conv2d(128, 128, kernel_size=3, stride=1, padding=1)
         self.c3 = nn.Conv2d(128, 128, kernel_size=3, stride=1, padding=1)

@@ -24,6 +24,7 @@ and which classes to merge (see :py:func:`find_overlapping_classes <cleanlab.dat
 
 import numpy as np
 import pandas as pd
+
 from cleanlab.count import estimate_joint
 
 

@@ -1,16 +1,17 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+import numpy as np
+import pytest
+from sklearn.datasets import load_digits
+from sklearn.metrics import accuracy_score
+
+import cleanlab
 from cleanlab.experimental.mnist_pytorch import (
     CNN,
     SKLEARN_DIGITS_TEST_SIZE,
     SKLEARN_DIGITS_TRAIN_SIZE,
 )
-import cleanlab
-import numpy as np
-from sklearn.metrics import accuracy_score
-from sklearn.datasets import load_digits
-import pytest
 
 X_train_idx = np.arange(SKLEARN_DIGITS_TRAIN_SIZE)
 X_test_idx = np.arange(SKLEARN_DIGITS_TEST_SIZE)
@@ -63,7 +64,7 @@ def test_loaders(
         # Get prediction on loader set.
         pred = cnn.predict(X)
         score = accuracy_score(y, pred)
-        print("Acc Before: {:.2f}, After: {:.2f}".format(prev_score, score))
+        print(f"Acc Before: {prev_score:.2f}, After: {score:.2f}")
         assert score > prev_score  # Scores should increase
 
 
