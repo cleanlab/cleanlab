@@ -144,6 +144,7 @@ def display_issues(
             print(color_sentence(sentence, word))
         else:
             shown += 1
+            # issue is tuple[int, int] but gets treated as int.
             sentence = get_sentence(tokens[issue])
             print("Sentence %d: %s" % (issue, sentence))
         if shown == top:
