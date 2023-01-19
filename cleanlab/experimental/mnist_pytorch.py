@@ -33,7 +33,7 @@ from torch.utils.data.sampler import SubsetRandomSampler
 import numpy as np
 from numpy.typing import NDArray
 from typing import Any, List, Optional
-from cl_typing import LabelLike
+from cleanlab.typing import LabelLike
 
 
 MNIST_TRAIN_SIZE = 60000

@@ -24,14 +24,13 @@ import pandas as pd
 from typing import Any, Union, Tuple, List, Iterable
 from numpy.typing import ArrayLike, NDArray
 
-from cl_typing import DatasetLike, LabelLike
+from cleanlab.typing import DatasetLike, LabelLike
 from cleanlab.internal.validation import labels_to_array
+
 TINY_VALUE = 1e-100
 
-def remove_noise_from_class(
-    noise_matrix: NDArray, 
-    class_without_noise: int
-    ) -> np.ndarray[Any]:
+
+def remove_noise_from_class(noise_matrix: NDArray, class_without_noise: int) -> np.ndarray[Any]:
     """A helper function in the setting of PU learning.
     Sets all P(label=class_without_noise|true_label=any_other_class) = 0
     in noise_matrix for pulearning setting, where we have
@@ -142,11 +141,8 @@ def clip_values(x: np.ndarray[float], low=0.0, high=1.0, new_sum=None) -> np.nda
 
 
 def value_counts(
-    x: ArrayLike[LabelLike], 
-    *, 
-    num_classes: int = None, 
-    multi_label: bool = False
-    ) -> np.ndarray:
+    x: ArrayLike[LabelLike], *, num_classes: int = None, multi_label: bool = False
+) -> np.ndarray:
     """Returns an np.ndarray of shape (K, 1), with the
     value counts for every unique item in the labels list/array,
     where K is the number of unique entries in labels.
@@ -204,12 +200,12 @@ def value_counts_fill_missing_classes(x, num_classes, *, multi_label=False) -> n
 
 
 def get_missing_classes(
-    labels: LabelLike, 
-    *, 
-    pred_probs=None, 
-    num_classes: int =None, 
-    multi_label: List[LabelLike] = False # very unsure if typing is correct here
-    ) -> List[Any]:
+    labels: LabelLike,
+    *,
+    pred_probs=None,
+    num_classes: int = None,
+    multi_label: List[LabelLike] = False,  # very unsure if typing is correct here
+) -> List[Any]:
     """Find which classes are present in ``pred_probs`` but not present in ``labels``.
 
     See ``count.compute_confident_joint`` for parameter docstrings."""
@@ -223,7 +219,9 @@ def get_missing_classes(
     return sorted(set(range(num_classes)).difference(unique_classes))
 
 
-def round_preserving_sum(iterable: Union[List[float], np.ndarray[float]]) -> Union[List[int], np.ndarray[int]]:
+def round_preserving_sum(
+    iterable: Union[List[float], np.ndarray[float]]
+) -> Union[List[int], np.ndarray[int]]:
     """Rounds an iterable of floats while retaining the original summed value.
     The name of each parameter is required. The type and description of each
     parameter is optional, but should be included if not obvious.
@@ -280,7 +278,6 @@ def round_preserving_row_totals(confident_joint: np.ndarray) -> np.ndarray:
     ).astype(int)
 
 
-
 def int2onehot(labels: List[List[int]]) -> NDArray:
     """Convert list of lists to a onehot matrix for multi-labels
 
@@ -294,6 +291,7 @@ def int2onehot(labels: List[List[int]]) -> NDArray:
 
     mlb = MultiLabelBinarizer()
     return mlb.fit_transform(labels)
+
 
 # using generic NDArray,
 # if someone knows how to properly annotate 2D numpy arrays feel free.
@@ -510,13 +508,18 @@ def train_val_split(
     return X_train, X_holdout, labels_train, labels_holdout
 
 
-def subset_X_y(X: List[LabelLike], labels: List[LabelLike], mask: Any) -> Tuple[DatasetLike, LabelLike]:
+def subset_X_y(
+    X: List[LabelLike], labels: List[LabelLike], mask: Any
+) -> Tuple[DatasetLike, LabelLike]:
     """Extracts subset of features/labels where mask is True"""
     labels = subset_labels(labels, mask)
     X = subset_data(X, mask)
     return X, labels
 
-def subset_labels(labels: List[LabelLike], mask: Any) -> Union[List[LabelLike], np.ndarray, pd.Series]:
+
+def subset_labels(
+    labels: List[LabelLike], mask: Any
+) -> Union[List[LabelLike], np.ndarray, pd.Series]:
     """Extracts subset of labels where mask is True"""
     try:  # filtering labels as if it is array or DataFrame
         return labels[mask]
@@ -526,11 +529,11 @@ def subset_labels(labels: List[LabelLike], mask: Any) -> Union[List[LabelLike], 
         except Exception:
             raise TypeError("labels must be 1D np.ndarray, list, or pd.Series.")
 
+
 # FIXME: add annoatation for mask
 def subset_data(
-    X: Union[torch.utils.data.Dataset, tensorflow.data.Dataset],
-    mask: Any
-    ) -> DatasetLike:
+    X: Union[torch.utils.data.Dataset, tensorflow.data.Dataset], mask: Any
+) -> DatasetLike:
     """Extracts subset of data examples where mask (np.ndarray) is True"""
     try:
         import torch

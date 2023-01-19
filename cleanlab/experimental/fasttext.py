@@ -29,7 +29,7 @@ from sklearn.base import BaseEstimator
 from fasttext import train_supervised, load_model
 
 from typing import Optional, Dict, List, Any
-from cl_typing import LabelLike
+from cleanlab.typing import LabelLike
 
 
 LABEL = "__label__"

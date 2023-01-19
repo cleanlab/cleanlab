@@ -121,7 +121,7 @@ import pandas as pd
 import inspect
 import warnings
 from typing import TypeVar, Optional, Iterable, Any, List, Dict, Union
-from cl_typing import LabelLike
+from cleanlab.typing import LabelLike
 
 from cleanlab.rank import get_label_quality_scores
 from cleanlab import filter
@@ -225,7 +225,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         # Hyper-parameters (used by .fit() function)
         cv_n_folds=5,
         converge_latent_estimates=False,
-        pulearning: Optional[Iterable[Any]]=None,
+        pulearning: Optional[Iterable[Any]] = None,
         find_label_issues_kwargs={},
         label_quality_scores_kwargs={},
         verbose=False,
@@ -662,7 +662,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
     def find_label_issues(
         self,
         X=None,
-        labels: Optional[LabelLike]=None,
+        labels: Optional[LabelLike] = None,
         *,
         pred_probs=None,
         thresholds=None,
@@ -970,10 +970,8 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         self.find_label_issues_kwargs = find_label_issues_kwargs
 
     def _process_label_issues_arg(
-        self,
-        label_issues: Union[pd.DataFrame, np.ndarray],
-        labels
-        ) -> pd.DataFrame:
+        self, label_issues: Union[pd.DataFrame, np.ndarray], labels
+    ) -> pd.DataFrame:
         """
         Helper method to get the label_issues input arg into a formatted DataFrame.
         """
