@@ -65,7 +65,7 @@ try:
     import psutil
 
     psutil_exists = True
-except ImportError as e:
+except ImportError as e:  # pragma: no cover
     psutil_exists = False
     w = """To use physical core counts for multiprocessing in cleanlab.filter, "pip install psutil"."""
     warnings.warn(w)
