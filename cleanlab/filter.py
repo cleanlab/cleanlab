@@ -67,8 +67,6 @@ try:
     psutil_exists = True
 except ImportError as e:  # pragma: no cover
     psutil_exists = False
-    w = """To use physical core counts for multiprocessing in cleanlab.filter, "pip install psutil"."""
-    warnings.warn(w)
 
 # global variable for find_label_issues multiprocessing
 pred_probs_by_class: Dict[int, np.ndarray]
@@ -202,7 +200,7 @@ def find_label_issues(
 
     n_jobs : optional
       Number of processing threads used by multiprocessing. Default ``None``
-      sets to the number of cores on your CPU.
+      sets to the number of cores on your CPU (physical cores if you have ``psutil`` package installed, otherwise logical cores).
       Set this to 1 to *disable* parallel processing (if its causing issues).
       Windows users may see a speed-up with ``n_jobs=1``.
 
@@ -272,9 +270,14 @@ def find_label_issues(
         else:
             if psutil_exists:
                 n_jobs = psutil.cpu_count(logical=False)  # physical cores
+            else:
+                print(
+                    """To default to the number of physical cores for multiprocessing in find_label_issues(), please: "pip install psutil"."""
+                )
             if not n_jobs:
                 # either psutil does not exist
-                # or physical cores cannot be determined, switch to logical cores
+                # or psutil can return None when physical cores cannot be determined
+                # switch to logical cores
                 n_jobs = multiprocessing.cpu_count()
     else:
         assert n_jobs >= 1
