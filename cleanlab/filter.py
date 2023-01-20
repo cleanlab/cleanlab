@@ -46,9 +46,8 @@ from cleanlab.internal.util import (
 from cleanlab.internal.multilabel_utils import stack_complement, get_onehot_num_classes, int2onehot
 from cleanlab.typing import LabelLike
 
-# tqdm is a module used to print time-to-complete when multiprocessing is used.
-# This module is not necessary, and therefore is not a package dependency, but
-# when installed it improves user experience for large datasets.
+# tqdm is a package to print time-to-complete when multiprocessing is used.
+# This package is not necessary, but when installed improves user experience for large datasets.
 try:
     import tqdm
 
@@ -59,8 +58,8 @@ except ImportError as e:  # pragma: no cover
     w = """To see estimated completion times for methods in cleanlab.filter, "pip install tqdm"."""
     warnings.warn(w)
 
-# psutil used to count physical cores for multiprocessing
-# Module not neccessary, because can always fall back to logical cores
+# psutil is a package used to count physical cores for multiprocessing
+# This package is not necessary, because we can always fall back to logical cores as the default
 try:
     import psutil
 
@@ -277,7 +276,7 @@ def find_label_issues(
                     "To default `n_jobs` to the number of physical cores for multiprocessing in find_label_issues(), please: `pip install psutil`.\n"
                     "Note: You can safely ignore this message. `n_jobs` only affects runtimes, results will be the same no matter its value.\n"
                     "Since psutil is not installed, `n_jobs` was set to the number of logical cores by default.\n"
-                    "Disable this message by either installing psutil or specifying the `n_jobs` argument." 
+                    "Disable this message by either installing psutil or specifying the `n_jobs` argument."
                 )  # pragma: no cover
             if not n_jobs:
                 # either psutil does not exist
