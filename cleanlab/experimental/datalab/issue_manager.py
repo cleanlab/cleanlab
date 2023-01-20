@@ -356,7 +356,7 @@ class OutOfDistributionIssueManager(IssueManager):
     def collect_info(self) -> dict:
 
         issues_dict = {
-            "num_ood_issues": sum(self.issues["is_ood_issue"]),
+            "num_outlier_issues": sum(self.issues[f"is_{self.issue_name}_issue"]),
             "average_ood_score": self.issues[self.issue_score_key].mean(),
         }
         pred_probs_issues_dict: Dict[
@@ -420,6 +420,6 @@ class OutOfDistributionIssueManager(IssueManager):
     def verbosity_levels(self) -> Dict[int, Any]:
         return {
             0: {},
-            1: {"summary": ["num_ood_issues"], "issue": ["nearest_neighbour"]},
+            1: {"summary": ["num_outlier_issues"], "issue": ["nearest_neighbour"]},
             2: {"issue": ["distance_to_nearest_neighbour"]},
         }

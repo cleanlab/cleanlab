@@ -146,8 +146,10 @@ class TestOutOfDistributionIssueManager:
         issue_manager.find_issues(features="embedding")
         issues, summary, info = issue_manager.issues, issue_manager.summary, issue_manager.info
         expected_issue_mask = np.array([False] * 4 + [True])
-        assert np.all(issues["is_ood_issue"] == expected_issue_mask), "Issue mask should be correct"
-        assert summary["issue_type"][0] == "ood"
+        assert np.all(
+            issues["is_outlier_issue"] == expected_issue_mask
+        ), "Issue mask should be correct"
+        assert summary["issue_type"][0] == "outlier"
         assert summary["score"][0] == pytest.approx(expected=0.8257756, rel=1e-7)
 
         assert info.get("knn", None) is not None, "Should have knn info"
@@ -165,8 +167,10 @@ class TestOutOfDistributionIssueManager:
         issue_manager.find_issues(pred_probs=pred_probs)
         issues, summary, info = issue_manager.issues, issue_manager.summary, issue_manager.info
         expected_issue_mask = np.array([False] * 4 + [True])
-        assert np.all(issues["is_ood_issue"] == expected_issue_mask), "Issue mask should be correct"
-        assert summary["issue_type"][0] == "ood"
+        assert np.all(
+            issues["is_outlier_issue"] == expected_issue_mask
+        ), "Issue mask should be correct"
+        assert summary["issue_type"][0] == "outlier"
         assert summary["score"][0] == pytest.approx(expected=0.151, rel=1e-3)
 
         assert np.all(

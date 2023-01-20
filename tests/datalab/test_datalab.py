@@ -87,7 +87,7 @@ class TestDatalab:
         if issue_types is None:
             # Test default issue types
             columns = lab.issues.columns
-            for issue_type in ["label", "ood"]:
+            for issue_type in ["label", "outlier"]:
                 assert f"is_{issue_type}_issue" in columns
                 assert f"{issue_type}_score" in columns
 
@@ -105,7 +105,7 @@ class TestDatalab:
 
         knn = NearestNeighbors(n_neighbors=3, metric="euclidean")
         issue_types = {
-            "ood": {
+            "outlier": {
                 "ood_kwargs": {"params": {"knn": knn}},
             },
         }
@@ -114,7 +114,7 @@ class TestDatalab:
             features="features",
             issue_types=issue_types,
         )
-        set_knn = lab.issue_managers["ood"].ood.params["knn"]
+        set_knn = lab.issue_managers["outlier"].ood.params["knn"]
         assert set_knn == knn
 
     def test_validate_issue_types_dict(self, lab, monkeypatch):
