@@ -6,14 +6,15 @@ from cleanlab.experimental.datalab.issue_manager import (
     IssueManager,
     LabelIssueManager,
     OutOfDistributionIssueManager,
+    NearDuplicateIssueManager,
 )
 
 
 REGISTRY: Dict[str, Type[IssueManager]] = {
     "outlier": OutOfDistributionIssueManager,
     "label": LabelIssueManager,
+    "near_duplicate": NearDuplicateIssueManager,
 }
-
 # Construct concrete issue manager with a from_str method
 class _IssueManagerFactory:
     """Factory class for constructing concrete issue managers."""

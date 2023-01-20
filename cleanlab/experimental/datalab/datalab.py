@@ -164,10 +164,7 @@ class Datalab:
 
         """
 
-        required_args_per_issue_type = {
-            "label": {"pred_probs": pred_probs, "model": model},
-            "outlier": {"pred_probs": pred_probs, "features": features},
-        }
+        required_args_per_issue_type = self._resolve_required_args(pred_probs, features, model)
 
         issue_types_copy = self._set_issue_types(issue_types, required_args_per_issue_type)
 
@@ -181,6 +178,43 @@ class Datalab:
             self.collect_results_from_issue_manager(issue_manager)
 
         self.issue_managers.update({im.issue_name: im for im in new_issue_managers})
+
+    def _resolve_required_args(self, pred_probs, features, model):
+        """Resolves the required arguments for each issue type.
+
+        This is a helper function that filters out any issue manager that does not have the required arguments.
+
+        This does not consider custom hyperparameters for each issue type.
+
+
+        Parameters
+        ----------
+        pred_probs :
+            Out-of-sample predicted probabilities made on the data.
+
+        features :
+            Name of column containing precomputed embeddings.
+
+        model :
+            sklearn compatible model used to compute out-of-sample predicted probabilities for the labels.
+
+        Returns
+        -------
+        args_dict :
+            Dictionary of required arguments for each issue type, if available.
+        """
+        args_dict = {
+            "label": {"pred_probs": pred_probs, "model": model},
+            "outlier": {"pred_probs": pred_probs, "features": features},
+            "near_duplicate": {"features": features},
+        }
+
+        args_dict = {
+            k: {k2: v2 for k2, v2 in v.items() if v2 is not None} for k, v in args_dict.items() if v
+        }
+        args_dict = {k: v for k, v in args_dict.items() if v}
+
+        return args_dict
 
     def _set_issue_types(
         self,
