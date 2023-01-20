@@ -259,6 +259,8 @@ def find_label_issues(
         raise ValueError(
             "filter_by 'confident_learning' or 'predicted_neq_given' is not supported (yet) when setting 'num_to_remove_per_class'"
         )
+    # Boolean set to true if dataset is large
+    big_dataset = K * len(labels) > 1e8
 
     # Set-up number of multiprocessing threads
     # On Windows/macOS, when multi_label is True, multiprocessing is much slower
@@ -270,10 +272,13 @@ def find_label_issues(
         else:
             if psutil_exists:
                 n_jobs = psutil.cpu_count(logical=False)  # physical cores
-            else:
+            elif big_dataset:
                 print(
-                    """To default to the number of physical cores for multiprocessing in find_label_issues(), please: "pip install psutil"."""
-                )
+                    "To default `n_jobs` to the number of physical cores for multiprocessing in find_label_issues(), please: `pip install psutil`.\n"
+                    "Note: You can safely ignore this message. `n_jobs` only affects runtimes, results will be the same no matter its value.\n"
+                    "Since psutil is not installed, `n_jobs` was set to the number of logical cores by default.\n"
+                    "Disable this message by either installing psutil or specifying the `n_jobs` argument." 
+                )  # pragma: no cover
             if not n_jobs:
                 # either psutil does not exist
                 # or psutil can return None when physical cores cannot be determined
@@ -306,8 +311,6 @@ def find_label_issues(
     )
     # Number of examples in each class of labels
     label_counts = value_counts_fill_missing_classes(labels, K, multi_label=multi_label)
-    # Boolean set to true if dataset is large
-    big_dataset = K * len(labels) > 1e8
     # Ensure labels are of type np.ndarray()
     labels = np.asarray(labels)
     if confident_joint is None or filter_by == "confident_learning":
