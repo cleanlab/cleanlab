@@ -26,11 +26,11 @@ This module considers two types of datasets:
 import numpy as np
 from sklearn.metrics import confusion_matrix
 import multiprocessing
-from multiprocessing.sharedctypes import RawArray
 import sys
 import warnings
 from typing import Any, Dict, List, Optional, Tuple, Union
 from functools import reduce
+import platform
 
 from cleanlab.count import calibrate_confident_joint
 from cleanlab.rank import (
@@ -46,9 +46,8 @@ from cleanlab.internal.util import (
 from cleanlab.internal.multilabel_utils import stack_complement, get_onehot_num_classes, int2onehot
 from cleanlab.typing import LabelLike
 
-# tqdm is a module used to print time-to-complete when multiprocessing is used.
-# This module is not necessary, and therefore is not a package dependency, but
-# when installed it improves user experience for large datasets.
+# tqdm is a package to print time-to-complete when multiprocessing is used.
+# This package is not necessary, but when installed improves user experience for large datasets.
 try:
     import tqdm
 
@@ -58,6 +57,19 @@ except ImportError as e:  # pragma: no cover
 
     w = """To see estimated completion times for methods in cleanlab.filter, "pip install tqdm"."""
     warnings.warn(w)
+
+# psutil is a package used to count physical cores for multiprocessing
+# This package is not necessary, because we can always fall back to logical cores as the default
+try:
+    import psutil
+
+    psutil_exists = True
+except ImportError as e:  # pragma: no cover
+    psutil_exists = False
+
+# global variable for find_label_issues multiprocessing
+pred_probs_by_class: Dict[int, np.ndarray]
+prune_count_matrix_cols: Dict[int, np.ndarray]
 
 
 def find_label_issues(
@@ -187,7 +199,7 @@ def find_label_issues(
 
     n_jobs : optional
       Number of processing threads used by multiprocessing. Default ``None``
-      sets to the number of cores on your CPU.
+      sets to the number of cores on your CPU (physical cores if you have ``psutil`` package installed, otherwise logical cores).
       Set this to 1 to *disable* parallel processing (if its causing issues).
       Windows users may see a speed-up with ``n_jobs=1``.
 
@@ -247,9 +259,34 @@ def find_label_issues(
             "filter_by 'confident_learning' or 'predicted_neq_given' is not supported (yet) when setting 'num_to_remove_per_class'"
         )
 
+    K = get_num_classes(
+        labels=labels, pred_probs=pred_probs, label_matrix=confident_joint, multi_label=multi_label
+    )
+    # Boolean set to true if dataset is large
+    big_dataset = K * len(labels) > 1e8
+
     # Set-up number of multiprocessing threads
+    # On Windows/macOS, when multi_label is True, multiprocessing is much slower
+    # even for faily large input arrays, so we default to n_jobs=1 in this case
+    os_name = platform.system()
     if n_jobs is None:
-        n_jobs = multiprocessing.cpu_count()
+        if multi_label and os_name != "Linux":
+            n_jobs = 1
+        else:
+            if psutil_exists:
+                n_jobs = psutil.cpu_count(logical=False)  # physical cores
+            elif big_dataset:
+                print(
+                    "To default `n_jobs` to the number of physical cores for multiprocessing in find_label_issues(), please: `pip install psutil`.\n"
+                    "Note: You can safely ignore this message. `n_jobs` only affects runtimes, results will be the same no matter its value.\n"
+                    "Since psutil is not installed, `n_jobs` was set to the number of logical cores by default.\n"
+                    "Disable this message by either installing psutil or specifying the `n_jobs` argument."
+                )  # pragma: no cover
+            if not n_jobs:
+                # either psutil does not exist
+                # or psutil can return None when physical cores cannot be determined
+                # switch to logical cores
+                n_jobs = multiprocessing.cpu_count()
     else:
         assert n_jobs >= 1
 
@@ -272,13 +309,8 @@ def find_label_issues(
         )
 
     # Else this is standard multi-class classification
-    K = get_num_classes(
-        labels=labels, pred_probs=pred_probs, label_matrix=confident_joint, multi_label=multi_label
-    )
     # Number of examples in each class of labels
     label_counts = value_counts_fill_missing_classes(labels, K, multi_label=multi_label)
-    # Boolean set to true if dataset is large
-    big_dataset = K * len(labels) > 1e8
     # Ensure labels are of type np.ndarray()
     labels = np.asarray(labels)
     if confident_joint is None or filter_by == "confident_learning":
@@ -310,83 +342,66 @@ def find_label_issues(
             prune_count_matrix = round_preserving_row_totals(tmp)
 
         # Prepare multiprocessing shared data
-        if n_jobs > 1:
-            _labels = RawArray("I", labels)  # type: ignore
-            _label_counts = RawArray("I", label_counts)  # type: ignore
-            _prune_count_matrix = RawArray("I", prune_count_matrix.flatten())  # type: ignore
-            _pred_probs = RawArray("f", pred_probs.flatten())  # type: ignore
-        else:  # Multiprocessing is turned off. Create tuple with all parameters
-            args = (
-                labels,
-                label_counts,
-                prune_count_matrix,
-                pred_probs,
-                multi_label,
-                min_examples_per_class,
-            )
+        # On Linux, multiprocessing is started with fork,
+        # so data can be shared with global vairables + COW
+        # On Window/macOS, processes are started with spawn,
+        # so data will need to be pickled to the subprocesses through input args
+        chunksize = max(1, K // n_jobs)
+        if n_jobs == 1 or os_name == "Linux":
+            global pred_probs_by_class, prune_count_matrix_cols
+            pred_probs_by_class = {k: pred_probs[labels == k] for k in range(K)}
+            prune_count_matrix_cols = {k: prune_count_matrix[:, k] for k in range(K)}
+            args = [[k, min_examples_per_class, None] for k in range(K)]
+        else:
+            args = [
+                [k, min_examples_per_class, [pred_probs[labels == k], prune_count_matrix[:, k]]]
+                for k in range(K)
+            ]
 
     # Perform Pruning with threshold probabilities from BFPRT algorithm in O(n)
     # Operations are parallelized across all CPU processes
     if filter_by == "prune_by_class" or filter_by == "both":
-        if n_jobs > 1:  # parallelize
-            with multiprocessing.Pool(
-                n_jobs,
-                initializer=_init,
-                initargs=(
-                    _labels,
-                    _label_counts,
-                    _prune_count_matrix,
-                    prune_count_matrix.shape,
-                    _pred_probs,
-                    pred_probs.shape,
-                    multi_label,
-                    min_examples_per_class,
-                ),
-            ) as p:
+        if n_jobs > 1:
+            with multiprocessing.Pool(n_jobs) as p:
                 if verbose:  # pragma: no cover
                     print("Parallel processing label issues by class.")
                 sys.stdout.flush()
                 if big_dataset and tqdm_exists:
                     label_issues_masks_per_class = list(
-                        tqdm.tqdm(p.imap(_prune_by_class, range(K)), total=K),
+                        tqdm.tqdm(p.imap(_prune_by_class, args, chunksize=chunksize), total=K)
                     )
                 else:
-                    label_issues_masks_per_class = p.map(_prune_by_class, range(K))
-        else:  # n_jobs = 1, so no parallelization
-            label_issues_masks_per_class = [_prune_by_class(k, args) for k in range(K)]
-        label_issues_mask = np.stack(label_issues_masks_per_class).any(axis=0)
+                    label_issues_masks_per_class = p.map(_prune_by_class, args, chunksize=chunksize)
+        else:
+            label_issues_masks_per_class = [_prune_by_class(arg) for arg in args]
+
+        label_issues_mask = np.zeros(len(labels), dtype=bool)
+        for k, mask in enumerate(label_issues_masks_per_class):
+            if len(mask) > 1:
+                label_issues_mask[labels == k] = mask
 
     if filter_by == "both":
         label_issues_mask_by_class = label_issues_mask
 
     if filter_by == "prune_by_noise_rate" or filter_by == "both":
-        if n_jobs > 1:  # parallelize
-            with multiprocessing.Pool(
-                n_jobs,
-                initializer=_init,
-                initargs=(
-                    _labels,
-                    _label_counts,
-                    _prune_count_matrix,
-                    prune_count_matrix.shape,
-                    _pred_probs,
-                    pred_probs.shape,
-                    multi_label,
-                    min_examples_per_class,
-                ),
-            ) as p:
+        if n_jobs > 1:
+            with multiprocessing.Pool(n_jobs) as p:
                 if verbose:  # pragma: no cover
                     print("Parallel processing label issues by noise rate.")
                 sys.stdout.flush()
                 if big_dataset and tqdm_exists:
                     label_issues_masks_per_class = list(
-                        tqdm.tqdm(p.imap(_prune_by_count, range(K)), total=K)
+                        tqdm.tqdm(p.imap(_prune_by_count, args, chunksize=chunksize), total=K)
                     )
                 else:
-                    label_issues_masks_per_class = p.map(_prune_by_count, range(K))
-        else:  # n_jobs = 1, so no parallelization
-            label_issues_masks_per_class = [_prune_by_count(k, args) for k in range(K)]
-        label_issues_mask = np.stack(label_issues_masks_per_class).any(axis=0)
+                    label_issues_masks_per_class = p.map(_prune_by_count, args, chunksize=chunksize)
+        else:
+            label_issues_masks_per_class = [_prune_by_count(arg) for arg in args]
+
+        label_issues_mask = np.zeros(len(labels), dtype=bool)
+        for k, mask in enumerate(label_issues_masks_per_class):
+            if len(mask) > 1:
+                label_issues_mask[labels == k] = mask
 
     if filter_by == "both":
         label_issues_mask = label_issues_mask & label_issues_mask_by_class
@@ -891,7 +906,7 @@ def _get_shared_data() -> Any:  # pragma: no cover
 
 
 # TODO figure out what the types inside args are.
-def _prune_by_class(k: int, args=None) -> np.ndarray:
+def _prune_by_class(args: list) -> np.ndarray:
     """multiprocessing Helper function for find_label_issues()
     that assumes globals and produces a mask for class k for each example by
     removing the examples with *smallest probability* of
@@ -902,41 +917,34 @@ def _prune_by_class(k: int, args=None) -> np.ndarray:
     k : int (between 0 and num classes - 1)
       The class of interest."""
 
-    if args:  # Single processing - params are passed in
-        (
-            labels,
-            label_counts,
-            prune_count_matrix,
-            pred_probs,
-            multi_label,
-            min_examples_per_class,
-        ) = args
-    else:  # Multiprocessing - data is shared across sub-processes
-        (
-            labels,
-            label_counts,
-            prune_count_matrix,
-            pred_probs,
-            multi_label,
-            min_examples_per_class,
-        ) = _get_shared_data()
-
-    if label_counts[k] > min_examples_per_class:  # No prune if not at least min_examples_per_class
-        num_issues = label_counts[k] - prune_count_matrix[k][k]
-        # Get return_indices_ranked_by of the smallest prob of class k for examples with noisy label k
-        label_filter = np.array([k in lst for lst in labels]) if multi_label else labels == k
-        class_probs = pred_probs[:, k]
-        rank = np.partition(class_probs[label_filter], num_issues)[num_issues]
-        return label_filter & (class_probs < rank)
+    k, min_examples_per_class, arrays = args
+    if arrays is None:
+        pred_probs = pred_probs_by_class[k]
+        prune_count_matrix = prune_count_matrix_cols[k]
     else:
-        warnings.warn(
-            f"May not flag all label issues in class: {k}, it has too few examples (see argument: `min_examples_per_class`)"
-        )
-        return np.zeros(len(labels), dtype=bool)
+        pred_probs = arrays[0]
+        prune_count_matrix = arrays[1]
+
+    label_counts = pred_probs.shape[0]
+    label_issues = np.zeros(label_counts, dtype=bool)
+    if label_counts > min_examples_per_class:  # No prune if not at least min_examples_per_class
+        num_issues = label_counts - prune_count_matrix[k]
+        # Get return_indices_ranked_by of the smallest prob of class k for examples with noisy label k
+        # rank = np.partition(class_probs, num_issues)[num_issues]
+        if num_issues >= 1:
+            class_probs = pred_probs[:, k]
+            order = np.argsort(class_probs)
+            label_issues[order[:num_issues]] = True
+        return label_issues
+
+    warnings.warn(
+        f"May not flag all label issues in class: {k}, it has too few examples (see argument: `min_examples_per_class`)"
+    )
+    return label_issues
 
 
 # TODO figure out what the types inside args are.
-def _prune_by_count(k: int, args=None) -> np.ndarray:
+def _prune_by_count(args: list) -> np.ndarray:
     """multiprocessing Helper function for find_label_issues() that assumes
     globals and produces a mask for class k for each example by
     removing the example with noisy label k having *largest margin*,
@@ -948,43 +956,34 @@ def _prune_by_count(k: int, args=None) -> np.ndarray:
     k : int (between 0 and num classes - 1)
       The true_label class of interest."""
 
-    if args:  # Single processing - params are passed in
-        (
-            labels,
-            label_counts,
-            prune_count_matrix,
-            pred_probs,
-            multi_label,
-            min_examples_per_class,
-        ) = args
-    else:  # Multiprocessing - data is shared across sub-processes
-        (
-            labels,
-            label_counts,
-            prune_count_matrix,
-            pred_probs,
-            multi_label,
-            min_examples_per_class,
-        ) = _get_shared_data()
+    k, min_examples_per_class, arrays = args
+    if arrays is None:
+        pred_probs = pred_probs_by_class[k]
+        prune_count_matrix = prune_count_matrix_cols[k]
+    else:
+        pred_probs = arrays[0]
+        prune_count_matrix = arrays[1]
 
-    label_issues_mask = np.zeros(len(pred_probs), dtype=bool)
-    pred_probs_k = pred_probs[:, k]
-    K = get_num_classes(labels, pred_probs, multi_label=multi_label)
-    if label_counts[k] <= min_examples_per_class:  # No prune if not at least min_examples_per_class
+    label_counts = pred_probs.shape[0]
+    label_issues_mask = np.zeros(label_counts, dtype=bool)
+    if label_counts <= min_examples_per_class:
         warnings.warn(
             f"May not flag all label issues in class: {k}, it has too few examples (see `min_examples_per_class` argument)"
         )
-        return np.zeros(len(labels), dtype=bool)
-    for j in range(K):  # j is true label index (k is noisy label index)
-        num2prune = prune_count_matrix[j][k]
+        return label_issues_mask
+
+    K = pred_probs.shape[1]
+    if K < 1:
+        raise ValueError("Must have at least 1 class.")
+    for j in range(K):
+        num2prune = prune_count_matrix[j]
         # Only prune for noise rates, not diagonal entries
         if k != j and num2prune > 0:
             # num2prune's largest p(true class k) - p(noisy class k)
             # for x with true label j
-            margin = pred_probs[:, j] - pred_probs_k
-            label_filter = np.array([k in lst for lst in labels]) if multi_label else labels == k
-            cut = -np.partition(-margin[label_filter], num2prune - 1)[num2prune - 1]
-            label_issues_mask = label_issues_mask | (label_filter & (margin >= cut))
+            margin = pred_probs[:, j] - pred_probs[:, k]
+            order = np.argsort(-margin)
+            label_issues_mask[order[:num2prune]] = True
     return label_issues_mask
 
 
