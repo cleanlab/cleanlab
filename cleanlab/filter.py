@@ -258,6 +258,10 @@ def find_label_issues(
         raise ValueError(
             "filter_by 'confident_learning' or 'predicted_neq_given' is not supported (yet) when setting 'num_to_remove_per_class'"
         )
+
+    K = get_num_classes(
+        labels=labels, pred_probs=pred_probs, label_matrix=confident_joint, multi_label=multi_label
+    )
     # Boolean set to true if dataset is large
     big_dataset = K * len(labels) > 1e8
 
@@ -305,9 +309,6 @@ def find_label_issues(
         )
 
     # Else this is standard multi-class classification
-    K = get_num_classes(
-        labels=labels, pred_probs=pred_probs, label_matrix=confident_joint, multi_label=multi_label
-    )
     # Number of examples in each class of labels
     label_counts = value_counts_fill_missing_classes(labels, K, multi_label=multi_label)
     # Ensure labels are of type np.ndarray()
