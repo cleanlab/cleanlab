@@ -24,4 +24,4 @@ jobs:
           empty_alt_ignore: true
           url_ignore_re: |
             ^https:\/\/docs\.github\.com\/
-            ^https:\/\/github\.com\/cleanlab\/cleanlab\/projects\/
+            ^https:\/\/github\.com\/cleanlab\/cleanlab\/projects
