@@ -52,9 +52,7 @@ def python_version_ok():  # tensorflow and torch do not play nice with older Pyt
 
 def run_fasttext_test():
     # run test only if os enviroment is set of true and os is not Windows
-    if os.environ.get("TEST_FASTTEXT") == "true" and os.name != "nt":
-        return True
-    return False
+    return os.environ.get("TEST_FASTTEXT") == "true" and os.name != "nt"
 
 
 def dataset_w_errors():
@@ -297,7 +295,7 @@ def test_torch_rarelabel(data=DATA_RARE_LABEL, hidden_units=8):
     pred_probs = cl.predict(dataset)
 
 
-# test fasttext
+# test fasttext only if not on windows and environment variable TEST_FASTTEXT has been set to "true"
 @pytest.mark.skipif(
     "not run_fasttext_test()", reason="fasttext is not easily pip install-able on windows"
 )
