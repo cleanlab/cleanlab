@@ -21,16 +21,21 @@ Ancillary helper methods used internally throughout this package; mostly related
 import warnings
 import numpy as np
 import pandas as pd
-from typing import Union, Tuple
+from typing import Union, Tuple, TypeVar, Optional, Callable, List, Any
 
 from cleanlab.typing import DatasetLike, LabelLike
 from cleanlab.internal.validation import labels_to_array
+import numpy.typing as npt
 
 
 TINY_VALUE = 1e-100
 
+T = TypeVar("T", bound=npt.NBitBase)
 
-def remove_noise_from_class(noise_matrix, class_without_noise) -> np.ndarray:
+
+def remove_noise_from_class(
+    noise_matrix: npt.NDArray["np.floating[T]"], class_without_noise: int
+) -> npt.NDArray["np.floating[T]"]:
     """A helper function in the setting of PU learning.
     Sets all P(label=class_without_noise|true_label=any_other_class) = 0
     in noise_matrix for pulearning setting, where we have
@@ -65,7 +70,7 @@ def remove_noise_from_class(noise_matrix, class_without_noise) -> np.ndarray:
     return x
 
 
-def clip_noise_rates(noise_matrix) -> np.ndarray:
+def clip_noise_rates(noise_matrix: npt.NDArray["np.floating[T]"]) -> npt.NDArray["np.floating[T]"]:
     """Clip all noise rates to proper range [0,1), but
     do not modify the diagonal terms because they are not
     noise rates.
@@ -80,16 +85,18 @@ def clip_noise_rates(noise_matrix) -> np.ndarray:
         Diagonal terms are not noise rates, but are consistency P(label=k|true_label=k)
         Assumes columns of noise_matrix sum to 1"""
 
-    def clip_noise_rate_range(noise_rate) -> float:
+    def clip_noise_rate_range(noise_rate: float) -> float:
         """Clip noise rate P(label=k'|true_label=k) or P(true_label=k|label=k')
         into proper range [0,1)"""
         return min(max(noise_rate, 0.0), 0.9999)
 
     # Vectorize clip_noise_rate_range for efficiency with np.ndarrays.
-    vectorized_clip = np.vectorize(clip_noise_rate_range)
+    vectorized_clip: Callable[
+        [npt.NDArray["np.floating[T]"]], npt.NDArray["np.floating[T]"]
+    ] = np.vectorize(clip_noise_rate_range)
 
     # Preserve because diagonal entries are not noise rates.
-    diagonal = np.diagonal(noise_matrix)
+    diagonal: npt.NDArray["np.floating[T]"] = np.diagonal(noise_matrix)
 
     # Clip all noise rates (efficiently).
     noise_matrix = vectorized_clip(noise_matrix)
@@ -102,7 +109,12 @@ def clip_noise_rates(noise_matrix) -> np.ndarray:
     return noise_matrix
 
 
-def clip_values(x, low=0.0, high=1.0, new_sum=None) -> np.ndarray:
+def clip_values(
+    x: npt.NDArray["np.floating[T]"],
+    low: float = 0.0,
+    high: float = 1.0,
+    new_sum: Optional[float] = None,
+) -> npt.NDArray["np.floating[T]"]:
     """Clip all values in p to range [low,high].
     Preserves sum of x.
 
@@ -125,11 +137,13 @@ def clip_values(x, low=0.0, high=1.0, new_sum=None) -> np.ndarray:
     x : np.ndarray
         A list of clipped values, summing to the same sum as x."""
 
-    def clip_range(a, low=low, high=high):
+    def clip_range(a: float, low: float = low, high: float = high) -> float:
         """Clip a into range [low,high]"""
         return min(max(a, low), high)
 
-    vectorized_clip = np.vectorize(
+    vectorized_clip: Callable[
+        [npt.NDArray["np.floating[T]"]], npt.NDArray["np.floating[T]"]
+    ] = np.vectorize(
         clip_range
     )  # Vectorize clip_range for efficiency with np.ndarrays
     prev_sum = sum(x) if new_sum is None else new_sum  # Store previous sum
@@ -140,7 +154,12 @@ def clip_values(x, low=0.0, high=1.0, new_sum=None) -> np.ndarray:
     return x
 
 
-def value_counts(x, *, num_classes=None, multi_label=False) -> np.ndarray:
+def value_counts(
+    x: Union[List[Any], npt.NDArray[Union[np.int_, np.str_]]],
+    *,
+    num_classes: Optional[int] = None,
+    multi_label: bool = False,
+) -> npt.NDArray[np.int_]:
     """Returns an np.ndarray of shape (K, 1), with the
     value counts for every unique item in the labels list/array,
     where K is the number of unique entries in labels.
@@ -173,7 +192,7 @@ def value_counts(x, *, num_classes=None, multi_label=False) -> np.ndarray:
 
     # Efficient method if x is pd.Series, np.ndarray, or list
     if multi_label:
-        x = [z for lst in x for z in lst]  # Flatten
+        x: List[Union[np.int_, np.str_]] = [z for lst in x for z in lst]  # Flatten
     unique_classes, counts = np.unique(x, return_counts=True)
     if num_classes is None or num_classes == len(unique_classes):
         return counts
@@ -182,8 +201,8 @@ def value_counts(x, *, num_classes=None, multi_label=False) -> np.ndarray:
         raise ValueError(f"Required: num_classes > max(x), but {num_classes} <= {max(x)}.")
     # Add zero counts for all missing classes in [0, 1,..., num_classes-1]
     # multi_label=False regardless because x was flattened.
-    missing_classes = get_missing_classes(x, num_classes=num_classes, multi_label=False)
-    missing_counts = [(z, 0) for z in missing_classes]
+    missing_classes: List[int] = get_missing_classes(x, num_classes=num_classes, multi_label=False)
+    missing_counts: List[Tuple[int]] = [(z, 0) for z in missing_classes]
     # Return counts with zeros for all missing classes.
     return np.array(list(zip(*sorted(list(zip(unique_classes, counts)) + missing_counts)))[1])
 
@@ -246,7 +265,9 @@ def round_preserving_sum(iterable) -> np.ndarray:
     return ints.astype(int)
 
 
-def round_preserving_row_totals(confident_joint) -> np.ndarray:
+def round_preserving_row_totals(
+    confident_joint: npt.NDArray["np.floating[T]"],
+) -> npt.NDArray[np.int_]:
     """Rounds confident_joint cj to type int
     while preserving the totals of reach row.
     Assumes that cj is a 2D np.ndarray of type float.
@@ -732,7 +753,7 @@ def format_labels(labels: LabelLike) -> Tuple[np.ndarray, dict]:
     return formatted_labels, inverse_map
 
 
-def smart_display_dataframe(df):  # pragma: no cover
+def smart_display_dataframe(df: pd.DataFrame):  # pragma: no cover
     """Display a pandas dataframe if in a jupyter notebook, otherwise print it to console."""
     try:
         from IPython.display import display
