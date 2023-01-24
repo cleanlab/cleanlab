@@ -191,6 +191,10 @@ class TestOutOfDistributionIssueManager:
         issue_manager.find_issues(pred_probs=pred_probs)
         report = issue_manager.report()
         assert isinstance(report, str)
+        assert (
+            "------------------------------------outlier-------------------------------------\n\n"
+            "   is_outlier_issue  outlier_score\n"
+        ) in report
 
 
 def test_register_custom_issue_manager():

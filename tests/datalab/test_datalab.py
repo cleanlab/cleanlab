@@ -353,7 +353,8 @@ class TestDatalab:
         # Mock three managers
         im1, im2, im3 = Mock(), Mock(), Mock()
         im1.name, im2.name, im3.name = "foo", "bar", "baz"
-        monkeypatch.setattr(lab, "issue_managers", {"foo": im1, "bar": im2, "baz": im3})
+        mock_issue_managers = {"foo": im1, "bar": im2, "baz": im3}
+        monkeypatch.setattr(lab, "issue_managers", mock_issue_managers)
 
         selected_managers = lab._get_managers(["foo", "baz"])
         assert selected_managers == [im1, im3]
