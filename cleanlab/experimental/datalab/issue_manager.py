@@ -144,6 +144,7 @@ class IssueManager(ABC):
         }
 
     def report(self, k: int = 5, verbosity: int = 0) -> str:
+        import json
 
         if verbosity not in self.verbosity_levels:
             raise ValueError(
@@ -156,13 +157,16 @@ class IssueManager(ABC):
         topk_ids = self.issues.sort_values(by=self.issue_score_key, ascending=True).index[:k]
 
         report_str = f"{self.issue_name:-^80}\n\n"
+
+        report_str += f"Score: {self.summary.loc[0, 'score']:.4f}\n\n"
+
         columns = {}
+        info_to_omit = []
         for level, verbosity_dict in self.verbosity_levels.items():
             if level <= verbosity:
                 for key, values in verbosity_dict.items():
                     if key == "info":
-                        for value in values:
-                            report_str += f"{value}:\n{self.info[value]}\n\n"
+                        info_to_omit.extend(values)
                     elif key == "issue":
                         # Add the issue-specific info, with the top k ids
                         new_columns = {
@@ -171,7 +175,45 @@ class IssueManager(ABC):
                             if self.info.get(col, None) is not None
                         }
                         columns.update(new_columns)
+                        info_to_omit.extend(values)
         report_str += self.issues.loc[topk_ids].copy().assign(**columns).to_string()
+
+        # Dump the info dict, omitting the info that has already been printed
+        info_to_omit = set(info_to_omit)
+        info_to_print = {key: value for key, value in self.info.items() if key not in info_to_omit}
+
+        def truncate(s, max_len=4) -> str:
+            if hasattr(s, "shape") or hasattr(s, "ndim"):
+                s = np.array(s)
+                if s.ndim > 1:
+                    description = f"array of shape {s.shape}\n"
+                    if s.ndim == 2:
+                        description += f"{np.array2string(s, max_line_width=1000)}"
+                    if s.ndim > 2:
+                        description += f"{np.array2string(s, max_line_width=1000, separator=', ')}"
+                    return description
+                s = s.tolist()
+
+            if isinstance(s, list):
+                if all([isinstance(s_, list) for s_ in s]):
+                    return truncate(np.array(s, dtype=object), max_len=max_len)
+                if len(s) > max_len:
+                    s = s[:max_len] + ["..."]
+            return str(s)
+
+        # Print the info dict, truncating arrays to 4 elements,
+        report_str += f"\n\nInfo:"
+        for key, value in info_to_print.items():
+            if isinstance(value, dict):
+                report_str += f"\n{key}:\n{json.dumps(value, indent=4)}"
+            if isinstance(value, pd.DataFrame):
+                max_rows = 5
+                df_str = value.head(max_rows).to_string()
+                if len(value) > max_rows:
+                    df_str += f"\n... (total {len(value)} rows)"
+                report_str += f"\n{key}:\n{df_str}"
+            else:
+                report_str += f"\n{key}: {truncate(value)}"
         return report_str
 
 
