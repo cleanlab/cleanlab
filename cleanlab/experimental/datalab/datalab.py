@@ -90,7 +90,8 @@ class Datalab:
                 "num_classes": len(class_names),
                 "multi_label": False,  # TODO: Add multi-label support.
                 "health_score": None,
-            }
+            },
+            "statistics": {},
         }
         self.cleanlab_version = cleanlab.version.__version__
         self.path = ""
@@ -173,11 +174,21 @@ class Datalab:
             for factory in _IssueManagerFactory.from_list(list(issue_types_copy.keys()))
         ]
 
+        failed_managers = []
         for issue_manager, arg_dict in zip(new_issue_managers, issue_types_copy.values()):
-            issue_manager.find_issues(**arg_dict)
-            self.collect_results_from_issue_manager(issue_manager)
+            try:
+                issue_manager.find_issues(**arg_dict)
+                self.collect_results_from_issue_manager(issue_manager)
+            except Exception as e:
+                print(f"Error in {issue_manager.issue_name}: {e}")
+                failed_managers.append(issue_manager)
 
-        self.issue_managers.update({im.issue_name: im for im in new_issue_managers})
+        if failed_managers:
+            print(f"Failed to find issues for {failed_managers}")
+        added_managers = {
+            im.issue_name: im for im in new_issue_managers if im not in failed_managers
+        }
+        self.issue_managers.update(added_managers)
 
     def _resolve_required_args(self, pred_probs, features, model):
         """Resolves the required arguments for each issue type.

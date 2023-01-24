@@ -176,3 +176,36 @@ class TestOutOfDistributionIssueManager:
         assert np.all(
             info.get("confident_thresholds", None) == [0.1, 0.825, 0.575]
         ), "Should have confident_joint info"
+
+    def test_report(self, issue_manager):
+
+        pred_probs = np.array(
+            [
+                [0.1, 0.85, 0.05],
+                [0.15, 0.8, 0.05],
+                [0.05, 0.05, 0.9],
+                [0.1, 0.05, 0.85],
+                [0.1, 0.65, 0.25],
+            ]
+        )
+        issue_manager.find_issues(pred_probs=pred_probs)
+        report = issue_manager.report()
+        assert isinstance(report, str)
+
+
+def test_register_custom_issue_manager():
+
+    from cleanlab.experimental.datalab.factory import REGISTRY, register
+    from cleanlab.experimental.datalab.issue_manager import IssueManager
+
+    assert "foo" not in REGISTRY
+
+    @register
+    class Foo(IssueManager):
+        issue_name = "foo"
+
+        def find_issues(self):
+            pass
+
+    assert "foo" in REGISTRY
+    assert REGISTRY["foo"] == Foo

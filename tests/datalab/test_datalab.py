@@ -17,6 +17,7 @@
 
 import os
 import pickle
+from unittest.mock import Mock
 from cleanlab.experimental.datalab.datalab import Datalab
 
 from sklearn.neighbors import NearestNeighbors
@@ -293,3 +294,66 @@ class TestDatalab:
                 "Data has been modified since Lab was saved. Cannot load Lab with modified data."
             )
             assert expected_error_msg == str(excinfo.value)
+
+    def test_failed_issue_managers(self, lab, monkeypatch):
+        """Test that a failed issue manager will not be added to the Datalab instance after
+        the call to `find_issues`."""
+        mock_issue_types = {"erroneous_issue_type": {}}
+        monkeypatch.setattr(lab, "_set_issue_types", lambda *args, **kwargs: mock_issue_types)
+
+        mock_issue_manager = Mock()
+        mock_issue_manager.name = "erronous"
+        mock_issue_manager.find_issues.side_effect = ValueError("Some error")
+
+        class MockIssueManagerFactory:
+            @staticmethod
+            def from_list(*args, **kwargs):
+                return [mock_issue_manager]
+
+        monkeypatch.setattr(
+            "cleanlab.experimental.datalab.datalab._IssueManagerFactory", MockIssueManagerFactory
+        )
+
+        lab.find_issues()
+        # We expect to have no issue managers in the Datalab instance.
+        assert len(lab.issue_managers) == 0
+
+    def test_get_report(self, lab, monkeypatch):
+        """Test that the report method works. Assuming we have two issue managers, each should add
+        their section to the report."""
+        mock_issues = pd.DataFrame(
+            {
+                "is_foo_issue": [False, True, False, False, False],
+                "foo_score": [0.6, 0.8, 0.7, 0.7, 0.8],
+            }
+        )
+        monkeypatch.setattr(lab, "issues", mock_issues)
+
+        mock_issue_summary = pd.DataFrame(
+            {
+                "issue_type": ["foo"],
+                "score": [0.72],
+            }
+        )
+
+        monkeypatch.setattr(lab, "issue_summary", mock_issue_summary)
+
+        mock_issue_manager = Mock()
+        mock_issue_manager.name = "foo"
+        mock_issue_manager.report.return_value = "foo report"
+        monkeypatch.setattr(
+            lab, "_get_managers", lambda *args, **kwargs: [mock_issue_manager, mock_issue_manager]
+        )
+
+        report = lab._get_report(k=3, verbosity=0)
+        assert report == "foo report\n\nfoo report\n\n"
+
+    def test_get_managers(self, lab, monkeypatch):
+        """Test that the _get_managers method works."""
+        # Mock three managers
+        im1, im2, im3 = Mock(), Mock(), Mock()
+        im1.name, im2.name, im3.name = "foo", "bar", "baz"
+        monkeypatch.setattr(lab, "issue_managers", {"foo": im1, "bar": im2, "baz": im3})
+
+        selected_managers = lab._get_managers(["foo", "baz"])
+        assert selected_managers == [im1, im3]
