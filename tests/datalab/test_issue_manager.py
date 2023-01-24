@@ -193,7 +193,7 @@ class TestOutOfDistributionIssueManager:
         assert isinstance(report, str)
         assert (
             "------------------------------------outlier-------------------------------------\n\n"
-            "   is_outlier_issue  outlier_score\n"
+            "Score: "
         ) in report
 
 
