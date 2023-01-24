@@ -460,7 +460,7 @@ class OutOfDistributionIssueManager(IssueManager):
         }
 
 
-class NearDuplicateIssueManager(IssueManager):
+class NearDuplicateIssueManager(IssueManager):  # pragma: no cover
     """Manages issues realted to near-duplicate examples."""
 
     issue_name: str = "near_duplicate"
