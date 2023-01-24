@@ -22,7 +22,7 @@ from __future__ import annotations
 import os
 import pickle
 import warnings
-from typing import Any, Dict, Mapping, Optional, Union
+from typing import Any, Dict, List, Mapping, Optional, Union
 
 import datasets
 import numpy as np
@@ -403,13 +403,19 @@ class Datalab:
     def report(self, k: int = 5, verbosity: int = 0) -> None:
         """Prints helpful summary of all issues."""
         # Show summary of issues
+        print(self._get_report(k, verbosity))
+
+    def _get_report(self, k: int, verbosity: int) -> str:
         # Sort issues based on the score
         # Show top K issues
         # Show the info (get_info) with some verbosity level
         #   E.g. for label issues, only show the confident joint computed with the health_summary
-        issue_type_argsort = self.issue_summary["score"].argsort().values
-        issue_type_sorted_keys = self.issue_summary["issue_type"].values[issue_type_argsort]
-        issue_managers = [self.issue_managers[i] for i in issue_type_sorted_keys]
+        issue_type_sorted_keys: List[str] = (
+            self.issue_summary.sort_values(by="score", ascending=True)["issue_type"]
+            .to_numpy()
+            .tolist()
+        )
+        issue_managers = self._get_managers(issue_type_sorted_keys)
         report_str = ""
         for issue_manager in issue_managers:
 
@@ -443,7 +449,11 @@ class Datalab:
                                 report += f"{value}:\n{issue_manager.info[value]}\n\n"
             report += issue_manager.issues.loc[topk_ids].copy().assign(**columns).to_string()
             report_str += report + "\n\n"
-        print(report_str)
+        return report_str
+
+    def _get_managers(self, keys: List[str]) -> List[IssueManager]:
+        issue_managers = [self.issue_managers[i] for i in keys]
+        return issue_managers
 
     def __repr__(self) -> str:
         """What is displayed in console if user executes: >>> datalab"""
