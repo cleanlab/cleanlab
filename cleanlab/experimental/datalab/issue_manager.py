@@ -123,9 +123,9 @@ class IssueManager(ABC):
 
         >>> verbosity_levels = {
         ...     0: {},
-        ...     1: {"summary": ["some_info_key"]},
+        ...     1: {"info": ["some_info_key"]},
         ...     2: {
-        ...         "summary": ["additional_info_key"],
+        ...         "info": ["additional_info_key"],
         ...         "issues": ["issue_column_1", "issue_column_2"],
         ...     },
         ... }
@@ -140,7 +140,39 @@ class IssueManager(ABC):
             0: {},
             1: {},
             2: {},
+            3: {},
         }
+
+    def report(self, k: int = 5, verbosity: int = 0) -> str:
+
+        if verbosity not in self.verbosity_levels:
+            raise ValueError(
+                f"Verbosity level {verbosity} not supported. "
+                f"Supported levels: {self.verbosity_levels.keys()}"
+            )
+        if self.issues.empty:
+            print(f"No issues found")
+
+        topk_ids = self.issues.sort_values(by=self.issue_score_key, ascending=True).index[:k]
+
+        report_str = f"{self.issue_name:-^80}\n\n"
+        columns = {}
+        for level, verbosity_dict in self.verbosity_levels.items():
+            if level <= verbosity:
+                for key, values in verbosity_dict.items():
+                    if key == "info":
+                        for value in values:
+                            report_str += f"{value}:\n{self.info[value]}\n\n"
+                    elif key == "issue":
+                        # Add the issue-specific info, with the top k ids
+                        new_columns = {
+                            col: np.array(self.info[col])[topk_ids]
+                            for col in values
+                            if self.info.get(col, None) is not None
+                        }
+                        columns.update(new_columns)
+        report_str += self.issues.loc[topk_ids].copy().assign(**columns).to_string()
+        return report_str
 
 
 class LabelIssueManager(IssueManager):
@@ -305,8 +337,9 @@ class LabelIssueManager(IssueManager):
     def verbosity_levels(self) -> Dict[int, Any]:
         return {
             0: {},
-            1: {"summary": ["confident_joint"]},
+            1: {"info": ["confident_joint"]},
             2: {"issue": ["given_label", "predicted_label"]},
+            3: {"info": ["classes_by_label_quality", "overlapping_classes"]},
         }
 
 
@@ -422,7 +455,7 @@ class OutOfDistributionIssueManager(IssueManager):
     def verbosity_levels(self) -> Dict[int, Any]:
         return {
             0: {},
-            1: {"summary": ["num_outlier_issues"], "issue": ["nearest_neighbour"]},
+            1: {"info": ["num_outlier_issues"], "issue": ["nearest_neighbour"]},
             2: {"issue": ["distance_to_nearest_neighbour"]},
         }
 
