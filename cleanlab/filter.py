@@ -25,10 +25,11 @@ This module considers two types of datasets:
 
 import numpy as np
 from sklearn.metrics import confusion_matrix
+import numpy.typing as npt
 import multiprocessing
 import sys
 import warnings
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union, TypeVar
 from functools import reduce
 import platform
 
@@ -74,7 +75,7 @@ prune_count_matrix_cols: Dict[int, np.ndarray]
 
 def find_label_issues(
     labels: LabelLike,
-    pred_probs: np.ndarray,
+    pred_probs: npt.NDArray["np.floating[T]"],
     *,
     return_indices_ranked_by: Optional[str] = None,
     rank_by_kwargs: Optional[Dict[str, Any]] = None,
@@ -82,11 +83,11 @@ def find_label_issues(
     multi_label: bool = False,
     frac_noise: float = 1.0,
     num_to_remove_per_class: Optional[int] = None,
-    min_examples_per_class=1,
-    confident_joint: Optional[np.ndarray] = None,
+    min_examples_per_class: int = 1,
+    confident_joint: Optional[npt.NDArray["np.floating[T]"]] = None,
     n_jobs: Optional[int] = None,
     verbose: bool = False,
-) -> np.ndarray:
+) -> npt.NDArray[Union[np.bool_, np.int_]]:
     """
     Identifies potentially bad labels in a classification dataset using confident learning.
 
@@ -115,7 +116,7 @@ def find_label_issues(
       `labels` should be an iterable of iterables (e.g. ``List[List[int]]``) whose i-th element corresponds to list of classes that i-th example belongs to (e.g. ``labels = [[1,2],[1],[0],[],...]``).
 
     pred_probs : np.ndarray, optional
-      An array of shape ``(N, K)`` of model-predicted class probabilities,
+      A 2D array of shape ``(N, K)`` of model-predicted class probabilities,
       ``P(label=k|x)``. Each row of this matrix corresponds
       to an example `x` and contains the model-predicted probabilities that
       `x` belongs to each possible class, for each of the K classes. The
@@ -229,7 +230,7 @@ def find_label_issues(
         "confident_learning",
         "predicted_neq_given",
     ]  # TODO: change default to confident_learning ?
-    allow_one_class = False
+    allow_one_class: bool = False
     if isinstance(labels, np.ndarray) or all(isinstance(lab, int) for lab in labels):
         if set(labels) == {0}:  # occurs with missing classes in multi-label settings
             allow_one_class = True
@@ -326,7 +327,7 @@ def find_label_issues(
         # Create `prune_count_matrix` with the number of examples to remove in each class and
         # leave at least min_examples_per_class examples per class.
         # `prune_count_matrix` is transposed relative to the confident_joint.
-        prune_count_matrix = _keep_at_least_n_per_class(
+        prune_count_matrix: npt.NDArray[np.int_] = _keep_at_least_n_per_class(
             prune_count_matrix=confident_joint.T,
             n=min_examples_per_class,
             frac_noise=frac_noise,
@@ -334,8 +335,10 @@ def find_label_issues(
 
         if num_to_remove_per_class is not None:
             # Estimate joint probability distribution over label issues
-            psy = prune_count_matrix / np.sum(prune_count_matrix, axis=1)
-            noise_per_s = psy.sum(axis=1) - psy.diagonal()
+            psy: npt.NDArray["np.floating[T]"] = prune_count_matrix / np.sum(
+                prune_count_matrix, axis=1
+            )
+            noise_per_s: npt.NDArray["np.floating[T]"] = psy.sum(axis=1) - psy.diagonal()
             # Calibrate labels.t. noise rates sum to num_to_remove_per_class
             tmp = (psy.T * num_to_remove_per_class / noise_per_s).T
             np.fill_diagonal(tmp, label_counts - num_to_remove_per_class)
@@ -438,18 +441,19 @@ def find_label_issues(
 
 
 def _find_label_issues_multilabel(
-    labels: list,
-    pred_probs: np.ndarray,
+    labels: LabelLike,
+    pred_probs: npt.NDArray["np.floating[T]"],
     return_indices_ranked_by: Optional[str] = None,
-    rank_by_kwargs={},
+    rank_by_kwargs: Dict = {},
     filter_by: str = "prune_by_noise_rate",
     frac_noise: float = 1.0,
     num_to_remove_per_class: Optional[int] = None,
-    min_examples_per_class=1,
+    min_examples_per_class: int = 1,
     confident_joint: Optional[np.ndarray] = None,
     n_jobs: Optional[int] = None,
     verbose: bool = False,
-) -> np.ndarray:
+) -> npt.NDArray[Union[np.bool_, np.int_]]:
+    # TODO: add docstring in the same format as other functions with args and returns
     """
     Finds label issues in multi-label classification data where each example can belong to more than one class.
     This is done via a one-vs-rest reduction for each class and the results are subsequently aggregated across all classes.
