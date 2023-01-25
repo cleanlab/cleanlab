@@ -197,10 +197,12 @@ class TestOutOfDistributionIssueManager:
         ) in report
 
 
-def test_register_custom_issue_manager():
+def test_register_custom_issue_manager(monkeypatch):
 
     from cleanlab.experimental.datalab.factory import REGISTRY, register
     from cleanlab.experimental.datalab.issue_manager import IssueManager
+    import io
+    import sys
 
     assert "foo" not in REGISTRY
 
@@ -213,3 +215,23 @@ def test_register_custom_issue_manager():
 
     assert "foo" in REGISTRY
     assert REGISTRY["foo"] == Foo
+
+    # Reregistering should overwrite the existing class, put print a warning
+
+    monkeypatch.setattr("sys.stdout", io.StringIO())
+
+    @register
+    class NewFoo(IssueManager):
+        issue_name = "foo"
+
+        def find_issues(self):
+            pass
+
+    assert "foo" in REGISTRY
+    assert REGISTRY["foo"] == NewFoo
+    assert all(
+        [
+            text in sys.stdout.getvalue()
+            for text in ["Warning: Overwriting existing issue manager foo with ", "NewFoo"]
+        ]
+    ), "Should print a warning"
