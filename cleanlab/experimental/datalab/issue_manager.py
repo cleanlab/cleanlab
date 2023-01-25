@@ -417,8 +417,14 @@ class OutOfDistributionIssueManager(IssueManager):
             raise ValueError(f"Either features or pred_probs must be provided.")
 
         if self.threshold is None:
-            # 10th percentile of scores
-            self.threshold = np.percentile(scores, 10)
+            if self._embeddings is not None:
+                knn: NearestNeighbors = self.ood.params["knn"]  # type: ignore
+                distances, _ = knn.kneighbors(self._embeddings, n_neighbors=2)
+                nn_distances = distances[:, 1]
+                count_scale = min(len(nn_distances) - 1, 10)
+                self.threshold = np.exp(-count_scale * np.mean(nn_distances) * self.ood.params["t"])
+            else:
+                self.threshold = np.percentile(scores, 10)
 
         self.issues = pd.DataFrame(
             {
