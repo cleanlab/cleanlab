@@ -400,6 +400,7 @@ class OutOfDistributionIssueManager(IssueManager):
         super().__init__(datalab)
         self.ood: OutOfDistribution = OutOfDistribution(**(ood_kwargs or {}))
         self.threshold = threshold
+        self._embeddings: Optional[np.ndarray] = None
 
     def find_issues(
         self,
@@ -477,9 +478,9 @@ class OutOfDistributionIssueManager(IssueManager):
         return scores
 
     def _score_with_features(self, features: List[str], **kwargs) -> np.ndarray:
-        embeddings = self._extract_embeddings(columns=features, **kwargs)
+        self._embeddings = self._extract_embeddings(columns=features, **kwargs)
 
-        scores = self.ood.fit_score(features=embeddings)
+        scores = self.ood.fit_score(features=self._embeddings)
         return scores
 
     # TODO: Update annotation for columns and related args in other methods
