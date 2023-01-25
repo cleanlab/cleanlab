@@ -33,7 +33,7 @@ class _IssueManagerFactory:
     @classmethod
     def from_list(cls, issue_types: List[str]) -> List[Type[IssueManager]]:
         """Constructs a list of concrete issue manager classes from a list of strings."""
-        return [REGISTRY[issue_type] for issue_type in issue_types]
+        return [cls.from_str(issue_type) for issue_type in issue_types]
 
 
 def register(cls: Type[IssueManager]):
