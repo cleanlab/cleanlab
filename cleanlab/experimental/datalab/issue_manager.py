@@ -146,10 +146,12 @@ class IssueManager(ABC):
     def report(self, k: int = 5, verbosity: int = 0) -> str:
         import json
 
-        if verbosity not in self.verbosity_levels:
+        top_level = max(self.verbosity_levels.keys()) + 1
+        if verbosity not in list(self.verbosity_levels.keys()) + [top_level]:
             raise ValueError(
                 f"Verbosity level {verbosity} not supported. "
                 f"Supported levels: {self.verbosity_levels.keys()}"
+                f"Use verbosity={top_level} to print all info."
             )
         if self.issues.empty:
             print(f"No issues found")
@@ -161,12 +163,12 @@ class IssueManager(ABC):
         report_str += f"Score: {self.summary.loc[0, 'score']:.4f}\n\n"
 
         columns = {}
-        info_to_omit = []
+        info_to_omit = set()
         for level, verbosity_dict in self.verbosity_levels.items():
             if level <= verbosity:
                 for key, values in verbosity_dict.items():
                     if key == "info":
-                        info_to_omit.extend(values)
+                        info_to_omit.update(values)
                     elif key == "issue":
                         # Add the issue-specific info, with the top k ids
                         new_columns = {
@@ -175,11 +177,16 @@ class IssueManager(ABC):
                             if self.info.get(col, None) is not None
                         }
                         columns.update(new_columns)
-                        info_to_omit.extend(values)
+                        info_to_omit.update(values)
+
+        if verbosity == max(self.verbosity_levels.keys()) + 1:
+            info_to_omit = set()
+            for verbosity_dict in self.verbosity_levels.values():
+                info_to_omit.update(verbosity_dict.get("issue", []))
+
         report_str += self.issues.loc[topk_ids].copy().assign(**columns).to_string()
 
         # Dump the info dict, omitting the info that has already been printed
-        info_to_omit = set(info_to_omit)
         info_to_print = {key: value for key, value in self.info.items() if key not in info_to_omit}
 
         def truncate(s, max_len=4) -> str:
@@ -187,10 +194,11 @@ class IssueManager(ABC):
                 s = np.array(s)
                 if s.ndim > 1:
                     description = f"array of shape {s.shape}\n"
-                    if s.ndim == 2:
-                        description += f"{np.array2string(s, max_line_width=1000)}"
-                    if s.ndim > 2:
-                        description += f"{np.array2string(s, max_line_width=1000, separator=', ')}"
+                    with np.printoptions(threshold=max_len):
+                        if s.ndim == 2:
+                            description += f"{s}"
+                        if s.ndim > 2:
+                            description += f"{s}"
                     return description
                 s = s.tolist()
 
@@ -201,19 +209,20 @@ class IssueManager(ABC):
                     s = s[:max_len] + ["..."]
             return str(s)
 
-        # Print the info dict, truncating arrays to 4 elements,
-        report_str += f"\n\nInfo:"
-        for key, value in info_to_print.items():
-            if isinstance(value, dict):
-                report_str += f"\n{key}:\n{json.dumps(value, indent=4)}"
-            if isinstance(value, pd.DataFrame):
-                max_rows = 5
-                df_str = value.head(max_rows).to_string()
-                if len(value) > max_rows:
-                    df_str += f"\n... (total {len(value)} rows)"
-                report_str += f"\n{key}:\n{df_str}"
-            else:
-                report_str += f"\n{key}: {truncate(value)}"
+        if info_to_print:
+            # Print the info dict, truncating arrays to 4 elements,
+            report_str += f"\n\nInfo: "
+            for key, value in info_to_print.items():
+                if isinstance(value, dict):
+                    report_str += f"\n{key}:\n{json.dumps(value, indent=4)}"
+                elif isinstance(value, pd.DataFrame):
+                    max_rows = 5
+                    df_str = value.head(max_rows).to_string()
+                    if len(value) > max_rows:
+                        df_str += f"\n... (total {len(value)} rows)"
+                    report_str += f"\n{key}:\n{df_str}"
+                else:
+                    report_str += f"\n{key}: {truncate(value)}"
         return report_str
 
 

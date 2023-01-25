@@ -177,7 +177,7 @@ class TestOutOfDistributionIssueManager:
             info.get("confident_thresholds", None) == [0.1, 0.825, 0.575]
         ), "Should have confident_joint info"
 
-    def test_report(self, issue_manager):
+    def test_report(self, issue_manager, monkeypatch):
 
         pred_probs = np.array(
             [
@@ -195,6 +195,32 @@ class TestOutOfDistributionIssueManager:
             "------------------------------------outlier-------------------------------------\n\n"
             "Score: "
         ) in report
+
+        report = issue_manager.report(verbosity=3)
+        assert "Info: " in report
+
+        # Mock some vector and matrix values in the info dict
+        mock_info = issue_manager.info
+        vector = np.array([1, 2, 3, 4, 5, 6])
+        matrix = np.array([[i for i in range(20)] for _ in range(10)])
+        df = pd.DataFrame(matrix)
+        mock_list = [9, 8, 7, 6, 5, 4, 3, 2, 1]
+        mock_dict = {"a": 1, "b": 2, "c": 3}
+        mock_info["vector"] = vector
+        mock_info["matrix"] = matrix
+        mock_info["list"] = mock_list
+        mock_info["dict"] = mock_dict
+        mock_info["df"] = df
+
+        monkeypatch.setattr(issue_manager, "info", mock_info)
+
+        report = issue_manager.report(verbosity=2)
+        assert "Info: " in report
+        assert "vector: [1, 2, 3, 4, '...']" in report
+        assert f"matrix: array of shape {matrix.shape}\n[[ 0 " in report
+        assert "list: [9, 8, 7, 6, '...']" in report
+        assert 'dict:\n{\n    "a": 1,\n    "b": 2,\n    "c": 3\n}' in report
+        assert "df:" in report
 
 
 def test_register_custom_issue_manager(monkeypatch):
