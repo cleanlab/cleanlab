@@ -24,10 +24,8 @@ import pickle
 import warnings
 from typing import Any, Dict, List, Mapping, Optional, Union
 
-import datasets
 import numpy as np
 import pandas as pd
-from datasets import load_from_disk
 from datasets.arrow_dataset import Dataset
 
 import cleanlab
@@ -36,16 +34,9 @@ from cleanlab.experimental.datalab.data import Data
 from cleanlab.experimental.datalab.data_issues import DataIssues
 from cleanlab.experimental.datalab.issue_manager import IssueManager
 from cleanlab.experimental.datalab.display import _Displayer
-from cleanlab.internal.validation import labels_to_array
+from cleanlab.experimental.datalab.serialize import _Serializer
 
 __all__ = ["Datalab"]
-
-# Constants:
-OBJECT_FILENAME = "datalab.pkl"
-ISSUES_FILENAME = "issues.csv"
-ISSUE_SUMMARY_FILENAME = "summary.csv"
-INFO_FILENAME = "info.pkl"
-DATA_DIRNAME = "data"
 
 
 class Datalab:
@@ -66,23 +57,17 @@ class Datalab:
         data: Dataset,
         label_name: Union[str, list[str]],
     ) -> None:
-        self._validate_data(data)
-        self._validate_data_and_labels(data, label_name)
-
-        if isinstance(label_name, list):
-            raise NotImplementedError("TODO: multi-label support.")
-
         self._data = Data(data, label_name)  # TODO: Set extracted class instance to self.data
         self.data = self._data._data
-        self.data_issues = DataIssues(self._data)
+        self._labels, self._label_map = self._data._labels, self._data._label_map
         self._data_hash = self._data._data_hash
         self.label_name = self._data._label_name
         # self.data.set_format(
         #     type="numpy"
         # )  # TODO: figure out if we are setting all features to numpy, maybe exclude label_name?
+        self.data_issues = DataIssues(self._data)
         self.issues = self.data_issues.issues
         self.issue_summary = self.data_issues.issue_summary
-        self._labels, self._label_map = self._data._labels, self._data._label_map
         self.info = self.data_issues.info
         self.cleanlab_version = cleanlab.version.__version__
         self.path = ""
@@ -96,76 +81,9 @@ class Datalab:
         """What is displayed if user executes: print(datalab)"""
         return _Displayer(self).__str__()
 
-    def __getstate__(self) -> dict:
-        """Used by pickle to serialize the object.
-
-        We don't want to pickle the issues, since it's just a dataframe and can be exported to
-        a human readable format. We can replace it with the file path to the exported file.
-
-        """
-        state = self.__dict__.copy()
-        save_path = self.path
-
-        # Update the issues to be the path to the exported file.
-        state["issues"] = os.path.join(save_path, ISSUES_FILENAME)
-        self.issues.to_csv(state["issues"], index=False)
-
-        # Update the issue summary to be the path to the exported file.
-        state["issue_summary"] = os.path.join(save_path, ISSUE_SUMMARY_FILENAME)
-        self.issue_summary.to_csv(state["issue_summary"], index=False)
-
-        # Save the dataset to disk
-        if self.data is not None:
-            state["data"] = os.path.join(save_path, DATA_DIRNAME)
-            self.data.save_to_disk(state["data"])
-        # if self.info is not None:
-        #     state["info"] = os.path.join(save_path, INFO_FILENAME)
-        #     # Pickle the info dict.
-        #     with open(state["info"], "wb") as f:
-        #         pickle.dump(self.info, f)
-
-        return state
-
-    def __setstate__(self, state: dict) -> None:
-        """Used by pickle to deserialize the object.
-
-        We need to load the issues from the file path.
-        """
-
-        save_path = state.get("path", "")
-        if save_path:
-            issues_path = state["issues"]
-            if isinstance(issues_path, str) and os.path.exists(issues_path):
-                state["issues"] = pd.read_csv(issues_path)
-
-            issue_summary_path = state["issue_summary"]
-            if isinstance(issue_summary_path, str) and os.path.exists(issue_summary_path):
-                state["issue_summary"] = pd.read_csv(issue_summary_path)
-
-            data_path = state["data"]
-            if isinstance(data_path, str) and os.path.exists(data_path):
-                state["data"] = load_from_disk(data_path)
-
-            # info_path = state["info"]
-            # if isinstance(info_path, str) and os.path.exists(info_path):
-            #     with open(info_path, "r") as f:
-            #         state["info"] = pickle.load(f)
-        self.__dict__.update(state)
-
     @property
     def labels(self) -> np.ndarray:
         return self._labels
-
-    @classmethod
-    def _validate_version(cls, datalab: "Datalab") -> None:
-        current_version = cleanlab.__version__
-        datalab_version = datalab.cleanlab_version
-        if current_version != datalab_version:
-            warnings.warn(
-                f"Saved Datalab was created using different version of cleanlab "
-                f"({datalab_version}) than current version ({current_version}). "
-                f"Things may be broken!"
-            )
 
     def _resolve_required_args(self, pred_probs, features, model):
         """Resolves the required arguments for each issue type.
@@ -269,62 +187,6 @@ class Datalab:
             for issue_name, missing_required_args in missing_required_args_dict.items():
                 error_message += f"Required argument {missing_required_args} for issue type {issue_name} was not provided.\n"
             raise ValueError(error_message)
-
-    def _set_labels(self, label_name: Union[str, list[str]]) -> tuple[np.ndarray, Mapping]:
-        """
-        Extracts labels from the dataset and stores it in self._labels.
-
-        Parameters
-        ----------
-        label_name : str or list[str] (TODO)
-            Name of the column in the dataset that contains the labels.
-
-        Returns
-        -------
-        formatted_labels : np.ndarray
-            Labels in the format [0, 1, ..., K-1] where K is the number of classes.
-
-        inverse_map : dict
-            Mapping from the formatted labels to the original labels in the dataset.
-        """
-
-        if isinstance(label_name, list):
-
-            raise NotImplementedError("TODO")
-
-            # _labels = np.vstack([my_data[label] for label in labels]).T
-
-        # Raw values from the dataset
-        _labels = self.data[label_name]
-        _labels = labels_to_array(_labels)  # type: ignore[assignment]
-        if _labels.ndim != 1:
-            raise ValueError("labels must be 1D numpy array.")
-
-        unique_labels = np.unique(_labels)
-        label_map = {label: i for i, label in enumerate(unique_labels)}
-        # labels 0, 1, ..., K-1
-        formatted_labels = np.array([label_map[label] for label in _labels])
-        inverse_map = {i: label for label, i in label_map.items()}
-
-        return formatted_labels, inverse_map
-
-    @staticmethod
-    def _validate_data(data) -> None:
-        if isinstance(data, datasets.DatasetDict):
-            raise ValueError(
-                "Please pass a single dataset, not a DatasetDict. "
-                "Try initializing with data['train'] instead."
-            )
-
-        assert isinstance(data, Dataset)
-
-    @staticmethod
-    def _validate_data_and_labels(data, labels) -> None:
-        if isinstance(labels, np.ndarray):
-            assert labels.shape[0] == data.shape[0]
-
-        if isinstance(labels, str):
-            pass
 
     def _get_report(self, k: int, verbosity: int) -> str:
         # Sort issues based on the score
@@ -522,26 +384,10 @@ class Datalab:
 
         You have to save the Dataset yourself if you want it saved to file!
         """
+        _Serializer.serialize(path=path, datalab=self)
 
-        if os.path.exists(path):
-            print(f"WARNING: Existing files will be overwritten by newly saved files at: {path}")
-        else:
-            os.mkdir(path)
-
-        self.path = path
-
-        object_file = os.path.join(self.path, OBJECT_FILENAME)
-        with open(object_file, "wb") as f:
-            pickle.dump(self, f)
-
-        print(
-            f"Saved Datalab to folder: {path}"
-            "The Dataset must be saved/loaded separately "
-            "to access it after reloading this Datalab."
-        )
-
-    @classmethod
-    def load(cls, path: str, data: Optional[Dataset] = None) -> "Datalab":
+    @staticmethod
+    def load(path: str, data: Optional[Dataset] = None) -> "Datalab":
         """Loads Lab from file. Folder could ideally be zipped or unzipped.
         Checks which cleanlab version Lab was previously saved from
             and raises warning if they dont match.
@@ -551,27 +397,4 @@ class Datalab:
         If data is None, the self.data attribute of this object
             will be empty and some functionality may not work.
         """
-        if not os.path.exists(path):
-            raise ValueError(f"No folder found at specified path: {path}")
-
-        object_file = os.path.join(path, OBJECT_FILENAME)
-        with open(object_file, "rb") as f:
-            datalab = pickle.load(f)
-
-        cls._validate_version(datalab)
-
-        if data is not None:
-            if hash(data) != datalab._data_hash:
-                raise ValueError(
-                    "Data has been modified since Lab was saved. "
-                    "Cannot load Lab with modified data."
-                )
-
-            if len(data) != len(datalab.labels):
-                raise ValueError(
-                    f"Length of data ({len(data)}) does not match length of labels ({len(datalab.labels)})"
-                )
-
-            datalab.data = data
-
-        return datalab
+        return _Serializer.deserialize(path=path, data=data)
