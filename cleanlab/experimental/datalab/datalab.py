@@ -252,32 +252,33 @@ class Datalab:
             Dictionary of issue types and their parameter configuration.
             The input `issue_types` is copied and updated with the necessary default values.
         """
-        issue_types_copy = (
-            issue_types.copy() if issue_types is not None else required_defaults_dict.copy()
-        )
         if issue_types is not None:
-            for key, issue_type_value in issue_types_copy.items():
-                missing_args = set(required_defaults_dict.get(key, {})) - set(
-                    issue_type_value.keys()
-                )
-                # Impute missing arguments with default values.
-                missing_dict = {
-                    missing_arg: required_defaults_dict[key][missing_arg]
-                    for missing_arg in missing_args
-                }
-                issue_types_copy[key].update(missing_dict)
+            issue_types_copy = issue_types.copy()
+            self._check_missing_args(required_defaults_dict, issue_types_copy)
+        else:
+            issue_types_copy = required_defaults_dict.copy()
         # Check that all required arguments are provided.
         self._validate_issue_types_dict(issue_types_copy, required_defaults_dict)
 
         # Remove None values from argument list, rely on default values in IssueManager
-        for arg_dict in issue_types_copy.values():
-            for k, v in arg_dict.copy().items():
-                if v is None:
-                    del arg_dict[k]
+        for key, value in issue_types_copy.items():
+            issue_types_copy[key] = {k: v for k, v in value.items() if v is not None}
         return issue_types_copy
 
+    @staticmethod
+    def _check_missing_args(required_defaults_dict, issue_types):
+        for key, issue_type_value in issue_types.items():
+            missing_args = set(required_defaults_dict.get(key, {})) - set(issue_type_value.keys())
+            # Impute missing arguments with default values.
+            missing_dict = {
+                missing_arg: required_defaults_dict[key][missing_arg]
+                for missing_arg in missing_args
+            }
+            issue_types[key].update(missing_dict)
+
+    @staticmethod
     def _validate_issue_types_dict(
-        self, issue_types: Dict[str, Any], required_defaults_dict: Dict[str, Any]
+        issue_types: Dict[str, Any], required_defaults_dict: Dict[str, Any]
     ) -> None:
         missing_required_args_dict = {}
         for issue_name, required_args in required_defaults_dict.items():
