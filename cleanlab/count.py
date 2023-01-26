@@ -139,13 +139,28 @@ def num_label_issues(
             calibrate=False,
             return_indices_of_off_diagonals=True,
         )
+
+        label_issues_mask = np.zeros(len(labels), dtype=bool)
+        for idx in cl_error_indices:
+            label_issues_mask[idx] = True
+
+        # Remove label issues if given label == model prediction
+        pred = pred_probs.argmax(axis=1)
+        for i, pred_label in enumerate(pred):
+            if pred_label == labels[i]:
+                label_issues_mask[i] = False
+        num_issues = np.sum(label_issues_mask)
     elif estimation_method == "off_diagonal_calibrated":
-        confident_joint, cl_error_indices = compute_confident_joint(
+        confident_joint = compute_confident_joint(
             labels=labels,
             pred_probs=pred_probs,
             calibrate=True,
-            return_indices_of_off_diagonals=True,
         )
+
+        # Estimate_joint calibrates the row sums to match the prior distribution of given labels and normalizes to sum to 1
+        joint = estimate_joint(labels, pred_probs, confident_joint=confident_joint)
+        frac_issues = 1.0 - joint.trace()
+        num_issues = np.rint(frac_issues * len(labels)).astype(int)
     else:
         raise ValueError(
             f"""
@@ -154,16 +169,7 @@ def num_label_issues(
                 """
         )
 
-    label_issues_mask = np.zeros(len(labels), dtype=bool)
-    for idx in cl_error_indices:
-        label_issues_mask[idx] = True
-
-    # Remove label issues if given label == model prediction
-    pred = pred_probs.argmax(axis=1)
-    for i, pred_label in enumerate(pred):
-        if pred_label == labels[i]:
-            label_issues_mask[i] = False
-    return np.sum(label_issues_mask)
+    return num_issues
 
 
 def _num_label_issues_multilabel(
