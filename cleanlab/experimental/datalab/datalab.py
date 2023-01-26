@@ -520,52 +520,26 @@ class Datalab:
 
         You have to save the Dataset yourself if you want it saved to file!
         """
+        warning_message = (
+            f"WARNING: Existing files will be overwritten by newly saved files at: {path}"
+        )
+        save_message = (
+            f"Saved Datalab to folder: {path}"
+            "The Dataset must be saved/loaded separately "
+            "to access it after reloading this Datalab."
+        )
         if os.path.exists(path):
-            print(f"WARNING: Existing files will be overwritten by newly saved files at: {path}")
+            print(warning_message)
         else:
             os.mkdir(path)
 
         self.path = path
 
-        # delete big attributes of this object that should be save
-        # d in separate formats:
-        # info, issues, results
-
-        # stored_info = None
-        # if self.info is not None:
-        #     stored_info = self.info
-        #     self.info = None
-        #     info_file = os.path.join(self.path, INFO_FILENAME)
-        #     with open(info_file, "wb") as f:
-        #         # json.dump(stored_info, f)
-        #         pickle.dump(stored_info, f)
-
-        # # Save the issues to a csv file.
-        # if isinstance(self.issues, pd.DataFrame):
-        #     self.issues.to_csv(os.path.join(self.path, ISSUES_FILENAME), index=False)
-
-        # stored_results = None
-        # if self.issue_summary is not None:
-        #     stored_results = self.issue_summary
-        #     self.issue_summary = None
-        #     results_file = os.path.join(self.path, RESULTS_FILENAME)
-        #     # stored_results.to_csv(results_file)
-        #     with open(results_file, "wb") as f:
-        #         pickle.dump(stored_results, f)
-
-        # save trimmed version of this object
         object_file = os.path.join(self.path, OBJECT_FILENAME)
         with open(object_file, "wb") as f:
             pickle.dump(self, f)
 
-        # revert object back to original state
-        # self.info = stored_info
-        # self.issue_summary = stored_results
-        print(f"Saved Datalab to folder: {path}")
-        print(
-            "The Dataset must be saved/loaded separately "
-            "to access it after reloading this Datalab."
-        )
+        print(save_message)
 
     @classmethod
     def load(cls, path: str, data: Optional[Dataset] = None) -> "Datalab":
