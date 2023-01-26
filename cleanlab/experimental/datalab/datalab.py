@@ -295,7 +295,7 @@ class Datalab:
         for issue_manager, arg_dict in zip(new_issue_managers, issue_types_copy.values()):
             try:
                 issue_manager.find_issues(**arg_dict)
-                self.collect_results_from_issue_manager(issue_manager)
+                self._collect_results_from_issue_manager(issue_manager)
             except Exception as e:
                 print(f"Error in {issue_manager.issue_name}: {e}")
                 failed_managers.append(issue_manager)
@@ -307,7 +307,7 @@ class Datalab:
         }
         self.issue_managers.update(added_managers)
 
-    def collect_results_from_issue_manager(self, issue_manager: IssueManager) -> None:
+    def _collect_results_from_issue_manager(self, issue_manager: IssueManager) -> None:
         """
         Collects results from an IssueManager and update the corresponding
         attributes of the Datalab object.
