@@ -14,7 +14,7 @@ from sklearn.utils.validation import check_is_fitted
 from cleanlab.internal.validation import assert_valid_inputs
 
 if TYPE_CHECKING:  # pragma: no cover
-    from cleanlab.experimental.datalab.datalab import Datalab  # pragma: no cover
+    from cleanlab.experimental.datalab.datalab import Datalab
 
 
 class IssueManager(ABC):

@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 """
-Implements cleanlab's DataLab interface as a one-stop-shop for tracking
+Implements cleanlab's Datalab interface as a one-stop-shop for tracking
 and managing all kinds of issues in datasets.
 """
 from __future__ import annotations
@@ -48,6 +48,16 @@ class Datalab:
     ----------
     data :
         A Hugging Face Dataset object.
+
+    label_name :
+        The name of the label column in the dataset.
+
+    Examples
+    --------
+    >>> import datasets
+    >>> from cleanlab import Datalab
+    >>> data = datasets.load_dataset("glue", "sst2", split="train")
+    >>> datalab = Datalab(data, label_name="label")
     """
 
     def __init__(
@@ -78,6 +88,7 @@ class Datalab:
 
     @property
     def labels(self) -> np.ndarray:
+        """Labels of the dataset, in a [0, 1, ..., K-1] format."""
         return self._labels
 
     def _resolve_required_args(self, pred_probs, features, model):

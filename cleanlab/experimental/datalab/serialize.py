@@ -24,7 +24,7 @@ import cleanlab
 
 from cleanlab.experimental.datalab.data import Data
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover
     from cleanlab.experimental.datalab.datalab import Datalab
     from datasets.arrow_dataset import Dataset
 
