@@ -47,6 +47,10 @@ def create_data():
             [5.5, 7.0],
         ]
     )
+    # Add a near duplicate point to the last outlier, with some tiny noise added
+    near_duplicate = X_out[-1:] + np.random.rand(1, 2) * 1e-3
+    X_out = np.concatenate([X_out, near_duplicate])
+
     y_out = np.sum(X_out, axis=1)
     y_out_bin = np.array([k for y_i in y_out for k, v in BINS.items() if v[0] <= y_i < v[1]])
     y_out_bin_idx = np.array([BINS_MAP[k] for k in y_out_bin])
