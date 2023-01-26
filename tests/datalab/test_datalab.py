@@ -206,8 +206,11 @@ class TestDatalab:
     def test_save(self, lab, tmp_path, monkeypatch):
         """Test that the save and load methods work."""
         lab.save(tmp_path)
-        assert tmp_path.exists(), "File was not saved"
+        assert tmp_path.exists(), "Save directory was not created"
         assert (tmp_path / "data").is_dir(), "Data directory was not saved"
+        assert (tmp_path / "issues.csv").exists(), "Issues file was not saved"
+        assert (tmp_path / "summary.csv").exists(), "Issue summary file was not saved"
+        assert (tmp_path / "datalab.pkl").exists(), "Datalab file was not saved"
 
         # Mock the issues dataframe
         mock_issues = pd.DataFrame(
@@ -270,17 +273,16 @@ class TestDatalab:
         lab.save(tmp_path)
 
         loaded_lab = Datalab.load(tmp_path)
-        assert loaded_lab.data.data == lab.data.data
-        assert loaded_lab.label_name == lab.label_name
-        assert all(loaded_lab._labels == lab._labels)
-        assert loaded_lab._label_map == lab._label_map
+        data = lab._data
+        loaded_data = loaded_lab._data
+        assert loaded_data == data
         assert loaded_lab.info == lab.info
         pd.testing.assert_frame_equal(loaded_lab.issues, mock_issues)
         pd.testing.assert_frame_equal(loaded_lab.issue_summary, mock_issue_summary)
 
         # Load accepts a `Dataset`.
         loaded_lab = Datalab.load(tmp_path, data=dataset)
-        assert loaded_lab.data.data == dataset.data
+        assert loaded_lab.data._data == dataset.data
 
         # Misaligned dataset raises a ValueError
         with pytest.raises(ValueError) as excinfo:

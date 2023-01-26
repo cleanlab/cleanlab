@@ -32,7 +32,10 @@ from datasets.arrow_dataset import Dataset
 
 import cleanlab
 from cleanlab.experimental.datalab.factory import _IssueManagerFactory
+from cleanlab.experimental.datalab.data import Data
+from cleanlab.experimental.datalab.data_issues import DataIssues
 from cleanlab.experimental.datalab.issue_manager import IssueManager
+from cleanlab.experimental.datalab.display import _Displayer
 from cleanlab.internal.validation import labels_to_array
 
 __all__ = ["Datalab"]
@@ -69,54 +72,29 @@ class Datalab:
         if isinstance(label_name, list):
             raise NotImplementedError("TODO: multi-label support.")
 
-        self.data = data
-        self._data_hash = hash(data)
-        self.label_name = label_name
-        self.data.set_format(
-            type="numpy"
-        )  # TODO: figure out if we are setting all features to numpy, maybe exclude label_name?
-        self.issues: pd.DataFrame = pd.DataFrame(
-            index=range(len(self.data))
-        )  # TODO: Keep track of all issue types,
-        self.issue_summary: pd.DataFrame = pd.DataFrame(
-            columns=["issue_type", "score"]
-        )  # TODO: For each issue type, add a score
-        self._labels, self._label_map = self._set_labels(self.label_name)
-        class_names = self.data.unique(self.label_name)  # TODO
-        self.info = {
-            "data": {
-                "num_examples": len(self.data),
-                "class_names": class_names,
-                "num_classes": len(class_names),
-                "multi_label": False,  # TODO: Add multi-label support.
-                "health_score": None,
-            },
-            "statistics": {},
-        }
+        self._data = Data(data, label_name)  # TODO: Set extracted class instance to self.data
+        self.data = self._data._data
+        self.data_issues = DataIssues(self._data)
+        self._data_hash = self._data._data_hash
+        self.label_name = self._data._label_name
+        # self.data.set_format(
+        #     type="numpy"
+        # )  # TODO: figure out if we are setting all features to numpy, maybe exclude label_name?
+        self.issues = self.data_issues.issues
+        self.issue_summary = self.data_issues.issue_summary
+        self._labels, self._label_map = self._data._labels, self._data._label_map
+        self.info = self.data_issues.info
         self.cleanlab_version = cleanlab.version.__version__
         self.path = ""
         self.issue_managers: Dict[str, IssueManager] = {}
 
     def __repr__(self) -> str:
-        """What is displayed in console if user executes: >>> datalab"""
-        checks_run = self.issues is None
-        display_str = f"checks_run={checks_run},"
-        num_examples = self.get_info("data", "num_examples")
-        if num_examples is not None:
-            display_str += f"num_examples={num_examples},"
-        num_classes = self.get_info("data", "num_classes")
-        if num_classes is not None:
-            display_str += f"num_classes={num_classes},"
-        if display_str[-1] == ",":  # delete trailing comma
-            display_str = display_str[:-1]
-
-        # Useful info could be: num_examples, task, issues_identified
-        # (numeric or None if issue-finding not run yet).
-        return f"Datalab({display_str})"
+        """What is displayed if user executes: datalab"""
+        return _Displayer(self).__repr__()
 
     def __str__(self) -> str:
         """What is displayed if user executes: print(datalab)"""
-        return "Datalab"  # TODO
+        return _Displayer(self).__str__()
 
     def __getstate__(self) -> dict:
         """Used by pickle to serialize the object.
