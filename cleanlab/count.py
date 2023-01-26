@@ -133,7 +133,7 @@ def num_label_issues(
     assert_valid_inputs(X=None, y=labels, pred_probs=pred_probs)
 
     if estimation_method == "off_diagonal":
-        confident_joint, cl_error_indices = compute_confident_joint(
+        _, cl_error_indices = compute_confident_joint(
             labels=labels,
             pred_probs=pred_probs,
             calibrate=False,
@@ -151,14 +151,14 @@ def num_label_issues(
                 label_issues_mask[i] = False
         num_issues = np.sum(label_issues_mask)
     elif estimation_method == "off_diagonal_calibrated":
-        confident_joint = compute_confident_joint(
+        calculated_confident_joint = compute_confident_joint(
             labels=labels,
             pred_probs=pred_probs,
             calibrate=True,
         )
 
         # Estimate_joint calibrates the row sums to match the prior distribution of given labels and normalizes to sum to 1
-        joint = estimate_joint(labels, pred_probs, confident_joint=confident_joint)
+        joint = estimate_joint(labels, pred_probs, confident_joint=calculated_confident_joint)
         frac_issues = 1.0 - joint.trace()
         num_issues = np.rint(frac_issues * len(labels)).astype(int)
     else:
