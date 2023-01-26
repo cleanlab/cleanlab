@@ -87,7 +87,7 @@ def num_label_issues(
       Array of estimated class label error statisics used for identifying label issues,
       in same format expected by :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` function.
       The `confident_joint` can be computed using :py:func:`count.compute_confident_joint <cleanlab.count.compute_confident_joint>`.
-      If not provided, it is internally computed from the given (noisy) `labels` and `pred_probs`.
+      It is internally computed from the given (noisy) `labels` and `pred_probs`.
 
     estimation_method :
       Method for estimating the number of label issues in dataset by counting the examples in the off-diagonal of the `confident_joint` ``P(label=i, true_label=j)``.
@@ -102,6 +102,8 @@ def num_label_issues(
           2. If you have a custom score to rank your data by label quality and you just need to know the cut-off of likely label issues.
 
        TL;DR: Use this method to get the most accurate estimate of number of label issues when you don't need the indices of the label issues.
+       Note: ``'off_diagonal'`` may sometimes underestimate issues for low number of classes but you can always change frac_noise > 1 or get :py:func:`rank.get_label_quality_scores
+      <cleanlab.rank.get_label_quality_scores>` and choose your own cutoff.
 
     multi_label : bool, optional
       Set ``False`` if your dataset is for regular (multi-class) classification, where each example belongs to exactly one class.
@@ -114,6 +116,13 @@ def num_label_issues(
       The estimated number of examples with label issues in the dataset.
     """
     valid_methods = ["off_diagonal", "off_diagonal_calibrated"]
+    if isinstance(confident_joint, np.ndarray):
+        warn_str = (
+            "WARNING! The supplied 'confident_joint' is ignored. Instead the 'confident_joint' is "
+            "estimated from the passed in 'labels' and 'pred_probs'."
+        )
+        warnings.warn(warn_str)
+
     if multi_label:
         return _num_label_issues_multilabel(
             labels=labels,
