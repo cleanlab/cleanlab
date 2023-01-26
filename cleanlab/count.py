@@ -101,7 +101,7 @@ def num_label_issues(
           1. As we add more label and data quality scoring functions in :py:mod:`cleanlab.rank`, this approach will always work.
           2. If you have a custom score to rank your data by label quality and you just need to know the cut-off of likely label issues.
 
-       TL;DR: use this method to get the most accurate estimate of number of label issues when you don't need the indices of the label issues.
+       TL;DR: Use this method to get the most accurate estimate of number of label issues when you don't need the indices of the label issues.
 
     multi_label : bool, optional
       Set ``False`` if your dataset is for regular (multi-class) classification, where each example belongs to exactly one class.
@@ -123,32 +123,38 @@ def num_label_issues(
     labels = labels_to_array(labels)
     assert_valid_inputs(X=None, y=labels, pred_probs=pred_probs)
 
-    if confident_joint is None:
-        # Original non-calibrated counts of confidently correctly and incorrectly labeled examples.
-        computed_confident_joint = compute_confident_joint(
-            labels=labels, pred_probs=pred_probs, calibrate=False
-        )
-    else:
-        computed_confident_joint = confident_joint
-
-    assert isinstance(computed_confident_joint, np.ndarray)
-
     if estimation_method == "off_diagonal":
-        num_issues: int = np.sum(computed_confident_joint) - np.trace(computed_confident_joint)
+        confident_joint, cl_error_indices = compute_confident_joint(
+            labels=labels,
+            pred_probs=pred_probs,
+            calibrate=False,
+            return_indices_of_off_diagonals=True,
+        )
     elif estimation_method == "off_diagonal_calibrated":
-        # Estimate_joint calibrates the row sums to match the prior distribution of given labels and normalizes to sum to 1
-        joint = estimate_joint(labels, pred_probs, confident_joint=computed_confident_joint)
-        frac_issues = 1.0 - joint.trace()
-        num_issues = np.rint(frac_issues * len(labels)).astype(int)
+        confident_joint, cl_error_indices = compute_confident_joint(
+            labels=labels,
+            pred_probs=pred_probs,
+            calibrate=True,
+            return_indices_of_off_diagonals=True,
+        )
     else:
         raise ValueError(
             f"""
-            {estimation_method} is not a valid estimation method!
-            Please choose a valid estimation method: {valid_methods}
-            """
+                {estimation_method} is not a valid estimation method!
+                Please choose a valid estimation method: {valid_methods}
+                """
         )
 
-    return num_issues
+    label_issues_mask = np.zeros(len(labels), dtype=bool)
+    for idx in cl_error_indices:
+        label_issues_mask[idx] = True
+
+    # Remove label issues if given label == model prediction
+    pred = pred_probs.argmax(axis=1)
+    for i, pred_label in enumerate(pred):
+        if pred_label == labels[i]:
+            label_issues_mask[i] = False
+    return np.sum(label_issues_mask)
 
 
 def _num_label_issues_multilabel(
