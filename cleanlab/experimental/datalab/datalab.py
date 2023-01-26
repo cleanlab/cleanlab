@@ -19,10 +19,8 @@ and managing all kinds of issues in datasets.
 """
 from __future__ import annotations
 
-import os
-import pickle
 import warnings
-from typing import Any, Dict, List, Mapping, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -62,9 +60,6 @@ class Datalab:
         self._labels, self._label_map = self._data._labels, self._data._label_map
         self._data_hash = self._data._data_hash
         self.label_name = self._data._label_name
-        # self.data.set_format(
-        #     type="numpy"
-        # )  # TODO: figure out if we are setting all features to numpy, maybe exclude label_name?
         self.data_issues = DataIssues(self._data)
         self.issues = self.data_issues.issues
         self.issue_summary = self.data_issues.issue_summary
