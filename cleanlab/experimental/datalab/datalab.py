@@ -358,25 +358,8 @@ class Datalab:
         Keys might include: number of examples suffering from issue,
         indicates of top-K examples most severely suffering,
         other misc stuff like which sets of examples are duplicates if the issue=="duplicated".
-        """
-        if issue_name in self.info:
-            info = self.info[issue_name]
-            if subkeys:
-                for sub_id, subkey in enumerate(subkeys):
-                    if not isinstance(info, dict):
-                        raise ValueError(
-                            f"subkey {subkey} at index {sub_id} is not a valid key in info dict."
-                            f"info is {info} and remaining subkeys are {subkeys[sub_id:]}."
-                        )
-                    sub_info = info.get(subkey)
-                    info = sub_info
-            return info
-        else:
-            raise ValueError(
-                f"issue_name {issue_name} not found in self.info. These have not been computed yet."
-            )
-            # could alternatively consider:
-            # raise ValueError("issue_name must be a valid key in Datalab.info dict.")
+        """  # TODO: Revise Datalab.get_info docstring
+        return self.data_issues.get_info(issue_name, *subkeys)
 
     def report(self, k: int = 5, verbosity: int = 0) -> None:
         """Prints helpful summary of all issues."""

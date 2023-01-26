@@ -17,6 +17,7 @@
 Module for class that collects and stores information and statistics on
 issues found in the data.
 """
+from typing import Any
 from cleanlab.experimental.datalab.data import Data
 import pandas as pd
 
@@ -36,3 +37,23 @@ class DataIssues:
             },
             "statistics": {},
         }
+
+    def get_info(self, issue_name: str, *subkeys: str) -> Any:
+        if issue_name in self.info:
+            info = self.info[issue_name]
+            if subkeys:
+                for sub_id, subkey in enumerate(subkeys):
+                    if not isinstance(info, dict):
+                        raise ValueError(
+                            f"subkey {subkey} at index {sub_id} is not a valid key in info dict."
+                            f"info is {info} and remaining subkeys are {subkeys[sub_id:]}."
+                        )
+                    sub_info = info.get(subkey)
+                    info = sub_info
+            return info
+        else:
+            raise ValueError(
+                f"issue_name {issue_name} not found in self.info. These have not been computed yet."
+            )
+            # could alternatively consider:
+            # raise ValueError("issue_name must be a valid key in Datalab.info dict.")
