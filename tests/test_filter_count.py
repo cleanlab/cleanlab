@@ -18,6 +18,7 @@ from cleanlab import count, filter
 from cleanlab.count import (
     get_confident_thresholds,
     estimate_py_and_noise_matrices_from_probabilities,
+    compute_confident_joint,
 )
 from cleanlab.internal.latent_algebra import compute_inv_noise_matrix
 from cleanlab.benchmarking.noise_generation import generate_noise_matrix_from_trace
@@ -715,22 +716,16 @@ def test_find_label_issue_filters_match_origin_functions():
         assert "not supported" in str(e)
 
 
-@pytest.mark.parametrize("confident_joint", [None, True])
-def test_num_label_issues(confident_joint):
+@pytest.mark.filterwarnings()
+def test_num_label_issues():
     cj_calibrated_off_diag_sum = data["cj"].sum() - data["cj"].trace()
-    n = count.num_label_issues(
-        labels=data["labels"],
-        pred_probs=data["pred_probs"],
-        confident_joint=data["cj"],
-        estimation_method="off_diagonal",
-    )  # data["cj"] is already calibrated and estimation method does not do extra calibration
 
-    n1 = count.num_label_issues(
+    n1 = count.num_label_issues(  # should throw warning as cj is passed in but also recalculated
         labels=data["labels"],
         pred_probs=data["pred_probs"],
         confident_joint=data["cj"],
         estimation_method="off_diagonal_calibrated",
-    )  # data["cj"] is already calibrated but recalibrating it should not change the values
+    )
 
     n2 = count.num_label_issues(
         labels=data["labels"],
@@ -738,21 +733,29 @@ def test_num_label_issues(confident_joint):
         estimation_method="off_diagonal_calibrated",
     )  # this should calculate and calibrate the confident joint into same matrix as data["cj"]
 
-    # data["cj"] is already calibrated and estimation method does not do extra calibration
-    assert n == cj_calibrated_off_diag_sum
-    # data["cj"] is already calibrated but recalibrating it should not change the values
-    assert n == n1
+    # data["cj"] is already calibrated and recalibrating it should not change the values
+    assert n2 == cj_calibrated_off_diag_sum
     # should calculate and calibrate the confident joint into same matrix as data["cj"]
-    assert n == n2
+    assert n1 == n2
 
-    f = filter.find_label_issues(
+    f = filter.find_label_issues(  # this should throw warning since cj passed in and filter by confident_learning
         labels=data["labels"], pred_probs=data["pred_probs"], confident_joint=data["cj"]
     )
 
     assert sum(f) == 35
 
-    f1 = filter.find_label_issues(
-        labels=data["labels"], pred_probs=data["pred_probs"], filter_by="confident_learning"
+    f1 = filter.find_label_issues(  # this should throw warning since cj passed in and filter by confident_learning
+        labels=data["labels"],
+        pred_probs=data["pred_probs"],
+        filter_by="confident_learning",
+        confident_joint=data["cj"],
+    )
+
+    n = count.num_label_issues(  # should throw warning as cj is passed in but also recalculated
+        labels=data["labels"],
+        pred_probs=data["pred_probs"],
+        confident_joint=data["cj"],
+        estimation_method="off_diagonal",
     )
 
     n3 = count.num_label_issues(
@@ -761,6 +764,7 @@ def test_num_label_issues(confident_joint):
     )
 
     assert sum(f1) == n3  # values should be equivalent for `filter_by='confident_learning'`
+    assert n == n3  # passing in cj should not affect calculation
 
     # check wrong estimation_method throws ValueError
     try:
