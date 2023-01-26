@@ -362,7 +362,17 @@ class Datalab:
         return self.data_issues.get_info(issue_name, *subkeys)
 
     def report(self, k: int = 5, verbosity: int = 0) -> None:
-        """Prints helpful summary of all issues."""
+        """Prints helpful summary of all issues.
+
+        Parameters
+        ----------
+        k :
+            Number of examples to show for each type of issue.
+
+        verbosity :
+            Level of verbosity. 0 is the default and prints the top k examples
+            for each issue. Higher levels may add more information to the report.
+        """
         # Show summary of issues
         print(self._get_report(k=k, verbosity=verbosity))
 
@@ -372,7 +382,7 @@ class Datalab:
         We do not guarantee saved Lab can be loaded from future versions of cleanlab.
 
         You have to save the Dataset yourself if you want it saved to file!
-        """
+        """  # TODO: Revise Datalab.save docstring: Formats and guarantees
         _Serializer.serialize(path=path, datalab=self)
 
     @staticmethod
@@ -380,10 +390,15 @@ class Datalab:
         """Loads Lab from file. Folder could ideally be zipped or unzipped.
         Checks which cleanlab version Lab was previously saved from
             and raises warning if they dont match.
-        `path` is the path to the saved Datalab, not Dataset.
 
-        Dataset should be the same one used before saving.
-        If data is None, the self.data attribute of this object
-            will be empty and some functionality may not work.
-        """
+        If a Dataset is passed (via the `data` argument), it will be added to the Datalab
+        if it matches the Dataset that was used to create the Datalab.
+
+        Parameters
+        ----------
+
+        `path` :
+            Path to the folder containing the save Datalab and
+            associated files, not the Dataset.
+        """  # TODO: Revise Datalab.load docstring: Zipped/unzipped, guarantees
         return _Serializer.deserialize(path=path, data=data)
