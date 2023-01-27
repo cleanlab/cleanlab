@@ -104,7 +104,7 @@ def num_label_issues(
 
 
        TL;DR: Use this method to get the most accurate estimate of number of label issues when you don't need the indices of the label issues.
-       Note: Note: ``'off_diagonal'`` may sometimes underestimate issues for data with few classes, so consider using ``'off_diagonal_calibrated'`` instead if your data has < 4 classes.
+      Note: ``'off_diagonal'`` may sometimes underestimate issues for data with few classes, so consider using ``'off_diagonal_calibrated'`` instead if your data has < 4 classes.
 
     multi_label : bool, optional
       Set ``False`` if your dataset is for regular (multi-class) classification, where each example belongs to exactly one class.
