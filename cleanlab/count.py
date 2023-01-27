@@ -158,7 +158,7 @@ def num_label_issues(
             pred_probs=pred_probs,
             calibrate=True,
         )
-
+        assert isinstance(calculated_confident_joint, np.ndarray)
         # Estimate_joint calibrates the row sums to match the prior distribution of given labels and normalizes to sum to 1
         joint = estimate_joint(labels, pred_probs, confident_joint=calculated_confident_joint)
         frac_issues = 1.0 - joint.trace()
