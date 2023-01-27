@@ -100,10 +100,11 @@ def num_label_issues(
        two cases:
           1. As we add more label and data quality scoring functions in :py:mod:`cleanlab.rank`, this approach will always work.
           2. If you have a custom score to rank your data by label quality and you just need to know the cut-off of likely label issues.
+       - ``'off_diagonal_custom'``: Counts the number of examples in the off-diagonal using a passed in `confident_joint`.
+
 
        TL;DR: Use this method to get the most accurate estimate of number of label issues when you don't need the indices of the label issues.
-       Note: ``'off_diagonal'`` may sometimes underestimate issues for low number of classes but you can always change frac_noise > 1 or get :py:func:`rank.get_label_quality_scores
-      <cleanlab.rank.get_label_quality_scores>` and choose your own cutoff.
+       Note: Note: ``'off_diagonal'`` may sometimes underestimate issues for data with few classes, so consider using ``'off_diagonal_calibrated'`` instead if your data has < 4 classes.
 
     multi_label : bool, optional
       Set ``False`` if your dataset is for regular (multi-class) classification, where each example belongs to exactly one class.
@@ -118,8 +119,9 @@ def num_label_issues(
     valid_methods = ["off_diagonal", "off_diagonal_calibrated"]
     if isinstance(confident_joint, np.ndarray):
         warn_str = (
-            "WARNING! The supplied 'confident_joint' is ignored. Instead the 'confident_joint' is "
-            "estimated from the passed in 'labels' and 'pred_probs'."
+            "WARNING! The supplied `confident_joint` is ignored as `confident_joint` is recomuputed internally using "
+            "the supplied `labels` and `pred_probs`. If you still want to use custom `confident_joint` call function "
+            "with `estimation_method='off_diagonal_custom'`."
         )
         warnings.warn(warn_str)
 
@@ -161,6 +163,19 @@ def num_label_issues(
         joint = estimate_joint(labels, pred_probs, confident_joint=calculated_confident_joint)
         frac_issues = 1.0 - joint.trace()
         num_issues = np.rint(frac_issues * len(labels)).astype(int)
+    elif estimation_method == "off_diagonal_custom":
+        if not isinstance(confident_joint, np.ndarray):
+            raise ValueError(
+                f"""
+                No `confident_joint` provided. For 'estimation_method' = {estimation_method} you need to provide pre-calculated
+                `confident_joint` matrix. Use a different `estimation_method` if you want the `confident_joint` matrix to
+                be calculated for you.
+                """
+            )
+        else:
+            joint = estimate_joint(labels, pred_probs, confident_joint=confident_joint)
+            frac_issues = 1.0 - joint.trace()
+            num_issues = np.rint(frac_issues * len(labels)).astype(int)
     else:
         raise ValueError(
             f"""
