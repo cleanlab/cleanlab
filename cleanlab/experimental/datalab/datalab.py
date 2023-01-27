@@ -19,7 +19,6 @@ and managing all kinds of issues in datasets.
 """
 from __future__ import annotations
 
-import warnings
 from typing import Any, Dict, List, Optional, Union, TYPE_CHECKING
 
 import numpy as np
