@@ -20,7 +20,7 @@ and managing all kinds of issues in datasets.
 from __future__ import annotations
 
 import warnings
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union, TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
@@ -30,9 +30,11 @@ import cleanlab
 from cleanlab.experimental.datalab.factory import _IssueManagerFactory
 from cleanlab.experimental.datalab.data import Data
 from cleanlab.experimental.datalab.data_issues import DataIssues
-from cleanlab.experimental.datalab.issue_manager import IssueManager
 from cleanlab.experimental.datalab.display import _Displayer
 from cleanlab.experimental.datalab.serialize import _Serializer
+
+if TYPE_CHECKING:  # pragma: no cover
+    from cleanlab.experimental.datalab.issue_manager import IssueManager
 
 __all__ = ["Datalab"]
 

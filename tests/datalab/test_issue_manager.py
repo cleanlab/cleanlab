@@ -3,9 +3,11 @@ import pandas as pd
 import pytest
 
 from cleanlab.experimental.datalab.issue_manager import (
+    IssueManager,
     LabelIssueManager,
     OutOfDistributionIssueManager,
 )
+from cleanlab.experimental.datalab.factory import REGISTRY, register
 from cleanlab.outlier import OutOfDistribution
 
 SEED = 42
@@ -225,8 +227,6 @@ class TestOutOfDistributionIssueManager:
 
 def test_register_custom_issue_manager(monkeypatch):
 
-    from cleanlab.experimental.datalab.factory import REGISTRY, register
-    from cleanlab.experimental.datalab.issue_manager import IssueManager
     import io
     import sys
 
