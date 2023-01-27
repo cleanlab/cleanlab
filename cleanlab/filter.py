@@ -260,9 +260,9 @@ def find_label_issues(
         )
     if filter_by is "confident_learning" and isinstance(confident_joint, np.ndarray):
         warn_str = (
-            "WARNING! The supplied 'confident_joint' is ignored when 'filter_by = 'confident_learning'', and confident joint is "
-            "estimated from the given labels. To use your supplied 'confident_joint', please specify a different "
-            "'filter_by' value."
+            "The supplied `confident_joint` is ignored when `filter_by = 'confident_learning'`; confident joint will be "
+            "re-estimated from the given labels. To use your supplied `confident_joint`, please specify a different "
+            "`filter_by` value."
         )
         warnings.warn(warn_str)
 
