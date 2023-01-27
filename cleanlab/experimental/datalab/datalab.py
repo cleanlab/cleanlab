@@ -71,9 +71,6 @@ class Datalab:
         self._data_hash = self._data._data_hash
         self.label_name = self._data._label_name
         self.data_issues = DataIssues(self._data)
-        self.issues = self.data_issues.issues
-        self.issue_summary = self.data_issues.issue_summary
-        self.info = self.data_issues.info
         self.cleanlab_version = cleanlab.version.__version__
         self.path = ""
         self.issue_managers: Dict[str, IssueManager] = {}
@@ -90,6 +87,33 @@ class Datalab:
     def labels(self) -> np.ndarray:
         """Labels of the dataset, in a [0, 1, ..., K-1] format."""
         return self._labels
+
+    @property
+    def issues(self) -> pd.DataFrame:
+        """Issues found in the dataset."""
+        return self.data_issues.issues
+
+    @issues.setter
+    def issues(self, issues: pd.DataFrame) -> None:
+        self.data_issues.issues = issues
+
+    @property
+    def issue_summary(self) -> pd.DataFrame:
+        """Summary of issues found in the dataset."""
+        return self.data_issues.issue_summary
+
+    @issue_summary.setter
+    def issue_summary(self, issue_summary: pd.DataFrame) -> None:
+        self.data_issues.issue_summary = issue_summary
+
+    @property
+    def info(self) -> Dict[str, Dict[str, Any]]:
+        """Information and statistics about the dataset issues found."""
+        return self.data_issues.info
+
+    @info.setter
+    def info(self, info: Dict[str, Dict[str, Any]]) -> None:
+        self.data_issues.info = info
 
     def _resolve_required_args(self, pred_probs, features, model):
         """Resolves the required arguments for each issue type.
