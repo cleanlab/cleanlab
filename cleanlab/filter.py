@@ -245,7 +245,7 @@ def find_label_issues(
         frac_noise != 1.0 or num_to_remove_per_class is not None
     ):
         warn_str = (
-            "WARNING! frac_noise and num_to_remove_per_class parameters are only supported"
+            "frac_noise and num_to_remove_per_class parameters are only supported"
             " for filter_by 'prune_by_noise_rate', 'prune_by_class', and 'both'. They "
             "are not supported for methods 'confident_learning' or "
             "'predicted_neq_given'."

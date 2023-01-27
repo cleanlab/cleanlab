@@ -119,7 +119,7 @@ def num_label_issues(
     valid_methods = ["off_diagonal", "off_diagonal_calibrated"]
     if isinstance(confident_joint, np.ndarray):
         warn_str = (
-            "WARNING! The supplied `confident_joint` is ignored as `confident_joint` is recomuputed internally using "
+            "The supplied `confident_joint` is ignored as `confident_joint` is recomuputed internally using "
             "the supplied `labels` and `pred_probs`. If you still want to use custom `confident_joint` call function "
             "with `estimation_method='off_diagonal_custom'`."
         )

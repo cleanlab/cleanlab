@@ -18,7 +18,6 @@ from cleanlab import count, filter
 from cleanlab.count import (
     get_confident_thresholds,
     estimate_py_and_noise_matrices_from_probabilities,
-    compute_confident_joint,
 )
 from cleanlab.internal.latent_algebra import compute_inv_noise_matrix
 from cleanlab.benchmarking.noise_generation import generate_noise_matrix_from_trace
@@ -745,7 +744,7 @@ def test_num_label_issues_different_estimation_types():
         estimation_method="off_diagonal",
     )
 
-    f2 = filter.find_label_issues(labels=y, pred_probs=pred_probs)
+    f2 = filter.find_label_issues(labels=y, pred_probs=pred_probs, filter_by="confident_learning")
 
     assert np.sum(f2) == n2
     assert n3 != n2
