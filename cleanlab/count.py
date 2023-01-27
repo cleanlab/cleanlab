@@ -100,11 +100,11 @@ def num_label_issues(
        two cases:
           1. As we add more label and data quality scoring functions in :py:mod:`cleanlab.rank`, this approach will always work.
           2. If you have a custom score to rank your data by label quality and you just need to know the cut-off of likely label issues.
-       - ``'off_diagonal_custom'``: Counts the number of examples in the off-diagonal using a passed in `confident_joint`.
+       - ``'off_diagonal_custom'``: Counts the number of examples in the off-diagonal of a provided `confident_joint` matrix.
 
 
        TL;DR: Use this method to get the most accurate estimate of number of label issues when you don't need the indices of the label issues.
-       Note: Note: ``'off_diagonal'`` may sometimes underestimate issues for data with few classes, so consider using ``'off_diagonal_calibrated'`` instead if your data has < 4 classes.
+      Note: ``'off_diagonal'`` may sometimes underestimate issues for data with few classes, so consider using ``'off_diagonal_calibrated'`` instead if your data has < 4 classes.
 
     multi_label : bool, optional
       Set ``False`` if your dataset is for regular (multi-class) classification, where each example belongs to exactly one class.
