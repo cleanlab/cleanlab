@@ -245,7 +245,7 @@ def find_label_issues(
         frac_noise != 1.0 or num_to_remove_per_class is not None
     ):
         warn_str = (
-            "WARNING! frac_noise and num_to_remove_per_class parameters are only supported"
+            "frac_noise and num_to_remove_per_class parameters are only supported"
             " for filter_by 'prune_by_noise_rate', 'prune_by_class', and 'both'. They "
             "are not supported for methods 'confident_learning' or "
             "'predicted_neq_given'."
@@ -258,6 +258,13 @@ def find_label_issues(
         raise ValueError(
             "filter_by 'confident_learning' or 'predicted_neq_given' is not supported (yet) when setting 'num_to_remove_per_class'"
         )
+    if filter_by is "confident_learning" and isinstance(confident_joint, np.ndarray):
+        warn_str = (
+            "The supplied `confident_joint` is ignored when `filter_by = 'confident_learning'`; confident joint will be "
+            "re-estimated from the given labels. To use your supplied `confident_joint`, please specify a different "
+            "`filter_by` value."
+        )
+        warnings.warn(warn_str)
 
     K = get_num_classes(
         labels=labels, pred_probs=pred_probs, label_matrix=confident_joint, multi_label=multi_label
