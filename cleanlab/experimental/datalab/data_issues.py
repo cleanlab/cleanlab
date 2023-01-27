@@ -17,9 +17,15 @@
 Module for class that collects and stores information and statistics on
 issues found in the data.
 """
-from typing import Any
-from cleanlab.experimental.datalab.data import Data
+from __future__ import annotations
+
+from typing import Any, TYPE_CHECKING
 import pandas as pd
+import warnings
+
+if TYPE_CHECKING:  # pragma: no cover
+    from cleanlab.experimental.datalab.data import Data
+    from cleanlab.experimental.datalab.issue_manager import IssueManager
 
 
 class DataIssues:
@@ -57,3 +63,48 @@ class DataIssues:
             )
             # could alternatively consider:
             # raise ValueError("issue_name must be a valid key in Datalab.info dict.")
+
+    def _collect_results_from_issue_manager(self, issue_manager: IssueManager) -> None:
+        """
+        Collects results from an IssueManager and update the corresponding
+        attributes of the Datalab object.
+
+        This includes:
+        - self.issues
+        - self.issue_summary
+        - self.info
+
+        Parameters
+        ----------
+        issue_manager :
+            IssueManager object to collect results from.
+        """
+        overlapping_columns = list(set(self.issues.columns) & set(issue_manager.issues.columns))
+        if overlapping_columns:
+            warnings.warn(
+                f"Overwriting columns {overlapping_columns} in self.issues with "
+                f"columns from issue manager {issue_manager}."
+            )
+            self.issues.drop(columns=overlapping_columns, inplace=True)
+        self.issues = self.issues.join(issue_manager.issues, how="outer")
+
+        if issue_manager.issue_name in self.issue_summary["issue_type"].values:
+            warnings.warn(
+                f"Overwriting row in self.issue_summary with "
+                f"row from issue manager {issue_manager}."
+            )
+            self.issue_summary = self.issue_summary[
+                self.issue_summary["issue_type"] != issue_manager.issue_name
+            ]
+        self.issue_summary = pd.concat(
+            [self.issue_summary, issue_manager.summary],
+            axis=0,
+            ignore_index=True,
+        )
+
+        if issue_manager.issue_name in self.info:
+            warnings.warn(
+                f"Overwriting key {issue_manager.issue_name} in self.info with "
+                f"key from issue manager {issue_manager}."
+            )
+        self.info[issue_manager.issue_name] = issue_manager.info

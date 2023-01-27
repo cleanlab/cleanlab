@@ -295,7 +295,7 @@ class Datalab:
         for issue_manager, arg_dict in zip(new_issue_managers, issue_types_copy.values()):
             try:
                 issue_manager.find_issues(**arg_dict)
-                self._collect_results_from_issue_manager(issue_manager)
+                self.data_issues._collect_results_from_issue_manager(issue_manager)
             except Exception as e:
                 print(f"Error in {issue_manager.issue_name}: {e}")
                 failed_managers.append(issue_manager)
@@ -306,51 +306,6 @@ class Datalab:
             im.issue_name: im for im in new_issue_managers if im not in failed_managers
         }
         self.issue_managers.update(added_managers)
-
-    def _collect_results_from_issue_manager(self, issue_manager: IssueManager) -> None:
-        """
-        Collects results from an IssueManager and update the corresponding
-        attributes of the Datalab object.
-
-        This includes:
-        - self.issues
-        - self.issue_summary
-        - self.info
-
-        Parameters
-        ----------
-        issue_manager :
-            IssueManager object to collect results from.
-        """
-        overlapping_columns = list(set(self.issues.columns) & set(issue_manager.issues.columns))
-        if overlapping_columns:
-            warnings.warn(
-                f"Overwriting columns {overlapping_columns} in self.issues with "
-                f"columns from issue manager {issue_manager}."
-            )
-            self.issues.drop(columns=overlapping_columns, inplace=True)
-        self.issues = self.issues.join(issue_manager.issues, how="outer")
-
-        if issue_manager.issue_name in self.issue_summary["issue_type"].values:
-            warnings.warn(
-                f"Overwriting row in self.issue_summary with "
-                f"row from issue manager {issue_manager}."
-            )
-            self.issue_summary = self.issue_summary[
-                self.issue_summary["issue_type"] != issue_manager.issue_name
-            ]
-        self.issue_summary = pd.concat(
-            [self.issue_summary, issue_manager.summary],
-            axis=0,
-            ignore_index=True,
-        )
-
-        if issue_manager.issue_name in self.info:
-            warnings.warn(
-                f"Overwriting key {issue_manager.issue_name} in self.info with "
-                f"key from issue manager {issue_manager}."
-            )
-        self.info[issue_manager.issue_name] = issue_manager.info
 
     def get_info(self, issue_name, *subkeys) -> Any:
         """Returns dict of info about a specific issue, or None if this issue does not exist in self.info.
