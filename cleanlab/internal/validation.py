@@ -1,4 +1,4 @@
-# Copyright (C) 2017-2022  Cleanlab Inc.
+# Copyright (C) 2017-2023  Cleanlab Inc.
 # This file is part of cleanlab.
 #
 # cleanlab is free software: you can redistribute it and/or modify
@@ -89,7 +89,7 @@ def assert_valid_inputs(
         else:
             assert isinstance(y, list)
             assert all(isinstance(y_i, list) for y_i in y)
-            highest_class = max([max(y_i) for y_i in y]) + 1
+            highest_class = max([max(y_i) for y_i in y if len(y_i) != 0]) + 1
         if pred_probs.shape[1] < highest_class:
             raise ValueError(
                 f"pred_probs must have at least {highest_class} columns, based on the largest class index which appears in labels."
@@ -110,7 +110,11 @@ def assert_valid_class_labels(
     integers (not multi-label).
     """
     if y.ndim != 1:
-        raise ValueError("labels must be 1D numpy array.")
+        raise ValueError("Labels must be 1D numpy array.")
+    if any([isinstance(label, str) for label in y]):
+        raise ValueError(
+            "Labels cannot be strings, they must be zero-indexed integers corresponding to class indices."
+        )
     if not np.equal(np.mod(y, 1), 0).all():  # check that labels are integers
         raise ValueError("Labels must be zero-indexed integers corresponding to class indices.")
     if min(y) < 0:

@@ -1,4 +1,4 @@
-# Copyright (C) 2017-2022  Cleanlab Inc.
+# Copyright (C) 2017-2023  Cleanlab Inc.
 # This file is part of cleanlab.
 #
 # cleanlab is free software: you can redistribute it and/or modify
@@ -715,22 +715,51 @@ def test_find_label_issue_filters_match_origin_functions():
         assert "not supported" in str(e)
 
 
-@pytest.mark.parametrize("confident_joint", [None, True])
-def test_num_label_issues(confident_joint):
-    cj_calibrated_off_diag_sum = data["cj"].sum() - data["cj"].trace()
-    n = count.num_label_issues(
-        labels=data["labels"],
-        pred_probs=data["pred_probs"],
-        confident_joint=data["cj"],
-        estimation_method="off_diagonal",
-    )  # data["cj"] is already calibrated and estimation method does not do extra calibration
+def test_num_label_issues_different_estimation_types():
+    # these numbers are hardcoded as data[] does not create a difference in both functions
+    y = np.array([0, 1, 1, 1, 1, 0, 0, 1, 0])
+    pred_probs = np.array(
+        [
+            [0.7110397298505661, 0.2889602701494339],
+            [0.6367131487519773, 0.36328685124802274],
+            [0.7571834730987641, 0.24281652690123584],
+            [0.6394163729473307, 0.3605836270526695],
+            [0.5853684039196656, 0.4146315960803345],
+            [0.6675968116482668, 0.33240318835173316],
+            [0.7240647829106976, 0.2759352170893023],
+            [0.740474240697777, 0.25952575930222266],
+            [0.7148252196621883, 0.28517478033781196],
+        ]
+    )
 
-    n1 = count.num_label_issues(
+    n3 = count.num_label_issues(
+        labels=y,
+        pred_probs=pred_probs,
+        estimation_method="off_diagonal_calibrated",
+    )
+
+    n2 = count.num_label_issues(
+        labels=y,
+        pred_probs=pred_probs,
+        estimation_method="off_diagonal",
+    )
+
+    f2 = filter.find_label_issues(labels=y, pred_probs=pred_probs, filter_by="confident_learning")
+
+    assert np.sum(f2) == n2
+    assert n3 != n2
+
+
+@pytest.mark.filterwarnings()
+def test_num_label_issues():
+    cj_calibrated_off_diag_sum = data["cj"].sum() - data["cj"].trace()
+
+    n1 = count.num_label_issues(  # should throw warning as cj is passed in but also recalculated
         labels=data["labels"],
         pred_probs=data["pred_probs"],
         confident_joint=data["cj"],
         estimation_method="off_diagonal_calibrated",
-    )  # data["cj"] is already calibrated but recalibrating it should not change the values
+    )
 
     n2 = count.num_label_issues(
         labels=data["labels"],
@@ -738,21 +767,47 @@ def test_num_label_issues(confident_joint):
         estimation_method="off_diagonal_calibrated",
     )  # this should calculate and calibrate the confident joint into same matrix as data["cj"]
 
-    # data["cj"] is already calibrated and estimation method does not do extra calibration
-    assert n == cj_calibrated_off_diag_sum
-    # data["cj"] is already calibrated but recalibrating it should not change the values
-    assert n == n1
-    # should calculate and calibrate the confident joint into same matrix as data["cj"]
-    assert n == n2
+    n_custom = count.num_label_issues(
+        labels=data["labels"],
+        pred_probs=data["pred_probs"],
+        confident_joint=data["cj"],
+        estimation_method="off_diagonal_custom",
+    )
 
-    f = filter.find_label_issues(
+    ones_joint = np.ones_like(data["cj"])
+    n_custom_bad = count.num_label_issues(
+        labels=data["labels"],
+        pred_probs=data["pred_probs"],
+        confident_joint=ones_joint,
+        estimation_method="off_diagonal_custom",
+    )
+
+    # data["cj"] is already calibrated and recalibrating it should not change the values
+    assert n2 == cj_calibrated_off_diag_sum
+    # should calculate and calibrate the confident joint into same matrix as data["cj"]
+    assert n1 == n2
+    # estimation_method='off_diagonal_custom' should use the passed in confident joint correctly
+    assert n_custom == n1
+    assert n_custom_bad != n1
+
+    f = filter.find_label_issues(  # this should throw warning since cj passed in and filter by confident_learning
         labels=data["labels"], pred_probs=data["pred_probs"], confident_joint=data["cj"]
     )
 
     assert sum(f) == 35
 
-    f1 = filter.find_label_issues(
-        labels=data["labels"], pred_probs=data["pred_probs"], filter_by="confident_learning"
+    f1 = filter.find_label_issues(  # this should throw warning since cj passed in and filter by confident_learning
+        labels=data["labels"],
+        pred_probs=data["pred_probs"],
+        filter_by="confident_learning",
+        confident_joint=data["cj"],
+    )
+
+    n = count.num_label_issues(  # should throw warning as cj is passed in but also recalculated
+        labels=data["labels"],
+        pred_probs=data["pred_probs"],
+        confident_joint=data["cj"],
+        estimation_method="off_diagonal",
     )
 
     n3 = count.num_label_issues(
@@ -761,6 +816,7 @@ def test_num_label_issues(confident_joint):
     )
 
     assert sum(f1) == n3  # values should be equivalent for `filter_by='confident_learning'`
+    assert n == n3  # passing in cj should not affect calculation
 
     # check wrong estimation_method throws ValueError
     try:
@@ -777,6 +833,41 @@ def test_num_label_issues(confident_joint):
                 pred_probs=data["pred_probs"],
                 estimation_method="not_a_real_method",
             )
+
+    # check not passing in cj with estimation_method_custom throws ValueError
+    try:
+        count.num_label_issues(
+            labels=data["labels"],
+            pred_probs=data["pred_probs"],
+            estimation_method="off_diagonal_custom",
+        )
+    except Exception as e:
+        assert "you need to provide pre-calculated" in str(e)
+        with pytest.raises(ValueError) as e:
+            count.num_label_issues(
+                labels=data["labels"],
+                pred_probs=data["pred_probs"],
+                estimation_method="off_diagonal_custom",
+            )
+
+
+@pytest.mark.parametrize("confident_joint", [None, True])
+def test_num_label_issues_multilabel(confident_joint):
+    dataset = multilabel_data
+    n = count.num_label_issues(
+        labels=dataset["labels"],
+        pred_probs=dataset["pred_probs"],
+        confident_joint=dataset["cj"] if confident_joint else None,
+        estimation_method="off_diagonal",
+        multi_label=True,
+    )
+    f = filter.find_label_issues(
+        labels=dataset["labels"],
+        pred_probs=dataset["pred_probs"],
+        confident_joint=dataset["cj"] if confident_joint else None,
+        multi_label=True,
+    )
+    assert sum(f) == n
 
 
 def test_issue_158():
@@ -854,6 +945,104 @@ def test_missing_classes():
         "predicted_neq_given",
     ]:
         assert all(filter.find_label_issues(labels, pred_probs, filter_by=fb) == issues)
+
+
+@pytest.mark.filterwarnings("ignore:WARNING!")
+def test_find_label_issues_match_multiprocessing():
+    # minimal version of this test was run in test_missing_classes
+    # here testing with larger input matrices
+
+    # test with ground truth labels:
+    n = 5000  # consider replacing this with larger value
+    # some past bugs observed only with larger sample-sizes like n=200000
+    m = 100
+    labels = np.ones(n, dtype=int)
+    labels[(n // 2) :] = 0
+    pred_probs = np.zeros((n, 4))
+    pred_probs[:, 0] = 0.95
+    pred_probs[:, 1] = 0.05
+    pred_probs[0, 0] = 0.94
+    pred_probs[0, 1] = 0.06
+    ground_truth = np.ones(n, dtype=bool)
+    ground_truth[(n // 2) :] = False
+    ground_truth[0] = False  # leave one example for min_example_per_class
+    # TODO: consider also testing this line without psutil installed
+    issues = filter.find_label_issues(labels, pred_probs)
+    issues1 = filter.find_label_issues(labels, pred_probs, n_jobs=1)
+    issues2 = filter.find_label_issues(labels, pred_probs, n_jobs=2)
+    assert all(issues == ground_truth)
+    assert all(issues == issues1)
+    assert all(issues == issues2)
+    issues = filter.find_label_issues(labels, pred_probs, filter_by="prune_by_class")
+    issues1 = filter.find_label_issues(labels, pred_probs, n_jobs=1, filter_by="prune_by_class")
+    issues2 = filter.find_label_issues(labels, pred_probs, n_jobs=2, filter_by="prune_by_class")
+    assert all(issues == ground_truth)
+    assert all(issues == issues1)
+    assert all(issues == issues2)
+
+    # test with random labels
+    normalize = np.random.randint(low=1, high=100, size=[n, m], dtype=np.uint8)
+    pred_probs = np.zeros((n, m))
+    for i, col in enumerate(normalize):
+        pred_probs[i] = col / np.sum(col)
+    labels = np.repeat(np.arange(m), n // m)
+    issues = filter.find_label_issues(labels, pred_probs)
+    issues1 = filter.find_label_issues(labels, pred_probs, n_jobs=1)
+    issues2 = filter.find_label_issues(labels, pred_probs, n_jobs=2)
+    assert all(issues == issues1)
+    assert all(issues == issues2)
+    issues = filter.find_label_issues(labels, pred_probs, filter_by="prune_by_class")
+    issues1 = filter.find_label_issues(labels, pred_probs, n_jobs=1, filter_by="prune_by_class")
+    issues2 = filter.find_label_issues(labels, pred_probs, n_jobs=2, filter_by="prune_by_class")
+    assert all(issues == issues1)
+    assert all(issues == issues2)
+
+
+@pytest.mark.parametrize(
+    "return_indices_ranked_by",
+    [None, "self_confidence", "normalized_margin", "confidence_weighted_entropy"],
+)
+@pytest.mark.filterwarnings("ignore::UserWarning")
+def test_missing_classes_multilabel(return_indices_ranked_by):
+    pred_probs = np.array(
+        [
+            [0.9, 0.1, 0.0, 0.4, 0.1],
+            [0.7, 0.8, 0.2, 0.3, 0.1],
+            [0.9, 0.8, 0.4, 0.2, 0.1],
+            [0.1, 0.1, 0.8, 0.3, 0.1],
+            [0.4, 0.5, 0.1, 0.1, 0.1],
+            [0.1, 0.1, 0.2, 0.1, 0.1],
+            [0.8, 0.1, 0.2, 0.1, 0.1],
+        ]
+    )
+    labels = [[0], [0, 1], [0, 1], [2], [0, 2, 3], [], []]
+    cj = count.compute_confident_joint(labels=labels, pred_probs=pred_probs, multi_label=True)
+    assert cj.shape == (5, 2, 2)
+    noise_idx = filter.find_label_issues(
+        labels=labels,
+        pred_probs=pred_probs,
+        multi_label=True,
+        return_indices_ranked_by=return_indices_ranked_by,
+    )
+    noise_idx2 = filter.find_label_issues(
+        labels=labels,
+        pred_probs=pred_probs,
+        multi_label=True,
+        confident_joint=cj,
+        return_indices_ranked_by=return_indices_ranked_by,
+    )
+
+    def _idx_to_bool(idx):
+        noise_bool = np.zeros(len(labels)).astype(bool)
+        noise_bool[idx] = True
+        return noise_bool
+
+    if return_indices_ranked_by is not None:
+        noise_idx = _idx_to_bool(noise_idx)
+        noise_idx2 = _idx_to_bool(noise_idx2)
+
+    expected_output = [False, False, False, False, True, False, True]
+    assert noise_idx.tolist() == noise_idx2.tolist() == expected_output
 
 
 def test_removing_class_consistent_results():

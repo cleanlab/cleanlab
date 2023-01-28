@@ -13,3 +13,4 @@ torch
 torchvision
 skorch
 tensorflow
+psutil

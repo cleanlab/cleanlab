@@ -1,4 +1,4 @@
-# Copyright (C) 2017-2022  Cleanlab Inc.
+# Copyright (C) 2017-2023  Cleanlab Inc.
 # This file is part of cleanlab.
 #
 # cleanlab is free software: you can redistribute it and/or modify
@@ -24,7 +24,8 @@ from sklearn.multiclass import OneVsRestClassifier
 from sklearn.linear_model import LogisticRegression
 
 from cleanlab.internal import multilabel_scorer as ml_scorer
-from cleanlab.internal.multilabel_utils import stack_complement, get_onehot_num_classes
+from cleanlab.internal.multilabel_utils import stack_complement, get_onehot_num_classes, onehot2int
+from cleanlab import multilabel_classification as multilabel_classfication
 
 
 @pytest.fixture
@@ -98,27 +99,185 @@ def dummy_features(labels):
     return np.random.rand(labels.shape[0], 2)
 
 
-@pytest.mark.parametrize("base_scorer", [scorer for scorer in ml_scorer.ClassLabelScorer])
-@pytest.mark.parametrize("aggregator", [np.min, np.max, np.mean])
-@pytest.mark.parametrize("strict", [True, False])
-def test_multilabel_scorer(base_scorer, aggregator, strict, labels, pred_probs):
-    scorer = ml_scorer.MultilabelScorer(base_scorer, aggregator, strict=strict)
-    assert callable(scorer)
+def test_public_label_quality_scores(labels, pred_probs):
+    formatted_labels = onehot2int(labels)
+    assert isinstance(formatted_labels, list)
+    scores1 = multilabel_classfication.get_label_quality_scores(formatted_labels, pred_probs)
+    assert len(scores1) == len(labels)
+    assert (scores1 >= 0).all() and (scores1 <= 1).all()
+    scores2 = multilabel_classfication.get_label_quality_scores(
+        formatted_labels, pred_probs, method="confidence_weighted_entropy"
+    )
+    assert not np.isclose(scores1, scores2).all()
+    scores3 = multilabel_classfication.get_label_quality_scores(
+        formatted_labels, pred_probs, adjust_pred_probs=True
+    )
+    assert not np.isclose(scores1, scores3).all()
+    scores4 = multilabel_classfication.get_label_quality_scores(
+        formatted_labels,
+        pred_probs,
+        method="normalized_margin",
+        adjust_pred_probs=True,
+        aggregator_kwargs={"method": "exponential_moving_average"},
+    )
+    assert not np.isclose(scores1, scores4).all()
+    scores5 = multilabel_classfication.get_label_quality_scores(
+        formatted_labels,
+        pred_probs,
+        method="normalized_margin",
+        adjust_pred_probs=True,
+        aggregator_kwargs={"method": "softmin"},
+    )
+    assert not np.isclose(scores4, scores5).all()
+    scores6 = multilabel_classfication.get_label_quality_scores(
+        formatted_labels,
+        pred_probs,
+        method="normalized_margin",
+        adjust_pred_probs=True,
+        aggregator_kwargs={"method": "softmin", "temperature": 0.002},
+    )
+    assert not np.isclose(scores5, scores6).all()
+    scores7 = multilabel_classfication.get_label_quality_scores(
+        formatted_labels,
+        pred_probs,
+        method="normalized_margin",
+        adjust_pred_probs=True,
+        aggregator_kwargs={"method": np.min},
+    )
+    assert np.isclose(scores6, scores7, rtol=1e-3).all()
 
-    test_scores = scorer(labels, pred_probs)
-    assert isinstance(test_scores, np.ndarray)
-    assert test_scores.shape == (labels.shape[0],)
+    with pytest.raises(ValueError) as e:
+        _ = multilabel_classfication.get_label_quality_scores(
+            formatted_labels, pred_probs, method="badchoice"
+        )
+        assert "Invalid method name: badchoice" in str(e.value)
 
-    # Test base_scorer_kwargs
-    base_scorer_kwargs = {"adjust_pred_probs": True}
-    if scorer.base_scorer is not ml_scorer.ClassLabelScorer.CONFIDENCE_WEIGHTED_ENTROPY:
-        test_scores = scorer(labels, pred_probs, base_scorer_kwargs=base_scorer_kwargs)
+    with pytest.raises(ValueError) as e:
+        _ = multilabel_classfication.get_label_quality_scores(
+            formatted_labels, pred_probs, aggregator_kwargs={"method": "invalid"}
+        )
+        assert "Invalid aggregation method specified: 'invalid'" in str(e.value)
+
+
+class TestAggregator:
+    """Test the Aggregator class."""
+
+    @pytest.fixture
+    def base_scores(self):
+        return np.array([[0.6, 0.3, 0.7, 0.1, 0.9]])
+
+    @pytest.mark.parametrize(
+        "method",
+        [np.min, np.max, np.mean, np.median, "exponential_moving_average", "softmin"],
+        ids=lambda x: x.__name__ if callable(x) else str(x),
+    )
+    def test_aggregator_callable(self, method):
+        aggregator = multilabel_classfication.Aggregator(method=method)
+        assert callable(aggregator.method), "Aggregator should store a callable method"
+        assert callable(aggregator), "Aggregator should be callable"
+
+    @pytest.mark.parametrize(
+        "method,expected_score",
+        [
+            (np.min, 0.1),
+            (np.max, 0.9),
+            (np.mean, 0.52),
+            (np.median, 0.6),
+            ("exponential_moving_average", 0.436),
+            ("softmin", 0.128),
+        ],
+        ids=["min", "max", "mean", "median", "exponential_moving_average", "softmin"],
+    )
+    def test_aggregator_score(self, base_scores, method, expected_score):
+        aggregator = multilabel_classfication.Aggregator(method=method)
+        scores = aggregator(base_scores)
+        assert np.isclose(scores, np.array([expected_score]), rtol=1e-3).all()
+        assert scores.shape == (1,)
+
+    def test_invalid_method(self):
+        with pytest.raises(ValueError) as e:
+            _ = multilabel_classfication.Aggregator(method="invalid_method")
+            assert "Invalid aggregation method specified: 'invalid_method'" in str(
+                e.value
+            ), "String constructor has limited options"
+
+        with pytest.raises(TypeError) as e:
+            _ = multilabel_classfication.Aggregator(method=1)
+            assert "Expected callable method" in str(e.value), "Non-callable methods are not valid"
+
+    def test_invalid_score(self, base_scores):
+        aggregator = multilabel_classfication.Aggregator(method=np.min)
+        with pytest.raises(ValueError) as e:
+            _ = aggregator(base_scores[0])
+            assert "Expected 2D array" in str(e.value), "Aggregator expects 2D array"
+
+
+class TestMultilabelScorer:
+    """Test the MultilabelScorer class."""
+
+    @pytest.fixture
+    def docs_labels(self):
+        return np.array([[0, 1, 0], [1, 0, 1]])
+
+    @pytest.fixture
+    def docs_pred_probs(self):
+        return np.array([[0.1, 0.9, 0.7], [0.4, 0.1, 0.6]])
+
+    @pytest.fixture
+    def default_scorer(self):
+        return ml_scorer.MultilabelScorer()
+
+    @pytest.mark.parametrize(
+        "base_scorer", [scorer for scorer in ml_scorer.ClassLabelScorer], ids=lambda x: x.name
+    )
+    @pytest.mark.parametrize(
+        "aggregator", [np.min, np.max, np.mean, "exponential_moving_average", "softmin"]
+    )
+    @pytest.mark.parametrize("strict", [True, False], ids=["strict", ""])
+    def test_call(self, base_scorer, aggregator, strict, labels, pred_probs):
+        scorer = ml_scorer.MultilabelScorer(base_scorer, aggregator, strict=strict)
+        assert callable(scorer)
+
+        test_scores = scorer(labels, pred_probs)
         assert isinstance(test_scores, np.ndarray)
         assert test_scores.shape == (labels.shape[0],)
-    else:
-        with pytest.raises(ValueError) as e:
-            scorer(labels, pred_probs, base_scorer_kwargs=base_scorer_kwargs)
-            assert "adjust_pred_probs is not currently supported for" in str(e)
+
+        # Test base_scorer_kwargs
+        base_scorer_kwargs = {"adjust_pred_probs": True}
+        if scorer.base_scorer is not ml_scorer.ClassLabelScorer.CONFIDENCE_WEIGHTED_ENTROPY:
+            test_scores = scorer(labels, pred_probs, base_scorer_kwargs=base_scorer_kwargs)
+            assert isinstance(test_scores, np.ndarray)
+            assert test_scores.shape == (labels.shape[0],)
+        else:
+            with pytest.raises(ValueError) as e:
+                scorer(labels, pred_probs, base_scorer_kwargs=base_scorer_kwargs)
+                assert "adjust_pred_probs is not currently supported for" in str(e)
+
+    @pytest.mark.parametrize(
+        "base_scorer", [scorer for scorer in ml_scorer.ClassLabelScorer], ids=lambda x: x.name
+    )
+    def test_aggregate_kwargs(self, base_scorer):
+        """Make sure the instatiated aggregator kwargs can be overridden.
+        I.e. switching from a forgetting-factor 1.0 to 0.5.
+        """
+        class_label_quality_scores = np.array([[0.9, 0.9, 0.3], [0.4, 0.9, 0.6]])
+        aggregator = ml_scorer.Aggregator(ml_scorer.exponential_moving_average, alpha=1.0)
+        scorer = ml_scorer.MultilabelScorer(
+            base_scorer=base_scorer,
+            aggregator=aggregator,
+        )
+        scores = scorer.aggregate(class_label_quality_scores)
+        assert np.allclose(scores, np.array([0.3, 0.4]))
+        # Use different alpha, should change scores
+        new_scores = scorer.aggregate(class_label_quality_scores, alpha=0.0)
+        assert np.allclose(new_scores, np.array([0.9, 0.9]))
+
+    def test_get_class_label_quality_scores(self, default_scorer, docs_labels, docs_pred_probs):
+        """Test the get_class_label_quality_scores method."""
+        class_label_quality_scores = default_scorer.get_class_label_quality_scores(
+            docs_labels, docs_pred_probs
+        )
+        assert np.allclose(class_label_quality_scores, np.array([[0.9, 0.9, 0.3], [0.4, 0.9, 0.6]]))
 
 
 @pytest.mark.parametrize(
@@ -204,13 +363,13 @@ def test_get_label_quality_scores_output(labels, pred_probs, scorer):
     [
         (
             pytest.lazy_fixture("labels"),
-            np.array([1 / 10, 1 / 10, 2 / 10, 1 / 10, 1 / 10, 2 / 10, 1 / 10, 1 / 10]),
+            np.full((3, 2), 0.5),
         ),
-        (np.array([[0, 1], [0, 0], [1, 1]]), np.array([1 / 3, 1 / 3, 0, 1 / 3])),
-        (np.array([[0, 1], [0, 0], [0, 1], [0, 1]]), np.array([1 / 4, 3 / 4, 0, 0])),
+        (np.array([[0, 1], [0, 0], [1, 1]]), np.array([[2 / 3, 1 / 3], [1 / 3, 2 / 3]])),
+        (np.array([[0, 1], [0, 0], [0, 1], [0, 1]]), np.array([[4 / 4, 0 / 4], [1 / 4, 3 / 4]])),
         (
             np.array([[0, 1, 0, 0, 0, 0, 0, 0, 0]]),
-            np.array([0 if i != 2**7 else 1 for i in range(2**9)]),
+            np.array([[1, 0] if i != 1 else [0, 1] for i in range(9)]),
         ),
     ],
     ids=[
@@ -223,7 +382,7 @@ def test_get_label_quality_scores_output(labels, pred_probs, scorer):
 def test_multilabel_py(given_labels, expected):
     py = ml_scorer.multilabel_py(given_labels)
     assert isinstance(py, np.ndarray)
-    assert py.shape == (2 ** given_labels.shape[1],)
+    assert py.shape == (given_labels.shape[1], 2)
     assert np.isclose(py, expected).all()
 
 
@@ -305,17 +464,38 @@ def test_get_cross_validated_multilabel_pred_probs(dummy_features, labels, cv, p
     assert np.allclose(pred_probs, pred_probs_gold, atol=5e-4)
 
 
-@pytest.mark.parametrize("alpha", [0.5, None])
-def test_exponential_moving_average(alpha):
-    # Test that the exponential moving average is correct
-    # for a simple example.
-    for x, expected_ema in zip(
-        [
-            np.ones(5).reshape(1, -1),
-            np.array([[0.1, 0.2, 0.3]]),
-            np.array([x / 10 for x in range(1, 7)]).reshape(2, 3),
-        ],
-        [1, 0.175, np.array([0.175, 0.475])],
-    ):
-        ema = ml_scorer.exponential_moving_average(x, alpha=alpha)
+class TestExponentialMovingAverage:
+    """Test the ml_scorer.expontential_moving_average function."""
+
+    @pytest.mark.parametrize("alpha", [0.5, None])
+    def test_valid_alpha(self, alpha):
+        # Test valid alpha values
+        for x, expected_ema in zip(
+            [
+                np.ones(5).reshape(1, -1),
+                np.array([[0.1, 0.2, 0.3]]),
+                np.array([x / 10 for x in range(1, 7)]).reshape(2, 3),
+            ],
+            [1, 0.175, np.array([0.175, 0.475])],
+        ):
+            ema = ml_scorer.exponential_moving_average(x, alpha=alpha)
+            assert np.allclose(ema, expected_ema, atol=1e-4)
+
+    @pytest.mark.parametrize(
+        "alpha,expected_ema",
+        [[0, 0.3], [1, 0.1]],
+        ids=["alpha=0", "alpha=1"],
+    )
+    def test_alpha_boundary(self, alpha, expected_ema):
+        # alpha = 0(1) should return the largest(smallest) value
+        X = np.array([[0.1, 0.2, 0.3]])
+        ema = ml_scorer.exponential_moving_average(X, alpha=alpha)
         assert np.allclose(ema, expected_ema, atol=1e-4)
+
+    def test_invalid_alpha(self):
+        # Test that the exponential moving average raises an error
+        # when alpha is not in the interval [0, 1].
+        partial_error_msg = r"alpha must be in the interval \[0, 1\]"
+        for alpha in [-0.5, 1.5]:
+            with pytest.raises(ValueError, match=partial_error_msg):
+                ml_scorer.exponential_moving_average(np.ones(5).reshape(1, -1), alpha=alpha)

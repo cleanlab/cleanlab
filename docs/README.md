@@ -75,7 +75,7 @@ pip install -r docs/requirements.txt
 
    2. move the notebook to ignore from local build to the newly created folder
    ```
-   mv docs/source/tutorials/audio.ipynb ../ignore_notebooks 
+   mv docs/source/tutorials/audio.ipynb ../ignore_notebooks
    ```
 
    3. build the docs locally, using `sphinx-build` as it does not require you to commit your changes
@@ -252,7 +252,7 @@ We've configured GitHub Actions to run the GitHub Pages workflow (gh-pages.yaml)
 
 ## Tutorials
 
-Each tutorial is a Jupyter notebook (unexecuted .ipynb file) that will be executed during CI for the version displayed at docs.cleanlab.ai using [nbsphinx](https://github.com/cleanlab/cleanlab/blob/31c939ff9aa487e9670b1a0f3f711a1d78448a91/docs/source/conf.py). Some basic [linting](https://github.com/cleanlab/cleanlab/blob/master/.ci/nblint.py) is also applied to ensure proper notebook formatting such as no trailing newlines at the end of cells. Here are some tips when adding a new tutorial notebook:
+Each tutorial is a Jupyter notebook (unexecuted .ipynb file) that will be executed during CI for the version displayed at docs.cleanlab.ai using [nbsphinx](https://github.com/cleanlab/cleanlab/blob/31c939ff9aa487e9670b1a0f3f711a1d78448a91/docs/source/conf.py). Some basic [linting](https://github.com/cleanlab/nblint-action) is also applied to ensure proper notebook formatting such as no trailing newlines at the end of cells. Here are some tips when adding a new tutorial notebook:
 
 1. Make sure to clear all Cell outputs before you `git commit` a tutorial. The outputs of cells should never be tracked in git, these outputs are automatically constructed for displaying on docs.cleanlab.ai during the CI which executes all notebooks in the folder **docs/source/**.
 
@@ -282,9 +282,9 @@ instead of containing your own virtualenv in there. CI will FAIL if you instead 
    - Add a comment in hidden cell not displayed on docs.cleanlab.ai stating which version of dependencies you used.
    - Think carefully whether each dependency is really necessary and if its future versions will be stable / compatible with future versions of existing dependencies.
 
-6. Don't forget to update **docs/source/index.rst** and **docs/source/tutorials/index.rst** to ensure your tutorial properly linked. Otherwise it will not appear on docs.cleanlab.ai!
+6. Don't forget to update **docs/source/index.rst** with a short title and **docs/source/tutorials/index.rst** to ensure your tutorial properly linked. Otherwise it will not appear on docs.cleanlab.ai!
 
-7. Ask yourself: 
+7. Ask yourself:
 - How can I make this tutorial run faster without sacrificing educational value?  Perhaps use smaller subsample of the dataset, smaller/pretrained model, etc.
 - What sections of this tutorial are least vital?  Consider creating a separate [Examples](https://github.com/cleanlab/examples) notebook that features those.
 

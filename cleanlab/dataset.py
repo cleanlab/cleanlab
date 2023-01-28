@@ -1,4 +1,4 @@
-# Copyright (C) 2017-2022  Cleanlab Inc.
+# Copyright (C) 2017-2023  Cleanlab Inc.
 # This file is part of cleanlab.
 #
 # cleanlab is free software: you can redistribute it and/or modify
@@ -16,7 +16,10 @@
 
 
 """
-Provides dataset-level and class-level overviews of issues in your dataset. If your task allows you to modify the classes in your dataset, this module can help you determine which classes to remove (see :py:func:`rank_classes_by_label_quality <cleanlab.dataset.rank_classes_by_label_quality>`) and which classes to merge (see :py:func:`find_overlapping_classes <cleanlab.dataset.find_overlapping_classes>`).
+Provides dataset-level and class-level overviews of issues in your classification dataset.
+If your task allows you to modify the classes in your dataset, this module can help you determine
+which classes to remove (see :py:func:`rank_classes_by_label_quality <cleanlab.dataset.rank_classes_by_label_quality>`)
+and which classes to merge (see :py:func:`find_overlapping_classes <cleanlab.dataset.find_overlapping_classes>`).
 """
 
 import numpy as np
@@ -151,12 +154,12 @@ def find_overlapping_classes(
 
     Parameters
     ----------
-    labels : np.ndarray, optional
-      An array of shape ``(N,)`` of noisy labels, i.e. some labels may be erroneous.
-      Elements must be in the set 0, 1, ..., K-1, where K is the number of classes.
-      All the classes (0, 1, ..., and K-1) MUST be present in ``labels``, such that
+    labels : np.ndarray or list, optional
+      An array_like (of length N) of noisy labels for the classification dataset, i.e. some labels may be erroneous.
+      Elements must be integers in the set 0, 1, ..., K-1, where K is the number of classes.
+      All the classes (0, 1, ..., and K-1) should be present in ``labels``, such that
       ``len(set(labels)) == pred_probs.shape[1]`` for standard multi-class classification with single-labeled data (e.g. ``labels =  [1,0,2,1,1,0...]``).
-      For multi-label classification where each example can belong to multiple classes(e.g. ``labels = [[1,2],[1],[0],..]``),
+      For multi-label classification where each example can belong to multiple classes (e.g. ``labels = [[1,2],[1],[0],[],...]``),
       your labels should instead satisfy: ``len(set(k for l in labels for k in l)) == pred_probs.shape[1])``.
 
     pred_probs : np.ndarray, optional
@@ -261,10 +264,10 @@ def find_overlapping_classes(
     df.insert(loc=2, column="Num Overlapping Examples", value=num_overlapping)
     if class_names is not None:
         df.insert(
-            loc=0, column="Class Name A", value=df["Class Index A"].apply(lambda x: class_names[x])  # type: ignore
+            loc=0, column="Class Name A", value=df["Class Index A"].apply(lambda x: class_names[x])
         )
         df.insert(
-            loc=1, column="Class Name B", value=df["Class Index B"].apply(lambda x: class_names[x])  # type: ignore
+            loc=1, column="Class Name B", value=df["Class Index B"].apply(lambda x: class_names[x])
         )
     return df.sort_values(by="Joint Probability", ascending=False).reset_index(drop=True)
 
