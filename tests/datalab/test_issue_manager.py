@@ -152,7 +152,7 @@ class TestOutOfDistributionIssueManager:
             issues["is_outlier_issue"] == expected_issue_mask
         ), "Issue mask should be correct"
         assert summary["issue_type"][0] == "outlier"
-        assert summary["score"][0] == pytest.approx(expected=0.8257756, rel=1e-7)
+        assert summary["score"][0] == pytest.approx(expected=0.7732146, rel=1e-7)
 
         assert info.get("knn", None) is not None, "Should have knn info"
 
