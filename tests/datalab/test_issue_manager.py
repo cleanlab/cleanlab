@@ -6,6 +6,7 @@ from cleanlab.experimental.datalab.issue_manager import (
     IssueManager,
     LabelIssueManager,
     OutOfDistributionIssueManager,
+    NearDuplicateIssueManager,
 )
 from cleanlab.experimental.datalab.factory import REGISTRY, register
 from cleanlab.outlier import OutOfDistribution
@@ -195,6 +196,104 @@ class TestOutOfDistributionIssueManager:
         assert isinstance(report, str)
         assert (
             "------------------------------------outlier-------------------------------------\n\n"
+            "Score: "
+        ) in report
+
+        report = issue_manager.report(verbosity=3)
+        assert "Info: " in report
+
+        # Mock some vector and matrix values in the info dict
+        mock_info = issue_manager.info
+        vector = np.array([1, 2, 3, 4, 5, 6])
+        matrix = np.array([[i for i in range(20)] for _ in range(10)])
+        df = pd.DataFrame(matrix)
+        mock_list = [9, 8, 7, 6, 5, 4, 3, 2, 1]
+        mock_dict = {"a": 1, "b": 2, "c": 3}
+        mock_info["vector"] = vector
+        mock_info["matrix"] = matrix
+        mock_info["list"] = mock_list
+        mock_info["dict"] = mock_dict
+        mock_info["df"] = df
+
+        monkeypatch.setattr(issue_manager, "info", mock_info)
+
+        report = issue_manager.report(verbosity=2)
+        assert "Info: " in report
+        assert "vector: [1, 2, 3, 4, '...']" in report
+        assert f"matrix: array of shape {matrix.shape}\n[[ 0 " in report
+        assert "list: [9, 8, 7, 6, '...']" in report
+        assert 'dict:\n{\n    "a": 1,\n    "b": 2,\n    "c": 3\n}' in report
+        assert "df:" in report
+
+
+class TestNearDuplicateIssueManager:
+    @pytest.fixture
+    def embeddings(self, lab):
+        np.random.seed(SEED)
+        embeddings_array = 0.5 + 0.1 * np.random.rand(lab.get_info("data", "num_examples"), 2)
+        embeddings_array[4, :] = (
+            embeddings_array[3, :] + np.random.rand(embeddings_array.shape[1]) * 0.001
+        )
+        return {"embedding": embeddings_array}
+
+    @pytest.fixture
+    def issue_manager(self, lab, embeddings, monkeypatch):
+        mock_data = lab.data.from_dict({**lab.data.to_dict(), **embeddings})
+        monkeypatch.setattr(lab, "data", mock_data)
+        return NearDuplicateIssueManager(
+            datalab=lab,
+            metric="euclidean",
+            k=2,
+        )
+
+    def test_init(self, lab, issue_manager):
+        assert issue_manager.datalab == lab
+        assert issue_manager.metric == "euclidean"
+        assert issue_manager.k == 2
+        assert issue_manager.threshold == None
+
+        issue_manager = NearDuplicateIssueManager(
+            datalab=lab,
+            threshold=0.1,
+        )
+        assert issue_manager.threshold == 0.1
+
+    def test_extract_embeddings(self, issue_manager, embeddings):
+        extracted_embeddings = issue_manager._extract_embeddings(
+            columns="embedding", format_kwargs={"dtype": np.float64}
+        )
+        assert isinstance(extracted_embeddings, np.ndarray), "Should be a numpy array"
+        assert np.all(extracted_embeddings == embeddings["embedding"]), "Embeddings should match"
+
+    def test_find_issues(self, issue_manager):
+        issue_manager.find_issues(features="embedding")
+        issues, summary, info = issue_manager.issues, issue_manager.summary, issue_manager.info
+        expected_issue_mask = np.array([False] * 3 + [True] * 2)
+        assert np.all(
+            issues["is_near_duplicate_issue"] == expected_issue_mask
+        ), "Issue mask should be correct"
+        assert summary["issue_type"][0] == "near_duplicate"
+        assert summary["score"][0] == pytest.approx(expected=0.03122489, rel=1e-7)
+
+        assert (
+            info.get("near_duplicate_sets", None) is not None
+        ), "Should have sets of near duplicates"
+
+        new_issue_manager = NearDuplicateIssueManager(
+            datalab=issue_manager.datalab,
+            metric="euclidean",
+            k=2,
+            threshold=0.1,
+        )
+        new_issue_manager.find_issues(features="embedding")
+
+    def test_report(self, issue_manager, monkeypatch):
+
+        issue_manager.find_issues(features="embedding")
+        report = issue_manager.report()
+        assert isinstance(report, str)
+        assert (
+            "---------------------------------near_duplicate---------------------------------\n\n"
             "Score: "
         ) in report
 

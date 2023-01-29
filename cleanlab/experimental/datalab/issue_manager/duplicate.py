@@ -15,7 +15,7 @@ if TYPE_CHECKING:  # pragma: no cover
     from cleanlab.experimental.datalab.datalab import Datalab
 
 
-class NearDuplicateIssueManager(IssueManager):  # pragma: no cover
+class NearDuplicateIssueManager(IssueManager):
     """Manages issues realted to near-duplicate examples."""
 
     issue_name: str = "near_duplicate"
