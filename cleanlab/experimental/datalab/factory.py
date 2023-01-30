@@ -1,3 +1,38 @@
+# Copyright (C) 2017-2023  Cleanlab Inc.
+# This file is part of cleanlab.
+#
+# cleanlab is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published
+# by the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# cleanlab is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
+"""The factory module provides a factory class for constructing concrete issue managers
+and a decorator for registering new issue managers.
+
+This module provides the :py:meth:`register` decorator for users to register new subclasses
+of :py:class:`IssueManager <cleanlab.experimental.datalab.issue_manager.IssueManager>` in the registry.
+
+
+Note
+----
+
+The :class:`REGISTRY` variable is used by the factory class to keep track of registered issue managers.
+The factory class is used as an implementation detail by :py:class:`Datalab <cleanlab.experimental.datalab.datalab.Datalab>`,
+which provides a simplified API for constructing concrete issue managers.
+:py:class:`Datalab <cleanlab.experimental.datalab.datalab.Datalab>` is intended to be used by users
+and provides detailed documentation on how to use the API.
+
+Warning
+-------
+Neither the ``REGISTRY`` variable nor the factory class should be used directly by users.
+"""
 from __future__ import annotations
 
 from typing import Dict, List, Type
