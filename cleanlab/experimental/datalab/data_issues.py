@@ -44,6 +44,16 @@ class DataIssues:
     ----------
     data :
         The data object for which the issues are being collected.
+
+    Attributes
+    ----------
+    issues : pd.DataFrame
+        Stores information about each individual issue found in the data,
+        on a per-example basis.
+    issue_summary : pd.DataFrame
+        Summarizes the overall statistics for each issue type.
+    info : dict
+        A dictionary that contains information and statistics about the data and each issue type.
     """
 
     def __init__(self, data: Data) -> None:
