@@ -92,7 +92,7 @@ def register(cls: Type[IssueManager]) -> Type[IssueManager]:
     Parameters
     ----------
     cls :
-        A subclass of IssueManager.
+        A subclass of :py:class:`IssueManager <cleanlab.experimental.datalab.issue_manager.IssueManager>`.
 
     Returns
     -------
@@ -112,7 +112,6 @@ def register(cls: Type[IssueManager]) -> Type[IssueManager]:
         @register
         class MyIssueManager(IssueManager):
             issue_name: str = "my_issue"
-
             def find_issues(self, **kwargs):
                 # Some logic to find issues
                 pass
