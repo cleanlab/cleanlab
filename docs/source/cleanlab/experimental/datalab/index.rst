@@ -13,4 +13,4 @@ datalab
 .. toctree::
     datalab
     factory
-
+    data_issues
