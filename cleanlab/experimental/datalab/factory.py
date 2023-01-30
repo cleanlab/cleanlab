@@ -15,6 +15,11 @@ REGISTRY: Dict[str, Type[IssueManager]] = {
     "label": LabelIssueManager,
     "near_duplicate": NearDuplicateIssueManager,
 }
+"""Registry of issue managers that can be constructed from a string 
+and used in the Datalab class.
+"""
+
+
 # Construct concrete issue manager with a from_str method
 class _IssueManagerFactory:
     """Factory class for constructing concrete issue managers."""
@@ -36,8 +41,37 @@ class _IssueManagerFactory:
         return [cls.from_str(issue_type) for issue_type in issue_types]
 
 
-def register(cls: Type[IssueManager]):
-    """Registers the issue manager factory."""
+def register(cls: Type[IssueManager]) -> Type[IssueManager]:
+    """Registers the issue manager factory.
+
+    Parameters
+    ----------
+    cls :
+        A subclass of IssueManager.
+
+    Returns
+    -------
+    cls :
+        The same class that was passed in.
+
+    Example
+    -------
+
+    When defining a new subclass of IssueManager, you can register it like so:
+
+    .. code-block:: python
+
+        from cleanlab.experimental.datalab.issue_manager import IssueManager
+        from cleanlab.experimental.datalab.factory import register
+
+        @register
+        class MyIssueManager(IssueManager):
+            issue_name: str = "my_issue"
+
+            def find_issues(self, **kwargs):
+                # Some logic to find issues
+                pass
+    """
     name: str = str(cls.issue_name)
     if name in REGISTRY:
         # Warn user that they are overwriting an existing issue manager
