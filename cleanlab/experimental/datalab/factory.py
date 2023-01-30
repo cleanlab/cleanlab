@@ -16,15 +16,17 @@
 """The factory module provides a factory class for constructing concrete issue managers
 and a decorator for registering new issue managers.
 
-This module provides the :py:meth:`register` decorator for users to register new subclasses
-of :py:class:`IssueManager <cleanlab.experimental.datalab.issue_manager.IssueManager>` in the registry.
+This module provides the :py:meth:`register` decorator for users to register new subclasses of
+:py:class:`IssueManager <cleanlab.experimental.datalab.issue_manager.IssueManager>` in the registry.
 
 
 Note
 ----
 
-The :class:`REGISTRY` variable is used by the factory class to keep track of registered issue managers.
-The factory class is used as an implementation detail by :py:class:`Datalab <cleanlab.experimental.datalab.datalab.Datalab>`,
+The :class:`REGISTRY` variable is used by the factory class to keep track
+of registered issue managers.
+The factory class is used as an implementation detail by 
+:py:class:`Datalab <cleanlab.experimental.datalab.datalab.Datalab>`,
 which provides a simplified API for constructing concrete issue managers.
 :py:class:`Datalab <cleanlab.experimental.datalab.datalab.Datalab>` is intended to be used by users
 and provides detailed documentation on how to use the API.
