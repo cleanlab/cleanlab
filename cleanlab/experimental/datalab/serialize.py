@@ -16,17 +16,19 @@
 from __future__ import annotations
 
 import os
-from typing import Optional, TYPE_CHECKING
 import pickle
 import warnings
-import pandas as pd
-import cleanlab
+from typing import TYPE_CHECKING, Optional
 
+import pandas as pd
+
+import cleanlab
 from cleanlab.experimental.datalab.data import Data
 
 if TYPE_CHECKING:  # pragma: no cover
-    from cleanlab import Datalab
     from datasets.arrow_dataset import Dataset
+
+    from cleanlab import Datalab
 
 
 # Constants:

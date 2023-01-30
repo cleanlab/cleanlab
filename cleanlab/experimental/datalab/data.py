@@ -15,10 +15,11 @@
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 """Module for class and functions that hold and validate datasets that are loaded into DataLab."""
 
-from datasets.arrow_dataset import Dataset
-import datasets
 from typing import Mapping, Union, cast
+
+import datasets
 import numpy as np
+from datasets.arrow_dataset import Dataset
 
 from cleanlab.internal.validation import labels_to_array
 

@@ -19,9 +19,10 @@ issues found in the data.
 """
 from __future__ import annotations
 
-from typing import Any, TYPE_CHECKING
-import pandas as pd
 import warnings
+from typing import TYPE_CHECKING, Any
+
+import pandas as pd
 
 if TYPE_CHECKING:  # pragma: no cover
     from cleanlab.experimental.datalab.data import Data

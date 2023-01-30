@@ -2,10 +2,11 @@
 Local test script for datalab.py
 """
 
-from cleanlab import Datalab
-from datasets import load_dataset
-import pandas as pd
 import numpy as np
+import pandas as pd
+from datasets import load_dataset
+
+from cleanlab import Datalab
 
 # pandas dataset:  my_data = pd.read_csv(...)
 my_data = load_dataset("lhoestq/demo1", split="train")  # label column is 'star'

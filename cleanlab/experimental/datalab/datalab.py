@@ -19,17 +19,17 @@ and managing all kinds of issues in datasets.
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Union, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 import numpy as np
 import pandas as pd
 from datasets.arrow_dataset import Dataset
 
 import cleanlab
-from cleanlab.experimental.datalab.factory import _IssueManagerFactory
 from cleanlab.experimental.datalab.data import Data
 from cleanlab.experimental.datalab.data_issues import DataIssues
 from cleanlab.experimental.datalab.display import _Displayer
+from cleanlab.experimental.datalab.factory import _IssueManagerFactory
 from cleanlab.experimental.datalab.serialize import _Serializer
 
 if TYPE_CHECKING:  # pragma: no cover

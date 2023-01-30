@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 import numpy as np
 import pandas as pd
+
 from cleanlab.experimental.datalab.issue_manager import IssueManager
 from cleanlab.outlier import OutOfDistribution
 

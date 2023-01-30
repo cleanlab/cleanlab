@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-from typing import Any, Dict, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
 import numpy as np
+
 from cleanlab.classification import CleanLearning
-from cleanlab.internal.validation import assert_valid_inputs
 from cleanlab.experimental.datalab.issue_manager import IssueManager
+from cleanlab.internal.validation import assert_valid_inputs
 
 if TYPE_CHECKING:  # pragma: no cover
     from cleanlab import Datalab

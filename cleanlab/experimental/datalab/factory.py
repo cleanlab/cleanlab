@@ -5,8 +5,8 @@ from typing import Dict, List, Type
 from cleanlab.experimental.datalab.issue_manager import (
     IssueManager,
     LabelIssueManager,
-    OutOfDistributionIssueManager,
     NearDuplicateIssueManager,
+    OutOfDistributionIssueManager,
 )
 
 
