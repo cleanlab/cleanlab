@@ -17,6 +17,16 @@ REGISTRY: Dict[str, Type[IssueManager]] = {
 }
 """Registry of issue managers that can be constructed from a string 
 and used in the Datalab class.
+
+Currently, the following issue managers are registered by default:
+
+- ``outlier``: :py:class:`OutOfDistributionIssueManager <cleanlab.experimental.datalab.issue_manager.OutOfDistributionIssueManager>`
+- ``label``: :py:class:`LabelIssueManager <cleanlab.experimental.datalab.issue_manager.LabelIssueManager>`
+- ``near_duplicate``: :py:class:`NearDuplicateIssueManager <cleanlab.experimental.datalab.issue_manager.NearDuplicateIssueManager>`
+
+Warning
+-------
+This variable should not be used directly by users.
 """
 
 
