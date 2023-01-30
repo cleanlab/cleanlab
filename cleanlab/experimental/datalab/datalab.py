@@ -368,8 +368,9 @@ class Datalab:
     @staticmethod
     def load(path: str, data: Optional[Dataset] = None) -> "Datalab":
         """Loads Lab from file. Folder could ideally be zipped or unzipped.
+
         Checks which cleanlab version Lab was previously saved from
-            and raises warning if they dont match.
+        and raises warning if they dont match.
 
         If a Dataset is passed (via the `data` argument), it will be added to the Datalab
         if it matches the Dataset that was used to create the Datalab.
