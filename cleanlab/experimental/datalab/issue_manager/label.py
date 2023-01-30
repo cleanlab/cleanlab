@@ -8,7 +8,7 @@ from cleanlab.internal.validation import assert_valid_inputs
 from cleanlab.experimental.datalab.issue_manager import IssueManager
 
 if TYPE_CHECKING:  # pragma: no cover
-    from cleanlab.experimental.datalab.datalab import Datalab
+    from cleanlab import Datalab
 
 
 class LabelIssueManager(IssueManager):

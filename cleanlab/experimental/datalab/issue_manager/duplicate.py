@@ -12,7 +12,7 @@ from sklearn.utils.validation import check_is_fitted
 from cleanlab.experimental.datalab.issue_manager import IssueManager
 
 if TYPE_CHECKING:  # pragma: no cover
-    from cleanlab.experimental.datalab.datalab import Datalab
+    from cleanlab import Datalab
 
 
 class NearDuplicateIssueManager(IssueManager):

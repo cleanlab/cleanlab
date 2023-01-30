@@ -6,7 +6,7 @@ import pandas as pd
 import numpy as np
 
 if TYPE_CHECKING:  # pragma: no cover
-    from cleanlab.experimental.datalab.datalab import Datalab
+    from cleanlab import Datalab
 
 
 class IssueManager(ABC):

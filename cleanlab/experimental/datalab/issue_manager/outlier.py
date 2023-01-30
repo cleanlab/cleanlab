@@ -8,7 +8,7 @@ from cleanlab.experimental.datalab.issue_manager import IssueManager
 from cleanlab.outlier import OutOfDistribution
 
 if TYPE_CHECKING:  # pragma: no cover
-    from cleanlab.experimental.datalab.datalab import Datalab
+    from cleanlab import Datalab
 
 
 class OutOfDistributionIssueManager(IssueManager):
