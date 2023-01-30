@@ -30,6 +30,15 @@ if TYPE_CHECKING:  # pragma: no cover
 
 
 class DataIssues:
+    """
+    Class that collects and stores information and statistics on issues found in a dataset.
+
+    Parameters
+    ----------
+    data :
+        The data object for which the issues are being collected.
+    """
+
     def __init__(self, data: Data) -> None:
         self.issues: pd.DataFrame = pd.DataFrame(index=range(len(data)))
         self.issue_summary: pd.DataFrame = pd.DataFrame(columns=["issue_type", "score"])
@@ -46,24 +55,38 @@ class DataIssues:
         }
 
     def get_info(self, issue_name: str, *subkeys: str) -> Any:
-        if issue_name in self.info:
-            info = self.info[issue_name]
-            if subkeys:
-                for sub_id, subkey in enumerate(subkeys):
-                    if not isinstance(info, dict):
-                        raise ValueError(
-                            f"subkey {subkey} at index {sub_id} is not a valid key in info dict."
-                            f"info is {info} and remaining subkeys are {subkeys[sub_id:]}."
-                        )
-                    sub_info = info.get(subkey)
-                    info = sub_info
-            return info
-        else:
+        """Get the info for the issue_name key (and any subkeys, if provided).
+
+        This function is used to get the info for a specific issue_name. If the info is not computed yet, it will raise an error.
+        If subkeys are provided, it will get the info for the subkeys.
+
+        Parameters
+        ----------
+        issue_name : str
+            The issue name for which the info is required.
+        subkeys : str
+            If the info is a dictionary, then you can provide the subkeys to get the info for nested dictionaries.
+
+        Returns
+        -------
+        info:
+            The info for the issue_name and subkeys.
+        """
+        info = self.info.get(issue_name, None)
+        if info is None:
             raise ValueError(
                 f"issue_name {issue_name} not found in self.info. These have not been computed yet."
             )
-            # could alternatively consider:
-            # raise ValueError("issue_name must be a valid key in Datalab.info dict.")
+
+        for sub_id, subkey in enumerate(subkeys):
+            if not isinstance(info, dict):
+                raise ValueError(
+                    f"subkey {subkey} at index {sub_id} is not a valid key in info dict."
+                    f"info is {info} and remaining subkeys are {subkeys[sub_id:]}."
+                )
+            sub_info = info.get(subkey)
+            info = sub_info
+        return info
 
     def _collect_results_from_issue_manager(self, issue_manager: IssueManager) -> None:
         """
