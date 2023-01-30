@@ -367,12 +367,20 @@ def test_fasttext():
     if not os.path.isdir(dir):
         os.makedirs(dir)
 
-    if not os.path.isfile("tests/fasttext_data/tweets_train.txt"):
-        wget.download(
-            "http://s.cleanlab.ai/tweets_fasttext/tweets_train.txt", "tests/fasttext_data"
+    try:
+        if not os.path.isfile("tests/fasttext_data/tweets_train.txt"):
+            wget.download(
+                "http://s.cleanlab.ai/tweets_fasttext/tweets_train.txt", "tests/fasttext_data"
+            )
+        if not os.path.isfile("tests/fasttext_data/tweets_test.txt"):
+            wget.download(
+                "http://s.cleanlab.ai/tweets_fasttext/tweets_test.txt", "tests/fasttext_data"
+            )
+    except:
+        raise RuntimeError(
+            "Download failed (potentially due to lack of internet connection or invalid url). "
+            "To skip this unittest, set the env variable TEST_FASTTEXT = false."
         )
-    if not os.path.isfile("tests/fasttext_data/tweets_test.txt"):
-        wget.download("http://s.cleanlab.ai/tweets_fasttext/tweets_test.txt", "tests/fasttext_data")
 
     labels = np.ravel([x[0] for x in data_loader("tests/fasttext_data/tweets_train.txt")])
     labels = [lab[9:] for lab in labels]

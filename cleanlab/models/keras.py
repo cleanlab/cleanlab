@@ -104,12 +104,12 @@ class KerasWrapperModel:
         Parameters
         ----------
         X : tf.Dataset or np.array or pd.DataFrame
-            If `X` is a tensorflow dataset object, it must already contain the labels as is required for standard Keras fit.
+            If ``X`` is a tensorflow dataset object, it must already contain the labels as is required for standard Keras fit.
 
         y : np.array or pd.DataFrame, default = None
-            If `X` is a tensorflow dataset object, you can optionally provide the labels again here as argument `y` to be compatible with sklearn,
+            If ``X`` is a tensorflow dataset object, you can optionally provide the labels again here as argument `y` to be compatible with sklearn,
             but they are ignored.
-            If `X` is a numpy array or pandas dataframe, the labels have to be passed in using this argument.
+            If ``X`` is a numpy array or pandas dataframe, the labels have to be passed in using this argument.
         """
 
         self.net = self.model(**self.model_kwargs)
@@ -124,6 +124,11 @@ class KerasWrapperModel:
     def predict_proba(self, X, *, apply_softmax=True, **kwargs):
         """Predict class probabilities for all classes using the wrapped Keras model.
         Set extra argument `apply_softmax` to True to indicate your network only outputs logits not probabilities.
+
+        Parameters
+        ----------
+        X : tf.Dataset or np.array or pd.DataFrame
+            Data in the same format as the original ``X`` provided to ``fit()``.
         """
         if self.net is None:
             raise ValueError("must call fit() before predict()")
@@ -133,7 +138,14 @@ class KerasWrapperModel:
         return pred_probs
 
     def predict(self, X, **kwargs):
-        """Predict class labels using the wrapped Keras model."""
+        """Predict class labels using the wrapped Keras model.
+
+        Parameters
+        ----------
+        X : tf.Dataset or np.array or pd.DataFrame
+            Data in the same format as the original ``X`` provided to ``fit()``.
+
+        """
         pred_probs = self.predict_proba(X, **kwargs)
         return np.argmax(pred_probs, axis=1)
 
@@ -197,12 +209,12 @@ class KerasWrapperSequential:
         Parameters
         ----------
         X : tf.Dataset or np.array or pd.DataFrame
-            If `X` is a tensorflow dataset object, it must already contain the labels as is required for standard Keras fit.
+            If ``X`` is a tensorflow dataset object, it must already contain the labels as is required for standard Keras fit.
 
         y : np.array or pd.DataFrame, default = None
-            If `X` is a tensorflow dataset object, you can optionally provide the labels again here as argument `y` to be compatible with sklearn,
+            If ``X`` is a tensorflow dataset object, you can optionally provide the labels again here as argument `y` to be compatible with sklearn,
             but they are ignored.
-            If `X` is a numpy array or pandas dataframe, the labels have to be passed in using this argument.
+            If ``X`` is a numpy array or pandas dataframe, the labels have to be passed in using this argument.
         """
         self.net = tf.keras.models.Sequential(self.layers, self.name)
         self.net.compile(**self.compile_kwargs)
@@ -216,6 +228,11 @@ class KerasWrapperSequential:
     def predict_proba(self, X, *, apply_softmax=True, **kwargs):
         """Predict class probabilities for all classes using the wrapped Keras model.
         Set extra argument `apply_softmax` to True to indicate your network only outputs logits not probabilities.
+
+        Parameters
+        ----------
+        X : tf.Dataset or np.array or pd.DataFrame
+            Data in the same format as the original ``X`` provided to ``fit()``.
         """
         if self.net is None:
             raise ValueError("must call fit() before predict()")
@@ -225,7 +242,13 @@ class KerasWrapperSequential:
         return pred_probs
 
     def predict(self, X, **kwargs):
-        """Predict class labels using the wrapped Keras model."""
+        """Predict class labels using the wrapped Keras model.
+
+        Parameters
+        ----------
+        X : tf.Dataset or np.array or pd.DataFrame
+            Data in the same format as the original ``X`` provided to ``fit()``.
+        """
         pred_probs = self.predict_proba(X, **kwargs)
         return np.argmax(pred_probs, axis=1)
 
