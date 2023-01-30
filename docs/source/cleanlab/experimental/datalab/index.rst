@@ -12,4 +12,5 @@ datalab
 
 .. toctree::
     datalab
+    factory
 
