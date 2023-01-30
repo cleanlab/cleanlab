@@ -14,8 +14,15 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 """
-Module for class that collects and stores information and statistics on
-issues found in the data.
+Module for the :py:class:`DataIssues` class, which serves as a central repository for storing
+information and statistics about issues found in a dataset.
+
+It collects information from various
+:py:class:`IssueManager <cleanlab.experimental.datalab.issue_manager.IssueManager>`
+instances and keeps track of each issue, a summary each type of issue,
+related information and statistics about the issues.
+
+The collected information can be accessed using the :py:meth:`get_info <cleanlab.experimental.datalab.data_issues.DataIssues.get_info>` method.
 """
 from __future__ import annotations
 
