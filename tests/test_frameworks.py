@@ -39,6 +39,9 @@ if os.name == "nt":  # check if we are on Windows
 import tensorflow as tf
 import torch
 import skorch
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import GridSearchCV
 
 from cleanlab.classification import CleanLearning
 from cleanlab.models.keras import KerasWrapperSequential, KerasWrapperModel
@@ -231,6 +234,64 @@ def test_tensorflow_rarelabel(batch_size, data=DATA_RARE_LABEL, hidden_units=8):
     cl = CleanLearning(model)
     cl.fit(dataset_tf, data["y"], clf_kwargs={"epochs": 10}, clf_final_kwargs={"epochs": 15})
     preds = cl.predict(dataset_tf)
+
+
+def test_keras_sklearn_compatability(data=DATA, hidden_units=128):
+    # test pipeline on Sequential API
+    model = KerasWrapperSequential(
+        [
+            tf.keras.layers.Dense(128, input_shape=[data["num_features"]], activation="relu"),
+            tf.keras.layers.Dense(data["num_classes"]),
+        ],
+    )
+
+    pipeline = Pipeline([("scale", StandardScaler()), ("net", model)])
+    pipeline.fit(data["X"], data["y"])
+    preds = pipeline.predict(data["X"])
+
+    # test gridsearch on Sequential API
+    model = KerasWrapperSequential(
+        [
+            tf.keras.layers.Dense(128, input_shape=[data["num_features"]], activation="relu"),
+            tf.keras.layers.Dense(data["num_classes"]),
+        ],
+    )
+
+    params = {"batch_size": [32, 64], "epochs": [2, 3]}
+    gs = GridSearchCV(
+        model, params, refit=False, cv=3, verbose=2, scoring="accuracy", error_score="raise"
+    )
+    gs.fit(data["X"], data["y"])
+
+    # test pipeline on functional API
+    def make_model(num_features, num_classes):
+        inputs = tf.keras.Input(shape=(num_features,))
+        x = tf.keras.layers.Dense(64, activation="relu")(inputs)
+        outputs = tf.keras.layers.Dense(num_classes)(x)
+        model = tf.keras.Model(inputs=inputs, outputs=outputs, name="test_model")
+
+        return model
+
+    model = KerasWrapperModel(
+        make_model,
+        model_kwargs={"num_features": data["num_features"], "num_classes": data["num_classes"]},
+    )
+
+    pipeline = Pipeline([("scale", StandardScaler()), ("net", model)])
+    pipeline.fit(data["X"], data["y"])
+    preds = pipeline.predict(data["X"])
+
+    # test gridsearch on Sequential API
+    model = KerasWrapperModel(
+        make_model,
+        model_kwargs={"num_features": data["num_features"], "num_classes": data["num_classes"]},
+    )
+
+    params = {"batch_size": [32, 64], "epochs": [2, 3]}
+    gs = GridSearchCV(
+        model, params, refit=False, cv=3, verbose=2, scoring="accuracy", error_score="raise"
+    )
+    gs.fit(data["X"], data["y"])
 
 
 @pytest.mark.skipif("not python_version_ok()", reason="need at least python 3.7")

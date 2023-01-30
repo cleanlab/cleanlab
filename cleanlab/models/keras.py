@@ -75,10 +75,12 @@ class KerasWrapperModel:
         compile_kwargs: dict = {
             "loss": tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
         },
+        params: dict = {},
     ):
         self.model = model
         self.model_kwargs = model_kwargs
         self.compile_kwargs = compile_kwargs
+        self.params = params
         self.net = None
 
     def get_params(self, deep=True):
@@ -87,7 +89,14 @@ class KerasWrapperModel:
             "model": self.model,
             "model_kwargs": self.model_kwargs,
             "compile_kwargs": self.compile_kwargs,
+            "params": self.params,
         }
+
+    def set_params(self, **params):
+        """Set the parameters of the Keras model."""
+        for key, value in params.items():
+            self.params[key] = value
+        return self
 
     def fit(self, X, y=None, **kwargs):
         """Trains a Keras model.
@@ -110,7 +119,7 @@ class KerasWrapperModel:
             assert_valid_inputs(X, y)
             kwargs["y"] = y
 
-        self.net.fit(X, **kwargs)
+        self.net.fit(X, **self.params, **kwargs)
 
     def predict_proba(self, X, *, apply_softmax=True, **kwargs):
         """Predict class probabilities for all classes using the wrapped Keras model.
@@ -159,10 +168,12 @@ class KerasWrapperSequential:
         compile_kwargs: dict = {
             "loss": tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
         },
+        params: dict = {},
     ):
         self.layers = layers
         self.name = name
         self.compile_kwargs = compile_kwargs
+        self.params = params
         self.net = None
 
     def get_params(self, deep=True):
@@ -171,7 +182,14 @@ class KerasWrapperSequential:
             "layers": self.layers,
             "name": self.name,
             "compile_kwargs": self.compile_kwargs,
+            "params": self.params,
         }
+
+    def set_params(self, **params):
+        """Set the parameters of the Keras model."""
+        for key, value in params.items():
+            self.params[key] = value
+        return self
 
     def fit(self, X, y=None, **kwargs):
         """Trains a Sequential Keras model.
@@ -193,7 +211,7 @@ class KerasWrapperSequential:
             assert_valid_inputs(X, y)
             kwargs["y"] = y
 
-        self.net.fit(X, **kwargs)
+        self.net.fit(X, **self.params, **kwargs)
 
     def predict_proba(self, X, *, apply_softmax=True, **kwargs):
         """Predict class probabilities for all classes using the wrapped Keras model.
