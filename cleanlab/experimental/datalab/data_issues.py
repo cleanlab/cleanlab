@@ -22,7 +22,8 @@ It collects information from various
 instances and keeps track of each issue, a summary each type of issue,
 related information and statistics about the issues.
 
-The collected information can be accessed using the :py:meth:`get_info <cleanlab.experimental.datalab.data_issues.DataIssues.get_info>` method.
+The collected information can be accessed using the 
+:py:meth:`get_info <cleanlab.experimental.datalab.data_issues.DataIssues.get_info>` method.
 """
 from __future__ import annotations
 
