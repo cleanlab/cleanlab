@@ -10,3 +10,4 @@ from . import outlier
 from . import token_classification
 from . import multilabel_classification
 from .experimental.datalab.datalab import Datalab
+from .experimental.datalab.issue_manager import IssueManager
