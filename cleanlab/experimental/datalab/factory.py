@@ -17,7 +17,8 @@
 and a decorator for registering new issue managers.
 
 This module provides the :py:meth:`register` decorator for users to register new subclasses of
-:py:class:`IssueManager <cleanlab.experimental.datalab.issue_manager.IssueManager>` in the registry.
+:py:class:`IssueManager <cleanlab.experimental.datalab.issue_manager.issue_manager.IssueManager>`
+in the registry.
 
 
 Note
@@ -104,7 +105,9 @@ def register(cls: Type[IssueManager]) -> Type[IssueManager]:
     Example
     -------
 
-    When defining a new subclass of IssueManager, you can register it like so:
+    When defining a new subclass of
+    :py:class:`IssueManager <cleanlab.experimental.datalab.issue_manager.IssueManager>`,
+    you can register it like so:
 
     .. code-block:: python
 
