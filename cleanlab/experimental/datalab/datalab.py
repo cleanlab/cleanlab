@@ -65,7 +65,7 @@ class Datalab:
     def __init__(
         self,
         data: Dataset,
-        label_name: Union[str, list[str]],
+        label_name: Union[str, List[str]],
     ) -> None:
         self._data = Data(data, label_name)  # TODO: Set extracted class instance to self.data
         self.data = self._data._data
