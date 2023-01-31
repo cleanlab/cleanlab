@@ -472,6 +472,42 @@ def _find_label_issues_multilabel(
     This is done via a one-vs-rest reduction for each class and the results are subsequently aggregated across all classes.
     Here `labels` must be formatted as an iterable of iterables, e.g. ``List[List[int]]``.
     """
+
+    if filter_by in ["low_normalized_margin", "low_self_confidence"]:
+        num_errors = sum(
+            find_label_issues(
+                labels=labels,
+                pred_probs=pred_probs,
+                confident_joint=confident_joint,
+                multi_label=True,
+                filter_by="confident_learning",
+            )
+        )
+
+        y_one, num_classes = get_onehot_num_classes(labels, pred_probs)
+        label_quality_scores = ml_scorer.get_label_quality_scores(
+            labels=y_one,
+            pred_probs=pred_probs,
+        )
+
+        cl_error_indices = np.argsort(label_quality_scores)[:num_errors]
+        label_issues_mask = np.zeros(len(labels), dtype=bool)
+        for idx in cl_error_indices:
+            label_issues_mask[idx] = True
+
+        if return_indices_ranked_by is not None:
+            label_quality_scores_issues = ml_scorer.get_label_quality_scores(
+                labels=y_one[label_issues_mask],
+                pred_probs=pred_probs[label_issues_mask],
+                method=ml_scorer.MultilabelScorer(
+                    base_scorer=ml_scorer.ClassLabelScorer.from_str(return_indices_ranked_by),
+                ),
+                base_scorer_kwargs=rank_by_kwargs,
+            )
+            return cl_error_indices[np.argsort(label_quality_scores_issues)]
+
+        return label_issues_mask
+
     per_class_issues = _find_multilabel_issues_per_class(
         labels,
         pred_probs,
