@@ -40,6 +40,32 @@ DATA_DIRNAME = "data"
 
 
 class _Serializer:
+    @staticmethod
+    def _save_data_issues(path: str, datalab: Datalab) -> None:
+        """Saves the issues to disk."""
+        issues_path = os.path.join(path, ISSUES_FILENAME)
+        datalab.data_issues.issues.to_csv(issues_path, index=False)
+
+        issue_summary_path = os.path.join(path, ISSUE_SUMMARY_FILENAME)
+        datalab.data_issues.issue_summary.to_csv(issue_summary_path, index=False)
+
+    @staticmethod
+    def _save_data(path: str, datalab: Datalab) -> None:
+        """Saves the dataset to disk."""
+        data_path = os.path.join(path, DATA_DIRNAME)
+        datalab.data.save_to_disk(data_path)
+
+    @staticmethod
+    def _validate_version(datalab: Datalab) -> None:
+        current_version = cleanlab.__version__
+        datalab_version = datalab.cleanlab_version
+        if current_version != datalab_version:
+            warnings.warn(
+                f"Saved Datalab was created using different version of cleanlab "
+                f"({datalab_version}) than current version ({current_version}). "
+                f"Things may be broken!"
+            )
+
     @classmethod
     def serialize(cls, path: str, datalab: Datalab) -> None:
         """Serializes the datalab object to disk."""
@@ -58,21 +84,6 @@ class _Serializer:
 
         # Save the dataset to disk
         cls._save_data(path=path, datalab=datalab)
-
-    @staticmethod
-    def _save_data_issues(path: str, datalab: Datalab) -> None:
-        """Saves the issues to disk."""
-        issues_path = os.path.join(path, ISSUES_FILENAME)
-        datalab.data_issues.issues.to_csv(issues_path, index=False)
-
-        issue_summary_path = os.path.join(path, ISSUE_SUMMARY_FILENAME)
-        datalab.data_issues.issue_summary.to_csv(issue_summary_path, index=False)
-
-    @staticmethod
-    def _save_data(path: str, datalab: Datalab) -> None:
-        """Saves the dataset to disk."""
-        data_path = os.path.join(path, DATA_DIRNAME)
-        datalab.data.save_to_disk(data_path)
 
     @classmethod
     def deserialize(cls, path: str, data: Optional[Dataset] = None) -> Datalab:
@@ -111,14 +122,3 @@ class _Serializer:
             datalab.data = datalab._data._data
 
         return datalab
-
-    @staticmethod
-    def _validate_version(datalab: Datalab) -> None:
-        current_version = cleanlab.__version__
-        datalab_version = datalab.cleanlab_version
-        if current_version != datalab_version:
-            warnings.warn(
-                f"Saved Datalab was created using different version of cleanlab "
-                f"({datalab_version}) than current version ({current_version}). "
-                f"Things may be broken!"
-            )
