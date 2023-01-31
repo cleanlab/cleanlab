@@ -165,7 +165,7 @@ class IssueManager(ABC):
                     elif key == "issue":
                         # Add the issue-specific info, with the top k ids
                         new_columns = {
-                            col: np.array(self.info[col])[topk_ids]
+                            col: np.array(self.info[col], dtype=object)[topk_ids]
                             for col in values
                             if self.info.get(col, None) is not None
                         }
