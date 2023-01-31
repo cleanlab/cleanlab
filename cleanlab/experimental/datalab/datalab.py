@@ -23,7 +23,6 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 import numpy as np
 import pandas as pd
-from datasets.arrow_dataset import Dataset
 
 import cleanlab
 from cleanlab.experimental.datalab.data import Data
@@ -33,6 +32,8 @@ from cleanlab.experimental.datalab.factory import _IssueManagerFactory
 from cleanlab.experimental.datalab.serialize import _Serializer
 
 if TYPE_CHECKING:  # pragma: no cover
+    from datasets.arrow_dataset import Dataset
+
     from cleanlab.experimental.datalab.issue_manager import IssueManager
 
 __all__ = ["Datalab"]
