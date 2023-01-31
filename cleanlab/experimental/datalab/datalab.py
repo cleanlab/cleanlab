@@ -264,6 +264,32 @@ class Datalab:
         issue_types :
             Collection of the types of issues to search for.
 
+            Keyword arguments to pass to the IssueManager constructor.
+
+            See Also
+            --------
+            IssueManager
+
+            It is a dictionary of dictionaries, where the keys are the issue types
+            and the values are dictionaries of keyword arguments to pass to the
+            IssueManager constructor.
+
+            Example
+            -------
+            For example, if you want to pass the keyword argument "clean_learning_kwargs"
+            to the constructor of the LabelIssueManager, you would pass:
+
+
+            .. code-block:: python
+
+                issue_init_kwargs = {
+                    "label": {
+                        "clean_learning_kwargs": {
+                            "prune_method": "prune_by_noise_rate",
+                        }
+                    }
+                }
+
         features :
             Name of column containing precomputed embeddings.
 
@@ -278,33 +304,6 @@ class Datalab:
             WARNING
             -------
             This is not yet implemented.
-
-        issue_init_kwargs :
-            # Add path to IssueManager class docstring.
-            Keyword arguments to pass to the IssueManager constructor.
-
-            See Also
-            --------
-            IssueManager
-
-
-            It is a dictionary of dictionaries, where the keys are the issue types
-            and the values are dictionaries of keyword arguments to pass to the
-            IssueManager constructor.
-
-            For example, if you want to pass the keyword argument "clean_learning_kwargs"
-            to the constructor of the LabelIssueManager, you would pass:
-
-            .. code-block:: python
-
-                issue_init_kwargs = {
-                    "label": {
-                        "clean_learning_kwargs": {
-                            "prune_method": "prune_by_noise_rate",
-                        }
-                    }
-                }
-
         """
 
         required_args_per_issue_type = self._resolve_required_args(pred_probs, features, model)
