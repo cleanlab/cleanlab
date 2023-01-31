@@ -1008,3 +1008,20 @@ def test_estimate_py_and_noise_matrices_missing_classes():
         ]
     )
     _ = estimate_py_and_noise_matrices_from_probabilities(labels, pred_probs3)
+
+
+def test_low_filter_by_methods():
+    dataset = data
+    num_issues = count.num_label_issues(dataset["labels"], dataset["pred_probs"])
+
+    # test filter by low_normalized_margin, check num issues is same as using count.num_label_issues
+    label_issues_nm = filter.find_label_issues(
+        dataset["labels"], dataset["pred_probs"], filter_by="low_normalized_margin"
+    )
+    assert np.sum(label_issues_nm) == num_issues
+
+    # test filter by low_self_confidence, check num issues is same as using count.num_label_issues
+    label_issues_sc = filter.find_label_issues(
+        dataset["labels"], dataset["pred_probs"], filter_by="low_self_confidence"
+    )
+    assert np.sum(label_issues_sc) == num_issues

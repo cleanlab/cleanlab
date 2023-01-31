@@ -32,10 +32,8 @@ import warnings
 from typing import Any, Dict, List, Optional, Tuple, Union
 from functools import reduce
 
-from cleanlab.count import calibrate_confident_joint
-from cleanlab.rank import (
-    order_label_issues,
-)
+from cleanlab.count import calibrate_confident_joint, num_label_issues
+from cleanlab.rank import order_label_issues, get_label_quality_scores
 import cleanlab.internal.multilabel_scorer as ml_scorer
 from cleanlab.internal.validation import assert_valid_inputs
 from cleanlab.internal.util import (
@@ -132,13 +130,13 @@ def find_label_issues(
     filter_by : {'prune_by_class', 'prune_by_noise_rate', 'both', 'confident_learning', 'predicted_neq_given'}, default='prune_by_noise_rate'
       Method to determine which examples are flagged as having label issue, so you can filter/prune them from the dataset. Options:
 
-      - ``'low_normalized_margin'``: filters the examples with *smallest* normalized margin label quality score. The number of issues returned matches :py:func:`count.num_label_issues <cleanlab.count.num_label_issues>`.
-      - ``'low_self_confidence'``: filters the examples with *smallest* self confidence label quality score. The number of issues returned matches :py:func:`count.num_label_issues <cleanlab.count.num_label_issues>`.
       - ``'prune_by_noise_rate'``: filters examples with *high probability* of being mislabeled for every non-diagonal in the confident joint (see `prune_counts_matrix` in `filter.py`). These are the examples where (with high confidence) the given label is unlikely to match the predicted label for the example.
       - ``'prune_by_class'``: filters the examples with *smallest probability* of belonging to their given class label for every class.
       - ``'both'``: filters only those examples that would be filtered by both ``'prune_by_noise_rate'`` and ``'prune_by_class'``.
       - ``'confident_learning'``: filters the examples counted as part of the off-diagonals of the confident joint. These are the examples that are confidently predicted to be a different label than their given label.
       - ``'predicted_neq_given'``: filters examples for which the predicted class (i.e. argmax of the predicted probabilities) does not match the given label.
+      - ``'low_normalized_margin'``: filters the examples with *smallest* normalized margin label quality score. The number of issues returned matches :py:func:`count.num_label_issues <cleanlab.count.num_label_issues>`.
+      - ``'low_self_confidence'``: filters the examples with *smallest* self confidence label quality score. The number of issues returned matches :py:func:`count.num_label_issues <cleanlab.count.num_label_issues>`.
 
     multi_label : bool, optional
       If ``True``, labels should be an iterable (e.g. list) of iterables, containing a
@@ -233,22 +231,32 @@ def find_label_issues(
         allow_one_class=allow_one_class,
     )
 
-    if filter_by in ["confident_learning", "predicted_neq_given"] and (
-        frac_noise != 1.0 or num_to_remove_per_class is not None
-    ):
+    if filter_by in [
+        "confident_learning",
+        "predicted_neq_given",
+        "low_normalized_margin",
+        "low_self_confidences",
+    ] and (frac_noise != 1.0 or num_to_remove_per_class is not None):
         warn_str = (
             "WARNING! frac_noise and num_to_remove_per_class parameters are only supported"
             " for filter_by 'prune_by_noise_rate', 'prune_by_class', and 'both'. They "
-            "are not supported for methods 'confident_learning' or "
-            "'predicted_neq_given'."
+            "are not supported for methods 'confident_learning', 'predicted_neq_given', "
+            "'low_normalized_margin' or 'low_self_confidence'."
         )
         warnings.warn(warn_str)
     if (num_to_remove_per_class is not None) and (
-        filter_by in ["confident_learning", "predicted_neq_given"]
+        filter_by
+        in [
+            "confident_learning",
+            "predicted_neq_given",
+            "low_normalized_margin",
+            "low_self_confidences",
+        ]
     ):
-        # TODO - add support for these two filters
+        # TODO - add support for these filters
         raise ValueError(
-            "filter_by 'confident_learning' or 'predicted_neq_given' is not supported (yet) when setting 'num_to_remove_per_class'"
+            "filter_by 'confident_learning', 'predicted_neq_given', 'low_normalized_margin' "
+            "or 'low_self_confidence' is not supported (yet) when setting 'num_to_remove_per_class'"
         )
 
     # Set-up number of multiprocessing threads
@@ -294,16 +302,13 @@ def find_label_issues(
             multi_label=multi_label,
             return_indices_of_off_diagonals=True,
         )
-    # TODO: (delete once read and/or make a comment) -- We don't re-use confident_joint inside this method in num_label_issues(confident_joint=confident_joint), bcconfident_joint is calibrated and by default the method uses an uncalibrated confident_joint. Delete this todo once confirmed this is correct.
-    if filter_by in ["low_normalized_margin", "low_self_confidence"]:
-        from cleanlab.rank import get_label_quality_scores
-        from cleanlab.count import num_label_issues
 
+    if filter_by in ["low_normalized_margin", "low_self_confidence"]:
         # TODO: consider setting adjust_pred_probs to true based on benchmarks (or adding it kwargs, or ignoring and leaving as false by default)
         scores = get_label_quality_scores(
             labels,
             pred_probs,
-            method=filter_by[7:],
+            method=filter_by[4:],
             adjust_pred_probs=False,
         )
         num_errors = num_label_issues(
@@ -313,9 +318,10 @@ def find_label_issues(
         cl_error_indices = np.argsort(scores)[:num_errors]
         # TODO: delete the comment below (or keep anything you want in docs/comments)
         # The following is the O(n) fastest solution (check for one-off errors), but the problem is if lots of the scores are identical you will overcount,
-        # you can end up returning more or less and they aren't ranked in the boolean form so there's no way to drop the highest scores randomlyu
+        # you can end up returning more or less and they aren't ranked in the boolean form so there's no way to drop the highest scores randomly
         #     boundary = np.partition(scores, num_errors)[num_errors]  # O(n) solution
         #     label_issues_mask = scores <= boundary
+
     if filter_by in ["prune_by_noise_rate", "prune_by_class", "both"]:
         # Create `prune_count_matrix` with the number of examples to remove in each class and
         # leave at least min_examples_per_class examples per class.
@@ -533,7 +539,8 @@ def _find_multilabel_issues_per_class(
     rank_by_kwargs : dict, optional
       Refer to documentation for this argument in filter.find_label_issues() for details.
 
-    filter_by : {'prune_by_class', 'prune_by_noise_rate', 'both', 'confident_learning', 'predicted_neq_given'}, default='prune_by_noise_rate'
+    filter_by : {'prune_by_class', 'prune_by_noise_rate', 'both', 'confident_learning', 'predicted_neq_given',
+        'low_normalized_margin', 'low_self_confidences'}, default='prune_by_noise_rate'
       Refer to documentation for this argument in filter.find_label_issues() for details.
 
     frac_noise : float, default=1.0
