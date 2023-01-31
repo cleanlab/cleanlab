@@ -27,16 +27,20 @@ with regards to the issue.
 
 .. code-block:: python
 
+    import numpy as np
+    import pandas as pd
     from cleanlab import IssueManager
 
     class Basic(IssueManager):
         issue_name = "basic"
         def find_issues(self, **kwargs) -> None:
             scores = np.random.rand(len(self.datalab.data))
-            self.issues = {
-                f"is_{self.issue_name}_issue" : scores < 0.1,
-                self.issue_score_key : scores,
-            }
+            self.issues = pd.DataFrame(
+                {
+                    f"is_{self.issue_name}_issue" : scores < 0.1,
+                    self.issue_score_key : scores,
+                },
+            )
             self.summary = self.get_summary(score = scores.mean())
 
 .. _intermediate_issue_manager:
@@ -55,6 +59,8 @@ if you add any of the keys to the ``verbosity_levels`` property of the class.
 
 .. code-block:: python
 
+    import numpy as np
+    import pandas as pd
     from cleanlab import IssueManager
 
     class Intermediate(IssueManager):
@@ -67,10 +73,12 @@ if you add any of the keys to the ``verbosity_levels`` property of the class.
             sin_filter = np.sin(intermediate_arg * np.arange(N) / N)
             kernel = sin_filter ** 2
             scores = np.convolve(raw_scores, kernel, mode="same")
-            self.issues = {
-                f"is_{self.issue_name}_issue" : scores < self.threshold,
-                self.issue_score_key : scores,
-            }
+            self.issues = pd.DataFrame(
+                {
+                    f"is_{self.issue_name}_issue" : scores < self.threshold,
+                    self.issue_score_key : scores,
+                },
+            )
             self.summary = self.get_summary(score = scores.mean())
             self.info = {
                 "std": std,
