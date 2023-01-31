@@ -88,6 +88,7 @@ setup(
     # requirements files see:
     # https://packaging.python.org/en/latest/discussions/install-requires-vs-requirements/
     install_requires=[
+        "datasets>=2.7.0",
         "numpy>=1.20.0",
         "scikit-learn>=1.0",
         "tqdm>=4.53.0",
