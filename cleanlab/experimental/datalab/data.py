@@ -15,7 +15,7 @@
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 """Module for class and functions that hold and validate datasets that are loaded into DataLab."""
 
-from typing import List, Mapping, Union, cast
+from typing import List, Mapping, Tuple, Union, cast
 
 import datasets
 import numpy as np
@@ -86,7 +86,7 @@ class Data:
             pass
 
 
-def _extract_labels(data: Dataset, label_name: Union[str, List[str]]) -> tuple[np.ndarray, Mapping]:
+def _extract_labels(data: Dataset, label_name: Union[str, List[str]]) -> Tuple[np.ndarray, Mapping]:
     """
     Picks out labels from the dataset and formats them to be [0, 1, ..., K-1]
     where K is the number of classes. Also returns a mapping from the formatted
