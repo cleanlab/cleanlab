@@ -793,6 +793,7 @@ def test_num_label_issues_multilabel(confident_joint):
         labels=dataset["labels"],
         pred_probs=dataset["pred_probs"],
         confident_joint=dataset["cj"] if confident_joint else None,
+        filter_by="confident_learning",
         multi_label=True,
     )
     assert sum(f) == n
