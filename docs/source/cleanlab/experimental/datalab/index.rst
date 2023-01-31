@@ -10,7 +10,22 @@ datalab
    :undoc-members:
    :show-inheritance:
 
+Guides
+------
+
 .. toctree::
+    :maxdepth: 2
+
+    guide/index
+
+
+API Reference
+-------------
+
+.. toctree::
+    :maxdepth: 2
+
     datalab
     factory
     data_issues
+    issue_manager/index

@@ -11,6 +11,8 @@ experimental
    :show-inheritance:
 
 .. toctree::
+    :maxdepth: 2
+
     datalab/index
     keras
     fasttext
