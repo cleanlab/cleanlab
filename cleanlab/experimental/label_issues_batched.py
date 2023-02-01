@@ -66,7 +66,7 @@ Examples
 """
 
 import numpy as np
-from typing import Optional
+from typing import Optional, List
 
 from cleanlab.count import get_confident_thresholds
 from cleanlab.rank import get_label_quality_scores, find_top_issues
@@ -141,7 +141,7 @@ class LabelInspector:
             self.prune_count = 0  # number of label issues estimated based on data seen so far (only used when estimation_method is not calibrated)
 
         if self.store_results:
-            self.label_quality_scores = []
+            self.label_quality_scores: List[float] = []
 
         self.confident_thresholds = np.zeros(
             (num_class,)
