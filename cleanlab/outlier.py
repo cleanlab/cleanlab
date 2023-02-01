@@ -102,10 +102,11 @@ class OutOfDistribution:
         "confident_thresholds": None,  # ood pred_probs param
     }
 
-    def __init__(self, params: dict = {}):
+    def __init__(self, params: Optional[dict] = None) -> None:
         self._assert_valid_params(params, self.DEFAULT_PARAM_DICT)
         self.params = self.DEFAULT_PARAM_DICT
-        self.params = {**self.params, **params}
+        if params is not None:
+            self.params = {**self.params, **params}
 
     def fit_score(
         self,
