@@ -515,7 +515,7 @@ cleanlab is based on peer-reviewed research. Here are relevant papers to cite if
 <details><summary><a href="https://arxiv.org/abs/2210.06812"> CROWDLAB for data with multiple annotators (NeurIPS '22)</a> (<b>click to show bibtex</b>) </summary>
 
     @inproceedings{goh2022crowdlab,
-        title={Utilizing supervised models to infer consensus labels and their quality from data with multiple annotators},
+        title={CROWDLAB: Supervised learning to infer consensus labels and quality scores for data with multiple annotators},
         author={Goh, Hui Wen and Tkachenko, Ulyana and Mueller, Jonas},
         booktitle={NeurIPS Human in the Loop Learning Workshop},
         year={2022}
