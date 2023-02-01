@@ -298,9 +298,12 @@ class LabelInspector:
         self.examples_per_class += batch_class_counts
         self.examples_processed_thresh += batch_size
 
-    def score_label_quality(self, labels: LabelLike, pred_probs: np.ndarray) -> np.ndarray:
+    def score_label_quality(
+        self, labels: LabelLike, pred_probs: np.ndarray, *, update_num_issues: bool = True
+    ) -> np.ndarray:
         """
-        Updates the estimate of confident_thresholds stored in this class using a new batch of data.
+        Scores the label quality of each example in the provided batch of data,
+        and also updates the number of label issues stored in this class.
         Inputs should be in same format as for: :py:func:`rank.get_label_quality_scores <cleanlab.rank.get_label_quality_scores>`..
 
         Parameters
@@ -311,6 +314,10 @@ class LabelInspector:
         pred_probs: np.ndarray
           2D array of model-predicted class probabilities for each example in the batch of data.
 
+        update_num_issues: bool, optional
+          Whether or not to update the number of label issues or only compute label quality scores.
+          For lower runtimes, set this to ``False`` if you only want to score label quality and not find label issues.
+
         Returns
         -------
         label_quality_scores : np.ndarray
@@ -320,9 +327,10 @@ class LabelInspector:
         batch_size = len(labels)
         scores = get_label_quality_scores(
             labels, pred_probs, **self.quality_score_kwargs
-        )  # TODO: adjusted scores are messed up because threshold arent being passed.
+        )  # TODO: adjusted scores will be wrong because thresholds arent being passed.
         class_counts = value_counts_fill_missing_classes(labels, num_classes=self.num_class)
-        self._update_num_label_issues(labels, pred_probs, **self.num_issue_kwargs)
+        if update_num_issues:
+            self._update_num_label_issues(labels, pred_probs, **self.num_issue_kwargs)
         self.examples_processed_quality += batch_size
         if self.store_results:
             self.label_quality_scores += list(scores)
