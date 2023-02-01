@@ -77,10 +77,13 @@ class KerasWrapperModel:
         },
         params: Optional[dict] = None,
     ):
+        if params is None:
+            params = {}
+
         self.model = model
         self.model_kwargs = model_kwargs
         self.compile_kwargs = compile_kwargs
-        self.params = params or {}
+        self.params = params
         self.net = None
 
     def get_params(self, deep=True):
@@ -181,10 +184,13 @@ class KerasWrapperSequential:
         },
         params: Optional[dict] = None,
     ):
+        if params is None:
+            params = {}
+
         self.layers = layers
         self.name = name
         self.compile_kwargs = compile_kwargs
-        self.params = params or {}
+        self.params = params
         self.net = None
 
     def get_params(self, deep=True):
