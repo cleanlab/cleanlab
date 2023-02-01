@@ -75,12 +75,12 @@ class KerasWrapperModel:
         compile_kwargs: dict = {
             "loss": tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
         },
-        params: dict = {},
+        params: Optional[dict] = None,
     ):
         self.model = model
         self.model_kwargs = model_kwargs
         self.compile_kwargs = compile_kwargs
-        self.params = params
+        self.params: dict = params or {}
         self.net = None
 
     def get_params(self, deep=True):
@@ -94,8 +94,7 @@ class KerasWrapperModel:
 
     def set_params(self, **params):
         """Set the parameters of the Keras model."""
-        for key, value in params.items():
-            self.params[key] = value
+        self.params.update(params)
         return self
 
     def fit(self, X, y=None, **kwargs):
@@ -119,7 +118,7 @@ class KerasWrapperModel:
             assert_valid_inputs(X, y)
             kwargs["y"] = y
 
-        self.net.fit(X, **self.params, **kwargs)
+        self.net.fit(X, **{**self.params, **kwargs})
 
     def predict_proba(self, X, *, apply_softmax=True, **kwargs):
         """Predict class probabilities for all classes using the wrapped Keras model.
