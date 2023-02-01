@@ -133,6 +133,10 @@ class LabelInspector:
         self.store_results = store_results
         self.verbose = verbose
         self.quality_score_kwargs = quality_score_kwargs  # extra arguments for ``rank.get_label_quality_scores()`` to control label quality scoring
+        if quality_score_kwargs.get("adjust_pred_probs", False):
+            raise ValueError(
+                "`adjust_pred_probs` is currently not supported for label quality scores in this class."
+            )
         self.num_issue_kwargs = num_issue_kwargs  # extra arguments for ``count.num_label_issues()`` to control estimation of the number of label issues (only supported argument for now is: `estimation_method`).
         self.off_diagonal_calibrated = False
         if num_issue_kwargs.get("estimation_method") == "off_diagonal_calibrated":
