@@ -80,7 +80,7 @@ class KerasWrapperModel:
         self.model = model
         self.model_kwargs = model_kwargs
         self.compile_kwargs = compile_kwargs
-        self.params: dict = params or {}
+        self.params = params or {}
         self.net = None
 
     def get_params(self, deep=True):
@@ -179,12 +179,12 @@ class KerasWrapperSequential:
         compile_kwargs: dict = {
             "loss": tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
         },
-        params: dict = {},
+        params: Optional[dict] = None,
     ):
         self.layers = layers
         self.name = name
         self.compile_kwargs = compile_kwargs
-        self.params = params
+        self.params = params or {}
         self.net = None
 
     def get_params(self, deep=True):
@@ -222,7 +222,7 @@ class KerasWrapperSequential:
             assert_valid_inputs(X, y)
             kwargs["y"] = y
 
-        self.net.fit(X, **self.params, **kwargs)
+        self.net.fit(X, **{**self.params, **kwargs})
 
     def predict_proba(self, X, *, apply_softmax=True, **kwargs):
         """Predict class probabilities for all classes using the wrapped Keras model.

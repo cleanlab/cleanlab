@@ -168,7 +168,7 @@ def test_tensorflow_sequential(batch_size, shuffle_config, data=DATA, hidden_uni
 
 @pytest.mark.skipif("not python_version_ok()", reason="need at least python 3.7")
 @pytest.mark.parametrize("batch_size,shuffle_config", [(1, 0), (32, 0), (32, 1), (32, 2)])
-def test_tensorflow_functional(batch_size, shuffle_config, data=DATA, hidden_units=128):
+def test_tensorflow_functional(batch_size, shuffle_config, data=DATA, hidden_units=64):
     dataset_tf = tf.data.Dataset.from_tensor_slices((data["X"], data["y"]))
     if shuffle_config == 0:  # proper shuffling for SGD
         dataset_shuffled = dataset_tf.shuffle(buffer_size=len(data["X"]))
@@ -182,7 +182,7 @@ def test_tensorflow_functional(batch_size, shuffle_config, data=DATA, hidden_uni
 
     def make_model(num_features, num_classes):
         inputs = tf.keras.Input(shape=(num_features,))
-        x = tf.keras.layers.Dense(64, activation="relu")(inputs)
+        x = tf.keras.layers.Dense(hidden_units, activation="relu")(inputs)
         outputs = tf.keras.layers.Dense(num_classes)(x)
         model = tf.keras.Model(inputs=inputs, outputs=outputs, name="test_model")
 
@@ -236,7 +236,7 @@ def test_tensorflow_rarelabel(batch_size, data=DATA_RARE_LABEL, hidden_units=8):
     preds = cl.predict(dataset_tf)
 
 
-def test_keras_sklearn_compatability(data=DATA, hidden_units=128):
+def test_keras_sklearn_compatability(data=DATA, hidden_units=32):
     # test pipeline on Sequential API
     model = KerasWrapperSequential(
         [
@@ -252,7 +252,9 @@ def test_keras_sklearn_compatability(data=DATA, hidden_units=128):
     # test gridsearch on Sequential API
     model = KerasWrapperSequential(
         [
-            tf.keras.layers.Dense(128, input_shape=[data["num_features"]], activation="relu"),
+            tf.keras.layers.Dense(
+                hidden_units, input_shape=[data["num_features"]], activation="relu"
+            ),
             tf.keras.layers.Dense(data["num_classes"]),
         ],
     )
