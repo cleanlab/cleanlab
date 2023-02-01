@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union, cast
 
 import numpy as np
 import pandas as pd
@@ -30,7 +30,7 @@ class NearDuplicateIssueManager(IssueManager):
         self.metric = metric
         self.threshold = threshold
         self.k = k
-        self.knn = None
+        self.knn: Optional[NearestNeighbors] = None
         self.near_duplicate_sets: List[List[int]] = []
 
     def find_issues(
@@ -113,7 +113,8 @@ class NearDuplicateIssueManager(IssueManager):
 
     def _score_features(self, feature_array) -> Tuple[np.ndarray, np.ndarray]:
         """Computes nearest-neighbor distances and near-duplicate scores for input features"""
-        distances, neighbor_indices = self.knn.kneighbors(feature_array)
+        knn = cast(NearestNeighbors, self.knn)
+        distances, _ = knn.kneighbors(feature_array)
         distances = distances[:, 1]  # nearest neighbor is always itself
 
         self.distances = distances
@@ -121,7 +122,7 @@ class NearDuplicateIssueManager(IssueManager):
         scores = np.tanh(distances)
         return scores, distances
 
-    def _compute_threshold_and_radius(self) -> float:
+    def _compute_threshold_and_radius(self) -> Tuple[float, float]:
         """Computes the radius for nearest-neighbors thresholding"""
         if self.threshold is None:
             no_exact_duplicates = self.distances[self.distances != 0]

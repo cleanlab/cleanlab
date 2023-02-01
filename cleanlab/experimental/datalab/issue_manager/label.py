@@ -9,6 +9,8 @@ from cleanlab.experimental.datalab.issue_manager import IssueManager
 from cleanlab.internal.validation import assert_valid_inputs
 
 if TYPE_CHECKING:  # pragma: no cover
+    import pandas as pd
+
     from cleanlab import Datalab
 
 

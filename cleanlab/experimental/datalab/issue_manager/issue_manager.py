@@ -153,7 +153,8 @@ class IssueManager(ABC):
 
         report_str = f"{self.issue_name:-^80}\n\n"
 
-        report_str += f"Score: {self.summary.loc[0, 'score']:.4f}\n\n"
+        score = self.summary["score"].loc[0]
+        report_str += f"Score: {score:.4f}\n\n"
 
         columns = {}
         info_to_omit = set()

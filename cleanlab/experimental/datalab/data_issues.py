@@ -28,7 +28,7 @@ The collected information can be accessed using the
 from __future__ import annotations
 
 import warnings
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Dict
 
 import pandas as pd
 
@@ -61,7 +61,7 @@ class DataIssues:
         self.issues: pd.DataFrame = pd.DataFrame(index=range(len(data)))
         self.issue_summary: pd.DataFrame = pd.DataFrame(columns=["issue_type", "score"])
         class_names = data.class_names
-        self.info = {
+        self.info: Dict[str, Dict[str, Any]] = {
             "data": {
                 "num_examples": len(data),
                 "class_names": class_names,
