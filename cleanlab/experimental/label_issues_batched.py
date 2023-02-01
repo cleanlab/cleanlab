@@ -66,7 +66,7 @@ Examples
 """
 
 import numpy as np
-from typing import List, Optional
+from typing import Optional
 
 from cleanlab.count import get_confident_thresholds
 from cleanlab.rank import get_label_quality_scores, find_top_issues
