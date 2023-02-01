@@ -24,6 +24,7 @@ from cleanlab.benchmarking.noise_generation import generate_noise_matrix_from_tr
 from cleanlab.benchmarking.noise_generation import generate_noisy_labels
 from cleanlab.internal.util import value_counts
 from cleanlab.internal.multilabel_utils import int2onehot
+from cleanlab.experimental.label_issues_batched import find_label_issues_batched
 import numpy as np
 import scipy
 import pytest
@@ -868,6 +869,69 @@ def test_num_label_issues_multilabel(confident_joint):
         multi_label=True,
     )
     assert sum(f) == n
+
+
+def test_batched_label_issues():
+    f1 = filter.find_label_issues(
+        labels=data["labels"],
+        pred_probs=data["pred_probs"],
+        return_indices_ranked_by="self_confidence",
+        filter_by="confident_learning",
+        # TODO: replace the above line with:
+        # filter_by="low_self_confidence",
+    )
+    f2 = find_label_issues_batched(
+        labels=data["labels"],
+        pred_probs=data["pred_probs"],
+        batch_size=int(len(data["labels"]) / 4.0),
+    )
+    f3 = find_label_issues_batched(
+        labels=data["labels"],
+        pred_probs=data["pred_probs"],
+        batch_size=int(len(data["labels"]) / 2.0),
+    )
+    f4 = find_label_issues_batched(
+        labels=data["labels"], pred_probs=data["pred_probs"], batch_size=len(data["labels"]) + 100
+    )
+    assert np.all(f4 == f3)
+    assert np.all(f4 == f2)
+    assert len(f2) == len(f1)
+    # check jaccard similarity:
+    intersection = len(list(set(f1).intersection(set(f2))))
+    union = (len(set(f1)) + len(set(f2))) - intersection
+    assert float(intersection) / union > 0.6
+    n1 = count.num_label_issues(
+        labels=data["labels"],
+        pred_probs=data["pred_probs"],
+        estimation_method="off_diagonal_calibrated",
+    )
+    quality_score_kwargs = {"method": "normalized_margin"}
+    num_issue_kwargs = {"estimation_method": "off_diagonal_calibrated"}
+    extra_args = {
+        "quality_score_kwargs": quality_score_kwargs,
+        "num_issue_kwargs": num_issue_kwargs,
+    }
+    f5 = find_label_issues_batched(
+        labels=data["labels"],
+        pred_probs=data["pred_probs"],
+        batch_size=int(len(data["labels"]) / 4.0),
+        **extra_args,
+    )
+    f6 = find_label_issues_batched(
+        labels=data["labels"],
+        pred_probs=data["pred_probs"],
+        batch_size=int(len(data["labels"]) / 2.0),
+        **extra_args,
+    )
+    f7 = find_label_issues_batched(
+        labels=data["labels"],
+        pred_probs=data["pred_probs"],
+        batch_size=len(data["labels"]) + 100,
+        **extra_args,
+    )
+    assert np.all(f7 == f5)
+    assert np.all(f6 == f5)
+    assert np.abs(len(f5) - n1) < 2
 
 
 def test_issue_158():
