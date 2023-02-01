@@ -17,6 +17,9 @@
 """
 Implementation of :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>`
 that does not need much memory by operating in mini-batches.
+You can also use this to estimate label quality scores or the number of label issues
+for big datasets with limited memory.
+
 The recommended usage is two passes over your data: 
 one pass to compute `confident_thresholds`, another to evaluate each label.
 To maximize efficiency, try to use the largest batch_sizes your memory allows.
@@ -271,7 +274,7 @@ class LabelInspector:
         Parameters
         ----------
         labels: np.ndarray or list
-          Given class labels for each example in the batch.
+          Given class labels for each example in the batch, values in ``0,1,2,...,K-1``.
 
         pred_probs: np.ndarray
           2D array of model-predicted class probabilities for each example in the batch.
@@ -299,7 +302,7 @@ class LabelInspector:
         Parameters
         ----------
         labels: np.ndarray or list
-          Given class labels for each example in the batch.
+          Given class labels for each example in the batch, values in ``0,1,2,...,K-1``.
 
         pred_probs: np.ndarray
           2D array of model-predicted class probabilities for each example in the batch of data.
@@ -408,7 +411,7 @@ def find_label_issues_batched(
     Parameters
     ----------
     labels: np.ndarray or list
-      Given class labels for each example in the dataset.
+      Given class labels for each example in the dataset, values in ``0,1,2,...,K-1``.
 
     pred_probs: np.ndarray
       2D array of model-predicted class probabilities for each example in the dataset.
