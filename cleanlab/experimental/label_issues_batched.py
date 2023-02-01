@@ -18,7 +18,7 @@
 Implementation of :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>`
 that does not need much memory by operating in mini-batches.
 The recommended usage is two passes over your data: 
-one pass to compute `confident_thresholds`,another to evaluate each label.
+one pass to compute `confident_thresholds`, another to evaluate each label.
 To maximize efficiency, try to use the largest batch_sizes your memory allows.
 To reduce runtime ~50%, you can run the first pass on a subset of your dataset
 as long as it contains enough data from each class to estimate `confident_thresholds` accurately.
@@ -93,7 +93,8 @@ class LabelInspector:
       The number of classes in your multi-class classification task.
 
     store_results : bool, optional
-      Whether this object will store all label quality scores.
+      Whether this object will store all label quality scores, a 1D array of shape ``(N,)``
+      where ``N`` is the total number of examples in your dataset.
       Set this to False if you encounter memory problems even for small batch sizes (~1000).
       If ``False``, you can still identify the label issues yourself by aggregating
       the label quality scores for each batch, sorting them across all batches, and returning the top ``T`` indices

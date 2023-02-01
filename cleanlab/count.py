@@ -163,7 +163,6 @@ def num_label_issues(
         joint = estimate_joint(labels, pred_probs, confident_joint=calculated_confident_joint)
         frac_issues = 1.0 - joint.trace()
         num_issues = np.rint(frac_issues * len(labels)).astype(int)
-        print("testing")
     elif estimation_method == "off_diagonal_custom":
         if not isinstance(confident_joint, np.ndarray):
             raise ValueError(
