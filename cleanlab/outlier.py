@@ -93,7 +93,7 @@ class OutOfDistribution:
 
     OUTLIER_PARAMS = {"k", "t", "knn"}
     OOD_PARAMS = {"confident_thresholds", "adjust_pred_probs", "method"}
-    DEFAULT_PARAM_DICT: Dict[str, Union[str, int, np.ndarray, NearestNeighbors, None]] = {
+    DEFAULT_PARAM_DICT: Dict[str, Union[str, int, None]] = {
         "k": None,  # ood features param
         "t": 1,  # ood features param
         "knn": None,  # ood features param
