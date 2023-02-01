@@ -316,7 +316,6 @@ def find_label_issues(
         )
         # Find label issues O(nlogn) solution (mapped to boolean mask later in the method)
         cl_error_indices = np.argsort(scores)[:num_errors]
-        # TODO: delete the comment below (or keep anything you want in docs/comments)
         # The following is the O(n) fastest solution (check for one-off errors), but the problem is if lots of the scores are identical you will overcount,
         # you can end up returning more or less and they aren't ranked in the boolean form so there's no way to drop the highest scores randomly
         #     boundary = np.partition(scores, num_errors)[num_errors]  # O(n) solution

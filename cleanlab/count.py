@@ -181,7 +181,7 @@ def _num_label_issues_multilabel(
         pred_probs=pred_probs,
         confident_joint=confident_joint,
         multi_label=True,
-        filter_by="confident_learning",
+        filter_by="confident_learning",  # specified to match num_label_issues
     )
     return sum(issues_idx)
 
