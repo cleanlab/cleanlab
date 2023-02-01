@@ -127,7 +127,7 @@ def find_label_issues(
       label quality score (see :py:func:`rank.get_label_quality_scores
       <cleanlab.rank.get_label_quality_scores>`).
 
-    filter_by : {'prune_by_class', 'prune_by_noise_rate', 'both', 'confident_learning', 'predicted_neq_given'}, default='prune_by_noise_rate'
+    filter_by : {'prune_by_class', 'prune_by_noise_rate', 'both', 'confident_learning', 'predicted_neq_given', 'low_normalized_margin', 'low_self_confidence'}, default='prune_by_noise_rate'
       Method to determine which examples are flagged as having label issue, so you can filter/prune them from the dataset. Options:
 
       - ``'prune_by_noise_rate'``: filters examples with *high probability* of being mislabeled for every non-diagonal in the confident joint (see `prune_counts_matrix` in `filter.py`). These are the examples where (with high confidence) the given label is unlikely to match the predicted label for the example.
