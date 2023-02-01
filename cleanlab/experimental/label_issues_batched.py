@@ -203,7 +203,7 @@ class LabelInspector:
                     * self.class_counts
                     / np.clip(self.normalization, a_min=EPS, a_max=None)
                 )  # avoid division by 0
-                return np.floor(np.sum(calibrated_prune_counts)).astype("int")
+                return np.rint(np.sum(calibrated_prune_counts)).astype("int")
             else:  # not calibrated
                 return self.prune_count
 

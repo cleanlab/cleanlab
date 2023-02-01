@@ -162,9 +162,7 @@ def num_label_issues(
         # Estimate_joint calibrates the row sums to match the prior distribution of given labels and normalizes to sum to 1
         joint = estimate_joint(labels, pred_probs, confident_joint=calculated_confident_joint)
         frac_issues = 1.0 - joint.trace()
-        num_issues = np.floor(frac_issues * len(labels)).astype(
-            int
-        )  # np.floor was np.rint instead before. Floor is more stable.
+        num_issues = np.rint(frac_issues * len(labels)).astype(int)
         print("testing")
     elif estimation_method == "off_diagonal_custom":
         if not isinstance(confident_joint, np.ndarray):
