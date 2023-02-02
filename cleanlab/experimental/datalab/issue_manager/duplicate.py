@@ -87,8 +87,8 @@ class NearDuplicateIssueManager(IssueManager):
         dists, nn_ids = self._query_knn_graph(weighted_knn_graph)
 
         knn_info_dict = {
-            "nearest_neighbour": nn_ids.tolist(),
-            "distance_to_nearest_neighbour": dists.tolist(),
+            "nearest_neighbor": nn_ids.tolist(),
+            "distance_to_nearest_neighbor": dists.tolist(),
             # TODO Check scipy-dependency
             "weighted_knn_graph": weighted_knn_graph.toarray().tolist(),
         }
@@ -158,5 +158,5 @@ class NearDuplicateIssueManager(IssueManager):
                 "issue": ["near_duplicate_sets"]
             },  # This is important information, but the output could be very large. Maybe it shouldn't be default
             1: {"summary": ["num_near_duplicate_issues"]},
-            2: {"issue": ["nearest_neighbor", "distance_to_nearest_neighbour"]},
+            2: {"issue": ["nearest_neighbor", "distance_to_nearest_neighbor"]},
         }

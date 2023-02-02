@@ -86,8 +86,8 @@ class OutOfDistributionIssueManager(IssueManager):
             #   to avoid computing the (distance, id) pairs twice.
             feature_issues_dict.update(
                 {
-                    "nearest_neighbour": nn_ids.tolist(),
-                    "distance_to_nearest_neighbour": dists.tolist(),
+                    "nearest_neighbor": nn_ids.tolist(),
+                    "distance_to_nearest_neighbor": dists.tolist(),
                     # TODO Check scipy-dependency
                     "weighted_knn_graph": weighted_knn_graph.tolist(),
                 }
@@ -123,6 +123,6 @@ class OutOfDistributionIssueManager(IssueManager):
     def verbosity_levels(self) -> Dict[int, Any]:
         return {
             0: {},
-            1: {"info": ["num_outlier_issues"], "issue": ["nearest_neighbour"]},
-            2: {"issue": ["distance_to_nearest_neighbour"]},
+            1: {"info": ["num_outlier_issues"], "issue": ["nearest_neighbor"]},
+            2: {"issue": ["distance_to_nearest_neighbor"]},
         }
