@@ -1,12 +1,13 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, cast
 
 import numpy as np
 import pandas as pd
 from sklearn.neighbors import NearestNeighbors
 from sklearn.utils.validation import check_is_fitted
 
+from cleanlab.experimental.datalab import data as datalab_data
 from cleanlab.experimental.datalab.issue_manager import IssueManager
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -39,7 +40,9 @@ class NearDuplicateIssueManager(IssueManager):
         **_,
     ) -> None:
 
-        feature_array = self._extract_embeddings(features)
+        feature_array = datalab_data._extract_embeddings(
+            dataset=self.datalab.data, columns=features
+        )
         if self.knn is None:
             self.knn = NearestNeighbors(n_neighbors=self.k, metric=self.metric)
 
@@ -100,16 +103,6 @@ class NearDuplicateIssueManager(IssueManager):
             **knn_info_dict,
         }
         return info_dict
-
-    def _extract_embeddings(self, columns: Union[str, List[str]], **kwargs) -> np.ndarray:
-        """Extracts embeddings for the given columns."""
-
-        if isinstance(columns, list):
-            raise NotImplementedError("TODO: Support list of columns.")
-
-        format_kwargs = kwargs.get("format_kwargs", {})
-
-        return self.datalab.data.with_format("numpy", **format_kwargs)[columns]
 
     def _score_features(self, feature_array) -> Tuple[np.ndarray, np.ndarray]:
         """Computes nearest-neighbor distances and near-duplicate scores for input features"""

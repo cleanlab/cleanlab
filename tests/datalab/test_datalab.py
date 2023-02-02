@@ -100,7 +100,7 @@ class TestDatalab:
             return np.random.rand(dataset_size, embedding_size)
 
         monkeypatch.setattr(
-            "cleanlab.experimental.datalab.issue_manager.OutOfDistributionIssueManager._extract_embeddings",
+            "cleanlab.experimental.datalab.data._extract_embeddings",
             mock_extract_embeddings,
         )
 

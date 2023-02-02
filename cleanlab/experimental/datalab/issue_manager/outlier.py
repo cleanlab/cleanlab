@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 import numpy as np
 import pandas as pd
 
+from cleanlab.experimental.datalab import data as datalab_data
 from cleanlab.experimental.datalab.issue_manager import IssueManager
 from cleanlab.outlier import OutOfDistribution
 
@@ -111,21 +112,12 @@ class OutOfDistributionIssueManager(IssueManager):
         return scores
 
     def _score_with_features(self, features: List[str], **kwargs) -> np.ndarray:
-        self._embeddings = self._extract_embeddings(columns=features, **kwargs)
+        self._embeddings = datalab_data._extract_embeddings(
+            dataset=self.datalab.data, columns=features, **kwargs
+        )
 
         scores = self.ood.fit_score(features=self._embeddings)
         return scores
-
-    # TODO: Update annotation for columns and related args in other methods
-    def _extract_embeddings(self, columns: Union[str, List[str]], **kwargs) -> np.ndarray:
-        """Extracts embeddings for the given columns."""
-
-        if isinstance(columns, list):
-            raise NotImplementedError("TODO: Support list of columns.")
-
-        format_kwargs = kwargs.get("format_kwargs", {})
-
-        return self.datalab.data.with_format("numpy", **format_kwargs)[columns]
 
     @property
     def verbosity_levels(self) -> Dict[int, Any]:
