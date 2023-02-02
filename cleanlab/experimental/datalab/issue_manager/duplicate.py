@@ -51,7 +51,7 @@ class NearDuplicateIssueManager(IssueManager):
         except:
             self.knn.fit(feature_array)
 
-        scores, distances = self._score_features(feature_array)
+        scores, self.distances = self._score_features(feature_array)
         self.radius, self.threshold = self._compute_threshold_and_radius()
 
         self.issues = pd.DataFrame(
@@ -65,7 +65,6 @@ class NearDuplicateIssueManager(IssueManager):
         self.near_duplicate_sets = [
             duplicates[duplicates != idx] for idx, duplicates in enumerate(indices)
         ]
-        self.distances = distances
 
         self.summary = self.get_summary(score=scores.mean())
         self.info = self.collect_info()
@@ -109,8 +108,6 @@ class NearDuplicateIssueManager(IssueManager):
         knn = cast(NearestNeighbors, self.knn)
         distances, _ = knn.kneighbors(feature_array)
         distances = distances[:, 1]  # nearest neighbor is always itself
-
-        self.distances = distances
 
         scores = np.tanh(distances)
         return scores, distances
