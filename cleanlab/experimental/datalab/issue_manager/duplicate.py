@@ -83,17 +83,14 @@ class NearDuplicateIssueManager(IssueManager):
             "threshold": self.threshold,
         }
 
-        knn = self.knn
-        dists, nn_ids = [array[:, 0] for array in knn.kneighbors()]  # type: ignore[union-attr]
-        weighted_knn_graph = knn.kneighbors_graph(mode="distance").toarray()  # type: ignore[union-attr]
+        weighted_knn_graph = self.knn.kneighbors_graph(mode="distance")  # type: ignore[union-attr]
+        dists, nn_ids = self._query_knn_graph(weighted_knn_graph)
 
-        # TODO: Reverse the order of the calls to knn.kneighbors() and knn.kneighbors_graph()
-        #   to avoid computing the (distance, id) pairs twice.
         knn_info_dict = {
             "nearest_neighbour": nn_ids.tolist(),
             "distance_to_nearest_neighbour": dists.tolist(),
             # TODO Check scipy-dependency
-            "weighted_knn_graph": weighted_knn_graph.tolist(),
+            "weighted_knn_graph": weighted_knn_graph.toarray().tolist(),
         }
 
         info_dict = {
@@ -102,6 +99,34 @@ class NearDuplicateIssueManager(IssueManager):
             **knn_info_dict,
         }
         return info_dict
+
+    def _query_knn_graph(self, weighted_knn_graph) -> Tuple[np.ndarray, np.ndarray]:
+        """Find the nearest neighbor for each example and the distance to it in the weighted
+        knn graph.
+
+        Parameters:
+        -----------
+        weighted_knn_graph: scipy.sparse.csr_matrix
+            The weighted knn graph is an NxN matrix in a sparse CSR format, where N is
+            the number of examples. Each row has `self.k` non-zero entries on the off-diagonal,
+            where `self.k` is the number of nearest neighbors. The non-zero entries are the
+            distances to the closest neighbors.
+
+        Returns:
+        --------
+        dists: np.ndarray
+            The distances to the nearest neighbors for each example.
+
+        nn_ids: np.ndarray
+            The indices of the nearest neighbors for each example.
+        """
+        indices = weighted_knn_graph.indices.reshape(-1, self.k)
+        reshaped_distances = weighted_knn_graph.data.reshape(weighted_knn_graph.shape[0], -1)
+        nn_ids = np.take_along_axis(
+            indices, np.argmin(reshaped_distances, axis=1)[:, None], axis=1
+        ).flatten()
+        dists = np.min(reshaped_distances, axis=1)
+        return dists, nn_ids
 
     def _score_features(self, feature_array) -> Tuple[np.ndarray, np.ndarray]:
         """Computes nearest-neighbor distances and near-duplicate scores for input features"""
