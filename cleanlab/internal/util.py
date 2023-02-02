@@ -21,7 +21,7 @@ Ancillary helper methods used internally throughout this package; mostly related
 import warnings
 import numpy as np
 import pandas as pd
-from typing import Union, Tuple, TypeVar, Optional, Callable, List, Any
+from typing import Union, Tuple, TypeVar, Optional, Callable, List, Any, Dict, Set
 
 from cleanlab.typing import DatasetLike, LabelLike
 from cleanlab.internal.validation import labels_to_array
@@ -57,7 +57,7 @@ def remove_noise_from_class(
     K = len(noise_matrix)
 
     cwn = class_without_noise
-    x = np.copy(noise_matrix)
+    x = np.copy(noise_matrix)  # type: ignore[no-untyped-call]
 
     # Set P( labels = cwn | y != cwn) = 0 (no noise)
     x[cwn, [i for i in range(K) if i != cwn]] = 0.0
@@ -192,7 +192,7 @@ def value_counts(
 
     # Efficient method if x is pd.Series, np.ndarray, or list
     if multi_label:
-        x: List[Union[np.int_, np.str_]] = [z for lst in x for z in lst]  # Flatten
+        x = [z for lst in x for z in lst]  # Flatten
     unique_classes, counts = np.unique(x, return_counts=True)
     if num_classes is None or num_classes == len(unique_classes):
         return counts
@@ -202,12 +202,17 @@ def value_counts(
     # Add zero counts for all missing classes in [0, 1,..., num_classes-1]
     # multi_label=False regardless because x was flattened.
     missing_classes: List[int] = get_missing_classes(x, num_classes=num_classes, multi_label=False)
-    missing_counts: List[Tuple[int]] = [(z, 0) for z in missing_classes]
+    missing_counts: List[Tuple[int, int]] = [(z, 0) for z in missing_classes]
     # Return counts with zeros for all missing classes.
     return np.array(list(zip(*sorted(list(zip(unique_classes, counts)) + missing_counts)))[1])
 
 
-def value_counts_fill_missing_classes(x, num_classes, *, multi_label=False) -> np.ndarray:
+def value_counts_fill_missing_classes(
+    x: Union[List[Any], npt.NDArray[Union[np.int_, np.str_]]],
+    num_classes: int,
+    *,
+    multi_label: bool = False,
+) -> npt.NDArray[np.int_]:
     """Same as ``internal.util.value_counts`` but requires that num_classes is provided and
     always fills missing classes with zero counts.
 
@@ -216,7 +221,13 @@ def value_counts_fill_missing_classes(x, num_classes, *, multi_label=False) -> n
     return value_counts(x, num_classes=num_classes, multi_label=multi_label)
 
 
-def get_missing_classes(labels, *, pred_probs=None, num_classes=None, multi_label=False):
+def get_missing_classes(
+    labels: LabelLike,
+    *,
+    pred_probs: Optional[npt.NDArray["np.floating[T]"]] = None,
+    num_classes: Optional[int] = None,
+    multi_label: bool = False,
+) -> List[int]:
     """Find which classes are present in ``pred_probs`` but not present in ``labels``.
 
     See ``count.compute_confident_joint`` for parameter docstrings."""
@@ -230,7 +241,9 @@ def get_missing_classes(labels, *, pred_probs=None, num_classes=None, multi_labe
     return sorted(set(range(num_classes)).difference(unique_classes))
 
 
-def round_preserving_sum(iterable) -> np.ndarray:
+def round_preserving_sum(
+    iterable: Union[List[float], npt.NDArray["np.floating[T]"]]
+) -> Union[List[int], npt.NDArray[np.int_]]:
     """Rounds an iterable of floats while retaining the original summed value.
     The name of each parameter is required. The type and description of each
     parameter is optional, but should be included if not obvious.
@@ -289,7 +302,10 @@ def round_preserving_row_totals(
     ).astype(int)
 
 
-def estimate_pu_f1(s, prob_s_eq_1) -> float:
+def estimate_pu_f1(
+    s: Union[List[int], npt.NDArray[np.int_]],
+    prob_s_eq_1: Union[List[float], npt.NDArray["np.floating[T]"]],
+) -> Optional[float]:
     """Computes Claesen's estimate of f1 in the pulearning setting.
 
     Parameters
@@ -312,7 +328,9 @@ def estimate_pu_f1(s, prob_s_eq_1) -> float:
     return recall**2 / (2.0 * frac_positive) if frac_positive != 0 else np.nan
 
 
-def confusion_matrix(true, pred) -> np.ndarray:
+def confusion_matrix(
+    true: npt.NDArray[np.int_], pred: npt.NDArray[np.int_]
+) -> npt.NDArray[np.int_]:
     """Implements a confusion matrix for true labels
     and predicted labels. true and pred MUST BE the same length
     and have the same distinct set of class labels represented.
@@ -353,13 +371,13 @@ def confusion_matrix(true, pred) -> np.ndarray:
 
 
 def print_square_matrix(
-    matrix,
-    left_name="s",
-    top_name="y",
-    title=" A square matrix",
-    short_title="s,y",
-    round_places=2,
-):
+    matrix: npt.NDArray["np.floating[T]"],
+    left_name: str = "s",
+    top_name: str = "y",
+    title: str = " A square matrix",
+    short_title: str = "s,y",
+    round_places: int = 2,
+) -> None:
     """Pretty prints a matrix.
 
     Parameters
@@ -393,7 +411,7 @@ def print_square_matrix(
     print()
 
 
-def print_noise_matrix(noise_matrix, round_places=2):
+def print_noise_matrix(noise_matrix: npt.NDArray["np.floating[T]"], round_places: int = 2) -> None:
     """Pretty prints the noise matrix."""
     print_square_matrix(
         noise_matrix,
@@ -403,7 +421,9 @@ def print_noise_matrix(noise_matrix, round_places=2):
     )
 
 
-def print_inverse_noise_matrix(inverse_noise_matrix, round_places=2):
+def print_inverse_noise_matrix(
+    inverse_noise_matrix: npt.NDArray["np.floating[T]"], round_places: int = 2
+) -> None:
     """Pretty prints the inverse noise matrix."""
     print_square_matrix(
         inverse_noise_matrix,
@@ -415,7 +435,7 @@ def print_inverse_noise_matrix(inverse_noise_matrix, round_places=2):
     )
 
 
-def print_joint_matrix(joint_matrix, round_places=2):
+def print_joint_matrix(joint_matrix: npt.NDArray["np.floating[T]"], round_places: int = 2) -> None:
     """Pretty prints the joint label noise matrix."""
     print_square_matrix(
         joint_matrix,
@@ -425,7 +445,9 @@ def print_joint_matrix(joint_matrix, round_places=2):
     )
 
 
-def compress_int_array(int_array, num_possible_values) -> np.ndarray:
+def compress_int_array(
+    int_array: Union[Any, npt.NDArray[np.int_]], num_possible_values
+) -> Union[Any, npt.NDArray[np.int_]]:
     """Compresses dtype of np.ndarray<int> if num_possible_values is small enough."""
     try:
         compressed_type = None
@@ -485,14 +507,18 @@ def train_val_split(
     return X_train, X_holdout, labels_train, labels_holdout
 
 
-def subset_X_y(X, labels, mask) -> Tuple[DatasetLike, LabelLike]:
+def subset_X_y(
+    X, labels: Union[list, np.ndarray, pd.Series], mask: npt.NDArray[np.bool_]
+) -> Tuple[DatasetLike, LabelLike]:
     """Extracts subset of features/labels where mask is True"""
     labels = subset_labels(labels, mask)
     X = subset_data(X, mask)
     return X, labels
 
 
-def subset_labels(labels, mask) -> Union[list, np.ndarray, pd.Series]:
+def subset_labels(
+    labels: Union[list, np.ndarray, pd.Series], mask: npt.NDArray[np.bool_]
+) -> Union[list, np.ndarray, pd.Series]:
     """Extracts subset of labels where mask is True"""
     try:  # filtering labels as if it is array or DataFrame
         return labels[mask]
@@ -703,7 +729,7 @@ def get_num_classes(labels=None, pred_probs=None, label_matrix=None, multi_label
     return num_unique_classes(labels, multi_label=multi_label)
 
 
-def num_unique_classes(labels, multi_label=None) -> int:
+def num_unique_classes(labels: LabelLike, multi_label: Optional[bool] = None) -> int:
     """Finds the number of unique classes for both single-labeled
     and multi-labeled labels. If multi_label is set to None (default)
     this method will infer if multi_label is True or False based on
@@ -713,7 +739,7 @@ def num_unique_classes(labels, multi_label=None) -> int:
     return len(get_unique_classes(labels, multi_label))
 
 
-def get_unique_classes(labels, multi_label=None) -> set:
+def get_unique_classes(labels: LabelLike, multi_label: Optional[bool] = None) -> Set[LabelLike]:
     """Returns the set of unique classes for both single-labeled
     and multi-labeled labels. If multi_label is set to None (default)
     this method will infer if multi_label is True or False based on
@@ -728,7 +754,7 @@ def get_unique_classes(labels, multi_label=None) -> set:
         return set(labels)
 
 
-def format_labels(labels: LabelLike) -> Tuple[np.ndarray, dict]:
+def format_labels(labels: LabelLike) -> Tuple[np.ndarray, Dict[int, Any]]:
     """Takes an array of labels and formats it such that labels are in the set ``0, 1, ..., K-1``,
     where ``K`` is the number of classes. The labels are assigned based on lexicographic order.
     This is useful for mapping string class labels to the integer format required by many cleanlab (and sklearn) functions.
@@ -753,7 +779,7 @@ def format_labels(labels: LabelLike) -> Tuple[np.ndarray, dict]:
     return formatted_labels, inverse_map
 
 
-def smart_display_dataframe(df: pd.DataFrame):  # pragma: no cover
+def smart_display_dataframe(df: pd.DataFrame) -> None:  # pragma: no cover
     """Display a pandas dataframe if in a jupyter notebook, otherwise print it to console."""
     try:
         from IPython.display import display
