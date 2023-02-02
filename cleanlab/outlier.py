@@ -105,8 +105,9 @@ class OutOfDistribution:
     def __init__(self, params: Optional[dict] = None) -> None:
         self._assert_valid_params(params, self.DEFAULT_PARAM_DICT)
         self.params = self.DEFAULT_PARAM_DICT
-        if params is not None:
-            self.params = {**self.params, **params}
+        if params is None:
+            params = {}
+        self.params = {**self.params, **params}
 
     def fit_score(
         self,
@@ -281,7 +282,7 @@ class OutOfDistribution:
         """
         Helper method to check passed in params valid and get list of parameters in param that are not in param_keys.
         """
-        if len(params) > 0:
+        if params is not None:
             wrong_params = list(set(params.keys()).difference(set(param_keys)))
             if len(wrong_params) > 0:
                 raise ValueError(
