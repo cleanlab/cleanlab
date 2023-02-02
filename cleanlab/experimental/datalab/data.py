@@ -19,6 +19,7 @@ from typing import List, Mapping, Tuple, Union, cast
 
 import datasets
 import numpy as np
+import pandas as pd
 from datasets.arrow_dataset import Dataset
 
 from cleanlab.internal.validation import labels_to_array
@@ -28,10 +29,31 @@ class Data:
     """
     Class that holds and validates datasets for DataLab.
 
+    Internally, the data is stored as a datasets.Dataset object and the labels
+    are integers (ranging from 0 to K-, where K is the number of classes) stored
+    in a numpy array.
+
     Parameters
     ----------
     data : Dataset
         Dataset to be used for DataLab.
+        Other formats are supported, but will be converted to a Dataset object.
+
+        Supported formats:
+            - datasets.Dataset
+            - pandas.DataFrame
+            - dict
+                - keys are strings
+                - values are arrays or lists of equal length
+            - list
+                - list of dictionaries with the same keys
+            - str
+                - path to a local file
+                    - Text (.txt)
+                    - CSV (.csv)
+                    - JSON (.json)
+                - or a dataset identifier on the Hugging Face Hub
+
 
     label_name : Union[str, List[str]]
         Name of the label column in the dataset.
@@ -40,11 +62,54 @@ class Data:
     def __init__(self, data: Dataset, label_name: Union[str, List[str]]) -> None:
         self._validate_data(data)
         self._validate_data_and_labels(data, label_name)
-        self._data = data
+        self._data = self._load_data(data)
         self._data_hash = hash(data)
         self._data.set_format(type="numpy")
         self._labels, self._label_map = _extract_labels(data, label_name)
         self._label_name = label_name
+
+    def _load_data(self, data) -> datasets.Dataset:
+        """Checks the type of dataset and uses the correct loader method and
+        assigns the result to the data attribute."""
+        if isinstance(data, datasets.Dataset):
+            return data
+        if isinstance(data, pd.DataFrame):
+            return datasets.Dataset.from_pandas(data)
+
+        if isinstance(data, dict):
+            try:
+                return datasets.Dataset.from_dict(data)
+            except Exception as e:
+                raise ValueError(
+                    "Failed to load data from dictionary. "
+                    "Ensure that it is a mapping from strings "
+                    "to arrays or lists of equal length.\n"
+                    f"Error: {e}"
+                ) from e
+        if isinstance(data, list):
+            try:
+                return datasets.Dataset.from_list(data)
+            except Exception as e:
+                raise ValueError(
+                    "Failed to load data from list. "
+                    "Ensure that it is a list of dictionaries "
+                    "with the same keys.\n"
+                    f"Error: {e}"
+                ) from e
+
+        if isinstance(data, str):
+            # Check if it's a path to a local file
+            import os
+
+            if os.path.exists(data):
+                if data.endswith(".txt"):
+                    return datasets.Dataset.from_text(data)
+                if data.endswith(".csv"):
+                    return datasets.Dataset.from_csv(data)
+                if data.endswith(".json"):
+                    return datasets.Dataset.from_json(data)
+
+            return datasets.load_dataset(data)
 
     def __len__(self) -> int:
         return len(self._data)
