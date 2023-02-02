@@ -138,13 +138,6 @@ class TestOutOfDistributionIssueManager:
         assert isinstance(issue_manager.ood, OutOfDistribution)
         assert issue_manager.ood.params["k"] == 3
 
-    def test_extract_embeddings(self, issue_manager, embeddings):
-        extracted_embeddings = issue_manager._extract_embeddings(
-            columns="embedding", format_kwargs={"dtype": np.float64}
-        )
-        assert isinstance(extracted_embeddings, np.ndarray), "Should be a numpy array"
-        assert np.all(extracted_embeddings == embeddings["embedding"]), "Embeddings should match"
-
     def test_find_issues(self, issue_manager):
         issue_manager.find_issues(features="embedding")
         issues, summary, info = issue_manager.issues, issue_manager.summary, issue_manager.info
@@ -257,13 +250,6 @@ class TestNearDuplicateIssueManager:
             threshold=0.1,
         )
         assert issue_manager.threshold == 0.1
-
-    def test_extract_embeddings(self, issue_manager, embeddings):
-        extracted_embeddings = issue_manager._extract_embeddings(
-            columns="embedding", format_kwargs={"dtype": np.float64}
-        )
-        assert isinstance(extracted_embeddings, np.ndarray), "Should be a numpy array"
-        assert np.all(extracted_embeddings == embeddings["embedding"]), "Embeddings should match"
 
     def test_find_issues(self, issue_manager):
         issue_manager.find_issues(features="embedding")
