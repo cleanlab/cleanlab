@@ -22,9 +22,9 @@ class NearDuplicateIssueManager(IssueManager):
     def __init__(
         self,
         datalab: Datalab,
-        metric: Optional[str] = "cosine",
+        metric: str = "cosine",
         threshold: Optional[float] = None,
-        k: Optional[int] = 10,
+        k: int = 10,
         **_,
     ):
         super().__init__(datalab)
