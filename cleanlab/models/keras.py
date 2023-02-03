@@ -36,7 +36,7 @@ Tips:
 """
 
 import tensorflow as tf
-import keras
+import keras  # type: ignore
 import numpy as np
 import pandas as pd
 from typing import Callable, Optional
@@ -118,8 +118,8 @@ class KerasWrapperModel:
         self.net = self.model(**self.model_kwargs)
         self.net.compile(**self.compile_kwargs)
 
+        # TODO: check for generators
         if y is not None and not isinstance(X, (tf.data.Dataset, keras.utils.Sequence)):
-            print(type(y))
             kwargs["y"] = y
 
         self.net.fit(X, **{**self.params, **kwargs})
@@ -225,8 +225,8 @@ class KerasWrapperSequential:
         self.net = tf.keras.models.Sequential(self.layers, self.name)
         self.net.compile(**self.compile_kwargs)
 
+        # TODO: check for generators
         if y is not None and not isinstance(X, (tf.data.Dataset, keras.utils.Sequence)):
-            print(type(y))
             kwargs["y"] = y
 
         self.net.fit(X, **{**self.params, **kwargs})
