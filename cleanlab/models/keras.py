@@ -38,9 +38,7 @@ Tips:
 import tensorflow as tf
 import keras  # type: ignore
 import numpy as np
-import pandas as pd
 from typing import Callable, Optional
-from cleanlab.internal.validation import assert_valid_inputs
 
 
 class KerasWrapperModel:
