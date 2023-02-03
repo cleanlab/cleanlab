@@ -117,8 +117,7 @@ class KerasWrapperModel:
         self.net = self.model(**self.model_kwargs)
         self.net.compile(**self.compile_kwargs)
 
-        if isinstance(X, (np.ndarray, pd.DataFrame)):
-            assert_valid_inputs(X, y)
+        if y is not None:
             kwargs["y"] = y
 
         self.net.fit(X, **{**self.params, **kwargs})
@@ -224,8 +223,7 @@ class KerasWrapperSequential:
         self.net = tf.keras.models.Sequential(self.layers, self.name)
         self.net.compile(**self.compile_kwargs)
 
-        if isinstance(X, (np.ndarray, pd.DataFrame)):
-            assert_valid_inputs(X, y)
+        if y is not None:
             kwargs["y"] = y
 
         self.net.fit(X, **{**self.params, **kwargs})
