@@ -20,8 +20,8 @@ jobs:
           - "3.9"
           - "3.10"
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-python@v2
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python }}
       - name: Install cleanlab
@@ -37,13 +37,13 @@ jobs:
           pip install tensorflow-cpu
       - name: Test with coverage
         run: pytest --verbose --cov=cleanlab/ --cov-config .coveragerc --cov-report=xml
-      - uses: codecov/codecov-action@v2
+      - uses: codecov/codecov-action@v3
   typecheck:
     name: Type check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-python@v2
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
         with:
           python-version: '3.10'
       - name: Install dependencies
@@ -57,9 +57,11 @@ jobs:
     name: Format
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: psf/black@stable
-  pylint:
+        with:
+          version: "~= 22.0"
+  flake8:
     name: Check for unused/wildcard imports
     runs-on: ubuntu-latest
     steps:
@@ -75,9 +77,7 @@ jobs:
     name: Lint Notebooks
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-python@v2
+      - uses: actions/checkout@v3
+      - uses: cleanlab/nblint-action@v1
         with:
-          python-version: '3.10'
-      - name: nblint
-        run: ./.ci/nblint.py docs
+          directory: 'docs'

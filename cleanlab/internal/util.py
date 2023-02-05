@@ -1,4 +1,4 @@
-# Copyright (C) 2017-2022  Cleanlab Inc.
+# Copyright (C) 2017-2023  Cleanlab Inc.
 # This file is part of cleanlab.
 #
 # cleanlab is free software: you can redistribute it and/or modify
@@ -633,7 +633,7 @@ def unshuffle_tensorflow_dataset(X: DatasetLike) -> Tuple[DatasetLike, int]:
         or ``len(pre_X)`` if buffer_size cannot be determined, or None if no ShuffleDataset found.
     """
     try:
-        from tensorflow.python.data.ops.dataset_ops import (  # pylint: disable=no-name-in-module
+        from tensorflow.python.data.ops.dataset_ops import (
             ShuffleDataset,
         )
 

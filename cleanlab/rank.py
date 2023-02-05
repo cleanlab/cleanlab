@@ -1,4 +1,4 @@
-# Copyright (C) 2017-2022  Cleanlab Inc.
+# Copyright (C) 2017-2023  Cleanlab Inc.
 # This file is part of cleanlab.
 #
 # cleanlab is free software: you can redistribute it and/or modify
@@ -40,73 +40,6 @@ from cleanlab.internal.label_quality_utils import (
     _subtract_confident_thresholds,
     get_normalized_entropy,
 )
-
-
-def order_label_issues(
-    label_issues_mask: np.ndarray,
-    labels: np.ndarray,
-    pred_probs: np.ndarray,
-    *,
-    rank_by: str = "self_confidence",
-    rank_by_kwargs: dict = {},
-) -> np.ndarray:
-    """Sorts label issues by label quality score.
-
-    Default label quality score is "self_confidence".
-
-    Parameters
-    ----------
-    label_issues_mask : np.ndarray
-      A boolean mask for the entire dataset where ``True`` represents a label
-      issue and ``False`` represents an example that is accurately labeled with
-      high confidence.
-
-    labels : np.ndarray
-      Labels in the same format expected by the :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>` function.
-
-    pred_probs : np.ndarray (shape (N, K))
-      Predicted-probabilities in the same format expected by the :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>` function.
-
-    rank_by : str, optional
-      Score by which to order label error indices (in increasing order). See
-      the `method` argument of :py:func:`get_label_quality_scores
-      <cleanlab.rank.get_label_quality_scores>`.
-
-    rank_by_kwargs : dict, optional
-      Optional keyword arguments to pass into :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>` function.
-      Accepted args include `adjust_pred_probs`.
-
-    Returns
-    -------
-    label_issues_idx : np.ndarray
-      Return an array of the indices of the examples with label issues,
-      ordered by the label-quality scoring method passed to `rank_by`.
-    """
-
-    allow_one_class = False
-    if isinstance(labels, np.ndarray) or all(isinstance(lab, int) for lab in labels):
-        if set(labels) == {0}:  # occurs with missing classes in multi-label settings
-            allow_one_class = True
-    assert_valid_inputs(
-        X=None,
-        y=labels,
-        pred_probs=pred_probs,
-        multi_label=False,
-        allow_one_class=allow_one_class,
-    )
-
-    # Convert bool mask to index mask
-    label_issues_idx = np.arange(len(labels))[label_issues_mask]
-
-    # Calculate label quality scores
-    label_quality_scores = get_label_quality_scores(
-        labels, pred_probs, method=rank_by, **rank_by_kwargs
-    )
-
-    # Get label quality scores for label issues
-    label_quality_scores_issues = label_quality_scores[label_issues_mask]
-
-    return label_issues_idx[np.argsort(label_quality_scores_issues)]
 
 
 def get_label_quality_scores(
@@ -440,6 +373,102 @@ def get_label_quality_ensemble_scores(
     return label_quality_scores
 
 
+def find_top_issues(quality_scores: np.ndarray, *, top: int = 10) -> np.ndarray:
+    """Returns the sorted indices of the `top` issues in `quality_scores`, ordered from smallest to largest quality score
+    (i.e., from most to least likely to be an issue). For example, the first value returned is the index corresponding
+    to the smallest value in `quality_scores` (most likely to be an issue). The second value in the returned array is
+    the index corresponding to the second smallest value in `quality-scores` (second-most likely to be an issue), and so forth.
+
+    This method assumes that `quality_scores` shares an index with some dataset such that the indices returned by this method
+    map to the examples in that dataset.
+
+    Parameters
+    ----------
+    quality_scores :
+      Array of shape ``(N,)``, where N is the number of examples, containing one quality score for each example in the dataset.
+
+    top :
+      The number of indices to return.
+
+    Returns
+    -------
+    top_issue_indices :
+      Indices of top examples most likely to suffer from an issue (ranked by issue severity)."""
+
+    if top is None or top > len(quality_scores):
+        top = len(quality_scores)
+
+    top_outlier_indices = quality_scores.argsort()[:top]
+    return top_outlier_indices
+
+
+def order_label_issues(
+    label_issues_mask: np.ndarray,
+    labels: np.ndarray,
+    pred_probs: np.ndarray,
+    *,
+    rank_by: str = "self_confidence",
+    rank_by_kwargs: dict = {},
+) -> np.ndarray:
+    """Sorts label issues by label quality score.
+
+    Default label quality score is "self_confidence".
+
+    Parameters
+    ----------
+    label_issues_mask : np.ndarray
+      A boolean mask for the entire dataset where ``True`` represents a label
+      issue and ``False`` represents an example that is accurately labeled with
+      high confidence.
+
+    labels : np.ndarray
+      Labels in the same format expected by the :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>` function.
+
+    pred_probs : np.ndarray (shape (N, K))
+      Predicted-probabilities in the same format expected by the :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>` function.
+
+    rank_by : str, optional
+      Score by which to order label error indices (in increasing order). See
+      the `method` argument of :py:func:`get_label_quality_scores
+      <cleanlab.rank.get_label_quality_scores>`.
+
+    rank_by_kwargs : dict, optional
+      Optional keyword arguments to pass into :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>` function.
+      Accepted args include `adjust_pred_probs`.
+
+    Returns
+    -------
+    label_issues_idx : np.ndarray
+      Return an array of the indices of the examples with label issues,
+      ordered by the label-quality scoring method passed to `rank_by`.
+    """
+
+    allow_one_class = False
+    if isinstance(labels, np.ndarray) or all(isinstance(lab, int) for lab in labels):
+        if set(labels) == {0}:  # occurs with missing classes in multi-label settings
+            allow_one_class = True
+    assert_valid_inputs(
+        X=None,
+        y=labels,
+        pred_probs=pred_probs,
+        multi_label=False,
+        allow_one_class=allow_one_class,
+    )
+
+    # Convert bool mask to index mask
+    label_issues_idx = np.arange(len(labels))[label_issues_mask]
+
+    # Calculate label quality scores
+    label_quality_scores = get_label_quality_scores(
+        labels, pred_probs, method=rank_by, **rank_by_kwargs
+    )
+
+    # Get label quality scores for label issues
+    label_quality_scores_issues = label_quality_scores[label_issues_mask]
+
+    return label_issues_idx[np.argsort(label_quality_scores_issues)]
+
+
 def get_self_confidence_for_each_label(
     labels: np.ndarray,
     pred_probs: np.ndarray,
@@ -554,32 +583,3 @@ def get_confidence_weighted_entropy_for_each_label(
     label_quality_scores = np.log(label_quality_scores + 1) / clipped_scores
 
     return label_quality_scores
-
-
-def find_top_issues(quality_scores: np.ndarray, *, top: int = 10) -> np.ndarray:
-    """Returns the sorted indices of the `top` issues in `quality_scores`, ordered from smallest to largest quality score
-    (i.e., from most to least likely to be an issue). For example, the first value returned is the index corresponding
-    to the smallest value in `quality_scores` (most likely to be an issue). The second value in the returned array is
-    the index corresponding to the second smallest value in `quality-scores` (second-most likely to be an issue), and so forth.
-
-    This method assumes that `quality_scores` shares an index with some dataset such that the indices returned by this method
-    map to the examples in that dataset.
-
-    Parameters
-    ----------
-    quality_scores :
-      Array of shape ``(N,)``, where N is the number of examples, containing one quality score for each example in the dataset.
-
-    top :
-      The number of indices to return.
-
-    Returns
-    -------
-    top_issue_indices :
-      Indices of top examples most likely to suffer from an issue (ranked by issue severity)."""
-
-    if top is None or top > len(quality_scores):
-        top = len(quality_scores)
-
-    top_outlier_indices = quality_scores.argsort()[:top]
-    return top_outlier_indices

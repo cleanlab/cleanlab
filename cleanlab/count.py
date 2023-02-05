@@ -1,4 +1,4 @@
-# Copyright (C) 2017-2022  Cleanlab Inc.
+# Copyright (C) 2017-2023  Cleanlab Inc.
 # This file is part of cleanlab.
 #
 # cleanlab is free software: you can redistribute it and/or modify
@@ -88,7 +88,7 @@ def num_label_issues(
       Array of estimated class label error statisics used for identifying label issues,
       in same format expected by :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` function.
       The `confident_joint` can be computed using :py:func:`count.compute_confident_joint <cleanlab.count.compute_confident_joint>`.
-      If not provided, it is internally computed from the given (noisy) `labels` and `pred_probs`.
+      It is internally computed from the given (noisy) `labels` and `pred_probs`.
 
     estimation_method :
       Method for estimating the number of label issues in dataset by counting the examples in the off-diagonal of the `confident_joint` ``P(label=i, true_label=j)``.
@@ -101,8 +101,11 @@ def num_label_issues(
        two cases:
           1. As we add more label and data quality scoring functions in :py:mod:`cleanlab.rank`, this approach will always work.
           2. If you have a custom score to rank your data by label quality and you just need to know the cut-off of likely label issues.
+       - ``'off_diagonal_custom'``: Counts the number of examples in the off-diagonal of a provided `confident_joint` matrix.
 
-       TL;DR: use this method to get the most accurate estimate of number of label issues when you don't need the indices of the label issues.
+
+       TL;DR: Use this method to get the most accurate estimate of number of label issues when you don't need the indices of the label issues.
+      Note: ``'off_diagonal'`` may sometimes underestimate issues for data with few classes, so consider using ``'off_diagonal_calibrated'`` instead if your data has < 4 classes.
 
     multi_label : bool, optional
       Set ``False`` if your dataset is for regular (multi-class) classification, where each example belongs to exactly one class.
@@ -115,6 +118,14 @@ def num_label_issues(
       The estimated number of examples with label issues in the dataset.
     """
     valid_methods = ["off_diagonal", "off_diagonal_calibrated"]
+    if isinstance(confident_joint, np.ndarray):
+        warn_str = (
+            "The supplied `confident_joint` is ignored as `confident_joint` is recomuputed internally using "
+            "the supplied `labels` and `pred_probs`. If you still want to use custom `confident_joint` call function "
+            "with `estimation_method='off_diagonal_custom'`."
+        )
+        warnings.warn(warn_str)
+
     if multi_label:
         return _num_label_issues_multilabel(
             labels=labels,
@@ -124,29 +135,54 @@ def num_label_issues(
     labels = labels_to_array(labels)
     assert_valid_inputs(X=None, y=labels, pred_probs=pred_probs)
 
-    if confident_joint is None:
-        # Original non-calibrated counts of confidently correctly and incorrectly labeled examples.
-        computed_confident_joint = compute_confident_joint(
-            labels=labels, pred_probs=pred_probs, calibrate=False
-        )
-    else:
-        computed_confident_joint = confident_joint
-
-    assert isinstance(computed_confident_joint, np.ndarray)
-
     if estimation_method == "off_diagonal":
-        num_issues: int = np.sum(computed_confident_joint) - np.trace(computed_confident_joint)
+        _, cl_error_indices = compute_confident_joint(
+            labels=labels,
+            pred_probs=pred_probs,
+            calibrate=False,
+            return_indices_of_off_diagonals=True,
+        )
+
+        label_issues_mask = np.zeros(len(labels), dtype=bool)
+        for idx in cl_error_indices:
+            label_issues_mask[idx] = True
+
+        # Remove label issues if given label == model prediction
+        pred = pred_probs.argmax(axis=1)
+        for i, pred_label in enumerate(pred):
+            if pred_label == labels[i]:
+                label_issues_mask[i] = False
+        num_issues = np.sum(label_issues_mask)
     elif estimation_method == "off_diagonal_calibrated":
+        calculated_confident_joint = compute_confident_joint(
+            labels=labels,
+            pred_probs=pred_probs,
+            calibrate=True,
+        )
+        assert isinstance(calculated_confident_joint, np.ndarray)
         # Estimate_joint calibrates the row sums to match the prior distribution of given labels and normalizes to sum to 1
-        joint = estimate_joint(labels, pred_probs, confident_joint=computed_confident_joint)
+        joint = estimate_joint(labels, pred_probs, confident_joint=calculated_confident_joint)
         frac_issues = 1.0 - joint.trace()
         num_issues = np.rint(frac_issues * len(labels)).astype(int)
+    elif estimation_method == "off_diagonal_custom":
+        if not isinstance(confident_joint, np.ndarray):
+            raise ValueError(
+                f"""
+                No `confident_joint` provided. For 'estimation_method' = {estimation_method} you need to provide pre-calculated
+                `confident_joint` matrix. Use a different `estimation_method` if you want the `confident_joint` matrix to
+                be calculated for you.
+                """
+            )
+        else:
+            joint = estimate_joint(labels, pred_probs, confident_joint=confident_joint)
+            frac_issues = 1.0 - joint.trace()
+            num_issues = np.rint(frac_issues * len(labels)).astype(int)
     else:
         raise ValueError(
             f"""
-            {estimation_method} is not a valid estimation method!
-            Please choose a valid estimation method: {valid_methods}
-            """
+                {estimation_method} is not a valid estimation method!
+                Please choose a valid estimation method: {valid_methods}
+                """
         )
 
     return num_issues
@@ -170,12 +206,19 @@ def _num_label_issues_multilabel(
     -------
     num_issues : int
        The estimated number of examples with label issues in the multi-label dataset.
+
+    Note: We set the filter_by method as 'confident_learning' to match the non-multilabel case
+    (analog to the off_diagonal estimation method)
     """
 
     from cleanlab.filter import find_label_issues
 
     issues_idx = find_label_issues(
-        labels=labels, pred_probs=pred_probs, confident_joint=confident_joint, multi_label=True
+        labels=labels,
+        pred_probs=pred_probs,
+        confident_joint=confident_joint,
+        multi_label=True,
+        filter_by="confident_learning",  # specified to match num_label_issues
     )
     return sum(issues_idx)
 

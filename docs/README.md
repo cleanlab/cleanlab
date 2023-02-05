@@ -252,7 +252,7 @@ We've configured GitHub Actions to run the GitHub Pages workflow (gh-pages.yaml)
 
 ## Tutorials
 
-Each tutorial is a Jupyter notebook (unexecuted .ipynb file) that will be executed during CI for the version displayed at docs.cleanlab.ai using [nbsphinx](https://github.com/cleanlab/cleanlab/blob/31c939ff9aa487e9670b1a0f3f711a1d78448a91/docs/source/conf.py). Some basic [linting](https://github.com/cleanlab/cleanlab/blob/master/.ci/nblint.py) is also applied to ensure proper notebook formatting such as no trailing newlines at the end of cells. Here are some tips when adding a new tutorial notebook:
+Each tutorial is a Jupyter notebook (unexecuted .ipynb file) that will be executed during CI for the version displayed at docs.cleanlab.ai using [nbsphinx](https://github.com/cleanlab/cleanlab/blob/31c939ff9aa487e9670b1a0f3f711a1d78448a91/docs/source/conf.py). Some basic [linting](https://github.com/cleanlab/nblint-action) is also applied to ensure proper notebook formatting such as no trailing newlines at the end of cells. Here are some tips when adding a new tutorial notebook:
 
 1. Make sure to clear all Cell outputs before you `git commit` a tutorial. The outputs of cells should never be tracked in git, these outputs are automatically constructed for displaying on docs.cleanlab.ai during the CI which executes all notebooks in the folder **docs/source/**.
 

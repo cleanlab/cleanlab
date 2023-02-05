@@ -1,4 +1,4 @@
-# Copyright (C) 2017-2022  Cleanlab Inc.
+# Copyright (C) 2017-2023  Cleanlab Inc.
 # This file is part of cleanlab.
 #
 # cleanlab is free software: you can redistribute it and/or modify
@@ -20,8 +20,9 @@ Here each example can belong to one or more classes, or none of the classes at a
 Unlike in standard multi-class classification, predicted class probabilities from model need not sum to 1 for each row in multi-label classification.
 """
 
-import numpy as np
-from typing import List
+import numpy as np  # noqa: F401: Imported for type annotations
+import numpy.typing as npt
+from typing import List, TypeVar, Dict, Any
 
 from cleanlab.internal.validation import assert_valid_inputs
 from cleanlab.internal.util import get_num_classes
@@ -29,14 +30,17 @@ from cleanlab.internal.multilabel_scorer import MultilabelScorer, ClassLabelScor
 from cleanlab.internal.multilabel_utils import int2onehot
 
 
+T = TypeVar("T", bound=npt.NBitBase)
+
+
 def get_label_quality_scores(
-    labels: List,
-    pred_probs: np.ndarray,
+    labels: List[List[int]],
+    pred_probs: npt.NDArray["np.floating[T]"],
     *,
     method: str = "self_confidence",
     adjust_pred_probs: bool = False,
-    aggregator_kwargs: dict = {"method": "exponential_moving_average", "alpha": 0.8}
-) -> np.ndarray:
+    aggregator_kwargs: Dict[str, Any] = {"method": "exponential_moving_average", "alpha": 0.8}
+) -> npt.NDArray["np.floating[T]"]:
     """Computes a label quality score each example in a multi-label classification dataset.
 
     Scores are between 0 and 1 with lower scores indicating examples whose label more likely contains an error.
@@ -57,12 +61,11 @@ def get_label_quality_scores(
       *Format requirements*: For dataset with K classes, individual class labels must be integers in 0, 1, ..., K-1.
 
     pred_probs : np.ndarray
-      An array of shape ``(N, K)`` of model-predicted probabilities,
-      ``P(label=k|x)``. Each row of this matrix corresponds
-      to an example `x` and contains the model-predicted probabilities that
-      `x` belongs to each possible class, for each of the K classes. The
-      columns must be ordered such that these probabilities correspond to
-      class 0, 1, ..., K-1. In multi-label classification, the rows of `pred_probs` need not sum to 1.
+      A 2D array of shape ``(N, K)`` of model-predicted class probabilities ``P(label=k|x)``.
+      Each row of this matrix corresponds to an example `x` and contains the predicted probabilities
+      that `x` belongs to each possible class, for each of the K classes.
+      The columns of this array must be ordered such that these probabilities correspond to class 0, 1, ..., K-1.
+      In multi-label classification (where classes are not mutually exclusive), the rows of `pred_probs` need not sum to 1.
 
       Note
       ----

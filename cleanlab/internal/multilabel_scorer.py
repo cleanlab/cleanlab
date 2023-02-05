@@ -1,4 +1,4 @@
-# Copyright (C) 2017-2022  Cleanlab Inc.
+# Copyright (C) 2017-2023  Cleanlab Inc.
 # This file is part of cleanlab.
 #
 # cleanlab is free software: you can redistribute it and/or modify
@@ -165,11 +165,11 @@ def exponential_moving_average(
 
     .. math::
 
-        \\text{EMA}_t = \\alpha \cdot s_t + (1 - \\alpha) \cdot \\text{EMA}_{t-1}, \\qquad 0 \\leq \\alpha \\leq 1
+        \text{EMA}_t = \alpha \cdot s_t + (1 - \alpha) \cdot \text{EMA}_{t-1}, \qquad 0 \leq \alpha \leq 1
 
-    We set :math:`\\text{EMA}_1 = s_1` as the largest score in the sorted vector s.
+    We set :math:`\text{EMA}_1 = s_1` as the largest score in the sorted vector s.
 
-    :math:`\\alpha` is the "forgetting factor" that gives more weight to the
+    :math:`\alpha` is the "forgetting factor" that gives more weight to the
     most recent scores, and successively less weight to the previous scores.
 
     Parameters
@@ -198,7 +198,7 @@ def exponential_moving_average(
     --------
     >>> from cleanlab.internal.multilabel_scorer import exponential_moving_average
     >>> import numpy as np
-    >>> s = np.array([0.1, 0.2, 0.3])
+    >>> s = np.array([[0.1, 0.2, 0.3]])
     >>> exponential_moving_average(s, alpha=0.5)
     np.array([0.175])
     """

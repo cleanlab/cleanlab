@@ -1,4 +1,4 @@
-# Copyright (C) 2017-2022  Cleanlab Inc.
+# Copyright (C) 2017-2023  Cleanlab Inc.
 # This file is part of cleanlab.
 #
 # cleanlab is free software: you can redistribute it and/or modify
@@ -15,8 +15,9 @@
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
 
-__version__ = "2.2.0"
+__version__ = "2.2.1"
 
+# 2.2.1 - Not yet released, you are using developer version. See documentation at: https://docs.cleanlab.ai/master/
 
 # 2.2.0 - Re-invented algorithms for multi-label classification and support for datasets with missing classes
 #

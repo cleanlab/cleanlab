@@ -1,4 +1,4 @@
-# Copyright (C) 2017-2022  Cleanlab Inc.
+# Copyright (C) 2017-2023  Cleanlab Inc.
 # This file is part of cleanlab.
 #
 # cleanlab is free software: you can redistribute it and/or modify
@@ -16,7 +16,7 @@
 
 """
 Scripts to test cleanlab usage with deep learning frameworks:
-pytorch, skorch, tensorflow, keras 
+pytorch, skorch, tensorflow, keras
 """
 
 import pytest
@@ -151,6 +151,10 @@ def test_tensorflow_sequential(batch_size, shuffle_config, data=DATA, hidden_uni
     assert issue_indices == data["error_indices"]
     assert err < 1e-3
 
+    # Test wrapper works with numpy array
+    cl = CleanLearning(model)
+    cl.fit(data["X"], data["y"])
+
 
 @pytest.mark.skipif("not python_version_ok()", reason="need at least python 3.7")
 @pytest.mark.parametrize("batch_size,shuffle_config", [(1, 0), (32, 0), (32, 1), (32, 2)])
@@ -196,6 +200,10 @@ def test_tensorflow_functional(batch_size, shuffle_config, data=DATA, hidden_uni
     issue_indices = list(cl.label_issues_df[cl.label_issues_df["is_label_issue"]].index.values)
     assert len(set(issue_indices) & set(data["error_indices"])) != 0
     assert err < 1e-3
+
+    # Test wrapper works with numpy array
+    cl = CleanLearning(model)
+    cl.fit(data["X"], data["y"])
 
 
 @pytest.mark.skipif("not python_version_ok()", reason="need at least python 3.7")
