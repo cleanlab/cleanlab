@@ -10,6 +10,8 @@ from cleanlab.experimental.datalab.issue_manager import IssueManager
 from cleanlab.outlier import OutOfDistribution
 
 if TYPE_CHECKING:  # pragma: no cover
+    from sklearn.neighbors import NearestNeighbors
+
     from cleanlab import Datalab
 
 
