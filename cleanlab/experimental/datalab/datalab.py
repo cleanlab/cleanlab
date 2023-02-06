@@ -22,6 +22,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 
 import cleanlab
@@ -245,7 +246,7 @@ class Datalab:
         *,
         pred_probs: Optional[np.ndarray] = None,
         issue_types: Optional[Dict[str, Any]] = None,
-        features: Optional[str] = None,  # embeddings of data
+        features: Optional[npt.NDArray] = None,
         model=None,  # sklearn.Estimator compatible object  # noqa: F821
     ) -> None:
         """
@@ -292,11 +293,7 @@ class Datalab:
                 }
 
         features :
-            Name of column containing precomputed embeddings.
-
-            WARNING
-            -------
-            This is not yet implemented.
+            Precomputed feature embeddings of the data.
 
         model :
             sklearn compatible model used to compute out-of-sample

@@ -92,17 +92,10 @@ class TestDatalab:
                 assert f"is_{issue_type}_issue" in columns
                 assert f"{issue_type}_score" in columns
 
-    def test_find_issues_with_custom_hyperparams(self, lab, pred_probs, monkeypatch):
-        def mock_extract_embeddings(*args, **kwargs):
-            # Return a dummy embedding matrix that matches the size of the dataset
-            dataset_size = lab.get_info("data", "num_examples")
-            embedding_size = 2
-            return np.random.rand(dataset_size, embedding_size)
-
-        monkeypatch.setattr(
-            "cleanlab.experimental.datalab.data._extract_embeddings",
-            mock_extract_embeddings,
-        )
+    def test_find_issues_with_custom_hyperparams(self, lab, pred_probs):
+        dataset_size = lab.get_info("data", "num_examples")
+        embedding_size = 2
+        mock_embeddings = np.random.rand(dataset_size, embedding_size)
 
         knn = NearestNeighbors(n_neighbors=3, metric="euclidean")
         issue_types = {
@@ -112,7 +105,7 @@ class TestDatalab:
         }
         lab.find_issues(
             pred_probs=pred_probs,
-            features="features",
+            features=mock_embeddings,
             issue_types=issue_types,
         )
         set_knn = lab.issue_managers["outlier"].ood.params["knn"]

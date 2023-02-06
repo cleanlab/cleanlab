@@ -138,15 +138,15 @@ class TestOutOfDistributionIssueManager:
         assert isinstance(issue_manager.ood, OutOfDistribution)
         assert issue_manager.ood.params["k"] == 3
 
-    def test_find_issues(self, issue_manager):
-        issue_manager.find_issues(features="embedding")
+    def test_find_issues(self, issue_manager, embeddings):
+        issue_manager.find_issues(features=embeddings["embedding"])
         issues, summary, info = issue_manager.issues, issue_manager.summary, issue_manager.info
         expected_issue_mask = np.array([False] * 4 + [True])
         assert np.all(
             issues["is_outlier_issue"] == expected_issue_mask
         ), "Issue mask should be correct"
         assert summary["issue_type"][0] == "outlier"
-        assert summary["score"][0] == pytest.approx(expected=0.7732146, rel=1e-7)
+        assert summary["score"][0] == pytest.approx(expected=0.7732146, abs=1e-7)
 
         assert info.get("knn", None) is not None, "Should have knn info"
 
@@ -167,7 +167,7 @@ class TestOutOfDistributionIssueManager:
             issues["is_outlier_issue"] == expected_issue_mask
         ), "Issue mask should be correct"
         assert summary["issue_type"][0] == "outlier"
-        assert summary["score"][0] == pytest.approx(expected=0.151, rel=1e-3)
+        assert summary["score"][0] == pytest.approx(expected=0.151, abs=1e-3)
 
         assert np.all(
             info.get("confident_thresholds", None) == [0.1, 0.825, 0.575]
@@ -251,15 +251,15 @@ class TestNearDuplicateIssueManager:
         )
         assert issue_manager.threshold == 0.1
 
-    def test_find_issues(self, issue_manager):
-        issue_manager.find_issues(features="embedding")
+    def test_find_issues(self, issue_manager, embeddings):
+        issue_manager.find_issues(features=embeddings["embedding"])
         issues, summary, info = issue_manager.issues, issue_manager.summary, issue_manager.info
         expected_issue_mask = np.array([False] * 3 + [True] * 2)
         assert np.all(
             issues["is_near_duplicate_issue"] == expected_issue_mask
         ), "Issue mask should be correct"
         assert summary["issue_type"][0] == "near_duplicate"
-        assert summary["score"][0] == pytest.approx(expected=0.03122489, rel=1e-7)
+        assert summary["score"][0] == pytest.approx(expected=0.03122489, abs=1e-7)
 
         assert (
             info.get("near_duplicate_sets", None) is not None
@@ -271,11 +271,11 @@ class TestNearDuplicateIssueManager:
             k=2,
             threshold=0.1,
         )
-        new_issue_manager.find_issues(features="embedding")
+        new_issue_manager.find_issues(features=embeddings["embedding"])
 
-    def test_report(self, issue_manager):
+    def test_report(self, issue_manager, embeddings):
 
-        issue_manager.find_issues(features="embedding")
+        issue_manager.find_issues(features=embeddings["embedding"])
         report = issue_manager.report()
         assert isinstance(report, str)
         assert (

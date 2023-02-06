@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 
 from cleanlab.experimental.datalab import data as datalab_data
@@ -34,7 +35,7 @@ class OutOfDistributionIssueManager(IssueManager):
 
     def find_issues(
         self,
-        features: Optional[List[str]] = None,
+        features: Optional[npt.NDArray] = None,
         pred_probs: Optional[np.ndarray] = None,
         **kwargs,
     ) -> None:
@@ -113,11 +114,8 @@ class OutOfDistributionIssueManager(IssueManager):
         scores = self.ood.fit_score(pred_probs=pred_probs, labels=self.datalab._labels, **kwargs)
         return scores
 
-    def _score_with_features(self, features: List[str], **kwargs) -> np.ndarray:
-        self._embeddings = datalab_data._extract_embeddings(
-            dataset=self.datalab.data, columns=features, **kwargs
-        )
-
+    def _score_with_features(self, features: npt.NDArray, **kwargs) -> npt.NDArray:
+        self._embeddings = features
         scores = self.ood.fit_score(features=self._embeddings)
         return scores
 

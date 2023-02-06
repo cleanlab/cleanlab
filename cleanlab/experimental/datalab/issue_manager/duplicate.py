@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, cast
 
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 from sklearn.neighbors import NearestNeighbors
 from sklearn.utils.validation import check_is_fitted
@@ -33,25 +34,25 @@ class NearDuplicateIssueManager(IssueManager):
         self.k = k
         self.knn: Optional[NearestNeighbors] = None
         self.near_duplicate_sets: List[List[int]] = []
+        self._embeddings: Optional[npt.NDArray] = None
+        self.distances: Optional[npt.NDArray] = None
 
     def find_issues(
         self,
-        features: List[str],
+        features: npt.NDArray,
         **_,
     ) -> None:
 
-        feature_array = datalab_data._extract_embeddings(
-            dataset=self.datalab.data, columns=features
-        )
+        self._embeddings = features
         if self.knn is None:
             self.knn = NearestNeighbors(n_neighbors=self.k, metric=self.metric)
 
         try:
             check_is_fitted(self.knn)
         except:
-            self.knn.fit(feature_array)
+            self.knn.fit(self._embeddings)
 
-        scores, self.distances = self._score_features(feature_array)
+        scores, self.distances = self._score_features(self._embeddings)
         self.radius, self.threshold = self._compute_threshold_and_radius()
 
         self.issues = pd.DataFrame(
@@ -61,7 +62,7 @@ class NearDuplicateIssueManager(IssueManager):
             },
         )
 
-        indices = self.knn.radius_neighbors(feature_array, self.radius, return_distance=False)
+        indices = self.knn.radius_neighbors(self._embeddings, self.radius, return_distance=False)
         self.near_duplicate_sets = [
             duplicates[duplicates != idx] for idx, duplicates in enumerate(indices)
         ]

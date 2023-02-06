@@ -246,26 +246,3 @@ def _extract_labels(data: Dataset, label_name: Union[str, List[str]]) -> Tuple[n
     inverse_map = {i: label for label, i in label_map.items()}
 
     return formatted_labels, inverse_map
-
-
-def _extract_embeddings(dataset: Dataset, columns: Union[str, List[str]], **kwargs) -> np.ndarray:
-    """Extracts embeddings for the given columns.
-
-    Example
-    -------
-    >>> import datasets
-    >>> from cleanlab.experimental.datalab.data import _extract_embeddings
-    >>> dataset = datasets.Dataset.from_dict({"text": ["hello world", "goodbye world"], "features": [[0.7071, 0.7071], [-0.8660, 0.5]]})
-    >>> _extract_embeddings(dataset, "features")
-    array([[ 0.7071,  0.7071],
-           [-0.866 ,  0.5   ]], dtype=float32)
-
-    """
-
-    if isinstance(columns, list):
-        raise NotImplementedError("TODO: Support list of columns.")
-
-    format_kwargs = kwargs.get("format_kwargs", {})
-
-    formatted_data = dataset.with_format("numpy", **format_kwargs)
-    return formatted_data[columns]
