@@ -273,10 +273,10 @@ def compute_py(
 
 
 def compute_pyx(
-    pred_probs: np.ndarray[Any], 
-    noise_matrix: np.ndarray[Any], 
-    inverse_noise_matrix: np.ndarray[Any]
-    ):
+    pred_probs: np.ndarray[Any],
+    noise_matrix: np.ndarray[Any],
+    inverse_noise_matrix: np.ndarray[Any],
+):
     """Compute ``pyx := P(true_label=k|x)`` from ``pred_probs := P(label=k|x)``, `noise_matrix` and
     `inverse_noise_matrix`.
 

@@ -103,7 +103,7 @@ class FastTextClassifier(BaseEstimator):  # Inherits sklearn base classifier
         self,
         train_data_fn,
         test_data_fn=None,
-        labels: Optional[np.ndarray[LabelLike]]=None,
+        labels: Optional[np.ndarray[LabelLike]] = None,
         tmp_dir="",
         label=LABEL,
         del_intermediate_data=True,
@@ -266,7 +266,7 @@ class FastTextClassifier(BaseEstimator):  # Inherits sklearn base classifier
             return pred
 
     # FIXME: add typings for y, sample_weight and k
-    def score(self, X: Optional[Any]=None, y=None, sample_weight=None, k=None) -> np.float32:
+    def score(self, X: Optional[Any] = None, y=None, sample_weight=None, k=None) -> np.float32:
         """Compute the average precision @ k (single label) of the
         labels predicted from X and the true labels given by y.
         score expects a `y` variable. In this case, `y` is the noisy labels."""
