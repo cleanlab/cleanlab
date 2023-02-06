@@ -89,7 +89,6 @@ class NearDuplicateIssueManager(IssueManager):
         knn_info_dict = {
             "nearest_neighbor": nn_ids.tolist(),
             "distance_to_nearest_neighbor": dists.tolist(),
-            # TODO Check scipy-dependency
             "weighted_knn_graph": weighted_knn_graph.toarray().tolist(),
         }
 
