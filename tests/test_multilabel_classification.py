@@ -388,7 +388,6 @@ def test_multilabel_py(given_labels, expected):
 
 @pytest.mark.parametrize("K", [2, 3, 4], ids=["K=2", "K=3", "K=4"])
 def test_get_split_generator(cv, K):
-
     all_configurations = np.array(list(itertools.product([0, 1], repeat=K)))
     given_labels = np.repeat(all_configurations, 2, axis=0)
 
@@ -412,7 +411,6 @@ def test_get_split_generator(cv, K):
 # Test split_generator with rare/missing multilabel configurations
 @pytest.mark.parametrize("K", [2, 3, 4], ids=["K=2", "K=3", "K=4"])
 def test_get_split_generator_rare_configurations(cv, K):
-
     all_configurations = np.array(list(itertools.product([0, 1], repeat=K)))
     given_labels = np.repeat(all_configurations, 2, axis=0)
 
