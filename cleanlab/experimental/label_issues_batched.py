@@ -467,8 +467,6 @@ def find_label_issues_batched(
         i = end_index
         lab.update_confident_thresholds(labels_batch, pred_probs_batch)
 
-    confident_thresholds = lab.get_confident_thresholds()  # just to see what we calculated
-
     # Next evaluate the quality of the labels (run this on full dataset you want to evaluate):
     i = 0
     while i < n:
