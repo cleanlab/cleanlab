@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, cast
+import warnings
 
 import numpy as np
 import numpy.typing as npt
@@ -23,7 +24,7 @@ class NearDuplicateIssueManager(IssueManager):
     def __init__(
         self,
         datalab: Datalab,
-        metric: str = "cosine",
+        metric: Optional[str] = None,
         threshold: Optional[float] = None,
         k: int = 10,
         **_,
@@ -45,7 +46,17 @@ class NearDuplicateIssueManager(IssueManager):
 
         self._embeddings = features
         if self.knn is None:
+            if self.metric is None:
+                self.metric = "cosine" if features.shape[1] > 3 else "euclidean"
             self.knn = NearestNeighbors(n_neighbors=self.k, metric=self.metric)
+
+        if self.metric and self.metric != self.knn.metric:
+            warnings.warn(
+                f"Metric {self.metric} does not match metric {self.knn.metric} used to fit knn. "
+                "Most likely an existing NearestNeighbors object was passed in, but a different "
+                "metric was specified."
+            )
+        self.metric = self.knn.metric
 
         try:
             check_is_fitted(self.knn)
