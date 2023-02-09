@@ -205,12 +205,19 @@ def _num_label_issues_multilabel(
     -------
     num_issues : int
        The estimated number of examples with label issues in the multi-label dataset.
+
+    Note: We set the filter_by method as 'confident_learning' to match the non-multilabel case
+    (analog to the off_diagonal estimation method)
     """
 
     from cleanlab.filter import find_label_issues
 
     issues_idx = find_label_issues(
-        labels=labels, pred_probs=pred_probs, confident_joint=confident_joint, multi_label=True
+        labels=labels,
+        pred_probs=pred_probs,
+        confident_joint=confident_joint,
+        multi_label=True,
+        filter_by="confident_learning",  # specified to match num_label_issues
     )
     return sum(issues_idx)
 

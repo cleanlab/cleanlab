@@ -866,6 +866,7 @@ def test_num_label_issues_multilabel(confident_joint):
         labels=dataset["labels"],
         pred_probs=dataset["pred_probs"],
         confident_joint=dataset["cj"] if confident_joint else None,
+        filter_by="confident_learning",
         multi_label=True,
     )
     assert sum(f) == n
@@ -1195,3 +1196,64 @@ def test_estimate_py_and_noise_matrices_missing_classes():
         ]
     )
     _ = estimate_py_and_noise_matrices_from_probabilities(labels, pred_probs3)
+
+
+def test_low_filter_by_methods():
+    dataset = data
+    num_issues = count.num_label_issues(dataset["labels"], dataset["pred_probs"])
+
+    # test filter by low_normalized_margin, check num issues is same as using count.num_label_issues
+    label_issues_nm = filter.find_label_issues(
+        dataset["labels"], dataset["pred_probs"], filter_by="low_normalized_margin"
+    )
+    assert sum(label_issues_nm) == num_issues
+
+    # test filter by low_self_confidence, check num issues is same as using count.num_label_issues
+    label_issues_sc = filter.find_label_issues(
+        dataset["labels"],
+        dataset["pred_probs"],
+        filter_by="low_self_confidence",
+        return_indices_ranked_by="normalized_margin",
+    )
+    assert len(label_issues_sc) == num_issues
+
+    label_issues_sc_sort = filter.find_label_issues(
+        dataset["labels"],
+        dataset["pred_probs"],
+        filter_by="low_self_confidence",
+        return_indices_ranked_by="confidence_weighted_entropy",
+    )
+    assert set(label_issues_sc) == set(label_issues_sc_sort)
+
+
+def test_low_filter_by_methods_multilabel():
+    dataset = multilabel_data
+    num_issues = count.num_label_issues(dataset["labels"], dataset["pred_probs"], multi_label=True)
+
+    # test filter by low_normalized_margin, check num issues is same as using count.num_label_issues
+    label_issues_nm = filter.find_label_issues(
+        dataset["labels"],
+        dataset["pred_probs"],
+        filter_by="low_normalized_margin",
+        multi_label=True,
+    )
+    assert sum(label_issues_nm) == num_issues
+
+    # test filter by low_self_confidence, check num issues is same as using count.num_label_issues
+    label_issues_sc = filter.find_label_issues(
+        dataset["labels"],
+        dataset["pred_probs"],
+        filter_by="low_self_confidence",
+        multi_label=True,
+        return_indices_ranked_by="confidence_weighted_entropy",
+    )
+    assert len(label_issues_sc) == num_issues
+
+    label_issues_sc_sort = filter.find_label_issues(
+        dataset["labels"],
+        dataset["pred_probs"],
+        filter_by="low_self_confidence",
+        multi_label=True,
+        return_indices_ranked_by="self_confidence",
+    )
+    assert set(label_issues_sc) == set(label_issues_sc_sort)

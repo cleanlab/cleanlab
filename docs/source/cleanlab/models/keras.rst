@@ -1,7 +1,7 @@
 keras
 =====
 
-.. automodule:: cleanlab.experimental.keras
+.. automodule:: cleanlab.models.keras
    :autosummary:
    :members:
    :undoc-members:
