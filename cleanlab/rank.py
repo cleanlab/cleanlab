@@ -132,9 +132,9 @@ def _compute_label_quality_scores(
     adjust_pred_probs: bool = False,
     confident_thresholds: Optional[np.ndarray] = None,
 ) -> np.ndarray:
-    """Internal implementation of get_label_quality scores that assumes inputs
-    have already been checked and are valid. This speeds things up a lot.
-    Can also take in precomputed confident_thresholds to further accelerate things.
+    """Internal implementation of get_label_quality_scores that assumes inputs
+    have already been checked and are valid. This speeds things up.
+    Can also take in pre-computed confident_thresholds to further accelerate things.
     """
     scoring_funcs = {
         "self_confidence": get_self_confidence_for_each_label,
