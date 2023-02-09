@@ -270,7 +270,7 @@ def find_label_issues(
             "filter_by 'confident_learning', 'predicted_neq_given', 'low_normalized_margin' "
             "or 'low_self_confidence' is not supported (yet) when setting 'num_to_remove_per_class'"
         )
-    if filter_by is "confident_learning" and isinstance(confident_joint, np.ndarray):
+    if filter_by == "confident_learning" and isinstance(confident_joint, np.ndarray):
         warn_str = (
             "The supplied `confident_joint` is ignored when `filter_by = 'confident_learning'`; confident joint will be "
             "re-estimated from the given labels. To use your supplied `confident_joint`, please specify a different "
