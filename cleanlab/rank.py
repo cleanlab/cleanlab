@@ -32,7 +32,7 @@ To obtain out-of-sample predicted probabilities for every datapoint in your data
 
 import numpy as np
 from sklearn.metrics import log_loss
-from typing import List, Optional
+from typing import List, Optional, Callable
 import warnings
 
 from cleanlab.internal.validation import assert_valid_inputs
@@ -119,15 +119,28 @@ def get_label_quality_scores(
     assert_valid_inputs(
         X=None, y=labels, pred_probs=pred_probs, multi_label=False, allow_one_class=True
     )
+    return _compute_label_quality_scores(
+        labels=labels, pred_probs=pred_probs, method=method, adjust_pred_probs=adjust_pred_probs
+    )
 
-    # Available scoring functions to choose from
+
+def _compute_label_quality_scores(
+    labels: np.ndarray,
+    pred_probs: np.ndarray,
+    *,
+    method: str = "self_confidence",
+    adjust_pred_probs: bool = False,
+    confident_thresholds: Optional[np.ndarray] = None,
+) -> np.ndarray:
+    """Internal implementation of get_label_quality scores that assumes inputs
+    have already been checked and are valid. This speeds things up a lot.
+    Can also take in precomputed confident_thresholds to further accelerate things.
+    """
     scoring_funcs = {
         "self_confidence": get_self_confidence_for_each_label,
         "normalized_margin": get_normalized_margin_for_each_label,
         "confidence_weighted_entropy": get_confidence_weighted_entropy_for_each_label,
     }
-
-    # Select scoring function
     try:
         scoring_func = scoring_funcs[method]
     except KeyError:
@@ -137,22 +150,15 @@ def get_label_quality_scores(
             Please choose a valid rank_by: self_confidence, normalized_margin, confidence_weighted_entropy
             """
         )
-
-    # Adjust predicted probabilities
     if adjust_pred_probs:
-
-        # Check if adjust_pred_probs is supported for the chosen method
         if method == "confidence_weighted_entropy":
             raise ValueError(f"adjust_pred_probs is not currently supported for {method}.")
+        pred_probs = _subtract_confident_thresholds(
+            labels=labels, pred_probs=pred_probs, confident_thresholds=confident_thresholds
+        )
 
-        pred_probs = _subtract_confident_thresholds(labels, pred_probs)
-
-    # Pass keyword arguments for scoring function
-    input = {"labels": labels, "pred_probs": pred_probs}
-
-    # Calculate scores
-    label_quality_scores = scoring_func(**input)
-
+    scoring_inputs = {"labels": labels, "pred_probs": pred_probs}
+    label_quality_scores = scoring_func(**scoring_inputs)
     return label_quality_scores
 
 

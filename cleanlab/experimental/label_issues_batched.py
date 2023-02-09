@@ -72,7 +72,7 @@ import numpy as np
 from typing import Optional, List
 
 from cleanlab.count import get_confident_thresholds
-from cleanlab.rank import get_label_quality_scores, find_top_issues
+from cleanlab.rank import find_top_issues, _compute_label_quality_scores
 from cleanlab.typing import LabelLike
 from cleanlab.internal.util import value_counts_fill_missing_classes
 
@@ -162,10 +162,11 @@ class LabelInspector:
         )
         self.examples_processed_quality = 0  # number of examples seen so far for estimating label quality and number of label issues
 
-    def get_confident_thresholds(self) -> np.ndarray:
+    def get_confident_thresholds(self, silent: bool = False) -> np.ndarray:
         """
         Fetches already-computed confident thresholds from the data seen so far
         in same format as: :py:func:`count.get_confident_thresholds <cleanlab.count.get_confident_thresholds>`.
+
 
         Returns
         -------
@@ -177,13 +178,13 @@ class LabelInspector:
                 "Have not computed any confident_thresholds yet. Call `update_confident_thresholds()` first."
             )
         else:
-            if self.verbose:
+            if self.verbose and not silent:
                 print(
                     f"Total number of examples used to estimate confident thresholds: {self.examples_processed_thresh}"
                 )
             return self.confident_thresholds
 
-    def get_num_issues(self) -> int:
+    def get_num_issues(self, silent: bool = False) -> int:
         """
         Fetches already-computed estimate of the number of label issues in the data seen so far
         in the same format as: :py:func:`count.num_label_issues <cleanlab.count.num_label_issues>`.
@@ -201,7 +202,7 @@ class LabelInspector:
                 "Have not evaluated any labels yet. Call `score_label_quality()` first."
             )
         else:
-            if self.verbose:
+            if self.verbose and not silent:
                 print(
                     f"Total number of examples whose labels have been evaluated: {self.examples_processed_quality}"
                 )
@@ -268,7 +269,7 @@ class LabelInspector:
             print(
                 f"Total number of examples whose labels have been evaluated: {self.examples_processed_quality}"
             )
-        return find_top_issues(self.get_quality_scores(), top=self.get_num_issues())
+        return find_top_issues(self.get_quality_scores(), top=self.get_num_issues(silent=True))
 
     def update_confident_thresholds(self, labels: LabelLike, pred_probs: np.ndarray):
         """
@@ -325,9 +326,12 @@ class LabelInspector:
         """
         labels = _batch_check(labels, pred_probs, self.num_class)
         batch_size = len(labels)
-        scores = get_label_quality_scores(
-            labels, pred_probs, **self.quality_score_kwargs
-        )  # TODO: adjusted scores will be wrong because thresholds arent being passed.
+        scores = _compute_label_quality_scores(
+            labels,
+            pred_probs,
+            confident_thresholds=self.get_confident_thresholds(silent=True),
+            **self.quality_score_kwargs,
+        )
         class_counts = value_counts_fill_missing_classes(labels, num_classes=self.num_class)
         if update_num_issues:
             self._update_num_label_issues(labels, pred_probs, **self.num_issue_kwargs)
