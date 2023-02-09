@@ -247,7 +247,7 @@ def find_label_issues(
         "confident_learning",
         "predicted_neq_given",
         "low_normalized_margin",
-        "low_self_confidences",
+        "low_self_confidence",
     ] and (frac_noise != 1.0 or num_to_remove_per_class is not None):
         warn_str = (
             "frac_noise and num_to_remove_per_class parameters are only supported"
@@ -262,7 +262,7 @@ def find_label_issues(
             "confident_learning",
             "predicted_neq_given",
             "low_normalized_margin",
-            "low_self_confidences",
+            "low_self_confidence",
         ]
     ):
         # TODO - add support for these filters
@@ -597,7 +597,7 @@ def _find_multilabel_issues_per_class(
       Refer to documentation for this argument in filter.find_label_issues() for details.
 
     filter_by : {'prune_by_class', 'prune_by_noise_rate', 'both', 'confident_learning', 'predicted_neq_given',
-        'low_normalized_margin', 'low_self_confidences'}, default='prune_by_noise_rate'
+        'low_normalized_margin', 'low_self_confidence'}, default='prune_by_noise_rate'
       Refer to documentation for this argument in filter.find_label_issues() for details.
 
     frac_noise : float, default=1.0
