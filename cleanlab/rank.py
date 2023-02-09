@@ -32,7 +32,7 @@ To obtain out-of-sample predicted probabilities for every datapoint in your data
 
 import numpy as np
 from sklearn.metrics import log_loss
-from typing import List, Optional, Callable
+from typing import List, Optional
 import warnings
 
 from cleanlab.internal.validation import assert_valid_inputs
