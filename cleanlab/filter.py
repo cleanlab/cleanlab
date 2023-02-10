@@ -452,12 +452,12 @@ def find_label_issues(
     if filter_by == "predicted_neq_given":
         label_issues_mask = find_predicted_neq_given(labels, pred_probs, multi_label=multi_label)
 
-    # Remove label issues if given label == model prediction
-    # TODO: consider use of _multiclass_crossval_predict() here
-    pred = pred_probs.argmax(axis=1)
-    for i, pred_label in enumerate(pred):
-        if pred_label == labels[i]:
-            label_issues_mask[i] = False
+    if filter_by not in ["low_self_confidence", "low_normalized_margin"]:
+        # Remove label issues if given label == model prediction if issues haven't been removed yet
+        pred = pred_probs.argmax(axis=1)
+        for i, pred_label in enumerate(pred):
+            if pred_label == labels[i]:
+                label_issues_mask[i] = False
 
     if verbose:
         print("Number of label issues found: {}".format(sum(label_issues_mask)))
