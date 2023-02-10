@@ -476,6 +476,7 @@ def find_label_issues_batched(
                 "labels_file must be str specifying path to .npy file containing the array of labels"
             )
         labels = np.load(labels_file, mmap_mode="r")
+        assert isinstance(labels, np.ndarray)
 
     if pred_probs_file is not None:
         if pred_probs is not None:
@@ -485,11 +486,14 @@ def find_label_issues_batched(
                 "pred_probs_file must be str specifying path to .npy file containing 2D array of pred_probs"
             )
         pred_probs = np.load(pred_probs_file, mmap_mode="r")
+        assert isinstance(pred_probs, np.ndarray)
         if verbose:
             print(
                 f"mmap-loaded numpy arrays have: {len(pred_probs)} examples, {pred_probs.shape[1]} classes"
             )
 
+    assert isinstance(pred_probs, np.ndarray)
+    assert labels is not None
     if len(labels) != len(pred_probs):
         raise ValueError(
             f"len(labels)={len(labels)} does not match len(pred_probs)={len(pred_probs)}. Perhaps an issue loading mmap numpy arrays from file."
