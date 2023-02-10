@@ -20,14 +20,17 @@ that does not need much memory by operating in mini-batches.
 You can also use this to estimate label quality scores or the number of label issues
 for big datasets with limited memory.
 
-The recommended usage is two passes over your data: 
+With default settings, the results returned from this method closely approximate those returned from:
+``cleanlab.filter.find_label_issues(..., filter_by="low_self_confidence", return_indices_ranked_by="self_confidence")``
+
+To run this, either follow the examples script below,
+or use the ``find_label_issues_batched()`` convenience function defined in this module.
+
+The recommended usage demonstrated in the examples script involves two passes over your data: 
 one pass to compute `confident_thresholds`, another to evaluate each label.
 To maximize efficiency, try to use the largest batch_sizes your memory allows.
-To reduce runtime ~50%, you can run the first pass on a subset of your dataset
+To reduce runtime further, you can run the first pass on a subset of your dataset
 as long as it contains enough data from each class to estimate `confident_thresholds` accurately.
-
-To run this, either follow the examples script,
-or use the ``find_label_issues_batched()`` convenience function defined in this module.
 
 In the examples script below:
 - `labels` is a (big) 1D ``np.ndarray`` of class labels represented as integers in ``0,1,...,K-1``.
@@ -401,9 +404,11 @@ def _batch_check(labels: LabelLike, pred_probs: np.ndarray, num_class: int) -> n
 
 
 def find_label_issues_batched(
-    labels: LabelLike,
-    pred_probs: np.ndarray,
     *,
+    labels_file: Optional[str] = None,
+    pred_probs_file: Optional[str] = None,
+    labels: Optional[LabelLike] = None,
+    pred_probs: Optional[np.ndarray] = None,
     batch_size: int = 10000,
     verbose: bool = True,
     quality_score_kwargs: Optional[dict] = None,
@@ -411,20 +416,37 @@ def find_label_issues_batched(
 ) -> np.ndarray:
     """
     Variant of :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>`
-    that requires less memory by reading in `pred_probs`, `labels` from (already loaded) arrays in mini-batches.
-    If you want to read from file in mini-batches instead of from already loaded arrays,
+    that requires less memory by reading `pred_probs`, `labels` in mini-batches, if provided as files.
+    Only .npy files are supported (not .npz), and these must be loadable via: ``np.load(your_file, mmap_mode="r")``.
+    If you want to read from other file-types (eg. HDF5 or Zarr) instead,
     see the example usage of the ``LabelInspector`` class.
+
     This function basically implements the example ``LabelInspector`` usage script,
     but you can further customize that script by running it yourself.
-    See the documentation of ``LabelInspector`` to learn more about how this method works.
+    See the documentation of ``LabelInspector`` to learn more about how this method works internally.
+
+    With default settings, the results returned from this method closely approximate those returned from:
+    ``cleanlab.filter.find_label_issues(..., filter_by="low_self_confidence", return_indices_ranked_by="self_confidence")``
 
     Parameters
     ----------
-    labels: np.ndarray or list
-      Given class labels for each example in the dataset, values in ``0,1,2,...,K-1``.
+    labels_file: str, optional
+      Path to .npy file where the entire 1D `labels` numpy array is stored on disk (list format is not supported).
+      This is loaded using: ``np.load(labels_file, mmap_mode="r")``
+      so make sure this file was created via: ``np.save()`` or other compatible methods.
 
-    pred_probs: np.ndarray
-      2D array of model-predicted class probabilities for each example in the dataset.
+    pred_probs_file: str
+      Path to .npy file where the entire `pred_probs` numpy array is stored on disk.
+      This is loaded using: ``np.load(pred_probs_file, mmap_mode="r")``
+      so make sure this file was created via: ``np.save()`` or other compatible methods.
+
+    labels: np.ndarray or list, optional
+      Given class labels for each example in the dataset, (int) values in ``0,1,2,...,K-1``.
+      Recommend providing `labels_file` instead of `labels` to avoid loading big objects into memory.
+
+    pred_probs: np.ndarray, optional
+      2D array of model-predicted class probabilities (floats) for each example in the dataset.
+      Recommend providing `pred_probs_file` instead of `pred_probs` to avoid loading big objects into memory.
 
     batch_size : int, optional
       Size of mini-batches to use for estimating the label issues.
@@ -446,6 +468,33 @@ def find_label_issues_batched(
     issue_indices : np.ndarray
       Indices of examples with label issues, sorted by label quality score.
     """
+    if labels_file is not None:
+        if labels is not None:
+            raise ValueError("only specify one of: `labels` or `labels_file`")
+        if not isinstance(labels_file, str):
+            raise ValueError(
+                "labels_file must be str specifying path to .npy file containing the array of labels"
+            )
+        labels = np.load(labels_file, mmap_mode="r")
+
+    if pred_probs_file is not None:
+        if pred_probs is not None:
+            raise ValueError("only specify one of: `pred_probs` or `pred_probs_file`")
+        if not isinstance(pred_probs_file, str):
+            raise ValueError(
+                "pred_probs_file must be str specifying path to .npy file containing 2D array of pred_probs"
+            )
+        pred_probs = np.load(pred_probs_file, mmap_mode="r")
+        if verbose:
+            print(
+                f"mmap-loaded numpy arrays have: {len(pred_probs)} examples, {pred_probs.shape[1]} classes"
+            )
+
+    if len(labels) != len(pred_probs):
+        raise ValueError(
+            f"len(labels)={len(labels)} does not match len(pred_probs)={len(pred_probs)}. Perhaps an issue loading mmap numpy arrays from file."
+        )
+
     lab = LabelInspector(
         num_class=pred_probs.shape[1],
         verbose=verbose,

@@ -31,6 +31,8 @@ import pytest
 from sklearn.multioutput import MultiOutputClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import cross_val_predict
+from tempfile import mkdtemp
+import os.path as path
 
 
 def make_data(
@@ -899,7 +901,7 @@ def test_batched_label_issues():
     assert len(f2) == len(f1)
     # check jaccard similarity:
     intersection = len(list(set(f1).intersection(set(f2))))
-    union = (len(set(f1)) + len(set(f2))) - intersection
+    union = len(set(f1)) + len(set(f2)) - intersection
     assert float(intersection) / union > 0.6
     n1 = count.num_label_issues(
         labels=data["labels"],
@@ -930,9 +932,21 @@ def test_batched_label_issues():
         batch_size=len(data["labels"]) + 100,
         **extra_args,
     )
+    assert not np.array_equal(f5, f2)
     assert np.all(f7 == f5)
     assert np.all(f6 == f5)
     assert np.abs(len(f5) - n1) < 2
+    # Test batches loaded from file:
+    labels_file = path.join(mkdtemp(), "labels.npy")
+    pred_probs_file = path.join(mkdtemp(), "pred_probs.npy")
+    np.save(labels_file, data["labels"])
+    np.save(pred_probs_file, data["pred_probs"])
+    f8 = find_label_issues_batched(
+        labels_file=labels_file,
+        pred_probs_file=pred_probs_file,
+        batch_size=int(len(data["labels"]) / 4.0),
+    )
+    assert np.all(f8 == f3)
 
 
 def test_issue_158():
