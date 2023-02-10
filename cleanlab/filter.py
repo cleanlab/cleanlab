@@ -454,7 +454,6 @@ def find_label_issues(
 
     if filter_by not in ["low_self_confidence", "low_normalized_margin"]:
         # Remove label issues if given label == model prediction if issues haven't been removed yet
-        # TODO: consider use of _multiclass_crossval_predict() here
         pred = pred_probs.argmax(axis=1)
         for i, pred_label in enumerate(pred):
             if pred_label == labels[i]:
