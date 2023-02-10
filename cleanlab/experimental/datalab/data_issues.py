@@ -72,7 +72,7 @@ class DataIssues:
             "statistics": {},
         }
 
-    def get_info(self, issue_name: str, *subkeys: str) -> Any:
+    def get_info(self, issue_name: str) -> Dict[str, Any]:
         """Get the info for the issue_name key (and any subkeys, if provided).
 
         This function is used to get the info for a specific issue_name. If the info is not computed yet, it will raise an error.
@@ -95,15 +95,6 @@ class DataIssues:
             raise ValueError(
                 f"issue_name {issue_name} not found in self.info. These have not been computed yet."
             )
-
-        for sub_id, subkey in enumerate(subkeys):
-            if not isinstance(info, dict):
-                raise ValueError(
-                    f"subkey {subkey} at index {sub_id} is not a valid key in info dict."
-                    f"info is {info} and remaining subkeys are {subkeys[sub_id:]}."
-                )
-            sub_info = info.get(subkey)
-            info = sub_info
         return info
 
     def _collect_results_from_issue_manager(self, issue_manager: IssueManager) -> None:

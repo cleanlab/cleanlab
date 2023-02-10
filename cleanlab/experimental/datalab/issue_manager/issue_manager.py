@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Dict, List
+from abc import ABC, ABCMeta, abstractmethod
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Tuple, Type, TypeVar
+import json
 
 import numpy as np
 import pandas as pd
@@ -10,7 +11,38 @@ if TYPE_CHECKING:  # pragma: no cover
     from cleanlab import Datalab
 
 
-class IssueManager(ABC):
+T = TypeVar("T", bound="IssueManager")
+TM = TypeVar("TM", bound="IssueManagerMeta")
+
+
+class IssueManagerMeta(ABCMeta):
+    """Metaclass for IssueManager that adds issue_score_key to the class.
+
+    :meta private:
+    """
+
+    issue_name: ClassVar[str]
+    issue_score_key: ClassVar[str]
+
+    def __new__(
+        meta: Type[TM],
+        name: str,
+        bases: Tuple[Type[Any], ...],
+        class_dict: Dict[str, Any],
+    ) -> TM:  # Classes that inherit from ABC don't need to be modified
+        if ABC in bases:
+            return super().__new__(meta, name, bases, class_dict)
+
+        # Concrete classes need to have an issue_name attribute
+        if "issue_name" not in class_dict:
+            raise TypeError("IssueManagers need an issue_name class variable")
+
+        # Add issue_score_key to class
+        class_dict["issue_score_key"] = f"{class_dict['issue_name']}_score"
+        return super().__new__(meta, name, bases, class_dict)
+
+
+class IssueManager(ABC, metaclass=IssueManagerMeta):
     """Base class for managing data issues of a particular type in a Datalab.
 
     For each example in a dataset, the IssueManager for a particular type of issue should compute:
@@ -42,8 +74,38 @@ class IssueManager(ABC):
         once the manager has set the `issues` and `summary` dataframes as instance attributes.
     """
 
-    issue_name: str
+    description: ClassVar[str] = ""
+    """Short text that summarizes the type of issues handled by this IssueManager.
+
+    :meta hide-value:
+    """
+    issue_name: ClassVar[str]
     """Returns a key that is used to store issue summary results about the assigned Lab."""
+    issue_score_key: ClassVar[str]
+    """Returns a key that is used to store issue score results about the assigned Lab."""
+    verbosity_levels: ClassVar[Dict[int, Dict[str, List[str]]]] = {
+        0: {},
+        1: {},
+        2: {},
+        3: {},
+    }
+    """A dictionary of verbosity levels and their corresponding dictionaries of
+    report items to print.
+
+    :meta hide-value:
+
+    Example
+    -------
+
+    >>> verbosity_levels = {
+    ...     0: {},
+    ...     1: {"info": ["some_info_key"]},
+    ...     2: {
+    ...         "info": ["additional_info_key"],
+    ...         "issues": ["issue_column_1", "issue_column_2"],
+    ...     },
+    ... }
+    """
 
     def __init__(self, datalab: Datalab):
         self.datalab = datalab
@@ -65,12 +127,6 @@ class IssueManager(ABC):
             if not hasattr(cls, var):
                 raise NotImplementedError(f"Class {cls.__name__} must define class variable {var}")
 
-    @property
-    def issue_score_key(self) -> str:
-        """Returns a key that is used to store issue score results about the assigned Lab."""
-        # TODO: The score key should just be f"{self.issue_name}_score" or f"{self.issue_name}_quality_score", f"{self.issue_name}_quality"
-        return f"{self.issue_name}_score"
-
     @abstractmethod
     def find_issues(self, *args, **kwargs) -> None:
         """Finds occurrences of this particular issue in the dataset.
@@ -91,7 +147,8 @@ class IssueManager(ABC):
 
     # TODO: Add a `collect_global_info` method for storing useful statistics that can be used by other IssueManagers.
 
-    def get_summary(self, score: float) -> pd.DataFrame:
+    @classmethod
+    def get_summary(cls, score: float) -> pd.DataFrame:
         """Sets the summary attribute of this IssueManager.
 
         Parameters
@@ -101,64 +158,103 @@ class IssueManager(ABC):
         """
         return pd.DataFrame(
             {
-                "issue_type": [self.issue_name],
+                "issue_type": [cls.issue_name],
                 "score": [score],
             },
         )
 
-    @property
-    def verbosity_levels(self) -> Dict[int, Dict[str, List[str]]]:
-        """Returns a dictionary of verbosity levels and their corresponding dictionaries of
-        report items to print.
+    @classmethod
+    def report(
+        cls,
+        issues: pd.DataFrame,
+        summary: pd.DataFrame,
+        info: Dict[str, Any],
+        k: int = 5,
+        verbosity: int = 0,
+        include_description: bool = True,
+    ) -> str:
+        """Compose a report of the issues found by this IssueManager.
 
-        Example
-        -------
+        Parameters
+        ----------
+        issues :
+            An issues dataframe.
 
-        >>> verbosity_levels = {
-        ...     0: {},
-        ...     1: {"info": ["some_info_key"]},
-        ...     2: {
-        ...         "info": ["additional_info_key"],
-        ...         "issues": ["issue_column_1", "issue_column_2"],
-        ...     },
-        ... }
+            Example
+            -------
+            >>> import pandas as pd
+            >>> issues = pd.DataFrame(
+            ...     {
+            ...         "is_X_issue": [True, False, True],
+            ...         "X_score": [0.2, 0.9, 0.4],
+            ...     },
+            ... )
+
+        summary :
+            The summary dataframe.
+
+            Example
+            -------
+            >>> summary = pd.DataFrame(
+            ...     {
+            ...         "issue_type": ["X"],
+            ...         "score": [0.5],
+            ...     },
+            ... )
+
+        info :
+            The info dict.
+
+            Example
+            -------
+            >>> info = {
+            ...     "A": "val_A",
+            ...     "B": ["val_B1", "val_B2"],
+            ... }
+
+        k :
+            The number of examples to print.
+
+        verbosity :
+            The verbosity level of the report.
+
+        include_description :
+            Whether to include a description of the issue in the report.
 
         Returns
         -------
-        verbosity_levels :
-            A dictionary of verbosity levels and their corresponding dictionaries of
-            report items to print.
+        report_str :
+            A string containing the report.
         """
-        return {
-            0: {},
-            1: {},
-            2: {},
-            3: {},
-        }
 
-    def report(self, k: int = 5, verbosity: int = 0) -> str:
-        import json
-
-        top_level = max(self.verbosity_levels.keys()) + 1
-        if verbosity not in list(self.verbosity_levels.keys()) + [top_level]:
+        top_level = max(cls.verbosity_levels.keys()) + 1
+        if verbosity not in list(cls.verbosity_levels.keys()) + [top_level]:
             raise ValueError(
                 f"Verbosity level {verbosity} not supported. "
-                f"Supported levels: {self.verbosity_levels.keys()}"
+                f"Supported levels: {cls.verbosity_levels.keys()}"
                 f"Use verbosity={top_level} to print all info."
             )
-        if self.issues.empty:
+        if issues.empty:
             print(f"No issues found")
 
-        topk_ids = self.issues.sort_values(by=self.issue_score_key, ascending=True).index[:k]
+        topk_ids = issues.sort_values(by=cls.issue_score_key, ascending=True).index[:k]
 
-        report_str = f"{self.issue_name:-^80}\n\n"
+        score = summary["score"].loc[0]
+        report_str = f"{' ' + cls.issue_name + ' issues ':-^100}\n\n"
 
-        score = self.summary["score"].loc[0]
-        report_str += f"Score: {score:.4f}\n\n"
+        if include_description and cls.description:
+            description = cls.description
+            if verbosity == 0:
+                description = description.split("\n\n", maxsplit=1)[0]
+            report_str += "About this issue:\n\t" + description + "\n\n"
+        report_str += (
+            f"Number of examples with this issue: {issues[f'is_{cls.issue_name}_issue'].sum()}\n"
+            f"Overall dataset quality in terms of this issue: : {score:.4f}\n\n"
+        )
 
         columns = {}
         info_to_omit = set()
-        for level, verbosity_dict in self.verbosity_levels.items():
+        for level, verbosity_dict in cls.verbosity_levels.items():
             if level <= verbosity:
                 for key, values in verbosity_dict.items():
                     if key == "info":
@@ -166,22 +262,29 @@ class IssueManager(ABC):
                     elif key == "issue":
                         # Add the issue-specific info, with the top k ids
                         new_columns = {
-                            col: np.array(self.info[col], dtype=object)[topk_ids]
+                            col: np.array(info[col], dtype=object)[topk_ids]
                             for col in values
-                            if self.info.get(col, None) is not None
+                            if info.get(col, None) is not None
                         }
                         columns.update(new_columns)
                         info_to_omit.update(values)
 
-        if verbosity == max(self.verbosity_levels.keys()) + 1:
+        max_verbosity = max(cls.verbosity_levels.keys())
+        info_to_print = set()
+        if verbosity == max_verbosity + 1:
             info_to_omit = set()
-            for verbosity_dict in self.verbosity_levels.values():
+            for verbosity_dict in cls.verbosity_levels.values():
                 info_to_omit.update(verbosity_dict.get("issue", []))
 
-        report_str += self.issues.loc[topk_ids].copy().assign(**columns).to_string()
+            info_to_print = {key for key in info.keys() if key not in info_to_omit}
 
-        # Dump the info dict, omitting the info that has already been printed
-        info_to_print = {key: value for key, value in self.info.items() if key not in info_to_omit}
+        elif verbosity <= max_verbosity:
+            for level, verbosity_dict in cls.verbosity_levels.items():
+                if level <= verbosity:
+                    info_to_print.update(verbosity_dict.get("info", {}))
+
+        report_str += "Examples representing most severe instances of this issue:\n"
+        report_str += issues.loc[topk_ids].copy().assign(**columns).to_string()
 
         def truncate(s, max_len=4) -> str:
             if hasattr(s, "shape") or hasattr(s, "ndim"):
@@ -204,9 +307,10 @@ class IssueManager(ABC):
             return str(s)
 
         if info_to_print:
+            info_to_print_dict = {key: info[key] for key in info_to_print}
             # Print the info dict, truncating arrays to 4 elements,
-            report_str += f"\n\nInfo: "
-            for key, value in info_to_print.items():
+            report_str += f"\n\nAdditional Information: "
+            for key, value in info_to_print_dict.items():
                 if isinstance(value, dict):
                     report_str += f"\n{key}:\n{json.dumps(value, indent=4)}"
                 elif isinstance(value, pd.DataFrame):

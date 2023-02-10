@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Dict, Optional
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional
 
 import numpy as np
 
@@ -26,7 +26,21 @@ class LabelIssueManager(IssueManager):
         Keyword arguments to pass to the CleanLearning constructor.
     """
 
-    issue_name: str = "label"
+    description: ClassVar[
+        str
+    ] = """A label issue is a problem in the labeling/annotation
+        of a dataset used for supervised learning tasks.
+
+        This includes examples whose given label is likely incorrect.
+        """
+
+    issue_name: ClassVar[str] = "label"
+    verbosity_levels = {
+        0: {},
+        1: {"info": ["confident_joint"]},
+        2: {"issue": ["given_label", "predicted_label"]},
+        3: {"info": ["classes_by_label_quality", "overlapping_classes"]},
+    }
 
     def __init__(
         self,
@@ -171,12 +185,3 @@ class LabelIssueManager(IssueManager):
 
     def _validate_pred_probs(self, pred_probs) -> None:
         assert_valid_inputs(X=None, y=self.datalab._labels, pred_probs=pred_probs)
-
-    @property
-    def verbosity_levels(self) -> Dict[int, Any]:
-        return {
-            0: {},
-            1: {"info": ["confident_joint"]},
-            2: {"issue": ["given_label", "predicted_label"]},
-            3: {"info": ["classes_by_label_quality", "overlapping_classes"]},
-        }

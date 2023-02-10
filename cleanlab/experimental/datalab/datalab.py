@@ -76,7 +76,6 @@ class Datalab:
         self.data_issues = DataIssues(self._data)
         self.cleanlab_version = cleanlab.version.__version__
         self.path = ""
-        self.issue_managers: Dict[str, IssueManager] = {}
 
     def __repr__(self) -> str:
         """What is displayed if user executes: datalab"""
@@ -221,25 +220,69 @@ class Datalab:
                 error_message += f"Required argument {missing_required_args} for issue type {issue_name} was not provided.\n"
             raise ValueError(error_message)
 
-    def _get_report(self, k: int, verbosity: int) -> str:
+    def _get_report(self, k: int, verbosity: int, include_description: bool) -> str:
         # Sort issues based on the score
         # Show top K issues
         # Show the info (get_info) with some verbosity level
         #   E.g. for label issues, only show the confident joint computed with the health_summary
-        issue_type_sorted_keys: List[str] = (
-            self.issue_summary.sort_values(by="score", ascending=True)["issue_type"]
-            .to_numpy()
-            .tolist()
-        )
-        issue_managers = self._get_managers(issue_type_sorted_keys)
         report_str = ""
-        for issue_manager in issue_managers:
-            report_str += issue_manager.report(k=k, verbosity=verbosity) + "\n\n"
+        issue_type_sorted = self.issue_summary.sort_values(by="score", ascending=True)
+        report_str += self._add_issue_summary_to_report(summary=issue_type_sorted)
+        issue_type_sorted_keys: List[str] = issue_type_sorted["issue_type"].tolist()
+        issue_manager_reports = []
+        for key in issue_type_sorted_keys:
+            issue_manager_class = _IssueManagerFactory.from_str(issue_type=key)
+            issue_manager_reports.append(
+                issue_manager_class.report(
+                    issues=self.get_issues(issue_name=key),
+                    summary=self.get_summary(issue_name=key),
+                    info=self.get_info(issue_name=key),
+                    k=k,
+                    verbosity=verbosity,
+                    include_description=include_description,
+                )
+            )
+
+        report_str += "\n\n\n".join(issue_manager_reports)
         return report_str
 
-    def _get_managers(self, keys: List[str]) -> List[IssueManager]:
-        issue_managers = [self.issue_managers[i] for i in keys]
-        return issue_managers
+    def get_issues(self, issue_name: str) -> pd.DataFrame:
+        columns = [col for col in self.issues.columns if issue_name in col]
+
+        if not columns:
+            raise ValueError(f"Issue type {issue_name} not found in the dataset.")
+        return self.issues[columns]
+
+    def get_summary(self, issue_name: str) -> pd.DataFrame:
+        """Get summary of issues for a given issue type.
+
+        Parameters
+        ----------
+        issue_name :
+            Name of the issue type.
+
+        Returns
+        -------
+        summary :
+            Summary of issues for a given issue type.
+        """
+        if self.issue_summary.empty:
+            raise ValueError(
+                "No issues found in the dataset. "
+                "Call `find_issues` before calling `get_summary`."
+            )
+        row_mask = self.issue_summary["issue_type"] == issue_name
+        if not any(row_mask):
+            raise ValueError(f"Issue type {issue_name} not found in the summary.")
+        return self.issue_summary[row_mask].reset_index(drop=True)
+
+    def _add_issue_summary_to_report(self, summary: pd.DataFrame) -> str:
+        return (
+            "Here is a summary of the different kinds of issues found in the data:\n\n"
+            + summary.to_string(index=False)
+            + "\n\n"
+            + "(Note: A lower score indicates a more severe issue across all examples in the dataset.)\n\n\n"
+        )
 
     def find_issues(
         self,
@@ -288,8 +331,8 @@ class Datalab:
                     "label": {
                         "clean_learning_kwargs": {
                             "prune_method": "prune_by_noise_rate",
-                        }
-                    }
+                        },
+                    },
                 }
 
         features :
@@ -324,21 +367,17 @@ class Datalab:
 
         if failed_managers:
             print(f"Failed to find issues for {failed_managers}")
-        added_managers = {
-            im.issue_name: im for im in new_issue_managers if im not in failed_managers
-        }
-        self.issue_managers.update(added_managers)
 
-    def get_info(self, issue_name, *subkeys) -> Any:
+    def get_info(self, issue_name) -> Dict[str, Any]:
         """Returns dict of info about a specific issue, or None if this issue does not exist in self.info.
         Internally fetched from self.info[issue_name] and prettified.
         Keys might include: number of examples suffering from issue,
         indicates of top-K examples most severely suffering,
         other misc stuff like which sets of examples are duplicates if the issue=="duplicated".
         """  # TODO: Revise Datalab.get_info docstring
-        return self.data_issues.get_info(issue_name, *subkeys)
+        return self.data_issues.get_info(issue_name)
 
-    def report(self, k: int = 5, verbosity: int = 0) -> None:
+    def report(self, k: int = 5, verbosity: int = 0, include_description: bool = True) -> None:
         """Prints helpful summary of all issues.
 
         Parameters
@@ -351,7 +390,7 @@ class Datalab:
             for each issue. Higher levels may add more information to the report.
         """
         # Show summary of issues
-        print(self._get_report(k=k, verbosity=verbosity))
+        print(self._get_report(k=k, verbosity=verbosity, include_description=include_description))
 
     def save(self, path: str) -> None:
         """Saves this Lab to file (all files are in folder at path/).

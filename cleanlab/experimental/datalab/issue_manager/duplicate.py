@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, cast
+from typing import TYPE_CHECKING, ClassVar, List, Optional, Tuple, cast
 import warnings
 
 import numpy as np
@@ -9,7 +9,6 @@ import pandas as pd
 from sklearn.neighbors import NearestNeighbors
 from sklearn.utils.validation import check_is_fitted
 
-from cleanlab.experimental.datalab import data as datalab_data
 from cleanlab.experimental.datalab.issue_manager import IssueManager
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -19,7 +18,33 @@ if TYPE_CHECKING:  # pragma: no cover
 class NearDuplicateIssueManager(IssueManager):
     """Manages issues realted to near-duplicate examples."""
 
-    issue_name: str = "near_duplicate"
+    description: ClassVar[
+        str
+    ] = """A near-duplicate issue refers to two or more examples in
+        a dataset that are extremely similar to each other, relative
+        to the rest of the dataset.
+
+        This may be reflected in the high similarity of the examples'
+        feature embeddings if the examples are represented as vectors.
+
+        Including near-duplicate examples in a dataset may negatively impact
+        a model's generalization performance and may lead to overfitting.
+
+        Near duplicated examples may record the same information with different:
+            - Abbreviations, misspellings, typos, etc. in text data.
+            - Text formatting, such as bold, italics, etc. in text data.
+            - Compression formats in audio, image, and video data.
+            - Sampling rates in audio and video data.
+            - Resolutions in image and video data.
+        """
+    issue_name: ClassVar[str] = "near_duplicate"
+    verbosity_levels = {
+        0: {
+            "issue": ["near_duplicate_sets"]
+        },  # This is important information, but the output could be very large. Maybe it shouldn't be default
+        1: {"info": ["radius"]},
+        2: {"issue": ["nearest_neighbor", "distance_to_nearest_neighbor"]},
+    }
 
     def __init__(
         self,
@@ -83,7 +108,6 @@ class NearDuplicateIssueManager(IssueManager):
 
     def collect_info(self) -> dict:
         issues_dict = {
-            "num_near_duplicate_issues": len(self.near_duplicate_sets),
             "average_near_duplicate_score": self.issues[self.issue_score_key].mean(),
             "near_duplicate_sets": self.near_duplicate_sets,
             "radius": self.radius,
@@ -161,13 +185,3 @@ class NearDuplicateIssueManager(IssueManager):
             threshold = self.threshold
             radius = np.arctanh(self.threshold)
         return radius, threshold
-
-    @property
-    def verbosity_levels(self) -> Dict[int, Any]:
-        return {
-            0: {
-                "issue": ["near_duplicate_sets"]
-            },  # This is important information, but the output could be very large. Maybe it shouldn't be default
-            1: {"summary": ["num_near_duplicate_issues"]},
-            2: {"issue": ["nearest_neighbor", "distance_to_nearest_neighbor"]},
-        }

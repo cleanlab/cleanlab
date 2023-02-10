@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional
 
 import numpy as np
 import numpy.typing as npt
@@ -19,7 +19,25 @@ if TYPE_CHECKING:  # pragma: no cover
 class OutOfDistributionIssueManager(IssueManager):
     """Manages issues related to out-of-distribution examples."""
 
-    issue_name: str = "outlier"
+    description: ClassVar[
+        str
+    ] = """An outlier issue refers to examples that are very different
+        from the rest of the dataset (i.e. potentially out-of-distribution).
+
+        Training/evaluating ML models with such examples may have unexpected consequences.
+
+        Examples may be considered as outliers if they:
+            - Are drawn from different distributions than the rest of the dataset.
+            - Are rare or anomalous events with extreme values.
+            - Have measurement- or data-collection errors.
+            - etc.
+        """
+    issue_name: ClassVar[str] = "outlier"
+    verbosity_levels = {
+        0: {},
+        1: {"info": ["average_ood_score"], "issue": ["nearest_neighbor"]},
+        2: {"issue": ["distance_to_nearest_neighbor"]},
+    }
 
     def __init__(
         self,
@@ -71,7 +89,6 @@ class OutOfDistributionIssueManager(IssueManager):
     def collect_info(self) -> dict:
 
         issues_dict = {
-            "num_outlier_issues": sum(self.issues[f"is_{self.issue_name}_issue"]),
             "average_ood_score": self.issues[self.issue_score_key].mean(),
         }
         pred_probs_issues_dict: Dict[
@@ -89,6 +106,8 @@ class OutOfDistributionIssueManager(IssueManager):
             #   to avoid computing the (distance, id) pairs twice.
             feature_issues_dict.update(
                 {
+                    "metric": knn.metric,  # type: ignore[union-attr]
+                    "n_neighbors": knn.n_neighbors,  # type: ignore[union-attr]
                     "nearest_neighbor": nn_ids.tolist(),
                     "distance_to_nearest_neighbor": dists.tolist(),
                     # TODO Check scipy-dependency
@@ -118,11 +137,3 @@ class OutOfDistributionIssueManager(IssueManager):
         self._embeddings = features
         scores = self.ood.fit_score(features=self._embeddings)
         return scores
-
-    @property
-    def verbosity_levels(self) -> Dict[int, Any]:
-        return {
-            0: {},
-            1: {"info": ["num_outlier_issues"], "issue": ["nearest_neighbor"]},
-            2: {"issue": ["distance_to_nearest_neighbor"]},
-        }

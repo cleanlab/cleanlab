@@ -124,7 +124,7 @@ class TestOutOfDistributionIssueManager:
     @pytest.fixture
     def embeddings(self, lab):
         np.random.seed(SEED)
-        embeddings_array = 0.5 + 0.1 * np.random.rand(lab.get_info("data", "num_examples"), 2)
+        embeddings_array = 0.5 + 0.1 * np.random.rand(lab.get_info("data")["num_examples"], 2)
         embeddings_array[4, :] = -1
         return {"embedding": embeddings_array}
 
@@ -173,7 +173,7 @@ class TestOutOfDistributionIssueManager:
             info.get("confident_thresholds", None) == [0.1, 0.825, 0.575]
         ), "Should have confident_joint info"
 
-    def test_report(self, issue_manager, monkeypatch):
+    def test_report(self, issue_manager):
 
         pred_probs = np.array(
             [
@@ -185,15 +185,24 @@ class TestOutOfDistributionIssueManager:
             ]
         )
         issue_manager.find_issues(pred_probs=pred_probs)
-        report = issue_manager.report()
+        report = issue_manager.report(
+            issues=issue_manager.issues,
+            summary=issue_manager.summary,
+            info=issue_manager.info,
+        )
         assert isinstance(report, str)
         assert (
-            "------------------------------------outlier-------------------------------------\n\n"
-            "Score: "
+            "------------------------------------------ outlier issues ------------------------------------------\n\n"
+            "About this issue"
         ) in report
 
-        report = issue_manager.report(verbosity=3)
-        assert "Info: " in report
+        report = issue_manager.report(
+            issues=issue_manager.issues,
+            summary=issue_manager.summary,
+            info=issue_manager.info,
+            verbosity=3,
+        )
+        assert "Additional Information: " in report
 
         # Mock some vector and matrix values in the info dict
         mock_info = issue_manager.info
@@ -208,22 +217,38 @@ class TestOutOfDistributionIssueManager:
         mock_info["dict"] = mock_dict
         mock_info["df"] = df
 
-        monkeypatch.setattr(issue_manager, "info", mock_info)
-
-        report = issue_manager.report(verbosity=2)
-        assert "Info: " in report
+        report = issue_manager.report(
+            issues=issue_manager.issues,
+            summary=issue_manager.summary,
+            info={**issue_manager.info, **mock_info},
+            verbosity=3,
+        )
+        assert "Additional Information: " in report
         assert "vector: [1, 2, 3, 4, '...']" in report
         assert f"matrix: array of shape {matrix.shape}\n[[ 0 " in report
         assert "list: [9, 8, 7, 6, '...']" in report
         assert 'dict:\n{\n    "a": 1,\n    "b": 2,\n    "c": 3\n}' in report
         assert "df:" in report
 
+        report = issue_manager.report(
+            issues=issue_manager.issues,
+            summary=issue_manager.summary,
+            info={**issue_manager.info, **mock_info},
+            verbosity=2,
+        )
+        assert "Additional Information: " in report
+        assert "vector: [1, 2, 3, 4, '...']" not in report
+        assert f"matrix: array of shape {matrix.shape}\n[[ 0 " not in report
+        assert "list: [9, 8, 7, 6, '...']" not in report
+        assert 'dict:\n{\n    "a": 1,\n    "b": 2,\n    "c": 3\n}' not in report
+        assert "df:" not in report
+
 
 class TestNearDuplicateIssueManager:
     @pytest.fixture
     def embeddings(self, lab):
         np.random.seed(SEED)
-        embeddings_array = 0.5 + 0.1 * np.random.rand(lab.get_info("data", "num_examples"), 2)
+        embeddings_array = 0.5 + 0.1 * np.random.rand(lab.get_info("data")["num_examples"], 2)
         embeddings_array[4, :] = (
             embeddings_array[3, :] + np.random.rand(embeddings_array.shape[1]) * 0.001
         )
@@ -276,15 +301,24 @@ class TestNearDuplicateIssueManager:
     def test_report(self, issue_manager, embeddings):
 
         issue_manager.find_issues(features=embeddings["embedding"])
-        report = issue_manager.report()
+        report = issue_manager.report(
+            issues=issue_manager.issues,
+            summary=issue_manager.summary,
+            info=issue_manager.info,
+        )
         assert isinstance(report, str)
         assert (
-            "---------------------------------near_duplicate---------------------------------\n\n"
-            "Score: "
+            "-------------------------------------- near_duplicate issues ---------------------------------------\n\n"
+            "About this issue"
         ) in report
 
-        report = issue_manager.report(verbosity=3)
-        assert "Info: " in report
+        report = issue_manager.report(
+            issues=issue_manager.issues,
+            summary=issue_manager.summary,
+            info=issue_manager.info,
+            verbosity=3,
+        )
+        assert "Additional Information: " in report
 
 
 def test_register_custom_issue_manager(monkeypatch):

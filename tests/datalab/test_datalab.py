@@ -17,7 +17,7 @@
 
 import os
 import pickle
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 from cleanlab.experimental.datalab.datalab import Datalab
 
 from sklearn.neighbors import NearestNeighbors
@@ -67,11 +67,11 @@ class TestDatalab:
 
     def test_get_info(self, lab):
         """Test that the method fetches the values from the info dict."""
-        num_classes = lab.get_info("data", "num_classes")
-        assert num_classes == 3
+        data_info = lab.get_info("data")
+        assert data_info["num_classes"] == 3
         lab.info["data"]["num_classes"] = 4
-        num_classes = lab.get_info("data", "num_classes")
-        assert num_classes == 4
+        data_info = lab.get_info("data")
+        assert data_info["num_classes"] == 4
 
     @pytest.mark.parametrize(
         "issue_types",
@@ -93,7 +93,7 @@ class TestDatalab:
                 assert f"{issue_type}_score" in columns
 
     def test_find_issues_with_custom_hyperparams(self, lab, pred_probs):
-        dataset_size = lab.get_info("data", "num_examples")
+        dataset_size = lab.get_info("data")["num_examples"]
         embedding_size = 2
         mock_embeddings = np.random.rand(dataset_size, embedding_size)
 
@@ -108,8 +108,10 @@ class TestDatalab:
             features=mock_embeddings,
             issue_types=issue_types,
         )
-        set_knn = lab.issue_managers["outlier"].ood.params["knn"]
-        assert set_knn == knn
+        metric = lab.info["outlier"]["metric"]
+        assert metric == "euclidean"
+        n_neighbors = lab.info["outlier"]["n_neighbors"]
+        assert n_neighbors == 3
 
     def test_validate_issue_types_dict(self, lab, monkeypatch):
         issue_types = {
@@ -309,13 +311,27 @@ class TestDatalab:
             "cleanlab.experimental.datalab.datalab._IssueManagerFactory", MockIssueManagerFactory
         )
 
+        assert lab.issues.empty
         lab.find_issues()
-        # We expect to have no issue managers in the Datalab instance.
-        assert len(lab.issue_managers) == 0
+        assert lab.issues.empty
 
-    def test_get_report(self, lab, monkeypatch):
+    @pytest.mark.parametrize("include_description", [True, False])
+    def test_get_report(self, lab, include_description, monkeypatch):
         """Test that the report method works. Assuming we have two issue managers, each should add
         their section to the report."""
+
+        mock_issue_manager = Mock()
+        mock_issue_manager.issue_name = "foo"
+        mock_issue_manager.report.return_value = "foo report"
+
+        class MockIssueManagerFactory:
+            @staticmethod
+            def from_str(*args, **kwargs):
+                return mock_issue_manager
+
+        monkeypatch.setattr(
+            "cleanlab.experimental.datalab.datalab._IssueManagerFactory", MockIssueManagerFactory
+        )
         mock_issues = pd.DataFrame(
             {
                 "is_foo_issue": [False, True, False, False, False],
@@ -331,25 +347,34 @@ class TestDatalab:
             }
         )
 
+        mock_info = {"foo": {"bar": "baz"}}
+
         monkeypatch.setattr(lab, "issue_summary", mock_issue_summary)
 
-        mock_issue_manager = Mock()
-        mock_issue_manager.name = "foo"
-        mock_issue_manager.report.return_value = "foo report"
         monkeypatch.setattr(
-            lab, "_get_managers", lambda *args, **kwargs: [mock_issue_manager, mock_issue_manager]
+            lab, "_add_issue_summary_to_report", lambda *args, **kwargs: "Here is a lab summary\n\n"
         )
+        monkeypatch.setattr(lab, "issues", mock_issues, raising=False)
+        monkeypatch.setattr(lab, "info", mock_info, raising=False)
 
-        report = lab._get_report(k=3, verbosity=0)
-        assert report == "foo report\n\nfoo report\n\n"
+        report = lab._get_report(k=3, verbosity=0, include_description=include_description)
+        expected_report = "\n\n".join(["Here is a lab summary", "foo report"])
+        assert report == expected_report
 
-    def test_get_managers(self, lab, monkeypatch):
-        """Test that the _get_managers method works."""
-        # Mock three managers
-        im1, im2, im3 = Mock(), Mock(), Mock()
-        im1.name, im2.name, im3.name = "foo", "bar", "baz"
-        mock_issue_managers = {"foo": im1, "bar": im2, "baz": im3}
-        monkeypatch.setattr(lab, "issue_managers", mock_issue_managers)
+    def test_report(self, lab, monkeypatch):
+        # lab.report simply wraps _get_report in a print statement
+        mock_get_report = Mock()
+        # Define a mock function that takes a verbosity argument and a k argument
+        # and returns a string
+        mock_get_report.side_effect = (
+            lambda verbosity, k, **kwargs: f"Report with verbosity={verbosity} and k={k}"
+        )
+        monkeypatch.setattr(lab, "_get_report", mock_get_report)
 
-        selected_managers = lab._get_managers(["foo", "baz"])
-        assert selected_managers == [im1, im3]
+        # Call report with no arguments, test that it prints the report
+        with patch("builtins.print") as mock_print:
+            lab.report()
+            mock_print.assert_called_once_with("Report with verbosity=0 and k=5")
+            mock_print.reset_mock()
+            lab.report(k=10, verbosity=3)
+            mock_print.assert_called_once_with("Report with verbosity=3 and k=10")
