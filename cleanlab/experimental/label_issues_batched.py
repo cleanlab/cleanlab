@@ -347,27 +347,36 @@ class LabelInspector:
             raise ValueError(
                 "Have not computed any confident_thresholds yet. Call `update_confident_thresholds()` first."
             )
-
-        for i, label in enumerate(labels):  # this loop is faster than numpy matrix operations
-            pred_probs_i = pred_probs[i, :]
-            # add margin for floating point comparison operations (to match original code):
-            adj_confident_thresholds = self.confident_thresholds - EPS
-            pred_gt_thresholds = pred_probs_i >= adj_confident_thresholds
-            max_ind = np.argmax(pred_probs_i * pred_gt_thresholds)
-            if not self.off_diagonal_calibrated:
-                if (pred_probs_i[max_ind] >= adj_confident_thresholds[max_ind]) & (
-                    max_ind != label
-                ):
-                    pred_class = np.argmax(pred_probs_i)
-                    pred_confidence = pred_probs_i[pred_class]
-                    self.prune_count += pred_class != label
-            else:  # calibrated
-                self.class_counts[label] += 1
-                if pred_probs_i[max_ind] >= adj_confident_thresholds[max_ind]:
-                    self.normalization[label] += 1
-                    self.prune_counts[label] += max_ind != label
-                    # & (pred_class != label)
-                    # This is not applied in num_label_issues(..., estimation_method="off_diagonal_custom"). Do we want to add it?
+        batch_size = len(labels)
+        pred_class = np.argmax(pred_probs, axis=1)
+        # for efficiency, this pred_class index is also used where older implementation instead used:
+        # max_ind = np.argmax(pred_probs * (pred_probs >= adj_confident_thresholds), axis=1)
+        pred_confidence = pred_probs[np.arange(batch_size), pred_class]
+        # add margin for floating point comparison operations:
+        adj_confident_thresholds = self.confident_thresholds - EPS
+        if not self.off_diagonal_calibrated:
+            prune_count_batch = np.sum(
+                (
+                    pred_probs[np.arange(batch_size), pred_class]
+                    >= adj_confident_thresholds[pred_class]
+                )
+                & (pred_class != labels)
+            )
+            self.prune_count += prune_count_batch
+        else:  # calibrated
+            self.class_counts += value_counts_fill_missing_classes(
+                labels, num_classes=self.num_class
+            )
+            to_increment = (
+                pred_probs[np.arange(batch_size), pred_class]
+                >= adj_confident_thresholds[pred_class]
+            )
+            for class_label in range(self.num_class):
+                labels_equal_to_class = labels == class_label
+                self.normalization[class_label] += np.sum(labels_equal_to_class & to_increment)
+                self.prune_counts[class_label] += np.sum(
+                    labels_equal_to_class & to_increment & (pred_class != labels)
+                )
 
 
 def _batch_check(labels: LabelLike, pred_probs: np.ndarray, num_class: int) -> np.ndarray:
