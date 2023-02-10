@@ -750,6 +750,29 @@ def test_num_label_issues_different_estimation_types():
     assert n3 != n2
 
 
+def test_find_label_issues_same_value():
+    f1 = filter.find_label_issues(
+        labels=data["labels"],
+        pred_probs=data["pred_probs"],
+        filter_by="confident_learning",
+    )
+
+    f2 = filter.find_label_issues(
+        labels=data["labels"],
+        pred_probs=data["pred_probs"],
+        filter_by="low_self_confidence",
+    )
+
+    f3 = filter.find_label_issues(
+        labels=data["labels"],
+        pred_probs=data["pred_probs"],
+        filter_by="low_normalized_margin",
+    )
+
+    assert np.sum(f1) == np.sum(f2)
+    assert np.sum(f2) == np.sum(f3)
+
+
 @pytest.mark.filterwarnings()
 def test_num_label_issues():
     cj_calibrated_off_diag_sum = data["cj"].sum() - data["cj"].trace()
