@@ -467,6 +467,11 @@ def find_label_issues_batched(
     -------
     issue_indices : np.ndarray
       Indices of examples with label issues, sorted by label quality score.
+    
+    Examples
+    --------
+    >>> batch_size = 10000  # for efficiency, set this to as large of a value as your memory can handle
+    >>> issues = find_label_issues_batched(labels_file="LABELS.npy", pred_probs_file="PREDPROBS.npy", batch_size=batch_size)
     """
     if labels_file is not None:
         if labels is not None:
