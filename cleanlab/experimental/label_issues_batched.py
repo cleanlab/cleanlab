@@ -26,7 +26,7 @@ With default settings, the results returned from this approach closely approxima
 To run this approach, either follow the examples script below,
 or use the ``find_label_issues_batched()`` convenience function defined in this module.
 
-The recommended usage demonstrated in the examples script involves two passes over your data: 
+The recommended usage demonstrated in the examples script involves two passes over your data:
 one pass to compute `confident_thresholds`, another to evaluate each label.
 To maximize efficiency, try to use the largest batch_size your memory allows.
 To reduce runtime further, you can run the first pass on a subset of your dataset
@@ -72,15 +72,27 @@ Examples
 """
 
 import numpy as np
-from typing import Optional, List
+from typing import Optional, List, Tuple, Any
 
 from cleanlab.count import get_confident_thresholds
 from cleanlab.rank import find_top_issues, _compute_label_quality_scores
 from cleanlab.typing import LabelLike
 from cleanlab.internal.util import value_counts_fill_missing_classes
 
+import platform
+import multiprocessing as mp
+
+try:
+    import psutil
+
+    PSUTIL_EXISTS = True
+except ImportError:  # pragma: no cover
+    PSUTIL_EXISTS = False
 
 EPS = 1e-6  # small number
+
+# global variable for multiproc on linux
+adj_confident_thresholds: np.ndarray
 
 
 class LabelInspector:
@@ -340,7 +352,15 @@ class LabelInspector:
 
         return scores
 
-    def _update_num_label_issues(self, labels: LabelLike, pred_probs: np.ndarray, **kwargs):
+    def _update_num_label_issues(
+        self,
+        labels: LabelLike,
+        pred_probs: np.ndarray,
+        n_jobs: Optional[int] = None,
+        thorough: Optional[bool] = False,
+        chunksize: Optional[int] = 1,
+        **kwargs,
+    ):
         """
         Update the estimate of num_label_issues stored in this class using a new batch of data.
         Kwargs are ignored here for now (included for forwards compatibility).
@@ -350,36 +370,112 @@ class LabelInspector:
             raise ValueError(
                 "Have not computed any confident_thresholds yet. Call `update_confident_thresholds()` first."
             )
-        batch_size = len(labels)
-        pred_class = np.argmax(pred_probs, axis=1)
-        # for efficiency, this pred_class index is also used where older implementation instead used:
-        # max_ind = np.argmax(pred_probs * (pred_probs >= adj_confident_thresholds), axis=1)
-        pred_confidence = pred_probs[np.arange(batch_size), pred_class]
-        # add margin for floating point comparison operations:
+
+        global adj_confident_thresholds
         adj_confident_thresholds = self.confident_thresholds - EPS
-        if not self.off_diagonal_calibrated:
-            prune_count_batch = np.sum(
-                (
-                    pred_probs[np.arange(batch_size), pred_class]
-                    >= adj_confident_thresholds[pred_class]
+        os_name = platform.system()
+        if os_name != "Linux" or self.off_diagonal_calibrated:
+            # multiprocessing only supporting fork, i.e. linux
+            # multiprocessing with calibrated not supported in this version
+            n_jobs = 1
+        if n_jobs == 1:
+            pred_class = np.argmax(pred_probs, axis=1)
+            batch_size = len(labels)
+            if thorough:
+                # calculating max_ind is expensive in single thread
+                # only do it if using thorough option
+                pred_gt_thresholds = pred_probs >= adj_confident_thresholds
+                max_ind = np.argmax(pred_probs * pred_gt_thresholds, axis=1)
+                if not self.off_diagonal_calibrated:
+                    mask = (max_ind != labels) & (pred_class != labels)
+                else:
+                    # calibrated
+                    # should we change to above?
+                    mask = pred_class != labels
+            else:
+                # for efficiency, use pred_class for max_ind
+                max_ind = pred_class
+                mask = pred_class != labels
+
+            if not self.off_diagonal_calibrated:
+                prune_count_batch = np.sum(
+                    (
+                        pred_probs[np.arange(batch_size), max_ind]
+                        >= adj_confident_thresholds[max_ind]
+                    )
+                    & mask
                 )
-                & (pred_class != labels)
-            )
+                self.prune_count += prune_count_batch
+            else:  # calibrated
+                self.class_counts += value_counts_fill_missing_classes(
+                    labels, num_classes=self.num_class
+                )
+                to_increment = (
+                    pred_probs[np.arange(batch_size), max_ind] >= adj_confident_thresholds[max_ind]
+                )
+                for class_label in range(self.num_class):
+                    labels_equal_to_class = labels == class_label
+                    self.normalization[class_label] += np.sum(labels_equal_to_class & to_increment)
+                    self.prune_counts[class_label] += np.sum(
+                        labels_equal_to_class & to_increment & mask
+                    )
+        else:
+            if n_jobs is None:
+                if PSUTIL_EXISTS:
+                    n_jobs = psutil.cpu_count(logical=False)  # physical cores
+                if not n_jobs:
+                    # switch to logical cores
+                    n_jobs = mp.cpu_count()
+                print(f"using n_jobs {n_jobs}")
+
+            if chunksize is None:
+                chunksize = len(labels) // n_jobs
+
+            labels_split = split_arr(np.asarray(labels), chunksize)
+            pred_probs_split = split_arr(pred_probs, chunksize)
+            if thorough:
+                use_thorough = np.ones(len(labels_split), dtype=bool)
+            else:
+                use_thorough = np.zeros(len(labels_split), dtype=bool)
+
+            with mp.Pool(n_jobs) as pool:
+                args = zip(labels_split, pred_probs_split, use_thorough)
+                prune_count_batch = np.sum(
+                    np.asarray(list(pool.imap_unordered(_compute_num_issues, args)))
+                )
             self.prune_count += prune_count_batch
-        else:  # calibrated
-            self.class_counts += value_counts_fill_missing_classes(
-                labels, num_classes=self.num_class
-            )
-            to_increment = (
-                pred_probs[np.arange(batch_size), pred_class]
-                >= adj_confident_thresholds[pred_class]
-            )
-            for class_label in range(self.num_class):
-                labels_equal_to_class = labels == class_label
-                self.normalization[class_label] += np.sum(labels_equal_to_class & to_increment)
-                self.prune_counts[class_label] += np.sum(
-                    labels_equal_to_class & to_increment & (pred_class != labels)
-                )
+
+
+def split_arr(arr: np.ndarray, chunksize: int) -> List[np.ndarray]:
+    """
+    Helper function to split np array into sizes of chunksize
+    """
+    return np.split(arr, np.arange(chunksize, arr.shape[0], chunksize), axis=0)
+
+
+def _compute_num_issues(arg: Tuple[Any, Any, Any]) -> int:
+    """
+    multiprocessing helper function for `_update_num_label_issues`
+    """
+    labels = arg[0]
+    pred_probs = arg[1]
+    thorough = arg[2]
+    pred_class = np.argmax(pred_probs, axis=-1)
+    batch_size = len(labels)
+    if thorough:
+        pred_gt_thresholds = pred_probs >= adj_confident_thresholds
+        max_ind = np.argmax(pred_probs * pred_gt_thresholds, axis=-1)
+        prune_count_batch = np.sum(
+            (pred_probs[np.arange(batch_size), max_ind] >= adj_confident_thresholds[max_ind])
+            & (max_ind != labels)
+            & (pred_class != labels)
+        )
+    else:
+        prune_count_batch = np.sum(
+            (pred_probs[np.arange(batch_size), pred_class] >= adj_confident_thresholds[pred_class])
+            & (pred_class != labels)
+        )
+    return prune_count_batch
 
 
 def _batch_check(labels: LabelLike, pred_probs: np.ndarray, num_class: int) -> np.ndarray:
