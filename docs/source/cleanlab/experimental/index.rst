@@ -11,6 +11,7 @@ experimental
    :show-inheritance:
 
 .. toctree::
+    label_issues_batched
     mnist_pytorch
     coteaching
     cifar_cnn
