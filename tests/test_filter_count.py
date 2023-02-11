@@ -919,8 +919,15 @@ def test_batched_label_issues():
     f4 = find_label_issues_batched(
         labels=data["labels"], pred_probs=data["pred_probs"], batch_size=len(data["labels"]) + 100
     )
+    f_single = find_label_issues_batched(
+        labels=data["labels"],
+        pred_probs=data["pred_probs"],
+        batch_size=len(data["labels"]),
+        n_jobs=1,
+    )
     assert np.all(f4 == f3)
     assert np.all(f4 == f2)
+    assert np.all(f_single == f4)
     assert len(f2) == len(f1)
     # check jaccard similarity:
     intersection = len(list(set(f1).intersection(set(f2))))
@@ -955,9 +962,17 @@ def test_batched_label_issues():
         batch_size=len(data["labels"]) + 100,
         **extra_args,
     )
+    f_single = find_label_issues_batched(
+        labels=data["labels"],
+        pred_probs=data["pred_probs"],
+        batch_size=len(data["labels"]),
+        n_jobs=1,
+        **extra_args,
+    )
     assert not np.array_equal(f5, f2)
     assert np.all(f7 == f5)
     assert np.all(f6 == f5)
+    assert np.ass(f_single == f5)
     assert np.abs(len(f5) - n1) < 2
     # Test batches loaded from file:
     labels_file = path.join(mkdtemp(), "labels.npy")

@@ -355,7 +355,9 @@ class LabelInspector:
         )
         class_counts = value_counts_fill_missing_classes(labels, num_classes=self.num_class)
         if update_num_issues:
-            self._update_num_label_issues(labels, pred_probs, n_jobs=n_jobs, **self.num_issue_kwargs)
+            self._update_num_label_issues(
+                labels, pred_probs, n_jobs=n_jobs, **self.num_issue_kwargs
+            )
         self.examples_processed_quality += batch_size
         if self.store_results:
             self.label_quality_scores += list(scores)
@@ -401,14 +403,17 @@ class LabelInspector:
                 else:
                     # calibrated
                     # should we change to above?
-                    mask = (pred_class != labels)
+                    mask = pred_class != labels
             else:
                 max_ind = pred_class
-                mask = (pred_class != labels)
+                mask = pred_class != labels
 
             if not self.off_diagonal_calibrated:
                 prune_count_batch = np.sum(
-                    (pred_probs[np.arange(batch_size), max_ind] >= adj_confident_thresholds[max_ind])
+                    (
+                        pred_probs[np.arange(batch_size), max_ind]
+                        >= adj_confident_thresholds[max_ind]
+                    )
                     & mask
                 )
                 self.prune_count += prune_count_batch
@@ -451,7 +456,9 @@ class LabelInspector:
             args = zip(inds, use_thorough)
             with mp.Pool(n_jobs) as pool:
                 if not self.off_diagonal_calibrated:
-                    prune_count_batch = np.sum(np.asarray(list(pool.imap_unordered(_compute_num_issues, args))))
+                    prune_count_batch = np.sum(
+                        np.asarray(list(pool.imap_unordered(_compute_num_issues, args)))
+                    )
                     self.prune_count += prune_count_batch
                 else:
                     results = list(pool.imap_unordered(_compute_num_issues_calibrated, args))
@@ -460,7 +467,6 @@ class LabelInspector:
                         self.class_counts[class_label] += 1
                         self.normalization[class_label] += result[1]
                         self.prune_counts[class_label] += result[2]
-
 
 
 def _compute_num_issues(arg: Tuple[int, bool]) -> int:
@@ -476,15 +482,15 @@ def _compute_num_issues(arg: Tuple[int, bool]) -> int:
         pred_gt_thresholds = pred_prob >= adj_confident_thresholds_shared
         max_ind = np.argmax(pred_prob * pred_gt_thresholds, axis=-1)
         prune_count_batch = (
-                (pred_prob[max_ind] >= adj_confident_thresholds_shared[max_ind])
-                & (max_ind != label)
-                & (pred_class != label)
-                )
+            (pred_prob[max_ind] >= adj_confident_thresholds_shared[max_ind])
+            & (max_ind != label)
+            & (pred_class != label)
+        )
     else:
         prune_count_batch = np.sum(
-                (pred_prob[pred_class] >= adj_confident_thresholds_shared[pred_class])
-                & (pred_class != label)
-                )
+            (pred_prob[pred_class] >= adj_confident_thresholds_shared[pred_class])
+            & (pred_class != label)
+        )
     return prune_count_batch
 
 
@@ -511,6 +517,7 @@ def _compute_num_issues_calibrated(arg: Tuple[int, bool]) -> Tuple[Any, int, int
         prune_count_batch = to_inc & (pred_class != label)
 
     return (label, normalization_batch, prune_count_batch)
+
 
 def _batch_check(labels: LabelLike, pred_probs: np.ndarray, num_class: int) -> np.ndarray:
     """
