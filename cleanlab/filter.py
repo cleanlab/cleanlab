@@ -284,12 +284,6 @@ def find_label_issues(
     # Boolean set to true if dataset is large
     big_dataset = K * len(labels) > 1e8
 
-    K = get_num_classes(
-        labels=labels, pred_probs=pred_probs, label_matrix=confident_joint, multi_label=multi_label
-    )
-    # Boolean set to true if dataset is large
-    big_dataset = K * len(labels) > 1e8
-
     # Set-up number of multiprocessing threads
     # On Windows/macOS, when multi_label is True, multiprocessing is much slower
     # even for faily large input arrays, so we default to n_jobs=1 in this case
