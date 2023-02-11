@@ -501,7 +501,6 @@ def find_label_issues_batched(
         raise ValueError(
             f"len(labels)={len(labels)} does not match len(pred_probs)={len(pred_probs)}. Perhaps an issue loading mmap numpy arrays from file."
         )
-
     lab = LabelInspector(
         num_class=pred_probs.shape[1],
         verbose=verbose,
@@ -509,6 +508,10 @@ def find_label_issues_batched(
         num_issue_kwargs=num_issue_kwargs,
     )
     n = len(labels)
+    if verbose:
+        from tqdm.auto import tqdm
+
+        pbar = tqdm(desc="number of examples processed for estimating thresholds", total=n)
     i = 0
     while i < n:
         end_index = i + batch_size
@@ -516,8 +519,13 @@ def find_label_issues_batched(
         pred_probs_batch = pred_probs[i:end_index, :]
         i = end_index
         lab.update_confident_thresholds(labels_batch, pred_probs_batch)
+        if verbose:
+            pbar.update(batch_size)
 
     # Next evaluate the quality of the labels (run this on full dataset you want to evaluate):
+    if verbose:
+        pbar.close()
+        pbar = tqdm(desc="number of examples processed for checking labels", total=n)
     i = 0
     while i < n:
         end_index = i + batch_size
@@ -525,5 +533,10 @@ def find_label_issues_batched(
         pred_probs_batch = pred_probs[i:end_index, :]
         i = end_index
         batch_results = lab.score_label_quality(labels_batch, pred_probs_batch)
+        if verbose:
+            pbar.update(batch_size)
+
+    if verbose:
+        pbar.close()
 
     return lab.get_label_issues()
