@@ -972,7 +972,7 @@ def test_batched_label_issues():
     assert not np.array_equal(f5, f2)
     assert np.all(f7 == f5)
     assert np.all(f6 == f5)
-    assert np.ass(f_single == f5)
+    assert np.all(f_single == f5)
     assert np.abs(len(f5) - n1) < 2
     # Test batches loaded from file:
     labels_file = path.join(mkdtemp(), "labels.npy")
