@@ -17,18 +17,18 @@
 """
 Implementation of :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>`
 that does not need much memory by operating in mini-batches.
-You can also use this to estimate label quality scores or the number of label issues
+You can also use this approach to estimate label quality scores or the number of label issues
 for big datasets with limited memory.
 
-With default settings, the results returned from this method closely approximate those returned from:
+With default settings, the results returned from this approach closely approximate those returned from:
 ``cleanlab.filter.find_label_issues(..., filter_by="low_self_confidence", return_indices_ranked_by="self_confidence")``
 
-To run this, either follow the examples script below,
+To run this approach, either follow the examples script below,
 or use the ``find_label_issues_batched()`` convenience function defined in this module.
 
 The recommended usage demonstrated in the examples script involves two passes over your data: 
 one pass to compute `confident_thresholds`, another to evaluate each label.
-To maximize efficiency, try to use the largest batch_sizes your memory allows.
+To maximize efficiency, try to use the largest batch_size your memory allows.
 To reduce runtime further, you can run the first pass on a subset of your dataset
 as long as it contains enough data from each class to estimate `confident_thresholds` accurately.
 
@@ -435,7 +435,7 @@ def find_label_issues_batched(
       This is loaded using: ``np.load(labels_file, mmap_mode="r")``
       so make sure this file was created via: ``np.save()`` or other compatible methods.
 
-    pred_probs_file: str
+    pred_probs_file: str, optional
       Path to .npy file where the entire `pred_probs` numpy array is stored on disk.
       This is loaded using: ``np.load(pred_probs_file, mmap_mode="r")``
       so make sure this file was created via: ``np.save()`` or other compatible methods.
@@ -491,9 +491,12 @@ def find_label_issues_batched(
             print(
                 f"mmap-loaded numpy arrays have: {len(pred_probs)} examples, {pred_probs.shape[1]} classes"
             )
+    if labels is None:
+        raise ValueError("must provide one of: `labels` or `labels_file`")
+    if pred_probs is None:
+        raise ValueError("must provide one of: `pred_probs` or `pred_probs_file`")
 
     assert isinstance(pred_probs, np.ndarray)
-    assert labels is not None
     if len(labels) != len(pred_probs):
         raise ValueError(
             f"len(labels)={len(labels)} does not match len(pred_probs)={len(pred_probs)}. Perhaps an issue loading mmap numpy arrays from file."
