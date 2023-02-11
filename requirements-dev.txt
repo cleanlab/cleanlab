@@ -13,3 +13,4 @@ torchvision
 skorch
 tensorflow
 psutil
+wget
