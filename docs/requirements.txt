@@ -4,7 +4,7 @@ sphinx-tabs==3.4.1
 nbsphinx==0.8.8
 autodocsumm==0.2.9
 furo==2022.06.21
-ipython==8.0.1
+ipython==8.10.0
 ipykernel==6.8.0
 ipywidgets==7.6.5
 sphinx-multiversion==0.2.4
