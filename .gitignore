@@ -119,5 +119,6 @@ venv.bak/
 /docs/source/notebooks/spoken_digits
 /docs/source/notebooks/pretrained_models
 
-# VS Code
+# Editor files
 .vscode/
+.idea/

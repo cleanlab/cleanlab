@@ -73,9 +73,10 @@ Cleanlab uses [mypy](https://mypy.readthedocs.io/en/stable/) typing. Type checki
 $ mypy cleanlab
 ```
 
-Note our CI adds a few additional flags to the `mypy` command it uses in the file:
+The above is just a simplified command for demonstration, do NOT run this for testing your own type annotations!
+Our CI adds a few additional flags to the `mypy` command it uses in the file:
 **.github/workflows/ci.yml**. 
-If you want to exactly match the `mypy` command that is executed in CI, copy these flags, and also ensure your version of `mypy` and related packages like `pandas-stubs` match the latest released versions (used in our CI).
+To exactly match the `mypy` command that is executed in CI, copy these flags, and also ensure your version of `mypy` and related packages like `pandas-stubs` match the latest released versions (used in our CI).
 
 ### Examples
 
@@ -99,11 +100,13 @@ examples/run_all_notebooks.sh
 
 ## How to style new code contributions
 
-cleanlab follows the [Black](https://black.readthedocs.io/) code style. This is
+cleanlab follows the [Black](https://black.readthedocs.io/) code style (see [pyproject.toml](pyproject.toml)). This is
 enforced by CI, so please format your code by invoking `black` before submitting a pull request.
 
 Generally aim to follow the [PEP-8 coding style](https://peps.python.org/pep-0008/). 
 Please do not use wildcard `import *` in any files, instead you should always import the specific functions that you need from a module.
+
+All cleanlab code should have a maximum line length of 100 characters.
 
 ### Pre-commit hook
 

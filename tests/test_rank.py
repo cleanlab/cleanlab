@@ -1,4 +1,4 @@
-# Copyright (C) 2017-2022  Cleanlab Inc.
+# Copyright (C) 2017-2023  Cleanlab Inc.
 # This file is part of cleanlab.
 #
 # cleanlab is free software: you can redistribute it and/or modify
@@ -153,7 +153,6 @@ def test_order_label_issues_using_scoring_func_ranking(scoring_method_func, adju
     # do not run the test below if the method does not support adjust_pred_probs
     # confidence_weighted_entropy scoring method does not support adjust_pred_probs
     if not (adjust_pred_probs == True and method == "confidence_weighted_entropy"):
-
         indices = np.arange(len(data["label_errors_mask"]))[
             data["label_errors_mask"]
         ]  # indices of label issues

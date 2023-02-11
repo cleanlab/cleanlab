@@ -1,4 +1,4 @@
-# Copyright (C) 2017-2022  Cleanlab Inc.
+# Copyright (C) 2017-2023  Cleanlab Inc.
 # This file is part of cleanlab.
 #
 # cleanlab is free software: you can redistribute it and/or modify
@@ -18,8 +18,8 @@
 """
 Contains mathematical functions relating the latent terms,
 ``P(given_label)``, ``P(given_label | true_label)``, ``P(true_label | given_label)``, ``P(true_label)``, etc. together.
-For every function here, if the inputs are exact, the output is guaranteed to be exact. 
-Every function herein is the computational equivalent of a mathematical equation having a closed, exact form. 
+For every function here, if the inputs are exact, the output is guaranteed to be exact.
+Every function herein is the computational equivalent of a mathematical equation having a closed, exact form.
 If the inputs are inexact, the error will of course propagate.
 Throughout `K` denotes the number of classes in the classification task.
 """
@@ -150,7 +150,7 @@ def compute_noise_matrix_from_inverse(ps, inverse_noise_matrix, *, py=None) -> n
 
     Returns
     -------
-    noise_matrix : np.ndarray 
+    noise_matrix : np.ndarray
         Array of shape ``(K, K)``, where `K` = number of classes, whose columns sum to 1.
         A conditional probability matrix of the form ``P(label=k_s|true_label=k_y)`` containing
         the fraction of examples in every class, labeled as every other class.

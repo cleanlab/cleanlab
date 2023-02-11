@@ -11,8 +11,7 @@ experimental
    :show-inheritance:
 
 .. toctree::
-    keras
-    fasttext
+    label_issues_batched
     mnist_pytorch
     coteaching
     cifar_cnn

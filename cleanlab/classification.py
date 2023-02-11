@@ -1,4 +1,4 @@
-# Copyright (C) 2017-2022  Cleanlab Inc.
+# Copyright (C) 2017-2023  Cleanlab Inc.
 # This file is part of cleanlab.
 #
 # cleanlab is free software: you can redistribute it and/or modify
@@ -229,7 +229,6 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         label_quality_scores_kwargs={},
         verbose=False,
     ):
-
         if clf is None:
             # Use logistic regression if no classifier is provided.
             clf = LogReg(multi_class="auto", solver="lbfgs")
@@ -645,7 +644,6 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         """
 
         if hasattr(self.clf, "score"):
-
             # Check if sample_weight in clf.score()
             if "sample_weight" in inspect.getfullargspec(self.clf.score).args:
                 return self.clf.score(X, y, sample_weight=sample_weight)

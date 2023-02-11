@@ -1,7 +1,7 @@
 fasttext
 ========
 
-.. automodule:: cleanlab.experimental.fasttext
+.. automodule:: cleanlab.models.fasttext
    :autosummary:
    :members:
    :undoc-members:

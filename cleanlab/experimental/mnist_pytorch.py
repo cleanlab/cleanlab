@@ -1,4 +1,4 @@
-# Copyright (C) 2017-2022  Cleanlab Inc.
+# Copyright (C) 2017-2023  Cleanlab Inc.
 # This file is part of cleanlab.
 #
 # cleanlab is free software: you can redistribute it and/or modify
@@ -311,7 +311,6 @@ class CNN(BaseEstimator):  # Inherits sklearn classifier
 
         # Train for self.epochs epochs
         for epoch in range(1, self.epochs + 1):
-
             # Enable dropout and batch norm layers
             self.model.train()
             for batch_idx, (data, target) in enumerate(train_loader):

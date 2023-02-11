@@ -1,4 +1,4 @@
-# Copyright (C) 2017-2022  Cleanlab Inc.
+# Copyright (C) 2017-2023  Cleanlab Inc.
 # This file is part of cleanlab.
 #
 # cleanlab is free software: you can redistribute it and/or modify
@@ -55,7 +55,8 @@ class OutOfDistribution:
              You can also pass in a subclass of ``sklearn.neighbors.NearestNeighbors`` which allows you to use faster
              approximate neighbor libraries as long as you wrap them behind the same sklearn API.
              If you specify ``knn`` here, there is no need to later call ``fit()`` before calling ``score()``.
-             If ``knn = None``, then by default: ``knn = sklearn.neighbors.NearestNeighbors(n_neighbors=k, metric="cosine").fit(features)``
+             If ``knn = None``, then by default: ``knn = sklearn.neighbors.NearestNeighbors(n_neighbors=k, metric=dist_metric).fit(features)``
+             where ``dist_metric == "cosine"`` if ``dim(features) > 3`` or ``dist_metric == "euclidean"`` otherwise.
              See: https://scikit-learn.org/stable/modules/neighbors.html
        *  k : int, default=None
              Optional number of neighbors to use when calculating outlier score (average distance to neighbors).
@@ -92,7 +93,7 @@ class OutOfDistribution:
 
     OUTLIER_PARAMS = {"k", "t", "knn"}
     OOD_PARAMS = {"confident_thresholds", "adjust_pred_probs", "method"}
-    DEFAULT_PARAM_DICT: Dict[Union[str, int, None], Union[str, int, None, np.ndarray]] = {
+    DEFAULT_PARAM_DICT: Dict[str, Union[str, int, None, np.ndarray]] = {
         "k": None,  # ood features param
         "t": 1,  # ood features param
         "knn": None,  # ood features param
@@ -101,9 +102,11 @@ class OutOfDistribution:
         "confident_thresholds": None,  # ood pred_probs param
     }
 
-    def __init__(self, params: dict = {}):
+    def __init__(self, params: Optional[dict] = None) -> None:
         self._assert_valid_params(params, self.DEFAULT_PARAM_DICT)
         self.params = self.DEFAULT_PARAM_DICT
+        if params is None:
+            params = {}
         self.params = {**self.params, **params}
 
     def fit_score(
@@ -279,7 +282,7 @@ class OutOfDistribution:
         """
         Helper method to check passed in params valid and get list of parameters in param that are not in param_keys.
         """
-        if len(params) > 0:
+        if params is not None:
             wrong_params = list(set(params.keys()).difference(set(param_keys)))
             if len(wrong_params) > 0:
                 raise ValueError(
@@ -411,8 +414,15 @@ def _get_ood_features_scores(
             raise ValueError(
                 f"Number of nearest neighbors k={k} cannot exceed the number of examples N={len(features)} passed into the estimator (knn)."
             )
-        knn = NearestNeighbors(n_neighbors=k, metric="cosine").fit(features)
+
+        if features.shape[1] > 3:  # use euclidean distance for lower dimensional spaces
+            metric = "cosine"
+        else:
+            metric = "euclidean"
+
+        knn = NearestNeighbors(n_neighbors=k, metric=metric).fit(features)
         features = None  # features should be None in knn.kneighbors(features) to avoid counting duplicate data points
+
     elif k is None:
         k = knn.n_neighbors
 

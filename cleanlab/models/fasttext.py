@@ -1,4 +1,4 @@
-# Copyright (C) 2017-2022  Cleanlab Inc.
+# Copyright (C) 2017-2023  Cleanlab Inc.
 # This file is part of cleanlab.
 #
 # cleanlab is free software: you can redistribute it and/or modify
@@ -151,7 +151,7 @@ class FastTextClassifier(BaseEstimator):  # Inherits sklearn base classifier
             masked_fn = "fastTextClf_" + str(int(time.time())) + ".txt"
             open(masked_fn, "w").close()
             # Read in training data one line at a time
-            with open(self.train_data_fn, "rU") as rf:
+            with open(self.train_data_fn, "r") as rf:
                 idx = 0
                 data_idx = data_indices.pop()
                 for line in rf:
