@@ -190,6 +190,7 @@ class LabelInspector:
         elif n_jobs is not None:
             self.n_jobs = n_jobs
         else:
+            self.n_jobs = None
             if PSUTIL_EXISTS:
                 self.n_jobs = psutil.cpu_count(logical=False)  # physical cores
             if not self.n_jobs:
