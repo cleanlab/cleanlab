@@ -123,6 +123,10 @@ class LabelInspector:
     verbose : bool, optional
       Whether to suppress print statements or not.
 
+    n_jobs: int, optional
+      Number of processes for multiprocessing. Only used on Linux.
+      If `n_jobs=None`, will use either the number of: physical cores if psutil is installed, or logical cores otherwise.
+
     quality_score_kwargs : dict, optional
       Keyword arguments to pass into :py:func:`rank.get_label_quality_scores <cleanlab.rank.get_label_quality_scores>`.
 
@@ -140,6 +144,7 @@ class LabelInspector:
         verbose: bool = True,
         quality_score_kwargs: Optional[dict] = None,
         num_issue_kwargs: Optional[dict] = None,
+        n_jobs: Optional[int] = None,
     ):
         if quality_score_kwargs is None:
             quality_score_kwargs = {}
@@ -174,6 +179,26 @@ class LabelInspector:
             0  # number of examples seen so far for estimating thresholds
         )
         self.examples_processed_quality = 0  # number of examples seen so far for estimating label quality and number of label issues
+        # Determine number of cores for multiprocessing:
+        os_name = platform.system()
+        if os_name != "Linux":
+            self.n_jobs = 1
+            if n_jobs is not None and n_jobs != 1 and self.verbose:
+                print(
+                    "n_jobs is overridden to 1 because multiprocessing is only supported for Linux."
+                )
+        elif n_jobs is not None:
+            self.n_jobs = n_jobs
+        else:
+            if PSUTIL_EXISTS:
+                self.n_jobs = psutil.cpu_count(logical=False)  # physical cores
+            if not self.n_jobs:
+                # switch to logical cores
+                self.n_jobs = mp.cpu_count()
+                if self.verbose:
+                    print(
+                        f"Multiprocessing will default to using the number of logical cores ({self.n_jobs}). To default to number of physical cores: pip install psutil"
+                    )
 
     def get_confident_thresholds(self, silent: bool = False) -> np.ndarray:
         """
@@ -318,7 +343,6 @@ class LabelInspector:
         pred_probs: np.ndarray,
         *,
         update_num_issues: bool = True,
-        n_jobs: Optional[int] = None,
     ) -> np.ndarray:
         """
         Scores the label quality of each example in the provided batch of data,
@@ -337,9 +361,6 @@ class LabelInspector:
           Whether or not to update the number of label issues or only compute label quality scores.
           For lower runtimes, set this to ``False`` if you only want to score label quality and not find label issues.
 
-        n_jobs: int, optional
-          Number of processes for multiprocessing. Only used on Linux. If `n_jobs=None`, the number of physical cores will be used.
-
         Returns
         -------
         label_quality_scores : np.ndarray
@@ -355,9 +376,7 @@ class LabelInspector:
         )
         class_counts = value_counts_fill_missing_classes(labels, num_classes=self.num_class)
         if update_num_issues:
-            self._update_num_label_issues(
-                labels, pred_probs, n_jobs=n_jobs, **self.num_issue_kwargs
-            )
+            self._update_num_label_issues(labels, pred_probs, **self.num_issue_kwargs)
         self.examples_processed_quality += batch_size
         if self.store_results:
             self.label_quality_scores += list(scores)
@@ -368,7 +387,6 @@ class LabelInspector:
         self,
         labels: LabelLike,
         pred_probs: np.ndarray,
-        n_jobs: Optional[int] = None,
         **kwargs,
     ):
         """
@@ -387,10 +405,7 @@ class LabelInspector:
                 "Have not computed any confident_thresholds yet. Call `update_confident_thresholds()` first."
             )
 
-        os_name = platform.system()
-        if os_name != "Linux":
-            n_jobs = 1
-        if n_jobs == 1:
+        if self.n_jobs == 1:
             adj_confident_thresholds = self.confident_thresholds - EPS
             pred_class = np.argmax(pred_probs, axis=1)
             batch_size = len(labels)
@@ -434,14 +449,7 @@ class LabelInspector:
                         # & (pred_class != labels)
                         # This is not applied in num_label_issues(..., estimation_method="off_diagonal_custom"). Do we want to add it?
                     )
-        else:
-            if n_jobs is None:
-                if PSUTIL_EXISTS:
-                    n_jobs = psutil.cpu_count(logical=False)  # physical cores
-                if not n_jobs:
-                    # switch to logical cores
-                    n_jobs = mp.cpu_count()
-
+        else:  # multiprocessing implementation
             global adj_confident_thresholds_shared
             adj_confident_thresholds_shared = self.confident_thresholds - EPS
 
@@ -454,7 +462,7 @@ class LabelInspector:
                 use_thorough = np.zeros(len(labels_shared), dtype=bool)
             inds = np.arange(len(labels_shared))
             args = zip(inds, use_thorough)
-            with mp.Pool(n_jobs) as pool:
+            with mp.Pool(self.n_jobs) as pool:
                 if not self.off_diagonal_calibrated:
                     prune_count_batch = np.sum(
                         np.asarray(list(pool.imap_unordered(_compute_num_issues, args)))
@@ -591,7 +599,8 @@ def find_label_issues_batched(
       To maximize efficiency, try to use the largest `batch_size` your memory allows.
 
     n_jobs: int, optional
-      Number of processes for multiprocessing. Only used on Linux. If `n_jobs=None`, the number of physical cores will be used.
+      Number of processes for multiprocessing. Only used on Linux.
+      If `n_jobs=None`, will use either the number of: physical cores if psutil is installed, or logical cores otherwise.
 
     verbose : bool, optional
       Whether to suppress print statements or not.
@@ -650,6 +659,7 @@ def find_label_issues_batched(
     lab = LabelInspector(
         num_class=pred_probs.shape[1],
         verbose=verbose,
+        n_jobs=n_jobs,
         quality_score_kwargs=quality_score_kwargs,
         num_issue_kwargs=num_issue_kwargs,
     )
@@ -678,7 +688,7 @@ def find_label_issues_batched(
         labels_batch = labels[i:end_index]
         pred_probs_batch = pred_probs[i:end_index, :]
         i = end_index
-        _ = lab.score_label_quality(labels_batch, pred_probs_batch, n_jobs=n_jobs)
+        _ = lab.score_label_quality(labels_batch, pred_probs_batch)
         if verbose:
             pbar.update(batch_size)
 
