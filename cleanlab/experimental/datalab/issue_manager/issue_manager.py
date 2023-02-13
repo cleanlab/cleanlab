@@ -23,6 +23,12 @@ class IssueManagerMeta(ABCMeta):
 
     issue_name: ClassVar[str]
     issue_score_key: ClassVar[str]
+    verbosity_levels: ClassVar[Dict[int, Dict[str, List[str]]]] = {
+        0: {},
+        1: {},
+        2: {},
+        3: {},
+    }
 
     def __new__(
         meta: Type[TM],
@@ -32,6 +38,21 @@ class IssueManagerMeta(ABCMeta):
     ) -> TM:  # Classes that inherit from ABC don't need to be modified
         if ABC in bases:
             return super().__new__(meta, name, bases, class_dict)
+
+        # Ensure that the verbosity levels don't have keys other than those in ["issue", "info"]
+        verbosity_levels = class_dict.get("verbosity_levels", meta.verbosity_levels)
+        for level in verbosity_levels.values():
+            if not isinstance(level, dict):
+                raise ValueError(
+                    f"Verbosity levels must be dictionaries. "
+                    f"Got {level} in {name}.verbosity_levels"
+                )
+            for key in level.keys():
+                if key not in ["issue", "info"]:
+                    raise ValueError(
+                        f"Verbosity levels can only have keys 'issue' and 'info'. "
+                        f"Got {key} in {name}.verbosity_levels"
+                    )
 
         # Concrete classes need to have an issue_name attribute
         if "issue_name" not in class_dict:
