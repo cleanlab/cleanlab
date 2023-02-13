@@ -128,7 +128,7 @@ class IssueManager(ABC, metaclass=IssueManagerMeta):
     ... }
     """
 
-    def __init__(self, datalab: Datalab):
+    def __init__(self, datalab: Datalab, **_):
         self.datalab = datalab
         self.info: Dict[str, Any] = {}
         self.issues: pd.DataFrame = pd.DataFrame()
