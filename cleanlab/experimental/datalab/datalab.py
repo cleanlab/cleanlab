@@ -226,7 +226,17 @@ class Datalab:
         # Show the info (get_info) with some verbosity level
         #   E.g. for label issues, only show the confident joint computed with the health_summary
         report_str = ""
-        issue_type_sorted = self.issue_summary.sort_values(by="score", ascending=True)
+        issue_summary = self.issue_summary.copy()
+        issue_type_names = issue_summary["issue_type"].tolist()
+        issue_type_counts = []
+        for issue_type_name in issue_type_names:
+            issues = self.get_issues(issue_name=issue_type_name)
+            is_issue_col = [col for col in issues.columns if col.startswith("is_")][0]
+            issue_type_counts.append(issues[is_issue_col].sum())
+        # Rank issue_summary by the number of issues in issue_type_counts
+        issue_summary["num_issues"] = issue_type_counts
+        # issue_type_sorted = self.issue_summary.sort_values(by="score", ascending=True)
+        issue_type_sorted = issue_summary.sort_values(by="num_issues", ascending=False)
         report_str += self._add_issue_summary_to_report(summary=issue_type_sorted)
         issue_type_sorted_keys: List[str] = issue_type_sorted["issue_type"].tolist()
         issue_manager_reports = []
