@@ -180,6 +180,7 @@ class LabelInspector:
         )
         self.examples_processed_quality = 0  # number of examples seen so far for estimating label quality and number of label issues
         # Determine number of cores for multiprocessing:
+        self.n_jobs: Optional[int] = None
         os_name = platform.system()
         if os_name != "Linux":
             self.n_jobs = 1
@@ -190,7 +191,6 @@ class LabelInspector:
         elif n_jobs is not None:
             self.n_jobs = n_jobs
         else:
-            self.n_jobs = None
             if PSUTIL_EXISTS:
                 self.n_jobs = psutil.cpu_count(logical=False)  # physical cores
             if not self.n_jobs:
