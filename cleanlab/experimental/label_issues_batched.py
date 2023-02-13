@@ -26,7 +26,7 @@ With default settings, the results returned from this approach closely approxima
 To run this approach, either follow the examples script below,
 or use the ``find_label_issues_batched()`` convenience function defined in this module.
 
-The recommended usage demonstrated in the examples script involves two passes over your data: 
+The recommended usage demonstrated in the examples script involves two passes over your data:
 one pass to compute `confident_thresholds`, another to evaluate each label.
 To maximize efficiency, try to use the largest batch_size your memory allows.
 To reduce runtime further, you can run the first pass on a subset of your dataset
@@ -72,15 +72,29 @@ Examples
 """
 
 import numpy as np
-from typing import Optional, List
+from typing import Optional, List, Tuple, Any
 
 from cleanlab.count import get_confident_thresholds
 from cleanlab.rank import find_top_issues, _compute_label_quality_scores
 from cleanlab.typing import LabelLike
 from cleanlab.internal.util import value_counts_fill_missing_classes
 
+import platform
+import multiprocessing as mp
+
+try:
+    import psutil
+
+    PSUTIL_EXISTS = True
+except ImportError:  # pragma: no cover
+    PSUTIL_EXISTS = False
 
 EPS = 1e-6  # small number
+
+# global variable for multiproc on linux
+adj_confident_thresholds_shared: np.ndarray
+labels_shared: LabelLike
+pred_probs_shared: np.ndarray
 
 
 class LabelInspector:
@@ -109,6 +123,10 @@ class LabelInspector:
     verbose : bool, optional
       Whether to suppress print statements or not.
 
+    n_jobs: int, optional
+      Number of processes for multiprocessing. Only used on Linux.
+      If `n_jobs=None`, will use either the number of: physical cores if psutil is installed, or logical cores otherwise.
+
     quality_score_kwargs : dict, optional
       Keyword arguments to pass into :py:func:`rank.get_label_quality_scores <cleanlab.rank.get_label_quality_scores>`.
 
@@ -126,6 +144,7 @@ class LabelInspector:
         verbose: bool = True,
         quality_score_kwargs: Optional[dict] = None,
         num_issue_kwargs: Optional[dict] = None,
+        n_jobs: Optional[int] = None,
     ):
         if quality_score_kwargs is None:
             quality_score_kwargs = {}
@@ -160,6 +179,26 @@ class LabelInspector:
             0  # number of examples seen so far for estimating thresholds
         )
         self.examples_processed_quality = 0  # number of examples seen so far for estimating label quality and number of label issues
+        # Determine number of cores for multiprocessing:
+        os_name = platform.system()
+        if os_name != "Linux":
+            self.n_jobs = 1
+            if n_jobs is not None and n_jobs != 1 and self.verbose:
+                print(
+                    "n_jobs is overridden to 1 because multiprocessing is only supported for Linux."
+                )
+        elif n_jobs is not None:
+            self.n_jobs = n_jobs
+        else:
+            if PSUTIL_EXISTS:
+                self.n_jobs = psutil.cpu_count(logical=False)  # physical cores
+            if not self.n_jobs:
+                # switch to logical cores
+                self.n_jobs = mp.cpu_count()
+                if self.verbose:
+                    print(
+                        f"Multiprocessing will default to using the number of logical cores ({self.n_jobs}). To default to number of physical cores: pip install psutil"
+                    )
 
     def get_confident_thresholds(self, silent: bool = False) -> np.ndarray:
         """
@@ -299,7 +338,11 @@ class LabelInspector:
         self.examples_processed_thresh += batch_size
 
     def score_label_quality(
-        self, labels: LabelLike, pred_probs: np.ndarray, *, update_num_issues: bool = True
+        self,
+        labels: LabelLike,
+        pred_probs: np.ndarray,
+        *,
+        update_num_issues: bool = True,
     ) -> np.ndarray:
         """
         Scores the label quality of each example in the provided batch of data,
@@ -340,46 +383,148 @@ class LabelInspector:
 
         return scores
 
-    def _update_num_label_issues(self, labels: LabelLike, pred_probs: np.ndarray, **kwargs):
+    def _update_num_label_issues(
+        self,
+        labels: LabelLike,
+        pred_probs: np.ndarray,
+        **kwargs,
+    ):
         """
         Update the estimate of num_label_issues stored in this class using a new batch of data.
         Kwargs are ignored here for now (included for forwards compatibility).
         Instead of being specified here, `estimation_method` should be declared when this class is initialized.
         """
+
+        # whether to match the output of count.num_label_issues exactly
+        # default is False, which gives significant speedup on large batches
+        # and empirically matches num_label_issues even on input sizes of
+        # 1M x 10k
+        thorough = False
         if self.examples_processed_thresh < 1:
             raise ValueError(
                 "Have not computed any confident_thresholds yet. Call `update_confident_thresholds()` first."
             )
-        batch_size = len(labels)
-        pred_class = np.argmax(pred_probs, axis=1)
-        # for efficiency, this pred_class index is also used where older implementation instead used:
-        # max_ind = np.argmax(pred_probs * (pred_probs >= adj_confident_thresholds), axis=1)
-        pred_confidence = pred_probs[np.arange(batch_size), pred_class]
-        # add margin for floating point comparison operations:
-        adj_confident_thresholds = self.confident_thresholds - EPS
-        if not self.off_diagonal_calibrated:
-            prune_count_batch = np.sum(
-                (
-                    pred_probs[np.arange(batch_size), pred_class]
-                    >= adj_confident_thresholds[pred_class]
+
+        if self.n_jobs == 1:
+            adj_confident_thresholds = self.confident_thresholds - EPS
+            pred_class = np.argmax(pred_probs, axis=1)
+            batch_size = len(labels)
+            if thorough:
+                # add margin for floating point comparison operations:
+                pred_gt_thresholds = pred_probs >= adj_confident_thresholds
+                max_ind = np.argmax(pred_probs * pred_gt_thresholds, axis=1)
+                if not self.off_diagonal_calibrated:
+                    mask = (max_ind != labels) & (pred_class != labels)
+                else:
+                    # calibrated
+                    # should we change to above?
+                    mask = pred_class != labels
+            else:
+                max_ind = pred_class
+                mask = pred_class != labels
+
+            if not self.off_diagonal_calibrated:
+                prune_count_batch = np.sum(
+                    (
+                        pred_probs[np.arange(batch_size), max_ind]
+                        >= adj_confident_thresholds[max_ind]
+                    )
+                    & mask
                 )
-                & (pred_class != labels)
-            )
-            self.prune_count += prune_count_batch
-        else:  # calibrated
-            self.class_counts += value_counts_fill_missing_classes(
-                labels, num_classes=self.num_class
-            )
-            to_increment = (
-                pred_probs[np.arange(batch_size), pred_class]
-                >= adj_confident_thresholds[pred_class]
-            )
-            for class_label in range(self.num_class):
-                labels_equal_to_class = labels == class_label
-                self.normalization[class_label] += np.sum(labels_equal_to_class & to_increment)
-                self.prune_counts[class_label] += np.sum(
-                    labels_equal_to_class & to_increment & (pred_class != labels)
+                self.prune_count += prune_count_batch
+            else:  # calibrated
+                self.class_counts += value_counts_fill_missing_classes(
+                    labels, num_classes=self.num_class
                 )
+                to_increment = (
+                    pred_probs[np.arange(batch_size), max_ind] >= adj_confident_thresholds[max_ind]
+                )
+                for class_label in range(self.num_class):
+                    labels_equal_to_class = labels == class_label
+                    self.normalization[class_label] += np.sum(labels_equal_to_class & to_increment)
+                    self.prune_counts[class_label] += np.sum(
+                        labels_equal_to_class
+                        & to_increment
+                        & (max_ind != labels)
+                        # & (pred_class != labels)
+                        # This is not applied in num_label_issues(..., estimation_method="off_diagonal_custom"). Do we want to add it?
+                    )
+        else:  # multiprocessing implementation
+            global adj_confident_thresholds_shared
+            adj_confident_thresholds_shared = self.confident_thresholds - EPS
+
+            global labels_shared, pred_probs_shared
+            labels_shared = labels
+            pred_probs_shared = pred_probs
+            if thorough:
+                use_thorough = np.ones(len(labels_shared), dtype=bool)
+            else:
+                use_thorough = np.zeros(len(labels_shared), dtype=bool)
+            inds = np.arange(len(labels_shared))
+            args = zip(inds, use_thorough)
+            with mp.Pool(self.n_jobs) as pool:
+                if not self.off_diagonal_calibrated:
+                    prune_count_batch = np.sum(
+                        np.asarray(list(pool.imap_unordered(_compute_num_issues, args)))
+                    )
+                    self.prune_count += prune_count_batch
+                else:
+                    results = list(pool.imap_unordered(_compute_num_issues_calibrated, args))
+                    for result in results:
+                        class_label = result[0]
+                        self.class_counts[class_label] += 1
+                        self.normalization[class_label] += result[1]
+                        self.prune_counts[class_label] += result[2]
+
+
+def _compute_num_issues(arg: Tuple[int, bool]) -> int:
+    """
+    Helper function for `_update_num_label_issues` multiprocessing without calibration
+    """
+    ind = arg[0]
+    thorough = arg[1]
+    label = labels_shared[ind]
+    pred_prob = pred_probs_shared[ind, :]
+    pred_class = np.argmax(pred_prob, axis=-1)
+    if thorough:
+        pred_gt_thresholds = pred_prob >= adj_confident_thresholds_shared
+        max_ind = np.argmax(pred_prob * pred_gt_thresholds, axis=-1)
+        prune_count_batch = (
+            (pred_prob[max_ind] >= adj_confident_thresholds_shared[max_ind])
+            & (max_ind != label)
+            & (pred_class != label)
+        )
+    else:
+        prune_count_batch = np.sum(
+            (pred_prob[pred_class] >= adj_confident_thresholds_shared[pred_class])
+            & (pred_class != label)
+        )
+    return prune_count_batch
+
+
+def _compute_num_issues_calibrated(arg: Tuple[int, bool]) -> Tuple[Any, int, int]:
+    """
+    Helper function for `_update_num_label_issues` multiprocessing with calibration
+    """
+    ind = arg[0]
+    thorough = arg[1]
+    label = labels_shared[ind]
+    pred_prob = pred_probs_shared[ind, :]
+
+    pred_class = np.argmax(pred_prob, axis=-1)
+    if thorough:
+        pred_gt_thresholds = pred_prob >= adj_confident_thresholds_shared
+        max_ind = np.argmax(pred_prob * pred_gt_thresholds, axis=-1)
+        to_inc = pred_prob[max_ind] >= adj_confident_thresholds_shared[max_ind]
+
+        prune_count_batch = to_inc & (max_ind != label)
+        normalization_batch = to_inc
+    else:
+        to_inc = pred_prob[pred_class] >= adj_confident_thresholds_shared[pred_class]
+        normalization_batch = to_inc
+        prune_count_batch = to_inc & (pred_class != label)
+
+    return (label, normalization_batch, prune_count_batch)
 
 
 def _batch_check(labels: LabelLike, pred_probs: np.ndarray, num_class: int) -> np.ndarray:
@@ -410,6 +555,7 @@ def find_label_issues_batched(
     labels: Optional[LabelLike] = None,
     pred_probs: Optional[np.ndarray] = None,
     batch_size: int = 10000,
+    n_jobs: Optional[int] = None,
     verbose: bool = True,
     quality_score_kwargs: Optional[dict] = None,
     num_issue_kwargs: Optional[dict] = None,
@@ -451,6 +597,10 @@ def find_label_issues_batched(
     batch_size : int, optional
       Size of mini-batches to use for estimating the label issues.
       To maximize efficiency, try to use the largest `batch_size` your memory allows.
+
+    n_jobs: int, optional
+      Number of processes for multiprocessing. Only used on Linux.
+      If `n_jobs=None`, will use either the number of: physical cores if psutil is installed, or logical cores otherwise.
 
     verbose : bool, optional
       Whether to suppress print statements or not.
@@ -509,6 +659,7 @@ def find_label_issues_batched(
     lab = LabelInspector(
         num_class=pred_probs.shape[1],
         verbose=verbose,
+        n_jobs=n_jobs,
         quality_score_kwargs=quality_score_kwargs,
         num_issue_kwargs=num_issue_kwargs,
     )
@@ -537,7 +688,7 @@ def find_label_issues_batched(
         labels_batch = labels[i:end_index]
         pred_probs_batch = pred_probs[i:end_index, :]
         i = end_index
-        batch_results = lab.score_label_quality(labels_batch, pred_probs_batch)
+        _ = lab.score_label_quality(labels_batch, pred_probs_batch)
         if verbose:
             pbar.update(batch_size)
 
