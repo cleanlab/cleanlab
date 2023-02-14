@@ -37,6 +37,8 @@ if TYPE_CHECKING:  # pragma: no cover
 
     from cleanlab.experimental.datalab.issue_manager import IssueManager
 
+    DatasetLike = Union[Dataset, pd.DataFrame, Dict[str, Any], List[Dict[str, Any]], str]
+
 __all__ = ["Datalab"]
 
 
@@ -49,8 +51,16 @@ class Datalab:
 
     Parameters
     ----------
-    data :
-        A Hugging Face Dataset object.
+    data : Union[Dataset, pd.DataFrame, dict, list, str]
+        Dataset-like object that can be converted to a Hugging Face Dataset object.
+
+        It should contain the labels for all examples, identified by a
+        `label_name` column in the Dataset object.
+
+        See also
+        --------
+        :py:class:`Data <cleanlab.experimental.datalab.data.Data>`: Internal class that represents the dataset.
+
 
     label_name :
         The name of the label column in the dataset.
@@ -65,7 +75,7 @@ class Datalab:
 
     def __init__(
         self,
-        data: Dataset,
+        data: "DatasetLike",
         label_name: Union[str, List[str]],
     ) -> None:
         self._data = Data(data, label_name)  # TODO: Set extracted class instance to self.data
@@ -101,7 +111,19 @@ class Datalab:
 
     @property
     def issue_summary(self) -> pd.DataFrame:
-        """Summary of issues found in the dataset."""
+        """Summary of issues found in the dataset.
+
+        Example
+        -------
+
+        If checks for "label" and "outlier" issues were run,
+        then the issue summary will look something like this:
+
+        >>> datalab.issue_summary
+        issue_type  score
+        outlier     0.123
+        label       0.456
+        """
         return self.data_issues.issue_summary
 
     @issue_summary.setter
@@ -110,7 +132,28 @@ class Datalab:
 
     @property
     def info(self) -> Dict[str, Dict[str, Any]]:
-        """Information and statistics about the dataset issues found."""
+        """Information and statistics about the dataset issues found.
+
+        Example
+        -------
+
+        If checks for "label" and "outlier" issues were run,
+        then the info will look something like this:
+
+        >>> datalab.info
+        {
+            "label": {
+                "given_labels": [0, 1, 0, 1, 1, 1, 1, 1, 0, 1, ...],
+                "predicted_label": [0, 0, 0, 1, 0, 1, 0, 1, 0, 1, ...],
+                ...,
+            },
+            "outlier": {
+                "nearest_neighbor": [3, 7, 1, 2, 8, 4, 5, 9, 6, 0, ...],
+                "distance_to_nearest_neighbor": [0.123, 0.789, 0.456, ...],
+                ...,
+            },
+        }
+        """
         return self.data_issues.info
 
     @info.setter
