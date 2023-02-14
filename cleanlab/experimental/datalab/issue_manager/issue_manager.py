@@ -161,7 +161,7 @@ class IssueManager(ABC, metaclass=IssueManagerMeta):
 
         NOTE
         ----
-        This method is called by `find_issues` after `find_issues` has set the `issues` and `summary` dataframes
+        This method is called by :py:meth:`find_issues` after :py:meth:`find_issues` has set the `issues` and `summary` dataframes
         as instance attributes.
         """
         raise NotImplementedError

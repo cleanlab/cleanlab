@@ -26,7 +26,7 @@ Note
 
 The :class:`REGISTRY` variable is used by the factory class to keep track
 of registered issue managers.
-The factory class is used as an implementation detail by 
+The factory class is used as an implementation detail by
 :py:class:`Datalab <cleanlab.experimental.datalab.datalab.Datalab>`,
 which provides a simplified API for constructing concrete issue managers.
 :py:class:`Datalab <cleanlab.experimental.datalab.datalab.Datalab>` is intended to be used by users
@@ -34,7 +34,7 @@ and provides detailed documentation on how to use the API.
 
 Warning
 -------
-Neither the ``REGISTRY`` variable nor the factory class should be used directly by users.
+Neither the :class:`REGISTRY` variable nor the factory class should be used directly by users.
 """
 from __future__ import annotations
 
@@ -56,11 +56,13 @@ REGISTRY: Dict[str, Type[IssueManager]] = {
 """Registry of issue managers that can be constructed from a string 
 and used in the Datalab class.
 
+:meta hide-value:
+
 Currently, the following issue managers are registered by default:
 
-- ``outlier``: :py:class:`OutOfDistributionIssueManager <cleanlab.experimental.datalab.issue_manager.OutOfDistributionIssueManager>`
-- ``label``: :py:class:`LabelIssueManager <cleanlab.experimental.datalab.issue_manager.LabelIssueManager>`
-- ``near_duplicate``: :py:class:`NearDuplicateIssueManager <cleanlab.experimental.datalab.issue_manager.NearDuplicateIssueManager>`
+- ``"outlier"``: :py:class:`OutOfDistributionIssueManager <cleanlab.experimental.datalab.issue_manager.outlier.OutOfDistributionIssueManager>`
+- ``"label"``: :py:class:`LabelIssueManager <cleanlab.experimental.datalab.issue_manager.label.LabelIssueManager>`
+- ``"near_duplicate"``: :py:class:`NearDuplicateIssueManager <cleanlab.experimental.datalab.issue_manager.duplicate.NearDuplicateIssueManager>`
 
 Warning
 -------
@@ -95,7 +97,8 @@ def register(cls: Type[IssueManager]) -> Type[IssueManager]:
     Parameters
     ----------
     cls :
-        A subclass of :py:class:`IssueManager <cleanlab.experimental.datalab.issue_manager.IssueManager>`.
+        A subclass of
+        :py:class:`IssueManager <cleanlab.experimental.datalab.issue_manager.issue_manager.IssueManager>`.
 
     Returns
     -------
@@ -106,12 +109,12 @@ def register(cls: Type[IssueManager]) -> Type[IssueManager]:
     -------
 
     When defining a new subclass of
-    :py:class:`IssueManager <cleanlab.experimental.datalab.issue_manager.IssueManager>`,
+    :py:class:`IssueManager <cleanlab.experimental.datalab.issue_manager.issue_manager.IssueManager>`,
     you can register it like so:
 
     .. code-block:: python
 
-        from cleanlab.experimental.datalab.issue_manager import IssueManager
+        from cleanlab import IssueManager
         from cleanlab.experimental.datalab.factory import register
 
         @register
@@ -120,6 +123,21 @@ def register(cls: Type[IssueManager]) -> Type[IssueManager]:
             def find_issues(self, **kwargs):
                 # Some logic to find issues
                 pass
+
+    or in a function call:
+
+    .. code-block:: python
+
+        from cleanlab import IssueManager
+        from cleanlab.experimental.datalab.factory import register
+
+        class MyIssueManager(IssueManager):
+            issue_name: str = "my_issue"
+            def find_issues(self, **kwargs):
+                # Some logic to find issues
+                pass
+
+        register(MyIssueManager)
     """
     name: str = str(cls.issue_name)
     if name in REGISTRY:

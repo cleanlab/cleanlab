@@ -212,7 +212,7 @@ def _extract_labels(data: Dataset, label_name: Union[str, List[str]]) -> Tuple[n
     labels to the original labels in the dataset.
 
     Note: This function is not meant to be used directly. It is used by
-    `cleanlab.data.Data` to extract the formatted labels from the dataset
+    ``cleanlab.data.Data`` to extract the formatted labels from the dataset
     and stores them as attributes.
 
     Parameters

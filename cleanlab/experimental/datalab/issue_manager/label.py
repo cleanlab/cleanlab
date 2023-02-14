@@ -59,7 +59,7 @@ class LabelIssueManager(IssueManager):
         and the keyword arguments stored as instance attributes.
 
         This allows the builder to use pre-computed info from the datalab to speed up
-        some computations in the `find_issues` method.
+        some computations in the :py:meth:`find_issues` method.
         """
         if not self.health_summary_parameters:
             self.health_summary_parameters = {
