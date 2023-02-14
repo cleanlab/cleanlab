@@ -143,6 +143,8 @@ def test_tensorflow_sequential(batch_size, shuffle_config, data=DATA, hidden_uni
         ],
     )
 
+    model.summary()
+
     # Test base model works:
     model.fit(
         X=dataset_tf,
@@ -192,6 +194,8 @@ def test_tensorflow_functional(batch_size, shuffle_config, data=DATA, hidden_uni
         make_model,
         model_kwargs={"num_features": data["num_features"], "num_classes": data["num_classes"]},
     )
+
+    model.summary()
 
     # Test base model works:
     model.fit(

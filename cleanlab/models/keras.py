@@ -112,9 +112,9 @@ class KerasWrapperModel:
             but they are ignored.
             If ``X`` is a numpy array or pandas dataframe, the labels have to be passed in using this argument.
         """
-
-        self.net = self.model(**self.model_kwargs)
-        self.net.compile(**self.compile_kwargs)
+        if self.net is None:
+            self.net = self.model(**self.model_kwargs)
+            self.net.compile(**self.compile_kwargs)
 
         # TODO: check for generators
         if y is not None and not isinstance(X, (tf.data.Dataset, keras.utils.Sequence)):
@@ -152,7 +152,11 @@ class KerasWrapperModel:
 
     def summary(self, **kwargs):
         """Returns the summary of the Keras model."""
-        self.net.summary(**kwargs)
+        if self.net is None:
+            self.net = self.model(**self.model_kwargs)
+            self.net.compile(**self.compile_kwargs)
+
+        return self.net.summary(**kwargs)
 
 
 class KerasWrapperSequential:
@@ -203,8 +207,7 @@ class KerasWrapperSequential:
 
     def set_params(self, **params):
         """Set the parameters of the Keras model."""
-        for key, value in params.items():
-            self.params[key] = value
+        self.params.update(params)
         return self
 
     def fit(self, X, y=None, **kwargs):
@@ -220,8 +223,9 @@ class KerasWrapperSequential:
             but they are ignored.
             If ``X`` is a numpy array or pandas dataframe, the labels have to be passed in using this argument.
         """
-        self.net = tf.keras.models.Sequential(self.layers, self.name)
-        self.net.compile(**self.compile_kwargs)
+        if self.net is None:
+            self.net = tf.keras.models.Sequential(self.layers, self.name)
+            self.net.compile(**self.compile_kwargs)
 
         # TODO: check for generators
         if y is not None and not isinstance(X, (tf.data.Dataset, keras.utils.Sequence)):
@@ -258,4 +262,8 @@ class KerasWrapperSequential:
 
     def summary(self, **kwargs):
         """Returns the summary of the Keras model."""
-        self.net.summary(**kwargs)
+        if self.net is None:
+            self.net = tf.keras.models.Sequential(self.layers, self.name)
+            self.net.compile(**self.compile_kwargs)
+
+        return self.net.summary(**kwargs)
