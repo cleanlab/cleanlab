@@ -20,6 +20,7 @@ and managing all kinds of issues in datasets.
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
+import warnings
 
 import numpy as np
 import numpy.typing as npt
@@ -364,13 +365,16 @@ class Datalab:
 
             Keyword arguments to pass to the IssueManager constructor.
 
-            See Also
-            --------
-            IssueManager
+            .. seealso::
+                IssueManager
 
             It is a dictionary of dictionaries, where the keys are the issue types
             and the values are dictionaries of keyword arguments to pass to the
             IssueManager constructor.
+
+            WARNING
+            -------
+            If an empty dictionary is passed, no issues will be found.
 
             Example
             -------
@@ -399,6 +403,12 @@ class Datalab:
             -------
             This is not yet implemented.
         """
+
+        if issue_types is not None and not issue_types:
+            warnings.warn(
+                "No issue types were specified. " "No issues will be found in the dataset."
+            )
+            return None
 
         required_args_per_issue_type = self._resolve_required_args(pred_probs, features, model)
 
