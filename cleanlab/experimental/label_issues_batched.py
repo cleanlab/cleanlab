@@ -298,7 +298,7 @@ class LabelInspector:
       Whether to suppress print statements or not.
 
     n_jobs: int, optional
-      Number of processes for multiprocessing. Only used on Linux.
+      Number of processes for multiprocessing (default value = 1). Only used on Linux.
       If `n_jobs=None`, will use either the number of: physical cores if psutil is installed, or logical cores otherwise.
 
     quality_score_kwargs : dict, optional
@@ -318,7 +318,7 @@ class LabelInspector:
         verbose: bool = True,
         quality_score_kwargs: Optional[dict] = None,
         num_issue_kwargs: Optional[dict] = None,
-        n_jobs: Optional[int] = None,
+        n_jobs: Optional[int] = 1,
     ):
         if quality_score_kwargs is None:
             quality_score_kwargs = {}
