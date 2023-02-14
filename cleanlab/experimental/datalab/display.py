@@ -31,10 +31,10 @@ class _Displayer:
         """What is displayed in console if user executes: >>> datalab"""
         checks_run = self.datalab.issues is None
         display_str = f"checks_run={checks_run},"
-        num_examples = self.datalab.get_info("data", "num_examples")
+        num_examples = self.datalab.get_info("data")["num_examples"]
         if num_examples is not None:
             display_str += f"num_examples={num_examples},"
-        num_classes = self.datalab.get_info("data", "num_classes")
+        num_classes = self.datalab.get_info("data")["num_classes"]
         if num_classes is not None:
             display_str += f"num_classes={num_classes},"
         if display_str[-1] == ",":  # delete trailing comma
