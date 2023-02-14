@@ -23,52 +23,8 @@ for big datasets with limited memory.
 With default settings, the results returned from this approach closely approximate those returned from:
 ``cleanlab.filter.find_label_issues(..., filter_by="low_self_confidence", return_indices_ranked_by="self_confidence")``
 
-To run this approach, either follow the examples script below,
-or use the ``find_label_issues_batched()`` convenience function defined in this module.
-
-The recommended usage demonstrated in the examples script involves two passes over your data:
-one pass to compute `confident_thresholds`, another to evaluate each label.
-To maximize efficiency, try to use the largest batch_size your memory allows.
-To reduce runtime further, you can run the first pass on a subset of your dataset
-as long as it contains enough data from each class to estimate `confident_thresholds` accurately.
-
-In the examples script below:
-- `labels` is a (big) 1D ``np.ndarray`` of class labels represented as integers in ``0,1,...,K-1``.
-- ``pred_probs`` = is a (big) 2D ``np.ndarray`` of predicted class probabilities,
-where each row is an example, each column represents a class.
-
-`labels` and `pred_probs` can be stored in a file instead where you load chunks of them at a time.
-Methods to load arrays in chunks include: ``np.load(...,mmap_mode='r')``, ``numpy.memmap()``,
-HDF5 or Zarr files, see: https://pythonspeed.com/articles/mmap-vs-zarr-hdf5/
-
-Examples
---------
->>> n = len(labels)
->>> batch_size = 10000  # you can change this in between batches, set as big as your RAM allows
->>> lab = LabelInspector(num_class = pred_probs.shape[1])
->>> # First compute confident thresholds (for faster results, can also do this on a random subset of your data):
->>> i = 0
->>> while i < n:
->>>     end_index = i + batch_size
->>>     labels_batch = labels[i:end_index]
->>>     pred_probs_batch = pred_probs[i:end_index,:]
->>>     i = end_index
->>>     lab.update_confident_thresholds(labels_batch, pred_probs_batch)
->>> # See what we calculated:
->>> confident_thresholds = lab.get_confident_thresholds()
->>> # Evaluate the quality of the labels (run this on full dataset you want to evaluate):
->>> i = 0
->>> while i < n:
->>>     end_index = i + batch_size
->>>     labels_batch = labels[i:end_index]
->>>     pred_probs_batch = pred_probs[i:end_index,:]
->>>     i = end_index
->>>     batch_results = lab.score_label_quality(labels_batch, pred_probs_batch)
->>> # Indices of examples with label issues, sorted by label quality score (most severe to least severe):
->>> indices_of_examples_with_issues = lab.get_label_issues()
->>> # If your `pred_probs` and `labels` are arrays already in memory,
->>> # then you can use this shortcut for all of the above:
->>> indices_of_examples_with_issues = find_label_issues_batched(labels, pred_probs, batch_size=10000)
+To run this approach, either use the ``find_label_issues_batched()`` convenience function defined in this module,
+or follow the examples script for the ``LabelInspector`` class if you require greater customization.
 """
 
 import numpy as np
@@ -97,6 +53,180 @@ labels_shared: LabelLike
 pred_probs_shared: np.ndarray
 
 
+def find_label_issues_batched(
+    labels: Optional[LabelLike] = None,
+    pred_probs: Optional[np.ndarray] = None,
+    *,
+    labels_file: Optional[str] = None,
+    pred_probs_file: Optional[str] = None,
+    batch_size: int = 10000,
+    n_jobs: Optional[int] = 1,
+    verbose: bool = True,
+    quality_score_kwargs: Optional[dict] = None,
+    num_issue_kwargs: Optional[dict] = None,
+) -> np.ndarray:
+    """
+    Variant of :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>`
+    that requires less memory by reading from `pred_probs`, `labels` in mini-batches.
+    To avoid loading big `pred_probs`, `labels` arrays into memory,
+    provide these as memory-mapped objects like Zarr arrays or memmap arrays instead of regular numpy arrays.
+    See: https://pythonspeed.com/articles/mmap-vs-zarr-hdf5/
+
+    With default settings, the results returned from this method closely approximate those returned from:
+    ``cleanlab.filter.find_label_issues(..., filter_by="low_self_confidence", return_indices_ranked_by="self_confidence")``
+
+    This function internally implements the example usage script of the ``LabelInspector`` class,
+    but you can further customize that script by running it yourself instead of this function.
+    See the documentation of ``LabelInspector`` to learn more about how this method works internally.
+
+    Parameters
+    ----------
+    labels: np.ndarray-like object, optional
+      1D array of given class labels for each example in the dataset, (int) values in ``0,1,2,...,K-1``.
+      To avoid loading big objects into memory, you should pass this as a memory-mapped object like:
+      Zarr array loaded with ``zarr.convenience.open(YOURFILE.zarr, mode="r")``,
+      or memmap array loaded with ``np.load(YOURFILE.npy, mmap_mode="r")``.
+
+      Tip: You can save an existing numpy array to Zarr via: ``zarr.convenience.save_array(YOURFILE.zarr, your_array)``,
+      or to .npy file that can be loaded with mmap via: ``np.save(YOURFILE.npy, your_array)``.
+
+    pred_probs: np.ndarray-like object, optional
+      2D array of model-predicted class probabilities (floats) for each example in the dataset.
+      To avoid loading big objects into memory, you should pass this as a memory-mapped object like:
+      Zarr array loaded with ``zarr.convenience.open(YOURFILE.zarr, mode="r")``
+      or memmap array loaded with ``np.load(YOURFILE.npy, mmap_mode="r")``.
+
+    labels_file: str, optional
+      Specify this instead of `labels` if you want this method to load from file for you into a memmap array.
+      Path to .npy file where the entire 1D `labels` numpy array is stored on disk (list format is not supported).
+      This is loaded using: ``np.load(labels_file, mmap_mode="r")``
+      so make sure this file was created via: ``np.save()`` or other compatible methods (.npz not supported).
+
+    pred_probs_file: str, optional
+      Specify this instead of `pred_probs` if you want this method to load from file for you into a memmap array.
+      Path to .npy file where the entire `pred_probs` numpy array is stored on disk.
+      This is loaded using: ``np.load(pred_probs_file, mmap_mode="r")``
+      so make sure this file was created via: ``np.save()`` or other compatible methods (.npz not supported).
+
+    batch_size : int, optional
+      Size of mini-batches to use for estimating the label issues.
+      To maximize efficiency, try to use the largest `batch_size` your memory allows.
+
+    n_jobs: int, optional
+      Number of processes for multiprocessing (default value = 1). Only used on Linux.
+      If `n_jobs=None`, will use either the number of: physical cores if psutil is installed, or logical cores otherwise.
+
+    verbose : bool, optional
+      Whether to suppress print statements or not.
+
+    quality_score_kwargs : dict, optional
+      Keyword arguments to pass into :py:func:`rank.get_label_quality_scores <cleanlab.rank.get_label_quality_scores>`.
+
+    num_issue_kwargs : dict, optional
+      Keyword arguments to :py:func:`count.num_label_issues()` <cleanlab.count.num_label_issues>`
+      to control estimation of the number of label issues.
+      The only supported kwarg here for now is: `estimation_method`.
+
+    Returns
+    -------
+    issue_indices : np.ndarray
+      Indices of examples with label issues, sorted by label quality score.
+
+    Examples
+    --------
+    >>> batch_size = 10000  # for efficiency, set this to as large of a value as your memory can handle
+    >>> # Just demonstrating how to save your existing numpy labels, pred_probs arrays to compatible .npy files:
+    >>> np.save("LABELS.npy", labels_array)
+    >>> np.save("PREDPROBS.npy", pred_probs_array)
+    >>> # You can load these back into memmap arrays via: labels = np.load("LABELS.npy", mmap_mode="r")
+    >>> # and then run this method on the memmap arrays, or just run it directly on the .npy files like this:
+    >>> issues = find_label_issues_batched(labels_file="LABELS.npy", pred_probs_file="PREDPROBS.npy", batch_size=batch_size)
+    >>> # This method also works with Zarr arrays:
+    >>> import zarr
+    >>> # Just demonstrating how to save your existing numpy labels, pred_probs arrays to compatible .zarr files:
+    >>> zarr.convenience.save_array("LABELS.zarr", labels_array)
+    >>> zarr.convenience.save_array("PREDPROBS.zarr", pred_probs_array)
+    >>> # You can load from such files into Zarr arrays:
+    >>> labels = zarr.convenience.open("LABELS.zarr", mode="r")
+    >>> pred_probs = zarr.convenience.open("PREDPROBS.zarr", mode="r")
+    >>> # This method can be directly run on Zarr arrays, memmap arrays, or regular numpy arrays:
+    >>> issues = find_label_issues_batched(labels=labels, pred_probs=pred_probs, batch_size=batch_size)
+    """
+    if labels_file is not None:
+        if labels is not None:
+            raise ValueError("only specify one of: `labels` or `labels_file`")
+        if not isinstance(labels_file, str):
+            raise ValueError(
+                "labels_file must be str specifying path to .npy file containing the array of labels"
+            )
+        labels = np.load(labels_file, mmap_mode="r")
+        assert isinstance(labels, np.ndarray)
+
+    if pred_probs_file is not None:
+        if pred_probs is not None:
+            raise ValueError("only specify one of: `pred_probs` or `pred_probs_file`")
+        if not isinstance(pred_probs_file, str):
+            raise ValueError(
+                "pred_probs_file must be str specifying path to .npy file containing 2D array of pred_probs"
+            )
+        pred_probs = np.load(pred_probs_file, mmap_mode="r")
+        assert isinstance(pred_probs, np.ndarray)
+        if verbose:
+            print(
+                f"mmap-loaded numpy arrays have: {len(pred_probs)} examples, {pred_probs.shape[1]} classes"
+            )
+    if labels is None:
+        raise ValueError("must provide one of: `labels` or `labels_file`")
+    if pred_probs is None:
+        raise ValueError("must provide one of: `pred_probs` or `pred_probs_file`")
+
+    assert pred_probs is not None
+    if len(labels) != len(pred_probs):
+        raise ValueError(
+            f"len(labels)={len(labels)} does not match len(pred_probs)={len(pred_probs)}. Perhaps an issue loading mmap numpy arrays from file."
+        )
+    lab = LabelInspector(
+        num_class=pred_probs.shape[1],
+        verbose=verbose,
+        n_jobs=n_jobs,
+        quality_score_kwargs=quality_score_kwargs,
+        num_issue_kwargs=num_issue_kwargs,
+    )
+    n = len(labels)
+    if verbose:
+        from tqdm.auto import tqdm
+
+        pbar = tqdm(desc="number of examples processed for estimating thresholds", total=n)
+    i = 0
+    while i < n:
+        end_index = i + batch_size
+        labels_batch = labels[i:end_index]
+        pred_probs_batch = pred_probs[i:end_index, :]
+        i = end_index
+        lab.update_confident_thresholds(labels_batch, pred_probs_batch)
+        if verbose:
+            pbar.update(batch_size)
+
+    # Next evaluate the quality of the labels (run this on full dataset you want to evaluate):
+    if verbose:
+        pbar.close()
+        pbar = tqdm(desc="number of examples processed for checking labels", total=n)
+    i = 0
+    while i < n:
+        end_index = i + batch_size
+        labels_batch = labels[i:end_index]
+        pred_probs_batch = pred_probs[i:end_index, :]
+        i = end_index
+        _ = lab.score_label_quality(labels_batch, pred_probs_batch)
+        if verbose:
+            pbar.update(batch_size)
+
+    if verbose:
+        pbar.close()
+
+    return lab.get_label_issues()
+
+
 class LabelInspector:
     """
     Class for finding label issues in big datasets where memory becomes a problem for other cleanlab methods.
@@ -106,6 +236,50 @@ class LabelInspector:
     on a small subset of your data to verify your inputs are properly formatted.
     Do NOT modify any of the attributes of this class yourself!
     Multi-label classification is not supported by this class, it is only for multi-class classification.
+
+    The recommended usage demonstrated in the examples script below involves two passes over your data:
+    one pass to compute `confident_thresholds`, another to evaluate each label.
+    To maximize efficiency, try to use the largest batch_size your memory allows.
+    To reduce runtime further, you can run the first pass on a subset of your dataset
+    as long as it contains enough data from each class to estimate `confident_thresholds` accurately.
+
+    In the examples script below:
+    - `labels` is a (big) 1D ``np.ndarray`` of class labels represented as integers in ``0,1,...,K-1``.
+    - ``pred_probs`` = is a (big) 2D ``np.ndarray`` of predicted class probabilities,
+    where each row is an example, each column represents a class.
+
+    `labels` and `pred_probs` can be stored in a file instead where you load chunks of them at a time.
+    Methods to load arrays in chunks include: ``np.load(...,mmap_mode='r')``, ``numpy.memmap()``,
+    HDF5 or Zarr files, see: https://pythonspeed.com/articles/mmap-vs-zarr-hdf5/
+
+    Examples
+    --------
+    >>> n = len(labels)
+    >>> batch_size = 10000  # you can change this in between batches, set as big as your RAM allows
+    >>> lab = LabelInspector(num_class = pred_probs.shape[1])
+    >>> # First compute confident thresholds (for faster results, can also do this on a random subset of your data):
+    >>> i = 0
+    >>> while i < n:
+    >>>     end_index = i + batch_size
+    >>>     labels_batch = labels[i:end_index]
+    >>>     pred_probs_batch = pred_probs[i:end_index,:]
+    >>>     i = end_index
+    >>>     lab.update_confident_thresholds(labels_batch, pred_probs_batch)
+    >>> # See what we calculated:
+    >>> confident_thresholds = lab.get_confident_thresholds()
+    >>> # Evaluate the quality of the labels (run this on full dataset you want to evaluate):
+    >>> i = 0
+    >>> while i < n:
+    >>>     end_index = i + batch_size
+    >>>     labels_batch = labels[i:end_index]
+    >>>     pred_probs_batch = pred_probs[i:end_index,:]
+    >>>     i = end_index
+    >>>     batch_results = lab.score_label_quality(labels_batch, pred_probs_batch)
+    >>> # Indices of examples with label issues, sorted by label quality score (most severe to least severe):
+    >>> indices_of_examples_with_issues = lab.get_label_issues()
+    >>> # If your `pred_probs` and `labels` are arrays already in memory,
+    >>> # then you can use this shortcut for all of the above:
+    >>> indices_of_examples_with_issues = find_label_issues_batched(labels, pred_probs, batch_size=10000)
 
     Parameters
     ----------
@@ -124,7 +298,7 @@ class LabelInspector:
       Whether to suppress print statements or not.
 
     n_jobs: int, optional
-      Number of processes for multiprocessing. Only used on Linux.
+      Number of processes for multiprocessing (default value = 1). Only used on Linux.
       If `n_jobs=None`, will use either the number of: physical cores if psutil is installed, or logical cores otherwise.
 
     quality_score_kwargs : dict, optional
@@ -144,7 +318,7 @@ class LabelInspector:
         verbose: bool = True,
         quality_score_kwargs: Optional[dict] = None,
         num_issue_kwargs: Optional[dict] = None,
-        n_jobs: Optional[int] = None,
+        n_jobs: Optional[int] = 1,
     ):
         if quality_score_kwargs is None:
             quality_score_kwargs = {}
@@ -180,6 +354,7 @@ class LabelInspector:
         )
         self.examples_processed_quality = 0  # number of examples seen so far for estimating label quality and number of label issues
         # Determine number of cores for multiprocessing:
+        self.n_jobs: Optional[int] = None
         os_name = platform.system()
         if os_name != "Linux":
             self.n_jobs = 1
@@ -351,7 +526,7 @@ class LabelInspector:
 
         Parameters
         ----------
-        labels: np.ndarray or list
+        labels: np.ndarray
           Given class labels for each example in the batch, values in ``0,1,2,...,K-1``.
 
         pred_probs: np.ndarray
@@ -546,153 +721,3 @@ def _batch_check(labels: LabelLike, pred_probs: np.ndarray, num_class: int) -> n
         raise ValueError("num_class must equal pred_probs.shape[1]")
 
     return labels
-
-
-def find_label_issues_batched(
-    *,
-    labels_file: Optional[str] = None,
-    pred_probs_file: Optional[str] = None,
-    labels: Optional[LabelLike] = None,
-    pred_probs: Optional[np.ndarray] = None,
-    batch_size: int = 10000,
-    n_jobs: Optional[int] = None,
-    verbose: bool = True,
-    quality_score_kwargs: Optional[dict] = None,
-    num_issue_kwargs: Optional[dict] = None,
-) -> np.ndarray:
-    """
-    Variant of :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>`
-    that requires less memory by reading `pred_probs`, `labels` in mini-batches, if provided as files.
-    Only .npy files are supported (not .npz), and these must be loadable via: ``np.load(your_file, mmap_mode="r")``.
-    If you want to read from other file-types (eg. HDF5 or Zarr) instead,
-    see the example usage of the ``LabelInspector`` class.
-
-    This function basically implements the example ``LabelInspector`` usage script,
-    but you can further customize that script by running it yourself.
-    See the documentation of ``LabelInspector`` to learn more about how this method works internally.
-
-    With default settings, the results returned from this method closely approximate those returned from:
-    ``cleanlab.filter.find_label_issues(..., filter_by="low_self_confidence", return_indices_ranked_by="self_confidence")``
-
-    Parameters
-    ----------
-    labels_file: str, optional
-      Path to .npy file where the entire 1D `labels` numpy array is stored on disk (list format is not supported).
-      This is loaded using: ``np.load(labels_file, mmap_mode="r")``
-      so make sure this file was created via: ``np.save()`` or other compatible methods.
-
-    pred_probs_file: str, optional
-      Path to .npy file where the entire `pred_probs` numpy array is stored on disk.
-      This is loaded using: ``np.load(pred_probs_file, mmap_mode="r")``
-      so make sure this file was created via: ``np.save()`` or other compatible methods.
-
-    labels: np.ndarray or list, optional
-      Given class labels for each example in the dataset, (int) values in ``0,1,2,...,K-1``.
-      Recommend providing `labels_file` instead of `labels` to avoid loading big objects into memory.
-
-    pred_probs: np.ndarray, optional
-      2D array of model-predicted class probabilities (floats) for each example in the dataset.
-      Recommend providing `pred_probs_file` instead of `pred_probs` to avoid loading big objects into memory.
-
-    batch_size : int, optional
-      Size of mini-batches to use for estimating the label issues.
-      To maximize efficiency, try to use the largest `batch_size` your memory allows.
-
-    n_jobs: int, optional
-      Number of processes for multiprocessing. Only used on Linux.
-      If `n_jobs=None`, will use either the number of: physical cores if psutil is installed, or logical cores otherwise.
-
-    verbose : bool, optional
-      Whether to suppress print statements or not.
-
-    quality_score_kwargs : dict, optional
-      Keyword arguments to pass into :py:func:`rank.get_label_quality_scores <cleanlab.rank.get_label_quality_scores>`.
-
-    num_issue_kwargs : dict, optional
-      Keyword arguments to :py:func:`count.num_label_issues()` <cleanlab.count.num_label_issues>`
-      to control estimation of the number of label issues.
-      The only supported kwarg here for now is: `estimation_method`.
-
-    Returns
-    -------
-    issue_indices : np.ndarray
-      Indices of examples with label issues, sorted by label quality score.
-
-    Examples
-    --------
-    >>> batch_size = 10000  # for efficiency, set this to as large of a value as your memory can handle
-    >>> issues = find_label_issues_batched(labels_file="LABELS.npy", pred_probs_file="PREDPROBS.npy", batch_size=batch_size)
-    """
-    if labels_file is not None:
-        if labels is not None:
-            raise ValueError("only specify one of: `labels` or `labels_file`")
-        if not isinstance(labels_file, str):
-            raise ValueError(
-                "labels_file must be str specifying path to .npy file containing the array of labels"
-            )
-        labels = np.load(labels_file, mmap_mode="r")
-        assert isinstance(labels, np.ndarray)
-
-    if pred_probs_file is not None:
-        if pred_probs is not None:
-            raise ValueError("only specify one of: `pred_probs` or `pred_probs_file`")
-        if not isinstance(pred_probs_file, str):
-            raise ValueError(
-                "pred_probs_file must be str specifying path to .npy file containing 2D array of pred_probs"
-            )
-        pred_probs = np.load(pred_probs_file, mmap_mode="r")
-        assert isinstance(pred_probs, np.ndarray)
-        if verbose:
-            print(
-                f"mmap-loaded numpy arrays have: {len(pred_probs)} examples, {pred_probs.shape[1]} classes"
-            )
-    if labels is None:
-        raise ValueError("must provide one of: `labels` or `labels_file`")
-    if pred_probs is None:
-        raise ValueError("must provide one of: `pred_probs` or `pred_probs_file`")
-
-    assert isinstance(pred_probs, np.ndarray)
-    if len(labels) != len(pred_probs):
-        raise ValueError(
-            f"len(labels)={len(labels)} does not match len(pred_probs)={len(pred_probs)}. Perhaps an issue loading mmap numpy arrays from file."
-        )
-    lab = LabelInspector(
-        num_class=pred_probs.shape[1],
-        verbose=verbose,
-        n_jobs=n_jobs,
-        quality_score_kwargs=quality_score_kwargs,
-        num_issue_kwargs=num_issue_kwargs,
-    )
-    n = len(labels)
-    if verbose:
-        from tqdm.auto import tqdm
-
-        pbar = tqdm(desc="number of examples processed for estimating thresholds", total=n)
-    i = 0
-    while i < n:
-        end_index = i + batch_size
-        labels_batch = labels[i:end_index]
-        pred_probs_batch = pred_probs[i:end_index, :]
-        i = end_index
-        lab.update_confident_thresholds(labels_batch, pred_probs_batch)
-        if verbose:
-            pbar.update(batch_size)
-
-    # Next evaluate the quality of the labels (run this on full dataset you want to evaluate):
-    if verbose:
-        pbar.close()
-        pbar = tqdm(desc="number of examples processed for checking labels", total=n)
-    i = 0
-    while i < n:
-        end_index = i + batch_size
-        labels_batch = labels[i:end_index]
-        pred_probs_batch = pred_probs[i:end_index, :]
-        i = end_index
-        _ = lab.score_label_quality(labels_batch, pred_probs_batch)
-        if verbose:
-            pbar.update(batch_size)
-
-    if verbose:
-        pbar.close()
-
-    return lab.get_label_issues()
