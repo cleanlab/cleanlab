@@ -26,6 +26,7 @@ API Reference
     :maxdepth: 2
 
     datalab
+    data
     factory
     data_issues
     issue_manager/index
