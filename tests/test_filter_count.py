@@ -915,9 +915,13 @@ def test_batched_label_issues():
         labels=data["labels"],
         pred_probs=data["pred_probs"],
         batch_size=int(len(data["labels"]) / 2.0),
+        n_jobs=None,
     )
     f4 = find_label_issues_batched(
-        labels=data["labels"], pred_probs=data["pred_probs"], batch_size=len(data["labels"]) + 100
+        labels=data["labels"],
+        pred_probs=data["pred_probs"],
+        batch_size=len(data["labels"]) + 100,
+        n_jobs=4,
     )
     f_single = find_label_issues_batched(
         labels=data["labels"],
@@ -954,12 +958,14 @@ def test_batched_label_issues():
         labels=data["labels"],
         pred_probs=data["pred_probs"],
         batch_size=int(len(data["labels"]) / 2.0),
+        n_jobs=None,
         **extra_args,
     )
     f7 = find_label_issues_batched(
         labels=data["labels"],
         pred_probs=data["pred_probs"],
         batch_size=len(data["labels"]) + 100,
+        n_jobs=4,
         **extra_args,
     )
     f_single = find_label_issues_batched(
