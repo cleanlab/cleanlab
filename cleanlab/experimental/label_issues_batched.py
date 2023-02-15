@@ -632,7 +632,8 @@ class LabelInspector:
             labels_shared = labels
             pred_probs_shared = pred_probs
 
-            processes = 5000  # good values ~1000-10000 in benchmarks where pred_probs has 1B entries
+            # good values for this are ~1000-10000 in benchmarks where pred_probs has 1B entries:
+            processes = 5000
             if len(labels) <= processes:
                 chunksize = 1
             else:
