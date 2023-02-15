@@ -632,10 +632,11 @@ class LabelInspector:
             labels_shared = labels
             pred_probs_shared = pred_probs
 
-            if len(labels) <= 5000:
+            processes = 5000  # good values ~1000-10000 in benchmarks where pred_probs has 1B entries
+            if len(labels) <= processes:
                 chunksize = 1
             else:
-                chunksize = len(labels) // 5000
+                chunksize = len(labels) // processes
             inds = split_arr(np.arange(len(labels)), chunksize)
 
             if thorough:
