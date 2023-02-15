@@ -93,7 +93,7 @@ class OutOfDistribution:
 
     OUTLIER_PARAMS = {"k", "t", "knn"}
     OOD_PARAMS = {"confident_thresholds", "adjust_pred_probs", "method"}
-    DEFAULT_PARAM_DICT: Dict[Union[str, int, None], Union[str, int, None, np.ndarray]] = {
+    DEFAULT_PARAM_DICT: Dict[str, Union[str, int, None, np.ndarray]] = {
         "k": None,  # ood features param
         "t": 1,  # ood features param
         "knn": None,  # ood features param
@@ -102,9 +102,11 @@ class OutOfDistribution:
         "confident_thresholds": None,  # ood pred_probs param
     }
 
-    def __init__(self, params: dict = {}):
+    def __init__(self, params: Optional[dict] = None) -> None:
         self._assert_valid_params(params, self.DEFAULT_PARAM_DICT)
         self.params = self.DEFAULT_PARAM_DICT
+        if params is None:
+            params = {}
         self.params = {**self.params, **params}
 
     def fit_score(
@@ -280,7 +282,7 @@ class OutOfDistribution:
         """
         Helper method to check passed in params valid and get list of parameters in param that are not in param_keys.
         """
-        if len(params) > 0:
+        if params is not None:
             wrong_params = list(set(params.keys()).difference(set(param_keys)))
             if len(wrong_params) > 0:
                 raise ValueError(

@@ -1227,7 +1227,6 @@ def _get_post_pred_probs_and_weights(
     quality_method: str = "crowdlab",
     verbose: bool = True,
 ) -> Tuple[np.ndarray, Any, Any]:
-
     """Return the posterior predicted probabilities of each example given a specified quality method.
 
     Parameters

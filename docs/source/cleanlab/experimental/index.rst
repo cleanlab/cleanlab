@@ -14,8 +14,7 @@ experimental
     :maxdepth: 2
 
     datalab/index
-    keras
-    fasttext
+    label_issues_batched
     mnist_pytorch
     coteaching
     cifar_cnn
