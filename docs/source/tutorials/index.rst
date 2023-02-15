@@ -15,4 +15,5 @@ Tutorials
    multilabel_classification
    token_classification
    pred_probs_cross_val
+   datalab_usage
    faq

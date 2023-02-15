@@ -125,6 +125,7 @@ Please see our `contributing guidelines <https://github.com/cleanlab/cleanlab/bl
    Multi-Label Classification <tutorials/multilabel_classification>
    Token Classification (text) <tutorials/token_classification>
    Predicted Probabilities via Cross Validation <tutorials/pred_probs_cross_val>
+   Datalab Usage (Experimental) <tutorials/datalab_usage>
    FAQ <tutorials/faq>
 
 .. toctree::

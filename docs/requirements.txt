@@ -24,3 +24,4 @@ timm==0.6.5
 torch==1.11.0
 requests==2.28.0
 sphinx-autodoc-typehints==1.19.2
+datasets==2.9.0
