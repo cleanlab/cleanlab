@@ -631,11 +631,19 @@ class LabelInspector:
             global labels_shared, pred_probs_shared
             labels_shared = labels
             pred_probs_shared = pred_probs
-            if thorough:
-                use_thorough = np.ones(len(labels_shared), dtype=bool)
+
+            # good values for this are ~1000-10000 in benchmarks where pred_probs has 1B entries:
+            processes = 5000
+            if len(labels) <= processes:
+                chunksize = 1
             else:
-                use_thorough = np.zeros(len(labels_shared), dtype=bool)
-            inds = np.arange(len(labels_shared))
+                chunksize = len(labels) // processes
+            inds = split_arr(np.arange(len(labels)), chunksize)
+
+            if thorough:
+                use_thorough = np.ones(len(inds), dtype=bool)
+            else:
+                use_thorough = np.zeros(len(inds), dtype=bool)
             args = zip(inds, use_thorough)
             with mp.Pool(self.n_jobs) as pool:
                 if not self.off_diagonal_calibrated:
@@ -652,7 +660,14 @@ class LabelInspector:
                         self.prune_counts[class_label] += result[2]
 
 
-def _compute_num_issues(arg: Tuple[int, bool]) -> int:
+def split_arr(arr: np.ndarray, chunksize: int) -> List[np.ndarray]:
+    """
+    Helper function to split array into chunks for multiprocessing
+    """
+    return np.split(arr, np.arange(chunksize, arr.shape[0], chunksize), axis=0)
+
+
+def _compute_num_issues(arg: Tuple[np.ndarray, bool]) -> int:
     """
     Helper function for `_update_num_label_issues` multiprocessing without calibration
     """
@@ -661,23 +676,27 @@ def _compute_num_issues(arg: Tuple[int, bool]) -> int:
     label = labels_shared[ind]
     pred_prob = pred_probs_shared[ind, :]
     pred_class = np.argmax(pred_prob, axis=-1)
+    batch_size = len(label)
     if thorough:
         pred_gt_thresholds = pred_prob >= adj_confident_thresholds_shared
         max_ind = np.argmax(pred_prob * pred_gt_thresholds, axis=-1)
-        prune_count_batch = (
-            (pred_prob[max_ind] >= adj_confident_thresholds_shared[max_ind])
+        prune_count_batch = np.sum(
+            (pred_prob[np.arange(batch_size), max_ind] >= adj_confident_thresholds_shared[max_ind])
             & (max_ind != label)
             & (pred_class != label)
         )
     else:
         prune_count_batch = np.sum(
-            (pred_prob[pred_class] >= adj_confident_thresholds_shared[pred_class])
+            (
+                pred_prob[np.arange(batch_size), pred_class]
+                >= adj_confident_thresholds_shared[pred_class]
+            )
             & (pred_class != label)
         )
     return prune_count_batch
 
 
-def _compute_num_issues_calibrated(arg: Tuple[int, bool]) -> Tuple[Any, int, int]:
+def _compute_num_issues_calibrated(arg: Tuple[np.ndarray, bool]) -> Tuple[Any, int, int]:
     """
     Helper function for `_update_num_label_issues` multiprocessing with calibration
     """
@@ -685,17 +704,23 @@ def _compute_num_issues_calibrated(arg: Tuple[int, bool]) -> Tuple[Any, int, int
     thorough = arg[1]
     label = labels_shared[ind]
     pred_prob = pred_probs_shared[ind, :]
+    batch_size = len(label)
 
     pred_class = np.argmax(pred_prob, axis=-1)
     if thorough:
         pred_gt_thresholds = pred_prob >= adj_confident_thresholds_shared
         max_ind = np.argmax(pred_prob * pred_gt_thresholds, axis=-1)
-        to_inc = pred_prob[max_ind] >= adj_confident_thresholds_shared[max_ind]
+        to_inc = (
+            pred_prob[np.arange(batch_size), max_ind] >= adj_confident_thresholds_shared[max_ind]
+        )
 
         prune_count_batch = to_inc & (max_ind != label)
         normalization_batch = to_inc
     else:
-        to_inc = pred_prob[pred_class] >= adj_confident_thresholds_shared[pred_class]
+        to_inc = (
+            pred_prob[np.arange(batch_size), pred_class]
+            >= adj_confident_thresholds_shared[pred_class]
+        )
         normalization_batch = to_inc
         prune_count_batch = to_inc & (pred_class != label)
 
