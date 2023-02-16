@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, ClassVar, List, Optional, Tuple, cast
+import warnings
 
 import scipy
 import numpy as np
@@ -116,18 +117,14 @@ class NonIIDIssueManager(IssueManager):  # pragma: no cover
             "k": self.k,
             "threshold": self.threshold,
         }
+        
+        weighted_knn_graph = self.knn.kneighbors_graph(mode="distance")  # type: ignore[union-attr]
+        dists, nn_ids = self._query_knn_graph(weighted_knn_graph)
 
-        knn = self.knn
-        dists, nn_ids = [array[:, 0] for array in knn.kneighbors()]  # type: ignore[union-attr]
-        weighted_knn_graph = knn.kneighbors_graph(mode="distance").toarray()  # type: ignore[union-attr]
-
-        # TODO: Reverse the order of the calls to knn.kneighbors() and knn.kneighbors_graph()
-        #   to avoid computing the (distance, id) pairs twice.
         knn_info_dict = {
-            "nearest_neighbour": nn_ids.tolist(),
-            "distance_to_nearest_neighbour": dists.tolist(),
-            # TODO Check scipy-dependency
-            "weighted_knn_graph": weighted_knn_graph.tolist(),
+            "nearest_neighbor": nn_ids.tolist(),
+            "distance_to_nearest_neighbor": dists.tolist(),
+            "weighted_knn_graph": weighted_knn_graph.toarray().tolist(),
         }
 
 
@@ -138,9 +135,7 @@ class NonIIDIssueManager(IssueManager):  # pragma: no cover
         }
         return info_dict
 
-        
-
-    def _permutation_test(self, num_permutations):
+    def _permutation_test(self, num_permutations) -> float:
         graph = self.neighbor_graph
         tiled = np.tile(np.arange(len(graph)), (len(graph), 1))
         index_distances = tiled - tiled.transpose()
@@ -170,7 +165,7 @@ class NonIIDIssueManager(IssueManager):  # pragma: no cover
 
         return p_value
 
-    def _score_dataset(self):
+    def _score_dataset(self) -> dict[int, float]:
         graph = self.neighbor_graph
         scores = {}    
         
@@ -192,26 +187,14 @@ class NonIIDIssueManager(IssueManager):  # pragma: no cover
         scores = {idx: scores[idx] for idx in range(len(scores))}
         return scores
 
-    def _compute_row_cdf(self, array, num_bins, bin_range):
+    def _compute_row_cdf(self, array, num_bins, bin_range) -> np.ndarray:
         histograms = np.apply_along_axis(lambda x: histogram1d(x, num_bins, bin_range), 1, array)
         histograms = histograms / np.sum(histograms[0])
 
         cdf = np.apply_along_axis(np.cumsum, 1, histograms)
         return cdf
-        
-    def _extract_embeddings(self, columns: Union[str, List[str]], **kwargs) -> np.ndarray:
-        """Extracts embeddings for the given columns."""
-        
-        # TODO this method is copied by outlier, duplicate, and non-iid managers. Perhaps it should be placed such that they can share it withough copying code
 
-        if isinstance(columns, list):
-            raise NotImplementedError("TODO: Support list of columns.")
-
-        format_kwargs = kwargs.get("format_kwargs", {})
-
-        return self.datalab.data.with_format("numpy", **format_kwargs)[columns]
-
-    def _get_neighbor_graph(self):
+    def _get_neighbor_graph(self) -> np.ndarray:
         """
         Given a fitted knn object, returns an array in which A[i,j] = n if
         item i and j are nth nearest neighbors. For n > k, A[i,j] = -1. Additionally, A[i,i] = 0
@@ -226,11 +209,11 @@ class NonIIDIssueManager(IssueManager):  # pragma: no cover
             kneighbor_graph[i,i] = 0
         return kneighbor_graph
 
-    def _ks_test(
+    def _ks_test( # TODO change name
             self,
             neighbor_histogram,
             non_neighbor_histogram,
-    ):
+    ) -> float:
         neighbor_cdf = np.array([np.sum(neighbor_histogram[:i]) for i in range(len(neighbor_histogram) + 1)])
         non_neighbor_cdf = np.array([np.sum(non_neighbor_histogram[:i]) for i in range(len(non_neighbor_histogram) + 1)])
     
@@ -241,7 +224,7 @@ class NonIIDIssueManager(IssueManager):  # pragma: no cover
             self,
             neighbor_index_distances,
             non_neighbor_index_distances,
-    ):
+    ) -> dict[str, float]:
 
         statistics = {}
         for key, test in self.tests.items():
@@ -252,7 +235,11 @@ class NonIIDIssueManager(IssueManager):  # pragma: no cover
             statistics[key] = statistic
         return statistics
 
-    def _sample_distances(self, sample_neighbors, distances=None, num_samples=1):
+    def _sample_distances(
+            self,
+            sample_neighbors,
+            distances=None,
+            num_samples=1) -> np.ndarray:
         graph = self.neighbor_graph
         all_idx = np.arange(len(graph))
         all_idx = np.tile(all_idx, (len(graph),1))
@@ -268,13 +255,13 @@ class NonIIDIssueManager(IssueManager):  # pragma: no cover
             sample_distances = distances[np.arange(len(graph)), choices.transpose()].transpose()
         return sample_distances
 
-    def _sample_neighbors(self, distances=None, num_samples=1):
+    def _sample_neighbors(self, distances=None, num_samples=1) -> np.ndarray:
         return self._sample_distances(sample_neighbors=True, distances=distances, num_samples=num_samples)
 
-    def _sample_non_neighbors(self, distances=None, num_samples=1):
+    def _sample_non_neighbors(self, distances=None, num_samples=1) -> np.ndarray:
         return self._sample_distances(sample_neighbors=False, distances=distances, num_samples=num_samples)
 
-    def _build_histogram(self, index_array):
+    def _build_histogram(self, index_array) -> np.ndarray:
         num_bins = len(self.neighbor_graph) - 1
         bin_range = (1, num_bins)
         histogram = histogram1d(index_array, num_bins, bin_range)
