@@ -45,10 +45,8 @@ __all__ = ["Datalab"]
 
 class Datalab:
     """
-    A single object to find all kinds of issues in datasets.
-    It tracks intermediate state from certain functions that can be
-    re-used across other functions.  This will become the main way 90%
-    of users interface with cleanlab library.
+    A single object to automatically detect all kinds of issues in datasets.
+    This is how we recommend you interface with the cleanlab library if you want to audit the quality of your data. If you have other specific goals, then consider using the other methods across this library. Even then, Datalab may be the easiest way to run specific analyses of your data. Datalab tracks intermediate state (e.g. data statistics) from certain cleanlab functions that can be re-used across other cleanlab functions for better efficiency.
 
     Parameters
     ----------
