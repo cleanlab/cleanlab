@@ -13,7 +13,7 @@ from cleanlab.outlier import OutOfDistribution
 if TYPE_CHECKING:  # pragma: no cover
     from sklearn.neighbors import NearestNeighbors
 
-    from cleanlab import Datalab
+    from cleanlab.experimental.datalab.datalab import Datalab
 
 
 class OutOfDistributionIssueManager(IssueManager):
@@ -124,7 +124,7 @@ class OutOfDistributionIssueManager(IssueManager):
         }
         info_dict = {
             **issues_dict,
-            **ood_params_dict,
+            **ood_params_dict,  # type: ignore[arg-type]
             **knn_dict,
         }
         return info_dict

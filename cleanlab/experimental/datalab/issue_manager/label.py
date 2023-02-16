@@ -11,7 +11,7 @@ from cleanlab.internal.validation import assert_valid_inputs
 if TYPE_CHECKING:  # pragma: no cover
     import pandas as pd
 
-    from cleanlab import Datalab
+    from cleanlab.experimental.datalab.datalab import Datalab
 
 
 class LabelIssueManager(IssueManager):

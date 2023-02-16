@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 
 if TYPE_CHECKING:  # pragma: no cover
-    from cleanlab import Datalab
+    from cleanlab.experimental.datalab.datalab import Datalab
 
 
 T = TypeVar("T", bound="IssueManager")

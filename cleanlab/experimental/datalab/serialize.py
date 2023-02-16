@@ -28,7 +28,7 @@ from cleanlab.experimental.datalab.data import Data
 if TYPE_CHECKING:  # pragma: no cover
     from datasets.arrow_dataset import Dataset
 
-    from cleanlab import Datalab
+    from cleanlab.experimental.datalab.datalab import Datalab
 
 
 # Constants:
@@ -57,7 +57,7 @@ class _Serializer:
 
     @staticmethod
     def _validate_version(datalab: Datalab) -> None:
-        current_version = cleanlab.__version__
+        current_version = cleanlab.__version__  # type: ignore[attr-defined]
         datalab_version = datalab.cleanlab_version
         if current_version != datalab_version:
             warnings.warn(
