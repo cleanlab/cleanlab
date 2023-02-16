@@ -45,6 +45,7 @@ from cleanlab.experimental.datalab.issue_manager import (
     LabelIssueManager,
     NearDuplicateIssueManager,
     OutOfDistributionIssueManager,
+    NonIIDIssueManager,
 )
 
 
@@ -52,6 +53,7 @@ REGISTRY: Dict[str, Type[IssueManager]] = {
     "outlier": OutOfDistributionIssueManager,
     "label": LabelIssueManager,
     "near_duplicate": NearDuplicateIssueManager,
+    "noniid": NonIIDIssueManager,
 }
 """Registry of issue managers that can be constructed from a string 
 and used in the Datalab class.
@@ -63,6 +65,7 @@ Currently, the following issue managers are registered by default:
 - ``"outlier"``: :py:class:`OutOfDistributionIssueManager <cleanlab.experimental.datalab.issue_manager.outlier.OutOfDistributionIssueManager>`
 - ``"label"``: :py:class:`LabelIssueManager <cleanlab.experimental.datalab.issue_manager.label.LabelIssueManager>`
 - ``"near_duplicate"``: :py:class:`NearDuplicateIssueManager <cleanlab.experimental.datalab.issue_manager.duplicate.NearDuplicateIssueManager>`
+- ``"noniid"``: :py:class:`NonIIDIssueManager <cleanlab.experimental.datalab.issue_manager.noniid.NonIIDIssueManager>`
 
 Warning
 -------

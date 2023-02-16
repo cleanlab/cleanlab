@@ -189,6 +189,7 @@ class Datalab:
             "label": {"pred_probs": pred_probs, "model": model},
             "outlier": {"pred_probs": pred_probs, "features": features},
             "near_duplicate": {"features": features},
+            "noniid": {"features": features},
         }
 
         args_dict = {
