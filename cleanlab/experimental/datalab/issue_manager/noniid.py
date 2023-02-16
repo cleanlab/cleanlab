@@ -122,11 +122,8 @@ class NonIIDIssueManager(IssueManager):  # pragma: no cover
         }
         
         weighted_knn_graph = self.knn.kneighbors_graph(mode="distance")  # type: ignore[union-attr]
-        dists, nn_ids = self._query_knn_graph(weighted_knn_graph)
 
         knn_info_dict = {
-            "nearest_neighbor": nn_ids.tolist(),
-            "distance_to_nearest_neighbor": dists.tolist(),
             "weighted_knn_graph": weighted_knn_graph.toarray().tolist(),
         }
 

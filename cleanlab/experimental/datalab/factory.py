@@ -65,7 +65,7 @@ Currently, the following issue managers are registered by default:
 - ``"outlier"``: :py:class:`OutOfDistributionIssueManager <cleanlab.experimental.datalab.issue_manager.outlier.OutOfDistributionIssueManager>`
 - ``"label"``: :py:class:`LabelIssueManager <cleanlab.experimental.datalab.issue_manager.label.LabelIssueManager>`
 - ``"near_duplicate"``: :py:class:`NearDuplicateIssueManager <cleanlab.experimental.datalab.issue_manager.duplicate.NearDuplicateIssueManager>`
-- ``"noniid"``: :py:class:`NonIIDIssueManager <cleanlab.experimental.datalab.issue_manager.noniid.NonIIDIssueManager>`
+- ``"non_iid"``: :py:class:`NonIIDIssueManager <cleanlab.experimental.datalab.issue_manager.noniid.NonIIDIssueManager>`
 
 Warning
 -------
