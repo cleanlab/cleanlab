@@ -1,19 +1,19 @@
 from __future__ import annotations
 
-
 from typing import Any, Dict, List, Optional, TYPE_CHECKING, Union
 
 import scipy
-import pandas as pd
 import numpy as np
-from fast_histogram import histogram1d
+import pandas as pd
+import numpy.typing as npt
+from fast_histogram import histogram1d # TODO new dependency
 from sklearn.neighbors import NearestNeighbors
 from sklearn.utils.validation import check_is_fitted
 
 from cleanlab.experimental.datalab.issue_manager import IssueManager
 
 if TYPE_CHECKING:  # pragma: no cover
-    from cleanlab.experimental.datalab.datalab import Datalab
+    from cleanlab import Datalab
 
 
 #TODO typing and method signatures
@@ -21,7 +21,13 @@ if TYPE_CHECKING:  # pragma: no cover
 class NonIIDIssueManager(IssueManager):  # pragma: no cover
     """Manages issues realted to non-iid data distributions."""
 
-    issue_name: str = "non_iid"
+    description: ClassVar[
+        str
+    ] = """ TODO add descriptions
+    """
+    issue_name: ClassVar[str] = "non_iid"
+    verbosity_levels = { # TODO add verbosity levels
+        }
 
     def __init__(
         self,
@@ -38,27 +44,38 @@ class NonIIDIssueManager(IssueManager):  # pragma: no cover
         self.threshold = threshold
         self.k = k
         self.num_permutations = num_permutations
-        self.knn = None
+        self.knn: Optional[NearestNeighbors] = None
+        self._embeddings: Optional[npt.NDArray] = None
         self.tests = {
-            'ks': self._ks_test,
+            'ks': self._ks_test, # TODO rename test
         }
         # TODO
 
     def find_issues(
         self,
-            features: List[str],
+            features: npt.NDArray,
             **_,
     ) -> None:
 
-        feature_array = self._extract_embeddings(features)
+        self._embeddings = features
 
         if self.knn is None:
+            if self.metric is None:
+                self.metric = "cosine" if features.shape[1] > 3 else "euclidean"
             self.knn = NearestNeighbors(n_neighbors=self.k, metric=self.metric)
+
+        if self.metric and self.metric != self.knn.metric:
+            warnings.warn(
+                f"Metric {self.metric} does not match metric {self.knn.metric} used to fit knn. "
+                "Most likely an existing NearestNeighbors object was passed in, but a different "
+                "metric was specified."
+            )
+        self.metric = self.knn.metric
 
         try:
             check_is_fitted(self.knn)
         except:
-            self.knn.fit(feature_array)
+            self.knn.fit(self._embeddings)
 
         self.neighbor_graph = self._get_neighbor_graph()
 
