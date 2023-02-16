@@ -503,6 +503,8 @@ class Datalab:
         You have to save the Dataset yourself if you want it saved to file!
         """  # TODO: Revise Datalab.save docstring: Formats and guarantees
         _Serializer.serialize(path=path, datalab=self)
+        save_message = f"Saved Datalab to folder: {path}"
+        print(save_message)
 
     @staticmethod
     def load(path: str, data: Optional[Dataset] = None) -> "Datalab":
@@ -521,4 +523,7 @@ class Datalab:
             Path to the folder containing the save Datalab and
             associated files, not the Dataset.
         """  # TODO: Revise Datalab.load docstring: Zipped/unzipped, guarantees
-        return _Serializer.deserialize(path=path, data=data)
+        datalab = _Serializer.deserialize(path=path, data=data)
+        load_message = f"Datalab loaded from folder: {path}"
+        print(load_message)
+        return datalab
