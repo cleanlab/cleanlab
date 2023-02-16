@@ -89,7 +89,7 @@ class NearDuplicateIssueManager(IssueManager):
             self.knn.fit(self._embeddings)
 
         scores, self.distances = self._score_features(self._embeddings)
-        self.radius, self.threshold = self._compute_threshold_and_radius()
+        self.radius, self.threshold = self._compute_threshold_and_radius(self.distances)
 
         self.issues = pd.DataFrame(
             {
@@ -172,10 +172,10 @@ class NearDuplicateIssueManager(IssueManager):
         scores = np.tanh(distances)
         return scores, distances
 
-    def _compute_threshold_and_radius(self) -> Tuple[float, float]:
+    def _compute_threshold_and_radius(self, distances: npt.NDArray) -> Tuple[float, float]:
         """Computes the radius for nearest-neighbors thresholding"""
         if self.threshold is None:
-            no_exact_duplicates = self.distances[self.distances != 0]
+            no_exact_duplicates = distances[distances != 0]
             median_nonzero_distance = np.median(
                 no_exact_duplicates
             )  # get median nonzero nearest-neighbor distance
