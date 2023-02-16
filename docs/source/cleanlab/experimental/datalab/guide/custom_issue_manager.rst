@@ -33,6 +33,10 @@ Prerequisites
 
 As a starting point for this guide, we'll import the necessary things for the next section and create a dummy dataset.
 
+.. note::
+
+    .. include:: ../optional_dependencies.rst
+
 .. code-block:: python
 
 

@@ -3,6 +3,10 @@ Datalab guides
 
 This page contains a list of guides for using Datalab.
 
+.. note::
+
+   .. include:: ../optional_dependencies.rst
+
 
 Developer guides
 ----------------

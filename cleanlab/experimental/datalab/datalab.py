@@ -16,6 +16,9 @@
 """
 Implements cleanlab's Datalab interface as a one-stop-shop for tracking
 and managing all kinds of issues in datasets.
+
+.. note::
+    .. include:: optional_dependencies.rst
 """
 from __future__ import annotations
 
