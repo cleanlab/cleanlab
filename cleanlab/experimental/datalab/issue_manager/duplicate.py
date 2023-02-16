@@ -16,7 +16,7 @@ if TYPE_CHECKING:  # pragma: no cover
 
 
 class NearDuplicateIssueManager(IssueManager):
-    """Manages issues realted to near-duplicate examples."""
+    """Manages issues related to near-duplicate examples."""
 
     description: ClassVar[
         str

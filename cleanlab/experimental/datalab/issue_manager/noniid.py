@@ -20,14 +20,17 @@ if TYPE_CHECKING:  # pragma: no cover
 #TODO typing and method signatures
 
 class NonIIDIssueManager(IssueManager):  # pragma: no cover
-    """Manages issues realted to non-iid data distributions."""
+    """Manages issues related to non-iid data distributions."""
 
     description: ClassVar[
         str
     ] = """ TODO add descriptions
     """
     issue_name: ClassVar[str] = "non_iid"
-    verbosity_levels = { # TODO add verbosity levels
+    verbosity_levels = {
+        0: {"issue": ["p-value"]},
+        1: {},
+        2: {"issue": ["nearest_neighbor", "distance_to_nearest_neighbor"]},
         }
 
     def __init__(
