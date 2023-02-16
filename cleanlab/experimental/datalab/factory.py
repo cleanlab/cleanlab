@@ -53,7 +53,7 @@ REGISTRY: Dict[str, Type[IssueManager]] = {
     "outlier": OutOfDistributionIssueManager,
     "label": LabelIssueManager,
     "near_duplicate": NearDuplicateIssueManager,
-    "noniid": NonIIDIssueManager,
+    "non_iid": NonIIDIssueManager,
 }
 """Registry of issue managers that can be constructed from a string 
 and used in the Datalab class.
