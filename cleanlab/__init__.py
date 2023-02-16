@@ -28,9 +28,9 @@ class DatalabUnavailable:
 
 def _datalab_import_factory():
     try:
-        from .experimental.datalab.datalab import Datalab
+        from .experimental.datalab.datalab import Datalab as _Datalab
 
-        return Datalab
+        return _Datalab
     except ImportError:
         return DatalabUnavailable(
             "Datalab is not available due to missing dependencies. "
@@ -40,9 +40,9 @@ def _datalab_import_factory():
 
 def _issue_manager_import_factory():
     try:
-        from .experimental.datalab.issue_manager import IssueManager
+        from .experimental.datalab.issue_manager import IssueManager as _IssueManager
 
-        return IssueManager
+        return _IssueManager
     except ImportError:
         return DatalabUnavailable(
             "IssueManager is not available due to missing dependencies for Datalab. "
