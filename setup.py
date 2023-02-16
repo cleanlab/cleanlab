@@ -28,10 +28,16 @@ with open(path.join(here, "README.md"), encoding="utf-8") as f:
 # Get version number and store it in __version__
 exec(open("cleanlab/version.py").read())
 
-extras = {
-    "datalab": ["datasets>=2.7.0"],
+DATALAB_REQUIRE = [
+    # Mainly for Datalab's data storage class.
+    # Still some type hints that require datasets
+    "datasets>=2.7.0",
+]
+
+EXTRAS_REQUIRE = {
+    "datalab": DATALAB_REQUIRE,
 }
-extras["all"] = list(set(sum(extras.values(), [])))
+EXTRAS_REQUIRE["all"] = list(set(sum(EXTRAS_REQUIRE.values(), [])))
 
 setup(
     name="cleanlab",
@@ -97,5 +103,5 @@ setup(
         "pandas>=1.1.5",
         "termcolor>=2.0.0",
     ],
-    extras_require=extras,
+    extras_require=EXTRAS_REQUIRE,
 )
