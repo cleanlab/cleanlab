@@ -357,7 +357,9 @@ class TestDatalab:
         monkeypatch.setattr(lab, "issues", mock_issues, raising=False)
         monkeypatch.setattr(lab, "info", mock_info, raising=False)
 
-        report = lab._get_report(k=3, verbosity=0, include_description=include_description)
+        report = lab._get_report(
+            num_examples=3, verbosity=0, include_description=include_description
+        )
         expected_report = "\n\n".join(["Here is a lab summary", "foo report"])
         assert report == expected_report
 
@@ -367,7 +369,7 @@ class TestDatalab:
         # Define a mock function that takes a verbosity argument and a k argument
         # and returns a string
         mock_get_report.side_effect = (
-            lambda verbosity, k, **_: f"Report with verbosity={verbosity} and k={k}"
+            lambda num_examples, verbosity, **_: f"Report with verbosity={verbosity} and k={num_examples}"
         )
         monkeypatch.setattr(lab, "_get_report", mock_get_report)
 

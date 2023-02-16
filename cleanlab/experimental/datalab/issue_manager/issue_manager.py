@@ -190,7 +190,7 @@ class IssueManager(ABC, metaclass=IssueManagerMeta):
         issues: pd.DataFrame,
         summary: pd.DataFrame,
         info: Dict[str, Any],
-        k: int = 5,
+        num_examples: int = 5,
         verbosity: int = 0,
         include_description: bool = True,
     ) -> str:
@@ -233,7 +233,7 @@ class IssueManager(ABC, metaclass=IssueManagerMeta):
             ...     "B": ["val_B1", "val_B2"],
             ... }
 
-        k :
+        num_examples :
             The number of examples to print.
 
         verbosity :
@@ -258,7 +258,7 @@ class IssueManager(ABC, metaclass=IssueManagerMeta):
         if issues.empty:
             print(f"No issues found")
 
-        topk_ids = issues.sort_values(by=cls.issue_score_key, ascending=True).index[:k]
+        topk_ids = issues.sort_values(by=cls.issue_score_key, ascending=True).index[:num_examples]
 
         score = summary["score"].loc[0]
         report_str = f"{' ' + cls.issue_name + ' issues ':-^100}\n\n"

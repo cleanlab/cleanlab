@@ -263,23 +263,13 @@ class Datalab:
                 error_message += f"Required argument {missing_required_args} for issue type {issue_name} was not provided.\n"
             raise ValueError(error_message)
 
-    def _get_report(self, k: int, verbosity: int, include_description: bool) -> str:
+    def _get_report(self, num_examples: int, verbosity: int, include_description: bool) -> str:
         # Sort issues based on the score
         # Show top k issues
         # Show the info (get_info) with some verbosity level
         #   E.g. for label issues, only show the confident joint computed with the health_summary
         report_str = ""
-        issue_summary = self.issue_summary.copy()
-        issue_type_names = issue_summary["issue_type"].tolist()
-        issue_type_counts = []
-        for issue_type_name in issue_type_names:
-            issues = self.get_issues(issue_name=issue_type_name)
-            is_issue_col = [col for col in issues.columns if col.startswith("is_")][0]
-            issue_type_counts.append(issues[is_issue_col].sum())
-        # Rank issue_summary by the number of issues in issue_type_counts
-        issue_summary["num_issues"] = issue_type_counts
-        # issue_type_sorted = self.issue_summary.sort_values(by="score", ascending=True)
-        issue_type_sorted = issue_summary.sort_values(by="num_issues", ascending=False)
+        issue_type_sorted = self._sort_issue_summary_by_issue_counts(self.issue_summary)
         report_str += self._add_issue_summary_to_report(summary=issue_type_sorted)
         issue_type_sorted_keys: List[str] = issue_type_sorted["issue_type"].tolist()
         issue_manager_reports = []
@@ -290,7 +280,7 @@ class Datalab:
                     issues=self.get_issues(issue_name=key),
                     summary=self.get_summary(issue_name=key),
                     info=self.get_info(issue_name=key),
-                    k=k,
+                    num_examples=num_examples,
                     verbosity=verbosity,
                     include_description=include_description,
                 )
@@ -298,6 +288,43 @@ class Datalab:
 
         report_str += "\n\n\n".join(issue_manager_reports)
         return report_str
+
+    def _sort_issue_summary_by_issue_counts(self, issue_summary: pd.DataFrame) -> pd.DataFrame:
+        """Sort issue_summary by the number of issues per issue type.
+
+        Returns
+        -------
+        sorted_summary :
+            Sorted issue_summary.
+
+        Examples
+        --------
+        >>> issue_summary = pd.DataFrame(
+        ...     {
+        ...         "issue_type": ["label", "outlier", "near_duplicate"],
+        ...         "score": [0.5, 0.2, 0.1],
+        ...     }
+        ... )
+        >>> # Calling this method will sort the issue_summary by the number of issues
+        >>> sorted_summary = Datalab._sort_issue_summary_by_issue_counts(issue_summary)
+        >>> sorted_summary
+               issue_type  score  num_issues
+        0         outlier    0.2           5
+        1           label    0.5           3
+        2  near_duplicate    0.1           2
+        """
+        summary = issue_summary.copy()
+        names = summary["issue_type"].tolist()
+        counts = []
+        for name in names:
+            issues = self.get_issues(issue_name=name)
+            is_issue_col = [col for col in issues.columns if col.startswith("is_")][0]
+            counts.append(issues[is_issue_col].sum())
+        # Rank issue_summary by the number of issues in issue_type_counts
+        summary["num_issues"] = counts
+        # issue_type_sorted = self.issue_summary.sort_values(by="score", ascending=True)
+        sorted_summary = summary.sort_values(by="num_issues", ascending=False)
+        return sorted_summary
 
     def get_issues(self, issue_name: str) -> pd.DataFrame:
         columns = [col for col in self.issues.columns if issue_name in col]
@@ -456,7 +483,9 @@ class Datalab:
         # Show summary of issues
         print(
             self._get_report(
-                k=num_examples, verbosity=verbosity, include_description=include_description
+                num_examples=num_examples,
+                verbosity=verbosity,
+                include_description=include_description,
             )
         )
 
