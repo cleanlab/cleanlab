@@ -61,7 +61,8 @@ class Datalab:
 
         See also
         --------
-        :py:class:`Data <cleanlab.experimental.datalab.data.Data>`: Internal class that represents the dataset.
+        :py:class:`Data <cleanlab.experimental.datalab.data.Data>`:
+        Internal class that represents the dataset.
 
 
     label_name :
@@ -165,7 +166,8 @@ class Datalab:
     def _resolve_required_args(self, pred_probs, features, model):
         """Resolves the required arguments for each issue type.
 
-        This is a helper function that filters out any issue manager that does not have the required arguments.
+        This is a helper function that filters out any issue manager
+        that does not have the required arguments.
 
         This does not consider custom hyperparameters for each issue type.
 
@@ -461,7 +463,8 @@ class Datalab:
             print(f"Failed to find issues for {failed_managers}")
 
     def get_info(self, issue_name) -> Dict[str, Any]:
-        """Returns dict of info about a specific issue, or None if this issue does not exist in self.info.
+        """Returns dict of info about a specific issue,
+        or None if this issue does not exist in self.info.
         Internally fetched from self.info[issue_name] and prettified.
         Keys might include: number of examples suffering from issue,
         indicates of top-K examples most severely suffering,
