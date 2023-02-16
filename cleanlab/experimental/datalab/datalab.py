@@ -265,7 +265,7 @@ class Datalab:
 
     def _get_report(self, k: int, verbosity: int, include_description: bool) -> str:
         # Sort issues based on the score
-        # Show top K issues
+        # Show top k issues
         # Show the info (get_info) with some verbosity level
         #   E.g. for label issues, only show the confident joint computed with the health_summary
         report_str = ""
@@ -439,20 +439,26 @@ class Datalab:
         """  # TODO: Revise Datalab.get_info docstring
         return self.data_issues.get_info(issue_name)
 
-    def report(self, k: int = 5, verbosity: int = 0, include_description: bool = True) -> None:
+    def report(
+        self, num_examples: int = 5, verbosity: int = 0, include_description: bool = True
+    ) -> None:
         """Prints helpful summary of all issues.
 
         Parameters
         ----------
-        k :
+        num_examples :
             Number of examples to show for each type of issue.
 
         verbosity :
-            Level of verbosity. 0 is the default and prints the top k examples
+            Level of verbosity. 0 is the default and prints the top num_examples examples
             for each issue. Higher levels may add more information to the report.
         """
         # Show summary of issues
-        print(self._get_report(k=k, verbosity=verbosity, include_description=include_description))
+        print(
+            self._get_report(
+                k=num_examples, verbosity=verbosity, include_description=include_description
+            )
+        )
 
     def save(self, path: str) -> None:
         """Saves this Lab to file (all files are in folder at path/).

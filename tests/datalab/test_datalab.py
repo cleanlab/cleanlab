@@ -367,7 +367,7 @@ class TestDatalab:
         # Define a mock function that takes a verbosity argument and a k argument
         # and returns a string
         mock_get_report.side_effect = (
-            lambda verbosity, k, **kwargs: f"Report with verbosity={verbosity} and k={k}"
+            lambda verbosity, k, **_: f"Report with verbosity={verbosity} and k={k}"
         )
         monkeypatch.setattr(lab, "_get_report", mock_get_report)
 
@@ -376,5 +376,5 @@ class TestDatalab:
             lab.report()
             mock_print.assert_called_once_with("Report with verbosity=0 and k=5")
             mock_print.reset_mock()
-            lab.report(k=10, verbosity=3)
+            lab.report(num_examples=10, verbosity=3)
             mock_print.assert_called_once_with("Report with verbosity=3 and k=10")
