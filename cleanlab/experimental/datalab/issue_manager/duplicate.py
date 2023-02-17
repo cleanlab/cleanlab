@@ -118,7 +118,7 @@ class NearDuplicateIssueManager(IssueManager):
             duplicates[duplicates != idx] for idx, duplicates in enumerate(indices)
         ]
 
-        self.summary = self.get_summary(score=scores.mean())
+        self.summary = self.make_summary(score=scores.mean())
         self.info = self.collect_info()
 
     def collect_info(self) -> dict:

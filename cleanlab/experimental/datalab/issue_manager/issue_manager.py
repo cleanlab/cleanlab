@@ -184,13 +184,18 @@ class IssueManager(ABC, metaclass=IssueManagerMeta):
     # TODO: Add a `collect_global_info` method for storing useful statistics that can be used by other IssueManagers.
 
     @classmethod
-    def get_summary(cls, score: float) -> pd.DataFrame:
-        """Sets the summary attribute of this IssueManager.
+    def make_summary(cls, score: float) -> pd.DataFrame:
+        """Construct a summary dataframe.
 
         Parameters
         ----------
         score :
             The overall score for this issue.
+
+        Returns
+        -------
+        summary :
+            A summary dataframe.
         """
         return pd.DataFrame(
             {

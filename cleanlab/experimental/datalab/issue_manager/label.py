@@ -113,7 +113,7 @@ class LabelIssueManager(IssueManager):
         )
 
         # Get a summarized dataframe of the label issues
-        self.summary = self.get_summary(score=summary_dict["overall_label_health_score"])
+        self.summary = self.make_summary(score=summary_dict["overall_label_health_score"])
 
         # Collect info about the label issues
         self.info = self.collect_info(issues=self.issues, summary_dict=summary_dict)

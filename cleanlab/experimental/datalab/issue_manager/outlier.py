@@ -98,7 +98,7 @@ class OutOfDistributionIssueManager(IssueManager):
             },
         )
 
-        self.summary = self.get_summary(score=scores.mean())
+        self.summary = self.make_summary(score=scores.mean())
 
         self.info = self.collect_info()
 
