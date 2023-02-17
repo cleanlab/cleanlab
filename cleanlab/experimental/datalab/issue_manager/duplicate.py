@@ -78,8 +78,6 @@ class NearDuplicateIssueManager(IssueManager):
         self.k = k
         self.knn: Optional[NearestNeighbors] = None
         self.near_duplicate_sets: List[List[int]] = []
-        self._embeddings: Optional[npt.NDArray] = None
-        self.distances: Optional[npt.NDArray] = None
 
     def find_issues(
         self,
@@ -87,7 +85,6 @@ class NearDuplicateIssueManager(IssueManager):
         **_,
     ) -> None:
 
-        self._embeddings = features
         if self.knn is None:
             if self.metric is None:
                 self.metric = "cosine" if features.shape[1] > 3 else "euclidean"
@@ -104,10 +101,10 @@ class NearDuplicateIssueManager(IssueManager):
         try:
             check_is_fitted(self.knn)
         except:
-            self.knn.fit(self._embeddings)
+            self.knn.fit(features)
 
-        scores, self.distances = self._score_features(self._embeddings)
-        self.radius, self.threshold = self._compute_threshold_and_radius(self.distances)
+        scores, distances = self._score_features(features)
+        self.radius, self.threshold = self._compute_threshold_and_radius(distances)
 
         self.issues = pd.DataFrame(
             {
@@ -116,7 +113,7 @@ class NearDuplicateIssueManager(IssueManager):
             },
         )
 
-        indices = self.knn.radius_neighbors(self._embeddings, self.radius, return_distance=False)
+        indices = self.knn.radius_neighbors(features, self.radius, return_distance=False)
         self.near_duplicate_sets = [
             duplicates[duplicates != idx] for idx, duplicates in enumerate(indices)
         ]
