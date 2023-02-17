@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, ClassVar, List, Optional, Tuple, cast
 import warnings
 
-import scipy
+from scipy.stats import gaussian_kde
 import numpy as np
 import pandas as pd
 import numpy.typing as npt
@@ -13,7 +13,7 @@ from sklearn.utils.validation import check_is_fitted
 from cleanlab.experimental.datalab.issue_manager import IssueManager
 
 if TYPE_CHECKING:  # pragma: no cover
-    from cleanlab import Datalab
+    from cleanlab.experimental.datalab.datalab import Datalab
 
 
 # TODO typing and method signatures
@@ -36,9 +36,9 @@ class NonIIDIssueManager(IssueManager):  # pragma: no cover
     def __init__(
         self,
         datalab: Datalab,
-        metric: Optional[str] = "cosine",
+        metric: Optional[str] = None,
         threshold: Optional[float] = None,
-        k: Optional[int] = 10,
+        k: int = 10,
         num_permutations: Optional[int] = 25,
         **_,
     ):
@@ -78,7 +78,7 @@ class NonIIDIssueManager(IssueManager):  # pragma: no cover
         except:
             self.knn.fit(self._embeddings)
 
-        self.neighbor_graph = self._get_neighbor_graph()
+        self.neighbor_graph = self._get_neighbor_graph(self.knn)
 
         self.num_neighbors = self.k
         self.num_non_neighbors = min(
@@ -129,7 +129,7 @@ class NonIIDIssueManager(IssueManager):  # pragma: no cover
 
         info_dict = {
             **issues_dict,
-            **params_dict,
+            **params_dict,  # type: ignore[arg-type]
             **knn_info_dict,
         }
         return info_dict
@@ -177,7 +177,7 @@ class NonIIDIssueManager(IssueManager):  # pragma: no cover
             statistics.append(stats)
 
         ks_stats = np.array([stats["ks"] for stats in statistics])
-        ks_stats_kde = scipy.stats.gaussian_kde(ks_stats)
+        ks_stats_kde = gaussian_kde(ks_stats)
         p_value = ks_stats_kde.integrate_box(self.statistics["ks"], 100)
 
         return p_value
@@ -214,14 +214,14 @@ class NonIIDIssueManager(IssueManager):  # pragma: no cover
         cdf = np.apply_along_axis(np.cumsum, 1, histograms)
         return cdf
 
-    def _get_neighbor_graph(self) -> np.ndarray:
+    def _get_neighbor_graph(self, knn: NearestNeighbors) -> np.ndarray:
         """
         Given a fitted knn object, returns an array in which A[i,j] = n if
         item i and j are nth nearest neighbors. For n > k, A[i,j] = -1. Additionally, A[i,i] = 0
         """
 
-        distances, kneighbors = self.knn.kneighbors()
-        graph = self.knn.kneighbors_graph(n_neighbors=self.k).toarray()
+        distances, kneighbors = knn.kneighbors()
+        graph = knn.kneighbors_graph(n_neighbors=self.k).toarray()
 
         kneighbor_graph = np.ones(graph.shape) * -1
         for i, nbrs in enumerate(kneighbors):
