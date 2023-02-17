@@ -375,8 +375,11 @@ class TestDatalab:
 
         # Call report with no arguments, test that it prints the report
         with patch("builtins.print") as mock_print:
-            lab.report()
+            lab.report(verbosity=0)
             mock_print.assert_called_once_with("Report with verbosity=0 and k=5")
             mock_print.reset_mock()
             lab.report(num_examples=10, verbosity=3)
             mock_print.assert_called_once_with("Report with verbosity=3 and k=10")
+            mock_print.reset_mock()
+            lab.report()
+            mock_print.assert_called_once_with("Report with verbosity=1 and k=5")

@@ -50,8 +50,9 @@ class OutOfDistributionIssueManager(IssueManager):
     issue_name: ClassVar[str] = "outlier"
     verbosity_levels = {
         0: {},
-        1: {"info": ["average_ood_score"], "issue": ["nearest_neighbor"]},
-        2: {"issue": ["distance_to_nearest_neighbor"]},
+        1: {},
+        2: {"info": ["average_ood_score"], "issue": ["nearest_neighbor"]},
+        3: {"issue": ["distance_to_nearest_neighbor"]},
     }
 
     def __init__(

@@ -68,6 +68,11 @@ class Datalab:
     label_name :
         The name of the label column in the dataset.
 
+    verbosity : int, optional
+        The verbosity level of the Datalab object. The higher the verbosity,
+        the more information is printed to the console.
+        Valid values are 0 through 4. Default is 1.
+
     Examples
     --------
     >>> import datasets
@@ -80,6 +85,7 @@ class Datalab:
         self,
         data: "DatasetLike",
         label_name: Union[str, List[str]],
+        verbosity: int = 1,
     ) -> None:
         self._data = Data(data, label_name)  # TODO: Set extracted class instance to self.data
         self.data = self._data._data
@@ -89,6 +95,7 @@ class Datalab:
         self.data_issues = DataIssues(self._data)
         self.cleanlab_version = cleanlab.version.__version__
         self.path = ""
+        self.verbosity = verbosity
 
     def __repr__(self) -> str:
         """What is displayed if user executes: datalab"""
@@ -453,12 +460,16 @@ class Datalab:
         failed_managers = []
         for issue_manager, arg_dict in zip(new_issue_managers, issue_types_copy.values()):
             try:
+                if self.verbosity:
+                    print(f"Finding {issue_manager.issue_name} issues ...")
                 issue_manager.find_issues(**arg_dict)
                 self.data_issues._collect_results_from_issue_manager(issue_manager)
             except Exception as e:
                 print(f"Error in {issue_manager.issue_name}: {e}")
                 failed_managers.append(issue_manager)
 
+        if self.verbosity:
+            print("Search complete.")
         if failed_managers:
             print(f"Failed to find issues for {failed_managers}")
 
@@ -473,7 +484,10 @@ class Datalab:
         return self.data_issues.get_info(issue_name)
 
     def report(
-        self, num_examples: int = 5, verbosity: int = 0, include_description: bool = True
+        self,
+        num_examples: int = 5,
+        verbosity: Optional[int] = None,
+        include_description: bool = True,
     ) -> None:
         """Prints helpful summary of all issues.
 
@@ -486,6 +500,8 @@ class Datalab:
             Level of verbosity. 0 is the default and prints the top num_examples examples
             for each issue. Higher levels may add more information to the report.
         """
+        if verbosity is None:
+            verbosity = self.verbosity
         # Show summary of issues
         print(
             self._get_report(

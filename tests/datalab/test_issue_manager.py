@@ -221,7 +221,7 @@ class TestOutOfDistributionIssueManager:
             issues=issue_manager.issues,
             summary=issue_manager.summary,
             info={**issue_manager.info, **mock_info},
-            verbosity=3,
+            verbosity=4,
         )
         assert "Additional Information: " in report
         assert "vector: [1, 2, 3, 4, '...']" in report

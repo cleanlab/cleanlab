@@ -52,8 +52,11 @@ class LabelIssueManager(IssueManager):
     issue_name: ClassVar[str] = "label"
     verbosity_levels = {
         0: {},
-        1: {"info": ["confident_joint"]},
-        2: {"issue": ["given_label", "predicted_label"]},
+        1: {},
+        2: {
+            "info": ["confident_joint"],
+            "issue": ["given_label", "predicted_label"],
+        },
         3: {"info": ["classes_by_label_quality", "overlapping_classes"]},
     }
 
