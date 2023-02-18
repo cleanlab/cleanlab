@@ -124,7 +124,7 @@ class TestOutOfDistributionIssueManager:
     @pytest.fixture
     def embeddings(self, lab):
         np.random.seed(SEED)
-        embeddings_array = 0.5 + 0.1 * np.random.rand(lab.get_info("data")["num_examples"], 2)
+        embeddings_array = 0.5 + 0.1 * np.random.rand(lab.get_info("statistics")["num_examples"], 2)
         embeddings_array[4, :] = -1
         return {"embedding": embeddings_array}
 
@@ -248,7 +248,7 @@ class TestNearDuplicateIssueManager:
     @pytest.fixture
     def embeddings(self, lab):
         np.random.seed(SEED)
-        embeddings_array = 0.5 + 0.1 * np.random.rand(lab.get_info("data")["num_examples"], 2)
+        embeddings_array = 0.5 + 0.1 * np.random.rand(lab.get_info("statistics")["num_examples"], 2)
         embeddings_array[4, :] = (
             embeddings_array[3, :] + np.random.rand(embeddings_array.shape[1]) * 0.001
         )

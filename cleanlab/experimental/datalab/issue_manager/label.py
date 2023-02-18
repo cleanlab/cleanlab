@@ -80,14 +80,15 @@ class LabelIssueManager(IssueManager):
         some computations in the :py:meth:`find_issues` method.
         """
         if not self.health_summary_parameters:
+            statistics_dict = self.datalab.get_info("statistics")
             self.health_summary_parameters = {
                 "labels": self.datalab._labels,
-                "asymmetric": self.datalab.info["data"].get("asymmetric", None),
+                "asymmetric": statistics_dict.get("asymmetric", None),
                 "class_names": list(self.datalab._label_map.values()),
-                "num_examples": self.datalab.info["data"].get("num_examples"),
-                "joint": self.datalab.info["data"].get("joint", None),
-                "confident_joint": self.datalab.info["data"].get("confident_joint", None),
-                "multi_label": self.datalab.info["data"].get("multi_label", None),
+                "num_examples": statistics_dict.get("num_examples"),
+                "joint": statistics_dict.get("joint", None),
+                "confident_joint": statistics_dict.get("confident_joint", None),
+                "multi_label": statistics_dict.get("multi_label", None),
             }
         self.health_summary_parameters = {
             k: v for k, v in self.health_summary_parameters.items() if v is not None

@@ -67,11 +67,11 @@ class TestDatalab:
 
     def test_get_info(self, lab):
         """Test that the method fetches the values from the info dict."""
-        data_info = lab.get_info("data")
-        assert data_info["num_classes"] == 3
-        lab.info["data"]["num_classes"] = 4
-        data_info = lab.get_info("data")
-        assert data_info["num_classes"] == 4
+        statistics = lab.get_info("statistics")
+        assert statistics["num_classes"] == 3
+        lab.info["statistics"]["num_classes"] = 4
+        statistics = lab.get_info("statistics")
+        assert statistics["num_classes"] == 4
 
     @pytest.mark.parametrize(
         "issue_types",
@@ -93,7 +93,7 @@ class TestDatalab:
                 assert f"{issue_type}_score" in columns
 
     def test_find_issues_with_custom_hyperparams(self, lab, pred_probs):
-        dataset_size = lab.get_info("data")["num_examples"]
+        dataset_size = lab.get_info("statistics")["num_examples"]
         embedding_size = 2
         mock_embeddings = np.random.rand(dataset_size, embedding_size)
 

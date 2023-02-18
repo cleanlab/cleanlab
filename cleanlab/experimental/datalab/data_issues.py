@@ -62,14 +62,13 @@ class DataIssues:
         self.issue_summary: pd.DataFrame = pd.DataFrame(columns=["issue_type", "score"])
         class_names = data.class_names
         self.info: Dict[str, Dict[str, Any]] = {
-            "data": {
+            "statistics": {
                 "num_examples": len(data),
                 "class_names": class_names,
                 "num_classes": len(class_names),
                 "multi_label": False,  # TODO: Add multi-label support.
                 "health_score": None,
             },
-            "statistics": {},
         }
 
     def get_info(self, issue_name: str) -> Dict[str, Any]:
