@@ -19,16 +19,93 @@ if TYPE_CHECKING:  # pragma: no cover
 # TODO typing and method signatures
 
 
+def simplified_kolmogorov_smirnov_test(
+    neighbor_histogram: npt.NDArray[np.float64],
+    non_neighbor_histogram: npt.NDArray[np.float64],
+) -> float:  # TODO change name
+    """Computes the Kolmogorov-Smirnov statistic between two groups of data.
+    The statistic is the largest difference between the empirical cumulative
+    distribution functions (ECDFs) of the two groups.
+
+    Parameters
+    ----------
+    neighbor_histogram :
+       Histogram data for the nearest neighbor group.
+
+    non_neighbor_histogram :
+        Histogram data for the non-neighbor group.
+
+    Returns
+    -------
+    statistic :
+        The KS statistic between the two ECDFs.
+
+    Note
+    ----
+    - Both input arrays should have the same length.
+    - The input arrays are histograms, which means they contain the count
+      or frequency of values in each group. The data in the histograms
+      should be normalized so that they sum to one.
+
+    To calculate the KS statistic, the function first calculates the ECDFs
+    for both input arrays, which are step functions that show the cumulative
+    sum of the data up to each point. The function then calculates the
+    largest absolute difference between the two ECDFs.
+    """
+
+    neighbor_cdf = np.cumsum(neighbor_histogram)
+    non_neighbor_cdf = np.cumsum(non_neighbor_histogram)
+
+    statistic = np.max(np.abs(neighbor_cdf - non_neighbor_cdf))
+    return statistic
+
+
 class NonIIDIssueManager(IssueManager):  # pragma: no cover
-    """Manages issues related to non-iid data distributions."""
+    """Manages issues related to non-iid data distributions.
+
+    Parameters
+    ----------
+    datalab :
+        The Datalab instance that this issue manager searches for issues in.
+
+    metric :
+        The distance metric used to compute the KNN graph of the examples in the dataset.
+        If set to `None`, the metric will be automatically selected based on the dimensionality
+        of the features used to represent the examples in the dataset.
+
+    k :
+        The number of nearest neighbors to consider when computing the KNN graph of the examples.
+
+    num_permutations :
+        The number of trials to run when performing permutation testing to determine whether
+        the distribution of index-distances between neighbors in the dataset is IID or not.
+
+    """
 
     description: ClassVar[
         str
-    ] = """ TODO add descriptions
+    ] = """The NonIIDIssueManager detects whether the given dataset is sampled IID or not.
+
+    Data can be non-IID in many ways and in general it is impossible to detect all cases of non-IID sampling.
+    This issue manager investigates whether the ordering of examples in the dataset is dependent on whether
+    examples are neighbors in the KNN graph or not. The algorithm uses permutation testing with the 
+    Kolmogorov-Smirnov statistic to determine whether the distribution of index-distances between neighbors
+    in the dataset is significantly different than that of the non-neighbors in the dataset.
+
+    Detecting non-IID data can very important when collecting datasets or preparing a model for deployment.
+    Although shuffling data is generally good practice for removing non-IID issues, knowing that there are
+    underlying problems with distribution drift or dependent sampling during data collection is important to
+    know in order to understand the real-world environment that your model will be deployed in.
+
+    Types of non-IID problems in datasets can be:
+        - Distribution drift or concept drift
+        - Video frames in an image dataset
+        - Sorting
+        - Dependent sampling
     """
     issue_name: ClassVar[str] = "non_iid"
     verbosity_levels = {
-        0: {"issue": ["p-value"]},
+        0: {"info": ["p-value"]},
         1: {},
         2: {"issue": ["nearest_neighbor", "distance_to_nearest_neighbor"]},
     }
@@ -37,28 +114,23 @@ class NonIIDIssueManager(IssueManager):  # pragma: no cover
         self,
         datalab: Datalab,
         metric: Optional[str] = None,
-        threshold: Optional[float] = None,
         k: int = 10,
-        num_permutations: Optional[int] = 25,
+        num_permutations: int = 25,
         **_,
     ):
 
         super().__init__(datalab)
         self.metric = metric
-        self.threshold = threshold
         self.k = k
         self.num_permutations = num_permutations
         self.knn: Optional[NearestNeighbors] = None
-        self._embeddings: Optional[npt.NDArray] = None
         self.tests = {
-            "ks": self._ks_test,  # TODO rename test
+            "ks": simplified_kolmogorov_smirnov_test,  # TODO rename test
         }
         self._histogram1d = None
         # TODO
 
     def find_issues(self, features: npt.NDArray, **_) -> None:
-
-        self._embeddings = features
 
         if self.knn is None:
             if self.metric is None:
@@ -76,7 +148,7 @@ class NonIIDIssueManager(IssueManager):  # pragma: no cover
         try:
             check_is_fitted(self.knn)
         except:
-            self.knn.fit(self._embeddings)
+            self.knn.fit(features)
 
         self.neighbor_graph = self._get_neighbor_graph(self.knn)
 
@@ -99,12 +171,13 @@ class NonIIDIssueManager(IssueManager):  # pragma: no cover
         scores = self._score_dataset()
         self.issues = pd.DataFrame(
             {
-                # f"is_{self.issue_name}_issue": scores < self.threshold,  # TODO this doesn't make sense
+                f"is_{self.issue_name}_issue": [False] * len(scores),
+                # TODO this doesn't make sense
                 self.issue_score_key: scores,
             },
         )
 
-        self.summary = self.get_summary(
+        self.summary = self.make_summary(
             score=self.p_value
         )  # TODO is the p-value the right thing to include here?
 
@@ -118,7 +191,6 @@ class NonIIDIssueManager(IssueManager):  # pragma: no cover
         params_dict = {
             "metric": self.metric,
             "k": self.k,
-            "threshold": self.threshold,
         }
 
         weighted_knn_graph = self.knn.kneighbors_graph(mode="distance")  # type: ignore[union-attr]
@@ -182,7 +254,7 @@ class NonIIDIssueManager(IssueManager):  # pragma: no cover
 
         return p_value
 
-    def _score_dataset(self) -> dict[int, float]:
+    def _score_dataset(self) -> npt.NDArray[np.float64]:
         graph = self.neighbor_graph
         scores = {}
 
@@ -202,8 +274,6 @@ class NonIIDIssueManager(IssueManager):  # pragma: no cover
 
         scores = stats / normalizer
         scores = np.tanh(-1 * scores) + 1
-
-        scores = {idx: scores[idx] for idx in range(len(scores))}
         return scores
 
     def _compute_row_cdf(self, array, num_bins, bin_range) -> np.ndarray:
@@ -228,21 +298,6 @@ class NonIIDIssueManager(IssueManager):  # pragma: no cover
             kneighbor_graph[i, nbrs] = 1 + np.arange(len(nbrs))
             kneighbor_graph[i, i] = 0
         return kneighbor_graph
-
-    def _ks_test(
-        self,
-        neighbor_histogram,
-        non_neighbor_histogram,
-    ) -> float:  # TODO change name
-        neighbor_cdf = np.array(
-            [np.sum(neighbor_histogram[:i]) for i in range(len(neighbor_histogram) + 1)]
-        )
-        non_neighbor_cdf = np.array(
-            [np.sum(non_neighbor_histogram[:i]) for i in range(len(non_neighbor_histogram) + 1)]
-        )
-
-        statistic = np.max(np.abs(neighbor_cdf - non_neighbor_cdf))
-        return statistic
 
     def _get_statistics(
         self,
