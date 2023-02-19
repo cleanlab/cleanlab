@@ -122,7 +122,7 @@ import inspect
 import warnings
 from typing import Optional, TYPE_CHECKING
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover
     from typing_extensions import Self
 
 from cleanlab.rank import get_label_quality_scores
