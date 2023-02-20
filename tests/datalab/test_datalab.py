@@ -172,6 +172,7 @@ class TestDatalab:
             {
                 "issue_type": ["foo"],
                 "score": [0.72],
+                "num_issues": [1],
             }
         )
         monkeypatch.setattr(lab, "issue_summary", mock_issue_summary)
@@ -192,6 +193,7 @@ class TestDatalab:
             {
                 "issue_type": ["foo", "label"],
                 "score": [0.72, 0.6],
+                "num_issues": [1, 0],
             }
         )
         pd.testing.assert_frame_equal(

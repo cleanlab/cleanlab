@@ -59,7 +59,9 @@ class DataIssues:
 
     def __init__(self, data: Data) -> None:
         self.issues: pd.DataFrame = pd.DataFrame(index=range(len(data)))
-        self.issue_summary: pd.DataFrame = pd.DataFrame(columns=["issue_type", "score"])
+        self.issue_summary: pd.DataFrame = pd.DataFrame(
+            columns=["issue_type", "score", "num_issues"]
+        )
         class_names = data.class_names
         self.info: Dict[str, Dict[str, Any]] = {
             "statistics": {
@@ -128,8 +130,13 @@ class DataIssues:
             self.issue_summary = self.issue_summary[
                 self.issue_summary["issue_type"] != issue_manager.issue_name
             ]
+        issue_column_name: str = f"is_{issue_manager.issue_name}_issue"
+        num_issues: int = int(issue_manager.issues[issue_column_name].sum())
         self.issue_summary = pd.concat(
-            [self.issue_summary, issue_manager.summary],
+            [
+                self.issue_summary,
+                issue_manager.summary.assign(num_issues=num_issues),
+            ],
             axis=0,
             ignore_index=True,
         )
