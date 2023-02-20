@@ -73,6 +73,27 @@ class TestDatalab:
         statistics = lab.get_info("statistics")
         assert statistics["num_classes"] == 4
 
+    def test_get_summary(self, lab, monkeypatch):
+        mock_summary: pd.DataFrame = pd.DataFrame(
+            {
+                "issue_type": ["label", "outlier"],
+                "score": [0.5, 0.3],
+                "num_issues": [1, 2],
+            }
+        )
+        monkeypatch.setattr(lab, "issue_summary", mock_summary)
+
+        label_summary = lab.get_summary(issue_name="label")
+        pd.testing.assert_frame_equal(label_summary, mock_summary.iloc[[0]])
+
+        outlier_summary = lab.get_summary(issue_name="outlier")
+        pd.testing.assert_frame_equal(
+            outlier_summary, mock_summary.iloc[[1]].reset_index(drop=True)
+        )
+
+        summary = lab.get_summary()
+        pd.testing.assert_frame_equal(summary, mock_summary)
+
     @pytest.mark.parametrize(
         "issue_types",
         [None, {"label": {}}],

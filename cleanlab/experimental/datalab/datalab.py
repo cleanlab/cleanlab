@@ -347,7 +347,7 @@ class Datalab:
             raise ValueError(f"Issue type {issue_name} not found in the dataset.")
         return self.issues[columns]
 
-    def get_summary(self, issue_name: str) -> pd.DataFrame:
+    def get_summary(self, issue_name: Optional[str] = None) -> pd.DataFrame:
         """Get summary of issues for a given issue type.
 
         Parameters
@@ -365,6 +365,10 @@ class Datalab:
                 "No issues found in the dataset. "
                 "Call `find_issues` before calling `get_summary`."
             )
+
+        if issue_name is None:
+            return self.issue_summary
+
         row_mask = self.issue_summary["issue_type"] == issue_name
         if not any(row_mask):
             raise ValueError(f"Issue type {issue_name} not found in the summary.")
