@@ -94,6 +94,28 @@ class TestDatalab:
         summary = lab.get_summary()
         pd.testing.assert_frame_equal(summary, mock_summary)
 
+    def test_get_issues(self, lab, monkeypatch):
+        mock_issues: pd.DataFrame = pd.DataFrame(
+            {
+                "is_label_issue": [True, False, False, True, False],
+                "label_score": [0.2, 0.4, 0.6, 0.1, 0.8],
+                "is_outlier_issue": [False, True, True, False, True],
+                "outlier_score": [0.5, 0.3, 0.1, 0.7, 0.2],
+            },
+        )
+        monkeypatch.setattr(lab, "issues", mock_issues)
+
+        label_issues = lab.get_issues(issue_name="label")
+        pd.testing.assert_frame_equal(label_issues, mock_issues[["is_label_issue", "label_score"]])
+
+        outlier_issues = lab.get_issues(issue_name="outlier")
+        pd.testing.assert_frame_equal(
+            outlier_issues, mock_issues[["is_outlier_issue", "outlier_score"]]
+        )
+
+        issues = lab.get_issues()
+        pd.testing.assert_frame_equal(issues, mock_issues)
+
     @pytest.mark.parametrize(
         "issue_types",
         [None, {"label": {}}],

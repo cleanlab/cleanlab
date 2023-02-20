@@ -340,7 +340,10 @@ class Datalab:
         sorted_summary = summary.sort_values(by="num_issues", ascending=False)
         return sorted_summary
 
-    def get_issues(self, issue_name: str) -> pd.DataFrame:
+    def get_issues(self, issue_name: Optional[str] = None) -> pd.DataFrame:
+        if issue_name is None:
+            return self.issues
+
         columns = [col for col in self.issues.columns if issue_name in col]
 
         if not columns:
