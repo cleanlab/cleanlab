@@ -74,22 +74,19 @@ class DataIssues:
         }
 
     def get_info(self, issue_name: str) -> Dict[str, Any]:
-        """Get the info for the issue_name key (and any subkeys, if provided).
+        """Get the info for the issue_name key.
 
         This function is used to get the info for a specific issue_name. If the info is not computed yet, it will raise an error.
-        If subkeys are provided, it will get the info for the subkeys.
 
         Parameters
         ----------
         issue_name : str
             The issue name for which the info is required.
-        subkeys : str
-            If the info is a dictionary, then you can provide the subkeys to get the info for nested dictionaries.
 
         Returns
         -------
         info:
-            The info for the issue_name and subkeys.
+            The info for the issue_name.
         """
         info = self.info.get(issue_name, None)
         if info is None:
