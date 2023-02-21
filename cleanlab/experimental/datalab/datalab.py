@@ -39,8 +39,6 @@ from cleanlab.experimental.datalab.serialize import _Serializer
 if TYPE_CHECKING:  # pragma: no cover
     from datasets.arrow_dataset import Dataset
 
-    from cleanlab.experimental.datalab.issue_manager import IssueManager
-
     DatasetLike = Union[Dataset, pd.DataFrame, Dict[str, Any], List[Dict[str, Any]], str]
 
 __all__ = ["Datalab"]

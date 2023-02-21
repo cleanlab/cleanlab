@@ -21,7 +21,6 @@ import numpy as np
 import numpy.typing as npt
 import pandas as pd
 
-from cleanlab.experimental.datalab import data as datalab_data
 from cleanlab.experimental.datalab.issue_manager import IssueManager
 from cleanlab.outlier import OutOfDistribution
 
