@@ -73,7 +73,6 @@ class OutOfDistributionIssueManager(IssueManager):
         pred_probs: Optional[np.ndarray] = None,
         **kwargs,
     ) -> None:
-
         if features is not None:
             scores = self._score_with_features(features, **kwargs)
         elif pred_probs is not None:
@@ -103,7 +102,6 @@ class OutOfDistributionIssueManager(IssueManager):
         self.info = self.collect_info()
 
     def collect_info(self) -> dict:
-
         issues_dict = {
             "average_ood_score": self.issues[self.issue_score_key].mean(),
         }

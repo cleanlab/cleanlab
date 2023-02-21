@@ -230,7 +230,6 @@ def _extract_labels(data: Dataset, label_name: Union[str, List[str]]) -> Tuple[n
     """
 
     if isinstance(label_name, list):
-
         raise NotImplementedError("TODO")
 
         # _labels = np.vstack([my_data[label] for label in labels]).T

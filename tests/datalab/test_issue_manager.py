@@ -60,7 +60,6 @@ class TestLabelIssueManager:
         ids=["No kwargs", "asymmetric=True"],
     )
     def test_get_summary_parameters(self, issue_manager, kwargs, monkeypatch):
-
         mock_health_summary_parameters = {
             "labels": [1, 0, 2],
             "asymmetric": False,
@@ -174,7 +173,6 @@ class TestOutOfDistributionIssueManager:
         ), "Should have confident_joint info"
 
     def test_report(self, issue_manager):
-
         pred_probs = np.array(
             [
                 [0.1, 0.85, 0.05],
@@ -299,7 +297,6 @@ class TestNearDuplicateIssueManager:
         new_issue_manager.find_issues(features=embeddings["embedding"])
 
     def test_report(self, issue_manager, embeddings):
-
         issue_manager.find_issues(features=embeddings["embedding"])
         report = issue_manager.report(
             issues=issue_manager.issues,
@@ -322,7 +319,6 @@ class TestNearDuplicateIssueManager:
 
 
 def test_register_custom_issue_manager(monkeypatch):
-
     import io
     import sys
 

@@ -118,7 +118,6 @@ class NonIIDIssueManager(IssueManager):  # pragma: no cover
         num_permutations: int = 25,
         **_,
     ):
-
         super().__init__(datalab)
         self.metric = metric
         self.k = k
@@ -131,7 +130,6 @@ class NonIIDIssueManager(IssueManager):  # pragma: no cover
         # TODO
 
     def find_issues(self, features: npt.NDArray, **_) -> None:
-
         if self.knn is None:
             if self.metric is None:
                 self.metric = "cosine" if features.shape[1] > 3 else "euclidean"
@@ -304,7 +302,6 @@ class NonIIDIssueManager(IssueManager):  # pragma: no cover
         neighbor_index_distances,
         non_neighbor_index_distances,
     ) -> dict[str, float]:
-
         statistics = {}
         for key, test in self.tests.items():
             statistic = test(

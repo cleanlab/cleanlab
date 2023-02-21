@@ -84,7 +84,6 @@ class NearDuplicateIssueManager(IssueManager):
         features: npt.NDArray,
         **_,
     ) -> None:
-
         if self.knn is None:
             if self.metric is None:
                 self.metric = "cosine" if features.shape[1] > 3 else "euclidean"
