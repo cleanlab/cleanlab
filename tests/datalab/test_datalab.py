@@ -65,13 +65,23 @@ class TestDatalab:
         assert isinstance(lab.issues, pd.DataFrame), "Issues should by in a dataframe"
         assert isinstance(lab.issue_summary, pd.DataFrame), "Issue summary should be a dataframe"
 
-    def test_get_info(self, lab):
-        """Test that the method fetches the values from the info dict."""
-        statistics = lab.get_info("statistics")
-        assert statistics["num_classes"] == 3
-        lab.info["statistics"]["num_classes"] = 4
-        statistics = lab.get_info("statistics")
-        assert statistics["num_classes"] == 4
+    def test_get_info(self, lab, monkeypatch):
+        mock_info: dict = {
+            "statistics": {"num_classes": 3},
+            "label": {
+                "given_labels": [1, 0, 1],
+                "predicted_labels": [1, 1, 2],
+            },
+            "outlier": {
+                "nearest_neighbors": [1, 0, 0],
+            },
+        }
+        monkeypatch.setattr(lab, "info", mock_info)
+
+        for key in mock_info:
+            assert lab.get_info(key) == mock_info[key]
+
+        assert lab.get_info() == lab.info == mock_info
 
     def test_get_summary(self, lab, monkeypatch):
         mock_summary: pd.DataFrame = pd.DataFrame(

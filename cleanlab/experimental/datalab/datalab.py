@@ -482,7 +482,7 @@ class Datalab:
         if failed_managers:
             print(f"Failed to find issues for {failed_managers}")
 
-    def get_info(self, issue_name) -> Dict[str, Any]:
+    def get_info(self, issue_name: Optional[str] = None) -> Dict[str, Any]:
         """Returns dict of info about a specific issue,
         or None if this issue does not exist in self.info.
         Internally fetched from self.info[issue_name] and prettified.

@@ -28,7 +28,7 @@ The collected information can be accessed using the
 from __future__ import annotations
 
 import warnings
-from typing import TYPE_CHECKING, Any, Dict
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
 import pandas as pd
 
@@ -73,14 +73,14 @@ class DataIssues:
             },
         }
 
-    def get_info(self, issue_name: str) -> Dict[str, Any]:
+    def get_info(self, issue_name: Optional[str] = None) -> Dict[str, Any]:
         """Get the info for the issue_name key.
 
         This function is used to get the info for a specific issue_name. If the info is not computed yet, it will raise an error.
 
         Parameters
         ----------
-        issue_name : str
+        issue_name :
             The issue name for which the info is required.
 
         Returns
@@ -88,7 +88,7 @@ class DataIssues:
         info:
             The info for the issue_name.
         """
-        info = self.info.get(issue_name, None)
+        info = self.info.get(issue_name, None) if issue_name else self.info
         if info is None:
             raise ValueError(
                 f"issue_name {issue_name} not found in self.info. These have not been computed yet."
