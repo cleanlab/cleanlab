@@ -339,13 +339,43 @@ class Datalab:
         return sorted_summary
 
     def get_issues(self, issue_name: Optional[str] = None) -> pd.DataFrame:
+        """
+        Fetch information about each individual issue found in the data for a specific issue type.
+
+        Parameters
+        ----------
+        issue_name : str or None
+            The name of the issue type to retrieve. If `None`, returns the entire `issues` DataFrame.
+
+        Raises
+        ------
+        ValueError
+            If `issue_name` is not found in the `issues` DataFrame.
+
+        Returns
+        -------
+        specific_issues :
+            A DataFrame containing the issues data for the specified issue type, or the entire `issues`
+            DataFrame if `issue_name` is `None`.
+
+            Additional columns are added to the DataFrame if `issue_name` is "label".
+        """
         if issue_name is None:
             return self.issues
 
-        columns = [col for col in self.issues.columns if issue_name in col]
+        specific_issues = self._get_matching_issue_columns(issue_name)
+        if issue_name == "label":
+            label_info = self.get_info(issue_name=issue_name)
+            predicted_labels = label_info["predicted_label"]
+            specific_issues = specific_issues.assign(
+                given_label=self.labels, predicted_label=predicted_labels
+            )
+        return specific_issues
 
+    def _get_matching_issue_columns(self, issue_name: str) -> pd.DataFrame:
+        columns = [col for col in self.issues.columns if issue_name in col]
         if not columns:
-            raise ValueError(f"Issue type {issue_name} not found in the dataset.")
+            raise ValueError(f"No columns found for issue type '{issue_name}'.")
         return self.issues[columns]
 
     def get_summary(self, issue_name: Optional[str] = None) -> pd.DataFrame:

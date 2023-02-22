@@ -115,13 +115,29 @@ class TestDatalab:
         )
         monkeypatch.setattr(lab, "issues", mock_issues)
 
+        mock_predicted_labels = np.array([0, 1, 2, 1, 2])
+        lab.info.update({"label": {"predicted_label": mock_predicted_labels}})
+
         label_issues = lab.get_issues(issue_name="label")
-        pd.testing.assert_frame_equal(label_issues, mock_issues[["is_label_issue", "label_score"]])
+
+        expected_label_issues = pd.DataFrame(
+            {
+                **{key: mock_issues[key] for key in ["is_label_issue", "label_score"]},
+                "given_label": [1, 1, 2, 0, 2],
+                "predicted_label": [0, 1, 2, 1, 2],
+            },
+        )
+
+        pd.testing.assert_frame_equal(label_issues, expected_label_issues)
 
         outlier_issues = lab.get_issues(issue_name="outlier")
-        pd.testing.assert_frame_equal(
-            outlier_issues, mock_issues[["is_outlier_issue", "outlier_score"]]
+
+        expected_outlier_issues = pd.DataFrame(
+            {
+                **{key: mock_issues[key] for key in ["is_outlier_issue", "outlier_score"]},
+            },
         )
+        pd.testing.assert_frame_equal(outlier_issues, expected_outlier_issues)
 
         issues = lab.get_issues()
         pd.testing.assert_frame_equal(issues, mock_issues)
