@@ -26,7 +26,7 @@ are to contain label errors. """
 
 
 def get_label_quality_scores(
-    dataset: List[Dict[Any, Any]],
+    annotations: List[Dict[Any, Any]],
     results: List[np.ndarray],
     *,
     method: str = "map",
@@ -45,13 +45,43 @@ def get_label_quality_scores(
 
     Parameters
     ----------
-    [TODO]
+    annotations:
+        A list of dictionaries such that `annotations[i]` contains the given annotations for the `i`-th image in the format
+       `{'bboxes': np.ndarray((N,4)), 'labels': np.ndarray((N,)), 'image_name': str}` where N is the number of bounding boxes
+       for the `i`-th image and `bboxes[j]` is in the format [x,y,w,h] with given label `labels[j]`. ('image_name' is optional here)
+
+    results:
+        A list of np.ndarray where such that `results[i]` corresponds to the predicted results for the `i`-th image
+        in the format `np.ndarray((K,))` where K is the number of classes and `results[i][k]` is of shape `np.ndarray(N,5)`
+        where `N` is the number of bounding boxes for class `K` and the five columns correspond to `[x,y,w,h,pred_prob]` returned
+        by the model.
+
+    method:
+        The method used to calculate lable_quality_scores.
+
+    threshold:
+        Bounding boxes in `results` with `pred_prob` below the threshold are not considered for computing label_quality_scores.
+
+    verbose : bool, default = True
+      Set to ``False`` to suppress all print statements.
+
+    Returns
+    ---------
+    label_quality_scores:
+        Array of shape ``(N, )`` of scores between 0 and 1, one per image in the dataset.
+        Lower scores indicate images are more likely to contain a label issue.
     """
 
-    assert_valid_inputs(dataset=dataset, results=results, method=method, threshold=threshold)
+    assert_valid_inputs(
+        annotations=annotations, results=results, method=method, threshold=threshold
+    )
 
     return _compute_label_quality_scores(
-        dataset=dataset, results=results, method=method, threshold=threshold
+        annotations=annotations,
+        results=results,
+        method=method,
+        threshold=threshold,
+        verbose=verbose,
     )
 
 
@@ -60,36 +90,46 @@ def issues_from_scores(label_quality_scores: np.ndarray, *, threshold: float = 0
 
     Parameters
     ----------
-    [TODO]
+    label_quality_scores:
+        Array of shape ``(N, )`` of scores between 0 and 1, one per image in the dataset.
+        Lower scores indicate images are more likely to contain a label issue.
+
+    threshold:
+        Label quality scores above the threshold are not considered as issues and their indices are omited from the return
+
+    Returns
+    ---------
+    issue_indices:
+        Array of issue indices sorted from most to least severe who's label quality scores fall below the threshold if one is provided.
     """
 
     if threshold > 1.0:
         raise ValueError(
             f"""
-            Theshold is a cuttoff of label_quality_scores and therefore should be <= 1.
+            Threshold is a cutoff of label_quality_scores and therefore should be <= 1.
             """
         )
-    print("lqs:", label_quality_scores)
+
     issue_indices = np.argwhere(label_quality_scores < threshold).flatten()
-    print(issue_indices)
     issue_vals = label_quality_scores[issue_indices]
-    sorted_vals = issue_vals.argsort()
-    return issue_indices[sorted_vals]
+    sorted_idx = issue_vals.argsort()
+    return issue_indices[sorted_idx]
 
 
 def _compute_label_quality_scores(
-    dataset: List[Dict[Any, Any]],
+    annotations: List[Dict[Any, Any]],
     results: List[np.ndarray],
     *,
     method: str = "map",
     threshold: Optional[float] = None,
     verbose: bool = True,
 ) -> np.ndarray:
+    """Internal function to prune extra bounding boxes and compute label quality scores based on passed in method."""
     if threshold is not None:
         results = _prune_by_threshold(results=results, threshold=threshold, verbose=verbose)
 
     if method == "map":
-        scores = _calculate_map(results, dataset)
+        scores = _calculate_map(results, annotations)
 
     return scores
 
@@ -97,6 +137,8 @@ def _compute_label_quality_scores(
 def _prune_by_threshold(
     results: List[np.ndarray], threshold: float, verbose: bool = True
 ) -> Tuple[List[Dict[Any, Any]], List[np.ndarray]]:
+    """Removes predicted bounding boxes from results who's pred_prob is below the cuttoff threshold."""
+
     results_copy = copy.deepcopy(results)
     num_ann_to_zero = 0
     total_ann = 0
@@ -124,15 +166,16 @@ def _prune_by_threshold(
 
 
 # Todo: make this more descriptive and assert better inputs
-def assert_valid_inputs(dataset, results, method=None, threshold=None):
-    if len(dataset) != len(results):
+def assert_valid_inputs(annotations, results, method=None, threshold=None):
+    """Asserts proper input format."""
+    if len(annotations) != len(results):
         raise ValueError(
-            f"Dataset and results length needs to match. len(dataset) == {len(dataset)} while len(results) == {len(results)}."
+            f"Annotations and results length needs to match. len(annotations) == {len(annotations)} while len(results) == {len(results)}."
         )
-    # Typecheck dataset and results
-    if not isinstance(dataset[0], dict):
+    # Typecheck annotations and results
+    if not isinstance(annotations[0], dict):
         raise ValueError(
-            f"Dataset has to be a list of dicts. Instead it is list of {type(dataset[0])}."
+            f"Annotations has to be a list of dicts. Instead it is list of {type(annotations[0])}."
         )
     # check last column of results is probabilities ( < 1.)?
     if not isinstance(results[0], np.ndarray):
@@ -154,15 +197,34 @@ def assert_valid_inputs(dataset, results, method=None, threshold=None):
     if threshold is not None and threshold > 1.0:
         raise ValueError(
             f"""
-            Theshold is a cuttoff of predicted probabilities and therefore should be <= 1.
+            Threshold is a cutoff of predicted probabilities and therefore should be <= 1.
             """
         )
 
 
+def _get_bbox_labels_annotation(annotation):
+    """Returns bbox and label values for annotation."""
+    bboxes = annotation["bboxes"]
+    labels = annotation["labels"]
+    return bboxes, labels
+
+
+def _get_bbox_labels_result(result):
+    """Returns bbox, label and pred_prob values for result."""
+    labels = []
+    boxes = []
+    for idx, result_class in enumerate(result):
+        labels.extend([idx] * len(result_class))
+        boxes.extend(result_class.tolist())
+    bboxes = [box[:4] for box in boxes]
+    pred_probs = [box[-1] for box in boxes]
+    return bboxes, labels, pred_probs
+
+
 # ==========TO BE DEPRECATED: Example score (calculate mAP)=============
-def _calculate_map(dataset, results):
-    map = np.zeros((len(dataset),))
-    for i, (d, r) in enumerate(zip(dataset, results)):
+def _calculate_map(annotations, results):
+    map = np.zeros((len(annotations),))
+    for i, (d, r) in enumerate(zip(annotations, results)):
         map[i] = bbox_map_eval(d, r)
     return map
 

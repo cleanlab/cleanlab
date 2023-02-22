@@ -4,8 +4,6 @@ from cleanlab.object_detection.rank import (
 )
 
 import numpy as np
-import pandas as pd
-import pytest
 
 import warnings
 import pickle
