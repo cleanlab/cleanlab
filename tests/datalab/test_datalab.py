@@ -123,8 +123,8 @@ class TestDatalab:
         expected_label_issues = pd.DataFrame(
             {
                 **{key: mock_issues[key] for key in ["is_label_issue", "label_score"]},
-                "given_label": [1, 1, 2, 0, 2],
-                "predicted_label": [0, 1, 2, 1, 2],
+                "given_label": [4, 4, 5, 3, 5],
+                "predicted_label": [3, 4, 5, 4, 5],
             },
         )
 

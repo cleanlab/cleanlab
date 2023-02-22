@@ -22,7 +22,7 @@ and managing all kinds of issues in datasets.
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union, cast
 import warnings
 
 import numpy as np
@@ -362,9 +362,12 @@ class Datalab:
         specific_issues = self._get_matching_issue_columns(issue_name)
         if issue_name == "label":
             label_info = self.get_info(issue_name=issue_name)
-            predicted_labels = label_info["predicted_label"]
+            predicted_labels = np.vectorize(self._data._label_map.get)(
+                label_info["predicted_label"]
+            )
+            label_name = cast(str, self.label_name)
             specific_issues = specific_issues.assign(
-                given_label=self.labels, predicted_label=predicted_labels
+                given_label=self._data._data[label_name], predicted_label=predicted_labels
             )
         return specific_issues
 
