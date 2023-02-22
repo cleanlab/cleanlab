@@ -150,9 +150,13 @@ class TestDatalab:
     def test_find_issues(self, lab, pred_probs, issue_types):
         assert lab.issues.empty, "Issues should be empty before calling find_issues"
         assert lab.issue_summary.empty, "Issue summary should be empty before calling find_issues"
+        assert lab.info["statistics"]["health_score"] is None
         lab.find_issues(pred_probs=pred_probs, issue_types=issue_types)
         assert not lab.issues.empty, "Issues weren't updated"
         assert not lab.issue_summary.empty, "Issue summary wasn't updated"
+        assert (
+            lab.info["statistics"]["health_score"] == lab.issue_summary["score"].mean()
+        )  # TODO: Avoid re-implementing logic in test
 
         if issue_types is None:
             # Test default issue types

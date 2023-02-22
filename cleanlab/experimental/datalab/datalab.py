@@ -509,6 +509,9 @@ class Datalab:
         if failed_managers:
             print(f"Failed to find issues for {failed_managers}")
 
+        health_score = self.issue_summary["score"].mean()
+        self.info["statistics"]["health_score"] = health_score
+
     def get_info(self, issue_name: Optional[str] = None) -> Dict[str, Any]:
         """Returns dict of info about a specific issue,
         or None if this issue does not exist in self.info.
