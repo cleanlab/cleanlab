@@ -327,11 +327,7 @@ class Datalab:
         """
         summary = issue_summary.copy()
         names = summary["issue_type"].tolist()
-        counts = []
-        for name in names:
-            issues = self.get_issues(issue_name=name)
-            is_issue_col = [col for col in issues.columns if col.startswith("is_")][0]
-            counts.append(issues[is_issue_col].sum())
+        counts = [self.get_issues(issue_name=name)[f"is_{name}_issue"].sum() for name in names]
         # Rank issue_summary by the number of issues in issue_type_counts
         summary["num_issues"] = counts
         # issue_type_sorted = self.issue_summary.sort_values(by="score", ascending=True)
