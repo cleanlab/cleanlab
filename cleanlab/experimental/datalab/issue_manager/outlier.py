@@ -120,7 +120,7 @@ class OutOfDistributionIssueManager(IssueManager):
             feature_issues_dict.update(
                 {
                     "metric": knn.metric,  # type: ignore[union-attr]
-                    "n_neighbors": knn.n_neighbors,  # type: ignore[union-attr]
+                    "k": knn.n_neighbors,  # type: ignore[union-attr]
                     "nearest_neighbor": nn_ids.tolist(),
                     "distance_to_nearest_neighbor": dists.tolist(),
                     # TODO Check scipy-dependency
