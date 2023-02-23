@@ -115,7 +115,7 @@ class NonIIDIssueManager(IssueManager):  # pragma: no cover
         datalab: Datalab,
         metric: Optional[str] = None,
         k: int = 10,
-        num_permutations: int = 25,
+        num_permutations: int = 15,
         **_,
     ):
         super().__init__(datalab)
