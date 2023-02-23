@@ -208,7 +208,14 @@ def assert_valid_inputs(annotations, results, method=None, threshold=None):
         )
 
 
-def viz(image_path, result, annotation, gt_overlay=True):
+def viz(
+    image_path: str,
+    result: np.ndarray,
+    annotation: Dict[Any, Any],
+    *,
+    prediction_threshold: Optional[float] = None,
+    gt_overlay: bool = True,
+):
     """Visualize bouding box annotations (given labels) and model predictions for an image. The given label annotations
     are shown with red while the predicted annotations shown in blue.
 
@@ -226,6 +233,10 @@ def viz(image_path, result, annotation, gt_overlay=True):
             The given annotation for a single image in the format {'bboxes': np.ndarray((N,4)), 'labels': np.ndarray((N,))}` where
             N is the number of bounding boxes for the `i`-th image and `bboxes[j]` is in the format [x,y,x,y] with given label `labels[j]`.
 
+        prediction_threshold:
+            Minimum pred_probs value of a bounding box output by the model. All bounding boxes with pred_probs below this threshold are
+            omited from the visualization.
+
         gt_overlay: bool
             If true, a single image with overlayed given label and predicted annotations is shown. If false, two images side
             by side are shown instead with the left image being given label and right being the ground truth annotation.
@@ -236,6 +247,11 @@ def viz(image_path, result, annotation, gt_overlay=True):
     image = plt.imread(image_path)
     rbbox, rlabels, pred_probs = _get_bbox_labels_result(result)
     abbox, alabels = _get_bbox_labels_annotation(annotation)
+
+    if prediction_threshold is not None:
+        keep_idx = np.where(pred_probs > prediction_threshold)
+        rbbox = rbbox[keep_idx]
+        rlabels = rlabels[keep_idx]
 
     if gt_overlay:
         fig, ax = plt.subplots(frameon=False)
@@ -321,7 +337,7 @@ def _get_bbox_labels_result(result):
         boxes.extend(result_class.tolist())
     bboxes = [box[:4] for box in boxes]
     pred_probs = [box[-1] for box in boxes]
-    return bboxes, labels, pred_probs
+    return np.array(bboxes), np.array(labels), np.array(pred_probs)
 
 
 def _bbox_xyxy_to_xywh(bbox):
