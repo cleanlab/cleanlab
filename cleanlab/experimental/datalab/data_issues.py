@@ -144,3 +144,10 @@ class DataIssues:
                 f"key from issue manager {issue_manager}."
             )
         self.info[issue_manager.issue_name] = issue_manager.info
+
+    def set_health_score(self) -> None:
+        """Set the health score for the dataset based on the issue summary.
+
+        Currently, the health score is the mean of the scores for each issue type.
+        """
+        self.info["statistics"]["health_score"] = self.issue_summary["score"].mean()
