@@ -54,12 +54,12 @@ def get_label_quality_scores(
     annotations:
         A list of dictionaries such that `annotations[i]` contains the given annotations for the `i`-th image in the format
        `{'bboxes': np.ndarray((N,4)), 'labels': np.ndarray((N,)), 'image_name': str}` where N is the number of bounding boxes
-       for the `i`-th image and `bboxes[j]` is in the format [x,y,w,h] with given label `labels[j]`. ('image_name' is optional here)
+       for the `i`-th image and `bboxes[j]` is in the format [x,y,x,y] with given label `labels[j]`. ('image_name' is optional here)
 
     results:
         A list of np.ndarray where such that `results[i]` corresponds to the predicted results for the `i`-th image
         in the format `np.ndarray((K,))` where K is the number of classes and `results[i][k]` is of shape `np.ndarray(N,5)`
-        where `N` is the number of bounding boxes for class `K` and the five columns correspond to `[x,y,w,h,pred_prob]` returned
+        where `N` is the number of bounding boxes for class `K` and the five columns correspond to `[x,y,x,y,pred_prob]` returned
         by the model.
 
     method:
@@ -219,12 +219,12 @@ def viz(image_path, result, annotation, gt_overlay=True):
 
         result:
             A result for a single image in the format `np.ndarray((K,))` where K is the number of classes and `result[k]` is of shape `np.ndarray(N,5)`
-            where `N` is the number of bounding boxes for class `K` and the five columns correspond to `[x,y,w,h,pred_prob]` returned
+            where `N` is the number of bounding boxes for class `K` and the five columns correspond to `[x,y,x,y,pred_prob]` returned
             by the model.
 
         annotation:
             The given annotation for a single image in the format {'bboxes': np.ndarray((N,4)), 'labels': np.ndarray((N,))}` where
-            N is the number of bounding boxes for the `i`-th image and `bboxes[j]` is in the format [x,y,w,h] with given label `labels[j]`.
+            N is the number of bounding boxes for the `i`-th image and `bboxes[j]` is in the format [x,y,x,y] with given label `labels[j]`.
 
         gt_overlay: bool
             If true, a single image with overlayed given label and predicted annotations is shown. If false, two images side
@@ -286,6 +286,7 @@ def _draw_labels(ax, rect, label, edgecolor):
 
 def _draw_boxes(fig, ax, bboxes, labels, edgecolor="g", linestyle="-", linewidth=3):
     """Helper function to draw bboxes and labels on an axis."""
+    bboxes = [_bbox_xyxy_to_xywh(box) for box in bboxes]
     for (x, y, w, h), label in zip(bboxes, labels):
         rect = Rectangle(
             (x, y),
@@ -321,6 +322,17 @@ def _get_bbox_labels_result(result):
     bboxes = [box[:4] for box in boxes]
     pred_probs = [box[-1] for box in boxes]
     return bboxes, labels, pred_probs
+
+
+def _bbox_xyxy_to_xywh(bbox):
+    if len(bbox) == 4:
+        x1, y1, x2, y2 = bbox
+        w = x2 - x1
+        h = y2 - y1
+        return [x1, y1, w, h]
+    else:
+        print("Wrong bbox shape", len(bbox))
+        return None
 
 
 # ==========TO BE DEPRECATED: Example score (calculate mAP)=============
