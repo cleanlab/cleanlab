@@ -18,8 +18,14 @@ from typing import List, Dict, Any, Optional, Tuple
 import numpy as np
 import copy
 
+# for visualizing functions
+import matplotlib.pyplot as plt
+from matplotlib.patches import Rectangle
+
+
 # for MAP
 from multiprocessing import Pool
+
 
 """Methods to rank and score images in an object detection dataset (object detection data), based on how likely they
 are to contain label errors. """
@@ -200,6 +206,102 @@ def assert_valid_inputs(annotations, results, method=None, threshold=None):
             Threshold is a cutoff of predicted probabilities and therefore should be <= 1.
             """
         )
+
+
+def viz(image_path, result, annotation, gt_overlay=True):
+    """Visualize bouding box annotations (given labels) and model predictions for an image. The given label annotations
+    are shown with red while the predicted annotations shown in blue.
+
+        Parameters
+        ----------
+        image_path:
+            Full path to the image file.
+
+        result:
+            A result for a single image in the format `np.ndarray((K,))` where K is the number of classes and `result[k]` is of shape `np.ndarray(N,5)`
+            where `N` is the number of bounding boxes for class `K` and the five columns correspond to `[x,y,w,h,pred_prob]` returned
+            by the model.
+
+        annotation:
+            The given annotation for a single image in the format {'bboxes': np.ndarray((N,4)), 'labels': np.ndarray((N,))}` where
+            N is the number of bounding boxes for the `i`-th image and `bboxes[j]` is in the format [x,y,w,h] with given label `labels[j]`.
+
+        gt_overlay: bool
+            If true, a single image with overlayed given label and predicted annotations is shown. If false, two images side
+            by side are shown instead with the left image being given label and right being the ground truth annotation.
+
+    """
+
+    # Create figure and axes
+    image = plt.imread(image_path)
+    rbbox, rlabels, pred_probs = _get_bbox_labels_result(result)
+    abbox, alabels = _get_bbox_labels_annotation(annotation)
+
+    if gt_overlay:
+        fig, ax = plt.subplots(frameon=False)
+        plt.axis("off")
+        ax.imshow(image)
+
+        fig, ax = _draw_boxes(fig, ax, rbbox, rlabels, edgecolor="b", linestyle="-", linewidth=2)
+        fig, ax = _draw_boxes(fig, ax, abbox, alabels, edgecolor="r", linestyle="-.", linewidth=2)
+    else:
+        fig, axes = plt.subplots(nrows=1, ncols=2, frameon=False)
+        axes[0].axis("off")
+        axes[0].imshow(image)
+        axes[1].axis("off")
+        axes[1].imshow(image)
+
+        fig, ax = _draw_boxes(
+            fig, axes[0], rbbox, rlabels, edgecolor="b", linestyle="-", linewidth=2
+        )
+        fig, ax = _draw_boxes(
+            fig, axes[1], abbox, alabels, edgecolor="r", linestyle="-.", linewidth=2
+        )
+
+    plt.show()
+
+
+def _draw_labels(ax, rect, label, edgecolor):
+    """Helper function to draw labels on an axis."""
+
+    rx, ry = rect.get_xy()
+    c_xleft = rx + 10
+    c_xright = rx + rect.get_width() - 10
+    c_ytop = ry + 10
+    c_ybottom = ry + rect.get_height() - 10
+
+    if edgecolor == "r":
+        cx, cy = c_xright, c_ytop
+    elif edgecolor == "b":
+        cx, cy = c_xleft, c_ytop
+    else:
+        cx, cy = c_xleft, c_ybottom
+
+    l = ax.annotate(
+        label, (cx, cy), fontsize=8, fontweight="bold", color="white", ha="center", va="center"
+    )
+    l.set_bbox(dict(facecolor=edgecolor, alpha=0.35, edgecolor=edgecolor))
+    return ax
+
+
+def _draw_boxes(fig, ax, bboxes, labels, edgecolor="g", linestyle="-", linewidth=3):
+    """Helper function to draw bboxes and labels on an axis."""
+    for (x, y, w, h), label in zip(bboxes, labels):
+        rect = Rectangle(
+            (x, y),
+            w,
+            h,
+            linewidth=linewidth,
+            linestyle=linestyle,
+            edgecolor=edgecolor,
+            facecolor="none",
+        )
+        ax.add_patch(rect)
+
+        if labels is not None:
+            ax = _draw_labels(ax, rect, label, edgecolor)
+
+    return fig, ax
 
 
 def _get_bbox_labels_annotation(annotation):
