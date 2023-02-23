@@ -19,7 +19,7 @@ information and statistics about issues found in a dataset.
 
 It collects information from various
 :py:class:`IssueManager <cleanlab.experimental.datalab.issue_manager.IssueManager>`
-instances and keeps track of each issue, a summary each type of issue,
+instances and keeps track of each issue, a summary for each type of issue,
 related information and statistics about the issues.
 
 The collected information can be accessed using the 
