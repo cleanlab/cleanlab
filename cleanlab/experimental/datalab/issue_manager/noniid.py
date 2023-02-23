@@ -167,10 +167,10 @@ class NonIIDIssueManager(IssueManager):  # pragma: no cover
 
         # TODO what about scores?
         scores = self._score_dataset()
+        score_median_threshold = np.median(scores) * 0.7
         self.issues = pd.DataFrame(
             {
-                f"is_{self.issue_name}_issue": [False] * len(scores),
-                # TODO this doesn't make sense
+                f"is_{self.issue_name}_issue": scores < score_median_threshold,
                 self.issue_score_key: scores,
             },
         )
@@ -276,7 +276,8 @@ class NonIIDIssueManager(IssueManager):  # pragma: no cover
 
     def _compute_row_cdf(self, array, num_bins, bin_range) -> np.ndarray:
         histogram1d = self._get_histrogram1d()
-        histograms = np.apply_along_axis(lambda x: histogram1d(x, num_bins, bin_range), 1, array)
+        # histograms = np.apply_along_axis(lambda x: histogram1d(x, num_bins, bin_range), 1, array)
+        histograms = np.apply_along_axis(lambda x: np.histogram(x, num_bins, range=bin_range)[0], 1, array)
         histograms = histograms / np.sum(histograms[0])
 
         cdf = np.apply_along_axis(np.cumsum, 1, histograms)
@@ -341,6 +342,8 @@ class NonIIDIssueManager(IssueManager):  # pragma: no cover
         histogram1d = self._get_histrogram1d()
         num_bins = len(self.neighbor_graph) - 1
         bin_range = (1, num_bins)
-        histogram = histogram1d(index_array, num_bins, bin_range)
+        # histogram = histogram1d(index_array, num_bins, bin_range)
+        histogram = np.histogram(index_array, num_bins, range=bin_range)[0]
+
         histogram = histogram / len(index_array)
         return histogram
