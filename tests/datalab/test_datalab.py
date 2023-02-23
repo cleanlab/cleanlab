@@ -183,8 +183,8 @@ class TestDatalab:
         )
         metric = lab.info["outlier"]["metric"]
         assert metric == "euclidean"
-        n_neighbors = lab.info["outlier"]["n_neighbors"]
-        assert n_neighbors == 3
+        k = lab.info["outlier"]["k"]
+        assert k == 3
 
     def test_validate_issue_types_dict(self, lab, monkeypatch):
         issue_types = {
