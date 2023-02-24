@@ -532,7 +532,7 @@ def get_cls_group_ofs(annotations, class_id):
         if ann.get("gt_is_group_ofs", None) is not None:
             gt_group_ofs.append(ann["gt_is_group_ofs"][gt_inds])
         else:
-            gt_group_ofs.append(np.empty((0, 1), dtype=np.bool))
+            gt_group_ofs.append(np.empty((0, 1), dtype=np.bool_))
 
     return gt_group_ofs
 
@@ -796,8 +796,8 @@ def tpfp_imagenet(
     # an indicator of ignored gts
     gt_ignore_inds = np.concatenate(
         (
-            np.zeros(gt_bboxes.shape[0], dtype=np.bool),
-            np.ones(gt_bboxes_ignore.shape[0], dtype=np.bool),
+            np.zeros(gt_bboxes.shape[0], dtype=np.bool_),
+            np.ones(gt_bboxes_ignore.shape[0], dtype=np.bool_),
         )
     )
     # stack gt_bboxes and gt_bboxes_ignore for convenience
@@ -905,8 +905,8 @@ def tpfp_default(
     # an indicator of ignored gts
     gt_ignore_inds = np.concatenate(
         (
-            np.zeros(gt_bboxes.shape[0], dtype=np.bool),
-            np.ones(gt_bboxes_ignore.shape[0], dtype=np.bool),
+            np.zeros(gt_bboxes.shape[0], dtype=np.bool_),
+            np.ones(gt_bboxes_ignore.shape[0], dtype=np.bool_),
         )
     )
     # stack gt_bboxes and gt_bboxes_ignore for convenience
@@ -1022,8 +1022,8 @@ def tpfp_openimages(
     # an indicator of ignored gts
     gt_ignore_inds = np.concatenate(
         (
-            np.zeros(gt_bboxes.shape[0], dtype=np.bool),
-            np.ones(gt_bboxes_ignore.shape[0], dtype=np.bool),
+            np.zeros(gt_bboxes.shape[0], dtype=np.bool_),
+            np.ones(gt_bboxes_ignore.shape[0], dtype=np.bool_),
         )
     )
     # stack gt_bboxes and gt_bboxes_ignore for convenience
