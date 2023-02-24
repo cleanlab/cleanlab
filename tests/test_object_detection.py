@@ -6,7 +6,6 @@ from cleanlab.object_detection.rank import (
 import numpy as np
 
 import warnings
-import pickle
 
 warnings.filterwarnings("ignore")
 
