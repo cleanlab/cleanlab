@@ -33,16 +33,16 @@ are to contain label errors. """
 
 def get_label_quality_scores(
     annotations: List[Dict[Any, Any]],
-    results: List[np.ndarray],
+    predictions: List[np.ndarray],
     *,
     method: str = "map",
-    threshold: Optional[float] = None,
+    probability_threshold: Optional[float] = None,
     verbose: bool = True,
 ) -> np.ndarray:
     """Returns a label quality score for each datapoint.
 
-    This is a function to compute label quality scores for object detection (multi-class) datasets,
-    where lower scores indicate labels less likely to be correct.
+    This is a function to compute label quality scores for object detection datasets,
+    where lower scores indicate image annotaion is less likely to be correct.
 
     Score is between 0 and 1.
 
@@ -56,17 +56,20 @@ def get_label_quality_scores(
        `{'bboxes': np.ndarray((N,4)), 'labels': np.ndarray((N,)), 'image_name': str}` where N is the number of bounding boxes
        for the `i`-th image and `bboxes[j]` is in the format [x,y,x,y] with given label `labels[j]`. ('image_name' is optional here)
 
-    results:
-        A list of np.ndarray where such that `results[i]` corresponds to the predicted results for the `i`-th image
-        in the format `np.ndarray((K,))` where K is the number of classes and `results[i][k]` is of shape `np.ndarray(N,5)`
+    predictions:
+        A list of np.ndarray where such that `predictions[i]` corresponds to the model predictions for the `i`-th image
+        in the format `np.ndarray((K,))` where K is the number of classes and `predictions[i][k]` is of shape `np.ndarray(N,5)`
         where `N` is the number of bounding boxes for class `K` and the five columns correspond to `[x,y,x,y,pred_prob]` returned
         by the model.
 
     method:
         The method used to calculate lable_quality_scores.
 
-    threshold:
-        Bounding boxes in `results` with `pred_prob` below the threshold are not considered for computing label_quality_scores.
+    probability_threshold:
+        Bounding boxes in `predictions` with `pred_prob` below the threshold are not considered for computing label_quality_scores.
+        If you know what probability-threshold was used when producing predicted boxes from your trained object detector,
+        please supply the value that was used here. If not provided, this value is inferred based on the smallest observed
+        predicted probability for any of the predicted boxes.
 
     verbose : bool, default = True
       Set to ``False`` to suppress all print statements.
@@ -75,18 +78,21 @@ def get_label_quality_scores(
     ---------
     label_quality_scores:
         Array of shape ``(N, )`` of scores between 0 and 1, one per image in the dataset.
-        Lower scores indicate images are more likely to contain a label issue.
+        Lower scores indicate images are more likely to contain an incorrect annotation.
     """
 
     assert_valid_inputs(
-        annotations=annotations, results=results, method=method, threshold=threshold
+        annotations=annotations,
+        predictions=predictions,
+        method=method,
+        threshold=probability_threshold,
     )
 
     return _compute_label_quality_scores(
         annotations=annotations,
-        results=results,
+        predictions=predictions,
         method=method,
-        threshold=threshold,
+        threshold=probability_threshold,
         verbose=verbose,
     )
 
@@ -124,7 +130,7 @@ def issues_from_scores(label_quality_scores: np.ndarray, *, threshold: float = 0
 
 def _compute_label_quality_scores(
     annotations: List[Dict[Any, Any]],
-    results: List[np.ndarray],
+    predictions: List[np.ndarray],
     *,
     method: str = "map",
     threshold: Optional[float] = None,
@@ -132,23 +138,25 @@ def _compute_label_quality_scores(
 ) -> np.ndarray:
     """Internal function to prune extra bounding boxes and compute label quality scores based on passed in method."""
     if threshold is not None:
-        results = _prune_by_threshold(results=results, threshold=threshold, verbose=verbose)
+        predictions = _prune_by_threshold(
+            predictions=predictions, threshold=threshold, verbose=verbose
+        )
 
     if method == "map":
-        scores = _calculate_map(results, annotations)
+        scores = _calculate_map(predictions, annotations)
 
     return scores
 
 
 def _prune_by_threshold(
-    results: List[np.ndarray], threshold: float, verbose: bool = True
+    predictions: List[np.ndarray], threshold: float, verbose: bool = True
 ) -> Tuple[List[Dict[Any, Any]], List[np.ndarray]]:
-    """Removes predicted bounding boxes from results who's pred_prob is below the cuttoff threshold."""
+    """Removes predicted bounding boxes from predictions who's pred_prob is below the cuttoff threshold."""
 
-    results_copy = copy.deepcopy(results)
+    predictions_copy = copy.deepcopy(predictions)
     num_ann_to_zero = 0
     total_ann = 0
-    for idx_results, result in enumerate(results_copy):
+    for idx_predictions, result in enumerate(predictions_copy):
         for idx_class, class_result in enumerate(result):
             filtered_class_result = class_result[class_result[:, -1] >= threshold]
             if len(class_result) > 0:
@@ -156,7 +164,7 @@ def _prune_by_threshold(
                 if len(filtered_class_result) == 0:
                     num_ann_to_zero += 1
 
-            results_copy[idx_results][idx_class] = filtered_class_result
+            predictions_copy[idx_predictions][idx_class] = filtered_class_result
 
     p_ann_pruned = total_ann and num_ann_to_zero / total_ann or 0  # avoid division by zero
     if p_ann_pruned > 0.97:
@@ -168,27 +176,27 @@ def _prune_by_threshold(
         print(
             f"Pruning {num_ann_to_zero} annotations out of {total_ann} using threshold=={threshold}."
         )
-    return results_copy
+    return predictions_copy
 
 
 # Todo: make this more descriptive and assert better inputs
-def assert_valid_inputs(annotations, results, method=None, threshold=None):
+def assert_valid_inputs(annotations, predictions, method=None, threshold=None):
     """Asserts proper input format."""
-    if len(annotations) != len(results):
+    if len(annotations) != len(predictions):
         raise ValueError(
-            f"Annotations and results length needs to match. len(annotations) == {len(annotations)} while len(results) == {len(results)}."
+            f"Annotations and predictions length needs to match. len(annotations) == {len(annotations)} while len(predictions) == {len(predictions)}."
         )
-    # Typecheck annotations and results
+    # Typecheck annotations and predictions
     if not isinstance(annotations[0], dict):
         raise ValueError(
             f"Annotations has to be a list of dicts. Instead it is list of {type(annotations[0])}."
         )
-    # check last column of results is probabilities ( < 1.)?
-    if not isinstance(results[0], np.ndarray):
+    # check last column of predictions is probabilities ( < 1.)?
+    if not isinstance(predictions[0], np.ndarray):
         raise ValueError(
-            f"Result has to be a list of np.ndarray. Instead it is list of {type(results[0])}."
+            f"Result has to be a list of np.ndarray. Instead it is list of {type(predictions[0])}."
         )
-    if not results[0][0].shape[1] == 5:
+    if not predictions[0][0].shape[1] == 5:
         raise ValueError(f"Result values have to be of format [_,_,_,_,pred_prob].")
 
     valid_methods = ["map"]
@@ -352,9 +360,9 @@ def _bbox_xyxy_to_xywh(bbox):
 
 
 # ==========TO BE DEPRECATED: Example score (calculate mAP)=============
-def _calculate_map(annotations, results):
+def _calculate_map(annotations, predictions):
     map = np.zeros((len(annotations),))
-    for i, (d, r) in enumerate(zip(annotations, results)):
+    for i, (d, r) in enumerate(zip(annotations, predictions)):
         map[i] = bbox_map_eval(d, r)
     return map
 
