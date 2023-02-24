@@ -269,7 +269,7 @@ class NonIIDIssueManager(IssueManager):  # pragma: no cover
         return scores
 
     def _compute_row_cdf(self, array, num_bins, bin_range) -> np.ndarray:
-        histogram1d = self._get_histrogram1d()
+        histogram1d = self._get_histogram1d()
         histograms = np.apply_along_axis(lambda x: histogram1d(x, num_bins, bin_range), 1, array)
         histograms = histograms / np.sum(histograms[0])
 
