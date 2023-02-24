@@ -55,7 +55,6 @@ class LabelIssueManager(IssueManager):
         1: {},
         2: {
             "info": ["confident_joint"],
-            "issue": ["given_label", "predicted_label"],
         },
         3: {"info": ["classes_by_label_quality", "overlapping_classes"]},
     }
