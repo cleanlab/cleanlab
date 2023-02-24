@@ -204,12 +204,15 @@ class NonIIDIssueManager(IssueManager):  # pragma: no cover
         return info_dict
 
     def _get_histogram1d(self):
+        # TODO: Test correctness of self._histogram1d()(test_array, test_num_bins, test_bin_range)
         if self._histogram1d is None:
             try:
                 from fast_histogram import histogram1d as _histogram1d
             except ImportError as e:
+
                 def _histogram1d(array, num_bins, bin_range):
                     return np.histogram(array, num_bins, range=bin_range)[0]
+
             self._histogram1d = _histogram1d
         return self._histogram1d
 
