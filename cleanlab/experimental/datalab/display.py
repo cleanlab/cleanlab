@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 """
-Module for class that handles the string representation of DataLab objects.
+Module for class that handles the string representation of Datalab objects.
 """
 
 from typing import TYPE_CHECKING

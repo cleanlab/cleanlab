@@ -13,7 +13,7 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
-"""Module for class and functions that hold and validate datasets that are loaded into DataLab."""
+"""Module for class and functions that hold and validate datasets that are loaded into Datalab."""
 
 import os
 from typing import Any, Callable, Dict, List, Mapping, Tuple, Union, cast, TYPE_CHECKING
@@ -51,9 +51,9 @@ class DataFormatError(ValueError):
 
 
 class DatasetDictError(ValueError):
-    """Exception raised when a DatasetDict is passed to DataLab.
+    """Exception raised when a DatasetDict is passed to Datalab.
 
-    Usually, this means that a dataset identifier was passed to DataLab, but
+    Usually, this means that a dataset identifier was passed to Datalab, but
     the dataset is a DatasetDict, which contains multiple splits of the dataset.
 
     """
@@ -62,7 +62,7 @@ class DatasetDictError(ValueError):
         message = (
             "Please pass a single dataset, not a DatasetDict. "
             "Try specifying a split, e.g. `dataset = load_dataset('dataset', split='train')` "
-            "then pass `dataset` to DataLab."
+            "then pass `dataset` to Datalab."
         )
         super().__init__(message)
 
@@ -83,7 +83,7 @@ class DatasetLoadError(ValueError):
 
 class Data:
     """
-    Class that holds and validates datasets for DataLab.
+    Class that holds and validates datasets for Datalab.
 
     Internally, the data is stored as a datasets.Dataset object and the labels
     are integers (ranging from 0 to K-, where K is the number of classes) stored
@@ -92,7 +92,7 @@ class Data:
     Parameters
     ----------
     data :
-        Dataset to be used for DataLab.
+        Dataset to be used for Datalab.
         Several formats are supported, but will be converted to a Dataset object.
 
         Supported formats:

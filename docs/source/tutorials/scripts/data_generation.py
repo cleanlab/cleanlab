@@ -73,7 +73,7 @@ def create_data():
 
     noisy_labels_idx = generate_noisy_labels(y_train_idx, noise_matrix)
 
-    # TODO: Add noise to test set when we support extra splits in DataLab
+    # TODO: Add noise to test set when we support extra splits in Datalab
 
     print("Label accuracy:", "{:.3f}".format(np.mean(noisy_labels_idx == y_train_idx)))
     noisy_labels = np.array([list(BINS_MAP.keys())[i] for i in noisy_labels_idx])
