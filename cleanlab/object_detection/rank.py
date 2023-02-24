@@ -155,6 +155,7 @@ def _prune_by_threshold(
 ) -> Tuple[List[Dict[Any, Any]], List[np.ndarray]]:
     """Removes predicted bounding boxes from predictions who's pred_prob is below the cuttoff threshold."""
 
+    MAX_ALLOWED_BOX_PRUNE = 0.97  # This is max allowed percent of prune for boxes below threhold before a warning is thrown.
     predictions_copy = copy.deepcopy(predictions)
     num_ann_to_zero = 0
     total_ann = 0
@@ -169,7 +170,7 @@ def _prune_by_threshold(
             predictions_copy[idx_predictions][idx_class] = filtered_class_result
 
     p_ann_pruned = total_ann and num_ann_to_zero / total_ann or 0  # avoid division by zero
-    if p_ann_pruned > 0.97:
+    if p_ann_pruned > MAX_ALLOWED_BOX_PRUNE:
         warnings.warn(
             f"Pruning with threshold=={threshold} prunes {p_ann_pruned}% annotations. Consider lowering the threshold.",
             UserWarning,

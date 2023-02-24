@@ -169,7 +169,7 @@ def make_numpy(annotations, predictions):
         )
 
     np_predictions = predictions[:]
-    np_predictions = [np.array(pred) for pred in np_predictions]
+    np_predictions = [np.array(pred, dtype=object) for pred in np_predictions]
     for i in range(len(np_predictions)):
         for j in range(len(np_predictions[i])):
             if len(np_predictions[i][j]) == 0:
