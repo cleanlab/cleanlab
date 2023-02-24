@@ -126,6 +126,7 @@ class NonIIDIssueManager(IssueManager):  # pragma: no cover
         self.tests = {
             "ks": simplified_kolmogorov_smirnov_test,
         }
+        self._histogram1d = None
 
     def find_issues(self, features: npt.NDArray, **_) -> None:
         if self.knn is None:
