@@ -39,6 +39,88 @@ pip install -e .
 
 For Macs with Apple silicon: replace `tensorflow` in requirements-dev.txt with: `tensorflow-macos==2.9.2` and `tensorflow-metal==0.5.1`
 
+### Handling optional dependencies
+
+When designing a class that relies on an optional, domain-specific runtime dependency, it is better to use lazy-importing to avoid forcing users to install the dependency if they do not need it.
+
+Depending on the coupling of your class to the dependency, you may want to consider importing it at the module-level or as an instance variable of the class or a function that uses the dependency.
+
+If the dependency is used by many methods in the module or other classes, it is better to import it at the module-level.
+On the other hand, if the dependency is only used by a handful of methods, then it's better to import it inside the method. If the dependency is not installed, an ImportError should be raised when the method is called, along with instructions on how to install the dependency.
+
+Here is an example of a class that lazily imports CuPy and has a sum method (element-wise) that can be used on both CPU and GPU devices.
+
+Unless an alternative implementations of the sum method is available, an `ImportError` should be raised when the method is called with instructions on how to install the dependency.
+
+<details> <summary>Example code</summary>
+
+```python
+def lazy_import_cupy():
+  try:
+    import cupy
+  except ImportError as error:
+    # If the dependency is required for the class to work,
+    # replace this block with a raised ImportError containing instructions
+    print("Warning: cupy is not installed. Please install it with `pip install cupy`.")
+    cupy = None
+  return cupy
+
+class Summation:
+  def __init__(self):
+    self.cupy = lazy_import_cupy()
+  def sum(self, x) -> float:
+    if self.cupy is None:
+      return sum(x)
+    return self.cupy.sum(x)
+```
+</details>
+
+
+For the build system to recognize the optional dependency, you should add it to the `EXTRAS_REQUIRE` constant in **setup.py**:
+
+<details> <summary>Example code</summary>
+
+```python
+EXTRAS_REQUIRE = {
+    ...
+    "gpu": [
+      # Explain why the dependency below is needed,
+      # e.g. "for performing summation on GPU"
+      "cupy",
+    ],
+}
+```
+
+
+Or assign to a separate variable and add it to `EXTRAS_REQUIRE`
+
+```python	
+GPU_REQUIRES = [
+  # Explanation ...
+  "cupy",
+]
+
+EXTAS_REQUIRE = {
+    ...
+    "gpu": GPU_REQUIRES,
+}
+```
+</details>
+
+
+The package can be installed with the optional dependency (here called `gpu`) via:
+
+1. PyPI installation
+
+```shell
+pip install -r cleanlab[gpu]
+```
+
+2. Editable installation
+
+```shell
+pip install -e .[gpu]
+```
 
 ## Testing
 
