@@ -208,14 +208,10 @@ class NonIIDIssueManager(IssueManager):  # pragma: no cover
         if self._histogram1d is None:
             try:
                 from fast_histogram import histogram1d as _histogram1d
-
-                self._histogram1d = _histogram1d
             except ImportError as e:
-                raise ImportError(
-                    "fast_histogram is required for the non-iid issue manager. "
-                    "To use this feature, run `pip install fast_histogram`."
-                    "To use all features available to cleanlab, run `pip install cleanlab[all]`."
-                ) from e
+                def _histogram1d(array, num_bins, bin_range):
+                    return np.histogram(array, num_bins, range=bin_range)[0]
+            self._histogram1d = _histogram1d
         return self._histogram1d
 
     def _permutation_test(self, num_permutations) -> float:
@@ -276,8 +272,7 @@ class NonIIDIssueManager(IssueManager):  # pragma: no cover
 
     def _compute_row_cdf(self, array, num_bins, bin_range) -> np.ndarray:
         histogram1d = self._get_histrogram1d()
-        # histograms = np.apply_along_axis(lambda x: histogram1d(x, num_bins, bin_range), 1, array)
-        histograms = np.apply_along_axis(lambda x: np.histogram(x, num_bins, range=bin_range)[0], 1, array)
+        histograms = np.apply_along_axis(lambda x: histogram1d(x, num_bins, bin_range), 1, array)
         histograms = histograms / np.sum(histograms[0])
 
         cdf = np.apply_along_axis(np.cumsum, 1, histograms)
@@ -342,8 +337,6 @@ class NonIIDIssueManager(IssueManager):  # pragma: no cover
         histogram1d = self._get_histrogram1d()
         num_bins = len(self.neighbor_graph) - 1
         bin_range = (1, num_bins)
-        # histogram = histogram1d(index_array, num_bins, bin_range)
-        histogram = np.histogram(index_array, num_bins, range=bin_range)[0]
-
+        histogram = histogram1d(index_array, num_bins, bin_range)
         histogram = histogram / len(index_array)
         return histogram
