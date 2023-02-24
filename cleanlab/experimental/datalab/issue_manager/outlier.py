@@ -123,7 +123,6 @@ class OutOfDistributionIssueManager(IssueManager):
                     "k": knn.n_neighbors,  # type: ignore[union-attr]
                     "nearest_neighbor": nn_ids.tolist(),
                     "distance_to_nearest_neighbor": dists.tolist(),
-                    # TODO Check scipy-dependency
                     "weighted_knn_graph": weighted_knn_graph.tolist(),
                 }
             )
