@@ -52,18 +52,20 @@ def get_label_quality_scores(
     Parameters
     ----------
     annotations:
-        A list of dictionaries such that `annotations[i]` contains the given annotations for the `i`-th image in the format
-       `{'bboxes': np.ndarray((N,4)), 'labels': np.ndarray((N,)), 'image_name': str}` where N is the number of bounding boxes
+        A list of `N` dictionaries for `N` images such that `annotations[i]` contains the given annotations for the `i`-th image in the format
+       `{'bboxes': np.ndarray((M,4)), 'labels': np.ndarray((M,)), 'image_name': str}` where `M` is the number of annotated bounding boxes
        for the `i`-th image and `bboxes[j]` is in the format [x,y,x,y] with given label `labels[j]`. ('image_name' is optional here)
 
     predictions:
-        A list of np.ndarray where such that `predictions[i]` corresponds to the model predictions for the `i`-th image
-        in the format `np.ndarray((K,))` where K is the number of classes and `predictions[i][k]` is of shape `np.ndarray(N,5)`
-        where `N` is the number of bounding boxes for class `K` and the five columns correspond to `[x,y,x,y,pred_prob]` returned
+        A list of `N` `np.ndarray` for `N` images such that `predictions[i]` corresponds to the model predictions for the `i`-th image
+        in the format `np.ndarray((K,))` where K is the number of classes and `predictions[i][k]` is of shape `np.ndarray(M,5)`
+        where `M` is the number of predicted bounding boxes for class `K` and the five columns correspond to `[x,y,x,y,pred_prob]` returned
         by the model.
 
+        Note: `M` number of predicted bounding boxes can be different from `M` number of annotated bounding boxes for class `K` of `i`-th image.
+
     method:
-        The method used to calculate lable_quality_scores.
+        The method used to calculate label_quality_scores.
 
     probability_threshold:
         Bounding boxes in `predictions` with `pred_prob` below the threshold are not considered for computing label_quality_scores.
@@ -224,7 +226,7 @@ def viz(
     prediction_threshold: Optional[float] = None,
     gt_overlay: bool = True,
 ):
-    """Visualize bouding box annotations (given labels) and model predictions for an image. The given label annotations
+    """Visualize bounding box annotations (given labels) and model predictions for an image. The given label annotations
     are shown with red while the predicted annotations shown in blue.
 
         Parameters
