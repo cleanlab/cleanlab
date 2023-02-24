@@ -124,10 +124,8 @@ class NonIIDIssueManager(IssueManager):  # pragma: no cover
         self.num_permutations = num_permutations
         self.knn: Optional[NearestNeighbors] = None
         self.tests = {
-            "ks": simplified_kolmogorov_smirnov_test,  # TODO rename test
+            "ks": simplified_kolmogorov_smirnov_test,
         }
-        self._histogram1d = None
-        # TODO
 
     def find_issues(self, features: npt.NDArray, **_) -> None:
         if self.knn is None:
@@ -204,7 +202,7 @@ class NonIIDIssueManager(IssueManager):  # pragma: no cover
         }
         return info_dict
 
-    def _get_histrogram1d(self):
+    def _get_histogram1d(self):
         if self._histogram1d is None:
             try:
                 from fast_histogram import histogram1d as _histogram1d
@@ -334,7 +332,7 @@ class NonIIDIssueManager(IssueManager):  # pragma: no cover
         )
 
     def _build_histogram(self, index_array) -> np.ndarray:
-        histogram1d = self._get_histrogram1d()
+        histogram1d = self._get_histogram1d()
         num_bins = len(self.neighbor_graph) - 1
         bin_range = (1, num_bins)
         histogram = histogram1d(index_array, num_bins, bin_range)

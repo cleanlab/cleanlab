@@ -22,7 +22,7 @@ and managing all kinds of issues in datasets.
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union, cast
 import warnings
 
 import numpy as np
@@ -327,11 +327,7 @@ class Datalab:
         """
         summary = issue_summary.copy()
         names = summary["issue_type"].tolist()
-        counts = []
-        for name in names:
-            issues = self.get_issues(issue_name=name)
-            is_issue_col = [col for col in issues.columns if col.startswith("is_")][0]
-            counts.append(issues[is_issue_col].sum())
+        counts = [self.get_issues(issue_name=name)[f"is_{name}_issue"].sum() for name in names]
         # Rank issue_summary by the number of issues in issue_type_counts
         summary["num_issues"] = counts
         # issue_type_sorted = self.issue_summary.sort_values(by="score", ascending=True)
@@ -339,13 +335,46 @@ class Datalab:
         return sorted_summary
 
     def get_issues(self, issue_name: Optional[str] = None) -> pd.DataFrame:
+        """
+        Fetch information about each individual issue found in the data for a specific issue type.
+
+        Parameters
+        ----------
+        issue_name : str or None
+            The name of the issue type to retrieve. If `None`, returns the entire `issues` DataFrame.
+
+        Raises
+        ------
+        ValueError
+            If `issue_name` is not found in the `issues` DataFrame.
+
+        Returns
+        -------
+        specific_issues :
+            A DataFrame containing the issues data for the specified issue type, or the entire `issues`
+            DataFrame if `issue_name` is `None`.
+
+            Additional columns are added to the DataFrame if `issue_name` is "label".
+        """
         if issue_name is None:
             return self.issues
 
-        columns = [col for col in self.issues.columns if issue_name in col]
+        specific_issues = self._get_matching_issue_columns(issue_name)
+        if issue_name == "label":
+            label_info = self.get_info(issue_name=issue_name)
+            predicted_labels = np.vectorize(self._data._label_map.get)(
+                label_info["predicted_label"]
+            )
+            label_name = cast(str, self.label_name)
+            specific_issues = specific_issues.assign(
+                given_label=self._data._data[label_name], predicted_label=predicted_labels
+            )
+        return specific_issues
 
+    def _get_matching_issue_columns(self, issue_name: str) -> pd.DataFrame:
+        columns = [col for col in self.issues.columns if issue_name in col]
         if not columns:
-            raise ValueError(f"Issue type {issue_name} not found in the dataset.")
+            raise ValueError(f"No columns found for issue type '{issue_name}'.")
         return self.issues[columns]
 
     def get_summary(self, issue_name: Optional[str] = None) -> pd.DataFrame:
@@ -479,6 +508,8 @@ class Datalab:
             print("Search complete.")
         if failed_managers:
             print(f"Failed to find issues for {failed_managers}")
+
+        self.data_issues.set_health_score()
 
     def get_info(self, issue_name: Optional[str] = None) -> Dict[str, Any]:
         """Returns dict of info about a specific issue,

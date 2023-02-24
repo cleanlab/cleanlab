@@ -19,7 +19,7 @@ information and statistics about issues found in a dataset.
 
 It collects information from various
 :py:class:`IssueManager <cleanlab.experimental.datalab.issue_manager.IssueManager>`
-instances and keeps track of each issue, a summary each type of issue,
+instances and keeps track of each issue, a summary for each type of issue,
 related information and statistics about the issues.
 
 The collected information can be accessed using the 
@@ -144,3 +144,10 @@ class DataIssues:
                 f"key from issue manager {issue_manager}."
             )
         self.info[issue_manager.issue_name] = issue_manager.info
+
+    def set_health_score(self) -> None:
+        """Set the health score for the dataset based on the issue summary.
+
+        Currently, the health score is the mean of the scores for each issue type.
+        """
+        self.info["statistics"]["health_score"] = self.issue_summary["score"].mean()

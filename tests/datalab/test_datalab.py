@@ -115,13 +115,29 @@ class TestDatalab:
         )
         monkeypatch.setattr(lab, "issues", mock_issues)
 
+        mock_predicted_labels = np.array([0, 1, 2, 1, 2])
+        lab.info.update({"label": {"predicted_label": mock_predicted_labels}})
+
         label_issues = lab.get_issues(issue_name="label")
-        pd.testing.assert_frame_equal(label_issues, mock_issues[["is_label_issue", "label_score"]])
+
+        expected_label_issues = pd.DataFrame(
+            {
+                **{key: mock_issues[key] for key in ["is_label_issue", "label_score"]},
+                "given_label": [4, 4, 5, 3, 5],
+                "predicted_label": [3, 4, 5, 4, 5],
+            },
+        )
+
+        pd.testing.assert_frame_equal(label_issues, expected_label_issues)
 
         outlier_issues = lab.get_issues(issue_name="outlier")
-        pd.testing.assert_frame_equal(
-            outlier_issues, mock_issues[["is_outlier_issue", "outlier_score"]]
+
+        expected_outlier_issues = pd.DataFrame(
+            {
+                **{key: mock_issues[key] for key in ["is_outlier_issue", "outlier_score"]},
+            },
         )
+        pd.testing.assert_frame_equal(outlier_issues, expected_outlier_issues)
 
         issues = lab.get_issues()
         pd.testing.assert_frame_equal(issues, mock_issues)
@@ -134,9 +150,13 @@ class TestDatalab:
     def test_find_issues(self, lab, pred_probs, issue_types):
         assert lab.issues.empty, "Issues should be empty before calling find_issues"
         assert lab.issue_summary.empty, "Issue summary should be empty before calling find_issues"
+        assert lab.info["statistics"]["health_score"] is None
         lab.find_issues(pred_probs=pred_probs, issue_types=issue_types)
         assert not lab.issues.empty, "Issues weren't updated"
         assert not lab.issue_summary.empty, "Issue summary wasn't updated"
+        assert (
+            lab.info["statistics"]["health_score"] == lab.issue_summary["score"].mean()
+        )  # TODO: Avoid re-implementing logic in test
 
         if issue_types is None:
             # Test default issue types
@@ -163,8 +183,8 @@ class TestDatalab:
         )
         metric = lab.info["outlier"]["metric"]
         assert metric == "euclidean"
-        n_neighbors = lab.info["outlier"]["n_neighbors"]
-        assert n_neighbors == 3
+        k = lab.info["outlier"]["k"]
+        assert k == 3
 
     def test_validate_issue_types_dict(self, lab, monkeypatch):
         issue_types = {
