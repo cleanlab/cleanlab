@@ -1,6 +1,7 @@
 # Python dependencies for development
 coverage != 6.3, != 6.3.*
 datasets
+fast-histogram
 mypy
 pandas-stubs
 pre-commit
