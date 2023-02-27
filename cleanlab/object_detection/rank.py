@@ -221,8 +221,8 @@ def assert_valid_inputs(annotations, predictions, method=None, threshold=None):
 
 def viz(
     image_path: str,
-    result: np.ndarray,
     annotation: Dict[Any, Any],
+    prediction: np.ndarray,
     *,
     prediction_threshold: Optional[float] = None,
     gt_overlay: bool = True,
@@ -235,14 +235,14 @@ def viz(
         image_path:
             Full path to the image file.
 
-        result:
-            A result for a single image in the format `np.ndarray((K,))` where K is the number of classes and `result[k]` is of shape `np.ndarray(N,5)`
-            where `N` is the number of bounding boxes for class `K` and the five columns correspond to `[x,y,x,y,pred_prob]` returned
-            by the model.
-
         annotation:
             The given annotation for a single image in the format {'bboxes': np.ndarray((N,4)), 'labels': np.ndarray((N,))}` where
             N is the number of bounding boxes for the `i`-th image and `bboxes[j]` is in the format [x,y,x,y] with given label `labels[j]`.
+
+        prediction:
+            A prediction for a single image in the format `np.ndarray((K,))` where K is the number of classes and `prediction[k]` is of shape `np.ndarray(N,5)`
+            where `N` is the number of bounding boxes for class `K` and the five columns correspond to `[x,y,x,y,pred_prob]` returned
+            by the model.
 
         prediction_threshold:
             Minimum pred_probs value of a bounding box output by the model. All bounding boxes with pred_probs below this threshold are
@@ -256,20 +256,20 @@ def viz(
 
     # Create figure and axes
     image = plt.imread(image_path)
-    rbbox, rlabels, pred_probs = _get_bbox_labels_result(result)
+    pbbox, plabels, pred_probs = _get_bbox_labels_result(prediction)
     abbox, alabels = _get_bbox_labels_annotation(annotation)
 
     if prediction_threshold is not None:
         keep_idx = np.where(pred_probs > prediction_threshold)
-        rbbox = rbbox[keep_idx]
-        rlabels = rlabels[keep_idx]
+        pbbox = pbbox[keep_idx]
+        plabels = plabels[keep_idx]
 
     if gt_overlay:
         fig, ax = plt.subplots(frameon=False)
         plt.axis("off")
         ax.imshow(image)
 
-        fig, ax = _draw_boxes(fig, ax, rbbox, rlabels, edgecolor="b", linestyle="-", linewidth=2)
+        fig, ax = _draw_boxes(fig, ax, pbbox, plabels, edgecolor="b", linestyle="-", linewidth=2)
         fig, ax = _draw_boxes(fig, ax, abbox, alabels, edgecolor="r", linestyle="-.", linewidth=2)
     else:
         fig, axes = plt.subplots(nrows=1, ncols=2, frameon=False)
@@ -279,7 +279,7 @@ def viz(
         axes[1].imshow(image)
 
         fig, ax = _draw_boxes(
-            fig, axes[0], rbbox, rlabels, edgecolor="b", linestyle="-", linewidth=2
+            fig, axes[0], pbbox, plabels, edgecolor="b", linestyle="-", linewidth=2
         )
         fig, ax = _draw_boxes(
             fig, axes[1], abbox, alabels, edgecolor="r", linestyle="-.", linewidth=2
@@ -339,11 +339,11 @@ def _get_bbox_labels_annotation(annotation):
     return bboxes, labels
 
 
-def _get_bbox_labels_result(result):
-    """Returns bbox, label and pred_prob values for result."""
+def _get_bbox_labels_result(prediction):
+    """Returns bbox, label and pred_prob values for prediction."""
     labels = []
     boxes = []
-    for idx, result_class in enumerate(result):
+    for idx, result_class in enumerate(prediction):
         labels.extend([idx] * len(result_class))
         boxes.extend(result_class.tolist())
     bboxes = [box[:4] for box in boxes]
