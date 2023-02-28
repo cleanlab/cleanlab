@@ -343,9 +343,9 @@ def _get_bbox_labels_result(prediction):
     """Returns bbox, label and pred_prob values for prediction."""
     labels = []
     boxes = []
-    for idx, result_class in enumerate(prediction):
-        labels.extend([idx] * len(result_class))
-        boxes.extend(result_class.tolist())
+    for idx, prediction_class in enumerate(prediction):
+        labels.extend([idx] * len(prediction_class))
+        boxes.extend(prediction_class.tolist())
     bboxes = [box[:4] for box in boxes]
     pred_probs = [box[-1] for box in boxes]
     return np.array(bboxes), np.array(labels), np.array(pred_probs)
