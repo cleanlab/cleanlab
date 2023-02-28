@@ -31,8 +31,9 @@ If you have some labeled and unlabeled data (with multiple annotators for some l
 use the :py:func:`get_active_learning_scores <cleanlab.multiannotator.get_active_learning_scores>` function, which is intended for active learning. 
 This function estimates an active learning quality score for each example,
 which can be used to prioritize which examples are most informative to collect additional labels for.
-This function is effective for settings where some examples have been labeled by one or more annotators and other examples can have no labels at all so far,
-as well as settings where new labels are collected either in batches of examples or one at a time.
+This function is effective for settings where some examples have been labeled by one or more annotators and other examples can have no labels at all so far,
+as well as settings where new labels are collected either in batches of examples or one at a time. 
+Here is an `example notebook <https://github.com/cleanlab/examples/blob/master/active_learning_multiannotator/active_learning.ipynb>`_ showcasing the use of this function in multiple active learning rounds.
 
 Each of the main functions in this module utilizes any trained classifier model.
 Variants of these functions are provided for settings where you have trained an ensemble of multiple models.
@@ -540,7 +541,7 @@ def get_active_learning_scores(
 ) -> Tuple[np.ndarray, np.ndarray]:
     """Returns an active learning quality score for each example in the dataset.
 
-    We consider settings where one example can be labeled by multiple annotators and some examples have no labels at all so far.
+    We consider settings where one example can be labeled by one or more annotators and some examples have no labels at all so far.
 
     The score is in between 0 and 1, and can be used to prioritize what data to collect additional labels for.
     Lower scores indicate examples whose true label we are least confident about based on the current data;
@@ -555,7 +556,8 @@ def get_active_learning_scores(
     ----------
     labels_multiannotator : pd.DataFrame of np.ndarray
         2D pandas DataFrame or array of multiple given labels for each example with shape ``(N, M)``,
-        where N is the number of examples and M is the number of annotators.
+        where N is the number of examples and M is the number of annotators. Note that this function also works with
+        datasets where there is only one annotator (M=1).
         For more details, labels in the same format expected by the :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>`.
         Note that examples that have no annotator labels should not be included in this DataFrame/array.
     pred_probs : np.ndarray
@@ -672,6 +674,7 @@ def get_active_learning_scores_ensemble(
         Multiannotator labels in the same format expected by :py:func:`get_active_learning_scores <cleanlab.multiannotator.get_active_learning_scores>`.
     pred_probs : np.ndarray
         An array of shape ``(P, N, K)`` where P is the number of models, consisting of predicted class probabilities from the ensemble models.
+        Note that this function also works with datasets where there is only one annotator (M=1).
         Each set of predicted probabilities with shape ``(N, K)`` is in the same format expected by the :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>`.
     pred_probs_unlabeled : np.ndarray, optional
         An array of shape ``(P, N, K)`` where P is the number of models, consisting of predicted class probabilities from a trained classifier model
