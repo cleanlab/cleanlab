@@ -1,11 +1,48 @@
-from cleanlab.object_detection.rank import (
-    get_label_quality_scores,
-    issues_from_scores,
-)
+from cleanlab.object_detection.rank import get_label_quality_scores, issues_from_scores, viz
 
 import numpy as np
 
 import warnings
+
+import pytest
+
+from PIL import Image
+import numpy as np
+
+# to suppress plt.show()
+import matplotlib.pyplot as plt
+
+
+def generate_image(arr=None):
+    """Generates single image of randomly colored pixels"""
+    if arr is None:
+        arr = np.random.randint(low=0, high=256, size=(300, 300, 3), dtype=np.uint8)
+    img = Image.fromarray(arr, mode="RGB")
+    return img
+
+
+@pytest.fixture(scope="session")
+def generate_single_image_file(tmpdir_factory, img_name="img.png", arr=None):
+    """Generates a single temporary image for testing"""
+    img = generate_image(arr)
+    fn = tmpdir_factory.mktemp("data").join(img_name)
+    img.save(str(fn))
+    return str(fn)
+
+
+@pytest.fixture(scope="session")
+def generate_n_image_files(tmpdir_factory, n=5):
+    """Generates n temporary images for testing and returns dir of images"""
+    filename_list = []
+    tmp_image_dir = tmpdir_factory.mktemp("data")
+    for i in range(n):
+        img = generate_image()
+        img_name = f"{i}.png"
+        fn = tmp_image_dir.join(img_name)
+        img.save(str(fn))
+        filename_list.append(str(fn))
+    return str(tmp_image_dir)
+
 
 warnings.filterwarnings("ignore")
 
@@ -202,3 +239,9 @@ def test_issues_from_scores():
     fake_threshold = 0.3
     fake_issue_from_scores = issues_from_scores(fake_scores, threshold=fake_threshold)
     assert (fake_issue_from_scores == np.array([3, 0])).all()
+
+
+@pytest.mark.usefixtures("generate_single_image_file")
+def test_viz(monkeypatch, generate_single_image_file):
+    monkeypatch.setattr(plt, "show", lambda: None)
+    viz(generate_single_image_file, annotations[0], predictions[0])
