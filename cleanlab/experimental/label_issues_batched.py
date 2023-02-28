@@ -305,7 +305,7 @@ class LabelInspector:
       Keyword arguments to pass into :py:func:`rank.get_label_quality_scores <cleanlab.rank.get_label_quality_scores>`.
 
     num_issue_kwargs : dict, optional
-      Keyword arguments to :py:func:`count.num_label_issues() <cleanlab.count.num_label_issues>`
+      Keyword arguments to :py:func:`count.num_label_issues <cleanlab.count.num_label_issues>`
       to control estimation of the number of label issues.
       The only supported kwarg here for now is: `estimation_method`.
     """
