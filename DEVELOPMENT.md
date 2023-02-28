@@ -213,7 +213,8 @@ Use relative linking to connect information between docs and jupyter notebooks, 
 
 - Link another function from within a source code docstring: ``:py:func:`function_name <cleanlab.file.function_name>` ``
 - Link another class from within a source code docstring: ``:py:class:`class_name <cleanlab.file.class_name>` ``
-- Link a tutorial notebook from within a source code docstring: ``:ref:`notebook_name <notebook_name>` ``
+- Link a tutorial (rst file) from within a source code docstring: ``:ref:`tutorial_name <tutorial_name>` ``
+- Link a tutorial notebook (ipynb file) from within a source code docstring: `` `notebook_name <tutorials/notebook_name.ipynb>`_ ``
 - Link a function from within a tutorial notebook: `[function_name](../cleanlab/file.rst#cleanlab.file.function_name)`
 - Link a specific section of a notebook from within the notebook: `[section title](#section-title)`
 - Link a different tutorial notebook from within a tutorial notebook: `[another notebook](another_notebook.html)`. (Note this only works when the other notebook is in same folder as this notebook, otherwise may need to try relative path)
