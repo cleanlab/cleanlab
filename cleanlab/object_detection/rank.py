@@ -219,13 +219,15 @@ def assert_valid_inputs(annotations, predictions, method=None, threshold=None):
         )
 
 
-def viz(
+def visualize(
     image_path: str,
     annotation: Dict[Any, Any],
     prediction: np.ndarray,
     *,
     prediction_threshold: Optional[float] = None,
-    gt_overlay: bool = True,
+    given_label_overlay: bool = True,
+    class_labels: Optional[Dict[Any, Any]] = None,
+    figsize: Optional[Tuple[int, int]] = None,
 ):
     """Visualize bounding box annotations (given labels) and model predictions for an image. The given label annotations
     are shown with red while the predicted annotations shown in blue.
@@ -248,10 +250,15 @@ def viz(
             Minimum pred_probs value of a bounding box output by the model. All bounding boxes with pred_probs below this threshold are
             omited from the visualization.
 
-        gt_overlay: bool
+        given_label_overlay: bool
             If true, a single image with overlayed given label and predicted annotations is shown. If false, two images side
             by side are shown instead with the left image being given label and right being the ground truth annotation.
 
+        class_labels:
+            Optional dictionary mapping one-hot-encoded class labels back to their original class names in the format {"one-hot-label": "original-class-name"}.
+
+        figsize:
+            Optional figuresize for plotting the visualizations. Corresponds to matplotlib.figure.figsize.
     """
 
     # Create figure and axes
@@ -264,15 +271,17 @@ def viz(
         pbbox = pbbox[keep_idx]
         plabels = plabels[keep_idx]
 
-    if gt_overlay:
-        fig, ax = plt.subplots(frameon=False)
+    if given_label_overlay:
+        figsize = (8, 5) if figsize is None else figsize
+        fig, ax = plt.subplots(frameon=False, figsize=figsize)
         plt.axis("off")
         ax.imshow(image)
 
-        fig, ax = _draw_boxes(fig, ax, pbbox, plabels, edgecolor="b", linestyle="-", linewidth=2)
-        fig, ax = _draw_boxes(fig, ax, abbox, alabels, edgecolor="r", linestyle="-.", linewidth=2)
+        fig, ax = _draw_boxes(fig, ax, pbbox, plabels, edgecolor="b", linestyle="-", linewidth=1)
+        _, _ = _draw_boxes(fig, ax, abbox, alabels, edgecolor="r", linestyle="-.", linewidth=1)
     else:
-        fig, axes = plt.subplots(nrows=1, ncols=2, frameon=False)
+        figsize = (14, 10) if figsize is None else figsize
+        fig, axes = plt.subplots(nrows=1, ncols=2, frameon=False, figsize=figsize)
         axes[0].axis("off")
         axes[0].imshow(image)
         axes[1].axis("off")
@@ -281,11 +290,31 @@ def viz(
         fig, ax = _draw_boxes(
             fig, axes[0], pbbox, plabels, edgecolor="b", linestyle="-", linewidth=2
         )
-        fig, ax = _draw_boxes(
-            fig, axes[1], abbox, alabels, edgecolor="r", linestyle="-.", linewidth=2
-        )
+        _, _ = _draw_boxes(fig, axes[1], abbox, alabels, edgecolor="r", linestyle="-.", linewidth=2)
 
+    _ = _plot_legend(class_labels)
     plt.show()
+
+
+def _plot_legend(class_labels):
+    MAX_CLASS_TO_SHOW = 10  # idea: we can also show top 10 most popular classes?
+
+    colors = ["black"] + ["red", "blue"]
+    markers = [None] + ["s", "s"]
+    labels = [r"$\bf{Legend}$", "given label", "predicted label"]
+
+    if class_labels:
+        colors += ["black"] + ["black"] * min(len(class_labels), MAX_CLASS_TO_SHOW)
+        markers += [None] + [f"${class_key}$" for class_key in class_labels.keys()]
+        labels += [r"$\bf{classes}$"] + list(class_labels.values())
+
+    f = lambda m, c: plt.plot([], [], marker=m, color=c, ls="none")[0]
+    handles = [f(marker, color) for marker, color in zip(markers, colors)]
+    legend = plt.legend(
+        handles, labels, bbox_to_anchor=(1.04, 0.05), loc="lower left", borderaxespad=0
+    )
+
+    return legend
 
 
 def _draw_labels(ax, rect, label, edgecolor):
@@ -294,7 +323,7 @@ def _draw_labels(ax, rect, label, edgecolor):
     rx, ry = rect.get_xy()
     c_xleft = rx + 10
     c_xright = rx + rect.get_width() - 10
-    c_ytop = ry + 10
+    c_ytop = ry + 12
     c_ybottom = ry + rect.get_height() - 10
 
     if edgecolor == "r":
@@ -307,7 +336,7 @@ def _draw_labels(ax, rect, label, edgecolor):
     l = ax.annotate(
         label, (cx, cy), fontsize=8, fontweight="bold", color="white", ha="center", va="center"
     )
-    l.set_bbox(dict(facecolor=edgecolor, alpha=0.35, edgecolor=edgecolor))
+    l.set_bbox(dict(facecolor=edgecolor, alpha=0.35, edgecolor=edgecolor, pad=2))
     return ax
 
 

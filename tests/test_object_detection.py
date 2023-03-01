@@ -1,4 +1,4 @@
-from cleanlab.object_detection.rank import get_label_quality_scores, issues_from_scores, viz
+from cleanlab.object_detection.rank import get_label_quality_scores, issues_from_scores, visualize
 
 import numpy as np
 
@@ -242,6 +242,6 @@ def test_issues_from_scores():
 
 
 @pytest.mark.usefixtures("generate_single_image_file")
-def test_viz(monkeypatch, generate_single_image_file):
+def test_visualize(monkeypatch, generate_single_image_file):
     monkeypatch.setattr(plt, "show", lambda: None)
-    viz(generate_single_image_file, annotations[0], predictions[0])
+    visualize(generate_single_image_file, annotations[0], predictions[0])
