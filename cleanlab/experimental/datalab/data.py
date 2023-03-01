@@ -123,10 +123,10 @@ class Data:
         :py:class:`Datalab <cleanlab.experimental.datalab.datalab.Datalab>` to work.
     """
 
-    def __init__(self, data: "DatasetLike", label_name: Union[str, List[str]]) -> None:
+    def __init__(self, data: "DatasetLike", label_name: str) -> None:
         self._validate_data(data)
         self._data = self._load_data(data)
-        self._validate_data_and_labels(self._data, label_name)
+        self._validate_data_and_labels(self._data, self._data[label_name])
         self._data_hash = hash(self._data)
         self._data.set_format(type="numpy")
         self._labels, self._label_map = _extract_labels(self._data, label_name)
@@ -176,11 +176,8 @@ class Data:
 
     @staticmethod
     def _validate_data_and_labels(data, labels) -> None:
-        if isinstance(labels, np.ndarray):
-            assert labels.shape[0] == data.shape[0]
-
-        if isinstance(labels, str):
-            pass
+        assert isinstance(labels, (np.ndarray, list))
+        assert len(labels) == len(data)
 
     @staticmethod
     def _load_dataset_from_dict(data_dict: Dict[str, Any]) -> Dataset:
