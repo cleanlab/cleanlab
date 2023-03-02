@@ -15,7 +15,9 @@
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
 
-__version__ = "2.3.0"
+__version__ = "2.3.1"
+
+# 2.3.1 - Not yet released, you are using bleeding-edge developer version. See its documentation at: https://docs.cleanlab.ai/master/
 
 # 2.3.0 - Extending cleanlab beyond label errors into a complete library for data-centric AI
 #
