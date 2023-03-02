@@ -7,6 +7,7 @@ from cleanlab.experimental.datalab.issue_manager import (
     LabelIssueManager,
     OutOfDistributionIssueManager,
     NearDuplicateIssueManager,
+    NonIIDIssueManager,
 )
 from cleanlab.experimental.datalab.factory import REGISTRY, register
 from cleanlab.outlier import OutOfDistribution
@@ -306,6 +307,82 @@ class TestNearDuplicateIssueManager:
         assert isinstance(report, str)
         assert (
             "-------------------------------------- near_duplicate issues ---------------------------------------\n\n"
+            "About this issue"
+        ) in report
+
+        report = issue_manager.report(
+            issues=issue_manager.issues,
+            summary=issue_manager.summary,
+            info=issue_manager.info,
+            verbosity=3,
+        )
+        assert "Additional Information: " in report
+
+class TestNonIIDIssueManager:
+    @pytest.fixture
+    def embeddings(self, lab):
+        np.random.seed(SEED) 
+        embeddings_array = np.random.rand(lab.get_info("statistics")["num_examples"], 2)
+        return {"embedding": embeddings_array}
+
+    @pytest.fixture
+    def issue_manager(self, lab, embeddings, monkeypatch):
+        mock_data = lab.data.from_dict({**lab.data.to_dict(), **embeddings})
+        monkeypatch.setattr(lab, "data", mock_data)
+        return NonIIDIssueManager(
+            datalab=lab,
+            metric="euclidean",
+            k=2,
+        )
+
+    def test_init(self, lab, issue_manager):
+        assert issue_manager.datalab == lab
+        assert issue_manager.metric == "euclidean"
+        assert issue_manager.k == 2
+        assert issue_manager.num_permutations == 10
+
+        issue_manager = NonIIDIssueManager(
+            datalab=lab,
+            num_permutations=15,
+        )
+
+        assert issue_manager.num_permutations == 15
+
+    def test_find_issues(self, issue_manager, embeddings):
+        np.random.seed(SEED)
+        issue_manager.find_issues(features=embeddings["embedding"])
+        issues, summary, info = issue_manager.issues, issue_manager.summary, issue_manager.info
+        expected_issue_mask = np.array([False] * 2 + [True] + [False] * 2)
+        assert np.all(
+            issues["is_non_iid_issue"] == expected_issue_mask
+        ), "Issue mask should be correct"
+        assert summary["issue_type"][0] == "non_iid"
+        assert summary["score"][0] == pytest.approx(expected=0.052342859, abs=1e-7)
+        assert (
+            info.get("p-value", None) is not None
+        ), "Should have p-value"
+        assert summary["score"][0] == pytest.approx(expected=info["p-value"], abs=1e-7)
+        
+        new_issue_manager = NearDuplicateIssueManager(
+            datalab=issue_manager.datalab,
+            metric="euclidean",
+            k=2,
+            threshold=0.1,
+        )
+        new_issue_manager.find_issues(features=embeddings["embedding"])
+
+    def test_report(self, issue_manager, embeddings):
+        np.random.seed(SEED)
+        issue_manager.find_issues(features=embeddings["embedding"])
+        report = issue_manager.report(
+            issues=issue_manager.issues,
+            summary=issue_manager.summary,
+            info=issue_manager.info,
+        )
+
+        assert isinstance(report, str)
+        assert (
+            "------------------------------------------ non_iid issues ------------------------------------------\n\n"
             "About this issue"
         ) in report
 
