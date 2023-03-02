@@ -217,16 +217,14 @@ class NonIIDIssueManager(IssueManager):
         return self._histogram1d
 
     def _permutation_test(self, num_permutations) -> float:
-        graph = self.neighbor_graph
-        tiled = np.tile(np.arange(len(graph)), (len(graph), 1))
-        index_distances = tiled - tiled.transpose()
-        neighbors = graph > 0
-        others = graph < 0
+        N = len(self.neighbor_graph)
+        tiled = np.tile(np.arange(N), (N, 1))
+        index_distances = tiled - tiled.T
 
         statistics = []
-        for i in range(num_permutations):
-            perm = np.random.permutation(len(graph))
-            distance = (perm - np.arange(len(graph))).reshape(len(graph), 1)
+        for _ in range(num_permutations):
+            perm = np.random.permutation(N)
+            distance = (perm - np.arange(N)).reshape(N, 1)
             new_distances = np.abs(distance - index_distances - distance.transpose())
 
             neighbor_index_distances = self._sample_neighbors(
@@ -311,18 +309,19 @@ class NonIIDIssueManager(IssueManager):
 
     def _sample_distances(self, sample_neighbors, distances=None, num_samples=1) -> np.ndarray:
         graph = self.neighbor_graph
-        all_idx = np.arange(len(graph))
-        all_idx = np.tile(all_idx, (len(graph), 1))
+        N = len(graph)
+        all_idx = np.arange(N)
+        all_idx = np.tile(all_idx, (N, 1))
         if sample_neighbors:
-            indices = all_idx[graph > 0].reshape(len(graph), -1)
+            indices = all_idx[graph > 0].reshape(N, -1)
         else:
-            indices = all_idx[graph < 0].reshape(len(graph), -1)
+            indices = all_idx[graph < 0].reshape(N, -1)
         generator = np.random.default_rng()
         choices = generator.choice(indices, axis=1, size=num_samples, replace=False)
         if distances is None:
-            sample_distances = np.abs(np.arange(len(graph)) - choices.transpose()).transpose()
+            sample_distances = np.abs(np.arange(N) - choices.transpose()).transpose()
         else:
-            sample_distances = distances[np.arange(len(graph)), choices.transpose()].transpose()
+            sample_distances = distances[np.arange(N), choices.transpose()].transpose()
         return sample_distances
 
     def _sample_neighbors(self, distances=None, num_samples=1) -> np.ndarray:
