@@ -139,15 +139,36 @@ def _compute_label_quality_scores(
     verbose: bool = True,
 ) -> np.ndarray:
     """Internal function to prune extra bounding boxes and compute label quality scores based on passed in method."""
+
+    pred_probs_prepruned = False
+    min_pred_prob = _get_min_pred_prob(predictions)
+
     if threshold is not None:
         predictions = _prune_by_threshold(
             predictions=predictions, threshold=threshold, verbose=verbose
         )
+        if np.abs(min_pred_prob - threshold) < 0.001 & threshold > 0:
+            pred_probs_prepruned = True  # the provided threshold is the threshold used for pre_pruning the pred_probs during model prediction.
+    else:
+        threshold = min_pred_prob  # assume model was not pre_pruned if no threshold was provided
 
     if method == "map":
         scores = _calculate_map(predictions, annotations)
 
     return scores
+
+
+def _get_min_pred_prob(
+    predictions: List[np.ndarray],
+) -> Tuple[List[Dict[Any, Any]], List[np.ndarray]]:
+    """Returns min pred_prob out of all predictions."""
+    pred_probs = [1.0]  # avoid calling np.min on empty array.
+    for prediction in predictions:
+        for class_prediction in prediction:
+            pred_probs.extend(list(class_prediction[:, -1]))
+
+    min_pred_prob = np.min(pred_probs)
+    return min_pred_prob
 
 
 def _prune_by_threshold(
@@ -159,15 +180,15 @@ def _prune_by_threshold(
     predictions_copy = copy.deepcopy(predictions)
     num_ann_to_zero = 0
     total_ann = 0
-    for idx_predictions, result in enumerate(predictions_copy):
-        for idx_class, class_result in enumerate(result):
-            filtered_class_result = class_result[class_result[:, -1] >= threshold]
-            if len(class_result) > 0:
+    for idx_predictions, prediction in enumerate(predictions_copy):
+        for idx_class, class_prediction in enumerate(prediction):
+            filtered_class_prediction = class_prediction[class_prediction[:, -1] >= threshold]
+            if len(class_prediction) > 0:
                 total_ann += 1
-                if len(filtered_class_result) == 0:
+                if len(filtered_class_prediction) == 0:
                     num_ann_to_zero += 1
 
-            predictions_copy[idx_predictions][idx_class] = filtered_class_result
+            predictions_copy[idx_predictions][idx_class] = filtered_class_prediction
 
     p_ann_pruned = total_ann and num_ann_to_zero / total_ann or 0  # avoid division by zero
     if p_ann_pruned > MAX_ALLOWED_BOX_PRUNE:
@@ -197,10 +218,10 @@ def assert_valid_inputs(annotations, predictions, method=None, threshold=None):
     # check last column of predictions is probabilities ( < 1.)?
     if not isinstance(predictions[0], np.ndarray):
         raise ValueError(
-            f"Result has to be a list of np.ndarray. Instead it is list of {type(predictions[0])}."
+            f"Prediction has to be a list of np.ndarray. Instead it is list of {type(predictions[0])}."
         )
     if not predictions[0][0].shape[1] == 5:
-        raise ValueError(f"Result values have to be of format [_,_,_,_,pred_prob].")
+        raise ValueError(f"Prediction values have to be of format [_,_,_,_,pred_prob].")
 
     valid_methods = ["map"]
     if method is not None and method not in valid_methods:
@@ -263,7 +284,7 @@ def visualize(
 
     # Create figure and axes
     image = plt.imread(image_path)
-    pbbox, plabels, pred_probs = _get_bbox_labels_result(prediction)
+    pbbox, plabels, pred_probs = _get_bbox_labels_prediction(prediction)
     abbox, alabels = _get_bbox_labels_annotation(annotation)
 
     if prediction_threshold is not None:
@@ -368,7 +389,7 @@ def _get_bbox_labels_annotation(annotation):
     return bboxes, labels
 
 
-def _get_bbox_labels_result(prediction):
+def _get_bbox_labels_prediction(prediction):
     """Returns bbox, label and pred_prob values for prediction."""
     labels = []
     boxes = []

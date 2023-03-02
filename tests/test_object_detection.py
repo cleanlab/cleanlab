@@ -1,4 +1,9 @@
-from cleanlab.object_detection.rank import get_label_quality_scores, issues_from_scores, visualize
+from cleanlab.object_detection.rank import (
+    get_label_quality_scores,
+    issues_from_scores,
+    visualize,
+    _get_min_pred_prob,
+)
 
 import numpy as np
 
@@ -229,9 +234,6 @@ def test_get_label_quality_scores():
 def test_issues_from_scores():
     scores = get_label_quality_scores(annotations, predictions)
     real_issue_from_scores = issues_from_scores(scores, threshold=1.0)
-    print(np.argmin(scores))
-    print(real_issue_from_scores[0])
-    print(real_issue_from_scores)
     assert len(real_issue_from_scores) == len(scores)
     assert np.argmin(scores) == real_issue_from_scores[0]
 
@@ -239,6 +241,11 @@ def test_issues_from_scores():
     fake_threshold = 0.3
     fake_issue_from_scores = issues_from_scores(fake_scores, threshold=fake_threshold)
     assert (fake_issue_from_scores == np.array([3, 0])).all()
+
+
+def test_get_min_pred_prob():
+    min = _get_min_pred_prob(predictions)
+    assert min == 0.054
 
 
 @pytest.mark.usefixtures("generate_single_image_file")
