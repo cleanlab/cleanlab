@@ -318,17 +318,16 @@ class TestNearDuplicateIssueManager:
         )
         assert "Additional Information: " in report
 
+
 class TestNonIIDIssueManager:
     @pytest.fixture
     def embeddings(self, lab):
-        np.random.seed(SEED) 
+        np.random.seed(SEED)
         embeddings_array = np.random.rand(lab.get_info("statistics")["num_examples"], 2)
-        return {"embedding": embeddings_array}
+        return embeddings_array
 
     @pytest.fixture
-    def issue_manager(self, lab, embeddings, monkeypatch):
-        mock_data = lab.data.from_dict({**lab.data.to_dict(), **embeddings})
-        monkeypatch.setattr(lab, "data", mock_data)
+    def issue_manager(self, lab):
         return NonIIDIssueManager(
             datalab=lab,
             metric="euclidean",
@@ -350,7 +349,7 @@ class TestNonIIDIssueManager:
 
     def test_find_issues(self, issue_manager, embeddings):
         np.random.seed(SEED)
-        issue_manager.find_issues(features=embeddings["embedding"])
+        issue_manager.find_issues(features=embeddings)
         issues, summary, info = issue_manager.issues, issue_manager.summary, issue_manager.info
         expected_issue_mask = np.array([False] * 2 + [True] + [False] * 2)
         assert np.all(
@@ -358,22 +357,20 @@ class TestNonIIDIssueManager:
         ), "Issue mask should be correct"
         assert summary["issue_type"][0] == "non_iid"
         assert summary["score"][0] == pytest.approx(expected=0.052342859, abs=1e-7)
-        assert (
-            info.get("p-value", None) is not None
-        ), "Should have p-value"
+        assert info.get("p-value", None) is not None, "Should have p-value"
         assert summary["score"][0] == pytest.approx(expected=info["p-value"], abs=1e-7)
-        
+
         new_issue_manager = NearDuplicateIssueManager(
             datalab=issue_manager.datalab,
             metric="euclidean",
             k=2,
             threshold=0.1,
         )
-        new_issue_manager.find_issues(features=embeddings["embedding"])
+        new_issue_manager.find_issues(features=embeddings)
 
     def test_report(self, issue_manager, embeddings):
         np.random.seed(SEED)
-        issue_manager.find_issues(features=embeddings["embedding"])
+        issue_manager.find_issues(features=embeddings)
         report = issue_manager.report(
             issues=issue_manager.issues,
             summary=issue_manager.summary,

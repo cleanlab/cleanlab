@@ -60,7 +60,7 @@ def simplified_kolmogorov_smirnov_test(
     return statistic
 
 
-class NonIIDIssueManager(IssueManager):  # pragma: no cover
+class NonIIDIssueManager(IssueManager):
     """Manages issues related to non-iid data distributions.
 
     Parameters
