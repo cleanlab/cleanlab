@@ -15,6 +15,7 @@
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
 
+import itertools
 import os
 import pickle
 from unittest.mock import Mock, patch
@@ -184,21 +185,19 @@ class TestDatalab:
         embedding_size = 2
         mock_embeddings = np.random.rand(dataset_size, embedding_size)
 
-        knn = NearestNeighbors(n_neighbors=3, metric="euclidean")
-        issue_types = {
-            "outlier": {
-                "ood_kwargs": {"params": {"knn": knn}},
-            },
-        }
-        lab.find_issues(
-            pred_probs=pred_probs,
-            features=mock_embeddings,
-            issue_types=issue_types,
-        )
-        metric = lab.info["outlier"]["metric"]
-        assert metric == "euclidean"
-        k = lab.info["outlier"]["k"]
-        assert k == 3
+        ks = [2, 3]
+        metrics = ["euclidean", "cosine"]
+        combinations = list(itertools.product(ks, metrics))
+        for k, metric in combinations:
+            knn = NearestNeighbors(n_neighbors=k, metric=metric)
+            issue_types = {"outlier": {"knn": knn}}
+            lab.find_issues(
+                pred_probs=pred_probs,
+                features=mock_embeddings,
+                issue_types=issue_types,
+            )
+            assert lab.info["outlier"]["metric"] == metric
+            assert lab.info["outlier"]["k"] == k
 
     def test_validate_issue_types_dict(self, lab, monkeypatch):
         issue_types = {

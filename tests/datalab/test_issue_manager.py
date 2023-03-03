@@ -129,16 +129,22 @@ class TestOutOfDistributionIssueManager:
         return {"embedding": embeddings_array}
 
     @pytest.fixture
-    def issue_manager(self, lab, embeddings, monkeypatch):
-        mock_data = lab.data.from_dict({**lab.data.to_dict(), **embeddings})
-        monkeypatch.setattr(lab, "data", mock_data)
-        return OutOfDistributionIssueManager(datalab=lab, ood_kwargs={"params": {"k": 3}})
+    def issue_manager(self, lab):
+        return OutOfDistributionIssueManager(datalab=lab, k=3)
 
-    def test_init(self, issue_manager):
+    @pytest.fixture
+    def issue_manager_with_threshold(self, lab):
+        return OutOfDistributionIssueManager(datalab=lab, k=2, threshold=0.5)
+
+    def test_init(self, issue_manager, issue_manager_with_threshold):
         assert isinstance(issue_manager.ood, OutOfDistribution)
         assert issue_manager.ood.params["k"] == 3
+        assert issue_manager.threshold == None
 
-    def test_find_issues(self, issue_manager, embeddings):
+        assert issue_manager_with_threshold.ood.params["k"] == 2
+        assert issue_manager_with_threshold.threshold == 0.5
+
+    def test_find_issues(self, issue_manager, issue_manager_with_threshold, embeddings):
         issue_manager.find_issues(features=embeddings["embedding"])
         issues, summary, info = issue_manager.issues, issue_manager.summary, issue_manager.info
         expected_issue_mask = np.array([False] * 4 + [True])
@@ -149,6 +155,8 @@ class TestOutOfDistributionIssueManager:
         assert summary["score"][0] == pytest.approx(expected=0.7732146, abs=1e-7)
 
         assert info.get("knn", None) is not None, "Should have knn info"
+
+        issue_manager_with_threshold.find_issues(features=embeddings["embedding"])
 
     def test_find_issues_with_pred_probs(self, issue_manager):
         pred_probs = np.array(
