@@ -323,7 +323,7 @@ class TestNonIIDIssueManager:
     @pytest.fixture
     def embeddings(self, lab):
         np.random.seed(SEED)
-        embeddings_array = np.random.rand(lab.get_info("statistics")["num_examples"], 2)
+        embeddings_array = np.arange(lab.get_info("statistics")["num_examples"] * 10).reshape(-1, 1)
         return embeddings_array
 
     @pytest.fixture
@@ -331,13 +331,13 @@ class TestNonIIDIssueManager:
         return NonIIDIssueManager(
             datalab=lab,
             metric="euclidean",
-            k=2,
+            k=10,
         )
 
     def test_init(self, lab, issue_manager):
         assert issue_manager.datalab == lab
         assert issue_manager.metric == "euclidean"
-        assert issue_manager.k == 2
+        assert issue_manager.k == 10
         assert issue_manager.num_permutations == 10
 
         issue_manager = NonIIDIssueManager(
@@ -350,23 +350,34 @@ class TestNonIIDIssueManager:
     def test_find_issues(self, issue_manager, embeddings):
         np.random.seed(SEED)
         issue_manager.find_issues(features=embeddings)
-        issues, summary, info = issue_manager.issues, issue_manager.summary, issue_manager.info
-        expected_issue_mask = np.array([False] * 2 + [True] + [False] * 2)
+        issues_sort, summary_sort, info_sort = issue_manager.issues, issue_manager.summary, issue_manager.info
+        expected_sorted_issue_mask = np.array([False] * len(embeddings))
         assert np.all(
-            issues["is_non_iid_issue"] == expected_issue_mask
+            issues_sort["is_non_iid_issue"] == expected_sorted_issue_mask
         ), "Issue mask should be correct"
-        assert summary["issue_type"][0] == "non_iid"
-        assert summary["score"][0] == pytest.approx(expected=0.052342859, abs=1e-7)
-        assert info.get("p-value", None) is not None, "Should have p-value"
-        assert summary["score"][0] == pytest.approx(expected=info["p-value"], abs=1e-7)
+        assert summary_sort["issue_type"][0] == "non_iid"
+        assert summary_sort["score"][0] == pytest.approx(expected=0.0, abs=1e-7)
+        assert info_sort.get("p-value", None) is not None, "Should have p-value"
+        assert summary_sort["score"][0] == pytest.approx(expected=info_sort["p-value"], abs=1e-7)
 
-        new_issue_manager = NearDuplicateIssueManager(
+        
+        permutation = np.random.permutation(len(embeddings))
+        new_issue_manager = NonIIDIssueManager(
             datalab=issue_manager.datalab,
             metric="euclidean",
-            k=2,
-            threshold=0.1,
+            k=10,
         )
-        new_issue_manager.find_issues(features=embeddings)
+        new_issue_manager.find_issues(features=embeddings[permutation])
+        issues_perm, summary_perm, info_perm = new_issue_manager.issues, new_issue_manager.summary, new_issue_manager.info
+        expected_permuted_issue_mask = np.array([False] * len(embeddings))
+        assert np.all(
+            issues_perm["is_non_iid_issue"] == expected_permuted_issue_mask
+        ), "Issue mask should be correct"
+        assert summary_perm["issue_type"][0] == "non_iid"
+        assert summary_perm["score"][0] == pytest.approx(expected=0.189562976, abs=1e-7)
+        assert info_perm.get("p-value", None) is not None, "Should have p-value"
+        assert summary_perm["score"][0] == pytest.approx(expected=info_perm["p-value"], abs=1e-7)
+
 
     def test_report(self, issue_manager, embeddings):
         np.random.seed(SEED)
