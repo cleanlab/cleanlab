@@ -151,7 +151,7 @@ class NonIIDIssueManager(IssueManager):
 
         self.num_neighbors = self.k
         self.num_non_neighbors = min(
-            10 * self.num_neighbors, len(self.neighbor_graph) - self.num_neighbors - 1
+            10 * self.num_neighbors, self.neighbor_graph.shape[0] - self.num_neighbors - 1
         )
         self.neighbor_index_distances = self._sample_neighbors(num_samples=self.num_neighbors)
         self.non_neighbor_index_distances = self._sample_non_neighbors(
@@ -193,7 +193,7 @@ class NonIIDIssueManager(IssueManager):
         weighted_knn_graph = self.knn.kneighbors_graph(mode="distance")  # type: ignore[union-attr]
 
         knn_info_dict = {
-            "weighted_knn_graph": weighted_knn_graph.toarray().tolist(),
+            "weighted_knn_graph": weighted_knn_graph,
         }
 
         info_dict = {
@@ -217,16 +217,14 @@ class NonIIDIssueManager(IssueManager):
         return self._histogram1d
 
     def _permutation_test(self, num_permutations) -> float:
-        graph = self.neighbor_graph
-        tiled = np.tile(np.arange(len(graph)), (len(graph), 1))
-        index_distances = tiled - tiled.transpose()
-        neighbors = graph > 0
-        others = graph < 0
+        N = self.neighbor_graph.shape[0]
+        tiled = np.tile(np.arange(N), (N, 1))
+        index_distances = tiled - tiled.T
 
         statistics = []
-        for i in range(num_permutations):
-            perm = np.random.permutation(len(graph))
-            distance = (perm - np.arange(len(graph))).reshape(len(graph), 1)
+        for _ in range(num_permutations):
+            perm = np.random.permutation(N)
+            distance = (perm - np.arange(N)).reshape(N, 1)
             new_distances = np.abs(distance - index_distances - distance.transpose())
 
             neighbor_index_distances = self._sample_neighbors(
@@ -254,7 +252,8 @@ class NonIIDIssueManager(IssueManager):
         graph = self.neighbor_graph
         scores = {}
 
-        num_bins = len(graph) - 1
+        N = graph.shape[0]
+        num_bins = N - 1
         bin_range = (1, num_bins)
 
         neighbor_cdfs = self._compute_row_cdf(self.neighbor_index_distances, num_bins, bin_range)
@@ -264,8 +263,8 @@ class NonIIDIssueManager(IssueManager):
 
         stats = np.sum(np.abs(neighbor_cdfs - non_neighbor_cdfs), axis=1)
 
-        indices = np.arange(len(graph))
-        reverse = len(graph) - indices
+        indices = np.arange(N)
+        reverse = N - indices
         normalizer = np.where(indices > reverse, indices, reverse)
 
         scores = stats / normalizer
@@ -286,8 +285,8 @@ class NonIIDIssueManager(IssueManager):
         item i and j are nth nearest neighbors. For n > k, A[i,j] = -1. Additionally, A[i,i] = 0
         """
 
-        distances, kneighbors = knn.kneighbors()
-        graph = knn.kneighbors_graph(n_neighbors=self.k).toarray()
+        _, kneighbors = knn.kneighbors()
+        graph = knn.kneighbors_graph(n_neighbors=self.k)
 
         kneighbor_graph = np.ones(graph.shape) * -1
         for i, nbrs in enumerate(kneighbors):
@@ -311,18 +310,19 @@ class NonIIDIssueManager(IssueManager):
 
     def _sample_distances(self, sample_neighbors, distances=None, num_samples=1) -> np.ndarray:
         graph = self.neighbor_graph
-        all_idx = np.arange(len(graph))
-        all_idx = np.tile(all_idx, (len(graph), 1))
+        N = graph.shape[0]
+        all_idx = np.arange(N)
+        all_idx = np.tile(all_idx, (N, 1))
         if sample_neighbors:
-            indices = all_idx[graph > 0].reshape(len(graph), -1)
+            indices = all_idx[graph > 0].reshape(N, -1)
         else:
-            indices = all_idx[graph < 0].reshape(len(graph), -1)
+            indices = all_idx[graph < 0].reshape(N, -1)
         generator = np.random.default_rng()
         choices = generator.choice(indices, axis=1, size=num_samples, replace=False)
         if distances is None:
-            sample_distances = np.abs(np.arange(len(graph)) - choices.transpose()).transpose()
+            sample_distances = np.abs(np.arange(N) - choices.transpose()).transpose()
         else:
-            sample_distances = distances[np.arange(len(graph)), choices.transpose()].transpose()
+            sample_distances = distances[np.arange(N), choices.transpose()].transpose()
         return sample_distances
 
     def _sample_neighbors(self, distances=None, num_samples=1) -> np.ndarray:
@@ -337,7 +337,7 @@ class NonIIDIssueManager(IssueManager):
 
     def _build_histogram(self, index_array) -> np.ndarray:
         histogram1d = self._get_histogram1d()
-        num_bins = len(self.neighbor_graph) - 1
+        num_bins = self.neighbor_graph.shape[0] - 1
         bin_range = (1, num_bins)
         histogram = histogram1d(index_array, num_bins, bin_range)
         histogram = histogram / len(index_array)

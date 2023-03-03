@@ -60,6 +60,19 @@ def create_data():
     y_train = np.concatenate([y_train, y_out])
     y_train_idx = np.concatenate([y_train_idx, y_out_bin_idx])
 
+    # Add non-iid examples to the training set
+    X_non_iid = np.array([[6.0 + 0.025 * i, 0.5 + np.sin(0.25 * i)] for i in range(25)])
+    y_non_iid = np.sum(X_non_iid, axis=1)
+    y_non_iid_bin = np.array(
+        [k for y_i in y_non_iid for k, v in BINS.items() if v[0] <= y_i < v[1]]
+    )
+    y_non_iid_bin_idx = np.array([BINS_MAP[k] for k in y_non_iid_bin])
+
+    # Add to train
+    X_train = np.concatenate([X_train, X_non_iid])
+    y_train = np.concatenate([y_train, y_non_iid])
+    y_train_idx = np.concatenate([y_train_idx, y_non_iid_bin_idx])
+
     py = np.bincount(y_train_idx) / float(len(y_train_idx))
     m = len(BINS)
 

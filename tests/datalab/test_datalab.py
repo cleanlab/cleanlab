@@ -15,6 +15,7 @@
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
 
+import itertools
 import os
 import pickle
 from unittest.mock import Mock, patch
@@ -73,7 +74,7 @@ class TestDatalab:
                 "predicted_labels": [1, 1, 2],
             },
             "outlier": {
-                "nearest_neighbors": [1, 0, 0],
+                "nearest_neighbor": [1, 0, 0],
             },
         }
         monkeypatch.setattr(lab, "info", mock_info)
@@ -116,7 +117,19 @@ class TestDatalab:
         monkeypatch.setattr(lab, "issues", mock_issues)
 
         mock_predicted_labels = np.array([0, 1, 2, 1, 2])
-        lab.info.update({"label": {"predicted_label": mock_predicted_labels}})
+
+        mock_nearest_neighbor = [1, 3, 5, 2, 0]
+        mock_distance_to_nearest_neighbor = [0.1, 0.2, 0.3, 0.4, 0.5]
+
+        lab.info.update(
+            {
+                "label": {"predicted_label": mock_predicted_labels},
+                "outlier": {
+                    "nearest_neighbor": mock_nearest_neighbor,
+                    "distance_to_nearest_neighbor": mock_distance_to_nearest_neighbor,
+                },
+            }
+        )
 
         label_issues = lab.get_issues(issue_name="label")
 
@@ -135,6 +148,8 @@ class TestDatalab:
         expected_outlier_issues = pd.DataFrame(
             {
                 **{key: mock_issues[key] for key in ["is_outlier_issue", "outlier_score"]},
+                "nearest_neighbor": mock_nearest_neighbor,
+                "distance_to_nearest_neighbor": mock_distance_to_nearest_neighbor,
             },
         )
         pd.testing.assert_frame_equal(outlier_issues, expected_outlier_issues)
@@ -170,21 +185,19 @@ class TestDatalab:
         embedding_size = 2
         mock_embeddings = np.random.rand(dataset_size, embedding_size)
 
-        knn = NearestNeighbors(n_neighbors=3, metric="euclidean")
-        issue_types = {
-            "outlier": {
-                "ood_kwargs": {"params": {"knn": knn}},
-            },
-        }
-        lab.find_issues(
-            pred_probs=pred_probs,
-            features=mock_embeddings,
-            issue_types=issue_types,
-        )
-        metric = lab.info["outlier"]["metric"]
-        assert metric == "euclidean"
-        k = lab.info["outlier"]["k"]
-        assert k == 3
+        ks = [2, 3]
+        metrics = ["euclidean", "cosine"]
+        combinations = list(itertools.product(ks, metrics))
+        for k, metric in combinations:
+            knn = NearestNeighbors(n_neighbors=k, metric=metric)
+            issue_types = {"outlier": {"knn": knn}}
+            lab.find_issues(
+                pred_probs=pred_probs,
+                features=mock_embeddings,
+                issue_types=issue_types,
+            )
+            assert lab.info["outlier"]["metric"] == metric
+            assert lab.info["outlier"]["k"] == k
 
     def test_validate_issue_types_dict(self, lab, monkeypatch):
         issue_types = {
