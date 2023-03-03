@@ -57,12 +57,24 @@ class OutOfDistributionIssueManager(IssueManager):
     def __init__(
         self,
         datalab: Datalab,
-        ood_kwargs: Optional[Dict[str, Any]] = None,
         threshold: Optional[float] = None,
-        **_,
+        **kwargs,
     ):
         super().__init__(datalab)
-        self.ood: OutOfDistribution = OutOfDistribution(**(ood_kwargs or {}))
+
+        ood_kwargs = kwargs.get("ood_kwargs", {})
+
+        valid_ood_params = OutOfDistribution.DEFAULT_PARAM_DICT.keys()
+        params = {
+            key: value
+            for key, value in ((k, kwargs.get(k, None)) for k in valid_ood_params)
+            if value is not None
+        }
+
+        if params:
+            ood_kwargs["params"] = params
+
+        self.ood: OutOfDistribution = OutOfDistribution(**ood_kwargs)
         self.threshold = threshold
         self._embeddings: Optional[np.ndarray] = None
 
