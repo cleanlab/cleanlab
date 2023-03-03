@@ -360,14 +360,21 @@ class Datalab:
             return self.issues
 
         specific_issues = self._get_matching_issue_columns(issue_name)
+        info = self.get_info(issue_name=issue_name)
         if issue_name == "label":
-            label_info = self.get_info(issue_name=issue_name)
-            predicted_labels = np.vectorize(self._data._label_map.get)(
-                label_info["predicted_label"]
-            )
+            label_map = self._data._label_map.get
+            predicted_labels = np.vectorize(label_map)(info["predicted_label"])
             label_name = cast(str, self.label_name)
             specific_issues = specific_issues.assign(
                 given_label=self._data._data[label_name], predicted_label=predicted_labels
+            )
+
+        if issue_name in ["outlier", "near_duplicate"]:
+            nearest_neighbor = info["nearest_neighbor"]
+            distance_to_nearest_neighbor = info["distance_to_nearest_neighbor"]
+            specific_issues = specific_issues.assign(
+                nearest_neighbor=nearest_neighbor,
+                distance_to_nearest_neighbor=distance_to_nearest_neighbor,
             )
         return specific_issues
 
