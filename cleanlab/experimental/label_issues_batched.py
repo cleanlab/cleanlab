@@ -509,6 +509,7 @@ class LabelInspector:
         ) / np.clip(
             self.examples_per_class + batch_class_counts, a_min=1, a_max=None
         )  # avoid division by 0
+        self.confident_thresholds = np.clip(self.confident_thresholds, 2e-6, 1.0)
         self.examples_per_class += batch_class_counts
         self.examples_processed_thresh += batch_size
 

@@ -1449,7 +1449,8 @@ def get_confident_thresholds(
             np.mean(pred_probs[:, k][labels == k]) if k in unique_classes else BIG_VALUE
             for k in all_classes
         ]
-        return np.array(confident_thresholds)
+        confident_thresholds = np.clip(confident_thresholds, 2e-6, 1.0)
+        return confident_thresholds
 
 
 def _get_confident_thresholds_multilabel(
