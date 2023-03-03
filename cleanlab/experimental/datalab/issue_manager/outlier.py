@@ -113,7 +113,7 @@ class OutOfDistributionIssueManager(IssueManager):
         if self.ood.params["knn"] is not None:
             knn = self.ood.params["knn"]
             dists, nn_ids = [array[:, 0] for array in knn.kneighbors()]  # type: ignore[union-attr]
-            weighted_knn_graph = knn.kneighbors_graph(mode="distance").toarray()  # type: ignore[union-attr]
+            weighted_knn_graph = knn.kneighbors_graph(mode="distance")  # type: ignore[union-attr]
 
             # TODO: Reverse the order of the calls to knn.kneighbors() and knn.kneighbors_graph()
             #   to avoid computing the (distance, id) pairs twice.
@@ -123,7 +123,7 @@ class OutOfDistributionIssueManager(IssueManager):
                     "k": knn.n_neighbors,  # type: ignore[union-attr]
                     "nearest_neighbor": nn_ids.tolist(),
                     "distance_to_nearest_neighbor": dists.tolist(),
-                    "weighted_knn_graph": weighted_knn_graph.tolist(),
+                    "weighted_knn_graph": weighted_knn_graph,
                 }
             )
 

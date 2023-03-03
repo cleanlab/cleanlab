@@ -193,7 +193,7 @@ class NonIIDIssueManager(IssueManager):
         weighted_knn_graph = self.knn.kneighbors_graph(mode="distance")  # type: ignore[union-attr]
 
         knn_info_dict = {
-            "weighted_knn_graph": weighted_knn_graph.toarray().tolist(),
+            "weighted_knn_graph": weighted_knn_graph,
         }
 
         info_dict = {
@@ -285,8 +285,8 @@ class NonIIDIssueManager(IssueManager):
         item i and j are nth nearest neighbors. For n > k, A[i,j] = -1. Additionally, A[i,i] = 0
         """
 
-        distances, kneighbors = knn.kneighbors()
-        graph = knn.kneighbors_graph(n_neighbors=self.k).toarray()
+        _, kneighbors = knn.kneighbors()
+        graph = knn.kneighbors_graph(n_neighbors=self.k)
 
         kneighbor_graph = np.ones(graph.shape) * -1
         for i, nbrs in enumerate(kneighbors):
