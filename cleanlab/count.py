@@ -38,6 +38,8 @@ from typing import Tuple, Union, Optional
 
 from cleanlab.typing import LabelLike
 from cleanlab.internal.multilabel_utils import stack_complement, get_onehot_num_classes
+from cleanlab.internal.constants import TINY_VALUE, CONFIDENT_THRESHOLDS_LOWER_BOUND
+
 from cleanlab.internal.util import (
     value_counts_fill_missing_classes,
     clip_values,
@@ -49,7 +51,6 @@ from cleanlab.internal.util import (
     get_unique_classes,
     is_torch_dataset,
     is_tensorflow_dataset,
-    TINY_VALUE,
 )
 from cleanlab.internal.latent_algebra import (
     compute_inv_noise_matrix,
@@ -1449,7 +1450,9 @@ def get_confident_thresholds(
             np.mean(pred_probs[:, k][labels == k]) if k in unique_classes else BIG_VALUE
             for k in all_classes
         ]
-        confident_thresholds = np.clip(confident_thresholds, 2e-6, 1.0)
+        confident_thresholds = np.clip(
+            confident_thresholds, a_min=CONFIDENT_THRESHOLDS_LOWER_BOUND, a_max=None
+        )
         return confident_thresholds
 
 
