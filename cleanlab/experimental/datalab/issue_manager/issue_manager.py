@@ -16,7 +16,8 @@
 from __future__ import annotations
 
 from abc import ABC, ABCMeta, abstractmethod
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Tuple, Type, TypeVar
+from itertools import chain
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Tuple, Type, TypeVar
 import json
 
 import numpy as np
@@ -38,11 +39,11 @@ class IssueManagerMeta(ABCMeta):
 
     issue_name: ClassVar[str]
     issue_score_key: ClassVar[str]
-    verbosity_levels: ClassVar[Dict[int, Dict[str, List[str]]]] = {
-        0: {},
-        1: {},
-        2: {},
-        3: {},
+    verbosity_levels: ClassVar[Dict[int, List[str]]] = {
+        0: [],
+        1: [],
+        2: [],
+        3: [],
     }
 
     def __new__(
@@ -56,18 +57,18 @@ class IssueManagerMeta(ABCMeta):
 
         # Ensure that the verbosity levels don't have keys other than those in ["issue", "info"]
         verbosity_levels = class_dict.get("verbosity_levels", meta.verbosity_levels)
-        for level in verbosity_levels.values():
-            if not isinstance(level, dict):
+        for level, level_list in verbosity_levels.items():
+            if not isinstance(level_list, list):
                 raise ValueError(
-                    f"Verbosity levels must be dictionaries. "
-                    f"Got {level} in {name}.verbosity_levels"
+                    f"Verbosity levels must be lists. "
+                    f"Got {level_list} in {name}.verbosity_levels"
                 )
-            for key in level.keys():
-                if key not in ["issue", "info"]:
-                    raise ValueError(
-                        f"Verbosity levels can only have keys 'issue' and 'info'. "
-                        f"Got {key} in {name}.verbosity_levels"
-                    )
+            prohibited_keys = [key for key in level_list if not isinstance(key, str)]
+            if prohibited_keys:
+                raise ValueError(
+                    f"Verbosity levels must be lists of strings. "
+                    f"Got {prohibited_keys} in {name}.verbosity_levels[{level}]"
+                )
 
         # Concrete classes need to have an issue_name attribute
         if "issue_name" not in class_dict:
@@ -119,11 +120,11 @@ class IssueManager(ABC, metaclass=IssueManagerMeta):
     """Returns a key that is used to store issue summary results about the assigned Lab."""
     issue_score_key: ClassVar[str]
     """Returns a key that is used to store issue score results about the assigned Lab."""
-    verbosity_levels: ClassVar[Dict[int, Dict[str, List[str]]]] = {
-        0: {},
-        1: {},
-        2: {},
-        3: {},
+    verbosity_levels: ClassVar[Dict[int, List[str]]] = {
+        0: [],
+        1: [],
+        2: [],
+        3: [],
     }
     """A dictionary of verbosity levels and their corresponding dictionaries of
     report items to print.
@@ -134,12 +135,9 @@ class IssueManager(ABC, metaclass=IssueManagerMeta):
     -------
 
     >>> verbosity_levels = {
-    ...     0: {},
-    ...     1: {"info": ["some_info_key"]},
-    ...     2: {
-    ...         "info": ["additional_info_key"],
-    ...         "issues": ["issue_column_1", "issue_column_2"],
-    ...     },
+    ...     0: [],
+    ...     1: ["some_info_key"],
+    ...     2: ["additional_info_key"],
     ... }
     """
 
@@ -213,6 +211,7 @@ class IssueManager(ABC, metaclass=IssueManagerMeta):
         num_examples: int = 5,
         verbosity: int = 0,
         include_description: bool = True,
+        info_to_omit: Optional[List[str]] = None,
     ) -> str:
         """Compose a report of the issues found by this IssueManager.
 
@@ -268,7 +267,8 @@ class IssueManager(ABC, metaclass=IssueManagerMeta):
             A string containing the report.
         """
 
-        top_level = max(cls.verbosity_levels.keys()) + 1
+        max_verbosity = max(cls.verbosity_levels.keys())
+        top_level = max_verbosity + 1
         if verbosity not in list(cls.verbosity_levels.keys()) + [top_level]:
             raise ValueError(
                 f"Verbosity level {verbosity} not supported. "
@@ -293,39 +293,18 @@ class IssueManager(ABC, metaclass=IssueManagerMeta):
             f"Overall dataset quality in terms of this issue: : {score:.4f}\n\n"
         )
 
-        columns = {}
-        info_to_omit = set()
-        for level, verbosity_dict in cls.verbosity_levels.items():
-            if level <= verbosity:
-                for key, values in verbosity_dict.items():
-                    if key == "info":
-                        info_to_omit.update(values)
-                    elif key == "issue":
-                        # Add the issue-specific info, with the top k ids
-                        new_columns = {
-                            col: np.array(info[col], dtype=object)[topk_ids]
-                            for col in values
-                            if info.get(col, None) is not None
-                        }
-                        columns.update(new_columns)
-                        info_to_omit.update(values)
-
-        max_verbosity = max(cls.verbosity_levels.keys())
         info_to_print = set()
-        if verbosity == max_verbosity + 1:
-            info_to_omit = set()
-            for verbosity_dict in cls.verbosity_levels.values():
-                info_to_omit.update(verbosity_dict.get("issue", []))
-
-            info_to_print = {key for key in info.keys() if key not in info_to_omit}
-
-        elif verbosity <= max_verbosity:
-            for level, verbosity_dict in cls.verbosity_levels.items():
-                if level <= verbosity:
-                    info_to_print.update(verbosity_dict.get("info", {}))
+        _info_to_omit = set(set(issues.columns)).union(info_to_omit or [])
+        if verbosity <= top_level:
+            available_keys = set(
+                chain.from_iterable(list(cls.verbosity_levels.values())[: verbosity + 1])
+            )
+            info_to_print = info_to_print.union(available_keys - _info_to_omit)
+        if verbosity == top_level:
+            info_to_print.update(set(info.keys()) - _info_to_omit)
 
         report_str += "Examples representing most severe instances of this issue:\n"
-        report_str += issues.loc[topk_ids].copy().assign(**columns).to_string()
+        report_str += issues.loc[topk_ids].to_string()
 
         def truncate(s, max_len=4) -> str:
             if hasattr(s, "shape") or hasattr(s, "ndim"):

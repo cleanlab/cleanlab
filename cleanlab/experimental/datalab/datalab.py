@@ -369,13 +369,22 @@ class Datalab:
                 given_label=self._data._data[label_name], predicted_label=predicted_labels
             )
 
-        if issue_name in ["outlier", "near_duplicate"]:
+        if issue_name == "outlier":
             nearest_neighbor = info["nearest_neighbor"]
             distance_to_nearest_neighbor = info["distance_to_nearest_neighbor"]
             specific_issues = specific_issues.assign(
                 nearest_neighbor=nearest_neighbor,
                 distance_to_nearest_neighbor=distance_to_nearest_neighbor,
             )
+
+        if issue_name == "near_duplicate":
+            near_duplicate_sets = info["near_duplicate_sets"]
+            distance_to_nearest_neighbor = info["distance_to_nearest_neighbor"]
+            specific_issues = specific_issues.assign(
+                near_duplicate_sets=near_duplicate_sets,
+                distance_to_nearest_neighbor=distance_to_nearest_neighbor,
+            )
+
         return specific_issues
 
     def _get_matching_issue_columns(self, issue_name: str) -> pd.DataFrame:

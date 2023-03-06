@@ -54,14 +54,9 @@ class NearDuplicateIssueManager(IssueManager):
         """
     issue_name: ClassVar[str] = "near_duplicate"
     verbosity_levels = {
-        0: {},
-        1: {
-            "info": ["radius"],
-            # This is important information, but the output could be very large.
-            # Maybe it shouldn't be default
-            "issue": ["near_duplicate_sets"],
-        },
-        2: {"issue": ["nearest_neighbor", "distance_to_nearest_neighbor"]},
+        0: [],
+        1: ["radius"],
+        2: [],
     }
 
     def __init__(

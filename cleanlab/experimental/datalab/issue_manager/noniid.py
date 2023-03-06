@@ -105,9 +105,9 @@ class NonIIDIssueManager(IssueManager):
     """
     issue_name: ClassVar[str] = "non_iid"
     verbosity_levels = {
-        0: {"info": ["p-value"]},
-        1: {},
-        2: {"issue": ["nearest_neighbor", "distance_to_nearest_neighbor"]},
+        0: ["p-value"],
+        1: [],
+        2: [],
     }
 
     def __init__(

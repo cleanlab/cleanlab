@@ -51,12 +51,10 @@ class LabelIssueManager(IssueManager):
 
     issue_name: ClassVar[str] = "label"
     verbosity_levels = {
-        0: {},
-        1: {},
-        2: {
-            "info": ["confident_joint"],
-        },
-        3: {"info": ["classes_by_label_quality", "overlapping_classes"]},
+        0: [],
+        1: [],
+        2: ["confident_joint"],
+        3: ["classes_by_label_quality", "overlapping_classes"],
     }
 
     def __init__(
