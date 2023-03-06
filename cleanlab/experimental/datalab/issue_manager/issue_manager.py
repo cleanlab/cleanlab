@@ -17,7 +17,7 @@ from __future__ import annotations
 
 from abc import ABC, ABCMeta, abstractmethod
 from itertools import chain
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Tuple, Type, TypeVar
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Set, Tuple, Type, TypeVar
 import json
 
 import numpy as np
@@ -293,13 +293,12 @@ class IssueManager(ABC, metaclass=IssueManagerMeta):
             f"Overall dataset quality in terms of this issue: : {score:.4f}\n\n"
         )
 
-        info_to_print = set()
-        _info_to_omit = set(set(issues.columns)).union(info_to_omit or [])
-        if verbosity <= top_level:
-            available_keys = set(
-                chain.from_iterable(list(cls.verbosity_levels.values())[: verbosity + 1])
-            )
-            info_to_print = info_to_print.union(available_keys - _info_to_omit)
+        info_to_print: Set[str] = set()
+        _info_to_omit = set(issues.columns).union(info_to_omit or [])
+        verbosity_levels_values = chain.from_iterable(
+            list(cls.verbosity_levels.values())[: verbosity + 1]
+        )
+        info_to_print.update(set(verbosity_levels_values) - _info_to_omit)
         if verbosity == top_level:
             info_to_print.update(set(info.keys()) - _info_to_omit)
 
