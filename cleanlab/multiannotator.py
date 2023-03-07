@@ -541,7 +541,7 @@ def get_active_learning_scores(
     pred_probs: np.ndarray,
     pred_probs_unlabeled: Optional[np.ndarray] = None,
 ) -> Tuple[np.ndarray, np.ndarray]:
-    """Returns an ActiveLab quality score for each example in the dataset, to estimate which examples are most informative to (re)label next in active learning. 
+    """Returns an ActiveLab quality score for each example in the dataset, to estimate which examples are most informative to (re)label next in active learning.
 
     We consider settings where one example can be labeled by one or more annotators and some examples have no labels at all so far.
 
