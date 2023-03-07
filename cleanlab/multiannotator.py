@@ -29,11 +29,11 @@ The underlying algorithms used to compute the statistics are described in `the C
 
 If you have some labeled and unlabeled data (with multiple annotators for some labeled examples) and want to decide what data to collect additional labels for,
 use the :py:func:`get_active_learning_scores <cleanlab.multiannotator.get_active_learning_scores>` function, which is intended for active learning. 
-This function estimates an active learning quality score for each example,
+This function estimates an ActiveLab quality score for each example,
 which can be used to prioritize which examples are most informative to collect additional labels for.
 This function is effective for settings where some examples have been labeled by one or more annotators and other examples can have no labels at all so far,
 as well as settings where new labels are collected either in batches of examples or one at a time. 
-Here is an `example notebook <https://github.com/cleanlab/examples/blob/master/active_learning_multiannotator/active_learning.ipynb>`_ showcasing the use of this function in multiple active learning rounds.
+Here is an `example notebook <https://github.com/cleanlab/examples/blob/master/active_learning_multiannotator/active_learning.ipynb>`_ showcasing the use of this ActiveLab method for active learning with data re-labeling.
 
 Each of the main functions in this module utilizes any trained classifier model.
 Variants of these functions are provided for settings where you have trained an ensemble of multiple models.
@@ -69,7 +69,7 @@ def get_label_quality_multiannotator(
     verbose: bool = True,
     label_quality_score_kwargs: dict = {},
 ) -> Dict[str, Any]:
-    """Returns label quality scores for each example and for each annotator.
+    """Returns label quality scores for each example and for each annotator in a dataset labeled by multiple annotators.
 
     This function is for multiclass classification datasets where examples have been labeled by
     multiple annotators (not necessarily the same number of annotators per example).
@@ -77,10 +77,10 @@ def get_label_quality_multiannotator(
     It computes one consensus label for each example that best accounts for the labels chosen by each
     annotator (and their quality), as well as a consensus quality score for how confident we are that this consensus label is actually correct.
     It also computes similar quality scores for each annotator's individual labels, and the quality of each annotator.
-    Scores are between 0 and 1; lower scores indicate labels/annotators less likely to be correct.
+    Scores are between 0 and 1 (estimated via methods like CROWDLAB); lower scores indicate labels/annotators less likely to be correct.
 
     To decide what data to collect additional labels for, try the :py:func:`get_active_learning_scores <cleanlab.multiannotator.get_active_learning_scores>`
-    function, which is intended for active learning with multiple annotators.
+    (ActiveLab) function, which is intended for active learning with multiple annotators.
 
     Parameters
     ----------
@@ -539,7 +539,7 @@ def get_active_learning_scores(
     pred_probs: np.ndarray,
     pred_probs_unlabeled: Optional[np.ndarray] = None,
 ) -> Tuple[np.ndarray, np.ndarray]:
-    """Returns an active learning quality score for each example in the dataset.
+    """Returns an ActiveLab quality score for each example in the dataset, to estimate which examples are most informative to (re)label next in active learning. 
 
     We consider settings where one example can be labeled by one or more annotators and some examples have no labels at all so far.
 
@@ -550,7 +550,7 @@ def get_active_learning_scores(
     and repeat this process after retraining your classifier.
 
     To analyze a fixed dataset labeled by multiple annotators rather than collecting additional labels, try the
-    :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>` function instead.
+    :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>` (CROWDLAB) function instead.
 
     Parameters
     ----------
@@ -570,7 +570,7 @@ def get_active_learning_scores(
     Returns
     -------
     active_learning_scores : np.ndarray
-        Array of shape ``(N,)`` indicating the active learning quality scores for each example.
+        Array of shape ``(N,)`` indicating the ActiveLab quality scores for each example.
         Examples with the lowest scores are those we should label next in order to maximally improve our classifier model.
 
     active_learning_scores_unlabeled : np.ndarray
@@ -663,10 +663,10 @@ def get_active_learning_scores_ensemble(
     pred_probs: np.ndarray,
     pred_probs_unlabeled: Optional[np.ndarray] = None,
 ) -> Tuple[np.ndarray, np.ndarray]:
-    """Returns an active learning quality score for each example in the dataset, based on predictions from an ensemble of models.
+    """Returns an ActiveLab quality score for each example in the dataset, based on predictions from an ensemble of models.
 
     This function is similar to :py:func:`get_active_learning_scores <cleanlab.multiannotator.get_active_learning_scores>` but allows for an
-    ensemble of multiple classifier models to be trained and will aggregate predictions from the models to compute the active learning quality score.
+    ensemble of multiple classifier models to be trained and will aggregate predictions from the models to compute the ActiveLab quality score.
 
     Parameters
     ----------
