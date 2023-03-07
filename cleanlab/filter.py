@@ -289,7 +289,6 @@ def find_label_issues(
     # even for faily large input arrays, so we default to n_jobs=1 in this case
     os_name = platform.system()
     if n_jobs is None:
-
         if psutil_exists:
             n_jobs = psutil.cpu_count(logical=False)  # physical cores
         elif big_dataset:
