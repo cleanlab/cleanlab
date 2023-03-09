@@ -17,6 +17,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional
 
+from scipy.stats import iqr
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
@@ -26,6 +27,7 @@ from cleanlab.outlier import OutOfDistribution
 
 if TYPE_CHECKING:  # pragma: no cover
     from sklearn.neighbors import NearestNeighbors
+    from scipy.sparse import csr_matrix
 
     from cleanlab.experimental.datalab.datalab import Datalab
 
@@ -77,6 +79,7 @@ class OutOfDistributionIssueManager(IssueManager):
         self.ood: OutOfDistribution = OutOfDistribution(**ood_kwargs)
         self.threshold = threshold
         self._embeddings: Optional[np.ndarray] = None
+        self._knn_graph: csr_matrix = None  # type: ignore
 
     def find_issues(
         self,
@@ -91,19 +94,39 @@ class OutOfDistributionIssueManager(IssueManager):
         else:
             raise ValueError(f"Either features or pred_probs must be provided.")
 
-        if self.threshold is None:
-            if self._embeddings is not None:
-                knn: NearestNeighbors = self.ood.params["knn"]  # type: ignore
-                distances, _ = knn.kneighbors(self._embeddings, n_neighbors=2)
-                nn_distances = distances[:, 1]
-                count_scale = min(len(nn_distances) - 1, 10)
-                self.threshold = np.exp(-count_scale * np.mean(nn_distances) * self.ood.params["t"])
-            else:
+        if self._embeddings is not None:
+            # Check if the weighted knn graph exists in info
+            weighted_knn_graph = self.datalab.get_info("statistics").get("weighted_knn_graph", None)
+
+            k: int = 0  # Used to check if the knn graph needs to be recomputed, already set in the knn object
+            if weighted_knn_graph is not None:
+                self._knn_graph: csr_matrix = weighted_knn_graph
+                k = self._knn_graph.nnz / self._knn_graph.shape[0]
+
+            knn: NearestNeighbors = self.ood.params["knn"]  # type: ignore
+            if knn.n_neighbors > k:  # type: ignore[union-attr]
+                # If the pre-existing knn graph has fewer neighbors than the knn object,
+                # then we need to recompute the knn graph
+                self._knn_graph = knn.kneighbors_graph(mode="distance")  # type: ignore[union-attr]
+                k = knn.n_neighbors  # type: ignore[union-attr]
+            distances = self._knn_graph.data.reshape(-1, k)  # type: ignore[union-attr]
+            avg_distances = distances.mean(axis=1)
+            if self.threshold is None:
+                q3_distance = np.percentile(avg_distances, 75)
+
+                # Threshold based on avg_distances, large average distances are outliers
+                self.threshold = q3_distance + 1.5 * iqr(avg_distances)
+            is_issue_column: np.ndarray = avg_distances > self.threshold
+
+        else:
+            if self.threshold is None:
+                # Threshold based on pred_probs, very small scores are outliers
                 self.threshold = np.percentile(scores, 10)
+            is_issue_column: np.ndarray = scores < self.threshold
 
         self.issues = pd.DataFrame(
             {
-                f"is_{self.issue_name}_issue": scores < self.threshold,
+                f"is_{self.issue_name}_issue": is_issue_column,
                 self.issue_score_key: scores,
             },
         )
@@ -122,20 +145,20 @@ class OutOfDistributionIssueManager(IssueManager):
         feature_issues_dict = {}
 
         # Compute
-        if self.ood.params["knn"] is not None:
-            knn = self.ood.params["knn"]
-            dists, nn_ids = [array[:, 0] for array in knn.kneighbors()]  # type: ignore[union-attr]
-            weighted_knn_graph = knn.kneighbors_graph(mode="distance")  # type: ignore[union-attr]
+        if self._knn_graph is not None and self.ood.params["knn"] is not None:
+            knn = self.ood.params["knn"]  # type: ignore
+            N = self._knn_graph.shape[0]
+            k = self._knn_graph.nnz // N
+            dists = self._knn_graph.data.reshape(N, -1)
+            nn_ids = self._knn_graph.indices.reshape(N, -1)
 
-            # TODO: Reverse the order of the calls to knn.kneighbors() and knn.kneighbors_graph()
-            #   to avoid computing the (distance, id) pairs twice.
             feature_issues_dict.update(
                 {
                     "metric": knn.metric,  # type: ignore[union-attr]
-                    "k": knn.n_neighbors,  # type: ignore[union-attr]
+                    "k": k,  # type: ignore[union-attr]
                     "nearest_neighbor": nn_ids.tolist(),
                     "distance_to_nearest_neighbor": dists.tolist(),
-                    "weighted_knn_graph": weighted_knn_graph,
+                    "weighted_knn_graph": self._knn_graph,
                 }
             )
 
