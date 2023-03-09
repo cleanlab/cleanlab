@@ -191,11 +191,8 @@ class NearDuplicateIssueManager(IssueManager):
         if self.threshold is None:
             # Threshold based on nearest-neighbor distance/radius. Smaller radius means
             # more examples are considered near-duplicates.
-            no_exact_duplicates = distances[distances != 0]
-            q1_nonzero_distance: float = np.quantile(no_exact_duplicates, 0.25)
-            iqr_nonzero_distance: float = iqr(no_exact_duplicates)
 
-            threshold: float = q1_nonzero_distance - 1.5 * iqr_nonzero_distance
+            threshold = np.median(distances) * 0.05
 
             if threshold < 0:
                 warnings.warn(
