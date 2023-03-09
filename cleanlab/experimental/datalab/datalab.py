@@ -515,6 +515,7 @@ class Datalab:
                 if self.verbosity:
                     print(f"Finding {issue_manager.issue_name} issues ...")
                 issue_manager.find_issues(**arg_dict)
+                self.data_issues.collect_statistics_from_issue_manager(issue_manager)
                 self.data_issues._collect_results_from_issue_manager(issue_manager)
             except Exception as e:
                 print(f"Error in {issue_manager.issue_name}: {e}")

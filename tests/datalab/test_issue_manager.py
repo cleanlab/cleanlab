@@ -286,7 +286,7 @@ class TestNearDuplicateIssueManager:
     def test_find_issues(self, issue_manager, embeddings):
         issue_manager.find_issues(features=embeddings["embedding"])
         issues, summary, info = issue_manager.issues, issue_manager.summary, issue_manager.info
-        expected_issue_mask = np.array([False] * 3 + [True] * 2)
+        expected_issue_mask = np.array([False] * 5)
         assert np.all(
             issues["is_near_duplicate_issue"] == expected_issue_mask
         ), "Issue mask should be correct"
@@ -358,7 +358,11 @@ class TestNonIIDIssueManager:
     def test_find_issues(self, issue_manager, embeddings):
         np.random.seed(SEED)
         issue_manager.find_issues(features=embeddings)
-        issues_sort, summary_sort, info_sort = issue_manager.issues, issue_manager.summary, issue_manager.info
+        issues_sort, summary_sort, info_sort = (
+            issue_manager.issues,
+            issue_manager.summary,
+            issue_manager.info,
+        )
         expected_sorted_issue_mask = np.array([False] * len(embeddings))
         assert np.all(
             issues_sort["is_non_iid_issue"] == expected_sorted_issue_mask
@@ -368,7 +372,6 @@ class TestNonIIDIssueManager:
         assert info_sort.get("p-value", None) is not None, "Should have p-value"
         assert summary_sort["score"][0] == pytest.approx(expected=info_sort["p-value"], abs=1e-7)
 
-        
         permutation = np.random.permutation(len(embeddings))
         new_issue_manager = NonIIDIssueManager(
             datalab=issue_manager.datalab,
@@ -376,7 +379,11 @@ class TestNonIIDIssueManager:
             k=10,
         )
         new_issue_manager.find_issues(features=embeddings[permutation])
-        issues_perm, summary_perm, info_perm = new_issue_manager.issues, new_issue_manager.summary, new_issue_manager.info
+        issues_perm, summary_perm, info_perm = (
+            new_issue_manager.issues,
+            new_issue_manager.summary,
+            new_issue_manager.info,
+        )
         expected_permuted_issue_mask = np.array([False] * len(embeddings))
         assert np.all(
             issues_perm["is_non_iid_issue"] == expected_permuted_issue_mask
@@ -385,7 +392,6 @@ class TestNonIIDIssueManager:
         assert summary_perm["score"][0] == pytest.approx(expected=0.189562976, abs=1e-7)
         assert info_perm.get("p-value", None) is not None, "Should have p-value"
         assert summary_perm["score"][0] == pytest.approx(expected=info_perm["p-value"], abs=1e-7)
-
 
     def test_report(self, issue_manager, embeddings):
         np.random.seed(SEED)

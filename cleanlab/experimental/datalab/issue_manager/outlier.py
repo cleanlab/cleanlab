@@ -80,6 +80,7 @@ class OutOfDistributionIssueManager(IssueManager):
         self.threshold = threshold
         self._embeddings: Optional[np.ndarray] = None
         self._knn_graph: csr_matrix = None  # type: ignore
+        self._metric: str = None  # type: ignore
 
     def find_issues(
         self,
@@ -104,10 +105,11 @@ class OutOfDistributionIssueManager(IssueManager):
                 k = self._knn_graph.nnz / self._knn_graph.shape[0]
 
             knn: NearestNeighbors = self.ood.params["knn"]  # type: ignore
-            if knn.n_neighbors > k:  # type: ignore[union-attr]
+            if kwargs.get("knn", None) is not None or knn.n_neighbors > k:  # type: ignore[union-attr]
                 # If the pre-existing knn graph has fewer neighbors than the knn object,
                 # then we need to recompute the knn graph
                 self._knn_graph = knn.kneighbors_graph(mode="distance")  # type: ignore[union-attr]
+                self._metric = knn.metric  # type: ignore[union-attr]
                 k = knn.n_neighbors  # type: ignore[union-attr]
             distances = self._knn_graph.data.reshape(-1, k)  # type: ignore[union-attr]
             avg_distances = distances.mean(axis=1)
@@ -158,12 +160,12 @@ class OutOfDistributionIssueManager(IssueManager):
                     "k": k,  # type: ignore[union-attr]
                     "nearest_neighbor": nn_ids.tolist(),
                     "distance_to_nearest_neighbor": dists.tolist(),
-                    "weighted_knn_graph": self._knn_graph,
                 }
             )
 
         if self.ood.params["confident_thresholds"] is not None:
             pass  #
+        statistics_dict = self._build_statistics_dictionary()
         ood_params_dict = self.ood.params
         knn_dict = {
             **pred_probs_issues_dict,
@@ -173,8 +175,31 @@ class OutOfDistributionIssueManager(IssueManager):
             **issues_dict,
             **ood_params_dict,  # type: ignore[arg-type]
             **knn_dict,
+            **statistics_dict,
         }
         return info_dict
+
+    def _build_statistics_dictionary(self) -> Dict[str, Dict[str, Any]]:
+        statistics_dict: Dict[str, Dict[str, Any]] = {"statistics": {}}
+
+        # Add the knn graph as a statistic if necessary
+        graph_key = "weighted_knn_graph"
+        old_knn_graph = self.datalab.get_info("statistics").get(graph_key, None)
+        old_graph_exists = old_knn_graph is not None
+        prefer_new_graph = (
+            not old_graph_exists
+            or self._knn_graph.nnz > old_knn_graph.nnz
+            or self._metric != self.datalab.get_info("statistics").get("knn_metric", None)
+        )
+        if prefer_new_graph:
+            statistics_dict["statistics"].update(
+                {
+                    graph_key: self._knn_graph,
+                    "knn_metric": self._metric,
+                },
+            )
+
+        return statistics_dict
 
     def _score_with_pred_probs(self, pred_probs: np.ndarray, **kwargs) -> np.ndarray:
         scores = self.ood.fit_score(pred_probs=pred_probs, labels=self.datalab._labels, **kwargs)

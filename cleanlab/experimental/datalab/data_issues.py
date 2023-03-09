@@ -95,6 +95,31 @@ class DataIssues:
             )
         return info
 
+    def collect_statistics_from_issue_manager(self, issue_manager: IssueManager) -> None:
+        """Update the statistics in the info dictionary.
+
+        Parameters
+        ----------
+        statistics :
+            A dictionary of statistics to add/update in the info dictionary.
+
+        Examples
+        --------
+
+        A common use case is to reuse the KNN-graph across multiple issue managers.
+        To avoid recomputing the KNN-graph for each issue manager,
+        we can pass it as a statistic to the issue managers.
+
+        >>> from scipy.sparse import csr_matrix
+        >>> weighted_knn_graph = csr_matrix(...)
+        >>> issue_manager_that_computes_knn_graph = ...
+
+        """
+        key = "statistics"
+        statistics: Dict[str, Any] = issue_manager.info.pop(key, {})
+        if statistics:
+            self.info[key].update(statistics)
+
     def _collect_results_from_issue_manager(self, issue_manager: IssueManager) -> None:
         """
         Collects results from an IssueManager and update the corresponding

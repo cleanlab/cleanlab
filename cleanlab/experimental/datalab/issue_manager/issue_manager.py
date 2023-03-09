@@ -330,6 +330,8 @@ class IssueManager(ABC, metaclass=IssueManagerMeta):
             # Print the info dict, truncating arrays to 4 elements,
             report_str += f"\n\nAdditional Information: "
             for key, value in info_to_print_dict.items():
+                if key == "statistics":
+                    continue
                 if isinstance(value, dict):
                     report_str += f"\n{key}:\n{json.dumps(value, indent=4)}"
                 elif isinstance(value, pd.DataFrame):
