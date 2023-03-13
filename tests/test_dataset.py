@@ -498,9 +498,9 @@ def test_value_error_missing_num_examples_with_joint(use_num_examples, use_label
 
 
 confident_joint_strategy = npst.arrays(
-    np.int64,
+    np.int32,
     shape=npst.array_shapes(min_dims=2, max_dims=2, min_side=2, max_side=10),
-    elements=st.integers(min_value=0, max_value=int(1e12)),
+    elements=st.integers(min_value=0, max_value=np.iinfo(np.int32).max),
 ).filter(lambda arr: arr.shape[0] == arr.shape[1])
 
 
