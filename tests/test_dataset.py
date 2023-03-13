@@ -504,6 +504,7 @@ confident_joint_strategy = npst.arrays(
 ).filter(lambda arr: arr.shape[0] == arr.shape[1])
 
 
+@pytest.mark.issue_651
 @given(confident_joint=confident_joint_strategy)
 def test_find_overlapping_classes_with_confident_joint(confident_joint):
 
