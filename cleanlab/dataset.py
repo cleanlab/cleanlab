@@ -248,7 +248,7 @@ def find_overlapping_classes(
             multi_label=multi_label,
         )
     if num_examples is None:
-        num_examples = _get_num_examples(labels=labels)
+        num_examples = _get_num_examples(labels=labels, confident_joint=confident_joint)
     if asymmetric:
         rcv_list = _2d_matrix_to_row_column_value_list(joint)
         # Remove diagonal elements
@@ -444,7 +444,7 @@ def health_summary(
     }
 
 
-def _get_num_examples(labels=None) -> int:
+def _get_num_examples(labels=None, confident_joint=None) -> int:
     """Helper method that finds the number of examples from the parameters or throws an error
     if neither parameter is provided.
 
@@ -464,9 +464,11 @@ def _get_num_examples(labels=None) -> int:
 
     if labels is not None:
         num_examples = len(labels)
+    elif confident_joint is not None:
+        num_examples = np.sum(confident_joint)
     else:
         raise ValueError(
-            "Error: num_examples is None. You must provide a value for num_examples "
-            "when calling this method using the joint as an input parameter."
+            "Error: num_examples is None. You must either provide confident_joint, "
+            "or provide both num_example and joint as input parameters."
         )
     return num_examples

@@ -388,7 +388,12 @@ def estimate_joint(
             multi_label=multi_label,
         )
     else:
-        calibrated_cj = calibrate_confident_joint(confident_joint, labels, multi_label=multi_label)
+        if labels is not None:
+            calibrated_cj = calibrate_confident_joint(
+                confident_joint, labels, multi_label=multi_label
+            )
+        else:
+            calibrated_cj = confident_joint
 
     assert isinstance(calibrated_cj, np.ndarray)
     if multi_label:
