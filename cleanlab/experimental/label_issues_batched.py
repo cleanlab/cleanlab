@@ -34,6 +34,11 @@ from cleanlab.count import get_confident_thresholds
 from cleanlab.rank import find_top_issues, _compute_label_quality_scores
 from cleanlab.typing import LabelLike
 from cleanlab.internal.util import value_counts_fill_missing_classes
+from cleanlab.internal.constants import (
+    CONFIDENT_THRESHOLDS_LOWER_BOUND,
+    FLOATING_POINT_COMPARISON,
+    CLIPPING_LOWER_BOUND,
+)
 
 import platform
 import multiprocessing as mp
@@ -44,8 +49,6 @@ try:
     PSUTIL_EXISTS = True
 except ImportError:  # pragma: no cover
     PSUTIL_EXISTS = False
-
-EPS = 1e-6  # small number
 
 # global variable for multiproc on linux
 adj_confident_thresholds_shared: np.ndarray
@@ -423,7 +426,7 @@ class LabelInspector:
                 calibrated_prune_counts = (
                     self.prune_counts
                     * self.class_counts
-                    / np.clip(self.normalization, a_min=EPS, a_max=None)
+                    / np.clip(self.normalization, a_min=CLIPPING_LOWER_BOUND, a_max=None)
                 )  # avoid division by 0
                 return np.rint(np.sum(calibrated_prune_counts)).astype("int")
             else:  # not calibrated
@@ -509,6 +512,9 @@ class LabelInspector:
         ) / np.clip(
             self.examples_per_class + batch_class_counts, a_min=1, a_max=None
         )  # avoid division by 0
+        self.confident_thresholds = np.clip(
+            self.confident_thresholds, a_min=CONFIDENT_THRESHOLDS_LOWER_BOUND, a_max=None
+        )
         self.examples_per_class += batch_class_counts
         self.examples_processed_thresh += batch_size
 
@@ -581,7 +587,7 @@ class LabelInspector:
             )
 
         if self.n_jobs == 1:
-            adj_confident_thresholds = self.confident_thresholds - EPS
+            adj_confident_thresholds = self.confident_thresholds - FLOATING_POINT_COMPARISON
             pred_class = np.argmax(pred_probs, axis=1)
             batch_size = len(labels)
             if thorough:
@@ -626,7 +632,7 @@ class LabelInspector:
                     )
         else:  # multiprocessing implementation
             global adj_confident_thresholds_shared
-            adj_confident_thresholds_shared = self.confident_thresholds - EPS
+            adj_confident_thresholds_shared = self.confident_thresholds - FLOATING_POINT_COMPARISON
 
             global labels_shared, pred_probs_shared
             labels_shared = labels

@@ -49,6 +49,8 @@ from typing import List, Dict, Any, Union, Tuple, Optional
 
 from cleanlab.rank import get_label_quality_scores
 from cleanlab.internal.util import get_num_classes, value_counts
+from cleanlab.internal.constants import CLIPPING_LOWER_BOUND
+
 from cleanlab.internal.multiannotator_utils import (
     assert_valid_inputs_multiannotator,
     assert_valid_pred_probs,
@@ -1296,7 +1298,7 @@ def _get_post_pred_probs_and_weights(
                 consensus_label_subset
                 != np.argmax(np.bincount(consensus_label_subset, minlength=num_classes))
             ),
-            a_min=1e-6,
+            a_min=CLIPPING_LOWER_BOUND,
             a_max=None,
         )
 
@@ -1306,14 +1308,14 @@ def _get_post_pred_probs_and_weights(
         )
         annotator_error = 1 - annotator_agreement_with_annotators
         adjusted_annotator_agreement = np.clip(
-            1 - (annotator_error / most_likely_class_error), a_min=1e-6, a_max=None
+            1 - (annotator_error / most_likely_class_error), a_min=CLIPPING_LOWER_BOUND, a_max=None
         )
 
         # compute model weight
         model_error = np.mean(np.argmax(prior_pred_probs_subset, axis=1) != consensus_label_subset)
-        model_weight = np.max([(1 - (model_error / most_likely_class_error)), 1e-6]) * np.sqrt(
-            np.mean(num_annotations)
-        )
+        model_weight = np.max(
+            [(1 - (model_error / most_likely_class_error)), CLIPPING_LOWER_BOUND]
+        ) * np.sqrt(np.mean(num_annotations))
 
         # compute weighted average
         post_pred_probs = np.full(prior_pred_probs.shape, np.nan)
@@ -1422,7 +1424,7 @@ def _get_post_pred_probs_and_weights_ensemble(
             consensus_label_subset
             != np.argmax(np.bincount(consensus_label_subset, minlength=num_classes))
         ),
-        a_min=1e-6,
+        a_min=CLIPPING_LOWER_BOUND,
         a_max=None,
     )
 
@@ -1432,7 +1434,7 @@ def _get_post_pred_probs_and_weights_ensemble(
     )
     annotator_error = 1 - annotator_agreement_with_annotators
     adjusted_annotator_agreement = np.clip(
-        1 - (annotator_error / most_likely_class_error), a_min=1e-6, a_max=None
+        1 - (annotator_error / most_likely_class_error), a_min=CLIPPING_LOWER_BOUND, a_max=None
     )
 
     # compute model weight
@@ -1441,9 +1443,9 @@ def _get_post_pred_probs_and_weights_ensemble(
         prior_pred_probs_subset = prior_pred_probs[idx][mask]
 
         model_error = np.mean(np.argmax(prior_pred_probs_subset, axis=1) != consensus_label_subset)
-        model_weight[idx] = np.max([(1 - (model_error / most_likely_class_error)), 1e-6]) * np.sqrt(
-            np.mean(num_annotations)
-        )
+        model_weight[idx] = np.max(
+            [(1 - (model_error / most_likely_class_error)), CLIPPING_LOWER_BOUND]
+        ) * np.sqrt(np.mean(num_annotations))
 
     # compute weighted average
     post_pred_probs = np.full(prior_pred_probs[0].shape, np.nan)
