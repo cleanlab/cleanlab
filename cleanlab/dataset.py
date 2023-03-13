@@ -22,6 +22,7 @@ which classes to remove (see :py:func:`rank_classes_by_label_quality <cleanlab.d
 and which classes to merge (see :py:func:`find_overlapping_classes <cleanlab.dataset.find_overlapping_classes>`).
 """
 
+from typing import Optional, cast
 import numpy as np
 import pandas as pd
 from cleanlab.count import estimate_joint
@@ -248,7 +249,7 @@ def find_overlapping_classes(
             multi_label=multi_label,
         )
     if num_examples is None:
-        num_examples = _get_num_examples(labels=labels)
+        num_examples = _get_num_examples(labels=labels, confident_joint=confident_joint)
     if asymmetric:
         rcv_list = _2d_matrix_to_row_column_value_list(joint)
         # Remove diagonal elements
@@ -444,7 +445,7 @@ def health_summary(
     }
 
 
-def _get_num_examples(labels=None) -> int:
+def _get_num_examples(labels=None, confident_joint: Optional[np.ndarray] = None) -> int:
     """Helper method that finds the number of examples from the parameters or throws an error
     if neither parameter is provided.
 
@@ -462,11 +463,11 @@ def _get_num_examples(labels=None) -> int:
     ValueError
         If `labels` is None."""
 
-    if labels is not None:
-        num_examples = len(labels)
-    else:
+    if labels is None and confident_joint is None:
         raise ValueError(
-            "Error: num_examples is None. You must provide a value for num_examples "
-            "when calling this method using the joint as an input parameter."
+            "Error: num_examples is None. You must either provide confident_joint, "
+            "or provide both num_example and joint as input parameters."
         )
+    _confident_joint = cast(np.ndarray, confident_joint)
+    num_examples = len(labels) if labels is not None else cast(int, np.sum(_confident_joint))
     return num_examples
