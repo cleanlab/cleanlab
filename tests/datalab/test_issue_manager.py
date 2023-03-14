@@ -286,7 +286,7 @@ class TestNearDuplicateIssueManager:
     def test_find_issues(self, issue_manager, embeddings):
         issue_manager.find_issues(features=embeddings["embedding"])
         issues, summary, info = issue_manager.issues, issue_manager.summary, issue_manager.info
-        expected_issue_mask = np.array([False] * 5)
+        expected_issue_mask = np.array([False] * 3 + [True] * 2)
         assert np.all(
             issues["is_near_duplicate_issue"] == expected_issue_mask
         ), "Issue mask should be correct"
