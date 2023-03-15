@@ -370,12 +370,12 @@ class Datalab:
             )
 
         if issue_name == "outlier":
-            nearest_neighbor = info["nearest_neighbor"]
-            distance_to_nearest_neighbor = info["distance_to_nearest_neighbor"]
-            specific_issues = specific_issues.assign(
-                nearest_neighbor=nearest_neighbor,
-                distance_to_nearest_neighbor=distance_to_nearest_neighbor,
-            )
+            column_dict = {
+                k: info.get(k)
+                for k in ["nearest_neighbor", "distance_to_nearest_neighbor"]
+                if info.get(k) is not None
+            }
+            specific_issues = specific_issues.assign(**column_dict)
 
         if issue_name == "near_duplicate":
             near_duplicate_sets = info["near_duplicate_sets"]

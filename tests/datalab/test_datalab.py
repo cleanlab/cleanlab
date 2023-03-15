@@ -573,3 +573,22 @@ class TestDatalabIssueManagerInteraction:
         from cleanlab.experimental.datalab.factory import REGISTRY
 
         REGISTRY.pop(custom_issue_manager.issue_name)
+
+
+@pytest.mark.parametrize(
+    "find_issues_kwargs",
+    [
+        ({"pred_probs": np.random.rand(3, 2)}),
+        ({"features": np.random.rand(3, 2)}),
+        ({"pred_probs": np.random.rand(3, 2), "features": np.random.rand(6, 2)}),
+    ],
+    ids=["pred_probs", "features", "pred_probs and features"],
+)
+def test_report_for_outlier_issues_via_pred_probs(find_issues_kwargs):
+    data = {"labels": [0, 1, 0]}
+    lab = Datalab(data=data, label_name="labels")
+    find_issues_kwargs["issue_types"] = {"outlier": {"k": 1}}
+    lab.find_issues(**find_issues_kwargs)
+
+    report = lab._get_report(num_examples=3, verbosity=0, include_description=False)
+    assert report, "Report should not be empty"
