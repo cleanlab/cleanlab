@@ -164,8 +164,7 @@ class Data:
 
     @property
     def class_names(self) -> list:
-        label_name = cast(str, self._label_name)
-        return self._data.unique(label_name)
+        return list(self._label_map.values())
 
     @staticmethod
     def _validate_data(data) -> None:
