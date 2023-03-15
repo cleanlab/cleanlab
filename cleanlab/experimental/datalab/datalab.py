@@ -378,13 +378,12 @@ class Datalab:
             specific_issues = specific_issues.assign(**column_dict)
 
         if issue_name == "near_duplicate":
-            near_duplicate_sets = info["near_duplicate_sets"]
-            distance_to_nearest_neighbor = info["distance_to_nearest_neighbor"]
-            specific_issues = specific_issues.assign(
-                near_duplicate_sets=near_duplicate_sets,
-                distance_to_nearest_neighbor=distance_to_nearest_neighbor,
-            )
-
+            column_dict = {
+                k: info.get(k)
+                for k in ["near_duplicate_sets", "distance_to_nearest_neighbor"]
+                if info.get(k) is not None
+            }
+            specific_issues = specific_issues.assign(**column_dict)
         return specific_issues
 
     def _get_matching_issue_columns(self, issue_name: str) -> pd.DataFrame:
