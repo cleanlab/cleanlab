@@ -128,7 +128,6 @@ class Data:
         self._data = self._load_data(data)
         self._validate_data_and_labels(self._data, self._data[label_name])
         self._data_hash = hash(self._data)
-        self._data.set_format(type="numpy")
         self._labels, self._label_map = _extract_labels(self._data, label_name)
         self._label_name = label_name
 
