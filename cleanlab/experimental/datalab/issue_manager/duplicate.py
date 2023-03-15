@@ -93,7 +93,7 @@ class NearDuplicateIssueManager(IssueManager):
         k: int = 0  # Used to check if the knn graph needs to be recomputed, already set in the knn object
         if weighted_knn_graph is not None:
             self._knn_graph: csr_matrix = weighted_knn_graph
-            k = self._knn_graph.nnz / self._knn_graph.shape[0]
+            k = self._knn_graph.nnz // self._knn_graph.shape[0]
 
         if self.metric and self.metric != self.knn.metric:
             warnings.warn(
