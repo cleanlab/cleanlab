@@ -53,7 +53,7 @@ class LabelIssueManager(IssueManager):
     verbosity_levels = {
         0: [],
         1: [],
-        2: ["confident_joint"],
+        2: [],
         3: ["classes_by_label_quality", "overlapping_classes"],
     }
 
