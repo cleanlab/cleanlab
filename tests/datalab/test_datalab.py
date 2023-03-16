@@ -66,21 +66,27 @@ class TestDatalab:
         assert isinstance(lab.issues, pd.DataFrame), "Issues should by in a dataframe"
         assert isinstance(lab.issue_summary, pd.DataFrame), "Issue summary should be a dataframe"
 
-    def test_get_info(self, lab, monkeypatch):
+    def test_get_info(self, lab):
         mock_info: dict = {
-            "statistics": {"num_classes": 3},
             "label": {
-                "given_labels": [1, 0, 1],
-                "predicted_labels": [1, 1, 2],
+                "given_label": [1, 0, 1, 0, 2],
+                "predicted_label": [1, 1, 2, 0, 2],
+                # get_info("label") adds `class_names` from statistics
             },
             "outlier": {
-                "nearest_neighbor": [1, 0, 0],
+                "nearest_neighbor": [1, 0, 0, 4, 3],
             },
         }
-        monkeypatch.setattr(lab, "info", mock_info)
+        mock_info = {**lab.info, **mock_info}
+        lab.info = mock_info
 
-        for key in mock_info:
-            assert lab.get_info(key) == mock_info[key]
+        label_info = lab.get_info("label")
+        assert label_info["given_label"].tolist() == [4, 3, 4, 3, 5]
+        assert label_info["predicted_label"].tolist() == [4, 4, 5, 3, 5]
+        assert label_info["class_names"] == [3, 4, 5]
+
+        outlier_info = lab.get_info("outlier")
+        assert outlier_info["nearest_neighbor"] == [1, 0, 0, 4, 3]
 
         assert lab.get_info() == lab.info == mock_info
 
@@ -123,7 +129,10 @@ class TestDatalab:
 
         lab.info.update(
             {
-                "label": {"predicted_label": mock_predicted_labels},
+                "label": {
+                    "given_label": lab.labels,
+                    "predicted_label": mock_predicted_labels,
+                },
                 "outlier": {
                     "nearest_neighbor": mock_nearest_neighbor,
                     "distance_to_nearest_neighbor": mock_distance_to_nearest_neighbor,

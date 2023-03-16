@@ -131,7 +131,6 @@ class Data:
         self._validate_data_and_labels(self._data, self._data[label_name])
         self._data_hash = hash(self._data)
         self._labels, self._label_map = _extract_labels(self._data, label_name)
-        self._label_feature = ClassLabel(names=self.class_names)
 
     def _load_data(self, data: "DatasetLike") -> Dataset:
         """Checks the type of dataset and uses the correct loader method and
@@ -157,8 +156,7 @@ class Data:
             labels = np.array_equal(self._labels, other._labels)
             label_names = self._label_name == other._label_name
             label_maps = self._label_map == other._label_map
-            label_features = self._label_feature == other._label_feature
-            return all([hashes, labels, label_names, label_maps, label_features])
+            return all([hashes, labels, label_names, label_maps])
         return False
 
     def __hash__(self) -> int:
@@ -252,7 +250,7 @@ def _extract_labels(data: Dataset, label_name: Union[str, List[str]]) -> Tuple[n
         raise ValueError("labels must be 1D numpy array.")
 
     label_name_feature = data.features[label_name]
-    if isinstance(label_name_feature, datasets.features.features.ClassLabel):
+    if isinstance(label_name_feature, ClassLabel):
         label_map = {label: label_name_feature.str2int(label) for label in label_name_feature.names}
         formatted_labels = labels
     else:

@@ -362,11 +362,8 @@ class Datalab:
         specific_issues = self._get_matching_issue_columns(issue_name)
         info = self.get_info(issue_name=issue_name)
         if issue_name == "label":
-            label_map = self._data._label_map.get
-            predicted_labels = np.vectorize(label_map)(info["predicted_label"])
-            label_name = cast(str, self.label_name)
             specific_issues = specific_issues.assign(
-                given_label=self._data._data[label_name], predicted_label=predicted_labels
+                given_label=info["given_label"], predicted_label=info["predicted_label"]
             )
 
         if issue_name == "outlier":

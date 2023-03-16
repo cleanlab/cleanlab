@@ -29,6 +29,7 @@ from __future__ import annotations
 
 import warnings
 from typing import TYPE_CHECKING, Any, Dict, Optional
+import numpy as np
 
 import pandas as pd
 
@@ -72,6 +73,15 @@ class DataIssues:
                 "health_score": None,
             },
         }
+        self._label_map = data._label_map
+
+    @property
+    def statistics(self) -> Dict[str, Any]:
+        """Returns the statistics dictionary.
+
+        Shorthand for self.info["statistics"].
+        """
+        return self.info["statistics"]
 
     def get_info(self, issue_name: Optional[str] = None) -> Dict[str, Any]:
         """Get the info for the issue_name key.
@@ -93,6 +103,15 @@ class DataIssues:
             raise ValueError(
                 f"issue_name {issue_name} not found in self.info. These have not been computed yet."
             )
+        info = info.copy()
+        if issue_name == "label":
+            # Labels that are stored as integers may need to be converted to strings.
+            for key in ["given_label", "predicted_label"]:
+                labels = info.get(key, None)
+                if labels is not None:
+                    info[key] = np.vectorize(self._label_map.get)(labels)
+
+            info["class_names"] = self.statistics["class_names"]
         return info
 
     def collect_statistics_from_issue_manager(self, issue_manager: IssueManager) -> None:
