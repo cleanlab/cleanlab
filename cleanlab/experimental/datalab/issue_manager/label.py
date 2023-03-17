@@ -94,12 +94,9 @@ class LabelIssueManager(IssueManager):
     def find_issues(
         self,
         pred_probs: np.ndarray,
-        model=None,
         health_summary_kwargs: Optional[Dict[str, Any]] = None,
         **_,
     ) -> None:
-        if pred_probs is None and model is not None:
-            raise NotImplementedError("TODO: We assume pred_probs is provided.")
 
         self.health_summary_parameters.update({"pred_probs": pred_probs})
         # Find examples with label issues
