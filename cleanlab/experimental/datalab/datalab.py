@@ -109,6 +109,11 @@ class Datalab:
         return self._labels
 
     @property
+    def class_names(self) -> List[str]:
+        """Names of the classes in the dataset."""
+        return self._data.class_names
+
+    @property
     def issues(self) -> pd.DataFrame:
         """Issues found in the dataset."""
         return self.data_issues.issues
