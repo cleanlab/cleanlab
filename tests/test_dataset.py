@@ -16,8 +16,11 @@
 
 import requests
 import pytest
+import hypothesis.extra.numpy as npst
+import hypothesis.strategies as st
 import io
 import numpy as np
+from hypothesis import given
 from cleanlab.dataset import (
     health_summary,
     find_overlapping_classes,
@@ -492,3 +495,43 @@ def test_value_error_missing_num_examples_with_joint(use_num_examples, use_label
             joint=joint,
             num_examples=len(labels) if use_num_examples else None,
         )
+
+
+confident_joint_strategy = npst.arrays(
+    np.int32,
+    shape=npst.array_shapes(min_dims=2, max_dims=2, min_side=2, max_side=10),
+    elements=st.integers(min_value=0, max_value=int(1e6)),
+).filter(lambda arr: arr.shape[0] == arr.shape[1])
+
+
+@pytest.mark.issue_651
+@given(confident_joint=confident_joint_strategy)
+def test_find_overlapping_classes_with_confident_joint(confident_joint):
+    # Setup
+    K = confident_joint.shape[0]
+    overlapping_classes = find_overlapping_classes(confident_joint=confident_joint)
+
+    # Test that the output dataframe has the expected columns
+    expected_columns = [
+        "Class Index A",
+        "Class Index B",
+        "Num Overlapping Examples",
+        "Joint Probability",
+    ]
+    assert set(overlapping_classes.columns) == set(expected_columns)
+
+    # Class indices must be valid
+    assert overlapping_classes["Class Index A"].between(0, K - 1).all()
+    assert overlapping_classes["Class Index B"].between(0, K - 1).all()
+
+    # Overlapping example count should be non-negative integers
+    assert (overlapping_classes["Num Overlapping Examples"] >= 0).all()
+    assert overlapping_classes["Num Overlapping Examples"].dtype == int
+
+    # Joint probabilities should be between 0 and 1
+    assert (overlapping_classes["Joint Probability"] >= 0).all()
+    assert (overlapping_classes["Joint Probability"] <= 1).all()
+
+    # Joint probabilities sorted in descending order
+    if K > 2:
+        assert (overlapping_classes["Joint Probability"].diff()[1:] <= 0).all()

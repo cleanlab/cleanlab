@@ -15,9 +15,22 @@
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
 
-__version__ = "2.2.1"
+__version__ = "2.3.1"
 
-# 2.2.1 - Not yet released, you are using developer version. See documentation at: https://docs.cleanlab.ai/master/
+# 2.3.1 - Not yet released, you are using bleeding-edge developer version. See its documentation at: https://docs.cleanlab.ai/master/
+
+# 2.3.0 - Extending cleanlab beyond label errors into a complete library for data-centric AI
+#
+#   Major new functionalities include:
+#   - Active learning with data re-labeling (ActiveLab)
+#   - KerasWrapperModel and KerasSequentialWrapper to make arbitrary Keras models compatible with scikit-learn
+#   - Computational improvements for detecting label issues (better efficiency and mini-batch estimation that works with lower memory)
+#
+#   See release for a full changelog.
+
+# ------------------------------------------
+# | PREVIOUS VERSION RELEASE NOTES SUMMARY |
+# ------------------------------------------
 
 # 2.2.0 - Re-invented algorithms for multi-label classification and support for datasets with missing classes
 #
@@ -30,12 +43,6 @@ __version__ = "2.2.1"
 #   - cleanlab now works much better for datasets in which some classes happen to not be present.
 #   - Algorithmic improvements to ensure count.num_label_issues() returns more accurate estimates.
 #   - For developers: introduction of flake8 code linter and more comprehensive mypy type annotations.
-#
-#   See release for a full changelog.
-
-# ------------------------------------------
-# | PREVIOUS VERSION RELEASE NOTES SUMMARY |
-# ------------------------------------------
 
 # 2.1.0 - "Multiannotator, Outlier detection, and Token Classification" - Cleanlab supports several new features
 #

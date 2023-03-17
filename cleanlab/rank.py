@@ -37,6 +37,10 @@ from typing import List, Optional
 import warnings
 
 from cleanlab.internal.validation import assert_valid_inputs
+from cleanlab.internal.constants import (
+    CLIPPING_LOWER_BOUND,
+)  # lower-bound clipping threshold to prevents 0 in logs and division
+
 from cleanlab.internal.label_quality_utils import (
     _subtract_confident_thresholds,
     get_normalized_entropy,
@@ -236,8 +240,6 @@ def get_label_quality_ensemble_scores(
     get_label_quality_scores
     """
 
-    MIN_ALLOWED = 1e-6  # lower-bound clipping threshold to prevents 0 in logs and division
-
     # Check pred_probs_list for errors
     assert isinstance(
         pred_probs_list, list
@@ -277,7 +279,7 @@ def get_label_quality_ensemble_scores(
             # pred_probs for each model
             for pred_probs in pred_probs_list:
                 pred_probs_clipped = np.clip(
-                    pred_probs, a_min=MIN_ALLOWED, a_max=None
+                    pred_probs, a_min=CLIPPING_LOWER_BOUND, a_max=None
                 )  # lower-bound clipping threshold to prevents 0 in logs when calculating log loss
                 pred_probs_clipped /= pred_probs_clipped.sum(axis=1)[:, np.newaxis]  # renormalize
 
@@ -574,15 +576,14 @@ def get_confidence_weighted_entropy_for_each_label(
       Lower scores indicate more likely mislabeled examples.
     """
 
-    MIN_ALLOWED = 1e-6  # lower-bound clipping threshold to prevents 0 in logs and division
     self_confidence = get_self_confidence_for_each_label(labels, pred_probs)
-    self_confidence = np.clip(self_confidence, a_min=MIN_ALLOWED, a_max=None)
+    self_confidence = np.clip(self_confidence, a_min=CLIPPING_LOWER_BOUND, a_max=None)
 
     # Divide entropy by self confidence
     label_quality_scores = get_normalized_entropy(pred_probs) / self_confidence
 
     # Rescale
-    clipped_scores = np.clip(label_quality_scores, a_min=MIN_ALLOWED, a_max=None)
+    clipped_scores = np.clip(label_quality_scores, a_min=CLIPPING_LOWER_BOUND, a_max=None)
     label_quality_scores = np.log(label_quality_scores + 1) / clipped_scores
 
     return label_quality_scores
