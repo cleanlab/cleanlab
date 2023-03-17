@@ -15,13 +15,12 @@
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Tuple, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional
 import warnings
 
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
-from scipy.stats import iqr
 from sklearn.neighbors import NearestNeighbors
 from sklearn.utils.validation import check_is_fitted
 
