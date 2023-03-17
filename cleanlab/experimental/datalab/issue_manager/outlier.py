@@ -102,7 +102,7 @@ class OutOfDistributionIssueManager(IssueManager):
             k: int = 0  # Used to check if the knn graph needs to be recomputed, already set in the knn object
             if weighted_knn_graph is not None:
                 self._knn_graph: csr_matrix = weighted_knn_graph
-                k = self._knn_graph.nnz / self._knn_graph.shape[0]
+                k = self._knn_graph.nnz // self._knn_graph.shape[0]
 
             knn: NearestNeighbors = self.ood.params["knn"]  # type: ignore
             if kwargs.get("knn", None) is not None or knn.n_neighbors > k:  # type: ignore[union-attr]

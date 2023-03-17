@@ -29,6 +29,7 @@ import pandas as pd
 from pathlib import Path
 
 import pytest
+import timeit
 
 
 def test_datalab_invalid_datasetdict(dataset, label_name):
@@ -601,3 +602,44 @@ def test_report_for_outlier_issues_via_pred_probs(find_issues_kwargs):
 
     report = lab._get_report(num_examples=3, verbosity=0, include_description=False)
     assert report, "Report should not be empty"
+
+
+def test_near_duplicates_reuses_knn_graph():
+    """'outlier' and 'near_duplicate' issues both require a KNN graph.
+    This test ensures that the KNN graph is only computed once.
+    E.g. if outlier is called first, and then near_duplicate can reuse the
+    resulting graph.
+    """
+    N = 3000
+    num_features = 1000
+    k = 20
+    find_issues_kwargs = {"issue_types": {"near_duplicate": {"k": k}}}
+    data = {"labels": np.random.randint(0, 2, size=N)}
+    features = np.random.rand(N, num_features)
+    lab = Datalab(data=data, label_name="labels")
+    time_only_near_duplicates = timeit.timeit(
+        lambda: lab.find_issues(features=features, **find_issues_kwargs),
+        number=1,
+    )
+
+    lab = Datalab(data=data, label_name="labels")
+    # Outliers need more neighbors, so this should be slower, so the graph will be computed twice
+    find_issues_kwargs = {
+        "issue_types": {"near_duplicate": {"k": k}, "outlier": {"k": k}},
+    }
+    time_near_duplicates_and_outlier = timeit.timeit(
+        lambda: lab.find_issues(features=features, **find_issues_kwargs),
+        number=1,
+    )
+    assert time_only_near_duplicates < time_near_duplicates_and_outlier
+
+    find_issues_kwargs = {
+        "issue_types": {"outlier": {"k": k}, "near_duplicate": {"k": k}},
+    }
+    time_outliers_before_near_duplicates = timeit.timeit(
+        lambda: lab.find_issues(features=features, **find_issues_kwargs),
+        number=1,
+    )
+    assert (
+        time_outliers_before_near_duplicates < time_near_duplicates_and_outlier
+    ), "KNN graph reuse should make this run of find_issues faster."
