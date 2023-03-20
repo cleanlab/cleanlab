@@ -654,8 +654,20 @@ def test_get_consensus_label():
             [0.2, 0.4, 0.4],
         ]
     )
-
     consensus_label = get_majority_vote_label(labels_tiebreaks, pred_probs_tiebreaks)
+
+    # more tiebreak testing (without pred_probs + non-overlapping annotators)
+    labels_tiebreaks = np.array(
+        [
+            [1, np.NaN, np.NaN, 2, np.NaN],
+            [np.NaN, 1, 0, np.NaN, np.NaN],
+            [np.NaN, np.NaN, 0, np.NaN, np.NaN],
+            [np.NaN, 2, np.NaN, np.NaN, np.NaN],
+            [2, np.NaN, 0, np.NaN, np.NaN],
+            [np.NaN, np.NaN, np.NaN, 0, 1],
+        ]
+    )
+    consensus_label = get_majority_vote_label(labels_tiebreaks)
 
 
 def test_impute_nonoverlaping_annotators():
