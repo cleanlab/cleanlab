@@ -539,8 +539,8 @@ def get_label_quality_multiannotator_ensemble(
 
 
 def get_active_learning_scores(
-    labels_multiannotator: Union[pd.DataFrame, np.ndarray],
-    pred_probs: np.ndarray,
+    labels_multiannotator: Optional[Union[pd.DataFrame, np.ndarray]] = None,
+    pred_probs: Optional[np.ndarray] = None,
     pred_probs_unlabeled: Optional[np.ndarray] = None,
 ) -> Tuple[np.ndarray, np.ndarray]:
     """Returns an ActiveLab quality score for each example in the dataset, to estimate which examples are most informative to (re)label next in active learning.
@@ -553,28 +553,35 @@ def get_active_learning_scores(
     To use an annotation budget most efficiently, select a batch of examples with the lowest scores and collect one additional label for each example,
     and repeat this process after retraining your classifier.
 
+    You can use this function to get active learning scores for examples that have one or more labels (specify ``labels_multiannotator`` and ``pred_probs``
+    as arguments), or to get active learning scores for unlabeled examples (specify ``pred_probs_unlabeled``), or both (specify all the above arguments).
+
     To analyze a fixed dataset labeled by multiple annotators rather than collecting additional labels, try the
     :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>` (CROWDLAB) function instead.
 
     Parameters
     ----------
-    labels_multiannotator : pd.DataFrame of np.ndarray
+    labels_multiannotator : pd.DataFrame of np.ndarray, optional
         2D pandas DataFrame or array of multiple given labels for each example with shape ``(N, M)``,
         where N is the number of examples and M is the number of annotators. Note that this function also works with
         datasets where there is only one annotator (M=1).
         For more details, labels in the same format expected by the :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>`.
         Note that examples that have no annotator labels should not be included in this DataFrame/array.
-    pred_probs : np.ndarray
+        This argument is optional if ``pred_probs`` is not provided (in cases where you only provide ``pred_probs_unlabeled`` to get active learning scores for unlabeled examples).
+    pred_probs : np.ndarray, optional
         An array of shape ``(N, K)`` of predicted class probabilities from a trained classifier model.
         Predicted probabilities in the same format expected by the :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>`.
+        This argument is optional if you only want to get active learning scores for unlabeled examples (pass in ``pred_probs_unlabeled`` instead).
     pred_probs_unlabeled : np.ndarray, optional
         An array of shape ``(N, K)`` of predicted class probabilities from a trained classifier model for examples that have no annotator labels.
         Predicted probabilities in the same format expected by the :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>`.
+        This argument is optional if you only want to get active learning scores for labeled examples (pass in ``pred_probs`` instead).
 
     Returns
     -------
     active_learning_scores : np.ndarray
         Array of shape ``(N,)`` indicating the ActiveLab quality scores for each example.
+        Returns an empty array if no labeled data is provided.
         Examples with the lowest scores are those we should label next in order to maximally improve our classifier model.
 
     active_learning_scores_unlabeled : np.ndarray
@@ -584,60 +591,80 @@ def get_active_learning_scores(
         (scores for unlabeled data are directly comparable with the `active_learning_scores` for labeled data).
     """
 
-    if isinstance(labels_multiannotator, np.ndarray):
-        labels_multiannotator = pd.DataFrame(labels_multiannotator)
-
     assert_valid_pred_probs(pred_probs=pred_probs, pred_probs_unlabeled=pred_probs_unlabeled)
 
-    num_classes = get_num_classes(pred_probs=pred_probs)
+    if pred_probs is not None:
+        if labels_multiannotator is None:
+            raise ValueError(
+                "labels_multiannotator cannot be None when passing in pred_probs. ",
+                "You can either provide labels_multiannotator to obtain active learning scores for the labeled examples, "
+                "or just pass in pred_probs_unlabeled to get active learning scores for unlabeled examples.",
+            )
 
-    # if all examples are only labeled by a single annotator
-    if labels_multiannotator.apply(lambda s: len(s.dropna()) == 1, axis=1).all():
-        optimal_temp = 1.0  # do not temp scale for single annotator case, temperature is defined here for later use
+        if isinstance(labels_multiannotator, np.ndarray):
+            labels_multiannotator = pd.DataFrame(labels_multiannotator)
 
-        assert_valid_inputs_multiannotator(
-            labels_multiannotator, pred_probs, allow_single_label=True
-        )
+        num_classes = get_num_classes(pred_probs=pred_probs)
 
-        consensus_label = get_majority_vote_label(
-            labels_multiannotator=labels_multiannotator,
-            pred_probs=pred_probs,
-            verbose=False,
-        )
-        quality_of_consensus_labeled = get_label_quality_scores(consensus_label, pred_probs)
+        # if all examples are only labeled by a single annotator
+        if labels_multiannotator.apply(lambda s: len(s.dropna()) == 1, axis=1).all():
+            optimal_temp = 1.0  # do not temp scale for single annotator case, temperature is defined here for later use
+
+            assert_valid_inputs_multiannotator(
+                labels_multiannotator, pred_probs, allow_single_label=True
+            )
+
+            consensus_label = get_majority_vote_label(
+                labels_multiannotator=labels_multiannotator,
+                pred_probs=pred_probs,
+                verbose=False,
+            )
+            quality_of_consensus_labeled = get_label_quality_scores(consensus_label, pred_probs)
+            model_weight = 1
+            annotator_weight = np.full(labels_multiannotator.shape[1], 1)
+            avg_annotator_weight = np.mean(annotator_weight)
+
+        else:
+            optimal_temp = find_best_temp_scaler(labels_multiannotator, pred_probs)
+            pred_probs = temp_scale_pred_probs(pred_probs, optimal_temp)
+
+            multiannotator_info = get_label_quality_multiannotator(
+                labels_multiannotator,
+                pred_probs,
+                return_annotator_stats=False,
+                return_detailed_quality=False,
+                return_weights=True,
+            )
+
+            quality_of_consensus_labeled = multiannotator_info["label_quality"][
+                "consensus_quality_score"
+            ]
+            model_weight = multiannotator_info["model_weight"]
+            annotator_weight = multiannotator_info["annotator_weight"]
+            avg_annotator_weight = np.mean(annotator_weight)
+
+        # compute scores for labeled data
+        active_learning_scores = np.full(len(labels_multiannotator), np.nan)
+        for i in range(len(active_learning_scores)):
+            annotator_labels = labels_multiannotator.iloc[i]
+            active_learning_scores[i] = np.average(
+                (quality_of_consensus_labeled[i], 1 / num_classes),
+                weights=(
+                    np.sum(annotator_weight[annotator_labels.notna()]) + model_weight,
+                    avg_annotator_weight,
+                ),
+            )
+
+    elif pred_probs_unlabeled is not None:
+        num_classes = get_num_classes(pred_probs=pred_probs_unlabeled)
+        optimal_temp = 1
         model_weight = 1
-        annotator_weight = np.full(labels_multiannotator.shape[1], 1)
-        avg_annotator_weight = np.mean(annotator_weight)
+        avg_annotator_weight = 1
+        active_learning_scores = np.array([])
 
     else:
-        optimal_temp = find_best_temp_scaler(labels_multiannotator, pred_probs)
-        pred_probs = temp_scale_pred_probs(pred_probs, optimal_temp)
-
-        multiannotator_info = get_label_quality_multiannotator(
-            labels_multiannotator,
-            pred_probs,
-            return_annotator_stats=False,
-            return_detailed_quality=False,
-            return_weights=True,
-        )
-
-        quality_of_consensus_labeled = multiannotator_info["label_quality"][
-            "consensus_quality_score"
-        ]
-        model_weight = multiannotator_info["model_weight"]
-        annotator_weight = multiannotator_info["annotator_weight"]
-        avg_annotator_weight = np.mean(annotator_weight)
-
-    # compute scores for labeled data
-    active_learning_scores = np.full(len(labels_multiannotator), np.nan)
-    for i in range(len(active_learning_scores)):
-        annotator_labels = labels_multiannotator.iloc[i]
-        active_learning_scores[i] = np.average(
-            (quality_of_consensus_labeled[i], 1 / num_classes),
-            weights=(
-                np.sum(annotator_weight[annotator_labels.notna()]) + model_weight,
-                avg_annotator_weight,
-            ),
+        raise ValueError(
+            "pred_probs and pred_probs_unlabeled cannot both be None, specify at least one of the two."
         )
 
     # compute scores for unlabeled data
@@ -663,8 +690,8 @@ def get_active_learning_scores(
 
 
 def get_active_learning_scores_ensemble(
-    labels_multiannotator: Union[pd.DataFrame, np.ndarray],
-    pred_probs: np.ndarray,
+    labels_multiannotator: Optional[Union[pd.DataFrame, np.ndarray]] = None,
+    pred_probs: Optional[np.ndarray] = None,
     pred_probs_unlabeled: Optional[np.ndarray] = None,
 ) -> Tuple[np.ndarray, np.ndarray]:
     """Returns an ActiveLab quality score for each example in the dataset, based on predictions from an ensemble of models.
@@ -676,14 +703,17 @@ def get_active_learning_scores_ensemble(
     ----------
     labels_multiannotator : pd.DataFrame or np.ndarray
         Multiannotator labels in the same format expected by :py:func:`get_active_learning_scores <cleanlab.multiannotator.get_active_learning_scores>`.
+        This argument is optional if ``pred_probs`` is not provided (in cases where you only provide ``pred_probs_unlabeled`` to get active learning scores for unlabeled examples).
     pred_probs : np.ndarray
         An array of shape ``(P, N, K)`` where P is the number of models, consisting of predicted class probabilities from the ensemble models.
         Note that this function also works with datasets where there is only one annotator (M=1).
         Each set of predicted probabilities with shape ``(N, K)`` is in the same format expected by the :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>`.
+        This argument is optional if you only want to get active learning scores for unlabeled examples (pass in ``pred_probs_unlabeled`` instead).
     pred_probs_unlabeled : np.ndarray, optional
         An array of shape ``(P, N, K)`` where P is the number of models, consisting of predicted class probabilities from a trained classifier model
         for examples that have no annotated labels so far (but which we may want to label in the future, and hence compute active learning quality scores for).
         Each set of predicted probabilities with shape ``(N, K)`` is in the same format expected by the :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>`.
+        This argument is optional if you only want to get active learning scores for labeled examples (pass in ``pred_probs`` instead).
 
     Returns
     -------
@@ -697,70 +727,88 @@ def get_active_learning_scores_ensemble(
     get_active_learning_scores
     """
 
-    if isinstance(labels_multiannotator, np.ndarray):
-        labels_multiannotator = pd.DataFrame(labels_multiannotator)
-
     assert_valid_pred_probs(
         pred_probs=pred_probs, pred_probs_unlabeled=pred_probs_unlabeled, ensemble=True
     )
 
-    num_classes = get_num_classes(pred_probs=pred_probs[0])
+    if pred_probs is not None:
+        if labels_multiannotator is None:
+            raise ValueError(
+                "labels_multiannotator cannot be None when passing in pred_probs. ",
+                "You can either provide labels_multiannotator to obtain active learning scores for the labeled examples, "
+                "or just pass in pred_probs_unlabeled to get active learning scores for unlabeled examples.",
+            )
 
-    # temp scale pred_probs
+        if isinstance(labels_multiannotator, np.ndarray):
+            labels_multiannotator = pd.DataFrame(labels_multiannotator)
 
-    # if all examples are only labeled by a single annotator
-    if labels_multiannotator.apply(lambda s: len(s.dropna()) == 1, axis=1).all():
-        # do not temp scale for single annotator case, temperature is defined here for later use
-        optimal_temp = np.full(len(pred_probs), 1.0)
+        num_classes = get_num_classes(pred_probs=pred_probs[0])
 
-        assert_valid_inputs_multiannotator(
-            labels_multiannotator, pred_probs, ensemble=True, allow_single_label=True
-        )
+        # if all examples are only labeled by a single annotator
+        if labels_multiannotator.apply(lambda s: len(s.dropna()) == 1, axis=1).all():
+            # do not temp scale for single annotator case, temperature is defined here for later use
+            optimal_temp = np.full(len(pred_probs), 1.0)
 
-        avg_pred_probs = np.mean(pred_probs, axis=0)
-        consensus_label = get_majority_vote_label(
-            labels_multiannotator=labels_multiannotator,
-            pred_probs=avg_pred_probs,
-            verbose=False,
-        )
-        quality_of_consensus_labeled = get_label_quality_scores(consensus_label, avg_pred_probs)
-        model_weight = np.full(len(pred_probs), 1)
-        annotator_weight = np.full(labels_multiannotator.shape[1], 1)
-        avg_annotator_weight = np.mean(annotator_weight)
+            assert_valid_inputs_multiannotator(
+                labels_multiannotator, pred_probs, ensemble=True, allow_single_label=True
+            )
+
+            avg_pred_probs = np.mean(pred_probs, axis=0)
+            consensus_label = get_majority_vote_label(
+                labels_multiannotator=labels_multiannotator,
+                pred_probs=avg_pred_probs,
+                verbose=False,
+            )
+            quality_of_consensus_labeled = get_label_quality_scores(consensus_label, avg_pred_probs)
+            model_weight = np.full(len(pred_probs), 1)
+            annotator_weight = np.full(labels_multiannotator.shape[1], 1)
+            avg_annotator_weight = np.mean(annotator_weight)
+
+        else:
+            optimal_temp = np.full(len(pred_probs), np.NaN)
+            for i in range(len(pred_probs)):
+                curr_pred_probs = pred_probs[i]
+                curr_optimal_temp = find_best_temp_scaler(labels_multiannotator, curr_pred_probs)
+                pred_probs[i] = temp_scale_pred_probs(curr_pred_probs, curr_optimal_temp)
+                optimal_temp[i] = curr_optimal_temp
+
+            multiannotator_info = get_label_quality_multiannotator_ensemble(
+                labels_multiannotator,
+                pred_probs,
+                return_annotator_stats=False,
+                return_detailed_quality=False,
+                return_weights=True,
+            )
+
+            quality_of_consensus_labeled = multiannotator_info["label_quality"][
+                "consensus_quality_score"
+            ]
+            model_weight = multiannotator_info["model_weight"]
+            annotator_weight = multiannotator_info["annotator_weight"]
+            avg_annotator_weight = np.mean(annotator_weight)
+
+        # compute scores for labeled data
+        active_learning_scores = np.full(len(labels_multiannotator), np.nan)
+        for i in range(len(active_learning_scores)):
+            annotator_labels = labels_multiannotator.iloc[i]
+            active_learning_scores[i] = np.average(
+                (quality_of_consensus_labeled[i], 1 / num_classes),
+                weights=(
+                    np.sum(annotator_weight[annotator_labels.notna()]) + np.sum(model_weight),
+                    avg_annotator_weight,
+                ),
+            )
+
+    elif pred_probs_unlabeled is not None:
+        num_classes = get_num_classes(pred_probs=pred_probs_unlabeled[0])
+        optimal_temp = np.full(len(pred_probs_unlabeled), 1.0)
+        model_weight = np.full(len(pred_probs_unlabeled), 1)
+        avg_annotator_weight = 1
+        active_learning_scores = np.array([])
 
     else:
-        optimal_temp = np.full(len(pred_probs), np.NaN)
-        for i in range(len(pred_probs)):
-            curr_pred_probs = pred_probs[i]
-            curr_optimal_temp = find_best_temp_scaler(labels_multiannotator, curr_pred_probs)
-            pred_probs[i] = temp_scale_pred_probs(curr_pred_probs, curr_optimal_temp)
-            optimal_temp[i] = curr_optimal_temp
-
-        multiannotator_info = get_label_quality_multiannotator_ensemble(
-            labels_multiannotator,
-            pred_probs,
-            return_annotator_stats=False,
-            return_detailed_quality=False,
-            return_weights=True,
-        )
-
-        quality_of_consensus_labeled = multiannotator_info["label_quality"][
-            "consensus_quality_score"
-        ]
-        model_weight = multiannotator_info["model_weight"]
-        annotator_weight = multiannotator_info["annotator_weight"]
-        avg_annotator_weight = np.mean(annotator_weight)
-
-    # compute scores for labeled data
-    active_learning_scores = np.full(len(labels_multiannotator), np.nan)
-    for i in range(len(active_learning_scores)):
-        annotator_labels = labels_multiannotator.iloc[i]
-        active_learning_scores[i] = np.average(
-            (quality_of_consensus_labeled[i], 1 / num_classes),
-            weights=(
-                np.sum(annotator_weight[annotator_labels.notna()]) + np.sum(model_weight),
-                avg_annotator_weight,
-            ),
+        raise ValueError(
+            "pred_probs and pred_probs_unlabeled cannot both be None, specify at least one of the two."
         )
 
     # compute scores for unlabeled data
@@ -861,6 +909,7 @@ def get_majority_vote_label(
                 tied_idx[idx] = label_mode[max_pred_probs]
 
     # tiebreak 2: using empirical class frequencies
+    # current tiebreak will select the minority class (to prevent larger class imbalance)
     if len(tied_idx) > 0:
         if pred_probs is not None:
             num_classes = pred_probs.shape[1]
@@ -872,14 +921,14 @@ def get_majority_vote_label(
             lambda s: pd.Series(np.bincount(s[s.notna()], minlength=num_classes)), axis=1
         ).sum()
         for idx, label_mode in tied_idx.copy().items():
-            max_frequency = np.where(
-                class_frequencies[label_mode] == np.max(class_frequencies[label_mode])
+            min_frequency = np.where(
+                class_frequencies[label_mode] == np.min(class_frequencies[label_mode])
             )[0]
-            if len(max_frequency) == 1:
-                majority_vote_label[idx] = label_mode[max_frequency[0]]
+            if len(min_frequency) == 1:
+                majority_vote_label[idx] = label_mode[min_frequency[0]]
                 del tied_idx[idx]
             else:
-                tied_idx[idx] = label_mode[max_frequency]
+                tied_idx[idx] = label_mode[min_frequency]
 
     # tiebreak 3: using initial annotator quality scores
     if len(tied_idx) > 0:
@@ -888,7 +937,13 @@ def get_majority_vote_label(
         annotator_agreement_with_consensus = nontied_labels_multiannotator.apply(
             lambda s: np.mean(s[pd.notna(s)] == nontied_majority_vote_label[pd.notna(s)]),
             axis=0,
-        ).to_numpy()
+        )
+
+        # impute average annotator accuracy for any annotator that do not overlap with consensus
+        mask = annotator_agreement_with_consensus.isna()
+        avg_annotator_agreement = np.mean(annotator_agreement_with_consensus[~mask])
+        annotator_agreement_with_consensus[mask] = avg_annotator_agreement
+
         for idx, label_mode in tied_idx.copy().items():
             label_quality_score = np.array(
                 [

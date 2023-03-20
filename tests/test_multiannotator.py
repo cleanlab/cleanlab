@@ -434,6 +434,13 @@ def test_get_active_learning_scores():
     assert len(active_learning_scores) == len(pred_probs)
     assert len(active_learning_scores_unlabeled) == 0
 
+    # test case where only passing unlabeled examples
+    active_learning_scores, active_learning_scores_unlabeled = get_active_learning_scores(
+        pred_probs_unlabeled=pred_probs_unlabeled
+    )
+    assert len(active_learning_scores) == 0
+    assert len(active_learning_scores_unlabeled) == len(pred_probs_unlabeled)
+
     # test case where number of classes do not match
     try:
         active_learning_scores, active_learning_scores_unlabeled = get_active_learning_scores(
@@ -484,6 +491,13 @@ def test_get_active_learning_scores_ensemble():
     assert isinstance(active_learning_scores, np.ndarray)
     assert len(active_learning_scores) == len(labels)
     assert len(active_learning_scores_unlabeled) == 0
+
+    # test case where only passing unlabeled examples
+    active_learning_scores, active_learning_scores_unlabeled = get_active_learning_scores_ensemble(
+        pred_probs_unlabeled=pred_probs_unlabeled
+    )
+    assert len(active_learning_scores) == 0
+    assert len(active_learning_scores_unlabeled) == len(labels_unlabeled)
 
     # test case where number of classes do not match
     try:
