@@ -4,7 +4,6 @@ from cleanlab.experimental.datalab.data_issues import DataIssues
 
 
 class TestDataIssues:
-
     labels = ["B", "A", "B"]
     label_name = "labels"
 
@@ -37,7 +36,6 @@ class TestDataIssues:
         assert data_issues.get_info("statistics") == data_issues.info["statistics"]
 
     def test_get_info_label(self, data_issues):
-
         data_issues.info["label"] = {"given_label": [0, 1, 1], "predicted_label": [1, 0, 1]}
         info = data_issues.get_info("label")
 

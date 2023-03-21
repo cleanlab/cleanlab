@@ -97,11 +97,13 @@ class OutOfDistributionIssueManager(IssueManager):
 
         if self._embeddings is not None:
             # Check if the weighted knn graph exists in info
-            weighted_knn_graph = self.datalab.get_info("statistics").get("weighted_knn_graph", None)
+            weighted_knn_graph: csr_matrix = self.datalab.get_info("statistics").get(
+                "weighted_knn_graph", None
+            )
 
             k: int = 0  # Used to check if the knn graph needs to be recomputed, already set in the knn object
             if weighted_knn_graph is not None:
-                self._knn_graph: csr_matrix = weighted_knn_graph
+                self._knn_graph = weighted_knn_graph
                 k = self._knn_graph.nnz // self._knn_graph.shape[0]
 
             knn: NearestNeighbors = self.ood.params["knn"]  # type: ignore
@@ -118,13 +120,13 @@ class OutOfDistributionIssueManager(IssueManager):
 
                 # Threshold based on avg_distances, large average distances are outliers
                 self.threshold = q3_distance + 1.5 * iqr(avg_distances)
-            is_issue_column: np.ndarray = avg_distances > self.threshold
+            is_issue_column = avg_distances > self.threshold
 
         else:
             if self.threshold is None:
                 # Threshold based on pred_probs, very small scores are outliers
                 self.threshold = np.percentile(scores, 10)
-            is_issue_column: np.ndarray = scores < self.threshold
+            is_issue_column = scores < self.threshold
 
         self.issues = pd.DataFrame(
             {
@@ -171,7 +173,7 @@ class OutOfDistributionIssueManager(IssueManager):
             **pred_probs_issues_dict,
             **feature_issues_dict,
         }
-        info_dict = {
+        info_dict: Dict[str, Any] = {
             **issues_dict,
             **ood_params_dict,  # type: ignore[arg-type]
             **knn_dict,

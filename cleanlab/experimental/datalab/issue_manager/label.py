@@ -97,7 +97,6 @@ class LabelIssueManager(IssueManager):
         health_summary_kwargs: Optional[Dict[str, Any]] = None,
         **_,
     ) -> None:
-
         self.health_summary_parameters.update({"pred_probs": pred_probs})
         # Find examples with label issues
         self.issues = self.cl.find_label_issues(labels=self.datalab._labels, pred_probs=pred_probs)
