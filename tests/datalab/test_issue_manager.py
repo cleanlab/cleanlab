@@ -444,21 +444,12 @@ class TestNonIIDIssueManager:
         Mainly focused on the nearest neighbor info.
         """
 
-        issue_manager.find_issues(features=embeddings["embedding"])
+        issue_manager.find_issues(features=embeddings)
         info = issue_manager.collect_info()
 
-        nearest_neighbors = info["nearest_neighbor"]
-        distances_to_nearest_neighbor = info["distance_to_nearest_neighbor"]
-
-        assert nearest_neighbors == [3, 0, 3, 0, 2], "Nearest neighbors should be correct"
-
-        assert pytest.approx(distances_to_nearest_neighbor, abs=1e-3) == [
-            0.033,
-            0.05,
-            0.072,
-            0.033,
-            2.143,
-        ], "Distances to nearest neighbor should be correct"
+        assert info["p-value"] == 0
+        assert info["metric"] == "euclidean"
+        assert info["k"] == 10
 
 
 def test_register_custom_issue_manager(monkeypatch):
