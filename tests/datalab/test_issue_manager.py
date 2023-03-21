@@ -155,6 +155,7 @@ class TestOutOfDistributionIssueManager:
         assert summary["score"][0] == pytest.approx(expected=0.7732146, abs=1e-7)
 
         assert info.get("knn", None) is not None, "Should have knn info"
+        assert issue_manager.threshold == pytest.approx(expected=0.0922, abs=1e-4)
 
         issue_manager_with_threshold.find_issues(features=embeddings["embedding"])
 
@@ -177,9 +178,24 @@ class TestOutOfDistributionIssueManager:
         assert summary["issue_type"][0] == "outlier"
         assert summary["score"][0] == pytest.approx(expected=0.151, abs=1e-3)
 
+        assert issue_manager.threshold == pytest.approx(expected=0.0421, abs=1e-4)
+
         assert np.all(
             info.get("confident_thresholds", None) == [0.1, 0.825, 0.575]
         ), "Should have confident_joint info"
+
+    def test_find_issues_with_different_iqr_scale(self, issue_manager, embeddings):
+        issue_manager.find_issues(features=embeddings["embedding"], iqr_scale=0.5)
+        issues, summary, info = issue_manager.issues, issue_manager.summary, issue_manager.info
+        expected_issue_mask = np.array([False] * 4 + [True])
+        assert np.all(
+            issues["is_outlier_issue"] == expected_issue_mask
+        ), "Issue mask should be correct"
+        assert summary["issue_type"][0] == "outlier"
+        assert summary["score"][0] == pytest.approx(expected=0.7732146, abs=1e-7)
+
+        # Lower iqr_scale should lower the threshold
+        assert issue_manager.threshold == pytest.approx(expected=0.0839, abs=1e-4)
 
     def test_report(self, issue_manager):
         pred_probs = np.array(

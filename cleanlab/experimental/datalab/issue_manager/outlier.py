@@ -86,6 +86,7 @@ class OutOfDistributionIssueManager(IssueManager):
         self,
         features: Optional[npt.NDArray] = None,
         pred_probs: Optional[np.ndarray] = None,
+        iqr_scale: float = 1.0,
         **kwargs,
     ) -> None:
         if features is not None:
@@ -118,8 +119,11 @@ class OutOfDistributionIssueManager(IssueManager):
             if self.threshold is None:
                 q3_distance = np.percentile(avg_distances, 75)
 
-                # Threshold based on avg_distances, large average distances are outliers
-                self.threshold = q3_distance + 1.5 * iqr(avg_distances)
+                if not isinstance(iqr_scale, (int, float)) and iqr_scale < 0:
+                    raise ValueError(
+                        f"iqr_scale must be a positive number, got {iqr_scale} of type {type(iqr_scale)}."
+                    )
+                self.threshold = q3_distance + iqr_scale * iqr(avg_distances)
             is_issue_column = avg_distances > self.threshold
 
         else:
