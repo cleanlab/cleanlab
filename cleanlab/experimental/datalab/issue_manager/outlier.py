@@ -153,8 +153,8 @@ class OutOfDistributionIssueManager(IssueManager):
             knn = self.ood.params["knn"]  # type: ignore
             N = self._knn_graph.shape[0]
             k = self._knn_graph.nnz // N
-            dists = self._knn_graph.data.reshape(N, -1)
-            nn_ids = self._knn_graph.indices.reshape(N, -1)
+            dists = self._knn_graph.data.reshape(N, -1)[:, 0]
+            nn_ids = self._knn_graph.indices.reshape(N, -1)[:, 0]
 
             feature_issues_dict.update(
                 {

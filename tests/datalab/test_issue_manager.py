@@ -250,6 +250,28 @@ class TestOutOfDistributionIssueManager:
         assert 'dict:\n{\n    "a": 1,\n    "b": 2,\n    "c": 3\n}' not in report
         assert "df:" not in report
 
+    def test_collect_info(self, issue_manager, embeddings):
+        """Test some values in the info dict.
+
+        Mainly focused on the nearest neighbor info.
+        """
+
+        issue_manager.find_issues(features=embeddings["embedding"])
+        info = issue_manager.collect_info()
+
+        nearest_neighbors = info["nearest_neighbor"]
+        distances_to_nearest_neighbor = info["distance_to_nearest_neighbor"]
+
+        assert nearest_neighbors == [3, 0, 3, 0, 2], "Nearest neighbors should be correct"
+
+        assert pytest.approx(distances_to_nearest_neighbor, abs=1e-3) == [
+            0.033,
+            0.05,
+            0.072,
+            0.033,
+            2.143,
+        ], "Distances to nearest neighbor should be correct"
+
 
 class TestNearDuplicateIssueManager:
     @pytest.fixture
@@ -415,6 +437,28 @@ class TestNonIIDIssueManager:
             verbosity=3,
         )
         assert "Additional Information: " in report
+
+    def test_collect_info(self, issue_manager, embeddings):
+        """Test some values in the info dict.
+
+        Mainly focused on the nearest neighbor info.
+        """
+
+        issue_manager.find_issues(features=embeddings["embedding"])
+        info = issue_manager.collect_info()
+
+        nearest_neighbors = info["nearest_neighbor"]
+        distances_to_nearest_neighbor = info["distance_to_nearest_neighbor"]
+
+        assert nearest_neighbors == [3, 0, 3, 0, 2], "Nearest neighbors should be correct"
+
+        assert pytest.approx(distances_to_nearest_neighbor, abs=1e-3) == [
+            0.033,
+            0.05,
+            0.072,
+            0.033,
+            2.143,
+        ], "Distances to nearest neighbor should be correct"
 
 
 def test_register_custom_issue_manager(monkeypatch):
