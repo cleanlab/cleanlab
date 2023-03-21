@@ -663,11 +663,12 @@ def test_get_consensus_label():
             [np.NaN, 1, 0, np.NaN, np.NaN],
             [np.NaN, np.NaN, 0, np.NaN, np.NaN],
             [np.NaN, 2, np.NaN, np.NaN, np.NaN],
-            [2, np.NaN, 0, np.NaN, np.NaN],
-            [np.NaN, np.NaN, np.NaN, 0, 1],
+            [2, np.NaN, 0, 2, np.NaN],
+            [np.NaN, np.NaN, np.NaN, 2, 1],
         ]
     )
     consensus_label = get_majority_vote_label(labels_tiebreaks)
+    assert all(consensus_label == np.array([1, 1, 0, 2, 2, 1]))
 
 
 def test_impute_nonoverlaping_annotators():

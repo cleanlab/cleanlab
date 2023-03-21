@@ -593,6 +593,7 @@ def get_active_learning_scores(
 
     assert_valid_pred_probs(pred_probs=pred_probs, pred_probs_unlabeled=pred_probs_unlabeled)
 
+    # compute multiannotator stats if labeled data is provided
     if pred_probs is not None:
         if labels_multiannotator is None:
             raise ValueError(
@@ -624,6 +625,7 @@ def get_active_learning_scores(
             annotator_weight = np.full(labels_multiannotator.shape[1], 1)
             avg_annotator_weight = np.mean(annotator_weight)
 
+        # examples are annotated by multiple annotators
         else:
             optimal_temp = find_best_temp_scaler(labels_multiannotator, pred_probs)
             pred_probs = temp_scale_pred_probs(pred_probs, optimal_temp)
@@ -655,6 +657,7 @@ def get_active_learning_scores(
                 ),
             )
 
+    # no labeled data provided so do not estimate temperature and model/annotator weights
     elif pred_probs_unlabeled is not None:
         num_classes = get_num_classes(pred_probs=pred_probs_unlabeled)
         optimal_temp = 1
@@ -731,6 +734,7 @@ def get_active_learning_scores_ensemble(
         pred_probs=pred_probs, pred_probs_unlabeled=pred_probs_unlabeled, ensemble=True
     )
 
+    # compute multiannotator stats if labeled data is provided
     if pred_probs is not None:
         if labels_multiannotator is None:
             raise ValueError(
@@ -764,6 +768,7 @@ def get_active_learning_scores_ensemble(
             annotator_weight = np.full(labels_multiannotator.shape[1], 1)
             avg_annotator_weight = np.mean(annotator_weight)
 
+        # examples are annotated by multiple annotators
         else:
             optimal_temp = np.full(len(pred_probs), np.NaN)
             for i in range(len(pred_probs)):
@@ -799,6 +804,7 @@ def get_active_learning_scores_ensemble(
                 ),
             )
 
+    # no labeled data provided so do not estimate temperature and model/annotator weights
     elif pred_probs_unlabeled is not None:
         num_classes = get_num_classes(pred_probs=pred_probs_unlabeled[0])
         optimal_temp = np.full(len(pred_probs_unlabeled), 1.0)
