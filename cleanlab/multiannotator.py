@@ -553,8 +553,8 @@ def get_active_learning_scores(
     To use an annotation budget most efficiently, select a batch of examples with the lowest scores and collect one additional label for each example,
     and repeat this process after retraining your classifier.
 
-    You can use this function to get active learning scores for examples that have one or more labels (specify ``labels_multiannotator`` and ``pred_probs``
-    as arguments), or to get active learning scores for unlabeled examples (specify ``pred_probs_unlabeled``), or both (specify all the above arguments).
+    You can use this function to get active learning scores for: examples that already have one or more labels (specify ``labels_multiannotator`` and ``pred_probs``
+    as arguments), or for unlabeled examples (specify ``pred_probs_unlabeled``), or for both types of examples (specify all of the above arguments).
 
     To analyze a fixed dataset labeled by multiple annotators rather than collecting additional labels, try the
     :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>` (CROWDLAB) function instead.
@@ -567,21 +567,21 @@ def get_active_learning_scores(
         datasets where there is only one annotator (M=1).
         For more details, labels in the same format expected by the :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>`.
         Note that examples that have no annotator labels should not be included in this DataFrame/array.
-        This argument is optional if ``pred_probs`` is not provided (in cases where you only provide ``pred_probs_unlabeled`` to get active learning scores for unlabeled examples).
+        This argument is optional if ``pred_probs`` is not provided (you might only provide ``pred_probs_unlabeled`` to only get active learning scores for the unlabeled examples).
     pred_probs : np.ndarray, optional
         An array of shape ``(N, K)`` of predicted class probabilities from a trained classifier model.
         Predicted probabilities in the same format expected by the :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>`.
-        This argument is optional if you only want to get active learning scores for unlabeled examples (pass in ``pred_probs_unlabeled`` instead).
+        This argument is optional if you only want to get active learning scores for unlabeled examples (specify only ``pred_probs_unlabeled`` instead).
     pred_probs_unlabeled : np.ndarray, optional
         An array of shape ``(N, K)`` of predicted class probabilities from a trained classifier model for examples that have no annotator labels.
         Predicted probabilities in the same format expected by the :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>`.
-        This argument is optional if you only want to get active learning scores for labeled examples (pass in ``pred_probs`` instead).
+        This argument is optional if you only want to get active learning scores for already-labeled examples (specify only ``pred_probs`` instead).
 
     Returns
     -------
     active_learning_scores : np.ndarray
         Array of shape ``(N,)`` indicating the ActiveLab quality scores for each example.
-        Returns an empty array if no labeled data is provided.
+        This array is empty if no already-labeled data was provided via ``labels_multiannotator``.
         Examples with the lowest scores are those we should label next in order to maximally improve our classifier model.
 
     active_learning_scores_unlabeled : np.ndarray
@@ -597,7 +597,7 @@ def get_active_learning_scores(
         if labels_multiannotator is None:
             raise ValueError(
                 "labels_multiannotator cannot be None when passing in pred_probs. ",
-                "You can either provide labels_multiannotator to obtain active learning scores for the labeled examples, "
+                "Either provide labels_multiannotator to obtain active learning scores for the labeled examples, "
                 "or just pass in pred_probs_unlabeled to get active learning scores for unlabeled examples.",
             )
 

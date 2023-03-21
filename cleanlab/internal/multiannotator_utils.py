@@ -144,7 +144,7 @@ def assert_valid_pred_probs(
             if pred_probs.ndim != 3:
                 error_message = "pred_probs must be a 3d array."
                 if pred_probs.ndim == 2:  # pragma: no cover
-                    error_message += " If you have a 2d pred_probs array, use the non-ensemble version of this function."
+                    error_message += " If you have a 2d pred_probs array (ie. only one predictor), use the non-ensemble version of this function."
                 raise ValueError(error_message)
 
         if pred_probs_unlabeled is not None:
