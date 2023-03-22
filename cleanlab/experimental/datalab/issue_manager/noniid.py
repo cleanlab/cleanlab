@@ -131,9 +131,7 @@ class NonIIDIssueManager(IssueManager):
         self.tests = {
             "ks": simplified_kolmogorov_smirnov_test,
         }
-        self._histogram1d = None
         self.background_distribution = None
-        self.sorted_neighbors = None
 
     def find_issues(self, features: npt.NDArray, **_) -> None:
         if self.knn is None:
@@ -202,18 +200,6 @@ class NonIIDIssueManager(IssueManager):
             **knn_info_dict,
         }
         return info_dict
-
-    def _get_histogram1d(self):
-        if self._histogram1d is None:
-            try:
-                from fast_histogram import histogram1d as _histogram1d
-            except ImportError as e:
-
-                def _histogram1d(array, num_bins, bin_range):
-                    return np.histogram(array, num_bins, range=bin_range)[0]
-
-            self._histogram1d = _histogram1d
-        return self._histogram1d
 
     def _permutation_test(self, num_permutations) -> float:
         N = self.N
