@@ -236,15 +236,64 @@ class NonIIDIssueManager(IssueManager):
 
 
     def _score_dataset(self) -> npt.NDArray[np.float64]:
+        """This function computes a variant of the KS statistic for each
+        datapoint. Rather than computing the maximum difference
+        between the CDF of the neighbor distances (foreground
+        distribution) and the CDF of the all index distances
+        (background distribution), we compute the absolute difference
+        in area-under-the-curve of the two CDFs.
+
+        The foreground distribution is computed by sampling the
+        neighbor distances from the KNN graph, but the background
+        distribution is computed analytically. The background CDF for
+        a datapoint i can be split up into three parts. Let d = min(i,
+        N - i - 1).
+
+        1. For 0 < j <= d, the slope of the CDF is 2 / (N - 1) since
+        there are two datapoints in the dataset that are distance j
+        from datapoint i. We call this threshold the 'double distance
+        threshold' 
+
+        2. For d < j <= N - d - 1, the slope of the CDF is
+        1 / (N - 1) since there is only one datapoint in the dataset
+        that is distance j from datapoint i.
+
+        3. For j > N - d - 1, the slope of the CDF is 0 and is
+        constant at 1.0 since there are no datapoints in the dataset
+        that are distance j from datapoint i.
+
+        We compute the area differences on each of the k intervals for
+        which the foreground CDF is constant which allows for the
+        possibility that the background CDF may intersect the
+        foreground CDF on this interval. We do not account for these
+        cases when computing absolute AUC difference.
+
+        Our algorithm is simple, sort the k sampled neighbor
+        distances. Then, for each of the k neighbor distances sampled,
+        compute the AUC for each CDF up to that point. Then, subtract
+        from each area the previous area in the sorted order to get
+        the AUC of the CDF on the interval between those two
+        points. Subtract the background interval AUCs from the
+        foreground interval AUCs, take the absolute value, and
+        sum. The algorithm is vectorized such that this statistic is
+        computed for each of the N datapoints simultaneously.
+
+        The statistics are then normalized by their respective maximum
+        possible distance (N - d - 1) and then mapped to [0,1] via
+        tanh.
+        """
         N = self.N
 
         sorted_neighbors = np.sort(self.neighbor_index_distances, axis=1)
 
+        N = 10
         # find the maximum distance that occurs with double probability
         middle_idx = np.floor((N - 1)/ 2).astype(int)
         double_distances = np.arange(N).reshape(N, 1)
         double_distances[double_distances > middle_idx] -= (N - 1)
         double_distances = np.abs(double_distances)
+        print(double_distances)
+        foo
 
         sorted_neighbors = np.hstack([sorted_neighbors, np.ones((N, 1)) * (N-1)]).astype(int)
         
