@@ -286,14 +286,12 @@ class NonIIDIssueManager(IssueManager):
 
         sorted_neighbors = np.sort(self.neighbor_index_distances, axis=1)
 
-        N = 10
         # find the maximum distance that occurs with double probability
         middle_idx = np.floor((N - 1)/ 2).astype(int)
         double_distances = np.arange(N).reshape(N, 1)
         double_distances[double_distances > middle_idx] -= (N - 1)
         double_distances = np.abs(double_distances)
-        print(double_distances)
-        foo
+
 
         sorted_neighbors = np.hstack([sorted_neighbors, np.ones((N, 1)) * (N-1)]).astype(int)
         
