@@ -84,16 +84,23 @@ class NonIIDIssueManager(IssueManager):
         str
     ] = """The NonIIDIssueManager detects whether the given dataset is sampled IID or not.
 
-    Data can be non-IID in many ways and in general it is impossible to detect all cases of non-IID sampling.
-    This issue manager investigates whether the ordering of examples in the dataset is dependent on whether
-    examples are neighbors in the KNN graph or not. The algorithm uses permutation testing with the 
-    Kolmogorov-Smirnov statistic to determine whether the distribution of index-distances between neighbors
-    in the dataset is significantly different than that of the non-neighbors in the dataset.
+    Data can be non-IID in many ways and in general it is impossible
+    to detect all cases of non-IID sampling.  This issue manager
+    investigates whether the ordering of examples in the dataset is
+    dependent on whether examples are neighbors in the KNN graph or
+    not. The algorithm uses permutation testing with the
+    Kolmogorov-Smirnov statistic to determine whether the distribution
+    of index-distances between neighbors in the dataset is
+    significantly different than that of the distribution of all
+    index-distances in the dataset.
 
-    Detecting non-IID data can very important when collecting datasets or preparing a model for deployment.
-    Although shuffling data is generally good practice for removing non-IID issues, knowing that there are
-    underlying problems with distribution drift or dependent sampling during data collection is important to
-    know in order to understand the real-world environment that your model will be deployed in.
+    Detecting non-IID data can very important when collecting datasets
+    or preparing a model for deployment.  Although shuffling data is
+    generally good practice for removing non-IID issues, knowing that
+    there are underlying problems with distribution drift or dependent
+    sampling during data collection is important to know in order to
+    understand the real-world environment that your model will be
+    deployed in.
 
     Types of non-IID problems in datasets can be:
         - Distribution drift or concept drift
@@ -147,12 +154,10 @@ class NonIIDIssueManager(IssueManager):
         except:
             self.knn.fit(features)
 
-        self.neighbor_graph = self._get_neighbor_graph(self.knn)
+        self.neighbor_index_choices = self._get_neighbors(self.knn)
 
         self.num_neighbors = self.k
-
-        self.neighbor_index_choices = self._sample_neighbors(num_samples=self.num_neighbors)
-
+        
         indices = np.arange(self.N)
         self.neighbor_index_distances = np.abs(indices.reshape(-1, 1) - self.neighbor_index_choices)
         
@@ -214,7 +219,6 @@ class NonIIDIssueManager(IssueManager):
         N = self.N
 
         perms = np.fromiter(itertools.chain.from_iterable(np.random.permutation(N)  for i in range(num_permutations)), dtype=int).reshape(num_permutations, N)
-
 
         neighbor_index_choices = self.neighbor_index_choices
         neighbor_index_choices = neighbor_index_choices.reshape(1, *neighbor_index_choices.shape)
@@ -315,8 +319,8 @@ class NonIIDIssueManager(IssueManager):
         # compute the area under the CDF for each of the indices in sorted_neighbors
         background_area = np.zeros(diffs.shape)
         background_diffs = np.zeros(diffs.shape)
-        background_area[set_beginging] = ((sorted_neighbors ** 2) / (N - 1))[set_beginning]
-        background_area[set_middle] = (area_beginning + 0.5 * ((sorted_neighbors + 3 * indices.reshape(N, 1)) * (sorted_neighbors - double_distances) / (N - 1)))[set_middle]
+        background_area[set_beginning] = ((sorted_neighbors ** 2) / (N - 1))[set_beginning]
+        background_area[set_middle] = (area_beginning + 0.5 * ((sorted_neighbors + 3 * double_distances) * (sorted_neighbors - double_distances) / (N - 1)))[set_middle]
         background_area[set_end] = (area_beginning + area_middle + (sorted_neighbors - (N - double_distances - 1) * 1.0))[set_end]
 
         # compute the area under the CDF between indices in sorted_neighbors
@@ -341,180 +345,33 @@ class NonIIDIssueManager(IssueManager):
         scores = np.tanh(-1 * scores) + 1
         return scores
 
-    def _compute_row_cdf(self, array, num_bins, bin_range) -> np.ndarray:
-        ## TODO use new batch function
-
-        histogram1d = self._get_histogram1d()
-        
-        histograms = np.apply_along_axis(lambda x: histogram1d(x, num_bins, bin_range), 1, array)
-        histograms = histograms / np.sum(histograms[0])
-        cdf = np.cumsum(histograms, axis=1)
-        return cdf
-
-    def _get_neighbor_graph(self, knn: NearestNeighbors) -> np.ndarray:
+    def _get_neighbors(self, knn: NearestNeighbors) -> np.ndarray:
         """
-        Given a fitted knn object, returns an array in which A[i,j] = n if
-        item i and j are nth nearest neighbors. For n > k, A[i,j] = -1. Additionally, A[i,i] = 0
+        Given a fitted knn object, returns an (N, k) array in which j is in A[i] if
+        item i and j are nearest neighbors.
         """
-
         _, kneighbors = knn.kneighbors()
         graph = knn.kneighbors_graph(n_neighbors=self.k)
         self.N  = graph.shape[0]
-        
-        # kneighbor_graph = np.ones(graph.shape) * -1
-        self.neighbors = kneighbors
-        # non_neighbors = np.zeros((self.N, self.N - self.neighbors.shape[1] - 1), dtype=int)
-        # indices = np.arange(self.N).reshape(self.N, -1)
-        # all_indices = np.tile(indices, (self.N,1))
-        # to_delete = np.hstack((self.neighbors, indices))
-        
-        # non_neighbors = np.delete(all_indices, to_delete).reshape(self.N, -1)
-        non_neighbors = None
-
-        
-        # print(non_neighbors)
-        # for i, nbrs in enumerate(kneighbors):
-        #     # kneighbor_graph[i, nbrs] = 1 + np.arange(len(nbrs))
-        #     # kneighbor_graph[i, i] = 0
-        #     ####
-        #     to_delete = np.append(nbrs, i)
-        #     non = np.delete(indices, to_delete)
-        #     non_neighbors[i] = non
-        #self.non_neighbors = np.array(non_neighbors)
-        self.non_neighbors = non_neighbors
-
-
-        return 0 #kneighbor_graph TODO
+        return kneighbors
 
     def _get_statistics(
         self,
         neighbor_index_distances,
     ) -> dict[str, float]:
         
-        if self.sorted_neighbors is None:
-            neighbor_index_distances = neighbor_index_distances.flatten()
-            self.sorted_neighbors = np.sort(neighbor_index_distances)
-            self.sorted_neighbors = np.hstack([self.sorted_neighbors, np.ones((1)) * (self.N-1)]).astype(int)
-        sorted_neighbors = self.sorted_neighbors
+        neighbor_index_distances = neighbor_index_distances.flatten()
+        sorted_neighbors = np.sort(neighbor_index_distances)
+        sorted_neighbors = np.hstack([sorted_neighbors, np.ones((1)) * (self.N-1)]).astype(int)
 
         if self.background_distribution is None:
             self.background_distribution = (self.N - np.arange(1, self.N)) / (self.N * (self.N - 1) / 2)
             p = 1 / (self.N * (self.N - 1) / 2)
-            self.background_levels = np.cumsum(self.background_distribution)
+            self.background_cdf = np.cumsum(self.background_distribution)
 
-        background_levels = self.background_levels
+        background_cdf = self.background_cdf
+        foreground_cdf = np.arange(sorted_neighbors.shape[0]) / (sorted_neighbors.shape[0] - 1)
 
-
-        # shifted = np.zeros(sorted_neighbors.shape)
-        # shifted[1:] = sorted_neighbors[:-1]
-        # diffs = sorted_neighbors - shifted
-
-
-        # background_areas = background_levels[sorted_neighbors - 1] * (sorted_neighbors) / 2
-        # shifted_area = np.zeros(background_areas.shape)
-        # shifted_area[1:] = background_areas[:-1]
-        # background_diffs = np.abs(background_areas - shifted_area)
-
-        foreground_levels = np.arange(sorted_neighbors.shape[0]) / (sorted_neighbors.shape[0] - 1)
-
-        statistic = np.max(np.abs(foreground_levels - background_levels[sorted_neighbors - 1]))
-    
-        # statistic = np.max(np.abs(foreground_diffs - background_diffs))
-        # print(statistic)
-        
-        
-        
-        # statistics = {}
-        # for key, test in self.tests.items():
-        #     statistic = test(
-        #         neighbor_index_distances,
-        #         non_neighbor_index_distances,
-        #     )
-        #     statistics[key] = statistic
+        statistic = np.max(np.abs(foreground_cdf - background_cdf[sorted_neighbors - 1]))
         statistics = {'ks': statistic}
         return statistics
-
-    def _sample_distances(self, sample_neighbors, distances=None, num_samples=1) -> np.ndarray:
-        N = self.N
-        # all_idx = np.arange(N)
-        # all_idx = np.tile(all_idx, (N, 1))
-
-        # indices = all_idx[graph > 0].reshape(N, -1)
-        if sample_neighbors:
-            return self.neighbors
-
-        # print(indices.shape)
-        # all_idx = np.arange(N)
-        # to_delete = np.hstack((indices, np.arange(N).reshape(N, -1)))
-        # print(to_delete.shape)
-        # print(to_delete)
-        # print(all_idx)
-        # print('stuff')
-        # all_idx[to_delete]
-        # print(all_idx[to_delete])
-        # indices = np.delete(all_idx, to_delete).reshape(N, -1)
-        # print(indices)
-        # print(indices.shape)
-
-        # #indices = all_idx[graph < 0].reshape(N, -1)
-        indices = self.non_neighbors
-
-        
-        generator = np.random.default_rng()
-        # indices = np.arange(1, N)
-        # def sample(idx):
-        #     idx = min(idx, np.abs(self.N - idx - 1))
-        #     _max = self.N - idx - 1
-        #     p = np.ones(len(indices)) / (N - 1)
-        #     p[indices <= idx] = 2 / (N - 1)
-        #     p[indices > _max] = 0
-        #     return generator.choice(indices, size=num_samples, p=p)
-
-        # choices = np.apply_along_axis(sample, 1, np.arange(N).reshape(N, 1))
-        # print(choices)
-        # foo
-        # print(indices)
-        # foo
-
-        # indices = generator.permuted(indices, axis=1)
-        # choices = indices[:, :num_samples]
-
-        choices = generator.choice(indices, size=num_samples, axis=1, replace=False, shuffle=False)
-        
-        return choices
-        
-        ### inaccurate
-        # indices = indices.flatten()
-        # num_samples = num_samples * N
-        # choices = generator.choice(indices, size=num_samples, replace=False).reshape(N, -1)
-        # return choices
-
-    def _sample_neighbors(self, distances=None, num_samples=1) -> np.ndarray:
-        return self._sample_distances(
-            sample_neighbors=True, distances=distances, num_samples=num_samples
-        )
-
-    def _sample_non_neighbors(self, distances=None, num_samples=1) -> np.ndarray:
-        return self._sample_distances(
-            sample_neighbors=False, distances=distances, num_samples=num_samples,
-        )
-
-    def _build_histogram(self, index_array) -> np.ndarray:
-        histogram1d = self._get_histogram1d()
-        num_bins = self.N - 1
-        bin_range = (1, num_bins)
-        histogram = histogram1d(index_array, num_bins, bin_range)
-
-        histogram = histogram / len(index_array)
-        return histogram
-
-    def _build_histogram_batch(self, index_array) -> np.ndarray:
-        histogram1d = self._get_histogram1d()
-        num_bins = self.N - 1
-        bin_range = (1, num_bins)
-
-        histograms = np.apply_along_axis(lambda x: histogram1d(x, num_bins, bin_range), 1, index_array)
-
-        histograms = histograms / np.sum(histograms[0])
-        return histograms
-
