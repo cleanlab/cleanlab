@@ -384,7 +384,7 @@ class TestNonIIDIssueManager:
         assert issue_manager.datalab == lab
         assert issue_manager.metric == "euclidean"
         assert issue_manager.k == 10
-        assert issue_manager.num_permutations == 10
+        assert issue_manager.num_permutations == 25
 
         issue_manager = NonIIDIssueManager(
             datalab=lab,
@@ -427,7 +427,7 @@ class TestNonIIDIssueManager:
             issues_perm["is_non_iid_issue"] == expected_permuted_issue_mask
         ), "Issue mask should be correct"
         assert summary_perm["issue_type"][0] == "non_iid"
-        assert summary_perm["score"][0] == pytest.approx(expected=0.189562976, abs=1e-7)
+        assert summary_perm["score"][0] == pytest.approx(expected=0.310207044, abs=1e-7)
         assert info_perm.get("p-value", None) is not None, "Should have p-value"
         assert summary_perm["score"][0] == pytest.approx(expected=info_perm["p-value"], abs=1e-7)
 
