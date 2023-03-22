@@ -116,9 +116,9 @@ Optionally, you can also add a description of the type of issue this issue manag
         issue_name = "intermediate"
         # Add a dictionary of information to include in the report
         verbosity_levels = {
-            0: {"issue": ["kernel"]},
-            1: {"info": ["std"]},
-            2: {"issue": ["raw_scores"]},
+            0: [],
+            1: ["std"],
+            2: ["raw_scores"],
         }
         # Add a description of the issue
         description = "Intermediate issues are a bit more involved than basic issues."

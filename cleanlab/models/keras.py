@@ -30,7 +30,7 @@ Tips:
 * If this class lacks certain functionality, you can alternatively try `scikeras <https://github.com/adriangb/scikeras>`_.
 * Unlike scikeras, our `KerasWrapper` classes can operate directly on ``tensorflow.data.Dataset`` objects (like regular Keras models).
 * To call ``fit()`` on a tensorflow ``Dataset`` object with a Keras model, the ``Dataset`` should already be batched.
-* Check out our `example <https://github.com/cleanlab/examples>`_ using this class: `huggingface_keras_imdb <https://github.com/cleanlab/examples/blob/master/huggingface_keras_imdb/huggingface_keras_imdb.ipynb>`_
+* Check out our example using this class: `huggingface_keras_imdb <https://github.com/cleanlab/examples/blob/master/huggingface_keras_imdb/huggingface_keras_imdb.ipynb>`_
 * Our `unit tests <https://github.com/cleanlab/cleanlab/blob/master/tests/test_frameworks.py>`_ also provide basic usage examples.
 
 """
@@ -51,7 +51,7 @@ class KerasWrapperModel:
     Parameters
     ----------
     model: Callable
-        A callable function to construct the Keras Model (using functional API). Pass in the function here, not the constructed model!
+        A callable function to construct the Keras Model (using functional API). Pass in the function here, not the constructed model!
 
         For example::
 

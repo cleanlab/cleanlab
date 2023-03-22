@@ -51,12 +51,10 @@ class LabelIssueManager(IssueManager):
 
     issue_name: ClassVar[str] = "label"
     verbosity_levels = {
-        0: {},
-        1: {},
-        2: {
-            "info": ["confident_joint"],
-        },
-        3: {"info": ["classes_by_label_quality", "overlapping_classes"]},
+        0: [],
+        1: [],
+        2: [],
+        3: ["classes_by_label_quality", "overlapping_classes"],
     }
 
     def __init__(
@@ -96,13 +94,9 @@ class LabelIssueManager(IssueManager):
     def find_issues(
         self,
         pred_probs: np.ndarray,
-        model=None,
         health_summary_kwargs: Optional[Dict[str, Any]] = None,
         **_,
     ) -> None:
-        if pred_probs is None and model is not None:
-            raise NotImplementedError("TODO: We assume pred_probs is provided.")
-
         self.health_summary_parameters.update({"pred_probs": pred_probs})
         # Find examples with label issues
         self.issues = self.cl.find_label_issues(labels=self.datalab._labels, pred_probs=pred_probs)

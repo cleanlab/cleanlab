@@ -38,6 +38,8 @@ from typing import Tuple, Union, Optional
 
 from cleanlab.typing import LabelLike
 from cleanlab.internal.multilabel_utils import stack_complement, get_onehot_num_classes
+from cleanlab.internal.constants import TINY_VALUE, CONFIDENT_THRESHOLDS_LOWER_BOUND
+
 from cleanlab.internal.util import (
     value_counts_fill_missing_classes,
     clip_values,
@@ -49,7 +51,6 @@ from cleanlab.internal.util import (
     get_unique_classes,
     is_torch_dataset,
     is_tensorflow_dataset,
-    TINY_VALUE,
 )
 from cleanlab.internal.latent_algebra import (
     compute_inv_noise_matrix,
@@ -91,19 +92,23 @@ def num_label_issues(
 
     estimation_method :
       Method for estimating the number of label issues in dataset by counting the examples in the off-diagonal of the `confident_joint` ``P(label=i, true_label=j)``.
-       - ``'off_diagonal'``: Counts the number of examples in the off-diagonal of the `confident_joint`. Returns the same value as ``sum(find_label_issues(filter_by='confident_learning'))``
-       - ``'off_diagonal_calibrated'``: Calibrates confident joint estimate ``P(label=i, true_label=j)`` such that
-       ``np.sum(cj) == len(labels)`` and ``np.sum(cj, axis = 1) == np.bincount(labels)`` before counting the number
-       of examples in the off-diagonal. Number will always be equal to or greater than
-       ``estimate_issues='off_diagonal'``. You can use this value as the cutoff threshold used with ranking/scoring
-       functions from :py:mod:`cleanlab.rank` with `num_label_issues` over ``estimation_method='off_diagonal'`` in
-       two cases:
-          1. As we add more label and data quality scoring functions in :py:mod:`cleanlab.rank`, this approach will always work.
-          2. If you have a custom score to rank your data by label quality and you just need to know the cut-off of likely label issues.
-       - ``'off_diagonal_custom'``: Counts the number of examples in the off-diagonal of a provided `confident_joint` matrix.
 
+      * ``'off_diagonal'``: Counts the number of examples in the off-diagonal of the `confident_joint`. Returns the same value as ``sum(find_label_issues(filter_by='confident_learning'))``
 
-       TL;DR: Use this method to get the most accurate estimate of number of label issues when you don't need the indices of the label issues.
+      * ``'off_diagonal_calibrated'``: Calibrates confident joint estimate ``P(label=i, true_label=j)`` such that
+        ``np.sum(cj) == len(labels)`` and ``np.sum(cj, axis = 1) == np.bincount(labels)`` before counting the number
+        of examples in the off-diagonal. Number will always be equal to or greater than
+        ``estimate_issues='off_diagonal'``. You can use this value as the cutoff threshold used with ranking/scoring
+        functions from :py:mod:`cleanlab.rank` with `num_label_issues` over ``estimation_method='off_diagonal'`` in
+        two cases:
+
+        #. As we add more label and data quality scoring functions in :py:mod:`cleanlab.rank`, this approach will always work.
+        #. If you have a custom score to rank your data by label quality and you just need to know the cut-off of likely label issues.
+
+      * ``'off_diagonal_custom'``: Counts the number of examples in the off-diagonal of a provided `confident_joint` matrix.
+
+      TL;DR: Use this method to get the most accurate estimate of number of label issues when you don't need the indices of the label issues.
+
       Note: ``'off_diagonal'`` may sometimes underestimate issues for data with few classes, so consider using ``'off_diagonal_calibrated'`` instead if your data has < 4 classes.
 
     multi_label : bool, optional
@@ -384,7 +389,12 @@ def estimate_joint(
             multi_label=multi_label,
         )
     else:
-        calibrated_cj = calibrate_confident_joint(confident_joint, labels, multi_label=multi_label)
+        if labels is not None:
+            calibrated_cj = calibrate_confident_joint(
+                confident_joint, labels, multi_label=multi_label
+            )
+        else:
+            calibrated_cj = confident_joint
 
     assert isinstance(calibrated_cj, np.ndarray)
     if multi_label:
@@ -1445,7 +1455,10 @@ def get_confident_thresholds(
             np.mean(pred_probs[:, k][labels == k]) if k in unique_classes else BIG_VALUE
             for k in all_classes
         ]
-        return np.array(confident_thresholds)
+        confident_thresholds = np.clip(
+            confident_thresholds, a_min=CONFIDENT_THRESHOLDS_LOWER_BOUND, a_max=None
+        )
+        return confident_thresholds
 
 
 def _get_confident_thresholds_multilabel(

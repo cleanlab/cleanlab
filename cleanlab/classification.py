@@ -120,7 +120,10 @@ import numpy as np
 import pandas as pd
 import inspect
 import warnings
-from typing import TypeVar, Optional
+from typing import Optional, TYPE_CHECKING
+
+if TYPE_CHECKING:  # pragma: no cover
+    from typing_extensions import Self
 
 from cleanlab.rank import get_label_quality_scores
 from cleanlab import filter
@@ -145,9 +148,6 @@ from cleanlab.internal.validation import (
     assert_valid_inputs,
     labels_to_array,
 )
-
-
-TCleanLearning = TypeVar("TCleanLearning", bound="CleanLearning")  # self type for the class
 
 
 class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
@@ -265,7 +265,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         self.clf_final_kwargs = None
 
     def fit(
-        self: TCleanLearning,
+        self,
         X,
         labels=None,
         *,
@@ -279,7 +279,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         clf_final_kwargs={},
         validation_func=None,
         y=None,
-    ) -> TCleanLearning:
+    ) -> "Self":
         """
         Train the model `clf` with error-prone, noisy labels as if
         the model had been instead trained on a dataset with the correct labels.

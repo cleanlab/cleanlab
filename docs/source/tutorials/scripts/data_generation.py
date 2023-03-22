@@ -25,7 +25,7 @@ BINS_MAP = {
 
 def create_data():
 
-    X = np.random.rand(1000, 2) * 5
+    X = np.random.rand(250, 2) * 5
     y = np.sum(X, axis=1)
     # Map y to bins based on the BINS dict
     y_bin = np.array([k for y_i in y for k, v in BINS.items() if v[0] <= y_i < v[1]])
@@ -48,7 +48,7 @@ def create_data():
         ]
     )
     # Add a near duplicate point to the last outlier, with some tiny noise added
-    near_duplicate = X_out[-1:] + np.random.rand(1, 2) * 1e-3
+    near_duplicate = X_out[-1:] + np.random.rand(1, 2) * 1e-6
     X_out = np.concatenate([X_out, near_duplicate])
 
     y_out = np.sum(X_out, axis=1)
@@ -111,19 +111,18 @@ def plot_data(X_train, y_train_idx, noisy_labels_idx, X_out):
     for i, (X, y) in enumerate(zip([X_train, X_train], [y_train_idx, noisy_labels_idx])):
         for k, v in BINS_MAP.items():
             ax[i].scatter(X[y == v, 0], X[y == v, 1], label=k)
-        ax[i].legend()
         ax[i].set_title(["Clean labels", "Noisy labels"][i])
         ax[i].set_xlabel(r"$x_1$")
         ax[i].set_ylabel(r"$x_2$")
 
     # Plot true boundaries (x+y=3.3, x+y=6.6)
     for i in range(2):
-        ax[i].plot([0, 3.3], [3.3, 0], color="k", linestyle="--", alpha=0.5)
-        ax[i].plot([0, 6.6], [6.6, 0], color="k", linestyle="--", alpha=0.5)
+        ax[i].plot([-0.7, 4.0], [4.0, -0.7], color="k", linestyle="--", alpha=0.5)
+        ax[i].plot([-0.7, 7.3], [7.3, -0.7], color="k", linestyle="--", alpha=0.5)
 
     # Draw red circles around the points that are misclassified (i.e. the points that are in the wrong bin)
     for i, (X, y) in enumerate(zip([X_train, X_train], [y_train_idx, noisy_labels_idx])):
-        for k, v in BINS_MAP.items():
+        for j, (k, v) in enumerate(BINS_MAP.items()):
             ax[i].plot(
                 X[(y == v) & (y != y_train_idx), 0],
                 X[(y == v) & (y != y_train_idx), 1],
@@ -133,9 +132,12 @@ def plot_data(X_train, y_train_idx, noisy_labels_idx, X_out):
                 markersize=14,
                 markeredgewidth=2.5,
                 alpha=0.5,
+                **{"label": "Label error" if i == 1 and j == 0 else None}
             )
 
     for i in range(2):
-        ax[i].scatter(X_out[:, 0], X_out[:, 1], color="k", marker="x", s=100, linewidth=2)
-
+        ax[i].scatter(
+            X_out[:, 0], X_out[:, 1], color="k", marker="x", s=100, linewidth=2, label="Outlier"
+        )
+        ax[i].legend()
     plt.tight_layout()

@@ -22,7 +22,7 @@ and managing all kinds of issues in datasets.
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 import warnings
 
 import numpy as np
@@ -107,6 +107,11 @@ class Datalab:
     def labels(self) -> np.ndarray:
         """Labels of the dataset, in a [0, 1, ..., K-1] format."""
         return self._labels
+
+    @property
+    def class_names(self) -> List[str]:
+        """Names of the classes in the dataset."""
+        return self._data.class_names
 
     @property
     def issues(self) -> pd.DataFrame:
@@ -362,20 +367,25 @@ class Datalab:
         specific_issues = self._get_matching_issue_columns(issue_name)
         info = self.get_info(issue_name=issue_name)
         if issue_name == "label":
-            label_map = self._data._label_map.get
-            predicted_labels = np.vectorize(label_map)(info["predicted_label"])
-            label_name = cast(str, self.label_name)
             specific_issues = specific_issues.assign(
-                given_label=self._data._data[label_name], predicted_label=predicted_labels
+                given_label=info["given_label"], predicted_label=info["predicted_label"]
             )
 
-        if issue_name in ["outlier", "near_duplicate"]:
-            nearest_neighbor = info["nearest_neighbor"]
-            distance_to_nearest_neighbor = info["distance_to_nearest_neighbor"]
-            specific_issues = specific_issues.assign(
-                nearest_neighbor=nearest_neighbor,
-                distance_to_nearest_neighbor=distance_to_nearest_neighbor,
-            )
+        if issue_name == "outlier":
+            column_dict = {
+                k: info.get(k)
+                for k in ["nearest_neighbor", "distance_to_nearest_neighbor"]
+                if info.get(k) is not None
+            }
+            specific_issues = specific_issues.assign(**column_dict)
+
+        if issue_name == "near_duplicate":
+            column_dict = {
+                k: info.get(k)
+                for k in ["near_duplicate_sets", "distance_to_nearest_neighbor"]
+                if info.get(k) is not None
+            }
+            specific_issues = specific_issues.assign(**column_dict)
         return specific_issues
 
     def _get_matching_issue_columns(self, issue_name: str) -> pd.DataFrame:
@@ -506,6 +516,7 @@ class Datalab:
                 if self.verbosity:
                     print(f"Finding {issue_manager.issue_name} issues ...")
                 issue_manager.find_issues(**arg_dict)
+                self.data_issues.collect_statistics_from_issue_manager(issue_manager)
                 self.data_issues._collect_results_from_issue_manager(issue_manager)
             except Exception as e:
                 print(f"Error in {issue_manager.issue_name}: {e}")

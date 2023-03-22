@@ -155,6 +155,7 @@ class TestOutOfDistributionIssueManager:
         assert summary["score"][0] == pytest.approx(expected=0.7732146, abs=1e-7)
 
         assert info.get("knn", None) is not None, "Should have knn info"
+        assert issue_manager.threshold == pytest.approx(expected=0.0922, abs=1e-4)
 
         issue_manager_with_threshold.find_issues(features=embeddings["embedding"])
 
@@ -177,9 +178,24 @@ class TestOutOfDistributionIssueManager:
         assert summary["issue_type"][0] == "outlier"
         assert summary["score"][0] == pytest.approx(expected=0.151, abs=1e-3)
 
+        assert issue_manager.threshold == pytest.approx(expected=0.0421, abs=1e-4)
+
         assert np.all(
             info.get("confident_thresholds", None) == [0.1, 0.825, 0.575]
         ), "Should have confident_joint info"
+
+    def test_find_issues_with_different_iqr_scale(self, issue_manager, embeddings):
+        issue_manager.find_issues(features=embeddings["embedding"], iqr_scale=0.5)
+        issues, summary, info = issue_manager.issues, issue_manager.summary, issue_manager.info
+        expected_issue_mask = np.array([False] * 4 + [True])
+        assert np.all(
+            issues["is_outlier_issue"] == expected_issue_mask
+        ), "Issue mask should be correct"
+        assert summary["issue_type"][0] == "outlier"
+        assert summary["score"][0] == pytest.approx(expected=0.7732146, abs=1e-7)
+
+        # Lower iqr_scale should lower the threshold
+        assert issue_manager.threshold == pytest.approx(expected=0.0839, abs=1e-4)
 
     def test_report(self, issue_manager):
         pred_probs = np.array(
@@ -249,6 +265,28 @@ class TestOutOfDistributionIssueManager:
         assert "list: [9, 8, 7, 6, '...']" not in report
         assert 'dict:\n{\n    "a": 1,\n    "b": 2,\n    "c": 3\n}' not in report
         assert "df:" not in report
+
+    def test_collect_info(self, issue_manager, embeddings):
+        """Test some values in the info dict.
+
+        Mainly focused on the nearest neighbor info.
+        """
+
+        issue_manager.find_issues(features=embeddings["embedding"])
+        info = issue_manager.collect_info()
+
+        nearest_neighbors = info["nearest_neighbor"]
+        distances_to_nearest_neighbor = info["distance_to_nearest_neighbor"]
+
+        assert nearest_neighbors == [3, 0, 3, 0, 2], "Nearest neighbors should be correct"
+
+        assert pytest.approx(distances_to_nearest_neighbor, abs=1e-3) == [
+            0.033,
+            0.05,
+            0.072,
+            0.033,
+            2.143,
+        ], "Distances to nearest neighbor should be correct"
 
 
 class TestNearDuplicateIssueManager:
@@ -358,7 +396,11 @@ class TestNonIIDIssueManager:
     def test_find_issues(self, issue_manager, embeddings):
         np.random.seed(SEED)
         issue_manager.find_issues(features=embeddings)
-        issues_sort, summary_sort, info_sort = issue_manager.issues, issue_manager.summary, issue_manager.info
+        issues_sort, summary_sort, info_sort = (
+            issue_manager.issues,
+            issue_manager.summary,
+            issue_manager.info,
+        )
         expected_sorted_issue_mask = np.array([False] * len(embeddings))
         assert np.all(
             issues_sort["is_non_iid_issue"] == expected_sorted_issue_mask
@@ -368,7 +410,6 @@ class TestNonIIDIssueManager:
         assert info_sort.get("p-value", None) is not None, "Should have p-value"
         assert summary_sort["score"][0] == pytest.approx(expected=info_sort["p-value"], abs=1e-7)
 
-        
         permutation = np.random.permutation(len(embeddings))
         new_issue_manager = NonIIDIssueManager(
             datalab=issue_manager.datalab,
@@ -376,7 +417,11 @@ class TestNonIIDIssueManager:
             k=10,
         )
         new_issue_manager.find_issues(features=embeddings[permutation])
-        issues_perm, summary_perm, info_perm = new_issue_manager.issues, new_issue_manager.summary, new_issue_manager.info
+        issues_perm, summary_perm, info_perm = (
+            new_issue_manager.issues,
+            new_issue_manager.summary,
+            new_issue_manager.info,
+        )
         expected_permuted_issue_mask = np.array([False] * len(embeddings))
         assert np.all(
             issues_perm["is_non_iid_issue"] == expected_permuted_issue_mask
@@ -385,7 +430,6 @@ class TestNonIIDIssueManager:
         assert summary_perm["score"][0] == pytest.approx(expected=0.189562976, abs=1e-7)
         assert info_perm.get("p-value", None) is not None, "Should have p-value"
         assert summary_perm["score"][0] == pytest.approx(expected=info_perm["p-value"], abs=1e-7)
-
 
     def test_report(self, issue_manager, embeddings):
         np.random.seed(SEED)
@@ -409,6 +453,19 @@ class TestNonIIDIssueManager:
             verbosity=3,
         )
         assert "Additional Information: " in report
+
+    def test_collect_info(self, issue_manager, embeddings):
+        """Test some values in the info dict.
+
+        Mainly focused on the nearest neighbor info.
+        """
+
+        issue_manager.find_issues(features=embeddings)
+        info = issue_manager.collect_info()
+
+        assert info["p-value"] == 0
+        assert info["metric"] == "euclidean"
+        assert info["k"] == 10
 
 
 def test_register_custom_issue_manager(monkeypatch):

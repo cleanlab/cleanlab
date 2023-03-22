@@ -17,6 +17,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional
 
+from scipy.stats import iqr
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
@@ -26,6 +27,7 @@ from cleanlab.outlier import OutOfDistribution
 
 if TYPE_CHECKING:  # pragma: no cover
     from sklearn.neighbors import NearestNeighbors
+    from scipy.sparse import csr_matrix
 
     from cleanlab.experimental.datalab.datalab import Datalab
 
@@ -48,10 +50,10 @@ class OutOfDistributionIssueManager(IssueManager):
         """
     issue_name: ClassVar[str] = "outlier"
     verbosity_levels = {
-        0: {},
-        1: {},
-        2: {"info": ["average_ood_score"], "issue": ["nearest_neighbor"]},
-        3: {"issue": ["distance_to_nearest_neighbor"]},
+        0: [],
+        1: [],
+        2: ["average_ood_score"],
+        3: [],
     }
 
     def __init__(
@@ -77,11 +79,14 @@ class OutOfDistributionIssueManager(IssueManager):
         self.ood: OutOfDistribution = OutOfDistribution(**ood_kwargs)
         self.threshold = threshold
         self._embeddings: Optional[np.ndarray] = None
+        self._knn_graph: csr_matrix = None  # type: ignore
+        self._metric: str = None  # type: ignore
 
     def find_issues(
         self,
         features: Optional[npt.NDArray] = None,
         pred_probs: Optional[np.ndarray] = None,
+        iqr_scale: float = 1.0,
         **kwargs,
     ) -> None:
         if features is not None:
@@ -91,19 +96,45 @@ class OutOfDistributionIssueManager(IssueManager):
         else:
             raise ValueError(f"Either features or pred_probs must be provided.")
 
-        if self.threshold is None:
-            if self._embeddings is not None:
-                knn: NearestNeighbors = self.ood.params["knn"]  # type: ignore
-                distances, _ = knn.kneighbors(self._embeddings, n_neighbors=2)
-                nn_distances = distances[:, 1]
-                count_scale = min(len(nn_distances) - 1, 10)
-                self.threshold = np.exp(-count_scale * np.mean(nn_distances) * self.ood.params["t"])
-            else:
+        if self._embeddings is not None:
+            # Check if the weighted knn graph exists in info
+            weighted_knn_graph: csr_matrix = self.datalab.get_info("statistics").get(
+                "weighted_knn_graph", None
+            )
+
+            k: int = 0  # Used to check if the knn graph needs to be recomputed, already set in the knn object
+            if weighted_knn_graph is not None:
+                self._knn_graph = weighted_knn_graph
+                k = self._knn_graph.nnz // self._knn_graph.shape[0]
+
+            knn: NearestNeighbors = self.ood.params["knn"]  # type: ignore
+            if kwargs.get("knn", None) is not None or knn.n_neighbors > k:  # type: ignore[union-attr]
+                # If the pre-existing knn graph has fewer neighbors than the knn object,
+                # then we need to recompute the knn graph
+                self._knn_graph = knn.kneighbors_graph(mode="distance")  # type: ignore[union-attr]
+                self._metric = knn.metric  # type: ignore[union-attr]
+                k = knn.n_neighbors  # type: ignore[union-attr]
+            distances = self._knn_graph.data.reshape(-1, k)  # type: ignore[union-attr]
+            avg_distances = distances.mean(axis=1)
+            if self.threshold is None:
+                q3_distance = np.percentile(avg_distances, 75)
+
+                if not isinstance(iqr_scale, (int, float)) and iqr_scale < 0:
+                    raise ValueError(
+                        f"iqr_scale must be a positive number, got {iqr_scale} of type {type(iqr_scale)}."
+                    )
+                self.threshold = q3_distance + iqr_scale * iqr(avg_distances)
+            is_issue_column = avg_distances > self.threshold
+
+        else:
+            if self.threshold is None:
+                # Threshold based on pred_probs, very small scores are outliers
                 self.threshold = np.percentile(scores, 10)
+            is_issue_column = scores < self.threshold
 
         self.issues = pd.DataFrame(
             {
-                f"is_{self.issue_name}_issue": scores < self.threshold,
+                f"is_{self.issue_name}_issue": is_issue_column,
                 self.issue_score_key: scores,
             },
         )
@@ -122,36 +153,59 @@ class OutOfDistributionIssueManager(IssueManager):
         feature_issues_dict = {}
 
         # Compute
-        if self.ood.params["knn"] is not None:
-            knn = self.ood.params["knn"]
-            dists, nn_ids = [array[:, 0] for array in knn.kneighbors()]  # type: ignore[union-attr]
-            weighted_knn_graph = knn.kneighbors_graph(mode="distance")  # type: ignore[union-attr]
+        if self._knn_graph is not None and self.ood.params["knn"] is not None:
+            knn = self.ood.params["knn"]  # type: ignore
+            N = self._knn_graph.shape[0]
+            k = self._knn_graph.nnz // N
+            dists = self._knn_graph.data.reshape(N, -1)[:, 0]
+            nn_ids = self._knn_graph.indices.reshape(N, -1)[:, 0]
 
-            # TODO: Reverse the order of the calls to knn.kneighbors() and knn.kneighbors_graph()
-            #   to avoid computing the (distance, id) pairs twice.
             feature_issues_dict.update(
                 {
                     "metric": knn.metric,  # type: ignore[union-attr]
-                    "k": knn.n_neighbors,  # type: ignore[union-attr]
+                    "k": k,  # type: ignore[union-attr]
                     "nearest_neighbor": nn_ids.tolist(),
                     "distance_to_nearest_neighbor": dists.tolist(),
-                    "weighted_knn_graph": weighted_knn_graph,
                 }
             )
 
         if self.ood.params["confident_thresholds"] is not None:
             pass  #
+        statistics_dict = self._build_statistics_dictionary()
         ood_params_dict = self.ood.params
         knn_dict = {
             **pred_probs_issues_dict,
             **feature_issues_dict,
         }
-        info_dict = {
+        info_dict: Dict[str, Any] = {
             **issues_dict,
             **ood_params_dict,  # type: ignore[arg-type]
             **knn_dict,
+            **statistics_dict,
         }
         return info_dict
+
+    def _build_statistics_dictionary(self) -> Dict[str, Dict[str, Any]]:
+        statistics_dict: Dict[str, Dict[str, Any]] = {"statistics": {}}
+
+        # Add the knn graph as a statistic if necessary
+        graph_key = "weighted_knn_graph"
+        old_knn_graph = self.datalab.get_info("statistics").get(graph_key, None)
+        old_graph_exists = old_knn_graph is not None
+        prefer_new_graph = (
+            not old_graph_exists
+            or self._knn_graph.nnz > old_knn_graph.nnz
+            or self._metric != self.datalab.get_info("statistics").get("knn_metric", None)
+        )
+        if prefer_new_graph:
+            statistics_dict["statistics"].update(
+                {
+                    graph_key: self._knn_graph,
+                    "knn_metric": self._metric,
+                },
+            )
+
+        return statistics_dict
 
     def _score_with_pred_probs(self, pred_probs: np.ndarray, **kwargs) -> np.ndarray:
         scores = self.ood.fit_score(pred_probs=pred_probs, labels=self.datalab._labels, **kwargs)

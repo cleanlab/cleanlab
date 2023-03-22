@@ -29,6 +29,7 @@ except ImportError as error:
 import numpy as np
 import pandas as pd
 from datasets.arrow_dataset import Dataset
+from datasets import ClassLabel
 
 from cleanlab.internal.validation import labels_to_array
 
@@ -125,12 +126,11 @@ class Data:
 
     def __init__(self, data: "DatasetLike", label_name: str) -> None:
         self._validate_data(data)
+        self._label_name = label_name
         self._data = self._load_data(data)
         self._validate_data_and_labels(self._data, self._data[label_name])
         self._data_hash = hash(self._data)
-        self._data.set_format(type="numpy")
         self._labels, self._label_map = _extract_labels(self._data, label_name)
-        self._label_name = label_name
 
     def _load_data(self, data: "DatasetLike") -> Dataset:
         """Checks the type of dataset and uses the correct loader method and
@@ -164,8 +164,7 @@ class Data:
 
     @property
     def class_names(self) -> list:
-        label_name = cast(str, self._label_name)
-        return self._data.unique(label_name)
+        return list(self._label_map.values())
 
     @staticmethod
     def _validate_data(data) -> None:
@@ -250,10 +249,13 @@ def _extract_labels(data: Dataset, label_name: Union[str, List[str]]) -> Tuple[n
     if labels.ndim != 1:
         raise ValueError("labels must be 1D numpy array.")
 
-    unique_labels = np.unique(labels)
-    label_map = {label: i for i, label in enumerate(unique_labels)}
-    # labels 0, 1, ..., K-1
-    formatted_labels = np.array([label_map[label] for label in labels])
+    label_name_feature = data.features[label_name]
+    if isinstance(label_name_feature, ClassLabel):
+        label_map = {label: label_name_feature.str2int(label) for label in label_name_feature.names}
+        formatted_labels = labels
+    else:
+        label_map = {label: i for i, label in enumerate(np.unique(labels))}
+        formatted_labels = np.vectorize(label_map.get)(labels)
     inverse_map = {i: label for label, i in label_map.items()}
 
     return formatted_labels, inverse_map

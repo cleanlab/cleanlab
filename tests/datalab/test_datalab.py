@@ -18,7 +18,7 @@
 import itertools
 import os
 import pickle
-from unittest.mock import Mock, patch
+from unittest.mock import MagicMock, Mock, patch
 from cleanlab.experimental.datalab.datalab import Datalab
 
 from sklearn.neighbors import NearestNeighbors
@@ -29,6 +29,7 @@ import pandas as pd
 from pathlib import Path
 
 import pytest
+import timeit
 
 
 def test_datalab_invalid_datasetdict(dataset, label_name):
@@ -66,21 +67,27 @@ class TestDatalab:
         assert isinstance(lab.issues, pd.DataFrame), "Issues should by in a dataframe"
         assert isinstance(lab.issue_summary, pd.DataFrame), "Issue summary should be a dataframe"
 
-    def test_get_info(self, lab, monkeypatch):
+    def test_get_info(self, lab):
         mock_info: dict = {
-            "statistics": {"num_classes": 3},
             "label": {
-                "given_labels": [1, 0, 1],
-                "predicted_labels": [1, 1, 2],
+                "given_label": [1, 0, 1, 0, 2],
+                "predicted_label": [1, 1, 2, 0, 2],
+                # get_info("label") adds `class_names` from statistics
             },
             "outlier": {
-                "nearest_neighbor": [1, 0, 0],
+                "nearest_neighbor": [1, 0, 0, 4, 3],
             },
         }
-        monkeypatch.setattr(lab, "info", mock_info)
+        mock_info = {**lab.info, **mock_info}
+        lab.info = mock_info
 
-        for key in mock_info:
-            assert lab.get_info(key) == mock_info[key]
+        label_info = lab.get_info("label")
+        assert label_info["given_label"].tolist() == [4, 3, 4, 3, 5]
+        assert label_info["predicted_label"].tolist() == [4, 4, 5, 3, 5]
+        assert label_info["class_names"] == [3, 4, 5]
+
+        outlier_info = lab.get_info("outlier")
+        assert outlier_info["nearest_neighbor"] == [1, 0, 0, 4, 3]
 
         assert lab.get_info() == lab.info == mock_info
 
@@ -123,7 +130,10 @@ class TestDatalab:
 
         lab.info.update(
             {
-                "label": {"predicted_label": mock_predicted_labels},
+                "label": {
+                    "given_label": lab.labels,
+                    "predicted_label": mock_predicted_labels,
+                },
                 "outlier": {
                     "nearest_neighbor": mock_nearest_neighbor,
                     "distance_to_nearest_neighbor": mock_distance_to_nearest_neighbor,
@@ -471,3 +481,165 @@ class TestDatalab:
             mock_print.reset_mock()
             lab.report()
             mock_print.assert_called_once_with("Report with verbosity=1 and k=5")
+
+
+class TestDatalabIssueManagerInteraction:
+    """The Datalab class should integrate with the IssueManager class correctly.
+
+    Tests include:
+    - Make sure a custom manager needs to be registered to work with Datalab
+    - Make sure that `find_issues()` with different affects the outcome (e.g. `Datalab.issues`)
+        differently depending on the issue manager.
+    """
+
+    @pytest.fixture
+    def custom_issue_manager(self):
+        from cleanlab.experimental.datalab.issue_manager import IssueManager
+
+        class CustomIssueManager(IssueManager):
+            issue_name = "custom_issue"
+
+            def find_issues(self, custom_argument: int = 1, **_) -> None:
+                # Flag example as an issue if the custom argument equals its index
+                scores = [
+                    abs(i - custom_argument) / (i + custom_argument)
+                    for i in range(len(self.datalab.data))
+                ]
+                self.issues = pd.DataFrame(
+                    {
+                        f"is_{self.issue_name}_issue": [
+                            i == custom_argument for i in range(len(self.datalab.data))
+                        ],
+                        self.issue_score_key: scores,
+                    },
+                )
+                summary_score = np.mean(scores)
+                self.summary = self.make_summary(score=summary_score)
+
+        return CustomIssueManager
+
+    def test_custom_issue_manager_not_registered(self, lab):
+        """Test that a custom issue manager that is not registered will not be used."""
+        # Mock registry dictionary
+        mock_registry = MagicMock()
+        mock_registry.__getitem__.side_effect = KeyError("issue type not registered")
+
+        with patch("cleanlab.experimental.datalab.factory.REGISTRY", mock_registry):
+            with pytest.raises(ValueError) as excinfo:
+                lab.find_issues(issue_types={"custom_issue": {}})
+
+                assert "issue type not registered" in str(excinfo.value)
+
+            assert mock_registry.__getitem__.called_once_with("custom_issue")
+
+            assert lab.issues.empty
+            assert lab.issue_summary.empty
+
+    def test_custom_issue_manager_registered(self, lab, custom_issue_manager):
+        """Test that a custom issue manager that is registered will be used."""
+        from cleanlab.experimental.datalab.factory import register
+
+        register(custom_issue_manager)
+
+        assert lab.issues.empty
+        assert lab.issue_summary.empty
+
+        lab.find_issues(issue_types={"custom_issue": {}})
+
+        expected_is_custom_issue_issue = [False, True] + [False] * 3
+        expected_custom_issue_score = [1 / 1, 0 / 2, 1 / 3, 2 / 4, 3 / 5]
+        expected_issues = pd.DataFrame(
+            {
+                "is_custom_issue_issue": expected_is_custom_issue_issue,
+                "custom_issue_score": expected_custom_issue_score,
+            }
+        )
+        assert pd.testing.assert_frame_equal(lab.issues, expected_issues) is None
+
+    def test_find_issues_for_custom_issue_manager_with_custom_kwarg(
+        self, lab, custom_issue_manager
+    ):
+        """Test that a custom issue manager that is registered will be used."""
+        from cleanlab.experimental.datalab.factory import register
+
+        register(custom_issue_manager)
+
+        assert lab.issues.empty
+        assert lab.issue_summary.empty
+
+        lab.find_issues(issue_types={"custom_issue": {"custom_argument": 3}})
+
+        expected_is_custom_issue_issue = [False, False, False, True, False]
+        expected_custom_issue_score = [3 / 3, 2 / 4, 1 / 5, 0 / 6, 1 / 7]
+        expected_issues = pd.DataFrame(
+            {
+                "is_custom_issue_issue": expected_is_custom_issue_issue,
+                "custom_issue_score": expected_custom_issue_score,
+            }
+        )
+        assert pd.testing.assert_frame_equal(lab.issues, expected_issues) is None
+
+        # Clean up registry
+        from cleanlab.experimental.datalab.factory import REGISTRY
+
+        REGISTRY.pop(custom_issue_manager.issue_name)
+
+
+@pytest.mark.parametrize(
+    "find_issues_kwargs",
+    [
+        ({"pred_probs": np.random.rand(3, 2)}),
+        ({"features": np.random.rand(3, 2)}),
+        ({"pred_probs": np.random.rand(3, 2), "features": np.random.rand(6, 2)}),
+    ],
+    ids=["pred_probs", "features", "pred_probs and features"],
+)
+def test_report_for_outlier_issues_via_pred_probs(find_issues_kwargs):
+    data = {"labels": [0, 1, 0]}
+    lab = Datalab(data=data, label_name="labels")
+    find_issues_kwargs["issue_types"] = {"outlier": {"k": 1}}
+    lab.find_issues(**find_issues_kwargs)
+
+    report = lab._get_report(num_examples=3, verbosity=0, include_description=False)
+    assert report, "Report should not be empty"
+
+
+def test_near_duplicates_reuses_knn_graph():
+    """'outlier' and 'near_duplicate' issues both require a KNN graph.
+    This test ensures that the KNN graph is only computed once.
+    E.g. if outlier is called first, and then near_duplicate can reuse the
+    resulting graph.
+    """
+    N = 3000
+    num_features = 1000
+    k = 20
+    find_issues_kwargs = {"issue_types": {"near_duplicate": {"k": k}}}
+    data = {"labels": np.random.randint(0, 2, size=N)}
+    features = np.random.rand(N, num_features)
+    lab = Datalab(data=data, label_name="labels")
+    time_only_near_duplicates = timeit.timeit(
+        lambda: lab.find_issues(features=features, **find_issues_kwargs),
+        number=1,
+    )
+
+    lab = Datalab(data=data, label_name="labels")
+    # Outliers need more neighbors, so this should be slower, so the graph will be computed twice
+    find_issues_kwargs = {
+        "issue_types": {"near_duplicate": {"k": k}, "outlier": {"k": k}},
+    }
+    time_near_duplicates_and_outlier = timeit.timeit(
+        lambda: lab.find_issues(features=features, **find_issues_kwargs),
+        number=1,
+    )
+    assert time_only_near_duplicates < time_near_duplicates_and_outlier
+
+    find_issues_kwargs = {
+        "issue_types": {"outlier": {"k": k}, "near_duplicate": {"k": k}},
+    }
+    time_outliers_before_near_duplicates = timeit.timeit(
+        lambda: lab.find_issues(features=features, **find_issues_kwargs),
+        number=1,
+    )
+    assert (
+        time_outliers_before_near_duplicates < time_near_duplicates_and_outlier
+    ), "KNN graph reuse should make this run of find_issues faster."
