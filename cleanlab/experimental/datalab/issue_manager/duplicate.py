@@ -91,7 +91,7 @@ class NearDuplicateIssueManager(IssueManager):
 
         k: int = 0  # Used to check if the knn graph needs to be recomputed, already set in the knn object
         if weighted_knn_graph is not None:
-            self._knn_graph: csr_matrix = weighted_knn_graph
+            self._knn_graph = weighted_knn_graph
             k = self._knn_graph.nnz // self._knn_graph.shape[0]
 
         if self.metric and self.metric != self.knn.metric:
@@ -187,6 +187,7 @@ class NearDuplicateIssueManager(IssueManager):
 
     def _compute_threshold(self, distances: npt.NDArray) -> float:
         """Computes nearest-neighbors thresholding for near-duplicate detection."""
+        threshold: float  # Declare type for mypy
         if self.threshold is None:
             # Threshold based on nearest-neighbor distance/radius. Smaller radius means
             # more examples are considered near-duplicates.
@@ -202,5 +203,5 @@ class NearDuplicateIssueManager(IssueManager):
                 )
                 threshold = 0
         else:
-            threshold: float = self.threshold
+            threshold = self.threshold
         return threshold
