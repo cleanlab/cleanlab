@@ -5,7 +5,7 @@ from cleanlab.filter import _find_multilabel_issues_per_class
 from cleanlab.internal.multilabel_utils import get_onehot_num_classes
 from collections import defaultdict
 
-def summarize_issues_multilabel(
+def summarize_issues_multilabel_dataset(
     labels=list,
     pred_probs=None,
     *,
@@ -123,6 +123,8 @@ def summarize_issues_multilabel(
         By default, the DataFrame is ordered by "Joint Probability" descending.
     """
     y_one, num_classes = get_onehot_num_classes(labels, pred_probs)
+    if class_names is None:
+        class_names = list(range(len(num_classes)))
     label_issues_list, labels_list, pred_probs_list = _find_multilabel_issues_per_class(
         labels,
         pred_probs,
@@ -132,8 +134,8 @@ def summarize_issues_multilabel(
     for class_num, (label, issues_for_class) in enumerate(zip(y_one.T, label_issues_list)):
         binary_label_issues = np.zeros(len(label)).astype(bool)
         binary_label_issues[issues_for_class] = True
-        dcnt[class_num]['TruebutFalse'] = sum(np.logical_and(label == 1, binary_label_issues))
-        dcnt[class_num]['FalsebutTrue'] = sum(np.logical_and(label == 0, binary_label_issues))
+        dcnt[class_names[class_num]]['TruebutFalse'] = sum(np.logical_and(label == 1, binary_label_issues))
+        dcnt[class_names[class_num]]['FalsebutTrue'] = sum(np.logical_and(label == 0, binary_label_issues))
 
     dct2 = defaultdict(list)
     ysum = y_one.sum(axis=0)
@@ -146,4 +148,4 @@ def summarize_issues_multilabel(
         dct2['num_examples_correction'].append(dcnt[i]['FalsebutTrue'] + dcnt[i]['TruebutFalse'])
         dct2['Issue_probability'].append((dcnt[i]['FalsebutTrue'] + dcnt[i]['TruebutFalse']) / len(y_one))
 
-    return pd.DataFrame.from_dict(dct2)
+    return pd.DataFrame.from_dict(dct2).set_index("class_name")
