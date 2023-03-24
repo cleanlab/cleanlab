@@ -7,7 +7,7 @@ cleanlab helps you **clean** data and **lab**els by automatically detecting issu
 
 ```python
 
-# cleanlab works with **any classifier**. Yup, you can use sklearn/PyTorch/TensorFlow/XGBoost/etc.
+# cleanlab works with **any classifier**. Yup, you can use PyTorch/TensorFlow/OpenAI/XGBoost/etc.
 cl = cleanlab.classification.CleanLearning(sklearn.YourFavoriteClassifier())
 
 # cleanlab finds data and label issues in **any dataset**... in ONE line of code!
