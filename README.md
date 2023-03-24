@@ -3,11 +3,11 @@
 </p>
 
 
-cleanlab automatically detects problems in a ML dataset. This data-centric AI package facilitates **machine learning with messy, real-world data** by providing **clean lab**els for robust training and flagging errors in your data.
+cleanlab helps you **clean** data and **lab**els by automatically detecting issues in a ML dataset. To facilitate **machine learning with messy, real-world data**, this data-centric AI package uses your *existing* models to estimate dataset problems that can be fixed to train even *better* models.
 
 ```python
 
-# cleanlab works with **any classifier**. Yup, you can use sklearn/PyTorch/TensorFlow/XGBoost/etc.
+# cleanlab works with **any classifier**. Yup, you can use PyTorch/TensorFlow/OpenAI/XGBoost/etc.
 cl = cleanlab.classification.CleanLearning(sklearn.YourFavoriteClassifier())
 
 # cleanlab finds data and label issues in **any dataset**... in ONE line of code!
@@ -41,59 +41,20 @@ Get started with: [documentation](https://docs.cleanlab.ai/), [tutorials](https:
 
 -----
 
-<details><summary><b>News! (2022) </b> -- cleanlab made accessible for everybody, not just ML researchers (<b>click to learn more</b>) </summary>
-<p>
-<ul>
-<li> <b>Nov 2022 📖</b> cleanlab 2.2.0 released! Added better algorithms for: label issues in multi-label classification, data with some classes absent, and estimating the number of label errors in a dataset. </li>
-<li> <b>Sep 2022 📖</b> cleanlab 2.1.0 released! Added support for: data labeled by multiple annotators in cleanlab.multiannotator, token classification with text data in cleanlab.token_classification, out-of-distribution detection in cleanlab.outlier, and CleanLearning with non-numpy-array data (e.g. pandas dataframes, tensorflow/pytorch datasets, etc) in cleanlab.classification.CleanLearning. </li>
-<li> <b>April 2022 📖</b> cleanlab 2.0.0 released! Lays foundations for this library to grow into a general-purpose data-centric AI toolkit. </li>
-<li> <b>March 2022 📖</b>  Documentation migrated to new website: <a href="https://docs.cleanlab.ai/">docs.cleanlab.ai</a> with quickstart tutorials for image/text/audio/tabular data.</li>
-<li> <b>Feb 2022 💻</b> <a href="https://docs.cleanlab.ai/v2.0.0/migrating/migrate_v2.html">APIs simplified</a> to make cleanlab accessible for everybody, not just ML researchers </li>
-<li> <b>Long-time cleanlab user?</b> Here's <a href="https://docs.cleanlab.ai/stable/migrating/migrate_v2.html">how to migrate</a> to cleanlab versions >= 2.0.0. </li>
-</ul>
-</p>
-</details>
-
-<details><summary><b>News! (2021) </b> -- cleanlab finds pervasive label errors in the most common ML datasets (<b>click to learn more</b>) </summary>
-<p>
-<ul>
-<li> <b>Dec 2021 🎉</b>  NeurIPS published the <a href="https://arxiv.org/abs/2103.14749">label errors paper (Northcutt, Athalye, & Mueller, 2021)</a>.</li>
-<li> <b>Apr 2021 🎉</b>  Journal of AI Research published the <a href="https://jair.org/index.php/jair/article/view/12125">confident learning paper (Northcutt, Jiang, & Chuang, 2021)</a>.</li>
-<li> <b>Mar 2021 😲</b>  cleanlab used to find and fix label issues in 10 of the most common ML benchmark datasets, published in: <a href="https://neurips.cc/Conferences/2021/ScheduleMultitrack?event=22763">NeurIPS 2021</a>. Along with <a href="https://arxiv.org/abs/2103.14749">the paper (Northcutt, Athalye, & Mueller, 2021)</a>, the authors launched <a href="https://labelerrors.com">labelerrors.com</a> where you can view the label issues in these datasets.</li>
-</ul>
-</p>
-</details>
-
-<details><summary><b>News! (2020) </b> -- cleanlab supports all OS, achieves state-of-the-art performance (<b>click to learn more</b>) </summary>
-<p>
-<ul>
-<li> <b>Dec 2020 🎉</b>  cleanlab supports NeurIPS workshop paper <a href="https://securedata.lol/camera_ready/28.pdf">(Northcutt, Athalye, & Lin, 2020)</a>.</li>
-<li> <b>Dec 2020 🤖</b>  cleanlab supports Positive-Unlabeled (PU) learning.</li>
-<li> <b>Feb 2020 🤖</b>  cleanlab now natively supports Mac, Linux, and Windows.</li>
-<li> <b>Feb 2020 🤖</b>  cleanlab now supports <a href="https://docs.cleanlab.ai/stable/cleanlab/experimental/coteaching.html">Co-Teaching</a> <a href="https://arxiv.org/abs/1804.06872">(Han et al., 2018)</a>.</li>
-<li> <b>Jan 2020 🎉</b> cleanlab achieves state-of-the-art on CIFAR-10 with noisy labels. Code to reproduce:  <a href="https://github.com/cleanlab/examples/tree/master/contrib/v1/cifar10">examples/cifar10</a>. This is a great place to see how to use cleanlab on real datasets (with predicted probabilities from trained model already precomputed for you).</li>
-</ul>
-</p>
-</details>
-
-Release notes for past versions are [here](https://github.com/cleanlab/cleanlab/releases).
-Details behind updates are explained in our [blog](https://cleanlab.ai/blog/) and [research papers](https://cleanlab.ai/research/).
-
-
 ## So fresh, so cleanlab
 
-cleanlab **clean**s your data's **lab**els via state-of-the-art *confident learning* algorithms, published in this [paper](https://jair.org/index.php/jair/article/view/12125) and [blog](https://l7.curtisnorthcutt.com/confident-learning). See some of the datasets cleaned with cleanlab at [labelerrors.com](https://labelerrors.com). This package helps you find data and label issues so you can train reliable ML models.
+cleanlab **clean**s your data's **lab**els via state-of-the-art *confident learning* algorithms, published in this [paper](https://jair.org/index.php/jair/article/view/12125) and [blog](https://l7.curtisnorthcutt.com/confident-learning). See some of the datasets cleaned with cleanlab at [labelerrors.com](https://labelerrors.com). This package helps you find label issues and other data issues, so you can train reliable ML models.
 
 cleanlab is:
 
 1. **backed by theory**
    - with [provable guarantees](https://arxiv.org/abs/1911.00068) of exact estimation of noise and label errors, even with imperfect models.
 2. **fast**
-   - Code is parallelized (< 1 second to find label issues in ImageNet with pre-computed predictions).
+   - Code is parallelized and scalable.
 4. **easy-to-use**
-   - Find label issues or train noise-robust models in one line of code (no hyperparameters by default).
+   - Find mislabeled data, bad annotators, outliers, or train noise-robust models -- all in one line of code.
 6. **general**
-   - Works with **[any dataset](https://labelerrors.com/)** and **any model**, e.g., TensorFlow, PyTorch, sklearn, XGBoost, Huggingface, etc.
+   - Works with **[any dataset](https://labelerrors.com/)** (text, image, tabular, audio, ...) and **any model** (TensorFlow, PyTorch, JAX, HuggingFace,  OpenAI, XGBoost, scikit-learn, ...)
 <br/>
 
 ![](https://raw.githubusercontent.com/cleanlab/assets/master/cleanlab/label-errors-examples.png)
@@ -107,11 +68,11 @@ cleanlab supports Linux, macOS, and Windows and runs on Python 3.7+.
 
 - Get started [here](https://docs.cleanlab.ai/)! Install via `pip` or `conda` as described [here](https://docs.cleanlab.ai/).
 - Developers who install the bleeding-edge from source should refer to [this master branch documentation](https://docs.cleanlab.ai/master/index.html).
-
+- For help, check out our detailed [FAQ](https://docs.cleanlab.ai/stable/tutorials/faq.html), [Github Issues](https://github.com/cleanlab/cleanlab/issues?q=is%3Aissue), or [Slack](https://cleanlab.ai/slack). We welcome any questions!
 
 ## Use cleanlab with any model for most ML tasks
 
-All features of cleanlab work with **any dataset** and **any model**. Yes, any model: scikit-learn, PyTorch, Tensorflow, Keras, JAX, HuggingFace, MXNet, XGBoost, etc.
+All features of cleanlab work with **any dataset** and **any model**. Yes, any model: PyTorch, Tensorflow, Keras, JAX, HuggingFace, OpenAI, XGBoost, scikit-learn, etc.
 If you use a sklearn-compatible classifier, all cleanlab methods work out-of-the-box.
 
 <details><summary>
@@ -121,7 +82,7 @@ It’s also easy to use your favorite non-sklearn-compatible model (<b>click to 
 
 cleanlab can find label issues from any model's predicted class probabilities if you can produce them yourself.
 
-Some other cleanlab functionality requires your model to be sklearn-compatible.
+Some cleanlab functionality may require your model to be sklearn-compatible.
 There's nothing you need to do if your model already has `.fit()`, `.predict()`, and `.predict_proba()` methods.
 Otherwise, just wrap your custom model into a Python class that inherits the `sklearn.base.BaseEstimator`:
 
@@ -526,6 +487,28 @@ cleanlab is based on peer-reviewed research. Here are relevant papers to cite if
 
 </details>
 
+<details><summary><a href="https://arxiv.org/abs/2301.11856"> ActiveLab: Active learning with data re-labeling (ICLR '23)</a> (<b>click to show bibtex</b>) </summary>
+
+    @inproceedings{goh2023activelab,
+        title={ActiveLab: Active Learning with Re-Labeling by Multiple Annotators},
+        author={Goh, Hui Wen and Mueller, Jonas},
+        booktitle={ICLR Workshop on Trustworthy ML},
+        year={2023}
+    }
+
+</details>
+
+<details><summary><a href="https://arxiv.org/abs/2211.13895"> Incorrect Annotations in Multi-Label Classification (ICLR '23)</a> (<b>click to show bibtex</b>) </summary>
+
+    @inproceedings{thyagarajan2023multilabel,
+        title={Identifying Incorrect Annotations in Multi-Label Classification Data},
+        author={Thyagarajan, Aditya and Snorrason, Elías and Northcutt, Curtis and Mueller, Jonas},
+        booktitle={ICLR Workshop on Trustworthy ML},
+        year={2023}
+    }
+
+</details>
+
 
 To understand/cite other cleanlab functionality not described above, check out our [additional publications](https://cleanlab.ai/research/).
 
@@ -537,6 +520,8 @@ To understand/cite other cleanlab functionality not described above, check out o
 - [Blog post: Introduction to Confident Learning](https://l7.curtisnorthcutt.com/confident-learning)
 
 - [NeurIPS 2021 paper: Pervasive Label Errors in Test Sets Destabilize Machine Learning Benchmarks](https://arxiv.org/abs/2103.14749)
+
+- [Release notes for past versions](https://github.com/cleanlab/cleanlab/releases)
 
 - [Cleanlab Studio](https://cleanlab.ai/studio/?utm_source=github&utm_medium=readme&utm_campaign=clostostudio): No-code Data Improvement
 
@@ -555,14 +540,15 @@ While this open-source library **finds** data issues, an interface is needed to 
 * Have an issue with cleanlab? [Search existing issues](https://github.com/cleanlab/cleanlab/issues?q=is%3Aissue) or [submit a new issue](https://github.com/cleanlab/cleanlab/issues/new).
 
 * Need professional help with cleanlab?
-Join our [\#help Slack channel](https://cleanlab.ai/slack) and message one of our core developers, Jonas Mueller, or schedule a meeting via email: team@cleanlab.ai
+Join our [\#help Slack channel](https://cleanlab.ai/slack) and message us there, or reach out via email: team@cleanlab.ai
 
 ## License
 
-Copyright (c) 2017-2023 Cleanlab Inc.
+Copyright (c) 2017 Cleanlab Inc.
 
 cleanlab is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 
 cleanlab is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 See [GNU Affero General Public LICENSE](https://github.com/cleanlab/cleanlab/blob/master/LICENSE) for details.
+You can email us to discuss licensing: team@cleanlab.ai
