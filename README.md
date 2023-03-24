@@ -54,7 +54,7 @@ cleanlab is:
 4. **easy-to-use**
    - Find mislabeled data, bad annotators, outliers, or train noise-robust models -- all in one line of code.
 6. **general**
-   - Works with **[any dataset](https://labelerrors.com/)** (text, image, tabular, audio, ...) and **any model** (TensorFlow, PyTorch, HuggingFace,  XGBoost, ...)
+   - Works with **[any dataset](https://labelerrors.com/)** (text, image, tabular, audio, ...) and **any model** (TensorFlow, PyTorch, JAX, HuggingFace,  OpenAI, XGBoost, scikit-learn, ...)
 <br/>
 
 ![](https://raw.githubusercontent.com/cleanlab/assets/master/cleanlab/label-errors-examples.png)
