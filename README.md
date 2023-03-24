@@ -43,7 +43,7 @@ Get started with: [documentation](https://docs.cleanlab.ai/), [tutorials](https:
 
 ## So fresh, so cleanlab
 
-cleanlab **clean**s your data's **lab**els via state-of-the-art *confident learning* algorithms, published in this [paper](https://jair.org/index.php/jair/article/view/12125) and [blog](https://l7.curtisnorthcutt.com/confident-learning). See some of the datasets cleaned with cleanlab at [labelerrors.com](https://labelerrors.com). This package helps you find data and label issues so you can train reliable ML models.
+cleanlab **clean**s your data's **lab**els via state-of-the-art *confident learning* algorithms, published in this [paper](https://jair.org/index.php/jair/article/view/12125) and [blog](https://l7.curtisnorthcutt.com/confident-learning). See some of the datasets cleaned with cleanlab at [labelerrors.com](https://labelerrors.com). This package helps you find label issues and other data issues, so you can train reliable ML models.
 
 cleanlab is:
 
