@@ -68,8 +68,6 @@ cleanlab supports Linux, macOS, and Windows and runs on Python 3.7+.
 
 - Get started [here](https://docs.cleanlab.ai/)! Install via `pip` or `conda` as described [here](https://docs.cleanlab.ai/).
 - Developers who install the bleeding-edge from source should refer to [this master branch documentation](https://docs.cleanlab.ai/master/index.html).
-- Release notes for past versions are [here](https://github.com/cleanlab/cleanlab/releases). Details behind updates are explained in our [blog](https://cleanlab.ai/blog/) and [research papers](https://cleanlab.ai/research/).
-
 - For help, check out our detailed [FAQ](https://docs.cleanlab.ai/stable/tutorials/faq.html), [Github Issues](https://github.com/cleanlab/cleanlab/issues?q=is%3Aissue), or [Slack](https://cleanlab.ai/slack). We welcome any questions!
 
 ## Use cleanlab with any model for most ML tasks
@@ -522,6 +520,8 @@ To understand/cite other cleanlab functionality not described above, check out o
 - [Blog post: Introduction to Confident Learning](https://l7.curtisnorthcutt.com/confident-learning)
 
 - [NeurIPS 2021 paper: Pervasive Label Errors in Test Sets Destabilize Machine Learning Benchmarks](https://arxiv.org/abs/2103.14749)
+
+- [Release notes for past versions](https://github.com/cleanlab/cleanlab/releases)
 
 - [Cleanlab Studio](https://cleanlab.ai/studio/?utm_source=github&utm_medium=readme&utm_campaign=clostostudio): No-code Data Improvement
 
