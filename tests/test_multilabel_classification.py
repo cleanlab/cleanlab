@@ -334,7 +334,7 @@ def test_multilabel_dataset():
     assert len(df) == 10
     assert np.isclose(
         np.array(expected_issue_probabilities), df['Issue_probability']
-    ).all()  # df.iloc[0]['Issue_probability']
+    ).all()
 
 
 @pytest.mark.parametrize(
