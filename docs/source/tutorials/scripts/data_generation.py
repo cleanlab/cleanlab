@@ -117,6 +117,8 @@ def plot_data(X_train, y_train_idx, noisy_labels_idx, X_out):
 
     # Plot true boundaries (x+y=3.3, x+y=6.6)
     for i in range(2):
+        ax[i].set_xlim(-3.5, 8.5)
+        ax[i].set_ylim(-3.5, 8.5)
         ax[i].plot([-0.7, 4.0], [4.0, -0.7], color="k", linestyle="--", alpha=0.5)
         ax[i].plot([-0.7, 7.3], [7.3, -0.7], color="k", linestyle="--", alpha=0.5)
 
