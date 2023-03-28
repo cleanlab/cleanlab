@@ -5,6 +5,7 @@ from cleanlab.filter import _find_multilabel_issues_per_class
 from cleanlab.internal.multilabel_utils import get_onehot_num_classes
 from collections import defaultdict
 
+
 def common_multilabel_issues(
     labels=list,
     pred_probs=None,
@@ -125,28 +126,33 @@ def common_multilabel_issues(
     if class_names is None:
         class_names = list(range(len(num_classes)))
     label_issues_list, labels_list, pred_probs_list = _find_multilabel_issues_per_class(
-        labels,
-        pred_probs,
-        return_indices_ranked_by='self_confidence'
+        labels=labels,
+        pred_probs=pred_probs,
+        confident_joint=confident_joint,
+        return_indices_ranked_by="self_confidence",
     )
     dcnt = defaultdict(defaultdict)
     for class_num, (label, issues_for_class) in enumerate(zip(y_one.T, label_issues_list)):
         binary_label_issues = np.zeros(len(label)).astype(bool)
         binary_label_issues[issues_for_class] = True
-        dcnt[class_names[class_num]]['TruebutFalse'] = sum(np.logical_and(label == 1, binary_label_issues))
-        dcnt[class_names[class_num]]['FalsebutTrue'] = sum(np.logical_and(label == 0, binary_label_issues))
+        dcnt[class_names[class_num]]["TruebutFalse"] = sum(
+            np.logical_and(label == 1, binary_label_issues)
+        )
+        dcnt[class_names[class_num]]["FalsebutTrue"] = sum(
+            np.logical_and(label == 0, binary_label_issues)
+        )
 
     dct2 = defaultdict(list)
     for i in dcnt:
         for j in dcnt[i]:
-            dct2['class_name'].append(i)
-            if j == 'TruebutFalse':
-                dct2['In_Given_Label'].append(True)
-                dct2['In_Suggested_Label'].append("False")
+            dct2["class_name"].append(i)
+            if j == "TruebutFalse":
+                dct2["In_Given_Label"].append(True)
+                dct2["In_Suggested_Label"].append("False")
             else:
-                dct2['In_Given_Label'].append(False)
-                dct2['In_Suggested_Label'].append("True")
-            dct2['num_examples'].append(dcnt[i][j])
-            dct2['Issue_probability'].append((dcnt[i][j]) / len(y_one))
+                dct2["In_Given_Label"].append(False)
+                dct2["In_Suggested_Label"].append("True")
+            dct2["num_examples"].append(dcnt[i][j])
+            dct2["Issue_probability"].append((dcnt[i][j]) / len(y_one))
 
     return pd.DataFrame.from_dict(dct2).set_index("class_name")
