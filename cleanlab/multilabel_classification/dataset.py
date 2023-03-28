@@ -5,11 +5,10 @@ from cleanlab.filter import _find_multilabel_issues_per_class
 from cleanlab.internal.multilabel_utils import get_onehot_num_classes
 from collections import defaultdict
 
-def summarize_issues_multilabel_dataset(
+def common_multilabel_issues(
     labels=list,
     pred_probs=None,
     *,
-    asymmetric=False,
     class_names=None,
     num_examples=None,
     joint=None,
@@ -138,14 +137,16 @@ def summarize_issues_multilabel_dataset(
         dcnt[class_names[class_num]]['FalsebutTrue'] = sum(np.logical_and(label == 0, binary_label_issues))
 
     dct2 = defaultdict(list)
-    ysum = y_one.sum(axis=0)
     for i in dcnt:
-        dct2['class_name'].append(i)
-        dct2['Given_label_true'].append(ysum[i])
-        dct2['Given_label_false'].append(len(y_one) - ysum[i])
-        dct2['Suggested_issue_True'].append(dcnt[i]['FalsebutTrue'])
-        dct2['Suggested_issue_False'].append(dcnt[i]['TruebutFalse'])
-        dct2['num_examples_correction'].append(dcnt[i]['FalsebutTrue'] + dcnt[i]['TruebutFalse'])
-        dct2['Issue_probability'].append((dcnt[i]['FalsebutTrue'] + dcnt[i]['TruebutFalse']) / len(y_one))
+        for j in dcnt[i]:
+            dct2['class_name'].append(i)
+            if j == 'TruebutFalse':
+                dct2['In_Given_Label'].append(True)
+                dct2['In_Suggested_Label'].append("False")
+            else:
+                dct2['In_Given_Label'].append(False)
+                dct2['In_Suggested_Label'].append("True")
+            dct2['num_examples'].append(dcnt[i][j])
+            dct2['Issue_probability'].append((dcnt[i][j]) / len(y_one))
 
     return pd.DataFrame.from_dict(dct2).set_index("class_name")
