@@ -58,7 +58,7 @@ def common_multilabel_issues(
 
     y_one, num_classes = get_onehot_num_classes(labels, pred_probs)
     if class_names is None:
-        class_names = list(range(len(num_classes)))
+        class_names = list(range(num_classes))
     label_issues_list, labels_list, pred_probs_list = _find_multilabel_issues_per_class(
         labels=labels,
         pred_probs=pred_probs,

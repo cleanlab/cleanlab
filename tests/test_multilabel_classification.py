@@ -26,6 +26,7 @@ from sklearn.linear_model import LogisticRegression
 from cleanlab.internal import multilabel_scorer as ml_scorer
 from cleanlab.internal.multilabel_utils import stack_complement, get_onehot_num_classes, onehot2int
 from cleanlab import multilabel_classification as multilabel_classfication
+from cleanlab.multilabel_classification.dataset import common_multilabel_issues
 
 
 @pytest.fixture
@@ -302,6 +303,38 @@ def scorer():
 def test_is_multilabel(labels):
     assert ml_scorer._is_multilabel(labels)
     assert not ml_scorer._is_multilabel(labels[:, 0])
+
+
+def test_multilabel_dataset():
+    pred_probs = np.array(
+        [
+            [0.9, 0.1, 0.0, 0.4, 0.1],
+            [0.7, 0.8, 0.2, 0.3, 0.1],
+            [0.9, 0.8, 0.4, 0.2, 0.1],
+            [0.1, 0.1, 0.8, 0.3, 0.1],
+            [0.4, 0.5, 0.1, 0.1, 0.1],
+            [0.1, 0.1, 0.2, 0.1, 0.1],
+            [0.8, 0.1, 0.2, 0.1, 0.1],
+        ]
+    )
+    labels = [[0], [0, 1], [0, 1], [2], [0, 2, 3], [], []]
+    df = common_multilabel_issues(labels=labels, pred_probs=pred_probs)
+    expected_issue_probabilities = [
+        0.14285714285714285,
+        0.14285714285714285,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+    ]
+    assert len(df) == 10
+    assert np.isclose(
+        np.array(expected_issue_probabilities), df['Issue_probability']
+    ).all()  # df.iloc[0]['Issue_probability']
 
 
 @pytest.mark.parametrize(
