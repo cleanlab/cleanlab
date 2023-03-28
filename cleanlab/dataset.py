@@ -76,13 +76,14 @@ def rank_classes_by_label_quality(
 
         By default, the DataFrame is ordered by "Label Quality Score", ascending.
     """
+    if multi_label:
+        raise ValueError("rank_classes_by_label_quality is not supported when multi_label is True")
 
     if joint is None:
         joint = estimate_joint(
             labels=labels,
             pred_probs=pred_probs,
             confident_joint=confident_joint,
-            multi_label=multi_label,
         )
     if num_examples is None:
         num_examples = _get_num_examples(labels=labels)
@@ -403,7 +404,6 @@ def health_summary(
         num_examples=num_examples,
         joint=joint,
         confident_joint=confident_joint,
-        multi_label=multi_label,
     )
     if verbose:
         print("Overall Class Quality and Noise across your dataset (below)")
@@ -418,7 +418,6 @@ def health_summary(
         num_examples=num_examples,
         joint=joint,
         confident_joint=confident_joint,
-        multi_label=multi_label,
     )
     if verbose:
         print(
@@ -437,7 +436,6 @@ def health_summary(
         num_examples=num_examples,
         joint=joint,
         confident_joint=confident_joint,
-        multi_label=multi_label,
         verbose=verbose,
     )
     if verbose:
