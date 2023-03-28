@@ -241,12 +241,15 @@ def find_overlapping_classes(
 
         return [(*i, v) for i, v in np.ndenumerate(matrix)]
 
+    if multi_label:
+        raise ValueError(
+            "find_overlapping_classes is not supported when multi_label is True, please use multilabel_classification.dataset.common_multilabel_issues instead."
+        )
     if joint is None:
         joint = estimate_joint(
             labels=labels,
             pred_probs=pred_probs,
             confident_joint=confident_joint,
-            multi_label=multi_label,
         )
     if num_examples is None:
         num_examples = _get_num_examples(labels=labels, confident_joint=confident_joint)
@@ -305,13 +308,14 @@ def overall_label_health_score(
         A score between 0 and 1, where 1 implies all labels in the dataset are estimated to be correct.
         A score of 0.5 implies that half of the dataset's labels are estimated to have issues.
     """
+    if multi_label:
+        raise ValueError("overall_label_health_score is not supported when multi_label is True.")
 
     if joint is None:
         joint = estimate_joint(
             labels=labels,
             pred_probs=pred_probs,
             confident_joint=confident_joint,
-            multi_label=multi_label,
         )
     if num_examples is None:
         num_examples = _get_num_examples(labels=labels)
@@ -366,12 +370,13 @@ def health_summary(
     """
     from cleanlab.internal.util import smart_display_dataframe
 
+    if multi_label:
+        raise ValueError("health_summary is not supported when multi_label is True")
     if joint is None:
         joint = estimate_joint(
             labels=labels,
             pred_probs=pred_probs,
             confident_joint=confident_joint,
-            multi_label=multi_label,
         )
     if num_examples is None:
         num_examples = _get_num_examples(labels=labels)
