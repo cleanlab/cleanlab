@@ -36,11 +36,7 @@ DATALAB_REQUIRE = [
 
 EXTRAS_REQUIRE = {
     "datalab": DATALAB_REQUIRE,
-    "all": [
-        # Used by the NonIIDIssueManager
-        # for computing 1D histograms efficiently.
-        "fast-histogram>=0.11"
-    ],
+    "all": [],
 }
 EXTRAS_REQUIRE["all"] = list(set(sum(EXTRAS_REQUIRE.values(), [])))
 
