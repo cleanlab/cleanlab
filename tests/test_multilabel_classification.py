@@ -305,7 +305,7 @@ def test_is_multilabel(labels):
     assert not ml_scorer._is_multilabel(labels[:, 0])
 
 
-def test_multilabel_dataset():
+def test_common_multilabel_issues():
     pred_probs = np.array(
         [
             [0.9, 0.1, 0.0, 0.4, 0.1],
