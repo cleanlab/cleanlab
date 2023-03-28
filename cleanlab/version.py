@@ -15,7 +15,7 @@
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
 
-__version__ = "2.3.1"
+__version__ = "2.3.2"
 
 # 2.3.2 - Not yet released, you are using bleeding-edge developer version. See its documentation at: https://docs.cleanlab.ai/master/
 
