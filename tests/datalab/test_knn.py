@@ -117,3 +117,21 @@ class TestKNN:
         assert np.all(graph.diagonal() == 0)
         assert np.all(graph.data >= 0)
         assert graph.nnz == features.shape[0] * knn.n_neighbors
+
+    def test_kneighbors_graph_cache(self, knn: KNN, features: np.ndarray) -> None:
+        knn.fit(features)
+        time_1 = timeit(lambda: knn.kneighbors_graph(), number=1)
+        time_2 = timeit(lambda: knn.kneighbors_graph(), number=1)
+        assert time_1 > time_2, "KNN should cache results, so second call should be faster"
+
+    def test_kneighbors_graph_features(self, knn: KNN, features: np.ndarray) -> None:
+        knn.fit(features)
+        N_new = 5
+        new_features = np.random.rand(N_new, 2)
+        graph = knn.kneighbors_graph(new_features)
+        assert graph.shape == (N_new, N_new)
+        assert np.any(
+            graph.diagonal() != 0
+        ), "Diagonal doesn't have to be zero when querying with different features"
+        assert np.all(graph.data >= 0)
+        assert graph.nnz == N_new * knn.n_neighbors
