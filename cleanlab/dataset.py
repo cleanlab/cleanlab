@@ -244,7 +244,7 @@ def find_overlapping_classes(
 
     if multi_label:
         raise ValueError(
-            "find_overlapping_classes is not supported when multi_label is True, please use multilabel_classification.dataset.common_multilabel_issues instead."
+            "The multi_label argument has been deprecated and is no longer supported in find_overlapping_classes(). Instead use: multilabel_classification.dataset.common_multilabel_issues()"
         )
     if joint is None:
         joint = estimate_joint(
