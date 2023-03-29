@@ -76,7 +76,7 @@ def rank_classes_by_label_quality(
 
         By default, the DataFrame is ordered by "Label Quality Score", ascending.
     """
-    if multi_label:
+    if multi_label:  # TODO
         raise ValueError("rank_classes_by_label_quality is not supported when multi_label is True")
 
     if joint is None:
