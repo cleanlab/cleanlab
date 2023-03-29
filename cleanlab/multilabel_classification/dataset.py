@@ -12,7 +12,7 @@ def common_multilabel_issues(
     class_names=None,
     confident_joint=None,
 ) -> pd.DataFrame:
-    """Returns the Tags that are often mis-labeled.
+    """Summarizes which tags in a multi-label dataset appear most often mislabeled overall.
 
 
     This method provides two scores in the Pandas DataFrame that is returned:
