@@ -8,6 +8,7 @@ import numpy as np
 
 from typing import Optional, Tuple, Union, cast
 from scipy.sparse import csr_matrix
+from sklearn.exceptions import NotFittedError
 from sklearn.neighbors import NearestNeighbors
 
 
@@ -156,7 +157,11 @@ class KNN:
                 )
             n_neighbors += 1  # Ignore self-querying
             query = self._fit_features
-            assert query is not None, "KNN search object not fit, cannot find neighbors."
+            if query is None:
+                raise NotFittedError(
+                    "KNN search object not fit, cannot find neighbors. "
+                    "Call the fit() method first."
+                )
             try:
                 neighbor_distances, neighbor_indices = index.kneighbors(
                     query, n_neighbors=n_neighbors
@@ -171,6 +176,11 @@ class KNN:
                 ) from e
         else:
             query = features
+            if self._fit_features is None:
+                raise NotFittedError(
+                    "KNN search object not fit, cannot find neighbors. "
+                    "Call the fit() method first."
+                )
             try:
                 neighbor_distances, neighbor_indices = index.kneighbors(
                     query, n_neighbors=n_neighbors

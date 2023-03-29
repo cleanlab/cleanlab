@@ -3,6 +3,7 @@ from annoy import AnnoyIndex
 import numpy as np
 import pytest
 from timeit import timeit
+from sklearn.exceptions import NotFittedError
 from sklearn.neighbors import NearestNeighbors
 
 from cleanlab.experimental.datalab.knn import KNN, KNNInterface
@@ -76,6 +77,14 @@ class TestKNN:
         fit_object = knn.fit(features)
         assert np.all(knn._fit_features == features)
         assert isinstance(fit_object, KNN)
+
+    def test_kneighbors_raises_error_if_not_fit(self, knn: KNN, features: np.ndarray) -> None:
+        with pytest.raises(NotFittedError) as record:
+            knn.kneighbors(features)
+        expected_message = (
+            "KNN search object not fit, cannot find neighbors. Call the fit() method first."
+        )
+        assert expected_message in record.value.args[0]
 
     def test_kneighbors(self, knn: KNN, features: np.ndarray) -> None:
         knn.fit(features)
