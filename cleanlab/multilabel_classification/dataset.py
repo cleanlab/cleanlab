@@ -14,12 +14,6 @@ def common_multilabel_issues(
 ) -> pd.DataFrame:
     """Summarizes which tags in a multi-label dataset appear most often mislabeled overall.
 
-
-    This method provides two scores in the Pandas DataFrame that is returned:
-
-    * **num_examples**: The number of examples where the given/predicted label differ.
-    * **Issue_probability**: `(num_examples / total number of examples in the dataset`).
-
     This method works by providing any one (and only one) of the following inputs:
 
     1. ``labels`` and ``pred_probs``, or
