@@ -38,16 +38,14 @@ def common_multilabel_issues(
     Returns
     -------
     common_multilabel_issues : pd.DataFrame
-        Pandas DataFrame with indexed on Tag with columns "In_Given_Label", "In_Suggested_Label", "num_examples",
-        "Issue_probability"and a description of each below.
-        Each row corresponds to a pair of classes.
+        DataFrame where each row corresponds to a Tag (specified as the row-index) with columns "In_Given_Label", "In_Suggested_Label", "Num_Examples", "Issue_Probability".
 
-        * *In_Given_Label*: Bool True/False
-        * *In_Suggested_Label*: Bool True/False
-        * *num_examples*: estimated number of issues for a different label other than the given label
-        * *Issue_probability*: the *num_examples* divided by the number of examples in the dataset.
+        * *In_Given_Label*: specifies whether the Tag is True/False in the given label  
+        * *In_Suggested_Label*: specifies whether the Tag is  True/False in the suggested label (based on model prediction)
+        * *Num_Examples*: Estimated number of examples with a label issue where this Tag is True/False as specified In_Given_Label but cleanlab suggests it should be as specified In_Suggested_Label. I.e. the number of examples in your dataset where the Tag was labeled as True but likely should have been False (or vice versa).
+        * *Issue_Probability*: This is the  *Num_Examples* column divided by the total number of examples in the dataset. It corresponds to the relative overall frequency of each type of label issue in your dataset.
 
-        By default, the DataFrame is ordered by "Issue_probability" descending.
+        By default, the rows in this DataFrame are ordered by "Issue_probability" (descending).
     """
 
     y_one, num_classes = get_onehot_num_classes(labels, pred_probs)
