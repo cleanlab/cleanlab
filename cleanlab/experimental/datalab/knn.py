@@ -16,6 +16,7 @@ class KNNInterface(ABC):
     """Necessary interface for any class handling KNN search to be compatible with `Datalab`."""
 
     n_neighbors: int
+    metric: str
 
     def fit(self, features: Union[np.ndarray, csr_matrix]) -> None:
         raise NotImplementedError
@@ -54,8 +55,11 @@ class KNN:
         If `None`, a NearestNeighbors search object is used.
     """
 
-    def __init__(self, n_neighbors: int = 5, knn: Optional[KNNInterface] = None) -> None:
+    def __init__(
+        self, n_neighbors: int = 5, metric: Optional[str] = None, knn: Optional[KNNInterface] = None
+    ) -> None:
         self.n_neighbors = n_neighbors
+        self.metric = metric
         self.knn = knn
         self.neighbor_indices: Optional[np.ndarray] = None
         self.neighbor_distances: Optional[np.ndarray] = None
@@ -63,7 +67,10 @@ class KNN:
         self._fit_features: Optional[Union[np.ndarray, csr_matrix]] = None
         if self.knn is None:
             # Use the default KNN search implementation in scikit-learn.
-            self.knn = NearestNeighbors(n_neighbors=self.n_neighbors)
+            nearest_neighbors_kwargs = {}
+            if self.metric is not None:
+                nearest_neighbors_kwargs["metric"] = self.metric
+            self.knn = NearestNeighbors(n_neighbors=self.n_neighbors, **nearest_neighbors_kwargs)
         try:
             k = cast(int, self.knn.n_neighbors)  # Cast knn n_neighbors to int
             if k != self.n_neighbors:
@@ -80,6 +87,24 @@ class KNN:
                 "KNN search object does not have a n_neighbors attribute. "
                 "Make sure that the number of neighbors being searched for "
                 "does not differ from the n_neighbors parameter."
+            )
+
+        try:
+            if self.knn.metric != self.metric:  # Cast knn metric to str
+                if self.metric is not None:
+                    warnings.warn(
+                        f"metric {self.metric} does not match metric "
+                        f"{self.knn.metric} used to fit knn. "
+                        "Most likely an existing NearestNeighbors object was passed in, "
+                        "but a different metric was specified. "
+                        "Using the metric found in the existing KNN search object."
+                    )
+                self.metric = self.knn.metric
+        except AttributeError:
+            warnings.warn(
+                "KNN search object does not have a metric attribute. "
+                "Make sure that the metric being used "
+                "does not differ from the metric parameter."
             )
 
     def fit(self, features: Union[np.ndarray, csr_matrix]) -> "KNN":
