@@ -205,12 +205,6 @@ def find_overlapping_classes(
       The `confident_joint` can be computed using :py:func:`count.compute_confident_joint <cleanlab.count.compute_confident_joint>`.
       If not provided, it is computed from the given (noisy) `labels` and `pred_probs`.
 
-    multi_label : bool, optional
-      If ``True``, labels should be an iterable (e.g. list) of iterables, containing a
-      list of labels for each example, instead of just a single label.
-      The multi-label setting supports classification tasks where an example has 1 or more labels.
-      Example of a multi-labeled `labels` input: ``[[0,1], [1], [0,2], [0,1,2], [0], [1], ...]``.
-
     Returns
     -------
     overlapping_classes : pd.DataFrame
@@ -242,7 +236,7 @@ def find_overlapping_classes(
 
         return [(*i, v) for i, v in np.ndenumerate(matrix)]
 
-    if multi_label:
+    if multi_label:  # TODO
         raise ValueError(
             "The multi_label argument has been deprecated and is no longer supported in find_overlapping_classes(). Instead use: multilabel_classification.dataset.common_multilabel_issues()"
         )
@@ -371,7 +365,7 @@ def health_summary(
     """
     from cleanlab.internal.util import smart_display_dataframe
 
-    if multi_label:
+    if multi_label:  # TODO
         raise ValueError("health_summary is not supported when multi_label is True")
     if joint is None:
         joint = estimate_joint(

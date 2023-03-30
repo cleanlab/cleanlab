@@ -12,7 +12,7 @@ def common_multilabel_issues(
     class_names=None,
     confident_joint=None,
 ) -> pd.DataFrame:
-    """Summarizes which tags in a multi-label dataset appear most often mislabeled overall.
+    """Summarizes which classes in a multi-label dataset appear most often mislabeled overall.
 
     This method works by providing any one (and only one) of the following inputs:
 
@@ -24,10 +24,10 @@ def common_multilabel_issues(
     Parameters
     ----------
     labels : List[List[int]]
-        Refer to documentation for this argument in filter._find_multilabel_issues_per_class() for further details.
+        Refer to documentation for this argument in :py:func:`filter._find_multilabel_issues_per_class <cleanlab.filter._find_multilabel_issues_per_class>` for further details.
 
     pred_probs : np.ndarray, optional
-      Refer to documentation for this argument in filter._find_multilabel_issues_per_class() for further details.
+      Refer to documentation for this argument in :py:func:`filter._find_multilabel_issues_per_class <cleanlab.filter._find_multilabel_issues_per_class>` for further details.
 
 
     class_names : Iterable[str]
@@ -35,17 +35,21 @@ def common_multilabel_issues(
         matches the label indices. So if class 0 is 'dog' and class 1 is 'cat', then
         ``class_names = ['dog', 'cat']``.
 
+    confident_joint : np.ndarray, optional
+        Refer to documentation for this argument in :py:func:`filter._find_multilabel_issues_per_class <cleanlab.filter._find_multilabel_issues_per_class>` for further details.
+
+
     Returns
     -------
     common_multilabel_issues : pd.DataFrame
-        DataFrame where each row corresponds to a Tag (specified as the row-index) with columns "In_Given_Label", "In_Suggested_Label", "Num_Examples", "Issue_Probability".
+        DataFrame where each row corresponds to a Class (specified as the row-index) with columns "In Given Label", "In Suggested Label", "Num_Examples", "Issue Probability".
 
-        * *In_Given_Label*: specifies whether the Tag is True/False in the given label  
-        * *In_Suggested_Label*: specifies whether the Tag is  True/False in the suggested label (based on model prediction)
-        * *Num_Examples*: Estimated number of examples with a label issue where this Tag is True/False as specified In_Given_Label but cleanlab suggests it should be as specified In_Suggested_Label. I.e. the number of examples in your dataset where the Tag was labeled as True but likely should have been False (or vice versa).
-        * *Issue_Probability*: This is the  *Num_Examples* column divided by the total number of examples in the dataset. It corresponds to the relative overall frequency of each type of label issue in your dataset.
+        * *In Given Label*: specifies whether the Class is True/False in the given label
+        * *In Suggested Label*: specifies whether the Class is  True/False in the suggested label (based on model prediction)
+        * *Num Examples*: Estimated number of examples with a label issue where this Class is True/False as specified "In Given Label" but cleanlab suggests it should be as specified In Suggested Label. I.e. the number of examples in your dataset where the Class was labeled as True but likely should have been False (or vice versa).
+        * *Issue Probability*: This is the  *Num Examples* column divided by the total number of examples in the dataset. It corresponds to the relative overall frequency of each type of label issue in your dataset.
 
-        By default, the rows in this DataFrame are ordered by "Issue_probability" (descending).
+        By default, the rows in this DataFrame are ordered by "Issue Probability" (descending).
     """
 
     y_one, num_classes = get_onehot_num_classes(labels, pred_probs)
@@ -66,20 +70,22 @@ def common_multilabel_issues(
         true_but_false_count = sum(np.logical_and(label == 1, binary_label_issues))
         false_but_true_count = sum(np.logical_and(label == 0, binary_label_issues))
 
-        summary_issue_counts["Tag"].append(class_name)
-        summary_issue_counts["In_Given_Label"].append(True)
-        summary_issue_counts["In_Suggested_Label"].append(False)
-        summary_issue_counts["num_examples"].append(true_but_false_count)
-        summary_issue_counts["Issue_probability"].append(true_but_false_count / len(y_one))
+        summary_issue_counts["Class"].append(class_name)
+        summary_issue_counts["Class Index"].append(class_num)
+        summary_issue_counts["In Given Label"].append(True)
+        summary_issue_counts["In Suggested Label"].append(False)
+        summary_issue_counts["Num Examples"].append(true_but_false_count)
+        summary_issue_counts["Issue Probability"].append(true_but_false_count / len(y_one))
 
-        summary_issue_counts["Tag"].append(class_name)
-        summary_issue_counts["In_Given_Label"].append(False)
-        summary_issue_counts["In_Suggested_Label"].append(True)
-        summary_issue_counts["num_examples"].append(false_but_true_count)
-        summary_issue_counts["Issue_probability"].append(false_but_true_count / len(y_one))
+        summary_issue_counts["Class"].append(class_name)
+        summary_issue_counts["Class Index"].append(class_num)
+        summary_issue_counts["In Given Label"].append(False)
+        summary_issue_counts["In Suggested Label"].append(True)
+        summary_issue_counts["Num Examples"].append(false_but_true_count)
+        summary_issue_counts["Issue Probability"].append(false_but_true_count / len(y_one))
 
     return (
         pd.DataFrame.from_dict(summary_issue_counts)
-        .set_index("Tag")
-        .sort_values(by=["Issue_probability"], ascending=False)
+        .set_index("Class Index")
+        .sort_values(by=["Issue Probability"], ascending=False)
     )

@@ -332,7 +332,7 @@ def test_common_multilabel_issues():
         0.0,
     ]
     assert len(df) == 10
-    assert np.isclose(np.array(expected_issue_probabilities), df["Issue_probability"]).all()
+    assert np.isclose(np.array(expected_issue_probabilities), df["Issue Probability"]).all()
 
 
 @pytest.mark.parametrize(
