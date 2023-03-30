@@ -27,7 +27,6 @@ from cleanlab.experimental.datalab.knn import KNN
 from cleanlab.outlier import OutOfDistribution
 
 if TYPE_CHECKING:  # pragma: no cover
-    from sklearn.neighbors import NearestNeighbors
     from scipy.sparse import csr_matrix
 
     from cleanlab.experimental.datalab.datalab import Datalab

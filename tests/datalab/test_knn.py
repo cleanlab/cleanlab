@@ -1,4 +1,3 @@
-from typing import Optional, Tuple
 from annoy import AnnoyIndex
 import numpy as np
 import pytest
