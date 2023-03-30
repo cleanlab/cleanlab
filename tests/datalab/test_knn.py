@@ -135,3 +135,33 @@ class TestKNN:
         ), "Diagonal doesn't have to be zero when querying with different features"
         assert np.all(graph.data >= 0)
         assert graph.nnz == N_new * knn.n_neighbors
+
+    def test_add_item(self, knn: KNN) -> None:
+        """Test that add_item() adds a new item to the index (without modifying existing items)"""
+        assert knn._fit_features is None
+        features = np.random.rand(2, 2)
+        # Incrementally adding vectors creates a matrix
+        for i, eg in enumerate(features):
+            knn.add_item(eg)
+            assert knn._fit_features.shape == (i + 1, 2)
+            assert np.all(knn._fit_features[-1] == eg)
+
+        # Adding a matrix of vectors with the same number of features works
+        new_features = np.random.rand(3, 2)
+        knn.add_item(new_features)
+        assert knn._fit_features.shape == (5, 2)
+
+    def test_add_item_raises_error(self, knn: KNN) -> None:
+        features = np.random.rand(2, 2)
+        knn.add_item(features)
+
+        # Adding a vector/matrix with a different number of features raises an error
+        incorrect_num_features = np.random.rand(3, 3)
+        with pytest.raises(ValueError) as record:
+            knn.add_item(incorrect_num_features[0])
+        expected_message = "New item has a different number of features than the fit features."
+        assert expected_message in record.value.args[0]
+
+        with pytest.raises(ValueError) as record:
+            knn.add_item(incorrect_num_features[1:])
+        assert expected_message in record.value.args[0]

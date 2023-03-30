@@ -92,6 +92,11 @@ class KNN:
         ----------
         features :
             A matrix of features for each data point.
+
+            Warning
+            -------
+            While support for sparse matrices (corresponding to precomputed graphs) is planned,
+            it is not fully implemented yet.
         """
         assert self.knn is not None, "KNN search object not initialized, cannot fit."
         self._fit_features = features
@@ -109,6 +114,11 @@ class KNN:
         ----------
         features :
             A matrix of features for each data point.
+
+            Warning
+            -------
+            While support for sparse matrices (corresponding to precomputed graphs) is planned,
+            it is not fully implemented yet.
 
         Returns
         -------
@@ -217,6 +227,11 @@ class KNN:
             A matrix of features for each data point. If this is not
             specified, then the KNN search object must have been fit before
 
+            Warning
+            -------
+            While support for sparse matrices (corresponding to precomputed graphs) is planned,
+            it is not fully implemented yet.
+
         n_neighbors :
             The number of neighbors to search for. If this is not
             specified, then the KNN search object must have been fit before
@@ -268,3 +283,66 @@ class KNN:
         self._knn_graph = csr_matrix((dists.ravel(), ids.ravel(), indptr), shape=(N, N))
 
         return self._knn_graph
+
+    def add_item(self, X: np.ndarray) -> "KNN":
+        """Add a vector/matrix to the fit features.
+
+        This is a convenience method for setting/adding fit-features when the underlying
+        KNN search object is already fit before instantiating this class.
+
+        Warning
+        -------
+        This method does not interact with the KNN search object's internal
+        index/cache. If you add items to the fit features, then you must
+        rebuild the index/cache yourself.
+
+        Parameters
+        ----------
+        X :
+            A vector or matrix of features to add to the fit features.
+
+        Examples
+        --------
+        >>> import numpy as np
+        >>> from sklearn.neighbors import NearestNeighbors
+        >>> from cleanlab.experimental.datalab.knn import KNN
+        >>> knn_sklearn = NearestNeighbors(n_neighbors=2)
+        >>> X = [[0.0, 0.4], [1.0, 0.2], [0.6, 0.2], [0.8, 1.0], [0.9, 1.0]]
+        >>> knn_sklearn.fit(X)
+        >>> dists, ids = knn_sklearn.kneighbors()
+        >>> dists
+        array([[0.63, 1.  ],
+               [0.4 , 0.81],
+               [0.4 , 0.63],
+               [0.1 , 0.82],
+               [0.1 , 0.81]])
+        >>> ids
+        array([[2, 3],
+               [2, 4],
+               [1, 0],
+               [4, 1],
+               [3, 1]])
+        >>> knn = KNN(knn=knn_sklearn)
+        >>> # knn.kneighbors() # This will fail because the `knn` has not been fit.
+        >>> knn.add_item(X) # Provide hint to the `knn` that the internal index is already fit.
+        >>> new_dists, new_ids = knn.kneighbors()
+        >>> np.allclose(dists, new_dists)
+        True
+        >>> np.allclose(ids, new_ids)
+        """
+        if isinstance(X, list):
+            X = np.array(X)
+        X = X.reshape(1, -1) if X.ndim == 1 else X
+        if self._fit_features is None:
+            self._fit_features = X
+            return self
+
+        if X.shape[1] != self._fit_features.shape[1]:
+            raise ValueError(
+                "New item has a different number of features than the fit features."
+                f"New item has {X.shape[1]} features, but fit features have "
+                f"{self._fit_features.shape[1]} features."
+            )
+        self._fit_features = np.vstack((self._fit_features, X))
+
+        return self
