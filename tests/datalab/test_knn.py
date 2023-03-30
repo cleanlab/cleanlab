@@ -69,7 +69,9 @@ class TestKNN:
             ), "KNN object should override n_neighbors"
         assert len(record) == 1
         warn_message = record[0].message.args[0]
-        assert "n_neighbors 3 does not match n_neighbors 5 used to fit knn" in warn_message
+        assert (
+            "n_neighbors 3 does not match n_neighbors 5 used to fit knn" in warn_message
+        ), "Should warn if n_neighbors does not match"
         assert "Using the n_neighbors found in the existing KNN search object." in warn_message
 
     def test_fit(self, knn: KNN, features: np.ndarray) -> None:
@@ -126,7 +128,7 @@ class TestKNN:
 
     def test_kneighbors_graph_features(self, knn: KNN, features: np.ndarray) -> None:
         knn.fit(features)
-        N_new = 5
+        N_new = 25
         new_features = np.random.rand(N_new, 2)
         graph = knn.kneighbors_graph(new_features)
         assert graph.shape == (N_new, N_new)
