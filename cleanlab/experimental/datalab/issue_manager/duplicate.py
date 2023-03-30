@@ -25,6 +25,7 @@ from sklearn.neighbors import NearestNeighbors
 from sklearn.utils.validation import check_is_fitted
 
 from cleanlab.experimental.datalab.issue_manager import IssueManager
+from cleanlab.experimental.datalab.knn import KNN
 
 if TYPE_CHECKING:  # pragma: no cover
     from scipy.sparse import csr_matrix
@@ -86,6 +87,7 @@ class NearDuplicateIssueManager(IssueManager):
             if self.metric is None:
                 self.metric = "cosine" if features.shape[1] > 3 else "euclidean"
             self.knn = NearestNeighbors(n_neighbors=self.k, metric=self.metric)
+        knn = KNN(n_neighbors=self.k, knn=self.knn)
 
         weighted_knn_graph = self.datalab.get_info("statistics").get("weighted_knn_graph", None)
 
@@ -94,24 +96,24 @@ class NearDuplicateIssueManager(IssueManager):
             self._knn_graph = weighted_knn_graph
             k = self._knn_graph.nnz // self._knn_graph.shape[0]
 
-        if self.metric and self.metric != self.knn.metric:
+        if self.metric and self.metric != knn.metric:
             warnings.warn(
-                f"Metric {self.metric} does not match metric {self.knn.metric} used to fit knn. "
+                f"Metric {self.metric} does not match metric {knn.metric} used to fit knn. "
                 "Most likely an existing NearestNeighbors object was passed in, but a different "
                 "metric was specified."
             )
-        self.metric = self.knn.metric
+        self.metric = knn.metric
 
         try:
             check_is_fitted(self.knn)
         except:
-            self.knn.fit(features)
+            knn.fit(features)
 
         if self.k > k:
             # If the pre-existing knn graph has fewer neighbors than the knn object,
             # then we need to recompute the knn graph.
-            self._knn_graph = self.knn.kneighbors_graph(mode="distance")  # type: ignore[union-attr]
-            k = self.knn.n_neighbors  # type: ignore[union-attr]
+            self._knn_graph = knn.kneighbors_graph()
+            k = knn.n_neighbors  # type: ignore[union-attr]
 
         nn_distances = self._knn_graph.data.reshape(-1, k)[:, 0]
         scores = np.tanh(nn_distances)
