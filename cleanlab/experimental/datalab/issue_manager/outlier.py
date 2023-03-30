@@ -23,6 +23,7 @@ import numpy.typing as npt
 import pandas as pd
 
 from cleanlab.experimental.datalab.issue_manager import IssueManager
+from cleanlab.experimental.datalab.knn import KNN
 from cleanlab.outlier import OutOfDistribution
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -107,11 +108,12 @@ class OutOfDistributionIssueManager(IssueManager):
                 self._knn_graph = weighted_knn_graph
                 k = self._knn_graph.nnz // self._knn_graph.shape[0]
 
-            knn: NearestNeighbors = self.ood.params["knn"]  # type: ignore
+            knn = KNN(knn=self.ood.params["knn"])  # type: ignore
+            knn.add_item(self._embeddings)
             if kwargs.get("knn", None) is not None or knn.n_neighbors > k:  # type: ignore[union-attr]
                 # If the pre-existing knn graph has fewer neighbors than the knn object,
                 # then we need to recompute the knn graph
-                self._knn_graph = knn.kneighbors_graph(mode="distance")  # type: ignore[union-attr]
+                self._knn_graph = knn.kneighbors_graph()  # type: ignore[union-attr]
                 self._metric = knn.metric  # type: ignore[union-attr]
                 k = knn.n_neighbors  # type: ignore[union-attr]
             distances = self._knn_graph.data.reshape(-1, k)  # type: ignore[union-attr]
