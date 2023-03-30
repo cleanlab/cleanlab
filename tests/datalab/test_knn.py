@@ -74,6 +74,57 @@ class TestKNN:
         ), "Should warn if n_neighbors does not match"
         assert "Using the n_neighbors found in the existing KNN search object." in warn_message
 
+    def test_default_attributes(self) -> None:
+        """Test that the default attributes are set correctly.
+
+        Specifically, the metric and number of neighbors should be set to the same values as the
+        knn search object.
+        """
+
+        # List of tuples of (kwargs, expected attributes)
+        test_kwargs_and_expected_attribute_tuples = [
+            # n_neighbors and metric take values from the default knn search object
+            ({}, {"n_neighbors": 5, "knn": NearestNeighbors, "metric": "minkowski"}),
+            # knn search object is still the default, but it's n_neighbors is overridden
+            (
+                {"n_neighbors": 10},
+                {"n_neighbors": 10, "knn": NearestNeighbors, "metric": "minkowski"},
+            ),
+            # metric is also overridden
+            (
+                {"n_neighbors": 7, "metric": "euclidean"},
+                {"n_neighbors": 7, "knn": NearestNeighbors, "metric": "euclidean"},
+            ),
+            # passing a knn search object overrides n_neighbors and metric
+            (
+                {"n_neighbors": 7, "knn": AnnoyKNN()},
+                {"n_neighbors": 5, "knn": AnnoyKNN, "metric": "angular"},
+            ),
+            # passing a knn search object overrides n_neighbors and metric
+            (
+                {
+                    "n_neighbors": 2,
+                    "knn": NearestNeighbors(n_neighbors=8, metric="cosine"),
+                    "metric": "euclidean",
+                },
+                {"n_neighbors": 8, "knn": NearestNeighbors, "metric": "cosine"},
+            ),
+        ]
+
+        for i, (kwargs, expected_attributes) in enumerate(
+            test_kwargs_and_expected_attribute_tuples
+        ):
+            knn = KNN(**kwargs)
+            assert (
+                knn.n_neighbors == expected_attributes["n_neighbors"]
+            ), f"Failing on n_neighbors for test case {i}"
+            assert isinstance(
+                knn.knn, expected_attributes["knn"]
+            ), f"Failing on knn for test case {i}"
+            assert (
+                knn.metric == expected_attributes["metric"]
+            ), f"Failing on metric for test case {i}"
+
     def test_fit(self, knn: KNN, features: np.ndarray) -> None:
         assert knn._fit_features is None
         fit_object = knn.fit(features)
