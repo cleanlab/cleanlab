@@ -155,12 +155,13 @@ class OutOfDistributionIssueManager(IssueManager):
         feature_issues_dict = {}
 
         # Compute
-        if self._knn_graph is not None and self.ood.params["knn"] is not None:
+        graph = self._knn_graph
+        if graph is not None and self.ood.params["knn"] is not None:
             knn = self.ood.params["knn"]  # type: ignore
-            N = self._knn_graph.shape[0]
-            k = self._knn_graph.nnz // N
-            dists = self._knn_graph.data.reshape(N, -1)[:, 0]
-            nn_ids = self._knn_graph.indices.reshape(N, -1)[:, 0]
+            N = graph.shape[0]
+            k = graph.nnz // N
+            dists = graph.data.reshape(N, -1)[:, 0]
+            nn_ids = graph.indices.reshape(N, -1)[:, 0]
 
             feature_issues_dict.update(
                 {
