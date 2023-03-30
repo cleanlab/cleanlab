@@ -189,6 +189,28 @@ class TestKNN:
         assert np.all(graph.data >= 0)
         assert graph.nnz == N_new * knn.n_neighbors
 
+    def test_radius_neighbors(self, features: np.ndarray) -> None:
+        knn = KNN()
+        knn.fit(features)
+        knn.radius_neighbors()  # Default values should work
+        neighbor_indices = knn.radius_neighbors(radius=0.2)
+        assert neighbor_indices.shape == (10,)
+        for indices in neighbor_indices:
+            assert isinstance(indices, np.ndarray)
+            assert indices.dtype == np.int64
+
+        # Annoy doesn't support radius search at the moment
+        knn = KNN(knn=AnnoyKNN())
+        knn.fit(features)
+        with pytest.raises(NotImplementedError) as record:
+            knn.radius_neighbors(radius=0.2)
+        error_message = record.value.args[0]
+        assert "KNN search object does not have a radius_neighbors method." in error_message
+        assert (
+            "For now, only sklearn.neighbors.NearestNeighbors objects support the radius_neighbors method out of the box."
+            in error_message
+        )
+
     def test_add_item(self, knn: KNN) -> None:
         """Test that add_item() adds a new item to the index (without modifying existing items)"""
         assert knn._fit_features is None

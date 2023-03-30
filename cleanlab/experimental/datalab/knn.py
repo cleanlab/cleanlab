@@ -6,7 +6,7 @@ from abc import ABC
 import warnings
 import numpy as np
 
-from typing import Optional, Tuple, Union, cast
+from typing import Any, Dict, Optional, Tuple, Union, cast
 from scipy.sparse import csr_matrix
 from sklearn.exceptions import NotFittedError
 from sklearn.neighbors import NearestNeighbors
@@ -308,6 +308,55 @@ class KNN:
         self._knn_graph = csr_matrix((dists.ravel(), ids.ravel(), indptr), shape=(N, N))
 
         return self._knn_graph
+
+    def radius_neighbors(
+        self, features: Optional[np.ndarray] = None, radius: Optional[float] = None
+    ):
+        """Find the neighbors of each data point within a given radius.
+
+        Warning
+        -------
+        This method is not yet fully implemented. For now, it is only available for
+        KNN search objects that implement the radius_neighbors method themselves,
+        such as sklearn.neighbors.NearestNeighbors.
+
+        Parameters
+        ----------
+        features :
+            A matrix of features for each data point. If this is not
+            specified, then the KNN search object must have been fit before and have
+            access to the fit features.
+
+        radius :
+            The radius to search for neighbors within. If this is not
+            specified, then the default radius of the KNN search instance variable
+            will be used.
+        """
+
+        kwargs: Dict[str, Any] = {"return_distance": False}
+        if features is not None:
+            kwargs["X"] = features
+        if radius is not None:
+            kwargs["radius"] = radius
+
+        # Assume that the underlying KNN search object has a radius_neighbors method
+        try:
+            knn = cast(NearestNeighbors, self.knn)
+            if not isinstance(knn, NearestNeighbors):
+                warnings.warn(
+                    "KNN search object is not an instance of sklearn.neighbors.NearestNeighbors. "
+                    "Calling the radius_neighbors method may cause unexpected behavior."
+                )
+            return knn.radius_neighbors(**kwargs)
+        except AttributeError as e:
+            error_message = (
+                "KNN search object does not have a radius_neighbors method. "
+                "For now, only sklearn.neighbors.NearestNeighbors objects support "
+                "the radius_neighbors method out of the box. "
+                "Make sure that the radius_neighbors method is implemented "
+                "for the KNN search object."
+            )
+            raise NotImplementedError(error_message) from e
 
     def add_item(self, X: np.ndarray) -> "KNN":
         """Add a vector/matrix to the fit features.
