@@ -309,7 +309,7 @@ def overall_label_health_score(
         A score between 0 and 1, where 1 implies all labels in the dataset are estimated to be correct.
         A score of 0.5 implies that half of the dataset's labels are estimated to have issues.
     """
-    if multi_label:
+    if multi_label:  # TODO
         raise ValueError("overall_label_health_score is not supported when multi_label is True.")
 
     if joint is None:
