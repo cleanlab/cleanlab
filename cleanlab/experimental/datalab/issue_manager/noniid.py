@@ -12,6 +12,7 @@ from sklearn.neighbors import NearestNeighbors
 from sklearn.utils.validation import check_is_fitted
 
 from cleanlab.experimental.datalab.issue_manager import IssueManager
+from cleanlab.experimental.datalab.knn import KNN
 
 if TYPE_CHECKING:  # pragma: no cover
     from cleanlab.experimental.datalab.datalab import Datalab
@@ -138,21 +139,22 @@ class NonIIDIssueManager(IssueManager):
             if self.metric is None:
                 self.metric = "cosine" if features.shape[1] > 3 else "euclidean"
             self.knn = NearestNeighbors(n_neighbors=self.k, metric=self.metric)
+        knn = KNN(n_neighbors=self.k, knn=self.knn)
 
-        if self.metric and self.metric != self.knn.metric:
+        if self.metric and self.metric != knn.metric:
             warnings.warn(
-                f"Metric {self.metric} does not match metric {self.knn.metric} used to fit knn. "
+                f"Metric {self.metric} does not match metric {knn.metric} used to fit knn. "
                 "Most likely an existing NearestNeighbors object was passed in, but a different "
                 "metric was specified."
             )
-        self.metric = self.knn.metric
+        self.metric = knn.metric
 
         try:
             check_is_fitted(self.knn)
         except:
-            self.knn.fit(features)
+            knn.fit(features)
 
-        self.neighbor_index_choices = self._get_neighbors(self.knn)
+        self.neighbor_index_choices = self._get_neighbors(knn)
 
         self.num_neighbors = self.k
 
@@ -347,14 +349,13 @@ class NonIIDIssueManager(IssueManager):
         scores = np.tanh(-1 * scores) + 1
         return scores
 
-    def _get_neighbors(self, knn: NearestNeighbors) -> np.ndarray:
+    def _get_neighbors(self, knn: KNN) -> np.ndarray:
         """
         Given a fitted knn object, returns an (N, k) array in which j is in A[i] if
         item i and j are nearest neighbors.
         """
         _, kneighbors = knn.kneighbors()
-        graph = knn.kneighbors_graph(n_neighbors=self.k)
-        self.N = graph.shape[0]
+        self.N = kneighbors.shape[0]
         return kneighbors
 
     def _get_statistics(
