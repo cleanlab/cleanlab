@@ -36,7 +36,11 @@ def common_multilabel_issues(
         ``class_names = ['dog', 'cat']``.
 
     confident_joint : np.ndarray, optional
-        Refer to documentation for this argument in :py:func:`filter._find_multilabel_issues_per_class <cleanlab.filter._find_multilabel_issues_per_class>` for further details.
+      An array of shape ``(K, 2, 2)`` representing a one-vs-rest formatted confident joint for multi-label data,
+      as returned by :py:func:`count.compute_confident_joint <cleanlab.count.compute_confident_joint>`.
+      Entry ``(c, i, j)`` in this array is the number of examples confidently counted into a ``(class c, noisy label=i, true label=j)`` bin,
+      where `i, j` are either 0 or 1 to denote whether this example belongs to class `c` or not
+      (recall examples can belong to multiple classes in multi-label classification).
 
 
     Returns
