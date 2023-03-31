@@ -31,6 +31,8 @@ from pathlib import Path
 import pytest
 import timeit
 
+SEED = 42
+
 
 def test_datalab_invalid_datasetdict(dataset, label_name):
     with pytest.raises(ValueError) as e:
@@ -613,15 +615,20 @@ def test_near_duplicates_reuses_knn_graph():
     N = 3000
     num_features = 1000
     k = 20
-    find_issues_kwargs = {"issue_types": {"near_duplicate": {"k": k}}}
     data = {"labels": np.random.randint(0, 2, size=N)}
+
+    np.random.seed(SEED)
     features = np.random.rand(N, num_features)
+
+    # Run 1: only near_duplicate
     lab = Datalab(data=data, label_name="labels")
+    find_issues_kwargs = {"issue_types": {"near_duplicate": {"k": k}}}
     time_only_near_duplicates = timeit.timeit(
         lambda: lab.find_issues(features=features, **find_issues_kwargs),
         number=1,
     )
 
+    # Run 2: near_duplicate and outlier with same k
     lab = Datalab(data=data, label_name="labels")
     # Outliers need more neighbors, so this should be slower, so the graph will be computed twice
     find_issues_kwargs = {
@@ -631,8 +638,8 @@ def test_near_duplicates_reuses_knn_graph():
         lambda: lab.find_issues(features=features, **find_issues_kwargs),
         number=1,
     )
-    assert time_only_near_duplicates < time_near_duplicates_and_outlier
 
+    # Run 3: Same Datalab instance with same issues, but in different order
     find_issues_kwargs = {
         "issue_types": {"outlier": {"k": k}, "near_duplicate": {"k": k}},
     }
@@ -640,6 +647,12 @@ def test_near_duplicates_reuses_knn_graph():
         lambda: lab.find_issues(features=features, **find_issues_kwargs),
         number=1,
     )
+
+    # Run 2 does an extra check, so it should be slower
+    assert time_only_near_duplicates < time_near_duplicates_and_outlier
+
+    # Run 3 should be faster because it reuses the KNN graph from Run 2
+    # in both issue checks
     assert (
         time_outliers_before_near_duplicates < time_near_duplicates_and_outlier
     ), "KNN graph reuse should make this run of find_issues faster."

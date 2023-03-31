@@ -109,7 +109,8 @@ class NearDuplicateIssueManager(IssueManager):
         except:
             knn.fit(features)
 
-        if self.k > k:
+        old_knn_metric = self.datalab.get_info("statistics").get("knn_metric", knn.metric)
+        if self.k > k or old_knn_metric != knn.metric:
             # If the pre-existing knn graph has fewer neighbors than the knn object,
             # then we need to recompute the knn graph.
             self._knn_graph = knn.kneighbors_graph()
@@ -178,12 +179,10 @@ class NearDuplicateIssueManager(IssueManager):
             or self.metric != self.datalab.get_info("statistics").get("knn_metric", None)
         )
         if prefer_new_graph:
-            statistics_dict["statistics"].update(
-                {
-                    graph_key: self._knn_graph,
-                    "knn_metric": self.metric,
-                },
-            )
+            if self._knn_graph is not None:
+                statistics_dict["statistics"][graph_key] = self._knn_graph
+            if self.metric is not None:
+                statistics_dict["statistics"]["knn_metric"] = self.metric
 
         return statistics_dict
 

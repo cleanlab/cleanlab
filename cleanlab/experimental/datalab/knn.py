@@ -269,7 +269,7 @@ class KNN:
             A sparse matrix containing the K nearest neighbors of each data point, weighted by the
             distance to the nearest neighbor.
 
-                Examples
+        Examples
         --------
         >>> from cleanlab.experimental.datalab.knn import KNN
         >>> knn = KNN(n_neighbors=2)

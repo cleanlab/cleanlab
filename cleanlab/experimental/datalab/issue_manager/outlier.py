@@ -200,12 +200,10 @@ class OutOfDistributionIssueManager(IssueManager):
             or self._metric != self.datalab.get_info("statistics").get("knn_metric", None)
         )
         if prefer_new_graph:
-            statistics_dict["statistics"].update(
-                {
-                    graph_key: self._knn_graph,
-                    "knn_metric": self._metric,
-                },
-            )
+            if self._knn_graph is not None:
+                statistics_dict["statistics"][graph_key] = self._knn_graph
+            if self._metric is not None:
+                statistics_dict["statistics"]["knn_metric"] = self._metric
 
         return statistics_dict
 
