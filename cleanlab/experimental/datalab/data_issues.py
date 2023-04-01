@@ -62,7 +62,7 @@ class DataIssues:
         self.issues: pd.DataFrame = pd.DataFrame(index=range(len(data)))
         self.issue_summary: pd.DataFrame = pd.DataFrame(
             columns=["issue_type", "score", "num_issues"]
-        )
+        ).astype({"score": np.float64, "num_issues": np.int64})
         class_names = data.class_names
         self.info: Dict[str, Dict[str, Any]] = {
             "statistics": {
