@@ -33,8 +33,7 @@ def common_multilabel_issues(
     class_names : Iterable[str], optional
         A list or other iterable of the string class names. The list should be in the order that
         matches the label indices. So if class 0 is 'dog' and class 1 is 'cat', then
-        ``class_names = ['dog', 'cat']``. If provided, the 'Class' column of the returned DataFrame will have the class name,
-            otherwise, the values will represent the class index.
+        ``class_names = ['dog', 'cat']``.
 
     confident_joint : np.ndarray, optional
       An array of shape ``(K, 2, 2)`` representing a one-vs-rest formatted confident joint for multi-label data,
@@ -50,6 +49,8 @@ def common_multilabel_issues(
         DataFrame where each row corresponds to a Class (specified as the row-index) with columns "In Given Label", "In Suggested Label", "Num Examples", "Issue Probability".
 
         * *In Given Label*: specifies whether the Class is True/False in the given label
+        * *Class*: If class_names is provided, the 'Class' column of the DataFrame will have the class name,
+            otherwise, the values will represent the class index.
         * *In Suggested Label*: specifies whether the Class is  True/False in the suggested label (based on model prediction)
         * *Num Examples*: Estimated number of examples with a label issue where this Class is True/False as specified "In Given Label" but cleanlab suggests it should be as specified In Suggested Label. I.e. the number of examples in your dataset where the Class was labeled as True but likely should have been False (or vice versa).
         * *Issue Probability*: This is the  *Num Examples* column divided by the total number of examples in the dataset. It corresponds to the relative overall frequency of each type of label issue in your dataset.
