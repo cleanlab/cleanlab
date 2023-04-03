@@ -30,10 +30,11 @@ def common_multilabel_issues(
       Refer to documentation for this argument in :py:func:`filter._find_multilabel_issues_per_class <cleanlab.filter._find_multilabel_issues_per_class>` for further details.
 
 
-    class_names : Iterable[str]
+    class_names : Iterable[str], optional
         A list or other iterable of the string class names. The list should be in the order that
         matches the label indices. So if class 0 is 'dog' and class 1 is 'cat', then
-        ``class_names = ['dog', 'cat']``.
+        ``class_names = ['dog', 'cat']``. If provided, the 'Class' column of the returned DataFrame will have the class name,
+            otherwise, the values will represent the class index.
 
     confident_joint : np.ndarray, optional
       An array of shape ``(K, 2, 2)`` representing a one-vs-rest formatted confident joint for multi-label data,
