@@ -349,7 +349,7 @@ def test_common_multilabel_issues(class_names):
         ]
     else:
         expected_res = [0, 2, 0, 1, 1, 2, 3, 3, 4, 4]
-    assert list(df['Class']) == expected_res
+    assert list(df["Class"]) == expected_res
 
 
 @pytest.mark.parametrize(
