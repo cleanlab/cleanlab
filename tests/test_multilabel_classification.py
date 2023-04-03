@@ -305,7 +305,8 @@ def test_is_multilabel(labels):
     assert not ml_scorer._is_multilabel(labels[:, 0])
 
 
-def test_common_multilabel_issues():
+@pytest.mark.parametrize("class_names", [None, ["Apple", "Cat", "Dog", "Peach", "Bird"]])
+def test_common_multilabel_issues(class_names):
     pred_probs = np.array(
         [
             [0.9, 0.1, 0.0, 0.4, 0.1],
@@ -318,7 +319,7 @@ def test_common_multilabel_issues():
         ]
     )
     labels = [[0], [0, 1], [0, 1], [2], [0, 2, 3], [], []]
-    df = common_multilabel_issues(labels=labels, pred_probs=pred_probs)
+    df = common_multilabel_issues(labels=labels, pred_probs=pred_probs, class_names=class_names)
     expected_issue_probabilities = [
         0.14285714285714285,
         0.14285714285714285,
@@ -333,6 +334,22 @@ def test_common_multilabel_issues():
     ]
     assert len(df) == 10
     assert np.isclose(np.array(expected_issue_probabilities), df["Issue Probability"]).all()
+    if class_names:
+        expected_res = [
+            "Apple",
+            "Dog",
+            "Apple",
+            "Cat",
+            "Cat",
+            "Dog",
+            "Peach",
+            "Peach",
+            "Bird",
+            "Bird",
+        ]
+    else:
+        expected_res = [0, 2, 0, 1, 1, 2, 3, 3, 4, 4]
+    assert list(df['Class']) == expected_res
 
 
 @pytest.mark.parametrize(
