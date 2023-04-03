@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from typing import Optional, cast
+from typing import Optional, cast, Dict, Any
 from cleanlab.filter import _find_multilabel_issues_per_class
 from cleanlab.internal.multilabel_utils import get_onehot_num_classes
 from collections import defaultdict
@@ -172,7 +172,7 @@ def rank_classes_by_multilabel_quality(
     issues_df = common_multilabel_issues(
         labels=labels, pred_probs=pred_probs, class_names=class_names, confident_joint=joint
     )
-    issues_dict = defaultdict(defaultdict)
+    issues_dict = defaultdict(defaultdict)  # type: Dict[str, Any]
     num_examples = _get_num_examples_multilabel(labels=labels, confident_joint=confident_joint)
     for class_num, row in issues_df.iterrows():
         if row["In Given Label"]:
@@ -271,7 +271,6 @@ def health_summary(
     labels=None,
     pred_probs=None,
     *,
-    asymmetric=False,
     class_names=None,
     num_examples=None,
     joint=None,
@@ -338,10 +337,7 @@ def health_summary(
     df_common_issues = common_multilabel_issues(
         labels=labels,
         pred_probs=pred_probs,
-        asymmetric=asymmetric,
         class_names=class_names,
-        num_examples=num_examples,
-        joint=joint,
         confident_joint=confident_joint,
     )
     if verbose:
