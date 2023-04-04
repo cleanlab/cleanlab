@@ -50,7 +50,7 @@ def common_multilabel_issues(
     Returns
     -------
     common_multilabel_issues : pd.DataFrame
-        DataFrame where each row corresponds to a Class (specified as the row-index) with columns "In Given Label", "In Suggested Label", "Num Examples", "Issue Probability".
+        DataFrame where each row corresponds to a Class with the following columns: 
 
         * *In Given Label*: specifies whether the Class is True/False in the given label
         * *Class*: If class_names is provided, the 'Class' column of the DataFrame will have the class name,
