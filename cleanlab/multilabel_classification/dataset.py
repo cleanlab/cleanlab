@@ -18,19 +18,15 @@ def common_multilabel_issues(
     """Summarizes which classes in a multi-label dataset appear most often mislabeled overall.
 
     Since classes are not mutually exclusive in multi-label classification, this method summarizes the label issues for each class independently of the others.
-    This method works by providing any one (and only one) of the following inputs:
+    This method works by providing ``labels``, ``pred_probs`` and an optional Confident Joint.
 
-    1. ``labels`` and ``pred_probs``, or
-    2. ``confident_joint``
-
-    Only provide **exactly one of the above input options**, do not provide a combination.
 
     Parameters
     ----------
     labels : List[List[int]]
         Refer to documentation for this argument in :py:func:`filter._find_multilabel_issues_per_class <cleanlab.filter._find_multilabel_issues_per_class>` for further details.
 
-    pred_probs : np.ndarray, optional
+    pred_probs : np.ndarray
       Refer to documentation for this argument in :py:func:`filter._find_multilabel_issues_per_class <cleanlab.filter._find_multilabel_issues_per_class>` for further details.
 
 
@@ -50,7 +46,7 @@ def common_multilabel_issues(
     Returns
     -------
     common_multilabel_issues : pd.DataFrame
-        DataFrame where each row corresponds to a Class with the following columns: 
+        DataFrame where each row corresponds to a Class with the following columns:
 
         * *In Given Label*: specifies whether the Class is True/False in the given label
         * *Class*: If class_names is provided, the 'Class' column of the DataFrame will have the class name,
@@ -67,54 +63,34 @@ def common_multilabel_issues(
     if class_names is None:
         num_classes = get_num_classes(labels=labels, pred_probs=pred_probs, multi_label=True)
         class_names = list(range(num_classes))
-    if confident_joint is None:
-        y_one, num_classes = get_onehot_num_classes(labels, pred_probs)
-        label_issues_list, labels_list, pred_probs_list = _find_multilabel_issues_per_class(
-            labels=labels,
-            pred_probs=pred_probs,
-            confident_joint=confident_joint,
-            return_indices_ranked_by="self_confidence",
-        )
+    y_one, num_classes = get_onehot_num_classes(labels, pred_probs)
+    label_issues_list, labels_list, pred_probs_list = _find_multilabel_issues_per_class(
+        labels=labels,
+        pred_probs=pred_probs,
+        confident_joint=confident_joint,
+        return_indices_ranked_by="self_confidence",
+    )
 
-        for class_num, (label, issues_for_class) in enumerate(zip(y_one.T, label_issues_list)):
-            binary_label_issues = np.zeros(len(label)).astype(bool)
-            binary_label_issues[issues_for_class] = True
-            class_name = class_names[class_num]
-            true_but_false_count = sum(np.logical_and(label == 1, binary_label_issues))
-            false_but_true_count = sum(np.logical_and(label == 0, binary_label_issues))
+    for class_num, (label, issues_for_class) in enumerate(zip(y_one.T, label_issues_list)):
+        binary_label_issues = np.zeros(len(label)).astype(bool)
+        binary_label_issues[issues_for_class] = True
+        class_name = class_names[class_num]
+        true_but_false_count = sum(np.logical_and(label == 1, binary_label_issues))
+        false_but_true_count = sum(np.logical_and(label == 0, binary_label_issues))
 
-            summary_issue_counts["Class"].append(class_name)
-            summary_issue_counts["Class Index"].append(class_num)
-            summary_issue_counts["In Given Label"].append(True)
-            summary_issue_counts["In Suggested Label"].append(False)
-            summary_issue_counts["Num Examples"].append(true_but_false_count)
-            summary_issue_counts["Issue Probability"].append(true_but_false_count / num_examples)
+        summary_issue_counts["Class"].append(class_name)
+        summary_issue_counts["Class Index"].append(class_num)
+        summary_issue_counts["In Given Label"].append(True)
+        summary_issue_counts["In Suggested Label"].append(False)
+        summary_issue_counts["Num Examples"].append(true_but_false_count)
+        summary_issue_counts["Issue Probability"].append(true_but_false_count / num_examples)
 
-            summary_issue_counts["Class"].append(class_name)
-            summary_issue_counts["Class Index"].append(class_num)
-            summary_issue_counts["In Given Label"].append(False)
-            summary_issue_counts["In Suggested Label"].append(True)
-            summary_issue_counts["Num Examples"].append(false_but_true_count)
-            summary_issue_counts["Issue Probability"].append(false_but_true_count / num_examples)
-    else:
-        for class_num, conf in enumerate(confident_joint):
-            class_name = class_names[class_num]
-            true_but_false_count = conf[1][0]
-            false_but_true_count = conf[0][1]
-            summary_issue_counts["Class"].append(class_name)
-            summary_issue_counts["Class Index"].append(class_num)
-            summary_issue_counts["In Given Label"].append(True)
-            summary_issue_counts["In Suggested Label"].append(False)
-            summary_issue_counts["Num Examples"].append(true_but_false_count)
-            summary_issue_counts["Issue Probability"].append(true_but_false_count / num_examples)
-
-            summary_issue_counts["Class"].append(class_name)
-            summary_issue_counts["Class Index"].append(class_num)
-            summary_issue_counts["In Given Label"].append(False)
-            summary_issue_counts["In Suggested Label"].append(True)
-            summary_issue_counts["Num Examples"].append(false_but_true_count)
-            summary_issue_counts["Issue Probability"].append(false_but_true_count / num_examples)
-
+        summary_issue_counts["Class"].append(class_name)
+        summary_issue_counts["Class Index"].append(class_num)
+        summary_issue_counts["In Given Label"].append(False)
+        summary_issue_counts["In Suggested Label"].append(True)
+        summary_issue_counts["Num Examples"].append(false_but_true_count)
+        summary_issue_counts["Issue Probability"].append(false_but_true_count / num_examples)
     return (
         pd.DataFrame.from_dict(summary_issue_counts)
         .set_index("Class Index")
@@ -127,7 +103,6 @@ def rank_classes_by_multilabel_quality(
     pred_probs=None,
     *,
     class_names=None,
-    num_examples=None,
     joint=None,
     confident_joint=None,
 ) -> pd.DataFrame:
@@ -139,11 +114,8 @@ def rank_classes_by_multilabel_quality(
     Score values are unnormalized and may tend to be very small. What matters is their relative
     ranking across the classes.
 
-    This method works by providing any one (and only one) of the following inputs:
+    This method works by providing ``labels``, ``pred_probs`` and an optional Confident Joint.
 
-    1. ``labels`` and ``pred_probs``, or
-    2. ``joint`` and ``num_examples``, or
-    3. ``confident_joint``
 
     Only provide **exactly one of the above input options**, do not provide a combination.
 
@@ -232,7 +204,6 @@ def overall_multilabel_health_score(
     labels=None,
     pred_probs=None,
     *,
-    num_examples=None,
     joint=None,
     confident_joint=None,
     verbose=True,
@@ -243,11 +214,8 @@ def overall_multilabel_health_score(
     half of the examples in the dataset may be incorrectly labeled. Thus, a higher
     score implies a higher quality dataset.
 
-    This method works by providing any one (and only one) of the following inputs:
+    This method works by providing ``labels``, ``pred_probs`` and an optional Confident Joint.
 
-    1. ``labels`` and ``pred_probs``, or
-    2. ``joint`` and ``num_examples``, or
-    3. ``confident_joint``
 
     Only provide **exactly one of the above input options**, do not provide a combination.
 
@@ -283,11 +251,8 @@ def health_summary(
     * The classes with the most and least label issues
     * Overall data label quality health score statistics for your dataset
 
-    This method works by providing any one (and only one) of the following inputs:
+    This method works by providing ``labels``, ``pred_probs`` and an optional Confident Joint.
 
-    1. ``labels`` and ``pred_probs``, or
-    2. ``joint`` and ``num_examples``, or
-    3. ``confident_joint``
 
     Only provide **exactly one of the above input options**, do not provide a combination.
 
