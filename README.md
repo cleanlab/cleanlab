@@ -26,7 +26,7 @@ cleanlab.dataset.health_summary(labels, confident_joint=cl.confident_joint)
 Get started with: [documentation](https://docs.cleanlab.ai/), [tutorials](https://docs.cleanlab.ai/stable/tutorials/image.html), [examples](https://github.com/cleanlab/examples), and [blogs](https://cleanlab.ai/blog/).
 
  - Learn to run cleanlab on your data in 5 minutes for classification with: [image](https://docs.cleanlab.ai/stable/tutorials/image.html), [text](https://docs.cleanlab.ai/stable/tutorials/text.html), [audio](https://docs.cleanlab.ai/stable/tutorials/audio.html), or [tabular](https://docs.cleanlab.ai/stable/tutorials/tabular.html) data.
-- Use cleanlab to automatically: [find mislabeled data + train robust models](https://docs.cleanlab.ai/stable/tutorials/indepth_overview.html), [detect outliers](https://docs.cleanlab.ai/stable/tutorials/outliers.html), [estimate consensus + annotator-quality for multi-annotator datasets](https://docs.cleanlab.ai/stable/tutorials/multiannotator.html), [suggest which data is best to (re)label next](https://github.com/cleanlab/examples/blob/master/active_learning_multiannotator/active_learning.ipynb). 
+- Use cleanlab to automatically: [find mislabeled data + train robust models](https://docs.cleanlab.ai/stable/tutorials/indepth_overview.html), [detect outliers](https://docs.cleanlab.ai/stable/tutorials/outliers.html), [estimate consensus + annotator-quality for multi-annotator datasets](https://docs.cleanlab.ai/stable/tutorials/multiannotator.html), [suggest which data is best to (re)label next (active learning)](https://github.com/cleanlab/examples/blob/master/active_learning_multiannotator/active_learning.ipynb). 
 
 
 [![pypi](https://img.shields.io/pypi/v/cleanlab.svg)](https://pypi.org/pypi/cleanlab/)
@@ -47,14 +47,10 @@ cleanlab **clean**s your data's **lab**els via state-of-the-art *confident learn
 
 cleanlab is:
 
-1. **backed by theory**
-   - with [provable guarantees](https://arxiv.org/abs/1911.00068) of exact estimation of noise and label errors, even with imperfect models.
-2. **fast**
-   - Code is parallelized and scalable.
-4. **easy-to-use**
-   - Find mislabeled data, bad annotators, outliers, or train noise-robust models -- all in one line of code.
-6. **general**
-   - Works with **[any dataset](https://labelerrors.com/)** (text, image, tabular, audio, ...) and **any model** (TensorFlow, PyTorch, JAX, HuggingFace,  OpenAI, XGBoost, scikit-learn, ...)
+1. **backed by theory** -- with [provable guarantees](https://arxiv.org/abs/1911.00068) of exact label noise estimation, even with imperfect models.
+2. **fast** -- code is parallelized and scalable.
+4. **easy to use** -- one line of code to find mislabeled data, bad annotators, outliers, or train noise-robust models.
+6. **general** -- works with **[any dataset](https://labelerrors.com/)** (text, image, tabular, audio,...) + **any model** (PyTorch, OpenAI, XGBoost,...)
 <br/>
 
 ![](https://raw.githubusercontent.com/cleanlab/assets/master/cleanlab/label-errors-examples.png)
@@ -69,6 +65,15 @@ cleanlab supports Linux, macOS, and Windows and runs on Python 3.7+.
 - Get started [here](https://docs.cleanlab.ai/)! Install via `pip` or `conda` as described [here](https://docs.cleanlab.ai/).
 - Developers who install the bleeding-edge from source should refer to [this master branch documentation](https://docs.cleanlab.ai/master/index.html).
 - For help, check out our detailed [FAQ](https://docs.cleanlab.ai/stable/tutorials/faq.html), [Github Issues](https://github.com/cleanlab/cleanlab/issues?q=is%3Aissue), or [Slack](https://cleanlab.ai/slack). We welcome any questions!
+
+**Practicing data-centric AI can look like this:**
+1. Train initial ML model on original dataset.
+2. Utilize this model to diagnose data issues (via cleanlab methods) and improve the dataset.
+3. Train the same model on the improved dataset. 
+4. Try various modeling techniques to further improve performance.
+
+Most folks jump from Step 1 → 4, but you may achieve big gains without *any* change to your modeling code by using cleanlab!
+Continuously boost performance by iterating Steps 2 → 4 (and try to evaluate with *cleaned* data).  
 
 ## Use cleanlab with any model for most ML tasks
 
@@ -126,12 +131,15 @@ cleanlab is useful across a wide variety of Machine Learning tasks. Specific tas
 3. [Token classification](https://docs.cleanlab.ai/stable/tutorials/token_classification.html) (e.g. entity recognition in text)
 4. [Classification with data labeled by multiple annotators](https://docs.cleanlab.ai/stable/tutorials/multiannotator.html)
 5. [Active learning with multiple annotators](https://github.com/cleanlab/examples/blob/master/active_learning_multiannotator/active_learning.ipynb) (suggest which data to label or re-label to improve model most)
-6. [Out of distribution detection](https://docs.cleanlab.ai/stable/tutorials/outliers.html)
+6. [Outlier and out of distribution detection](https://docs.cleanlab.ai/stable/tutorials/outliers.html)
 
 For many other ML tasks, cleanlab can still help you improve your dataset if appropriately applied.
 
 
 ## Cool cleanlab applications
+
+Many practical applications are demonstrated in our [Example Notebooks](https://github.com/cleanlab/examples). \
+After going through those, consider these more unusual use-cases of this package:
 
 <details><summary>
 Reproducing results in <a href="https://arxiv.org/abs/1911.00068">Confident Learning paper</a>
@@ -408,7 +416,6 @@ Now that you have `indices_of_label_errors`, you can remove those label issues a
 <br/>
 </details>
 
-Many other practical applications are demonstrated in our [Example Notebooks](https://github.com/cleanlab/examples)
 
 ## Citation and related publications
 
