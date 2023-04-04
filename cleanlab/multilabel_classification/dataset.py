@@ -48,12 +48,11 @@ def common_multilabel_issues(
     common_multilabel_issues : pd.DataFrame
         DataFrame where each row corresponds to a Class with the following columns:
 
-        * *In Given Label*: specifies whether the Class is True/False in the given label
-        * *Class*: If class_names is provided, the 'Class' column of the DataFrame will have the class name,
-            otherwise, the values will represent the class index.
-        * *In Suggested Label*: specifies whether the Class is  True/False in the suggested label (based on model prediction)
-        * *Num Examples*: Estimated number of examples with a label issue where this Class is True/False as specified "In Given Label" but cleanlab suggests it should be as specified In Suggested Label. I.e. the number of examples in your dataset where the Class was labeled as True but likely should have been False (or vice versa).
-        * *Issue Probability*: This is the  *Num Examples* column divided by the total number of examples in the dataset. It corresponds to the relative overall frequency of each type of label issue in your dataset.
+        * *Class*: If `class_names` is provided, the "Class" column of the DataFrame will indicate the name of the class, otherwise this column contains integers representing the class index.
+        * *In Given Label*: whether the Class is originally annotated True or False in the given label.
+        * *In Suggested Label*: whether the Class should be True or False in the suggested label (based on model's prediction).
+        * *Num Examples*: Number of examples flagged as a label issue where this Class is True/False "In Given Label" but cleanlab estimates the annotation should actually be as specified "In Suggested Label". I.e. the number of examples in your dataset where this Class was labeled as True but likely should have been False (or vice versa).
+        * *Issue Probability*: The  *Num Examples* column divided by the total number of examples in the dataset; i.e. the relative overall frequency of each type of label issue in your dataset.
 
         By default, the rows in this DataFrame are ordered by "Issue Probability" (descending).
     """
