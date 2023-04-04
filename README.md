@@ -537,7 +537,7 @@ While this open-source library **finds** data issues, an interface is needed to 
 
 * Have code improvements for cleanlab? See the [development guide](DEVELOPMENT.md).
 
-* Have an issue with cleanlab? [Search existing issues](https://github.com/cleanlab/cleanlab/issues?q=is%3Aissue) or [submit a new issue](https://github.com/cleanlab/cleanlab/issues/new).
+* Have an issue with cleanlab? Search [our FAQ](https://docs.cleanlab.ai/stable/tutorials/faq.html) and [existing issues](https://github.com/cleanlab/cleanlab/issues?q=is%3Aissue), or [submit a new issue](https://github.com/cleanlab/cleanlab/issues/new).
 
 * Need professional help with cleanlab?
 Join our [\#help Slack channel](https://cleanlab.ai/slack) and message us there, or reach out via email: team@cleanlab.ai
