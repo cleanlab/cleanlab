@@ -17,6 +17,7 @@ def common_multilabel_issues(
 ) -> pd.DataFrame:
     """Summarizes which classes in a multi-label dataset appear most often mislabeled overall.
 
+    Since classes are not mutually exclusive in multi-label classification, this method summarizes the label issues for each class independently of the others.
     This method works by providing any one (and only one) of the following inputs:
 
     1. ``labels`` and ``pred_probs``, or
