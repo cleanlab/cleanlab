@@ -92,7 +92,6 @@ def common_multilabel_issues(
         summary_issue_counts["Issue Probability"].append(false_but_true_count / num_examples)
     return (
         pd.DataFrame.from_dict(summary_issue_counts)
-        .set_index("Class Index")
         .sort_values(by=["Issue Probability"], ascending=False)
     )
 
@@ -166,7 +165,6 @@ def rank_classes_by_multilabel_quality(
             issues_df_dict[j].append(issues_dict[i][j])
     return (
         pd.DataFrame.from_dict(issues_df_dict)
-        .set_index("Class Index")
         .sort_values(by="Label Quality Score", ascending=True)
     )
 

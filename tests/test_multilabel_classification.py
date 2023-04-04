@@ -28,7 +28,7 @@ from cleanlab.internal.multilabel_utils import stack_complement, get_onehot_num_
 from cleanlab import multilabel_classification as multilabel_classfication
 from cleanlab.multilabel_classification.dataset import (
     common_multilabel_issues,
-    rank_classes_by_multilabel_quality,
+    rank_classes_by_multilabel_quality, overall_multilabel_health_score,
 )
 
 
@@ -388,6 +388,13 @@ def test_rank_classes_by_multilabel_quality(pred_probs_multilabel, labels_multil
     assert np.isclose(
         np.array(expected_Inverse_Label_Noise), df_ranked["Inverse Label Noise"]
     ).all()
+
+
+def test_overall_multilabel_health_score(pred_probs_multilabel, labels_multilabel):
+    overall_label_health_score = overall_multilabel_health_score(pred_probs=pred_probs_multilabel,label=labels_multilabel)
+    assert np.isclose(overall_label_health_score,0.2857142857142857)
+
+def test_health_summary_multilabel(pred_probs_multilabel,labels_multilabel):
 
 
 @pytest.mark.parametrize(
