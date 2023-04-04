@@ -50,7 +50,7 @@ cleanlab is:
 1. **backed by theory** -- with [provable guarantees](https://arxiv.org/abs/1911.00068) of exact label noise estimation, even with imperfect models.
 2. **fast** -- code is parallelized and scalable.
 4. **easy to use** -- one line of code to find mislabeled data, bad annotators, outliers, or train noise-robust models.
-6. **general** -- works with **[any dataset](https://labelerrors.com/)** (text, image, tabular, audio, ...) and **any model** (TensorFlow, PyTorch, XGBoost, ...)
+6. **general** -- works with **[any dataset](https://labelerrors.com/)** (text, image, tabular, audio, ...) and **any model** (PyTorch, OpenAI, XGBoost, ...)
 <br/>
 
 ![](https://raw.githubusercontent.com/cleanlab/assets/master/cleanlab/label-errors-examples.png)
@@ -72,8 +72,8 @@ cleanlab supports Linux, macOS, and Windows and runs on Python 3.7+.
 3. Train the same model on the improved dataset. 
 4. Try various modeling techniques to further improve performance.
 
-Most folks jump from Step 1 → 4, but you can often achieve big gains without *any* change to your modeling code by using cleanlab!
-Continuously boost performance by iterating Steps 2 → 4 (make sure to evaluate with cleaned data).  
+Most folks jump from Step 1 → 4, but you may achieve big gains without *any* change to your modeling code by using cleanlab!
+Continuously boost performance by iterating Steps 2 → 4 (and try to evaluate with *cleaned* data).  
 
 ## Use cleanlab with any model for most ML tasks
 
