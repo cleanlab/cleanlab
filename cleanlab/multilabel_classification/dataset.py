@@ -205,7 +205,6 @@ def overall_multilabel_health_score(
     *,
     joint=None,
     confident_joint=None,
-    verbose=True,
 ) -> float:
     """Returns a single score between 0 and 1 measuring the overall quality of all labels in a dataset.
     Intuitively, the score is the average correctness of the given labels across all examples in the
@@ -307,10 +306,7 @@ def health_summary(
     )
     if verbose:
         print(
-            "\nClass Overlap. In some cases, you may want to merge classes in the top rows (below)"
-            + "\n"
-            + "-" * 83
-            + "\n",
+            "\nCommon multilabel issues are" + "\n" + "-" * 83 + "\n",
             flush=True,
         )
         smart_display_dataframe(df_common_issues)
@@ -319,8 +315,6 @@ def health_summary(
     health_score = overall_multilabel_health_score(
         labels=labels,
         pred_probs=pred_probs,
-        num_examples=num_examples,
-        joint=joint,
         confident_joint=confident_joint,
         verbose=verbose,
     )

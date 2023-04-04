@@ -26,7 +26,10 @@ from sklearn.linear_model import LogisticRegression
 from cleanlab.internal import multilabel_scorer as ml_scorer
 from cleanlab.internal.multilabel_utils import stack_complement, get_onehot_num_classes, onehot2int
 from cleanlab import multilabel_classification as multilabel_classfication
-from cleanlab.multilabel_classification.dataset import common_multilabel_issues
+from cleanlab.multilabel_classification.dataset import (
+    common_multilabel_issues,
+    rank_classes_by_multilabel_quality,
+)
 
 
 @pytest.fixture
@@ -83,6 +86,26 @@ def pred_probs():
             [0.15, 0.95, 0.05],
         ]
     )
+
+
+@pytest.fixture
+def pred_probs_multilabel():
+    return np.array(
+        [
+            [0.9, 0.1, 0.0, 0.4, 0.1],
+            [0.7, 0.8, 0.2, 0.3, 0.1],
+            [0.9, 0.8, 0.4, 0.2, 0.1],
+            [0.1, 0.1, 0.8, 0.3, 0.1],
+            [0.4, 0.5, 0.1, 0.1, 0.1],
+            [0.1, 0.1, 0.2, 0.1, 0.1],
+            [0.8, 0.1, 0.2, 0.1, 0.1],
+        ]
+    )
+
+
+@pytest.fixture
+def labels_multilabel():
+    return [[0], [0, 1], [0, 1], [2], [0, 2, 3], [], []]
 
 
 @pytest.fixture
@@ -306,20 +329,10 @@ def test_is_multilabel(labels):
 
 
 @pytest.mark.parametrize("class_names", [None, ["Apple", "Cat", "Dog", "Peach", "Bird"]])
-def test_common_multilabel_issues(class_names):
-    pred_probs = np.array(
-        [
-            [0.9, 0.1, 0.0, 0.4, 0.1],
-            [0.7, 0.8, 0.2, 0.3, 0.1],
-            [0.9, 0.8, 0.4, 0.2, 0.1],
-            [0.1, 0.1, 0.8, 0.3, 0.1],
-            [0.4, 0.5, 0.1, 0.1, 0.1],
-            [0.1, 0.1, 0.2, 0.1, 0.1],
-            [0.8, 0.1, 0.2, 0.1, 0.1],
-        ]
+def test_common_multilabel_issues(class_names, pred_probs_multilabel, labels_multilabel):
+    df = common_multilabel_issues(
+        labels=labels_multilabel, pred_probs=pred_probs_multilabel, class_names=class_names
     )
-    labels = [[0], [0, 1], [0, 1], [2], [0, 2, 3], [], []]
-    df = common_multilabel_issues(labels=labels, pred_probs=pred_probs, class_names=class_names)
     expected_issue_probabilities = [
         0.14285714285714285,
         0.14285714285714285,
@@ -350,6 +363,31 @@ def test_common_multilabel_issues(class_names):
     else:
         expected_res = [0, 2, 0, 1, 1, 2, 3, 3, 4, 4]
     assert list(df["Class"]) == expected_res
+
+
+def test_rank_classes_by_multilabel_quality(pred_probs_multilabel, labels_multilabel):
+    df_ranked = rank_classes_by_multilabel_quality(
+        pred_probs=pred_probs_multilabel, labels=labels_multilabel
+    )
+    expected_Label_Issues = [1, 0, 0, 0, 0]
+
+    expected_Label_Noise = [0.14285714285714285, 0.0, 0.0, 0.0, 0.0]
+
+    expected_Label_Quality_Score = [0.8571428571428572, 1.0, 1.0, 1.0, 1.0]
+
+    expected_Inverse_Label_Issues = [0, 1, 0, 0, 0]
+
+    expected_Inverse_Label_Noise = [0.0, 0.14285714285714285, 0.0, 0.0, 0.0]
+    assert df_ranked["Label Issues"] == expected_Label_Issues
+
+    assert np.isclose(np.array(expected_Label_Noise), df_ranked["Label Noise"]).all()
+    assert np.isclose(
+        np.array(expected_Label_Quality_Score), df_ranked["Label Quality Score"]
+    ).all()
+    assert df_ranked["Inverse Label Issues"] == expected_Inverse_Label_Issues
+    assert np.isclose(
+        np.array(expected_Inverse_Label_Noise), df_ranked["Inverse Label Noise"]
+    ).all()
 
 
 @pytest.mark.parametrize(
