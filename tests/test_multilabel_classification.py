@@ -379,13 +379,13 @@ def test_rank_classes_by_multilabel_quality(pred_probs_multilabel, labels_multil
     expected_Inverse_Label_Issues = [0, 1, 0, 0, 0]
 
     expected_Inverse_Label_Noise = [0.0, 0.14285714285714285, 0.0, 0.0, 0.0]
-    assert df_ranked["Label Issues"] == expected_Label_Issues
+    assert list(df_ranked["Label Issues"]) == expected_Label_Issues
 
     assert np.isclose(np.array(expected_Label_Noise), df_ranked["Label Noise"]).all()
     assert np.isclose(
         np.array(expected_Label_Quality_Score), df_ranked["Label Quality Score"]
     ).all()
-    assert df_ranked["Inverse Label Issues"] == expected_Inverse_Label_Issues
+    assert list(df_ranked["Inverse Label Issues"]) == expected_Inverse_Label_Issues
     assert np.isclose(
         np.array(expected_Inverse_Label_Noise), df_ranked["Inverse Label Noise"]
     ).all()
@@ -393,7 +393,7 @@ def test_rank_classes_by_multilabel_quality(pred_probs_multilabel, labels_multil
 
 def test_overall_multilabel_health_score(pred_probs_multilabel, labels_multilabel):
     overall_label_health_score = overall_multilabel_health_score(
-        pred_probs=pred_probs_multilabel, label=labels_multilabel
+        pred_probs=pred_probs_multilabel, labels=labels_multilabel
     )
     assert np.isclose(overall_label_health_score, 0.2857142857142857)
 

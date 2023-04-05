@@ -90,9 +90,8 @@ def common_multilabel_issues(
         summary_issue_counts["In Suggested Label"].append(True)
         summary_issue_counts["Num Examples"].append(false_but_true_count)
         summary_issue_counts["Issue Probability"].append(false_but_true_count / num_examples)
-    return (
-        pd.DataFrame.from_dict(summary_issue_counts)
-        .sort_values(by=["Issue Probability"], ascending=False)
+    return pd.DataFrame.from_dict(summary_issue_counts).sort_values(
+        by=["Issue Probability"], ascending=False
     )
 
 
@@ -147,25 +146,26 @@ def rank_classes_by_multilabel_quality(
     num_examples = _get_num_examples_multilabel(labels=labels, confident_joint=confident_joint)
     for class_num, row in issues_df.iterrows():
         if row["In Given Label"]:
-            issues_dict[class_num]["Label Issues"] = int(row["Issue Probability"] * num_examples)
-            issues_dict[class_num]["Label Noise"] = row["Issue Probability"]
-            issues_dict[class_num]["Label Quality Score"] = (
-                1 - issues_dict[class_num]["Label Noise"]
-            )
-        else:
-            issues_dict[class_num]["Inverse Label Issues"] = int(
+            issues_dict[row["Class Index"]]["Label Issues"] = int(
                 row["Issue Probability"] * num_examples
             )
-            issues_dict[class_num]["Inverse Label Noise"] = row["Issue Probability"]
+            issues_dict[row["Class Index"]]["Label Noise"] = row["Issue Probability"]
+            issues_dict[row["Class Index"]]["Label Quality Score"] = (
+                1 - issues_dict[row["Class Index"]]["Label Noise"]
+            )
+        else:
+            issues_dict[row["Class Index"]]["Inverse Label Issues"] = int(
+                row["Issue Probability"] * num_examples
+            )
+            issues_dict[row["Class Index"]]["Inverse Label Noise"] = row["Issue Probability"]
 
     issues_df_dict = defaultdict(list)
     for i in issues_dict:
         issues_df_dict["Class Index"].append(i)
         for j in issues_dict[i]:
             issues_df_dict[j].append(issues_dict[i][j])
-    return (
-        pd.DataFrame.from_dict(issues_df_dict)
-        .sort_values(by="Label Quality Score", ascending=True)
+    return pd.DataFrame.from_dict(issues_df_dict).sort_values(
+        by="Label Quality Score", ascending=True
     )
 
 
