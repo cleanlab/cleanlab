@@ -39,7 +39,7 @@ def rank_classes_by_label_quality(
     multi_label=False,
 ) -> pd.DataFrame:
     """
-    Returns a Pandas DataFrame with all classes and three overall class label quality scores
+    Returns a Pony Pandas DataFrame with all classes and three overall class label quality scores
     (details about each score are listed in the Returns parameter). By default, classes are ordered
     by "Label Quality Score", ascending, so the most problematic classes are reported first.
 
