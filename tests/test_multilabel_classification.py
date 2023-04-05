@@ -25,10 +25,11 @@ from sklearn.linear_model import LogisticRegression
 
 from cleanlab.internal import multilabel_scorer as ml_scorer
 from cleanlab.internal.multilabel_utils import stack_complement, get_onehot_num_classes, onehot2int
-from cleanlab import multilabel_classification as multilabel_classfication
+from cleanlab import multilabel_classification as ml_classification
 from cleanlab.multilabel_classification.dataset import (
     common_multilabel_issues,
-    rank_classes_by_multilabel_quality, overall_multilabel_health_score,
+    rank_classes_by_multilabel_quality,
+    overall_multilabel_health_score,
 )
 
 
@@ -126,18 +127,18 @@ def dummy_features(labels):
 def test_public_label_quality_scores(labels, pred_probs):
     formatted_labels = onehot2int(labels)
     assert isinstance(formatted_labels, list)
-    scores1 = multilabel_classfication.get_label_quality_scores(formatted_labels, pred_probs)
+    scores1 = ml_classification.get_label_quality_scores(formatted_labels, pred_probs)
     assert len(scores1) == len(labels)
     assert (scores1 >= 0).all() and (scores1 <= 1).all()
-    scores2 = multilabel_classfication.get_label_quality_scores(
+    scores2 = ml_classification.get_label_quality_scores(
         formatted_labels, pred_probs, method="confidence_weighted_entropy"
     )
     assert not np.isclose(scores1, scores2).all()
-    scores3 = multilabel_classfication.get_label_quality_scores(
+    scores3 = ml_classification.get_label_quality_scores(
         formatted_labels, pred_probs, adjust_pred_probs=True
     )
     assert not np.isclose(scores1, scores3).all()
-    scores4 = multilabel_classfication.get_label_quality_scores(
+    scores4 = ml_classification.get_label_quality_scores(
         formatted_labels,
         pred_probs,
         method="normalized_margin",
@@ -145,7 +146,7 @@ def test_public_label_quality_scores(labels, pred_probs):
         aggregator_kwargs={"method": "exponential_moving_average"},
     )
     assert not np.isclose(scores1, scores4).all()
-    scores5 = multilabel_classfication.get_label_quality_scores(
+    scores5 = ml_classification.get_label_quality_scores(
         formatted_labels,
         pred_probs,
         method="normalized_margin",
@@ -153,7 +154,7 @@ def test_public_label_quality_scores(labels, pred_probs):
         aggregator_kwargs={"method": "softmin"},
     )
     assert not np.isclose(scores4, scores5).all()
-    scores6 = multilabel_classfication.get_label_quality_scores(
+    scores6 = ml_classification.get_label_quality_scores(
         formatted_labels,
         pred_probs,
         method="normalized_margin",
@@ -161,7 +162,7 @@ def test_public_label_quality_scores(labels, pred_probs):
         aggregator_kwargs={"method": "softmin", "temperature": 0.002},
     )
     assert not np.isclose(scores5, scores6).all()
-    scores7 = multilabel_classfication.get_label_quality_scores(
+    scores7 = ml_classification.get_label_quality_scores(
         formatted_labels,
         pred_probs,
         method="normalized_margin",
@@ -171,13 +172,13 @@ def test_public_label_quality_scores(labels, pred_probs):
     assert np.isclose(scores6, scores7, rtol=1e-3).all()
 
     with pytest.raises(ValueError) as e:
-        _ = multilabel_classfication.get_label_quality_scores(
+        _ = ml_classification.get_label_quality_scores(
             formatted_labels, pred_probs, method="badchoice"
         )
         assert "Invalid method name: badchoice" in str(e.value)
 
     with pytest.raises(ValueError) as e:
-        _ = multilabel_classfication.get_label_quality_scores(
+        _ = ml_classification.get_label_quality_scores(
             formatted_labels, pred_probs, aggregator_kwargs={"method": "invalid"}
         )
         assert "Invalid aggregation method specified: 'invalid'" in str(e.value)
@@ -196,7 +197,7 @@ class TestAggregator:
         ids=lambda x: x.__name__ if callable(x) else str(x),
     )
     def test_aggregator_callable(self, method):
-        aggregator = multilabel_classfication.Aggregator(method=method)
+        aggregator = ml_scorer.Aggregator(method=method)
         assert callable(aggregator.method), "Aggregator should store a callable method"
         assert callable(aggregator), "Aggregator should be callable"
 
@@ -213,24 +214,24 @@ class TestAggregator:
         ids=["min", "max", "mean", "median", "exponential_moving_average", "softmin"],
     )
     def test_aggregator_score(self, base_scores, method, expected_score):
-        aggregator = multilabel_classfication.Aggregator(method=method)
+        aggregator = ml_scorer.Aggregator(method=method)
         scores = aggregator(base_scores)
         assert np.isclose(scores, np.array([expected_score]), rtol=1e-3).all()
         assert scores.shape == (1,)
 
     def test_invalid_method(self):
         with pytest.raises(ValueError) as e:
-            _ = multilabel_classfication.Aggregator(method="invalid_method")
+            _ = ml_scorer.Aggregator(method="invalid_method")
             assert "Invalid aggregation method specified: 'invalid_method'" in str(
                 e.value
             ), "String constructor has limited options"
 
         with pytest.raises(TypeError) as e:
-            _ = multilabel_classfication.Aggregator(method=1)
+            _ = ml_scorer.Aggregator(method=1)
             assert "Expected callable method" in str(e.value), "Non-callable methods are not valid"
 
     def test_invalid_score(self, base_scores):
-        aggregator = multilabel_classfication.Aggregator(method=np.min)
+        aggregator = ml_scorer.Aggregator(method=np.min)
         with pytest.raises(ValueError) as e:
             _ = aggregator(base_scores[0])
             assert "Expected 2D array" in str(e.value), "Aggregator expects 2D array"
@@ -391,10 +392,13 @@ def test_rank_classes_by_multilabel_quality(pred_probs_multilabel, labels_multil
 
 
 def test_overall_multilabel_health_score(pred_probs_multilabel, labels_multilabel):
-    overall_label_health_score = overall_multilabel_health_score(pred_probs=pred_probs_multilabel,label=labels_multilabel)
-    assert np.isclose(overall_label_health_score,0.2857142857142857)
+    overall_label_health_score = overall_multilabel_health_score(
+        pred_probs=pred_probs_multilabel, label=labels_multilabel
+    )
+    assert np.isclose(overall_label_health_score, 0.2857142857142857)
 
-def test_health_summary_multilabel(pred_probs_multilabel,labels_multilabel):
+
+# def test_health_summary_multilabel(pred_probs_multilabel,labels_multilabel):
 
 
 @pytest.mark.parametrize(
