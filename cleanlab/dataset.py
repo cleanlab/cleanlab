@@ -139,11 +139,21 @@ def find_overlapping_classes(
     issues via the approach published in `Northcutt et al.,
     2021 <https://jair.org/index.php/jair/article/view/12125>`_.
 
-    Example using ``labels`` and ``pred_probs``
+    Example using ``confident_joint``
     ----
-    >>> yourFavoriteModel = LogisticRegression(verbose=0, random_state=SEED)
-    >>> issues = CleanLearning(yourFavoriteModel, seed=SEED).find_label_issues(data, labels)
-    >>> issues.head()
+    >>> from cleanlab.dataset import find_overlapping_classes
+    >>> from cleanlab.classification import CleanLearning
+    >>> from sklearn.linear_model import LogisticRegression
+    >>> data, labels = get_data_labels_from_dataset(yourFavoriteDataset)
+    >>> yourFavoriteModel = LogisticRegression()
+    >>> cl = CleanLearning(yourFavoriteModel)
+    >>> _ = cl.fit(data, labels) # fit model to cleaned data
+    >>> df = find_overlapping_classes(
+            labels=labels,
+            confident_joint=cl.confident_joint,
+            class_names=class_names,
+        )
+    >>> df # output pairs of classes that are often mislabeled
 
     Note
     ----
