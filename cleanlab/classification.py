@@ -841,7 +841,9 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
             )
         # Add confident joint to find label issue args if it is not previously specified
         if "confident_joint" not in self.find_label_issues_kwargs.keys():
-            self.find_label_issues_kwargs["confident_joint"] = self.confident_joint
+            # however does not add if users specify filter_by="confident_learning", as it will throw a warning
+            if not self.find_label_issues_kwargs.get("filter_by") == "confident_learning":
+                self.find_label_issues_kwargs["confident_joint"] = self.confident_joint
 
         # if pulearning == the integer specifying the class without noise.
         if self.num_classes == 2 and self.pulearning is not None:  # pragma: no cover
