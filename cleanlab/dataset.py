@@ -39,7 +39,7 @@ def rank_classes_by_label_quality(
     multi_label=False,
 ) -> pd.DataFrame:
     """
-    Returns a Pony Pandas DataFrame with all classes and three overall class label quality scores
+    Returns a Pandas DataFrame with all classes and three overall class label quality scores
     (details about each score are listed in the Returns parameter). By default, classes are ordered
     by "Label Quality Score", ascending, so the most problematic classes are reported first.
 
@@ -138,6 +138,12 @@ def find_overlapping_classes(
     This method uses the joint distribution of noisy and true labels to compute ontological
     issues via the approach published in `Northcutt et al.,
     2021 <https://jair.org/index.php/jair/article/view/12125>`_.
+
+    Example using ``labels`` and ``pred_probs``
+    ----
+    >>> yourFavoriteModel = LogisticRegression(verbose=0, random_state=SEED)
+    >>> issues = CleanLearning(yourFavoriteModel, seed=SEED).find_label_issues(data, labels)
+    >>> issues.head()
 
     Note
     ----
