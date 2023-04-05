@@ -139,8 +139,8 @@ def find_overlapping_classes(
     issues via the approach published in `Northcutt et al.,
     2021 <https://jair.org/index.php/jair/article/view/12125>`_.
 
-    Example using ``confident_joint``
-    ----
+    Examples
+    --------
     >>> from cleanlab.dataset import find_overlapping_classes
     >>> from cleanlab.classification import CleanLearning
     >>> from sklearn.linear_model import LogisticRegression
