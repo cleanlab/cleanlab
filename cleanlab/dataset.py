@@ -76,8 +76,10 @@ def rank_classes_by_label_quality(
 
         By default, the DataFrame is ordered by "Label Quality Score", ascending.
     """
-    if multi_label:  # TODO
-        raise ValueError("rank_classes_by_label_quality is not supported when multi_label is True")
+    if multi_label:
+        raise ValueError(
+            "For multilabel data, please call multilabel_classification.dataset.overall_multilabel_health_score"
+        )
 
     if joint is None:
         joint = estimate_joint(
@@ -236,10 +238,11 @@ def find_overlapping_classes(
 
         return [(*i, v) for i, v in np.ndenumerate(matrix)]
 
-    if multi_label:  # TODO
+    if multi_label:
         raise ValueError(
-            "The multi_label argument has been deprecated and is no longer supported in find_overlapping_classes(). Instead use: multilabel_classification.dataset.common_multilabel_issues()"
+            "For multilabel data, please call multilabel_classification.dataset.common_multilabel_issues"
         )
+
     if joint is None:
         joint = estimate_joint(
             labels=labels,
@@ -303,8 +306,10 @@ def overall_label_health_score(
         A score between 0 and 1, where 1 implies all labels in the dataset are estimated to be correct.
         A score of 0.5 implies that half of the dataset's labels are estimated to have issues.
     """
-    if multi_label:  # TODO
-        raise ValueError("overall_label_health_score is not supported when multi_label is True.")
+    if multi_label:
+        raise ValueError(
+            "For multilabel data, please call multilabel_classification.dataset.overall_multilabel_health_score"
+        )
 
     if joint is None:
         joint = estimate_joint(
@@ -365,8 +370,10 @@ def health_summary(
     """
     from cleanlab.internal.util import smart_display_dataframe
 
-    if multi_label:  # TODO
-        raise ValueError("health_summary is not supported when multi_label is True")
+    if multi_label:
+        raise ValueError(
+            "For multilabel data, please call multilabel_classification.dataset.health_summary"
+        )
     if joint is None:
         joint = estimate_joint(
             labels=labels,
