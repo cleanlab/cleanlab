@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from typing import Optional, cast, Dict, Any
+from typing import Optional, cast, Dict
 from cleanlab.filter import _find_multilabel_issues_per_class
 from cleanlab.internal.multilabel_utils import get_onehot_num_classes
 from collections import defaultdict
@@ -241,7 +241,7 @@ def health_summary(
     joint=None,
     confident_joint=None,
     verbose=True,
-) -> dict:
+) -> Dict:
     """Prints a health summary of your datasets including useful statistics like:
 
     * The classes with the most and least label issues
