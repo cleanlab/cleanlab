@@ -142,16 +142,21 @@ def find_overlapping_classes(
     Examples
     --------
     >>> from cleanlab.dataset import find_overlapping_classes
-    >>> from cleanlab.classification import CleanLearning
     >>> from sklearn.linear_model import LogisticRegression
+    >>> from sklearn.model_selection import cross_val_predict
     >>> data, labels = get_data_labels_from_dataset(yourFavoriteDataset)
     >>> yourFavoriteModel = LogisticRegression()
-    >>> cl = CleanLearning(yourFavoriteModel)
-    >>> _ = cl.fit(data, labels) # fit model to cleaned data
+    >>> num_crossval_folds = 3
+    >>> pred_probs = cross_val_predict(
+            yourFavoriteModel,
+            data,
+            labels,
+            cv=num_crossval_folds,
+            method="predict_proba",
+        )
     >>> df = find_overlapping_classes(
             labels=labels,
-            confident_joint=cl.confident_joint,
-            class_names=class_names,
+            pred_probs=pred_probs,
         )
     >>> df # output pairs of classes that are often mislabeled
 
