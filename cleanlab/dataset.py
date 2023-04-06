@@ -157,8 +157,7 @@ def find_overlapping_classes(
     >>> df = find_overlapping_classes(
             labels=labels,
             pred_probs=pred_probs,
-        )
-    >>> df # output pairs of classes that are often mislabeled
+        )  # lists pairs of classes that are often mislabeled as one another
 
     Note
     ----
