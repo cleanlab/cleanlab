@@ -72,7 +72,7 @@ def rank_classes_by_label_quality(
     >>> df = rank_classes_by_label_quality(
             labels=labels,
             pred_probs=pred_probs,
-        )  # list all classes and three associated class label quality scores
+        ) # list all classes and three associated class label quality scores
 
     **Parameters**: For parameter info, see the docstring of :py:func:`find_overlapping_classes <cleanlab.dataset.find_overlapping_classes>`.
 
@@ -173,11 +173,11 @@ def find_overlapping_classes(
             labels,
             cv=num_crossval_folds,
             method="predict_proba",
-        )
+        ) # generate cross-validation estimates for each input data point
     >>> df = find_overlapping_classes(
             labels=labels,
             pred_probs=pred_probs,
-        )  # lists pairs of classes that are often mislabeled as one another
+        ) # lists pairs of classes that are often mislabeled as one another
 
     Note
     ----
@@ -351,11 +351,11 @@ def overall_label_health_score(
             labels,
             cv=num_crossval_folds,
             method="predict_proba",
-        )
+        ) # generate cross-validation estimates for each input data point
     >>> score = overall_label_health_score(
             labels=labels,
             pred_probs=pred_probs,
-        )  # a score measuring the overall quality of all labels in a dataset.
+        ) # a score measuring the overall quality of all labels in a dataset.
 
     **Parameters**: For parameter info, see the docstring of :py:func:`find_overlapping_classes <cleanlab.dataset.find_overlapping_classes>`.
 
@@ -426,11 +426,11 @@ def health_summary(
             labels,
             cv=num_crossval_folds,
             method="predict_proba",
-        )
-    >>> dict = health_summary(
+        ) # generate cross-validation estimates for each input data point
+    >>> dic = health_summary(
             labels=labels,
             pred_probs=pred_probs,
-        )  # a dictionary containing health summary of your datasets
+        ) # a dictionary containing health summary of your datasets
 
     **Parameters**: For parameter info, see the docstring of :py:func:`find_overlapping_classes <cleanlab.dataset.find_overlapping_classes>`.
 
