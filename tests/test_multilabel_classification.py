@@ -30,6 +30,7 @@ from cleanlab.multilabel_classification.dataset import (
     common_multilabel_issues,
     rank_classes_by_multilabel_quality,
     overall_multilabel_health_score,
+    multilabel_health_summary,
 )
 
 
@@ -398,7 +399,16 @@ def test_overall_multilabel_health_score(pred_probs_multilabel, labels_multilabe
     assert np.isclose(overall_label_health_score, 0.2857142857142857)
 
 
-# def test_health_summary_multilabel(pred_probs_multilabel,labels_multilabel):
+def test_health_summary_multilabel(pred_probs_multilabel, labels_multilabel):
+    health_summary_multilabel = multilabel_health_summary(
+        pred_probs=pred_probs_multilabel, labels=labels_multilabel
+    )
+    expected_keys = [
+        "classes_by_multilabel_quality",
+        "common_multilabel_issues",
+        "overall_multilabel_health_score",
+    ]
+    assert sorted(health_summary_multilabel.keys()) == expected_keys
 
 
 @pytest.mark.parametrize(

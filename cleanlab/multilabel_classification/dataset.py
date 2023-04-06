@@ -232,7 +232,7 @@ def overall_multilabel_health_score(
     return sum(issues_df["Num Examples"]) / num_examples
 
 
-def health_summary(
+def multilabel_health_summary(
     labels=None,
     pred_probs=None,
     *,
@@ -249,20 +249,16 @@ def health_summary(
 
     This method works by providing ``labels``, ``pred_probs`` and an optional Confident Joint.
 
-
-    Only provide **exactly one of the above input options**, do not provide a combination.
-
-    **Parameters**: For parameter info, see the docstring of :py:func:`find_overlapping_classes <cleanlab.dataset.find_overlapping_classes>`.
+    **Parameters**: For parameter info, see the docstring of :py:func:`common_multilabel_issues <cleanlab.multilabel_classificaiton.dataset.common_multilabel_issues>`.
 
     Returns
     -------
     summary : dict
         A dictionary containing keys (see the corresponding functions' documentation to understand the values):
 
-        - ``"overall_label_health_score"``, corresponding to :py:func:`overall_label_health_score <cleanlab.dataset.overall_label_health_score>`
-        - ``"joint"``, corresponding to :py:func:`estimate_joint <cleanlab.count.estimate_joint>`
-        - ``"classes_by_label_quality"``, corresponding to :py:func:`rank_classes_by_label_quality <cleanlab.dataset.rank_classes_by_label_quality>`
-        - ``"overlapping_classes"``, corresponding to :py:func:`find_overlapping_classes <cleanlab.dataset.find_overlapping_classes>`
+        - ``"overall_label_health_score"``, corresponding to :py:func:`overall_multilabel_health_score <cleanlab.multilabel_classification.dataset.overall_multilabel_health_score>`
+        - ``"classes_by_multilabel_quality"``, corresponding to :py:func:`rank_classes_by_multilabel_quality <cleanlab.multilabel_classification.dataset.rank_classes_by_multilabel_quality>`
+        - ``"common_multilabel_issues"``, corresponding to :py:func:`common_multilabel_issues <cleanlab.multilabel_classification.dataset.common_multilabel_issues>`
     """
     from cleanlab.internal.util import smart_display_dataframe
 
@@ -270,10 +266,7 @@ def health_summary(
         num_examples = _get_num_examples_multilabel(labels=labels)
 
     if verbose:
-        longest_line = (
-            f"|   for your dataset with {num_examples:,} examples "
-            f"and {len(joint):,} classes.  |\n"
-        )
+        longest_line = f"|   for your dataset with {num_examples:,} examples "
         print(
             "-" * (len(longest_line) - 1)
             + "\n"
@@ -288,7 +281,6 @@ def health_summary(
         labels=labels,
         pred_probs=pred_probs,
         class_names=class_names,
-        num_examples=num_examples,
         confident_joint=confident_joint,
     )
     if verbose:
@@ -314,13 +306,11 @@ def health_summary(
         labels=labels,
         pred_probs=pred_probs,
         confident_joint=confident_joint,
-        verbose=verbose,
     )
     if verbose:
         print("\nGenerated with <3 from Cleanlab.\n")
     return {
-        "overall_label_health_score": health_score,
-        "joint": joint,
-        "classes_by_label_quality": df_class_label_quality,
-        "overlapping_classes": df_common_issues,
+        "overall_multilabel_health_score": health_score,
+        "classes_by_multilabel_quality": df_class_label_quality,
+        "common_multilabel_issues": df_common_issues,
     }
