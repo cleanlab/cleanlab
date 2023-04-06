@@ -427,10 +427,10 @@ def health_summary(
             cv=num_crossval_folds,
             method="predict_proba",
         )
-    >>> df = overall_label_health_score(
+    >>> dict = health_summary(
             labels=labels,
             pred_probs=pred_probs,
-        )  # prints a health summary of your datasets
+        )  # a dictionary containing health summary of your datasets
 
     **Parameters**: For parameter info, see the docstring of :py:func:`find_overlapping_classes <cleanlab.dataset.find_overlapping_classes>`.
 
