@@ -494,7 +494,10 @@ def _find_label_issues_multilabel(
     This is done via a one-vs-rest reduction for each class and the results are subsequently aggregated across all classes.
     Here `labels` must be formatted as an iterable of iterables, e.g. ``List[List[int]]``.
     """
-
+    warnings.warn(
+        "The '_find_label_issues_multilabel' function is deprecated and will be removed in future versions. Please use the Cleanlab.multilabel_classification.filter instead.",
+        DeprecationWarning,
+    )
     if filter_by in ["low_normalized_margin", "low_self_confidence"]:
         num_errors = sum(
             find_label_issues(
