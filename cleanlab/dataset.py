@@ -54,6 +54,26 @@ def rank_classes_by_label_quality(
 
     Only provide **exactly one of the above input options**, do not provide a combination.
 
+    Examples
+    --------
+    >>> from cleanlab.dataset import rank_classes_by_label_quality
+    >>> from sklearn.linear_model import LogisticRegression
+    >>> from sklearn.model_selection import cross_val_predict
+    >>> data, labels = get_data_labels_from_dataset(yourFavoriteDataset)
+    >>> yourFavoriteModel = LogisticRegression()
+    >>> num_crossval_folds = 3
+    >>> pred_probs = cross_val_predict(
+            yourFavoriteModel,
+            data,
+            labels,
+            cv=num_crossval_folds,
+            method="predict_proba",
+        ) # generate cross-validation estimates for each input data point
+    >>> df = rank_classes_by_label_quality(
+            labels=labels,
+            pred_probs=pred_probs,
+        )  # list all classes and three associated class label quality scores
+
     **Parameters**: For parameter info, see the docstring of :py:func:`find_overlapping_classes <cleanlab.dataset.find_overlapping_classes>`.
 
     Returns
@@ -317,6 +337,26 @@ def overall_label_health_score(
 
     Only provide **exactly one of the above input options**, do not provide a combination.
 
+    Examples
+    --------
+    >>> from cleanlab.dataset import overall_label_health_score
+    >>> from sklearn.linear_model import LogisticRegression
+    >>> from sklearn.model_selection import cross_val_predict
+    >>> data, labels = get_data_labels_from_dataset(yourFavoriteDataset)
+    >>> yourFavoriteModel = LogisticRegression()
+    >>> num_crossval_folds = 3
+    >>> pred_probs = cross_val_predict(
+            yourFavoriteModel,
+            data,
+            labels,
+            cv=num_crossval_folds,
+            method="predict_proba",
+        )
+    >>> score = overall_label_health_score(
+            labels=labels,
+            pred_probs=pred_probs,
+        )  # a score measuring the overall quality of all labels in a dataset.
+
     **Parameters**: For parameter info, see the docstring of :py:func:`find_overlapping_classes <cleanlab.dataset.find_overlapping_classes>`.
 
     Returns
@@ -371,6 +411,26 @@ def health_summary(
     3. ``confident_joint``
 
     Only provide **exactly one of the above input options**, do not provide a combination.
+
+    Examples
+    --------
+    >>> from cleanlab.dataset import health_summary
+    >>> from sklearn.linear_model import LogisticRegression
+    >>> from sklearn.model_selection import cross_val_predict
+    >>> data, labels = get_data_labels_from_dataset(yourFavoriteDataset)
+    >>> yourFavoriteModel = LogisticRegression()
+    >>> num_crossval_folds = 3
+    >>> pred_probs = cross_val_predict(
+            yourFavoriteModel,
+            data,
+            labels,
+            cv=num_crossval_folds,
+            method="predict_proba",
+        )
+    >>> df = overall_label_health_score(
+            labels=labels,
+            pred_probs=pred_probs,
+        )  # prints a health summary of your datasets
 
     **Parameters**: For parameter info, see the docstring of :py:func:`find_overlapping_classes <cleanlab.dataset.find_overlapping_classes>`.
 
