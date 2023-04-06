@@ -32,6 +32,7 @@ from cleanlab.multilabel_classification.dataset import (
     overall_multilabel_health_score,
     multilabel_health_summary,
 )
+from cleanlab.multilabel_classification.rank import get_label_quality_scores_per_class
 
 
 @pytest.fixture
@@ -397,6 +398,32 @@ def test_overall_multilabel_health_score(pred_probs_multilabel, labels_multilabe
         pred_probs=pred_probs_multilabel, labels=labels_multilabel
     )
     assert np.isclose(overall_label_health_score, 0.2857142857142857)
+
+
+def test_get_label_quality_scores_per_class():
+    pred_probs = np.array(
+        [
+            [0.9, 0.1, 0.0, 0.4, 0.1],
+            [0.7, 0.8, 0.2, 0.3, 0.1],
+            [0.9, 0.8, 0.4, 0.2, 0.1],
+            [0.1, 0.1, 0.8, 0.3, 0.1],
+            [0.4, 0.5, 0.1, 0.1, 0.1],
+            [0.1, 0.1, 0.2, 0.1, 0.1],
+            [0.8, 0.1, 0.2, 0.1, 0.1],
+        ]
+    )
+    labels = [[0], [0, 1], [0, 1], [2], [0, 2, 3], [], []]
+    scores = get_label_quality_scores_per_class(pred_probs=pred_probs, labels=labels)
+    expected_res = [
+        [0.9, 0.9, 1.0, 0.6, 0.9],
+        [0.7, 0.8, 0.8, 0.7, 0.9],
+        [0.9, 0.8, 0.6, 0.8, 0.9],
+        [0.9, 0.9, 0.8, 0.7, 0.9],
+        [0.4, 0.5, 0.1, 0.1, 0.9],
+        [0.9, 0.9, 0.8, 0.9, 0.9],
+        [0.2, 0.9, 0.8, 0.9, 0.9],
+    ]
+    assert np.isclose(scores, np.array(expected_res)).all()
 
 
 def test_health_summary_multilabel(pred_probs_multilabel, labels_multilabel):

@@ -130,7 +130,7 @@ def get_label_quality_scores_per_class(
     method: str = "self_confidence",
     adjust_pred_probs: bool = False,
 ) -> np.ndarray:
-    """Computes a label quality score each example in a multi-label classification dataset.
+    """Computes a per class label quality score for each example in a multi-label classification dataset.
 
     Scores are between 0 and 1 with lower scores indicating examples whose label more likely contains an error.
     For each example, this method internally computes a separate score for each individual class
