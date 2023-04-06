@@ -86,7 +86,7 @@ class OutOfDistributionIssueManager(IssueManager):
         self,
         features: Optional[npt.NDArray] = None,
         pred_probs: Optional[np.ndarray] = None,
-        iqr_scale: float = 1.0,
+        iqr_scale: float = 1.5,
         **kwargs,
     ) -> None:
         if features is not None:
