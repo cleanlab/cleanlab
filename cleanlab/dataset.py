@@ -139,6 +139,26 @@ def find_overlapping_classes(
     issues via the approach published in `Northcutt et al.,
     2021 <https://jair.org/index.php/jair/article/view/12125>`_.
 
+    Examples
+    --------
+    >>> from cleanlab.dataset import find_overlapping_classes
+    >>> from sklearn.linear_model import LogisticRegression
+    >>> from sklearn.model_selection import cross_val_predict
+    >>> data, labels = get_data_labels_from_dataset(yourFavoriteDataset)
+    >>> yourFavoriteModel = LogisticRegression()
+    >>> num_crossval_folds = 3
+    >>> pred_probs = cross_val_predict(
+            yourFavoriteModel,
+            data,
+            labels,
+            cv=num_crossval_folds,
+            method="predict_proba",
+        )
+    >>> df = find_overlapping_classes(
+            labels=labels,
+            pred_probs=pred_probs,
+        )  # lists pairs of classes that are often mislabeled as one another
+
     Note
     ----
     The joint distribution of noisy and true labels is asymmetric, and therefore the joint
