@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 from typing import Optional, cast, Dict
-from cleanlab.filter import _find_multilabel_issues_per_class
+from cleanlab.multilabel_classification.filter import find_multilabel_issues_per_class
 from cleanlab.internal.multilabel_utils import get_onehot_num_classes
 from collections import defaultdict
 
@@ -63,7 +63,7 @@ def common_multilabel_issues(
         num_classes = get_num_classes(labels=labels, pred_probs=pred_probs, multi_label=True)
         class_names = list(range(num_classes))
     y_one, num_classes = get_onehot_num_classes(labels, pred_probs)
-    label_issues_list, labels_list, pred_probs_list = _find_multilabel_issues_per_class(
+    label_issues_list, labels_list, pred_probs_list = find_multilabel_issues_per_class(
         labels=labels,
         pred_probs=pred_probs,
         confident_joint=confident_joint,
