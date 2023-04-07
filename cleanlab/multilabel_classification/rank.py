@@ -22,7 +22,7 @@ Unlike in standard multi-class classification, predicted class probabilities fro
 
 import numpy as np  # noqa: F401: Imported for type annotations
 import numpy.typing as npt
-from typing import List, TypeVar, Dict, Any, Optional
+from typing import List, TypeVar, Dict, Any, Optional, Tuple
 
 from cleanlab.internal.validation import assert_valid_inputs
 from cleanlab.internal.util import get_num_classes
@@ -45,11 +45,12 @@ def _labels_to_binary(
     binary_labels = int2onehot(labels, K=num_classes)
     return binary_labels
 
+
 def _create_multilabel_scorer(
     method: str,
     adjust_pred_probs: bool,
     aggregator_kwargs: Optional[Dict[str, Any]] = None,
-) -> MultilabelScorer:
+) -> Tuple[MultilabelScorer, Dict]:
     """This function acts as a factory that creates a MultilabelScorer."""
     base_scorer = ClassLabelScorer.from_str(method)
     base_scorer_kwargs = {"adjust_pred_probs": adjust_pred_probs}
