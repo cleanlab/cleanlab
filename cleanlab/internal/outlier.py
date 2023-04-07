@@ -40,7 +40,8 @@ def transform_distances_to_scores(distances: np.ndarray, k: int, t: int) -> np.n
 
     k : int
         Number of neighbors used to compute the average distance to each example.
-        This assumes that the second dimension of distances is k or greater, to avoid index errors.
+        This assumes that the second dimension of distances is k or greater, but it
+        uses slicing to avoid indexing errors.
 
     t : int
         Controls transformation of distances between examples into similarity scores that lie in [0,1].
