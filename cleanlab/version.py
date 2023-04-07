@@ -15,9 +15,13 @@
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
 
-__version__ = "2.3.1"
+__version__ = "2.3.2"
 
-# 2.3.1 - Not yet released, you are using bleeding-edge developer version. See its documentation at: https://docs.cleanlab.ai/master/
+# 2.3.2 - Not yet released, you are using bleeding-edge developer version. See its documentation at: https://docs.cleanlab.ai/master/
+
+# ------------------------------------------------
+# | PREVIOUS MAJOR VERSION RELEASE NOTES SUMMARY |
+# ------------------------------------------------
 
 # 2.3.0 - Extending cleanlab beyond label errors into a complete library for data-centric AI
 #
@@ -25,12 +29,6 @@ __version__ = "2.3.1"
 #   - Active learning with data re-labeling (ActiveLab)
 #   - KerasWrapperModel and KerasSequentialWrapper to make arbitrary Keras models compatible with scikit-learn
 #   - Computational improvements for detecting label issues (better efficiency and mini-batch estimation that works with lower memory)
-#
-#   See release for a full changelog.
-
-# ------------------------------------------
-# | PREVIOUS VERSION RELEASE NOTES SUMMARY |
-# ------------------------------------------
 
 # 2.2.0 - Re-invented algorithms for multi-label classification and support for datasets with missing classes
 #
