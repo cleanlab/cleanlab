@@ -204,7 +204,7 @@ def overall_multilabel_health_score(
     joint=None,
     confident_joint=None,
 ) -> float:
-    """Returns a single score between 0 and 1 measuring the overall quality of all labels in a dataset.
+    """Returns a single score between 0 and 1 measuring the overall quality of all labels in a multi-label classification dataset.
     Intuitively, the score is the average correctness of the given labels across all examples in the
     dataset. So a score of 1 suggests your data is perfectly labeled and a score of 0.5 suggests
     half of the examples in the dataset may be incorrectly labeled. Thus, a higher
