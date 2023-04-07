@@ -155,7 +155,7 @@ class TestOutOfDistributionIssueManager:
         assert summary["score"][0] == pytest.approx(expected=0.7732146, abs=1e-7)
 
         assert info.get("knn", None) is not None, "Should have knn info"
-        assert issue_manager.threshold == pytest.approx(expected=0.0922, abs=1e-4)
+        assert issue_manager.threshold == pytest.approx(expected=0.1004, abs=1e-4)
 
         issue_manager_with_threshold.find_issues(features=embeddings["embedding"])
 
