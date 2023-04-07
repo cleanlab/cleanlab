@@ -15,12 +15,12 @@
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
 
-import itertools
 import os
 import pickle
 from unittest.mock import MagicMock, Mock, patch
 from cleanlab.experimental.datalab.datalab import Datalab
 
+from scipy.sparse import csr_matrix
 from sklearn.neighbors import NearestNeighbors
 from datasets.dataset_dict import DatasetDict
 import numpy as np
@@ -192,24 +192,28 @@ class TestDatalab:
                 assert f"is_{issue_type}_issue" in columns
                 assert f"{issue_type}_score" in columns
 
-    def test_find_issues_with_custom_hyperparams(self, lab, pred_probs):
+    @pytest.mark.parametrize("k", [2, 3])
+    @pytest.mark.parametrize("metric", ["euclidean", "cosine"])
+    def test_find_issues_with_custom_hyperparams(self, lab, pred_probs, k, metric):
         dataset_size = lab.get_info("statistics")["num_examples"]
         embedding_size = 2
         mock_embeddings = np.random.rand(dataset_size, embedding_size)
 
-        ks = [2, 3]
-        metrics = ["euclidean", "cosine"]
-        combinations = list(itertools.product(ks, metrics))
-        for k, metric in combinations:
-            knn = NearestNeighbors(n_neighbors=k, metric=metric)
-            issue_types = {"outlier": {"knn": knn}}
-            lab.find_issues(
-                pred_probs=pred_probs,
-                features=mock_embeddings,
-                issue_types=issue_types,
-            )
-            assert lab.info["outlier"]["metric"] == metric
-            assert lab.info["outlier"]["k"] == k
+        knn = NearestNeighbors(n_neighbors=k, metric=metric)
+        issue_types = {"outlier": {"knn": knn}}
+        assert lab.get_info("statistics").get("weighted_knn_graph") is None
+        lab.find_issues(
+            pred_probs=pred_probs,
+            features=mock_embeddings,
+            issue_types=issue_types,
+        )
+        assert lab.info["outlier"]["k"] == k
+        statistics = lab.get_info("statistics")
+        assert statistics["knn_metric"] == metric
+        knn_graph = statistics["weighted_knn_graph"]
+        assert isinstance(knn_graph, csr_matrix)
+        assert knn_graph.shape == (dataset_size, dataset_size)
+        assert knn_graph.nnz == dataset_size * k
 
     def test_validate_issue_types_dict(self, lab, monkeypatch):
         issue_types = {
@@ -483,6 +487,51 @@ class TestDatalab:
             mock_print.reset_mock()
             lab.report()
             mock_print.assert_called_once_with("Report with verbosity=1 and k=5")
+
+
+class TestDatalabUsingKNNGraph:
+    """The Datalab class can accept a `knn_graph` argument to `find_issues` that should
+    be used instead of computing a new one from the `features` argument."""
+
+    @pytest.fixture
+    def data_tuple(self):
+        # from cleanlab.experimental.datalab.datalab import Datalab
+        np.random.seed(SEED)
+        N = 10
+        data = {"label": np.random.randint(0, 2, size=N)}
+        features = np.random.rand(N, 5)
+        knn_graph = (
+            NearestNeighbors(n_neighbors=3, metric="cosine")
+            .fit(features)
+            .kneighbors_graph(mode="distance")
+        )
+        return Datalab(data=data, label_name="label"), knn_graph, features
+
+    def test_knn_graph(self, data_tuple):
+        """Test that the `knn_graph` argument to `find_issues` is used instead of computing a new
+        one from the `features` argument."""
+        lab, knn_graph, _ = data_tuple
+        assert lab.get_info("statistics").get("weighted_knn_graph") is None
+        lab.find_issues(knn_graph=knn_graph)
+        knn_graph_stats = lab.get_info("statistics").get("weighted_knn_graph")
+        np.testing.assert_array_equal(knn_graph_stats.toarray(), knn_graph.toarray())
+
+        assert lab.get_info("statistics").get("knn_metric") is None
+
+    def test_features_and_knn_graph(self, data_tuple):
+        """Test that the `knn_graph` argument to `find_issues` is used instead of computing a new
+        one from the `features` argument."""
+        lab, knn_graph, features = data_tuple
+        k = 4
+        lab.find_issues(knn_graph=knn_graph, features=features, issue_types={"outlier": {"k": k}})
+        knn_graph_stats = lab.get_info("statistics").get("weighted_knn_graph")
+        assert knn_graph_stats.nnz == k * len(
+            lab.data
+        ), f"Expected {k * len(lab.data)} nnz, got {knn_graph_stats.nnz}"
+        three_nn_dists = knn_graph_stats.data.reshape(len(lab.data), k)[:, :3]
+        knn_graph_three_nn_dists = knn_graph.data.reshape(len(lab.data), k - 1)
+        np.testing.assert_array_equal(three_nn_dists, knn_graph_three_nn_dists)
+        assert lab.get_info("statistics").get("knn_metric") == "cosine"
 
 
 class TestDatalabIssueManagerInteraction:

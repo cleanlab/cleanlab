@@ -15,8 +15,9 @@
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional, Union, cast
 
+from scipy.sparse import csr_matrix
 from scipy.stats import iqr
 import numpy as np
 import numpy.typing as npt
@@ -24,11 +25,9 @@ import pandas as pd
 
 from cleanlab.experimental.datalab.issue_manager import IssueManager
 from cleanlab.experimental.datalab.knn import KNN
-from cleanlab.outlier import OutOfDistribution
+from cleanlab.outlier import OutOfDistribution, transform_distances_to_scores
 
 if TYPE_CHECKING:  # pragma: no cover
-    from scipy.sparse import csr_matrix
-
     from cleanlab.experimental.datalab.datalab import Datalab
 
 
@@ -79,7 +78,6 @@ class OutOfDistributionIssueManager(IssueManager):
         self.ood: OutOfDistribution = OutOfDistribution(**ood_kwargs)
         self.threshold = threshold
         self._embeddings: Optional[np.ndarray] = None
-        self._knn_graph: csr_matrix = None  # type: ignore
         self._metric: str = None  # type: ignore
 
     def find_issues(
@@ -89,33 +87,43 @@ class OutOfDistributionIssueManager(IssueManager):
         iqr_scale: float = 1.5,
         **kwargs,
     ) -> None:
-        if features is not None:
+        knn_graph = self._process_knn_graph_from_inputs(kwargs)
+
+        if knn_graph is not None:
+            N = knn_graph.shape[0]
+            k = knn_graph.nnz // N
+            t = cast(int, self.ood.params["t"])
+            distances = knn_graph.data.reshape(-1, k)
+            scores = transform_distances_to_scores(distances, k=k, t=t)
+        elif features is not None:
             scores = self._score_with_features(features, **kwargs)
         elif pred_probs is not None:
             scores = self._score_with_pred_probs(pred_probs, **kwargs)
         else:
-            raise ValueError(f"Either features or pred_probs must be provided.")
+            if kwargs.get("knn_graph", None) is not None:
+                raise ValueError(
+                    "knn_graph is provided, but not sufficiently large to compute the scores based on the provided hyperparameters."
+                )
+            raise ValueError(f"Either features pred_probs must be provided.")
 
-        if self._embeddings is not None:
+        if features is not None and knn_graph is None:
             # Check if the weighted knn graph exists in info
-            weighted_knn_graph: csr_matrix = self.datalab.get_info("statistics").get(
-                "weighted_knn_graph", None
-            )
+            knn_graph = self.datalab.get_info("statistics").get("weighted_knn_graph", None)
 
             k: int = 0  # Used to check if the knn graph needs to be recomputed, already set in the knn object
-            if weighted_knn_graph is not None:
-                self._knn_graph = weighted_knn_graph
-                k = self._knn_graph.nnz // self._knn_graph.shape[0]
+            if knn_graph is not None:
+                k = knn_graph.nnz // knn_graph.shape[0]
 
             knn = KNN(knn=self.ood.params["knn"])  # type: ignore
-            knn.add_item(self._embeddings)
+            knn.add_item(features)
             if kwargs.get("knn", None) is not None or knn.n_neighbors > k:  # type: ignore[union-attr]
                 # If the pre-existing knn graph has fewer neighbors than the knn object,
                 # then we need to recompute the knn graph
-                self._knn_graph = knn.kneighbors_graph()  # type: ignore[union-attr]
+                assert knn.knn == self.ood.params["knn"]  # type: ignore[union-attr]
+                knn_graph = knn.kneighbors_graph()  # type: ignore[union-attr]
                 self._metric = knn.metric  # type: ignore[union-attr]
                 k = knn.n_neighbors  # type: ignore[union-attr]
-            distances = self._knn_graph.data.reshape(-1, k)  # type: ignore[union-attr]
+            distances = knn_graph.data.reshape(-1, k)  # type: ignore[union-attr]
             avg_distances = distances.mean(axis=1)
             if self.threshold is None:
                 q3_distance = np.percentile(avg_distances, 75)
@@ -142,9 +150,28 @@ class OutOfDistributionIssueManager(IssueManager):
 
         self.summary = self.make_summary(score=scores.mean())
 
-        self.info = self.collect_info()
+        self.info = self.collect_info(knn_graph=knn_graph)
 
-    def collect_info(self) -> dict:
+    def _process_knn_graph_from_inputs(self, kwargs: Dict[str, Any]) -> Union[csr_matrix, None]:
+        """Determine if a knn_graph is provided in the kwargs or if one is already stored in the associated Datalab instance."""
+        knn_graph_kwargs: Optional[csr_matrix] = kwargs.get("knn_graph", None)
+        knn_graph_stats = self.datalab.get_info("statistics").get("weighted_knn_graph", None)
+
+        knn_graph: Optional[csr_matrix] = None
+        if knn_graph_kwargs is not None:
+            knn_graph = knn_graph_kwargs
+        elif knn_graph_stats is not None:
+            knn_graph = knn_graph_stats
+
+        if isinstance(knn_graph, csr_matrix) and kwargs.get("k", 0) > (
+            knn_graph.nnz // knn_graph.shape[0]
+        ):
+            # If the provided knn graph is insufficient, then we need to recompute the knn graph
+            # with the provided features
+            knn_graph = None
+        return knn_graph
+
+    def collect_info(self, *, knn_graph: Optional[csr_matrix] = None) -> dict:
         issues_dict = {
             "average_ood_score": self.issues[self.issue_score_key].mean(),
         }
@@ -153,14 +180,12 @@ class OutOfDistributionIssueManager(IssueManager):
         ] = {}  # TODO: Implement collect_info for pred_probs related issues
         feature_issues_dict = {}
 
-        # Compute
-        graph = self._knn_graph
-        if graph is not None and self.ood.params["knn"] is not None:
+        if knn_graph is not None and self.ood.params["knn"] is not None:
             knn = self.ood.params["knn"]  # type: ignore
-            N = graph.shape[0]
-            k = graph.nnz // N
-            dists = graph.data.reshape(N, -1)[:, 0]
-            nn_ids = graph.indices.reshape(N, -1)[:, 0]
+            N = knn_graph.shape[0]
+            k = knn_graph.nnz // N
+            dists = knn_graph.data.reshape(N, -1)[:, 0]
+            nn_ids = knn_graph.indices.reshape(N, -1)[:, 0]
 
             feature_issues_dict.update(
                 {
@@ -173,7 +198,7 @@ class OutOfDistributionIssueManager(IssueManager):
 
         if self.ood.params["confident_thresholds"] is not None:
             pass  #
-        statistics_dict = self._build_statistics_dictionary()
+        statistics_dict = self._build_statistics_dictionary(knn_graph=knn_graph)
         ood_params_dict = self.ood.params
         knn_dict = {
             **pred_probs_issues_dict,
@@ -187,7 +212,9 @@ class OutOfDistributionIssueManager(IssueManager):
         }
         return info_dict
 
-    def _build_statistics_dictionary(self) -> Dict[str, Dict[str, Any]]:
+    def _build_statistics_dictionary(
+        self, *, knn_graph: Optional[csr_matrix]
+    ) -> Dict[str, Dict[str, Any]]:
         statistics_dict: Dict[str, Dict[str, Any]] = {"statistics": {}}
 
         # Add the knn graph as a statistic if necessary
@@ -196,14 +223,15 @@ class OutOfDistributionIssueManager(IssueManager):
         old_graph_exists = old_knn_graph is not None
         prefer_new_graph = (
             not old_graph_exists
-            or self._knn_graph.nnz > old_knn_graph.nnz
+            or knn_graph.nnz > old_knn_graph.nnz
             or self._metric != self.datalab.get_info("statistics").get("knn_metric", None)
         )
         if prefer_new_graph:
-            if self._knn_graph is not None:
-                statistics_dict["statistics"][graph_key] = self._knn_graph
-            if self._metric is not None:
-                statistics_dict["statistics"]["knn_metric"] = self._metric
+            if knn_graph is not None:
+                statistics_dict["statistics"][graph_key] = knn_graph
+        if self._metric is not None:
+            # TODO: This is still note saved correctly
+            statistics_dict["statistics"]["knn_metric"] = self._metric
 
         return statistics_dict
 
@@ -212,6 +240,5 @@ class OutOfDistributionIssueManager(IssueManager):
         return scores
 
     def _score_with_features(self, features: npt.NDArray, **kwargs) -> npt.NDArray:
-        self._embeddings = features
-        scores = self.ood.fit_score(features=self._embeddings)
+        scores = self.ood.fit_score(features=features)
         return scores

@@ -21,6 +21,7 @@ import warnings
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
+from scipy.sparse import csr_matrix
 from sklearn.neighbors import NearestNeighbors
 from sklearn.utils.validation import check_is_fitted
 
@@ -28,8 +29,6 @@ from cleanlab.experimental.datalab.issue_manager import IssueManager
 from cleanlab.experimental.datalab.knn import KNN
 
 if TYPE_CHECKING:  # pragma: no cover
-    from scipy.sparse import csr_matrix
-
     from cleanlab.experimental.datalab.datalab import Datalab
 
 
@@ -76,25 +75,22 @@ class NearDuplicateIssueManager(IssueManager):
         self.k = k
         self.knn: Optional[NearestNeighbors] = None
         self.near_duplicate_sets: List[List[int]] = []
-        self._knn_graph: csr_matrix = None  # type: ignore
 
     def find_issues(
         self,
         features: npt.NDArray,
-        **_,
+        **kwargs,
     ) -> None:
+        knn_graph = self._process_knn_graph_from_inputs(kwargs)
         if self.knn is None:
             if self.metric is None:
                 self.metric = "cosine" if features.shape[1] > 3 else "euclidean"
             self.knn = NearestNeighbors(n_neighbors=self.k, metric=self.metric)
         knn = KNN(n_neighbors=self.k, knn=self.knn)
 
-        weighted_knn_graph = self.datalab.get_info("statistics").get("weighted_knn_graph", None)
-
         k: int = 0  # Used to check if the knn graph needs to be recomputed, already set in the knn object
-        if weighted_knn_graph is not None:
-            self._knn_graph = weighted_knn_graph
-            k = self._knn_graph.nnz // self._knn_graph.shape[0]
+        if knn_graph is not None:
+            k = knn_graph.nnz // knn_graph.shape[0]
 
         if self.metric and self.metric != knn.metric:
             warnings.warn(
@@ -110,13 +106,13 @@ class NearDuplicateIssueManager(IssueManager):
             knn.fit(features)
 
         old_knn_metric = self.datalab.get_info("statistics").get("knn_metric", knn.metric)
-        if self.k > k or old_knn_metric != knn.metric:
+        if self.k > k or old_knn_metric != knn.metric or knn_graph is None:
             # If the pre-existing knn graph has fewer neighbors than the knn object,
             # then we need to recompute the knn graph.
-            self._knn_graph = knn.kneighbors_graph()
+            knn_graph = knn.kneighbors_graph()
             k = knn.n_neighbors  # type: ignore[union-attr]
 
-        nn_distances = self._knn_graph.data.reshape(-1, k)[:, 0]
+        nn_distances = knn_graph.data.reshape(-1, k)[:, 0]
         scores = np.tanh(nn_distances)
 
         self.threshold = self._compute_threshold(nn_distances)
@@ -134,9 +130,28 @@ class NearDuplicateIssueManager(IssueManager):
         ]
 
         self.summary = self.make_summary(score=scores.mean())
-        self.info = self.collect_info()
+        self.info = self.collect_info(knn_graph=knn_graph)
 
-    def collect_info(self) -> dict:
+    def _process_knn_graph_from_inputs(self, kwargs: Dict[str, Any]) -> Union[csr_matrix, None]:
+        """Determine if a knn_graph is provided in the kwargs or if one is already stored in the associated Datalab instance."""
+        knn_graph_kwargs: Optional[csr_matrix] = kwargs.get("knn_graph", None)
+        knn_graph_stats = self.datalab.get_info("statistics").get("weighted_knn_graph", None)
+
+        knn_graph: Optional[csr_matrix] = None
+        if knn_graph_kwargs is not None:
+            knn_graph = knn_graph_kwargs
+        elif knn_graph_stats is not None:
+            knn_graph = knn_graph_stats
+
+        if isinstance(knn_graph, csr_matrix) and kwargs.get("k", 0) > (
+            knn_graph.nnz // knn_graph.shape[0]
+        ):
+            # If the provided knn graph is insufficient, then we need to recompute the knn graph
+            # with the provided features
+            knn_graph = None
+        return knn_graph
+
+    def collect_info(self, knn_graph: csr_matrix) -> dict:
         issues_dict = {
             "average_near_duplicate_score": self.issues[self.issue_score_key].mean(),
             "near_duplicate_sets": self.near_duplicate_sets,
@@ -148,15 +163,16 @@ class NearDuplicateIssueManager(IssueManager):
             "threshold": self.threshold,
         }
 
-        dists = self._knn_graph.data.reshape(self._knn_graph.shape[0], -1)[:, 0]
-        nn_ids = self._knn_graph.indices.reshape(self._knn_graph.shape[0], -1)[:, 0]
+        N = knn_graph.shape[0]
+        dists = knn_graph.data.reshape(N, -1)[:, 0]
+        nn_ids = knn_graph.indices.reshape(N, -1)[:, 0]
 
         knn_info_dict = {
             "nearest_neighbor": nn_ids.tolist(),
             "distance_to_nearest_neighbor": dists.tolist(),
         }
 
-        statistics_dict = self._build_statistics_dictionary()
+        statistics_dict = self._build_statistics_dictionary(knn_graph=knn_graph)
 
         info_dict = {
             **issues_dict,
@@ -166,7 +182,7 @@ class NearDuplicateIssueManager(IssueManager):
         }
         return info_dict
 
-    def _build_statistics_dictionary(self) -> Dict[str, Dict[str, Any]]:
+    def _build_statistics_dictionary(self, knn_graph: csr_matrix) -> Dict[str, Dict[str, Any]]:
         statistics_dict: Dict[str, Dict[str, Any]] = {"statistics": {}}
 
         # Add the knn graph as a statistic if necessary
@@ -175,12 +191,11 @@ class NearDuplicateIssueManager(IssueManager):
         old_graph_exists = old_knn_graph is not None
         prefer_new_graph = (
             not old_graph_exists
-            or self._knn_graph.nnz > old_knn_graph.nnz
+            or knn_graph.nnz > old_knn_graph.nnz
             or self.metric != self.datalab.get_info("statistics").get("knn_metric", None)
         )
         if prefer_new_graph:
-            if self._knn_graph is not None:
-                statistics_dict["statistics"][graph_key] = self._knn_graph
+            statistics_dict["statistics"][graph_key] = knn_graph
             if self.metric is not None:
                 statistics_dict["statistics"]["knn_metric"] = self.metric
 

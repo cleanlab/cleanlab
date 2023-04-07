@@ -38,6 +38,7 @@ from cleanlab.experimental.datalab.serialize import _Serializer
 
 if TYPE_CHECKING:  # pragma: no cover
     from datasets.arrow_dataset import Dataset
+    from scipy.sparse import csr_matrix
 
     DatasetLike = Union[Dataset, pd.DataFrame, Dict[str, Any], List[Dict[str, Any]], str]
 
@@ -173,7 +174,7 @@ class Datalab:
     def info(self, info: Dict[str, Dict[str, Any]]) -> None:
         self.data_issues.info = info
 
-    def _resolve_required_args(self, pred_probs, features, model):
+    def _resolve_required_args(self, pred_probs, features, model, knn_graph):
         """Resolves the required arguments for each issue type.
 
         This is a helper function that filters out any issue manager
@@ -200,14 +201,23 @@ class Datalab:
         """
         args_dict = {
             "label": {"pred_probs": pred_probs, "model": model},
-            "outlier": {"pred_probs": pred_probs, "features": features},
-            "near_duplicate": {"features": features},
-            "non_iid": {"features": features},
+            "outlier": {"pred_probs": pred_probs, "features": features, "knn_graph": knn_graph},
+            "near_duplicate": {"features": features, "knn_graph": knn_graph},
+            "non_iid": {"features": features, "knn_graph": knn_graph},
         }
 
         args_dict = {
             k: {k2: v2 for k2, v2 in v.items() if v2 is not None} for k, v in args_dict.items() if v
         }
+
+        # Prefer `knn_graph` over `features` if both are provided.
+        for v in args_dict.values():
+            if "knn_graph" in v and "features" in v:
+                warnings.warn(
+                    "Both `features` and `knn_graph` were provided. "
+                    "Most issue managers will likely prefer using `knn_graph` "
+                    "instead of `features` for efficiency."
+                )
 
         # TODO: Check for any missing arguments that are required for each issue type.
         args_dict = {k: v for k, v in args_dict.items() if v}
@@ -435,6 +445,7 @@ class Datalab:
         pred_probs: Optional[np.ndarray] = None,
         issue_types: Optional[Dict[str, Any]] = None,
         features: Optional[npt.NDArray] = None,
+        knn_graph: Optional[csr_matrix] = None,
         model=None,  # sklearn.Estimator compatible object  # noqa: F821
     ) -> None:
         """
@@ -501,7 +512,9 @@ class Datalab:
             )
             return None
 
-        required_args_per_issue_type = self._resolve_required_args(pred_probs, features, model)
+        required_args_per_issue_type = self._resolve_required_args(
+            pred_probs, features, model, knn_graph
+        )
 
         issue_types_copy = self._set_issue_types(issue_types, required_args_per_issue_type)
 

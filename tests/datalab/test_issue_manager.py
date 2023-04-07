@@ -276,7 +276,7 @@ class TestOutOfDistributionIssueManager:
         """
 
         issue_manager.find_issues(features=embeddings["embedding"])
-        info = issue_manager.collect_info()
+        info = issue_manager.info
 
         nearest_neighbors = info["nearest_neighbor"]
         distances_to_nearest_neighbor = info["distance_to_nearest_neighbor"]
