@@ -114,7 +114,6 @@ def rank_classes_by_multilabel_quality(
     This method works by providing ``labels``, ``pred_probs`` and an optional Confident Joint.
 
 
-    Only provide **exactly one of the above input options**, do not provide a combination.
 
     **Parameters**: For parameter info, see the docstring of :py:func:`find_overlapping_classes <cleanlab.dataset.find_overlapping_classes>`.
 
