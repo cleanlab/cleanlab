@@ -78,7 +78,7 @@ class LabelIssueManager(IssueManager):
         --------
         >>> from cleanlab.experimental.datalab.issue_manager.label import LabelIssueManager
         >>> LabelIssueManager._process_clean_learning_kwargs(thresholds=[0.1, 0.9])
-        {'find_label_issues_kwargs': {'thresholds': [0.1, 0.9]}}
+        {'thresholds': [0.1, 0.9]}
         """
         accepted_kwargs = [
             "thresholds",
