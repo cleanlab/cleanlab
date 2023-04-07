@@ -22,7 +22,7 @@ Unlike in standard multi-class classification, predicted class probabilities fro
 
 import numpy as np  # noqa: F401: Imported for type annotations
 import numpy.typing as npt
-from typing import List, TypeVar, Dict, Any
+from typing import List, TypeVar, Dict, Any, Optional
 
 from cleanlab.internal.validation import assert_valid_inputs
 from cleanlab.internal.util import get_num_classes
@@ -31,6 +31,34 @@ from cleanlab.internal.multilabel_scorer import MultilabelScorer, ClassLabelScor
 
 
 T = TypeVar("T", bound=npt.NBitBase)
+
+
+def _labels_to_binary(
+    labels: List[List[int]],
+    pred_probs: npt.NDArray["np.floating[T]"],
+) -> np.ndarray:
+    """Validate the inputs to the multilabel scorer. Also transform the labels to a binary representation."""
+    assert_valid_inputs(
+        X=None, y=labels, pred_probs=pred_probs, multi_label=True, allow_one_class=True
+    )
+    num_classes = get_num_classes(labels=labels, pred_probs=pred_probs, multi_label=True)
+    binary_labels = int2onehot(labels, K=num_classes)
+    return binary_labels
+
+def _create_multilabel_scorer(
+    method: str,
+    adjust_pred_probs: bool,
+    aggregator_kwargs: Optional[Dict[str, Any]] = None,
+) -> MultilabelScorer:
+    """This function acts as a factory that creates a MultilabelScorer."""
+    base_scorer = ClassLabelScorer.from_str(method)
+    base_scorer_kwargs = {"adjust_pred_probs": adjust_pred_probs}
+    if aggregator_kwargs:
+        aggregator = Aggregator(**aggregator_kwargs)
+        scorer = MultilabelScorer(base_scorer, aggregator)
+    else:
+        scorer = MultilabelScorer(base_scorer)
+    return scorer, base_scorer_kwargs
 
 
 def get_label_quality_scores(
@@ -110,20 +138,16 @@ def get_label_quality_scores(
     >>> scores
     array([0.9, 0.5])
     """
-
-    assert_valid_inputs(
-        X=None, y=labels, pred_probs=pred_probs, multi_label=True, allow_one_class=True
+    binary_labels = _labels_to_binary(labels, pred_probs)
+    scorer, base_scorer_kwargs = _create_multilabel_scorer(
+        method=method,
+        adjust_pred_probs=adjust_pred_probs,
+        aggregator_kwargs=aggregator_kwargs,
     )
-    num_classes = get_num_classes(labels=labels, pred_probs=pred_probs, multi_label=True)
-    binary_labels = int2onehot(labels, K=num_classes)
-    base_scorer = ClassLabelScorer.from_str(method)
-    base_scorer_kwargs = {"adjust_pred_probs": adjust_pred_probs}
-    aggregator = Aggregator(**aggregator_kwargs)
-    scorer = MultilabelScorer(base_scorer, aggregator)
     return scorer(binary_labels, pred_probs, base_scorer_kwargs=base_scorer_kwargs)
 
 
-def get_label_quality_scores_per_class(
+def get_class_label_quality_scores(
     labels: List[List[int]],
     pred_probs: npt.NDArray["np.floating[T]"],
     *,
@@ -199,15 +223,11 @@ def get_label_quality_scores_per_class(
     >>> scores
     array([0.9, 0.5])
     """
-
-    assert_valid_inputs(
-        X=None, y=labels, pred_probs=pred_probs, multi_label=True, allow_one_class=True
+    binary_labels = _labels_to_binary(labels, pred_probs)
+    scorer, base_scorer_kwargs = _create_multilabel_scorer(
+        method=method,
+        adjust_pred_probs=adjust_pred_probs,
     )
-    num_classes = get_num_classes(labels=labels, pred_probs=pred_probs, multi_label=True)
-    binary_labels = int2onehot(labels, K=num_classes)
-    base_scorer = ClassLabelScorer.from_str(method)
-    scorer = MultilabelScorer(base_scorer)
-    base_scorer_kwargs = {"adjust_pred_probs": adjust_pred_probs}
     return scorer.get_class_label_quality_scores(
         labels=binary_labels, pred_probs=pred_probs, base_scorer_kwargs=base_scorer_kwargs
     )
