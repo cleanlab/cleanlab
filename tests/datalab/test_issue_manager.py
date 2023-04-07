@@ -46,8 +46,11 @@ class TestLabelIssueManager:
             [key in info_keys for key in expected_keys]
         ), f"Info should have the right keys, but is missing {set(expected_keys) - set(info_keys)}"
 
+    def test_find_issues_with_kwargs(self, pred_probs, issue_manager):
+        issue_manager.find_issues(pred_probs=pred_probs, thresholds=[0.2, 0.3, 0.1])
+
     def test_init_with_clean_learning_kwargs(self, lab, issue_manager):
-        """Test that the init method can providee kwargs to the CleanLearning constructor."""
+        """Test that the init method can provide kwargs to the CleanLearning constructor."""
         new_issue_manager = LabelIssueManager(
             datalab=lab,
             clean_learning_kwargs={"cv_n_folds": 10},

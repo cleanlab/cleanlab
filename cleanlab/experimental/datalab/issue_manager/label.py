@@ -67,9 +67,30 @@ class LabelIssueManager(IssueManager):
         super().__init__(datalab)
         self.cl = CleanLearning(**(clean_learning_kwargs or {}))
         self.health_summary_parameters: Dict[str, Any] = health_summary_parameters or {}
-        self.reset()
+        self._reset()
 
-    def reset(self) -> None:
+    @staticmethod
+    def _process_find_label_issues_kwargs(kwargs: Dict[str, Any]) -> Dict[str, Any]:
+        """Searches for keyword arguments that are meant for the
+        CleanLearning.find_label_issues method call
+
+        Examples
+        --------
+        >>> from cleanlab.experimental.datalab.issue_manager.label import LabelIssueManager
+        >>> LabelIssueManager._process_clean_learning_kwargs(thresholds=[0.1, 0.9])
+        {'find_label_issues_kwargs': {'thresholds': [0.1, 0.9]}}
+        """
+        accepted_kwargs = [
+            "thresholds",
+            "noise_matrix",
+            "inverse_noise_matrix",
+            "save_space",
+            "clf_kwargs",
+            "validation_func",
+        ]
+        return {k: v for k, v in kwargs.items() if k in accepted_kwargs and v is not None}
+
+    def _reset(self) -> None:
         """Reset the attributes of this manager based on the available datalab info
         and the keyword arguments stored as instance attributes.
 
@@ -95,11 +116,15 @@ class LabelIssueManager(IssueManager):
         self,
         pred_probs: np.ndarray,
         health_summary_kwargs: Optional[Dict[str, Any]] = None,
-        **_,
+        **kwargs,
     ) -> None:
         self.health_summary_parameters.update({"pred_probs": pred_probs})
         # Find examples with label issues
-        self.issues = self.cl.find_label_issues(labels=self.datalab._labels, pred_probs=pred_probs)
+        self.issues = self.cl.find_label_issues(
+            labels=self.datalab._labels,
+            pred_probs=pred_probs,
+            **self._process_find_label_issues_kwargs(kwargs),
+        )
         self.issues.rename(columns={"label_quality": self.issue_score_key}, inplace=True)
 
         summary_dict = self.get_health_summary(
