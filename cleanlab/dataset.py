@@ -427,10 +427,10 @@ def health_summary(
             cv=num_crossval_folds,
             method="predict_proba",
         ) # generate cross-validation estimates for each input data point
-    >>> dic = health_summary(
-            labels=labels,
-            pred_probs=pred_probs,
-        ) # a dictionary containing health summary of your datasets
+    >>> summary = health_summary(
+                labels=labels,
+                pred_probs=pred_probs,
+        )  # dictionary summarizing the overall label quality of the classes in your dataset
 
     **Parameters**: For parameter info, see the docstring of :py:func:`find_overlapping_classes <cleanlab.dataset.find_overlapping_classes>`.
 
