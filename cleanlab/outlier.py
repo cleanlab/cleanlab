@@ -25,7 +25,7 @@ import numpy as np
 from cleanlab.count import get_confident_thresholds
 from sklearn.neighbors import NearestNeighbors
 from sklearn.exceptions import NotFittedError
-from typing import Optional, Union, Tuple, Dict
+from typing import Optional, Union, Tuple, Dict, cast
 from cleanlab.internal.label_quality_utils import (
     _subtract_confident_thresholds,
     get_normalized_entropy,
@@ -446,7 +446,7 @@ def _get_ood_features_scores(
     # neighbor of each point is the point itself, at a distance of zero.
     distances, _ = knn.kneighbors(features)
 
-    ood_features_scores = transform_distances_to_scores(distances, k, t)
+    ood_features_scores = transform_distances_to_scores(distances, cast(int, k), t)
     return (ood_features_scores, knn)
 
 
