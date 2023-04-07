@@ -72,7 +72,7 @@ def rank_classes_by_label_quality(
     >>> df = rank_classes_by_label_quality(
             labels=labels,
             pred_probs=pred_probs,
-        ) # list all classes and three associated class label quality scores
+        )  # report overall label quality scores summarizing the examples annotated as each class
 
     **Parameters**: For parameter info, see the docstring of :py:func:`find_overlapping_classes <cleanlab.dataset.find_overlapping_classes>`.
 
