@@ -173,7 +173,7 @@ def find_overlapping_classes(
             labels,
             cv=num_crossval_folds,
             method="predict_proba",
-        ) # generate cross-validation estimates for each input data point
+        )  # generate cross-validation estimates for each input data point
     >>> df = find_overlapping_classes(
             labels=labels,
             pred_probs=pred_probs,
