@@ -3,7 +3,6 @@ from typing import Optional, Union, Tuple, List, Any
 import numpy as np
 
 
-
 def find_label_issues(
     labels: list,
     pred_probs: np.ndarray,
@@ -16,7 +15,7 @@ def find_label_issues(
     confident_joint: Optional[np.ndarray] = None,
     n_jobs: Optional[int] = None,
     verbose: bool = False,
-)-> np.ndarray:
+) -> np.ndarray:
     """
     Finds label issues in multi-label classification data where each example can belong to more than one class.
 
