@@ -30,6 +30,7 @@ from cleanlab.internal.label_quality_utils import (
     _subtract_confident_thresholds,
     get_normalized_entropy,
 )
+from cleanlab.internal.outlier import transform_distances_to_scores
 from cleanlab.internal.validation import assert_valid_inputs, labels_to_array
 from cleanlab.typing import LabelLike
 
