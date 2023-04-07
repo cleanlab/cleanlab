@@ -42,7 +42,7 @@ def find_label_issues(
 
     filter_by : {'prune_by_class', 'prune_by_noise_rate', 'both', 'confident_learning', 'predicted_neq_given',
         'low_normalized_margin', 'low_self_confidence'}, default='prune_by_noise_rate'
-      Refer to documentation for this argument in filter.find_label_issues() for details.
+      Refer to documentation for this argument in :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` for details.
 
     frac_noise : float, default=1.0
       Refer to documentation for this argument in :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` for details.
@@ -129,23 +129,23 @@ def find_multilabel_issues_per_class(
 
 
     return_indices_ranked_by : {None, 'self_confidence', 'normalized_margin', 'confidence_weighted_entropy'}, default=None
-      Refer to documentation for this argument in filter.find_label_issues() for details.
+      Refer to documentation for this argument in :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` for details.
 
     rank_by_kwargs : dict, optional
-      Refer to documentation for this argument in filter.find_label_issues() for details.
+      Refer to documentation for this argument in :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` for details.
 
     filter_by : {'prune_by_class', 'prune_by_noise_rate', 'both', 'confident_learning', 'predicted_neq_given',
         'low_normalized_margin', 'low_self_confidence'}, default='prune_by_noise_rate'
-      Refer to documentation for this argument in filter.find_label_issues() for details.
+      Refer to documentation for this argument in :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` for details.
 
     frac_noise : float, default=1.0
-      Refer to documentation for this argument in filter.find_label_issues() for details.
+      Refer to documentation for this argument in :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` for details.
 
     num_to_remove_per_class : array_like
-      Refer to documentation for this argument in filter.find_label_issues() for details.
+      Refer to documentation for this argument in :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` for details.
 
     min_examples_per_class : int, default=1
-      Refer to documentation for this argument in filter.find_label_issues() for details.
+      Refer to documentation for this argument in :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` for details.
 
     confident_joint : np.ndarray, optional
       An array of shape ``(K, 2, 2)`` representing a one-vs-rest formatted confident joint.
@@ -156,7 +156,7 @@ def find_multilabel_issues_per_class(
       If not provided, it is computed from the given (noisy) `labels` and `pred_probs`.
 
     n_jobs : optional
-      Refer to documentation for this argument in filter.find_label_issues() for details.
+      Refer to documentation for this argument in :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` for details.
 
     verbose : optional
       If ``True``, prints when multiprocessing happens.
