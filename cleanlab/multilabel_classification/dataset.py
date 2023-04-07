@@ -104,9 +104,9 @@ def rank_classes_by_multilabel_quality(
     confident_joint=None,
 ) -> pd.DataFrame:
     """
-    Returns a Pandas DataFrame with all classes and three overall class label quality scores
-    (details about each score are listed in the Returns parameter). By default, classes are ordered
-    by "Label Quality Score", ascending, so the most problematic classes are reported first.
+    Returns a Pandas DataFrame with three overall class label quality scores summarizing all examples annotated with each  class in a multi-label classification dataset. 
+    Details about each score are listed below under the Returns parameter. By default, classes are ordered
+    by "Label Quality Score", ascending, so the most problematic classes are reported first in the returned DataFrame.
 
     Score values are unnormalized and may tend to be very small. What matters is their relative
     ranking across the classes.
