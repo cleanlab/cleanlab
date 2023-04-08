@@ -681,7 +681,7 @@ def test_near_duplicates_reuses_knn_graph():
     lab = Datalab(data=data, label_name="labels")
     # Outliers need more neighbors, so this should be slower, so the graph will be computed twice
     find_issues_kwargs = {
-        "issue_types": {"near_duplicate": {"k": k}, "outlier": {"k": k}},
+        "issue_types": {"near_duplicate": {"k": k}, "outlier": {"k": 2 * k}},
     }
     time_near_duplicates_and_outlier = timeit.timeit(
         lambda: lab.find_issues(features=features, **find_issues_kwargs),
@@ -690,7 +690,7 @@ def test_near_duplicates_reuses_knn_graph():
 
     # Run 3: Same Datalab instance with same issues, but in different order
     find_issues_kwargs = {
-        "issue_types": {"outlier": {"k": k}, "near_duplicate": {"k": k}},
+        "issue_types": {"outlier": {"k": 2 * k}, "near_duplicate": {"k": k}},
     }
     time_outliers_before_near_duplicates = timeit.timeit(
         lambda: lab.find_issues(features=features, **find_issues_kwargs),
@@ -698,7 +698,10 @@ def test_near_duplicates_reuses_knn_graph():
     )
 
     # Run 2 does an extra check, so it should be slower
-    assert time_only_near_duplicates < time_near_duplicates_and_outlier
+    assert time_only_near_duplicates < time_near_duplicates_and_outlier, (
+        "Run 2 should be slower because it does an extra check "
+        "for outliers, which requires a KNN graph."
+    )
 
     # Run 3 should be faster because it reuses the KNN graph from Run 2
     # in both issue checks

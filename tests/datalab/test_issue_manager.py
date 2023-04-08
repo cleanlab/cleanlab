@@ -464,7 +464,7 @@ class TestNonIIDIssueManager:
         """
 
         issue_manager.find_issues(features=embeddings)
-        info = issue_manager.collect_info()
+        info = issue_manager.info
 
         assert info["p-value"] == 0
         assert info["metric"] == "euclidean"

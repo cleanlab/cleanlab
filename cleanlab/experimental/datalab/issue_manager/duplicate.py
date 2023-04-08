@@ -15,7 +15,7 @@
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Union
 import warnings
 
 import numpy as np
@@ -78,41 +78,40 @@ class NearDuplicateIssueManager(IssueManager):
 
     def find_issues(
         self,
-        features: npt.NDArray,
+        features: Optional[npt.NDArray] = None,
         **kwargs,
     ) -> None:
         knn_graph = self._process_knn_graph_from_inputs(kwargs)
-        if self.knn is None:
-            if self.metric is None:
-                self.metric = "cosine" if features.shape[1] > 3 else "euclidean"
-            self.knn = NearestNeighbors(n_neighbors=self.k, metric=self.metric)
-        knn = KNN(n_neighbors=self.k, knn=self.knn)
+        old_knn_metric = self.datalab.get_info("statistics").get("knn_metric")
+        metric_changes = self.metric and self.metric != old_knn_metric
 
-        k: int = 0  # Used to check if the knn graph needs to be recomputed, already set in the knn object
-        if knn_graph is not None:
-            k = knn_graph.nnz // knn_graph.shape[0]
+        if knn_graph is None or metric_changes:
+            if features is None:
+                raise ValueError(
+                    "If a knn_graph is not provided, features must be provided to fit a new knn."
+                )
+            if self.knn is None:
+                if self.metric is None:
+                    self.metric = "cosine" if features.shape[1] > 3 else "euclidean"
+                self.knn = NearestNeighbors(n_neighbors=self.k, metric=self.metric)
+            knn = KNN(n_neighbors=self.k, knn=self.knn)
 
-        if self.metric and self.metric != knn.metric:
-            warnings.warn(
-                f"Metric {self.metric} does not match metric {knn.metric} used to fit knn. "
-                "Most likely an existing NearestNeighbors object was passed in, but a different "
-                "metric was specified."
-            )
-        self.metric = knn.metric
+            if self.metric and self.metric != knn.metric:
+                warnings.warn(
+                    f"Metric {self.metric} does not match metric {knn.metric} used to fit knn. "
+                    "Most likely an existing NearestNeighbors object was passed in, but a different "
+                    "metric was specified."
+                )
+            self.metric = knn.metric
 
-        try:
-            check_is_fitted(self.knn)
-        except:
-            knn.fit(features)
+            try:
+                check_is_fitted(self.knn)
+            except:
+                knn.fit(features)
 
-        old_knn_metric = self.datalab.get_info("statistics").get("knn_metric", knn.metric)
-        if self.k > k or old_knn_metric != knn.metric or knn_graph is None:
-            # If the pre-existing knn graph has fewer neighbors than the knn object,
-            # then we need to recompute the knn graph.
             knn_graph = knn.kneighbors_graph()
-            k = knn.n_neighbors  # type: ignore[union-attr]
-
-        nn_distances = knn_graph.data.reshape(-1, k)[:, 0]
+        N = knn_graph.shape[0]
+        nn_distances = knn_graph.data.reshape(N, -1)[:, 0]
         scores = np.tanh(nn_distances)
 
         self.threshold = self._compute_threshold(nn_distances)
@@ -124,13 +123,35 @@ class NearDuplicateIssueManager(IssueManager):
             },
         )
 
-        indices = self.knn.radius_neighbors(radius=self.threshold, return_distance=False)
-        self.near_duplicate_sets = [
-            duplicates[duplicates != idx] for idx, duplicates in enumerate(indices)
-        ]
+        self.near_duplicate_sets = self._neighbors_within_radius(knn_graph, self.threshold)
 
         self.summary = self.make_summary(score=scores.mean())
         self.info = self.collect_info(knn_graph=knn_graph)
+
+    @staticmethod
+    def _neighbors_within_radius(knn_graph: csr_matrix, radius: float):
+        """Returns a list of lists of indices of near-duplicate examples.
+
+        Each list of indices represents a set of near-duplicate examples.
+
+        If the list is empty for a given example, then that example is not
+        a near-duplicate of any other example.
+        """
+
+        N = knn_graph.shape[0]
+        distances = knn_graph.data.reshape(N, -1)
+        # Create a mask for the threshold
+        mask = distances < radius
+
+        # Update the indptr to reflect the new number of neighbors
+        indptr = np.zeros(knn_graph.indptr.shape, dtype=knn_graph.indptr.dtype)
+        indptr[1:] = np.cumsum(mask.sum(axis=1))
+
+        # Filter the knn_graph based on the threshold
+        indices = knn_graph.indices[mask.ravel()]
+        near_duplicate_sets = [indices[indptr[i] : indptr[i + 1]] for i in range(N)]
+
+        return near_duplicate_sets
 
     def _process_knn_graph_from_inputs(self, kwargs: Dict[str, Any]) -> Union[csr_matrix, None]:
         """Determine if a knn_graph is provided in the kwargs or if one is already stored in the associated Datalab instance."""

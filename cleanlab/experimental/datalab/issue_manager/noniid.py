@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, ClassVar, Optional, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional, Union, cast
 import warnings
 import itertools
 
@@ -8,6 +8,7 @@ from scipy.stats import gaussian_kde
 import numpy as np
 import pandas as pd
 import numpy.typing as npt
+from scipy.sparse import csr_matrix
 from sklearn.neighbors import NearestNeighbors
 from sklearn.utils.validation import check_is_fitted
 
@@ -134,27 +135,43 @@ class NonIIDIssueManager(IssueManager):
         }
         self.background_distribution = None
 
-    def find_issues(self, features: npt.NDArray, **_) -> None:
-        if self.knn is None:
-            if self.metric is None:
-                self.metric = "cosine" if features.shape[1] > 3 else "euclidean"
-            self.knn = NearestNeighbors(n_neighbors=self.k, metric=self.metric)
-        knn = KNN(n_neighbors=self.k, knn=self.knn)
+        # Internal instance variable for tracking KNN wrapper
+        self._knn: Optional[KNN] = None
 
-        if self.metric and self.metric != knn.metric:
-            warnings.warn(
-                f"Metric {self.metric} does not match metric {knn.metric} used to fit knn. "
-                "Most likely an existing NearestNeighbors object was passed in, but a different "
-                "metric was specified."
-            )
-        self.metric = knn.metric
+    def find_issues(self, features: Optional[npt.NDArray] = None, **kwargs) -> None:
+        knn_graph = self._process_knn_graph_from_inputs(kwargs)
+        old_knn_metric = self.datalab.get_info("statistics").get("knn_metric")
+        metric_changes = self.metric and self.metric != old_knn_metric
 
-        try:
-            check_is_fitted(self.knn)
-        except:
-            knn.fit(features)
+        if knn_graph is None or metric_changes:
+            if features is None:
+                raise ValueError(
+                    "If a knn_graph is not provided, features must be provided to fit a new knn."
+                )
 
-        self.neighbor_index_choices = self._get_neighbors(knn)
+            if self.knn is None:
+                if self.metric is None:
+                    self.metric = "cosine" if features.shape[1] > 3 else "euclidean"
+                self.knn = NearestNeighbors(n_neighbors=self.k, metric=self.metric)
+            knn = KNN(n_neighbors=self.k, knn=self.knn)
+
+            if self.metric and self.metric != knn.metric:
+                warnings.warn(
+                    f"Metric {self.metric} does not match metric {knn.metric} used to fit knn. "
+                    "Most likely an existing NearestNeighbors object was passed in, but a different "
+                    "metric was specified."
+                )
+            self.metric = knn.metric
+
+            try:
+                check_is_fitted(self.knn)
+            except:
+                knn.fit(features)
+
+            self.neighbor_index_choices = self._get_neighbors(knn=knn)
+            self._knn = knn
+        else:
+            self.neighbor_index_choices = self._get_neighbors(knn_graph=knn_graph)
 
         self.num_neighbors = self.k
 
@@ -176,9 +193,35 @@ class NonIIDIssueManager(IssueManager):
 
         self.summary = self.make_summary(score=self.p_value)
 
-        self.info = self.collect_info()
+        if knn_graph is None:
+            self.info = self.collect_info(knn=self._knn)
+        self.info = self.collect_info(knn_graph=knn_graph, knn=self._knn)
 
-    def collect_info(self) -> dict:
+    def _process_knn_graph_from_inputs(self, kwargs: Dict[str, Any]) -> Union[csr_matrix, None]:
+        """Determine if a knn_graph is provided in the kwargs or if one is already stored in the associated Datalab instance."""
+        knn_graph_kwargs: Optional[csr_matrix] = kwargs.get("knn_graph", None)
+        knn_graph_stats = self.datalab.get_info("statistics").get("weighted_knn_graph", None)
+
+        knn_graph: Optional[csr_matrix] = None
+        if knn_graph_kwargs is not None:
+            knn_graph = knn_graph_kwargs
+        elif knn_graph_stats is not None:
+            knn_graph = knn_graph_stats
+
+        need_to_recompute_knn = isinstance(knn_graph, csr_matrix) and (
+            kwargs.get("k", 0) > knn_graph.nnz // knn_graph.shape[0]
+            or self.k > knn_graph.nnz // knn_graph.shape[0]
+        )
+
+        if need_to_recompute_knn:
+            # If the provided knn graph is insufficient, then we need to recompute the knn graph
+            # with the provided features
+            knn_graph = None
+        return knn_graph
+
+    def collect_info(
+        self, knn_graph: Optional[csr_matrix] = None, knn: Optional[KNN] = None
+    ) -> dict:
         issues_dict = {
             "p-value": self.p_value,
         }
@@ -187,19 +230,38 @@ class NonIIDIssueManager(IssueManager):
             "metric": self.metric,
             "k": self.k,
         }
+        if knn_graph is None:
+            assert knn is not None, "If knn_graph is None, knn must be provided."
+            knn_graph = knn.kneighbors_graph()  # type: ignore[union-attr]
 
-        weighted_knn_graph = self.knn.kneighbors_graph(mode="distance")  # type: ignore[union-attr]
-
-        knn_info_dict = {
-            "weighted_knn_graph": weighted_knn_graph,
-        }
+        assert knn_graph is not None, "knn_graph must be provided or computed."
+        statistics_dict = self._build_statistics_dictionary(knn_graph=knn_graph)
 
         info_dict = {
             **issues_dict,
             **params_dict,  # type: ignore[arg-type]
-            **knn_info_dict,
+            **statistics_dict,
         }
         return info_dict
+
+    def _build_statistics_dictionary(self, knn_graph: csr_matrix) -> Dict[str, Dict[str, Any]]:
+        statistics_dict: Dict[str, Dict[str, Any]] = {"statistics": {}}
+
+        # Add the knn graph as a statistic if necessary
+        graph_key = "weighted_knn_graph"
+        old_knn_graph = self.datalab.get_info("statistics").get(graph_key, None)
+        old_graph_exists = old_knn_graph is not None
+        prefer_new_graph = (
+            (knn_graph is not None and not old_graph_exists)
+            or knn_graph.nnz > old_knn_graph.nnz
+            or self.metric != self.datalab.get_info("statistics").get("knn_metric", None)
+        )
+        if prefer_new_graph:
+            statistics_dict["statistics"][graph_key] = knn_graph
+            if self.metric is not None:
+                statistics_dict["statistics"]["knn_metric"] = self.metric
+
+        return statistics_dict
 
     def _permutation_test(self, num_permutations) -> float:
         N = self.N
@@ -349,13 +411,22 @@ class NonIIDIssueManager(IssueManager):
         scores = np.tanh(-1 * scores) + 1
         return scores
 
-    def _get_neighbors(self, knn: KNN) -> np.ndarray:
+    def _get_neighbors(
+        self, knn: Optional[KNN] = None, knn_graph: Optional[csr_matrix] = None
+    ) -> np.ndarray:
         """
-        Given a fitted knn object, returns an (N, k) array in which j is in A[i] if
-        item i and j are nearest neighbors.
+        Given a fitted knn object or a knn graph, returns an (N, k) array in
+        which j is in A[i] if item i and j are nearest neighbors.
         """
-        _, kneighbors = knn.kneighbors()
-        self.N = kneighbors.shape[0]
+        if knn_graph is not None:
+            N = knn_graph.shape[0]
+            kneighbors = knn_graph.indices.reshape(N, -1)
+        elif knn is not None:
+            _, kneighbors = knn.kneighbors()
+            N = kneighbors.shape[0]
+        else:
+            raise ValueError("Must provide either knn or knn_graph")
+        self.N = N
         return kneighbors
 
     def _get_statistics(
