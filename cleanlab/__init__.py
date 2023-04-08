@@ -28,7 +28,7 @@ class DatalabUnavailable:
 
 def _datalab_import_factory():
     try:
-        from .experimental.datalab.datalab import Datalab as _Datalab
+        from .datalab.datalab import Datalab as _Datalab
 
         return _Datalab
     except ImportError:
@@ -40,7 +40,7 @@ def _datalab_import_factory():
 
 def _issue_manager_import_factory():
     try:
-        from .experimental.datalab.issue_manager import IssueManager as _IssueManager
+        from .datalab.issue_manager import IssueManager as _IssueManager
 
         return _IssueManager
     except ImportError:
