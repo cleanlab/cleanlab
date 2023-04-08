@@ -157,7 +157,7 @@ class KNN:
 
         Examples
         --------
-        >>> from cleanlab.experimental.datalab.knn import KNN
+        >>> from cleanlab.datalab.knn import KNN
         >>> knn = KNN(n_neighbors=2)
         >>> X = [[0.0, 0.4], [1.0, 0.2], [0.6, 0.2], [0.8, 1.0], [0.9, 1.0]]
         >>> knn.fit(X)
@@ -271,7 +271,7 @@ class KNN:
 
         Examples
         --------
-        >>> from cleanlab.experimental.datalab.knn import KNN
+        >>> from cleanlab.datalab.knn import KNN
         >>> knn = KNN(n_neighbors=2)
         >>> X = [[0.0, 0.4], [1.0, 0.2], [0.6, 0.2], [0.8, 1.0], [0.9, 1.0]]
         >>> knn.fit(X)
@@ -379,7 +379,7 @@ class KNN:
         --------
         >>> import numpy as np
         >>> from sklearn.neighbors import NearestNeighbors
-        >>> from cleanlab.experimental.datalab.knn import KNN
+        >>> from cleanlab.datalab.knn import KNN
         >>> knn_sklearn = NearestNeighbors(n_neighbors=2)
         >>> X = [[0.0, 0.4], [1.0, 0.2], [0.6, 0.2], [0.8, 1.0], [0.9, 1.0]]
         >>> knn_sklearn.fit(X)

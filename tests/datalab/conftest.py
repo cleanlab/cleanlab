@@ -1,7 +1,7 @@
 import pytest
 from datasets.arrow_dataset import Dataset
 
-from cleanlab.experimental.datalab.datalab import Datalab
+from cleanlab.datalab.datalab import Datalab
 import numpy as np
 
 SEED = 42

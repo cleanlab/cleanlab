@@ -121,7 +121,7 @@ class Data:
     - datasets :
         Dataset, DatasetDict and load_dataset are imported from datasets.
         This is an optional dependency of cleanlab, but is required for
-        :py:class:`Datalab <cleanlab.experimental.datalab.datalab.Datalab>` to work.
+        :py:class:`Datalab <cleanlab.datalab.datalab.Datalab>` to work.
     """
 
     def __init__(self, data: "DatasetLike", label_name: str) -> None:

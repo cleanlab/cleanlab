@@ -12,11 +12,11 @@ from scipy.sparse import csr_matrix
 from sklearn.neighbors import NearestNeighbors
 from sklearn.utils.validation import check_is_fitted
 
-from cleanlab.experimental.datalab.issue_manager import IssueManager
-from cleanlab.experimental.datalab.knn import KNN
+from cleanlab.datalab.issue_manager import IssueManager
+from cleanlab.datalab.knn import KNN
 
 if TYPE_CHECKING:  # pragma: no cover
-    from cleanlab.experimental.datalab.datalab import Datalab
+    from cleanlab.datalab.datalab import Datalab
 
 
 def simplified_kolmogorov_smirnov_test(

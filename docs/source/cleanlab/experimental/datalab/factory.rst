@@ -1,7 +1,7 @@
 factory
 =======
 
-.. automodule:: cleanlab.experimental.datalab.factory
+.. automodule:: cleanlab.datalab.factory
    :autosummary:
    :members:
    :undoc-members:

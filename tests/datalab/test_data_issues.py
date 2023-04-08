@@ -1,6 +1,6 @@
 import pytest
-from cleanlab.experimental.datalab.data import Data
-from cleanlab.experimental.datalab.data_issues import DataIssues
+from cleanlab.datalab.data import Data
+from cleanlab.datalab.data_issues import DataIssues
 
 
 class TestDataIssues:

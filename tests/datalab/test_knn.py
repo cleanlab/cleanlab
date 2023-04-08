@@ -5,7 +5,7 @@ from timeit import timeit
 from sklearn.exceptions import NotFittedError
 from sklearn.neighbors import NearestNeighbors
 
-from cleanlab.experimental.datalab.knn import KNN, KNNInterface
+from cleanlab.datalab.knn import KNN, KNNInterface
 
 
 class AnnoyKNN(KNNInterface):

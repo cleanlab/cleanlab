@@ -23,12 +23,12 @@ from typing import TYPE_CHECKING, Optional
 import pandas as pd
 
 import cleanlab
-from cleanlab.experimental.datalab.data import Data
+from cleanlab.datalab.data import Data
 
 if TYPE_CHECKING:  # pragma: no cover
     from datasets.arrow_dataset import Dataset
 
-    from cleanlab.experimental.datalab.datalab import Datalab
+    from cleanlab.datalab.datalab import Datalab
 
 
 # Constants:

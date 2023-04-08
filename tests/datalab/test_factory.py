@@ -1,7 +1,7 @@
 import pytest
 
-from cleanlab.experimental.datalab.factory import register, REGISTRY, list_possible_issue_types
-from cleanlab.experimental.datalab.issue_manager.issue_manager import IssueManager
+from cleanlab.datalab.factory import register, REGISTRY, list_possible_issue_types
+from cleanlab.datalab.issue_manager.issue_manager import IssueManager
 
 
 @pytest.fixture

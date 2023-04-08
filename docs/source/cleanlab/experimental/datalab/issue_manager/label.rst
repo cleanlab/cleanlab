@@ -1,7 +1,7 @@
 label
 =====
 
-.. automodule:: cleanlab.experimental.datalab.issue_manager.label
+.. automodule:: cleanlab.datalab.issue_manager.label
     :autosummary:
     :members:
     :undoc-members:

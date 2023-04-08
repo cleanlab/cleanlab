@@ -1,5 +1,5 @@
 import pytest
-from cleanlab.experimental.datalab.data import Data
+from cleanlab.datalab.data import Data
 from datasets import Dataset, load_dataset, ClassLabel
 import numpy as np
 import hypothesis.strategies as st

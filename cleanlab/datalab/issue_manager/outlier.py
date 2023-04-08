@@ -23,12 +23,12 @@ import numpy as np
 import numpy.typing as npt
 import pandas as pd
 
-from cleanlab.experimental.datalab.issue_manager import IssueManager
-from cleanlab.experimental.datalab.knn import KNN
+from cleanlab.datalab.issue_manager import IssueManager
+from cleanlab.datalab.knn import KNN
 from cleanlab.outlier import OutOfDistribution, transform_distances_to_scores
 
 if TYPE_CHECKING:  # pragma: no cover
-    from cleanlab.experimental.datalab.datalab import Datalab
+    from cleanlab.datalab.datalab import Datalab
 
 
 class OutOfDistributionIssueManager(IssueManager):

@@ -2,7 +2,7 @@ outlier
 =======
 
 
-.. automodule:: cleanlab.experimental.datalab.issue_manager.outlier
+.. automodule:: cleanlab.datalab.issue_manager.outlier
     :autosummary:
     :members:
     :undoc-members:

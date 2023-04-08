@@ -18,7 +18,7 @@
 import os
 import pickle
 from unittest.mock import MagicMock, Mock, patch
-from cleanlab.experimental.datalab.datalab import Datalab
+from cleanlab.datalab.datalab import Datalab
 
 from scipy.sparse import csr_matrix
 from sklearn.neighbors import NearestNeighbors
@@ -412,7 +412,7 @@ class TestDatalab:
                 return [mock_issue_manager]
 
         monkeypatch.setattr(
-            "cleanlab.experimental.datalab.datalab._IssueManagerFactory", MockIssueManagerFactory
+            "cleanlab.datalab.datalab._IssueManagerFactory", MockIssueManagerFactory
         )
 
         assert lab.issues.empty
@@ -434,7 +434,7 @@ class TestDatalab:
                 return mock_issue_manager
 
         monkeypatch.setattr(
-            "cleanlab.experimental.datalab.datalab._IssueManagerFactory", MockIssueManagerFactory
+            "cleanlab.datalab.datalab._IssueManagerFactory", MockIssueManagerFactory
         )
         mock_issues = pd.DataFrame(
             {
@@ -495,7 +495,7 @@ class TestDatalabUsingKNNGraph:
 
     @pytest.fixture
     def data_tuple(self):
-        # from cleanlab.experimental.datalab.datalab import Datalab
+        # from cleanlab.datalab.datalab import Datalab
         np.random.seed(SEED)
         N = 10
         data = {"label": np.random.randint(0, 2, size=N)}
@@ -545,7 +545,7 @@ class TestDatalabIssueManagerInteraction:
 
     @pytest.fixture
     def custom_issue_manager(self):
-        from cleanlab.experimental.datalab.issue_manager import IssueManager
+        from cleanlab.datalab.issue_manager import IssueManager
 
         class CustomIssueManager(IssueManager):
             issue_name = "custom_issue"
@@ -575,7 +575,7 @@ class TestDatalabIssueManagerInteraction:
         mock_registry = MagicMock()
         mock_registry.__getitem__.side_effect = KeyError("issue type not registered")
 
-        with patch("cleanlab.experimental.datalab.factory.REGISTRY", mock_registry):
+        with patch("cleanlab.datalab.factory.REGISTRY", mock_registry):
             with pytest.raises(ValueError) as excinfo:
                 lab.find_issues(issue_types={"custom_issue": {}})
 
@@ -588,7 +588,7 @@ class TestDatalabIssueManagerInteraction:
 
     def test_custom_issue_manager_registered(self, lab, custom_issue_manager):
         """Test that a custom issue manager that is registered will be used."""
-        from cleanlab.experimental.datalab.factory import register
+        from cleanlab.datalab.factory import register
 
         register(custom_issue_manager)
 
@@ -611,7 +611,7 @@ class TestDatalabIssueManagerInteraction:
         self, lab, custom_issue_manager
     ):
         """Test that a custom issue manager that is registered will be used."""
-        from cleanlab.experimental.datalab.factory import register
+        from cleanlab.datalab.factory import register
 
         register(custom_issue_manager)
 
@@ -631,7 +631,7 @@ class TestDatalabIssueManagerInteraction:
         assert pd.testing.assert_frame_equal(lab.issues, expected_issues) is None
 
         # Clean up registry
-        from cleanlab.experimental.datalab.factory import REGISTRY
+        from cleanlab.datalab.factory import REGISTRY
 
         REGISTRY.pop(custom_issue_manager.issue_name)
 

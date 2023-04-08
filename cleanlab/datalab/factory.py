@@ -17,7 +17,7 @@
 and a decorator for registering new issue managers.
 
 This module provides the :py:meth:`register` decorator for users to register new subclasses of
-:py:class:`IssueManager <cleanlab.experimental.datalab.issue_manager.issue_manager.IssueManager>`
+:py:class:`IssueManager <cleanlab.datalab.issue_manager.issue_manager.IssueManager>`
 in the registry.
 
 
@@ -27,9 +27,9 @@ Note
 The :class:`REGISTRY` variable is used by the factory class to keep track
 of registered issue managers.
 The factory class is used as an implementation detail by
-:py:class:`Datalab <cleanlab.experimental.datalab.datalab.Datalab>`,
+:py:class:`Datalab <cleanlab.datalab.datalab.Datalab>`,
 which provides a simplified API for constructing concrete issue managers.
-:py:class:`Datalab <cleanlab.experimental.datalab.datalab.Datalab>` is intended to be used by users
+:py:class:`Datalab <cleanlab.datalab.datalab.Datalab>` is intended to be used by users
 and provides detailed documentation on how to use the API.
 
 Warning
@@ -40,7 +40,7 @@ from __future__ import annotations
 
 from typing import Dict, List, Type
 
-from cleanlab.experimental.datalab.issue_manager import (
+from cleanlab.datalab.issue_manager import (
     IssueManager,
     LabelIssueManager,
     NearDuplicateIssueManager,
@@ -62,10 +62,10 @@ and used in the Datalab class.
 
 Currently, the following issue managers are registered by default:
 
-- ``"outlier"``: :py:class:`OutOfDistributionIssueManager <cleanlab.experimental.datalab.issue_manager.outlier.OutOfDistributionIssueManager>`
-- ``"label"``: :py:class:`LabelIssueManager <cleanlab.experimental.datalab.issue_manager.label.LabelIssueManager>`
-- ``"near_duplicate"``: :py:class:`NearDuplicateIssueManager <cleanlab.experimental.datalab.issue_manager.duplicate.NearDuplicateIssueManager>`
-- ``"non_iid"``: :py:class:`NonIIDIssueManager <cleanlab.experimental.datalab.issue_manager.noniid.NonIIDIssueManager>`
+- ``"outlier"``: :py:class:`OutOfDistributionIssueManager <cleanlab.datalab.issue_manager.outlier.OutOfDistributionIssueManager>`
+- ``"label"``: :py:class:`LabelIssueManager <cleanlab.datalab.issue_manager.label.LabelIssueManager>`
+- ``"near_duplicate"``: :py:class:`NearDuplicateIssueManager <cleanlab.datalab.issue_manager.duplicate.NearDuplicateIssueManager>`
+- ``"non_iid"``: :py:class:`NonIIDIssueManager <cleanlab.datalab.issue_manager.noniid.NonIIDIssueManager>`
 
 Warning
 -------
@@ -80,7 +80,7 @@ def list_possible_issue_types() -> List[str]:
 
     See Also
     --------
-    :py:class:`REGISTRY <cleanlab.experimental.datalab.factory.REGISTRY>` : The default issue types and their corresponding issue managers can be found here.
+    :py:class:`REGISTRY <cleanlab.datalab.factory.REGISTRY>` : The default issue types and their corresponding issue managers can be found here.
     """
     return list(REGISTRY.keys())
 
@@ -113,7 +113,7 @@ def register(cls: Type[IssueManager]) -> Type[IssueManager]:
     ----------
     cls :
         A subclass of
-        :py:class:`IssueManager <cleanlab.experimental.datalab.issue_manager.issue_manager.IssueManager>`.
+        :py:class:`IssueManager <cleanlab.datalab.issue_manager.issue_manager.IssueManager>`.
 
     Returns
     -------
@@ -124,13 +124,13 @@ def register(cls: Type[IssueManager]) -> Type[IssueManager]:
     -------
 
     When defining a new subclass of
-    :py:class:`IssueManager <cleanlab.experimental.datalab.issue_manager.issue_manager.IssueManager>`,
+    :py:class:`IssueManager <cleanlab.datalab.issue_manager.issue_manager.IssueManager>`,
     you can register it like so:
 
     .. code-block:: python
 
         from cleanlab import IssueManager
-        from cleanlab.experimental.datalab.factory import register
+        from cleanlab.datalab.factory import register
 
         @register
         class MyIssueManager(IssueManager):
@@ -144,7 +144,7 @@ def register(cls: Type[IssueManager]) -> Type[IssueManager]:
     .. code-block:: python
 
         from cleanlab import IssueManager
-        from cleanlab.experimental.datalab.factory import register
+        from cleanlab.datalab.factory import register
 
         class MyIssueManager(IssueManager):
             issue_name: str = "my_issue"

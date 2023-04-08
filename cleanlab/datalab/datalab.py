@@ -30,11 +30,11 @@ import numpy.typing as npt
 import pandas as pd
 
 import cleanlab
-from cleanlab.experimental.datalab.data import Data
-from cleanlab.experimental.datalab.data_issues import DataIssues
-from cleanlab.experimental.datalab.display import _Displayer
-from cleanlab.experimental.datalab.factory import _IssueManagerFactory
-from cleanlab.experimental.datalab.serialize import _Serializer
+from cleanlab.datalab.data import Data
+from cleanlab.datalab.data_issues import DataIssues
+from cleanlab.datalab.display import _Displayer
+from cleanlab.datalab.factory import _IssueManagerFactory
+from cleanlab.datalab.serialize import _Serializer
 
 if TYPE_CHECKING:  # pragma: no cover
     from datasets.arrow_dataset import Dataset
@@ -60,7 +60,7 @@ class Datalab:
 
         See also
         --------
-        :py:class:`Data <cleanlab.experimental.datalab.data.Data>`:
+        :py:class:`Data <cleanlab.datalab.data.Data>`:
         Internal class that represents the dataset.
 
 

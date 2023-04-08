@@ -2,14 +2,14 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from cleanlab.experimental.datalab.issue_manager import (
+from cleanlab.datalab.issue_manager import (
     IssueManager,
     LabelIssueManager,
     OutOfDistributionIssueManager,
     NearDuplicateIssueManager,
     NonIIDIssueManager,
 )
-from cleanlab.experimental.datalab.factory import REGISTRY, register
+from cleanlab.datalab.factory import REGISTRY, register
 from cleanlab.outlier import OutOfDistribution
 
 SEED = 42
