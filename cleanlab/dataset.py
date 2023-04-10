@@ -14,6 +14,8 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
+def example():
+    return "here"
 
 """
 Provides dataset-level and class-level overviews of issues in your classification dataset.
