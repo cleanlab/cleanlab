@@ -48,6 +48,7 @@ def common_multilabel_issues(
     common_multilabel_issues : pd.DataFrame
         DataFrame where each row corresponds to a Class with the following columns:
 
+        * *Class Index*: The index of the Class.
         * *Class*: If `class_names` is provided, the "Class" column of the DataFrame will indicate the name of the class, otherwise this column contains integers representing the class index.
         * *In Given Label*: whether the Class is originally annotated True or False in the given label.
         * *In Suggested Label*: whether the Class should be True or False in the suggested label (based on model's prediction).
@@ -77,8 +78,8 @@ def common_multilabel_issues(
         true_but_false_count = sum(np.logical_and(label == 1, binary_label_issues))
         false_but_true_count = sum(np.logical_and(label == 0, binary_label_issues))
 
-        summary_issue_counts["Class"].append(class_name)
         summary_issue_counts["Class Index"].append(class_num)
+        summary_issue_counts["Class"].append(class_name)
         summary_issue_counts["In Given Label"].append(True)
         summary_issue_counts["In Suggested Label"].append(False)
         summary_issue_counts["Num Examples"].append(true_but_false_count)
@@ -90,8 +91,10 @@ def common_multilabel_issues(
         summary_issue_counts["In Suggested Label"].append(True)
         summary_issue_counts["Num Examples"].append(false_but_true_count)
         summary_issue_counts["Issue Probability"].append(false_but_true_count / num_examples)
-    return pd.DataFrame.from_dict(summary_issue_counts).sort_values(
-        by=["Issue Probability"], ascending=False
+    return (
+        pd.DataFrame.from_dict(summary_issue_counts)
+        .sort_values(by=["Issue Probability"], ascending=False)
+        .reset_index(drop=True)
     )
 
 
@@ -129,11 +132,12 @@ def rank_classes_by_multilabel_quality(
         perfect quality. Columns:
 
         * *Class Index*: The index of the class in 0, 1, ..., K-1.
+        * *Class*: If `class_names` is provided, the "Class" column of the DataFrame will indicate the name of the class, otherwise this column contains integers representing the class index.
         * *Label Issues*: ``count(given_label = k, true_label != k)``, estimated number of examples in the dataset that are labeled as class k but should have a different label.
-        * *Inverse Label Issues*: ``count(given_label != k, true_label = k)``, estimated number of examples in the dataset that should actually be labeled as class k but have been given another label.
         * *Label Noise*: ``prob(true_label != k | given_label = k)``, estimated proportion of examples in the dataset that are labeled as class k but should have a different label. For each class k: this is computed by dividing the number of examples with "Label Issues" that were labeled as class k by the total number of examples labeled as class k.
-        * *Inverse Label Noise*: ``prob(given_label != k | true_label = k)``, estimated proportion of examples in the dataset that should actually be labeled as class k but have been given another label.
         * *Label Quality Score*: ``p(true_label = k | given_label = k)``. This is the proportion of examples with given label k that have been labeled correctly, i.e. ``1 - label_noise``.
+        * *Inverse Label Issues*: ``count(given_label != k, true_label = k)``, estimated number of examples in the dataset that should actually be labeled as class k but have been given another label.
+        * *Inverse Label Noise*: ``prob(given_label != k | true_label = k)``, estimated proportion of examples in the dataset that should actually be labeled as class k but have been given another label.
 
         By default, the DataFrame is ordered by "Label Quality Score", ascending.
     """
@@ -163,8 +167,10 @@ def rank_classes_by_multilabel_quality(
         issues_df_dict["Class Index"].append(i)
         for j in issues_dict[i]:
             issues_df_dict[j].append(issues_dict[i][j])
-    return pd.DataFrame.from_dict(issues_df_dict).sort_values(
-        by="Label Quality Score", ascending=True
+    return (
+        pd.DataFrame.from_dict(issues_df_dict)
+        .sort_values(by="Label Quality Score", ascending=True)
+        .reset_index(drop=True)
     )
 
 
