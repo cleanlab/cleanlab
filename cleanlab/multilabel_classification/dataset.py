@@ -149,6 +149,7 @@ def rank_classes_by_multilabel_quality(
     num_examples = _get_num_examples_multilabel(labels=labels, confident_joint=confident_joint)
     for class_num, row in issues_df.iterrows():
         if row["In Given Label"]:
+            issues_dict[row["Class Index"]]["Class"] = row["Class"]
             issues_dict[row["Class Index"]]["Label Issues"] = int(
                 row["Issue Probability"] * num_examples
             )
@@ -157,6 +158,7 @@ def rank_classes_by_multilabel_quality(
                 1 - issues_dict[row["Class Index"]]["Label Noise"]
             )
         else:
+            issues_dict[row["Class Index"]]["Class"] = row["Class"]
             issues_dict[row["Class Index"]]["Inverse Label Issues"] = int(
                 row["Issue Probability"] * num_examples
             )
