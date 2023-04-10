@@ -26,13 +26,17 @@ def find_label_issues(
 
 
     pred_probs : np.ndarray
-      An array of shape ``(N, K)`` of model-predicted probabilities,
-      ``P(label=k|x)``. Each row of this matrix corresponds
-      to an example `x` and contains the model-predicted probabilities that
-      `x` belongs to each possible class, for each of the K classes. The
-      columns must be ordered such that these probabilities correspond to
-      class 0, 1, ..., K-1. They need not sum to 1.0
+      A 2D array of shape ``(N, K)`` of model-predicted class probabilities ``P(label=k|x)``.
+      Each row of this matrix corresponds to an example `x` and contains the predicted probabilities
+      that `x` belongs to each possible class, for each of the K classes.
+      The columns of this array must be ordered such that these probabilities correspond to class 0, 1, ..., K-1.
+      In multi-label classification (where classes are not mutually exclusive), the rows of `pred_probs` need not sum to 1.
 
+      Note
+      ----
+      Estimated label quality scores are most accurate when they are computed based on out-of-sample ``pred_probs`` from your model.
+      To obtain out-of-sample predicted probabilities for every example in your dataset, you can use :ref:`cross-validation <pred_probs_cross_val>`.
+      This is encouraged to get better results.
 
     return_indices_ranked_by : {None, 'self_confidence', 'normalized_margin', 'confidence_weighted_entropy'}, default=None
       Refer to documentation for this argument in :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` for details.
@@ -58,7 +62,7 @@ def find_label_issues(
       Entry ``(c, i, j)`` in this array is the number of examples confidently counted into a ``(class c, noisy label=i, true label=j)`` bin,
       where `i, j` are either 0 or 1 to denote whether this example belongs to class `c` or not
       (recall examples can belong to multiple classes in multi-label classification).
-      The `confident_joint` can be computed using :py:func:`count.compute_confident_joint <cleanlab.count.compute_confident_joint>`.
+      The `confident_joint` can be computed using :py:func:`count.compute_confident_joint <cleanlab.count.compute_confident_joint>` with multi_label=True.
       If not provided, it is computed from the given (noisy) `labels` and `pred_probs`.
 
     n_jobs : optional
@@ -118,15 +122,8 @@ def find_multilabel_issues_per_class(
     labels : List[List[int]]
       List of noisy labels for multi-label classification where each example can belong to multiple classes (e.g. ``labels = [[1,2],[1],[0],[],...]`` indicates the first example in dataset belongs to both class 1 and class 2.
 
-
     pred_probs : np.ndarray
-      An array of shape ``(N, K)`` of model-predicted probabilities,
-      ``P(label=k|x)``. Each row of this matrix corresponds
-      to an example `x` and contains the model-predicted probabilities that
-      `x` belongs to each possible class, for each of the K classes. The
-      columns must be ordered such that these probabilities correspond to
-      class 0, 1, ..., K-1. They need not sum to 1.0
-
+      Refer to documentation for this argument in :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` for details.
 
     return_indices_ranked_by : {None, 'self_confidence', 'normalized_margin', 'confidence_weighted_entropy'}, default=None
       Refer to documentation for this argument in :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` for details.
@@ -148,12 +145,7 @@ def find_multilabel_issues_per_class(
       Refer to documentation for this argument in :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` for details.
 
     confident_joint : np.ndarray, optional
-      An array of shape ``(K, 2, 2)`` representing a one-vs-rest formatted confident joint.
-      Entry ``(c, i, j)`` in this array is the number of examples confidently counted into a ``(class c, noisy label=i, true label=j)`` bin,
-      where `i, j` are either 0 or 1 to denote whether this example belongs to class `c` or not
-      (recall examples can belong to multiple classes in multi-label classification).
-      The `confident_joint` can be computed using :py:func:`count.compute_confident_joint <cleanlab.count.compute_confident_joint>`.
-      If not provided, it is computed from the given (noisy) `labels` and `pred_probs`.
+      Refer to documentation for this argument in :py:func:`cleanlab.multilabel.filter.find_label_issues <cleanlab.filter.find_label_issues>` for details.
 
     n_jobs : optional
       Refer to documentation for this argument in :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` for details.
