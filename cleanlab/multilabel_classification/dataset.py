@@ -48,8 +48,8 @@ def common_multilabel_issues(
     common_multilabel_issues : pd.DataFrame
         DataFrame where each row corresponds to a Class with the following columns:
 
+        * *Class Name*: If `class_names` is provided, the "Class Name" column of the DataFrame will indicate the name of the class, otherwise this column contains integers representing the class index.
         * *Class Index*: The index of the Class.
-        * *Class*: If `class_names` is provided, the "Class" column of the DataFrame will indicate the name of the class, otherwise this column contains integers representing the class index.
         * *In Given Label*: whether the Class is originally annotated True or False in the given label.
         * *In Suggested Label*: whether the Class should be True or False in the suggested label (based on model's prediction).
         * *Num Examples*: Number of examples flagged as a label issue where this Class is True/False "In Given Label" but cleanlab estimates the annotation should actually be as specified "In Suggested Label". I.e. the number of examples in your dataset where this Class was labeled as True but likely should have been False (or vice versa).
@@ -78,14 +78,14 @@ def common_multilabel_issues(
         true_but_false_count = sum(np.logical_and(label == 1, binary_label_issues))
         false_but_true_count = sum(np.logical_and(label == 0, binary_label_issues))
 
+        summary_issue_counts["Class Name"].append(class_name)
         summary_issue_counts["Class Index"].append(class_num)
-        summary_issue_counts["Class"].append(class_name)
         summary_issue_counts["In Given Label"].append(True)
         summary_issue_counts["In Suggested Label"].append(False)
         summary_issue_counts["Num Examples"].append(true_but_false_count)
         summary_issue_counts["Issue Probability"].append(true_but_false_count / num_examples)
 
-        summary_issue_counts["Class"].append(class_name)
+        summary_issue_counts["Class Name"].append(class_name)
         summary_issue_counts["Class Index"].append(class_num)
         summary_issue_counts["In Given Label"].append(False)
         summary_issue_counts["In Suggested Label"].append(True)
@@ -131,13 +131,13 @@ def rank_classes_by_multilabel_quality(
         in the class. The "Label Quality Score" is also between 0 and 1 where 1 implies
         perfect quality. Columns:
 
+        * *Class Name*: If `class_names` is provided, the "Class Name" column of the DataFrame will indicate the name of the class, otherwise this column contains integers representing the class index.
         * *Class Index*: The index of the class in 0, 1, ..., K-1.
-        * *Class*: If `class_names` is provided, the "Class" column of the DataFrame will indicate the name of the class, otherwise this column contains integers representing the class index.
         * *Label Issues*: ``count(given_label = k, true_label != k)``, estimated number of examples in the dataset that are labeled as class k but should have a different label.
-        * *Label Noise*: ``prob(true_label != k | given_label = k)``, estimated proportion of examples in the dataset that are labeled as class k but should have a different label. For each class k: this is computed by dividing the number of examples with "Label Issues" that were labeled as class k by the total number of examples labeled as class k.
-        * *Label Quality Score*: ``p(true_label = k | given_label = k)``. This is the proportion of examples with given label k that have been labeled correctly, i.e. ``1 - label_noise``.
         * *Inverse Label Issues*: ``count(given_label != k, true_label = k)``, estimated number of examples in the dataset that should actually be labeled as class k but have been given another label.
+        * *Label Noise*: ``prob(true_label != k | given_label = k)``, estimated proportion of examples in the dataset that are labeled as class k but should have a different label. For each class k: this is computed by dividing the number of examples with "Label Issues" that were labeled as class k by the total number of examples labeled as class k.
         * *Inverse Label Noise*: ``prob(given_label != k | true_label = k)``, estimated proportion of examples in the dataset that should actually be labeled as class k but have been given another label.
+        * *Label Quality Score*: ``p(true_label = k | given_label = k)``. This is the proportion of examples with given label k that have been labeled correctly, i.e. ``1 - label_noise``.
 
         By default, the DataFrame is ordered by "Label Quality Score", ascending.
     """
@@ -147,9 +147,18 @@ def rank_classes_by_multilabel_quality(
     )
     issues_dict = defaultdict(defaultdict)  # type: Dict[str, Any]
     num_examples = _get_num_examples_multilabel(labels=labels, confident_joint=confident_joint)
+    return_columns = [
+        "Class Name",
+        "Class Index",
+        "Label Issues",
+        "Inverse Label Issues",
+        "Label Noise",
+        "Inverse Label Noise",
+        "Label Quality Score",
+    ]
     for class_num, row in issues_df.iterrows():
         if row["In Given Label"]:
-            issues_dict[row["Class Index"]]["Class"] = row["Class"]
+            issues_dict[row["Class Index"]]["Class Name"] = row["Class Name"]
             issues_dict[row["Class Index"]]["Label Issues"] = int(
                 row["Issue Probability"] * num_examples
             )
@@ -158,7 +167,7 @@ def rank_classes_by_multilabel_quality(
                 1 - issues_dict[row["Class Index"]]["Label Noise"]
             )
         else:
-            issues_dict[row["Class Index"]]["Class"] = row["Class"]
+            issues_dict[row["Class Index"]]["Class Name"] = row["Class Name"]
             issues_dict[row["Class Index"]]["Inverse Label Issues"] = int(
                 row["Issue Probability"] * num_examples
             )
@@ -173,7 +182,7 @@ def rank_classes_by_multilabel_quality(
         pd.DataFrame.from_dict(issues_df_dict)
         .sort_values(by="Label Quality Score", ascending=True)
         .reset_index(drop=True)
-    )
+    )[return_columns]
 
 
 def _get_num_examples_multilabel(labels=None, confident_joint: Optional[np.ndarray] = None) -> int:
