@@ -17,82 +17,82 @@ def find_label_issues(
     verbose: bool = False,
 ) -> np.ndarray:
     """
-    Finds label issues in multi-label classification data where each example can belong to more than one class.
+        Finds label issues in multi-label classification data where each example can belong to more than one class.
 
-    Parameters
-    ----------
-    labels : List[List[int]]
-      List of noisy labels for multi-label classification where each example can belong to multiple classes (e.g. ``labels = [[1,2],[1],[0],[],...]`` indicates the first example in dataset belongs to both class 1 and class 2.
+        Parameters
+        ----------
+        labels : List[List[int]]
+          List of noisy labels for multi-label classification where each example can belong to multiple classes (e.g. ``labels = [[1,2],[1],[0],[],...]`` indicates the first example in dataset belongs to both class 1 and class 2.
 
 
-    pred_probs : np.ndarray
-      An array of shape ``(N, K)`` of model-predicted class probabilities.
-      Each row of this matrix corresponds to an example `x`
-      and contains the predicted probability that `x` belongs to each possible class,
-      for each of the K classes (along its columns).
-      The columns need not sum to 1 but must be ordered such that
-      these probabilities correspond to class 0, 1, ..., K-1.
+        pred_probs : np.ndarray
+          An array of shape ``(N, K)`` of model-predicted class probabilities.
+          Each row of this matrix corresponds to an example `x`
+          and contains the predicted probability that `x` belongs to each possible class,
+          for each of the K classes (along its columns).
+          The columns need not sum to 1 but must be ordered such that
+          these probabilities correspond to class 0, 1, ..., K-1.
 
-      Note
-      ----
-      Estimated label quality scores are most accurate when they are computed based on out-of-sample ``pred_probs`` from your model.
-      To obtain out-of-sample predicted probabilities for every example in your dataset, you can use :ref:`cross-validation <pred_probs_cross_val>`.
-      This is encouraged to get better results.
+          Note
+          ----
+          Estimated label quality scores are most accurate when they are computed based on out-of-sample ``pred_probs`` from your model.
+          To obtain out-of-sample predicted probabilities for every example in your dataset, you can use :ref:`cross-validation <pred_probs_cross_val>`.
+          This is encouraged to get better results.
 
-    return_indices_ranked_by : {None, 'self_confidence', 'normalized_margin', 'confidence_weighted_entropy'}, default=None
-      This function can return a boolean mask (if None) or a sorted array of indices based on the specified ranking method.
-      Refer to documentation for this argument in :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` for details.
+        return_indices_ranked_by : {None, 'self_confidence', 'normalized_margin', 'confidence_weighted_entropy'}, default=None
+          This function can return a boolean mask (if None) or a sorted array of indices based on the specified ranking method.
+          Refer to documentation for this argument in :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` for details.
 
-    rank_by_kwargs : dict, optional
-      Optional keyword arguments to pass into scoring functions for ranking by
-      label quality score (see :py:func:`rank.get_label_quality_scores
-      <cleanlab.rank.get_label_quality_scores>`).
+        rank_by_kwargs : dict, optional
+          Optional keyword arguments to pass into scoring functions for ranking by
+          label quality score (see :py:func:`rank.get_label_quality_scores
+          <cleanlab.rank.get_label_quality_scores>`).
 
-    filter_by : {'prune_by_class', 'prune_by_noise_rate', 'both', 'confident_learning', 'predicted_neq_given',
-        'low_normalized_margin', 'low_self_confidence'}, default='prune_by_noise_rate'
-      The specific method that can be used to filter or prune examples with label issues from a dataset.
-      Refer to documentation for this argument in :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` for details.
+        filter_by : {'prune_by_class', 'prune_by_noise_rate', 'both', 'confident_learning', 'predicted_neq_given',
+            'low_normalized_margin', 'low_self_confidence'}, default='prune_by_noise_rate'
+          The specific method that can be used to filter or prune examples with label issues from a dataset.
+          Refer to documentation for this argument in :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` for details.
 
-    frac_noise : float, default=1.0
-      This will return the "top" frac_noise * num_label_issues estimated label errors, dependent on the filtering method used,
-      Refer to documentation for this argument in :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` for details.
+        frac_noise : float, default=1.0
+          This will return the "top" frac_noise * num_label_issues estimated label errors, dependent on the filtering method used,
+          Refer to documentation for this argument in :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` for details.
 
-    num_to_remove_per_class : array_like
-      This parameter is an iterable that specifies the number of mislabeled examples to return from each class.
-      Refer to documentation for this argument in :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` for details.
+        num_to_remove_per_class : array_like
+          This parameter is an iterable that specifies the number of mislabeled examples to return from each class.
+          Refer to documentation for this argument in :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` for details.
 
-    min_examples_per_class : int, default=1
-      The minimum number of examples required per class to avoid flagging as label issues.
-      Refer to documentation for this argument in :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` for details.
+        min_examples_per_class : int, default=1
+          The minimum number of examples required per class to avoid flagging as label issues.
+          Refer to documentation for this argument in :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` for details.
 
-    confident_joint : np.ndarray, optional
-      An array of shape ``(K, 2, 2)`` representing a one-vs-rest formatted confident joint, as is appropriate for multi-label classification tasks.
-      Entry ``(c, i, j)`` in this array is the number of examples confidently counted into a ``(class c, noisy label=i, true label=j)`` bin,
-      where `i, j` are either 0 or 1 to denote whether this example belongs to class `c` or not
-      (recall examples can belong to multiple classes in multi-label classification).
-      The `confident_joint` can be computed using :py:func:`count.compute_confident_joint <cleanlab.count.compute_confident_joint>` with multi_label=True.
-      If not provided, it is computed from the given (noisy) `labels` and `pred_probs`.
+        confident_joint : np.ndarray, optional
+          An array of shape ``(K, 2, 2)`` representing a one-vs-rest formatted confident joint, as is appropriate for multi-label classification tasks.
+          Entry ``(c, i, j)`` in this array is the number of examples confidently counted into a ``(class c, noisy label=i, true label=j)`` bin,
+          where `i, j` are either 0 or 1 to denote whether this example belongs to class `c` or not
+          (recall examples can belong to multiple classes in multi-label classification).
+          The `confident_joint` can be computed using :py:func:`count.compute_confident_joint <cleanlab.count.compute_confident_joint>` with multi_label=True.
+          If not provided, it is computed from the given (noisy) `labels` and `pred_probs`.
 
-    n_jobs : optional
-      Number of processing threads used by multiprocessing.
-      Refer to documentation for this argument in :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` for details.
+        n_jobs : optional
+          Number of processing threads used by multiprocessing.
+          Refer to documentation for this argument in :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` for details.
 
-    verbose : optional
-      If ``True``, prints when multiprocessing happens.
+        verbose : optional
+          If ``True``, prints when multiprocessing happens.
 
-    Returns
-    -------
-    per_class_label_issues : list(np.ndarray)
-      If `return_indices_ranked_by` left unspecified, returns a list of boolean **masks** for the entire dataset
-where ``True`` represents an example identified to have label issue and ``False`` represents an example that is
-      accurately labeled with high confidence.
-      If `return_indices_ranked_by` is specified, returns a list of shorter arrays of **indices** of examples identified to have
-      label issues (i.e. those indices where the mask would be ``True``), sorting by likelihood that the corresponding label is correct is not supported yet.
+        Returns
+        -------
+        per_class_label_issues : list(np.ndarray)
+          If `return_indices_ranked_by` left unspecified, returns a list of boolean **masks** for the entire dataset
+    where ``True`` represents an example identified to have label issue and ``False`` represents an example that is
+          accurately labeled with high confidence.
+          If `return_indices_ranked_by` is specified, returns a list of shorter arrays of **indices** of examples identified to have
+          label issues (i.e. those indices where the mask would be ``True``), sorting by likelihood that the corresponding label is correct is not supported yet.
 
-      Note
-      ----
-      Obtain the *indices* of examples with label issues in your dataset by setting
-      `return_indices_ranked_by`.
+          Note
+          ----
+          Obtain the *indices* of examples with label issues in your dataset by setting
+          `return_indices_ranked_by`.
 
     """
     from cleanlab.filter import _find_label_issues_multilabel
@@ -126,55 +126,65 @@ def find_multilabel_issues_per_class(
     verbose: bool = False,
 ) -> Union[np.ndarray, Tuple[List[np.ndarray], List[Any], List[np.ndarray]]]:
     """
-    Parameters
-    ----------
-    labels : List[List[int]]
-      List of noisy labels for multi-label classification where each example can belong to multiple classes (e.g. ``labels = [[1,2],[1],[0],[],...]`` indicates the first example in dataset belongs to both class 1 and class 2.
+     Parameters
+     ----------
+     labels : List[List[int]]
+       List of noisy labels for multi-label classification where each example can belong to multiple classes (e.g. ``labels = [[1,2],[1],[0],[],...]`` indicates the first example in dataset belongs to both class 1 and class 2.
 
-    pred_probs : np.ndarray
-      Refer to documentation for this argument in :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` for details.
+     pred_probs : np.ndarray
+       A numpy array representing the predicted probabilities for each class.
+       Refer to documentation for this argument in :py:func:`cleanlab.multilabel_classification.filter.find_label_issues <cleanlab.multilabel_classification.filter.find_label_issues>` for details.
 
-    return_indices_ranked_by : {None, 'self_confidence', 'normalized_margin', 'confidence_weighted_entropy'}, default=None
-      Refer to documentation for this argument in :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` for details.
+     return_indices_ranked_by : {None, 'self_confidence', 'normalized_margin', 'confidence_weighted_entropy'}, default=None
+       This function can return a boolean mask (if None) or a sorted array of indices based on the specified ranking method.
+       Refer to documentation for this argument in :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` for details.
 
-    rank_by_kwargs : dict, optional
-      Refer to documentation for this argument in :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` for details.
+     rank_by_kwargs : dict, optional
+       Optional keyword arguments to pass into scoring functions for ranking by
+       label quality score (see :py:func:`rank.get_label_quality_scores
+       <cleanlab.rank.get_label_quality_scores>`).
 
-    filter_by : {'prune_by_class', 'prune_by_noise_rate', 'both', 'confident_learning', 'predicted_neq_given',
-        'low_normalized_margin', 'low_self_confidence'}, default='prune_by_noise_rate'
-      Refer to documentation for this argument in :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` for details.
+     filter_by : {'prune_by_class', 'prune_by_noise_rate', 'both', 'confident_learning', 'predicted_neq_given',
+         'low_normalized_margin', 'low_self_confidence'}, default='prune_by_noise_rate'
+       The specific method that can be used to filter or prune examples with label issues from a dataset.
+       Refer to documentation for this argument in :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` for details.
 
-    frac_noise : float, default=1.0
-      Refer to documentation for this argument in :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` for details.
+     frac_noise : float, default=1.0
+       This will return the "top" frac_noise * num_label_issues estimated label errors, dependent on the filtering method used,
+       Refer to documentation for this argument in :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` for details.
 
-    num_to_remove_per_class : array_like
-      Refer to documentation for this argument in :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` for details.
+     num_to_remove_per_class : array_like
+       This parameter is an iterable that specifies the number of mislabeled examples to return from each class.
+       Refer to documentation for this argument in :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` for details.
 
-    min_examples_per_class : int, default=1
-      Refer to documentation for this argument in :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` for details.
+     min_examples_per_class : int, default=1
+       The minimum number of examples required per class to avoid flagging as label issues.
+       Refer to documentation for this argument in :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` for details.
 
-    confident_joint : np.ndarray, optional
-      Refer to documentation for this argument in :py:func:`cleanlab.multilabel.filter.find_label_issues <cleanlab.filter.find_label_issues>` for details.
+     confident_joint : np.ndarray, optional
+       An array of shape ``(K, 2, 2)`` representing a one-vs-rest formatted confident joint
+       Refer to documentation for this argument in :py:func:`cleanlab.multilabel_classification.filter.find_label_issues <cleanlab.multilabel_classification.filter.find_label_issues>` for details.
 
     n_jobs : optional
-      Refer to documentation for this argument in :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` for details.
+       Number of processing threads used by multiprocessing.
+       Refer to documentation for this argument in :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` for details.
 
-    verbose : optional
-      If ``True``, prints when multiprocessing happens.
+     verbose : optional
+       If ``True``, prints when multiprocessing happens.
 
-    Returns
-    -------
-    per_class_label_issues : list(np.ndarray)
-      If `return_indices_ranked_by` left unspecified, returns a list of boolean **masks** for the entire dataset
-      where ``True`` represents a label issue and ``False`` represents an example that is
-      accurately labeled with high confidence.
-      If `return_indices_ranked_by` is specified, returns a list of shorter arrays of **indices** of examples identified to have
-      label issues (i.e. those indices where the mask would be ``True``), sorting by likelihood that the corresponding label is correct is not supported yet.
+     Returns
+     -------
+     per_class_label_issues : list(np.ndarray)
+       If `return_indices_ranked_by` left unspecified, returns a list of boolean **masks** for the entire dataset
+       where ``True`` represents a label issue and ``False`` represents an example that is
+       accurately labeled with high confidence.
+       If `return_indices_ranked_by` is specified, returns a list of shorter arrays of **indices** of examples identified to have
+       label issues (i.e. those indices where the mask would be ``True``), sorting by likelihood that the corresponding label is correct is not supported yet.
 
-      Note
-      ----
-      Obtain the *indices* of label issues in your dataset by setting
-      `return_indices_ranked_by`.
+       Note
+       ----
+       Obtain the *indices* of label issues in your dataset by setting
+       `return_indices_ranked_by`.
 
     """
     from cleanlab.filter import find_label_issues

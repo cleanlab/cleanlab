@@ -82,10 +82,10 @@ def get_label_quality_scores(
     Parameters
     ----------
     labels : List[List[int]]
-       Refer to documentation for this argument in :py:func:`cleanlab.multilabel.filter.find_label_issues <cleanlab.filter.find_label_issues>` for details.
+       Refer to documentation for this argument in :py:func:`cleanlab.multilabel_classification.filter.find_label_issues <cleanlab.filter.find_label_issues>` for details.
 
     pred_probs : np.ndarray
-       Refer to documentation for this argument in :py:func:`cleanlab.multilabel.filter.find_label_issues <cleanlab.filter.find_label_issues>` for details.
+       Refer to documentation for this argument in :py:func:`cleanlab.multilabel_classification.filter.find_label_issues <cleanlab.filter.find_label_issues>` for details.
 
 
     method : {"self_confidence", "normalized_margin", "confidence_weighted_entropy"}, default = "self_confidence"
@@ -198,7 +198,7 @@ def get_label_quality_scores_per_class(
       A 1D array of shape ``(N,)`` with a label quality score (between 0 and 1) for each example in the dataset.
       Lower scores indicate examples whose label is more likely to contain annotation errors.
 
-    To get a score for each class annotation for each example, use the :py:func:`cleanlab.multilabel_classification.rank.get_label_quality_scores_per_class <cleanlab.multilabel_classification.rank.get_label_quality_scores_per_class>` method instead.
+    To get a score for each class annotation for each example, use the :py:func:`cleanlab.multilabel_classification.classification.rank.get_label_quality_scores_per_class <cleanlab.multilabel_classification.rank.get_label_quality_scores_per_class>` method instead.
     Examples
     --------
     >>> from cleanlab.multilabel_classification import get_label_quality_scores
