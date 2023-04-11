@@ -139,11 +139,12 @@ def get_label_quality_scores_per_class(
     method: str = "self_confidence",
     adjust_pred_probs: bool = False,
 ) -> np.ndarray:
-    """Computes a per class label quality score for each example in a multi-label classification dataset.
+    """Scores the quality of each individual class annotation for each example in a multi-label classification dataset.
 
-    Scores are between 0 and 1 with lower scores indicating examples whose label more likely contains an error.
-    For each example, this method internally computes a separate score for each individual class
-    and then aggregates these per-class scores into an overall label quality score for the example.
+    Scores are between 0 and 1 with lower scores indicating examples where this class was less likely chosen correctly.
+     Remember each class either applies to the example or not, so low scores indicate examples where this class is likely annotated as True when it should be False or vice-versa.
+
+    These scores are aggregated across classes into a single quality score for each example in the `multilabel_classification.rank.get_label_quality_scores` method.
 
     To estimate exactly which examples are mislabeled in a multi-label classification dataset,
     you can also use :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` with argument ``multi_label=True``.
