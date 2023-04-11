@@ -17,7 +17,7 @@ def find_label_issues(
     verbose: bool = False,
 ) -> np.ndarray:
     """
-    Finds label issues in multi-label classification data where each example can belong to more than one class.
+    Identifies potentially bad labels in a multi-label classification dataset using confident learning.
     An example is flagged as with a label issue if *any* of the classes appear to be incorrectly annotated for this example.
 
     Parameters
@@ -83,10 +83,13 @@ def find_label_issues(
 
     Returns
     -------
-    label_issues : list(np.ndarray)
+    label_issues : np.ndarray
+      If `return_indices_ranked_by` left unspecified, returns a boolean **mask** for the entire dataset
+      where ``True`` represents a label issue and ``False`` represents an example that is
+      accurately labeled with high confidence.
+
       If `return_indices_ranked_by` is specified, returns a (shorter) list of **indices** of examples identified to have
-      label issues (i.e. those indices where the mask would be ``True``).
-      Indices are sorted by likelihood that *all* classes are correctly annotated for the corresponding example.
+      label issues (i.e. those indices where the mask would be ``True``). Indices are sorted by likelihood that *all* classes are correctly annotated for the corresponding example.
 
       Note
       ----
@@ -125,8 +128,9 @@ def find_multilabel_issues_per_class(
     verbose: bool = False,
 ) -> Union[np.ndarray, Tuple[List[np.ndarray], List[Any], List[np.ndarray]]]:
     """
-    Identifies potentially bad labels in a multi-label classification dataset using confident learning.
+    Identifies potentially bad labels for each class in a multi-label classification dataset using confident learning.
     Refer to documentation in :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` for further details.
+    This function returns a list of label issues of size K, where K = num_classes.
 
     Parameters
      ----------
@@ -177,13 +181,8 @@ def find_multilabel_issues_per_class(
 
      Returns
      -------
-     per_class_label_issues : np.ndarray
-      If `return_indices_ranked_by` left unspecified, returns a boolean **mask** for the entire dataset
-      where ``True`` represents a label issue and ``False`` represents an example that is
-      accurately labeled with high confidence.
-
-      If `return_indices_ranked_by` is specified, returns a (shorter) list of **indices** of examples identified to have
-      label issues (i.e. those indices where the mask would be ``True``). Indices are sorted by likelihood that *all* classes are correctly annotated for the corresponding example.
+     per_class_label_issues : list(np.ndarray)
+        returns a list of per class label issues, refer to :py:func:`cleanlab.multilabel_classification.filter.find_label_issues <cleanlab.multilabel_classification.filter.find_label_issues>`
 
 
        Note

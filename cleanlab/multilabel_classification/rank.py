@@ -108,6 +108,8 @@ def get_label_quality_scores(
       Options for ``"method"`` include: ``"exponential_moving_average"`` or ``"softmin"`` or your own callable function.
       See :py:class:`internal.multilabel_scorer.Aggregator <cleanlab.internal.multilabel_scorer.Aggregator>` for details about each option and other possible hyperparameters.
 
+    To get a score for each class annotation for each example, use the :py:func:`cleanlab.multilabel_classification.classification.rank.get_label_quality_scores_per_class <cleanlab.multilabel_classification.rank.get_label_quality_scores_per_class>` method instead.
+
     Returns
     -------
     label_quality_scores : np.ndarray
@@ -141,15 +143,12 @@ def get_label_quality_scores_per_class(
     method: str = "self_confidence",
     adjust_pred_probs: bool = False,
 ) -> np.ndarray:
-    """Scores the quality of each individual class annotation for each example in a multi-label classification dataset.
+    """
+    Computes the quality score for each individual class in a multi-label classification dataset.
+    The functionality is similar to :py:func:`get_label_quality_scores <cleanlab.multilabel_classification.rank.get_label_quality_scores>`
+    but instead returns the results before using an aggregator.
+    Refer to documentation in :py:func:`get_label_quality_scores <cleanlab.multilabel_classification.rank.get_label_quality_scores>` for details.
 
-    Scores are between 0 and 1 with lower scores indicating examples where this class was less likely chosen correctly.
-     Remember each class either applies to the example or not, so low scores indicate examples where this class is likely annotated as True when it should be False or vice-versa.
-
-    These scores are aggregated across classes into a single quality score for each example in the `multilabel_classification.rank.get_label_quality_scores` method.
-
-    To estimate exactly which examples are mislabeled in a multi-label classification dataset,
-    you can also use :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` with argument ``multi_label=True``.
 
     Parameters
     ----------
@@ -169,18 +168,13 @@ def get_label_quality_scores_per_class(
       Account for class imbalance in the label-quality scoring by adjusting predicted probabilities.
       Refer to documentation for this argument in :py:func:`rank.get_label_quality_scores <cleanlab.rank.get_label_quality_scores>` for details.
 
-    aggregator_kwargs : dict, default = {"method": "exponential_moving_average", "alpha": 0.8}
-      A dictionary of hyperparameter values for aggregating per class scores into an overall label quality score for each example.
-      Options for ``"method"`` include: ``"exponential_moving_average"`` or ``"softmin"`` or your own callable function.
-      See :py:class:`internal.multilabel_scorer.Aggregator <cleanlab.internal.multilabel_scorer.Aggregator>` for details about each option and other possible hyperparameters.
-
     Returns
     -------
-    label_quality_scores : np.ndarray
-      A 1D array of shape ``(N,)`` with a label quality score (between 0 and 1) for each example in the dataset.
-      Lower scores indicate examples whose label is more likely to contain annotation errors.
+    label_quality_scores : list(np.ndarray)
+      The returned list contains K - 1D arrays, each of shape (N,), where K is the number of classes in the dataset.
+      Each element of the list corresponds to a class and contains a label quality score (between 0 and 1)
+      for every example in the dataset that belongs to that class.
 
-    To get a score for each class annotation for each example, use the :py:func:`cleanlab.multilabel_classification.classification.rank.get_label_quality_scores_per_class <cleanlab.multilabel_classification.rank.get_label_quality_scores_per_class>` method instead.
     Examples
     --------
     >>> from cleanlab.multilabel_classification import get_label_quality_scores
