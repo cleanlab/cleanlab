@@ -122,7 +122,6 @@ def data_multilabel(num_classes=5):
         if i > 95:
             pos = (pos + 2) % num_classes
         q[pos] = 0.9
-
         pred_probs.append(q)
     return labels, np.array(pred_probs)
 
