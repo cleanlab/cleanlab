@@ -88,7 +88,7 @@ def find_label_issues(
       where ``True`` represents a label issue and ``False`` represents an example that is
       accurately labeled with high confidence.
 
-      If `return_indices_ranked_by` is specified, returns a (shorter) list of **indices** of examples identified to have
+      If `return_indices_ranked_by` is specified, returns a list of **indices** of examples identified to have
       label issues (i.e. those indices where the mask would be ``True``). Indices are sorted by likelihood that *all* classes are correctly annotated for the corresponding example.
 
       Note
