@@ -14,9 +14,6 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
-def example():
-    return "here"
-
 """
 Provides dataset-level and class-level overviews of issues in your classification dataset.
 If your task allows you to modify the classes in your dataset, this module can help you determine
@@ -63,6 +60,9 @@ def rank_classes_by_label_quality(
     >>> from sklearn.model_selection import cross_val_predict
     >>> data, labels = get_data_labels_from_dataset(yourFavoriteDataset)
     >>> yourFavoriteModel = LogisticRegression()
+    >>> test = "test"
+    >>> test
+    "false"
     >>> pred_probs = cross_val_predict(
             yourFavoriteModel,
             data,
