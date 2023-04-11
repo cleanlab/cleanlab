@@ -921,12 +921,18 @@ def test_batched_label_issues():
         batch_size=len(data["labels"]) + 100,
         n_jobs=4,
     )
+    f5 = find_label_issues_batched(
+        labels=data["labels"],
+        pred_probs=data["pred_probs"],
+        batch_size=1,
+    )
     f_single = find_label_issues_batched(
         labels=data["labels"],
         pred_probs=data["pred_probs"],
         batch_size=len(data["labels"]),
         n_jobs=1,
     )
+    assert np.all(f4 == f5)
     assert np.all(f4 == f3)
     assert np.all(f4 == f2)
     assert np.all(f_single == f4)
