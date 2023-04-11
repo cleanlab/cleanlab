@@ -1,7 +1,10 @@
 import pandas as pd
 import numpy as np
 from typing import Optional, cast, Dict, Any  # noqa: F401
-from cleanlab.multilabel_classification.filter import find_multilabel_issues_per_class
+from cleanlab.multilabel_classification.filter import (
+    find_multilabel_issues_per_class,
+    find_label_issues,
+)
 from cleanlab.internal.multilabel_utils import get_onehot_num_classes
 from collections import defaultdict
 
@@ -239,13 +242,9 @@ def overall_multilabel_health_score(
         A score between 0 and 1, where 1 implies all labels in the dataset are estimated to be correct.
         A score of 0.5 implies that half of the dataset's labels are estimated to have issues.
     """
-    num_classes = get_num_classes(labels=labels, pred_probs=pred_probs, multi_label=True)
-    class_names = list(range(num_classes))
-    num_examples = _get_num_examples_multilabel(labels=labels, confident_joint=confident_joint)
-    issues_df = common_multilabel_issues(
-        labels=labels, pred_probs=pred_probs, class_names=class_names, confident_joint=joint
-    )
-    return sum(issues_df["Num Examples"]) / num_examples
+    num_examples = _get_num_examples_multilabel(labels=labels)
+    issues = find_label_issues(labels=labels, pred_probs=pred_probs)
+    return 1.0 - sum(issues) / num_examples
 
 
 def multilabel_health_summary(

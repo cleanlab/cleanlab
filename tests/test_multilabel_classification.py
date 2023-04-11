@@ -112,6 +112,22 @@ def labels_multilabel():
 
 
 @pytest.fixture
+def data_multilabel(num_classes=5):
+    labels = []
+    pred_probs = []
+    for i in range(0, 100):
+        q = [0.1] * num_classes
+        pos = i % num_classes
+        labels.append([pos])
+        if i > 95:
+            pos = (pos + 2) % num_classes
+        q[pos] = 0.9
+
+        pred_probs.append(q)
+    return labels, np.array(pred_probs)
+
+
+@pytest.fixture
 def cv():
     return sklearn.model_selection.StratifiedKFold(
         n_splits=2,
@@ -393,11 +409,12 @@ def test_rank_classes_by_multilabel_quality(pred_probs_multilabel, labels_multil
     ).all()
 
 
-def test_overall_multilabel_health_score(pred_probs_multilabel, labels_multilabel):
+def test_overall_multilabel_health_score(data_multilabel):
+    labels, pred_probs = data_multilabel
     overall_label_health_score = overall_multilabel_health_score(
-        pred_probs=pred_probs_multilabel, labels=labels_multilabel
+        pred_probs=pred_probs, labels=labels
     )
-    assert np.isclose(overall_label_health_score, 0.2857142857142857)
+    assert np.isclose(overall_label_health_score, 0.96)
 
 
 def test_get_class_label_quality_scores():
