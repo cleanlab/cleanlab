@@ -32,7 +32,7 @@ from cleanlab.multilabel_classification.dataset import (
     overall_multilabel_health_score,
     multilabel_health_summary,
 )
-from cleanlab.multilabel_classification.rank import get_class_label_quality_scores
+from cleanlab.multilabel_classification.rank import get_label_quality_scores_per_class
 
 
 @pytest.fixture
@@ -365,7 +365,7 @@ def test_common_multilabel_issues(class_names, pred_probs_multilabel, labels_mul
         ]
     else:
         expected_res = [0, 2, 0, 1, 1, 2, 3, 3, 4, 4]
-    assert list(df["Class"]) == expected_res
+    assert list(df["Class Name"]) == expected_res
 
 
 def test_rank_classes_by_multilabel_quality(pred_probs_multilabel, labels_multilabel):
@@ -413,7 +413,7 @@ def test_get_class_label_quality_scores():
         ]
     )
     labels = [[0], [0, 1], [0, 1], [2], [0, 2, 3], [], []]
-    scores = get_class_label_quality_scores(pred_probs=pred_probs, labels=labels)
+    scores = get_label_quality_scores_per_class(pred_probs=pred_probs, labels=labels)
     expected_res = [
         [0.9, 0.9, 1.0, 0.6, 0.9],
         [0.7, 0.8, 0.8, 0.7, 0.9],

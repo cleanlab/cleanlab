@@ -132,7 +132,7 @@ def get_label_quality_scores(
     return scorer(binary_labels, pred_probs, base_scorer_kwargs=base_scorer_kwargs)
 
 
-def get_class_label_quality_scores(
+def get_label_quality_scores_per_class(
     labels: List[List[int]],
     pred_probs: npt.NDArray["np.floating[T]"],
     *,

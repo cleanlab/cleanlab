@@ -488,7 +488,7 @@ class MultilabelScorer:
         >>> labels = np.array([[0, 1, 0], [1, 0, 1]])
         >>> pred_probs = np.array([[0.1, 0.9, 0.7], [0.4, 0.1, 0.6]])
         >>> scorer = MultilabelScorer() # Use the default base scorer (SELF_CONFIDENCE)
-        >>> class_label_quality_scores = scorer.get_class_label_quality_scores(labels, pred_probs)
+        >>> class_label_quality_scores = scorer.get_label_quality_scores_per_class(labels, pred_probs)
         >>> class_label_quality_scores
         array([[0.9, 0.9, 0.3],
                [0.4, 0.9, 0.6]])
