@@ -27,11 +27,12 @@ def common_multilabel_issues(
     Parameters
     ----------
     labels : List[List[int]]
-        Refer to documentation for this argument in :py:func:`filter._find_multilabel_issues_per_class <cleanlab.filter._find_multilabel_issues_per_class>` for further details.
+       List of noisy labels for multi-label classification where each example can belong to multiple classes.
+       Refer to documentation for this argument in :py:func:`cleanlab.multilabel_classification.filter.find_label_issues <cleanlab.multilabel_classification.filter.find_label_issues>` for further details.
 
     pred_probs : np.ndarray
-      Refer to documentation for this argument in :py:func:`filter._find_multilabel_issues_per_class <cleanlab.filter._find_multilabel_issues_per_class>` for further details.
-
+      An array of shape ``(N, K)`` of model-predicted class probabilities.
+      Refer to documentation for this argument in :py:func:`cleanlab.multilabel_classification.filter.find_label_issues <cleanlab.multilabel_classification.filter.find_label_issues>` for further details.
 
     class_names : Iterable[str], optional
         A list or other iterable of the string class names. The list should be in the order that
@@ -121,7 +122,7 @@ def rank_classes_by_multilabel_quality(
 
 
 
-    **Parameters**: For parameter info, see the docstring of :py:func:`find_overlapping_classes <cleanlab.dataset.find_overlapping_classes>`.
+    **Parameters**: For parameter info, see the docstring of :py:func:`common_multilabel_issues <cleanlab.multilabel_classificaiton.dataset.common_multilabel_issues>`.
 
     Returns
     -------
@@ -220,7 +221,6 @@ def overall_multilabel_health_score(
     labels=None,
     pred_probs=None,
     *,
-    joint=None,
     confident_joint=None,
 ) -> float:
     """Returns a single score between 0 and 1 measuring the overall quality of all labels in a multi-label classification dataset.
@@ -234,7 +234,7 @@ def overall_multilabel_health_score(
 
     Only provide **exactly one of the above input options**, do not provide a combination.
 
-    **Parameters**: For parameter info, see the docstring of :py:func:`find_overlapping_classes <cleanlab.dataset.find_overlapping_classes>`.
+    **Parameters**: For parameter info, see the docstring of :py:func:`common_multilabel_issues <cleanlab.multilabel_classificaiton.dataset.common_multilabel_issues>`.
 
     Returns
     -------
@@ -243,7 +243,9 @@ def overall_multilabel_health_score(
         A score of 0.5 implies that half of the dataset's labels are estimated to have issues.
     """
     num_examples = _get_num_examples_multilabel(labels=labels)
-    issues = find_label_issues(labels=labels, pred_probs=pred_probs)
+    issues = find_label_issues(
+        labels=labels, pred_probs=pred_probs, confident_joint=confident_joint
+    )
     return 1.0 - sum(issues) / num_examples
 
 
