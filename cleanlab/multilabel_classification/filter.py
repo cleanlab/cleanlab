@@ -84,7 +84,7 @@ def find_label_issues(
     -------
     per_class_label_issues : list(np.ndarray)
       If `return_indices_ranked_by` left unspecified, returns a list of boolean **masks** for the entire dataset
-      where ``True`` represents a label issue and ``False`` represents an example that is
+where ``True`` represents an example identified to have label issue and ``False`` represents an example that is
       accurately labeled with high confidence.
       If `return_indices_ranked_by` is specified, returns a list of shorter arrays of **indices** of examples identified to have
       label issues (i.e. those indices where the mask would be ``True``), sorting by likelihood that the corresponding label is correct is not supported yet.
