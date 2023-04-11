@@ -68,8 +68,8 @@ class Datalab:
         The name of the label column in the dataset.
 
     verbosity : int, optional
-        The verbosity level of the Datalab object. The higher the verbosity,
-        the more information is printed to the console.
+        The higher the verbosity level, the more information
+        Datalab prints when auditing a dataset.
         Valid values are 0 through 4. Default is 1.
 
     Examples
@@ -351,7 +351,7 @@ class Datalab:
 
     def get_issues(self, issue_name: Optional[str] = None) -> pd.DataFrame:
         """
-        Fetch information about each individual issue found in the data for a specific issue type.
+        Fetch information about each individual issue (i.e. potentially problematic example) found in the data for a specific issue type.
 
         Parameters
         ----------
@@ -405,12 +405,12 @@ class Datalab:
         return self.issues[columns]
 
     def get_summary(self, issue_name: Optional[str] = None) -> pd.DataFrame:
-        """Get summary of issues for a given issue type.
+        """Summarize the issues found in dataset of a specified issue type.
 
         Parameters
         ----------
         issue_name :
-            Name of the issue type.
+            Name of the issue type to focus on.
 
         Returns
         -------
@@ -443,41 +443,58 @@ class Datalab:
         self,
         *,
         pred_probs: Optional[np.ndarray] = None,
-        issue_types: Optional[Dict[str, Any]] = None,
         features: Optional[npt.NDArray] = None,
         knn_graph: Optional[csr_matrix] = None,
         model=None,  # sklearn.Estimator compatible object  # noqa: F821
+        issue_types: Optional[Dict[str, Any]] = None,
     ) -> None:
         """
-        Checks for all sorts of issues in the data, including in labels and in features.
+        Checks the dataset for all sorts of common issues in real-world data (in both labels and feature values).
 
-        Can utilize either provided model or pred_probs.
+        You can use Datalab to find issues in your data, utilizing *any* model you have already trained.
+        This method only interacts with your model via its predictions or embeddings (and other functions thereof).
+        The more of these inputs you provide, the more types of issues Datalab can detect in your dataset/labels.
+        If you provide a subset of these inputs, Datalab will output what insights it can based on the limited information from your model.
 
         Note
         ----
-        The issues are saved in self.issues, but are not returned.
+        The issues are saved in the ``self.issues`` attribute, but are not returned.
 
         Parameters
         ----------
         pred_probs :
-            Out-of-sample predicted probabilities made on the data.
+            Out-of-sample predicted class probabilities made by the model for every example in the dataset.
+            To best detect label issues, provide this input obtained from the most accurate model you can produce.
 
-        issue_types :
-            Collection of the types of issues to search for.
+        features :
+            Feature embeddings (vector representations) of every example in the dataset.
 
-            Keyword arguments to pass to the IssueManager constructor.
+        knn_graph :
+            Sparse matrix representing similarities between examples in the dataset in a K nearest neighbor graph.
+            If both `knn_graph` and `features` are provided, the `knn_graph` will take precendence.
+            If `knn_graph` is not provided, it is constructed based on the provided `features`.
+            If neither `knn_graph` nor `features` are provided, certain issue types like (near) duplicates will not be considered.
 
-            .. seealso::
-                IssueManager
-
-            It is a dictionary of dictionaries, where the keys are the issue types
-            and the values are dictionaries of keyword arguments to pass to the
-            IssueManager constructor.
+        model :
+            sklearn-compatible model trained via cross-validation to compute out-of-sample
+            predicted probabilities for each example. Only considered if `pred_probs` was not provided.
 
             WARNING
             -------
-            If an empty dictionary is passed, no issues will be found.
-
+            This is not yet implemented.
+            
+        issue_types :
+            Collection specifying which types of issues to consider in audit and any non-default parameter settings to use.
+            If unspecified, a default set of issue types and recommended parameter settings is considered.
+            
+            This is a dictionary of dictionaries, where the keys are the issue types of interest 
+            and the values are dictionaries of parameter values that control how each type of issue is detected.
+            More specifically, the values are constructor keyword arguments passed to the corresponding ``IssueManager``,
+            which is responsible for detecting the particular issue type.
+            
+            .. seealso::
+                IssueManager
+            
             Example
             -------
             For example, if you want to pass the keyword argument "clean_learning_kwargs"
@@ -493,17 +510,6 @@ class Datalab:
                         },
                     },
                 }
-
-        features :
-            Precomputed feature embeddings of the data.
-
-        model :
-            sklearn compatible model used to compute out-of-sample
-            predicted probability for the labels.
-
-            WARNING
-            -------
-            This is not yet implemented.
         """
 
         if issue_types is not None and not issue_types:
@@ -558,16 +564,20 @@ class Datalab:
         verbosity: Optional[int] = None,
         include_description: bool = True,
     ) -> None:
-        """Prints helpful summary of all issues.
+        """Prints informative summary of all issues.
 
         Parameters
         ----------
         num_examples :
             Number of examples to show for each type of issue.
+            The report shows the top `num_examples` instances in the dataset that suffer the most from each type of issue.
 
         verbosity :
-            Level of verbosity. 0 is the default and prints the top num_examples examples
-            for each issue. Higher levels may add more information to the report.
+            Higher verbosity levels add more information to the report.
+        
+        include_description :
+            Whether or not to include a description of each issue type in the report.
+            Consider setting this to ``False`` once you're familiar with how each issue type is defined.  
         """
         if verbosity is None:
             verbosity = self.verbosity
@@ -581,33 +591,41 @@ class Datalab:
         )
 
     def save(self, path: str) -> None:
-        """Saves this Lab to file (all files are in folder at path/).
-        Uses nice format for the DF attributes (csv) and dict attributes (eg. json if possible).
-        We do not guarantee saved Lab can be loaded from future versions of cleanlab.
-
-        You have to save the Dataset yourself if you want it saved to file!
-        """  # TODO: Revise Datalab.save docstring: Formats and guarantees
+        """Saves this Datalab object to file (all files are in folder at `path/`).
+        We do not guarantee saved Datalab can be loaded from future versions of cleanlab.
+        
+        Parameters
+        ----------
+        path :
+            Folder in which all information about this Datalab should be saved.
+        
+        Note
+        ----
+        You have to save the Dataset yourself separately if you want it saved to file!
+        """
         _Serializer.serialize(path=path, datalab=self)
         save_message = f"Saved Datalab to folder: {path}"
         print(save_message)
 
     @staticmethod
     def load(path: str, data: Optional[Dataset] = None) -> "Datalab":
-        """Loads Lab from file. Folder could ideally be zipped or unzipped.
-
-        Checks which cleanlab version Lab was previously saved from
-        and raises warning if they dont match.
-
-        If a Dataset is passed (via the `data` argument), it will be added to the Datalab
-        if it matches the Dataset that was used to create the Datalab.
+        """Loads Datalab object from a previously saved folder.
 
         Parameters
         ----------
-
         `path` :
-            Path to the folder containing the save Datalab and
-            associated files, not the Dataset.
-        """  # TODO: Revise Datalab.load docstring: Zipped/unzipped, guarantees
+            Path to the folder previously specified in ``Datalab.save()``.
+            
+        `data` :
+            The dataset used to originally construct the Datalab.
+            Remember the dataset is not saved as part of the Datalab,
+            you must save/load the data separately.
+        
+        Returns
+        -------
+        `datalab` :
+            A Datalab object that is identical to the one originally saved.
+        """
         datalab = _Serializer.deserialize(path=path, data=data)
         load_message = f"Datalab loaded from folder: {path}"
         print(load_message)
