@@ -76,8 +76,6 @@ def get_label_quality_scores(
     For each example, this method internally computes a separate score for each individual class
     and then aggregates these per-class scores into an overall label quality score for the example.
 
-    To estimate exactly which examples are mislabeled in a multi-label classification dataset,
-    you can also use :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` with argument ``multi_label=True``.
 
     Parameters
     ----------
