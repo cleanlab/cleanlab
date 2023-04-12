@@ -28,7 +28,7 @@ from sklearn.metrics import confusion_matrix
 import multiprocessing
 import sys
 import warnings
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple, List
 from functools import reduce
 import platform
 
@@ -486,7 +486,7 @@ def _find_label_issues_multilabel(
     rank_by_kwargs={},
     filter_by: str = "prune_by_noise_rate",
     frac_noise: float = 1.0,
-    num_to_remove_per_class: Optional[int] = None,
+    num_to_remove_per_class: Optional[List[int]] = None,
     min_examples_per_class=1,
     confident_joint: Optional[np.ndarray] = None,
     n_jobs: Optional[int] = None,

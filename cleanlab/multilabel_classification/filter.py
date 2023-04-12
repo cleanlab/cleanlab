@@ -10,7 +10,7 @@ def find_label_issues(
     rank_by_kwargs={},
     filter_by: str = "prune_by_noise_rate",
     frac_noise: float = 1.0,
-    num_to_remove_per_class: Optional[int] = None,
+    num_to_remove_per_class: Optional[List[int]] = None,
     min_examples_per_class=1,
     confident_joint: Optional[np.ndarray] = None,
     n_jobs: Optional[int] = None,
@@ -198,7 +198,7 @@ def find_multilabel_issues_per_class(
         The first of these objects is a list of length K whose k-th element is:
         an ordered list of indices of examples where class k appears incorrectly annotated, sorted by the likelihood that class k is correctly annotated.
     """
-    from cleanlab.filter import find_label_issues
+    import cleanlab.filter
     from cleanlab.internal.multilabel_utils import get_onehot_num_classes, stack_complement
 
     y_one, num_classes = get_onehot_num_classes(labels, pred_probs)
@@ -223,14 +223,13 @@ def find_multilabel_issues_per_class(
             conf = None
         else:
             conf = confident_joint[class_num]
-        binary_label_issues = find_label_issues(
+        binary_label_issues = cleanlab.filter.find_label_issues(
             labels=label,
             pred_probs=pred_probs_binary,
             return_indices_ranked_by=return_indices_ranked_by,
             frac_noise=frac_noise,
             rank_by_kwargs=rank_by_kwargs,
             filter_by=filter_by,
-            multi_label=False,
             num_to_remove_per_class=[num_to_remove_per_class[class_num], 0]
             if num_to_remove_per_class
             else None,
