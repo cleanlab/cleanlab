@@ -17,14 +17,17 @@ def find_label_issues(
     verbose: bool = False,
 ) -> np.ndarray:
     """
-    Identifies potentially bad labels in a multi-label classification dataset using confident learning.
+    Identifies potentially mislabeled examples in a multi-label classification dataset.
     An example is flagged as with a label issue if *any* of the classes appear to be incorrectly annotated for this example.
 
     Parameters
     ----------
     labels : List[List[int]]
       List of noisy labels for multi-label classification where each example can belong to multiple classes.
-      The i-th element of `labels` corresponds to list of classes that i-th example belongs to (e.g. ``labels = [[1,2],[1],[0],..]``).
+      This is an iterable of iterables where the i-th element of `labels` corresponds to a list of classes that the i-th example belongs to,
+      according to the original data annotation (e.g. ``labels = [[1,2],[1],[0],..]``).
+      This method will return the indices i where the inner list ``labels[i]`` is estimated to have some error.
+      For a dataset with K classes, each class must be represented as an integer in 0, 1, ..., K-1 within the labels.
 
     pred_probs : np.ndarray
       An array of shape ``(N, K)`` of model-predicted class probabilities.
@@ -41,7 +44,7 @@ def find_label_issues(
       This is encouraged to get better results.
 
     return_indices_ranked_by : {None, 'self_confidence', 'normalized_margin', 'confidence_weighted_entropy'}, default=None
-      This function can return a boolean mask (if None) or a sorted array of indices based on the specified ranking method.
+      This function can return a boolean mask (if None) or an array of the example-indices with issues sorted based on the specified ranking method.
       Refer to documentation for this argument in :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` for details.
 
     rank_by_kwargs : dict, optional
@@ -51,7 +54,7 @@ def find_label_issues(
 
     filter_by : {'prune_by_class', 'prune_by_noise_rate', 'both', 'confident_learning', 'predicted_neq_given',
         'low_normalized_margin', 'low_self_confidence'}, default='prune_by_noise_rate'
-      The specific method that can be used to filter or prune examples with label issues from a dataset.
+      The specific Confident Learning method to determine precisely which examples have label issues in a dataset.
       Refer to documentation for this argument in :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` for details.
 
     frac_noise : float, default=1.0
@@ -59,11 +62,11 @@ def find_label_issues(
       Refer to documentation for this argument in :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` for details.
 
     num_to_remove_per_class : array_like
-      This parameter is an iterable that specifies the number of mislabeled examples to return from each class.
+      An iterable that specifies the number of mislabeled examples to return from each class.
       Refer to documentation for this argument in :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` for details.
 
     min_examples_per_class : int, default=1
-      The minimum number of examples required per class to avoid flagging as label issues.
+      The minimum number of examples required per class below which examples from this class will not be flagged as label issues.
       Refer to documentation for this argument in :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` for details.
 
     confident_joint : np.ndarray, optional
@@ -85,11 +88,12 @@ def find_label_issues(
     -------
     label_issues : np.ndarray
       If `return_indices_ranked_by` left unspecified, returns a boolean **mask** for the entire dataset
-      where ``True`` represents a label issue and ``False`` represents an example that is
-      accurately labeled with high confidence.
+      where ``True`` represents an example suffering from some label issue and
+      ``False`` represents an example that appears accurately labeled.
 
-      If `return_indices_ranked_by` is specified, returns a list of **indices** of examples identified to have
-      label issues (i.e. those indices where the mask would be ``True``). Indices are sorted by likelihood that *all* classes are correctly annotated for the corresponding example.
+      If `return_indices_ranked_by` is specified, this method instead returns a list of **indices** of examples identified with
+      label issues (i.e. those indices where the mask would be ``True``).
+      Indices are sorted by the likelihood that *all* classes are correctly annotated for the corresponding example.
 
       Note
       ----
@@ -128,22 +132,24 @@ def find_multilabel_issues_per_class(
     verbose: bool = False,
 ) -> Union[np.ndarray, Tuple[List[np.ndarray], List[Any], List[np.ndarray]]]:
     """
-    Identifies potentially bad labels for each class in a multi-label classification dataset using confident learning.
-    Refer to documentation in :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` for further details.
-    This function returns a list of label issues of size K, where K = num_classes.
+    Identifies potentially bad labels for each example and each class in a multi-label classification dataset.
+    Whereas :py:func:`find_label_issues <cleanlab.multilabel_classification.filter.find_label_issues>`
+    estimates which examples have an erroneous annotation for *any* class, this method estimates which specific classes are incorrectly annotated as well.
+    This method returns a list of size K, the number of classes in the dataset.
 
     Parameters
      ----------
      labels : List[List[int]]
        List of noisy labels for multi-label classification where each example can belong to multiple classes.
        Refer to documentation for this argument in :py:func:`find_label_issues <cleanlab.multilabel_classification.filter.find_label_issues>` for further details.
+       This method will identify whether ``labels[i][k]`` appears correct, for every example ``i`` and class ``k``.
 
     pred_probs : np.ndarray
       An array of shape ``(N, K)`` of model-predicted class probabilities.
       Refer to documentation for this argument in :py:func:`find_label_issues <cleanlab.multilabel_classification.filter.find_label_issues>` for further details.
 
      return_indices_ranked_by : {None, 'self_confidence', 'normalized_margin', 'confidence_weighted_entropy'}, default=None
-       This function can return a boolean mask (if None) or a sorted array of indices based on the specified ranking method.
+       This function can return a boolean mask (if this argument is ``None``) or a sorted array of indices based on the specified ranking method (if not ``None``).
        Refer to documentation for this argument in :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` for details.
 
      rank_by_kwargs : dict, optional
@@ -182,14 +188,15 @@ def find_multilabel_issues_per_class(
      Returns
      -------
      per_class_label_issues : list(np.ndarray)
-        returns a list of per class label issues, refer to :py:func:`cleanlab.multilabel_classification.filter.find_label_issues <cleanlab.multilabel_classification.filter.find_label_issues>`
-
-
-       Note
-       ----
-       Obtain the *indices* of label issues in your dataset by setting
-       `return_indices_ranked_by`.
-
+        By default, this is a list of length K containing the examples where each class appears incorrectly annotated.
+        ``per_class_label_issues[k]`` is a Boolean mask of the same length as the dataset,
+        where ``True`` values indicate examples where class ``k`` appears incorrectly annotated.
+        
+        For more details, refer to :py:func:`cleanlab.multilabel_classification.filter.find_label_issues <cleanlab.multilabel_classification.filter.find_label_issues>`.
+        
+        Otherwise if `return_indices_ranked_by` is not ``None``, then this method returns multiple objects.
+        The first of these objects is a list of length K whose k-th element is:
+        an ordered list of indices of examples where class k appears incorrectly annotated, sorted by the likelihood that class k is correctly annotated.
     """
     from cleanlab.filter import find_label_issues
     from cleanlab.internal.multilabel_utils import get_onehot_num_classes, stack_complement
