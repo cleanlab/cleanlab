@@ -25,7 +25,7 @@ from sklearn.linear_model import LogisticRegression
 
 from cleanlab.internal import multilabel_scorer as ml_scorer
 from cleanlab.internal.multilabel_utils import stack_complement, get_onehot_num_classes, onehot2int
-from cleanlab import multilabel_classification as ml_classification
+from cleanlab import multilabel_classification as ml_classification, multilabel_classification
 from cleanlab.multilabel_classification.dataset import (
     common_multilabel_issues,
     rank_classes_by_multilabel_quality,
@@ -33,6 +33,7 @@ from cleanlab.multilabel_classification.dataset import (
     multilabel_health_summary,
 )
 from cleanlab.multilabel_classification.rank import get_label_quality_scores_per_class
+from cleanlab.multilabel_classification import filter
 
 
 @pytest.fixture
@@ -119,7 +120,7 @@ def data_multilabel(num_classes=5):
         q = [0.1] * num_classes
         pos = i % num_classes
         labels.append([pos])
-        if i > 95:
+        if i > 90:
             pos = (pos + 2) % num_classes
         q[pos] = 0.9
         pred_probs.append(q)
@@ -378,9 +379,35 @@ def test_common_multilabel_issues(class_names, pred_probs_multilabel, labels_mul
             "Bird",
             "Bird",
         ]
+        assert list(df["Class Name"]) == expected_res
     else:
-        expected_res = [0, 2, 0, 1, 1, 2, 3, 3, 4, 4]
-    assert list(df["Class Name"]) == expected_res
+        assert "Class Name" not in df.columns
+
+
+@pytest.mark.parametrize("min_examples_per_class", [10, 90])
+def test_multilabel_min_examples_per_class(data_multilabel, min_examples_per_class):
+    labels, pred_probs = data_multilabel
+    issues = filter.find_label_issues(
+        labels=labels, pred_probs=pred_probs, min_examples_per_class=min_examples_per_class
+    )
+    if min_examples_per_class == 10:
+        assert sum(issues) == 9
+    else:
+        assert sum(issues) == 0
+
+
+@pytest.mark.parametrize("num_to_remove_per_class", [None, [1, 1, 0, 0, 2], [1, 1, 0, 0, 1]])
+def test_multilabel_num_to_remove_per_class(data_multilabel, num_to_remove_per_class):
+    labels, pred_probs = data_multilabel
+
+    issues = filter.find_label_issues(
+        labels=labels, pred_probs=pred_probs, num_to_remove_per_class=num_to_remove_per_class
+    )
+    num_issues = sum(issues)
+    if num_to_remove_per_class is None:
+        assert num_issues == 9
+    else:
+        assert num_issues == sum(num_to_remove_per_class)
 
 
 def test_rank_classes_by_multilabel_quality(pred_probs_multilabel, labels_multilabel):
@@ -413,7 +440,7 @@ def test_overall_multilabel_health_score(data_multilabel):
     overall_label_health_score = overall_multilabel_health_score(
         pred_probs=pred_probs, labels=labels
     )
-    assert np.isclose(overall_label_health_score, 0.96)
+    assert np.isclose(overall_label_health_score, 0.91)
 
 
 def test_get_class_label_quality_scores():

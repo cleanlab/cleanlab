@@ -68,19 +68,19 @@ def common_multilabel_issues(
     for class_num, (label, issues_for_class) in enumerate(zip(y_one.T, label_issues_list)):
         binary_label_issues = np.zeros(len(label)).astype(bool)
         binary_label_issues[issues_for_class] = True
-        class_name = class_names[class_num]
         true_but_false_count = sum(np.logical_and(label == 1, binary_label_issues))
         false_but_true_count = sum(np.logical_and(label == 0, binary_label_issues))
-        if class_names:
-            summary_issue_counts["Class Name"].append(class_name)
+
+        if class_names is not None:
+            summary_issue_counts["Class Name"].append(class_names[class_num])
         summary_issue_counts["Class Index"].append(class_num)
         summary_issue_counts["In Given Label"].append(True)
         summary_issue_counts["In Suggested Label"].append(False)
         summary_issue_counts["Num Examples"].append(true_but_false_count)
         summary_issue_counts["Issue Probability"].append(true_but_false_count / num_examples)
 
-        if class_names:
-            summary_issue_counts["Class Name"].append(class_name)
+        if class_names is not None:
+            summary_issue_counts["Class Name"].append(class_names[class_num])
         summary_issue_counts["Class Index"].append(class_num)
         summary_issue_counts["In Given Label"].append(False)
         summary_issue_counts["In Suggested Label"].append(True)
@@ -150,7 +150,7 @@ def rank_classes_by_multilabel_quality(
         return_columns = return_columns[1:]
     for class_num, row in issues_df.iterrows():
         if row["In Given Label"]:
-            if class_names:
+            if class_names is not None:
                 issues_dict[row["Class Index"]]["Class Name"] = row["Class Name"]
             issues_dict[row["Class Index"]]["Label Issues"] = int(
                 row["Issue Probability"] * num_examples
@@ -160,7 +160,7 @@ def rank_classes_by_multilabel_quality(
                 1 - issues_dict[row["Class Index"]]["Label Noise"]
             )
         else:
-            if class_names:
+            if class_names is not None:
                 issues_dict[row["Class Index"]]["Class Name"] = row["Class Name"]
             issues_dict[row["Class Index"]]["Inverse Label Issues"] = int(
                 row["Issue Probability"] * num_examples

@@ -191,9 +191,9 @@ def find_multilabel_issues_per_class(
         By default, this is a list of length K containing the examples where each class appears incorrectly annotated.
         ``per_class_label_issues[k]`` is a Boolean mask of the same length as the dataset,
         where ``True`` values indicate examples where class ``k`` appears incorrectly annotated.
-        
+
         For more details, refer to :py:func:`cleanlab.multilabel_classification.filter.find_label_issues <cleanlab.multilabel_classification.filter.find_label_issues>`.
-        
+
         Otherwise if `return_indices_ranked_by` is not ``None``, then this method returns multiple objects.
         The first of these objects is a list of length K whose k-th element is:
         an ordered list of indices of examples where class k appears incorrectly annotated, sorted by the likelihood that class k is correctly annotated.
@@ -231,7 +231,9 @@ def find_multilabel_issues_per_class(
             rank_by_kwargs=rank_by_kwargs,
             filter_by=filter_by,
             multi_label=False,
-            num_to_remove_per_class=num_to_remove_per_class,
+            num_to_remove_per_class=[num_to_remove_per_class[class_num], 0]
+            if num_to_remove_per_class
+            else None,
             min_examples_per_class=min_examples_per_class,
             confident_joint=conf,
             n_jobs=n_jobs,
