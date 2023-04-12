@@ -241,7 +241,7 @@ def find_overlapping_classes(
 
     if multi_label:
         raise ValueError(
-            "For multilabel data, please call multilabel_classification.dataset.common_multilabel_issues"
+            "For multilabel data, please instead call: multilabel_classification.dataset.common_multilabel_issues()"
         )
 
     if joint is None:
