@@ -125,7 +125,7 @@ def find_multilabel_issues_per_class(
     rank_by_kwargs={},
     filter_by: str = "prune_by_noise_rate",
     frac_noise: float = 1.0,
-    num_to_remove_per_class: Optional[int] = None,
+    num_to_remove_per_class: Optional[List[int]] = None,
     min_examples_per_class=1,
     confident_joint: Optional[np.ndarray] = None,
     n_jobs: Optional[int] = None,
@@ -230,6 +230,8 @@ def find_multilabel_issues_per_class(
             conf = None
         else:
             conf = confident_joint[class_num]
+        if num_to_remove_per_class is not None:
+            ml_num_to_remove_per_class = [num_to_remove_per_class[class_num], 0]
         binary_label_issues = cleanlab.filter.find_label_issues(
             labels=label,
             pred_probs=pred_probs_binary,
@@ -237,9 +239,7 @@ def find_multilabel_issues_per_class(
             frac_noise=frac_noise,
             rank_by_kwargs=rank_by_kwargs,
             filter_by=filter_by,
-            num_to_remove_per_class=[num_to_remove_per_class[class_num], 0]
-            if num_to_remove_per_class
-            else None,
+            num_to_remove_per_class=ml_num_to_remove_per_class,
             min_examples_per_class=min_examples_per_class,
             confident_joint=conf,
             n_jobs=n_jobs,
