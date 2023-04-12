@@ -80,7 +80,7 @@ def find_label_issues(
     filter_by: str = "prune_by_noise_rate",
     multi_label: bool = False,
     frac_noise: float = 1.0,
-    num_to_remove_per_class: Optional[int] = None,
+    num_to_remove_per_class: Optional[List[int]] = None,
     min_examples_per_class=1,
     confident_joint: Optional[np.ndarray] = None,
     n_jobs: Optional[int] = None,
