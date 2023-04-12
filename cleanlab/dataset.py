@@ -79,7 +79,7 @@ def rank_classes_by_label_quality(
     """
     if multi_label:
         raise ValueError(
-            "For multilabel data, please call multilabel_classification.dataset.overall_multilabel_health_score"
+            "For multilabel data, please instead call:  multilabel_classification.dataset.overall_multilabel_health_score()"
         )
 
     if joint is None:
