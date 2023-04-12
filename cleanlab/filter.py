@@ -314,7 +314,7 @@ def find_label_issues(
         if not isinstance(labels, list):
             raise TypeError("`labels` must be list when `multi_label=True`.")
         warnings.warn(
-            "The multi_label argument to filter.find_label_issues() is deprecated and will be removed in future versions. Please use multilabel_classification.filter.find-label_issues() instead.",
+            "The multi_label argument to filter.find_label_issues() is deprecated and will be removed in future versions. Please use `multilabel_classification.filter.find_label_issues()` instead.",
             DeprecationWarning,
         )
         return _find_label_issues_multilabel(
