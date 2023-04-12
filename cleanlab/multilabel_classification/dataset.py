@@ -57,9 +57,6 @@ def common_multilabel_issues(
 
     num_examples = _get_num_examples_multilabel(labels=labels, confident_joint=confident_joint)
     summary_issue_counts = defaultdict(list)
-    if class_names is None:
-        num_classes = get_num_classes(labels=labels, pred_probs=pred_probs, multi_label=True)
-        class_names = list(range(num_classes))
     y_one, num_classes = get_onehot_num_classes(labels, pred_probs)
     label_issues_list, labels_list, pred_probs_list = find_multilabel_issues_per_class(
         labels=labels,
@@ -74,15 +71,16 @@ def common_multilabel_issues(
         class_name = class_names[class_num]
         true_but_false_count = sum(np.logical_and(label == 1, binary_label_issues))
         false_but_true_count = sum(np.logical_and(label == 0, binary_label_issues))
-
-        summary_issue_counts["Class Name"].append(class_name)
+        if class_names:
+            summary_issue_counts["Class Name"].append(class_name)
         summary_issue_counts["Class Index"].append(class_num)
         summary_issue_counts["In Given Label"].append(True)
         summary_issue_counts["In Suggested Label"].append(False)
         summary_issue_counts["Num Examples"].append(true_but_false_count)
         summary_issue_counts["Issue Probability"].append(true_but_false_count / num_examples)
 
-        summary_issue_counts["Class Name"].append(class_name)
+        if class_names:
+            summary_issue_counts["Class Name"].append(class_name)
         summary_issue_counts["Class Index"].append(class_num)
         summary_issue_counts["In Given Label"].append(False)
         summary_issue_counts["In Suggested Label"].append(True)
@@ -105,7 +103,7 @@ def rank_classes_by_multilabel_quality(
 ) -> pd.DataFrame:
     """
     Returns a DataFrame with three overall label quality scores per class for a multi-label dataset.
-    
+
     These numbers summarize all examples annotated with the class (details listed below under the Returns parameter).
     By default, classes are ordered by "Label Quality Score", so the most problematic classes are reported first in the DataFrame.
 
@@ -121,7 +119,7 @@ def rank_classes_by_multilabel_quality(
          "Inverse Label Issues", "Label Issues", "Inverse Label Noise", "Label Quality Score".
         Some entries are overall quality scores between 0 and 1, summarizing how good overall the labels
         appear to be for that class (lower values indicate more erroneous labels).
-        Other entries are estimated counts of annotation errors related to this class. 
+        Other entries are estimated counts of annotation errors related to this class.
         Here is what each column represents:
 
         * *Class Index*: The index of the class in 0, 1, ..., K-1.
@@ -148,9 +146,12 @@ def rank_classes_by_multilabel_quality(
         "Inverse Label Noise",
         "Label Quality Score",
     ]
+    if not class_names:
+        return_columns = return_columns[1:]
     for class_num, row in issues_df.iterrows():
         if row["In Given Label"]:
-            issues_dict[row["Class Index"]]["Class Name"] = row["Class Name"]
+            if class_names:
+                issues_dict[row["Class Index"]]["Class Name"] = row["Class Name"]
             issues_dict[row["Class Index"]]["Label Issues"] = int(
                 row["Issue Probability"] * num_examples
             )
@@ -159,7 +160,8 @@ def rank_classes_by_multilabel_quality(
                 1 - issues_dict[row["Class Index"]]["Label Noise"]
             )
         else:
-            issues_dict[row["Class Index"]]["Class Name"] = row["Class Name"]
+            if class_names:
+                issues_dict[row["Class Index"]]["Class Name"] = row["Class Name"]
             issues_dict[row["Class Index"]]["Inverse Label Issues"] = int(
                 row["Issue Probability"] * num_examples
             )
