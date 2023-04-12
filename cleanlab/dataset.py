@@ -54,7 +54,8 @@ def rank_classes_by_label_quality(
 
     Only provide **exactly one of the above input options**, do not provide a combination.
 
-    **Parameters**: For parameter info, see the docstring of :py:func:`find_overlapping_classes <cleanlab.dataset.find_overlapping_classes>`.
+    **Parameters**: For information about the arguments to this method, see the documentation of
+    :py:func:`find_overlapping_classes <cleanlab.dataset.find_overlapping_classes>`.
 
     Returns
     -------
@@ -298,7 +299,8 @@ def overall_label_health_score(
 
     Only provide **exactly one of the above input options**, do not provide a combination.
 
-    **Parameters**: For parameter info, see the docstring of :py:func:`find_overlapping_classes <cleanlab.dataset.find_overlapping_classes>`.
+    **Parameters**: For information about the arguments to this method, see the documentation of
+    :py:func:`find_overlapping_classes <cleanlab.dataset.find_overlapping_classes>`.
 
     Returns
     -------
@@ -356,7 +358,8 @@ def health_summary(
 
     Only provide **exactly one of the above input options**, do not provide a combination.
 
-    **Parameters**: For parameter info, see the docstring of :py:func:`find_overlapping_classes <cleanlab.dataset.find_overlapping_classes>`.
+    **Parameters**: For information about the arguments to this method, see the documentation of
+    :py:func:`find_overlapping_classes <cleanlab.dataset.find_overlapping_classes>`.
 
     Returns
     -------
@@ -453,9 +456,7 @@ def _get_num_examples(labels=None, confident_joint: Optional[np.ndarray] = None)
     """Helper method that finds the number of examples from the parameters or throws an error
     if neither parameter is provided.
 
-    Parameters
-    ----------
-    For parameter info, see the docstring of `dataset.find_overlapping_classes`
+    **Parameters:** For information about the arguments to this method, see the documentation of `dataset.find_overlapping_classes`
 
     Returns
     -------
