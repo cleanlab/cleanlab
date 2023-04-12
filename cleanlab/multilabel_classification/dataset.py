@@ -44,6 +44,7 @@ def common_multilabel_issues(
     common_multilabel_issues : pd.DataFrame
         DataFrame where each row corresponds to a class summarized by the following columns:
 
+        * *Class Name*: The name of the class if class_names is provided.
         * *Class Index*: The index of the class.
         * *In Given Label*: Whether the Class is originally annotated True or False in the given label.
         * *In Suggested Label*: Whether the Class should be True or False in the suggested label (based on model's prediction).
@@ -120,6 +121,7 @@ def rank_classes_by_multilabel_quality(
         Other entries are estimated counts of annotation errors related to this class.
         Here is what each column represents:
 
+        * *Class Name*: The name of the class if class_names is provided.
         * *Class Index*: The index of the class in 0, 1, ..., K-1.
         * *Label Issues*: Estimated number of examples in the dataset that are labeled as belonging to class k but actually should not belong to this class.
         * *Inverse Label Issues*: Estimated number of examples in the dataset that should actually be labeled as class k but did not receive this label.
