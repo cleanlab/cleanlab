@@ -21,38 +21,34 @@ def common_multilabel_issues(
     """Summarizes which classes in a multi-label dataset appear most often mislabeled overall.
 
     Since classes are not mutually exclusive in multi-label classification, this method summarizes the label issues for each class independently of the others.
-    This method works by providing ``labels``, ``pred_probs`` and an optional Confident Joint.
-
 
     Parameters
     ----------
     labels : List[List[int]]
        List of noisy labels for multi-label classification where each example can belong to multiple classes.
-       Refer to documentation for this argument in :py:func:`cleanlab.multilabel_classification.filter.find_label_issues <cleanlab.multilabel_classification.filter.find_label_issues>` for further details.
+       Refer to documentation for this argument in :py:func:`multilabel_classification.filter.find_label_issues <cleanlab.multilabel_classification.filter.find_label_issues>` for further details.
 
     pred_probs : np.ndarray
       An array of shape ``(N, K)`` of model-predicted class probabilities.
-      Refer to documentation for this argument in :py:func:`cleanlab.multilabel_classification.filter.find_label_issues <cleanlab.multilabel_classification.filter.find_label_issues>` for further details.
+      Refer to documentation for this argument in :py:func:`multilabel_classification.filter.find_label_issues <cleanlab.multilabel_classification.filter.find_label_issues>` for further details.
 
     class_names : Iterable[str], optional
-        A list or other iterable of the string class names. The list should be in the order that
-        matches the label indices. So if class 0 is 'dog' and class 1 is 'cat', then
-        ``class_names = ['dog', 'cat']``.
+        A list or other iterable of the string class names. Its order must match the label indices.
+        If class 0 is 'dog' and class 1 is 'cat', then ``class_names = ['dog', 'cat']``.
 
     confident_joint : np.ndarray, optional
        An array of shape ``(K, 2, 2)`` representing a one-vs-rest formatted confident joint.
-       Refer to documentation for this argument in :py:func:`cleanlab.multilabel_classification.filter.find_label_issues <cleanlab.multilabel_classification.filter.find_label_issues>` for details.
-
+       Refer to documentation for this argument in :py:func:`multilabel_classification.filter.find_label_issues <cleanlab.multilabel_classification.filter.find_label_issues>` for details.
 
     Returns
     -------
     common_multilabel_issues : pd.DataFrame
-        DataFrame where each row corresponds to a Class with the following columns:
+        DataFrame where each row corresponds to a class summarized by the following columns:
 
-        * *Class Name*: If `class_names` is provided, the "Class Name" column of the DataFrame will indicate the name of the class, otherwise this column contains integers representing the class index.
-        * *Class Index*: The index of the Class.
-        * *In Given Label*: whether the Class is originally annotated True or False in the given label.
-        * *In Suggested Label*: whether the Class should be True or False in the suggested label (based on model's prediction).
+        * *Class Name*: If `class_names` is provided, this column indicates the string name of the class. Otherwise this column contains integers representing the class index.
+        * *Class Index*: The index of the class.
+        * *In Given Label*: Whether the Class is originally annotated True or False in the given label.
+        * *In Suggested Label*: Whether the Class should be True or False in the suggested label (based on model's prediction).
         * *Num Examples*: Number of examples flagged as a label issue where this Class is True/False "In Given Label" but cleanlab estimates the annotation should actually be as specified "In Suggested Label". I.e. the number of examples in your dataset where this Class was labeled as True but likely should have been False (or vice versa).
         * *Issue Probability*: The  *Num Examples* column divided by the total number of examples in the dataset; i.e. the relative overall frequency of each type of label issue in your dataset.
 
@@ -108,39 +104,35 @@ def rank_classes_by_multilabel_quality(
     confident_joint=None,
 ) -> pd.DataFrame:
     """
-    Returns a Pandas DataFrame with three overall class label quality scores summarizing all examples annotated with each  class in a multi-label classification dataset.
-    Details about each score are listed below under the Returns parameter. By default, classes are ordered
-    by "Label Quality Score", ascending, so the most problematic classes are reported first in the returned DataFrame.
+    Returns a DataFrame with three overall label quality scores per class for a multi-label dataset.
+    
+    These numbers summarize all examples annotated with the class (details listed below under the Returns parameter).
+    By default, classes are ordered by "Label Quality Score", so the most problematic classes are reported first in the DataFrame.
 
-    Score values are unnormalized and may tend to be very small. What matters is their relative
-    ranking across the classes.
+    Score values are unnormalized and may be very small. What matters is their relative ranking across the classes.
 
-    This method works by providing ``labels``, ``pred_probs`` and an optional Confident Joint.
-
-
-
-    **Parameters**: For parameter info, see the docstring of :py:func:`common_multilabel_issues <cleanlab.multilabel_classificaiton.dataset.common_multilabel_issues>`.
+    **Parameters**: For information about the arguments to this method, see the documentation of
+    :py:func:`common_multilabel_issues <cleanlab.multilabel_classificaiton.dataset.common_multilabel_issues>`.
 
     Returns
     -------
     overall_label_quality : pd.DataFrame
-        Pandas DataFrame with cols "Class Index", "Label Issues", "Inverse Label Issues",
-        "Label Issues", "Inverse Label Noise", "Label Quality Score",
-        with a description of each of these columns below.
-        The length of the DataFrame is ``num_classes`` (one row per class).
-        Noise scores are between 0 and 1, where 0 implies no label issues
-        in the class. The "Label Quality Score" is also between 0 and 1 where 1 implies
-        perfect quality. Columns:
+        Pandas DataFrame with one row per class and columns: "Class Index", "Label Issues",
+         "Inverse Label Issues", "Label Issues", "Inverse Label Noise", "Label Quality Score".
+        Some entries are overall quality scores between 0 and 1, summarizing how good overall the labels
+        appear to be for that class (lower values indicate more erroneous labels).
+        Other entries are estimated counts of annotation errors related to this class. 
+        Here is what each column represents:
 
         * *Class Name*: If `class_names` is provided, the "Class Name" column of the DataFrame will indicate the name of the class, otherwise this column contains integers representing the class index.
         * *Class Index*: The index of the class in 0, 1, ..., K-1.
-        * *Label Issues*: ``count(given_label = k, true_label != k)``, estimated number of examples in the dataset that are labeled as class k but should have a different label.
-        * *Inverse Label Issues*: ``count(given_label != k, true_label = k)``, estimated number of examples in the dataset that should actually be labeled as class k but have been given another label.
-        * *Label Noise*: ``prob(true_label != k | given_label = k)``, estimated proportion of examples in the dataset that are labeled as class k but should have a different label. For each class k: this is computed by dividing the number of examples with "Label Issues" that were labeled as class k by the total number of examples labeled as class k.
-        * *Inverse Label Noise*: ``prob(given_label != k | true_label = k)``, estimated proportion of examples in the dataset that should actually be labeled as class k but have been given another label.
-        * *Label Quality Score*: ``p(true_label = k | given_label = k)``. This is the proportion of examples with given label k that have been labeled correctly, i.e. ``1 - label_noise``.
+        * *Label Issues*: Estimated number of examples in the dataset that are labeled as belonging to class k but actually should not belong to this class.
+        * *Inverse Label Issues*: Estimated number of examples in the dataset that should actually be labeled as class k but did not receive this label.
+        * *Label Noise*: Estimated proportion of examples in the dataset that are labeled as class k but should not be. For each class k: this is computed by dividing the number of examples with "Label Issues" that were labeled as class k by the total number of examples labeled as class k.
+        * *Inverse Label Noise*: Estimated proportion of examples in the dataset that should actually be labeled as class k but did not receive this label.
+        * *Label Quality Score*: Estimated proportion of examples labeled as class k that have been labeled correctly, i.e. ``1 - label_noise``.
 
-        By default, the DataFrame is ordered by "Label Quality Score", ascending.
+        By default, the DataFrame is ordered by "Label Quality Score" (in ascending order), so the classes with the most label issues appear first.
     """
 
     issues_df = common_multilabel_issues(
@@ -226,17 +218,13 @@ def overall_multilabel_health_score(
     half of the examples in the dataset may be incorrectly labeled. Thus, a higher
     score implies a higher quality dataset.
 
-    This method works by providing ``labels``, ``pred_probs`` and an optional Confident Joint.
-
-
-    Only provide **exactly one of the above input options**, do not provide a combination.
-
-    **Parameters**: For parameter info, see the docstring of :py:func:`common_multilabel_issues <cleanlab.multilabel_classificaiton.dataset.common_multilabel_issues>`.
+    **Parameters**: For information about the arguments to this method, see the documentation of
+    :py:func:`common_multilabel_issues <cleanlab.multilabel_classificaiton.dataset.common_multilabel_issues>`.
 
     Returns
     -------
     health_score : float
-        A score between 0 and 1, where 1 implies all labels in the dataset are estimated to be correct.
+        A overall score between 0 and 1, where 1 implies all labels in the dataset are estimated to be correct.
         A score of 0.5 implies that half of the dataset's labels are estimated to have issues.
     """
     num_examples = _get_num_examples_multilabel(labels=labels)
@@ -255,23 +243,22 @@ def multilabel_health_summary(
     confident_joint=None,
     verbose=True,
 ) -> Dict:
-    """Prints a health summary of your datasets including useful statistics like:
+    """Prints a health summary of your multi-label datasets including useful statistics like:
 
     * The classes with the most and least label issues
     * Overall data label quality health score statistics for your dataset
 
-    This method works by providing ``labels``, ``pred_probs`` and an optional Confident Joint.
-
-    **Parameters**: For parameter info, see the docstring of :py:func:`common_multilabel_issues <cleanlab.multilabel_classificaiton.dataset.common_multilabel_issues>`.
+    **Parameters**: For information about the arguments to this method, see the documentation of
+    :py:func:`common_multilabel_issues <cleanlab.multilabel_classificaiton.dataset.common_multilabel_issues>`.
 
     Returns
     -------
     summary : dict
         A dictionary containing keys (see the corresponding functions' documentation to understand the values):
 
-        - ``"overall_label_health_score"``, corresponding to :py:func:`overall_multilabel_health_score <cleanlab.multilabel_classification.dataset.overall_multilabel_health_score>`
-        - ``"classes_by_multilabel_quality"``, corresponding to :py:func:`rank_classes_by_multilabel_quality <cleanlab.multilabel_classification.dataset.rank_classes_by_multilabel_quality>`
-        - ``"common_multilabel_issues"``, corresponding to :py:func:`common_multilabel_issues <cleanlab.multilabel_classification.dataset.common_multilabel_issues>`
+        - ``"overall_label_health_score"``, corresponding to output of :py:func:`overall_multilabel_health_score <cleanlab.multilabel_classification.dataset.overall_multilabel_health_score>`
+        - ``"classes_by_multilabel_quality"``, corresponding to output of :py:func:`rank_classes_by_multilabel_quality <cleanlab.multilabel_classification.dataset.rank_classes_by_multilabel_quality>`
+        - ``"common_multilabel_issues"``, corresponding to output of :py:func:`common_multilabel_issues <cleanlab.multilabel_classification.dataset.common_multilabel_issues>`
     """
     from cleanlab.internal.util import smart_display_dataframe
 
