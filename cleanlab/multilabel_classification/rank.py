@@ -81,16 +81,16 @@ def get_label_quality_scores(
     ----------
     labels : List[List[int]]
        List of noisy labels for multi-label classification where each example can belong to multiple classes.
-       Refer to documentation for this argument in :py:func:`cleanlab.multilabel_classification.filter.find_label_issues <cleanlab.multilabel_classification.filter.find_label_issues>` for further details.
+       Refer to documentation for this argument in :py:func:`multilabel_classification.filter.find_label_issues <cleanlab.multilabel_classification.filter.find_label_issues>` for further details.
 
     pred_probs : np.ndarray
       An array of shape ``(N, K)`` of model-predicted class probabilities.
-      Refer to documentation for this argument in :py:func:`cleanlab.multilabel_classification.filter.find_label_issues <cleanlab.multilabel_classification.filter.find_label_issues>` for further details.
+      Refer to documentation for this argument in :py:func:`multilabel_classification.filter.find_label_issues <cleanlab.multilabel_classification.filter.find_label_issues>` for further details.
 
     method : {"self_confidence", "normalized_margin", "confidence_weighted_entropy"}, default = "self_confidence"
-      Method to calculate separate per class annotation scores that are subsequently aggregated to form an overall label quality score.
+      Method to calculate separate per-class annotation scores for an example that are then aggregated into an overall label quality score for the example.
       These scores are separately calculated for each class based on the corresponding column of `pred_probs` in a one-vs-rest manner,
-      and are standard label quality scores for multi-class classification.
+      and are standard label quality scores for binary classification (based on whether the class should or should not apply to this example).
 
       See also
       --------
@@ -102,18 +102,17 @@ def get_label_quality_scores(
 
 
     aggregator_kwargs : dict, default = {"method": "exponential_moving_average", "alpha": 0.8}
-      A dictionary of hyperparameter values for aggregating per class scores into an overall label quality score for each example.
+      A dictionary of hyperparameter values to use when aggregating per-class scores into an overall label quality score for each example.
       Options for ``"method"`` include: ``"exponential_moving_average"`` or ``"softmin"`` or your own callable function.
       See :py:class:`internal.multilabel_scorer.Aggregator <cleanlab.internal.multilabel_scorer.Aggregator>` for details about each option and other possible hyperparameters.
 
-    To get a score for each class annotation for each example, use the :py:func:`cleanlab.multilabel_classification.classification.rank.get_label_quality_scores_per_class <cleanlab.multilabel_classification.rank.get_label_quality_scores_per_class>` method instead.
+    To get a score for each class annotation for each example, use the :py:func:`multilabel_classification.classification.rank.get_label_quality_scores_per_class <cleanlab.multilabel_classification.rank.get_label_quality_scores_per_class>` method instead.
 
     Returns
     -------
     label_quality_scores : np.ndarray
       A 1D array of shape ``(N,)`` with a label quality score (between 0 and 1) for each example in the dataset.
-      Lower scores indicate examples whose label is more likely to contain annotation errors.
-
+      Lower scores indicate examples whose label is more likely to contain some annotation error (for any of the classes).
 
     Examples
     --------
@@ -142,11 +141,11 @@ def get_label_quality_scores_per_class(
     adjust_pred_probs: bool = False,
 ) -> np.ndarray:
     """
-    Computes the quality score for each individual class in a multi-label classification dataset.
-    The functionality is similar to :py:func:`get_label_quality_scores <cleanlab.multilabel_classification.rank.get_label_quality_scores>`
-    but instead returns the results before using an aggregator.
+    Computes a quality score quantifying how likely each individual class annotation is correct in a multi-label classification dataset.
+    This is similar to :py:func:`get_label_quality_scores <cleanlab.multilabel_classification.rank.get_label_quality_scores>`
+    but instead returns the per-class results without aggregation.
+    For a dataset with K classes, each example receives K scores from this method. 
     Refer to documentation in :py:func:`get_label_quality_scores <cleanlab.multilabel_classification.rank.get_label_quality_scores>` for details.
-
 
     Parameters
     ----------
@@ -159,7 +158,7 @@ def get_label_quality_scores_per_class(
       Refer to documentation for this argument in :py:func:`find_label_issues <cleanlab.multilabel_classification.filter.find_label_issues>` for further details.
 
     method : {"self_confidence", "normalized_margin", "confidence_weighted_entropy"}, default = "self_confidence"
-      Method to calculate separate per class annotation scores.
+      Method to calculate separate per-class annotation scores (that quantify how likely a particular class annotation is correct for a particular example).
       Refer to documentation for this argument in :py:func:`get_label_quality_scores <cleanlab.multilabel_classification.rank.get_label_quality_scores>` for further details.
 
     adjust_pred_probs : bool, default = False
@@ -169,9 +168,8 @@ def get_label_quality_scores_per_class(
     Returns
     -------
     label_quality_scores : list(np.ndarray)
-      The returned list contains K - 1D arrays, each of shape (N,), where K is the number of classes in the dataset.
-      Each element of the list corresponds to a class and contains a label quality score (between 0 and 1)
-      for every example in the dataset that belongs to that class.
+      A list containing K arrays, each of shape (N,). Here K is the number of classes in the dataset and N is the number of examples.
+      ``label_quality_scores[k][i]`` is a score between 0 and 1 quantifying how likely the annotation for class ``k`` is correct for example ``i``.
 
     Examples
     --------
