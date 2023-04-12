@@ -8,8 +8,6 @@ from cleanlab.multilabel_classification.filter import (
 from cleanlab.internal.multilabel_utils import get_onehot_num_classes
 from collections import defaultdict
 
-from cleanlab.internal.util import get_num_classes
-
 
 def common_multilabel_issues(
     labels=list,

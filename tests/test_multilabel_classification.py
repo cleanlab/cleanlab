@@ -25,7 +25,7 @@ from sklearn.linear_model import LogisticRegression
 
 from cleanlab.internal import multilabel_scorer as ml_scorer
 from cleanlab.internal.multilabel_utils import stack_complement, get_onehot_num_classes, onehot2int
-from cleanlab import multilabel_classification as ml_classification, multilabel_classification
+from cleanlab import multilabel_classification as ml_classification
 from cleanlab.multilabel_classification.dataset import (
     common_multilabel_issues,
     rank_classes_by_multilabel_quality,

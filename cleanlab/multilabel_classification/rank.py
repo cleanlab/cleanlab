@@ -144,7 +144,7 @@ def get_label_quality_scores_per_class(
     Computes a quality score quantifying how likely each individual class annotation is correct in a multi-label classification dataset.
     This is similar to :py:func:`get_label_quality_scores <cleanlab.multilabel_classification.rank.get_label_quality_scores>`
     but instead returns the per-class results without aggregation.
-    For a dataset with K classes, each example receives K scores from this method. 
+    For a dataset with K classes, each example receives K scores from this method.
     Refer to documentation in :py:func:`get_label_quality_scores <cleanlab.multilabel_classification.rank.get_label_quality_scores>` for details.
 
     Parameters
