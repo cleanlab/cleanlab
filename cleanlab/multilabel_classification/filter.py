@@ -197,12 +197,13 @@ def find_multilabel_issues_per_class(
         Otherwise if `return_indices_ranked_by` is not ``None``, then this method returns 3 objects: label_issues_list, labels_list, pred_probs_list
         label_issues_list is a list of length K whose k-th element is:
         an ordered list of indices of examples where class k appears incorrectly annotated, sorted by the likelihood that class k is correctly annotated.
+
         labels_list is a list of length K whose k-th element is:
         a list of binary one-hot encoded labels where each element of the list indicates whether the example belongs to class k or not.
+
         pred_probs_list is a list of length K whose k-th element is:
         an array of predicted probabilities in a one-vs-rest setting of shape (N, 2), where first element has probability p
-        of belonging to that class, and the other (1-p)
-
+        of belonging to that class, and the other (1-p).
     """
     import cleanlab.filter
     from cleanlab.internal.multilabel_utils import get_onehot_num_classes, stack_complement
