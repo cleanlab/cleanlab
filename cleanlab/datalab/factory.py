@@ -85,6 +85,16 @@ def list_possible_issue_types() -> List[str]:
     return list(REGISTRY.keys())
 
 
+def list_default_issue_types() -> List[str]:
+    """Returns a list of the issue types that are run by default by Datalab.
+
+    See Also
+    --------
+    :py:class:`REGISTRY <cleanlab.datalab.factory.REGISTRY>` : The default issue types and their corresponding issue managers can be found here.
+    """
+    return ["label", "outlier", "near_duplicate"]
+
+
 # Construct concrete issue manager with a from_str method
 class _IssueManagerFactory:
     """Factory class for constructing concrete issue managers."""

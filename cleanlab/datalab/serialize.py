@@ -67,13 +67,27 @@ class _Serializer:
             )
 
     @classmethod
-    def serialize(cls, path: str, datalab: Datalab) -> None:
-        """Serializes the datalab object to disk."""
+    def serialize(cls, path: str, datalab: Datalab, force: bool) -> None:
+        """Serializes the datalab object to disk.
 
-        if os.path.exists(path):
-            print(f"WARNING: Existing files will be overwritten by newly saved files at: {path}")
-        else:
+        Parameters
+        ----------
+        path : str
+            Path to save the datalab object to.
+
+        datalab : Datalab
+            The datalab object to save.
+
+        force : bool
+            If True, will overwrite existing files at the specified path.
+        """
+        path_exists = os.path.exists(path)
+        if not path_exists:
             os.mkdir(path)
+        else:
+            if not force:
+                raise FileExistsError("Please specify a new path or set force=True")
+            print(f"WARNING: Existing files will be overwritten by newly saved files at: {path}")
 
         # Save the datalab object to disk.
         with open(os.path.join(path, OBJECT_FILENAME), "wb") as f:

@@ -43,11 +43,9 @@ class LabelIssueManager(IssueManager):
 
     description: ClassVar[
         str
-    ] = """A label issue is a problem in the labeling/annotation
-        of a dataset used for supervised learning tasks.
-
-        This includes examples whose given label is likely incorrect.
-        """
+    ] = """Examples whose given label is estimated to be potentially 
+    incorrect (e.g. due to annotation error) are flagged as having label issues.
+    """
 
     issue_name: ClassVar[str] = "label"
     verbosity_levels = {

@@ -84,31 +84,12 @@ class NonIIDIssueManager(IssueManager):
 
     description: ClassVar[
         str
-    ] = """The NonIIDIssueManager detects whether the given dataset is sampled IID or not.
-
-    Data can be non-IID in many ways and in general it is impossible
-    to detect all cases of non-IID sampling.  This issue manager
-    investigates whether the ordering of examples in the dataset is
-    dependent on whether examples are neighbors in the KNN graph or
-    not. The algorithm uses permutation testing with the
-    Kolmogorov-Smirnov statistic to determine whether the distribution
-    of index-distances between neighbors in the dataset is
-    significantly different than that of the distribution of all
-    index-distances in the dataset.
-
-    Detecting non-IID data can very important when collecting datasets
-    or preparing a model for deployment.  Although shuffling data is
-    generally good practice for removing non-IID issues, knowing that
-    there are underlying problems with distribution drift or dependent
-    sampling during data collection is important to know in order to
-    understand the real-world environment that your model will be
-    deployed in.
-
-    Types of non-IID problems in datasets can be:
-        - Distribution drift or concept drift
-        - Video frames in an image dataset
-        - Sorting
-        - Dependent sampling
+    ] = """Whether the dataset exhibits statistically significant
+          violations of the IID assumption like: 
+          changepoints or shift, drift, autocorrelation, etc.
+          The specific violation considered is whether the 
+          examples are ordered such that almost adjacent examples
+          tend to have more similar feature values.
     """
     issue_name: ClassVar[str] = "non_iid"
     verbosity_levels = {

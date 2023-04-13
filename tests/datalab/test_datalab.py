@@ -304,7 +304,7 @@ class TestDatalab:
 
     def test_save(self, lab, tmp_path, monkeypatch):
         """Test that the save and load methods work."""
-        lab.save(tmp_path)
+        lab.save(tmp_path, force=True)
         assert tmp_path.exists(), "Save directory was not created"
         assert (tmp_path / "data").is_dir(), "Data directory was not saved"
         assert (tmp_path / "issues.csv").exists(), "Issues file was not saved"
@@ -328,7 +328,7 @@ class TestDatalab:
             }
         )
         monkeypatch.setattr(lab, "issue_summary", mock_issue_summary)
-        lab.save(tmp_path)
+        lab.save(tmp_path, force=True)
         assert (tmp_path / "issues.csv").exists(), "Issues file was not saved"
         assert (tmp_path / "summary.csv").exists(), "Issue summary file was not saved"
 
@@ -369,7 +369,7 @@ class TestDatalab:
         )
         monkeypatch.setattr(lab, "issue_summary", mock_issue_summary)
 
-        lab.save(tmp_path)
+        lab.save(tmp_path, force=True)
 
         loaded_lab = Datalab.load(tmp_path)
         data = lab._data

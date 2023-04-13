@@ -60,18 +60,16 @@ def create_data():
     y_train = np.concatenate([y_train, y_out])
     y_train_idx = np.concatenate([y_train_idx, y_out_bin_idx])
 
-    # Add non-iid examples to the training set
-    X_non_iid = np.array([[6.0 + 0.025 * i, 0.5 + np.sin(0.25 * i)] for i in range(25)])
-    y_non_iid = np.sum(X_non_iid, axis=1)
-    y_non_iid_bin = np.array(
-        [k for y_i in y_non_iid for k, v in BINS.items() if v[0] <= y_i < v[1]]
-    )
-    y_non_iid_bin_idx = np.array([BINS_MAP[k] for k in y_non_iid_bin])
+    # Add an exact duplicate example to the training set
+    exact_duplicate_idx = np.random.randint(0, len(X_train))
+    X_duplicate = X_train[exact_duplicate_idx, None]
+    y_duplicate = y_train[exact_duplicate_idx, None]
+    y_duplicate_idx = y_train_idx[exact_duplicate_idx, None]
 
     # Add to train
-    X_train = np.concatenate([X_train, X_non_iid])
-    y_train = np.concatenate([y_train, y_non_iid])
-    y_train_idx = np.concatenate([y_train_idx, y_non_iid_bin_idx])
+    X_train = np.concatenate([X_train, X_duplicate])
+    y_train = np.concatenate([y_train, y_duplicate])
+    y_train_idx = np.concatenate([y_train_idx, y_duplicate_idx])
 
     py = np.bincount(y_train_idx) / float(len(y_train_idx))
     m = len(BINS)
@@ -88,44 +86,30 @@ def create_data():
 
     # TODO: Add noise to test set when we support extra splits in Datalab
 
-    print("Label accuracy:", "{:.3f}".format(np.mean(noisy_labels_idx == y_train_idx)))
     noisy_labels = np.array([list(BINS_MAP.keys())[i] for i in noisy_labels_idx])
 
-    return {
-        "X_train": X_train,
-        "y_train": y_train,
-        "y_train_idx": y_train_idx,
-        "noisy_labels": noisy_labels,
-        "noisy_labels_idx": noisy_labels_idx,
-        "X_test": X_test,
-        "y_test": y_test,
-        "y_test_idx": y_test_idx,
-        "X_out": X_out,
-        "y_out": y_out,
-    }
+    return X_train, y_train_idx, noisy_labels, noisy_labels_idx, X_out, X_duplicate
 
 
-def plot_data(X_train, y_train_idx, noisy_labels_idx, X_out):
+def plot_data(X_train, y_train_idx, noisy_labels_idx, X_out, X_duplicate):
     # Plot data with clean labels and noisy labels, use BINS_MAP for the legend
-    fig, ax = plt.subplots(1, 2, figsize=(10, 5))
-    for i, (X, y) in enumerate(zip([X_train, X_train], [y_train_idx, noisy_labels_idx])):
-        for k, v in BINS_MAP.items():
-            ax[i].scatter(X[y == v, 0], X[y == v, 1], label=k)
-        ax[i].set_title(["Clean labels", "Noisy labels"][i])
-        ax[i].set_xlabel(r"$x_1$")
-        ax[i].set_ylabel(r"$x_2$")
+    fig, ax = plt.subplots(figsize=(8, 6))
+    for k, v in BINS_MAP.items():
+        ax.scatter(X_train[noisy_labels_idx == v, 0], X_train[noisy_labels_idx == v, 1], label=k)
+    ax.set_title("Noisy labels")
+    ax.set_xlabel(r"$x_1$")
+    ax.set_ylabel(r"$x_2$")
 
     # Plot true boundaries (x+y=3.3, x+y=6.6)
-    for i in range(2):
-        ax[i].set_xlim(-3.5, 8.5)
-        ax[i].set_ylim(-3.5, 8.5)
-        ax[i].plot([-0.7, 4.0], [4.0, -0.7], color="k", linestyle="--", alpha=0.5)
-        ax[i].plot([-0.7, 7.3], [7.3, -0.7], color="k", linestyle="--", alpha=0.5)
+    ax.set_xlim(-3.5, 8.5)
+    ax.set_ylim(-3.5, 8.5)
+    ax.plot([-0.7, 4.0], [4.0, -0.7], color="k", linestyle="--", alpha=0.5)
+    ax.plot([-0.7, 7.3], [7.3, -0.7], color="k", linestyle="--", alpha=0.5)
 
     # Draw red circles around the points that are misclassified (i.e. the points that are in the wrong bin)
     for i, (X, y) in enumerate(zip([X_train, X_train], [y_train_idx, noisy_labels_idx])):
         for j, (k, v) in enumerate(BINS_MAP.items()):
-            ax[i].plot(
+            ax.plot(
                 X[(y == v) & (y != y_train_idx), 0],
                 X[(y == v) & (y != y_train_idx), 1],
                 "o",
@@ -137,9 +121,17 @@ def plot_data(X_train, y_train_idx, noisy_labels_idx, X_out):
                 **{"label": "Label error" if i == 1 and j == 0 else None}
             )
 
-    for i in range(2):
-        ax[i].scatter(
-            X_out[:, 0], X_out[:, 1], color="k", marker="x", s=100, linewidth=2, label="Outlier"
-        )
-        ax[i].legend()
+    ax.scatter(X_out[:, 0], X_out[:, 1], color="k", marker="x", s=100, linewidth=2, label="Outlier")
+
+    # Plot the exact duplicate
+    ax.scatter(
+        X_duplicate[:, 0],
+        X_duplicate[:, 1],
+        color="c",
+        marker="x",
+        s=100,
+        linewidth=2,
+        label="Exact Duplicate",
+    )
+    ax.legend()
     plt.tight_layout()

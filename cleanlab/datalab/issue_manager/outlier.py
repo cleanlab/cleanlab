@@ -36,16 +36,8 @@ class OutOfDistributionIssueManager(IssueManager):
 
     description: ClassVar[
         str
-    ] = """An outlier issue refers to examples that are very different
-        from the rest of the dataset (i.e. potentially out-of-distribution).
-
-        Training/evaluating ML models with such examples may have unexpected consequences.
-
-        Examples may be considered as outliers if they:
-            - Are drawn from different distributions than the rest of the dataset.
-            - Are rare or anomalous events with extreme values.
-            - Have measurement- or data-collection errors.
-            - etc.
+    ] = """Examples that are very different from the rest of the dataset
+        (i.e. potentially out-of-distribution or rare/anomalous instances).
         """
     issue_name: ClassVar[str] = "outlier"
     verbosity_levels = {

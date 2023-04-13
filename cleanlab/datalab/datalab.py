@@ -33,7 +33,7 @@ import cleanlab
 from cleanlab.datalab.data import Data
 from cleanlab.datalab.data_issues import DataIssues
 from cleanlab.datalab.display import _Displayer
-from cleanlab.datalab.factory import _IssueManagerFactory
+from cleanlab.datalab.factory import _IssueManagerFactory, list_default_issue_types
 from cleanlab.datalab.serialize import _Serializer
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -233,7 +233,7 @@ class Datalab:
 
         While each IssueManager defines default values for its arguments,
         the Datalab class needs to organize the calls to each IssueManager
-        with different arguments, some of which may be
+        with different arguments, some of which may be user-provided.
 
         Parameters
         ----------
@@ -482,28 +482,37 @@ class Datalab:
             WARNING
             -------
             This is not yet implemented.
-            
+
         issue_types :
             Collection specifying which types of issues to consider in audit and any non-default parameter settings to use.
             If unspecified, a default set of issue types and recommended parameter settings is considered.
-            
-            This is a dictionary of dictionaries, where the keys are the issue types of interest 
+
+            This is a dictionary of dictionaries, where the keys are the issue types of interest
             and the values are dictionaries of parameter values that control how each type of issue is detected.
             More specifically, the values are constructor keyword arguments passed to the corresponding ``IssueManager``,
             which is responsible for detecting the particular issue type.
-            
+
             .. seealso::
                 IssueManager
-            
-            Example
-            -------
+
+            Examples
+            --------
+
+            Suppose you want to detect label issues. Just pass a dictionary with the key "label" and an empty dictionary as the value.
+
+            .. code-block:: python
+
+                issue_types = {"label": {}}
+
+
+            For more control, you can pass keyword arguments to the issue manager that handles the label issues.
             For example, if you want to pass the keyword argument "clean_learning_kwargs"
             to the constructor of the LabelIssueManager, you would pass:
 
 
             .. code-block:: python
 
-                issue_init_kwargs = {
+                issue_types = {
                     "label": {
                         "clean_learning_kwargs": {
                             "prune_method": "prune_by_noise_rate",
@@ -518,11 +527,13 @@ class Datalab:
             )
             return None
 
-        required_args_per_issue_type = self._resolve_required_args(
-            pred_probs, features, model, knn_graph
+        issue_types_copy = self.get_available_issue_types(
+            pred_probs=pred_probs,
+            features=features,
+            knn_graph=knn_graph,
+            model=model,
+            issue_types=issue_types,
         )
-
-        issue_types_copy = self._set_issue_types(issue_types, required_args_per_issue_type)
 
         new_issue_managers = [
             factory(datalab=self, **issue_types_copy.get(factory.issue_name, {}))
@@ -542,11 +553,39 @@ class Datalab:
                 failed_managers.append(issue_manager)
 
         if self.verbosity:
-            print("Search complete.")
+            print(
+                f"Audit complete. {self.issue_summary['num_issues'].sum()} issues found in the dataset."
+            )
         if failed_managers:
-            print(f"Failed to find issues for {failed_managers}")
+            print(f"Failed to check for these issue types: {failed_managers}")
 
         self.data_issues.set_health_score()
+
+    def get_available_issue_types(self, **kwargs):
+        """Returns a dictionary of issue types that can be used in the find_issues method."""
+
+        pred_probs = kwargs.get("pred_probs", None)
+        features = kwargs.get("features", None)
+        knn_graph = kwargs.get("knn_graph", None)
+        model = kwargs.get("model", None)
+        issue_types = kwargs.get("issue_types", None)
+
+        # Determine which parameters are required for each issue type
+        required_args_per_issue_type = self._resolve_required_args(
+            pred_probs, features, model, knn_graph
+        )
+
+        issue_types_copy = self._set_issue_types(issue_types, required_args_per_issue_type)
+
+        if issue_types is None:
+            # Only run default issue types if no issue types are specified
+            issue_types_copy = {
+                issue: issue_types_copy[issue]
+                for issue in list_default_issue_types()
+                if issue in issue_types_copy
+            }
+
+        return issue_types_copy
 
     def get_info(self, issue_name: Optional[str] = None) -> Dict[str, Any]:
         """Returns dict of info about a specific issue,
@@ -560,6 +599,7 @@ class Datalab:
 
     def report(
         self,
+        *,
         num_examples: int = 5,
         verbosity: Optional[int] = None,
         include_description: bool = True,
@@ -574,10 +614,10 @@ class Datalab:
 
         verbosity :
             Higher verbosity levels add more information to the report.
-        
+
         include_description :
             Whether or not to include a description of each issue type in the report.
-            Consider setting this to ``False`` once you're familiar with how each issue type is defined.  
+            Consider setting this to ``False`` once you're familiar with how each issue type is defined.
         """
         if verbosity is None:
             verbosity = self.verbosity
@@ -590,20 +630,23 @@ class Datalab:
             )
         )
 
-    def save(self, path: str) -> None:
+    def save(self, path: str, force: bool = False) -> None:
         """Saves this Datalab object to file (all files are in folder at `path/`).
         We do not guarantee saved Datalab can be loaded from future versions of cleanlab.
-        
+
         Parameters
         ----------
         path :
             Folder in which all information about this Datalab should be saved.
-        
+
+        force :
+            If ``True``, overwrites any existing files in the folder at `path`.
+
         Note
         ----
         You have to save the Dataset yourself separately if you want it saved to file!
         """
-        _Serializer.serialize(path=path, datalab=self)
+        _Serializer.serialize(path=path, datalab=self, force=force)
         save_message = f"Saved Datalab to folder: {path}"
         print(save_message)
 
@@ -615,12 +658,12 @@ class Datalab:
         ----------
         `path` :
             Path to the folder previously specified in ``Datalab.save()``.
-            
+
         `data` :
             The dataset used to originally construct the Datalab.
             Remember the dataset is not saved as part of the Datalab,
             you must save/load the data separately.
-        
+
         Returns
         -------
         `datalab` :

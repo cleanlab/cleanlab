@@ -38,11 +38,14 @@ class TestData:
     @pytest.fixture(
         scope="class",
         params=[
-            {"name": "lhoestq/demo1", "label_name": "star"},
+            # {"name": "lhoestq/demo1", "label_name": "star"},  # skip(reason="datasets.load_dataset() is not working")
             {"name": "beans", "label_name": "labels"},
         ],
         autouse=True,
-        ids=["demo1", "beans"],
+        ids=[
+            # "demo1",  # skip(reason="datasets.load_dataset() is not working")
+            "beans",
+        ],
     )
     def dataset_and_label_name(self, request):
         name = request.param["name"]
