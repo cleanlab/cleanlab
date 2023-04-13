@@ -109,7 +109,7 @@ def find_label_issues(
       *Format requirements*: for dataset with K classes, each label must be integer in 0, 1, ..., K-1.
       For a standard (multi-class) classification dataset where each example is labeled with one class,
       `labels` should be 1D array of shape ``(N,)``, for example: ``labels = [1,0,2,1,1,0...]``.
-    
+
     pred_probs : np.ndarray, optional
       An array of shape ``(N, K)`` of model-predicted class probabilities,
       ``P(label=k|x)``. Each row of this matrix corresponds
