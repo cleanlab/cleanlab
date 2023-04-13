@@ -232,6 +232,8 @@ def find_multilabel_issues_per_class(
             conf = confident_joint[class_num]
         if num_to_remove_per_class is not None:
             ml_num_to_remove_per_class = [num_to_remove_per_class[class_num], 0]
+        else:
+            ml_num_to_remove_per_class = None
         binary_label_issues = cleanlab.filter.find_label_issues(
             labels=label,
             pred_probs=pred_probs_binary,
