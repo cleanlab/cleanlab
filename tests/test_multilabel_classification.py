@@ -410,9 +410,10 @@ def test_multilabel_num_to_remove_per_class(data_multilabel, num_to_remove_per_c
         assert num_issues == sum(num_to_remove_per_class)
 
 
-def test_rank_classes_by_multilabel_quality(pred_probs_multilabel, labels_multilabel):
+@pytest.mark.parametrize("class_names", [None, ["Apple", "Cat", "Dog", "Peach", "Bird"]])
+def test_rank_classes_by_multilabel_quality(pred_probs_multilabel, labels_multilabel, class_names):
     df_ranked = rank_classes_by_multilabel_quality(
-        pred_probs=pred_probs_multilabel, labels=labels_multilabel
+        pred_probs=pred_probs_multilabel, labels=labels_multilabel, class_names=class_names
     )
     expected_Label_Issues = [1, 0, 0, 0, 0]
 
@@ -433,6 +434,17 @@ def test_rank_classes_by_multilabel_quality(pred_probs_multilabel, labels_multil
     assert np.isclose(
         np.array(expected_Inverse_Label_Noise), df_ranked["Inverse Label Noise"]
     ).all()
+    if class_names:
+        expected_res = [
+            "Dog",
+            "Apple",
+            "Cat",
+            "Peach",
+            "Bird",
+        ]
+        assert list(df_ranked["Class Name"]) == expected_res
+    else:
+        assert "Class Name" not in df_ranked.columns
 
 
 def test_overall_multilabel_health_score(data_multilabel):
