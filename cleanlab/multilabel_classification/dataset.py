@@ -146,7 +146,7 @@ def rank_classes_by_multilabel_quality(
         "Inverse Label Noise",
         "Label Quality Score",
     ]
-    if not class_names:
+    if class_names is None:
         return_columns = return_columns[1:]
     for class_num, row in issues_df.iterrows():
         if row["In Given Label"]:
