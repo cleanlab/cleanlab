@@ -17,10 +17,9 @@
 """
 Methods to identify which examples have label issues in a classification dataset.
 The documentation below assumes a dataset with ``N`` examples and ``K`` classes.
-This module considers two types of datasets:
-
-* standard (multi-class) classification where each example is labeled as belonging to exactly one of K classes (e.g. ``labels = np.array([0,0,1,0,2,1])``)
-* multi-label classification where each example can be labeled as belonging to multiple classes (e.g. ``labels = [[1,2],[1],[0],[],...]``)
+This module is for standard (multi-class) classification where each example is labeled as belonging to exactly one of K classes (e.g. ``labels = np.array([0,0,1,0,2,1])``).
+Some methods here also work for multi-label classification data where each example can be labeled as belonging to multiple classes (e.g. ``labels = [[1,2],[1],[0],[],...]``),
+but we encourage using the methods in the ``cleanlab.multilabel_classification`` module instead for such data.
 """
 
 import numpy as np
@@ -78,13 +77,13 @@ def find_label_issues(
     return_indices_ranked_by: Optional[str] = None,
     rank_by_kwargs: Optional[Dict[str, Any]] = None,
     filter_by: str = "prune_by_noise_rate",
-    multi_label: bool = False,
     frac_noise: float = 1.0,
     num_to_remove_per_class: Optional[List[int]] = None,
     min_examples_per_class=1,
     confident_joint: Optional[np.ndarray] = None,
     n_jobs: Optional[int] = None,
     verbose: bool = False,
+    multi_label: bool = False,
 ) -> np.ndarray:
     """
     Identifies potentially bad labels in a classification dataset using confident learning.
@@ -110,8 +109,6 @@ def find_label_issues(
       *Format requirements*: for dataset with K classes, each label must be integer in 0, 1, ..., K-1.
       For a standard (multi-class) classification dataset where each example is labeled with one class,
       `labels` should be 1D array of shape ``(N,)``, for example: ``labels = [1,0,2,1,1,0...]``.
-      For a multi-label classification dataset where each example can belong to multiple (or no) classes,
-      `labels` should be an iterable of iterables (e.g. ``List[List[int]]``) whose i-th element corresponds to list of classes that i-th example belongs to (e.g. ``labels = [[1,2],[1],[0],[],...]``).
 
     pred_probs : np.ndarray, optional
       An array of shape ``(N, K)`` of model-predicted class probabilities,
@@ -151,13 +148,6 @@ def find_label_issues(
       - ``'low_normalized_margin'``: filters the examples with *smallest* normalized margin label quality score. The number of issues returned matches :py:func:`count.num_label_issues <cleanlab.count.num_label_issues>`.
       - ``'low_self_confidence'``: filters the examples with *smallest* self confidence label quality score. The number of issues returned matches :py:func:`count.num_label_issues <cleanlab.count.num_label_issues>`.
 
-    multi_label : bool, optional
-      If ``True``, labels should be an iterable (e.g. list) of iterables, containing a
-      list of class labels for each example, instead of just a single label.
-      The multi-label setting supports classification tasks where an example can belong to more than 1 class or none of the classes (rather than exactly one class as in standard multi-class classification).
-      Example of a multi-labeled `labels` input: ``[[0,1], [1], [0,2], [0,1,2], [0], [1], [], ...]``. This says the first example in dataset belongs to both class 0 and class 1, according to its given label.
-      Each row of `pred_probs` no longer needs to sum to 1 in multi-label settings, since one example can now belong to multiple classes simultaneously.
-
     frac_noise : float, default=1.0
       Used to only return the "top" ``frac_noise * num_label_issues``. The choice of which "top"
       label issues to return is dependent on the `filter_by` method used. It works by reducing the
@@ -168,7 +158,6 @@ def find_label_issues(
       When ``frac_noise=1.0``, return all "confident" estimated noise indices (recommended).
 
       frac_noise * number_of_mislabeled_examples_in_class_k.
-      Note: specifying `frac_noise` is not yet supported if `multi_label` is True.
 
     num_to_remove_per_class : array_like
       An iterable of length K, the number of classes.
@@ -196,7 +185,6 @@ def find_label_issues(
       Entry ``(j, k)`` in the matrix is the number of examples confidently counted into the pair of ``(noisy label=j, true label=k)`` classes.
       The `confident_joint` can be computed using :py:func:`count.compute_confident_joint <cleanlab.count.compute_confident_joint>`.
       If not provided, it is computed from the given (noisy) `labels` and `pred_probs`.
-      If `multi_label` is True, `confident_joint` should instead be a one-vs-rest array with shape ``(K, 2, 2)`` as returned by :py:func:`count.compute_confident_joint <cleanlab.count.compute_confident_joint>` function.
 
     n_jobs : optional
       Number of processing threads used by multiprocessing. Default ``None``
@@ -774,9 +762,6 @@ def find_label_issues_using_argmax_confusion_matrix(
       label issue and ``False`` represents an example that is accurately
       labeled with high confidence.
 
-    Note
-    ----
-    Multi-label classification is not supported in this method.
     """
 
     assert_valid_inputs(X=None, y=labels, pred_probs=pred_probs, multi_label=False)
