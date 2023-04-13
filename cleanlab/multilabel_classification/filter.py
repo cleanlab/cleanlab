@@ -195,7 +195,7 @@ def find_multilabel_issues_per_class(
         For more details, refer to :py:func:`cleanlab.multilabel_classification.filter.find_label_issues <cleanlab.multilabel_classification.filter.find_label_issues>`.
 
         Otherwise if `return_indices_ranked_by` is not ``None``, then this method returns 3 objects (each of length K, the number of classes): `label_issues_list`, `labels_list`, `pred_probs_list`.
-        
+
         * *label_issues_list*: an ordered list of indices of examples where class k appears incorrectly annotated, sorted by the likelihood that class k is correctly annotated.
 
         * *labels_list*: a binary one-hot representation of the original labels, useful if you want to compute label quality scores.
