@@ -281,7 +281,7 @@ def _softmin_sentence_score(
         return np.array([np.mean(scores) for scores in token_scores])
 
     def softmax(scores: np.ndarray) -> np.ndarray:
-        scores = = scores / temperature
+        scores = scores / temperature
         scores_max = np.amax(scores, axis=0, keepdims=True)
         exp_scores_shifted = np.exp(scores - scores_max)
         return exp_scores_shifted / np.sum(exp_scores_shifted, axis=0, keepdims=True)
