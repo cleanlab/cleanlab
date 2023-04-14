@@ -533,6 +533,14 @@ class TestDatalabUsingKNNGraph:
         np.testing.assert_array_equal(three_nn_dists, knn_graph_three_nn_dists)
         assert lab.get_info("statistics").get("knn_metric") == "cosine"
 
+    def test_without_features_or_knn_graph(self, data_tuple):
+        """Test that the `knn_graph` argument to `find_issues` is used instead of computing a new
+        one from the `features` argument."""
+        lab, _, _ = data_tuple
+
+        lab.find_issues()  # No issue checks should be run
+        assert lab.issues.empty  # No columns should be added to the issues dataframe
+
 
 class TestDatalabIssueManagerInteraction:
     """The Datalab class should integrate with the IssueManager class correctly.
