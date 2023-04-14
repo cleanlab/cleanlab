@@ -541,6 +541,9 @@ class Datalab:
         ]
 
         if not new_issue_managers:
+            no_args_passed = all(arg is None for arg in [pred_probs, features, knn_graph, model])
+            if no_args_passed:
+                warnings.warn("No arguments were passed to find_issues.")
             warnings.warn("No issue check performed.")
             return None
 
