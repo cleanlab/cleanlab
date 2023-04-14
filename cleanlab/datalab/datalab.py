@@ -540,6 +540,10 @@ class Datalab:
             for factory in _IssueManagerFactory.from_list(list(issue_types_copy.keys()))
         ]
 
+        if not new_issue_managers:
+            warnings.warn("No issue check performed.")
+            return None
+
         failed_managers = []
         for issue_manager, arg_dict in zip(new_issue_managers, issue_types_copy.values()):
             try:
