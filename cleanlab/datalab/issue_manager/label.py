@@ -105,6 +105,7 @@ class LabelIssueManager(IssueManager):
                 "joint": statistics_dict.get("joint", None),
                 "confident_joint": statistics_dict.get("confident_joint", None),
                 "multi_label": statistics_dict.get("multi_label", None),
+                "verbose": False,
             }
         self.health_summary_parameters = {
             k: v for k, v in self.health_summary_parameters.items() if v is not None
