@@ -74,13 +74,6 @@ class KNN:
         try:
             k = cast(int, self.knn.n_neighbors)  # Cast knn n_neighbors to int
             if k != self.n_neighbors:
-                warnings.warn(
-                    f"n_neighbors {self.n_neighbors} does not match n_neighbors "
-                    f"{k} used to fit knn. "
-                    "Most likely an existing NearestNeighbors object was passed in, "
-                    "but a different n_neighbors was specified. "
-                    "Using the n_neighbors found in the existing KNN search object."
-                )
                 self.n_neighbors = k
         except AttributeError:
             warnings.warn(

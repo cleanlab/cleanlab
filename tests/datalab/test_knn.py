@@ -61,17 +61,10 @@ class TestKNN:
 
         assert KNN(n_neighbors=4).n_neighbors == 4
 
-        with pytest.warns(UserWarning) as record:
-            larger_index: KNNInterface = NearestNeighbors(n_neighbors=5)
-            assert (
-                KNN(n_neighbors=3, knn=larger_index).n_neighbors == 5
-            ), "KNN object should override n_neighbors"
-        assert len(record) == 1
-        warn_message = record[0].message.args[0]
+        larger_index: KNNInterface = NearestNeighbors(n_neighbors=5)
         assert (
-            "n_neighbors 3 does not match n_neighbors 5 used to fit knn" in warn_message
-        ), "Should warn if n_neighbors does not match"
-        assert "Using the n_neighbors found in the existing KNN search object." in warn_message
+            KNN(n_neighbors=3, knn=larger_index).n_neighbors == 5
+        ), "KNN object should override n_neighbors"
 
     def test_default_attributes(self) -> None:
         """Test that the default attributes are set correctly.
