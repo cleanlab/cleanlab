@@ -602,7 +602,7 @@ class Datalab:
         *,
         num_examples: int = 5,
         verbosity: Optional[int] = None,
-        include_description: bool = True,
+        include_description: bool = False,
     ) -> None:
         """Prints informative summary of all issues.
 

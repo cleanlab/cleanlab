@@ -210,7 +210,7 @@ class IssueManager(ABC, metaclass=IssueManagerMeta):
         info: Dict[str, Any],
         num_examples: int = 5,
         verbosity: int = 0,
-        include_description: bool = True,
+        include_description: bool = False,
         info_to_omit: Optional[List[str]] = None,
     ) -> str:
         """Compose a report of the issues found by this IssueManager.
