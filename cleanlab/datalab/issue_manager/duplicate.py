@@ -218,7 +218,7 @@ class NearDuplicateIssueManager(IssueManager):
             # Threshold based on nearest-neighbor distance/radius. Smaller radius means
             # more examples are considered near-duplicates.
 
-            threshold = np.median(distances) * 0.05
+            threshold = np.median(distances) * 0.20
 
             if threshold < 0:
                 warnings.warn(
