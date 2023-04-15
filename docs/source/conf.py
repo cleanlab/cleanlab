@@ -17,6 +17,12 @@ import shutil
 
 sys.path.insert(0, os.path.abspath("../../cleanlab"))
 
+# doctest setup
+# If extensions (or modules to document with autodoc) are in another directory,
+# add these directories to sys.path here.
+import pathlib
+sys.path.insert(0, pathlib.Path(__file__).parents[2].resolve().as_posix())
+
 # -- Project information -----------------------------------------------------
 
 project = "cleanlab"
@@ -57,6 +63,9 @@ templates_path = ["_templates"]
 exclude_patterns = ["_build"]
 
 autosummary_generate = True
+
+# -- Options for doctest extension ---------------------------------------------
+nbsphinx_allow_errors = True # to allow make doctest to run
 
 # -- Options for apidoc extension ----------------------------------------------
 

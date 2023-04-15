@@ -58,11 +58,8 @@ def rank_classes_by_label_quality(
     >>> from cleanlab.dataset import rank_classes_by_label_quality
     >>> from sklearn.linear_model import LogisticRegression
     >>> from sklearn.model_selection import cross_val_predict
-    >>> data, labels = get_data_labels_from_dataset(yourFavoriteDataset)
+    >>> data, labels = get_data_labels_from_dataset()
     >>> yourFavoriteModel = LogisticRegression()
-    >>> test = "test"
-    >>> test
-    "false"
     >>> pred_probs = cross_val_predict(
             yourFavoriteModel,
             data,
@@ -162,10 +159,11 @@ def find_overlapping_classes(
 
     Examples
     --------
+    .. doctest::
     >>> from cleanlab.dataset import find_overlapping_classes
     >>> from sklearn.linear_model import LogisticRegression
     >>> from sklearn.model_selection import cross_val_predict
-    >>> data, labels = get_data_labels_from_dataset(yourFavoriteDataset)
+    >>> data, labels = get_data_labels_from_dataset()
     >>> yourFavoriteModel = LogisticRegression()
     >>> pred_probs = cross_val_predict(
             yourFavoriteModel,
@@ -342,7 +340,7 @@ def overall_label_health_score(
     >>> from cleanlab.dataset import overall_label_health_score
     >>> from sklearn.linear_model import LogisticRegression
     >>> from sklearn.model_selection import cross_val_predict
-    >>> data, labels = get_data_labels_from_dataset(yourFavoriteDataset)
+    >>> data, labels = get_data_labels_from_dataset()
     >>> yourFavoriteModel = LogisticRegression()
     >>> pred_probs = cross_val_predict(
             yourFavoriteModel,
@@ -416,18 +414,18 @@ def health_summary(
     >>> from cleanlab.dataset import health_summary
     >>> from sklearn.linear_model import LogisticRegression
     >>> from sklearn.model_selection import cross_val_predict
-    >>> data, labels = get_data_labels_from_dataset(yourFavoriteDataset)
+    >>> data, labels = get_data_labels_from_dataset()
     >>> yourFavoriteModel = LogisticRegression()
-    >>> pred_probs = cross_val_predict(
-            yourFavoriteModel,
-            data,
-            labels,
-            cv=3,
-            method="predict_proba",
+    >>> pred_probs = cross_val_predict(  \
+            yourFavoriteModel,           \
+            data,                        \
+            labels,                      \
+            cv=3,                        \
+            method="predict_proba",      \
         )  # generate cross-validation estimates for each input data point
-    >>> summary = health_summary(
-                labels=labels,
-                pred_probs=pred_probs,
+    >>> summary = health_summary(        \
+                labels=labels,           \
+                pred_probs=pred_probs,   \
         )  # dictionary summarizing the overall label quality of the classes in your dataset
 
     **Parameters**: For parameter info, see the docstring of :py:func:`find_overlapping_classes <cleanlab.dataset.find_overlapping_classes>`.
