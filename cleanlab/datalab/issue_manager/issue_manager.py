@@ -281,7 +281,7 @@ class IssueManager(ABC, metaclass=IssueManagerMeta):
         topk_ids = issues.sort_values(by=cls.issue_score_key, ascending=True).index[:num_examples]
 
         score = summary["score"].loc[0]
-        report_str = f"{' ' + cls.issue_name + ' issues ':-^100}\n\n"
+        report_str = f"{' ' + cls.issue_name + ' issues ':-^60}\n\n"
 
         if include_description and cls.description:
             description = cls.description
