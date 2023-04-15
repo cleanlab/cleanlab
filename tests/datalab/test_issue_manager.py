@@ -218,7 +218,7 @@ class TestOutlierIssueManager:
         )
         assert isinstance(report, str)
         assert (
-            "------------------------------------------ outlier issues ------------------------------------------\n\n"
+            "---------------------- outlier issues ----------------------\n\n"
             "Number of examples with this issue:"
         ) in report
 
@@ -355,7 +355,7 @@ class TestNearDuplicateIssueManager:
         )
         assert isinstance(report, str)
         assert (
-            "-------------------------------------- near_duplicate issues ---------------------------------------\n\n"
+            "------------------ near_duplicate issues -------------------\n\n"
             "Number of examples with this issue:"
         ) in report
 
@@ -445,7 +445,7 @@ class TestNonIIDIssueManager:
 
         assert isinstance(report, str)
         assert (
-            "------------------------------------------ non_iid issues ------------------------------------------\n\n"
+            "---------------------- non_iid issues ----------------------\n\n"
             "Number of examples with this issue:"
         ) in report
 
