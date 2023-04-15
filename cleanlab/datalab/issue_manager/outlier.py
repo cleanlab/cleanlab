@@ -31,7 +31,7 @@ if TYPE_CHECKING:  # pragma: no cover
     from cleanlab.datalab.datalab import Datalab
 
 
-class OutOfDistributionIssueManager(IssueManager):
+class OutlierIssueManager(IssueManager):
     """Manages issues related to out-of-distribution examples."""
 
     description: ClassVar[

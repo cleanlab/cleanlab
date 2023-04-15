@@ -5,7 +5,7 @@ import pytest
 from cleanlab.datalab.issue_manager import (
     IssueManager,
     LabelIssueManager,
-    OutOfDistributionIssueManager,
+    OutlierIssueManager,
     NearDuplicateIssueManager,
     NonIIDIssueManager,
 )
@@ -123,7 +123,7 @@ class TestLabelIssueManager:
         assert summary_parameters == expected_parameters
 
 
-class TestOutOfDistributionIssueManager:
+class TestOutlierIssueManager:
     @pytest.fixture
     def embeddings(self, lab):
         np.random.seed(SEED)
@@ -133,11 +133,11 @@ class TestOutOfDistributionIssueManager:
 
     @pytest.fixture
     def issue_manager(self, lab):
-        return OutOfDistributionIssueManager(datalab=lab, k=3)
+        return OutlierIssueManager(datalab=lab, k=3)
 
     @pytest.fixture
     def issue_manager_with_threshold(self, lab):
-        return OutOfDistributionIssueManager(datalab=lab, k=2, threshold=0.5)
+        return OutlierIssueManager(datalab=lab, k=2, threshold=0.5)
 
     def test_init(self, issue_manager, issue_manager_with_threshold):
         assert isinstance(issue_manager.ood, OutOfDistribution)
@@ -219,7 +219,7 @@ class TestOutOfDistributionIssueManager:
         assert isinstance(report, str)
         assert (
             "------------------------------------------ outlier issues ------------------------------------------\n\n"
-            "About this issue"
+            "Number of examples with this issue:"
         ) in report
 
         report = issue_manager.report(
@@ -356,7 +356,7 @@ class TestNearDuplicateIssueManager:
         assert isinstance(report, str)
         assert (
             "-------------------------------------- near_duplicate issues ---------------------------------------\n\n"
-            "About this issue"
+            "Number of examples with this issue:"
         ) in report
 
         report = issue_manager.report(
@@ -446,7 +446,7 @@ class TestNonIIDIssueManager:
         assert isinstance(report, str)
         assert (
             "------------------------------------------ non_iid issues ------------------------------------------\n\n"
-            "About this issue"
+            "Number of examples with this issue:"
         ) in report
 
         report = issue_manager.report(
