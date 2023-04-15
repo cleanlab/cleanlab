@@ -110,7 +110,6 @@ class NonIIDIssueManager(IssueManager):
         self.metric = metric
         self.k = k
         self.num_permutations = num_permutations
-        self.knn: Optional[NearestNeighbors] = None
         self.tests = {
             "ks": simplified_kolmogorov_smirnov_test,
         }
@@ -130,11 +129,9 @@ class NonIIDIssueManager(IssueManager):
                     "If a knn_graph is not provided, features must be provided to fit a new knn."
                 )
 
-            if self.knn is None:
-                if self.metric is None:
-                    self.metric = "cosine" if features.shape[1] > 3 else "euclidean"
-                self.knn = NearestNeighbors(n_neighbors=self.k, metric=self.metric)
-            knn = KNN(n_neighbors=self.k, knn=self.knn)
+            if self.metric is None:
+                self.metric = "cosine" if features.shape[1] > 3 else "euclidean"
+            knn = NearestNeighbors(n_neighbors=self.k, metric=self.metric)
 
             if self.metric and self.metric != knn.metric:
                 warnings.warn(
@@ -145,7 +142,7 @@ class NonIIDIssueManager(IssueManager):
             self.metric = knn.metric
 
             try:
-                check_is_fitted(self.knn)
+                check_is_fitted(knn)
             except:
                 knn.fit(features)
 
@@ -213,7 +210,7 @@ class NonIIDIssueManager(IssueManager):
         }
         if knn_graph is None:
             assert knn is not None, "If knn_graph is None, knn must be provided."
-            knn_graph = knn.kneighbors_graph()  # type: ignore[union-attr]
+            knn_graph = knn.kneighbors_graph(mode="distance")  # type: ignore[union-attr]
 
         assert knn_graph is not None, "knn_graph must be provided or computed."
         statistics_dict = self._build_statistics_dictionary(knn_graph=knn_graph)

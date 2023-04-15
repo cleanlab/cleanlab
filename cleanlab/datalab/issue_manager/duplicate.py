@@ -26,7 +26,6 @@ from sklearn.neighbors import NearestNeighbors
 from sklearn.utils.validation import check_is_fitted
 
 from cleanlab.datalab.issue_manager import IssueManager
-from cleanlab.datalab.knn import KNN
 
 if TYPE_CHECKING:  # pragma: no cover
     from cleanlab.datalab.datalab import Datalab
@@ -62,7 +61,6 @@ class NearDuplicateIssueManager(IssueManager):
         self.metric = metric
         self.threshold = threshold
         self.k = k
-        self.knn: Optional[NearestNeighbors] = None
         self.near_duplicate_sets: List[List[int]] = []
 
     def find_issues(
@@ -79,11 +77,9 @@ class NearDuplicateIssueManager(IssueManager):
                 raise ValueError(
                     "If a knn_graph is not provided, features must be provided to fit a new knn."
                 )
-            if self.knn is None:
-                if self.metric is None:
-                    self.metric = "cosine" if features.shape[1] > 3 else "euclidean"
-                self.knn = NearestNeighbors(n_neighbors=self.k, metric=self.metric)
-            knn = KNN(n_neighbors=self.k, knn=self.knn)
+            if self.metric is None:
+                self.metric = "cosine" if features.shape[1] > 3 else "euclidean"
+            knn = NearestNeighbors(n_neighbors=self.k, metric=self.metric)
 
             if self.metric and self.metric != knn.metric:
                 warnings.warn(
@@ -94,11 +90,11 @@ class NearDuplicateIssueManager(IssueManager):
             self.metric = knn.metric
 
             try:
-                check_is_fitted(self.knn)
+                check_is_fitted(knn)
             except:
                 knn.fit(features)
 
-            knn_graph = knn.kneighbors_graph()
+            knn_graph = knn.kneighbors_graph(mode="distance")
         N = knn_graph.shape[0]
         nn_distances = knn_graph.data.reshape(N, -1)[:, 0]
         scores = np.tanh(nn_distances)
