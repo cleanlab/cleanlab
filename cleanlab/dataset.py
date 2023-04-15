@@ -416,17 +416,8 @@ def health_summary(
     >>> from sklearn.model_selection import cross_val_predict
     >>> data, labels = get_data_labels_from_dataset()
     >>> yourFavoriteModel = LogisticRegression()
-    >>> # generate cross-validation estimates for each input data point
-    >>> pred_probs = cross_val_predict(
-    ...    yourFavoriteModel,
-    ...    data,
-    ...    labels,
-    ...    cv=3,
-    ...    method="predict_proba")
-    >>> summary = health_summary(        \
-                labels=labels,           \
-                pred_probs=pred_probs,   \
-        )  # dictionary summarizing the overall label quality of the classes in your dataset
+    >>> pred_probs = cross_val_predict(yourFavoriteModel, data, labels, cv=3, method="predict_proba")
+    >>> summary = health_summary(labels=labels, pred_probs=pred_probs) # doctest: +SKIP
 
     **Parameters**: For parameter info, see the docstring of :py:func:`find_overlapping_classes <cleanlab.dataset.find_overlapping_classes>`.
 
