@@ -13,7 +13,6 @@ from sklearn.neighbors import NearestNeighbors
 from sklearn.utils.validation import check_is_fitted
 
 from cleanlab.datalab.issue_manager import IssueManager
-from cleanlab.datalab.knn import KNN
 
 if TYPE_CHECKING:  # pragma: no cover
     from cleanlab.datalab.datalab import Datalab
@@ -115,9 +114,6 @@ class NonIIDIssueManager(IssueManager):
         }
         self.background_distribution = None
 
-        # Internal instance variable for tracking KNN wrapper
-        self._knn: Optional[KNN] = None
-
     def find_issues(self, features: Optional[npt.NDArray] = None, **kwargs) -> None:
         knn_graph = self._process_knn_graph_from_inputs(kwargs)
         old_knn_metric = self.datalab.get_info("statistics").get("knn_metric")
@@ -147,7 +143,6 @@ class NonIIDIssueManager(IssueManager):
                 knn.fit(features)
 
             self.neighbor_index_choices = self._get_neighbors(knn=knn)
-            self._knn = knn
         else:
             self.neighbor_index_choices = self._get_neighbors(knn_graph=knn_graph)
 
@@ -172,8 +167,8 @@ class NonIIDIssueManager(IssueManager):
         self.summary = self.make_summary(score=self.p_value)
 
         if knn_graph is None:
-            self.info = self.collect_info(knn=self._knn)
-        self.info = self.collect_info(knn_graph=knn_graph, knn=self._knn)
+            self.info = self.collect_info(knn=knn)
+        self.info = self.collect_info(knn_graph=knn_graph, knn=knn)
 
     def _process_knn_graph_from_inputs(self, kwargs: Dict[str, Any]) -> Union[csr_matrix, None]:
         """Determine if a knn_graph is provided in the kwargs or if one is already stored in the associated Datalab instance."""
@@ -198,7 +193,7 @@ class NonIIDIssueManager(IssueManager):
         return knn_graph
 
     def collect_info(
-        self, knn_graph: Optional[csr_matrix] = None, knn: Optional[KNN] = None
+        self, knn_graph: Optional[csr_matrix] = None, knn: Optional[NearestNeighbors] = None
     ) -> dict:
         issues_dict = {
             "p-value": self.p_value,
@@ -390,7 +385,7 @@ class NonIIDIssueManager(IssueManager):
         return scores
 
     def _get_neighbors(
-        self, knn: Optional[KNN] = None, knn_graph: Optional[csr_matrix] = None
+        self, knn: Optional[NearestNeighbors] = None, knn_graph: Optional[csr_matrix] = None
     ) -> np.ndarray:
         """
         Given a fitted knn object or a knn graph, returns an (N, k) array in
