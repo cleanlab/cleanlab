@@ -416,13 +416,13 @@ def health_summary(
     >>> from sklearn.model_selection import cross_val_predict
     >>> data, labels = get_data_labels_from_dataset()
     >>> yourFavoriteModel = LogisticRegression()
-    >>> pred_probs = cross_val_predict(  \
-            yourFavoriteModel,           \
-            data,                        \
-            labels,                      \
-            cv=3,                        \
-            method="predict_proba",      \
-        )  # generate cross-validation estimates for each input data point
+    >>> # generate cross-validation estimates for each input data point
+    >>> pred_probs = cross_val_predict(
+    ...    yourFavoriteModel,
+    ...    data,
+    ...    labels,
+    ...    cv=3,
+    ...    method="predict_proba")
     >>> summary = health_summary(        \
                 labels=labels,           \
                 pred_probs=pred_probs,   \
