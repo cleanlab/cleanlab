@@ -243,8 +243,10 @@ def softmin(
 
     def softmax(scores: np.ndarray) -> np.ndarray:
         """Softmax function."""
-        exp_scores = np.exp(scores / temperature)
-        return exp_scores / np.sum(exp_scores, axis=axis, keepdims=True)
+        scores = scores / temperature
+        scores_max = np.amax(scores, axis=axis, keepdims=True)
+        exp_scores_shifted = np.exp(scores - scores_max)
+        return exp_scores_shifted / np.sum(exp_scores_shifted, axis=axis, keepdims=True)
 
     return np.einsum("ij,ij->i", s, softmax(1 - s))
 
