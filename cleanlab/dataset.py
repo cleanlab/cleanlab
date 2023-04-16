@@ -85,13 +85,16 @@ def rank_classes_by_label_quality(
 
         By default, the DataFrame is ordered by "Label Quality Score", ascending.
     """
+    if multi_label:
+        raise ValueError(
+            "For multilabel data, please instead call:  multilabel_classification.dataset.overall_multilabel_health_score()"
+        )
 
     if joint is None:
         joint = estimate_joint(
             labels=labels,
             pred_probs=pred_probs,
             confident_joint=confident_joint,
-            multi_label=multi_label,
         )
     if num_examples is None:
         num_examples = _get_num_examples(labels=labels)
@@ -223,12 +226,6 @@ def find_overlapping_classes(
       The `confident_joint` can be computed using :py:func:`count.compute_confident_joint <cleanlab.count.compute_confident_joint>`.
       If not provided, it is computed from the given (noisy) `labels` and `pred_probs`.
 
-    multi_label : bool, optional
-      If ``True``, labels should be an iterable (e.g. list) of iterables, containing a
-      list of labels for each example, instead of just a single label.
-      The multi-label setting supports classification tasks where an example has 1 or more labels.
-      Example of a multi-labeled `labels` input: ``[[0,1], [1], [0,2], [0,1,2], [0], [1], ...]``.
-
     Returns
     -------
     overlapping_classes : pd.DataFrame
@@ -260,12 +257,16 @@ def find_overlapping_classes(
 
         return [(*i, v) for i, v in np.ndenumerate(matrix)]
 
+    if multi_label:
+        raise ValueError(
+            "For multilabel data, please instead call: multilabel_classification.dataset.common_multilabel_issues()"
+        )
+
     if joint is None:
         joint = estimate_joint(
             labels=labels,
             pred_probs=pred_probs,
             confident_joint=confident_joint,
-            multi_label=multi_label,
         )
     if num_examples is None:
         num_examples = _get_num_examples(labels=labels, confident_joint=confident_joint)
@@ -328,19 +329,23 @@ def overall_label_health_score(
 
     **Parameters**: For parameter info, see the docstring of :py:func:`find_overlapping_classes <cleanlab.dataset.find_overlapping_classes>`.
 
+
     Returns
     -------
     health_score : float
         A score between 0 and 1, where 1 implies all labels in the dataset are estimated to be correct.
         A score of 0.5 implies that half of the dataset's labels are estimated to have issues.
     """
+    if multi_label:
+        raise ValueError(
+            "For multilabel data, please instead call: multilabel_classification.dataset.overall_multilabel_health_score()"
+        )
 
     if joint is None:
         joint = estimate_joint(
             labels=labels,
             pred_probs=pred_probs,
             confident_joint=confident_joint,
-            multi_label=multi_label,
         )
     if num_examples is None:
         num_examples = _get_num_examples(labels=labels)
@@ -405,12 +410,15 @@ def health_summary(
     """
     from cleanlab.internal.util import smart_display_dataframe
 
+    if multi_label:
+        raise ValueError(
+            "For multilabel data, please call multilabel_classification.dataset.health_summary"
+        )
     if joint is None:
         joint = estimate_joint(
             labels=labels,
             pred_probs=pred_probs,
             confident_joint=confident_joint,
-            multi_label=multi_label,
         )
     if num_examples is None:
         num_examples = _get_num_examples(labels=labels)
@@ -437,7 +445,6 @@ def health_summary(
         num_examples=num_examples,
         joint=joint,
         confident_joint=confident_joint,
-        multi_label=multi_label,
     )
     if verbose:
         print("Overall Class Quality and Noise across your dataset (below)")
@@ -452,7 +459,6 @@ def health_summary(
         num_examples=num_examples,
         joint=joint,
         confident_joint=confident_joint,
-        multi_label=multi_label,
     )
     if verbose:
         print(
@@ -471,7 +477,6 @@ def health_summary(
         num_examples=num_examples,
         joint=joint,
         confident_joint=confident_joint,
-        multi_label=multi_label,
         verbose=verbose,
     )
     if verbose:
@@ -488,9 +493,7 @@ def _get_num_examples(labels=None, confident_joint: Optional[np.ndarray] = None)
     """Helper method that finds the number of examples from the parameters or throws an error
     if neither parameter is provided.
 
-    Parameters
-    ----------
-    For parameter info, see the docstring of `dataset.find_overlapping_classes`
+    **Parameters:** For information about the arguments to this method, see the documentation of `dataset.find_overlapping_classes`
 
     Returns
     -------

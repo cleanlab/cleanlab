@@ -744,8 +744,6 @@ def _batch_check(labels: LabelLike, pred_probs: np.ndarray, num_class: int) -> n
     """
     batch_size = pred_probs.shape[0]
     labels = np.asarray(labels)
-    if batch_size < 10:
-        raise ValueError("Please run this with batches containing at least 10 examples.")
     if len(labels) != batch_size:
         raise ValueError("labels and pred_probs must have same length")
     if pred_probs.shape[1] != num_class:
