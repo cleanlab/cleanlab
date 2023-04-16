@@ -150,7 +150,6 @@ def find_overlapping_classes(
 
     Examples
     --------
-    .. doctest::
     >>> from cleanlab.dataset import find_overlapping_classes
     >>> from sklearn.linear_model import LogisticRegression
     >>> from sklearn.model_selection import cross_val_predict
