@@ -17,7 +17,7 @@
 """
 Methods to rank the severity of label issues in multi-label classification datasets.
 Here each example can belong to one or more classes, or none of the classes at all.
-Unlike in standard multi-class classification, predicted class probabilities from model need not sum to 1 for each row in multi-label classification.
+Unlike in standard multi-class classification, model-predicted class probabilities need not sum to 1 for each row in multi-label classification.
 """
 
 import numpy as np  # noqa: F401: Imported for type annotations
@@ -70,7 +70,7 @@ def get_label_quality_scores(
     adjust_pred_probs: bool = False,
     aggregator_kwargs: Dict[str, Any] = {"method": "exponential_moving_average", "alpha": 0.8},
 ) -> npt.NDArray["np.floating[T]"]:
-    """Computes a label quality score each example in a multi-label classification dataset.
+    """Computes a label quality score for each example in a multi-label classification dataset.
 
     Scores are between 0 and 1 with lower scores indicating examples whose label more likely contains an error.
     For each example, this method internally computes a separate score for each individual class
