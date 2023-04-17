@@ -194,7 +194,7 @@ class OutlierIssueManager(IssueManager):
         ] = {}  # TODO: Implement collect_info for pred_probs related issues
         feature_issues_dict = {}
 
-        if knn_graph is not None and self.ood.params["knn"] is not None:
+        if knn_graph is not None:
             knn = self.ood.params["knn"]  # type: ignore
             N = knn_graph.shape[0]
             k = knn_graph.nnz // N
@@ -203,12 +203,14 @@ class OutlierIssueManager(IssueManager):
 
             feature_issues_dict.update(
                 {
-                    "metric": knn.metric,  # type: ignore[union-attr]
                     "k": k,  # type: ignore[union-attr]
                     "nearest_neighbor": nn_ids.tolist(),
                     "distance_to_nearest_neighbor": dists.tolist(),
                 }
             )
+            if self.ood.params["knn"] is not None:
+                knn = self.ood.params["knn"]
+                feature_issues_dict.update({"metric": knn.metric})  # type: ignore[union-attr]
 
         if self.ood.params["confident_thresholds"] is not None:
             pass  #
