@@ -1,5 +1,6 @@
 import pytest
 from datasets.arrow_dataset import Dataset
+from sklearn.neighbors import NearestNeighbors
 
 from cleanlab.datalab.datalab import Datalab
 import numpy as np
@@ -53,6 +54,25 @@ def label_name():
 @pytest.fixture
 def lab(dataset, label_name):
     return Datalab(data=dataset, label_name=label_name)
+
+
+@pytest.fixture
+def large_lab():
+    np.random.seed(SEED)
+    N = 100
+    K = 2
+    data = np.random.rand(N, 2)
+    labels = np.random.randint(0, K, size=N)
+    pred_probs = np.random.rand(N, K)
+    pred_probs /= pred_probs.sum(axis=1, keepdims=True)
+
+    lab = Datalab(
+        data={"features": data, "label": labels, "pred_probs": pred_probs}, label_name="label"
+    )
+    knn = NearestNeighbors(n_neighbors=25, metric="euclidean").fit(data)
+    knn_graph = knn.kneighbors_graph(mode="distance")
+    lab.info["statistics"]["unit_test_knn_graph"] = knn_graph
+    return lab
 
 
 @pytest.fixture

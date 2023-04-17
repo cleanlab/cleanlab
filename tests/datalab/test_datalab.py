@@ -15,6 +15,8 @@
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
 
+import contextlib
+import io
 import os
 import pickle
 from unittest.mock import MagicMock, Mock, patch
@@ -191,6 +193,83 @@ class TestDatalab:
             for issue_type in ["label", "outlier"]:
                 assert f"is_{issue_type}_issue" in columns
                 assert f"{issue_type}_score" in columns
+
+    @pytest.mark.parametrize(
+        "issue_types",
+        [
+            None,
+            {"label": {}},
+            {"outlier": {}},
+            {"near_duplicate": {}},
+            {"outlier": {}, "near_duplicate": {}},
+        ],
+        ids=[
+            "Defaults",
+            "Only label issues",
+            "Only outlier issues",
+            "Only near_duplicate issues",
+            "Both outlier and near_duplicate issues",
+        ],
+    )
+    @pytest.mark.parametrize(
+        "use_features",
+        [True, False],
+        ids=["Use features", "Don't use features"],
+    )
+    @pytest.mark.parametrize(
+        "use_pred_probs",
+        [True, False],
+        ids=["Use pred_probs", "Don't use pred_probs"],
+    )
+    @pytest.mark.parametrize(
+        "use_knn_graph",
+        [True, False],
+        ids=["Use knn_graph", "Don't use knn_graph"],
+    )
+    def test_repeat_find_issues_then_report_with_defaults(
+        self,
+        large_lab,
+        issue_types,
+        use_features,
+        use_pred_probs,
+        use_knn_graph,
+    ):
+        """Test "all" combinations of inputs to find_issues() and make sure repeated calls to it won't change any results. Same applies to report().
+
+        This test does NOT test the correctness of the inputs, so some test cases may lead to missing arguments errors that are silently ignored.
+        """
+
+        # Extract features and pred_probs from Datalab object
+        features, pred_probs = (
+            np.array(large_lab.data[k]) if v else None
+            for k, v in zip(["features", "pred_probs"], [use_features, use_pred_probs])
+        )
+
+        # Extract sparse knn_graph from Datalab object's info dictionary
+        knn_graph = None
+        if use_knn_graph:
+            knn_graph = large_lab.info["statistics"]["unit_test_knn_graph"]
+
+        # Run find_issues and report() once
+        large_lab.find_issues(
+            features=features, pred_probs=pred_probs, knn_graph=knn_graph, issue_types=issue_types
+        )
+        with contextlib.redirect_stdout(io.StringIO()) as f:
+            large_lab.report()
+        first_report = f.getvalue()
+        issues = large_lab.issues.copy()
+        issue_summary = large_lab.issue_summary.copy()
+
+        # Rerunning find_issues() and report() with the same default parameters should not change the number of issues
+        large_lab.find_issues(
+            features=features, pred_probs=pred_probs, knn_graph=knn_graph, issue_types=issue_types
+        )
+        with contextlib.redirect_stdout(io.StringIO()) as f:
+            large_lab.report()
+        second_report = f.getvalue()
+        pd.testing.assert_frame_equal(large_lab.issues, issues)
+        pd.testing.assert_frame_equal(large_lab.issue_summary, issue_summary)
+        assert first_report == second_report
 
     @pytest.mark.parametrize("k", [2, 3])
     @pytest.mark.parametrize("metric", ["euclidean", "cosine"])
