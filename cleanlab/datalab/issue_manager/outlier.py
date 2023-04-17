@@ -15,7 +15,7 @@
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional, Union, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional, Tuple, Union, cast
 
 from scipy.sparse import csr_matrix
 from scipy.stats import iqr
@@ -80,12 +80,14 @@ class OutlierIssueManager(IssueManager):
         **kwargs,
     ) -> None:
         knn_graph = self._process_knn_graph_from_inputs(kwargs)
+        distances: Optional[np.ndarray] = None
 
         if knn_graph is not None:
             N = knn_graph.shape[0]
             k = knn_graph.nnz // N
             t = cast(int, self.ood.params["t"])
             distances = knn_graph.data.reshape(-1, k)
+            assert isinstance(distances, np.ndarray)
             scores = transform_distances_to_scores(distances, k=k, t=t)
         elif features is not None:
             scores = self._score_with_features(features, **kwargs)
@@ -98,35 +100,24 @@ class OutlierIssueManager(IssueManager):
                 )
             raise ValueError(f"Either features pred_probs must be provided.")
 
-        if features is not None and knn_graph is None:
-            # Check if the weighted knn graph exists in info
-            knn_graph = self.datalab.get_info("statistics").get("weighted_knn_graph", None)
+        if features is not None or knn_graph is not None:
+            if knn_graph is None:
+                assert (
+                    features is not None
+                ), "features must be provided so that we can compute the knn graph."
+                knn_graph = self._process_knn_graph_from_features(kwargs)
+            distances = knn_graph.data.reshape(knn_graph.shape[0], -1)
 
-            k: int = 0  # Used to check if the knn graph needs to be recomputed, already set in the knn object
-            if knn_graph is not None:
-                k = knn_graph.nnz // knn_graph.shape[0]
-
-            knn: NearestNeighbors = self.ood.params["knn"]  # type: ignore
-            if kwargs.get("knn", None) is not None or knn.n_neighbors > k:  # type: ignore[union-attr]
-                # If the pre-existing knn graph has fewer neighbors than the knn object,
-                # then we need to recompute the knn graph
-                assert knn == self.ood.params["knn"]  # type: ignore[union-attr]
-                knn_graph = knn.kneighbors_graph(mode="distance")  # type: ignore[union-attr]
-                self._metric = knn.metric  # type: ignore[union-attr]
-                k = knn.n_neighbors  # type: ignore[union-attr]
-            distances = knn_graph.data.reshape(-1, k)  # type: ignore[union-attr]
-            avg_distances = distances.mean(axis=1)
-            if self.threshold is None:
-                q3_distance = np.percentile(avg_distances, 75)
-
-                if not isinstance(iqr_scale, (int, float)) and iqr_scale < 0:
-                    raise ValueError(
-                        f"iqr_scale must be a positive number, got {iqr_scale} of type {type(iqr_scale)}."
-                    )
-                self.threshold = q3_distance + iqr_scale * iqr(avg_distances)
-            is_issue_column = avg_distances > self.threshold
+            assert isinstance(distances, np.ndarray)
+            (
+                self.threshold,
+                is_issue_column,
+            ) = self._compute_threshold_and_issue_column_from_distances(
+                distances, iqr_scale, self.threshold
+            )
 
         else:
+            assert pred_probs is not None
             if self.threshold is None:
                 # Threshold based on pred_probs, very small scores are outliers
                 self.threshold = np.percentile(scores, 10)
@@ -162,9 +153,41 @@ class OutlierIssueManager(IssueManager):
             knn_graph = None
         return knn_graph
 
+    def _compute_threshold_and_issue_column_from_distances(
+        self, distances: np.ndarray, iqr_scale: float, threshold: Optional[float] = None
+    ) -> Tuple[float, np.ndarray]:
+        avg_distances = distances.mean(axis=1)
+        if threshold is None:
+            q3_distance = np.percentile(avg_distances, 75)
+            if not isinstance(iqr_scale, (int, float)) and iqr_scale < 0:
+                raise ValueError(
+                    f"iqr_scale must be a positive number, got {iqr_scale} of type {type(iqr_scale)}."
+                )
+            threshold = q3_distance + iqr_scale * iqr(avg_distances)
+        return threshold, avg_distances > threshold
+
+    def _process_knn_graph_from_features(self, kwargs: Dict) -> csr_matrix:
+        # Check if the weighted knn graph exists in info
+        knn_graph = self.datalab.get_info("statistics").get("weighted_knn_graph", None)
+
+        k: int = 0  # Used to check if the knn graph needs to be recomputed, already set in the knn object
+        if knn_graph is not None:
+            k = knn_graph.nnz // knn_graph.shape[0]
+
+        knn: NearestNeighbors = self.ood.params["knn"]  # type: ignore
+        if kwargs.get("knn", None) is not None or knn.n_neighbors > k:  # type: ignore[union-attr]
+            # If the pre-existing knn graph has fewer neighbors than the knn object,
+            # then we need to recompute the knn graph
+            assert knn == self.ood.params["knn"]  # type: ignore[union-attr]
+            knn_graph = knn.kneighbors_graph(mode="distance")  # type: ignore[union-attr]
+            self._metric = knn.metric  # type: ignore[union-attr]
+
+        return knn_graph
+
     def collect_info(self, *, knn_graph: Optional[csr_matrix] = None) -> dict:
         issues_dict = {
             "average_ood_score": self.issues[self.issue_score_key].mean(),
+            "threshold": self.threshold,
         }
         pred_probs_issues_dict: Dict[
             str, Any
@@ -214,7 +237,7 @@ class OutlierIssueManager(IssueManager):
         old_graph_exists = old_knn_graph is not None
         prefer_new_graph = (
             not old_graph_exists
-            or knn_graph.nnz > old_knn_graph.nnz
+            or (isinstance(knn_graph, csr_matrix) and knn_graph.nnz > old_knn_graph.nnz)
             or self._metric != self.datalab.get_info("statistics").get("knn_metric", None)
         )
         if prefer_new_graph:
