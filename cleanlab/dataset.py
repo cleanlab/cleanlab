@@ -402,11 +402,13 @@ def health_summary(
     multi_label=False,
     verbose=True,
 ) -> dict:
-    """Prints a health summary of your datasets including useful statistics like:
+    """Prints a health summary of your dataset.
 
-    * The classes with the most and least label issues
-    * Classes that overlap and could potentially be merged
-    * Overall data label quality health score statistics for your dataset
+    This summary includes useful statistics like:
+
+    * The classes with the most and least label issues.
+    * Classes that overlap and could potentially be merged.
+    * Overall label quality scores, summarizing how accurate the labels appear overall.
 
     This method works by providing any one (and only one) of the following inputs:
 

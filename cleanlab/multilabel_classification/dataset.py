@@ -244,10 +244,12 @@ def multilabel_health_summary(
     confident_joint=None,
     verbose=True,
 ) -> Dict:
-    """Prints a health summary of your multi-label datasets including useful statistics like:
+    """Prints a health summary of your multi-label dataset.
 
-    * The classes with the most and least label issues
-    * Overall data label quality health score statistics for your dataset
+    This summary includes useful statistics like:
+
+    * The classes with the most and least label issues.
+    * Overall label quality scores, summarizing how accurate the labels appear across the entire dataset.
 
     **Parameters**: For information about the arguments to this method, see the documentation of
     :py:func:`common_multilabel_issues <cleanlab.multilabel_classificaiton.dataset.common_multilabel_issues>`.
