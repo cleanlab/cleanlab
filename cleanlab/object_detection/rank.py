@@ -22,10 +22,8 @@ import copy
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
 
-
 # for MAP
 from multiprocessing import Pool
-
 
 """Methods to rank and score images in an object detection dataset (object detection data), based on how likely they
 are to contain label errors. """
@@ -35,7 +33,7 @@ def get_label_quality_scores(
     annotations: List[Dict[Any, Any]],
     predictions: List[np.ndarray],
     *,
-    method: str = "map",
+    method: str = "subtype",
     probability_threshold: Optional[float] = None,
     verbose: bool = True,
 ) -> np.ndarray:
@@ -134,7 +132,7 @@ def _compute_label_quality_scores(
     annotations: List[Dict[Any, Any]],
     predictions: List[np.ndarray],
     *,
-    method: str = "map",
+    method: str = "subtype",
     threshold: Optional[float] = None,
     verbose: bool = True,
 ) -> np.ndarray:
@@ -147,14 +145,22 @@ def _compute_label_quality_scores(
         predictions = _prune_by_threshold(
             predictions=predictions, threshold=threshold, verbose=verbose
         )
-        if np.abs(min_pred_prob - threshold) < 0.001 & threshold > 0:
+        if np.abs(min_pred_prob - threshold) < 0.001 and threshold > 0:
             pred_probs_prepruned = True  # the provided threshold is the threshold used for pre_pruning the pred_probs during model prediction.
     else:
         threshold = min_pred_prob  # assume model was not pre_pruned if no threshold was provided
 
-    if method == "map":
-        scores = _calculate_map(predictions, annotations)
-
+    if method == "subtype":
+        scores = _compute_subtype_lqs(
+            annotations,
+            predictions,
+            alpha=0.99,
+            low_probability_threshold=0.7,
+            high_probability_threshold=0.95,
+            temperature=0.98,
+        )
+    elif method == "map":
+        scores = _compute_map(predictions, annotations)
     return scores
 
 
@@ -176,7 +182,7 @@ def _prune_by_threshold(
 ) -> Tuple[List[Dict[Any, Any]], List[np.ndarray]]:
     """Removes predicted bounding boxes from predictions who's pred_prob is below the cuttoff threshold."""
 
-    MAX_ALLOWED_BOX_PRUNE = 0.97  # This is max allowed percent of prune for boxes below threhold before a warning is thrown.
+    max_allowed_box_prune = 0.97  # This is max allowed percent of prune for boxes below threhold before a warning is thrown.
     predictions_copy = copy.deepcopy(predictions)
     num_ann_to_zero = 0
     total_ann = 0
@@ -191,7 +197,7 @@ def _prune_by_threshold(
             predictions_copy[idx_predictions][idx_class] = filtered_class_prediction
 
     p_ann_pruned = total_ann and num_ann_to_zero / total_ann or 0  # avoid division by zero
-    if p_ann_pruned > MAX_ALLOWED_BOX_PRUNE:
+    if p_ann_pruned > max_allowed_box_prune:
         warnings.warn(
             f"Pruning with threshold=={threshold} prunes {p_ann_pruned}% annotations. Consider lowering the threshold.",
             UserWarning,
@@ -223,7 +229,7 @@ def assert_valid_inputs(annotations, predictions, method=None, threshold=None):
     if not predictions[0][0].shape[1] == 5:
         raise ValueError(f"Prediction values have to be of format [_,_,_,_,pred_prob].")
 
-    valid_methods = ["map"]
+    valid_methods = ["map", "subtype"]
     if method is not None and method not in valid_methods:
         raise ValueError(
             f"""
@@ -282,9 +288,13 @@ def visualize(
             Optional figuresize for plotting the visualizations. Corresponds to matplotlib.figure.figsize.
     """
 
+    prediction_type = _get_prediction_type(prediction)
+
     # Create figure and axes
     image = plt.imread(image_path)
-    pbbox, plabels, pred_probs = _get_bbox_labels_prediction(prediction)
+    pbbox, plabels, pred_probs = _get_bbox_labels_prediction(
+        prediction, prediction_type=prediction_type
+    )
     abbox, alabels = _get_bbox_labels_annotation(annotation)
 
     if prediction_threshold is not None:
@@ -389,7 +399,12 @@ def _get_bbox_labels_annotation(annotation):
     return bboxes, labels
 
 
-def _get_bbox_labels_prediction(prediction):
+def _get_bbox_labels_prediction_all_preds(prediction):
+    det_bboxes, det_labels, det_probs = prediction
+    return det_bboxes, det_labels, det_probs
+
+
+def _get_bbox_labels_prediction_single_box(prediction):
     """Returns bbox, label and pred_prob values for prediction."""
     labels = []
     boxes = []
@@ -399,6 +414,28 @@ def _get_bbox_labels_prediction(prediction):
     bboxes = [box[:4] for box in boxes]
     pred_probs = [box[-1] for box in boxes]
     return np.array(bboxes), np.array(labels), np.array(pred_probs)
+
+
+def _get_prediction_type(prediction):
+    # todo: predicted probability matrix OR one numeber
+    if (
+        len(prediction) == 3
+        and prediction[0].shape == prediction[2].shape
+        and prediction[0].shape[0] == prediction[1].shape[0]
+    ):
+        return "all_pred"
+    else:
+        return "single_pred"
+
+
+def _get_bbox_labels_prediction(prediction, prediction_type="single_pred"):
+    """Returns bbox, label and pred_prob values for prediction."""
+
+    if prediction_type == "all_pred":
+        boxes, labels, pred_probs = _get_bbox_labels_prediction_all_preds(prediction)
+    else:
+        boxes, labels, pred_probs = _get_bbox_labels_prediction_single_box(prediction)
+    return boxes, labels, pred_probs
 
 
 def _bbox_xyxy_to_xywh(bbox):
@@ -412,36 +449,341 @@ def _bbox_xyxy_to_xywh(bbox):
         return None
 
 
+# ============= Simple label subtype algorithm ============
+
+
+# setup labeling helper functions
+def _seperate_annotations(annotation):
+    """Seperates annotations into annotation and bounding box lists."""
+
+    lab_bboxes = annotation["bboxes"]
+    lab_annotations = annotation["labels"]
+    return lab_bboxes, lab_annotations
+
+
+def _separate_predictions(prediction):
+    """Seperates predictions into annotation, bounding boxes and pred_probs"""
+
+    det_bboxes = []
+    det_annotations = []
+    det_annotation_prob = []
+    cnt = 0
+    for i in prediction:
+        for j in i:
+            if len(j) != 0:
+                det_bboxes.append(j[:-1])
+                det_annotations.append(cnt)
+                det_annotation_prob.append(j[-1])
+        cnt += 1
+    return det_bboxes, det_annotations, det_annotation_prob
+
+
+def _mod_coordinates(x):
+    """Takes is a list of xyxy coordinates and returns them in dictionary format."""
+    wd = {}
+    wd["x1"], wd["y1"], wd["x2"], wd["y2"] = x[0], x[1], x[2], x[3]
+    return wd
+
+
+# distance/similarity helped functions
+def _get_overlap(bb1, bb2):
+    """Takes in two bounding boxes `bb1` and `bb2` and returns their IoU overlap."""
+    return _get_iou(_mod_coordinates(bb1), _mod_coordinates(bb2))
+
+
+def _get_overlap_matrix(bb1_list, bb2_list):
+    """Takes in two lists of bounding boxes and returns an IoU matrix where IoU[i][j] is the overlap between
+    the i-th box in `bb1_list` and the j-th box in `bb2_list`."""
+    wd = np.zeros(shape=(len(bb1_list), len(bb2_list)))
+    for i in range(len(bb1_list)):
+        for j in range(len(bb2_list)):
+            wd[i][j] = _get_overlap(bb1_list[i], bb2_list[j])
+    return wd
+
+
+def _get_iou(bb1, bb2):
+    """
+    Calculate the Intersection over Union (IoU) of two bounding boxes.
+    I've modified this to calculate overlap ratio in the line:
+    iou = np.clip(intersection_area / float(min(bb1_area,bb2_area)),0.0,1.0)
+
+    Parameters
+    ----------
+    bb1 : dict
+        Keys: {'x1', 'x2', 'y1', 'y2'}
+        The (x1, y1) position is at the top left corner,
+        the (x2, y2) position is at the bottom right corner
+    bb2 : dict
+        Keys: {'x1', 'x2', 'y1', 'y2'}
+        The (x, y) position is at the top left corner,
+        the (x2, y2) position is at the bottom right corner
+    Returns
+    -------
+    float
+        in [0, 1]
+    """
+    assert bb1["x1"] < bb1["x2"]
+    assert bb1["y1"] < bb1["y2"]
+    assert bb2["x1"] < bb2["x2"]
+    assert bb2["y1"] < bb2["y2"]
+
+    # determine the coordinates of the intersection rectangle
+    x_left = max(bb1["x1"], bb2["x1"])
+    y_top = max(bb1["y1"], bb2["y1"])
+    x_right = min(bb1["x2"], bb2["x2"])
+    y_bottom = min(bb1["y2"], bb2["y2"])
+
+    if x_right < x_left or y_bottom < y_top:
+        return 0.0
+
+    # The intersection of two axis-aligned bounding boxes is always an
+    # axis-aligned bounding box
+    intersection_area = (x_right - x_left) * (y_bottom - y_top)
+
+    # compute the area of both AABBs
+    bb1_area = (bb1["x2"] - bb1["x1"]) * (bb1["y2"] - bb1["y1"])
+    bb2_area = (bb2["x2"] - bb2["x1"]) * (bb2["y2"] - bb2["y1"])
+    assert intersection_area - 0.1 <= bb1_area
+    assert intersection_area - 0.1 <= bb2_area
+
+    # compute the intersection over union by taking the intersection
+    # area and dividing it by the sum of prediction + ground-truth
+    # areas - the interesection area
+    iou = intersection_area / float(bb1_area + bb2_area - intersection_area)
+    # There are some hyper-parameters here like consider tile area/object area
+    assert iou >= 0.0
+    assert iou - 0.01 <= 1.0
+    return iou
+
+
+def _euc_dis(box1, box2):
+    """Calculates the euclidian distance between `box1` and `box2`."""
+    euc_factor = 0.1  # this is a hyperparameter
+
+    x1, y1 = (box1[0] + box1[2]) / 2, (box1[1] + box1[3]) / 2
+    x2, y2 = (box2[0] + box2[2]) / 2, (box2[1] + box2[3]) / 2
+    p1 = np.array([x1, y1])
+    p2 = np.array([x2, y2])
+    val2 = np.exp(-np.linalg.norm(p1 - p2) * euc_factor)
+    return val2
+
+
+def _get_dist_matrix(bb1_list, bb2_list):
+    """Returns a distance matrix of distances from all of boxes in bb1_list to all of boxes in bb2_list."""
+    wd = np.zeros(shape=(len(bb1_list), len(bb2_list)))
+    for i in range(len(bb1_list)):
+        for j in range(len(bb2_list)):
+            wd[i][j] = _euc_dis(bb1_list[i], bb2_list[j])
+    return wd
+
+
+def _softmax(x, temperature=0.99, axis=0):
+    """Gets softmax of scores."""
+    x = x / temperature
+    x_max = np.amax(x, axis=axis, keepdims=True)
+    exp_x_shifted = np.exp(x - x_max)
+    return exp_x_shifted / np.sum(exp_x_shifted, axis=axis, keepdims=True)
+
+
+def _softmin1D(scores, temperature=0.99, axis=0):
+    """Returns softmin of passed in scores."""
+    scores = np.array(scores)
+    softmax_scores = _softmax(-1 * scores, temperature, axis)
+    return np.dot(softmax_scores, scores)
+
+
+def _get_valid_score(scores_arr, temperature=0.99):
+    """Given scores array, returns valid score (softmin) or 1. Checks validity of score."""
+    scores_arr = np.array(scores_arr)
+    if len(scores_arr) > 0:
+        valid_score = _softmin1D(scores_arr, temperature=temperature)
+    else:
+        valid_score = 1.0
+    return valid_score
+
+
+def _get_min_possible_similarity(predictions, annotations, alpha):
+    """Gets the min possible similarity score between two bounding boxes out of all examples."""
+    min_possible_similarity = 1.0
+    for prediction, annotation in zip(predictions, annotations):
+        lab_bboxes, lab_annotations = _seperate_annotations(annotation)
+        det_bboxes, det_annotations, det_annotation_prob = _separate_predictions(prediction)
+        det_annotation_prob = np.array(det_annotation_prob)
+        iou_matrix = _get_overlap_matrix(lab_bboxes, det_bboxes)
+        dist_matrix = 1 - _get_dist_matrix(lab_bboxes, det_bboxes)
+        similarity_matrix = iou_matrix * alpha + (1 - alpha) * (1 - dist_matrix)
+        min_image_similarity = 1.0 if 0 in similarity_matrix.shape else np.min(similarity_matrix)
+        if min_image_similarity > 0:
+            min_possible_similarity = np.min([min_possible_similarity, min_image_similarity])
+    return min_possible_similarity
+
+
+def _compute_subtype_lqs(
+    annotations,
+    predictions,
+    *,
+    alpha,
+    low_probability_threshold,
+    high_probability_threshold,
+    temperature,
+):
+    """
+    Returns a label quality score for each datapoint.
+    Score is between 0 and 1.
+
+    1 - clean label (given label is likely correct).
+    0 - dirty label (given label is likely incorrect).
+
+    Parameters
+    ----------
+    annotations:
+        A list of `N` dictionaries for `N` images such that `annotations[i]` contains the given annotations for the `i`-th image in the format
+       `{'bboxes': np.ndarray((M,4)), 'labels': np.ndarray((M,)), 'image_name': str}` where `M` is the number of annotated bounding boxes
+       for the `i`-th image and `bboxes[j]` is in the format [x,y,x,y] with given label `labels[j]`. ('image_name' is optional here)
+
+    predictions:
+        A list of `N` `np.ndarray` for `N` images such that `predictions[i]` corresponds to the model predictions for the `i`-th image
+        in the format `np.ndarray((K,))` where K is the number of classes and `predictions[i][k]` is of shape `np.ndarray(M,5)`
+        where `M` is the number of predicted bounding boxes for class `K` and the five columns correspond to `[x,y,x,y,pred_prob]` returned
+        by the model.
+
+        Note: `M` number of predicted bounding boxes can be different from `M` number of annotated bounding boxes for class `K` of `i`-th image.
+
+    alpha:
+        Weight between IoU and distance when considering similarity matrix. High alpha means considering IoU more strongly over distance.
+
+    low_probability_threshold:
+        The lowest prediction threshold allowed when considering predicted boxes to identify badly located annotation boxes.
+
+    high_probability_threshold:
+        The high probability threshold for considering predicted boxes to identify overlooked and swapped annotation boxes.
+
+    temperature:
+        Temperature of the softmin function where a lower score suggests softmin acts closer to min.
+
+    Returns
+    ---------
+    label_quality_scores:
+        Array of shape ``(N, )`` of scores between 0 and 1, one per image in the dataset.
+        Lower scores indicate images are more likely to contain an incorrect annotation.
+    """
+    # scores_overlooked_per_image = []
+    # scores_badloc_per_image = []
+    # scores_swapped_per_image = []
+
+    scores = []
+
+    min_possible_similarity = _get_min_possible_similarity(predictions, annotations, alpha)
+    for prediction, annotation in zip(predictions, annotations):
+        lab_bboxes, lab_annotations = _seperate_annotations(annotation)
+        det_bboxes, det_annotations, det_annotation_prob = _separate_predictions(prediction)
+        det_annotation_prob = np.array(det_annotation_prob)
+        iou_matrix = _get_overlap_matrix(lab_bboxes, det_bboxes)
+        dist_matrix = 1 - _get_dist_matrix(lab_bboxes, det_bboxes)
+
+        similarity_matrix = iou_matrix * alpha + (1 - alpha) * (1 - dist_matrix)
+        assert (similarity_matrix.flatten() >= 0).all() and (similarity_matrix.flatten() <= 1).all()
+
+        scores_overlooked = []
+        for iid, k in enumerate(det_annotations):
+            if det_annotation_prob[iid] < high_probability_threshold:
+                continue
+
+            k_similarity = similarity_matrix[lab_annotations == k, iid]
+            if len(k_similarity) == 0:  # if there is no annotated box
+                scores_overlooked.append(min_possible_similarity * (1 - det_annotation_prob[iid]))
+            else:
+                closest_annotated_box = np.argmax(k_similarity)
+                scores_overlooked.append(k_similarity[closest_annotated_box])
+        score_overlooked = _get_valid_score(scores_overlooked, temperature)
+        # scores_overlooked_per_image.append(score_overlooked)
+
+        scores_badloc = []
+        for iid, k in enumerate(lab_annotations):  # for every annotated box
+            k_similarity = similarity_matrix[iid, det_annotations == k]
+            k_pred = det_annotation_prob[det_annotations == k]
+
+            if len(k_pred) == 0:  # there are no predicted boxes of class k
+                scores_badloc.append(min_possible_similarity)
+                continue
+
+            idx_at_least_low_probability_threshold = k_pred > low_probability_threshold
+            k_similarity = k_similarity[idx_at_least_low_probability_threshold]
+            k_pred = k_pred[idx_at_least_low_probability_threshold]
+            assert len(k_pred) == len(k_similarity)
+            if len(k_pred) == 0:
+                scores_badloc.append(min_possible_similarity)
+            else:
+                scores_badloc.append(np.max(k_similarity))
+        score_badloc = _get_valid_score(scores_badloc, temperature)
+        # scores_badloc_per_image.append(score_badloc)
+
+        scores_swap = []
+        for iid, k in enumerate(lab_annotations):
+            not_k_idx = det_annotations != k
+
+            if len(not_k_idx) == 0:
+                scores_swap.append(1.0)
+                continue
+
+            not_k_similarity = similarity_matrix[iid, not_k_idx]
+            not_k_pred = det_annotation_prob[not_k_idx]
+
+            idx_at_least_high_probability_threshold = not_k_pred > high_probability_threshold
+            if len(idx_at_least_high_probability_threshold) == 0:
+                scores_swap.append(1.0)
+                continue
+
+            not_k_similarity = not_k_similarity[idx_at_least_high_probability_threshold]
+            if len(not_k_similarity) == 0:  # if there is no annotated box
+                scores_swap.append(1.0)
+            else:
+                closest_predicted_box = np.argmax(not_k_similarity)
+                score = np.max(
+                    [min_possible_similarity, 1 - not_k_similarity[closest_predicted_box]]
+                )
+                scores_swap.append(score)
+        score_swap = _get_valid_score(scores_swap, temperature)
+        # scores_swapped_per_image.append(score_swap)
+        scores.append(
+            _softmin1D([score_overlooked, score_badloc, score_swap], temperature=temperature)
+        )
+    # scores = [_softmin1D(np.array([so,sbl,ssw]), temperature) for so,sbl,ssw in zip(SO,SBL,SSw)]
+
+    # scores = _softmin1D(np.array((scores_overlooked_per_image, scores_badloc_per_image, scores_swapped_per_image)), temperature)
+    return np.array(scores)
+
+
 # ==========TO BE DEPRECATED: Example score (calculate mAP)=============
-def _calculate_map(annotations, predictions):
+def _compute_map(annotations, predictions):
     map = np.zeros((len(annotations),))
     for i, (d, r) in enumerate(zip(annotations, predictions)):
         map[i] = bbox_map_eval(d, r)
     return map
 
 
-def bbox_map_eval(det_result, annotation, nproc=4):
-    """Evaluate mAP of single image det result.
+def bbox_map_eval(det_prediction, annotation, nproc=4):
+    """Evaluate mAP of single image det prediction.
     Args:
-        det_result (list[list]): [[cls1_det, cls2_det, ...], ...].
+        det_prediction (list[list]): [[cls1_det, cls2_det, ...], ...].
             The outer list indicates images, and the inner list indicates
             per-class detected bboxes.
         annotation (dict): Ground truth annotations where keys of
              annotations are:
             - bboxes: numpy array of shape (n, 4)
-            - labels: numpy array of shape (n, )
+            - annotations: numpy array of shape (n, )
             - bboxes_ignore (optional): numpy array of shape (k, 4)
-            - labels_ignore (optional): numpy array of shape (k, )
+            - annotations_ignore (optional): numpy array of shape (k, )
         nproc (int): Processes used for computing mAP.
             Default: 4.
     Returns:
         float: mAP
     """
-    # use only bbox det result
-    if isinstance(det_result, tuple):
-        bbox_det_result = [det_result[0]]
+    # use only bbox det prediction
+    if isinstance(det_prediction, tuple):
+        bbox_det_prediction = [det_prediction[0]]
     else:
-        bbox_det_result = [det_result]
+        bbox_det_prediction = [det_prediction]
     # mAP
     iou_thrs = np.linspace(0.5, 0.95, int(np.round((0.95 - 0.5) / 0.05)) + 1, endpoint=True)
 
@@ -450,7 +792,7 @@ def bbox_map_eval(det_result, annotation, nproc=4):
     for thr in iou_thrs:
         p = workers.apply_async(
             eval_map,
-            (bbox_det_result, [annotation]),
+            (bbox_det_prediction, [annotation]),
             {"iou_thr": thr, "logger": "silent", "nproc": 1},
         )
         processes.append(p)
@@ -578,7 +920,7 @@ def get_cls_group_ofs(annotations, class_id):
     """
     gt_group_ofs = []
     for ann in annotations:
-        gt_inds = ann["labels"] == class_id
+        gt_inds = ann["annotations"] == class_id
         if ann.get("gt_is_group_ofs", None) is not None:
             gt_group_ofs.append(ann["gt_is_group_ofs"][gt_inds])
         else:
@@ -587,26 +929,26 @@ def get_cls_group_ofs(annotations, class_id):
     return gt_group_ofs
 
 
-def get_cls_results(det_results, annotations, class_id):
-    """Get det results and gt information of a certain class.
+def get_cls_predictions(det_predictions, annotations, class_id):
+    """Get det predictions and gt information of a certain class.
 
     Args:
-        det_results (list[list]): Same as `eval_map()`.
+        det_predictions (list[list]): Same as `eval_map()`.
         annotations (list[dict]): Same as `eval_map()`.
         class_id (int): ID of a specific class.
 
     Returns:
         tuple[list[np.ndarray]]: detected bboxes, gt bboxes, ignored gt bboxes
     """
-    cls_dets = [img_res[class_id] for img_res in det_results]
+    cls_dets = [img_res[class_id] for img_res in det_predictions]
     cls_gts = []
     cls_gts_ignore = []
     for ann in annotations:
-        gt_inds = ann["labels"] == class_id
+        gt_inds = ann["annotations"] == class_id
         cls_gts.append(ann["bboxes"][gt_inds, :])
 
-        if ann.get("labels_ignore", None) is not None:
-            ignore_inds = ann["labels_ignore"] == class_id
+        if ann.get("annotations_ignore", None) is not None:
+            ignore_inds = ann["annotations_ignore"] == class_id
             cls_gts_ignore.append(ann["bboxes_ignore"][ignore_inds, :])
         else:
             cls_gts_ignore.append(np.empty((0, 4), dtype=np.float32))
@@ -615,7 +957,7 @@ def get_cls_results(det_results, annotations, class_id):
 
 
 def eval_map(
-    det_results,
+    det_predictions,
     annotations,
     scale_ranges=None,
     iou_thr=0.5,
@@ -629,15 +971,15 @@ def eval_map(
 ):
     """Evaluate mAP of a dataset.
     Args:
-        det_results (list[list]): [[cls1_det, cls2_det, ...], ...].
+        det_predictions (list[list]): [[cls1_det, cls2_det, ...], ...].
             The outer list indicates images, and the inner list indicates
             per-class detected bboxes.
         annotations (list[dict]): Ground truth annotations where each item of
             the list indicates an image. Keys of annotations are:
             - `bboxes`: numpy array of shape (n, 4)
-            - `labels`: numpy array of shape (n, )
+            - `annotations`: numpy array of shape (n, )
             - `bboxes_ignore` (optional): numpy array of shape (k, 4)
-            - `labels_ignore` (optional): numpy array of shape (k, )
+            - `annotations_ignore` (optional): numpy array of shape (k, )
         scale_ranges (list[tuple] | None): Range of scales to be evaluated,
             in the format [(min1, max1), (min2, max2), ...]. A range of
             (32, 64) means the area range between (32**2, 64**2).
@@ -667,15 +1009,15 @@ def eval_map(
     Returns:
         tuple: (mAP, [dict, dict, ...])
     """
-    assert len(det_results) == len(annotations)
+    assert len(det_predictions) == len(annotations)
     if not use_legacy_coordinate:
         extra_length = 0.0
     else:
         extra_length = 1.0
 
-    num_imgs = len(det_results)
+    num_imgs = len(det_predictions)
     num_scales = len(scale_ranges) if scale_ranges is not None else 1
-    num_classes = len(det_results[0])  # positive class num
+    num_classes = len(det_predictions[0])  # positive class num
     area_ranges = (
         [(rg[0] ** 2, rg[1] ** 2) for rg in scale_ranges] if scale_ranges is not None else None
     )
@@ -687,10 +1029,10 @@ def eval_map(
         nproc = min(nproc, num_imgs)
         pool = Pool(nproc)
 
-    eval_results = []
+    eval_predictions = []
     for i in range(num_classes):
         # get gt and det bboxes of this class
-        cls_dets, cls_gts, cls_gts_ignore = get_cls_results(det_results, annotations, i)
+        cls_dets, cls_gts, cls_gts_ignore = get_cls_predictions(det_predictions, annotations, i)
         # choose proper function according to datasets to compute tp and fp
         if tpfp_fn is None:
             if dataset in ["det", "vid"]:
@@ -775,7 +1117,7 @@ def eval_map(
             num_gts = num_gts.item()
         mode = "area" if dataset != "voc07" else "11points"
         ap = average_precision(recalls, precisions, mode)
-        eval_results.append(
+        eval_predictions.append(
             {
                 "num_gts": num_gts,
                 "num_dets": num_dets,
@@ -790,8 +1132,8 @@ def eval_map(
 
     if scale_ranges is not None:
         # shape (num_classes, num_scales)
-        all_ap = np.vstack([cls_result["ap"] for cls_result in eval_results])
-        all_num_gts = np.vstack([cls_result["num_gts"] for cls_result in eval_results])
+        all_ap = np.vstack([cls_prediction["ap"] for cls_prediction in eval_predictions])
+        all_num_gts = np.vstack([cls_prediction["num_gts"] for cls_prediction in eval_predictions])
         mean_ap = []
         for i in range(num_scales):
             if np.any(all_num_gts[:, i] > 0):
@@ -800,12 +1142,12 @@ def eval_map(
                 mean_ap.append(0.0)
     else:
         aps = []
-        for cls_result in eval_results:
-            if cls_result["num_gts"] > 0:
-                aps.append(cls_result["ap"])
+        for cls_prediction in eval_predictions:
+            if cls_prediction["num_gts"] > 0:
+                aps.append(cls_prediction["ap"])
         mean_ap = np.array(aps).mean().item() if aps else 0.0
 
-    return mean_ap, eval_results
+    return mean_ap, eval_predictions
 
 
 def tpfp_imagenet(
@@ -1280,24 +1622,24 @@ def bbox_overlaps(bboxes1, bboxes2, mode="iou", eps=1e-6, use_legacy_coordinate=
     return ious
 
 
-def get_cls_results(det_results, annotations, class_id):
-    """Get det results and gt information of a certain class.
+def get_cls_predictions(det_predictions, annotations, class_id):
+    """Get det predictions and gt information of a certain class.
     Args:
-        det_results (list[list]): Same as `eval_map()`.
+        det_predictions (list[list]): Same as `eval_map()`.
         annotations (list[dict]): Same as `eval_map()`.
         class_id (int): ID of a specific class.
     Returns:
         tuple[list[np.ndarray]]: detected bboxes, gt bboxes, ignored gt bboxes
     """
-    cls_dets = [img_res[class_id] for img_res in det_results]
+    cls_dets = [img_res[class_id] for img_res in det_predictions]
     cls_gts = []
     cls_gts_ignore = []
     for ann in annotations:
-        gt_inds = ann["labels"] == class_id
+        gt_inds = ann["annotations"] == class_id
         cls_gts.append(ann["bboxes"][gt_inds, :])
 
-        if ann.get("labels_ignore", None) is not None:
-            ignore_inds = ann["labels_ignore"] == class_id
+        if ann.get("annotations_ignore", None) is not None:
+            ignore_inds = ann["annotations_ignore"] == class_id
             cls_gts_ignore.append(ann["bboxes_ignore"][ignore_inds, :])
         else:
             cls_gts_ignore.append(np.empty((0, 4), dtype=np.float32))
