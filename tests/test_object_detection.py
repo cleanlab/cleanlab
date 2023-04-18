@@ -3,6 +3,12 @@ from cleanlab.object_detection.rank import (
     issues_from_scores,
     visualize,
     _get_min_pred_prob,
+    _softmax,
+    _softmin1D,
+    _get_valid_score,
+    _bbox_xyxy_to_xywh,
+    _prune_by_threshold,
+    _compute_label_quality_scores,
 )
 
 import numpy as np
@@ -84,7 +90,7 @@ predictions = [
             [135.494, 276.395, 148.796, 304.116, 0.059],
         ],
         [
-            [387.278, 68.7, 499.833, 345.118, 1.0],
+            [387.278, 68.7, 499.833, 345.118, 0.9999],
             [0.0, 261.727, 63.421, 305.305, 0.893],
             [464.847, 87.14, 513.476, 136.868, 0.054],
         ],
@@ -106,8 +112,8 @@ predictions = [
         [[197.521, 227.798, 332.14, 374.322, 0.195]],
         [[346.335, 226.451, 357.505, 247.975, 0.173]],
         [
-            [6.485, 163.255, 136.174, 395.704, 1.0],
-            [328.483, 173.752, 396.547, 372.454, 1.0],
+            [6.485, 163.255, 136.174, 395.704, 0.999],
+            [328.483, 173.752, 396.547, 372.454, 0.999],
             [507.475, 172.329, 630.554, 384.995, 0.999],
             [613.713, 245.157, 637.14, 337.998, 0.063],
         ],
@@ -246,6 +252,67 @@ def test_issues_from_scores():
 def test_get_min_pred_prob():
     min = _get_min_pred_prob(predictions)
     assert min == 0.054
+
+
+def test_get_valid_score():
+    score = _get_valid_score([])
+    assert score == 1.0
+
+    score_larger = _get_valid_score([0.8, 0.7, 0.6])
+    score_smaller = _get_valid_score([0.8, 0.7, 0.6], temperature=0.2)
+    assert score_smaller < score_larger
+
+
+def test_softmin1D():
+    small_val = 0.004
+    assert _softmin1D([small_val]) == small_val
+
+
+def test_softmax():
+    small_val = 0.004
+    assert _softmax(np.array([small_val])) == 1.0
+
+
+def test_bbox_xyxy_to_xywh():
+    box_coords = _bbox_xyxy_to_xywh([5, 4, 2, 5, 0.86])
+    assert box_coords is None
+    box_coords = _bbox_xyxy_to_xywh([5, 4, 2, 5])
+    assert box_coords is not None
+
+
+@pytest.mark.filterwarnings("ignore::UserWarning")  # Should be 2 warnings (first two calls)
+def test_prune_by_threshold():
+    pruned_predictions = _prune_by_threshold(predictions, 1.0)
+    print(pruned_predictions)
+    for image_pred in pruned_predictions:
+        for class_pred in image_pred:
+            assert class_pred.shape[0] == 0
+
+    pruned_predictions = _prune_by_threshold(predictions, 0.9999)
+
+    num_boxes_not_pruned = 0
+    for image_pred in pruned_predictions:
+        for class_pred in image_pred:
+            if class_pred.shape[0] > 0:
+                num_boxes_not_pruned += 1
+    assert num_boxes_not_pruned == 1
+
+    pruned_predictions = _prune_by_threshold(predictions, 0.0)
+    for im0, im1 in zip(pruned_predictions, predictions):
+        for cl0, cl1 in zip(im0, im1):
+            assert (cl0 == cl1).all()
+
+
+def test_compute_label_quality_scores():
+    scores = _compute_label_quality_scores(annotations, predictions)
+    scores_with_threshold = _compute_label_quality_scores(annotations, predictions, threshold=0.9)
+    assert np.sum(scores) != np.sum(scores_with_threshold)
+
+    min_pred_prob = _get_min_pred_prob(predictions)
+    scores_with_min_threshold = _compute_label_quality_scores(
+        annotations, predictions, threshold=min_pred_prob
+    )
+    assert (scores == scores_with_min_threshold).all()
 
 
 @pytest.mark.usefixtures("generate_single_image_file")
