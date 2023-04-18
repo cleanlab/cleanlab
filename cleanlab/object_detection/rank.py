@@ -27,7 +27,7 @@ are to contain label errors. """
 
 
 def get_label_quality_scores(
-    annotations: List[Dict[Any, Any]],
+    labels: List[Dict[Any, Any]],
     predictions: List[np.ndarray],
     *,
     method: str = "subtype",
@@ -46,8 +46,8 @@ def get_label_quality_scores(
 
     Parameters
     ----------
-    annotations:
-        A list of `N` dictionaries for `N` images such that `annotations[i]` contains the given annotations for the `i`-th image in the format
+    labels:
+        A list of `N` dictionaries for `N` images such that `labels[i]` contains the given labels for the `i`-th image in the format
        `{'bboxes': np.ndarray((M,4)), 'labels': np.ndarray((M,)), 'image_name': str}` where `M` is the number of annotated bounding boxes
        for the `i`-th image and `bboxes[j]` is in the format [x,y,x,y] with given label `labels[j]`. ('image_name' is optional here)
 
@@ -75,18 +75,18 @@ def get_label_quality_scores(
     ---------
     label_quality_scores:
         Array of shape ``(N, )`` of scores between 0 and 1, one per image in the dataset.
-        Lower scores indicate images are more likely to contain an incorrect annotation.
+        Lower scores indicate images are more likely to contain an incorrect label.
     """
 
     assert_valid_inputs(
-        annotations=annotations,
+        labels=labels,
         predictions=predictions,
         method=method,
         threshold=probability_threshold,
     )
 
     return _compute_label_quality_scores(
-        annotations=annotations,
+        labels=labels,
         predictions=predictions,
         method=method,
         threshold=probability_threshold,
@@ -126,7 +126,7 @@ def issues_from_scores(label_quality_scores: np.ndarray, *, threshold: float = 0
 
 
 def _compute_label_quality_scores(
-    annotations: List[Dict[Any, Any]],
+    labels: List[Dict[Any, Any]],
     predictions: List[np.ndarray],
     *,
     method: str = "subtype",
@@ -149,7 +149,7 @@ def _compute_label_quality_scores(
 
     if method == "subtype":
         scores = _compute_subtype_lqs(
-            annotations,
+            labels,
             predictions,
             alpha=0.99,
             low_probability_threshold=0.7,
@@ -195,27 +195,25 @@ def _prune_by_threshold(
     p_ann_pruned = total_ann and num_ann_to_zero / total_ann or 0  # avoid division by zero
     if p_ann_pruned > max_allowed_box_prune:
         warnings.warn(
-            f"Pruning with threshold=={threshold} prunes {p_ann_pruned}% annotations. Consider lowering the threshold.",
+            f"Pruning with threshold=={threshold} prunes {p_ann_pruned}% labels. Consider lowering the threshold.",
             UserWarning,
         )
     if verbose:
-        print(
-            f"Pruning {num_ann_to_zero} annotations out of {total_ann} using threshold=={threshold}."
-        )
+        print(f"Pruning {num_ann_to_zero} labels out of {total_ann} using threshold=={threshold}.")
     return predictions_copy
 
 
 # Todo: make this more descriptive and assert better inputs
-def assert_valid_inputs(annotations, predictions, method=None, threshold=None):
+def assert_valid_inputs(labels, predictions, method=None, threshold=None):
     """Asserts proper input format."""
-    if len(annotations) != len(predictions):
+    if len(labels) != len(predictions):
         raise ValueError(
-            f"Annotations and predictions length needs to match. len(annotations) == {len(annotations)} while len(predictions) == {len(predictions)}."
+            f"labels and predictions length needs to match. len(labels) == {len(labels)} while len(predictions) == {len(predictions)}."
         )
-    # Typecheck annotations and predictions
-    if not isinstance(annotations[0], dict):
+    # Typecheck labels and predictions
+    if not isinstance(labels[0], dict):
         raise ValueError(
-            f"Annotations has to be a list of dicts. Instead it is list of {type(annotations[0])}."
+            f"Labels has to be a list of dicts. Instead it is list of {type(labels[0])}."
         )
     # check last column of predictions is probabilities ( < 1.)?
     if not isinstance(predictions[0], np.ndarray):
@@ -244,7 +242,7 @@ def assert_valid_inputs(annotations, predictions, method=None, threshold=None):
 
 def visualize(
     image_path: str,
-    annotation: Dict[Any, Any],
+    label: Dict[Any, Any],
     prediction: np.ndarray,
     *,
     prediction_threshold: Optional[float] = None,
@@ -252,16 +250,16 @@ def visualize(
     class_labels: Optional[Dict[Any, Any]] = None,
     figsize: Optional[Tuple[int, int]] = None,
 ):
-    """Visualize bounding box annotations (given labels) and model predictions for an image. The given label annotations
-    are shown with red while the predicted annotations shown in blue.
+    """Visualize bounding box labels (given labels) and model predictions for an image. The given labels
+    are shown with red while the predictions are shown in blue.
 
         Parameters
         ----------
         image_path:
             Full path to the image file.
 
-        annotation:
-            The given annotation for a single image in the format {'bboxes': np.ndarray((N,4)), 'labels': np.ndarray((N,))}` where
+        label:
+            The given label for a single image in the format {'bboxes': np.ndarray((N,4)), 'labels': np.ndarray((N,))}` where
             N is the number of bounding boxes for the `i`-th image and `bboxes[j]` is in the format [x,y,x,y] with given label `labels[j]`.
 
         prediction:
@@ -274,8 +272,8 @@ def visualize(
             omited from the visualization.
 
         given_label_overlay: bool
-            If true, a single image with overlayed given label and predicted annotations is shown. If false, two images side
-            by side are shown instead with the left image being given label and right being the ground truth annotation.
+            If true, a single image with overlayed given labels and predictions is shown. If false, two images side
+            by side are shown instead with the left image being the prediction and right being the given label.
 
         class_labels:
             Optional dictionary mapping one-hot-encoded class labels back to their original class names in the format {"one-hot-label": "original-class-name"}.
@@ -288,10 +286,8 @@ def visualize(
 
     # Create figure and axes
     image = plt.imread(image_path)
-    pbbox, plabels, pred_probs = _get_bbox_labels_prediction(
-        prediction, prediction_type=prediction_type
-    )
-    abbox, alabels = _get_bbox_labels_annotation(annotation)
+    pbbox, plabels, pred_probs = _separate_prediction(prediction, prediction_type=prediction_type)
+    abbox, alabels = _separate_label(label)
 
     if prediction_threshold is not None:
         keep_idx = np.where(pred_probs > prediction_threshold)
@@ -388,20 +384,21 @@ def _draw_boxes(fig, ax, bboxes, labels, edgecolor="g", linestyle="-", linewidth
     return fig, ax
 
 
-def _get_bbox_labels_annotation(annotation):
-    """Returns bbox and label values for annotation."""
-    bboxes = annotation["bboxes"]
-    labels = annotation["labels"]
+def _separate_label(label):
+    """Seperates labels into bounding box and class label lists."""
+    bboxes = label["bboxes"]
+    labels = label["labels"]
     return bboxes, labels
 
 
-def _get_bbox_labels_prediction_all_preds(prediction):
-    det_bboxes, det_labels, det_probs = prediction
-    return det_bboxes, det_labels, det_probs
+# TODO: make object detection work for all predicted probabilities
+def _separate_prediction_all_preds(prediction):
+    pred_bboxes, pred_labels, det_probs = prediction
+    return pred_bboxes, pred_labels, det_probs
 
 
-def _get_bbox_labels_prediction_single_box(prediction):
-    """Returns bbox, label and pred_prob values for prediction."""
+def _separate_prediction_single_box(prediction):
+    """Seperates predictions into class labels, bounding boxes and pred_prob lists"""
     labels = []
     boxes = []
     for idx, prediction_class in enumerate(prediction):
@@ -423,17 +420,18 @@ def _get_prediction_type(prediction):
         return "single_pred"
 
 
-def _get_bbox_labels_prediction(prediction, prediction_type="single_pred"):
+def _separate_prediction(prediction, prediction_type="single_pred"):
     """Returns bbox, label and pred_prob values for prediction."""
 
     if prediction_type == "all_pred":
-        boxes, labels, pred_probs = _get_bbox_labels_prediction_all_preds(prediction)
+        boxes, labels, pred_probs = _separate_prediction_all_preds(prediction)
     else:
-        boxes, labels, pred_probs = _get_bbox_labels_prediction_single_box(prediction)
+        boxes, labels, pred_probs = _separate_prediction_single_box(prediction)
     return boxes, labels, pred_probs
 
 
 def _bbox_xyxy_to_xywh(bbox):
+    """Converts bounding box coodrinate types from x1y1,x2y2 to x,y,w,h"""
     if len(bbox) == 4:
         x1, y1, x2, y2 = bbox
         w = x2 - x1
@@ -445,44 +443,17 @@ def _bbox_xyxy_to_xywh(bbox):
 
 
 # ============= Simple label subtype algorithm ============
-
-
-# setup labeling helper functions
-def _seperate_annotations(annotation):
-    """Seperates annotations into annotation and bounding box lists."""
-
-    lab_bboxes = annotation["bboxes"]
-    lab_annotations = annotation["labels"]
-    return lab_bboxes, lab_annotations
-
-
-def _separate_predictions(prediction):
-    """Seperates predictions into annotation, bounding boxes and pred_probs"""
-
-    det_bboxes = []
-    det_annotations = []
-    det_annotation_prob = []
-    cnt = 0
-    for i in prediction:
-        for j in i:
-            if len(j) != 0:
-                det_bboxes.append(j[:-1])
-                det_annotations.append(cnt)
-                det_annotation_prob.append(j[-1])
-        cnt += 1
-    return det_bboxes, det_annotations, det_annotation_prob
-
-
 def _mod_coordinates(x):
     """Takes is a list of xyxy coordinates and returns them in dictionary format."""
-    wd = {}
-    wd["x1"], wd["y1"], wd["x2"], wd["y2"] = x[0], x[1], x[2], x[3]
+
+    wd = {"x1": x[0], "y1": x[1], "x2": x[2], "y2": x[3]}
     return wd
 
 
 # distance/similarity helped functions
 def _get_overlap(bb1, bb2):
     """Takes in two bounding boxes `bb1` and `bb2` and returns their IoU overlap."""
+
     return _get_iou(_mod_coordinates(bb1), _mod_coordinates(bb2))
 
 
@@ -597,15 +568,15 @@ def _get_valid_score(scores_arr, temperature=0.99):
     return valid_score
 
 
-def _get_min_possible_similarity(predictions, annotations, alpha):
+def _get_min_possible_similarity(predictions, labels, alpha):
     """Gets the min possible similarity score between two bounding boxes out of all examples."""
     min_possible_similarity = 1.0
-    for prediction, annotation in zip(predictions, annotations):
-        lab_bboxes, lab_annotations = _seperate_annotations(annotation)
-        det_bboxes, det_annotations, det_annotation_prob = _separate_predictions(prediction)
-        det_annotation_prob = np.array(det_annotation_prob)
-        iou_matrix = _get_overlap_matrix(lab_bboxes, det_bboxes)
-        dist_matrix = 1 - _get_dist_matrix(lab_bboxes, det_bboxes)
+    for prediction, label in zip(predictions, labels):
+        lab_bboxes, lab_labels = _separate_label(label)
+        pred_bboxes, pred_labels, pred_label_prob = _separate_prediction(prediction)
+        pred_label_prob = np.array(pred_label_prob)
+        iou_matrix = _get_overlap_matrix(lab_bboxes, pred_bboxes)
+        dist_matrix = 1 - _get_dist_matrix(lab_bboxes, pred_bboxes)
         similarity_matrix = iou_matrix * alpha + (1 - alpha) * (1 - dist_matrix)
         min_image_similarity = 1.0 if 0 in similarity_matrix.shape else np.min(similarity_matrix)
         if min_image_similarity > 0:
@@ -614,7 +585,7 @@ def _get_min_possible_similarity(predictions, annotations, alpha):
 
 
 def _compute_subtype_lqs(
-    annotations,
+    labels,
     predictions,
     *,
     alpha,
@@ -631,8 +602,8 @@ def _compute_subtype_lqs(
 
     Parameters
     ----------
-    annotations:
-        A list of `N` dictionaries for `N` images such that `annotations[i]` contains the given annotations for the `i`-th image in the format
+    labels:
+        A list of `N` dictionaries for `N` images such that `labels[i]` contains the given labels for the `i`-th image in the format
        `{'bboxes': np.ndarray((M,4)), 'labels': np.ndarray((M,)), 'image_name': str}` where `M` is the number of annotated bounding boxes
        for the `i`-th image and `bboxes[j]` is in the format [x,y,x,y] with given label `labels[j]`. ('image_name' is optional here)
 
@@ -648,10 +619,10 @@ def _compute_subtype_lqs(
         Weight between IoU and distance when considering similarity matrix. High alpha means considering IoU more strongly over distance.
 
     low_probability_threshold:
-        The lowest prediction threshold allowed when considering predicted boxes to identify badly located annotation boxes.
+        The lowest prediction threshold allowed when considering predicted boxes to identify badly located label boxes.
 
     high_probability_threshold:
-        The high probability threshold for considering predicted boxes to identify overlooked and swapped annotation boxes.
+        The high probability threshold for considering predicted boxes to identify overlooked and swapped label boxes.
 
     temperature:
         Temperature of the softmin function where a lower score suggests softmin acts closer to min.
@@ -660,38 +631,38 @@ def _compute_subtype_lqs(
     ---------
     label_quality_scores:
         Array of shape ``(N, )`` of scores between 0 and 1, one per image in the dataset.
-        Lower scores indicate images are more likely to contain an incorrect annotation.
+        Lower scores indicate images are more likely to contain an incorrect label.
     """
     scores = []
 
-    min_possible_similarity = _get_min_possible_similarity(predictions, annotations, alpha)
-    for prediction, annotation in zip(predictions, annotations):
-        lab_bboxes, lab_annotations = _seperate_annotations(annotation)
-        det_bboxes, det_annotations, det_annotation_prob = _separate_predictions(prediction)
-        det_annotation_prob = np.array(det_annotation_prob)
-        iou_matrix = _get_overlap_matrix(lab_bboxes, det_bboxes)
-        dist_matrix = 1 - _get_dist_matrix(lab_bboxes, det_bboxes)
+    min_possible_similarity = _get_min_possible_similarity(predictions, labels, alpha)
+    for prediction, label in zip(predictions, labels):
+        lab_bboxes, lab_labels = _separate_label(label)
+        pred_bboxes, pred_labels, pred_label_prob = _separate_prediction(prediction)
+        pred_label_prob = np.array(pred_label_prob)
+        iou_matrix = _get_overlap_matrix(lab_bboxes, pred_bboxes)
+        dist_matrix = 1 - _get_dist_matrix(lab_bboxes, pred_bboxes)
 
         similarity_matrix = iou_matrix * alpha + (1 - alpha) * (1 - dist_matrix)
         assert (similarity_matrix.flatten() >= 0).all() and (similarity_matrix.flatten() <= 1).all()
 
         scores_overlooked = []
-        for iid, k in enumerate(det_annotations):
-            if det_annotation_prob[iid] < high_probability_threshold:
+        for iid, k in enumerate(pred_labels):
+            if pred_label_prob[iid] < high_probability_threshold:
                 continue
 
-            k_similarity = similarity_matrix[lab_annotations == k, iid]
+            k_similarity = similarity_matrix[lab_labels == k, iid]
             if len(k_similarity) == 0:  # if there is no annotated box
-                scores_overlooked.append(min_possible_similarity * (1 - det_annotation_prob[iid]))
+                scores_overlooked.append(min_possible_similarity * (1 - pred_label_prob[iid]))
             else:
                 closest_annotated_box = np.argmax(k_similarity)
                 scores_overlooked.append(k_similarity[closest_annotated_box])
         score_overlooked = _get_valid_score(scores_overlooked, temperature)
 
         scores_badloc = []
-        for iid, k in enumerate(lab_annotations):  # for every annotated box
-            k_similarity = similarity_matrix[iid, det_annotations == k]
-            k_pred = det_annotation_prob[det_annotations == k]
+        for iid, k in enumerate(lab_labels):  # for every annotated box
+            k_similarity = similarity_matrix[iid, pred_labels == k]
+            k_pred = pred_label_prob[pred_labels == k]
 
             if len(k_pred) == 0:  # there are no predicted boxes of class k
                 scores_badloc.append(min_possible_similarity)
@@ -708,15 +679,15 @@ def _compute_subtype_lqs(
         score_badloc = _get_valid_score(scores_badloc, temperature)
 
         scores_swap = []
-        for iid, k in enumerate(lab_annotations):
-            not_k_idx = det_annotations != k
+        for iid, k in enumerate(lab_labels):
+            not_k_idx = pred_labels != k
 
             if len(not_k_idx) == 0:
                 scores_swap.append(1.0)
                 continue
 
             not_k_similarity = similarity_matrix[iid, not_k_idx]
-            not_k_pred = det_annotation_prob[not_k_idx]
+            not_k_pred = pred_label_prob[not_k_idx]
 
             idx_at_least_high_probability_threshold = not_k_pred > high_probability_threshold
             if len(idx_at_least_high_probability_threshold) == 0:
