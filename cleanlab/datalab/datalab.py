@@ -609,7 +609,7 @@ class Datalab:
         *,
         num_examples: int = 5,
         verbosity: Optional[int] = None,
-        include_description: bool = False,
+        include_description: bool = True,
     ) -> None:
         """Prints informative summary of all issues.
 
