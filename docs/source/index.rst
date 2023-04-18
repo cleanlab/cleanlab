@@ -140,6 +140,7 @@ Please see our `contributing guidelines <https://github.com/cleanlab/cleanlab/bl
    Detecting Common Data Issues with Datalab <tutorials/datalab>
    Perform Advanced Data Auditing with Datalab <tutorials/datalab_advanced>
    FAQ <tutorials/faq>
+   Datalab Tutorials <tutorials/datalab/index>
 
 .. toctree::
    :caption: API Reference
