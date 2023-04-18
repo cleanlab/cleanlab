@@ -43,8 +43,8 @@ class LabelIssueManager(IssueManager):
 
     description: ClassVar[
         str
-    ] = """Examples whose given label is estimated to be potentially 
-    incorrect (e.g. due to annotation error) are flagged as having label issues.
+    ] = """Examples whose given label is estimated to be potentially incorrect
+    (e.g. due to annotation error) are flagged as having label issues.
     """
 
     issue_name: ClassVar[str] = "label"

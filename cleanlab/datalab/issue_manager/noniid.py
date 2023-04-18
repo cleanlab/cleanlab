@@ -84,11 +84,11 @@ class NonIIDIssueManager(IssueManager):
     description: ClassVar[
         str
     ] = """Whether the dataset exhibits statistically significant
-          violations of the IID assumption like: 
-          changepoints or shift, drift, autocorrelation, etc.
-          The specific violation considered is whether the 
-          examples are ordered such that almost adjacent examples
-          tend to have more similar feature values.
+    violations of the IID assumption like: 
+    changepoints or shift, drift, autocorrelation, etc.
+    The specific violation considered is whether the 
+    examples are ordered such that almost adjacent examples
+    tend to have more similar feature values.
     """
     issue_name: ClassVar[str] = "non_iid"
     verbosity_levels = {

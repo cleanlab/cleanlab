@@ -37,11 +37,11 @@ class NearDuplicateIssueManager(IssueManager):
     description: ClassVar[
         str
     ] = """A (near) duplicate issue refers to two or more examples in
-        a dataset that are extremely similar to each other, relative
-        to the rest of the dataset.  The examples flagged with this issue
-        may be exactly duplicated, or lie atypically close together when
-        represented as vectors (i.e. feature embeddings).
-        """
+    a dataset that are extremely similar to each other, relative
+    to the rest of the dataset.  The examples flagged with this issue
+    may be exactly duplicated, or lie atypically close together when
+    represented as vectors (i.e. feature embeddings).
+    """
     issue_name: ClassVar[str] = "near_duplicate"
     verbosity_levels = {
         0: [],

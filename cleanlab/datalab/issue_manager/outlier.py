@@ -36,9 +36,9 @@ class OutlierIssueManager(IssueManager):
 
     description: ClassVar[
         str
-    ] = """Examples that are very different from the rest of the dataset
-        (i.e. potentially out-of-distribution or rare/anomalous instances).
-        """
+    ] = """Examples that are very different from the rest of the dataset 
+    (i.e. potentially out-of-distribution or rare/anomalous instances).
+    """
     issue_name: ClassVar[str] = "outlier"
     verbosity_levels = {
         0: [],
