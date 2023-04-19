@@ -316,7 +316,7 @@ class TestNearDuplicateIssueManager:
         assert issue_manager.datalab == lab
         assert issue_manager.metric == "euclidean"
         assert issue_manager.k == 2
-        assert issue_manager.threshold == None
+        assert issue_manager.threshold == 0.2
 
         issue_manager = NearDuplicateIssueManager(
             datalab=lab,

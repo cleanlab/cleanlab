@@ -53,13 +53,13 @@ class NearDuplicateIssueManager(IssueManager):
         self,
         datalab: Datalab,
         metric: Optional[str] = None,
-        threshold: Optional[float] = None,
+        threshold: float = 0.2,
         k: int = 10,
         **_,
     ):
         super().__init__(datalab)
         self.metric = metric
-        self.threshold = threshold
+        self.threshold = self._set_threshold(threshold)
         self.k = k
         self.near_duplicate_sets: List[List[int]] = []
 
@@ -98,12 +98,11 @@ class NearDuplicateIssueManager(IssueManager):
         N = knn_graph.shape[0]
         nn_distances = knn_graph.data.reshape(N, -1)[:, 0]
         scores = np.tanh(nn_distances)
-
-        self.threshold = self._compute_threshold(nn_distances)
+        is_issue_column = nn_distances < self.threshold * np.median(nn_distances)
 
         self.issues = pd.DataFrame(
             {
-                f"is_{self.issue_name}_issue": nn_distances < self.threshold,
+                f"is_{self.issue_name}_issue": is_issue_column,
                 self.issue_score_key: scores,
             },
         )
@@ -207,23 +206,18 @@ class NearDuplicateIssueManager(IssueManager):
 
         return statistics_dict
 
-    def _compute_threshold(self, distances: npt.NDArray) -> float:
+    def _set_threshold(
+        self,
+        threshold: float,
+    ) -> float:
         """Computes nearest-neighbors thresholding for near-duplicate detection."""
         threshold: float  # Declare type for mypy
-        if self.threshold is None:
-            # Threshold based on nearest-neighbor distance/radius. Smaller radius means
-            # more examples are considered near-duplicates.
-
-            threshold = np.median(distances) * 0.20
-
-            if threshold < 0:
-                warnings.warn(
-                    f"Computed threshold {threshold} is less than 0. "
-                    "Setting threshold to 0."
-                    "This may indicate that either the only a few examples are in the dataset, "
-                    "or the data is heavily skewed."
-                )
-                threshold = 0
-        else:
-            threshold = self.threshold
+        if threshold < 0:
+            warnings.warn(
+                f"Computed threshold {threshold} is less than 0. "
+                "Setting threshold to 0."
+                "This may indicate that either the only a few examples are in the dataset, "
+                "or the data is heavily skewed."
+            )
+            threshold = 0
         return threshold
