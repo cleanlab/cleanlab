@@ -15,9 +15,6 @@ Some of these files include various models that can be used with cleanlab to fin
    :show-inheritance:
 
 .. toctree::
-    :maxdepth: 2
-
-    datalab/index
     label_issues_batched
     mnist_pytorch
     coteaching
