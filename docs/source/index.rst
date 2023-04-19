@@ -137,8 +137,6 @@ Please see our `contributing guidelines <https://github.com/cleanlab/cleanlab/bl
    Multi-Label Classification <tutorials/multilabel_classification>
    Token Classification (text) <tutorials/token_classification>
    Predicted Probabilities via Cross Validation <tutorials/pred_probs_cross_val>
-   Detecting Common Data Issues with Datalab <tutorials/datalab>
-   Perform Advanced Data Auditing with Datalab <tutorials/datalab_advanced>
    FAQ <tutorials/faq>
    Datalab Tutorials <tutorials/datalab/index>
 
