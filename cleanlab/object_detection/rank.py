@@ -617,6 +617,8 @@ def _compute_scores_overlooked_for_image(
     high_probability_threshold,
     min_possible_similarity,
 ):
+    """Function to compute the overlooked box score for each prediction in a single image."""
+
     scores_overlooked = []
     for iid, k in enumerate(pred_labels):
         if pred_label_probs[iid] < high_probability_threshold:
@@ -639,6 +641,7 @@ def _compute_scores_badloc_for_image(
     low_probability_threshold,
     min_possible_similarity,
 ):
+    """Function to compute the bad location score for each label in a single image."""
     scores_badloc = []
     for iid, k in enumerate(lab_labels):  # for every annotated box
         k_similarity = similarity_matrix[iid, pred_labels == k]
@@ -667,6 +670,7 @@ def _compute_scores_swap_for_image(
     high_probability_threshold,
     min_possible_similarity,
 ):
+    """Function to compute the swap score for each label in a single image."""
     scores_swap = []
     for iid, k in enumerate(lab_labels):
         not_k_idx = pred_labels != k

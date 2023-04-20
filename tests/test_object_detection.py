@@ -9,6 +9,10 @@ from cleanlab.object_detection.rank import (
     _bbox_xyxy_to_xywh,
     _prune_by_threshold,
     _compute_label_quality_scores,
+    _separate_label,
+    _separate_prediction,
+    _get_overlap_matrix,
+    _get_dist_matrix,
 )
 
 import numpy as np
@@ -158,7 +162,7 @@ predictions = [
         [],
     ],
 ]
-annotations = [
+labels = [
     {
         "bboxes": [
             [388.6600036621094, 69.91999816894531, 498.07000732421875, 347.5400085449219],
@@ -205,10 +209,10 @@ annotations = [
 ]
 
 
-def make_numpy(annotations, predictions):
-    np_annotations = []
-    for ann in annotations:
-        np_annotations.append(
+def make_numpy(labels, predictions):
+    np_labels = []
+    for ann in labels:
+        np_labels.append(
             {
                 "bboxes": np.array(ann["bboxes"]),
                 "labels": np.array(ann["labels"]),
@@ -224,21 +228,21 @@ def make_numpy(annotations, predictions):
                 np_predictions[i][j] = np.zeros((0, 5))
             else:
                 np_predictions[i][j] = np.array(np_predictions[i][j])
-    return np_annotations, np_predictions
+    return np_labels, np_predictions
 
 
-annotations, predictions = make_numpy(annotations, predictions)
+labels, predictions = make_numpy(labels, predictions)
 
 
 def test_get_label_quality_scores():
-    scores = get_label_quality_scores(annotations, predictions)
-    assert len(scores) == len(annotations)
+    scores = get_label_quality_scores(labels, predictions)
+    assert len(scores) == len(labels)
     assert (scores < 1.0).all()
     assert len(scores.shape) == 1
 
 
 def test_issues_from_scores():
-    scores = get_label_quality_scores(annotations, predictions)
+    scores = get_label_quality_scores(labels, predictions)
     real_issue_from_scores = issues_from_scores(scores, threshold=1.0)
     assert len(real_issue_from_scores) == len(scores)
     assert np.argmin(scores) == real_issue_from_scores[0]
@@ -303,14 +307,26 @@ def test_prune_by_threshold():
             assert (cl0 == cl1).all()
 
 
+def test_similarity_matrix():
+    ALPHA = 0.99
+    lab_bboxes, lab_labels = _separate_label(labels[0])
+    det_bboxes, det_labels, det_label_prob = _separate_prediction(predictions[0])
+
+    iou_matrix = _get_overlap_matrix(lab_bboxes, det_bboxes)
+    dist_matrix = 1 - _get_dist_matrix(lab_bboxes, det_bboxes)
+
+    similarity_matrix = iou_matrix * ALPHA + (1 - ALPHA) * (1 - dist_matrix)
+    assert (similarity_matrix.flatten() >= 0).all() and (similarity_matrix.flatten() <= 1).all()
+
+
 def test_compute_label_quality_scores():
-    scores = _compute_label_quality_scores(annotations, predictions)
-    scores_with_threshold = _compute_label_quality_scores(annotations, predictions, threshold=0.9)
+    scores = _compute_label_quality_scores(labels, predictions)
+    scores_with_threshold = _compute_label_quality_scores(labels, predictions, threshold=0.9)
     assert np.sum(scores) != np.sum(scores_with_threshold)
 
     min_pred_prob = _get_min_pred_prob(predictions)
     scores_with_min_threshold = _compute_label_quality_scores(
-        annotations, predictions, threshold=min_pred_prob
+        labels, predictions, threshold=min_pred_prob
     )
     assert (scores == scores_with_min_threshold).all()
 
@@ -318,4 +334,11 @@ def test_compute_label_quality_scores():
 @pytest.mark.usefixtures("generate_single_image_file")
 def test_visualize(monkeypatch, generate_single_image_file):
     monkeypatch.setattr(plt, "show", lambda: None)
-    visualize(generate_single_image_file, annotations[0], predictions[0])
+    visualize(generate_single_image_file, labels[0], predictions[0])
+    visualize(
+        generate_single_image_file,
+        labels[0],
+        predictions[0],
+        prediction_threshold=0.99,
+        given_label_overlay=False,
+    )
