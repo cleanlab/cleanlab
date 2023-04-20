@@ -13,17 +13,14 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
+
+"""Methods to rank and score images in an object detection dataset (object detection data), based on how likely they
+are to contain label errors. """
+
 import warnings
 from typing import List, Dict, Any, Optional, Tuple
 import numpy as np
 import copy
-
-# for visualizing functions
-import matplotlib.pyplot as plt
-from matplotlib.patches import Rectangle
-
-"""Methods to rank and score images in an object detection dataset (object detection data), based on how likely they
-are to contain label errors. """
 
 
 def get_label_quality_scores(
@@ -34,33 +31,40 @@ def get_label_quality_scores(
     probability_threshold: Optional[float] = None,
     verbose: bool = True,
 ) -> np.ndarray:
-    """Returns a label quality score for each datapoint.
+    """Computes a label quality score for each image in the dataset.
 
-    This is a function to compute label quality scores for object detection datasets,
-    where lower scores indicate image annotaion is less likely to be correct.
+     For object detection datasets, the label quality score for an image estimates how likely it has been correctly labeled.
+     Lower scores indicate images whose annotation is more likely imperfect.
+     Annotators may have mislabeled an image because they:
+        * overlooked an object (missing annotated bounding box),
+        * chose the wrong class label for an annotated box in the correct location,
+        * imperfectly annotated the location/edges of a bounding box.
+     Any of these annotation errors should lead to an image with a lower label quality score.
 
     Score is between 0 and 1.
 
     1 - clean label (given label is likely correct).
     0 - dirty label (given label is likely incorrect).
 
+    A score is calculated for each of `N` images, with `K` total classes in the data.
+    Each image has `L` annotated bounding boxes and `M` predicted bounding boxes.
+
     Parameters
     ----------
     labels:
-        A list of `N` dictionaries for `N` images such that `labels[i]` contains the given labels for the `i`-th image in the format
-       `{'bboxes': np.ndarray((M,4)), 'labels': np.ndarray((M,)), 'image_name': str}` where `M` is the number of annotated bounding boxes
+        A list of `N` dictionaries such that `labels[i]` contains the given labels for the `i`-th image in the format
+       `{'bboxes': np.ndarray((M,4)), 'labels': np.ndarray((M,)), 'image_name': str}` where `L` is the number of annotated bounding boxes
        for the `i`-th image and `bboxes[j]` is in the format [x,y,x,y] with given label `labels[j]`. ('image_name' is optional here)
 
     predictions:
-        A list of `N` `np.ndarray` for `N` images such that `predictions[i]` corresponds to the model predictions for the `i`-th image
-        in the format `np.ndarray((K,))` where K is the number of classes and `predictions[i][k]` is of shape `np.ndarray(M,5)`
-        where `M` is the number of predicted bounding boxes for class `K` and the five columns correspond to `[x,y,x,y,pred_prob]` returned
+        A list of `N` `np.ndarray` such that `predictions[i]` corresponds to the model predictions for the `i`-th image
+        in the format `np.ndarray((K,))` and `predictions[i][k]` is of shape `np.ndarray(M,5)`
+        where `M` is the number of predicted bounding boxes for class `k` and the five columns correspond to `[x,y,x,y,pred_prob]` returned
         by the model.
 
-        Note: `M` number of predicted bounding boxes can be different from `M` number of annotated bounding boxes for class `K` of `i`-th image.
-
     method:
-        The method used to calculate label_quality_scores.
+        The method used to calculate label_quality_scores. Options:
+        - ``subtype_lqs``: calculates image score as a composite score of the quality of badly located, swapped and missing bounding boxes.
 
     probability_threshold:
         Bounding boxes in `predictions` with `pred_prob` below the threshold are not considered for computing label_quality_scores.
@@ -75,7 +79,7 @@ def get_label_quality_scores(
     ---------
     label_quality_scores:
         Array of shape ``(N, )`` of scores between 0 and 1, one per image in the dataset.
-        Lower scores indicate images are more likely to contain an incorrect label.
+        Lower scores indicate images that are more likely mislabeled.
     """
 
     assert_valid_inputs(
@@ -284,6 +288,13 @@ def visualize(
 
     prediction_type = _get_prediction_type(prediction)
 
+    try:
+        import matplotlib.pyplot as plt
+    except Exception as e:
+        raise ImportError(
+            "This functionality requires matplotlib. Install it via: `pip install matplotlib`"
+        )
+
     # Create figure and axes
     image = plt.imread(image_path)
     pbbox, plabels, pred_probs = _separate_prediction(prediction, prediction_type=prediction_type)
@@ -331,6 +342,13 @@ def _plot_legend(class_labels):
         markers += [None] + [f"${class_key}$" for class_key in class_labels.keys()]
         labels += [r"$\bf{classes}$"] + list(class_labels.values())
 
+    try:
+        import matplotlib.pyplot as plt
+    except Exception as e:
+        raise ImportError(
+            "This functionality requires matplotlib. Install it via: `pip install matplotlib`"
+        )
+
     f = lambda m, c: plt.plot([], [], marker=m, color=c, ls="none")[0]
     handles = [f(marker, color) for marker, color in zip(markers, colors)]
     legend = plt.legend(
@@ -366,6 +384,14 @@ def _draw_labels(ax, rect, label, edgecolor):
 def _draw_boxes(fig, ax, bboxes, labels, edgecolor="g", linestyle="-", linewidth=3):
     """Helper function to draw bboxes and labels on an axis."""
     bboxes = [_bbox_xyxy_to_xywh(box) for box in bboxes]
+
+    try:
+        from matplotlib.patches import Rectangle
+    except Exception as e:
+        raise ImportError(
+            "This functionality requires matplotlib. Install it via: `pip install matplotlib`"
+        )
+
     for (x, y, w, h), label in zip(bboxes, labels):
         rect = Rectangle(
             (x, y),
@@ -569,12 +595,11 @@ def _get_valid_score(scores_arr, temperature=0.99):
 
 
 def _get_min_possible_similarity(predictions, labels, alpha):
-    """Gets the min possible similarity score between two bounding boxes out of all examples."""
+    """Gets the min possible similarity score between two bounding boxes out of all images."""
     min_possible_similarity = 1.0
     for prediction, label in zip(predictions, labels):
         lab_bboxes, lab_labels = _separate_label(label)
-        pred_bboxes, pred_labels, pred_label_prob = _separate_prediction(prediction)
-        pred_label_prob = np.array(pred_label_prob)
+        pred_bboxes, pred_labels, _ = _separate_prediction(prediction)
         iou_matrix = _get_overlap_matrix(lab_bboxes, pred_bboxes)
         dist_matrix = 1 - _get_dist_matrix(lab_bboxes, pred_bboxes)
         similarity_matrix = iou_matrix * alpha + (1 - alpha) * (1 - dist_matrix)
@@ -582,6 +607,90 @@ def _get_min_possible_similarity(predictions, labels, alpha):
         if min_image_similarity > 0:
             min_possible_similarity = np.min([min_possible_similarity, min_image_similarity])
     return min_possible_similarity
+
+
+def _compute_scores_overlooked_for_image(
+    pred_labels,
+    pred_label_probs,
+    lab_labels,
+    similarity_matrix,
+    high_probability_threshold,
+    min_possible_similarity,
+):
+    scores_overlooked = []
+    for iid, k in enumerate(pred_labels):
+        if pred_label_probs[iid] < high_probability_threshold:
+            continue
+
+        k_similarity = similarity_matrix[lab_labels == k, iid]
+        if len(k_similarity) == 0:  # if there is no annotated box
+            scores_overlooked.append(min_possible_similarity * (1 - pred_label_probs[iid]))
+        else:
+            closest_annotated_box = np.argmax(k_similarity)
+            scores_overlooked.append(k_similarity[closest_annotated_box])
+    return scores_overlooked
+
+
+def _compute_scores_badloc_for_image(
+    pred_labels,
+    pred_label_probs,
+    lab_labels,
+    similarity_matrix,
+    low_probability_threshold,
+    min_possible_similarity,
+):
+    scores_badloc = []
+    for iid, k in enumerate(lab_labels):  # for every annotated box
+        k_similarity = similarity_matrix[iid, pred_labels == k]
+        k_pred = pred_label_probs[pred_labels == k]
+
+        if len(k_pred) == 0:  # there are no predicted boxes of class k
+            scores_badloc.append(min_possible_similarity)
+            continue
+
+        idx_at_least_low_probability_threshold = k_pred > low_probability_threshold
+        k_similarity = k_similarity[idx_at_least_low_probability_threshold]
+        k_pred = k_pred[idx_at_least_low_probability_threshold]
+        assert len(k_pred) == len(k_similarity)
+        if len(k_pred) == 0:
+            scores_badloc.append(min_possible_similarity)
+        else:
+            scores_badloc.append(np.max(k_similarity))
+    return scores_badloc
+
+
+def _compute_scores_swap_for_image(
+    pred_labels,
+    pred_label_probs,
+    lab_labels,
+    similarity_matrix,
+    high_probability_threshold,
+    min_possible_similarity,
+):
+    scores_swap = []
+    for iid, k in enumerate(lab_labels):
+        not_k_idx = pred_labels != k
+
+        if len(not_k_idx) == 0:
+            scores_swap.append(1.0)
+            continue
+
+        not_k_similarity = similarity_matrix[iid, not_k_idx]
+        not_k_pred = pred_label_probs[not_k_idx]
+
+        idx_at_least_high_probability_threshold = not_k_pred > high_probability_threshold
+        if len(idx_at_least_high_probability_threshold) == 0:
+            scores_swap.append(1.0)
+            continue
+
+        not_k_similarity = not_k_similarity[idx_at_least_high_probability_threshold]
+        if len(not_k_similarity) == 0:  # if there is no annotated box
+            scores_swap.append(1.0)
+        else:
+            closest_predicted_box = np.argmax(not_k_similarity)
+            score = np.max([min_possible_similarity, 1 - not_k_similarity[closest_predicted_box]])
+            scores_swap.append(score)
+    return scores_swap
 
 
 def _compute_subtype_lqs(
@@ -594,7 +703,7 @@ def _compute_subtype_lqs(
     temperature,
 ):
     """
-    Returns a label quality score for each datapoint.
+    Returns a label quality score for each image.
     Score is between 0 and 1.
 
     1 - clean label (given label is likely correct).
@@ -638,72 +747,43 @@ def _compute_subtype_lqs(
     min_possible_similarity = _get_min_possible_similarity(predictions, labels, alpha)
     for prediction, label in zip(predictions, labels):
         lab_bboxes, lab_labels = _separate_label(label)
-        pred_bboxes, pred_labels, pred_label_prob = _separate_prediction(prediction)
-        pred_label_prob = np.array(pred_label_prob)
+        pred_bboxes, pred_labels, pred_label_probs = _separate_prediction(prediction)
+        pred_label_probs = np.array(pred_label_probs)
         iou_matrix = _get_overlap_matrix(lab_bboxes, pred_bboxes)
         dist_matrix = 1 - _get_dist_matrix(lab_bboxes, pred_bboxes)
 
         similarity_matrix = iou_matrix * alpha + (1 - alpha) * (1 - dist_matrix)
-        assert (similarity_matrix.flatten() >= 0).all() and (similarity_matrix.flatten() <= 1).all()
 
-        scores_overlooked = []
-        for iid, k in enumerate(pred_labels):
-            if pred_label_prob[iid] < high_probability_threshold:
-                continue
-
-            k_similarity = similarity_matrix[lab_labels == k, iid]
-            if len(k_similarity) == 0:  # if there is no annotated box
-                scores_overlooked.append(min_possible_similarity * (1 - pred_label_prob[iid]))
-            else:
-                closest_annotated_box = np.argmax(k_similarity)
-                scores_overlooked.append(k_similarity[closest_annotated_box])
+        scores_overlooked = _compute_scores_overlooked_for_image(
+            pred_labels,
+            pred_label_probs,
+            lab_labels,
+            similarity_matrix,
+            high_probability_threshold,
+            min_possible_similarity,
+        )
         score_overlooked = _get_valid_score(scores_overlooked, temperature)
 
-        scores_badloc = []
-        for iid, k in enumerate(lab_labels):  # for every annotated box
-            k_similarity = similarity_matrix[iid, pred_labels == k]
-            k_pred = pred_label_prob[pred_labels == k]
-
-            if len(k_pred) == 0:  # there are no predicted boxes of class k
-                scores_badloc.append(min_possible_similarity)
-                continue
-
-            idx_at_least_low_probability_threshold = k_pred > low_probability_threshold
-            k_similarity = k_similarity[idx_at_least_low_probability_threshold]
-            k_pred = k_pred[idx_at_least_low_probability_threshold]
-            assert len(k_pred) == len(k_similarity)
-            if len(k_pred) == 0:
-                scores_badloc.append(min_possible_similarity)
-            else:
-                scores_badloc.append(np.max(k_similarity))
+        scores_badloc = _compute_scores_badloc_for_image(
+            pred_labels,
+            pred_label_probs,
+            lab_labels,
+            similarity_matrix,
+            low_probability_threshold,
+            min_possible_similarity,
+        )
         score_badloc = _get_valid_score(scores_badloc, temperature)
 
-        scores_swap = []
-        for iid, k in enumerate(lab_labels):
-            not_k_idx = pred_labels != k
-
-            if len(not_k_idx) == 0:
-                scores_swap.append(1.0)
-                continue
-
-            not_k_similarity = similarity_matrix[iid, not_k_idx]
-            not_k_pred = pred_label_prob[not_k_idx]
-
-            idx_at_least_high_probability_threshold = not_k_pred > high_probability_threshold
-            if len(idx_at_least_high_probability_threshold) == 0:
-                scores_swap.append(1.0)
-                continue
-
-            not_k_similarity = not_k_similarity[idx_at_least_high_probability_threshold]
-            if len(not_k_similarity) == 0:  # if there is no annotated box
-                scores_swap.append(1.0)
-            else:
-                closest_predicted_box = np.argmax(not_k_similarity)
-                score = np.max(
-                    [min_possible_similarity, 1 - not_k_similarity[closest_predicted_box]]
-                )
-                scores_swap.append(score)
+        scores_swap = _compute_scores_swap_for_image(
+            pred_labels,
+            pred_label_probs,
+            lab_labels,
+            similarity_matrix,
+            high_probability_threshold,
+            min_possible_similarity,
+        )
         score_swap = _get_valid_score(scores_swap, temperature)
+
         scores.append(
             _softmin1D([score_overlooked, score_badloc, score_swap], temperature=temperature)
         )
