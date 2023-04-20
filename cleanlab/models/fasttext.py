@@ -15,10 +15,16 @@
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
 """
-Text classification with FastText models that are compatible with cleanlab.
+Text classification with fastText models that are compatible with cleanlab.
 This module allows you to easily find label issues in your text datasets.
 
-You must first ``pip install fasttext``
+You must have fastText installed: ``pip install fasttext``.
+
+Tips:
+
+* Check out our example using this class: `fasttext_amazon_reviews <https://github.com/cleanlab/examples/blob/master/fasttext_amazon_reviews/fasttext_amazon_reviews.ipynb>`_
+* Our `unit tests <https://github.com/cleanlab/cleanlab/blob/master/tests/test_frameworks.py>`_ also provide basic usage examples.
+
 """
 
 import time
@@ -96,6 +102,17 @@ def data_loader(
 
 
 class FastTextClassifier(BaseEstimator):  # Inherits sklearn base classifier
+    """Instantiate a fastText classifier that is compatible with :py:class:`CleanLearning <cleanlab.classification.CleanLearning>`.
+
+    Parameters
+    ----------
+    train_data_fn: str
+        File name of the training data in the format compatible with fastText.
+
+    test_data_fn: str, optional
+        File name of the test data in the format compatible with fastText.
+    """
+
     def __init__(
         self,
         train_data_fn,

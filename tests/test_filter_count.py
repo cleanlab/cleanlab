@@ -14,6 +14,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
+import cleanlab.multilabel_classification.dataset
 from cleanlab import count, filter
 from cleanlab.count import (
     get_confident_thresholds,
@@ -496,6 +497,7 @@ def test_pruning_order_method():
 
 
 @pytest.mark.parametrize("multi_label", [True, False])
+@pytest.mark.parametrize("use_dataset_function", [True, False])
 @pytest.mark.parametrize(
     "filter_by", ["prune_by_noise_rate", "prune_by_class", "both", "confident_learning"]
 )
@@ -503,17 +505,37 @@ def test_pruning_order_method():
     "return_indices_ranked_by",
     [None, "self_confidence", "normalized_margin", "confidence_weighted_entropy"],
 )
-def test_find_label_issues_multi_label(multi_label, filter_by, return_indices_ranked_by):
+def test_find_label_issues_multi_label(
+    multi_label, use_dataset_function, filter_by, return_indices_ranked_by
+):
     """Note: argmax_not_equal method is not compatible with multi_label == True"""
     dataset = multilabel_data if multi_label else data
+    if multi_label:
+        if use_dataset_function:
+            noise_idx = cleanlab.multilabel_classification.filter.find_label_issues(
+                labels=dataset["labels"],
+                pred_probs=dataset["pred_probs"],
+                filter_by=filter_by,
+                return_indices_ranked_by=return_indices_ranked_by,
+            )
+        else:
+            with pytest.warns(DeprecationWarning):
+                noise_idx = filter.find_label_issues(
+                    labels=dataset["labels"],
+                    pred_probs=dataset["pred_probs"],
+                    filter_by=filter_by,
+                    multi_label=multi_label,
+                    return_indices_ranked_by=return_indices_ranked_by,
+                )
+    else:
+        noise_idx = filter.find_label_issues(
+            labels=dataset["labels"],
+            pred_probs=dataset["pred_probs"],
+            filter_by=filter_by,
+            multi_label=multi_label,
+            return_indices_ranked_by=return_indices_ranked_by,
+        )
 
-    noise_idx = filter.find_label_issues(
-        labels=dataset["labels"],
-        pred_probs=dataset["pred_probs"],
-        filter_by=filter_by,
-        multi_label=multi_label,
-        return_indices_ranked_by=return_indices_ranked_by,
-    )
     if return_indices_ranked_by is not None:
         noise_bool = np.zeros(len(dataset["labels"])).astype(bool)
         noise_bool[noise_idx] = True
@@ -921,12 +943,18 @@ def test_batched_label_issues():
         batch_size=len(data["labels"]) + 100,
         n_jobs=4,
     )
+    f5 = find_label_issues_batched(
+        labels=data["labels"],
+        pred_probs=data["pred_probs"],
+        batch_size=1,
+    )
     f_single = find_label_issues_batched(
         labels=data["labels"],
         pred_probs=data["pred_probs"],
         batch_size=len(data["labels"]),
         n_jobs=1,
     )
+    assert np.all(f4 == f5)
     assert np.all(f4 == f3)
     assert np.all(f4 == f2)
     assert np.all(f_single == f4)

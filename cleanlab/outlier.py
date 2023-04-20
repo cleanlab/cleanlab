@@ -25,11 +25,12 @@ import numpy as np
 from cleanlab.count import get_confident_thresholds
 from sklearn.neighbors import NearestNeighbors
 from sklearn.exceptions import NotFittedError
-from typing import Optional, Union, Tuple, Dict
+from typing import Optional, Union, Tuple, Dict, cast
 from cleanlab.internal.label_quality_utils import (
     _subtract_confident_thresholds,
     get_normalized_entropy,
 )
+from cleanlab.internal.outlier import transform_distances_to_scores
 from cleanlab.internal.validation import assert_valid_inputs, labels_to_array
 from cleanlab.typing import LabelLike
 
@@ -446,11 +447,7 @@ def _get_ood_features_scores(
     # neighbor of each point is the point itself, at a distance of zero.
     distances, _ = knn.kneighbors(features)
 
-    # Calculate average distance to k-nearest neighbors
-    avg_knn_distances = distances[:, :k].mean(axis=1)
-
-    # Map ood_features_scores to range 0-1 with 0 = most concerning
-    ood_features_scores: np.ndarray = np.exp(-1 * avg_knn_distances * t)
+    ood_features_scores = transform_distances_to_scores(distances, cast(int, k), t)
     return (ood_features_scores, knn)
 
 

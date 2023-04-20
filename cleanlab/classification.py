@@ -120,7 +120,10 @@ import numpy as np
 import pandas as pd
 import inspect
 import warnings
-from typing import TypeVar, Optional
+from typing import Optional, TYPE_CHECKING
+
+if TYPE_CHECKING:  # pragma: no cover
+    from typing_extensions import Self
 
 from cleanlab.rank import get_label_quality_scores
 from cleanlab import filter
@@ -145,9 +148,6 @@ from cleanlab.internal.validation import (
     assert_valid_inputs,
     labels_to_array,
 )
-
-
-TCleanLearning = TypeVar("TCleanLearning", bound="CleanLearning")  # self type for the class
 
 
 class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
@@ -265,7 +265,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         self.clf_final_kwargs = None
 
     def fit(
-        self: TCleanLearning,
+        self,
         X,
         labels=None,
         *,
@@ -279,7 +279,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         clf_final_kwargs={},
         validation_func=None,
         y=None,
-    ) -> TCleanLearning:
+    ) -> "Self":
         """
         Train the model `clf` with error-prone, noisy labels as if
         the model had been instead trained on a dataset with the correct labels.
@@ -839,6 +839,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
                 pred_probs=pred_probs,
                 thresholds=thresholds,
             )
+
         # if pulearning == the integer specifying the class without noise.
         if self.num_classes == 2 and self.pulearning is not None:  # pragma: no cover
             # pulearning = 1 (no error in 1 class) implies p(label=1|true_label=0) = 0
@@ -850,6 +851,12 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
             # pulearning = 1 (no error in 1 class) implies p(label=1,true_label=0) = 0
             self.confident_joint[self.pulearning][1 - self.pulearning] = 0
             self.confident_joint[1 - self.pulearning][1 - self.pulearning] = 1
+
+        # Add confident joint to find label issue args if it is not previously specified
+        if "confident_joint" not in self.find_label_issues_kwargs.keys():
+            # however does not add if users specify filter_by="confident_learning", as it will throw a warning
+            if not self.find_label_issues_kwargs.get("filter_by") == "confident_learning":
+                self.find_label_issues_kwargs["confident_joint"] = self.confident_joint
 
         labels = labels_to_array(labels)
         if self.verbose:
