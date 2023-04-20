@@ -36,37 +36,39 @@ def get_label_quality_scores(
     For object detection datasets, the label quality score for an image estimates how likely it has been correctly labeled.
     Lower scores indicate images whose annotation is more likely imperfect.
     Annotators may have mislabeled an image because they:
-    * overlooked an object (missing annotated bounding box),
-    * chose the wrong class label for an annotated box in the correct location,
-    * imperfectly annotated the location/edges of a bounding box.
+    - overlooked an object (missing annotated bounding box),
+    - chose the wrong class label for an annotated box in the correct location,
+    - imperfectly annotated the location/edges of a bounding box.
     Any of these annotation errors should lead to an image with a lower label quality score.
 
     Score is between 0 and 1.
-        1 - clean label (given label is likely correct).
-        0 - dirty label (given label is likely incorrect).
 
-    A score is calculated for each of `N` images, with `K` total classes in the data.
-    Each image has `L` annotated bounding boxes and `M` predicted bounding boxes.
+        - 1 - clean label (given label is likely correct).
+        - 0 - dirty label (given label is likely incorrect).
+
+    A score is calculated for each of ``N`` images, with ``K`` total classes in the data.
+    Each image has ``L`` annotated bounding boxes and ``M`` predicted bounding boxes.
 
     Parameters
     ----------
     labels:
-        A list of `N` dictionaries such that `labels[i]` contains the given labels for the `i`-th image in the format
-       `{'bboxes': np.ndarray((M,4)), 'labels': np.ndarray((M,)), 'image_name': str}` where `L` is the number of annotated bounding boxes
-       for the `i`-th image and `bboxes[j]` is in the format [x,y,x,y] with given label `labels[j]`. ('image_name' is optional here)
+        A list of ``N`` dictionaries such that ``labels[i]`` contains the given labels for the `i`-th image in the format
+       ``{'bboxes': np.ndarray((M,4)), 'labels': np.ndarray((M,)), 'image_name': str}`` where ``L`` is the number of annotated bounding boxes
+       for the `i`-th image and ``bboxes[j]`` is in the format ``[x,y,x,y]`` with given label ``labels[j]``. (``image_name`` is optional here)
 
     predictions:
-        A list of `N` `np.ndarray` such that `predictions[i]` corresponds to the model predictions for the `i`-th image
-        in the format `np.ndarray((K,))` and `predictions[i][k]` is of shape `np.ndarray(M,5)`
-        where `M` is the number of predicted bounding boxes for class `k` and the five columns correspond to `[x,y,x,y,pred_prob]` returned
+        A list of ``N`` ``np.ndarray`` such that ``predictions[i]`` corresponds to the model predictions for the `i`-th image
+        in the format ``np.ndarray((K,))`` and ``predictions[i][k]`` is of shape ``np.ndarray(M,5)``
+        where ``M`` is the number of predicted bounding boxes for class ``k`` and the five columns correspond to ``[x,y,x,y,pred_prob]`` returned
         by the model.
 
     method:
         The method used to calculate label_quality_scores. Options:
+
         - ``subtype_lqs``: calculates image score as a composite score of the quality of badly located, swapped and missing bounding boxes.
 
     probability_threshold:
-        Bounding boxes in `predictions` with `pred_prob` below the threshold are not considered for computing label_quality_scores.
+        Bounding boxes in ``predictions`` with ``pred_prob`` below the threshold are not considered for computing `label_quality_scores`.
         If you know what probability-threshold was used when producing predicted boxes from your trained object detector,
         please supply the value that was used here. If not provided, this value is inferred based on the smallest observed
         predicted probability for any of the predicted boxes.
@@ -81,7 +83,7 @@ def get_label_quality_scores(
         Lower scores indicate images that are more likely mislabeled.
     """
 
-    assert_valid_inputs(
+    _assert_valid_inputs(
         labels=labels,
         predictions=predictions,
         method=method,
@@ -207,7 +209,7 @@ def _prune_by_threshold(
 
 
 # Todo: make this more descriptive and assert better inputs
-def assert_valid_inputs(labels, predictions, method=None, threshold=None):
+def _assert_valid_inputs(labels, predictions, method=None, threshold=None):
     """Asserts proper input format."""
     if len(labels) != len(predictions):
         raise ValueError(
@@ -256,33 +258,36 @@ def visualize(
     """Visualize bounding box labels (given labels) and model predictions for an image. The given labels
     are shown with red while the predictions are shown in blue.
 
+    A single image is visualized with ``L`` annotated bounding boxes, ``M`` predicted bounding boxes and ``K`` total classes.
+
+
     Parameters
     ----------
     image_path:
         Full path to the image file.
 
     label:
-        The given label for a single image in the format {'bboxes': np.ndarray((N,4)), 'labels': np.ndarray((N,))}` where
-        N is the number of bounding boxes for the `i`-th image and `bboxes[j]` is in the format [x,y,x,y] with given label `labels[j]`.
+        The given label for a single image in the format ``{'bboxes': np.ndarray((L,4)), 'labels': np.ndarray((L,))}`` where
+        ``L`` is the number of bounding boxes for the `i`-th image and ``bboxes[j]`` is in the format ``[x,y,x,y]`` with given label ``labels[j]``.
 
     prediction:
-        A prediction for a single image in the format `np.ndarray((K,))` where K is the number of classes and `prediction[k]` is of shape `np.ndarray(N,5)`
-        where `N` is the number of bounding boxes for class `K` and the five columns correspond to `[x,y,x,y,pred_prob]` returned
+        A prediction for a single image in the format ``np.ndarray((K,))`` and ``prediction[k]`` is of shape ``np.ndarray(N,5)``
+        where ``M`` is the number of bounding boxes for class ``k`` and the five columns correspond to ``[x,y,x,y,pred_prob]`` returned
         by the model.
 
     prediction_threshold:
-        Minimum pred_probs value of a bounding box output by the model. All bounding boxes with pred_probs below this threshold are
-        omited from the visualization.
+        Minimum `pred_probs` value of a bounding box output by the model. All bounding boxes with `pred_probs` below this threshold are
+        omitted from the visualization.
 
     given_label_overlay: bool
-        If true, a single image with overlayed given labels and predictions is shown. If false, two images side
+        If true, a single image with overlaid given labels and predictions is shown. If false, two images side
         by side are shown instead with the left image being the prediction and right being the given label.
 
     class_labels:
-        Optional dictionary mapping one-hot-encoded class labels back to their original class names in the format {"one-hot-label": "original-class-name"}.
+        Optional dictionary mapping one-hot-encoded class labels back to their original class names in the format ``{"one-hot-label": "original-class-name"}``.
 
     figsize:
-        Optional figuresize for plotting the visualizations. Corresponds to matplotlib.figure.figsize.
+        Optional figuresize for plotting the visualizations. Corresponds to ``matplotlib.figure.figsize``.
     """
 
     prediction_type = _get_prediction_type(prediction)
