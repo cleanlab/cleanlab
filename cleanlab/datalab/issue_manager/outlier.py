@@ -76,7 +76,8 @@ class OutlierIssueManager(IssueManager):
         self,
         features: Optional[npt.NDArray] = None,
         pred_probs: Optional[np.ndarray] = None,
-        iqr_scale: float = 1.5,
+        iqr_scale: float = 1.7,
+        pred_probs_scale: float = 0.13,
         **kwargs,
     ) -> None:
         knn_graph = self._process_knn_graph_from_inputs(kwargs)
@@ -120,7 +121,7 @@ class OutlierIssueManager(IssueManager):
             assert pred_probs is not None
             if self.threshold is None:
                 # Threshold based on pred_probs, very small scores are outliers
-                self.threshold = np.percentile(scores, 10)
+                self.threshold = pred_probs_scale * np.median(scores)
             is_issue_column = scores < self.threshold
 
         self.issues = pd.DataFrame(

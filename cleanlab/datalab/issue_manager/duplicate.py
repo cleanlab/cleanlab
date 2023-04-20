@@ -53,7 +53,7 @@ class NearDuplicateIssueManager(IssueManager):
         self,
         datalab: Datalab,
         metric: Optional[str] = None,
-        threshold: float = 0.2,
+        threshold: float = 0.13,
         k: int = 10,
         **_,
     ):
