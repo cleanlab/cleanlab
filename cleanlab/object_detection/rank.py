@@ -33,18 +33,17 @@ def get_label_quality_scores(
 ) -> np.ndarray:
     """Computes a label quality score for each image in the dataset.
 
-     For object detection datasets, the label quality score for an image estimates how likely it has been correctly labeled.
-     Lower scores indicate images whose annotation is more likely imperfect.
-     Annotators may have mislabeled an image because they:
-        * overlooked an object (missing annotated bounding box),
-        * chose the wrong class label for an annotated box in the correct location,
-        * imperfectly annotated the location/edges of a bounding box.
-     Any of these annotation errors should lead to an image with a lower label quality score.
+    For object detection datasets, the label quality score for an image estimates how likely it has been correctly labeled.
+    Lower scores indicate images whose annotation is more likely imperfect.
+    Annotators may have mislabeled an image because they:
+    * overlooked an object (missing annotated bounding box),
+    * chose the wrong class label for an annotated box in the correct location,
+    * imperfectly annotated the location/edges of a bounding box.
+    Any of these annotation errors should lead to an image with a lower label quality score.
 
     Score is between 0 and 1.
-
-    1 - clean label (given label is likely correct).
-    0 - dirty label (given label is likely incorrect).
+        1 - clean label (given label is likely correct).
+        0 - dirty label (given label is likely incorrect).
 
     A score is calculated for each of `N` images, with `K` total classes in the data.
     Each image has `L` annotated bounding boxes and `M` predicted bounding boxes.
@@ -257,33 +256,33 @@ def visualize(
     """Visualize bounding box labels (given labels) and model predictions for an image. The given labels
     are shown with red while the predictions are shown in blue.
 
-        Parameters
-        ----------
-        image_path:
-            Full path to the image file.
+    Parameters
+    ----------
+    image_path:
+        Full path to the image file.
 
-        label:
-            The given label for a single image in the format {'bboxes': np.ndarray((N,4)), 'labels': np.ndarray((N,))}` where
-            N is the number of bounding boxes for the `i`-th image and `bboxes[j]` is in the format [x,y,x,y] with given label `labels[j]`.
+    label:
+        The given label for a single image in the format {'bboxes': np.ndarray((N,4)), 'labels': np.ndarray((N,))}` where
+        N is the number of bounding boxes for the `i`-th image and `bboxes[j]` is in the format [x,y,x,y] with given label `labels[j]`.
 
-        prediction:
-            A prediction for a single image in the format `np.ndarray((K,))` where K is the number of classes and `prediction[k]` is of shape `np.ndarray(N,5)`
-            where `N` is the number of bounding boxes for class `K` and the five columns correspond to `[x,y,x,y,pred_prob]` returned
-            by the model.
+    prediction:
+        A prediction for a single image in the format `np.ndarray((K,))` where K is the number of classes and `prediction[k]` is of shape `np.ndarray(N,5)`
+        where `N` is the number of bounding boxes for class `K` and the five columns correspond to `[x,y,x,y,pred_prob]` returned
+        by the model.
 
-        prediction_threshold:
-            Minimum pred_probs value of a bounding box output by the model. All bounding boxes with pred_probs below this threshold are
-            omited from the visualization.
+    prediction_threshold:
+        Minimum pred_probs value of a bounding box output by the model. All bounding boxes with pred_probs below this threshold are
+        omited from the visualization.
 
-        given_label_overlay: bool
-            If true, a single image with overlayed given labels and predictions is shown. If false, two images side
-            by side are shown instead with the left image being the prediction and right being the given label.
+    given_label_overlay: bool
+        If true, a single image with overlayed given labels and predictions is shown. If false, two images side
+        by side are shown instead with the left image being the prediction and right being the given label.
 
-        class_labels:
-            Optional dictionary mapping one-hot-encoded class labels back to their original class names in the format {"one-hot-label": "original-class-name"}.
+    class_labels:
+        Optional dictionary mapping one-hot-encoded class labels back to their original class names in the format {"one-hot-label": "original-class-name"}.
 
-        figsize:
-            Optional figuresize for plotting the visualizations. Corresponds to matplotlib.figure.figsize.
+    figsize:
+        Optional figuresize for plotting the visualizations. Corresponds to matplotlib.figure.figsize.
     """
 
     prediction_type = _get_prediction_type(prediction)
