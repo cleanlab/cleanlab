@@ -569,7 +569,8 @@ class Datalab:
         self.data_issues.set_health_score()
 
     def get_available_issue_types(self, **kwargs):
-        """Returns a dictionary of issue types that can be used in the find_issues method."""
+        """Returns a dictionary of issue types that can be used in :py:meth:`Datalab.find_issues
+        <cleanlab.datalab.datalab.Datalab.find_issues>` method."""
 
         pred_probs = kwargs.get("pred_probs", None)
         features = kwargs.get("features", None)
