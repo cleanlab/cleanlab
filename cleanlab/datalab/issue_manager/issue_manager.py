@@ -146,7 +146,6 @@ class IssueManager(ABC, metaclass=IssueManagerMeta):
         self.info: Dict[str, Any] = {}
         self.issues: pd.DataFrame = pd.DataFrame()
         self.summary: pd.DataFrame = pd.DataFrame()
-        # TODO: Split info into two attributes: "local" info and "global" statistics (should be checked at the start of `find_issues`, but overwritten by `collect_info`).
 
     def __repr__(self):
         class_name = self.__class__.__name__
@@ -178,8 +177,6 @@ class IssueManager(ABC, metaclass=IssueManagerMeta):
         as instance attributes.
         """
         raise NotImplementedError
-
-    # TODO: Add a `collect_global_info` method for storing useful statistics that can be used by other IssueManagers.
 
     @classmethod
     def make_summary(cls, score: float) -> pd.DataFrame:

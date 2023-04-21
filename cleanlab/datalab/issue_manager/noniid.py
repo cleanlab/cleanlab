@@ -21,7 +21,7 @@ if TYPE_CHECKING:  # pragma: no cover
 def simplified_kolmogorov_smirnov_test(
     neighbor_histogram: npt.NDArray[np.float64],
     non_neighbor_histogram: npt.NDArray[np.float64],
-) -> float:  # TODO change name
+) -> float:
     """Computes the Kolmogorov-Smirnov statistic between two groups of data.
     The statistic is the largest difference between the empirical cumulative
     distribution functions (ECDFs) of the two groups.

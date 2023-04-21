@@ -206,9 +206,7 @@ class OutlierIssueManager(IssueManager):
             "average_ood_score": self.issues[self.issue_score_key].mean(),
             "threshold": self.threshold,
         }
-        pred_probs_issues_dict: Dict[
-            str, Any
-        ] = {}  # TODO: Implement collect_info for pred_probs related issues
+        pred_probs_issues_dict: Dict[str, Any] = {}
         feature_issues_dict = {}
 
         if knn_graph is not None:
@@ -263,7 +261,6 @@ class OutlierIssueManager(IssueManager):
             if knn_graph is not None:
                 statistics_dict["statistics"][graph_key] = knn_graph
         if self._metric is not None:
-            # TODO: This is still note saved correctly
             statistics_dict["statistics"]["knn_metric"] = self._metric
 
         return statistics_dict

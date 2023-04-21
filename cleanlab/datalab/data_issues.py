@@ -69,7 +69,7 @@ class DataIssues:
                 "num_examples": len(data),
                 "class_names": class_names,
                 "num_classes": len(class_names),
-                "multi_label": False,  # TODO: Add multi-label support.
+                "multi_label": False,
                 "health_score": None,
             },
         }
