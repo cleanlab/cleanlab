@@ -1,5 +1,5 @@
 import pytest
-from cleanlab.datalab.data import Data
+from cleanlab.datalab.data import Data, DataFormatError, DatasetLoadError
 from datasets import Dataset, load_dataset, ClassLabel
 import numpy as np
 import hypothesis.strategies as st
@@ -78,3 +78,34 @@ class TestData:
         else:
             classes = sorted(dataset.unique(label_name))
         assert data.class_names == classes
+
+    def test_init_data_from_list_of_dicts(self):
+        dataset = [{"X": 0, "label": 0}, {"X": 1, "label": 1}, {"X": 2, "label": 1}]
+        data = Data(data=dataset, label_name="label")
+        assert isinstance(data._data, Dataset)
+
+    def test_init_raises_format_error(self):
+        data = np.random.rand(10, 2)
+        with pytest.raises(DataFormatError) as excinfo:
+            Data(data=data, label_name="label")
+
+        expected_error_substring = "Unsupported data type: <class 'numpy.ndarray'>\n"
+        assert expected_error_substring in str(excinfo.value)
+
+    def test_init_raises_load_error(self):
+        improperly_aligned_data = {
+            "X": [0, 1, 2],
+            "label": [0, 1],
+        }
+        with pytest.raises(DatasetLoadError) as excinfo:
+            Data(data=improperly_aligned_data, label_name="label")
+
+        expected_error_substring = "Failed to load dataset from <class 'dict'>.\n"
+        assert expected_error_substring in str(excinfo.value)
+
+    def test_not_equal_to_copy_or_non_data(self):
+        dataset = {"X": [0, 1, 2], "label": [0, 1, 2]}
+        data = Data(data=dataset, label_name="label")
+        data_copy = Data(data=dataset, label_name="label")
+        assert data != data_copy
+        assert data != dataset

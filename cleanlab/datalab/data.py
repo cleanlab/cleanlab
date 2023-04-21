@@ -218,7 +218,7 @@ class Data:
         return dataset_cast
 
 
-def _extract_labels(data: Dataset, label_name: Union[str, List[str]]) -> Tuple[np.ndarray, Mapping]:
+def _extract_labels(data: Dataset, label_name: str) -> Tuple[np.ndarray, Mapping]:
     """
     Picks out labels from the dataset and formats them to be [0, 1, ..., K-1]
     where K is the number of classes. Also returns a mapping from the formatted
@@ -230,7 +230,7 @@ def _extract_labels(data: Dataset, label_name: Union[str, List[str]]) -> Tuple[n
 
     Parameters
     ----------
-    label_name : str or List[str]
+    label_name : str
         Name of the column in the dataset that contains the labels.
 
     Returns
@@ -241,11 +241,6 @@ def _extract_labels(data: Dataset, label_name: Union[str, List[str]]) -> Tuple[n
     inverse_map : dict
         Mapping from the formatted labels to the original labels in the dataset.
     """
-
-    if isinstance(label_name, list):
-        raise NotImplementedError("TODO")
-
-        # _labels = np.vstack([my_data[label] for label in labels]).T
 
     labels = labels_to_array(data[label_name])  # type: ignore[assignment]
     if labels.ndim != 1:
