@@ -472,9 +472,33 @@ class Datalab:
 
         knn_graph :
             Sparse matrix representing similarities between examples in the dataset in a K nearest neighbor graph.
+
+            If provided, this must be a square CSR matrix with shape (num_examples, num_examples) and (k*num_examples) non-zero entries (k is the number of nearest neighbors considered for each example)
+            evenly distributed across the rows. The non-zero entries must be the distances between the corresponding examples. Self-distances must be omitted
+            (i.e. the diagonal must be all zeros and the k nearest neighbors of each example must not include itself).
+
             If both `knn_graph` and `features` are provided, the `knn_graph` will take precendence.
             If `knn_graph` is not provided, it is constructed based on the provided `features`.
             If neither `knn_graph` nor `features` are provided, certain issue types like (near) duplicates will not be considered.
+
+            Examples
+            --------
+
+            .. code-block:: python
+
+                >>> from sklearn.neighbors import NearestNeighbors
+                >>> import numpy as np
+                >>> X = np.array([[0, 1], [1, 1], [2, 2], [2, 0]])
+                >>> nbrs = NearestNeighbors(n_neighbors=2, metric="euclidean").fit(X)
+                >>> knn_graph = nbrs.kneighbors_graph(mode="distance")
+                >>> knn_graph # Pass this to Datalab
+                <4x4 sparse matrix of type '<class 'numpy.float64'>'
+                        with 8 stored elements in Compressed Sparse Row format>
+                >>> knn_graph.toarray()  # DO NOT PASS knn_graph.toarray() to Datalab, only pass the sparse matrix itself
+                array([[0.        , 1.        , 2.23606798, 0.        ],
+                       [1.        , 0.        , 1.41421356, 0.        ],
+                       [0.        , 1.41421356, 0.        , 2.        ],
+                       [0.        , 1.41421356, 2.        , 0.        ]])
 
         issue_types :
             Collection specifying which types of issues to consider in audit and any non-default parameter settings to use.
