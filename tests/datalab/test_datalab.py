@@ -54,7 +54,14 @@ class TestDatalab:
         # Can print the object
         print(lab)
         captured = capsys.readouterr()
-        assert "Datalab\n" == captured.out
+        expected_output = (
+            "Datalab:\n"
+            "Checks run: No\n"
+            "Number of examples: 5\n"
+            "Number of classes: 3\n"
+            "Issues identified: Not checked\n"
+        )
+        assert expected_output == captured.out
 
     def tmp_path(self):
         # A path for temporarily saving the instance during tests.
