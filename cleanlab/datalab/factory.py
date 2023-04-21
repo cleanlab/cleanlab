@@ -18,7 +18,7 @@ and a decorator for registering new issue managers.
 
 This module provides the :py:meth:`register` decorator for users to register new subclasses of
 :py:class:`IssueManager <cleanlab.datalab.issue_manager.issue_manager.IssueManager>`
-in the registry.
+in the registry. Each IssueManager detects some particular type of issue in a dataset.
 
 
 Note
