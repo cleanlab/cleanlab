@@ -522,6 +522,8 @@ To understand/cite other cleanlab functionality not described above, check out o
 
 ## Other resources
 
+- [Introduction to Data-centric AI (MIT IAP Course 2023)](https://dcai.csail.mit.edu/)
+
 - [Cleanlab Blog](https://cleanlab.ai/blog/)
 
 - [Blog post: Introduction to Confident Learning](https://l7.curtisnorthcutt.com/confident-learning)

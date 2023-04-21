@@ -448,6 +448,16 @@ def test_real_datasets(dataset_name):
     )
 
 
+@pytest.mark.parametrize("dataset_name", ["mnist"])
+def test_multilabel_error(dataset_name):
+    print("\n" + dataset_name.capitalize() + "\n")
+    class_names = eval(dataset_name)
+    pred_probs, labels = _get_pred_probs_labels_from_labelerrors_datasets(dataset_name)
+    # if this runs without issue no all four datasets, the test passes
+    with pytest.raises(ValueError) as e:
+        _ = find_overlapping_classes(labels=labels, pred_probs=pred_probs, multi_label=True)
+
+
 @pytest.mark.parametrize("asymmetric", [True, False])
 @pytest.mark.parametrize("dataset_name", ["mnist", "imdb"])
 def test_symmetry_df_size(asymmetric, dataset_name):
