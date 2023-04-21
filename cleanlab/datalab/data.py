@@ -13,7 +13,7 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
-"""Module for class and functions that hold and validate datasets that are loaded into Datalab."""
+"""Classes and methods for datasets that are loaded into Datalab."""
 
 import os
 from typing import Any, Callable, Dict, List, Mapping, Tuple, Union, cast, TYPE_CHECKING
@@ -87,14 +87,14 @@ class Data:
     Class that holds and validates datasets for Datalab.
 
     Internally, the data is stored as a datasets.Dataset object and the labels
-    are integers (ranging from 0 to K-, where K is the number of classes) stored
+    are integers (ranging from 0 to K-1, where K is the number of classes) stored
     in a numpy array.
 
     Parameters
     ----------
     data :
-        Dataset to be used for Datalab.
-        Several formats are supported, but will be converted to a Dataset object.
+        Dataset to be audited by Datalab.
+        Several formats are supported, which will internally be converted to a Dataset object.
 
         Supported formats:
             - datasets.Dataset
@@ -110,6 +110,8 @@ class Data:
                     - CSV (.csv)
                     - JSON (.json)
                 - or a dataset identifier on the Hugging Face Hub
+            It checks if the string is a path to a file that exists locally, and if not,
+            it assumes it is a dataset identifier on the Hugging Face Hub.
 
     label_name : Union[str, List[str]]
         Name of the label column in the dataset.
