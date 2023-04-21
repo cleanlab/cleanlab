@@ -211,7 +211,6 @@ class NearDuplicateIssueManager(IssueManager):
         threshold: float,
     ) -> float:
         """Computes nearest-neighbors thresholding for near-duplicate detection."""
-        threshold: float  # Declare type for mypy
         if threshold < 0:
             warnings.warn(
                 f"Computed threshold {threshold} is less than 0. "
