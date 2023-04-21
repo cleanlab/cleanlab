@@ -14,8 +14,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 """
-Implements cleanlab's Datalab interface as a one-stop-shop for tracking
-and managing all kinds of issues in datasets.
+Datalab offers a unified audit to detect all kinds of issues in data and labels.
 
 .. note::
     .. include:: optional_dependencies.rst
@@ -33,7 +32,7 @@ import cleanlab
 from cleanlab.datalab.data import Data
 from cleanlab.datalab.data_issues import DataIssues
 from cleanlab.datalab.display import _Displayer
-from cleanlab.datalab.factory import _IssueManagerFactory, list_default_issue_types
+from cleanlab.datalab.factory import _IssueManagerFactory
 from cleanlab.datalab.serialize import _Serializer
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -58,10 +57,14 @@ class Datalab:
         It should contain the labels for all examples, identified by a
         `label_name` column in the Dataset object.
 
-        See also
-        --------
-        :py:class:`Data <cleanlab.datalab.data.Data>`:
-        Internal class that represents the dataset.
+        Supported formats:
+            - datasets.Dataset
+            - pandas.DataFrame
+            - dict (keys are strings, values are arrays/lists of length ``N``)
+            - list (list of dictionaries that each have the same keys)
+            - str
+                - path to a local file: Text (.txt), CSV (.csv), JSON (.json)
+                - or a dataset identifier on the Hugging Face Hub
 
 
     label_name :
@@ -86,7 +89,7 @@ class Datalab:
         label_name: str,
         verbosity: int = 1,
     ) -> None:
-        self._data = Data(data, label_name)  # TODO: Set extracted class instance to self.data
+        self._data = Data(data, label_name)
         self.data = self._data._data
         self._labels, self._label_map = self._data._labels, self._data._label_map
         self._data_hash = self._data._data_hash
@@ -116,7 +119,7 @@ class Datalab:
 
     @property
     def issues(self) -> pd.DataFrame:
-        """Issues found in the dataset."""
+        """Issues found in each example from the dataset."""
         return self.data_issues.issues
 
     @issues.setter
@@ -125,7 +128,7 @@ class Datalab:
 
     @property
     def issue_summary(self) -> pd.DataFrame:
-        """Summary of issues found in the dataset.
+        """Summary of issues found in the dataset and the overall severity of each type of issue.
 
         Example
         -------
@@ -174,7 +177,7 @@ class Datalab:
     def info(self, info: Dict[str, Dict[str, Any]]) -> None:
         self.data_issues.info = info
 
-    def _resolve_required_args(self, pred_probs, features, model, knn_graph):
+    def _resolve_required_args(self, pred_probs, features, knn_graph):
         """Resolves the required arguments for each issue type.
 
         This is a helper function that filters out any issue manager
@@ -191,16 +194,13 @@ class Datalab:
         features :
             Name of column containing precomputed embeddings.
 
-        model :
-            sklearn compatible model used to compute out-of-sample predicted probabilities for the labels.
-
         Returns
         -------
         args_dict :
             Dictionary of required arguments for each issue type, if available.
         """
         args_dict = {
-            "label": {"pred_probs": pred_probs, "model": model},
+            "label": {"pred_probs": pred_probs},
             "outlier": {"pred_probs": pred_probs, "features": features, "knn_graph": knn_graph},
             "near_duplicate": {"features": features, "knn_graph": knn_graph},
             "non_iid": {"features": features, "knn_graph": knn_graph},
@@ -219,7 +219,6 @@ class Datalab:
                     "instead of `features` for efficiency."
                 )
 
-        # TODO: Check for any missing arguments that are required for each issue type.
         args_dict = {k: v for k, v in args_dict.items() if v}
 
         return args_dict
@@ -351,25 +350,25 @@ class Datalab:
 
     def get_issues(self, issue_name: Optional[str] = None) -> pd.DataFrame:
         """
-        Fetch information about each individual issue (i.e. potentially problematic example) found in the data for a specific issue type.
+        Use this after finding issues to see which examples suffer from which types of issues.
 
         Parameters
         ----------
         issue_name : str or None
-            The name of the issue type to retrieve. If `None`, returns the entire `issues` DataFrame.
+            The type of issue to focus on. If `None`, returns full DataFrame summarizing all of the types of issues detected in each example from the dataset.
 
         Raises
         ------
         ValueError
-            If `issue_name` is not found in the `issues` DataFrame.
+            If `issue_name` is not a type of issue previously considered in the audit.
 
         Returns
         -------
         specific_issues :
-            A DataFrame containing the issues data for the specified issue type, or the entire `issues`
-            DataFrame if `issue_name` is `None`.
+            A DataFrame where each row corresponds to an example from the dataset and columns specify:
+            whether this example exhibits a particular type of issue and how severely (via a numeric quality score where lower values indicate more severe instances of the issue).
 
-            Additional columns are added to the DataFrame if `issue_name` is "label".
+            Additional columns may be present in the DataFrame depending on the type of issue specified.
         """
         if issue_name is None:
             return self.issues
@@ -405,17 +404,20 @@ class Datalab:
         return self.issues[columns]
 
     def get_summary(self, issue_name: Optional[str] = None) -> pd.DataFrame:
-        """Summarize the issues found in dataset of a specified issue type.
+        """Summarize the issues found in dataset of a particular type,
+        including how severe this type of issue is overall across the dataset.
 
         Parameters
         ----------
         issue_name :
-            Name of the issue type to focus on.
+            Name of the issue type to summarize. If `None`, summarizes each of the different issue types previously considered in the audit.
 
         Returns
         -------
         summary :
-            Summary of issues for a given issue type.
+            DataFrame where each row corresponds to a type of issue, and columns quantify:
+            the number of examples in the dataset estimated to exhibit this type of issue,
+            and the overall severity of the issue across the dataset (via a numeric quality score where lower values indicate that the issue is overall more severe).
         """
         if self.issue_summary.empty:
             raise ValueError(
@@ -445,7 +447,6 @@ class Datalab:
         pred_probs: Optional[np.ndarray] = None,
         features: Optional[npt.NDArray] = None,
         knn_graph: Optional[csr_matrix] = None,
-        model=None,  # sklearn.Estimator compatible object  # noqa: F821
         issue_types: Optional[Dict[str, Any]] = None,
     ) -> None:
         """
@@ -475,14 +476,6 @@ class Datalab:
             If `knn_graph` is not provided, it is constructed based on the provided `features`.
             If neither `knn_graph` nor `features` are provided, certain issue types like (near) duplicates will not be considered.
 
-        model :
-            sklearn-compatible model trained via cross-validation to compute out-of-sample
-            predicted probabilities for each example. Only considered if `pred_probs` was not provided.
-
-            WARNING
-            -------
-            This is not yet implemented.
-
         issue_types :
             Collection specifying which types of issues to consider in audit and any non-default parameter settings to use.
             If unspecified, a default set of issue types and recommended parameter settings is considered.
@@ -498,14 +491,14 @@ class Datalab:
             Examples
             --------
 
-            Suppose you want to detect label issues. Just pass a dictionary with the key "label" and an empty dictionary as the value.
+            Suppose you want to only consider label issues. Just pass a dictionary with the key "label" and an empty dictionary as the value (to use default label issue parameters).
 
             .. code-block:: python
 
                 issue_types = {"label": {}}
 
 
-            For more control, you can pass keyword arguments to the issue manager that handles the label issues.
+            If you are advanced user who wants greater control, you can pass keyword arguments to the issue manager that handles the label issues.
             For example, if you want to pass the keyword argument "clean_learning_kwargs"
             to the constructor of the LabelIssueManager, you would pass:
 
@@ -531,7 +524,6 @@ class Datalab:
             pred_probs=pred_probs,
             features=features,
             knn_graph=knn_graph,
-            model=model,
             issue_types=issue_types,
         )
 
@@ -541,7 +533,7 @@ class Datalab:
         ]
 
         if not new_issue_managers:
-            no_args_passed = all(arg is None for arg in [pred_probs, features, knn_graph, model])
+            no_args_passed = all(arg is None for arg in [pred_probs, features, knn_graph])
             if no_args_passed:
                 warnings.warn("No arguments were passed to find_issues.")
             warnings.warn("No issue check performed.")
@@ -568,6 +560,16 @@ class Datalab:
 
         self.data_issues.set_health_score()
 
+    @staticmethod
+    def list_default_issue_types() -> List[str]:
+        """Returns a list of the issue types that are run by default by Datalab.
+
+        See Also
+        --------
+        :py:class:`REGISTRY <cleanlab.datalab.factory.REGISTRY>` : The issue types available by default and their corresponding issue managers can be found here.
+        """
+        return ["label", "outlier", "near_duplicate"]
+
     def get_available_issue_types(self, **kwargs):
         """Returns a dictionary of issue types that can be used in :py:meth:`Datalab.find_issues
         <cleanlab.datalab.datalab.Datalab.find_issues>` method."""
@@ -575,13 +577,10 @@ class Datalab:
         pred_probs = kwargs.get("pred_probs", None)
         features = kwargs.get("features", None)
         knn_graph = kwargs.get("knn_graph", None)
-        model = kwargs.get("model", None)
         issue_types = kwargs.get("issue_types", None)
 
         # Determine which parameters are required for each issue type
-        required_args_per_issue_type = self._resolve_required_args(
-            pred_probs, features, model, knn_graph
-        )
+        required_args_per_issue_type = self._resolve_required_args(pred_probs, features, knn_graph)
 
         issue_types_copy = self._set_issue_types(issue_types, required_args_per_issue_type)
 
@@ -589,7 +588,7 @@ class Datalab:
             # Only run default issue types if no issue types are specified
             issue_types_copy = {
                 issue: issue_types_copy[issue]
-                for issue in list_default_issue_types()
+                for issue in self.list_default_issue_types()
                 if issue in issue_types_copy
             }
 
@@ -648,7 +647,7 @@ class Datalab:
             Folder in which all information about this Datalab should be saved.
 
         force :
-            If ``True``, overwrites any existing files in the folder at `path`.
+            If ``True``, overwrites any existing files in the folder at `path`. Use this with caution!!
 
         Note
         ----
