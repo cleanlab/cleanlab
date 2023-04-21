@@ -32,7 +32,7 @@ import cleanlab
 from cleanlab.datalab.data import Data
 from cleanlab.datalab.data_issues import DataIssues
 from cleanlab.datalab.display import _Displayer
-from cleanlab.datalab.factory import _IssueManagerFactory
+from cleanlab.datalab.factory import _IssueManagerFactory, REGISTRY
 from cleanlab.datalab.serialize import _Serializer
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -561,12 +561,24 @@ class Datalab:
         self.data_issues.set_health_score()
 
     @staticmethod
+    def list_possible_issue_types() -> List[str]:
+        """Returns a list of all registered issue types.
+
+        Any issue type that is not in this list cannot be used in the :py:meth:`find_issues` method.
+
+        See Also
+        --------
+        :py:class:`REGISTRY <cleanlab.datalab.factory.REGISTRY>` : All available issue types and their corresponding issue managers can be found here.
+        """
+        return list(REGISTRY.keys())
+
+    @staticmethod
     def list_default_issue_types() -> List[str]:
         """Returns a list of the issue types that are run by default by Datalab.
 
         See Also
         --------
-        :py:class:`REGISTRY <cleanlab.datalab.factory.REGISTRY>` : The issue types available by default and their corresponding issue managers can be found here.
+        :py:class:`REGISTRY <cleanlab.datalab.factory.REGISTRY>` : All available issue types and their corresponding issue managers can be found here.
         """
         return ["label", "outlier", "near_duplicate"]
 
