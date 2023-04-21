@@ -647,11 +647,11 @@ class Datalab:
             Folder in which all information about this Datalab should be saved.
 
         force :
-            If ``True``, overwrites any existing files in the folder at `path`. Use this with caution!!
+            If ``True``, overwrites any existing files in the folder at `path`. Use this with caution!
 
         Note
         ----
-        You have to save the Dataset yourself separately if you want it saved to file!
+        You have to save the Dataset yourself separately if you want it saved to file.
         """
         _Serializer.serialize(path=path, datalab=self, force=force)
         save_message = f"Saved Datalab to folder: {path}"

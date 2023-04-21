@@ -38,7 +38,10 @@ class LabelIssueManager(IssueManager):
         A Datalab instance.
 
     clean_learning_kwargs :
-        Keyword arguments to pass to the CleanLearning constructor.
+        Keyword arguments to pass to the :py:meth:`CleanLearning <cleanlab.classification.CleanLearning>` constructor.
+
+    health_summary_parameters :
+        Keyword arguments to pass to the :py:meth:`health_summary <cleanlab.dataset.health_summary>` function.
     """
 
     description: ClassVar[
