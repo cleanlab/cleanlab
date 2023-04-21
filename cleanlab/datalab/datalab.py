@@ -481,7 +481,7 @@ class Datalab:
             If unspecified, a default set of issue types and recommended parameter settings is considered.
 
             This is a dictionary of dictionaries, where the keys are the issue types of interest
-            and the values are dictionaries of parameter values that control how each type of issue is detected.
+            and the values are dictionaries of parameter values that control how each type of issue is detected (only for advanced users).
             More specifically, the values are constructor keyword arguments passed to the corresponding ``IssueManager``,
             which is responsible for detecting the particular issue type.
 
@@ -607,13 +607,21 @@ class Datalab:
         return issue_types_copy
 
     def get_info(self, issue_name: Optional[str] = None) -> Dict[str, Any]:
-        """Returns dict of info about a specific issue,
-        or None if this issue does not exist in self.info.
-        Internally fetched from self.info[issue_name] and prettified.
-        Keys might include: number of examples suffering from issue,
-        indicates of top-K examples most severely suffering,
-        other misc stuff like which sets of examples are duplicates if the issue=="duplicated".
-        """  # TODO: Revise Datalab.get_info docstring
+        """Fetches dict of miscellaneous information/statistics stored when previously finding isuses.
+
+        Parameters
+        ----------
+        issue_name :
+            The type of the issue to retrieve relevant information/statistics about.
+            If `None`, returns a huge dict of information for all issue types, where keys correspond to different issue types.
+
+        Returns
+        -------
+        info :
+            Dict of miscellaneous information related to the issues and other statistics of the dataset.
+            For example, may include information about which sets of examples are duplicated, if this is the issue type of interest.
+            Refer to our Datalab tutorials to better understand how you might utilize this information.
+        """
         return self.data_issues.get_info(issue_name)
 
     def report(
