@@ -208,7 +208,7 @@ def issues_from_scores(
 
     Returns
     ---------
-    label_issues : np.ndarray
+    issues : np.ndarray
       Returns a boolean **mask** for the entire dataset
       where ``True`` represents a pixel label issue and ``False`` represents an example that is
       accurately labeled with using the threshold provided by the user.

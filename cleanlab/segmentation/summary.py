@@ -15,7 +15,7 @@
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
 """
-Methods to display sentences and their label issues in a token classification dataset (text data), as well as summarize the types of issues identified.
+Methods to display images and their label issues in a semantic segmentation classification dataset, as well as summarize the types of issues identified.
 """
 
 from typing import Any, Dict, List, Optional, Tuple
@@ -27,50 +27,51 @@ from cleanlab.internal.token_classification_utils import color_sentence, get_sen
 
 
 def display_issues(
-    issues: list,
-    tokens: List[List[str]],
+    issues: np.ndarray,
     *,
-    labels: Optional[list] = None,
-    pred_probs: Optional[list] = None,
+    labels: np.ndarray,
+    pred_probs: np.ndarray,
     exclude: List[Tuple[int, int]] = [],
     class_names: Optional[List[str]] = None,
     top: int = 20
 ) -> None:
     """
-    Display token classification label issues, showing sentence with problematic token(s) highlighted.
+    Display semantic segmentation label issues, showing images with problematic pixels highlighted.
 
-    Can also shows given and predicted label for each token identified to have label issue.
+    Can also shows given and predicted label for each pixel identified to have label issue.
 
     Parameters
     ----------
     issues:
-        List of tuples ``(i, j)`` representing a label issue for the `j`-th token of the `i`-th sentence.
+        Boolean **mask** for the entire dataset
+        where ``True`` represents a pixel label issue and ``False`` represents an example that is
+        accurately labeled.
 
-        Same format as output by :py:func:`token_classification.filter.find_label_issues <cleanlab.token_classification.filter.find_label_issues>`
-        or :py:func:`token_classification.rank.issues_from_scores <cleanlab.token_classification.rank.issues_from_scores>`.
+        Same format as output by :py:func:`segmentation.filter.find_label_issues <cleanlab.segmentation.filter.find_label_issues>`
+        or :py:func:`segmentation.rank.issues_from_scores <cleanlab.segmentation.rank.issues_from_scores>`.
+        
+    labels : np.ndarray 
+       Optional discrete array of noisy labels for a classification dataset, i.e. some labels may be erroneous.
+      *Format requirements*: for dataset with K classes, each pixel must be integer in 0, 1, ..., K-1.
+      For a standard (multi-class) classification dataset where each example is labeled with one class,
+      `labels` should be 3-D array of shape ``(N,H,W,)``. 
 
-    tokens:
-        Nested list such that `tokens[i]` is a list of tokens (strings/words) that comprise the `i`-th sentence.
+      If `labels` is provided, this function also displays given label of the pixel identified with issue.
+      
+    Tip: If your labels are one hot encoded you can `np.argmax(labels_one_hot,axis=1)` assuming that `labels_one_hot` is of dimension (N,K,H,W)
+    before entering in the function
 
-    labels:
-        Optional nested list of given labels for all tokens, such that `labels[i]` is a list of labels, one for each token in the `i`-th sentence.
-        For a dataset with K classes, each label must be in 0, 1, ..., K-1.
-
-        If `labels` is provided, this function also displays given label of the token identified with issue.
-
-    pred_probs:
-        Optional list of np arrays, such that `pred_probs[i]` has shape ``(T, K)`` if the `i`-th sentence contains T tokens.
-
-        Each row of `pred_probs[i]` corresponds to a token `t` in the `i`-th sentence,
-        and contains model-predicted probabilities that `t` belongs to each of the K possible classes.
-
-        Columns of each `pred_probs[i]` should be ordered such that the probabilities correspond to class 0, 1, ..., K-1.
-
-        If `pred_probs` is provided, this function also displays predicted label of the token identified with issue.
+    pred_probs : np.ndarray
+      Optional array of shape ``(N,K,H,W,)`` of model-predicted class probabilities,
+      ``P(label=k|x)``. Each pixel contains an array of K classes, where for 
+      an example `x` the array at each pixel contains the model-predicted probabilities 
+      that `x` belongs to each of the K classes.
+      
+    If `pred_probs` is provided, this function also displays predicted label of the pixel identified with issue.
 
     exclude:
         Optional list of given/predicted label swaps (tuples) to be ignored. For example, if `exclude=[(0, 1), (1, 0)]`,
-        tokens whose label was likely swapped between class 0 and 1 are not displayed. Class labels must be in 0, 1, ..., K-1.
+        works whose label was likely swapped between class 0 and 1 are not displayed. Class labels must be in 0, 1, ..., K-1.
 
     class_names:
         Optional length K list of names of each class, such that `class_names[i]` is the string name of the class corresponding to `labels` with value `i`.
@@ -80,74 +81,52 @@ def display_issues(
     top: int, default=20
         Maximum number of issues to be printed.
 
-    Examples
-    --------
-    >>> from cleanlab.token_classification.summary import display_issues
-    >>> issues = [(2, 0), (0, 1)]
-    >>> tokens = [
-    ...     ["A", "?weird", "sentence"],
-    ...     ["A", "valid", "sentence"],
-    ...     ["An", "sentence", "with", "a", "typo"],
-    ... ]
-    >>> display_issues(issues, tokens)
-    Sentence 2, token 0:
-    ----
-    An sentence with a typo
-    ...
-    ...
-    Sentence 0, token 1:
-    ----
-    A ?weird sentence
     """
     if not class_names:
-        print(
-            "Classes will be printed in terms of their integer index since `class_names` was not provided. "
-        )
-        print("Specify this argument to see the string names of each class. \n")
+    print(
+        "Classes will be printed in terms of their integer index since `class_names` was not provided. "
+    )
+    print("Specify this argument to see the string names of each class. \n")
 
     top = min(top, len(issues))
     shown = 0
     is_tuple = isinstance(issues[0], tuple)
 
-    for issue in issues:
-        if is_tuple:
-            i, j = issue
-            sentence = get_sentence(tokens[i])
-            word = tokens[i][j]
-
-            if pred_probs:
-                prediction = pred_probs[i][j].argmax()
-            if labels:
-                given = labels[i][j]
-            if pred_probs and labels:
-                if (given, prediction) in exclude:
-                    continue
-
-            if pred_probs and class_names:
-                prediction = class_names[prediction]
-            if labels and class_names:
-                given = class_names[given]
-
-            shown += 1
-            print("Sentence %d, token %d:" % (i, j))
-            if labels and not pred_probs:
-                print("Given label: %s" % str(given))
-            elif not labels and pred_probs:
-                print("Predicted label according to provided pred_probs: %s" % str(prediction))
-            elif labels and pred_probs:
-                print(
-                    "Given label: %s, predicted label according to provided pred_probs: %s"
-                    % (str(given), str(prediction))
-                )
-            print("----")
-            print(color_sentence(sentence, word))
-        else:
-            shown += 1
-            sentence = get_sentence(tokens[issue])
-            print("Sentence %d: %s" % (issue, sentence))
-        if shown == top:
+    for i in range(len(issues)):
+        if shown >= top:
             break
-        print("\n")
+        
+        if is_tuple:
+            x, y = issues[i]
+        else:
+            x, y = np.unravel_index(i, issues.shape)
+
+        given_label = labels[x, y]
+        pred_label = np.argmax(pred_probs[x, y])
+
+        if (given_label, pred_label) in exclude:
+            continue
+
+        # Show images
+        fig, axes = plt.subplots(1, 3, figsize=(15, 5))
+
+        # First image - Ground truth labels
+        axes[0].imshow(labels[x], cmap='jet')
+        axes[0].set_title("Ground Truth Labels")
+        
+        # Second image - Argmaxed pred_probs
+        axes[1].imshow(np.argmax(pred_probs[x], axis=0), cmap='jet')
+        axes[1].set_title("Argmaxed Prediction Probabilities")
+        
+        # Third image - Errors
+        error_map = (labels[x] != np.argmax(pred_probs[x], axis=0)).astype(int)
+        axes[2].imshow(error_map, cmap='gray', vmin=0, vmax=1)
+        axes[2].set_title("Errors")
+        
+        plt.show()
+        shown += 1
+
+
 
 
 def common_label_issues(
@@ -162,30 +141,38 @@ def common_label_issues(
     verbose: bool = True
 ) -> pd.DataFrame:
     """
-    Display the tokens (words) that most commonly have label issues.
+    Display the pixels that most commonly have label issues.
 
-    These may correspond to words that are ambiguous or systematically misunderstood by the data annotators.
+    These may correspond to pixels that are ambiguous or systematically misunderstood by the data annotators.
 
     Parameters
     ----------
     issues:
-        List of tuples ``(i, j)`` representing a label issue for the `j`-th token of the `i`-th sentence.
+        Boolean **mask** for the entire dataset
+        where ``True`` represents a pixel label issue and ``False`` represents an example that is
+        accurately labeled.
 
-        Same format as output by :py:func:`token_classification.filter.find_label_issues <cleanlab.token_classification.filter.find_label_issues>`
-        or :py:func:`token_classification.rank.issues_from_scores <cleanlab.token_classification.rank.issues_from_scores>`.
+        Same format as output by :py:func:`segmentation.filter.find_label_issues <cleanlab.segmentation.filter.find_label_issues>`
+        or :py:func:`segmentation.rank.issues_from_scores <cleanlab.segmentation.rank.issues_from_scores>`.
 
-    tokens:
-        Nested list such that `tokens[i]` is a list of tokens (strings/words) that comprise the `i`-th sentence.
+    labels : np.ndarray 
+       Optional discrete array of noisy labels for a classification dataset, i.e. some labels may be erroneous.
+      *Format requirements*: for dataset with K classes, each pixel must be integer in 0, 1, ..., K-1.
+      For a standard (multi-class) classification dataset where each example is labeled with one class,
+      `labels` should be 3-D array of shape ``(N,H,W,)``. 
 
-    labels:
-        Optional nested list of given labels for all tokens in the same format as `labels` for :py:func:`token_classification.summary.display_issues <cleanlab.token_classification.summary.display_issues>`.
+      If `labels` is provided, this function also displays given label of the pixel identified with issue.
+      
+    Tip: If your labels are one hot encoded you can `np.argmax(labels_one_hot,axis=1)` assuming that `labels_one_hot` is of dimension (N,K,H,W)
+    before entering in the function
 
-        If `labels` is provided, this function also displays given label of the token identified to commonly suffer from label issues.
-
-    pred_probs:
-        Optional list of model-predicted probabilities (np arrays) in the same format as `pred_probs` for
-        :py:func:`token_classification.summary.display_issues <cleanlab.token_classification.summary.display_issues>`.
-
+    pred_probs : np.ndarray
+      Optional array of shape ``(N,K,H,W,)`` of model-predicted class probabilities,
+      ``P(label=k|x)``. Each pixel contains an array of K classes, where for 
+      an example `x` the array at each pixel contains the model-predicted probabilities 
+      that `x` belongs to each of the K classes.
+      
+    If `pred_probs` is provided, this function also displays predicted label of the pixel identified with issue.
         If both `labels` and `pred_probs` are provided, also reports each type of given/predicted label swap for tokens identified to commonly suffer from label issues.
 
     class_names:
@@ -198,7 +185,7 @@ def common_label_issues(
 
     exclude:
         Optional list of given/predicted label swaps (tuples) to be ignored in the same format as `exclude` for
-        :py:func:`token_classification.summary.display_issues <cleanlab.token_classification.summary.display_issues>`.
+        :py:func:`segmentation.summary.display_issues <cleanlab.segmentation.summary.display_issues>`.
 
     verbose:
         Whether to also print out the token information in the returned DataFrame `df`.
@@ -206,154 +193,96 @@ def common_label_issues(
     Returns
     -------
     df:
-        If both `labels` and `pred_probs` are provided, DataFrame `df` contains columns ``['token', 'given_label',
-        'predicted_label', 'num_label_issues']``, and each row contains information for a specific token and
+        If both `labels` and `pred_probs` are provided, DataFrame `df` contains columns ``['class', 'given_label',
+        'predicted_label', 'num_label_issues']``, and each row contains information for a specific class and
         given/predicted label swap, ordered by the number of label issues inferred for this type of label swap.
 
-        Otherwise, `df` only has columns ['token', 'num_label_issues'], and each row contains the information for a specific
+        Otherwise, `df` only has columns ['class', 'num_label_issues'], and each row contains the information for a specific
         token, ordered by the number of total label issues involving this token.
 
-    Examples
-    --------
-    >>> from cleanlab.token_classification.summary import common_label_issues
-    >>> issues = [(2, 0), (0, 1)]
-    >>> tokens = [
-    ...     ["A", "?weird", "sentence"],
-    ...     ["A", "valid", "sentence"],
-    ...     ["An", "sentence", "with", "a", "typo"],
-    ... ]
-    >>> df = common_label_issues(issues, tokens)
-    >>> df
-        token  num_label_issues
-    0      An                 1
-    1  ?weird                 1
+
     """
-    count: Dict[str, Any] = {}
-    if not labels or not pred_probs:
-        for issue in issues:
-            i, j = issue
-            word = tokens[i][j]
-            if word not in count:
-                count[word] = 0
-            count[word] += 1
-
-        words = [word for word in count.keys()]
-        freq = [count[word] for word in words]
-        rank = np.argsort(freq)[::-1][:top]
-
-        for r in rank:
-            print(
-                "Token '%s' is potentially mislabeled %d times throughout the dataset\n"
-                % (words[r], freq[r])
-            )
-
-        info = [[word, f] for word, f in zip(words, freq)]
-        info = sorted(info, key=lambda x: x[1], reverse=True)
-        return pd.DataFrame(info, columns=["token", "num_label_issues"])
-
     if not class_names:
-        print(
-            "Classes will be printed in terms of their integer index since `class_names` was not provided. "
-        )
-        print("Specify this argument to see the string names of each class. \n")
-
-    n = pred_probs[0].shape[1]
-    for issue in issues:
-        i, j = issue
-        word = tokens[i][j]
-        label = labels[i][j]
-        pred = pred_probs[i][j].argmax()
-        if word not in count:
-            count[word] = np.zeros([n, n], dtype=int)
-        if (label, pred) not in exclude:
-            count[word][label][pred] += 1
-    words = [word for word in count.keys()]
-    freq = [np.sum(count[word]) for word in words]
-    rank = np.argsort(freq)[::-1][:top]
-
-    for r in rank:
-        matrix = count[words[r]]
-        most_frequent = np.argsort(count[words[r]].flatten())[::-1]
-        print(
-            "Token '%s' is potentially mislabeled %d times throughout the dataset"
-            % (words[r], freq[r])
-        )
-        if verbose:
-            print(
-                "---------------------------------------------------------------------------------------"
-            )
-            for f in most_frequent:
-                i, j = f // n, f % n
-                if matrix[i][j] == 0:
-                    break
-                if class_names:
-                    print(
-                        "labeled as class `%s` but predicted to actually be class `%s` %d times"
-                        % (class_names[i], class_names[j], matrix[i][j])
-                    )
-                else:
-                    print(
-                        "labeled as class %d but predicted to actually be class %d %d times"
-                        % (i, j, matrix[i][j])
-                    )
-        print()
-    info = []
-    for word in words:
-        for i in range(n):
-            for j in range(n):
-                num = count[word][i][j]
-                if num > 0:
-                    if not class_names:
-                        info.append([word, i, j, num])
-                    else:
-                        info.append([word, class_names[i], class_names[j], num])
-    info = sorted(info, key=lambda x: x[3], reverse=True)
-    return pd.DataFrame(
-        info, columns=["token", "given_label", "predicted_label", "num_label_issues"]
+    print(
+        "Classes will be printed in terms of their integer index since `class_names` was not provided. "
     )
+    print("Specify this argument to see the string names of each class. \n")
 
+    class_counter = Counter()
+    label_swap_counter = Counter()
 
-def filter_by_token(
-    token: str, issues: List[Tuple[int, int]], tokens: List[List[str]]
-) -> List[Tuple[int, int]]:
+    for issue in issues:
+        x, y = issue
+        class_name = tokens[x][y]
+        class_counter[class_name] += 1
+
+        if labels is not None and pred_probs is not None:
+            given_label = labels[x, y]
+            pred_label = np.argmax(pred_probs[x, y])
+
+            if (given_label, pred_label) not in exclude:
+                label_swap_counter[(class_name, given_label, pred_label)] += 1
+
+    top_classes = class_counter.most_common(top)
+    columns = ['class', 'num_label_issues']
+    data = top_classes
+
+    if labels is not None and pred_probs is not None:
+        top_label_swaps = label_swap_counter.most_common(top)
+        columns.extend(['given_label', 'predicted_label'])
+        data = [item[0] + (item[1],) for item in top_label_swaps]
+
+        if class_names:
+            data = [(class_name, class_names[given], class_names[pred], count)
+                    for (class_name, given, pred, count) in data]
+
+    df = pd.DataFrame(data, columns=columns)
+
+    if verbose:
+        print(df)
+
+    return df
+    
+
+def filter_by_class(
+    class_index: int, issues: np.ndarray, labels: np.ndarray 
+) -> np.ndarray :
     """
-    Return subset of label issues involving a particular token.
+    Return subset of label issues involving a particular class in labels.
 
     Parameters
     ----------
-    token:
-        A specific token you are interested in.
+    class_index:
+        A specific class you are interested in.
 
     issues:
-        List of tuples ``(i, j)`` representing a label issue for the `j`-th token of the `i`-th sentence.
-        Same format as output by :py:func:`token_classification.filter.find_label_issues <cleanlab.token_classification.filter.find_label_issues>`
-        or :py:func:`token_classification.rank.issues_from_scores <cleanlab.token_classification.rank.issues_from_scores>`.
+        Boolean **mask** for the entire dataset
+        where ``True`` represents a pixel label issue and ``False`` represents an example that is
+        accurately labeled.
 
-    tokens:
-        Nested list such that `tokens[i]` is a list of tokens (strings/words) that comprise the `i`-th sentence.
+        Same format as output by :py:func:`segmentation.filter.find_label_issues <cleanlab.segmentation.filter.find_label_issues>`
+        or :py:func:`segmentation.rank.issues_from_scores <cleanlab.segmentation.rank.issues_from_scores>`.
+
+    labels : np.ndarray 
+       Optional discrete array of noisy labels for a classification dataset, i.e. some labels may be erroneous.
+      *Format requirements*: for dataset with K classes, each pixel must be integer in 0, 1, ..., K-1.
+      For a standard (multi-class) classification dataset where each example is labeled with one class,
+      `labels` should be 3-D array of shape ``(N,H,W,)``. 
+
+      If `labels` is provided, this function also displays given label of the pixel identified with issue.
+      
+    Tip: If your labels are one hot encoded you can `np.argmax(labels_one_hot,axis=1)` assuming that `labels_one_hot` is of dimension (N,K,H,W)
+    before entering in the function
+
 
     Returns
     ----------
     issues_subset:
-        List of tuples ``(i, j)`` representing a label issue for the `j`-th token of the `i`-th sentence, in the same format as `issues`.
-        But restricting to only those issues that involve the specified `token`.
+        Boolean **mask** for the subset dataset
+        where ``True`` represents a pixel label issue and ``False`` represents an example that is
+        accurately labeled for the labeled class.
 
-    Examples
-    --------
-    >>> from cleanlab.token_classification.summary import filter_by_token
-    >>> token = "?weird"
-    >>> issues = [(2, 0), (0, 1)]
-    >>> tokens = [
-    ...     ["A", "?weird", "sentence"],
-    ...     ["A", "valid", "sentence"],
-    ...     ["An", "sentence", "with", "a", "typo"],
-    ... ]
-    >>> filter_by_token(token, issues, tokens)
-    [(0, 1)]
+
     """
-    returned_issues = []
-    for issue in issues:
-        i, j = issue
-        if token.lower() == tokens[i][j].lower():
-            returned_issues.append(issue)
-    return returned_issues
+    mask = labels==class_index
+    return np.logical_and(mask, issues)
