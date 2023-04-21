@@ -5,9 +5,9 @@ Creating Your Own Issues Manager
 
 
 
-This guide will walk you through the process of creating creating your own 
+This guide walks through the process of creating creating your own 
 :py:class:`IssueManager <cleanlab.datalab.issue_manager.issue_manager.IssueManager>`
-to extend the issue-checking capabilities of 
+to detect a custom-defined type of issue alongside the pre-defined issue types in 
 :py:class:`Datalab <cleanlab.datalab.datalab.Datalab>`.
 
 .. seealso::
