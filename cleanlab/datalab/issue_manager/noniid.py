@@ -213,7 +213,7 @@ class NonIIDIssueManager(IssueManager):
         info_dict = {
             **issues_dict,
             **params_dict,  # type: ignore[arg-type]
-            **statistics_dict,
+            **statistics_dict,  # type: ignore[arg-type]
         }
         return info_dict
 
