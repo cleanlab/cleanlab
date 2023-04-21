@@ -4,6 +4,7 @@ Tutorials
 .. toctree::
    :maxdepth: 1
 
+   datalab/
    indepth_overview
    image
    text
@@ -15,5 +16,4 @@ Tutorials
    multilabel_classification
    token_classification
    pred_probs_cross_val
-   datalab/
    faq
