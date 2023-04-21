@@ -6,7 +6,7 @@ Datalab Tutorials
 
    Detecting Common Data Issues with Datalab <datalab_quickstart>
    Perform Advanced Data Auditing with Datalab <datalab_advanced>
-   Image Classification <image>
-   Text Classification <text>
-   Tabular Classification <tabular>
-   Audio Classification <audio>
+   Image Classification Label Errors <image>
+   Text Classification Label Errors <text>
+   Tabular Classification Label Errors <tabular>
+   Audio Classification Label Errors <audio>
