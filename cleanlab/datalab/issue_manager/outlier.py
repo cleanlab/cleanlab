@@ -47,6 +47,21 @@ class OutlierIssueManager(IssueManager):
         3: [],
     }
 
+    DEFAULT_THRESHOLDS = {
+        "features": 0.37037,
+        "pred_probs": 0.13,
+    }
+    """Default thresholds for outlier detection.
+
+    If outlier detection is performed on the features, an example whose average
+    distance to their k nearest neighbors is greater than
+    Q3_avg_dist + (1 / threshold - 1) * IQR_avg_dist is considered an outlier.
+
+    If outlier detection is performed on the predicted probabilities, an example
+    whose average score is lower than threshold * median_outlier_score is
+    considered an outlier.
+    """
+
     def __init__(
         self,
         datalab: Datalab,
@@ -68,6 +83,7 @@ class OutlierIssueManager(IssueManager):
             ood_kwargs["params"] = params
 
         self.ood: OutOfDistribution = OutOfDistribution(**ood_kwargs)
+
         self.threshold = threshold
         self._embeddings: Optional[np.ndarray] = None
         self._metric: str = None  # type: ignore
@@ -76,8 +92,6 @@ class OutlierIssueManager(IssueManager):
         self,
         features: Optional[npt.NDArray] = None,
         pred_probs: Optional[np.ndarray] = None,
-        iqr_scale: float = 1.7,
-        pred_probs_scale: float = 0.13,
         **kwargs,
     ) -> None:
         knn_graph = self._process_knn_graph_from_inputs(kwargs)
@@ -113,16 +127,16 @@ class OutlierIssueManager(IssueManager):
             (
                 self.threshold,
                 is_issue_column,
-            ) = self._compute_threshold_and_issue_column_from_distances(
-                distances, iqr_scale, self.threshold
-            )
+            ) = self._compute_threshold_and_issue_column_from_distances(distances, self.threshold)
 
         else:
             assert pred_probs is not None
+            # Threshold based on pred_probs, very small scores are outliers
             if self.threshold is None:
-                # Threshold based on pred_probs, very small scores are outliers
-                self.threshold = pred_probs_scale * np.median(scores)
-            is_issue_column = scores < self.threshold
+                self.threshold = self.DEFAULT_THRESHOLDS["pred_probs"]
+            if not 0 <= self.threshold:
+                raise ValueError(f"threshold must be non-negative, but got {self.threshold}.")
+            is_issue_column = scores < self.threshold * np.median(scores)
 
         self.issues = pd.DataFrame(
             {
@@ -155,17 +169,19 @@ class OutlierIssueManager(IssueManager):
         return knn_graph
 
     def _compute_threshold_and_issue_column_from_distances(
-        self, distances: np.ndarray, iqr_scale: float, threshold: Optional[float] = None
+        self, distances: np.ndarray, threshold: Optional[float] = None
     ) -> Tuple[float, np.ndarray]:
         avg_distances = distances.mean(axis=1)
-        if threshold is None:
-            q3_distance = np.percentile(avg_distances, 75)
-            if not isinstance(iqr_scale, (int, float)) and iqr_scale < 0:
+        if threshold:
+            if not (isinstance(threshold, (int, float)) and 0 <= threshold <= 1):
                 raise ValueError(
-                    f"iqr_scale must be a positive number, got {iqr_scale} of type {type(iqr_scale)}."
+                    f"threshold must be a number between 0 and 1, got {threshold} of type {type(threshold)}."
                 )
-            threshold = q3_distance + iqr_scale * iqr(avg_distances)
-        return threshold, avg_distances > threshold
+        if threshold is None:
+            threshold = OutlierIssueManager.DEFAULT_THRESHOLDS["features"]
+        q3_distance = np.percentile(avg_distances, 75)
+        iqr_scale = 1 / threshold - 1 if threshold != 0 else np.inf
+        return threshold, avg_distances > q3_distance + iqr_scale * iqr(avg_distances)
 
     def _process_knn_graph_from_features(self, kwargs: Dict) -> csr_matrix:
         # Check if the weighted knn graph exists in info
@@ -253,6 +269,8 @@ class OutlierIssueManager(IssueManager):
         return statistics_dict
 
     def _score_with_pred_probs(self, pred_probs: np.ndarray, **kwargs) -> np.ndarray:
+        # Remove "threshold" from kwargs if it exists
+        kwargs.pop("threshold", None)
         scores = self.ood.fit_score(pred_probs=pred_probs, labels=self.datalab._labels, **kwargs)
         return scores
 

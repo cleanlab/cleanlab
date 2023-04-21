@@ -158,19 +158,19 @@ class TestOutlierIssueManager:
         assert summary["score"][0] == pytest.approx(expected=0.7732146, abs=1e-7)
 
         assert info.get("knn", None) is not None, "Should have knn info"
-        assert issue_manager.threshold == pytest.approx(expected=0.1038, abs=1e-4)
+        assert issue_manager.threshold == pytest.approx(expected=0.37037, abs=1e-5)
 
         issue_manager_with_threshold.find_issues(features=embeddings["embedding"])
 
-    @pytest.mark.skip
-    def test_find_issues_with_pred_probs(self, issue_manager):
+    def test_find_issues_with_pred_probs(self, lab):
+        issue_manager = OutlierIssueManager(datalab=lab, threshold=0.3)
         pred_probs = np.array(
             [
-                [0.1, 0.85, 0.05],
-                [0.15, 0.8, 0.05],
+                [0.25, 0.725, 0.025],
+                [0.37, 0.42, 0.21],
                 [0.05, 0.05, 0.9],
                 [0.1, 0.05, 0.85],
-                [0.35, 0.35, 0.30],
+                [0.1125, 0.65, 0.2375],
             ]
         )
         issue_manager.find_issues(pred_probs=pred_probs)
@@ -180,16 +180,17 @@ class TestOutlierIssueManager:
             issues["is_outlier_issue"] == expected_issue_mask
         ), "Issue mask should be correct"
         assert summary["issue_type"][0] == "outlier"
-        # assert summary["score"][0] == pytest.approx(expected=0.151, abs=1e-3)
+        assert summary["score"][0] == pytest.approx(expected=0.210, abs=1e-3)
 
-        # assert issue_manager.threshold == pytest.approx(expected=0.0421, abs=1e-4)
+        assert issue_manager.threshold == 0.3
 
         assert np.all(
-            info.get("confident_thresholds", None) == [0.1, 0.825, 0.575]
+            info.get("confident_thresholds", None) == [0.1, 0.5725, 0.56875]
         ), "Should have confident_joint info"
 
-    def test_find_issues_with_different_iqr_scale(self, issue_manager, embeddings):
-        issue_manager.find_issues(features=embeddings["embedding"], iqr_scale=0.5)
+    def test_find_issues_with_different_thresholds(self, lab, embeddings):
+        issue_manager = OutlierIssueManager(datalab=lab, k=3, threshold=0.66666)
+        issue_manager.find_issues(features=embeddings["embedding"])
         issues, summary, info = issue_manager.issues, issue_manager.summary, issue_manager.info
         expected_issue_mask = np.array([False] * 4 + [True])
         assert np.all(
@@ -198,8 +199,7 @@ class TestOutlierIssueManager:
         assert summary["issue_type"][0] == "outlier"
         assert summary["score"][0] == pytest.approx(expected=0.7732146, abs=1e-7)
 
-        # Lower iqr_scale should lower the threshold
-        assert issue_manager.threshold == pytest.approx(expected=0.0839, abs=1e-4)
+        assert issue_manager.threshold == 0.66666
 
     def test_report(self, issue_manager):
         pred_probs = np.array(
