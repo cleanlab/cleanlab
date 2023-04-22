@@ -475,7 +475,7 @@ class Datalab:
             If provided, this must be a 2D array with shape (num_examples, num_features).
 
         knn_graph :
-            Sparse matrix representing distances between examples in the dataset in a K nearest neighbor graph.
+            Sparse matrix representing distances between examples in the dataset in a k nearest neighbor graph.
 
             If provided, this must be a square CSR matrix with shape (num_examples, num_examples) and (k*num_examples) non-zero entries (k is the number of nearest neighbors considered for each example)
             evenly distributed across the rows.
