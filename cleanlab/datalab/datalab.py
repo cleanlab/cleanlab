@@ -467,8 +467,12 @@ class Datalab:
             Out-of-sample predicted class probabilities made by the model for every example in the dataset.
             To best detect label issues, provide this input obtained from the most accurate model you can produce.
 
-        features :
+            If provided, this must be a 2D array with shape (num_examples, K) where K is the number of classes in the dataset.
+
+        features : Optional[np.ndarray]
             Feature embeddings (vector representations) of every example in the dataset.
+
+            If provided, this must be a 2D array with shape (num_examples, num_features).
 
         knn_graph :
             Sparse matrix representing distances between examples in the dataset in a K nearest neighbor graph.
