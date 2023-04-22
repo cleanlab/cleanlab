@@ -66,8 +66,7 @@ class Datalab:
                 - path to a local file: Text (.txt), CSV (.csv), JSON (.json)
                 - or a dataset identifier on the Hugging Face Hub
 
-
-    label_name :
+    label_name : str
         The name of the label column in the dataset.
 
     verbosity : int, optional
@@ -100,11 +99,11 @@ class Datalab:
         self.verbosity = verbosity
 
     def __repr__(self) -> str:
-        """What is displayed if user executes: datalab"""
+        """What is displayed if user executes: ``datalab``"""
         return _Displayer(self).__repr__()
 
     def __str__(self) -> str:
-        """What is displayed if user executes: print(datalab)"""
+        """What is displayed if user executes: ``print(datalab)``"""
         return _Displayer(self).__str__()
 
     @property
@@ -130,7 +129,7 @@ class Datalab:
     def issue_summary(self) -> pd.DataFrame:
         """Summary of issues found in the dataset and the overall severity of each type of issue.
 
-        Example
+        Examples
         -------
 
         If checks for "label" and "outlier" issues were run,
@@ -151,7 +150,7 @@ class Datalab:
     def info(self) -> Dict[str, Dict[str, Any]]:
         """Information and statistics about the dataset issues found.
 
-        Example
+        Examples
         -------
 
         If checks for "label" and "outlier" issues were run,
@@ -498,7 +497,7 @@ class Datalab:
             which is responsible for detecting the particular issue type.
 
             .. seealso::
-                IssueManager
+                :py:class:`IssueManager <cleanlab.datalab.issue_manager.issue_manager.IssueManager>`
 
         Examples
         --------
