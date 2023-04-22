@@ -3,9 +3,7 @@
 [run]
 branch = True
 omit =
-    # cleanlab/experimental/*
-    cleanlab/experimental/*/!(datalab)/*
-    cleanlab/experimental/datalab/examples/*
+    cleanlab/experimental/*
 
 [report]
 # Regexes for lines to exclude from consideration
