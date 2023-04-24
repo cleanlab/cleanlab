@@ -117,9 +117,15 @@ def display_issues(
             plot_index+=1
         
         # Third image - Errors
+
+        if output_plots == 1:
+            ax = axes
+        else:
+            ax = axes[plot_index]
+
         mask = np.full((h,w), True) if len(exclude)== 0 else ~np.isin(labels[i], exclude)
-        axes[plot_index].imshow(issues[i]& mask, cmap='gray', vmin=0, vmax=1)
-        axes[plot_index].set_title(f"Suggested Errors in image index {i}")
+        ax.imshow(issues[i]& mask, cmap='gray', vmin=0, vmax=1)
+        ax.set_title(f"Suggested Errors in image index {i}")
         plt.show()
         
         plot_index = 0
