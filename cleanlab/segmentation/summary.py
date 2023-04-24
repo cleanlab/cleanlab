@@ -283,7 +283,7 @@ def filter_by_class(
 
 
     """
-    issues_subset = issues & np.isin(labels, class_index) & np.isin(pred_probs.argmax(1), class_index)
+    issues_subset = (issues & np.isin(labels, class_index)) | (issues & np.isin(pred_probs.argmax(1), class_index))
     return issues_subset
     
 def generate_colormap(num_colors):
