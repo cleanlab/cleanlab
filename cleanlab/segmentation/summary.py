@@ -84,7 +84,6 @@ def display_issues(
 
     try:
         import matplotlib.pyplot as plt
-
     except:
         raise ImportError("try \"pip install matplotlib\"")
         
