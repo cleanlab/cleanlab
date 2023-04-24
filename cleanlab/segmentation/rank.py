@@ -174,7 +174,7 @@ def get_label_quality_per_image(image_scores,method=None,temperature=0.1):
 
 
 def issues_from_scores(
-    image_scores: np.ndarray,*, pixel_scores: np.ndarray, threshold: float = 0.1
+    image_scores: np.ndarray, pixel_scores: np.ndarray = None, threshold: float = 0.1
 ) -> Union[list, np.ndarray]:
     """
     Converts scores output by :py:func:`segmentation.rank.get_label_quality_scores <cleanlab.segmentation.rank.get_label_quality_scores>`
@@ -219,7 +219,7 @@ def issues_from_scores(
         falls below the `threshold` (also sorted by overall label quality score of each image).
 
     """
-    if pixel_scores:
+    if pixel_scores is not None:
         issues = np.where(pixel_scores < threshold, True, False)
         num_issues = np.sum(issues, axis=(1, 2))
         ranking = np.argsort(num_issues)
@@ -228,7 +228,7 @@ def issues_from_scores(
     else:
         ranking = np.argsort(image_scores)
         cutoff = 0
-        while image_scores[ranking[cutoff]] < threshold and cutoff < len(ranking):
+        while image_scores[ranking[cutoff]] < threshold and cutoff < len(ranking)-1:
             cutoff += 1
         return ranking[:cutoff]
 
