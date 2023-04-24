@@ -235,7 +235,7 @@ def common_label_issues(
     
 
 def filter_by_class(
-    class_index: int, issues: np.ndarray, labels: np.ndarray 
+    class_index: int, issues: np.ndarray, labels: np.ndarray,pred_probs: np.ndarray 
 ) -> np.ndarray :
     """
     Return subset of label issues involving a particular class.
@@ -253,18 +253,17 @@ def filter_by_class(
         Same format as output by :py:func:`segmentation.filter.find_label_issues <cleanlab.segmentation.filter.find_label_issues>`
         or :py:func:`segmentation.rank.issues_from_scores <cleanlab.segmentation.rank.issues_from_scores>`.
     
-    pred_probs : np.ndarray
-      Array of shape ``(N,K,H,W,)`` of model-predicted class probabilities,
-      ``P(label=k|x)``. Each pixel contains an array of K classes, where for 
-      an example `x` the array at each pixel contains the model-predicted probabilities 
-      that `x` belongs to each of the K classes.
-      
-      
     labels : np.ndarray 
        Optional discrete array of noisy labels for a classification dataset, i.e. some labels may be erroneous.
       *Format requirements*: for dataset with K classes, each pixel must be integer in 0, 1, ..., K-1.
       For a standard (multi-class) classification dataset where each example is labeled with one class,
       `labels` should be 3-D array of shape ``(N,H,W,)``. 
+
+    pred_probs : np.ndarray
+      Array of shape ``(N,K,H,W,)`` of model-predicted class probabilities,
+      ``P(label=k|x)``. Each pixel contains an array of K classes, where for 
+      an example `x` the array at each pixel contains the model-predicted probabilities 
+      that `x` belongs to each of the K classes.
 
       
     Tip: If your labels are one hot encoded you can `np.argmax(labels_one_hot,axis=1)` assuming that `labels_one_hot` is of dimension (N,K,H,W)
