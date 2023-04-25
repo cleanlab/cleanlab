@@ -1,5 +1,5 @@
 import tempfile
-from mock import patch
+from unittest.mock import patch
 import pytest
 from cleanlab.datalab.data import Data, DataFormatError, DatasetLoadError
 from datasets import Dataset, ClassLabel

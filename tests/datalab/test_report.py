@@ -1,7 +1,7 @@
-from mock import Mock
 import pytest
 import numpy as np
 import pandas as pd
+from unittest.mock import Mock
 
 from cleanlab.datalab.report import Reporter
 
