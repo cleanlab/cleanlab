@@ -47,7 +47,7 @@ class DataIssues:
     data :
         The data object for which the issues are being collected.
 
-    Attributes
+    Parameters
     ----------
     issues : pd.DataFrame
         Stores information about each individual issue found in the data,
@@ -82,6 +82,88 @@ class DataIssues:
         Shorthand for self.info["statistics"].
         """
         return self.info["statistics"]
+
+    def get_issues(self, issue_name: Optional[str] = None) -> pd.DataFrame:
+        """
+        Use this after finding issues to see which examples suffer from which types of issues.
+
+        Parameters
+        ----------
+        issue_name : str or None
+            The type of issue to focus on. If `None`, returns full DataFrame summarizing all of the types of issues detected in each example from the dataset.
+
+        Raises
+        ------
+        ValueError
+            If `issue_name` is not a type of issue previously considered in the audit.
+
+        Returns
+        -------
+        specific_issues :
+            A DataFrame where each row corresponds to an example from the dataset and columns specify:
+            whether this example exhibits a particular type of issue and how severely (via a numeric quality score where lower values indicate more severe instances of the issue).
+
+            Additional columns may be present in the DataFrame depending on the type of issue specified.
+        """
+        if issue_name is None:
+            return self.issues
+
+        columns = [col for col in self.issues.columns if issue_name in col]
+        if not columns:
+            raise ValueError(f"No columns found for issue type '{issue_name}'.")
+        specific_issues = self.issues[columns]
+        info = self.get_info(issue_name=issue_name)
+        if issue_name == "label":
+            specific_issues = specific_issues.assign(
+                given_label=info["given_label"], predicted_label=info["predicted_label"]
+            )
+
+        if issue_name == "outlier":
+            column_dict = {
+                k: info.get(k)
+                for k in ["nearest_neighbor", "distance_to_nearest_neighbor"]
+                if info.get(k) is not None
+            }
+            specific_issues = specific_issues.assign(**column_dict)
+
+        if issue_name == "near_duplicate":
+            column_dict = {
+                k: info.get(k)
+                for k in ["near_duplicate_sets", "distance_to_nearest_neighbor"]
+                if info.get(k) is not None
+            }
+            specific_issues = specific_issues.assign(**column_dict)
+        return specific_issues
+
+    def get_summary(self, issue_name: Optional[str] = None) -> pd.DataFrame:
+        """Summarize the issues found in dataset of a particular type,
+        including how severe this type of issue is overall across the dataset.
+
+        Parameters
+        ----------
+        issue_name :
+            Name of the issue type to summarize. If `None`, summarizes each of the different issue types previously considered in the audit.
+
+        Returns
+        -------
+        summary :
+            DataFrame where each row corresponds to a type of issue, and columns quantify:
+            the number of examples in the dataset estimated to exhibit this type of issue,
+            and the overall severity of the issue across the dataset (via a numeric quality score where lower values indicate that the issue is overall more severe).
+        """
+        if self.issue_summary.empty:
+            raise ValueError(
+                "No issues found in the dataset. "
+                "Call `find_issues` before calling `get_summary`."
+            )
+
+        if issue_name is None:
+            return self.issue_summary
+
+        row_mask = self.issue_summary["issue_type"] == issue_name
+        if not any(row_mask):
+            raise ValueError(f"Issue type {issue_name} not found in the summary.")
+        return self.issue_summary[row_mask].reset_index(drop=True)
 
     def get_info(self, issue_name: Optional[str] = None) -> Dict[str, Any]:
         """Get the info for the issue_name key.
@@ -139,7 +221,7 @@ class DataIssues:
         if statistics:
             self.info[key].update(statistics)
 
-    def _collect_results_from_issue_manager(self, issue_manager: IssueManager) -> None:
+    def collect_results_from_issue_manager(self, issue_manager: IssueManager) -> None:
         """
         Collects results from an IssueManager and update the corresponding
         attributes of the Datalab object.

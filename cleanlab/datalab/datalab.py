@@ -22,7 +22,6 @@ Datalab offers a unified audit to detect all kinds of issues in data and labels.
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
-import warnings
 
 import numpy as np
 import numpy.typing as npt
@@ -32,8 +31,9 @@ import cleanlab
 from cleanlab.datalab.data import Data
 from cleanlab.datalab.data_issues import DataIssues
 from cleanlab.datalab.display import _Displayer
-from cleanlab.datalab.factory import _IssueManagerFactory, REGISTRY
+from cleanlab.datalab.issue_finder import IssueFinder
 from cleanlab.datalab.serialize import _Serializer
+from cleanlab.datalab.report import Reporter
 
 if TYPE_CHECKING:  # pragma: no cover
     from datasets.arrow_dataset import Dataset
@@ -95,16 +95,13 @@ class Datalab:
         self.label_name = self._data._label_name
         self.data_issues = DataIssues(self._data)
         self.cleanlab_version = cleanlab.version.__version__
-        self.path = ""
         self.verbosity = verbosity
 
     def __repr__(self) -> str:
-        """What is displayed if user executes: ``datalab``"""
-        return _Displayer(self).__repr__()
+        return _Displayer(data_issues=self.data_issues).__repr__()
 
     def __str__(self) -> str:
-        """What is displayed if user executes: ``print(datalab)``"""
-        return _Displayer(self).__str__()
+        return _Displayer(data_issues=self.data_issues).__str__()
 
     @property
     def labels(self) -> np.ndarray:
@@ -129,6 +126,8 @@ class Datalab:
     def issue_summary(self) -> pd.DataFrame:
         """Summary of issues found in the dataset and the overall severity of each type of issue.
 
+        This is a wrapper around the ``DataIssues.issue_summary`` attribute.
+
         Examples
         -------
 
@@ -149,6 +148,8 @@ class Datalab:
     @property
     def info(self) -> Dict[str, Dict[str, Any]]:
         """Information and statistics about the dataset issues found.
+
+        This is a wrapper around the ``DataIssues.info`` attribute.
 
         Examples
         -------
@@ -176,180 +177,13 @@ class Datalab:
     def info(self, info: Dict[str, Dict[str, Any]]) -> None:
         self.data_issues.info = info
 
-    def _resolve_required_args(self, pred_probs, features, knn_graph):
-        """Resolves the required arguments for each issue type.
-
-        This is a helper function that filters out any issue manager
-        that does not have the required arguments.
-
-        This does not consider custom hyperparameters for each issue type.
-
-
-        Parameters
-        ----------
-        pred_probs :
-            Out-of-sample predicted probabilities made on the data.
-
-        features :
-            Name of column containing precomputed embeddings.
-
-        Returns
-        -------
-        args_dict :
-            Dictionary of required arguments for each issue type, if available.
-        """
-        args_dict = {
-            "label": {"pred_probs": pred_probs},
-            "outlier": {"pred_probs": pred_probs, "features": features, "knn_graph": knn_graph},
-            "near_duplicate": {"features": features, "knn_graph": knn_graph},
-            "non_iid": {"features": features, "knn_graph": knn_graph},
-        }
-
-        args_dict = {
-            k: {k2: v2 for k2, v2 in v.items() if v2 is not None} for k, v in args_dict.items() if v
-        }
-
-        # Prefer `knn_graph` over `features` if both are provided.
-        for v in args_dict.values():
-            if "knn_graph" in v and "features" in v:
-                warnings.warn(
-                    "Both `features` and `knn_graph` were provided. "
-                    "Most issue managers will likely prefer using `knn_graph` "
-                    "instead of `features` for efficiency."
-                )
-
-        args_dict = {k: v for k, v in args_dict.items() if v}
-
-        return args_dict
-
-    def _set_issue_types(
-        self,
-        issue_types: Optional[Dict[str, Any]],
-        required_defaults_dict: Dict[str, Any],
-    ) -> Dict[str, Any]:
-        """Set necessary configuration for each IssueManager in a dictionary.
-
-        While each IssueManager defines default values for its arguments,
-        the Datalab class needs to organize the calls to each IssueManager
-        with different arguments, some of which may be user-provided.
-
-        Parameters
-        ----------
-        issue_types :
-            Dictionary of issue types and argument configuration for their respective IssueManagers.
-            If None, then the `required_defaults_dict` is used.
-
-        required_defaults_dict :
-            Dictionary of default parameter configuration for each issue type.
-
-        Returns
-        -------
-        issue_types_copy :
-            Dictionary of issue types and their parameter configuration.
-            The input `issue_types` is copied and updated with the necessary default values.
-        """
-        if issue_types is not None:
-            issue_types_copy = issue_types.copy()
-            self._check_missing_args(required_defaults_dict, issue_types_copy)
-        else:
-            issue_types_copy = required_defaults_dict.copy()
-        # Check that all required arguments are provided.
-        self._validate_issue_types_dict(issue_types_copy, required_defaults_dict)
-
-        # Remove None values from argument list, rely on default values in IssueManager
-        for key, value in issue_types_copy.items():
-            issue_types_copy[key] = {k: v for k, v in value.items() if v is not None}
-        return issue_types_copy
-
-    @staticmethod
-    def _check_missing_args(required_defaults_dict, issue_types):
-        for key, issue_type_value in issue_types.items():
-            missing_args = set(required_defaults_dict.get(key, {})) - set(issue_type_value.keys())
-            # Impute missing arguments with default values.
-            missing_dict = {
-                missing_arg: required_defaults_dict[key][missing_arg]
-                for missing_arg in missing_args
-            }
-            issue_types[key].update(missing_dict)
-
-    @staticmethod
-    def _validate_issue_types_dict(
-        issue_types: Dict[str, Any], required_defaults_dict: Dict[str, Any]
-    ) -> None:
-        missing_required_args_dict = {}
-        for issue_name, required_args in required_defaults_dict.items():
-            if issue_name in issue_types:
-                missing_args = set(required_args.keys()) - set(issue_types[issue_name].keys())
-                if missing_args:
-                    missing_required_args_dict[issue_name] = missing_args
-        if any(missing_required_args_dict.values()):
-            error_message = ""
-            for issue_name, missing_required_args in missing_required_args_dict.items():
-                error_message += f"Required argument {missing_required_args} for issue type {issue_name} was not provided.\n"
-            raise ValueError(error_message)
-
-    def _get_report(self, num_examples: int, verbosity: int, include_description: bool) -> str:
-        # Sort issues based on the score
-        # Show top k issues
-        # Show the info (get_info) with some verbosity level
-        #   E.g. for label issues, only show the confident joint computed with the health_summary
-        report_str = ""
-        issue_type_sorted = self._sort_issue_summary_by_issue_counts(self.issue_summary)
-        report_str += self._add_issue_summary_to_report(summary=issue_type_sorted)
-        issue_type_sorted_keys: List[str] = issue_type_sorted["issue_type"].tolist()
-        issue_manager_reports = []
-        for key in issue_type_sorted_keys:
-            issue_manager_class = _IssueManagerFactory.from_str(issue_type=key)
-            issue_manager_reports.append(
-                issue_manager_class.report(
-                    issues=self.get_issues(issue_name=key),
-                    summary=self.get_summary(issue_name=key),
-                    info=self.get_info(issue_name=key),
-                    num_examples=num_examples,
-                    verbosity=verbosity,
-                    include_description=include_description,
-                )
-            )
-
-        report_str += "\n\n\n".join(issue_manager_reports)
-        return report_str
-
-    def _sort_issue_summary_by_issue_counts(self, issue_summary: pd.DataFrame) -> pd.DataFrame:
-        """Sort issue_summary by the number of issues per issue type.
-
-        Returns
-        -------
-        sorted_summary :
-            Sorted issue_summary.
-
-        Examples
-        --------
-        >>> issue_summary = pd.DataFrame(
-        ...     {
-        ...         "issue_type": ["label", "outlier", "near_duplicate"],
-        ...         "score": [0.5, 0.2, 0.1],
-        ...     }
-        ... )
-        >>> # Calling this method will sort the issue_summary by the number of issues
-        >>> sorted_summary = Datalab._sort_issue_summary_by_issue_counts(issue_summary)
-        >>> sorted_summary
-               issue_type  score  num_issues
-        0         outlier    0.2           5
-        1           label    0.5           3
-        2  near_duplicate    0.1           2
-        """
-        summary = issue_summary.copy()
-        names = summary["issue_type"].tolist()
-        counts = [self.get_issues(issue_name=name)[f"is_{name}_issue"].sum() for name in names]
-        # Rank issue_summary by the number of issues in issue_type_counts
-        summary["num_issues"] = counts
-        # issue_type_sorted = self.issue_summary.sort_values(by="score", ascending=True)
-        sorted_summary = summary.sort_values(by="num_issues", ascending=False)
-        return sorted_summary
-
     def get_issues(self, issue_name: Optional[str] = None) -> pd.DataFrame:
         """
         Use this after finding issues to see which examples suffer from which types of issues.
+
+        NOTE
+        ----
+        This is a wrapper around the :py:meth:`DataIssues.get_issues <cleanlab.datalab.data_issues.DataIssues.get_issues>` method.
 
         Parameters
         ----------
@@ -369,42 +203,16 @@ class Datalab:
 
             Additional columns may be present in the DataFrame depending on the type of issue specified.
         """
-        if issue_name is None:
-            return self.issues
-
-        specific_issues = self._get_matching_issue_columns(issue_name)
-        info = self.get_info(issue_name=issue_name)
-        if issue_name == "label":
-            specific_issues = specific_issues.assign(
-                given_label=info["given_label"], predicted_label=info["predicted_label"]
-            )
-
-        if issue_name == "outlier":
-            column_dict = {
-                k: info.get(k)
-                for k in ["nearest_neighbor", "distance_to_nearest_neighbor"]
-                if info.get(k) is not None
-            }
-            specific_issues = specific_issues.assign(**column_dict)
-
-        if issue_name == "near_duplicate":
-            column_dict = {
-                k: info.get(k)
-                for k in ["near_duplicate_sets", "distance_to_nearest_neighbor"]
-                if info.get(k) is not None
-            }
-            specific_issues = specific_issues.assign(**column_dict)
-        return specific_issues
-
-    def _get_matching_issue_columns(self, issue_name: str) -> pd.DataFrame:
-        columns = [col for col in self.issues.columns if issue_name in col]
-        if not columns:
-            raise ValueError(f"No columns found for issue type '{issue_name}'.")
-        return self.issues[columns]
+        return self.data_issues.get_issues(issue_name=issue_name)
 
     def get_summary(self, issue_name: Optional[str] = None) -> pd.DataFrame:
         """Summarize the issues found in dataset of a particular type,
         including how severe this type of issue is overall across the dataset.
+
+        NOTE
+        ----
+        This is a wrapper around the
+        :py:meth:`DataIssues.get_summary <cleanlab.datalab.data_issues.DataIssues.get_summary>` method.
 
         Parameters
         ----------
@@ -418,27 +226,29 @@ class Datalab:
             the number of examples in the dataset estimated to exhibit this type of issue,
             and the overall severity of the issue across the dataset (via a numeric quality score where lower values indicate that the issue is overall more severe).
         """
-        if self.issue_summary.empty:
-            raise ValueError(
-                "No issues found in the dataset. "
-                "Call `find_issues` before calling `get_summary`."
-            )
+        return self.data_issues.get_summary(issue_name=issue_name)
 
-        if issue_name is None:
-            return self.issue_summary
+    def get_info(self, issue_name: Optional[str] = None) -> Dict[str, Any]:
+        """Get the info for the issue_name key.
 
-        row_mask = self.issue_summary["issue_type"] == issue_name
-        if not any(row_mask):
-            raise ValueError(f"Issue type {issue_name} not found in the summary.")
-        return self.issue_summary[row_mask].reset_index(drop=True)
+        This function is used to get the info for a specific issue_name. If the info is not computed yet, it will raise an error.
 
-    def _add_issue_summary_to_report(self, summary: pd.DataFrame) -> str:
-        return (
-            "Here is a summary of the different kinds of issues found in the data:\n\n"
-            + summary.to_string(index=False)
-            + "\n\n"
-            + "(Note: A lower score indicates a more severe issue across all examples in the dataset.)\n\n\n"
-        )
+        NOTE
+        ----
+        This is a wrapper around the
+        :py:meth:`DataIssues.get_info <cleanlab.datalab.data_issues.DataIssues.get_info>` method.
+
+        Parameters
+        ----------
+        issue_name :
+            The issue name for which the info is required.
+
+        Returns
+        -------
+        info:
+            The info for the issue_name.
+        """
+        return self.data_issues.get_info(issue_name)
 
     def find_issues(
         self,
@@ -458,13 +268,18 @@ class Datalab:
 
         Note
         ----
+        This method acts as a wrapper around the :py:meth:`IssueFinder.find_issues <cleanlab.datalab.issue_finder.IssueFinder.find_issues>` method,
+        where the core logic for issue detection is implemented.
+
+        Note
+        ----
         The issues are saved in the ``self.issues`` attribute, but are not returned.
 
         Parameters
         ----------
         pred_probs :
             Out-of-sample predicted class probabilities made by the model for every example in the dataset.
-            To best detect label issues, provide this input obtained from the most accurate model you can produce.
+            To best detect label issues, provide this input obtained from the most accurate model you can produce.
 
             If provided, this must be a 2D array with shape (num_examples, K) where K is the number of classes in the dataset.
 
@@ -584,52 +399,13 @@ class Datalab:
                 >>> # lab.find_issues(pred_probs=pred_probs, issue_types=issue_types)
 
         """
-
-        if issue_types is not None and not issue_types:
-            warnings.warn(
-                "No issue types were specified. " "No issues will be found in the dataset."
-            )
-            return None
-
-        issue_types_copy = self.get_available_issue_types(
+        issue_finder = IssueFinder(datalab=self, verbosity=self.verbosity)
+        issue_finder.find_issues(
             pred_probs=pred_probs,
             features=features,
             knn_graph=knn_graph,
             issue_types=issue_types,
         )
-
-        new_issue_managers = [
-            factory(datalab=self, **issue_types_copy.get(factory.issue_name, {}))
-            for factory in _IssueManagerFactory.from_list(list(issue_types_copy.keys()))
-        ]
-
-        if not new_issue_managers:
-            no_args_passed = all(arg is None for arg in [pred_probs, features, knn_graph])
-            if no_args_passed:
-                warnings.warn("No arguments were passed to find_issues.")
-            warnings.warn("No issue check performed.")
-            return None
-
-        failed_managers = []
-        for issue_manager, arg_dict in zip(new_issue_managers, issue_types_copy.values()):
-            try:
-                if self.verbosity:
-                    print(f"Finding {issue_manager.issue_name} issues ...")
-                issue_manager.find_issues(**arg_dict)
-                self.data_issues.collect_statistics_from_issue_manager(issue_manager)
-                self.data_issues._collect_results_from_issue_manager(issue_manager)
-            except Exception as e:
-                print(f"Error in {issue_manager.issue_name}: {e}")
-                failed_managers.append(issue_manager)
-
-        if self.verbosity:
-            print(
-                f"Audit complete. {self.issue_summary['num_issues'].sum()} issues found in the dataset."
-            )
-        if failed_managers:
-            print(f"Failed to check for these issue types: {failed_managers}")
-
-        self.data_issues.set_health_score()
 
     @staticmethod
     def list_possible_issue_types() -> List[str]:
@@ -637,63 +413,30 @@ class Datalab:
 
         Any issue type that is not in this list cannot be used in the :py:meth:`find_issues` method.
 
+        Note
+        ----
+        This method is a wrapper around :py:meth:`IssueFinder.list_possible_issue_types <cleanlab.datalab.issue_finder.IssueFinder.list_possible_issue_types>`.
+
         See Also
         --------
         :py:class:`REGISTRY <cleanlab.datalab.factory.REGISTRY>` : All available issue types and their corresponding issue managers can be found here.
         """
-        return list(REGISTRY.keys())
+        return IssueFinder.list_possible_issue_types()
 
     @staticmethod
     def list_default_issue_types() -> List[str]:
-        """Returns a list of the issue types that are run by default by Datalab.
+        """Returns a list of the issue types that are run by default
+        when :py:meth:`find_issues` is called without specifying `issue_types`.
+
+        Note
+        ----
+        This method is a wrapper around :py:meth:`IssueFinder.list_default_issue_types <cleanlab.datalab.issue_finder.IssueFinder.list_default_issue_types>`.
 
         See Also
         --------
         :py:class:`REGISTRY <cleanlab.datalab.factory.REGISTRY>` : All available issue types and their corresponding issue managers can be found here.
         """
-        return ["label", "outlier", "near_duplicate"]
-
-    def get_available_issue_types(self, **kwargs):
-        """Returns a dictionary of issue types that can be used in :py:meth:`Datalab.find_issues
-        <cleanlab.datalab.datalab.Datalab.find_issues>` method."""
-
-        pred_probs = kwargs.get("pred_probs", None)
-        features = kwargs.get("features", None)
-        knn_graph = kwargs.get("knn_graph", None)
-        issue_types = kwargs.get("issue_types", None)
-
-        # Determine which parameters are required for each issue type
-        required_args_per_issue_type = self._resolve_required_args(pred_probs, features, knn_graph)
-
-        issue_types_copy = self._set_issue_types(issue_types, required_args_per_issue_type)
-
-        if issue_types is None:
-            # Only run default issue types if no issue types are specified
-            issue_types_copy = {
-                issue: issue_types_copy[issue]
-                for issue in self.list_default_issue_types()
-                if issue in issue_types_copy
-            }
-
-        return issue_types_copy
-
-    def get_info(self, issue_name: Optional[str] = None) -> Dict[str, Any]:
-        """Fetches dict of miscellaneous information/statistics stored when previously finding isuses.
-
-        Parameters
-        ----------
-        issue_name :
-            The type of the issue to retrieve relevant information/statistics about.
-            If `None`, returns a huge dict of information for all issue types, where keys correspond to different issue types.
-
-        Returns
-        -------
-        info :
-            Dict of miscellaneous information related to the issues and other statistics of the dataset.
-            For example, may include information about which sets of examples are duplicated, if this is the issue type of interest.
-            Refer to our Datalab tutorials to better understand how you might utilize this information.
-        """
-        return self.data_issues.get_info(issue_name)
+        return IssueFinder.list_default_issue_types()
 
     def report(
         self,
@@ -716,17 +459,19 @@ class Datalab:
         include_description :
             Whether or not to include a description of each issue type in the report.
             Consider setting this to ``False`` once you're familiar with how each issue type is defined.
+
+        See Also
+        --------
+        For advanced usage, see documentation for the :py:class:`Reporter <cleanlab.datalab.reporter.Reporter>` class.
         """
         if verbosity is None:
             verbosity = self.verbosity
-        # Show summary of issues
-        print(
-            self._get_report(
-                num_examples=num_examples,
-                verbosity=verbosity,
-                include_description=include_description,
-            )
+        reporter = Reporter(
+            data_issues=self.data_issues,
+            verbosity=verbosity,
+            include_description=include_description,
         )
+        print(reporter.get_report(num_examples=num_examples))
 
     def save(self, path: str, force: bool = False) -> None:
         """Saves this Datalab object to file (all files are in folder at `path/`).

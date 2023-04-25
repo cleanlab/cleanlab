@@ -32,6 +32,8 @@ API Reference
 
     datalab
     data
-    factory
     data_issues
+    issue_finder
+    factory
     issue_manager/index
+    report

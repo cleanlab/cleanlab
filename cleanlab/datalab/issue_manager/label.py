@@ -139,7 +139,7 @@ class LabelIssueManager(IssueManager):
         # Collect info about the label issues
         self.info = self.collect_info(issues=self.issues, summary_dict=summary_dict)
 
-        # Drop drop column from issues that are in the info
+        # Drop columns from issues that are in the info
         self.issues = self.issues.drop(columns=["given_label", "predicted_label"])
 
     def get_health_summary(self, pred_probs, **kwargs) -> dict:

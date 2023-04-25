@@ -33,6 +33,8 @@ from pathlib import Path
 import pytest
 import timeit
 
+from cleanlab.datalab.report import Reporter
+
 SEED = 42
 
 
@@ -62,6 +64,22 @@ class TestDatalab:
             "Issues identified: Not checked\n"
         )
         assert expected_output == captured.out
+
+    def test_class_names(self):
+        y = ["a", "3", "2", "3"]
+        lab = Datalab({"y": y}, label_name="y")
+        assert lab.class_names == ["2", "3", "a"]
+
+        y = [-1, 4, 0.5, 0, 4, -1]
+        lab = Datalab({"y": y}, label_name="y")
+        assert lab.class_names == [-1, 0, 0.5, 4]
+
+    def test_list_default_issue_types(self):
+        assert Datalab.list_default_issue_types() == [
+            "label",
+            "outlier",
+            "near_duplicate",
+        ]
 
     def tmp_path(self):
         # A path for temporarily saving the instance during tests.
@@ -201,6 +219,16 @@ class TestDatalab:
                 assert f"is_{issue_type}_issue" in columns
                 assert f"{issue_type}_score" in columns
 
+    def test_find_issues_without_values_in_issue_types_raises_warning(self, lab, pred_probs):
+        issue_types = {}
+        with pytest.warns(UserWarning) as record:
+            lab.find_issues(pred_probs=pred_probs, issue_types=issue_types)
+        warning_message = record[0].message.args[0]
+        assert (
+            "No issue types were specified. No issues will be found in the dataset."
+            in warning_message
+        )
+
     @pytest.mark.parametrize(
         "issue_types",
         [
@@ -300,49 +328,6 @@ class TestDatalab:
         assert isinstance(knn_graph, csr_matrix)
         assert knn_graph.shape == (dataset_size, dataset_size)
         assert knn_graph.nnz == dataset_size * k
-
-    def test_validate_issue_types_dict(self, lab, monkeypatch):
-        issue_types = {
-            "issue_type_1": {f"arg_{i}": f"value_{i}" for i in range(1, 3)},
-            "issue_type_2": {f"arg_{i}": f"value_{i}" for i in range(1, 4)},
-        }
-        defaults_dict = issue_types.copy()
-
-        issue_types["issue_type_2"][
-            "arg_2"
-        ] = "another_value_2"  # Should be in default, but not affect the test
-        issue_types["issue_type_2"][
-            "arg_4"
-        ] = "value_4"  # Additional arg not in defaults should be allowed (ignored)
-
-        with monkeypatch.context() as m:
-            m.setitem(issue_types, "issue_type_1", {})
-            with pytest.raises(ValueError) as e:
-                lab._validate_issue_types_dict(issue_types, defaults_dict)
-            assert all([string in str(e.value) for string in ["issue_type_1", "arg_1", "arg_2"]])
-
-    @pytest.mark.parametrize(
-        "defaults_dict",
-        [
-            {"issue_type_1": {"arg_1": "default_value_1"}},
-        ],
-    )
-    @pytest.mark.parametrize(
-        "issue_types",
-        [{"issue_type_1": {"arg_1": "value_1", "arg_2": "value_2"}}, {"issue_type_1": {}}],
-    )
-    def test_set_issue_types(self, lab, issue_types, defaults_dict, monkeypatch):
-        """Test that the issue_types dict is set correctly."""
-        with monkeypatch.context() as m:
-            # Mock the validation method to do nothing
-            m.setattr(lab, "_validate_issue_types_dict", lambda x, y: None)
-            issue_types_copy = lab._set_issue_types(issue_types, defaults_dict)
-
-            # For each argument in issue_types missing from defaults_dict, it should be added to the defaults dict
-            for issue_type, args in issue_types.items():
-                missing_args = set(args.keys()) - set(defaults_dict[issue_type].keys())
-                for arg in missing_args:
-                    assert issue_types_copy[issue_type][arg] == args[arg]
 
     # Mock the lab.issues dataframe to have some pre-existing issues
     def test_update_issues(self, lab, pred_probs, monkeypatch):
@@ -486,10 +471,9 @@ class TestDatalab:
         """Test that a failed issue manager will not be added to the Datalab instance after
         the call to `find_issues`."""
         mock_issue_types = {"erroneous_issue_type": {}}
-        monkeypatch.setattr(lab, "_set_issue_types", lambda *args, **kwargs: mock_issue_types)
 
         mock_issue_manager = Mock()
-        mock_issue_manager.name = "erronous"
+        mock_issue_manager.issue_name = "erroneous_issue_type"
         mock_issue_manager.find_issues.side_effect = ValueError("Some error")
 
         class MockIssueManagerFactory:
@@ -498,81 +482,44 @@ class TestDatalab:
                 return [mock_issue_manager]
 
         monkeypatch.setattr(
-            "cleanlab.datalab.datalab._IssueManagerFactory", MockIssueManagerFactory
+            "cleanlab.datalab.issue_finder._IssueManagerFactory", MockIssueManagerFactory
         )
 
         assert lab.issues.empty
-        lab.find_issues()
-        assert lab.issues.empty
-
-    @pytest.mark.parametrize("include_description", [True, False])
-    def test_get_report(self, lab, include_description, monkeypatch):
-        """Test that the report method works. Assuming we have two issue managers, each should add
-        their section to the report."""
-
-        mock_issue_manager = Mock()
-        mock_issue_manager.issue_name = "foo"
-        mock_issue_manager.report.return_value = "foo report"
-
-        class MockIssueManagerFactory:
-            @staticmethod
-            def from_str(*args, **kwargs):
-                return mock_issue_manager
-
-        monkeypatch.setattr(
-            "cleanlab.datalab.datalab._IssueManagerFactory", MockIssueManagerFactory
-        )
-        mock_issues = pd.DataFrame(
-            {
-                "is_foo_issue": [False, True, False, False, False],
-                "foo_score": [0.6, 0.8, 0.7, 0.7, 0.8],
-            }
-        )
-        monkeypatch.setattr(lab, "issues", mock_issues)
-
-        mock_issue_summary = pd.DataFrame(
-            {
-                "issue_type": ["foo"],
-                "score": [0.72],
-            }
-        )
-
-        mock_info = {"foo": {"bar": "baz"}}
-
-        monkeypatch.setattr(lab, "issue_summary", mock_issue_summary)
-
-        monkeypatch.setattr(
-            lab, "_add_issue_summary_to_report", lambda *args, **kwargs: "Here is a lab summary\n\n"
-        )
-        monkeypatch.setattr(lab, "issues", mock_issues, raising=False)
-        monkeypatch.setattr(lab, "info", mock_info, raising=False)
-
-        report = lab._get_report(
-            num_examples=3, verbosity=0, include_description=include_description
-        )
-        expected_report = "\n\n".join(["Here is a lab summary", "foo report"])
-        assert report == expected_report
-
-    def test_report(self, lab, monkeypatch):
-        # lab.report simply wraps _get_report in a print statement
-        mock_get_report = Mock()
-        # Define a mock function that takes a verbosity argument and a k argument
-        # and returns a string
-        mock_get_report.side_effect = (
-            lambda num_examples, verbosity, **_: f"Report with verbosity={verbosity} and k={num_examples}"
-        )
-        monkeypatch.setattr(lab, "_get_report", mock_get_report)
-
-        # Call report with no arguments, test that it prints the report
         with patch("builtins.print") as mock_print:
-            lab.report(verbosity=0)
-            mock_print.assert_called_once_with("Report with verbosity=0 and k=5")
-            mock_print.reset_mock()
-            lab.report(num_examples=10, verbosity=3)
-            mock_print.assert_called_once_with("Report with verbosity=3 and k=10")
-            mock_print.reset_mock()
-            lab.report()
-            mock_print.assert_called_once_with("Report with verbosity=1 and k=5")
+            lab.find_issues(issue_types=mock_issue_types)
+            for expected_msg_substr in [
+                "Error in",
+                "Audit complete",
+                "Failed to check for these issue types: ",
+            ]:
+                assert any(expected_msg_substr in call[0][0] for call in mock_print.call_args_list)
+
+        assert lab.issues.empty
+
+    def test_report(self, lab):
+        class MockReporter:
+            def __init__(self, *args, **kwargs):
+                self.verbosity = kwargs.get("verbosity", None)
+                assert self.verbosity is not None, "Reporter should be initialized with verbosity"
+
+            def get_report(self, *args, **kwargs):
+                return (
+                    f"Report with verbosity={self.verbosity} and k={kwargs.get('num_examples', 5)}"
+                )
+
+        with patch("cleanlab.datalab.datalab.Reporter", new=MockReporter):
+
+            # Call report with no arguments, test that it prints the report
+            with patch("builtins.print") as mock_print:
+                lab.report(verbosity=0)
+                mock_print.assert_called_once_with("Report with verbosity=0 and k=5")
+                mock_print.reset_mock()
+                lab.report(num_examples=10, verbosity=3)
+                mock_print.assert_called_once_with("Report with verbosity=3 and k=10")
+                mock_print.reset_mock()
+                lab.report()
+                mock_print.assert_called_once_with("Report with verbosity=1 and k=5")
 
 
 class TestDatalabUsingKNNGraph:
@@ -751,7 +698,8 @@ def test_report_for_outlier_issues_via_pred_probs(find_issues_kwargs):
     find_issues_kwargs["issue_types"] = {"outlier": {"k": 1}}
     lab.find_issues(**find_issues_kwargs)
 
-    report = lab._get_report(num_examples=3, verbosity=0, include_description=False)
+    reporter = Reporter(lab.data_issues, verbosity=0, include_description=False)
+    report = reporter.get_report(num_examples=3)
     assert report, "Report should not be empty"
 
 

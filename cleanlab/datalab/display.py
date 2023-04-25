@@ -19,37 +19,37 @@ Module that handles the string representation of Datalab objects.
 
 from typing import TYPE_CHECKING
 
-if TYPE_CHECKING:
-    from cleanlab.datalab.datalab import Datalab  # pragma: no cover
+if TYPE_CHECKING:  # pragma: no cover
+    from cleanlab.datalab.data_issues import DataIssues
 
 
 class _Displayer:
-    def __init__(self, datalab: "Datalab") -> None:
-        self.datalab = datalab
+    def __init__(self, data_issues: "DataIssues") -> None:
+        self.data_issues = data_issues
 
     def __repr__(self) -> str:
         """What is displayed in console if user executes: >>> datalab"""
-        checks_run = not self.datalab.issues.empty
+        checks_run = not self.data_issues.issues.empty
         display_str = f"checks_run={checks_run}"
-        num_examples = self.datalab.get_info("statistics")["num_examples"]
+        num_examples = self.data_issues.get_info("statistics")["num_examples"]
         if num_examples is not None:
             display_str += f", num_examples={num_examples}"
-        num_classes = self.datalab.get_info("statistics")["num_classes"]
+        num_classes = self.data_issues.get_info("statistics")["num_classes"]
         if num_classes is not None:
             display_str += f", num_classes={num_classes}"
         if checks_run:
-            issues_identified = self.datalab.issue_summary["num_issues"].sum()
+            issues_identified = self.data_issues.issue_summary["num_issues"].sum()
             display_str += f", issues_identified={issues_identified}"
         return f"Datalab({display_str})"
 
     def __str__(self) -> str:
         """What is displayed if user executes: print(datalab)"""
-        checks_run = not self.datalab.issues.empty
-        num_examples = self.datalab.get_info("statistics").get("num_examples")
-        num_classes = self.datalab.get_info("statistics").get("num_classes")
+        checks_run = not self.data_issues.issues.empty
+        num_examples = self.data_issues.get_info("statistics").get("num_examples")
+        num_classes = self.data_issues.get_info("statistics").get("num_classes")
 
         issues_identified = (
-            self.datalab.issue_summary["num_issues"].sum() if checks_run else "Not checked"
+            self.data_issues.issue_summary["num_issues"].sum() if checks_run else "Not checked"
         )
         info_list = [
             f"Checks run: {'Yes' if checks_run else 'No'}",
