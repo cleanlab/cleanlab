@@ -126,6 +126,7 @@ Please see our `contributing guidelines <https://github.com/cleanlab/cleanlab/bl
    :hidden:
    :caption: Tutorials
 
+   Datalab Tutorials <tutorials/datalab/index>
    Workflows of Data-Centric AI <tutorials/indepth_overview>
    Image Classification (pytorch) <tutorials/image>
    Text Classification (tensorflow) <tutorials/text>
@@ -151,8 +152,9 @@ Please see our `contributing guidelines <https://github.com/cleanlab/cleanlab/bl
    cleanlab/dataset
    cleanlab/outlier
    cleanlab/multiannotator
-   cleanlab/multilabel_classification/index
+   cleanlab/multilabel_classification
    cleanlab/token_classification/index
+   cleanlab/datalab/index
    cleanlab/benchmarking/index
    cleanlab/models/index
    cleanlab/experimental/index
