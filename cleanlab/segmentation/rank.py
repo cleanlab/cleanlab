@@ -24,7 +24,6 @@ import pandas as pd
 import numpy as np
 from typing import List, Optional, Union, Tuple
 
-from cleanlab.rank import get_label_quality_scores as main_get_label_quality_scores
 from cleanlab.segmentation.filter import find_label_issues
 
 
@@ -119,7 +118,7 @@ def get_label_quality_scores(
     downsample_num_pixel_issues = kwargs.get("downsample", 16) 
 
     if method == "num_pixel_issues":
-        return find_label_issues(labels,pred_probs, downsample=downsample_num_pixel_issues, n_jobs=n_jobs, score_only=True, verbose=verbose,)
+        return find_label_issues(labels,pred_probs, downsample=downsample_num_pixel_issues, n_jobs=n_jobs, scores_only=True, verbose=verbose,)
         
     if downsample_num_pixel_issues != 16:
         import warnings
