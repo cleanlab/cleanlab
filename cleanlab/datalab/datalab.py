@@ -58,13 +58,14 @@ class Datalab:
         `label_name` column in the Dataset object.
 
         Supported formats:
-            - datasets.Dataset
-            - pandas.DataFrame
-            - dict (keys are strings, values are arrays/lists of length ``N``)
-            - list (list of dictionaries that each have the same keys)
-            - str
-                - path to a local file: Text (.txt), CSV (.csv), JSON (.json)
-                - or a dataset identifier on the Hugging Face Hub
+          - datasets.Dataset
+          - pandas.DataFrame
+          - dict (keys are strings, values are arrays/lists of length ``N``)
+          - list (list of dictionaries that each have the same keys)
+          - str
+
+            - path to a local file: Text (.txt), CSV (.csv), JSON (.json)
+            - or a dataset identifier on the Hugging Face Hub
 
     label_name : str
         The name of the label column in the dataset.
