@@ -124,7 +124,7 @@ def issues_from_scores(label_quality_scores: np.ndarray, *, threshold: float = 0
             """
         )
 
-    issue_indices = np.argwhere(label_quality_scores < threshold).flatten()
+    issue_indices = np.argwhere(label_quality_scores <= threshold).flatten()
     issue_vals = label_quality_scores[issue_indices]
     sorted_idx = issue_vals.argsort()
     return issue_indices[sorted_idx]
@@ -153,13 +153,17 @@ def _compute_label_quality_scores(
         threshold = min_pred_prob  # assume model was not pre_pruned if no threshold was provided
 
     if method == "subtype":
+        alpha = 0.91
+        low_probability_threshold = 0.10
+        high_probability_threshold = 0.6
+        temperature = 0.98
         scores = _compute_subtype_lqs(
             labels,
             predictions,
-            alpha=0.99,
-            low_probability_threshold=0.7,
-            high_probability_threshold=0.95,
-            temperature=0.98,
+            alpha=alpha,
+            low_probability_threshold=low_probability_threshold,
+            high_probability_threshold=high_probability_threshold,
+            temperature=temperature,
         )
 
     return scores
@@ -554,7 +558,7 @@ def _get_iou(bb1, bb2):
 
 def _euc_dis(box1, box2):
     """Calculates the euclidian distance between `box1` and `box2`."""
-    euc_factor = 0.1  # this is a hyperparameter
+    euc_factor = 100  # this is a hyperparameter
 
     x1, y1 = (box1[0] + box1[2]) / 2, (box1[1] + box1[3]) / 2
     x2, y2 = (box2[0] + box2[2]) / 2, (box2[1] + box2[3]) / 2
@@ -588,16 +592,6 @@ def _softmin1D(scores, temperature=0.99, axis=0):
     return np.dot(softmax_scores, scores)
 
 
-def _get_valid_score(scores_arr, temperature=0.99):
-    """Given scores array, returns valid score (softmin) or 1. Checks validity of score."""
-    scores_arr = np.array(scores_arr)
-    if len(scores_arr) > 0:
-        valid_score = _softmin1D(scores_arr, temperature=temperature)
-    else:
-        valid_score = 1.0
-    return valid_score
-
-
 def _get_min_possible_similarity(predictions, labels, alpha):
     """Gets the min possible similarity score between two bounding boxes out of all images."""
     min_possible_similarity = 1.0
@@ -607,52 +601,297 @@ def _get_min_possible_similarity(predictions, labels, alpha):
         iou_matrix = _get_overlap_matrix(lab_bboxes, pred_bboxes)
         dist_matrix = 1 - _get_dist_matrix(lab_bboxes, pred_bboxes)
         similarity_matrix = iou_matrix * alpha + (1 - alpha) * (1 - dist_matrix)
-        min_image_similarity = 1.0 if 0 in similarity_matrix.shape else np.min(similarity_matrix)
-        if min_image_similarity > 0:
-            min_possible_similarity = np.min([min_possible_similarity, min_image_similarity])
+        non_zero_similarity_matrix = similarity_matrix[np.nonzero(similarity_matrix)]
+        min_image_similarity = (
+            1.0 if 0 in non_zero_similarity_matrix.shape else np.min(non_zero_similarity_matrix)
+        )
+        min_possible_similarity = np.min([min_possible_similarity, min_image_similarity])
     return min_possible_similarity
 
 
-def _compute_scores_overlooked_for_image(
-    pred_labels,
-    pred_label_probs,
-    lab_labels,
-    similarity_matrix,
-    high_probability_threshold,
-    min_possible_similarity,
+def _get_valid_inputs_for_compute_scores_per_image(
+    *,
+    alpha: float,
+    label: Optional[dict] = None,
+    prediction: Optional[np.ndarray] = None,
+    pred_labels: Optional[np.ndarray] = None,
+    pred_label_probs: Optional[np.ndarray] = None,
+    pred_bboxes=None,
+    lab_labels: Optional[np.ndarray] = None,
+    lab_bboxes=None,
+    similarity_matrix=None,
+    min_possible_similarity: Optional[float] = None,
 ):
-    """Function to compute the overlooked box score for each prediction in a single image."""
+    if lab_labels is None or lab_bboxes is None:
+        if label is None:
+            raise ValueError(f"Pass in either one of label or label labels. Both can not be None.")
+        lab_bboxes, lab_labels = _separate_label(label)
 
-    scores_overlooked = []
+    if pred_labels is None or pred_label_probs is None or pred_bboxes is None:
+        if prediction is None:
+            raise ValueError(
+                f"Pass in either one of prediction or prediction labels and prediction probabilities. Both can not be None."
+            )
+        pred_bboxes, pred_labels, pred_label_probs = _separate_prediction(prediction)
+
+    if similarity_matrix is None:
+        iou_matrix = _get_overlap_matrix(lab_bboxes, pred_bboxes)
+        dist_matrix = 1 - _get_dist_matrix(lab_bboxes, pred_bboxes)
+        similarity_matrix = iou_matrix * alpha + (1 - alpha) * (1 - dist_matrix)
+
+    if min_possible_similarity is None:
+        min_possible_similarity = (
+            1.0
+            if 0 in similarity_matrix.shape
+            else np.min(similarity_matrix[np.nonzero(similarity_matrix)])
+        )
+
+    return (
+        pred_labels,
+        pred_label_probs,
+        pred_bboxes,
+        lab_labels,
+        lab_bboxes,
+        similarity_matrix,
+        min_possible_similarity,
+    )
+
+
+def _get_valid_inputs_for_compute_scores(
+    labels,
+    predictions,
+    alpha,
+):
+    min_possible_similarity = _get_min_possible_similarity(predictions, labels, alpha)
+
+    lab_labels_list = []
+    lab_bboxes_list = []
+    pred_labels_list = []
+    pred_label_probs_list = []
+    pred_bboxes_list = []
+    similarity_matrix_list = []
+
+    for prediction, label in zip(predictions, labels):
+        (
+            pred_labels,
+            pred_label_probs,
+            pred_bboxes,
+            lab_labels,
+            lab_bboxes,
+            similarity_matrix,
+            _,
+        ) = _get_valid_inputs_for_compute_scores_per_image(
+            alpha=alpha,
+            label=label,
+            prediction=prediction,
+            min_possible_similarity=min_possible_similarity,
+        )
+        lab_labels_list.append(lab_labels)
+        lab_bboxes_list.append(lab_bboxes)
+        pred_labels_list.append(pred_labels)
+        pred_label_probs_list.append(pred_label_probs)
+        pred_bboxes_list.append(pred_bboxes)
+        similarity_matrix_list.append(similarity_matrix)
+    return (
+        pred_labels_list,
+        pred_label_probs_list,
+        pred_bboxes_list,
+        lab_labels_list,
+        lab_bboxes_list,
+        similarity_matrix_list,
+        min_possible_similarity,
+    )
+
+
+def _get_valid_score(scores_arr, temperature=0.99):
+    """Given scores array, returns valid score (softmin) or 1. Checks validity of score."""
+    scores_arr = np.array(scores_arr)
+    scores_arr = scores_arr[~np.isnan(scores_arr)]
+    if len(scores_arr) > 0:
+        valid_score = _softmin1D(scores_arr, temperature=temperature)
+    else:
+        valid_score = 1.0
+    return valid_score
+
+
+def _pool_box_scores_per_image(box_scores, temperature=0.99) -> np.ndarray:
+    image_scores = np.empty(
+        shape=[
+            len(box_scores),
+        ]
+    )
+    for idx, box_score in enumerate(box_scores):
+        image_score = _get_valid_score(box_score, temperature=temperature)
+        image_scores[idx] = image_score
+    return image_scores
+
+
+def _compute_overlooked_box_scores_for_image(
+    alpha: float,
+    high_probability_threshold: float,
+    label: Optional[dict] = None,
+    prediction: Optional[np.ndarray] = None,
+    pred_labels: Optional[np.ndarray] = None,
+    pred_label_probs: Optional[np.ndarray] = None,
+    pred_bboxes: Optional[list] = None,
+    lab_labels: Optional[np.ndarray] = None,
+    lab_bboxes: Optional[list] = None,
+    similarity_matrix: Optional[np.ndarray] = None,
+    min_possible_similarity: Optional[float] = None,
+):
+    """This method returns one score per predicted box (above threshold) in an image. Score from 0 to 1 ranking how overlooked the box is."""
+
+    (
+        pred_labels,
+        pred_label_probs,
+        pred_bboxes,
+        lab_labels,
+        lab_bboxes,
+        similarity_matrix,
+        min_possible_similarity,
+    ) = _get_valid_inputs_for_compute_scores_per_image(
+        alpha=alpha,
+        label=label,
+        prediction=prediction,
+        pred_labels=pred_labels,
+        pred_label_probs=pred_label_probs,
+        pred_bboxes=pred_bboxes,
+        lab_labels=lab_labels,
+        lab_bboxes=lab_bboxes,
+        similarity_matrix=similarity_matrix,
+        min_possible_similarity=min_possible_similarity,
+    )
+
+    scores_overlooked = np.empty(
+        shape=[
+            len(pred_labels),
+        ]
+    )  # same length as num of predicted boxes
+
     for iid, k in enumerate(pred_labels):
         if pred_label_probs[iid] < high_probability_threshold:
+            scores_overlooked[iid] = np.nan
             continue
 
         k_similarity = similarity_matrix[lab_labels == k, iid]
         if len(k_similarity) == 0:  # if there is no annotated box
-            scores_overlooked.append(min_possible_similarity * (1 - pred_label_probs[iid]))
+            score = min_possible_similarity * (1 - pred_label_probs[iid])
         else:
             closest_annotated_box = np.argmax(k_similarity)
-            scores_overlooked.append(k_similarity[closest_annotated_box])
+            score = k_similarity[closest_annotated_box]
+        scores_overlooked[iid] = score
+
     return scores_overlooked
 
 
-def _compute_scores_badloc_for_image(
-    pred_labels,
-    pred_label_probs,
-    lab_labels,
-    similarity_matrix,
-    low_probability_threshold,
-    min_possible_similarity,
+def _compute_overlooked_box_scores(
+    alpha: float,
+    high_probability_threshold: float,
+    labels: Optional[dict] = None,
+    predictions: Optional[np.ndarray] = None,
+    pred_labels_list: Optional[list] = None,
+    pred_label_probs_list: Optional[list] = None,
+    pred_bboxes_list: Optional[list] = None,
+    lab_labels_list: Optional[list] = None,
+    lab_bboxes_list: Optional[list] = None,
+    similarity_matrix_list: Optional[list] = None,
+    min_possible_similarity: Optional[float] = None,
 ):
-    """Function to compute the bad location score for each label in a single image."""
-    scores_badloc = []
+    if (
+        pred_labels_list is None
+        or pred_label_probs_list is None
+        or lab_labels_list is None
+        or similarity_matrix_list is None
+        or min_possible_similarity is None
+    ):
+        (
+            pred_labels_list,
+            pred_label_probs_list,
+            pred_bboxes_list,
+            lab_labels_list,
+            lab_bboxes_list,
+            similarity_matrix_list,
+            min_possible_similarity,
+        ) = _get_valid_inputs_for_compute_scores(labels, predictions, alpha)
+
+    scores_overlooked = []
+    for (
+        pred_labels,
+        pred_label_probs,
+        pred_bboxes,
+        lab_labels,
+        lab_bboxes,
+        similarity_matrix,
+    ) in zip(
+        pred_labels_list,
+        pred_label_probs_list,
+        pred_bboxes_list,
+        lab_labels_list,
+        lab_bboxes_list,
+        similarity_matrix_list,
+    ):
+        scores_overlooked_per_box = _compute_overlooked_box_scores_for_image(
+            alpha=alpha,
+            high_probability_threshold=high_probability_threshold,
+            pred_labels=pred_labels,
+            pred_label_probs=pred_label_probs,
+            pred_bboxes=pred_bboxes,
+            lab_labels=lab_labels,
+            lab_bboxes=lab_bboxes,
+            similarity_matrix=similarity_matrix,
+            min_possible_similarity=min_possible_similarity,
+        )
+        scores_overlooked.append(scores_overlooked_per_box)
+    return scores_overlooked
+
+
+def _compute_badloc_box_scores_for_image(
+    alpha: float,
+    low_probability_threshold: float,
+    label: Optional[dict] = None,
+    prediction: Optional[np.ndarray] = None,
+    pred_labels: Optional[np.ndarray] = None,
+    pred_label_probs: Optional[np.ndarray] = None,
+    pred_bboxes: Optional[list] = None,
+    lab_labels: Optional[np.ndarray] = None,
+    lab_bboxes: Optional[list] = None,
+    similarity_matrix: Optional[np.ndarray] = None,
+    min_possible_similarity: Optional[float] = None,
+):
+    """This method returns one score per labeled box in an image. Score from 0 to 1 ranking how badly located the box is."""
+
+    (
+        pred_labels,
+        pred_label_probs,
+        pred_bboxes,
+        lab_labels,
+        lab_bboxes,
+        similarity_matrix,
+        min_possible_similarity,
+    ) = _get_valid_inputs_for_compute_scores_per_image(
+        alpha=alpha,
+        label=label,
+        prediction=prediction,
+        pred_labels=pred_labels,
+        pred_label_probs=pred_label_probs,
+        pred_bboxes=pred_bboxes,
+        lab_labels=lab_labels,
+        lab_bboxes=lab_bboxes,
+        similarity_matrix=similarity_matrix,
+        min_possible_similarity=min_possible_similarity,
+    )
+
+    scores_badloc = np.empty(
+        shape=[
+            len(lab_labels),
+        ]
+    )  # same length as number of labeled boxes
     for iid, k in enumerate(lab_labels):  # for every annotated box
         k_similarity = similarity_matrix[iid, pred_labels == k]
         k_pred = pred_label_probs[pred_labels == k]
 
         if len(k_pred) == 0:  # there are no predicted boxes of class k
-            scores_badloc.append(min_possible_similarity)
+            scores_badloc[iid] = min_possible_similarity
             continue
 
         idx_at_least_low_probability_threshold = k_pred > low_probability_threshold
@@ -660,27 +899,117 @@ def _compute_scores_badloc_for_image(
         k_pred = k_pred[idx_at_least_low_probability_threshold]
         assert len(k_pred) == len(k_similarity)
         if len(k_pred) == 0:
-            scores_badloc.append(min_possible_similarity)
+            scores_badloc[iid] = min_possible_similarity
         else:
-            scores_badloc.append(np.max(k_similarity))
+            scores_badloc[iid] = np.max(k_similarity)
     return scores_badloc
 
 
-def _compute_scores_swap_for_image(
-    pred_labels,
-    pred_label_probs,
-    lab_labels,
-    similarity_matrix,
-    high_probability_threshold,
-    min_possible_similarity,
+def _compute_badloc_box_scores(
+    alpha: float,
+    low_probability_threshold: float,
+    labels: Optional[dict] = None,
+    predictions: Optional[np.ndarray] = None,
+    pred_labels_list: Optional[list] = None,
+    pred_label_probs_list: Optional[list] = None,
+    pred_bboxes_list: Optional[list] = None,
+    lab_labels_list: Optional[list] = None,
+    lab_bboxes_list: Optional[list] = None,
+    similarity_matrix_list: Optional[list] = None,
+    min_possible_similarity: Optional[float] = None,
 ):
-    """Function to compute the swap score for each label in a single image."""
-    scores_swap = []
+    if (
+        pred_labels_list is None
+        or pred_label_probs_list is None
+        or lab_labels_list is None
+        or similarity_matrix_list is None
+        or min_possible_similarity is None
+    ):
+        (
+            pred_labels_list,
+            pred_label_probs_list,
+            lab_labels_list,
+            similarity_matrix_list,
+            min_possible_similarity,
+        ) = _get_valid_inputs_for_compute_scores(labels, predictions, alpha)
+
+    scores_badloc = []
+    for (
+        pred_labels,
+        pred_label_probs,
+        pred_bboxes,
+        lab_labels,
+        lab_bboxes,
+        similarity_matrix,
+    ) in zip(
+        pred_labels_list,
+        pred_label_probs_list,
+        pred_bboxes_list,
+        lab_labels_list,
+        lab_bboxes_list,
+        similarity_matrix_list,
+    ):
+        scores_badloc_per_box = _compute_badloc_box_scores_for_image(
+            alpha=alpha,
+            low_probability_threshold=low_probability_threshold,
+            pred_labels=pred_labels,
+            pred_label_probs=pred_label_probs,
+            pred_bboxes=pred_bboxes,
+            lab_labels=lab_labels,
+            lab_bboxes=lab_bboxes,
+            similarity_matrix=similarity_matrix,
+            min_possible_similarity=min_possible_similarity,
+        )
+        scores_badloc.append(scores_badloc_per_box)
+    return scores_badloc
+
+
+def _compute_swap_box_scores_for_image(
+    alpha: float,
+    high_probability_threshold: float,
+    label: Optional[dict] = None,
+    prediction: Optional[np.ndarray] = None,
+    pred_labels: Optional[np.ndarray] = None,
+    pred_label_probs: Optional[np.ndarray] = None,
+    pred_bboxes: Optional[list] = None,
+    lab_labels: Optional[np.ndarray] = None,
+    lab_bboxes: Optional[list] = None,
+    similarity_matrix: Optional[np.ndarray] = None,
+    min_possible_similarity: Optional[float] = None,
+):
+    """This method returns one score per labeled box in an image. Score from 0 to 1 ranking how likeley swapped the box is."""
+
+    (
+        pred_labels,
+        pred_label_probs,
+        pred_bboxes,
+        lab_labels,
+        lab_bboxes,
+        similarity_matrix,
+        min_possible_similarity,
+    ) = _get_valid_inputs_for_compute_scores_per_image(
+        alpha=alpha,
+        label=label,
+        prediction=prediction,
+        pred_labels=pred_labels,
+        pred_label_probs=pred_label_probs,
+        pred_bboxes=pred_bboxes,
+        lab_labels=lab_labels,
+        lab_bboxes=lab_bboxes,
+        similarity_matrix=similarity_matrix,
+        min_possible_similarity=min_possible_similarity,
+    )
+
+    scores_swap = np.empty(
+        shape=[
+            len(lab_labels),
+        ]
+    )  # same length as number of labeled boxes
     for iid, k in enumerate(lab_labels):
         not_k_idx = pred_labels != k
 
         if len(not_k_idx) == 0:
-            scores_swap.append(1.0)
+            scores_swap[iid] = 1.0
             continue
 
         not_k_similarity = similarity_matrix[iid, not_k_idx]
@@ -688,16 +1017,75 @@ def _compute_scores_swap_for_image(
 
         idx_at_least_high_probability_threshold = not_k_pred > high_probability_threshold
         if len(idx_at_least_high_probability_threshold) == 0:
-            scores_swap.append(1.0)
+            scores_swap[iid] = 1.0
             continue
 
         not_k_similarity = not_k_similarity[idx_at_least_high_probability_threshold]
         if len(not_k_similarity) == 0:  # if there is no annotated box
-            scores_swap.append(1.0)
+            scores_swap[iid] = 1.0
         else:
             closest_predicted_box = np.argmax(not_k_similarity)
             score = np.max([min_possible_similarity, 1 - not_k_similarity[closest_predicted_box]])
-            scores_swap.append(score)
+            scores_swap[iid] = score
+    return scores_swap
+
+
+def _compute_swap_box_scores(
+    alpha: float,
+    high_probability_threshold: float,
+    labels: Optional[dict] = None,
+    predictions: Optional[np.ndarray] = None,
+    pred_labels_list: Optional[list] = None,
+    pred_label_probs_list: Optional[list] = None,
+    pred_bboxes_list: Optional[list] = None,
+    lab_labels_list: Optional[list] = None,
+    lab_bboxes_list: Optional[list] = None,
+    similarity_matrix_list: Optional[list] = None,
+    min_possible_similarity: Optional[float] = None,
+):
+    if (
+        pred_labels_list is None
+        or pred_label_probs_list is None
+        or lab_labels_list is None
+        or similarity_matrix_list is None
+        or min_possible_similarity is None
+    ):
+        (
+            pred_labels_list,
+            pred_label_probs_list,
+            lab_labels_list,
+            similarity_matrix_list,
+            min_possible_similarity,
+        ) = _get_valid_inputs_for_compute_scores(labels, predictions, alpha)
+
+    scores_swap = []
+    for (
+        pred_labels,
+        pred_label_probs,
+        pred_bboxes,
+        lab_labels,
+        lab_bboxes,
+        similarity_matrix,
+    ) in zip(
+        pred_labels_list,
+        pred_label_probs_list,
+        pred_bboxes_list,
+        lab_labels_list,
+        lab_bboxes_list,
+        similarity_matrix_list,
+    ):
+        scores_swap_per_box = _compute_swap_box_scores_for_image(
+            alpha=alpha,
+            high_probability_threshold=high_probability_threshold,
+            pred_labels=pred_labels,
+            pred_label_probs=pred_label_probs,
+            pred_bboxes=pred_bboxes,
+            lab_labels=lab_labels,
+            lab_bboxes=lab_bboxes,
+            similarity_matrix=similarity_matrix,
+            min_possible_similarity=min_possible_similarity,
+        )
+        scores_swap.append(scores_swap_per_box)
     return scores_swap
 
 
@@ -750,49 +1138,56 @@ def _compute_subtype_lqs(
         Array of shape ``(N, )`` of scores between 0 and 1, one per image in the dataset.
         Lower scores indicate images are more likely to contain an incorrect label.
     """
-    scores = []
+    (
+        pred_labels_list,
+        pred_label_probs_list,
+        pred_bboxes_list,
+        lab_labels_list,
+        lab_bboxes_list,
+        similarity_matrix_list,
+        min_possible_similarity,
+    ) = _get_valid_inputs_for_compute_scores(labels, predictions, alpha)
 
-    min_possible_similarity = _get_min_possible_similarity(predictions, labels, alpha)
-    for prediction, label in zip(predictions, labels):
-        lab_bboxes, lab_labels = _separate_label(label)
-        pred_bboxes, pred_labels, pred_label_probs = _separate_prediction(prediction)
-        pred_label_probs = np.array(pred_label_probs)
-        iou_matrix = _get_overlap_matrix(lab_bboxes, pred_bboxes)
-        dist_matrix = 1 - _get_dist_matrix(lab_bboxes, pred_bboxes)
+    overlooked_scores_per_box = _compute_overlooked_box_scores(
+        alpha=alpha,
+        high_probability_threshold=high_probability_threshold,
+        pred_labels_list=pred_labels_list,
+        pred_label_probs_list=pred_label_probs_list,
+        pred_bboxes_list=pred_bboxes_list,
+        lab_labels_list=lab_labels_list,
+        lab_bboxes_list=lab_bboxes_list,
+        similarity_matrix_list=similarity_matrix_list,
+        min_possible_similarity=min_possible_similarity,
+    )
+    overlooked_score_per_image = _pool_box_scores_per_image(overlooked_scores_per_box, temperature)
 
-        similarity_matrix = iou_matrix * alpha + (1 - alpha) * (1 - dist_matrix)
+    badloc_scores_per_box = _compute_badloc_box_scores(
+        alpha=alpha,
+        low_probability_threshold=low_probability_threshold,
+        pred_labels_list=pred_labels_list,
+        pred_label_probs_list=pred_label_probs_list,
+        pred_bboxes_list=pred_bboxes_list,
+        lab_labels_list=lab_labels_list,
+        lab_bboxes_list=lab_bboxes_list,
+        similarity_matrix_list=similarity_matrix_list,
+        min_possible_similarity=min_possible_similarity,
+    )
+    badloc_score_per_image = _pool_box_scores_per_image(badloc_scores_per_box, temperature)
 
-        scores_overlooked = _compute_scores_overlooked_for_image(
-            pred_labels,
-            pred_label_probs,
-            lab_labels,
-            similarity_matrix,
-            high_probability_threshold,
-            min_possible_similarity,
-        )
-        score_overlooked = _get_valid_score(scores_overlooked, temperature)
+    swap_scores_per_box = _compute_swap_box_scores(
+        alpha=alpha,
+        high_probability_threshold=high_probability_threshold,
+        pred_labels_list=pred_labels_list,
+        pred_label_probs_list=pred_label_probs_list,
+        pred_bboxes_list=pred_bboxes_list,
+        lab_labels_list=lab_labels_list,
+        lab_bboxes_list=lab_bboxes_list,
+        similarity_matrix_list=similarity_matrix_list,
+        min_possible_similarity=min_possible_similarity,
+    )
+    swap_score_per_image = _pool_box_scores_per_image(swap_scores_per_box, temperature)
 
-        scores_badloc = _compute_scores_badloc_for_image(
-            pred_labels,
-            pred_label_probs,
-            lab_labels,
-            similarity_matrix,
-            low_probability_threshold,
-            min_possible_similarity,
-        )
-        score_badloc = _get_valid_score(scores_badloc, temperature)
-
-        scores_swap = _compute_scores_swap_for_image(
-            pred_labels,
-            pred_label_probs,
-            lab_labels,
-            similarity_matrix,
-            high_probability_threshold,
-            min_possible_similarity,
-        )
-        score_swap = _get_valid_score(scores_swap, temperature)
-
-        scores.append(
-            _softmin1D([score_overlooked, score_badloc, score_swap], temperature=temperature)
-        )
-    return np.array(scores)
+    scores = (
+        0.6 * overlooked_score_per_image + 0.2 * badloc_score_per_image + 0.2 * swap_score_per_image
+    )
+    return scores

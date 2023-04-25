@@ -237,7 +237,7 @@ labels, predictions = make_numpy(labels, predictions)
 def test_get_label_quality_scores():
     scores = get_label_quality_scores(labels, predictions)
     assert len(scores) == len(labels)
-    assert (scores < 1.0).all()
+    assert (scores <= 1.0).all()
     assert len(scores.shape) == 1
 
 
