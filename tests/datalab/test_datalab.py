@@ -509,7 +509,6 @@ class TestDatalab:
                 )
 
         with patch("cleanlab.datalab.datalab.Reporter", new=MockReporter):
-
             # Call report with no arguments, test that it prints the report
             with patch("builtins.print") as mock_print:
                 lab.report(verbosity=0)
