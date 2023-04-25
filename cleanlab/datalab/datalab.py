@@ -114,143 +114,6 @@ class Datalab:
         """Names of the classes in the dataset."""
         return self._data.class_names
 
-    @property
-    def issues(self) -> pd.DataFrame:
-        """Issues found in each example from the dataset."""
-        return self.data_issues.issues
-
-    @issues.setter
-    def issues(self, issues: pd.DataFrame) -> None:
-        self.data_issues.issues = issues
-
-    @property
-    def issue_summary(self) -> pd.DataFrame:
-        """Summary of issues found in the dataset and the overall severity of each type of issue.
-
-        This is a wrapper around the ``DataIssues.issue_summary`` attribute.
-
-        Examples
-        -------
-
-        If checks for "label" and "outlier" issues were run,
-        then the issue summary will look something like this:
-
-        >>> datalab.issue_summary
-        issue_type  score
-        outlier     0.123
-        label       0.456
-        """
-        return self.data_issues.issue_summary
-
-    @issue_summary.setter
-    def issue_summary(self, issue_summary: pd.DataFrame) -> None:
-        self.data_issues.issue_summary = issue_summary
-
-    @property
-    def info(self) -> Dict[str, Dict[str, Any]]:
-        """Information and statistics about the dataset issues found.
-
-        This is a wrapper around the ``DataIssues.info`` attribute.
-
-        Examples
-        -------
-
-        If checks for "label" and "outlier" issues were run,
-        then the info will look something like this:
-
-        >>> datalab.info
-        {
-            "label": {
-                "given_labels": [0, 1, 0, 1, 1, 1, 1, 1, 0, 1, ...],
-                "predicted_label": [0, 0, 0, 1, 0, 1, 0, 1, 0, 1, ...],
-                ...,
-            },
-            "outlier": {
-                "nearest_neighbor": [3, 7, 1, 2, 8, 4, 5, 9, 6, 0, ...],
-                "distance_to_nearest_neighbor": [0.123, 0.789, 0.456, ...],
-                ...,
-            },
-        }
-        """
-        return self.data_issues.info
-
-    @info.setter
-    def info(self, info: Dict[str, Dict[str, Any]]) -> None:
-        self.data_issues.info = info
-
-    def get_issues(self, issue_name: Optional[str] = None) -> pd.DataFrame:
-        """
-        Use this after finding issues to see which examples suffer from which types of issues.
-
-        NOTE
-        ----
-        This is a wrapper around the :py:meth:`DataIssues.get_issues <cleanlab.datalab.data_issues.DataIssues.get_issues>` method.
-
-        Parameters
-        ----------
-        issue_name : str or None
-            The type of issue to focus on. If `None`, returns full DataFrame summarizing all of the types of issues detected in each example from the dataset.
-
-        Raises
-        ------
-        ValueError
-            If `issue_name` is not a type of issue previously considered in the audit.
-
-        Returns
-        -------
-        specific_issues :
-            A DataFrame where each row corresponds to an example from the dataset and columns specify:
-            whether this example exhibits a particular type of issue and how severely (via a numeric quality score where lower values indicate more severe instances of the issue).
-
-            Additional columns may be present in the DataFrame depending on the type of issue specified.
-        """
-        return self.data_issues.get_issues(issue_name=issue_name)
-
-    def get_summary(self, issue_name: Optional[str] = None) -> pd.DataFrame:
-        """Summarize the issues found in dataset of a particular type,
-        including how severe this type of issue is overall across the dataset.
-
-        NOTE
-        ----
-        This is a wrapper around the
-        :py:meth:`DataIssues.get_summary <cleanlab.datalab.data_issues.DataIssues.get_summary>` method.
-
-        Parameters
-        ----------
-        issue_name :
-            Name of the issue type to summarize. If `None`, summarizes each of the different issue types previously considered in the audit.
-
-        Returns
-        -------
-        summary :
-            DataFrame where each row corresponds to a type of issue, and columns quantify:
-            the number of examples in the dataset estimated to exhibit this type of issue,
-            and the overall severity of the issue across the dataset (via a numeric quality score where lower values indicate that the issue is overall more severe).
-        """
-        return self.data_issues.get_summary(issue_name=issue_name)
-
-    def get_info(self, issue_name: Optional[str] = None) -> Dict[str, Any]:
-        """Get the info for the issue_name key.
-
-        This function is used to get the info for a specific issue_name. If the info is not computed yet, it will raise an error.
-
-        NOTE
-        ----
-        This is a wrapper around the
-        :py:meth:`DataIssues.get_info <cleanlab.datalab.data_issues.DataIssues.get_info>` method.
-
-        Parameters
-        ----------
-        issue_name :
-            The issue name for which the info is required.
-
-        Returns
-        -------
-        info:
-            The info for the issue_name.
-        """
-        return self.data_issues.get_info(issue_name)
-
     def find_issues(
         self,
         *,
@@ -408,37 +271,6 @@ class Datalab:
             issue_types=issue_types,
         )
 
-    @staticmethod
-    def list_possible_issue_types() -> List[str]:
-        """Returns a list of all registered issue types.
-
-        Any issue type that is not in this list cannot be used in the :py:meth:`find_issues` method.
-
-        Note
-        ----
-        This method is a wrapper around :py:meth:`IssueFinder.list_possible_issue_types <cleanlab.datalab.issue_finder.IssueFinder.list_possible_issue_types>`.
-
-        See Also
-        --------
-        :py:class:`REGISTRY <cleanlab.datalab.factory.REGISTRY>` : All available issue types and their corresponding issue managers can be found here.
-        """
-        return IssueFinder.list_possible_issue_types()
-
-    @staticmethod
-    def list_default_issue_types() -> List[str]:
-        """Returns a list of the issue types that are run by default
-        when :py:meth:`find_issues` is called without specifying `issue_types`.
-
-        Note
-        ----
-        This method is a wrapper around :py:meth:`IssueFinder.list_default_issue_types <cleanlab.datalab.issue_finder.IssueFinder.list_default_issue_types>`.
-
-        See Also
-        --------
-        :py:class:`REGISTRY <cleanlab.datalab.factory.REGISTRY>` : All available issue types and their corresponding issue managers can be found here.
-        """
-        return IssueFinder.list_default_issue_types()
-
     def report(
         self,
         *,
@@ -473,6 +305,174 @@ class Datalab:
             include_description=include_description,
         )
         print(reporter.get_report(num_examples=num_examples))
+
+    @property
+    def issues(self) -> pd.DataFrame:
+        """Issues found in each example from the dataset."""
+        return self.data_issues.issues
+
+    @issues.setter
+    def issues(self, issues: pd.DataFrame) -> None:
+        self.data_issues.issues = issues
+
+    @property
+    def issue_summary(self) -> pd.DataFrame:
+        """Summary of issues found in the dataset and the overall severity of each type of issue.
+
+        This is a wrapper around the ``DataIssues.issue_summary`` attribute.
+
+        Examples
+        -------
+
+        If checks for "label" and "outlier" issues were run,
+        then the issue summary will look something like this:
+
+        >>> datalab.issue_summary
+        issue_type  score
+        outlier     0.123
+        label       0.456
+        """
+        return self.data_issues.issue_summary
+
+    @issue_summary.setter
+    def issue_summary(self, issue_summary: pd.DataFrame) -> None:
+        self.data_issues.issue_summary = issue_summary
+
+    @property
+    def info(self) -> Dict[str, Dict[str, Any]]:
+        """Information and statistics about the dataset issues found.
+
+        This is a wrapper around the ``DataIssues.info`` attribute.
+
+        Examples
+        -------
+
+        If checks for "label" and "outlier" issues were run,
+        then the info will look something like this:
+
+        >>> datalab.info
+        {
+            "label": {
+                "given_labels": [0, 1, 0, 1, 1, 1, 1, 1, 0, 1, ...],
+                "predicted_label": [0, 0, 0, 1, 0, 1, 0, 1, 0, 1, ...],
+                ...,
+            },
+            "outlier": {
+                "nearest_neighbor": [3, 7, 1, 2, 8, 4, 5, 9, 6, 0, ...],
+                "distance_to_nearest_neighbor": [0.123, 0.789, 0.456, ...],
+                ...,
+            },
+        }
+        """
+        return self.data_issues.info
+
+    @info.setter
+    def info(self, info: Dict[str, Dict[str, Any]]) -> None:
+        self.data_issues.info = info
+
+    def get_issues(self, issue_name: Optional[str] = None) -> pd.DataFrame:
+        """
+        Use this after finding issues to see which examples suffer from which types of issues.
+
+        NOTE
+        ----
+        This is a wrapper around the :py:meth:`DataIssues.get_issues <cleanlab.datalab.data_issues.DataIssues.get_issues>` method.
+
+        Parameters
+        ----------
+        issue_name : str or None
+            The type of issue to focus on. If `None`, returns full DataFrame summarizing all of the types of issues detected in each example from the dataset.
+
+        Raises
+        ------
+        ValueError
+            If `issue_name` is not a type of issue previously considered in the audit.
+
+        Returns
+        -------
+        specific_issues :
+            A DataFrame where each row corresponds to an example from the dataset and columns specify:
+            whether this example exhibits a particular type of issue and how severely (via a numeric quality score where lower values indicate more severe instances of the issue).
+
+            Additional columns may be present in the DataFrame depending on the type of issue specified.
+        """
+        return self.data_issues.get_issues(issue_name=issue_name)
+
+    def get_summary(self, issue_name: Optional[str] = None) -> pd.DataFrame:
+        """Summarize the issues found in dataset of a particular type,
+        including how severe this type of issue is overall across the dataset.
+
+        NOTE
+        ----
+        This is a wrapper around the
+        :py:meth:`DataIssues.get_summary <cleanlab.datalab.data_issues.DataIssues.get_summary>` method.
+
+        Parameters
+        ----------
+        issue_name :
+            Name of the issue type to summarize. If `None`, summarizes each of the different issue types previously considered in the audit.
+
+        Returns
+        -------
+        summary :
+            DataFrame where each row corresponds to a type of issue, and columns quantify:
+            the number of examples in the dataset estimated to exhibit this type of issue,
+            and the overall severity of the issue across the dataset (via a numeric quality score where lower values indicate that the issue is overall more severe).
+        """
+        return self.data_issues.get_summary(issue_name=issue_name)
+
+    def get_info(self, issue_name: Optional[str] = None) -> Dict[str, Any]:
+        """Get the info for the issue_name key.
+
+        This function is used to get the info for a specific issue_name. If the info is not computed yet, it will raise an error.
+
+        NOTE
+        ----
+        This is a wrapper around the
+        :py:meth:`DataIssues.get_info <cleanlab.datalab.data_issues.DataIssues.get_info>` method.
+
+        Parameters
+        ----------
+        issue_name :
+            The issue name for which the info is required.
+
+        Returns
+        -------
+        info:
+            The info for the issue_name.
+        """
+        return self.data_issues.get_info(issue_name)
+
+    @staticmethod
+    def list_possible_issue_types() -> List[str]:
+        """Returns a list of all registered issue types.
+
+        Any issue type that is not in this list cannot be used in the :py:meth:`find_issues` method.
+
+        Note
+        ----
+        This method is a wrapper around :py:meth:`IssueFinder.list_possible_issue_types <cleanlab.datalab.issue_finder.IssueFinder.list_possible_issue_types>`.
+
+        See Also
+        --------
+        :py:class:`REGISTRY <cleanlab.datalab.factory.REGISTRY>` : All available issue types and their corresponding issue managers can be found here.
+        """
+        return IssueFinder.list_possible_issue_types()
+
+    @staticmethod
+    def list_default_issue_types() -> List[str]:
+        """Returns a list of the issue types that are run by default
+        when :py:meth:`find_issues` is called without specifying `issue_types`.
+
+        Note
+        ----
+        This method is a wrapper around :py:meth:`IssueFinder.list_default_issue_types <cleanlab.datalab.issue_finder.IssueFinder.list_default_issue_types>`.
+
+        See Also
+        --------
+        :py:class:`REGISTRY <cleanlab.datalab.factory.REGISTRY>` : All available issue types and their corresponding issue managers can be found here.
+        """
+        return IssueFinder.list_default_issue_types()
 
     def save(self, path: str, force: bool = False) -> None:
         """Saves this Datalab object to file (all files are in folder at `path/`).
