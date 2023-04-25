@@ -184,7 +184,6 @@ class Datalab:
         Here are some ways to provide inputs to :py:meth:`find_issues`:
 
         - Passing ``pred_probs``:
-
             .. code-block:: python
 
                 >>> from sklearn.linear_model import LogisticRegression
@@ -199,7 +198,6 @@ class Datalab:
 
 
         - Passing ``features``:
-
             .. code-block:: python
 
                 >>> from sklearn.linear_model import LogisticRegression
@@ -216,7 +214,6 @@ class Datalab:
             You can pass both ``pred_probs`` and ``features`` to :py:meth:`find_issues` for a more comprehensive audit.
 
         - Passing a ``knn_graph``:
-
             .. code-block:: python
 
                 >>> from sklearn.neighbors import NearestNeighbors
@@ -238,17 +235,16 @@ class Datalab:
                 >>> lab.find_issues(knn_graph=knn_graph)
 
         - Configuring issue types:
-
-        Suppose you want to only consider label issues. Just pass a dictionary with the key "label" and an empty dictionary as the value (to use default label issue parameters).
+            Suppose you want to only consider label issues. Just pass a dictionary with the key "label" and an empty dictionary as the value (to use default label issue parameters).
 
             .. code-block:: python
 
                 >>> issue_types = {"label": {}}
                 >>> # lab.find_issues(pred_probs=pred_probs, issue_types=issue_types)
 
-        If you are advanced user who wants greater control, you can pass keyword arguments to the issue manager that handles the label issues.
-        For example, if you want to pass the keyword argument "clean_learning_kwargs"
-        to the constructor of the :py:class:`LabelIssueManager <cleanlab.datalab.issue_manager.label.LabelIssueManager>`, you would pass:
+            If you are advanced user who wants greater control, you can pass keyword arguments to the issue manager that handles the label issues.
+            For example, if you want to pass the keyword argument "clean_learning_kwargs"
+            to the constructor of the :py:class:`LabelIssueManager <cleanlab.datalab.issue_manager.label.LabelIssueManager>`, you would pass:
 
 
             .. code-block:: python
@@ -295,7 +291,8 @@ class Datalab:
 
         See Also
         --------
-        For advanced usage, see documentation for the :py:class:`Reporter <cleanlab.datalab.reporter.Reporter>` class.
+        For advanced usage, see documentation for the
+        :py:class:`Reporter <cleanlab.datalab.report.Reporter>` class.
         """
         if verbosity is None:
             verbosity = self.verbosity
@@ -438,7 +435,7 @@ class Datalab:
 
         Returns
         -------
-        info:
+        :py:meth:`info <cleanlab.datalab.data_issues.DataIssues.get_info>` :
             The info for the issue_name.
         """
         return self.data_issues.get_info(issue_name)
