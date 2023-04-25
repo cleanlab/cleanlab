@@ -157,7 +157,7 @@ def _compute_label_quality_scores(
         low_probability_threshold = 0.10
         high_probability_threshold = 0.6
         temperature = 0.98
-        scores = _compute_subtype_lqs(
+        scores = _get_subtype_label_quality_scores(
             labels,
             predictions,
             alpha=alpha,
@@ -1089,7 +1089,7 @@ def _compute_swap_box_scores(
     return scores_swap
 
 
-def _compute_subtype_lqs(
+def _get_subtype_label_quality_scores(
     labels,
     predictions,
     *,
