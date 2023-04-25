@@ -692,15 +692,17 @@ def _get_valid_inputs_for_compute_scores(
         pred_label_probs_list.append(pred_label_probs)
         pred_bboxes_list.append(pred_bboxes)
         similarity_matrix_list.append(similarity_matrix)
-    return (
-        pred_labels_list,
-        pred_label_probs_list,
-        pred_bboxes_list,
-        lab_labels_list,
-        lab_bboxes_list,
-        similarity_matrix_list,
-        min_possible_similarity,
-    )
+
+    auxiliary_input_dict = {
+        "pred_labels_list": pred_labels_list,
+        "pred_label_probs_list": pred_label_probs_list,
+        "pred_bboxes_list": pred_bboxes_list,
+        "lab_labels_list": lab_labels_list,
+        "lab_bboxes_list": lab_bboxes_list,
+        "similarity_matrix_list": similarity_matrix_list,
+        "min_possible_similarity": min_possible_similarity,
+    }
+    return auxiliary_input_dict
 
 
 def _get_valid_score(scores_arr, temperature=0.99):
@@ -1138,52 +1140,20 @@ def _get_subtype_label_quality_scores(
         Array of shape ``(N, )`` of scores between 0 and 1, one per image in the dataset.
         Lower scores indicate images are more likely to contain an incorrect label.
     """
-    (
-        pred_labels_list,
-        pred_label_probs_list,
-        pred_bboxes_list,
-        lab_labels_list,
-        lab_bboxes_list,
-        similarity_matrix_list,
-        min_possible_similarity,
-    ) = _get_valid_inputs_for_compute_scores(labels, predictions, alpha)
-
+    auxiliary_input_dict = _get_valid_inputs_for_compute_scores(labels, predictions, alpha)
     overlooked_scores_per_box = _compute_overlooked_box_scores(
-        alpha=alpha,
-        high_probability_threshold=high_probability_threshold,
-        pred_labels_list=pred_labels_list,
-        pred_label_probs_list=pred_label_probs_list,
-        pred_bboxes_list=pred_bboxes_list,
-        lab_labels_list=lab_labels_list,
-        lab_bboxes_list=lab_bboxes_list,
-        similarity_matrix_list=similarity_matrix_list,
-        min_possible_similarity=min_possible_similarity,
+        alpha=alpha, high_probability_threshold=high_probability_threshold, **auxiliary_input_dict
     )
     overlooked_score_per_image = _pool_box_scores_per_image(overlooked_scores_per_box, temperature)
 
     badloc_scores_per_box = _compute_badloc_box_scores(
-        alpha=alpha,
-        low_probability_threshold=low_probability_threshold,
-        pred_labels_list=pred_labels_list,
-        pred_label_probs_list=pred_label_probs_list,
-        pred_bboxes_list=pred_bboxes_list,
-        lab_labels_list=lab_labels_list,
-        lab_bboxes_list=lab_bboxes_list,
-        similarity_matrix_list=similarity_matrix_list,
-        min_possible_similarity=min_possible_similarity,
+        alpha=alpha, low_probability_threshold=low_probability_threshold, **auxiliary_input_dict
     )
+
     badloc_score_per_image = _pool_box_scores_per_image(badloc_scores_per_box, temperature)
 
     swap_scores_per_box = _compute_swap_box_scores(
-        alpha=alpha,
-        high_probability_threshold=high_probability_threshold,
-        pred_labels_list=pred_labels_list,
-        pred_label_probs_list=pred_label_probs_list,
-        pred_bboxes_list=pred_bboxes_list,
-        lab_labels_list=lab_labels_list,
-        lab_bboxes_list=lab_bboxes_list,
-        similarity_matrix_list=similarity_matrix_list,
-        min_possible_similarity=min_possible_similarity,
+        alpha=alpha, high_probability_threshold=high_probability_threshold, **auxiliary_input_dict
     )
     swap_score_per_image = _pool_box_scores_per_image(swap_scores_per_box, temperature)
 
