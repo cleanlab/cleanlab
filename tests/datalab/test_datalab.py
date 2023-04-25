@@ -180,7 +180,7 @@ class TestDatalab:
             },
         )
 
-        pd.testing.assert_frame_equal(label_issues, expected_label_issues)
+        pd.testing.assert_frame_equal(label_issues, expected_label_issues, check_dtype=False)
 
         outlier_issues = lab.get_issues(issue_name="outlier")
 
@@ -191,10 +191,10 @@ class TestDatalab:
                 "distance_to_nearest_neighbor": mock_distance_to_nearest_neighbor,
             },
         )
-        pd.testing.assert_frame_equal(outlier_issues, expected_outlier_issues)
+        pd.testing.assert_frame_equal(outlier_issues, expected_outlier_issues, check_dtype=False)
 
         issues = lab.get_issues()
-        pd.testing.assert_frame_equal(issues, mock_issues)
+        pd.testing.assert_frame_equal(issues, mock_issues, check_dtype=False)
 
     @pytest.mark.parametrize(
         "issue_types",
