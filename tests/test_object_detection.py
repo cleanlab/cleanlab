@@ -13,8 +13,17 @@ from cleanlab.object_detection.rank import (
     _separate_prediction,
     _get_overlap_matrix,
     _get_dist_matrix,
+    _get_valid_inputs_for_compute_scores,
+    _compute_overlooked_box_scores,
+    _compute_badloc_box_scores,
+    _compute_swap_box_scores,
 )
 
+from cleanlab.object_detection.filter import (
+    find_label_issues,
+    _find_label_issues_per_box,
+    _pool_box_scores_per_image,
+)
 import numpy as np
 
 import warnings
@@ -329,6 +338,53 @@ def test_compute_label_quality_scores():
         labels, predictions, threshold=min_pred_prob
     )
     assert (scores == scores_with_min_threshold).all()
+
+
+def test_find_label_issues():
+    alpha = 0.91
+    high_probability_threshold = 0.7
+    low_probability_threshold = 0.1
+
+    thr_overlooked = 0.4
+    thr_badloc = 0.4  # hyperparameter
+    thr_swap = 0.99  # hyperparameter
+
+    auxiliary_input_dict = _get_valid_inputs_for_compute_scores(labels, predictions, alpha)
+
+    overlooked_scores_per_box = _compute_overlooked_box_scores(
+        alpha=alpha, high_probability_threshold=high_probability_threshold, **auxiliary_input_dict
+    )
+    overlooked_issues_per_box = _find_label_issues_per_box(
+        overlooked_scores_per_box, thr_overlooked
+    )
+    overlooked_issues_per_image = _pool_box_scores_per_image(overlooked_issues_per_box)
+    overlooked_issues = np.sum(overlooked_issues_per_image)
+    assert overlooked_issues == 3
+
+    badloc_scores_per_box = _compute_badloc_box_scores(
+        alpha=alpha, low_probability_threshold=low_probability_threshold, **auxiliary_input_dict
+    )
+    badloc_issues_per_box = _find_label_issues_per_box(badloc_scores_per_box, thr_badloc)
+    badloc_issues_per_image = _pool_box_scores_per_image(badloc_issues_per_box)
+    badloc_issues = np.sum(badloc_issues_per_image)
+    assert badloc_issues == 1
+
+    swap_scores_per_box = _compute_swap_box_scores(
+        alpha=alpha, high_probability_threshold=high_probability_threshold, **auxiliary_input_dict
+    )
+    swap_issues_per_box = _find_label_issues_per_box(swap_scores_per_box, thr_swap)
+    swap_issues_per_image = _pool_box_scores_per_image(swap_issues_per_box)
+    swap_issues = np.sum(swap_issues_per_image)
+    assert swap_issues == 1
+
+    thr_swap = 0.4  # hyperparameter
+    swap_issues_per_box = _find_label_issues_per_box(swap_scores_per_box, thr_swap)
+    swap_issues_per_image = _pool_box_scores_per_image(swap_issues_per_box)
+    swap_issues = np.sum(swap_issues_per_image)
+    assert swap_issues == 0
+
+    label_issues = find_label_issues(labels, predictions)
+    assert np.sum(label_issues) == np.sum(overlooked_issues + badloc_issues + swap_issues)
 
 
 @pytest.mark.usefixtures("generate_single_image_file")
