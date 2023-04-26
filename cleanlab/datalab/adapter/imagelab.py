@@ -5,14 +5,11 @@ with the DataIssues, IssueFinder, Reporter classes.
 
 """
 
-import warnings
 from typing import Optional
 
-import pandas as pd
 from cleanvision.imagelab import Imagelab
 from datasets.arrow_dataset import Dataset
 
-from cleanlab.datalab.data_issues import DataIssues
 from cleanlab.datalab.issue_finder import IssueFinder
 from cleanlab.datalab.report import Reporter
 
