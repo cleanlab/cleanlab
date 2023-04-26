@@ -28,8 +28,8 @@ and collects the results to :py:class:`DataIssues <cleanlab.datalab.data_issues.
     :py:meth:`Datalab.find_issues <cleanlab.datalab.datalab.Datalab.find_issues>` method.
 """
 
-from typing import Any, List, Optional, Dict, TYPE_CHECKING
 import warnings
+from typing import Any, List, Optional, Dict, TYPE_CHECKING
 
 import numpy as np
 import numpy.typing as npt
@@ -39,7 +39,6 @@ from cleanlab.datalab.factory import _IssueManagerFactory, REGISTRY
 
 if TYPE_CHECKING:  # pragma: no cover
     from cleanlab.datalab.datalab import Datalab
-    from cleanvision.imagelab import Imagelab
 
 
 class IssueFinder:
@@ -70,9 +69,8 @@ class IssueFinder:
     `Datalab.find_issues` method which internally utilizes an IssueFinder instance.
     """
 
-    def __init__(self, datalab: "Datalab", imagelab: "Imagelab", verbosity=1):
+    def __init__(self, datalab: "Datalab", verbosity=1):
         self.datalab = datalab
-        self.imagelab = imagelab
         self.verbosity = verbosity
 
     def find_issues(
@@ -140,12 +138,6 @@ class IssueFinder:
                 :py:class:`IssueManager <cleanlab.datalab.issue_manager.issue_manager.IssueManager>`
         """
 
-        if issue_types is not None and not issue_types:
-            warnings.warn(
-                "No issue types were specified. " "No issues will be found in the dataset."
-            )
-            return None
-
         issue_types_copy = self.get_available_issue_types(
             pred_probs=pred_probs,
             features=features,
@@ -153,16 +145,16 @@ class IssueFinder:
             issue_types=issue_types,
         )
 
-        new_issue_managers = []
-        for issue_type in issue_types_copy.keys():
-            if issue_type == "image_issue_types":
-                continue
-            factory = _IssueManagerFactory.from_str(issue_type)
-            new_issue_managers.append(
-                factory(datalab=self.datalab, **issue_types_copy.get(factory.issue_name, {}))
-            )
+        if not issue_types_copy:
+            warnings.warn("No arguments specified to check for datalab issues")
+            return None
 
-        if not new_issue_managers and not self.imagelab:
+        new_issue_managers = [
+            factory(datalab=self.datalab, **issue_types_copy.get(factory.issue_name, {}))
+            for factory in _IssueManagerFactory.from_list(list(issue_types_copy.keys()))
+        ]
+
+        if not new_issue_managers and not self.datalab.imagelab:
             no_args_passed = all(arg is None for arg in [pred_probs, features, knn_graph])
             if no_args_passed:
                 warnings.warn("No arguments were passed to find_issues.")
@@ -176,28 +168,15 @@ class IssueFinder:
                 if self.verbosity:
                     print(f"Finding {issue_manager.issue_name} issues ...")
                 issue_manager.find_issues(**arg_dict)
-                data_issues.collect_statistics_from_issue_manager(issue_manager)
-                data_issues.collect_results_from_issue_manager(issue_manager)
+                data_issues.collect_statistics(issue_manager)
+                data_issues.collect_issues_from_issue_manager(issue_manager)
             except Exception as e:
                 print(f"Error in {issue_manager.issue_name}: {e}")
                 failed_managers.append(issue_manager)
 
-        # Run imagelab
-        try:
-            if self.verbosity:
-                print(
-                    f'Finding {", ".join(issue_types_copy["image_issue_types"].keys())} images ...'
-                )
-            self.imagelab.find_issues(issue_types=issue_types_copy["image_issue_types"])
-            data_issues.collect_statistics_from_issue_manager(self.imagelab)
-            data_issues._collect_results_from_imagelab(self.imagelab)
-        except Exception as e:
-            print(f"Error in checking for image issues: {e}")
-            failed_managers.append(self.imagelab)
-
         if self.verbosity:
             print(
-                f"Audit complete. {data_issues.issue_summary['num_issues'].sum()} issues found in the dataset."
+                f"General audit complete. {data_issues.issue_summary['num_issues'].sum()} issues found in the dataset."
             )
         if failed_managers:
             print(f"Failed to check for these issue types: {failed_managers}")
@@ -282,20 +261,20 @@ class IssueFinder:
         """
         if issue_types is not None:
             issue_types_copy = issue_types.copy()
+            issue_types_copy = {
+                issue: issue_types_copy[issue]
+                for issue in self.list_possible_issue_types()
+                if issue in issue_types_copy
+            }
             self._check_missing_args(required_defaults_dict, issue_types_copy)
         else:
             issue_types_copy = required_defaults_dict.copy()
             # keep only default issue types
-            default_issues = self.list_default_issue_types()
             issue_types_copy = {
                 issue: issue_types_copy[issue]
-                for issue in default_issues
+                for issue in self.list_default_issue_types()
                 if issue in issue_types_copy
             }
-            if self.imagelab:
-                issue_types_copy["image_issue_types"] = {
-                    issue_type: {} for issue_type in self.imagelab.list_default_issue_types()
-                }
 
         # Check that all required arguments are provided.
         self._validate_issue_types_dict(issue_types_copy, required_defaults_dict)
@@ -304,10 +283,6 @@ class IssueFinder:
         for key, value in issue_types_copy.items():
             issue_types_copy[key] = {k: v for k, v in value.items() if v is not None}
 
-        # Remove imagelab near/exact duplicate checks
-        if "near_duplicate" in issue_types_copy and "image_issue_types" in issue_types_copy:
-            issue_types_copy["image_issue_types"].pop("near_duplicates")
-            issue_types_copy["image_issue_types"].pop("exact_duplicates")
         return issue_types_copy
 
     @staticmethod

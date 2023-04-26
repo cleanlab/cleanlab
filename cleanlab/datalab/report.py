@@ -90,7 +90,6 @@ class Reporter:
         issue_summary = self.data_issues.issue_summary.copy()
         issue_summary = issue_summary[~issue_summary["issue_type"].isin(self.imagelab_issues)]
         if issue_summary.empty:
-            print("No issues checks run exclusive to datalab.")
             return report_str
 
         issue_summary_sorted = issue_summary.sort_values(by="num_issues", ascending=False)

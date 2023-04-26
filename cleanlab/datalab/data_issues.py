@@ -197,9 +197,7 @@ class DataIssues:
             info["class_names"] = self.statistics["class_names"]
         return info
 
-    def collect_statistics_from_issue_manager(
-        self, issue_manager: Union[IssueManager, Imagelab]
-    ) -> None:
+    def collect_statistics(self, issue_manager: Union[IssueManager, Imagelab]) -> None:
         """Update the statistics in the info dictionary.
 
         Parameters
@@ -240,7 +238,7 @@ class DataIssues:
             warnings.warn(f"Overwriting key {issue_name} in self.info")
         self.info[issue_name] = new_info
 
-    def _collect_results_from_imagelab(self, imagelab: Imagelab) -> None:
+    def collect_issues_from_imagelab(self, imagelab: Imagelab) -> None:
         """
         Collect results from Imagelab and update datalab.issues and datalab.issue_summary
 
@@ -269,7 +267,7 @@ class DataIssues:
                 continue
             self._update_issue_info(issue_type, imagelab.info[issue_type])
 
-    def collect_results_from_issue_manager(self, issue_manager: IssueManager) -> None:
+    def collect_issues_from_issue_manager(self, issue_manager: IssueManager) -> None:
         """
         Collects results from an IssueManager and update the corresponding
         attributes of the Datalab object.
