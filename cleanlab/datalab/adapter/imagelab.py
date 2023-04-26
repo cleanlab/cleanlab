@@ -5,16 +5,31 @@ with the DataIssues, IssueFinder, Reporter classes.
 
 """
 
-from typing import Optional
-
-from cleanvision.imagelab import Imagelab
-from datasets.arrow_dataset import Dataset
+from typing import Optional, TYPE_CHECKING
 
 from cleanlab.datalab.issue_finder import IssueFinder
 from cleanlab.datalab.report import Reporter
 
+if TYPE_CHECKING:
+    from datasets.arrow_dataset import Dataset
+    from cleanvision.imagelab import Imagelab
 
-def create_imagelab(dataset: Dataset, image_key: str) -> Optional[Imagelab]:
+
+def create_imagelab(dataset: "Dataset", image_key: str) -> Optional["Imagelab"]:
+    """Creates Imagelab instance for running CleanVision checks. CleanVision checks are only supported for
+    huggingface datasets as of now.
+
+    Parameters
+    ----------
+    dataset: datasets.Dataset
+        Huggingface dataset used by Imagelab
+    image_key: str
+        key for image feature in the huggingface dataset
+
+    Returns
+    -------
+    Imagelab
+    """
     imagelab = None
     if not image_key:
         return imagelab
