@@ -154,9 +154,9 @@ def _compute_label_quality_scores(
 
     if method == "subtype":
         alpha = 0.91
-        low_probability_threshold = 0.10
-        high_probability_threshold = 0.6
-        temperature = 0.98
+        low_probability_threshold = 0.001
+        high_probability_threshold = 0.5
+        temperature = 0.1
         scores = _get_subtype_label_quality_scores(
             labels,
             predictions,
@@ -558,7 +558,7 @@ def _get_iou(bb1, bb2):
 
 def _euc_dis(box1, box2):
     """Calculates the euclidian distance between `box1` and `box2`."""
-    euc_factor = 100  # this is a hyperparameter
+    euc_factor = 0.1  # this is a hyperparameter
 
     x1, y1 = (box1[0] + box1[2]) / 2, (box1[1] + box1[3]) / 2
     x2, y2 = (box2[0] + box2[2]) / 2, (box2[1] + box2[3]) / 2
@@ -1149,7 +1149,6 @@ def _get_subtype_label_quality_scores(
     badloc_scores_per_box = _compute_badloc_box_scores(
         alpha=alpha, low_probability_threshold=low_probability_threshold, **auxiliary_input_dict
     )
-
     badloc_score_per_image = _pool_box_scores_per_image(badloc_scores_per_box, temperature)
 
     swap_scores_per_box = _compute_swap_box_scores(
