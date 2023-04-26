@@ -300,10 +300,15 @@ class Datalab:
             verbosity = self.verbosity
         reporter = Reporter(
             data_issues=self.data_issues,
+            imagelab_issues=self.imagelab.issue_summary["issue_type"] if self.imagelab else [],
             verbosity=verbosity,
             include_description=include_description,
         )
         print(reporter.get_report(num_examples=num_examples))
+
+        if self.imagelab:
+            print("\n\n")
+            self.imagelab.report(num_images=num_examples, verbosity=verbosity)
 
     @property
     def issues(self) -> pd.DataFrame:
@@ -443,13 +448,14 @@ class Datalab:
         return self.data_issues.get_info(issue_name)
 
     def _init_imagelab(self, image_key):
+        imagelab = None
         if image_key:
             try:
                 from cleanvision.imagelab import Imagelab
                 from datasets.arrow_dataset import Dataset
 
                 if isinstance(self.data, Dataset):
-                    self.imagelab = Imagelab(hf_dataset=self.data, image_key=image_key)
+                    imagelab = Imagelab(hf_dataset=self.data, image_key=image_key)
                 else:
                     raise ValueError(
                         "Only huggingface datasets are supported for cleanvision checks from cleanlab as of now"
@@ -460,6 +466,7 @@ class Datalab:
                     "Cannot import datasets or cleanvision package. Please install them and try again, or just install cleanlab with "
                     "all optional dependencies via: `pip install cleanlab[all]`"
                 )
+        return imagelab
 
     @staticmethod
     def list_possible_issue_types() -> List[str]:

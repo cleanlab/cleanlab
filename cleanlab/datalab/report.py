@@ -17,7 +17,7 @@
 Module that handles reporting of all types of issues identified in the data.
 """
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List
 
 import pandas as pd
 
@@ -54,10 +54,15 @@ class Reporter:
     """
 
     def __init__(
-        self, data_issues: "DataIssues", verbosity: int = 1, include_description: bool = True
+        self,
+        data_issues: "DataIssues",
+        imagelab_issues: List[str],
+        verbosity: int = 1,
+        include_description: bool = True,
     ):
         self.data_issues = data_issues
         self.verbosity = verbosity
+        self.imagelab_issues = imagelab_issues
         self.include_description = include_description
 
     def get_report(self, num_examples: int) -> str:
@@ -82,8 +87,14 @@ class Reporter:
         >>> print(report_str)
         """
         report_str = ""
-        issue_summary = self.data_issues.issue_summary
+        issue_summary = self.data_issues.issue_summary.copy()
+        issue_summary = issue_summary[~issue_summary["issue_type"].isin(self.imagelab_issues)]
+        if issue_summary.empty:
+            print("No issues checks run exclusive to datalab.")
+            return report_str
+
         issue_summary_sorted = issue_summary.sort_values(by="num_issues", ascending=False)
+
         report_str += self._write_summary(summary=issue_summary_sorted)
 
         issue_reports = [

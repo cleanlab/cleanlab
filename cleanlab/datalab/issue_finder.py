@@ -153,12 +153,16 @@ class IssueFinder:
             issue_types=issue_types,
         )
 
-        new_issue_managers = [
-            factory(datalab=self.datalab, **issue_types_copy.get(factory.issue_name, {}))
-            for factory in _IssueManagerFactory.from_list(list(issue_types_copy.keys()))
-        ]
+        new_issue_managers = []
+        for issue_type in issue_types_copy.keys():
+            if issue_type == "image_issue_types":
+                continue
+            factory = _IssueManagerFactory.from_str(issue_type)
+            new_issue_managers.append(
+                factory(datalab=self, **issue_types_copy.get(factory.issue_name, {}))
+            )
 
-        if not new_issue_managers:
+        if not new_issue_managers and not self.imagelab:
             no_args_passed = all(arg is None for arg in [pred_probs, features, knn_graph])
             if no_args_passed:
                 warnings.warn("No arguments were passed to find_issues.")
@@ -178,12 +182,29 @@ class IssueFinder:
                 print(f"Error in {issue_manager.issue_name}: {e}")
                 failed_managers.append(issue_manager)
 
+        # Run imagelab
+        try:
+            if self.verbosity:
+                print(
+                    f'Finding {", ".join(issue_types_copy["image_issue_types"].keys())} images ...'
+                )
+            self.imagelab.find_issues(issue_types=issue_types_copy["image_issue_types"])
+            data_issues.collect_statistics_from_issue_manager(self.imagelab)
+            data_issues._collect_results_from_imagelab(self.imagelab)
+        except Exception as e:
+            print(f"Error in checking for image issues: {e}")
+            failed_managers.append(self.imagelab)
+
         if self.verbosity:
             print(
                 f"Audit complete. {data_issues.issue_summary['num_issues'].sum()} issues found in the dataset."
             )
         if failed_managers:
             print(f"Failed to check for these issue types: {failed_managers}")
+            if self.imagelab:
+                print(
+                    f"{self.imagelab.issue_summary['num_images'].sum()} images issues found in the dataset."
+                )
 
         data_issues.set_health_score()
 
@@ -272,19 +293,21 @@ class IssueFinder:
                 if issue in issue_types_copy
             }
             if self.imagelab:
-                print("Running default issue checks on raw images")
-                # todo implement default issue types on imagelab side
                 issue_types_copy["image_issue_types"] = {
-                    "dark": {},
-                    "light": {},
-                    "near_duplicates": {},
+                    issue_type: {} for issue_type in self.imagelab.list_default_issue_types()
                 }
+
         # Check that all required arguments are provided.
         self._validate_issue_types_dict(issue_types_copy, required_defaults_dict)
 
         # Remove None values from argument list, rely on default values in IssueManager
         for key, value in issue_types_copy.items():
             issue_types_copy[key] = {k: v for k, v in value.items() if v is not None}
+
+        # Remove imagelab near/exact duplicate checks
+        if "near_duplicate" in issue_types_copy and "image_issue_types" in issue_types_copy:
+            issue_types_copy["image_issue_types"].pop("near_duplicates")
+            issue_types_copy["image_issue_types"].pop("exact_duplicates")
         return issue_types_copy
 
     @staticmethod
@@ -350,13 +373,5 @@ class IssueFinder:
         required_args_per_issue_type = self._resolve_required_args(pred_probs, features, knn_graph)
 
         issue_types_copy = self._set_issue_types(issue_types, required_args_per_issue_type)
-
-        if issue_types is None:
-            # Only run default issue types if no issue types are specified
-            issue_types_copy = {
-                issue: issue_types_copy[issue]
-                for issue in self.list_default_issue_types()
-                if issue in issue_types_copy
-            }
 
         return issue_types_copy
