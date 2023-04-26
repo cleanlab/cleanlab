@@ -23,7 +23,7 @@ via a factory, run the issue managers
 and collects the results to :py:class:`DataIssues <cleanlab.datalab.data_issues.DataIssues>`.
 
 .. note::
-    
+
     This module is not intended to be used directly. Instead, use the public-facing
     :py:meth:`Datalab.find_issues <cleanlab.datalab.datalab.Datalab.find_issues>` method.
 """
@@ -39,6 +39,7 @@ from cleanlab.datalab.factory import _IssueManagerFactory, REGISTRY
 
 if TYPE_CHECKING:  # pragma: no cover
     from cleanlab.datalab.datalab import Datalab
+    from cleanvision.imagelab import Imagelab
 
 
 class IssueFinder:
@@ -69,8 +70,9 @@ class IssueFinder:
     `Datalab.find_issues` method which internally utilizes an IssueFinder instance.
     """
 
-    def __init__(self, datalab: "Datalab", verbosity=1):
+    def __init__(self, datalab: "Datalab", imagelab: "Imagelab", verbosity=1):
         self.datalab = datalab
+        self.imagelab = imagelab
         self.verbosity = verbosity
 
     def find_issues(
@@ -137,12 +139,6 @@ class IssueFinder:
             .. seealso::
                 :py:class:`IssueManager <cleanlab.datalab.issue_manager.issue_manager.IssueManager>`
         """
-
-        if issue_types is not None and not issue_types:
-            warnings.warn(
-                "No issue types were specified. " "No issues will be found in the dataset."
-            )
-            return None
 
         if issue_types is not None and not issue_types:
             warnings.warn(
@@ -268,6 +264,21 @@ class IssueFinder:
             self._check_missing_args(required_defaults_dict, issue_types_copy)
         else:
             issue_types_copy = required_defaults_dict.copy()
+            # keep only default issue types
+            default_issues = self.list_default_issue_types()
+            issue_types_copy = {
+                issue: issue_types_copy[issue]
+                for issue in default_issues
+                if issue in issue_types_copy
+            }
+            if self.imagelab:
+                print("Running default issue checks on raw images")
+                # todo implement default issue types on imagelab side
+                issue_types_copy["image_issue_types"] = {
+                    "dark": {},
+                    "light": {},
+                    "near_duplicates": {},
+                }
         # Check that all required arguments are provided.
         self._validate_issue_types_dict(issue_types_copy, required_defaults_dict)
 

@@ -32,8 +32,8 @@ from cleanlab.datalab.data import Data
 from cleanlab.datalab.data_issues import DataIssues
 from cleanlab.datalab.display import _Displayer
 from cleanlab.datalab.issue_finder import IssueFinder
-from cleanlab.datalab.serialize import _Serializer
 from cleanlab.datalab.report import Reporter
+from cleanlab.datalab.serialize import _Serializer
 
 if TYPE_CHECKING:  # pragma: no cover
     from datasets.arrow_dataset import Dataset
@@ -87,6 +87,7 @@ class Datalab:
         self,
         data: "DatasetLike",
         label_name: str,
+        image_key: str,
         verbosity: int = 1,
     ) -> None:
         self._data = Data(data, label_name)
@@ -97,6 +98,7 @@ class Datalab:
         self.data_issues = DataIssues(self._data)
         self.cleanlab_version = cleanlab.version.__version__
         self.verbosity = verbosity
+        self.imagelab = self._init_imagelab(image_key)
 
     def __repr__(self) -> str:
         return _Displayer(data_issues=self.data_issues).__repr__()
@@ -259,7 +261,7 @@ class Datalab:
                 >>> # lab.find_issues(pred_probs=pred_probs, issue_types=issue_types)
 
         """
-        issue_finder = IssueFinder(datalab=self, verbosity=self.verbosity)
+        issue_finder = IssueFinder(datalab=self, imagelab=self.imagelab, verbosity=self.verbosity)
         issue_finder.find_issues(
             pred_probs=pred_probs,
             features=features,
@@ -439,6 +441,25 @@ class Datalab:
             The info for the issue_name.
         """
         return self.data_issues.get_info(issue_name)
+
+    def _init_imagelab(self, image_key):
+        if image_key:
+            try:
+                from cleanvision.imagelab import Imagelab
+                from datasets.arrow_dataset import Dataset
+
+                if isinstance(self.data, Dataset):
+                    self.imagelab = Imagelab(hf_dataset=self.data, image_key=image_key)
+                else:
+                    raise ValueError(
+                        "Only huggingface datasets are supported for cleanvision checks from cleanlab as of now"
+                    )
+
+            except ImportError:
+                raise ImportError(
+                    "Cannot import datasets or cleanvision package. Please install them and try again, or just install cleanlab with "
+                    "all optional dependencies via: `pip install cleanlab[all]`"
+                )
 
     @staticmethod
     def list_possible_issue_types() -> List[str]:
