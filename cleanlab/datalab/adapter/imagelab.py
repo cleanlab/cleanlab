@@ -51,7 +51,6 @@ class ImagelabReporterAdapter(Reporter):
 
 # How do we let `Datalab` call this in `Datalab.find_issues`?
 class ImagelabIssueFinderAdapter(IssueFinder):
-
     # How should we initialize this?
     def __init__(self, datalab, verbosity, *args, **kwargs):
         self.datalab = datalab
