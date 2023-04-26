@@ -29,8 +29,8 @@ from cleanlab.internal.token_classification_utils import color_sentence, get_sen
 
 def display_issues(
     issues: np.ndarray,
-    labels: np.ndarray=None,
-    pred_probs: np.ndarray=None,
+    labels: Optional[np.ndarray]=None,
+    pred_probs: Optional[np.ndarray]=None,
     exclude: List[int] = [],
     top: int = 20
 ) -> None:
