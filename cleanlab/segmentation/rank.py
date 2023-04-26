@@ -35,7 +35,7 @@ def get_label_quality_scores(
     n_jobs: Optional[int] = 1,
     verbose: bool = True,
     **kwargs
-) -> np.ndarray:
+) -> Tuple[np.ndarray,np.ndarray]:
     """Returns a label quality score for each image.
 
     This is a function to compute label quality scores for standard (multi-class) classification datasets,
@@ -118,7 +118,14 @@ def get_label_quality_scores(
     downsample_num_pixel_issues = kwargs.get("downsample", 16) 
 
     if method == "num_pixel_issues":
-        return find_label_issues(labels,pred_probs, downsample=downsample_num_pixel_issues, n_jobs=n_jobs, scores_only=True, verbose=verbose,)
+        _,K,_,_ = pred_probs.shape
+        labels_expanded = labels[:, np.newaxis, :, :]
+        mask = (np.arange(K)[np.newaxis, :, np.newaxis, np.newaxis] == labels_expanded)
+        # Calculate pixel_scores
+        masked_pred_probs = np.where(mask, pred_probs, 0)
+        pixel_scores = masked_pred_probs.sum(axis=1)
+        
+        return find_label_issues(labels,pred_probs, downsample=downsample_num_pixel_issues, n_jobs=n_jobs, scores_only=True, verbose=verbose,), pixel_scores
         
     if downsample_num_pixel_issues != 16:
         import warnings
