@@ -503,8 +503,8 @@ class TestDatalab:
                 self.verbosity = kwargs.get("verbosity", None)
                 assert self.verbosity is not None, "Reporter should be initialized with verbosity"
 
-            def get_report(self, *args, **kwargs):
-                return (
+            def report(self, *args, **kwargs) -> None:
+                print(
                     f"Report with verbosity={self.verbosity} and k={kwargs.get('num_examples', 5)}"
                 )
 

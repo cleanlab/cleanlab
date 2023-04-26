@@ -1,7 +1,7 @@
 import pytest
 import numpy as np
 import pandas as pd
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 from cleanlab.datalab.report import Reporter
 
@@ -35,6 +35,17 @@ class TestReporter:
 
         another_reporter = Reporter(data_issues=data_issues, verbosity=2)
         assert another_reporter.verbosity == 2
+
+    def test_report(self, reporter):
+        """Test that the report method works. It just wraps the get_report method in a print
+        statement."""
+        mock_get_report = Mock()
+
+        with patch("builtins.print") as mock_print:  # type: ignore
+            with patch.object(reporter, "get_report", mock_get_report):
+                reporter.report(num_examples=3)
+            mock_get_report.assert_called_with(num_examples=3)
+        mock_print.assert_called_with(mock_get_report.return_value)
 
     @pytest.mark.parametrize("include_description", [True, False])
     def test_get_report(self, reporter, data_issues, include_description, monkeypatch):
