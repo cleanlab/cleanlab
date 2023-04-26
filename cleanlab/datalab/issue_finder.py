@@ -159,7 +159,7 @@ class IssueFinder:
                 continue
             factory = _IssueManagerFactory.from_str(issue_type)
             new_issue_managers.append(
-                factory(datalab=self, **issue_types_copy.get(factory.issue_name, {}))
+                factory(datalab=self.datalab, **issue_types_copy.get(factory.issue_name, {}))
             )
 
         if not new_issue_managers and not self.imagelab:

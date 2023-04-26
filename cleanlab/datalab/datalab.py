@@ -87,7 +87,7 @@ class Datalab:
         self,
         data: "DatasetLike",
         label_name: str,
-        image_key: str,
+        image_key: Optional[str] = None,
         verbosity: int = 1,
     ) -> None:
         self._data = Data(data, label_name)
@@ -304,10 +304,9 @@ class Datalab:
             verbosity=verbosity,
             include_description=include_description,
         )
-        print(reporter.get_report(num_examples=num_examples))
-
+        datalab_report = reporter.get_report(num_examples=num_examples)
         if self.imagelab:
-            print("\n\n")
+            print("\n")
             self.imagelab.report(num_images=num_examples, verbosity=verbosity)
 
     @property
@@ -455,7 +454,7 @@ class Datalab:
                 from datasets.arrow_dataset import Dataset
 
                 if isinstance(self.data, Dataset):
-                    imagelab = Imagelab(hf_dataset=self.data, image_key=image_key)
+                    imagelab = Imagelab(hf_dataset=self.data, image_key=image_key, verbosity=0)
                 else:
                     raise ValueError(
                         "Only huggingface datasets are supported for cleanvision checks from cleanlab as of now"
