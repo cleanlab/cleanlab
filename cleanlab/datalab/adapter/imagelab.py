@@ -139,7 +139,7 @@ class ImagelabIssueFinderAdapter(IssueFinder):
         super().__init__(datalab, verbosity)
         self.imagelab = self.datalab._imagelab
 
-    def get_available_issue_types(self, issue_types, **kwargs):
+    def _get_imagelab_issue_types(self, issue_types, **kwargs):
         if issue_types is None:
             issue_types_copy = {
                 issue_type: {} for issue_type in self.imagelab.list_default_issue_types()
@@ -164,10 +164,11 @@ class ImagelabIssueFinderAdapter(IssueFinder):
         knn_graph: Optional[csr_matrix] = None,
         issue_types: Optional[Dict[str, Any]] = None,
     ) -> None:
-        if issue_types is not None and "image_issue_types" in issue_types:
-            datalab_issue_types = issue_types.copy().pop("image_issue_types")
-        else:
-            datalab_issue_types = issue_types
+        datalab_issue_types = (
+            {k: v for k, v in issue_types.items() if k != "image_issue_types"}
+            if issue_types
+            else issue_types
+        )
         super().find_issues(
             pred_probs=pred_probs,
             features=features,
@@ -175,7 +176,7 @@ class ImagelabIssueFinderAdapter(IssueFinder):
             issue_types=datalab_issue_types,
         )
 
-        issue_types_copy = self.get_available_issue_types(issue_types)
+        issue_types_copy = self._get_imagelab_issue_types(issue_types)
         if not issue_types_copy:
             return
         try:
