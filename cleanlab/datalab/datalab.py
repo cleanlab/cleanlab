@@ -107,7 +107,7 @@ class Datalab:
         self.verbosity = verbosity
         self._imagelab = create_imagelab(dataset=self.data, image_key=image_key)
 
-        self.data_issues = data_issues_factory(self._imagelab)
+        self.data_issues = data_issues_factory(self._imagelab)(self._data)
 
     # todo: check displayer methods
     def __repr__(self) -> str:

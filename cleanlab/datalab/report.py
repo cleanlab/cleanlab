@@ -59,6 +59,7 @@ class Reporter:
         data_issues: "DataIssues",
         verbosity: int = 1,
         include_description: bool = True,
+        **kwargs
     ):
         self.data_issues = data_issues
         self.verbosity = verbosity
