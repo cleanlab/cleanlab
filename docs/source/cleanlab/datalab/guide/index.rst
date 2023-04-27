@@ -11,7 +11,7 @@ This page contains a list of guides for using Datalab.
 Types of issues
 ---------------
 
-These guides are for users who want to use Datalab with greater control, selecting what issues to search for.
+These guides are for users who want to use Datalab with greater control, selecting what issues to search for and what nondefault settings to use for detecting them.
 
 .. toctree::
    :maxdepth: 3
@@ -21,7 +21,7 @@ These guides are for users who want to use Datalab with greater control, selecti
 Customizing issue types
 -----------------------
 
-These guides are for developers create their own IssueManager so that they work with Datalab.
+These guides are for developers to create a custom issue type that Datalab can audit for together with the built-in issue types it already detects.
 
 .. toctree::
    :maxdepth: 3
