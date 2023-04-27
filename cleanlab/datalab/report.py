@@ -17,12 +17,12 @@
 Module that handles reporting of all types of issues identified in the data.
 """
 
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING
 
 import pandas as pd
 
-from cleanlab.datalab.issue_manager_factory import _IssueManagerFactory
 from cleanlab.datalab.issue_finder import IssueFinder
+from cleanlab.datalab.issue_manager_factory import _IssueManagerFactory
 
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -130,6 +130,3 @@ class Reporter:
             + "\n\n"
             + "(Note: A lower score indicates a more severe issue across all examples in the dataset.)\n\n\n"
         )
-
-    def report(self, num_examples):
-        print(self.get_report(num_examples))

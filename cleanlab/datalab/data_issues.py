@@ -238,35 +238,6 @@ class DataIssues:
             warnings.warn(f"Overwriting key {issue_name} in self.info")
         self.info[issue_name] = new_info
 
-    def collect_issues_from_imagelab(self, imagelab: Imagelab) -> None:
-        """
-        Collect results from Imagelab and update datalab.issues and datalab.issue_summary
-
-        Parameters
-        ----------
-        imagelab: Imagelab
-            Imagelab instance that run all the checks for image issue types
-        """
-        self._update_issues(imagelab)
-
-        common_rows = list(
-            set(imagelab.issue_summary["issue_type"]) & set(self.issue_summary["issue_type"])
-        )
-        if common_rows:
-            warnings.warn(
-                f"Overwriting {common_rows} rows in self.issue_summary from issue manager {imagelab}."
-            )
-        self.issue_summary = self.issue_summary[~self.issue_summary["issue_type"].isin(common_rows)]
-        imagelab_summary_copy = imagelab.issue_summary.copy()
-        imagelab_summary_copy.rename({"num_images": "num_issues"}, axis=1, inplace=True)
-        self.issue_summary = pd.concat(
-            [self.issue_summary, imagelab_summary_copy], axis=0, ignore_index=True
-        )
-        for issue_type in imagelab.info.keys():
-            if issue_type == "statistics":
-                continue
-            self._update_issue_info(issue_type, imagelab.info[issue_type])
-
     def collect_issues_from_issue_manager(self, issue_manager: IssueManager) -> None:
         """
         Collects results from an IssueManager and update the corresponding
