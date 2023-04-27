@@ -268,11 +268,11 @@ def test_get_min_pred_prob():
 
 
 def test_get_valid_score():
-    score = _get_valid_score([])
+    score = _get_valid_score(np.array([]), temperature=0.99)
     assert score == 1.0
 
-    score_larger = _get_valid_score([0.8, 0.7, 0.6])
-    score_smaller = _get_valid_score([0.8, 0.7, 0.6], temperature=0.2)
+    score_larger = _get_valid_score(np.array([0.8, 0.7, 0.6]), temperature=0.99)
+    score_smaller = _get_valid_score(np.array([0.8, 0.7, 0.6]), temperature=0.2)
     assert score_smaller < score_larger
 
 
@@ -349,7 +349,7 @@ def test_find_label_issues():
     thr_badloc = 0.4  # hyperparameter
     thr_swap = 0.99  # hyperparameter
 
-    auxiliary_input_dict = _get_valid_inputs_for_compute_scores(labels, predictions, alpha)
+    auxiliary_input_dict = _get_valid_inputs_for_compute_scores(alpha, labels, predictions)
 
     overlooked_scores_per_box = _compute_overlooked_box_scores(
         alpha=alpha, high_probability_threshold=high_probability_threshold, **auxiliary_input_dict

@@ -63,7 +63,7 @@ def find_label_issues(
     thr_badloc = 0.4  # hyperparameter
     thr_swap = 0.4  # hyperparameter
 
-    auxiliary_input_dict = _get_valid_inputs_for_compute_scores(labels, predictions, alpha)
+    auxiliary_input_dict = _get_valid_inputs_for_compute_scores(alpha, labels, predictions)
 
     overlooked_scores_per_box = _compute_overlooked_box_scores(
         alpha=alpha, high_probability_threshold=high_probability_threshold, **auxiliary_input_dict

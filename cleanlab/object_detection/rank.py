@@ -24,7 +24,7 @@ import copy
 
 
 def get_label_quality_scores(
-    labels: List[Dict[Any, Any]],
+    labels: List[Dict[str, Any]],
     predictions: List[np.ndarray],
     *,
     method: str = "subtype",
@@ -131,7 +131,7 @@ def issues_from_scores(label_quality_scores: np.ndarray, *, threshold: float = 0
 
 
 def _compute_label_quality_scores(
-    labels: List[Dict[Any, Any]],
+    labels: List[Dict[str, Any]],
     predictions: List[np.ndarray],
     *,
     method: str = "subtype",
@@ -171,7 +171,7 @@ def _compute_label_quality_scores(
 
 def _get_min_pred_prob(
     predictions: List[np.ndarray],
-) -> Tuple[List[Dict[Any, Any]], List[np.ndarray]]:
+) -> float:
     """Returns min pred_prob out of all predictions."""
     pred_probs = [1.0]  # avoid calling np.min on empty array.
     for prediction in predictions:
@@ -184,7 +184,7 @@ def _get_min_pred_prob(
 
 def _prune_by_threshold(
     predictions: List[np.ndarray], threshold: float, verbose: bool = True
-) -> Tuple[List[Dict[Any, Any]], List[np.ndarray]]:
+) -> List[np.ndarray]:
     """Removes predicted bounding boxes from predictions who's pred_prob is below the cuttoff threshold."""
 
     max_allowed_box_prune = 0.97  # This is max allowed percent of prune for boxes below threshold before a warning is thrown.
@@ -213,7 +213,12 @@ def _prune_by_threshold(
 
 
 # Todo: make this more descriptive and assert better inputs
-def _assert_valid_inputs(labels, predictions, method=None, threshold=None):
+def _assert_valid_inputs(
+    labels: List[Dict[str, Any]],
+    predictions,
+    method: Optional[str] = None,
+    threshold: Optional[float] = None,
+):
     """Asserts proper input format."""
     if len(labels) != len(predictions):
         raise ValueError(
@@ -251,7 +256,7 @@ def _assert_valid_inputs(labels, predictions, method=None, threshold=None):
 
 def visualize(
     image_path: str,
-    label: Dict[Any, Any],
+    label: Dict[str, Any],
     prediction: np.ndarray,
     *,
     prediction_threshold: Optional[float] = None,
@@ -418,7 +423,7 @@ def _draw_boxes(fig, ax, bboxes, labels, edgecolor="g", linestyle="-", linewidth
     return fig, ax
 
 
-def _separate_label(label):
+def _separate_label(label: Dict[str, Any]) -> Tuple[np.ndarray, np.ndarray]:
     """Seperates labels into bounding box and class label lists."""
     bboxes = label["bboxes"]
     labels = label["labels"]
@@ -426,12 +431,16 @@ def _separate_label(label):
 
 
 # TODO: make object detection work for all predicted probabilities
-def _separate_prediction_all_preds(prediction):
+def _separate_prediction_all_preds(
+    prediction: List[np.ndarray],
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     pred_bboxes, pred_labels, det_probs = prediction
     return pred_bboxes, pred_labels, det_probs
 
 
-def _separate_prediction_single_box(prediction):
+def _separate_prediction_single_box(
+    prediction: np.ndarray,
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Seperates predictions into class labels, bounding boxes and pred_prob lists"""
     labels = []
     boxes = []
@@ -443,7 +452,7 @@ def _separate_prediction_single_box(prediction):
     return np.array(bboxes), np.array(labels), np.array(pred_probs)
 
 
-def _get_prediction_type(prediction):
+def _get_prediction_type(prediction: np.ndarray) -> str:
     if (
         len(prediction) == 3
         and prediction[0].shape == prediction[2].shape
@@ -454,7 +463,9 @@ def _get_prediction_type(prediction):
         return "single_pred"
 
 
-def _separate_prediction(prediction, prediction_type="single_pred"):
+def _separate_prediction(
+    prediction, prediction_type="single_pred"
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Returns bbox, label and pred_prob values for prediction."""
 
     if prediction_type == "all_pred":
@@ -464,7 +475,7 @@ def _separate_prediction(prediction, prediction_type="single_pred"):
     return boxes, labels, pred_probs
 
 
-def _bbox_xyxy_to_xywh(bbox):
+def _bbox_xyxy_to_xywh(bbox: List[float]) -> Optional[List[float]]:
     """Converts bounding box coodrinate types from x1y1,x2y2 to x,y,w,h"""
     if len(bbox) == 4:
         x1, y1, x2, y2 = bbox
@@ -477,7 +488,7 @@ def _bbox_xyxy_to_xywh(bbox):
 
 
 # ============= Simple label subtype algorithm ============
-def _mod_coordinates(x):
+def _mod_coordinates(x: List[float]) -> Dict[str, Any]:
     """Takes is a list of xyxy coordinates and returns them in dictionary format."""
 
     wd = {"x1": x[0], "y1": x[1], "x2": x[2], "y2": x[3]}
@@ -485,13 +496,13 @@ def _mod_coordinates(x):
 
 
 # distance/similarity helped functions
-def _get_overlap(bb1, bb2):
+def _get_overlap(bb1: List[float], bb2: List[float]) -> float:
     """Takes in two bounding boxes `bb1` and `bb2` and returns their IoU overlap."""
 
     return _get_iou(_mod_coordinates(bb1), _mod_coordinates(bb2))
 
 
-def _get_overlap_matrix(bb1_list, bb2_list):
+def _get_overlap_matrix(bb1_list: np.ndarray, bb2_list: np.ndarray) -> np.ndarray:
     """Takes in two lists of bounding boxes and returns an IoU matrix where IoU[i][j] is the overlap between
     the i-th box in `bb1_list` and the j-th box in `bb2_list`."""
     wd = np.zeros(shape=(len(bb1_list), len(bb2_list)))
@@ -501,7 +512,7 @@ def _get_overlap_matrix(bb1_list, bb2_list):
     return wd
 
 
-def _get_iou(bb1, bb2):
+def _get_iou(bb1: Dict[str, Any], bb2: Dict[str, Any]) -> float:
     """
     Calculate the Intersection over Union (IoU) of two bounding boxes.
     I've modified this to calculate overlap ratio in the line:
@@ -556,7 +567,7 @@ def _get_iou(bb1, bb2):
     return iou
 
 
-def _euc_dis(box1, box2):
+def _euc_dis(box1: List[float], box2: List[float]) -> float:
     """Calculates the euclidian distance between `box1` and `box2`."""
     euc_factor = 0.1  # this is a hyperparameter
 
@@ -568,7 +579,7 @@ def _euc_dis(box1, box2):
     return val2
 
 
-def _get_dist_matrix(bb1_list, bb2_list):
+def _get_dist_matrix(bb1_list: np.ndarray, bb2_list: np.ndarray) -> np.ndarray:
     """Returns a distance matrix of distances from all of boxes in bb1_list to all of boxes in bb2_list."""
     wd = np.zeros(shape=(len(bb1_list), len(bb2_list)))
     for i in range(len(bb1_list)):
@@ -577,7 +588,7 @@ def _get_dist_matrix(bb1_list, bb2_list):
     return wd
 
 
-def _softmax(x, temperature=0.99, axis=0):
+def _softmax(x: np.ndarray, temperature: float = 0.99, axis: int = 0) -> np.ndarray:
     """Gets softmax of scores."""
     x = x / temperature
     x_max = np.amax(x, axis=axis, keepdims=True)
@@ -585,14 +596,18 @@ def _softmax(x, temperature=0.99, axis=0):
     return exp_x_shifted / np.sum(exp_x_shifted, axis=axis, keepdims=True)
 
 
-def _softmin1D(scores, temperature=0.99, axis=0):
+def _softmin1D(scores: np.ndarray, temperature: float = 0.99, axis: int = 0) -> float:
     """Returns softmin of passed in scores."""
     scores = np.array(scores)
     softmax_scores = _softmax(-1 * scores, temperature, axis)
     return np.dot(softmax_scores, scores)
 
 
-def _get_min_possible_similarity(predictions, labels, alpha):
+def _get_min_possible_similarity(
+    alpha: float,
+    predictions,
+    labels: List[Dict[str, Any]],
+) -> float:
     """Gets the min possible similarity score between two bounding boxes out of all images."""
     min_possible_similarity = 1.0
     for prediction, label in zip(predictions, labels):
@@ -612,16 +627,16 @@ def _get_min_possible_similarity(predictions, labels, alpha):
 def _get_valid_inputs_for_compute_scores_per_image(
     *,
     alpha: float,
-    label: Optional[dict] = None,
+    label: Optional[Dict[str, Any]] = None,
     prediction: Optional[np.ndarray] = None,
     pred_labels: Optional[np.ndarray] = None,
     pred_label_probs: Optional[np.ndarray] = None,
-    pred_bboxes=None,
+    pred_bboxes: Optional[np.ndarray] = None,
     lab_labels: Optional[np.ndarray] = None,
     lab_bboxes=None,
     similarity_matrix=None,
     min_possible_similarity: Optional[float] = None,
-):
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, float]:
     if lab_labels is None or lab_bboxes is None:
         if label is None:
             raise ValueError(f"Pass in either one of label or label labels. Both can not be None.")
@@ -658,11 +673,17 @@ def _get_valid_inputs_for_compute_scores_per_image(
 
 
 def _get_valid_inputs_for_compute_scores(
-    labels,
-    predictions,
-    alpha,
+    alpha: float,
+    labels: Optional[List[Dict[str, Any]]] = None,
+    predictions: Optional[List[np.ndarray]] = None,
 ):
-    min_possible_similarity = _get_min_possible_similarity(predictions, labels, alpha)
+    if predictions is None or labels is None:
+        raise ValueError(
+            f"Predictions and labels can not be None. Both are needed to get valid inputs."
+        )
+    min_possible_similarity = _get_min_possible_similarity(alpha, predictions, labels)
+
+    auxillary_inputs = []
 
     lab_labels_list = []
     lab_bboxes_list = []
@@ -693,6 +714,8 @@ def _get_valid_inputs_for_compute_scores(
         pred_bboxes_list.append(pred_bboxes)
         similarity_matrix_list.append(similarity_matrix)
 
+        # auxillary_inputs.append(auxillary_inputs_dict)
+
     auxiliary_input_dict = {
         "pred_labels_list": pred_labels_list,
         "pred_label_probs_list": pred_label_probs_list,
@@ -705,9 +728,8 @@ def _get_valid_inputs_for_compute_scores(
     return auxiliary_input_dict
 
 
-def _get_valid_score(scores_arr, temperature=0.99):
+def _get_valid_score(scores_arr: np.ndarray, temperature: float) -> float:
     """Given scores array, returns valid score (softmin) or 1. Checks validity of score."""
-    scores_arr = np.array(scores_arr)
     scores_arr = scores_arr[~np.isnan(scores_arr)]
     if len(scores_arr) > 0:
         valid_score = _softmin1D(scores_arr, temperature=temperature)
@@ -716,7 +738,7 @@ def _get_valid_score(scores_arr, temperature=0.99):
     return valid_score
 
 
-def _pool_box_scores_per_image(box_scores, temperature=0.99) -> np.ndarray:
+def _pool_box_scores_per_image(box_scores: List[np.ndarray], temperature: float) -> np.ndarray:
     image_scores = np.empty(
         shape=[
             len(box_scores),
@@ -731,16 +753,16 @@ def _pool_box_scores_per_image(box_scores, temperature=0.99) -> np.ndarray:
 def _compute_overlooked_box_scores_for_image(
     alpha: float,
     high_probability_threshold: float,
-    label: Optional[dict] = None,
+    label: Optional[Dict[str, Any]] = None,
     prediction: Optional[np.ndarray] = None,
     pred_labels: Optional[np.ndarray] = None,
     pred_label_probs: Optional[np.ndarray] = None,
-    pred_bboxes: Optional[list] = None,
+    pred_bboxes: Optional[np.ndarray] = None,
     lab_labels: Optional[np.ndarray] = None,
-    lab_bboxes: Optional[list] = None,
+    lab_bboxes: Optional[np.ndarray] = None,
     similarity_matrix: Optional[np.ndarray] = None,
     min_possible_similarity: Optional[float] = None,
-):
+) -> np.ndarray:
     """This method returns one score per predicted box (above threshold) in an image. Score from 0 to 1 ranking how overlooked the box is."""
 
     (
@@ -789,16 +811,16 @@ def _compute_overlooked_box_scores_for_image(
 def _compute_overlooked_box_scores(
     alpha: float,
     high_probability_threshold: float,
-    labels: Optional[dict] = None,
-    predictions: Optional[np.ndarray] = None,
-    pred_labels_list: Optional[list] = None,
-    pred_label_probs_list: Optional[list] = None,
-    pred_bboxes_list: Optional[list] = None,
-    lab_labels_list: Optional[list] = None,
-    lab_bboxes_list: Optional[list] = None,
-    similarity_matrix_list: Optional[list] = None,
+    labels: Optional[List[Dict[str, Any]]] = None,
+    predictions: Optional[List[np.ndarray]] = None,
+    pred_labels_list: Optional[List[np.ndarray]] = None,
+    pred_label_probs_list: Optional[List[np.ndarray]] = None,
+    pred_bboxes_list: Optional[List[np.ndarray]] = None,
+    lab_labels_list: Optional[List[np.ndarray]] = None,
+    lab_bboxes_list: Optional[List[np.ndarray]] = None,
+    similarity_matrix_list: Optional[List[np.ndarray]] = None,
     min_possible_similarity: Optional[float] = None,
-):
+) -> List[np.ndarray]:
     if (
         pred_labels_list is None
         or pred_label_probs_list is None
@@ -814,7 +836,7 @@ def _compute_overlooked_box_scores(
             lab_bboxes_list,
             similarity_matrix_list,
             min_possible_similarity,
-        ) = _get_valid_inputs_for_compute_scores(labels, predictions, alpha)
+        ) = _get_valid_inputs_for_compute_scores(alpha, labels, predictions)
 
     scores_overlooked = []
     for (
@@ -850,16 +872,16 @@ def _compute_overlooked_box_scores(
 def _compute_badloc_box_scores_for_image(
     alpha: float,
     low_probability_threshold: float,
-    label: Optional[dict] = None,
+    label: Optional[Dict[str, Any]] = None,
     prediction: Optional[np.ndarray] = None,
     pred_labels: Optional[np.ndarray] = None,
     pred_label_probs: Optional[np.ndarray] = None,
-    pred_bboxes: Optional[list] = None,
+    pred_bboxes: Optional[np.ndarray] = None,
     lab_labels: Optional[np.ndarray] = None,
-    lab_bboxes: Optional[list] = None,
+    lab_bboxes: Optional[np.ndarray] = None,
     similarity_matrix: Optional[np.ndarray] = None,
     min_possible_similarity: Optional[float] = None,
-):
+) -> np.ndarray:
     """This method returns one score per labeled box in an image. Score from 0 to 1 ranking how badly located the box is."""
 
     (
@@ -910,16 +932,16 @@ def _compute_badloc_box_scores_for_image(
 def _compute_badloc_box_scores(
     alpha: float,
     low_probability_threshold: float,
-    labels: Optional[dict] = None,
-    predictions: Optional[np.ndarray] = None,
-    pred_labels_list: Optional[list] = None,
-    pred_label_probs_list: Optional[list] = None,
-    pred_bboxes_list: Optional[list] = None,
-    lab_labels_list: Optional[list] = None,
-    lab_bboxes_list: Optional[list] = None,
-    similarity_matrix_list: Optional[list] = None,
+    labels: Optional[List[Dict[str, Any]]] = None,
+    predictions: Optional[List[np.ndarray]] = None,
+    pred_labels_list: Optional[List[np.ndarray]] = None,
+    pred_label_probs_list: Optional[List[np.ndarray]] = None,
+    pred_bboxes_list: Optional[List[np.ndarray]] = None,
+    lab_labels_list: Optional[List[np.ndarray]] = None,
+    lab_bboxes_list: Optional[List[np.ndarray]] = None,
+    similarity_matrix_list: Optional[List[np.ndarray]] = None,
     min_possible_similarity: Optional[float] = None,
-):
+) -> List[np.ndarray]:
     if (
         pred_labels_list is None
         or pred_label_probs_list is None
@@ -933,7 +955,7 @@ def _compute_badloc_box_scores(
             lab_labels_list,
             similarity_matrix_list,
             min_possible_similarity,
-        ) = _get_valid_inputs_for_compute_scores(labels, predictions, alpha)
+        ) = _get_valid_inputs_for_compute_scores(alpha, labels, predictions)
 
     scores_badloc = []
     for (
@@ -969,16 +991,16 @@ def _compute_badloc_box_scores(
 def _compute_swap_box_scores_for_image(
     alpha: float,
     high_probability_threshold: float,
-    label: Optional[dict] = None,
+    label: Optional[Dict[str, Any]] = None,
     prediction: Optional[np.ndarray] = None,
     pred_labels: Optional[np.ndarray] = None,
     pred_label_probs: Optional[np.ndarray] = None,
-    pred_bboxes: Optional[list] = None,
+    pred_bboxes: Optional[np.ndarray] = None,
     lab_labels: Optional[np.ndarray] = None,
-    lab_bboxes: Optional[list] = None,
+    lab_bboxes: Optional[np.ndarray] = None,
     similarity_matrix: Optional[np.ndarray] = None,
     min_possible_similarity: Optional[float] = None,
-):
+) -> np.ndarray:
     """This method returns one score per labeled box in an image. Score from 0 to 1 ranking how likeley swapped the box is."""
 
     (
@@ -1035,16 +1057,16 @@ def _compute_swap_box_scores_for_image(
 def _compute_swap_box_scores(
     alpha: float,
     high_probability_threshold: float,
-    labels: Optional[dict] = None,
-    predictions: Optional[np.ndarray] = None,
-    pred_labels_list: Optional[list] = None,
-    pred_label_probs_list: Optional[list] = None,
-    pred_bboxes_list: Optional[list] = None,
-    lab_labels_list: Optional[list] = None,
-    lab_bboxes_list: Optional[list] = None,
-    similarity_matrix_list: Optional[list] = None,
+    labels: Optional[List[Dict[str, Any]]] = None,
+    predictions: Optional[List[np.ndarray]] = None,
+    pred_labels_list: Optional[List[np.ndarray]] = None,
+    pred_label_probs_list: Optional[List[np.ndarray]] = None,
+    pred_bboxes_list: Optional[List[np.ndarray]] = None,
+    lab_labels_list: Optional[List[np.ndarray]] = None,
+    lab_bboxes_list: Optional[List[np.ndarray]] = None,
+    similarity_matrix_list: Optional[List[np.ndarray]] = None,
     min_possible_similarity: Optional[float] = None,
-):
+) -> List[np.ndarray]:
     if (
         pred_labels_list is None
         or pred_label_probs_list is None
@@ -1058,7 +1080,7 @@ def _compute_swap_box_scores(
             lab_labels_list,
             similarity_matrix_list,
             min_possible_similarity,
-        ) = _get_valid_inputs_for_compute_scores(labels, predictions, alpha)
+        ) = _get_valid_inputs_for_compute_scores(alpha, labels, predictions)
 
     scores_swap = []
     for (
@@ -1092,14 +1114,14 @@ def _compute_swap_box_scores(
 
 
 def _get_subtype_label_quality_scores(
-    labels,
-    predictions,
+    labels: List[Dict[str, Any]],
+    predictions: List[np.ndarray],
     *,
-    alpha,
-    low_probability_threshold,
-    high_probability_threshold,
-    temperature,
-):
+    alpha: float,
+    low_probability_threshold: float,
+    high_probability_threshold: float,
+    temperature: float,
+) -> np.ndarray:
     """
     Returns a label quality score for each image.
     Score is between 0 and 1.
@@ -1140,7 +1162,7 @@ def _get_subtype_label_quality_scores(
         Array of shape ``(N, )`` of scores between 0 and 1, one per image in the dataset.
         Lower scores indicate images are more likely to contain an incorrect label.
     """
-    auxiliary_input_dict = _get_valid_inputs_for_compute_scores(labels, predictions, alpha)
+    auxiliary_input_dict = _get_valid_inputs_for_compute_scores(alpha, labels, predictions)
     overlooked_scores_per_box = _compute_overlooked_box_scores(
         alpha=alpha, high_probability_threshold=high_probability_threshold, **auxiliary_input_dict
     )
