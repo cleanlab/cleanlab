@@ -74,6 +74,7 @@ class TestIssueFinder:
         with monkeypatch.context() as m:
             # Mock the validation method to do nothing
             m.setattr(issue_finder, "_validate_issue_types_dict", lambda x, y: None)
+            m.setattr(issue_finder, "list_possible_issue_types", lambda *_: ["issue_type_1"])
             issue_types_copy = issue_finder._set_issue_types(issue_types, defaults_dict)
 
             # For each argument in issue_types missing from defaults_dict, it should be added to the defaults dict
