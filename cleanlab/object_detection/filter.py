@@ -16,8 +16,7 @@
 
 """Methods to find label issues in an object detection dataset (object detection data), where each annotated bounding box in an image receives its own class label."""
 
-import warnings
-from typing import Optional, Union, Tuple, List, Any, Dict
+from typing import List, Any, Dict
 import numpy as np
 
 from cleanlab.object_detection.rank import (
@@ -35,7 +34,6 @@ def find_label_issues(
     """
     Identifies potentially mislabeled examples in an object detection dataset.
     An example is flagged as with a label issue if *any* of the boxes appear to be incorrectly annotated for this example.
-    Incorrectlt labeled ex
 
     Parameters
     ----------
@@ -95,7 +93,14 @@ def find_label_issues(
     return issues_per_image
 
 
-def _find_label_issues_per_box(scores_per_box, threshold):
+def _find_label_issues_per_box(
+    scores_per_box: List[np.ndarray], threshold: float
+) -> List[np.ndarray]:
+    """Takes in a list of size ``N`` where each index is an array of scores for each bounding box in the `n-th` image
+    and a threshold. Each box below or equal to the threshold will be marked as an issue.
+
+    Returns a list of size ``N`` where each index is a boolean array of length number of boxes per image `n `
+    marking if a specific box is an issue - 1 or not - 0."""
     is_issue_per_box = []
     for idx, score_per_box in enumerate(scores_per_box):
         score_per_box[np.isnan(score_per_box)] = 1.0
@@ -104,7 +109,12 @@ def _find_label_issues_per_box(scores_per_box, threshold):
     return is_issue_per_box
 
 
-def _pool_box_scores_per_image(is_issue_per_box):
+def _pool_box_scores_per_image(is_issue_per_box: List[np.ndarray]) -> np.ndarray:
+    """Takes in a list of size ``N`` where each index is a boolean array of length number of boxes per image `n `
+    marking if a specific box is an issue - 1 or not - 0.
+
+    Returns a list of size ``N`` where each index marks if the image contains an issue - 1 or not - 0.
+    Images are marked as issues if 1 or more bounding boxes in the image is an issue."""
     is_issue = np.zeros(
         shape=[
             len(
