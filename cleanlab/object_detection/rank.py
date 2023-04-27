@@ -18,22 +18,27 @@
 are to contain label errors. """
 
 import warnings
-from typing import List, Dict, Any, Optional, Tuple, TypedDict
+from typing import List, Dict, Any, Optional, Tuple, TYPE_CHECKING, TypeVar
 import numpy as np
 import copy
 
-AuxiliaryTypesDict = TypedDict(
-    "AuxiliaryTypesDict",
-    {
-        "pred_labels": np.ndarray,
-        "pred_label_probs": np.ndarray,
-        "pred_bboxes": np.ndarray,
-        "lab_labels": np.ndarray,
-        "lab_bboxes": np.ndarray,
-        "similarity_matrix": np.ndarray,
-        "min_possible_similarity": float,
-    },
-)
+if TYPE_CHECKING:  # pragma: no cover
+    from typing import TypedDict
+
+    AuxiliaryTypesDict = TypedDict(
+        "AuxiliaryTypesDict",
+        {
+            "pred_labels": np.ndarray,
+            "pred_label_probs": np.ndarray,
+            "pred_bboxes": np.ndarray,
+            "lab_labels": np.ndarray,
+            "lab_bboxes": np.ndarray,
+            "similarity_matrix": np.ndarray,
+            "min_possible_similarity": float,
+        },
+    )
+else:
+    AuxiliaryTypesDict = TypeVar("AuxiliaryTypesDict")
 
 
 def get_label_quality_scores(
