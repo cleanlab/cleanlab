@@ -581,7 +581,7 @@ class TestDatalabUsingKNNGraph:
 
         assert len(record) == 2
         assert "No arguments were passed to find_issues." == str(record[0].message)
-        assert "No issue check performed." == str(record[1].message)
+        assert "No arguments specified to check for datalab issues" == str(record[1].message)
         assert lab.issues.empty  # No columns should be added to the issues dataframe
 
 
@@ -684,7 +684,7 @@ class TestDatalabIssueManagerInteraction:
         assert pd.testing.assert_frame_equal(lab.issues, expected_issues) is None
 
         # Clean up registry
-        from cleanlab.datalab.factory import REGISTRY
+        from cleanlab.datalab.issue_manager_factory import REGISTRY
 
         REGISTRY.pop(custom_issue_manager.issue_name)
 
