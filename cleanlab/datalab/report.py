@@ -21,7 +21,7 @@ from typing import TYPE_CHECKING, List
 
 import pandas as pd
 
-from cleanlab.datalab.factory import _IssueManagerFactory
+from cleanlab.datalab.issue_manager_factory import _IssueManagerFactory
 from cleanlab.datalab.issue_finder import IssueFinder
 
 

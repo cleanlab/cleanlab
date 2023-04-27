@@ -34,7 +34,11 @@ from cleanlab.datalab.adapter.imagelab import (
 )
 from cleanlab.datalab.data import Data
 from cleanlab.datalab.display import _Displayer
-from cleanlab.datalab.factory import data_issues_factory, issue_finder_factory, report_factory
+from cleanlab.datalab.helper_factory import (
+    data_issues_factory,
+    issue_finder_factory,
+    report_factory,
+)
 from cleanlab.datalab.issue_finder import IssueFinder
 from cleanlab.datalab.serialize import _Serializer
 
@@ -101,7 +105,7 @@ class Datalab:
 
         self.cleanlab_version = cleanlab.version.__version__
         self.verbosity = verbosity
-        self._imagelab = create_imagelab(hf_dataset=self.data, image_key=image_key)
+        self._imagelab = create_imagelab(dataset=self.data, image_key=image_key)
 
         self.data_issues = data_issues_factory(self._imagelab)
 

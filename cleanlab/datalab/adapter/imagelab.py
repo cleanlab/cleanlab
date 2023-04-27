@@ -84,7 +84,7 @@ class ImagelabDataIssuesAdapter(DataIssues):
     def __init__(self, data: Data) -> None:
         super().__init__(data)
 
-    def collect_issues_from_imagelab(self, imagelab: Imagelab) -> None:
+    def collect_issues_from_imagelab(self, imagelab: "Imagelab") -> None:
         """
         Collect results from Imagelab and update datalab.issues and datalab.issue_summary
 

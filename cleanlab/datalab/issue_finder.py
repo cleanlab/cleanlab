@@ -35,7 +35,7 @@ import numpy as np
 import numpy.typing as npt
 from scipy.sparse import csr_matrix
 
-from cleanlab.datalab.factory import _IssueManagerFactory, REGISTRY
+from cleanlab.datalab.issue_manager_factory import _IssueManagerFactory, REGISTRY
 
 if TYPE_CHECKING:  # pragma: no cover
     from cleanlab.datalab.datalab import Datalab
@@ -68,15 +68,6 @@ class IssueFinder:
     This class is not intended to be used directly. Instead, use the
     `Datalab.find_issues` method which internally utilizes an IssueFinder instance.
     """
-
-    def __init__(
-        self,
-        data_issues: "DataIssues",
-        imagelab_issues: List[str],
-        verbosity: int = 1,
-        include_description: bool = True,
-    ):
-        super().__init__(data_issues, imagelab_issues, verbosity, include_description)
 
     def __init__(self, datalab: "Datalab", verbosity=1):
         self.datalab = datalab
