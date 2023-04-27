@@ -301,7 +301,7 @@ class Datalab:
             verbosity=verbosity,
             include_description=include_description,
         )
-        print(reporter.get_report(num_examples=num_examples))
+        reporter.report(num_examples=num_examples)
 
     @property
     def issues(self) -> pd.DataFrame:
