@@ -18,9 +18,22 @@
 are to contain label errors. """
 
 import warnings
-from typing import List, Dict, Any, Optional, Tuple, Union
+from typing import List, Dict, Any, Optional, Tuple, TypedDict
 import numpy as np
 import copy
+
+AuxiliaryTypesDict = TypedDict(
+    "AuxiliaryTypesDict",
+    {
+        "pred_labels": np.ndarray,
+        "pred_label_probs": np.ndarray,
+        "pred_bboxes": np.ndarray,
+        "lab_labels": np.ndarray,
+        "lab_bboxes": np.ndarray,
+        "similarity_matrix": np.ndarray,
+        "min_possible_similarity": float,
+    },
+)
 
 
 def get_label_quality_scores(
@@ -636,7 +649,7 @@ def _get_valid_inputs_for_compute_scores_per_image(
     lab_bboxes=None,
     similarity_matrix=None,
     min_possible_similarity: Optional[float] = None,
-) -> Dict[str, Union[np.ndarray, float]]:
+) -> AuxiliaryTypesDict:
     # ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, float]:
     if lab_labels is None or lab_bboxes is None:
         if label is None:
@@ -662,7 +675,7 @@ def _get_valid_inputs_for_compute_scores_per_image(
             else np.min(similarity_matrix[np.nonzero(similarity_matrix)])
         )
 
-    auxiliary_input_dict = {
+    auxiliary_input_dict: AuxiliaryTypesDict = {
         "pred_labels": pred_labels,
         "pred_label_probs": pred_label_probs,
         "pred_bboxes": pred_bboxes,
@@ -673,23 +686,13 @@ def _get_valid_inputs_for_compute_scores_per_image(
     }
 
     return auxiliary_input_dict
-    #
-    # return (
-    #     pred_labels,
-    #     pred_label_probs,
-    #     pred_bboxes,
-    #     lab_labels,
-    #     lab_bboxes,
-    #     similarity_matrix,
-    #     min_possible_similarity,
-    # )
 
 
 def _get_valid_inputs_for_compute_scores(
     alpha: float,
     labels: Optional[List[Dict[str, Any]]] = None,
     predictions: Optional[List[np.ndarray]] = None,
-):
+) -> List[AuxiliaryTypesDict]:
     if predictions is None or labels is None:
         raise ValueError(
             f"Predictions and labels can not be None. Both are needed to get valid inputs."
@@ -697,13 +700,6 @@ def _get_valid_inputs_for_compute_scores(
     min_possible_similarity = _get_min_possible_similarity(alpha, predictions, labels)
 
     auxiliary_inputs = []
-
-    # lab_labels_list = []
-    # lab_bboxes_list = []
-    # pred_labels_list = []
-    # pred_label_probs_list = []
-    # pred_bboxes_list = []
-    # similarity_matrix_list = []
 
     for prediction, label in zip(predictions, labels):
         auxiliary_input_dict = _get_valid_inputs_for_compute_scores_per_image(
@@ -714,24 +710,6 @@ def _get_valid_inputs_for_compute_scores(
         )
         auxiliary_inputs.append(auxiliary_input_dict)
 
-        # lab_labels_list.append(lab_labels)
-        # lab_bboxes_list.append(lab_bboxes)
-        # pred_labels_list.append(pred_labels)
-        # pred_label_probs_list.append(pred_label_probs)
-        # pred_bboxes_list.append(pred_bboxes)
-        # similarity_matrix_list.append(similarity_matrix)
-
-        # auxillary_inputs.append(auxillary_inputs_dict)
-    #
-    # auxiliary_input_dict = {
-    #     "pred_labels_list": pred_labels_list,
-    #     "pred_label_probs_list": pred_label_probs_list,
-    #     "pred_bboxes_list": pred_bboxes_list,
-    #     "lab_labels_list": lab_labels_list,
-    #     "lab_bboxes_list": lab_bboxes_list,
-    #     "similarity_matrix_list": similarity_matrix_list,
-    #     "min_possible_similarity": min_possible_similarity,
-    # }
     return auxiliary_inputs
 
 
@@ -818,7 +796,7 @@ def _compute_overlooked_box_scores(
     high_probability_threshold: float,
     labels: Optional[List[Dict[str, Any]]] = None,
     predictions: Optional[List[np.ndarray]] = None,
-    auxiliary_inputs: Optional[List[Dict[str, Any]]] = None,
+    auxiliary_inputs: Optional[List[AuxiliaryTypesDict]] = None,
 ) -> List[np.ndarray]:
     if auxiliary_inputs is None:
         auxiliary_inputs = _get_valid_inputs_for_compute_scores(alpha, labels, predictions)
@@ -897,7 +875,7 @@ def _compute_badloc_box_scores(
     low_probability_threshold: float,
     labels: Optional[List[Dict[str, Any]]] = None,
     predictions: Optional[List[np.ndarray]] = None,
-    auxiliary_inputs: Optional[List[Dict[str, Any]]] = None,
+    auxiliary_inputs: Optional[List[AuxiliaryTypesDict]] = None,
 ) -> List[np.ndarray]:
     if auxiliary_inputs is None:
         auxiliary_inputs = _get_valid_inputs_for_compute_scores(alpha, labels, predictions)
@@ -980,10 +958,10 @@ def _compute_swap_box_scores(
     high_probability_threshold: float,
     labels: Optional[List[Dict[str, Any]]] = None,
     predictions: Optional[List[np.ndarray]] = None,
-    auxiliary_inputs: Optional[List[Dict[str, Any]]] = None,
+    auxiliary_inputs: Optional[List[AuxiliaryTypesDict]] = None,
 ) -> List[np.ndarray]:
     if auxiliary_inputs is None:
-        auxiliary_input_dict = _get_valid_inputs_for_compute_scores(alpha, labels, predictions)
+        auxiliary_inputs = _get_valid_inputs_for_compute_scores(alpha, labels, predictions)
 
     scores_swap = []
     for auxiliary_inputs in auxiliary_inputs:
