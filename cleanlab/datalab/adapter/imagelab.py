@@ -24,7 +24,7 @@ if TYPE_CHECKING:  # pragma: no cover
     from cleanvision.imagelab import Imagelab
 
 
-def create_imagelab(dataset: "Dataset", image_key: str) -> Optional["Imagelab"]:
+def create_imagelab(dataset: "Dataset", image_key: Optional[str]) -> Optional["Imagelab"]:
     """Creates Imagelab instance for running CleanVision checks. CleanVision checks are only supported for
     huggingface datasets as of now.
 
@@ -117,7 +117,7 @@ class ImagelabDataIssuesAdapter(DataIssues):
 class ImagelabReporterAdapter(Reporter):
     def __init__(
         self,
-        data_issues: "DataIssues",
+        data_issues: DataIssues,
         imagelab,
         verbosity: int = 1,
         include_description: bool = True,
