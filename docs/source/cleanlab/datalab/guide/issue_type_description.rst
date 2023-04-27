@@ -30,7 +30,7 @@ Example (pseudo-code)
 Datalab estimates various issues based on the four inputs below.
 Each input is optional, if you do not provide it, Datalab will skip checks for those types of issues that require this input.
 
-1. ``labels`` - the annotated class for each example in a multi-class classification dataset.
+1. ``label_name`` - a field in the dataset that the stores the annotated class for each example in a multi-class classification dataset.
 2. ``pred_probs`` - predicted class probabilities output by your trained model for each example in the dataset (these should be out-of-sample, eg. produced via cross-validation).
 3. ``features`` - numeric vector representations of the features for each example in the dataset. These may be embeddings from a (pre)trained model, or just a numerically-transformed version of the original data features.
 4. ``knn_graph`` - K nearest neighbor graph represented as a sparse matrix of dissimilarity values between examples in the dataset. If both `knn_graph` and `features` are provided, the `knn_graph` takes precedence, and if only `features` is provided, then a `knn_graph` is internally constructed based on the (either euclidean or cosine) distance between different examples’ features.
@@ -108,8 +108,8 @@ The assumption that examples in a dataset are Independent and Identically Distri
 
 For datasets with low non-IID score, you should consider why your data are not IID and act accordingly. For example, if the data distribution is drifting over time, consider employing a time-based train/test split instead of a random partition.  Note that shuffling the data ahead of time will ensure a good non-IID score, but this is not always a fix to the underlying problem (e.g. future deployment data may stem from a different distribution, or you may overlook the fact that examples influence each other). We thus recommend **not** shuffling your data to be able to diagnose this issue if it exists.
 
-Issue Parameters
-================
+Optional Issue Parameters
+=========================
 
 Here is the dict of possible (**optional**) parameter values that can be specified via the argument `issue_types` to :py:meth:`Datalab.find_issues <cleanlab.datalab.datalab.Datalab.find_issues>`.
 Optionally specify these to exert greater control over how issues are detected in your dataset.
@@ -131,8 +131,7 @@ Label Issue Parameters
 .. code-block:: python
 
     label_kwargs = {
-        "health_summary_parameters": # dict of potential keyword arguments to method `dataset.health_summary()`. The arguments in this dictionary may get filtered based on their availability, with the final set of arguments to be used determined by the class.,
-    	"health_summary_kwargs": # dict of keyword arguments to supplement/overwrite the filtered arguments from the `health_summary_parameters`,
+        "health_summary_parameters": # dict of potential keyword arguments to method `dataset.health_summary()`,
         "clean_learning_kwargs": # dict of keyword arguments to constructor `CleanLearning()` including keys like: "find_label_issues_kwargs" or "label_quality_scores_kwargs",
         "thresholds": # `thresholds` argument to `CleanLearning.find_label_issues()`,
         "noise_matrix": # `noise_matrix` argument to `CleanLearning.find_label_issues()`,
@@ -185,6 +184,10 @@ Duplicate Issue Parameters
     	"k": # integer representing the number of nearest neighbors for nearest neighbors search (passed as argument to `NearestNeighbors`), if necessary,
     	"threshold": # `threshold` argument to constructor of `NearDuplicateIssueManager()`. Non-negative floating value that determines the maximum distance between two examples to be considered outliers, relative to the median distance to the nearest neighbors,
     }
+
+.. attention::
+
+    `k` does not affect the results of the (near) duplicate search algorithm. It only affects the construction of the knn graph, if necessary.
 
 .. note::
 
