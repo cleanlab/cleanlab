@@ -22,6 +22,7 @@ from typing import TYPE_CHECKING, List
 import pandas as pd
 
 from cleanlab.datalab.factory import _IssueManagerFactory
+from cleanlab.datalab.issue_finder import IssueFinder
 
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -56,13 +57,11 @@ class Reporter:
     def __init__(
         self,
         data_issues: "DataIssues",
-        imagelab_issues: List[str],
         verbosity: int = 1,
         include_description: bool = True,
     ):
         self.data_issues = data_issues
         self.verbosity = verbosity
-        self.imagelab_issues = imagelab_issues
         self.include_description = include_description
 
     def get_report(self, num_examples: int) -> str:
@@ -88,7 +87,9 @@ class Reporter:
         """
         report_str = ""
         issue_summary = self.data_issues.issue_summary.copy()
-        issue_summary = issue_summary[~issue_summary["issue_type"].isin(self.imagelab_issues)]
+        issue_summary = issue_summary[
+            issue_summary["issue_type"].isin(IssueFinder.list_possible_issue_types())
+        ]
         if issue_summary.empty:
             return report_str
 
@@ -118,3 +119,6 @@ class Reporter:
             + "\n\n"
             + "(Note: A lower score indicates a more severe issue across all examples in the dataset.)\n\n\n"
         )
+
+    def report(self, num_examples):
+        print(self.get_report(num_examples))

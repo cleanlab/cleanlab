@@ -47,7 +47,14 @@ from cleanlab.datalab.issue_manager import (
     OutlierIssueManager,
     NonIIDIssueManager,
 )
-
+from cleanlab.datalab.data_issues import DataIssues
+from cleanlab.datalab.issue_finder import IssueFinder
+from cleanlab.datalab.report import Reporter
+from cleanlab.datalab.adapter.imagelab import (
+    ImagelabDataIssuesAdapter,
+    ImagelabIssueFinderAdapter,
+    ImagelabReporterAdapter,
+)
 
 REGISTRY: Dict[str, Type[IssueManager]] = {
     "outlier": OutlierIssueManager,
@@ -55,7 +62,7 @@ REGISTRY: Dict[str, Type[IssueManager]] = {
     "near_duplicate": NearDuplicateIssueManager,
     "non_iid": NonIIDIssueManager,
 }
-"""Registry of issue managers that can be constructed from a string 
+"""Registry of issue managers that can be constructed from a string
 and used in the Datalab class.
 
 :meta hide-value:
@@ -92,6 +99,27 @@ class _IssueManagerFactory:
     def from_list(cls, issue_types: List[str]) -> List[Type[IssueManager]]:
         """Constructs a list of concrete issue manager classes from a list of strings."""
         return [cls.from_str(issue_type) for issue_type in issue_types]
+
+
+def data_issues_factory(imagelab):
+    if imagelab:
+        return ImagelabDataIssuesAdapter
+    else:
+        return DataIssues
+
+
+def issue_finder_factory(imagelab):
+    if imagelab:
+        return ImagelabIssueFinderAdapter
+    else:
+        return IssueFinder
+
+
+def report_factory(imagelab):
+    if imagelab:
+        return ImagelabReporterAdapter
+    else:
+        return Reporter
 
 
 def register(cls: Type[IssueManager]) -> Type[IssueManager]:

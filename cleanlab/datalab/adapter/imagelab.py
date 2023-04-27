@@ -5,12 +5,21 @@ with the DataIssues, IssueFinder, Reporter classes.
 
 """
 
-from typing import Optional, TYPE_CHECKING
+import warnings
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
+import numpy as np
+import numpy.typing as npt
+import pandas as pd
+from scipy.sparse import csr_matrix
+
+from cleanlab.datalab.data import Data
+from cleanlab.datalab.data_issues import DataIssues
 from cleanlab.datalab.issue_finder import IssueFinder
 from cleanlab.datalab.report import Reporter
 
-if TYPE_CHECKING:
+
+if TYPE_CHECKING:  # pragma: no cover
     from datasets.arrow_dataset import Dataset
     from cleanvision.imagelab import Imagelab
 
@@ -52,13 +61,72 @@ def create_imagelab(dataset: "Dataset", image_key: str) -> Optional["Imagelab"]:
     return imagelab
 
 
-# This should only be called in the `Datalab.report` method, or by some helper function that handles all Reporter adapters.
+class ImagelabDataIssuesAdapter(DataIssues):
+    """
+    Class that collects and stores information and statistics on issues found in a dataset.
+
+    Parameters
+    ----------
+    data :
+        The data object for which the issues are being collected.
+
+    Parameters
+    ----------
+    issues : pd.DataFrame
+        Stores information about each individual issue found in the data,
+        on a per-example basis.
+    issue_summary : pd.DataFrame
+        Summarizes the overall statistics for each issue type.
+    info : dict
+        A dictionary that contains information and statistics about the data and each issue type.
+    """
+
+    def __init__(self, data: Data) -> None:
+        super().__init__(data)
+
+    def collect_issues_from_imagelab(self, imagelab: Imagelab) -> None:
+        """
+        Collect results from Imagelab and update datalab.issues and datalab.issue_summary
+
+        Parameters
+        ----------
+        imagelab: Imagelab
+            Imagelab instance that run all the checks for image issue types
+        """
+        self._update_issues(imagelab)
+
+        common_rows = list(
+            set(imagelab.issue_summary["issue_type"]) & set(self.issue_summary["issue_type"])
+        )
+        if common_rows:
+            warnings.warn(
+                f"Overwriting {common_rows} rows in self.issue_summary from issue manager {imagelab}."
+            )
+        self.issue_summary = self.issue_summary[~self.issue_summary["issue_type"].isin(common_rows)]
+        imagelab_summary_copy = imagelab.issue_summary.copy()
+        imagelab_summary_copy.rename({"num_images": "num_issues"}, axis=1, inplace=True)
+        self.issue_summary = pd.concat(
+            [self.issue_summary, imagelab_summary_copy], axis=0, ignore_index=True
+        )
+        for issue_type in imagelab.info.keys():
+            if issue_type == "statistics":
+                continue
+            self._update_issue_info(issue_type, imagelab.info[issue_type])
+
+
 class ImagelabReporterAdapter(Reporter):
-    # Should these be __init__(self, *args, imagelab, **kwargs)? Calling super() with *args, **kwargs?
-    def __init__(self, imagelab: Imagelab) -> None:
+    def __init__(
+        self,
+        data_issues: "DataIssues",
+        imagelab,
+        verbosity: int = 1,
+        include_description: bool = True,
+    ):
+        super().__init__(data_issues, verbosity, include_description)
         self.imagelab = imagelab
 
     def report(self, num_examples: int, verbosity: Optional[int] = None) -> None:
+        super().report(num_examples)
         if not self.imagelab.issue_summary.empty:
             print("\n")
             self.imagelab.report(num_images=num_examples)
@@ -67,11 +135,9 @@ class ImagelabReporterAdapter(Reporter):
 # How do we let `Datalab` call this in `Datalab.find_issues`?
 class ImagelabIssueFinderAdapter(IssueFinder):
     # How should we initialize this?
-    def __init__(self, datalab, verbosity, *args, **kwargs):
-        self.datalab = datalab
-        self.imagelab = self.datalab.imagelab
-        self.verbosity = verbosity
-        self.data_issues = self.datalab.data_issues
+    def __init__(self, datalab, verbosity):
+        super().__init__(datalab, verbosity)
+        self.imagelab = self.datalab._imagelab
 
     def get_available_issue_types(self, issue_types, **kwargs):
         if issue_types is None:
@@ -90,7 +156,25 @@ class ImagelabIssueFinderAdapter(IssueFinder):
             issue_types_copy.pop("exact_duplicates")
         return issue_types_copy
 
-    def find_issues(self, issue_types, **kwargs) -> None:
+    def find_issues(
+        self,
+        *,
+        pred_probs: Optional[np.ndarray] = None,
+        features: Optional[npt.NDArray] = None,
+        knn_graph: Optional[csr_matrix] = None,
+        issue_types: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        if issue_types is not None and "image_issue_types" in issue_types:
+            datalab_issue_types = issue_types.copy().pop("image_issue_types")
+        else:
+            datalab_issue_types = issue_types
+        super().find_issues(
+            pred_probs=pred_probs,
+            features=features,
+            knn_graph=knn_graph,
+            issue_types=datalab_issue_types,
+        )
+
         issue_types_copy = self.get_available_issue_types(issue_types)
         if not issue_types_copy:
             return
@@ -100,13 +184,12 @@ class ImagelabIssueFinderAdapter(IssueFinder):
 
             self.imagelab.find_issues(issue_types=issue_types_copy)
 
-            self.data_issues.collect_statistics(self.imagelab)
-            self.data_issues.collect_issues_from_imagelab(self.imagelab)
+            self.datalab.data_issues.collect_statistics(self.imagelab)
+            self.datalab.data_issues.collect_issues_from_imagelab(self.imagelab)
             if self.verbosity:
                 print(
-                    f"Image specific audit complete. {self.imagelab.issue_summary['num_images'].sum()} image issues found in the dataset."
+                    f"Image issues audit complete. {self.imagelab.issue_summary['num_images'].sum()} image issues found in the dataset."
                 )
 
         except Exception as e:
             print(f"Error in checking for image issues: {e}")
-            # failed_managers.append(self.imagelab)

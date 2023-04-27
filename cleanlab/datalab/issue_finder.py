@@ -69,6 +69,15 @@ class IssueFinder:
     `Datalab.find_issues` method which internally utilizes an IssueFinder instance.
     """
 
+    def __init__(
+        self,
+        data_issues: "DataIssues",
+        imagelab_issues: List[str],
+        verbosity: int = 1,
+        include_description: bool = True,
+    ):
+        super().__init__(data_issues, imagelab_issues, verbosity, include_description)
+
     def __init__(self, datalab: "Datalab", verbosity=1):
         self.datalab = datalab
         self.verbosity = verbosity
@@ -154,7 +163,7 @@ class IssueFinder:
             for factory in _IssueManagerFactory.from_list(list(issue_types_copy.keys()))
         ]
 
-        if not new_issue_managers and not self.datalab.imagelab:
+        if not new_issue_managers and not self.datalab._imagelab:
             no_args_passed = all(arg is None for arg in [pred_probs, features, knn_graph])
             if no_args_passed:
                 warnings.warn("No arguments were passed to find_issues.")
@@ -180,10 +189,6 @@ class IssueFinder:
             )
         if failed_managers:
             print(f"Failed to check for these issue types: {failed_managers}")
-            if self.imagelab:
-                print(
-                    f"{self.imagelab.issue_summary['num_images'].sum()} images issues found in the dataset."
-                )
 
         data_issues.set_health_score()
 

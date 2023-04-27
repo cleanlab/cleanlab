@@ -21,24 +21,22 @@ Datalab offers a unified audit to detect all kinds of issues in data and labels.
 """
 from __future__ import annotations
 
+import warnings
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
-import warnings
+
 import cleanlab
-from cleanlab.datalab.data import Data
-from cleanlab.datalab.data_issues import DataIssues
-from cleanlab.datalab.display import _Displayer
-from cleanlab.datalab.issue_finder import IssueFinder
-from cleanlab.datalab.report import Reporter
-from cleanlab.datalab.serialize import _Serializer
 from cleanlab.datalab.adapter.imagelab import (
-    ImagelabReporterAdapter,
     create_imagelab,
-    ImagelabIssueFinderAdapter,
 )
+from cleanlab.datalab.data import Data
+from cleanlab.datalab.display import _Displayer
+from cleanlab.datalab.factory import data_issues_factory, issue_finder_factory, report_factory
+from cleanlab.datalab.issue_finder import IssueFinder
+from cleanlab.datalab.serialize import _Serializer
 
 if TYPE_CHECKING:  # pragma: no cover
     from datasets.arrow_dataset import Dataset
@@ -100,10 +98,12 @@ class Datalab:
         self._labels, self._label_map = self._data._labels, self._data._label_map
         self._data_hash = self._data._data_hash
         self.label_name = self._data._label_name
-        self.data_issues = DataIssues(self._data)
+
         self.cleanlab_version = cleanlab.version.__version__
         self.verbosity = verbosity
-        self.imagelab = create_imagelab(self.data, image_key)
+        self._imagelab = create_imagelab(hf_dataset=self.data, image_key=image_key)
+
+        self.data_issues = data_issues_factory(self._imagelab)
 
     # todo: check displayer methods
     def __repr__(self) -> str:
@@ -272,18 +272,13 @@ class Datalab:
                 "No issue types were specified. " "No issues will be found in the dataset."
             )
             return None
-        issue_finder = IssueFinder(datalab=self, verbosity=self.verbosity)
+        issue_finder = issue_finder_factory(self._imagelab)(datalab=self, verbosity=self.verbosity)
         issue_finder.find_issues(
             pred_probs=pred_probs,
             features=features,
             knn_graph=knn_graph,
             issue_types=issue_types,
         )
-        if self.imagelab:
-            imagelab_issue_finder = ImagelabIssueFinderAdapter(
-                datalab=self, verbosity=self.verbosity
-            )
-            imagelab_issue_finder.find_issues(issue_types=issue_types)
 
     def report(
         self,
@@ -315,19 +310,13 @@ class Datalab:
         if verbosity is None:
             verbosity = self.verbosity
 
-        reporter = Reporter(
+        reporter = report_factory(self._imagelab)(
             data_issues=self.data_issues,
-            imagelab_issues=self.imagelab.issue_summary["issue_type"] if self.imagelab else [],
+            imagelab=self._imagelab,
             verbosity=verbosity,
             include_description=include_description,
         )
-        datalab_report = reporter.get_report(num_examples=num_examples)
-        if datalab_report:
-            print(datalab_report)
-
-        if self.imagelab:
-            imagelab_reporter = ImagelabReporterAdapter(self.imagelab)
-            imagelab_reporter.report(num_examples)
+        reporter.report(num_examples=num_examples)
 
     @property
     def issues(self) -> pd.DataFrame:
