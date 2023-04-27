@@ -65,6 +65,16 @@ class Reporter:
         self.verbosity = verbosity
         self.include_description = include_description
 
+    def report(self, num_examples: int) -> None:
+        """Prints a report about identified issues in the data.
+
+        Parameters
+        ----------
+        num_examples :
+            The number of examples to include in the report for each issue type.
+        """
+        print(self.get_report(num_examples=num_examples))
+
     def get_report(self, num_examples: int) -> str:
         """Constructs a report about identified issues in the data.
 
