@@ -349,10 +349,12 @@ def test_find_label_issues():
     thr_badloc = 0.4  # hyperparameter
     thr_swap = 0.99  # hyperparameter
 
-    auxiliary_input_dict = _get_valid_inputs_for_compute_scores(alpha, labels, predictions)
+    auxiliary_inputs = _get_valid_inputs_for_compute_scores(alpha, labels, predictions)
 
     overlooked_scores_per_box = _compute_overlooked_box_scores(
-        alpha=alpha, high_probability_threshold=high_probability_threshold, **auxiliary_input_dict
+        alpha=alpha,
+        high_probability_threshold=high_probability_threshold,
+        auxiliary_inputs=auxiliary_inputs,
     )
     overlooked_issues_per_box = _find_label_issues_per_box(
         overlooked_scores_per_box, thr_overlooked
@@ -362,7 +364,9 @@ def test_find_label_issues():
     assert overlooked_issues == 3
 
     badloc_scores_per_box = _compute_badloc_box_scores(
-        alpha=alpha, low_probability_threshold=low_probability_threshold, **auxiliary_input_dict
+        alpha=alpha,
+        low_probability_threshold=low_probability_threshold,
+        auxiliary_inputs=auxiliary_inputs,
     )
     badloc_issues_per_box = _find_label_issues_per_box(badloc_scores_per_box, thr_badloc)
     badloc_issues_per_image = _pool_box_scores_per_image(badloc_issues_per_box)
@@ -370,7 +374,9 @@ def test_find_label_issues():
     assert badloc_issues == 1
 
     swap_scores_per_box = _compute_swap_box_scores(
-        alpha=alpha, high_probability_threshold=high_probability_threshold, **auxiliary_input_dict
+        alpha=alpha,
+        high_probability_threshold=high_probability_threshold,
+        auxiliary_inputs=auxiliary_inputs,
     )
     swap_issues_per_box = _find_label_issues_per_box(swap_scores_per_box, thr_swap)
     swap_issues_per_image = _pool_box_scores_per_image(swap_issues_per_box)
