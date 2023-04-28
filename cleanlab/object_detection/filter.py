@@ -19,11 +19,21 @@
 from typing import List, Any, Dict
 import numpy as np
 
+from cleanlab.internal.constants import (
+    ALPHA,
+    LOW_PROBABILITY_THRESHOLD,
+    HIGH_PROBABILITY_THRESHOLD,
+    OVERLOOKED_THRESHOLD,
+    BADLOC_THRESHOLD,
+    SWAP_THRESHOLD,
+)
+
 from cleanlab.object_detection.rank import (
     _get_valid_inputs_for_compute_scores,
     _compute_overlooked_box_scores,
     _compute_badloc_box_scores,
     _compute_swap_box_scores,
+    _assert_valid_inputs,
 )
 
 
@@ -53,44 +63,97 @@ def find_label_issues(
     label_issues : np.ndarray
       Returns a list of **indices** of examples identified with label issues (i.e. those indices where the mask would be ``True``).
     """
-    alpha = 0.91  # hyperparameter
-    high_probability_threshold = 0.7  # hyperparameter
-    low_probability_threshold = 0.1  # hyperparameter
+    scoring_method = "objectlab"
 
-    thr_overlooked = 0.4  # hyperparameter
-    thr_badloc = 0.4  # hyperparameter
-    thr_swap = 0.4  # hyperparameter
+    _assert_valid_inputs(
+        labels=labels,
+        predictions=predictions,
+        method=scoring_method,
+    )
 
-    auxiliary_inputs = _get_valid_inputs_for_compute_scores(alpha, labels, predictions)
+    _find_label_issues(labels, predictions, scoring_method=scoring_method)
+
+    auxiliary_inputs = _get_valid_inputs_for_compute_scores(ALPHA, labels, predictions)
 
     overlooked_scores_per_box = _compute_overlooked_box_scores(
-        alpha=alpha,
-        high_probability_threshold=high_probability_threshold,
+        alpha=ALPHA,
+        high_probability_threshold=HIGH_PROBABILITY_THRESHOLD,
         auxiliary_inputs=auxiliary_inputs,
     )
     overlooked_issues_per_box = _find_label_issues_per_box(
-        overlooked_scores_per_box, thr_overlooked
+        overlooked_scores_per_box, OVERLOOKED_THRESHOLD
     )
     overlooked_issues_per_image = _pool_box_scores_per_image(overlooked_issues_per_box)
 
     badloc_scores_per_box = _compute_badloc_box_scores(
-        alpha=alpha,
-        low_probability_threshold=low_probability_threshold,
+        alpha=ALPHA,
+        low_probability_threshold=LOW_PROBABILITY_THRESHOLD,
         auxiliary_inputs=auxiliary_inputs,
     )
-    badloc_issues_per_box = _find_label_issues_per_box(badloc_scores_per_box, thr_badloc)
+    badloc_issues_per_box = _find_label_issues_per_box(badloc_scores_per_box, BADLOC_THRESHOLD)
     badloc_issues_per_image = _pool_box_scores_per_image(badloc_issues_per_box)
 
     swap_scores_per_box = _compute_swap_box_scores(
-        alpha=alpha,
-        high_probability_threshold=high_probability_threshold,
+        alpha=ALPHA,
+        high_probability_threshold=HIGH_PROBABILITY_THRESHOLD,
         auxiliary_inputs=auxiliary_inputs,
     )
-    swap_issues_per_box = _find_label_issues_per_box(swap_scores_per_box, thr_swap)
+    swap_issues_per_box = _find_label_issues_per_box(swap_scores_per_box, SWAP_THRESHOLD)
     swap_issues_per_image = _pool_box_scores_per_image(swap_issues_per_box)
 
     issues_per_image = overlooked_issues_per_image + badloc_issues_per_image + swap_issues_per_image
     is_issue = issues_per_image > 0
+    return is_issue
+
+
+def _find_label_issues(
+    labels: List[Dict[str, Any]],
+    predictions: List[np.ndarray],
+    *,
+    scoring_method: str = "objectlab",
+):
+    """Internal function to find label issues based on passed in method."""
+
+    if scoring_method == "objectlab":
+        auxiliary_inputs = _get_valid_inputs_for_compute_scores(ALPHA, labels, predictions)
+
+        overlooked_scores_per_box = _compute_overlooked_box_scores(
+            alpha=ALPHA,
+            high_probability_threshold=HIGH_PROBABILITY_THRESHOLD,
+            auxiliary_inputs=auxiliary_inputs,
+        )
+        overlooked_issues_per_box = _find_label_issues_per_box(
+            overlooked_scores_per_box, OVERLOOKED_THRESHOLD
+        )
+        overlooked_issues_per_image = _pool_box_scores_per_image(overlooked_issues_per_box)
+
+        badloc_scores_per_box = _compute_badloc_box_scores(
+            alpha=ALPHA,
+            low_probability_threshold=LOW_PROBABILITY_THRESHOLD,
+            auxiliary_inputs=auxiliary_inputs,
+        )
+        badloc_issues_per_box = _find_label_issues_per_box(badloc_scores_per_box, BADLOC_THRESHOLD)
+        badloc_issues_per_image = _pool_box_scores_per_image(badloc_issues_per_box)
+
+        swap_scores_per_box = _compute_swap_box_scores(
+            alpha=ALPHA,
+            high_probability_threshold=HIGH_PROBABILITY_THRESHOLD,
+            auxiliary_inputs=auxiliary_inputs,
+        )
+        swap_issues_per_box = _find_label_issues_per_box(swap_scores_per_box, SWAP_THRESHOLD)
+        swap_issues_per_image = _pool_box_scores_per_image(swap_issues_per_box)
+
+        issues_per_image = (
+            overlooked_issues_per_image + badloc_issues_per_image + swap_issues_per_image
+        )
+        is_issue = issues_per_image > 0
+    else:
+        is_issue = np.full(
+            shape=[
+                len(labels),
+            ],
+            fill_value=-1,
+        )
     return is_issue
 
 

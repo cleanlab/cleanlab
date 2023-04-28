@@ -18,6 +18,13 @@
 are to contain label errors. """
 
 import warnings
+from cleanlab.internal.constants import (
+    ALPHA,
+    LOW_PROBABILITY_THRESHOLD,
+    HIGH_PROBABILITY_THRESHOLD,
+    TEMPERATURE,
+    EUC_FACTOR,
+)
 from typing import List, Dict, Any, Optional, Tuple, TYPE_CHECKING, TypeVar
 import numpy as np
 import copy
@@ -45,7 +52,6 @@ def get_label_quality_scores(
     labels: List[Dict[str, Any]],
     predictions: List[np.ndarray],
     *,
-    method: str = "subtype",
     probability_threshold: Optional[float] = None,
     verbose: bool = True,
 ) -> np.ndarray:
@@ -80,11 +86,6 @@ def get_label_quality_scores(
         where ``M`` is the number of predicted bounding boxes for class ``k`` and the five columns correspond to ``[x,y,x,y,pred_prob]`` where
         ``[x,y,x,y]`` are the bounding box coordinates predicted by the model and ``pred_prob`` is the model's confidence in ``predictions[i]``.
 
-    method:
-        The method used to calculate label_quality_scores. Options:
-
-        - ``subtype_lqs``: calculates image score as a composite score of the quality of badly located, swapped and missing bounding boxes.
-
     probability_threshold:
         Bounding boxes in ``predictions`` with ``pred_prob`` below the threshold are not considered for computing `label_quality_scores`.
         If you know what probability-threshold was used when producing predicted boxes from your trained object detector,
@@ -100,6 +101,7 @@ def get_label_quality_scores(
         Array of shape ``(N, )`` of scores between 0 and 1, one per image in the object detection dataset.
         Lower scores indicate images that are more likely mislabeled.
     """
+    method = "objectlab"
 
     _assert_valid_inputs(
         labels=labels,
@@ -153,7 +155,7 @@ def _compute_label_quality_scores(
     labels: List[Dict[str, Any]],
     predictions: List[np.ndarray],
     *,
-    method: str = "subtype",
+    method: str = "objectlab",
     threshold: Optional[float] = None,
     verbose: bool = True,
 ) -> np.ndarray:
@@ -171,18 +173,14 @@ def _compute_label_quality_scores(
     else:
         threshold = min_pred_prob  # assume model was not pre_pruned if no threshold was provided
 
-    if method == "subtype":
-        alpha = 0.91
-        low_probability_threshold = 0.001
-        high_probability_threshold = 0.5
-        temperature = 0.1
+    if method == "objectlab":
         scores = _get_subtype_label_quality_scores(
             labels,
             predictions,
-            alpha=alpha,
-            low_probability_threshold=low_probability_threshold,
-            high_probability_threshold=high_probability_threshold,
-            temperature=temperature,
+            alpha=ALPHA,
+            low_probability_threshold=LOW_PROBABILITY_THRESHOLD,
+            high_probability_threshold=HIGH_PROBABILITY_THRESHOLD,
+            temperature=TEMPERATURE,
         )
 
     return scores
@@ -256,7 +254,7 @@ def _assert_valid_inputs(
     if not predictions[0][0].shape[1] == 5:
         raise ValueError(f"Prediction values have to be of format [_,_,_,_,pred_prob].")
 
-    valid_methods = ["subtype"]
+    valid_methods = ["objectlab"]
     if method is not None and method not in valid_methods:
         raise ValueError(
             f"""
@@ -443,7 +441,7 @@ def _draw_boxes(fig, ax, bboxes, labels, edgecolor="g", linestyle="-", linewidth
 
 
 def _separate_label(label: Dict[str, Any]) -> Tuple[np.ndarray, np.ndarray]:
-    """Seperates labels into bounding box and class label lists."""
+    """Separates labels into bounding box and class label lists."""
     bboxes = label["bboxes"]
     labels = label["labels"]
     return bboxes, labels
@@ -460,7 +458,7 @@ def _separate_prediction_all_preds(
 def _separate_prediction_single_box(
     prediction: np.ndarray,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """Seperates predictions into class labels, bounding boxes and pred_prob lists"""
+    """Separates predictions into class labels, bounding boxes and pred_prob lists"""
     labels = []
     boxes = []
     for idx, prediction_class in enumerate(prediction):
@@ -588,13 +586,11 @@ def _get_iou(bb1: Dict[str, Any], bb2: Dict[str, Any]) -> float:
 
 def _euc_dis(box1: List[float], box2: List[float]) -> float:
     """Calculates the euclidian distance between `box1` and `box2`."""
-    euc_factor = 0.1  # this is a hyperparameter
-
     x1, y1 = (box1[0] + box1[2]) / 2, (box1[1] + box1[3]) / 2
     x2, y2 = (box2[0] + box2[2]) / 2, (box2[1] + box2[3]) / 2
     p1 = np.array([x1, y1])
     p2 = np.array([x2, y2])
-    val2 = np.exp(-np.linalg.norm(p1 - p2) * euc_factor)
+    val2 = np.exp(-np.linalg.norm(p1 - p2) * EUC_FACTOR)
     return val2
 
 
