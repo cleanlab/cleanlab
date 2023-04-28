@@ -90,7 +90,8 @@ def find_label_issues(
     swap_issues_per_image = _pool_box_scores_per_image(swap_issues_per_box)
 
     issues_per_image = overlooked_issues_per_image + badloc_issues_per_image + swap_issues_per_image
-    return issues_per_image
+    is_issue = issues_per_image > 0
+    return is_issue
 
 
 def _find_label_issues_per_box(
