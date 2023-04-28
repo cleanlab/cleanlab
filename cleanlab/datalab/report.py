@@ -112,9 +112,20 @@ class Reporter:
         return report_str
 
     def _write_summary(self, summary: pd.DataFrame) -> str:
+
+        statistics = self.data_issues.get_info("statistics")
+        num_examples = statistics["num_examples"]
+        num_classes = statistics.get(
+            "num_classes"
+        )  # This may not be required for all types of datasets  in the future (e.g. unlabeled/regression)
+
+        dataset_information = f"Dataset Information: num_examples: {num_examples}"
+        if num_classes is not None:
+            dataset_information += f", num_classes: {num_classes}"
         return (
             "Here is a summary of the different kinds of issues found in the data:\n\n"
             + summary.to_string(index=False)
             + "\n\n"
-            + "(Note: A lower score indicates a more severe issue across all examples in the dataset.)\n\n\n"
+            + "(Note: A lower score indicates a more severe issue across all examples in the dataset.)\n\n"
+            + f"{dataset_information}\n\n\n"
         )
