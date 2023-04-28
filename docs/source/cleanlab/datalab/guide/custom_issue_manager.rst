@@ -199,7 +199,7 @@ The report will look something like this:
     ------------------------------------------- basic issues -------------------------------------------
 
     Number of examples with this issue: 2
-    Overall dataset quality in terms of this issue: : 0.4778
+    Overall dataset quality in terms of this issue: 0.4778
 
     Examples representing most severe instances of this issue:
         is_basic_issue  basic_score
@@ -216,7 +216,7 @@ The report will look something like this:
     	Intermediate issues are a bit more involved than basic issues.
 
     Number of examples with this issue: 0
-    Overall dataset quality in terms of this issue: : 0.2865
+    Overall dataset quality in terms of this issue: 0.2865
 
     Examples representing most severe instances of this issue:
         is_intermediate_issue  intermediate_score    kernel
