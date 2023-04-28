@@ -220,7 +220,7 @@ def test_find_label_issues(test_labels):
     assert len(issues) == 1
     assert issues[0] == (1, 0)
     issues2 = find_label_issues(
-        test_labels, pred_probs, return_indices_ranked_by="normalized_margin"
+        test_labels, pred_probs, return_indices_ranked_by="normalized_margin", n_jobs=1
     )
     assert isinstance(issues2, list)
 
