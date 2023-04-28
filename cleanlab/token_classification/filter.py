@@ -60,7 +60,7 @@ def find_label_issues(
 
         See :py:func:`cleanlab.filter.find_label_issues <cleanlab.filter.find_label_issues>`
         documentation for more details on each label quality scoring method.
-    
+
     kwargs:
         Additional keyword arguments to pass into :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>`
         which is internally applied at the token level. Can include values like `n_jobs` to control parallel processing, `frac_noise`, etc.
