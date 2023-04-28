@@ -33,7 +33,7 @@ def find_label_issues(
 ) -> np.ndarray:
     """
     Identifies potentially mislabeled examples in an object detection dataset.
-    An example is flagged as with a label issue if *any* of the boxes appear to be incorrectly annotated for this example.
+    An image is flagged with a label issue if *any* of its bounding boxes appear incorrectly annotated -- this includes images for which a bounding box: should have been annotated but is missing, has been annotated with the wrong class, or has been annotated in a suboptimal location.
 
     Parameters
     ----------
@@ -46,7 +46,7 @@ def find_label_issues(
         A list of ``N`` ``np.ndarray`` such that ``predictions[i]`` corresponds to the model predictions for the `i`-th image
         in the format ``np.ndarray((K,))`` and ``predictions[i][k]`` is of shape ``np.ndarray(M,5)``
         where ``M`` is the number of predicted bounding boxes for class ``k`` and the five columns correspond to ``[x,y,x,y,pred_prob]`` returned
-        by the model.
+        by the model and ``pred_prob`` is the model's confidence in ``predictions[i]``.
 
     Returns
     -------

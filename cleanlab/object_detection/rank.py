@@ -77,8 +77,8 @@ def get_label_quality_scores(
     predictions:
         A list of ``N`` ``np.ndarray`` such that ``predictions[i]`` corresponds to the model predictions for the `i`-th image
         in the format ``np.ndarray((K,))`` and ``predictions[i][k]`` is of shape ``np.ndarray(M,5)``
-        where ``M`` is the number of predicted bounding boxes for class ``k`` and the five columns correspond to ``[x,y,x,y,pred_prob]`` returned
-        by the model.
+        where ``M`` is the number of predicted bounding boxes for class ``k`` and the five columns correspond to ``[x,y,x,y,pred_prob]`` where
+        ``[x,y,x,y]`` are the bounding box coordinates predicted by the model and ``pred_prob`` is the model's confidence in ``predictions[i]``.
 
     method:
         The method used to calculate label_quality_scores. Options:
@@ -97,7 +97,7 @@ def get_label_quality_scores(
     Returns
     ---------
     label_quality_scores:
-        Array of shape ``(N, )`` of scores between 0 and 1, one per image in the dataset.
+        Array of shape ``(N, )`` of scores between 0 and 1, one per image in the object detection dataset.
         Lower scores indicate images that are more likely mislabeled.
     """
 
@@ -118,16 +118,17 @@ def get_label_quality_scores(
 
 
 def issues_from_scores(label_quality_scores: np.ndarray, *, threshold: float = 0.1) -> np.ndarray:
-    """Returns a list of indices images with issues sorted from most to least severe.
+    """Returns a list of indices of images with issues sorted from most to least severe cut off at threshold.
+    Useful to set an acceptable threshold for if an example should be considered an issue or not.
 
     Parameters
     ----------
     label_quality_scores:
-        Array of shape ``(N, )`` of scores between 0 and 1, one per image in the dataset.
+        Array of shape ``(N, )`` of scores between 0 and 1, one per image in the object detection dataset.
         Lower scores indicate images are more likely to contain a label issue.
 
     threshold:
-        Label quality scores above the threshold are not considered as issues and their indices are omited from the return
+        Label quality scores above the threshold are not considered to be label issues. The corresponding examples' indices are omitted from the returned array.
 
     Returns
     ---------
@@ -299,8 +300,8 @@ def visualize(
 
     prediction:
         A prediction for a single image in the format ``np.ndarray((K,))`` and ``prediction[k]`` is of shape ``np.ndarray(N,5)``
-        where ``M`` is the number of bounding boxes for class ``k`` and the five columns correspond to ``[x,y,x,y,pred_prob]`` returned
-        by the model.
+         where ``M`` is the number of predicted bounding boxes for class ``k`` and the five columns correspond to ``[x,y,x,y,pred_prob]`` where
+        ``[x,y,x,y]`` are the bounding box coordinates predicted by the model and ``pred_prob`` is the model's confidence in ``predictions[i]``.
 
     prediction_threshold:
         Minimum `pred_probs` value of a bounding box output by the model. All bounding boxes with `pred_probs` below this threshold are
@@ -1003,8 +1004,8 @@ def _get_subtype_label_quality_scores(
     predictions:
         A list of `N` `np.ndarray` for `N` images such that `predictions[i]` corresponds to the model predictions for the `i`-th image
         in the format `np.ndarray((K,))` where K is the number of classes and `predictions[i][k]` is of shape `np.ndarray(M,5)`
-        where `M` is the number of predicted bounding boxes for class `K` and the five columns correspond to `[x,y,x,y,pred_prob]` returned
-        by the model.
+        where ``M`` is the number of predicted bounding boxes for class ``k`` and the five columns correspond to ``[x,y,x,y,pred_prob]`` where
+        ``[x,y,x,y]`` are the bounding box coordinates predicted by the model and ``pred_prob`` is the model's confidence in ``predictions[i]``.
 
         Note: `M` number of predicted bounding boxes can be different from `M` number of annotated bounding boxes for class `K` of `i`-th image.
 
@@ -1023,7 +1024,7 @@ def _get_subtype_label_quality_scores(
     Returns
     ---------
     label_quality_scores:
-        Array of shape ``(N, )`` of scores between 0 and 1, one per image in the dataset.
+        Array of shape ``(N, )`` of scores between 0 and 1, one per image in the object detection dataset.
         Lower scores indicate images are more likely to contain an incorrect label.
     """
     auxiliary_inputs = _get_valid_inputs_for_compute_scores(alpha, labels, predictions)
