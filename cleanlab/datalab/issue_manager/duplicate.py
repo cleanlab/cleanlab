@@ -45,8 +45,8 @@ class NearDuplicateIssueManager(IssueManager):
     issue_name: ClassVar[str] = "near_duplicate"
     verbosity_levels = {
         0: [],
-        1: ["threshold"],
-        2: [],
+        1: [],
+        2: ["threshold"],
     }
 
     def __init__(
