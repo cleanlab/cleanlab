@@ -58,12 +58,7 @@ class TestLabelIssueManager:
         cv_n_folds = [im.cl.cv_n_folds for im in [issue_manager, new_issue_manager]]
         assert cv_n_folds == [5, 10], "Issue manager should have the right attributes"
 
-    @pytest.mark.parametrize(
-        "kwargs",
-        [{}, {"asymmetric": True}],
-        ids=["No kwargs", "asymmetric=True"],
-    )
-    def test_get_summary_parameters(self, issue_manager, kwargs, monkeypatch):
+    def test_get_summary_parameters(self, issue_manager, monkeypatch):
         mock_health_summary_parameters = {
             "labels": [1, 0, 2],
             "asymmetric": False,
@@ -80,13 +75,12 @@ class TestLabelIssueManager:
         monkeypatch.setattr(
             issue_manager, "health_summary_parameters", mock_health_summary_parameters
         )
-        summary_parameters = issue_manager._get_summary_parameters(pred_probs=pred_probs, **kwargs)
+        summary_parameters = issue_manager._get_summary_parameters(pred_probs=pred_probs)
         expected_parameters = {
             "confident_joint": [1 / 3, 1 / 3, 1 / 3],
             "asymmetric": False,
             "class_names": ["a", "b", "c"],
         }
-        expected_parameters.update(kwargs)
         assert summary_parameters == expected_parameters
 
         # Test missing "confident_joint" key
@@ -94,14 +88,13 @@ class TestLabelIssueManager:
         monkeypatch.setattr(
             issue_manager, "health_summary_parameters", mock_health_summary_parameters
         )
-        summary_parameters = issue_manager._get_summary_parameters(pred_probs=pred_probs, **kwargs)
+        summary_parameters = issue_manager._get_summary_parameters(pred_probs=pred_probs)
         expected_parameters = {
             "joint": [1 / 3, 1 / 3, 1 / 3],
             "num_examples": 3,
             "asymmetric": False,
             "class_names": ["a", "b", "c"],
         }
-        expected_parameters.update(kwargs)
         assert summary_parameters == expected_parameters
 
         # Test missing "joint" key
@@ -109,14 +102,13 @@ class TestLabelIssueManager:
         monkeypatch.setattr(
             issue_manager, "health_summary_parameters", mock_health_summary_parameters
         )
-        summary_parameters = issue_manager._get_summary_parameters(pred_probs=pred_probs, **kwargs)
+        summary_parameters = issue_manager._get_summary_parameters(pred_probs=pred_probs)
         expected_parameters = {
             "pred_probs": pred_probs,
             "labels": [1, 0, 2],
             "asymmetric": False,
             "class_names": ["a", "b", "c"],
         }
-        expected_parameters.update(kwargs)
         assert np.all(summary_parameters["pred_probs"] == expected_parameters["pred_probs"])
         summary_parameters.pop("pred_probs")
         expected_parameters.pop("pred_probs")

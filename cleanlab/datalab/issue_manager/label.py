@@ -67,7 +67,9 @@ class LabelIssueManager(IssueManager):
     ):
         super().__init__(datalab)
         self.cl = CleanLearning(**(clean_learning_kwargs or {}))
-        self.health_summary_parameters: Dict[str, Any] = health_summary_parameters or {}
+        self.health_summary_parameters: Dict[str, Any] = (
+            health_summary_parameters.copy() if health_summary_parameters else {}
+        )
         self._reset()
 
     @staticmethod
@@ -102,12 +104,12 @@ class LabelIssueManager(IssueManager):
             statistics_dict = self.datalab.get_info("statistics")
             self.health_summary_parameters = {
                 "labels": self.datalab._labels,
-                "asymmetric": statistics_dict.get("asymmetric", None),
                 "class_names": list(self.datalab._label_map.values()),
                 "num_examples": statistics_dict.get("num_examples"),
                 "joint": statistics_dict.get("joint", None),
                 "confident_joint": statistics_dict.get("confident_joint", None),
                 "multi_label": statistics_dict.get("multi_label", None),
+                "asymmetric": statistics_dict.get("asymmetric", None),
                 "verbose": False,
             }
         self.health_summary_parameters = {
@@ -117,7 +119,6 @@ class LabelIssueManager(IssueManager):
     def find_issues(
         self,
         pred_probs: np.ndarray,
-        health_summary_kwargs: Optional[Dict[str, Any]] = None,
         **kwargs,
     ) -> None:
         self.health_summary_parameters.update({"pred_probs": pred_probs})
@@ -129,9 +130,7 @@ class LabelIssueManager(IssueManager):
         )
         self.issues.rename(columns={"label_quality": self.issue_score_key}, inplace=True)
 
-        summary_dict = self.get_health_summary(
-            pred_probs=pred_probs, **(health_summary_kwargs or {})
-        )
+        summary_dict = self.get_health_summary(pred_probs=pred_probs)
 
         # Get a summarized dataframe of the label issues
         self.summary = self.make_summary(score=summary_dict["overall_label_health_score"])
@@ -142,18 +141,18 @@ class LabelIssueManager(IssueManager):
         # Drop columns from issues that are in the info
         self.issues = self.issues.drop(columns=["given_label", "predicted_label"])
 
-    def get_health_summary(self, pred_probs, **kwargs) -> dict:
+    def get_health_summary(self, pred_probs) -> dict:
         """Returns a short summary of the health of this Lab."""
         from cleanlab.dataset import health_summary
 
         # Validate input
         self._validate_pred_probs(pred_probs)
 
-        summary_kwargs = self._get_summary_parameters(pred_probs, **kwargs)
+        summary_kwargs = self._get_summary_parameters(pred_probs)
         summary = health_summary(**summary_kwargs)
         return summary
 
-    def _get_summary_parameters(self, pred_probs, **kwargs) -> Dict["str", Any]:
+    def _get_summary_parameters(self, pred_probs) -> Dict["str", Any]:
         """Collects a set of input parameters for the health summary function based on
         any info available in the datalab.
 
@@ -190,9 +189,10 @@ class LabelIssueManager(IssueManager):
             # Start with the health_summary_parameters, then override with kwargs
             if k in self.health_summary_parameters:
                 summary_parameters[k] = self.health_summary_parameters[k]
-            if k in kwargs:
-                summary_parameters[k] = kwargs[k]
-        return summary_parameters
+
+        return (
+            summary_parameters  # will be called in `dataset.health_summary(**summary_parameters)`
+        )
 
     def collect_info(self, issues: pd.DataFrame, summary_dict: dict) -> dict:
         issues_info = {
