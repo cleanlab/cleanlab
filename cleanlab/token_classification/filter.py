@@ -95,7 +95,7 @@ def find_label_issues(
         labels_flatten,
         pred_probs_flatten,
         return_indices_ranked_by=return_indices_ranked_by,
-        **kwargs
+        **kwargs,
     )
 
     lengths = [len(label) for label in labels]
