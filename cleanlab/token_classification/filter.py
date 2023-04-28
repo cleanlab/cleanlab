@@ -92,7 +92,10 @@ def find_label_issues(
     pred_probs_flatten = np.array([pred for pred_prob in pred_probs for pred in pred_prob])
 
     issues_main = find_label_issues_main(
-        labels_flatten, pred_probs_flatten, return_indices_ranked_by=return_indices_ranked_by, **kwargs
+        labels_flatten,
+        pred_probs_flatten,
+        return_indices_ranked_by=return_indices_ranked_by,
+        **kwargs
     )
 
     lengths = [len(label) for label in labels]
