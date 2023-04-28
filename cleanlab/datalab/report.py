@@ -112,7 +112,6 @@ class Reporter:
         return report_str
 
     def _write_summary(self, summary: pd.DataFrame) -> str:
-
         statistics = self.data_issues.get_info("statistics")
         num_examples = statistics["num_examples"]
         num_classes = statistics.get(
