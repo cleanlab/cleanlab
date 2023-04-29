@@ -160,7 +160,6 @@ def find_label_issues2(
         #only want to call it an error if pred_probs doesnt match the label at that pixel
         img[num,ii,jj]=True 
     
-
     if downsample==1:
         return img
     else:
