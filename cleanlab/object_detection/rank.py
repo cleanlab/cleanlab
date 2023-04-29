@@ -232,7 +232,6 @@ def _prune_by_threshold(
     return predictions_copy
 
 
-# Todo: make this more descriptive and assert better inputs
 def _assert_valid_inputs(
     labels: List[Dict[str, Any]],
     predictions,
@@ -994,17 +993,10 @@ def _get_subtype_label_quality_scores(
     Parameters
     ----------
     labels:
-        A list of `N` dictionaries for `N` images such that `labels[i]` contains the given labels for the `i`-th image in the format
-       `{'bboxes': np.ndarray((M,4)), 'labels': np.ndarray((M,)), 'image_name': str}` where `M` is the number of annotated bounding boxes
-       for the `i`-th image and `bboxes[j]` is in the format [x,y,x,y] with given label `labels[j]`. ('image_name' is optional here)
+        As expected by :py:func:`get_label_quality_scores <cleanlab.outlier.get_label_quality_scores>`. See function for more details.
 
     predictions:
-        A list of `N` `np.ndarray` for `N` images such that `predictions[i]` corresponds to the model predictions for the `i`-th image
-        in the format `np.ndarray((K,))` where K is the number of classes and `predictions[i][k]` is of shape `np.ndarray(M,5)`
-        where ``M`` is the number of predicted bounding boxes for class ``k`` and the five columns correspond to ``[x,y,x,y,pred_prob]`` where
-        ``[x,y,x,y]`` are the bounding box coordinates predicted by the model and ``pred_prob`` is the model's confidence in ``predictions[i]``.
-
-        Note: `M` number of predicted bounding boxes can be different from `M` number of annotated bounding boxes for class `K` of `i`-th image.
+        As expected by :py:func:`get_label_quality_scores <cleanlab.outlier.get_label_quality_scores>`. See function for more details.
 
     alpha:
         Weight between IoU and distance when considering similarity matrix. High alpha means considering IoU more strongly over distance.
@@ -1021,8 +1013,7 @@ def _get_subtype_label_quality_scores(
     Returns
     ---------
     label_quality_scores:
-        Array of shape ``(N, )`` of scores between 0 and 1, one per image in the object detection dataset.
-        Lower scores indicate images are more likely to contain an incorrect label.
+        As returned by :py:func:`get_label_quality_scores <cleanlab.outlier.get_label_quality_scores>`. See function for more details.
     """
     auxiliary_inputs = _get_valid_inputs_for_compute_scores(alpha, labels, predictions)
     overlooked_scores_per_box = _compute_overlooked_box_scores(
