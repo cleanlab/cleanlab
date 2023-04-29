@@ -23,7 +23,7 @@ from cleanlab.experimental.label_issues_batched import find_label_issues_batched
 import numpy as np 
 from typing import Optional, List, Any
 
-def find_label_issues2(
+def find_label_issues(
     labels: np.ndarray,
     pred_probs: np.ndarray,
     downsample: int = 16,
@@ -135,12 +135,12 @@ def find_label_issues2(
     
     
     #Added Downsampling
-    pre_labelsog, pre_pred_probsog = downsample_arrays(labels, pred_probs, downsample)
+    pre_labels, pre_pred_probs = downsample_arrays(labels, pred_probs, downsample)
     
-    num_image, num_classes, h, w = pre_pred_probsog.shape
+    num_image, num_classes, h, w = pre_pred_probs.shape
     #flatten images just preps labels and pred_probs
     
-    pre_labels, pre_pred_probs = flatten_and_preprocess_masks(pre_labelsog, pre_pred_probsog)
+    pre_labels, pre_pred_probs = flatten_and_preprocess_masks(pre_labels, pre_pred_probs)
     
     ranked_label_issues = find_label_issues_batched(pre_labels, pre_pred_probs, batch_size=batch_size, n_jobs=n_jobs,verbose=verbose)
 
