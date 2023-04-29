@@ -24,6 +24,10 @@ from cleanlab.internal.constants import (
     HIGH_PROBABILITY_THRESHOLD,
     TEMPERATURE,
     EUC_FACTOR,
+    MAX_ALLOWED_BOX_PRUNE,
+    CUSTOM_SCORE_WEIGHT_OVERLOOKED,
+    CUSTOM_SCORE_WEIGHT_BADLOC,
+    CUSTOM_SCORE_WEIGHT_SWAP,
 )
 from typing import List, Dict, Any, Optional, Tuple, TYPE_CHECKING, TypeVar
 import numpy as np
@@ -204,7 +208,6 @@ def _prune_by_threshold(
 ) -> List[np.ndarray]:
     """Removes predicted bounding boxes from predictions who's pred_prob is below the cuttoff threshold."""
 
-    max_allowed_box_prune = 0.97  # This is max allowed percent of prune for boxes below threshold before a warning is thrown.
     predictions_copy = copy.deepcopy(predictions)
     num_ann_to_zero = 0
     total_ann = 0
@@ -219,7 +222,7 @@ def _prune_by_threshold(
             predictions_copy[idx_predictions][idx_class] = filtered_class_prediction
 
     p_ann_pruned = total_ann and num_ann_to_zero / total_ann or 0  # avoid division by zero
-    if p_ann_pruned > max_allowed_box_prune:
+    if p_ann_pruned > MAX_ALLOWED_BOX_PRUNE:
         warnings.warn(
             f"Pruning with threshold=={threshold} prunes {p_ann_pruned}% labels. Consider lowering the threshold.",
             UserWarning,
@@ -399,10 +402,8 @@ def _draw_labels(ax, rect, label, edgecolor):
 
     if edgecolor == "r":
         cx, cy = c_xright, c_ytop
-    elif edgecolor == "b":
+    else:  # edgecolor == b
         cx, cy = c_xleft, c_ytop
-    else:
-        cx, cy = c_xleft, c_ybottom
 
     l = ax.annotate(
         label, (cx, cy), fontsize=8, fontweight="bold", color="white", ha="center", va="center"
@@ -472,8 +473,8 @@ def _separate_prediction_single_box(
 def _get_prediction_type(prediction: np.ndarray) -> str:
     if (
         len(prediction) == 3
-        and prediction[0].shape == prediction[2].shape
-        and prediction[0].shape[0] == prediction[1].shape[0]
+        and prediction[0].shape[0] == prediction[2].shape[1]
+        and prediction[1].shape[0] == prediction[2].shape[0]
     ):
         return "all_pred"
     else:
@@ -1046,6 +1047,8 @@ def _get_subtype_label_quality_scores(
     swap_score_per_image = _pool_box_scores_per_image(swap_scores_per_box, temperature)
 
     scores = (
-        0.6 * overlooked_score_per_image + 0.2 * badloc_score_per_image + 0.2 * swap_score_per_image
+        CUSTOM_SCORE_WEIGHT_OVERLOOKED * overlooked_score_per_image
+        + CUSTOM_SCORE_WEIGHT_BADLOC * badloc_score_per_image
+        + CUSTOM_SCORE_WEIGHT_SWAP * swap_score_per_image
     )
     return scores

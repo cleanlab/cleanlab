@@ -17,14 +17,28 @@ from cleanlab.object_detection.rank import (
     _compute_overlooked_box_scores,
     _compute_badloc_box_scores,
     _compute_swap_box_scores,
+    _get_prediction_type,
 )
 
 from cleanlab.object_detection.filter import (
     find_label_issues,
     _find_label_issues_per_box,
     _pool_box_scores_per_image,
+    _find_label_issues,
 )
+
+from cleanlab.internal.constants import (
+    ALPHA,
+    LOW_PROBABILITY_THRESHOLD,
+    HIGH_PROBABILITY_THRESHOLD,
+    OVERLOOKED_THRESHOLD,
+    BADLOC_THRESHOLD,
+    SWAP_THRESHOLD,
+)
+
 import numpy as np
+
+np.random.seed(0)
 
 import warnings
 
@@ -68,179 +82,97 @@ def generate_n_image_files(tmpdir_factory, n=5):
     return str(tmp_image_dir)
 
 
+def generate_predictions(
+    num_predictions, annotations, num_classes=5, max_boxes=6, image_size=300, is_issue=False
+):
+    """Generates num_predictions number of predictions based on passed in hyperparameters in same format as expected by find_label_issues and get_label_quality_scores"""
+
+    predictions = []
+    if isinstance(is_issue, int):
+        is_issue = [is_issue] * num_predictions
+    for i in range(num_predictions):
+        issue = is_issue[i]
+        annotation = annotations[i] if i < len(annotations) else None
+        prediction = generate_prediction(annotation, num_classes, image_size, max_boxes, issue)
+        if prediction is not None:
+            predictions.append(prediction)
+    return predictions
+
+
+def generate_prediction(annotation, num_classes, image_size, max_boxes, issue):
+    """Generates a single prediction based on passed in hyperparameters in same format as expected by find_label_issues and get_label_quality_scores"""
+
+    prediction = [[] for _ in range(num_classes)]
+    if annotation is None and issue is False:
+        return
+    else:
+        if issue is False:
+            for label, bboox in zip(annotation["labels"], annotation["bboxes"]):
+                rand_probability = np.random.randint(low=60, high=100) / 100
+                prediction[label].append(list(bboox) + [rand_probability])
+        else:
+            num_predictions = np.random.randint(low=1, high=max_boxes + 1)
+            rand_labels = generate_labels(num_classes, num_predictions)
+            for label in rand_labels:
+                rand_bbox = generate_bbox(image_size)
+                rand_probability = np.random.randint(low=60, high=100) / 100
+                prediction[label].append(list(rand_bbox) + [rand_probability])
+        prediction = [
+            np.array(p) if len(p) > 0 else np.empty(shape=[0, 5], dtype=np.float32)
+            for p in prediction
+        ]
+    return np.array(prediction, dtype=object)
+
+
+def generate_annotations(num_annotations, num_classes=5, max_boxes=5, image_size=300):
+    """Generates num_annotations number of annotations based on passed in hyperparameters in same format as expected by find_label_issues and get_label_quality_scores"""
+
+    annotations = []
+    for i in range(num_annotations):
+        annotations.append(generate_annotation(num_classes, image_size, max_boxes))
+    return annotations
+
+
+def generate_annotation(num_classes, image_size, max_boxes):
+    """Generates a single annotation based on passed in hyperparameters in same format as expected by find_label_issues and get_label_quality_scores"""
+
+    num_boxes = np.random.randint(low=1, high=max_boxes)
+    bboxes = np.array([generate_bbox(image_size) for _ in range(num_boxes)])
+    labels = generate_labels(num_classes, num_boxes)
+    annotation = {"bboxes": bboxes, "labels": labels}
+    return annotation
+
+
+def generate_labels(num_classes, num_boxes):
+    """Generates num_boxes number of labels with possible values [0-num_classes)"""
+    return np.random.choice(num_classes, num_boxes)
+
+
+def generate_bbox(image_size):
+    """Generates a single bounding box x1,y1,x2,y2 with coordinates lower than image_size"""
+    x2 = np.random.randint(low=2, high=image_size - 1)
+    y2 = np.random.randint(low=2, high=image_size - 1)
+    x_shift = np.random.randint(low=1, high=x2)
+    y_shift = np.random.randint(low=1, high=y2)
+    x1 = x2 - x_shift
+    y1 = y2 - y_shift
+    return [x1, y1, x2, y2]
+
+
 warnings.filterwarnings("ignore")
 
-predictions = [
-    [
-        [],
-        [
-            [135.011, 235.428, 242.794, 280.324, 0.442],
-            [277.164, 370.205, 333.007, 426.35, 0.213],
-            [618.572, 345.519, 639.224, 426.451, 0.106],
-            [136.026, 249.197, 152.126, 274.018, 0.096],
-            [135.011, 247.702, 193.286, 273.123, 0.086],
-            [136.58, 248.428, 165.579, 273.118, 0.075],
-            [247.92, 341.299, 308.505, 425.982, 0.054],
-        ],
-        [
-            [157.144, 113.92, 173.256, 129.331, 0.742],
-            [144.433, 269.503, 172.975, 303.368, 0.69],
-            [121.25, 274.145, 144.453, 306.208, 0.526],
-            [249.437, 340.538, 300.789, 425.402, 0.442],
-            [155.648, 168.818, 182.364, 184.548, 0.391],
-            [322.219, 60.97, 337.243, 78.251, 0.23],
-            [358.432, 63.371, 382.29, 87.495, 0.162],
-            [61.763, 32.829, 123.159, 135.47, 0.12],
-            [337.75, 60.75, 356.248, 78.516, 0.107],
-            [203.805, 131.003, 258.593, 193.753, 0.096],
-            [326.321, 164.405, 358.241, 205.042, 0.09],
-            [121.438, 273.073, 138.858, 296.033, 0.079],
-            [30.629, 341.96, 99.499, 385.207, 0.077],
-            [346.648, 83.467, 369.731, 108.147, 0.069],
-            [216.162, 261.51, 256.074, 298.204, 0.068],
-            [88.995, 5.224, 139.134, 68.347, 0.067],
-            [253.883, 116.387, 293.624, 159.546, 0.065],
-            [135.494, 276.395, 148.796, 304.116, 0.059],
-        ],
-        [
-            [387.278, 68.7, 499.833, 345.118, 0.9999],
-            [0.0, 261.727, 63.421, 305.305, 0.893],
-            [464.847, 87.14, 513.476, 136.868, 0.054],
-        ],
-        [],
-    ],
-    [
-        [],
-        [[241.3, 177.116, 297.747, 228.405, 0.116], [84.284, 188.507, 169.367, 228.18, 0.107]],
-        [[209.936, 122.989, 215.953, 133.578, 0.266], [335.776, 55.317, 352.0, 77.911, 0.07]],
-        [],
-        [],
-    ],
-    [
-        [
-            [591.134, 277.14, 638.379, 340.738, 0.304],
-            [611.689, 251.713, 639.139, 337.745, 0.235],
-            [597.653, 230.408, 635.975, 339.172, 0.068],
-        ],
-        [[197.521, 227.798, 332.14, 374.322, 0.195]],
-        [[346.335, 226.451, 357.505, 247.975, 0.173]],
-        [
-            [6.485, 163.255, 136.174, 395.704, 0.999],
-            [328.483, 173.752, 396.547, 372.454, 0.999],
-            [507.475, 172.329, 630.554, 384.995, 0.999],
-            [613.713, 245.157, 637.14, 337.998, 0.063],
-        ],
-        [[338.683, 42.592, 399.161, 106.331, 0.845]],
-    ],
-    [
-        [],
-        [
-            [164.599, 290.227, 358.904, 494.316, 0.841],
-            [303.496, 345.948, 351.585, 402.053, 0.176],
-            [0.043, 282.055, 18.413, 308.25, 0.111],
-            [307.782, 352.802, 355.269, 459.404, 0.079],
-            [309.075, 356.346, 340.737, 411.017, 0.064],
-        ],
-        [],
-        [
-            [1.142, 222.285, 82.401, 306.364, 0.94],
-            [96.074, 202.809, 121.392, 300.851, 0.106],
-            [100.471, 201.552, 128.465, 344.904, 0.058],
-            [2.253, 228.026, 41.348, 278.981, 0.056],
-        ],
-        [],
-    ],
-    [
-        [
-            [0.0, 46.954, 36.545, 71.575, 0.734],
-            [0.206, 113.128, 23.607, 186.366, 0.508],
-            [0.005, 58.389, 7.103, 69.996, 0.258],
-            [11.682, 69.438, 160.726, 213.097, 0.164],
-            [46.527, 41.948, 70.301, 56.561, 0.144],
-            [2.258, 353.964, 637.883, 459.634, 0.106],
-            [23.833, 58.832, 36.728, 70.771, 0.105],
-        ],
-        [[9.181, 112.75, 187.607, 372.173, 0.191], [52.113, 222.224, 190.611, 374.671, 0.059]],
-        [],
-        [
-            [561.302, 269.395, 600.368, 344.598, 0.994],
-            [253.825, 108.051, 272.708, 171.272, 0.947],
-            [259.138, 108.331, 273.064, 132.699, 0.145],
-            [260.174, 108.24, 273.084, 155.805, 0.056],
-        ],
-        [],
-    ],
-]
-labels = [
-    {
-        "bboxes": [
-            [388.6600036621094, 69.91999816894531, 498.07000732421875, 347.5400085449219],
-            [0.0, 262.80999755859375, 62.15999984741211, 299.5799865722656],
-            [119.4000015258789, 272.510009765625, 144.22000122070312, 306.760009765625],
-            [141.47000122070312, 267.9100036621094, 173.66000366210938, 303.7699890136719],
-        ],
-        "labels": [3, 3, 2, 2],
-        "seg_map": "000000397133.png",
-    },
-    {
-        "bboxes": [
-            [26.5, 215.25, 88.0, 229.75],
-            [116.5, 189.57000732421875, 166.5, 215.07000732421875],
-            [241.9499969482422, 180.4199981689453, 293.32000732421875, 225.82000732421875],
-        ],
-        "labels": [1, 1, 1],
-        "seg_map": "000000037777.png",
-    },
-    {
-        "bboxes": [
-            [326.2799987792969, 174.55999755859375, 397.5199890136719, 371.80999755859375],
-            [9.789999961853027, 167.05999755859375, 131.72999572753906, 393.510009765625],
-            [510.44000244140625, 171.27000427246094, 634.0999755859375, 387.0299987792969],
-            [345.1300048828125, 226.41000366210938, 356.19000244140625, 248.5500030517578],
-            [337.05999755859375, 44.11000061035156, 398.4200134277344, 101.27999877929688],
-        ],
-        "labels": [3, 3, 3, 2, 4],
-        "seg_map": "000000252219.png",
-    },
-    {
-        "bboxes": [[167.3800048828125, 293.55999755859375, 354.0799865722656, 492.05999755859375]],
-        "labels": [1],
-        "seg_map": "000000491497.png",
-    },
-    {
-        "bboxes": [
-            [567.8200073242188, 273.1000061035156, 599.2000122070312, 347.2099914550781],
-            [251.19000244140625, 106.41999816894531, 274.510009765625, 168.13999938964844],
-        ],
-        "labels": [3, 3],
-        "seg_map": "000000348881.png",
-    },
-]
+good_labels = generate_annotations(5, num_classes=10, max_boxes=10)
+good_predictions = generate_predictions(
+    5, good_labels, num_classes=10, max_boxes=12, is_issue=False
+)
 
+bad_labels = generate_annotations(5, num_classes=10, max_boxes=10)
+bad_predictions = generate_predictions(5, bad_labels, num_classes=10, max_boxes=12, is_issue=True)
 
-def make_numpy(labels, predictions):
-    np_labels = []
-    for ann in labels:
-        np_labels.append(
-            {
-                "bboxes": np.array(ann["bboxes"]),
-                "labels": np.array(ann["labels"]),
-                "seg_map": ann["seg_map"],
-            }
-        )
-
-    np_predictions = predictions[:]
-    np_predictions = [np.array(pred, dtype=object) for pred in np_predictions]
-    for i in range(len(np_predictions)):
-        for j in range(len(np_predictions[i])):
-            if len(np_predictions[i][j]) == 0:
-                np_predictions[i][j] = np.zeros((0, 5))
-            else:
-                np_predictions[i][j] = np.array(np_predictions[i][j])
-    return np_labels, np_predictions
-
-
-labels, predictions = make_numpy(labels, predictions)
+labels = good_labels + bad_labels  # 10 labels
+predictions = (
+    good_predictions + bad_predictions
+)  # 10 predictions, [:5] is perfect predictions, [5:] is bad predictions
 
 
 def test_get_label_quality_scores():
@@ -248,6 +180,8 @@ def test_get_label_quality_scores():
     assert len(scores) == len(labels)
     assert (scores <= 1.0).all()
     assert len(scores.shape) == 1
+    assert (scores[:5] > 0.9).all()  # perfect annotations get high scores
+    assert (scores[5:] < 0.7).all()  # label issues get low scores
 
 
 def test_issues_from_scores():
@@ -264,7 +198,7 @@ def test_issues_from_scores():
 
 def test_get_min_pred_prob():
     min = _get_min_pred_prob(predictions)
-    assert min == 0.054
+    assert min == 0.6
 
 
 def test_get_valid_score():
@@ -301,16 +235,16 @@ def test_prune_by_threshold():
         for class_pred in image_pred:
             assert class_pred.shape[0] == 0
 
-    pruned_predictions = _prune_by_threshold(predictions, 0.9999)
+    pruned_predictions = _prune_by_threshold(predictions, 0.6)
 
     num_boxes_not_pruned = 0
     for image_pred in pruned_predictions:
         for class_pred in image_pred:
             if class_pred.shape[0] > 0:
                 num_boxes_not_pruned += 1
-    assert num_boxes_not_pruned == 1
+    assert num_boxes_not_pruned == 46
 
-    pruned_predictions = _prune_by_threshold(predictions, 0.0)
+    pruned_predictions = _prune_by_threshold(predictions, 0.5)
     for im0, im1 in zip(pruned_predictions, predictions):
         for cl0, cl1 in zip(im0, im1):
             assert (cl0 == cl1).all()
@@ -341,56 +275,118 @@ def test_compute_label_quality_scores():
 
 
 def test_find_label_issues():
-    alpha = 0.91
-    high_probability_threshold = 0.7
-    low_probability_threshold = 0.1
-
-    thr_overlooked = 0.4
-    thr_badloc = 0.4  # hyperparameter
-    thr_swap = 0.99  # hyperparameter
-
-    auxiliary_inputs = _get_valid_inputs_for_compute_scores(alpha, labels, predictions)
+    auxiliary_inputs = _get_valid_inputs_for_compute_scores(ALPHA, labels, predictions)
 
     overlooked_scores_per_box = _compute_overlooked_box_scores(
-        alpha=alpha,
-        high_probability_threshold=high_probability_threshold,
+        alpha=ALPHA,
+        high_probability_threshold=HIGH_PROBABILITY_THRESHOLD,
         auxiliary_inputs=auxiliary_inputs,
     )
+
+    overlooked_scores_no_auxillary_inputs = _compute_overlooked_box_scores(
+        alpha=ALPHA,
+        high_probability_threshold=HIGH_PROBABILITY_THRESHOLD,
+        labels=labels,
+        predictions=predictions,
+    )
+    for score, no_auxiliary_inputs_score in zip(
+        overlooked_scores_per_box, overlooked_scores_no_auxillary_inputs
+    ):
+        assert (score == no_auxiliary_inputs_score).all()
+
     overlooked_issues_per_box = _find_label_issues_per_box(
-        overlooked_scores_per_box, thr_overlooked
+        overlooked_scores_per_box, OVERLOOKED_THRESHOLD
     )
     overlooked_issues_per_image = _pool_box_scores_per_image(overlooked_issues_per_box)
     overlooked_issues = np.sum(overlooked_issues_per_image)
-    assert overlooked_issues == 3
+    assert np.sum(overlooked_issues_per_image[5:]) == 5  # check bad labels were detected correctly
+    assert overlooked_issues == 5
 
     badloc_scores_per_box = _compute_badloc_box_scores(
-        alpha=alpha,
-        low_probability_threshold=low_probability_threshold,
+        alpha=ALPHA,
+        low_probability_threshold=LOW_PROBABILITY_THRESHOLD,
         auxiliary_inputs=auxiliary_inputs,
     )
-    badloc_issues_per_box = _find_label_issues_per_box(badloc_scores_per_box, thr_badloc)
+
+    badloc_scores_no_auxillary_inputs = _compute_badloc_box_scores(
+        alpha=ALPHA,
+        low_probability_threshold=LOW_PROBABILITY_THRESHOLD,
+        labels=labels,
+        predictions=predictions,
+    )
+
+    for score, no_auxiliary_inputs_score in zip(
+        badloc_scores_per_box, badloc_scores_no_auxillary_inputs
+    ):
+        assert (score == no_auxiliary_inputs_score).all()
+
+    badloc_issues_per_box = _find_label_issues_per_box(badloc_scores_per_box, BADLOC_THRESHOLD)
     badloc_issues_per_image = _pool_box_scores_per_image(badloc_issues_per_box)
     badloc_issues = np.sum(badloc_issues_per_image)
-    assert badloc_issues == 1
+    assert np.sum(badloc_issues_per_image[5:]) == 5  # check bad labels were detected correctly
+    assert badloc_issues == 5
 
     swap_scores_per_box = _compute_swap_box_scores(
-        alpha=alpha,
-        high_probability_threshold=high_probability_threshold,
+        alpha=ALPHA,
+        high_probability_threshold=HIGH_PROBABILITY_THRESHOLD,
         auxiliary_inputs=auxiliary_inputs,
     )
-    swap_issues_per_box = _find_label_issues_per_box(swap_scores_per_box, thr_swap)
-    swap_issues_per_image = _pool_box_scores_per_image(swap_issues_per_box)
-    swap_issues = np.sum(swap_issues_per_image)
-    assert swap_issues == 1
 
-    thr_swap = 0.4  # hyperparameter
-    swap_issues_per_box = _find_label_issues_per_box(swap_scores_per_box, thr_swap)
+    swap_scores_no_auxillary_inputs = _compute_swap_box_scores(
+        alpha=ALPHA,
+        high_probability_threshold=HIGH_PROBABILITY_THRESHOLD,
+        labels=labels,
+        predictions=predictions,
+    )
+
+    for score, no_auxiliary_inputs_score in zip(
+        swap_scores_per_box, swap_scores_no_auxillary_inputs
+    ):
+        assert (score == no_auxiliary_inputs_score).all()
+
+    swap_issues_per_box = _find_label_issues_per_box(swap_scores_per_box, SWAP_THRESHOLD)
     swap_issues_per_image = _pool_box_scores_per_image(swap_issues_per_box)
     swap_issues = np.sum(swap_issues_per_image)
+    assert np.sum(swap_scores_per_box[2]) > np.sum(swap_scores_per_box[7])
     assert swap_issues == 0
 
     label_issues = find_label_issues(labels, predictions)
-    assert np.sum(label_issues) == np.sum(overlooked_issues + badloc_issues + swap_issues)
+    assert np.sum(label_issues) == np.sum(
+        (swap_issues_per_image + badloc_issues_per_image + overlooked_issues_per_image) > 0
+    )
+    assert np.sum(label_issues[5:]) == 5  # check bad labels were detected correctly
+
+    swap_issues_per_box = _find_label_issues_per_box(swap_scores_per_box, 0.7)
+    swap_issues_per_image = _pool_box_scores_per_image(swap_issues_per_box)
+    swap_issues = np.sum(swap_issues_per_image)
+    assert swap_issues == 4
+    assert np.sum(swap_issues_per_image[5:]) == 4  # check bad labels were detected correctly
+
+
+def test_separate_prediction():
+    pred_bboxes = np.array(
+        [
+            np.array(list(generate_bbox(300)) + [0.97]),
+            np.empty(shape=[0, 5], dtype=np.float32),
+            np.array(list(generate_bbox(300)) + [0.94]),
+        ],
+        dtype=object,
+    )
+    pred_labels = np.array([0, 2])
+    pred_probs = np.array([[0.98, 0.01, 0.01], [0.02, 0.02, 0.98]])
+    all_pred_prediction = np.array([pred_bboxes, pred_labels, pred_probs], dtype=object)
+    prediction_type = _get_prediction_type(all_pred_prediction)
+    assert prediction_type == "all_pred"
+
+    boxes, labels, pred_probs = _separate_prediction(
+        all_pred_prediction, prediction_type=prediction_type
+    )
+    assert len(labels) == len(pred_probs)
+
+
+def test_bad_input_find_label_issues_internal():
+    bad_label_issues = _find_label_issues(labels, predictions, scoring_method="bad_method")
+    assert (bad_label_issues == -1).all()
 
 
 @pytest.mark.usefixtures("generate_single_image_file")
@@ -402,5 +398,25 @@ def test_visualize(monkeypatch, generate_single_image_file):
         labels[0],
         predictions[0],
         prediction_threshold=0.99,
+        given_label_overlay=False,
+    )
+
+    visualize(
+        generate_single_image_file,
+        labels[0],
+        predictions[0],
+        prediction_threshold=0.99,
+        class_labels={
+            "0": "car",
+            "1": "chair",
+            "2": "cup",
+            "3": "person",
+            "4": "traffic light",
+            "5": "5",
+            "6": "6",
+            "7": "7",
+            "8": "8",
+            "9": "9",
+        },
         given_label_overlay=False,
     )
