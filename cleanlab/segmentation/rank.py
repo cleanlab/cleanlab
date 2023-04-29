@@ -227,9 +227,7 @@ def issues_from_scores(
     """
     if pixel_scores is not None:
         issues = np.where(pixel_scores < threshold, True, False)
-        num_issues = np.sum(issues, axis=(1, 2))
-        ranking = np.argsort(num_issues)
-        return issues[ranking]
+        return issues
 
     else:
         ranking = np.argsort(image_scores)
