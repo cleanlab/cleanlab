@@ -23,7 +23,7 @@ from cleanlab.experimental.label_issues_batched import find_label_issues_batched
 import numpy as np 
 from typing import Optional, List, Any
 
-def find_label_issues(
+def find_label_issues2(
     labels: np.ndarray,
     pred_probs: np.ndarray,
     downsample: int = 16,
@@ -135,12 +135,12 @@ def find_label_issues(
     
     
     #Added Downsampling
-    pre_labels, pre_pred_probs = downsample_arrays(labels, pred_probs, downsample)
+    pre_labelsog, pre_pred_probsog = downsample_arrays(labels, pred_probs, downsample)
     
-    num_image, num_classes, h, w = pre_pred_probs.shape
+    num_image, num_classes, h, w = pre_pred_probsog.shape
     #flatten images just preps labels and pred_probs
     
-    pre_labels, pre_pred_probs = flatten_and_preprocess_masks(pre_labels, pre_pred_probs)
+    pre_labels, pre_pred_probs = flatten_and_preprocess_masks(pre_labelsog, pre_pred_probsog)
     
     ranked_label_issues = find_label_issues_batched(pre_labels, pre_pred_probs, batch_size=batch_size, n_jobs=n_jobs,verbose=verbose)
 
@@ -157,9 +157,25 @@ def find_label_issues(
     img = np.full((num_image, h, w), False)
 
     for num,ii,jj in zip(image_num,pixel_coor_i, pixel_coor_j):
-        img[num,ii,jj]=True
+        #only want to call it an error if pred_probs doesnt match the label at that pixel
+        img[num,ii,jj]=True 
     
-    #This is where we upsample
-    img = img.repeat(downsample, axis = 1).repeat(downsample, axis = 2) if downsample!=1 else img
 
-    return img
+    if downsample==1:
+        return img
+    else:
+        img = img.repeat(downsample, axis = 1).repeat(downsample, axis = 2)
+        
+        for num, ii, jj in zip(image_num, pixel_coor_i, pixel_coor_j):
+            # Upsample the coordinates
+            upsampled_ii = ii * downsample
+            upsampled_jj = jj * downsample
+            # Iterate over the upsampled region
+            for row in range(upsampled_ii, upsampled_ii + downsample):
+                for col in range(upsampled_jj, upsampled_jj + downsample):
+                    # Check if the predicted class (argmax) at the identified issue location matches the true label
+                    if np.argmax(pred_probs[num, :, row, col]) == labels[num, row, col]:
+                        # If they match, set the corresponding entry in the img array to False
+                        img[num, row, col] = False
+
+        return img
