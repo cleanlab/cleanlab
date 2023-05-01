@@ -19,10 +19,10 @@ Methods to rank the severity of label issues in multi-label classification datas
 Here each example can belong to one or more classes, or none of the classes at all.
 Unlike in standard multi-class classification, model-predicted class probabilities need not sum to 1 for each row in multi-label classification.
 """
+from __future__ import annotations
 
 import numpy as np  # noqa: F401: Imported for type annotations
-import numpy.typing as npt
-from typing import List, TypeVar, Dict, Any, Optional, Tuple
+from typing import List, TypeVar, Dict, Any, Optional, Tuple, TYPE_CHECKING
 
 from cleanlab.internal.validation import assert_valid_inputs
 from cleanlab.internal.util import get_num_classes
@@ -30,7 +30,10 @@ from cleanlab.internal.multilabel_utils import int2onehot
 from cleanlab.internal.multilabel_scorer import MultilabelScorer, ClassLabelScorer, Aggregator
 
 
-T = TypeVar("T", bound=npt.NBitBase)
+if TYPE_CHECKING:  # pragma: no cover
+    import numpy.typing as npt
+
+    T = TypeVar("T", bound=npt.NBitBase)
 
 
 def _labels_to_binary(

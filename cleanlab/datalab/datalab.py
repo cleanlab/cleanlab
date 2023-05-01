@@ -24,7 +24,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 import numpy as np
-import numpy.typing as npt
 import pandas as pd
 
 import cleanlab
@@ -36,6 +35,7 @@ from cleanlab.datalab.serialize import _Serializer
 from cleanlab.datalab.report import Reporter
 
 if TYPE_CHECKING:  # pragma: no cover
+    import numpy.typing as npt
     from datasets.arrow_dataset import Dataset
     from scipy.sparse import csr_matrix
 
