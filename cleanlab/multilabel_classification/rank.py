@@ -30,7 +30,7 @@ from cleanlab.internal.multilabel_utils import int2onehot
 from cleanlab.internal.multilabel_scorer import MultilabelScorer, ClassLabelScorer, Aggregator
 
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover
     import numpy.typing as npt
 
     T = TypeVar("T", bound=npt.NBitBase)

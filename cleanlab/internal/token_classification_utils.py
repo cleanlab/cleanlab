@@ -25,7 +25,7 @@ import numpy as np
 from termcolor import colored
 from typing import List, Optional, Callable, Tuple, TypeVar, TYPE_CHECKING
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover
     import numpy.typing as npt
 
     T = TypeVar("T", bound=npt.NBitBase)

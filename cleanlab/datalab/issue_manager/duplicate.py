@@ -19,7 +19,6 @@ from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Union
 import warnings
 
 import numpy as np
-
 import pandas as pd
 from scipy.sparse import csr_matrix
 from sklearn.neighbors import NearestNeighbors
