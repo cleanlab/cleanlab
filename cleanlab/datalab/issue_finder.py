@@ -27,17 +27,18 @@ and collects the results to :py:class:`DataIssues <cleanlab.datalab.data_issues.
     This module is not intended to be used directly. Instead, use the public-facing
     :py:meth:`Datalab.find_issues <cleanlab.datalab.datalab.Datalab.find_issues>` method.
 """
+from __future__ import annotations
 
 from typing import Any, List, Optional, Dict, TYPE_CHECKING
 import warnings
 
 import numpy as np
-import numpy.typing as npt
 from scipy.sparse import csr_matrix
 
 from cleanlab.datalab.factory import _IssueManagerFactory, REGISTRY
 
 if TYPE_CHECKING:  # pragma: no cover
+    import numpy.typing as npt
     from cleanlab.datalab.datalab import Datalab
 
 
