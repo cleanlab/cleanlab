@@ -106,10 +106,9 @@ class OutOfDistribution:
 
     def __init__(self, params: Optional[dict] = None) -> None:
         self._assert_valid_params(params, self.DEFAULT_PARAM_DICT)
-        self.params = self.DEFAULT_PARAM_DICT
-        if params is None:
-            params = {}
-        self.params = {**self.params, **params}
+        self.params = self.DEFAULT_PARAM_DICT.copy()
+        if params is not None:
+            self.params.update(params)
 
     def fit_score(
         self,

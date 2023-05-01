@@ -76,9 +76,7 @@ def _subtract_confident_thresholds(
 
     # Re-normalize by shifting data to take care of negative values from the subtraction
     pred_probs_adj += confident_thresholds.max()
-    pred_probs_adj /= pred_probs_adj.sum(axis=1)[
-        :, None
-    ]  # The [:, None] adds a dimension to make the /= operator work for broadcasting.
+    pred_probs_adj /= pred_probs_adj.sum(axis=1, keepdims=True)
 
     return pred_probs_adj
 
