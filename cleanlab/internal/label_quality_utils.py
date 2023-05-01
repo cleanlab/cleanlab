@@ -14,9 +14,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
-"""
-Helper methods used internally for computing label quality scores
-"""
+"""Helper methods used internally for computing label quality scores."""
 
 import numpy as np
 from typing import Optional
@@ -31,7 +29,9 @@ def _subtract_confident_thresholds(
     multi_label: bool = False,
     confident_thresholds: Optional[np.ndarray] = None,
 ) -> np.ndarray:
-    """Returns adjusted predicted probabilities by subtracting the class confident thresholds and renormalizing.
+    """
+    Return adjusted predicted probabilities by subtracting the class confident thresholds and renormalizing.
+
     The confident class threshold for a class j is the expected (average) "self-confidence" for class j.
     The purpose of this adjustment is to handle class imbalance.
     Parameters
@@ -87,7 +87,7 @@ def _subtract_confident_thresholds(
 def get_normalized_entropy(
     pred_probs: np.ndarray, min_allowed_prob: float = CLIPPING_LOWER_BOUND
 ) -> np.ndarray:
-    """Returns the normalized entropy of pred_probs.
+    """Return the normalized entropy of pred_probs.
 
     Normalized entropy is between 0 and 1. Higher values of entropy indicate higher uncertainty in the model's prediction of the correct label.
 

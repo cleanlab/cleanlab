@@ -221,7 +221,7 @@ class OutOfDistribution:
         self, *, features: Optional[np.ndarray] = None, pred_probs: Optional[np.ndarray] = None
     ) -> np.ndarray:
         """
-        Uses fitted estimator and passed in `features` or `pred_probs` to calculate out-of-distribution scores for a dataset.
+        Use fitted estimator and passed in `features` or `pred_probs` to calculate out-of-distribution scores for a dataset.
 
         Score for each example corresponds to the likelihood this example stems from the same distribution as the dataset previously specified in ``fit()`` (i.e. is not an outlier).
 
@@ -277,16 +277,12 @@ class OutOfDistribution:
         return scores
 
     def _get_params(self, param_keys) -> dict:
-        """
-        Helper method to get function specific dictionary of parameters (i.e. only those in param_keys).
-        """
+        """Get function specific dictionary of parameters (i.e. only those in param_keys)."""
         return {k: v for k, v in self.params.items() if k in param_keys}
 
     @staticmethod
     def _assert_valid_params(params, param_keys):
-        """
-        Helper method to check passed in params valid and get list of parameters in param that are not in param_keys.
-        """
+        """Validate passed in params and get list of parameters in param that are not in param_keys."""
         if params is not None:
             wrong_params = list(set(params.keys()).difference(set(param_keys)))
             if len(wrong_params) > 0:
@@ -296,9 +292,7 @@ class OutOfDistribution:
 
     @staticmethod
     def _assert_valid_inputs(features, pred_probs):
-        """
-        Helper method to check features and pred_prob inputs are valid. Throws error if not.
-        """
+        """Check whether features and pred_prob inputs are valid, throw error if not."""
         if features is None and pred_probs is None:
             raise ValueError(
                 f"Not enough information to compute scores. Pass in either features or pred_probs."
@@ -381,8 +375,11 @@ def _get_ood_features_scores(
     k: Optional[int] = None,
     t: int = 1,
 ) -> Tuple[np.ndarray, Optional[NearestNeighbors]]:
-    """Returns an outlier score for each example based on its feature values which is computed inversely proportional
-    to the average distance between this example and its K nearest neighbors (in feature space).
+    """
+    Return outlier socre based on feature values using `k` nearest neighborss.
+
+    The outlier score for each example is computed inversely proportional to
+    the average distance between this example and its K nearest neighbors (in feature space).
 
     Parameters
     ----------
@@ -464,7 +461,7 @@ def _get_ood_predictions_scores(
     adjust_pred_probs: bool = True,
     method: str = "entropy",
 ) -> Tuple[np.ndarray, Optional[np.ndarray]]:
-    """Returns an OOD (out of distribution) score for each example based on it pred_prob values.
+    """Return an OOD (out of distribution) score for each example based on it pred_prob values.
 
     Parameters
     ----------
