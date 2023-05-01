@@ -38,6 +38,7 @@ from cleanlab.typing import LabelLike
 class OutOfDistribution:
     """
     Provides scores to detect Out Of Distribution (OOD) examples that are outliers in a dataset.
+
     Each example's OOD score lies in [0,1] with smaller values indicating examples that are less typical under the data distribution.
     OOD scores may be estimated from either: numeric feature embeddings or predicted probabilities from a trained classifier.
 
@@ -120,6 +121,7 @@ class OutOfDistribution:
     ) -> np.ndarray:
         """
         Fits this estimator to a given dataset and returns out-of-distribution scores for the same dataset.
+
         Scores lie in [0,1] with smaller values indicating examples that are less typical under the dataset
         distribution (values near 0 indicate outliers). Exactly one of `features` or `pred_probs` needs to be passed
         in to calculate scores.
@@ -175,6 +177,7 @@ class OutOfDistribution:
     ):
         """
         Fits this estimator to a given dataset.
+
         One of `features` or `pred_probs` must be specified.
 
         If `features` are passed in, a ``NearestNeighbors`` object is fit.
@@ -219,6 +222,7 @@ class OutOfDistribution:
     ) -> np.ndarray:
         """
         Uses fitted estimator and passed in `features` or `pred_probs` to calculate out-of-distribution scores for a dataset.
+
         Score for each example corresponds to the likelihood this example stems from the same distribution as the dataset previously specified in ``fit()`` (i.e. is not an outlier).
 
         If `features` are passed, returns OOD score for each example based on its feature values.
@@ -321,6 +325,7 @@ class OutOfDistribution:
     ) -> Optional[np.ndarray]:
         """
         Shared fit functionality between ``fit()`` and ``fit_score()``.
+
         For details, refer to :py:func:`fit <cleanlab.outlier.OutOfDistribution.fit>`
         or :py:func:`fit_score <cleanlab.outlier.OutOfDistribution.fit_score>`.
         """
