@@ -187,8 +187,8 @@ class OutOfDistribution:
         ----------
         features : np.ndarray, optional
           Feature array of shape ``(N, M)``, where N is the number of examples and M is the number of features used to represent each example.
-          All features should be **numeric**. For less structured data (eg. images, text, categorical values, ...), you should provide
-          vector embeddings to represent each example (eg. extracted from some pretrained neural network).
+          All features should be **numeric**. For less structured data (e.g. images, text, categorical values, ...), you should provide
+          vector embeddings to represent each example (e.g. extracted from some pretrained neural network).
 
         pred_probs : np.ndarray, optional
            An array of shape ``(N, K)`` of model-predicted probabilities,
@@ -369,7 +369,7 @@ def _get_ood_features_scores(
     t: int = 1,
 ) -> Tuple[np.ndarray, Optional[NearestNeighbors]]:
     """
-    Return outlier socre based on feature values using `k` nearest neighborss.
+    Return outlier score based on feature values using `k` nearest neighbors.
 
     The outlier score for each example is computed inversely proportional to
     the average distance between this example and its K nearest neighbors (in feature space).
