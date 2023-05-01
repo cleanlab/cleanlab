@@ -58,7 +58,6 @@ def _subtract_confident_thresholds(
     pred_probs_adj : np.ndarray (float)
       Adjusted pred_probs.
     """
-
     # Get expected (average) self-confidence for each class
     # TODO: Test this for multi-label
     if confident_thresholds is None:
@@ -112,7 +111,6 @@ def get_normalized_entropy(
     entropy:
       Each element is the normalized entropy of the corresponding row of ``pred_probs``.
     """
-
     num_classes = pred_probs.shape[1]
 
     # Note that dividing by log(num_classes) changes the base of the log which rescales entropy to 0-1 range

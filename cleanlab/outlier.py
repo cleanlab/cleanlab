@@ -489,7 +489,6 @@ def _get_ood_predictions_scores(
     ood_predictions_scores : Tuple[np.ndarray, Optional[np.ndarray]]
       Returns a tuple. First element is array of `ood_predictions_scores` and second is an np.ndarray of `confident_thresholds` or None is 'confident_thresholds' is not calculated.
     """
-
     valid_methods = [
         "entropy",
         "least_confidence",
