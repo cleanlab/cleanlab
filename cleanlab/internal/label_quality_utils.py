@@ -34,6 +34,7 @@ def _subtract_confident_thresholds(
 
     The confident class threshold for a class j is the expected (average) "self-confidence" for class j.
     The purpose of this adjustment is to handle class imbalance.
+
     Parameters
     ----------
     labels : np.ndarray
@@ -53,6 +54,7 @@ def _subtract_confident_thresholds(
       the total number of errors considered is based on the number of labels,
       not the number of examples. So, the calibrated `confident_joint` will sum
       to the number of total labels.
+
     Returns
     -------
     pred_probs_adj : np.ndarray (float)
