@@ -258,20 +258,14 @@ class OutOfDistribution:
                 raise ValueError(
                     "OOD estimator needs to be fit on features first. Call `fit()` or `fit_scores()` before this function."
                 )
-            else:
-                scores, _ = _get_ood_features_scores(
-                    features, **self._get_params(self.OUTLIER_PARAMS)
-                )
+            scores, _ = _get_ood_features_scores(features, **self._get_params(self.OUTLIER_PARAMS))
 
         if pred_probs is not None:
             if self.params["confident_thresholds"] is None and self.params["adjust_pred_probs"]:
                 raise ValueError(
                     "OOD estimator needs to be fit on pred_probs first since params['adjust_pred_probs']=True. Call `fit()` or `fit_scores()` before this function."
                 )
-            else:
-                scores, _ = _get_ood_predictions_scores(
-                    pred_probs, **self._get_params(self.OOD_PARAMS)
-                )
+            scores, _ = _get_ood_predictions_scores(pred_probs, **self._get_params(self.OOD_PARAMS))
 
         return scores
 
@@ -508,12 +502,9 @@ def _get_ood_predictions_scores(
                     "Cannot calculate adjust_pred_probs without labels. Either pass in labels parameter or set "
                     "params['adjusted_pred_probs'] = False. "
                 )
-            else:
-                labels = labels_to_array(labels)
-                assert_valid_inputs(X=None, y=labels, pred_probs=pred_probs, multi_label=False)
-                confident_thresholds = get_confident_thresholds(
-                    labels, pred_probs, multi_label=False
-                )
+            labels = labels_to_array(labels)
+            assert_valid_inputs(X=None, y=labels, pred_probs=pred_probs, multi_label=False)
+            confident_thresholds = get_confident_thresholds(labels, pred_probs, multi_label=False)
 
         pred_probs = _subtract_confident_thresholds(
             None, pred_probs, multi_label=False, confident_thresholds=confident_thresholds

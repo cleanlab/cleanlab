@@ -68,10 +68,7 @@ def _subtract_confident_thresholds(
                 "Cannot calculate confident_thresholds without labels. Pass in either labels or already calculated "
                 "confident_thresholds parameter. "
             )
-        else:
-            confident_thresholds = get_confident_thresholds(
-                labels, pred_probs, multi_label=multi_label
-            )
+        confident_thresholds = get_confident_thresholds(labels, pred_probs, multi_label=multi_label)
 
     # Subtract the class confident thresholds
     pred_probs_adj = pred_probs - confident_thresholds
