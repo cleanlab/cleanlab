@@ -64,8 +64,8 @@ def _subtract_confident_thresholds(
     if confident_thresholds is None:
         if labels is None:
             raise ValueError(
-                f"Cannot calculate confident_thresholds without labels. Pass in either labels or already calculated "
-                f"confident_thresholds parameter. "
+                "Cannot calculate confident_thresholds without labels. Pass in either labels or already calculated "
+                "confident_thresholds parameter. "
             )
         else:
             confident_thresholds = get_confident_thresholds(
