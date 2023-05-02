@@ -192,6 +192,9 @@ class IssueManager(ABC, metaclass=IssueManagerMeta):
         summary :
             A summary dataframe.
         """
+        if not 0 <= score <= 1:
+            raise ValueError(f"Score must be between 0 and 1. Got {score}.")
+
         return pd.DataFrame(
             {
                 "issue_type": [cls.issue_name],
