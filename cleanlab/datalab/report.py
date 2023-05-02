@@ -99,7 +99,7 @@ class Reporter:
         issue_reports = [
             _IssueManagerFactory.from_str(issue_type=key).report(
                 issues=self.data_issues.get_issues(issue_name=key),
-                summary=self.data_issues.get_summary(issue_name=key),
+                summary=self.data_issues.get_issue_summary(issue_name=key),
                 info=self.data_issues.get_info(issue_name=key),
                 num_examples=num_examples,
                 verbosity=self.verbosity,
