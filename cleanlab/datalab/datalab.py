@@ -395,14 +395,14 @@ class Datalab:
         """
         return self.data_issues.get_issues(issue_name=issue_name)
 
-    def get_summary(self, issue_name: Optional[str] = None) -> pd.DataFrame:
+    def get_issue_summary(self, issue_name: Optional[str] = None) -> pd.DataFrame:
         """Summarize the issues found in dataset of a particular type,
         including how severe this type of issue is overall across the dataset.
 
         NOTE
         ----
         This is a wrapper around the
-        :py:meth:`DataIssues.get_summary <cleanlab.datalab.data_issues.DataIssues.get_summary>` method.
+        :py:meth:`DataIssues.get_issue_summary <cleanlab.datalab.data_issues.DataIssues.get_issue_summary>` method.
 
         Parameters
         ----------
@@ -411,12 +411,12 @@ class Datalab:
 
         Returns
         -------
-        summary :
+        issue_summary :
             DataFrame where each row corresponds to a type of issue, and columns quantify:
             the number of examples in the dataset estimated to exhibit this type of issue,
             and the overall severity of the issue across the dataset (via a numeric quality score where lower values indicate that the issue is overall more severe).
         """
-        return self.data_issues.get_summary(issue_name=issue_name)
+        return self.data_issues.get_issue_summary(issue_name=issue_name)
 
     def get_info(self, issue_name: Optional[str] = None) -> Dict[str, Any]:
         """Get the info for the issue_name key.

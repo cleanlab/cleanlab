@@ -120,7 +120,7 @@ class TestDatalab:
 
         assert lab.get_info() == lab.info == mock_info
 
-    def test_get_summary(self, lab, monkeypatch):
+    def test_get_issue_summary(self, lab, monkeypatch):
         mock_summary: pd.DataFrame = pd.DataFrame(
             {
                 "issue_type": ["label", "outlier"],
@@ -130,15 +130,15 @@ class TestDatalab:
         )
         monkeypatch.setattr(lab, "issue_summary", mock_summary)
 
-        label_summary = lab.get_summary(issue_name="label")
+        label_summary = lab.get_issue_summary(issue_name="label")
         pd.testing.assert_frame_equal(label_summary, mock_summary.iloc[[0]])
 
-        outlier_summary = lab.get_summary(issue_name="outlier")
+        outlier_summary = lab.get_issue_summary(issue_name="outlier")
         pd.testing.assert_frame_equal(
             outlier_summary, mock_summary.iloc[[1]].reset_index(drop=True)
         )
 
-        summary = lab.get_summary()
+        summary = lab.get_issue_summary()
         pd.testing.assert_frame_equal(summary, mock_summary)
 
     def test_get_issues(self, lab, monkeypatch):
