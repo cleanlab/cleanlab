@@ -55,7 +55,7 @@ def create_imagelab(dataset: "Dataset", image_key: Optional[str]) -> Optional["I
 
     except ImportError:
         raise ImportError(
-            "Cannot import datasets or cleanvision package. Please install them and try again, or just install cleanlab with "
+            "Cannot import required packages: datasets, cleanvision. Please install them and try again, or just install cleanlab with "
             "all optional dependencies via: `pip install cleanlab[all]`"
         )
     return imagelab
