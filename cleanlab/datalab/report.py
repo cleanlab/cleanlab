@@ -97,12 +97,10 @@ class Reporter:
         >>> print(report_str)
         """
         report_str = ""
-        issue_summary = self.data_issues.issue_summary.copy()
-        issue_summary = issue_summary[
-            issue_summary["issue_type"].isin(IssueFinder.list_possible_issue_types())
-        ]
-        if issue_summary.empty:
-            return report_str
+        issue_summary = self.data_issues.issue_summary
+        datalab_checks = list(
+            set(issue_summary["issue_type"]) & set(IssueFinder.list_possible_issue_types())
+        )
 
         issue_summary_sorted = issue_summary.sort_values(by="num_issues", ascending=False)
 
@@ -118,6 +116,7 @@ class Reporter:
                 include_description=self.include_description,
             )
             for key in issue_summary_sorted["issue_type"].tolist()
+            if key in datalab_checks
         ]
 
         report_str += "\n\n\n".join(issue_reports)

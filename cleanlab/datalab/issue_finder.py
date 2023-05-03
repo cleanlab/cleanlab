@@ -147,10 +147,6 @@ class IssueFinder:
         )
 
         if not issue_types_copy:
-            no_args_passed = all(arg is None for arg in [pred_probs, features, knn_graph])
-            if no_args_passed:
-                warnings.warn("No arguments were passed to find_issues.")
-            warnings.warn("No arguments specified to check for datalab issues")
             return None
 
         new_issue_managers = [
@@ -170,14 +166,8 @@ class IssueFinder:
             except Exception as e:
                 print(f"Error in {issue_manager.issue_name}: {e}")
                 failed_managers.append(issue_manager)
-
-        if self.verbosity:
-            print(
-                f"General audit complete. {data_issues.issue_summary['num_issues'].sum()} issues found in the dataset."
-            )
         if failed_managers:
             print(f"Failed to check for these issue types: {failed_managers}")
-
         data_issues.set_health_score()
 
     def _resolve_required_args(self, pred_probs, features, knn_graph):

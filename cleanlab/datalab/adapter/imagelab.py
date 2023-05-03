@@ -124,9 +124,8 @@ class ImagelabReporterAdapter(Reporter):
 
     def report(self, num_examples: int, verbosity: Optional[int] = None) -> None:
         super().report(num_examples)
-        if not self.imagelab.issue_summary.empty:
-            print("\n")
-            self.imagelab.report(num_images=num_examples)
+        if not self.imagelab:
+            self.imagelab.report(num_images=num_examples, print_summary=False)
 
 
 # How do we let `Datalab` call this in `Datalab.find_issues`?
@@ -178,16 +177,11 @@ class ImagelabIssueFinderAdapter(IssueFinder):
             return
         try:
             if self.verbosity:
-                print(f'\nFinding {", ".join(issue_types_copy.keys())} images ...')
+                print(f'Finding {", ".join(issue_types_copy.keys())} images ...')
 
             self.imagelab.find_issues(issue_types=issue_types_copy)
 
             self.datalab.data_issues.collect_statistics(self.imagelab)
             self.datalab.data_issues.collect_issues_from_imagelab(self.imagelab)
-            if self.verbosity:
-                print(
-                    f"Image issues audit complete. {self.imagelab.issue_summary['num_images'].sum()} image issues found in the dataset."
-                )
-
         except Exception as e:
             print(f"Error in checking for image issues: {e}")
