@@ -1,9 +1,10 @@
+import numpy as np
+import pandas as pd
 import pytest
 from datasets.arrow_dataset import Dataset
 from sklearn.neighbors import NearestNeighbors
 
 from cleanlab.datalab.datalab import Datalab
-import numpy as np
 
 SEED = 42
 LABEL_NAME = "star"
@@ -79,3 +80,30 @@ def large_lab():
 def pred_probs(dataset):
     np.random.seed(SEED)
     return np.random.rand(len(dataset), 3)
+
+
+@pytest.fixture
+def custom_issue_manager():
+    from cleanlab.datalab.issue_manager.issue_manager import IssueManager
+
+    class CustomIssueManager(IssueManager):
+        issue_name = "custom_issue"
+
+        def find_issues(self, custom_argument: int = 1, **_) -> None:
+            # Flag example as an issue if the custom argument equals its index
+            scores = [
+                abs(i - custom_argument) / (i + custom_argument)
+                for i in range(len(self.datalab.data))
+            ]
+            self.issues = pd.DataFrame(
+                {
+                    f"is_{self.issue_name}_issue": [
+                        i == custom_argument for i in range(len(self.datalab.data))
+                    ],
+                    self.issue_score_key: scores,
+                },
+            )
+            summary_score = np.mean(scores)
+            self.summary = self.make_summary(score=summary_score)
+
+    return CustomIssueManager

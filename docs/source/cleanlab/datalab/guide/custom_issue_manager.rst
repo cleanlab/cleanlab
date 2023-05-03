@@ -92,7 +92,7 @@ with regards to the issue.
             )
 
             # Score the dataset as a whole based on this issue type
-            self.summary = self.get_summary(score = scores.mean())
+            self.summary = self.make_summary(score = scores.mean())
 
 
 .. _intermediate_issue_manager:
@@ -136,7 +136,7 @@ Optionally, you can also add a description of the type of issue this issue manag
                     self.issue_score_key : scores,
                 },
             )
-            self.summary = self.get_summary(score = scores.mean())
+            self.summary = self.make_summary(score = scores.mean())
 
             # Useful information that will be available in the Datalab instance
             self.info = {

@@ -589,32 +589,6 @@ class TestDatalabIssueManagerInteraction:
         differently depending on the issue manager.
     """
 
-    @pytest.fixture
-    def custom_issue_manager(self):
-        from cleanlab.datalab.issue_manager import IssueManager
-
-        class CustomIssueManager(IssueManager):
-            issue_name = "custom_issue"
-
-            def find_issues(self, custom_argument: int = 1, **_) -> None:
-                # Flag example as an issue if the custom argument equals its index
-                scores = [
-                    abs(i - custom_argument) / (i + custom_argument)
-                    for i in range(len(self.datalab.data))
-                ]
-                self.issues = pd.DataFrame(
-                    {
-                        f"is_{self.issue_name}_issue": [
-                            i == custom_argument for i in range(len(self.datalab.data))
-                        ],
-                        self.issue_score_key: scores,
-                    },
-                )
-                summary_score = np.mean(scores)
-                self.summary = self.make_summary(score=summary_score)
-
-        return CustomIssueManager
-
     def test_custom_issue_manager_not_registered(self, lab):
         """Test that a custom issue manager that is not registered will not be used."""
         # Mock registry dictionary
