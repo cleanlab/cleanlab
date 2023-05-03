@@ -124,7 +124,7 @@ class TestDatalab:
 
         assert lab.get_info() == lab.info == mock_info
 
-    def test_get_summary(self, lab, monkeypatch):
+    def test_get_issue_summary(self, lab, monkeypatch):
         mock_summary: pd.DataFrame = pd.DataFrame(
             {
                 "issue_type": ["label", "outlier"],
@@ -134,15 +134,15 @@ class TestDatalab:
         )
         monkeypatch.setattr(lab, "issue_summary", mock_summary)
 
-        label_summary = lab.get_summary(issue_name="label")
+        label_summary = lab.get_issue_summary(issue_name="label")
         pd.testing.assert_frame_equal(label_summary, mock_summary.iloc[[0]])
 
-        outlier_summary = lab.get_summary(issue_name="outlier")
+        outlier_summary = lab.get_issue_summary(issue_name="outlier")
         pd.testing.assert_frame_equal(
             outlier_summary, mock_summary.iloc[[1]].reset_index(drop=True)
         )
 
-        summary = lab.get_summary()
+        summary = lab.get_issue_summary()
         pd.testing.assert_frame_equal(summary, mock_summary)
 
     def test_get_issues(self, lab, monkeypatch):
@@ -594,34 +594,7 @@ class TestDatalabIssueManagerInteraction:
         differently depending on the issue manager.
     """
 
-    @pytest.fixture
-    def custom_issue_manager(self):
-        from cleanlab.datalab.issue_manager import IssueManager
-
-        class CustomIssueManager(IssueManager):
-            issue_name = "custom_issue"
-
-            def find_issues(self, custom_argument: int = 1, **_) -> None:
-                # Flag example as an issue if the custom argument equals its index
-                scores = [
-                    abs(i - custom_argument) / (i + custom_argument)
-                    for i in range(len(self.datalab.data))
-                ]
-                self.issues = pd.DataFrame(
-                    {
-                        f"is_{self.issue_name}_issue": [
-                            i == custom_argument for i in range(len(self.datalab.data))
-                        ],
-                        self.issue_score_key: scores,
-                    },
-                )
-                summary_score = np.mean(scores)
-                self.summary = self.make_summary(score=summary_score)
-
-        return CustomIssueManager
-
-    @pytest.mark.parametrize("list_possible_issue_types", [["custom_issue"]], indirect=True)
-    def test_custom_issue_manager_not_registered(self, lab, list_possible_issue_types):
+    def test_custom_issue_manager_not_registered(self, lab):
         """Test that a custom issue manager that is not registered will not be used."""
         # Mock registry dictionary
         mock_registry = MagicMock()
@@ -693,10 +666,10 @@ class TestDatalabIssueManagerInteraction:
     "find_issues_kwargs",
     [
         ({"pred_probs": np.random.rand(3, 2)}),
-        # ({"features": np.random.rand(3, 2)}),
-        # ({"pred_probs": np.random.rand(3, 2), "features": np.random.rand(6, 2)}),
+        ({"features": np.random.rand(3, 2)}),
+        ({"pred_probs": np.random.rand(3, 2), "features": np.random.rand(6, 2)}),
     ],
-    # ids=["pred_probs", "features", "pred_probs and features"],
+    ids=["pred_probs", "features", "pred_probs and features"],
 )
 def test_report_for_outlier_issues_via_pred_probs(find_issues_kwargs):
     data = {"labels": [0, 1, 0]}

@@ -92,7 +92,7 @@ with regards to the issue.
             )
 
             # Score the dataset as a whole based on this issue type
-            self.summary = self.get_summary(score = scores.mean())
+            self.summary = self.make_summary(score = scores.mean())
 
 
 .. _intermediate_issue_manager:
@@ -136,7 +136,7 @@ Optionally, you can also add a description of the type of issue this issue manag
                     self.issue_score_key : scores,
                 },
             )
-            self.summary = self.get_summary(score = scores.mean())
+            self.summary = self.make_summary(score = scores.mean())
 
             # Useful information that will be available in the Datalab instance
             self.info = {
@@ -199,7 +199,7 @@ The report will look something like this:
     ------------------------------------------- basic issues -------------------------------------------
 
     Number of examples with this issue: 2
-    Overall dataset quality in terms of this issue: : 0.4778
+    Overall dataset quality in terms of this issue: 0.4778
 
     Examples representing most severe instances of this issue:
         is_basic_issue  basic_score
@@ -216,7 +216,7 @@ The report will look something like this:
     	Intermediate issues are a bit more involved than basic issues.
 
     Number of examples with this issue: 0
-    Overall dataset quality in terms of this issue: : 0.2865
+    Overall dataset quality in terms of this issue: 0.2865
 
     Examples representing most severe instances of this issue:
         is_intermediate_issue  intermediate_score    kernel

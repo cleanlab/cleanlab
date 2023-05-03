@@ -20,13 +20,13 @@ from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional, Tuple, Union, c
 from scipy.sparse import csr_matrix
 from scipy.stats import iqr
 import numpy as np
-import numpy.typing as npt
 import pandas as pd
 
 from cleanlab.datalab.issue_manager import IssueManager
 from cleanlab.outlier import OutOfDistribution, transform_distances_to_scores
 
 if TYPE_CHECKING:  # pragma: no cover
+    import numpy.typing as npt
     from sklearn.neighbors import NearestNeighbors
     from cleanlab.datalab.datalab import Datalab
 

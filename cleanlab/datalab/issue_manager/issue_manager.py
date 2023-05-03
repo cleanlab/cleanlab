@@ -192,6 +192,9 @@ class IssueManager(ABC, metaclass=IssueManagerMeta):
         summary :
             A summary dataframe.
         """
+        if not 0 <= score <= 1:
+            raise ValueError(f"Score must be between 0 and 1. Got {score}.")
+
         return pd.DataFrame(
             {
                 "issue_type": [cls.issue_name],
@@ -287,7 +290,7 @@ class IssueManager(ABC, metaclass=IssueManagerMeta):
             report_str += "About this issue:\n\t" + description + "\n\n"
         report_str += (
             f"Number of examples with this issue: {issues[f'is_{cls.issue_name}_issue'].sum()}\n"
-            f"Overall dataset quality in terms of this issue: : {score:.4f}\n\n"
+            f"Overall dataset quality in terms of this issue: {score:.4f}\n\n"
         )
 
         info_to_print: Set[str] = set()
