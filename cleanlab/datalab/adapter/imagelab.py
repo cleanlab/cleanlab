@@ -50,7 +50,7 @@ def create_imagelab(dataset: "Dataset", image_key: Optional[str]) -> Optional["I
             imagelab = Imagelab(hf_dataset=dataset, image_key=image_key, verbosity=0)
         else:
             raise ValueError(
-                "Only huggingface datasets are supported for cleanvision checks from cleanlab as of now"
+                "For now, only huggingface datasets are supported for running cleanvision checks inside cleanlab. You can easily convert most datasets to the huggingface dataset format."
             )
 
     except ImportError:
