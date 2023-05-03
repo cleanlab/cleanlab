@@ -1,8 +1,5 @@
-"""A wrapper around the Imagelab class from the CleanVision package to incorporate it into Datalab. This allows low-quality images to be detected alongside other issues in computer vision datasets.
-
-It uses the Adapter pattern so that Imagelab becomes compatible
-with the DataIssues, IssueFinder, Reporter classes.
-
+"""A wrapper around the Imagelab class from the CleanVision package to incorporate it into Datalab.
+This allows low-quality images to be detected alongside other issues in computer vision datasets.
 """
 
 import warnings
