@@ -244,11 +244,6 @@ class IssueFinder:
         """
         if issue_types is not None:
             issue_types_copy = issue_types.copy()
-            issue_types_copy = {
-                issue: issue_types_copy[issue]
-                for issue in self.list_possible_issue_types()
-                if issue in issue_types_copy
-            }
             self._check_missing_args(required_defaults_dict, issue_types_copy)
         else:
             issue_types_copy = required_defaults_dict.copy()

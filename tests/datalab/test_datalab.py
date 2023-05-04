@@ -30,9 +30,11 @@ from datasets.dataset_dict import DatasetDict
 from scipy.sparse import csr_matrix
 from sklearn.neighbors import NearestNeighbors
 
+import cleanlab
 from cleanlab.datalab.datalab import Datalab
 from cleanlab.datalab.issue_finder import IssueFinder
 from cleanlab.datalab.report import Reporter
+
 
 SEED = 42
 
@@ -495,14 +497,14 @@ class TestDatalab:
             lab.find_issues(issue_types=mock_issue_types)
             for expected_msg_substr in [
                 "Error in",
-                "General audit complete",
+                "Audit complete",
                 "Failed to check for these issue types: ",
             ]:
                 assert any(expected_msg_substr in call[0][0] for call in mock_print.call_args_list)
 
         assert lab.issues.empty
 
-    def test_report(self, lab):
+    def test_report(self, lab, monkeypatch, capsys):
         class MockReporter:
             def __init__(self, *args, **kwargs):
                 self.verbosity = kwargs.get("verbosity", None)
@@ -513,17 +515,23 @@ class TestDatalab:
                     f"Report with verbosity={self.verbosity} and k={kwargs.get('num_examples', 5)}"
                 )
 
-        with patch("cleanlab.datalab.helper_factory.Reporter", new=MockReporter):
-            # Call report with no arguments, test that it prints the report
-            with patch("builtins.print") as mock_print:
-                lab.report(verbosity=0)
-                mock_print.assert_called_once_with("Report with verbosity=0 and k=5")
-                mock_print.reset_mock()
-                lab.report(num_examples=10, verbosity=3)
-                mock_print.assert_called_once_with("Report with verbosity=3 and k=10")
-                mock_print.reset_mock()
-                lab.report()
-                mock_print.assert_called_once_with("Report with verbosity=1 and k=5")
+        monkeypatch.setattr(cleanlab.datalab.helper_factory, "Reporter", MockReporter)
+        monkeypatch.setattr(
+            lab.data_issues,
+            "issue_summary",
+            pd.DataFrame(np.random.randint(0, 100, size=(100, 4)), columns=list("ABCD")),
+        )
+        lab.report(verbosity=0)
+        captured = capsys.readouterr()
+        assert "Report with verbosity=0 and k=5" in captured.out
+
+        lab.report(num_examples=10, verbosity=3)
+        captured = capsys.readouterr()
+        assert "Report with verbosity=3 and k=10" in captured.out
+
+        lab.report()
+        captured = capsys.readouterr()
+        assert "Report with verbosity=1 and k=5" in captured.out
 
 
 class TestDatalabUsingKNNGraph:
@@ -579,9 +587,8 @@ class TestDatalabUsingKNNGraph:
         with pytest.warns(UserWarning) as record:
             lab.find_issues()
 
-        assert len(record) == 2
-        assert "No arguments were passed to find_issues." == str(record[0].message)
-        assert "No arguments specified to check for datalab issues" == str(record[1].message)
+        assert len(record) == 1
+        assert "No arguments were passed to Datalab.find_issues()." == str(record[0].message)
         assert lab.issues.empty  # No columns should be added to the issues dataframe
 
 

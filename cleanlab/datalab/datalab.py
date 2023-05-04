@@ -323,6 +323,7 @@ class Datalab:
             print(
                 "Please specify some issue types to run in datalab.find_issues() to see the report.\n"
             )
+            return
 
         reporter = report_factory(self._imagelab)(
             data_issues=self.data_issues,
