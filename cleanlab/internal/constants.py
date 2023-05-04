@@ -27,7 +27,7 @@ TINY_VALUE = 1e-100  # very tiny value for clipping
 EUC_FACTOR = 0.1  # factor to control magnitude of euclidian distance
 MAX_ALLOWED_BOX_PRUNE = 0.97  # This is max allowed percent of prune for boxes below threshold before a warning is thrown.
 
-ALPHA = 0.91  # param for objectlab, weight between IoU and distance when considering similarity matrix. High alpha means considering IoU more strongly over distance
+ALPHA = 0.9  # param for objectlab, weight between IoU and distance when considering similarity matrix. High alpha means considering IoU more strongly over distance
 LOW_PROBABILITY_THRESHOLD = 0.001  # param for objectlab, lowest prediction threshold allowed when considering predicted boxes to identify badly located label boxes
 HIGH_PROBABILITY_THRESHOLD = 0.5  # param for objectlab, high probability threshold for considering predicted boxes to identify overlooked and swapped label boxes
 TEMPERATURE = 0.1  # param for objectlab, temperature of the softmin function where a lower score suggests softmin acts closer to min

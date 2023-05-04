@@ -80,15 +80,12 @@ def get_label_quality_scores(
     Parameters
     ----------
     labels:
-        A list of ``N`` dictionaries such that ``labels[i]`` contains the given labels for the `i`-th image in the format
-       ``{'bboxes': np.ndarray((M,4)), 'labels': np.ndarray((M,)), 'image_name': str}`` where ``L`` is the number of annotated bounding boxes
-       for the `i`-th image and ``bboxes[j]`` is in the format ``[x,y,x,y]`` with given label ``labels[j]``. (``image_name`` is optional here)
+        A list of ``N`` dictionaries such that ``labels[i]`` contains the given labels for the `i`-th image.
+        Refer to documentation for this argument in :py:func:`find_label_issues <cleanlab.object_detection.filter.find_label_issues>` for further details.
 
     predictions:
-        A list of ``N`` ``np.ndarray`` such that ``predictions[i]`` corresponds to the model predictions for the `i`-th image
-        in the format ``np.ndarray((K,))`` and ``predictions[i][k]`` is of shape ``np.ndarray(M,5)``
-        where ``M`` is the number of predicted bounding boxes for class ``k`` and the five columns correspond to ``[x,y,x,y,pred_prob]`` where
-        ``[x,y,x,y]`` are the bounding box coordinates predicted by the model and ``pred_prob`` is the model's confidence in ``predictions[i]``.
+        A list of ``N`` ``np.ndarray`` such that ``predictions[i]`` corresponds to the model predictions for the `i`-th image.
+        Refer to documentation for this argument in :py:func:`find_label_issues <cleanlab.object_detection.filter.find_label_issues>` for further details.
 
     probability_threshold:
         Bounding boxes in ``predictions`` with ``pred_prob`` below the threshold are not considered for computing `label_quality_scores`.
@@ -249,12 +246,14 @@ def _assert_valid_inputs(
             f"Labels has to be a list of dicts. Instead it is list of {type(labels[0])}."
         )
     # check last column of predictions is probabilities ( < 1.)?
-    if not isinstance(predictions[0], np.ndarray):
+    if not isinstance(predictions[0], (list, np.ndarray)):
         raise ValueError(
-            f"Prediction has to be a list of np.ndarray. Instead it is list of {type(predictions[0])}."
+            f"Prediction has to be a list or np.ndarray. Instead it is type {type(predictions[0])}."
         )
     if not predictions[0][0].shape[1] == 5:
-        raise ValueError(f"Prediction values have to be of format [_,_,_,_,pred_prob].")
+        raise ValueError(
+            f"Prediction values have to be of format [x1,y1,x2,y2,pred_prob]. Please refer to the documentation for predicted probabilities under object_detection.rank.get_label_quality_scores for details"
+        )
 
     valid_methods = ["objectlab"]
     if method is not None and method not in valid_methods:
@@ -322,7 +321,7 @@ def visualize(
 
     try:
         import matplotlib.pyplot as plt
-    except Exception as e:
+    except ImportError as e:
         raise ImportError(
             "This functionality requires matplotlib. Install it via: `pip install matplotlib`"
         )
@@ -376,7 +375,7 @@ def _plot_legend(class_labels):
 
     try:
         import matplotlib.pyplot as plt
-    except Exception as e:
+    except ImportError as e:
         raise ImportError(
             "This functionality requires matplotlib. Install it via: `pip install matplotlib`"
         )
@@ -993,10 +992,12 @@ def _get_subtype_label_quality_scores(
     Parameters
     ----------
     labels:
-        As expected by :py:func:`get_label_quality_scores <cleanlab.outlier.get_label_quality_scores>`. See function for more details.
+        A list of ``N`` dictionaries such that ``labels[i]`` contains the given labels for the `i`-th image.
+        Refer to documentation for this argument in :py:func:`find_label_issues <cleanlab.object_detection.filter.find_label_issues>` for further details.
 
     predictions:
-        As expected by :py:func:`get_label_quality_scores <cleanlab.outlier.get_label_quality_scores>`. See function for more details.
+        A list of ``N`` ``np.ndarray`` such that ``predictions[i]`` corresponds to the model predictions for the `i`-th image.
+        Refer to documentation for this argument in :py:func:`find_label_issues <cleanlab.object_detection.filter.find_label_issues>` for further details.
 
     alpha:
         Weight between IoU and distance when considering similarity matrix. High alpha means considering IoU more strongly over distance.
@@ -1042,4 +1043,4 @@ def _get_subtype_label_quality_scores(
         + CUSTOM_SCORE_WEIGHT_BADLOC * badloc_score_per_image
         + CUSTOM_SCORE_WEIGHT_SWAP * swap_score_per_image
     )
-    return scores
+    return 1 - scores
