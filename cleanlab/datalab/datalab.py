@@ -274,9 +274,9 @@ class Datalab:
         if issue_types is not None and not issue_types:
             warnings.warn("No issue types were specified. No issues will be found in the dataset.")
             return None
-        no_args_passed = all(arg is None for arg in [pred_probs, features, knn_graph])
+        no_args_passed = all(arg is None for arg in [pred_probs, features, knn_graph, issue_types])
         if no_args_passed:
-            warnings.warn("No arguments were passed to find_issues.")
+            warnings.warn("No arguments were passed to Datalab.find_issues().")
 
         issue_finder = issue_finder_factory(self._imagelab)(datalab=self, verbosity=self.verbosity)
         issue_finder.find_issues(
@@ -287,7 +287,7 @@ class Datalab:
         )
         if self.verbosity:
             print(
-                f"Audit complete. {self.data_issues.issue_summary['num_issues'].sum()} issues found in the dataset."
+                f"\nAudit complete. {self.data_issues.issue_summary['num_issues'].sum()} issues found in the dataset."
             )
 
     def report(
@@ -321,7 +321,7 @@ class Datalab:
             verbosity = self.verbosity
         if self.data_issues.issue_summary.empty:
             print(
-                "Please specify some issue types to run in datalab.find_issues() to see the report."
+                "Please specify some issue types to run in datalab.find_issues() to see the report.\n"
             )
 
         reporter = report_factory(self._imagelab)(

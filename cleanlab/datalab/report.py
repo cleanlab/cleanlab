@@ -98,14 +98,19 @@ class Reporter:
         """
         report_str = ""
         issue_summary = self.data_issues.issue_summary
-        datalab_checks = list(
-            set(issue_summary["issue_type"]) & set(IssueFinder.list_possible_issue_types())
-        )
+
+        if issue_summary.empty:
+            report_str += self._write_dataset_info()
+            return report_str
 
         issue_summary_sorted = issue_summary.sort_values(by="num_issues", ascending=False)
 
         report_str += self._write_summary(summary=issue_summary_sorted)
+        report_str += self._write_dataset_info()
 
+        datalab_checks = list(
+            set(issue_summary["issue_type"]) & set(IssueFinder.list_possible_issue_types())
+        )
         issue_reports = [
             _IssueManagerFactory.from_str(issue_type=key).report(
                 issues=self.data_issues.get_issues(issue_name=key),
@@ -122,20 +127,25 @@ class Reporter:
         report_str += "\n\n\n".join(issue_reports)
         return report_str
 
-    def _write_summary(self, summary: pd.DataFrame) -> str:
+    def _write_dataset_info(self):
         statistics = self.data_issues.get_info("statistics")
+
         num_examples = statistics["num_examples"]
+        dataset_information = f"Dataset Information: num_examples: {num_examples}"
+
         num_classes = statistics.get(
             "num_classes"
         )  # This may not be required for all types of datasets  in the future (e.g. unlabeled/regression)
 
-        dataset_information = f"Dataset Information: num_examples: {num_examples}"
         if num_classes is not None:
             dataset_information += f", num_classes: {num_classes}"
+
+        return dataset_information + "\n"
+
+    def _write_summary(self, summary: pd.DataFrame) -> str:
         return (
             "Here is a summary of the different kinds of issues found in the data:\n\n"
             + summary.to_string(index=False)
             + "\n\n"
             + "(Note: A lower score indicates a more severe issue across all examples in the dataset.)\n\n"
-            + f"{dataset_information}\n\n\n"
         )

@@ -124,7 +124,7 @@ class ImagelabReporterAdapter(Reporter):
 
     def report(self, num_examples: int, verbosity: Optional[int] = None) -> None:
         super().report(num_examples)
-        if not self.imagelab:
+        if self.imagelab:
             self.imagelab.report(num_images=num_examples, print_summary=False)
 
 
