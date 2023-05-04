@@ -155,7 +155,15 @@ class TestNonIIDIssueManager:
         assert info["metric"] == "euclidean"
         assert info["k"] == 10
 
-    @pytest.mark.parametrize("seed", [SEED, None], ids=["seed", "no_seed"])
+    @pytest.mark.parametrize(
+        "seed",
+        [
+            "default",
+            SEED,
+            None,
+        ],
+        ids=["default", "seed", "no_seed"],
+    )
     def test_seed(self, lab, seed):
         num_classes = 10
         means = [
@@ -186,12 +194,19 @@ class TestNonIIDIssueManager:
         embeddings = dataset["features"]
 
         # Create new issue manager, ignore the lab assigned for this test
-        issue_manager = NonIIDIssueManager(
-            datalab=lab,
-            metric="euclidean",
-            k=10,
-            seed=seed,
-        )
+        if seed == "default":
+            issue_manager = NonIIDIssueManager(
+                datalab=lab,
+                metric="euclidean",
+                k=10,
+            )
+        else:
+            issue_manager = NonIIDIssueManager(
+                datalab=lab,
+                metric="euclidean",
+                k=10,
+                seed=seed,
+            )
         issue_manager.find_issues(features=embeddings)
         p_value = issue_manager.info["p-value"]
 
@@ -200,7 +215,7 @@ class TestNonIIDIssueManager:
         p_value2 = issue_manager.info["p-value"]
 
         assert p_value > 0.0
-        if seed is not None:
+        if seed is not None or seed == "default":
             assert p_value == p_value2
         else:
             assert p_value != p_value2

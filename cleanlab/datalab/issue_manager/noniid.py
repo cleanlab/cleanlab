@@ -103,7 +103,7 @@ class NonIIDIssueManager(IssueManager):
         metric: Optional[str] = None,
         k: int = 10,
         num_permutations: int = 25,
-        seed: Optional[int] = None,
+        seed: Optional[int] = 0,
         **_,
     ):
         super().__init__(datalab)
