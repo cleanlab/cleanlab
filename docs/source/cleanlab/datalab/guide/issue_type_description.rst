@@ -203,6 +203,7 @@ Non-IID Issue Parameters
     "metric": # `metric` argument to constructor of `NonIIDIssueManager`. String for the distance metric used for nearest neighbors search if necessary. `metric` argument to constructor of `sklearn.neighbors.NearestNeighbors`,
     "k": # `k` argument to constructor of `NonIIDIssueManager`. Integer representing the number of nearest neighbors for nearest neighbors search if necessary. `n_neighbors` argument to constructor of `sklearn.neighbors.NearestNeighbors`
     "num_permutations": # `num_permutations` argument to constructor of `NonIIDIssueManager`.
+    "seed": # seed for numpy's random number generator (used for permutation tests)
     }
 
 .. note::
