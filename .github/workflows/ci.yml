@@ -28,10 +28,6 @@ jobs:
         run: pip install -e .
       - name: Install development dependencies
         run: pip install -r requirements-dev.txt
-      - name: Check cleanlab runs without optional dependencies
-        # these tests provide 50% coverage
-        run: |
-          pytest tests/test_multilabel_classification.py tests/test_multiannotator.py tests/test_filter_count.py
       - name: Install fasttext for non-Windows machines
         if: matrix.os != 'windows-latest'
         run: |
@@ -46,6 +42,22 @@ jobs:
         env:
           TEST_FASTTEXT: true
       - uses: codecov/codecov-action@v3
+  check-without-extras:
+    name: Check cleanlab runs without optional dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      - name: Install dependencies
+        run: |
+          python -m  pip install --upgrade pip
+          pip install .
+          pip install pytest
+      - name: Run tests
+        run: | # these tests provide 50% coverage
+          pytest tests/test_multilabel_classification.py tests/test_multiannotator.py tests/test_filter_count.py
   check-min-version:
     name: Checks the package is compatible with minimum versions
     runs-on: ubuntu-latest
@@ -65,7 +77,7 @@ jobs:
           pip install pandas==1.1.5
           pip install termcolor==2.0.0
       - name: Run tests
-        run: |
+        run: | # this test provides 33% coverage
           pytest tests/test_classification.py
   typecheck:
     name: Type check
