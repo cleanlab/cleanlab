@@ -157,7 +157,6 @@ class TestNonIIDIssueManager:
 
     @pytest.mark.parametrize("seed", [SEED, None], ids=["seed", "no_seed"])
     def test_seed(self, lab, seed):
-
         num_classes = 10
         means = [
             np.array([np.random.uniform(high=10), np.random.uniform(high=10)])
