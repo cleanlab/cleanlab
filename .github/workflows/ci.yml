@@ -54,7 +54,7 @@ jobs:
         run: |
           python -m  pip install --upgrade pip
           pip install .
-          pip install pytest
+          pip install pytest pytest-lazy-fixture
       - name: Run tests
         run: | # these tests provide 50% coverage
           pytest tests/test_multilabel_classification.py tests/test_multiannotator.py tests/test_filter_count.py
