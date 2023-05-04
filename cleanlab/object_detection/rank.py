@@ -1043,4 +1043,4 @@ def _get_subtype_label_quality_scores(
         + CUSTOM_SCORE_WEIGHT_BADLOC * badloc_score_per_image
         + CUSTOM_SCORE_WEIGHT_SWAP * swap_score_per_image
     )
-    return 1 - scores
+    return scores

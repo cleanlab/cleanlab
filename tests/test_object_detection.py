@@ -384,6 +384,12 @@ def test_separate_prediction():
     assert len(labels) == len(pred_probs)
 
 
+def test_return_issues_ranked_by_scores():
+    label_issue_idx = find_label_issues(labels, predictions, return_indices_ranked_by_score=True)
+    assert [5, 6, 7, 8, 9] in label_issue_idx[:5]  # lower scores for bad examples
+    assert len(label_issue_idx) == 5  # no good example index returned
+
+
 def test_bad_input_find_label_issues_internal():
     bad_label_issues = _find_label_issues(labels, predictions, scoring_method="bad_method")
     assert (bad_label_issues == -1).all()

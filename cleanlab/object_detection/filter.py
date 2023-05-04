@@ -34,32 +34,37 @@ from cleanlab.object_detection.rank import (
     _compute_badloc_box_scores,
     _compute_swap_box_scores,
     _assert_valid_inputs,
+    get_label_quality_scores,
+    issues_from_scores,
 )
 
 
 def find_label_issues(
     labels: List[Dict[str, Any]],
     predictions: List[np.ndarray],
+    *,
+    return_indices_ranked_by_score: bool = False,
 ) -> np.ndarray:
     """
     Identifies potentially mislabeled examples in an object detection dataset.
-    An image is flagged with a label issue if *any* of its bounding boxes appear incorrectly annotated -- this includes images for which a bounding box: should have been annotated but is missing, has been annotated with the wrong class, or has been annotated in a suboptimal location.
+    An example is flagged with a label issue if *any* of its bounding boxes appear incorrectly annotated -- this includes examples for which a bounding box: should have been annotated but is missing, has been annotated with the wrong class, or has been annotated in a suboptimal location.
 
-    A boolean is returned for each of ``N`` images, with ``K`` total classes in the data.
-    Each image has ``L`` annotated bounding boxes and ``M`` predicted bounding boxes.
+    Each of the ``N`` examples has ``K`` total classes in the data, ``L`` annotated bounding boxes and ``M`` predicted bounding boxes.
+    If ``return_indices_ranked_by_score`` is ``False``, a boolean is returned for each of the ``N`` examples marking if the example is an issue (``True``) or not (``False``).
+    Else, the indices of examples marked as issues are returned sorted by issue severity with the most severe issues ordered first.
 
     Parameters
     ----------
     labels:
-        A list of ``N`` dictionaries such that ``labels[i]`` contains the given labels for the `i`-th image in the format
+        A list of ``N`` dictionaries such that ``labels[i]`` contains the given labels for the `i`-th example in the format
        ``{'bboxes': np.ndarray((M,4)), 'labels': np.ndarray((M,)), 'image_name': str}`` where ``L`` is the number of annotated bounding boxes
-       for the `i`-th image and ``bboxes[j]`` is in the format ``[x,y,x,y]`` with given label ``labels[j]``. (``image_name`` is optional here)
+       for the `i`-th example and ``bboxes[j]`` is in the format ``[x,y,x,y]`` with given label ``labels[j]``. (``image_name`` is optional here)
 
        More information on proper labels formatting can be seen [here](https://mmdetection.readthedocs.io/en/dev-3.x/advanced_guides/customize_dataset.html)
 
 
     predictions:
-        A list of ``N`` ``np.ndarray`` such that ``predictions[i]`` corresponds to the model predictions for the `i`-th image
+        A list of ``N`` ``np.ndarray`` such that ``predictions[i]`` corresponds to the model predictions for the `i`-th example
         in the format ``np.ndarray((K,))`` and ``predictions[i][k]`` is of shape ``np.ndarray(M,5)``
         where ``M`` is the number of predicted bounding boxes for class ``k`` and the five columns correspond to ``[x,y,x,y,pred_prob]`` where
         ``[x,y,x,y]`` are the bounding box coordinates predicted by the model and ``pred_prob`` is the model's confidence in ``predictions[i]``.
@@ -67,6 +72,15 @@ def find_label_issues(
         More information on proper predictions formatting can be seen [here](https://mmdetection.readthedocs.io/en/dev-3.x/advanced_guides/customize_dataset.html)
 
         Note: ``[x,y,x,y]``
+
+    return_indices_ranked_by_score:
+        Determines what is returned by this method: either a boolean mask or list of indices np.ndarray.
+        If ``False``, this function returns a boolean mask (``True`` if example at index is label error).
+        If ``True``, this function returns a sorted array of indices of examples with label issues
+        (instead of a boolean mask).
+
+        Indices are sorted by label quality score which are calculated from :py:func:`get_label_quality_scores <cleanlab.object_detection.rank.get_label_quality_scores>`.
+
 
     Returns
     -------
@@ -81,7 +95,12 @@ def find_label_issues(
         method=scoring_method,
     )
 
-    is_issue = _find_label_issues(labels, predictions, scoring_method=scoring_method)
+    is_issue = _find_label_issues(
+        labels,
+        predictions,
+        scoring_method=scoring_method,
+        return_indices_ranked_by_score=return_indices_ranked_by_score,
+    )
 
     return is_issue
 
@@ -90,6 +109,7 @@ def _find_label_issues(
     labels: List[Dict[str, Any]],
     predictions: List[np.ndarray],
     *,
+    return_indices_ranked_by_score: bool = True,
     scoring_method: str = "objectlab",
 ):
     """Internal function to find label issues based on passed in method."""
@@ -134,21 +154,30 @@ def _find_label_issues(
             ],
             fill_value=-1,
         )
-    return is_issue
+
+    if return_indices_ranked_by_score:
+        scores = get_label_quality_scores(labels, predictions)
+        sorted_scores_idx = issues_from_scores(scores, threshold=1.0)
+        is_issue_idx = np.where(is_issue == True)[0]
+        sorted_issue_mask = np.in1d(sorted_scores_idx, is_issue_idx, assume_unique=True)
+        issue_idx = sorted_scores_idx[sorted_issue_mask]
+        return issue_idx
+    else:
+        return is_issue
 
 
 def _find_label_issues_per_box(
     scores_per_box: List[np.ndarray], threshold: float
 ) -> List[np.ndarray]:
-    """Takes in a list of size ``N`` where each index is an array of scores for each bounding box in the `n-th` image
+    """Takes in a list of size ``N`` where each index is an array of scores for each bounding box in the `n-th` example
     and a threshold. Each box below or equal to the threshold will be marked as an issue.
 
-    Returns a list of size ``N`` where each index is a boolean array of length number of boxes per image `n `
+    Returns a list of size ``N`` where each index is a boolean array of length number of boxes per example `n `
     marking if a specific box is an issue - 1 or not - 0."""
     is_issue_per_box = []
     for idx, score_per_box in enumerate(scores_per_box):
         if len(score_per_box) == 0:  # if no for specific image, then image not an issue
-            is_issue_per_box.append(np.ndarray([False]))
+            is_issue_per_box.append(np.array([False]))
         else:
             score_per_box[np.isnan(score_per_box)] = 1.0
             score_per_box = score_per_box
