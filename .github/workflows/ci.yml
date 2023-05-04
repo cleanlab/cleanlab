@@ -26,10 +26,12 @@ jobs:
           python-version: ${{ matrix.python }}
       - name: Install cleanlab
         run: pip install -e .
-      - name: Check cleanlab runs without optional dependencies
-        run: python3 -c "import cleanlab"
       - name: Install development dependencies
         run: pip install -r requirements-dev.txt
+      - name: Check cleanlab runs without optional dependencies
+        # these tests provide 50% coverage
+        run: |
+          pytest tests/test_multilabel_classification.py tests/test_multiannotator.py tests/test_filter_count.py
       - name: Install fasttext for non-Windows machines
         if: matrix.os != 'windows-latest'
         run: |
@@ -44,6 +46,26 @@ jobs:
         env:
           TEST_FASTTEXT: true
       - uses: codecov/codecov-action@v3
+  check-min-version:
+    name: Checks the package is compatible with minimum versions
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.7'
+      - name: Install min version of dependencies
+        run: |
+          python -m  pip install --upgrade pip
+          pip install .
+          pip install numpy==1.20.0
+          pip install scikit-learn==1.0
+          pip install tqdm==4.53.0
+          pip install pandas==1.1.5
+          pip install termcolor==2.0.0
+      - name: Run tests
+        run: |
+          pytest tests/test_classification.py
   typecheck:
     name: Type check
     runs-on: ubuntu-latest
