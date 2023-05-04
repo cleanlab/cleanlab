@@ -135,21 +135,25 @@ class ImagelabIssueFinderAdapter(IssueFinder):
         super().__init__(datalab, verbosity)
         self.imagelab = self.datalab._imagelab
 
+    def _get_datalab_specific_default_issue_types(self):
+        issue_types = self.imagelab.list_default_issue_types()
+        filtered_issue_types = [
+            issue_type
+            for issue_type in issue_types
+            if issue_types not in ["near_duplicates", "exact_duplicates"]
+        ]
+        return filtered_issue_types
+
     def _get_imagelab_issue_types(self, issue_types, **kwargs):
         if issue_types is None:
             issue_types_copy = {
-                issue_type: {} for issue_type in self.imagelab.list_default_issue_types()
+                issue_type: {} for issue_type in self._get_datalab_specific_default_issue_types()
             }
         else:
             if "image_issue_types" not in issue_types:
                 return None
             else:
                 issue_types_copy = issue_types["image_issue_types"].copy()
-
-        # Remove imagelab near/exact duplicate checks
-        if "is_near_duplicate_issue" in self.datalab.issues.columns:
-            issue_types_copy.pop("near_duplicates")
-            issue_types_copy.pop("exact_duplicates")
         return issue_types_copy
 
     def find_issues(
