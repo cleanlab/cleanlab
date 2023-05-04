@@ -70,12 +70,7 @@ jobs:
         run: |
           python -m  pip install --upgrade pip
           pip install .
-          pip install pytest
-          pip install numpy==1.20.0
-          pip install scikit-learn==1.0
-          pip install tqdm==4.53.0
-          pip install pandas==1.1.5
-          pip install termcolor==2.0.0
+          pip install pytest pytest-lazy-fixture numpy==1.20.0 scikit-learn==1.0 tqdm==4.53.0 pandas==1.1.5 termcolor==2.0.0
       - name: Run tests
         run: | # this test provides 33% coverage
           pytest tests/test_classification.py
