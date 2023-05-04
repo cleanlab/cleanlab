@@ -23,7 +23,7 @@ Quickstart
 
       .. code-block:: bash
 
-         pip install cleanlab[all]
+         pip install "cleanlab[all]"
 
    .. tab:: conda
 
