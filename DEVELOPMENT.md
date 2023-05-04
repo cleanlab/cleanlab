@@ -113,13 +113,13 @@ The package can be installed with the optional dependency (here called `gpu`) vi
 1. PyPI installation
 
 ```shell
-pip install -r cleanlab[gpu]
+pip install -r "cleanlab[gpu]"
 ```
 
 2. Editable installation
 
 ```shell
-pip install -e .[gpu]
+pip install -e ".[gpu]"
 ```
 
 ## Testing
