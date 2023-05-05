@@ -56,7 +56,6 @@ def get_label_quality_scores(
     labels: List[Dict[str, Any]],
     predictions: List[np.ndarray],
     *,
-    probability_threshold: Optional[float] = None,
     verbose: bool = True,
 ) -> np.ndarray:
     """Computes a label quality score for each image in the dataset.
@@ -87,12 +86,6 @@ def get_label_quality_scores(
         A list of ``N`` ``np.ndarray`` such that ``predictions[i]`` corresponds to the model predictions for the `i`-th image.
         Refer to documentation for this argument in :py:func:`find_label_issues <cleanlab.object_detection.filter.find_label_issues>` for further details.
 
-    probability_threshold:
-        Bounding boxes in ``predictions`` with ``pred_prob`` below the threshold are not considered for computing `label_quality_scores`.
-        If you know what probability-threshold was used when producing predicted boxes from your trained object detector,
-        please supply the value that was used here. If not provided, this value is inferred based on the smallest observed
-        predicted probability for any of the predicted boxes.
-
     verbose : bool, default = True
       Set to ``False`` to suppress all print statements.
 
@@ -103,6 +96,7 @@ def get_label_quality_scores(
         Lower scores indicate images that are more likely mislabeled.
     """
     method = "objectlab"
+    probability_threshold = 0.0
 
     _assert_valid_inputs(
         labels=labels,
