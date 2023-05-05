@@ -127,17 +127,18 @@ class Reporter:
         if num_classes is not None:
             dataset_information += f", num_classes: {num_classes}"
 
-        if not self.show_summary_score:
+        if self.show_summary_score:
             return (
                 "Here is a summary of the different kinds of issues found in the data:\n\n"
-                + summary.drop(columns=["score"]).to_string(index=False)
+                + summary.to_string(index=False)
                 + "\n\n"
+                + "(Note: A lower score indicates a more severe issue across all examples in the dataset.)\n\n"
                 + f"{dataset_information}\n\n\n"
             )
+
         return (
             "Here is a summary of the different kinds of issues found in the data:\n\n"
-            + summary.to_string(index=False)
+            + summary.drop(columns=["score"]).to_string(index=False)
             + "\n\n"
-            + "(Note: A lower score indicates a more severe issue across all examples in the dataset.)\n\n"
             + f"{dataset_information}\n\n\n"
         )
