@@ -293,8 +293,8 @@ Try to adhere to this standardized terminology unless you have good reason not t
 
 Use relative linking to connect information between docs and jupyter notebooks, and make sure links will remain valid in the future as new cleanlab versions are released! Sphinx/html works with relative paths so try to specify relative paths if necessary. For specific situations:
 
-- Link another function of class from within a source code docstring: `` `~cleanlab.file.name` ``.
-  This uses the default role 'py:obj', the leading tilde shortens the link to only display `name`.
+- Link another function or class from within a source code docstring: `` `~cleanlab.file.function_or_class_name` ``.
+  - This uses the [Sphinx's](https://www.sphinx-doc.org/en/master/usage/configuration.html#confval-default_role) `default_role = "py:obj"` setting, so the leading tilde shortens the link to only display `function_or_class_name`.
 - Link a tutorial (rst file) from within a source code docstring or rst file: ``:ref:`tutorial_name <tutorial_name>` ``
 - Link a tutorial notebook (ipynb file) from within a source code docstring or rst file: `` `notebook_name <tutorials/notebook_name.ipynb>`_ `` . (If the notebook is not the in the same folder as the source code, use a relative path)
 - Link a function from within a tutorial notebook: `[function_name](../cleanlab/file.rst#cleanlab.file.function_name)`
