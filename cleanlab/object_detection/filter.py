@@ -46,45 +46,52 @@ def find_label_issues(
     return_indices_ranked_by_score: bool = False,
 ) -> np.ndarray:
     """
-    Identifies potentially mislabeled examples in an object detection dataset.
-    An example is flagged with a label issue if *any* of its bounding boxes appear incorrectly annotated -- this includes examples for which a bounding box: should have been annotated but is missing, has been annotated with the wrong class, or has been annotated in a suboptimal location.
+    Identifies potentially mislabeled images in an object detection dataset.
+    An image is flagged with a label issue if *any* of its bounding boxes appear incorrectly annotated.
+    This includes images for which a bounding box: should have been annotated but is missing,
+    has been annotated with the wrong class, or has been annotated in a suboptimal location.
 
-    Each of the ``N`` examples has ``K`` total classes in the data, ``L`` annotated bounding boxes and ``M`` predicted bounding boxes.
-    If ``return_indices_ranked_by_score`` is ``False``, a boolean is returned for each of the ``N`` examples marking if the example is an issue (``True``) or not (``False``).
-    Else, the indices of examples marked as issues are returned sorted by issue severity with the most severe issues ordered first.
+    Suppose the dataset has ``N`` images, ``K`` possible class labels.
+    If ``return_indices_ranked_by_score`` is ``False``, a boolean mask of length ``N`` is returned,
+    indicating whether each image has a label issue (``True``) or not (``False``).
+    If ``return_indices_ranked_by_score`` is ``True``, the indices of images flagged with label issues are returned,
+    sorted with the most likely-mislabeled images ordered first.
 
     Parameters
     ----------
     labels:
-        A list of ``N`` dictionaries such that ``labels[i]`` contains the given labels for the `i`-th example in the format
-       ``{'bboxes': np.ndarray((M,4)), 'labels': np.ndarray((M,)), 'image_name': str}`` where ``L`` is the number of annotated bounding boxes
-       for the `i`-th example and ``bboxes[j]`` is in the format ``[x1,y1,x2,y2]`` with given label ``labels[j]``. (``image_name`` is optional here)
+        Annotated boxes and class labels in the original dataset, which may contain some errors. 
+        This is a list of ``N`` dictionaries such that ``labels[i]`` contains the given labels for the `i`-th image in the following format:
+        ``{'bboxes': np.ndarray((L,4)), 'labels': np.ndarray((L,)), 'image_name': str}`` where ``L`` is the number of annotated bounding boxes
+        for the `i`-th image and ``bboxes[l]`` is a bounding box of coordinates in ``[x1,y1,x2,y2]`` format with given class label ``labels[j]``.
+        ``image_name`` is an optional part of the labels that can be used to later refer to specific images.
 
-       More information on proper labels formatting can be seen [here](https://mmdetection.readthedocs.io/en/dev-3.x/advanced_guides/customize_dataset.html)
+       For more information on proper labels formatting, check out the [MMDetection library](https://mmdetection.readthedocs.io/en/dev-3.x/advanced_guides/customize_dataset.html)
 
-    predictions:
-        A list of ``N`` ``np.ndarray`` such that ``predictions[i]`` corresponds to the model predictions for the `i`-th example
-        in the format ``np.ndarray((K,))`` and ``predictions[i][k]`` is of shape ``np.ndarray(M,5)``
-        where ``M`` is the number of predicted bounding boxes for class ``k`` and the five columns correspond to ``[x,y,x,y,pred_prob]`` where
-        ``[x1,y1,x2,y2]`` are the bounding box coordinates predicted by the model and ``pred_prob`` is the model's confidence in ``predictions[i]``.
+    predictions: 
+        Predictions output by a trained object detection model.
+        For the most accurate results, predictions should be out-of-sample to avoid overfitting, eg. obtained via :ref:`cross-validation <pred_probs_cross_val>`.
+        This is a list of ``N`` ``np.ndarray`` such that ``predictions[i]`` corresponds to the model prediction for the `i`-th image.
+        For each possible class ``k`` in 0, 1, ..., K-1: ``predictions[i][k]`` is a ``np.ndarray`` of shape ``(M,5)``,
+        where ``M`` is the number of predicted bounding boxes for class ``k``. Here the five columns correspond to ``[x1,y1,x2,y2,pred_prob]``,
+        where ``[x1,y1,x2,y2]`` are coordinates of the bounding box predicted by the model
+        and ``pred_prob`` is the model's confidence in the predicted class label for this bounding box. 
 
-        More information on proper predictions formatting can be seen [here](https://mmdetection.readthedocs.io/en/dev-3.x/advanced_guides/customize_dataset.html)
+        For more information on proper predictions formatting, check out the [MMDetection library](https://mmdetection.readthedocs.io/en/dev-3.x/advanced_guides/customize_dataset.html)
 
         Note: Here, [x1,y1] corresponds to the coordinates of the bottom-left corner of the bounding box, while [x2,y2] corresponds to the coordinates of the top-right corner of the bounding box. The last column, pred_prob, represents the predicted probability that the bounding box contains an object of the class k.
 
     return_indices_ranked_by_score:
-        Determines what is returned by this method: either a boolean mask or list of indices np.ndarray.
-        If ``False``, this function returns a boolean mask (``True`` if example at index is label error).
-        If ``True``, this function returns a sorted array of indices of examples with label issues
-        (instead of a boolean mask).
-
-        Indices are sorted by label quality score which are calculated from :py:func:`get_label_quality_scores <cleanlab.object_detection.rank.get_label_quality_scores>`.
-
+        Determines what is returned by this method (see description of return value for details).
 
     Returns
     -------
     label_issues : np.ndarray
-      Returns a list of **indices** of examples identified with label issues (i.e. those indices where the mask would be ``True``).
+        Returns a list of **indices** of examples identified with label issues (i.e. those indices where the mask would be ``True``).
+        If ``return_indices_ranked_by_score = False``, this function returns a boolean mask of length ``N`` (``True`` entries indicate which images have label issue).
+        If ``return_indices_ranked_by_score = True``, this function returns a (shorter) array of indices of images with label issues, sorted by how likely the image is mislabeled.
+
+        Indices are sorted by image label quality score calculated via :py:func:`object_detection.rank.get_label_quality_scores <cleanlab.object_detection.rank.get_label_quality_scores>`.
     """
     scoring_method = "objectlab"
 
