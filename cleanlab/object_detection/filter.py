@@ -87,11 +87,11 @@ def find_label_issues(
     Returns
     -------
     label_issues : np.ndarray
-        Returns a list of **indices** of examples identified with label issues (i.e. those indices where the mask would be ``True``).
+        Specifies which images are identified to have a label issue.
         If ``return_indices_ranked_by_score = False``, this function returns a boolean mask of length ``N`` (``True`` entries indicate which images have label issue).
         If ``return_indices_ranked_by_score = True``, this function returns a (shorter) array of indices of images with label issues, sorted by how likely the image is mislabeled.
 
-        Indices are sorted by image label quality score calculated via :py:func:`object_detection.rank.get_label_quality_scores <cleanlab.object_detection.rank.get_label_quality_scores>`.
+        More precisely, indices are sorted by image label quality score calculated via :py:func:`object_detection.rank.get_label_quality_scores <cleanlab.object_detection.rank.get_label_quality_scores>`.
     """
     scoring_method = "objectlab"
 
