@@ -39,6 +39,88 @@ pip install -e .
 
 For Macs with Apple silicon: replace `tensorflow` in requirements-dev.txt with: `tensorflow-macos==2.9.2` and `tensorflow-metal==0.5.1`
 
+### Handling optional dependencies
+
+When designing a class that relies on an optional, domain-specific runtime dependency, it is better to use lazy-importing to avoid forcing users to install the dependency if they do not need it.
+
+Depending on the coupling of your class to the dependency, you may want to consider importing it at the module-level or as an instance variable of the class or a function that uses the dependency.
+
+If the dependency is used by many methods in the module or other classes, it is better to import it at the module-level.
+On the other hand, if the dependency is only used by a handful of methods, then it's better to import it inside the method. If the dependency is not installed, an ImportError should be raised when the method is called, along with instructions on how to install the dependency.
+
+Here is an example of a class that lazily imports CuPy and has a sum method (element-wise) that can be used on both CPU and GPU devices.
+
+Unless an alternative implementations of the sum method is available, an `ImportError` should be raised when the method is called with instructions on how to install the dependency.
+
+<details> <summary>Example code</summary>
+
+```python
+def lazy_import_cupy():
+  try:
+    import cupy
+  except ImportError as error:
+    # If the dependency is required for the class to work,
+    # replace this block with a raised ImportError containing instructions
+    print("Warning: cupy is not installed. Please install it with `pip install cupy`.")
+    cupy = None
+  return cupy
+
+class Summation:
+  def __init__(self):
+    self.cupy = lazy_import_cupy()
+  def sum(self, x) -> float:
+    if self.cupy is None:
+      return sum(x)
+    return self.cupy.sum(x)
+```
+</details>
+
+
+For the build system to recognize the optional dependency, you should add it to the `EXTRAS_REQUIRE` constant in **setup.py**:
+
+<details> <summary>Example code</summary>
+
+```python
+EXTRAS_REQUIRE = {
+    ...
+    "gpu": [
+      # Explain why the dependency below is needed,
+      # e.g. "for performing summation on GPU"
+      "cupy",
+    ],
+}
+```
+
+
+Or assign to a separate variable and add it to `EXTRAS_REQUIRE`
+
+```python	
+GPU_REQUIRES = [
+  # Explanation ...
+  "cupy",
+]
+
+EXTAS_REQUIRE = {
+    ...
+    "gpu": GPU_REQUIRES,
+}
+```
+</details>
+
+
+The package can be installed with the optional dependency (here called `gpu`) via:
+
+1. PyPI installation
+
+```shell
+pip install -r cleanlab[gpu]
+```
+
+2. Editable installation
+
+```shell
+pip install -e .[gpu]
+```
 
 ## Testing
 
@@ -211,8 +293,8 @@ Try to adhere to this standardized terminology unless you have good reason not t
 
 Use relative linking to connect information between docs and jupyter notebooks, and make sure links will remain valid in the future as new cleanlab versions are released! Sphinx/html works with relative paths so try to specify relative paths if necessary. For specific situations:
 
-- Link another function from within a source code docstring: ``:py:func:`function_name <cleanlab.file.function_name>` ``
-- Link another class from within a source code docstring: ``:py:class:`class_name <cleanlab.file.class_name>` ``
+- Link another function or class from within a source code docstring: `` `~cleanlab.file.function_or_class_name` ``.
+  - This uses the [Sphinx's](https://www.sphinx-doc.org/en/master/usage/configuration.html#confval-default_role) `default_role = "py:obj"` setting, so the leading tilde shortens the link to only display `function_or_class_name`.
 - Link a tutorial (rst file) from within a source code docstring or rst file: ``:ref:`tutorial_name <tutorial_name>` ``
 - Link a tutorial notebook (ipynb file) from within a source code docstring or rst file: `` `notebook_name <tutorials/notebook_name.ipynb>`_ `` . (If the notebook is not the in the same folder as the source code, use a relative path)
 - Link a function from within a tutorial notebook: `[function_name](../cleanlab/file.rst#cleanlab.file.function_name)`

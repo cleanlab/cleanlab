@@ -126,9 +126,10 @@ Please see our `contributing guidelines <https://github.com/cleanlab/cleanlab/bl
    :hidden:
    :caption: Tutorials
 
+   Datalab Tutorials <tutorials/datalab/index>
    Workflows of Data-Centric AI <tutorials/indepth_overview>
    Image Classification (pytorch) <tutorials/image>
-   Text Classification (tensorflow) <tutorials/text>
+   Text Classification (transformers) <tutorials/text>
    Tabular Classification (sklearn) <tutorials/tabular>
    Audio Classification (speechbrain) <tutorials/audio>
    Find Dataset-level Issues <tutorials/dataset_health>
@@ -153,6 +154,7 @@ Please see our `contributing guidelines <https://github.com/cleanlab/cleanlab/bl
    cleanlab/multiannotator
    cleanlab/multilabel_classification
    cleanlab/token_classification/index
+   cleanlab/datalab/index
    cleanlab/benchmarking/index
    cleanlab/models/index
    cleanlab/experimental/index
