@@ -24,26 +24,20 @@ TINY_VALUE = 1e-100  # very tiny value for clipping
 
 
 # Object Detection Constants
-EUC_FACTOR = 0.1  # factor to control magnitude of euclidian distance
-MAX_ALLOWED_BOX_PRUNE = 0.97  # This is max allowed percent of prune for boxes below threshold before a warning is thrown.
+EUC_FACTOR = 0.1  # Factor to control magnitude of euclidian distance. Increasing the factor makes the distances between two objects go to zero more rapidly.
+MAX_ALLOWED_BOX_PRUNE = 0.97  # This is max allowed percent of boxes that are pruned before a warning is thrown given a specific threshold. Pruning too many boxes negatively affects performance.
 
-ALPHA = 0.9  # param for objectlab, weight between IoU and distance when considering similarity matrix. High alpha means considering IoU more strongly over distance
-LOW_PROBABILITY_THRESHOLD = 0.001  # param for objectlab, lowest prediction threshold allowed when considering predicted boxes to identify badly located label boxes
-HIGH_PROBABILITY_THRESHOLD = 0.5  # param for objectlab, high probability threshold for considering predicted boxes to identify overlooked and swapped label boxes
-TEMPERATURE = 0.1  # param for objectlab, temperature of the softmin function used to pool the per-box quality scores for an error subtype across all boxes into a single subtype score for the image. With a lower temperature, softmin pooling acts more like minimum pooling, alternatively it acts more like mean pooling with high temperature.
+ALPHA = 0.9  # Param for objectlab, weight between IoU and distance when considering similarity matrix. High alpha means considering IoU more strongly over distance
+LOW_PROBABILITY_THRESHOLD = 0.001  # Param for get_label_quality_score, lowest predicted class probability threshold allowed when considering predicted boxes to identify badly located label boxes.
+HIGH_PROBABILITY_THRESHOLD = 0.5  # Param for objectlab, high probability threshold for considering predicted boxes to identify overlooked and swapped label boxes
+TEMPERATURE = 0.1  # Param for objectlab, temperature of the softmin function used to pool the per-box quality scores for an error subtype across all boxes into a single subtype score for the image. With a lower temperature, softmin pooling acts more like minimum pooling, alternatively it acts more like mean pooling with high temperature.
 
-OVERLOOKED_THRESHOLD = (
-    0.3  # threshold to determine max score for a box to be considered an overlooked issue
-)
-BADLOC_THRESHOLD = (
-    0.3  # threshold to determine max score for a box to be considered a bad location issue
-)
-SWAP_THRESHOLD = 0.3  # threshold to determine max score for a box to be considered a swap issue
+OVERLOOKED_THRESHOLD = 0.3  # Param for find_label_issues. Per-box label quality score threshold to determine max score for a box to be considered an overlooked issue
+BADLOC_THRESHOLD = 0.3  # Param for find_label_issues. Per-box label quality score threshold to determine max score for a box to be considered a bad location issue
+SWAP_THRESHOLD = 0.3  # Param for find_label_issues. Per-box label quality score threshold to determine max score for a box to be considered a swap issue
 
-CUSTOM_SCORE_WEIGHT_OVERLOOKED = 0.6  # weight to determine how much to value overlooked scores over other subtypes when deciding the overall label quality score for an image.
-CUSTOM_SCORE_WEIGHT_BADLOC = 0.2  # weight to determine how much to value badloc scores over other subtypes when deciding issues
-CUSTOM_SCORE_WEIGHT_SWAP = 0.2  # weight to determine how much to value swap scores over other subtypes when deciding issues
+CUSTOM_SCORE_WEIGHT_OVERLOOKED = 0.6  # Param for get_label_quality_score, weight to determine how much to value overlooked scores over other subtypes when deciding the overall label quality score for an image.
+CUSTOM_SCORE_WEIGHT_BADLOC = 0.2  # Param for get_label_quality_score, weight to determine how much to value badloc scores over other subtypes when deciding issues
+CUSTOM_SCORE_WEIGHT_SWAP = 0.2  # Param for get_label_quality_score, weight to determine how much to value swap scores over other subtypes when deciding issues
 
-MAX_CLASS_TO_SHOW = (
-    10  # number of classes to show in legend during the visualize method. Class > max is cut off.
-)
+MAX_CLASS_TO_SHOW = 10  # Nmber of classes to show in legend during the visualize method. Classes over max_class_to_show are cut off.

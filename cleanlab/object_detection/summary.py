@@ -15,7 +15,7 @@
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
 """Methods to display examples and their label issues in an object detection dataset."""
-from typing import List, Optional, Any, Dict, Tuple, Union, TYPE_CHECKING, TypeVar
+from typing import Optional, Any, Dict, Tuple, Union, TYPE_CHECKING, TypeVar
 
 import numpy as np
 

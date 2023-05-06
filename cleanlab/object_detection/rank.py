@@ -329,7 +329,6 @@ def _mod_coordinates(x: List[float]) -> Dict[str, Any]:
     return wd
 
 
-# distance/similarity helped functions
 def _get_overlap(bb1: List[float], bb2: List[float]) -> float:
     """Takes in two bounding boxes `bb1` and `bb2` and returns their IoU overlap."""
 
@@ -402,7 +401,7 @@ def _get_iou(bb1: Dict[str, Any], bb2: Dict[str, Any]) -> float:
 
 
 def _euc_dis(box1: List[float], box2: List[float]) -> float:
-    """Calculates the euclidian distance between `box1` and `box2`."""
+    """Calculates the Euclidean distance between `box1` and `box2`."""
     x1, y1 = (box1[0] + box1[2]) / 2, (box1[1] + box1[3]) / 2
     x2, y2 = (box2[0] + box2[2]) / 2, (box2[1] + box2[3]) / 2
     p1 = np.array([x1, y1])
@@ -806,7 +805,7 @@ def _get_subtype_label_quality_scores(
         Weight between IoU and distance when considering similarity matrix. High alpha means considering IoU more strongly over distance.
 
     low_probability_threshold:
-        The lowest prediction threshold allowed when considering predicted boxes to identify badly located label boxes.
+        The lowest predicted class probability threshold allowed when considering predicted boxes to identify badly located label boxes.
 
     high_probability_threshold:
         The high probability threshold for considering predicted boxes to identify overlooked and swapped label boxes.
