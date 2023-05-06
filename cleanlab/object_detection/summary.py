@@ -26,6 +26,8 @@ from cleanlab.object_detection.rank import (
     _get_prediction_type,
 )
 
+from cleanlab.internal.object_detection_utils import bbox_xyxy_to_xywh
+
 if TYPE_CHECKING:  # pragma: no cover
     from PIL.Image import Image as Image
 else:
@@ -197,7 +199,7 @@ def _draw_labels(ax, rect, label, edgecolor):
 
 def _draw_boxes(fig, ax, bboxes, labels, edgecolor="g", linestyle="-", linewidth=3):
     """Helper function to draw bboxes and labels on an axis."""
-    bboxes = [_bbox_xyxy_to_xywh(box) for box in bboxes]
+    bboxes = [bbox_xyxy_to_xywh(box) for box in bboxes]
 
     try:
         from matplotlib.patches import Rectangle
@@ -222,15 +224,3 @@ def _draw_boxes(fig, ax, bboxes, labels, edgecolor="g", linestyle="-", linewidth
             ax = _draw_labels(ax, rect, label, edgecolor)
 
     return fig, ax
-
-
-def _bbox_xyxy_to_xywh(bbox: List[float]) -> Optional[List[float]]:
-    """Converts bounding box coodrinate types from x1y1,x2y2 to x,y,w,h"""
-    if len(bbox) == 4:
-        x1, y1, x2, y2 = bbox
-        w = x2 - x1
-        h = y2 - y1
-        return [x1, y1, w, h]
-    else:
-        print("Wrong bbox shape", len(bbox))
-        return None

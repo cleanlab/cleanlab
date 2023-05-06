@@ -29,6 +29,9 @@ from cleanlab.internal.constants import (
     CUSTOM_SCORE_WEIGHT_BADLOC,
     CUSTOM_SCORE_WEIGHT_SWAP,
 )
+
+from cleanlab.internal.object_detection_utils import softmin1d
+
 from typing import List, Dict, Any, Optional, Tuple, TYPE_CHECKING, TypeVar
 import numpy as np
 import copy
@@ -417,21 +420,6 @@ def _get_dist_matrix(bb1_list: np.ndarray, bb2_list: np.ndarray) -> np.ndarray:
     return wd
 
 
-def _softmax(x: np.ndarray, temperature: float = 0.99, axis: int = 0) -> np.ndarray:
-    """Gets softmax of scores."""
-    x = x / temperature
-    x_max = np.amax(x, axis=axis, keepdims=True)
-    exp_x_shifted = np.exp(x - x_max)
-    return exp_x_shifted / np.sum(exp_x_shifted, axis=axis, keepdims=True)
-
-
-def _softmin1D(scores: np.ndarray, temperature: float = 0.99, axis: int = 0) -> float:
-    """Returns softmin of passed in scores."""
-    scores = np.array(scores)
-    softmax_scores = _softmax(-1 * scores, temperature, axis)
-    return np.dot(softmax_scores, scores)
-
-
 def _get_min_possible_similarity(
     alpha: float,
     predictions,
@@ -533,7 +521,7 @@ def _get_valid_score(scores_arr: np.ndarray, temperature: float) -> float:
     """Given scores array, returns valid score (softmin) or 1. Checks validity of score."""
     scores_arr = scores_arr[~np.isnan(scores_arr)]
     if len(scores_arr) > 0:
-        valid_score = _softmin1D(scores_arr, temperature=temperature)
+        valid_score = softmin1d(scores_arr, temperature=temperature)
     else:
         valid_score = 1.0
     return valid_score

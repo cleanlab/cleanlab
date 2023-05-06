@@ -1,9 +1,13 @@
+from cleanlab.internal.object_detection_utils import (
+    softmin1d,
+    softmax,
+    bbox_xyxy_to_xywh,
+)
+
 from cleanlab.object_detection.rank import (
     get_label_quality_scores,
     issues_from_scores,
     _get_min_pred_prob,
-    _softmax,
-    _softmin1D,
     _get_valid_score,
     _prune_by_threshold,
     _compute_label_quality_scores,
@@ -26,7 +30,6 @@ from cleanlab.object_detection.filter import (
 )
 
 from cleanlab.object_detection.summary import (
-    _bbox_xyxy_to_xywh,
     visualize,
 )
 from cleanlab.internal.constants import (
@@ -212,20 +215,20 @@ def test_get_valid_score():
     assert score_smaller < score_larger
 
 
-def test_softmin1D():
+def test_softmin1d():
     small_val = 0.004
-    assert _softmin1D([small_val]) == small_val
+    assert softmin1d([small_val]) == small_val
 
 
 def test_softmax():
     small_val = 0.004
-    assert _softmax(np.array([small_val])) == 1.0
+    assert softmax(np.array([small_val])) == 1.0
 
 
 def test_bbox_xyxy_to_xywh():
-    box_coords = _bbox_xyxy_to_xywh([5, 4, 2, 5, 0.86])
+    box_coords = bbox_xyxy_to_xywh([5, 4, 2, 5, 0.86])
     assert box_coords is None
-    box_coords = _bbox_xyxy_to_xywh([5, 4, 2, 5])
+    box_coords = bbox_xyxy_to_xywh([5, 4, 2, 5])
     assert box_coords is not None
 
 
