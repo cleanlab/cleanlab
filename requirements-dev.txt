@@ -18,3 +18,4 @@ torchvision
 typing-extensions>=4.1.1
 wget
 matplotlib
+pillow

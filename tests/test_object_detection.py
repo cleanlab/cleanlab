@@ -405,6 +405,8 @@ def test_visualize(monkeypatch, generate_single_image_file):
     img = Image.fromarray(arr, mode="RGB")
     visualize(img)
 
+    visualize(img, save_path="./fake_path.pdf")
+
     visualize(generate_single_image_file, label=labels[0], prediction=predictions[0])
     visualize(generate_single_image_file, label=None, prediction=predictions[0])
     visualize(generate_single_image_file, label=labels[0], prediction=None)

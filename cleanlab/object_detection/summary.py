@@ -15,9 +15,8 @@
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
 """Methods to display examples and their label issues in an object detection dataset."""
-from typing import List, Optional, Any, Dict, Tuple, Union
+from typing import List, Optional, Any, Dict, Tuple, Union, TYPE_CHECKING, TypeVar
 
-from PIL import Image
 import numpy as np
 
 from cleanlab.internal.constants import MAX_CLASS_TO_SHOW
@@ -27,9 +26,14 @@ from cleanlab.object_detection.rank import (
     _get_prediction_type,
 )
 
+if TYPE_CHECKING:  # pragma: no cover
+    from PIL.Image import Image as Image
+else:
+    Image = TypeVar("Image")
+
 
 def visualize(
-    image: Union[str, Image.Image],
+    image: Union[str, Image],
     *,
     label: Optional[Dict[str, Any]] = None,
     prediction: Optional[np.ndarray] = None,
