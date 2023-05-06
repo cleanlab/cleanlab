@@ -1,12 +1,10 @@
 from cleanlab.object_detection.rank import (
     get_label_quality_scores,
     issues_from_scores,
-    visualize,
     _get_min_pred_prob,
     _softmax,
     _softmin1D,
     _get_valid_score,
-    _bbox_xyxy_to_xywh,
     _prune_by_threshold,
     _compute_label_quality_scores,
     _separate_label,
@@ -27,6 +25,10 @@ from cleanlab.object_detection.filter import (
     _find_label_issues,
 )
 
+from cleanlab.object_detection.summary import (
+    _bbox_xyxy_to_xywh,
+    visualize,
+)
 from cleanlab.internal.constants import (
     ALPHA,
     LOW_PROBABILITY_THRESHOLD,
@@ -398,21 +400,34 @@ def test_bad_input_find_label_issues_internal():
 @pytest.mark.usefixtures("generate_single_image_file")
 def test_visualize(monkeypatch, generate_single_image_file):
     monkeypatch.setattr(plt, "show", lambda: None)
-    visualize(generate_single_image_file, labels[0], predictions[0])
+
+    arr = np.random.randint(low=0, high=256, size=(300, 300, 3), dtype=np.uint8)
+    img = Image.fromarray(arr, mode="RGB")
+    visualize(img)
+
+    visualize(generate_single_image_file, label=labels[0], prediction=predictions[0])
+    visualize(generate_single_image_file, label=None, prediction=predictions[0])
+    visualize(generate_single_image_file, label=labels[0], prediction=None)
+    visualize(generate_single_image_file, label=None, prediction=None)
+
+    visualize(generate_single_image_file, label=None, prediction=predictions[0], overlay=False)
+    visualize(generate_single_image_file, label=labels[0], prediction=None, overlay=False)
+    visualize(generate_single_image_file, label=None, prediction=None, overlay=False)
+
     visualize(
         generate_single_image_file,
-        labels[0],
-        predictions[0],
+        label=labels[0],
+        prediction=predictions[0],
         prediction_threshold=0.99,
-        given_label_overlay=False,
+        overlay=False,
     )
 
     visualize(
         generate_single_image_file,
-        labels[0],
-        predictions[0],
+        label=labels[0],
+        prediction=predictions[0],
         prediction_threshold=0.99,
-        class_labels={
+        class_names={
             "0": "car",
             "1": "chair",
             "2": "cup",
@@ -424,5 +439,5 @@ def test_visualize(monkeypatch, generate_single_image_file):
             "8": "8",
             "9": "9",
         },
-        given_label_overlay=False,
+        overlay=False,
     )

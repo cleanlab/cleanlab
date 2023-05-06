@@ -60,7 +60,7 @@ def find_label_issues(
     Parameters
     ----------
     labels:
-        Annotated boxes and class labels in the original dataset, which may contain some errors. 
+        Annotated boxes and class labels in the original dataset, which may contain some errors.
         This is a list of ``N`` dictionaries such that ``labels[i]`` contains the given labels for the `i`-th image in the following format:
         ``{'bboxes': np.ndarray((L,4)), 'labels': np.ndarray((L,)), 'image_name': str}`` where ``L`` is the number of annotated bounding boxes
         for the `i`-th image and ``bboxes[l]`` is a bounding box of coordinates in ``[x1,y1,x2,y2]`` format with given class label ``labels[j]``.
@@ -68,14 +68,14 @@ def find_label_issues(
 
        For more information on proper labels formatting, check out the [MMDetection library](https://mmdetection.readthedocs.io/en/dev-3.x/advanced_guides/customize_dataset.html)
 
-    predictions: 
+    predictions:
         Predictions output by a trained object detection model.
         For the most accurate results, predictions should be out-of-sample to avoid overfitting, eg. obtained via :ref:`cross-validation <pred_probs_cross_val>`.
         This is a list of ``N`` ``np.ndarray`` such that ``predictions[i]`` corresponds to the model prediction for the `i`-th image.
         For each possible class ``k`` in 0, 1, ..., K-1: ``predictions[i][k]`` is a ``np.ndarray`` of shape ``(M,5)``,
         where ``M`` is the number of predicted bounding boxes for class ``k``. Here the five columns correspond to ``[x1,y1,x2,y2,pred_prob]``,
         where ``[x1,y1,x2,y2]`` are coordinates of the bounding box predicted by the model
-        and ``pred_prob`` is the model's confidence in the predicted class label for this bounding box. 
+        and ``pred_prob`` is the model's confidence in the predicted class label for this bounding box.
 
         For more information on proper predictions formatting, check out the [MMDetection library](https://mmdetection.readthedocs.io/en/dev-3.x/advanced_guides/customize_dataset.html)
 

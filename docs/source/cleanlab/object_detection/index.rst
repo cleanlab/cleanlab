@@ -12,3 +12,5 @@ Methods to detect label issues in object detection datasets.
 .. toctree::
 
     rank
+    filter
+    summary

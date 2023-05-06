@@ -43,3 +43,7 @@ SWAP_THRESHOLD = 0.3  # threshold to determine max score for a box to be conside
 CUSTOM_SCORE_WEIGHT_OVERLOOKED = 0.6  # weight to determine how much to value overlooked scores over other subtypes when deciding the overall label quality score for an image.
 CUSTOM_SCORE_WEIGHT_BADLOC = 0.2  # weight to determine how much to value badloc scores over other subtypes when deciding issues
 CUSTOM_SCORE_WEIGHT_SWAP = 0.2  # weight to determine how much to value swap scores over other subtypes when deciding issues
+
+MAX_CLASS_TO_SHOW = (
+    10  # number of classes to show in legend during the visualize method. Class > max is cut off.
+)
