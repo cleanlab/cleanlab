@@ -115,7 +115,8 @@ def get_label_quality_scores(
 
 
 def issues_from_scores(label_quality_scores: np.ndarray, *, threshold: float = 0.1) -> np.ndarray:
-    """Returns a list of indices of images with issues sorted from most to least severe cut off at threshold.
+    """Apply thresholding to convert label quality scores to  
+    Returns a list of indices of images with issues sorted from most to least severe cut off at threshold.
     Useful to set an acceptable threshold for if an example should be considered an issue or not.
 
     Parameters
@@ -276,10 +277,8 @@ def visualize(
     class_labels: Optional[Dict[Any, Any]] = None,
     figsize: Optional[Tuple[int, int]] = None,
 ):
-    """Visualize bounding box labels (given labels) and model predictions for an image. The given labels
-    are shown with red while the predictions are shown in blue.
-
-    A single image is visualized with ``L`` annotated bounding boxes, ``M`` predicted bounding boxes and ``K`` total classes.
+    """Display the annotated bounding boxes (given labels) and predicted bounding boxes (model predictions) for a particular image.
+    Given labels are shown in red, model predictions in blue.
 
 
     Parameters
@@ -297,18 +296,19 @@ def visualize(
         ``[x,y,x,y]`` are the bounding box coordinates predicted by the model and ``pred_prob`` is the model's confidence in ``predictions[i]``.
 
     prediction_threshold:
-        Minimum `pred_probs` value of a bounding box output by the model. All bounding boxes with `pred_probs` below this threshold are
-        omitted from the visualization.
+        All model-predicted bounding boxes with confidence (`pred_prob`)
+        below this threshold are omitted from the visualization.
 
     given_label_overlay: bool
-        If true, a single image with overlaid given labels and predictions is shown. If false, two images side
-        by side are shown instead with the left image being the prediction and right being the given label.
+        If True, display a single image with given labels and predictions overlaid.
+        If False, display two images (side by side) with the left image showing  the model predictions and the right image showing the given label.
 
     class_labels:
-        Optional dictionary mapping one-hot-encoded class labels back to their original class names in the format ``{"one-hot-label": "original-class-name"}``.
+        Optional dictionary mapping one-hot-encoded class labels back to their original class names in the format ``{"integer-label": "original-class-name"}``.
 
     figsize:
-        Optional figuresize for plotting the visualizations. Corresponds to ``matplotlib.figure.figsize``.
+        Optional figure size for plotting the image.
+        Corresponds to ``matplotlib.figure.figsize``.
     """
 
     prediction_type = _get_prediction_type(prediction)
@@ -497,7 +497,6 @@ def _bbox_xyxy_to_xywh(bbox: List[float]) -> Optional[List[float]]:
         return None
 
 
-# ============= Simple label subtype algorithm ============
 def _mod_coordinates(x: List[float]) -> Dict[str, Any]:
     """Takes is a list of xyxy coordinates and returns them in dictionary format."""
 

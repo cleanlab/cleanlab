@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
-"""Methods to find label issues in an object detection dataset (object detection data), where each annotated bounding box in an image receives its own class label."""
+"""Methods to find label issues in an object detection dataset, where each annotated bounding box in an image receives its own class label."""
 
 from typing import List, Any, Dict
 import numpy as np

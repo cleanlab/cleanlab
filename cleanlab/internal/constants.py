@@ -30,7 +30,7 @@ MAX_ALLOWED_BOX_PRUNE = 0.97  # This is max allowed percent of prune for boxes b
 ALPHA = 0.9  # param for objectlab, weight between IoU and distance when considering similarity matrix. High alpha means considering IoU more strongly over distance
 LOW_PROBABILITY_THRESHOLD = 0.001  # param for objectlab, lowest prediction threshold allowed when considering predicted boxes to identify badly located label boxes
 HIGH_PROBABILITY_THRESHOLD = 0.5  # param for objectlab, high probability threshold for considering predicted boxes to identify overlooked and swapped label boxes
-TEMPERATURE = 0.1  # param for objectlab, temperature of the softmin function where a lower score suggests softmin acts closer to min
+TEMPERATURE = 0.1  # param for objectlab, temperature of the softmin function used to pool the per-box quality scores for an error subtype across all boxes into a single subtype score for the image. With a lower temperature, softmin pooling acts more like minimum pooling, alternatively it acts more like mean pooling with high temperature.
 
 OVERLOOKED_THRESHOLD = (
     0.3  # threshold to determine max score for a box to be considered an overlooked issue
@@ -40,6 +40,6 @@ BADLOC_THRESHOLD = (
 )
 SWAP_THRESHOLD = 0.3  # threshold to determine max score for a box to be considered a swap issue
 
-CUSTOM_SCORE_WEIGHT_OVERLOOKED = 0.6  # weight to determine how much to value overlooked scores over other subtypes when deciding issues
+CUSTOM_SCORE_WEIGHT_OVERLOOKED = 0.6  # weight to determine how much to value overlooked scores over other subtypes when deciding the overall label quality score for an image.
 CUSTOM_SCORE_WEIGHT_BADLOC = 0.2  # weight to determine how much to value badloc scores over other subtypes when deciding issues
 CUSTOM_SCORE_WEIGHT_SWAP = 0.2  # weight to determine how much to value swap scores over other subtypes when deciding issues
