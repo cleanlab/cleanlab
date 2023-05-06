@@ -186,9 +186,9 @@ def _draw_labels(ax, rect, label, edgecolor):
     c_ytop = ry + 12
 
     if edgecolor == "r":
-        cx, cy = c_xright, c_ytop
-    else:  # edgecolor == b
         cx, cy = c_xleft, c_ytop
+    else:  # edgecolor == b
+        cx, cy = c_xright, c_ytop
 
     l = ax.annotate(
         label, (cx, cy), fontsize=8, fontweight="bold", color="white", ha="center", va="center"
