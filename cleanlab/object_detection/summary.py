@@ -37,6 +37,7 @@ def visualize(
     overlay: bool = True,
     class_names: Optional[Dict[Any, Any]] = None,
     figsize: Optional[Tuple[int, int]] = None,
+    save_path: Optional[str] = None,
 ) -> None:
     """Display the annotated bounding boxes (given labels) and predicted bounding boxes (model predictions) for a particular image.
     Given labels are shown in red, model predictions in blue.
@@ -66,6 +67,9 @@ def visualize(
 
     class_names:
         Optional dictionary mapping one-hot-encoded class labels back to their original class names in the format ``{"integer-label": "original-class-name"}``.
+
+    save_path:
+        Path to save figure at. If a path is provided, the figure is saved instead of displayed.
 
     figsize:
         Optional figure size for plotting the image.
@@ -126,7 +130,11 @@ def visualize(
 
     if label or prediction is not None:
         _ = _plot_legend(class_names, label, prediction)
-    plt.show()
+
+    if save_path is not None:
+        plt.savefig(save_path)
+    else:
+        plt.show()
 
 
 def _plot_legend(class_names, label, prediction):
@@ -170,7 +178,6 @@ def _draw_labels(ax, rect, label, edgecolor):
     c_xleft = rx + 10
     c_xright = rx + rect.get_width() - 10
     c_ytop = ry + 12
-    c_ybottom = ry + rect.get_height() - 10
 
     if edgecolor == "r":
         cx, cy = c_xright, c_ytop
