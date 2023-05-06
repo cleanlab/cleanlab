@@ -15,7 +15,7 @@
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
 """Helper methods used internally for computing label quality scores."""
-
+import warnings
 import numpy as np
 from typing import Optional
 
@@ -81,7 +81,7 @@ def _subtract_confident_thresholds(
 
 
 def get_normalized_entropy(
-    pred_probs: np.ndarray, min_allowed_prob: float = CLIPPING_LOWER_BOUND
+    pred_probs: np.ndarray, min_allowed_prob: Optional[float] = None
 ) -> np.ndarray:
     """Return the normalized entropy of pred_probs.
 
@@ -95,21 +95,32 @@ def get_normalized_entropy(
 
     Parameters
     ----------
-    pred_probs:
+    pred_probs : np.ndarray (shape (N, K))
       Each row of this matrix corresponds to an example x and contains the model-predicted
       probabilities that x belongs to each possible class: P(label=k|x)
 
-    min_allowed_prob:
-      Minimum allowed probability value. Entries of `pred_probs` below this value will be clipped to this value.
-      Ensures entropy remains well-behaved even when `pred_probs` contains zeros.
+    min_allowed_prob : float, optional
+      Minimum allowed probability value. If not `None` (default),
+      entries of `pred_probs` below this value will be clipped to this value.
+      The Entropy is well-behaved even if `pred_probs` contains zeros,
+      this argument deprecated and will be removed.
 
     Returns
     -------
-    entropy:
+    entropy : np.ndarray (shape (N, ))
       Each element is the normalized entropy of the corresponding row of ``pred_probs``.
     """
     num_classes = pred_probs.shape[1]
 
+    if min_allowed_prob is not None:
+        warnings.warn(
+            "Using `min_allowed_prob` is not necessary anymore and will be removed.",
+            DeprecationWarning,
+        )
+        pred_probs = np.clip(pred_probs, a_min=min_allowed_prob, a_max=None)
+
+    finite = pred_probs != 0
+    entropy = -np.sum(pred_probs * np.log(pred_probs, where=finite), axis=1, where=finite)
     # Note that dividing by log(num_classes) changes the base of the log which rescales entropy to 0-1 range
-    clipped_pred_probs = np.clip(pred_probs, a_min=min_allowed_prob, a_max=None)
-    return -np.sum(pred_probs * np.log(clipped_pred_probs), axis=1) / np.log(num_classes)
+    entropy /= np.log(num_classes)
+    return entropy

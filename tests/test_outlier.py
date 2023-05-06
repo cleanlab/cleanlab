@@ -109,6 +109,19 @@ def make_data(
 data = make_data()
 
 
+def test_normalized_entropy():
+    """Check that normalized entropy is well well-behaved and in [0, 1]."""
+    # test tiny numbers
+    for dtype in [np.float16, np.float32, np.float64]:
+        info = np.finfo(dtype)
+        for val in [info.eps, info.smallest_normal, info.smallest_subnormal, 0]:
+            entropy = get_normalized_entropy(np.array([[1.0, val]], dtype=dtype))
+            assert 0.0 <= entropy <= 1.0
+    # test multiple _assert_valid_inputs
+    entropy = get_normalized_entropy(np.array([[0.0, 1.0], [0.5, 0.5]]))
+    assert all((0.0 <= entropy) & (entropy <= 1.0))
+
+
 def test_class_wrong_info_assert_valid_inputs():
     features = data["X_train"]
     pred_probs = data["pred_probs"]
