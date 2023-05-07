@@ -87,6 +87,9 @@ def get_label_quality_scores(
       Must be a factor divisible by both the labels and the pred_probs. Note that larger factors result in a linear 
       decrease in performance
 
+      temperature : float, optional
+        Temperature for softmin. Default ``0.1``
+
 
 
     Returns

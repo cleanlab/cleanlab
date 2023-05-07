@@ -24,7 +24,6 @@ import numpy as np
 from typing import Optional, List, Any, Tuple
 
 def find_label_issues(
-def find_label_issues(
     labels: np.ndarray,
     pred_probs: np.ndarray,
     *,
@@ -33,7 +32,7 @@ def find_label_issues(
     n_jobs: Optional[int] = 1,
     verbose: bool = True,
     **kwargs) -> np.ndarray:
-
+    """
     Returns a boolean mask for the entire dataset, per pixel where ``True`` represents
     an example identified with a label issue and ``False`` represents an example of a pixel correctly labeled.
 
@@ -71,20 +70,20 @@ def find_label_issues(
       If `n_jobs=None`, will use either the number of: physical cores if psutil is installed, or logical cores otherwise.
     
     verbose : bool, optional
-      Whether to suppress print statements or not.
+      Set to ``False`` to suppress all print statements.
 
-    Set to ``False`` to suppress all print statements.
-        scores_only: optional
-        Set to True to return a score for each image. Meant for internal call in 
-        ``cleanlab.semantic_segmentation.rank.get_label_quality_scores``
+    **kwargs: 
+      scores_only: optional
+      Set to True to return a score for each image. Meant for internal call in 
+      ``cleanlab.semantic_segmentation.rank.get_label_quality_scores``
 
     
     Returns
     -------
     label_issues : np.ndarray
-      Returns a boolean **mask** for the entire dataset
-      where ``True`` represents a pixel label issue and ``False`` represents an example that is
       Returns a boolean **mask** for the entire dataset of length `N`
+      where ``True`` represents a pixel label issue and ``False`` represents an example that is correctly labeled.
+      
 
     """
     scores_only = kwargs.get("scores_only", False)
@@ -122,9 +121,10 @@ def find_label_issues(
 
         return small_labels, renorm_small_pred_probs
     
-    def flatten_and_preprocess_masks(labels: np.ndarray, pred_probs: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
-        _, num_classes, _, _ = pred_probs.shape
+
     def flatten_and_preprocess_masks(labels: np.ndarray, pred_probs: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+        _, num_classes, _, _ = pred_probs.shape
+        labels_flat = labels.flatten().astype(int)
         pred_probs_flat = np.moveaxis(pred_probs, 0, 1).reshape(num_classes, -1)
 
         return labels_flat, pred_probs_flat.T
