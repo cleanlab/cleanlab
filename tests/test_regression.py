@@ -7,7 +7,7 @@ labels = np.array([1, 2, 3, 4])
 predictions = np.array([2, 2, 5, 4.1])
 
 # Used for characterization tests
-expected_score_outre = np.array([0.00323821, 0.33692597, 0.00191686, 0.33692597])
+expected_score_outre = np.array([0.04536998, 0.38809391, 0.03983538, 0.38809391])
 expected_score_residual = np.array([0.36787944, 1.0, 0.13533528, 0.90483742])
 expected_scores = {"outre": expected_score_outre, "residual": expected_score_residual}
 
@@ -89,13 +89,13 @@ def test_method_pass_get_label_quality_scores(method):
     assert isinstance(scores, np.ndarray)
 
 
-# @pytest.mark.parametrize(
-#     "method",
-#     [
-#         "residual",
-#         "outre",
-#     ],
-# )
-# def test_expected_scores(method):
-#     scores = rank.get_label_quality_scores(labels=labels, predictions=predictions, method=method)
-#     assert np.allclose(scores, expected_scores[method], atol=1e-08)
+@pytest.mark.parametrize(
+    "method",
+    [
+        "residual",
+        "outre",
+    ],
+)
+def test_expected_scores(method):
+    scores = rank.get_label_quality_scores(labels=labels, predictions=predictions, method=method)
+    assert np.allclose(scores, expected_scores[method], atol=1e-08)
