@@ -36,6 +36,11 @@ def find_label_issues(
     Returns a boolean mask for the entire dataset, per pixel where ``True`` represents
     an example identified with a label issue and ``False`` represents an example of a pixel correctly labeled.
 
+    N - Number of images in the dataset
+    K - Number of classes in the dataset
+    H - Height of each image
+    W - Width of each image
+
     Tip: if you encounter the error "pred_probs is not defined", try setting
     ``n_jobs=1``.
 
@@ -43,8 +48,7 @@ def find_label_issues(
     ----------
     labels : np.ndarray 
       A discrete array of shape ``(N,H,W,)`` of noisy labels for a classification dataset, i.e. some labels may be erroneous.
-      *Format requirements*: for dataset with K classes, each pixel must be integer in 0, 1, ..., K-1.
-      For a standard (multi-class) classification dataset where each pixel is labeled with one class
+      *Format requirements*: for a dataset with K classes, each pixel must be integer in 0, 1, ..., K-1.
       
     Tip: If your labels are one hot encoded you can `np.argmax(labels_one_hot,axis=1)` assuming that `labels_one_hot` is of dimension (N,K,H,W)
     before entering in the function
@@ -81,7 +85,7 @@ def find_label_issues(
     Returns
     -------
     label_issues : np.ndarray
-      Returns a boolean **mask** for the entire dataset of length `N`
+      Returns a boolean **mask** for the entire dataset of length `(N,H,W)`
       where ``True`` represents a pixel label issue and ``False`` represents an example that is correctly labeled.
       
 
@@ -104,9 +108,9 @@ def find_label_issues(
         #Check downsample
         if height%downsample!=0 or width%downsample!=0:
             raise ValueError(f"Height {height} and width {width} not divisible by downsample value of {downsample}")
-
+        return None
     
-    def downsample_arrays(labels: np.ndarray, pred_probs: np.ndarray, factor: int = 1) -> tuple[np.ndarray, np.ndarray]:
+    def downsample_arrays(labels: np.ndarray, pred_probs: np.ndarray, factor: int = 1) -> Tuple[np.ndarray, np.ndarray]:
         if factor == 1:
             return labels, pred_probs
         num_image, num_classes, h, w = pred_probs.shape
@@ -148,24 +152,24 @@ def find_label_issues(
     #Finding the right indicies
     relative_index = ranked_label_issues % (h*w)
     pixel_coor_i,pixel_coor_j  = np.unravel_index(relative_index, (h,w))
-    image_num = ranked_label_issues//(h*w)
+    image_number = ranked_label_issues//(h*w)
     
     if scores_only:
-        return 1 - np.bincount(image_num)/(h*w)
+        return 1 - np.bincount(image_number)/(h*w)
 
     #Upsample carefully maintaining indicies
-    img = np.full((num_image, h, w), False)
+    image = np.full((num_image, h, w), False)
 
-    for num,ii,jj in zip(image_num,pixel_coor_i, pixel_coor_j):
+    for num,ii,jj in zip(image_number,pixel_coor_i, pixel_coor_j):
         #only want to call it an error if pred_probs doesnt match the label at that pixel
-        img[num,ii,jj]=True 
+        image[num,ii,jj]=True 
     
     if downsample==1:
-        return img
+        return image
     else:
-        img = img.repeat(downsample, axis = 1).repeat(downsample, axis = 2)
+        image = image.repeat(downsample, axis = 1).repeat(downsample, axis = 2)
         
-        for num, ii, jj in zip(image_num, pixel_coor_i, pixel_coor_j):
+        for num, ii, jj in zip(image_number, pixel_coor_i, pixel_coor_j):
             # Upsample the coordinates
             upsampled_ii = ii * downsample
             upsampled_jj = jj * downsample
@@ -174,7 +178,7 @@ def find_label_issues(
                 for col in range(upsampled_jj, upsampled_jj + downsample):
                     # Check if the predicted class (argmax) at the identified issue location matches the true label
                     if np.argmax(pred_probs[num, :, row, col]) == labels[num, row, col]:
-                        # If they match, set the corresponding entry in the img array to False
-                        img[num, row, col] = False
+                        # If they match, set the corresponding entry in the image array to False
+                        image[num, row, col] = False
 
-        return img
+        return image

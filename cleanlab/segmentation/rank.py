@@ -39,30 +39,24 @@ def get_label_quality_scores(
 ) -> Tuple[np.ndarray,np.ndarray]:
     """Returns a label quality score for each image.
 
-    This is a function to compute label quality scores for standard (multi-class) classification datasets,
+    This is a function to compute label quality scores for semantic segmentation datasets,
     where lower scores indicate labels less likely to be correct.
 
-    Score is between 0 and 1.
-
-    1 - clean label (given label is likely correct).
-    0 - dirty label (given label is likely incorrect).
+    N - Number of images in the dataset
+    K - Number of classes in the dataset
+    H - Height of each image
+    W - Width of each image
 
     Parameters
     ----------
     labels : np.ndarray 
-      A discrete array of noisy labels for a classification dataset, i.e. some labels may be erroneous.
-      *Format requirements*: for dataset with K classes, each pixel must be integer in 0, 1, ..., K-1.
-      For a standard (multi-class) classification dataset where each example is labeled with one class,
-      `labels` should be 3-D array of shape ``(N,H,W,)``. 
-      
-    Tip: If your labels are one hot encoded you can `np.argmax(labels_one_hot,axis=1)` assuming that `labels_one_hot` is of dimension (N,K,H,W)
-    before entering in the function
+      A discrete array of noisy labels for a segmantic segmentation dataset, in the shape``(N,H,W,)``. 
+      where each pixel must be integer in 0, 1, ..., K-1.
 
     pred_probs : np.ndarray
       An array of shape ``(N,K,H,W,)`` of model-predicted class probabilities,
-      ``P(label=k|x)``. Each pixel contains an array of K classes, where for 
-      an example `x` the array at each pixel contains the model-predicted probabilities 
-      that `x` belongs to each of the K classes.
+
+    Refer to documentation for this argument in :py:func:find_label_issues <cleanlab.segemntation.filter.find_label_issues>
       
     method : {"softmin", "num_pixel_issues"}, default="softmin"
       Label quality scoring method.
