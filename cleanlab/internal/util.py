@@ -1,4 +1,4 @@
-# Copyright (C) 2017-2022  Cleanlab Inc.
+# Copyright (C) 2017-2023  Cleanlab Inc.
 # This file is part of cleanlab.
 #
 # cleanlab is free software: you can redistribute it and/or modify
@@ -25,9 +25,7 @@ from typing import Union, Tuple
 
 from cleanlab.typing import DatasetLike, LabelLike
 from cleanlab.internal.validation import labels_to_array
-
-
-TINY_VALUE = 1e-100
+from cleanlab.internal.constants import FLOATING_POINT_COMPARISON, TINY_VALUE
 
 
 def remove_noise_from_class(noise_matrix, class_without_noise) -> np.ndarray:
@@ -234,7 +232,7 @@ def round_preserving_sum(iterable) -> np.ndarray:
     orig_sum = np.sum(floats).round()
     int_sum = np.sum(ints).round()
     # Adjust the integers so that they sum to orig_sum
-    while abs(int_sum - orig_sum) > 1e-6:
+    while abs(int_sum - orig_sum) > FLOATING_POINT_COMPARISON:
         diff = np.round(orig_sum - int_sum)
         increment = -1 if int(diff < 0.0) else 1
         changes = min(int(abs(diff)), len(iterable))

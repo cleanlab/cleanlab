@@ -1,4 +1,4 @@
-# Copyright (C) 2017-2022  Cleanlab Inc.
+# Copyright (C) 2017-2023  Cleanlab Inc.
 # This file is part of cleanlab.
 #
 # cleanlab is free software: you can redistribute it and/or modify
@@ -25,6 +25,7 @@ indices of individual datapoints based on their quality.
 
 Note: multi-label classification is not supported by most methods in this module,
 each example must be labeled as belonging to a single class, e.g. format: ``labels = np.ndarray([1,0,2,1,1,0...])``.
+For multi-label classification, instead see :py:func:`multilabel_classification.get_label_quality_scores <cleanlab.multilabel_classification.get_label_quality_scores>`.
 
 Note: Label quality scores are most accurate when they are computed based on out-of-sample `pred_probs` from your model.
 To obtain out-of-sample predicted probabilities for every datapoint in your dataset, you can use :ref:`cross-validation <pred_probs_cross_val>`. This is encouraged to get better results.
@@ -36,6 +37,10 @@ from typing import List, Optional
 import warnings
 
 from cleanlab.internal.validation import assert_valid_inputs
+from cleanlab.internal.constants import (
+    CLIPPING_LOWER_BOUND,
+)  # lower-bound clipping threshold to prevents 0 in logs and division
+
 from cleanlab.internal.label_quality_utils import (
     _subtract_confident_thresholds,
     get_normalized_entropy,
@@ -119,15 +124,28 @@ def get_label_quality_scores(
     assert_valid_inputs(
         X=None, y=labels, pred_probs=pred_probs, multi_label=False, allow_one_class=True
     )
+    return _compute_label_quality_scores(
+        labels=labels, pred_probs=pred_probs, method=method, adjust_pred_probs=adjust_pred_probs
+    )
 
-    # Available scoring functions to choose from
+
+def _compute_label_quality_scores(
+    labels: np.ndarray,
+    pred_probs: np.ndarray,
+    *,
+    method: str = "self_confidence",
+    adjust_pred_probs: bool = False,
+    confident_thresholds: Optional[np.ndarray] = None,
+) -> np.ndarray:
+    """Internal implementation of get_label_quality_scores that assumes inputs
+    have already been checked and are valid. This speeds things up.
+    Can also take in pre-computed confident_thresholds to further accelerate things.
+    """
     scoring_funcs = {
         "self_confidence": get_self_confidence_for_each_label,
         "normalized_margin": get_normalized_margin_for_each_label,
         "confidence_weighted_entropy": get_confidence_weighted_entropy_for_each_label,
     }
-
-    # Select scoring function
     try:
         scoring_func = scoring_funcs[method]
     except KeyError:
@@ -137,22 +155,15 @@ def get_label_quality_scores(
             Please choose a valid rank_by: self_confidence, normalized_margin, confidence_weighted_entropy
             """
         )
-
-    # Adjust predicted probabilities
     if adjust_pred_probs:
-
-        # Check if adjust_pred_probs is supported for the chosen method
         if method == "confidence_weighted_entropy":
             raise ValueError(f"adjust_pred_probs is not currently supported for {method}.")
+        pred_probs = _subtract_confident_thresholds(
+            labels=labels, pred_probs=pred_probs, confident_thresholds=confident_thresholds
+        )
 
-        pred_probs = _subtract_confident_thresholds(labels, pred_probs)
-
-    # Pass keyword arguments for scoring function
-    input = {"labels": labels, "pred_probs": pred_probs}
-
-    # Calculate scores
-    label_quality_scores = scoring_func(**input)
-
+    scoring_inputs = {"labels": labels, "pred_probs": pred_probs}
+    label_quality_scores = scoring_func(**scoring_inputs)
     return label_quality_scores
 
 
@@ -229,8 +240,6 @@ def get_label_quality_ensemble_scores(
     get_label_quality_scores
     """
 
-    MIN_ALLOWED = 1e-6  # lower-bound clipping threshold to prevents 0 in logs and division
-
     # Check pred_probs_list for errors
     assert isinstance(
         pred_probs_list, list
@@ -259,20 +268,18 @@ def get_label_quality_ensemble_scores(
 
     # This weighting scheme performs search of t in log_loss_search_T_values for "best" log loss
     if weight_ensemble_members_by == "log_loss_search":
-
         # Initialize variables for log loss search
         pred_probs_avg_log_loss_weighted = None
         neg_log_loss_weights = None
         best_eval_log_loss = float("inf")
 
         for t in log_loss_search_T_values:
-
             neg_log_loss_list = []
 
             # pred_probs for each model
             for pred_probs in pred_probs_list:
                 pred_probs_clipped = np.clip(
-                    pred_probs, a_min=MIN_ALLOWED, a_max=None
+                    pred_probs, a_min=CLIPPING_LOWER_BOUND, a_max=None
                 )  # lower-bound clipping threshold to prevents 0 in logs when calculating log loss
                 pred_probs_clipped /= pred_probs_clipped.sum(axis=1)[:, np.newaxis]  # renormalize
 
@@ -299,7 +306,6 @@ def get_label_quality_ensemble_scores(
     scores_list = []
     accuracy_list = []
     for pred_probs in pred_probs_list:
-
         # Calculate scores and accuracy
         scores = get_label_quality_scores(
             labels=labels,
@@ -349,7 +355,6 @@ def get_label_quality_ensemble_scores(
         label_quality_scores = (scores_ensemble * weights).sum(axis=1)
 
     elif weight_ensemble_members_by == "custom":
-
         # Check custom_weights for errors
         assert (
             custom_weights is not None
@@ -499,9 +504,9 @@ def get_self_confidence_for_each_label(
       Lower scores indicate more likely mislabeled examples.
     """
 
-    # np.mean is used so that this works for multi-labels (list of lists)
-    label_quality_scores = np.array([np.mean(pred_probs[i, l]) for i, l in enumerate(labels)])
-    return label_quality_scores
+    # To make this work for multi-label (but it will slow down runtime), replace:
+    # pred_probs[i, l] -> np.mean(pred_probs[i, l])
+    return np.array([pred_probs[i, l] for i, l in enumerate(labels)])
 
 
 def get_normalized_margin_for_each_label(
@@ -571,15 +576,14 @@ def get_confidence_weighted_entropy_for_each_label(
       Lower scores indicate more likely mislabeled examples.
     """
 
-    MIN_ALLOWED = 1e-6  # lower-bound clipping threshold to prevents 0 in logs and division
     self_confidence = get_self_confidence_for_each_label(labels, pred_probs)
-    self_confidence = np.clip(self_confidence, a_min=MIN_ALLOWED, a_max=None)
+    self_confidence = np.clip(self_confidence, a_min=CLIPPING_LOWER_BOUND, a_max=None)
 
     # Divide entropy by self confidence
     label_quality_scores = get_normalized_entropy(pred_probs) / self_confidence
 
     # Rescale
-    clipped_scores = np.clip(label_quality_scores, a_min=MIN_ALLOWED, a_max=None)
+    clipped_scores = np.clip(label_quality_scores, a_min=CLIPPING_LOWER_BOUND, a_max=None)
     label_quality_scores = np.log(label_quality_scores + 1) / clipped_scores
 
     return label_quality_scores

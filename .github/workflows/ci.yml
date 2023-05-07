@@ -30,6 +30,10 @@ jobs:
         run: python3 -c "import cleanlab"
       - name: Install development dependencies
         run: pip install -r requirements-dev.txt
+      - name: Install fasttext for non-Windows machines
+        if: matrix.os != 'windows-latest'
+        run: |
+          pip install fasttext
       - name: Overwrite tensorflow version on Windows
         if: matrix.os == 'windows-latest'
         run: |
@@ -37,7 +41,9 @@ jobs:
           pip install tensorflow-cpu
       - name: Test with coverage
         run: pytest --verbose --cov=cleanlab/ --cov-config .coveragerc --cov-report=xml
-      - uses: codecov/codecov-action@v2
+        env:
+          TEST_FASTTEXT: true
+      - uses: codecov/codecov-action@v3
   typecheck:
     name: Type check
     runs-on: ubuntu-latest

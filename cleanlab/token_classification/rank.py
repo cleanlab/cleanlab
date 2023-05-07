@@ -1,4 +1,4 @@
-# Copyright (C) 2017-2022  Cleanlab Inc.
+# Copyright (C) 2017-2023  Cleanlab Inc.
 # This file is part of cleanlab.
 #
 # cleanlab is free software: you can redistribute it and/or modify
@@ -154,9 +154,15 @@ def issues_from_scores(
     Converts scores output by :py:func:`token_classification.rank.get_label_quality_scores <cleanlab.token_classification.rank.get_label_quality_scores>`
     to a list of issues of similar format as output by :py:func:`token_classification.filter.find_label_issues <cleanlab.token_classification.filter.find_label_issues>`.
 
-    Only considers as issues those tokens with label quality score lower than `threshold`.
+    Issues are sorted by label quality score, from most to least severe.
 
-    Issues are sorted by label quality score, from most severe to least.
+    Only considers as issues those tokens with label quality score lower than `threshold`,
+    so this parameter determines the number of issues that are returned.
+    This method is intended for converting the most severely mislabeled examples to a format compatible with
+    ``summary`` methods like :py:func:`token_classification.summary.display_issues <cleanlab.token_classification.summary.display_issues>`.
+    This method does not estimate the number of label errors since the `threshold` is arbitrary,
+    for that instead use :py:func:`token_classification.filter.find_label_issues <cleanlab.token_classification.filter.find_label_issues>`,
+    which estimates the label errors via Confident Learning rather than score thresholding.
 
     Parameters
     ----------
@@ -275,8 +281,10 @@ def _softmin_sentence_score(
         return np.array([np.mean(scores) for scores in token_scores])
 
     def softmax(scores: np.ndarray) -> np.ndarray:
-        exp_scores = np.exp(scores / temperature)
-        return exp_scores / np.sum(exp_scores)
+        scores = scores / temperature
+        scores_max = np.amax(scores, axis=0, keepdims=True)
+        exp_scores_shifted = np.exp(scores - scores_max)
+        return exp_scores_shifted / np.sum(exp_scores_shifted, axis=0, keepdims=True)
 
     def fun(scores: np.ndarray) -> float:
         return np.dot(scores, softmax(1 - np.array(scores)))

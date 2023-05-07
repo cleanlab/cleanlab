@@ -1,4 +1,4 @@
-# Copyright (C) 2017-2022  Cleanlab Inc.
+# Copyright (C) 2017-2023  Cleanlab Inc.
 # This file is part of cleanlab.
 #
 # cleanlab is free software: you can redistribute it and/or modify
@@ -14,7 +14,6 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
-
 """
 Provides dataset-level and class-level overviews of issues in your classification dataset.
 If your task allows you to modify the classes in your dataset, this module can help you determine
@@ -22,6 +21,7 @@ which classes to remove (see :py:func:`rank_classes_by_label_quality <cleanlab.d
 and which classes to merge (see :py:func:`find_overlapping_classes <cleanlab.dataset.find_overlapping_classes>`).
 """
 
+from typing import Optional, cast
 import numpy as np
 import pandas as pd
 from cleanlab.count import estimate_joint
@@ -53,6 +53,16 @@ def rank_classes_by_label_quality(
 
     Only provide **exactly one of the above input options**, do not provide a combination.
 
+    Examples
+    --------
+    >>> from cleanlab.dataset import rank_classes_by_label_quality
+    >>> from sklearn.linear_model import LogisticRegression
+    >>> from sklearn.model_selection import cross_val_predict
+    >>> data, labels = get_data_labels_from_dataset()
+    >>> yourFavoriteModel = LogisticRegression()
+    >>> pred_probs = cross_val_predict(yourFavoriteModel, data, labels, cv=3, method="predict_proba")
+    >>> df = rank_classes_by_label_quality(labels=labels, pred_probs=pred_probs)
+
     **Parameters**: For parameter info, see the docstring of :py:func:`find_overlapping_classes <cleanlab.dataset.find_overlapping_classes>`.
 
     Returns
@@ -75,13 +85,16 @@ def rank_classes_by_label_quality(
 
         By default, the DataFrame is ordered by "Label Quality Score", ascending.
     """
+    if multi_label:
+        raise ValueError(
+            "For multilabel data, please instead call:  multilabel_classification.dataset.overall_multilabel_health_score()"
+        )
 
     if joint is None:
         joint = estimate_joint(
             labels=labels,
             pred_probs=pred_probs,
             confident_joint=confident_joint,
-            multi_label=multi_label,
         )
     if num_examples is None:
         num_examples = _get_num_examples(labels=labels)
@@ -137,6 +150,16 @@ def find_overlapping_classes(
     This method uses the joint distribution of noisy and true labels to compute ontological
     issues via the approach published in `Northcutt et al.,
     2021 <https://jair.org/index.php/jair/article/view/12125>`_.
+
+    Examples
+    --------
+    >>> from cleanlab.dataset import find_overlapping_classes
+    >>> from sklearn.linear_model import LogisticRegression
+    >>> from sklearn.model_selection import cross_val_predict
+    >>> data, labels = get_data_labels_from_dataset()
+    >>> yourFavoriteModel = LogisticRegression()
+    >>> pred_probs = cross_val_predict(yourFavoriteModel, data, labels, cv=3, method="predict_proba")
+    >>> df = find_overlapping_classes(labels=labels, pred_probs=pred_probs)
 
     Note
     ----
@@ -203,12 +226,6 @@ def find_overlapping_classes(
       The `confident_joint` can be computed using :py:func:`count.compute_confident_joint <cleanlab.count.compute_confident_joint>`.
       If not provided, it is computed from the given (noisy) `labels` and `pred_probs`.
 
-    multi_label : bool, optional
-      If ``True``, labels should be an iterable (e.g. list) of iterables, containing a
-      list of labels for each example, instead of just a single label.
-      The multi-label setting supports classification tasks where an example has 1 or more labels.
-      Example of a multi-labeled `labels` input: ``[[0,1], [1], [0,2], [0,1,2], [0], [1], ...]``.
-
     Returns
     -------
     overlapping_classes : pd.DataFrame
@@ -240,15 +257,19 @@ def find_overlapping_classes(
 
         return [(*i, v) for i, v in np.ndenumerate(matrix)]
 
+    if multi_label:
+        raise ValueError(
+            "For multilabel data, please instead call: multilabel_classification.dataset.common_multilabel_issues()"
+        )
+
     if joint is None:
         joint = estimate_joint(
             labels=labels,
             pred_probs=pred_probs,
             confident_joint=confident_joint,
-            multi_label=multi_label,
         )
     if num_examples is None:
-        num_examples = _get_num_examples(labels=labels)
+        num_examples = _get_num_examples(labels=labels, confident_joint=confident_joint)
     if asymmetric:
         rcv_list = _2d_matrix_to_row_column_value_list(joint)
         # Remove diagonal elements
@@ -296,7 +317,18 @@ def overall_label_health_score(
 
     Only provide **exactly one of the above input options**, do not provide a combination.
 
+    Examples
+    --------
+    >>> from cleanlab.dataset import overall_label_health_score
+    >>> from sklearn.linear_model import LogisticRegression
+    >>> from sklearn.model_selection import cross_val_predict
+    >>> data, labels = get_data_labels_from_dataset()
+    >>> yourFavoriteModel = LogisticRegression()
+    >>> pred_probs = cross_val_predict(yourFavoriteModel, data, labels, cv=3, method="predict_proba")
+    >>> score = overall_label_health_score(labels=labels, pred_probs=pred_probs)  # doctest: +SKIP
+
     **Parameters**: For parameter info, see the docstring of :py:func:`find_overlapping_classes <cleanlab.dataset.find_overlapping_classes>`.
+
 
     Returns
     -------
@@ -304,13 +336,16 @@ def overall_label_health_score(
         A score between 0 and 1, where 1 implies all labels in the dataset are estimated to be correct.
         A score of 0.5 implies that half of the dataset's labels are estimated to have issues.
     """
+    if multi_label:
+        raise ValueError(
+            "For multilabel data, please instead call: multilabel_classification.dataset.overall_multilabel_health_score()"
+        )
 
     if joint is None:
         joint = estimate_joint(
             labels=labels,
             pred_probs=pred_probs,
             confident_joint=confident_joint,
-            multi_label=multi_label,
         )
     if num_examples is None:
         num_examples = _get_num_examples(labels=labels)
@@ -337,11 +372,13 @@ def health_summary(
     multi_label=False,
     verbose=True,
 ) -> dict:
-    """Prints a health summary of your datasets including useful statistics like:
+    """Prints a health summary of your dataset.
 
-    * The classes with the most and least label issues
-    * Classes that overlap and could potentially be merged
-    * Overall data label quality health score statistics for your dataset
+    This summary includes useful statistics like:
+
+    * The classes with the most and least label issues.
+    * Classes that overlap and could potentially be merged.
+    * Overall label quality scores, summarizing how accurate the labels appear overall.
 
     This method works by providing any one (and only one) of the following inputs:
 
@@ -350,6 +387,16 @@ def health_summary(
     3. ``confident_joint``
 
     Only provide **exactly one of the above input options**, do not provide a combination.
+
+    Examples
+    --------
+    >>> from cleanlab.dataset import health_summary
+    >>> from sklearn.linear_model import LogisticRegression
+    >>> from sklearn.model_selection import cross_val_predict
+    >>> data, labels = get_data_labels_from_dataset()
+    >>> yourFavoriteModel = LogisticRegression()
+    >>> pred_probs = cross_val_predict(yourFavoriteModel, data, labels, cv=3, method="predict_proba")
+    >>> summary = health_summary(labels=labels, pred_probs=pred_probs)  # doctest: +SKIP
 
     **Parameters**: For parameter info, see the docstring of :py:func:`find_overlapping_classes <cleanlab.dataset.find_overlapping_classes>`.
 
@@ -365,12 +412,15 @@ def health_summary(
     """
     from cleanlab.internal.util import smart_display_dataframe
 
+    if multi_label:
+        raise ValueError(
+            "For multilabel data, please call multilabel_classification.dataset.health_summary"
+        )
     if joint is None:
         joint = estimate_joint(
             labels=labels,
             pred_probs=pred_probs,
             confident_joint=confident_joint,
-            multi_label=multi_label,
         )
     if num_examples is None:
         num_examples = _get_num_examples(labels=labels)
@@ -397,7 +447,6 @@ def health_summary(
         num_examples=num_examples,
         joint=joint,
         confident_joint=confident_joint,
-        multi_label=multi_label,
     )
     if verbose:
         print("Overall Class Quality and Noise across your dataset (below)")
@@ -412,7 +461,6 @@ def health_summary(
         num_examples=num_examples,
         joint=joint,
         confident_joint=confident_joint,
-        multi_label=multi_label,
     )
     if verbose:
         print(
@@ -431,7 +479,6 @@ def health_summary(
         num_examples=num_examples,
         joint=joint,
         confident_joint=confident_joint,
-        multi_label=multi_label,
         verbose=verbose,
     )
     if verbose:
@@ -444,13 +491,11 @@ def health_summary(
     }
 
 
-def _get_num_examples(labels=None) -> int:
+def _get_num_examples(labels=None, confident_joint: Optional[np.ndarray] = None) -> int:
     """Helper method that finds the number of examples from the parameters or throws an error
     if neither parameter is provided.
 
-    Parameters
-    ----------
-    For parameter info, see the docstring of `dataset.find_overlapping_classes`
+    **Parameters:** For information about the arguments to this method, see the documentation of `dataset.find_overlapping_classes`
 
     Returns
     -------
@@ -462,11 +507,11 @@ def _get_num_examples(labels=None) -> int:
     ValueError
         If `labels` is None."""
 
-    if labels is not None:
-        num_examples = len(labels)
-    else:
+    if labels is None and confident_joint is None:
         raise ValueError(
-            "Error: num_examples is None. You must provide a value for num_examples "
-            "when calling this method using the joint as an input parameter."
+            "Error: num_examples is None. You must either provide confident_joint, "
+            "or provide both num_example and joint as input parameters."
         )
+    _confident_joint = cast(np.ndarray, confident_joint)
+    num_examples = len(labels) if labels is not None else cast(int, np.sum(_confident_joint))
     return num_examples

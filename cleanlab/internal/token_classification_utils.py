@@ -1,4 +1,4 @@
-# Copyright (C) 2017-2022  Cleanlab Inc.
+# Copyright (C) 2017-2023  Cleanlab Inc.
 # This file is part of cleanlab.
 #
 # cleanlab is free software: you can redistribute it and/or modify
@@ -17,12 +17,18 @@
 """
 Helper methods used internally in cleanlab.token_classification
 """
+from __future__ import annotations
 
 import re
 import string
 import numpy as np
 from termcolor import colored
-from typing import List, Optional, Callable, Tuple
+from typing import List, Optional, Callable, Tuple, TypeVar, TYPE_CHECKING
+
+if TYPE_CHECKING:  # pragma: no cover
+    import numpy.typing as npt
+
+    T = TypeVar("T", bound=npt.NBitBase)
 
 
 def get_sentence(words: List[str]) -> str:
@@ -171,14 +177,16 @@ def mapping(entities: List[int], maps: List[int]) -> List[int]:
     return list(map(f, entities))
 
 
-def merge_probs(probs: np.ndarray, maps: List[int]) -> np.ndarray:
+def merge_probs(
+    probs: npt.NDArray["np.floating[T]"], maps: List[int]
+) -> npt.NDArray["np.floating[T]"]:
     """
     Merges model-predictive probabilities with desired mapping
 
     Parameters
     ----------
     probs:
-        np.array of shape `(N, K)`, where N is the number of tokens, and K is the number of classes for the model
+        A 2D np.array of shape `(N, K)`, where N is the number of tokens, and K is the number of classes for the model
 
     maps:
         a list of mapped index, such that the probability of the token being in the i'th class is mapped to the
@@ -188,7 +196,7 @@ def merge_probs(probs: np.ndarray, maps: List[int]) -> np.ndarray:
     Returns
     ---------
     probs_merged:
-        np.array of shape ``(N, K')``, where `K` is the number of new classes. Probabilities are merged and
+        A 2D np.array of shape ``(N, K')``, where `K'` is the number of new classes. Probabilities are merged and
         re-normalized if necessary.
 
     Examples

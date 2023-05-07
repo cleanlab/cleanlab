@@ -1,4 +1,4 @@
-# Copyright (C) 2017-2022  Cleanlab Inc.
+# Copyright (C) 2017-2023  Cleanlab Inc.
 # This file is part of cleanlab.
 #
 # cleanlab is free software: you can redistribute it and/or modify
@@ -19,6 +19,7 @@ Checks to ensure valid inputs for various methods.
 """
 
 from cleanlab.typing import LabelLike, DatasetLike
+from cleanlab.internal.constants import FLOATING_POINT_COMPARISON
 from typing import Any, List, Optional, Union
 import warnings
 import numpy as np
@@ -95,7 +96,9 @@ def assert_valid_inputs(
                 f"pred_probs must have at least {highest_class} columns, based on the largest class index which appears in labels."
             )
         # Check for valid probabilities.
-        if (np.min(pred_probs) < 0) or (np.max(pred_probs) > 1):
+        if (np.min(pred_probs) < 0 - FLOATING_POINT_COMPARISON) or (
+            np.max(pred_probs) > 1 + FLOATING_POINT_COMPARISON
+        ):
             raise ValueError("Values in pred_probs must be between 0 and 1.")
         if X is not None:
             warnings.warn("When X and pred_probs are both provided, the former may be ignored.")
