@@ -135,7 +135,7 @@ def get_outre_score_for_each_label(
     labels: np.ndarray,
     predictions: np.ndarray,
     *,
-    residual_scale: float = 10,
+    residual_scale: float = 5,
     frac_neighbors: float = 0.5,
     neighbor_metric: str = "euclidean",
 ) -> np.ndarray:
@@ -152,11 +152,11 @@ def get_outre_score_for_each_label(
     predictions: np.ndarray
         Predicted labels in the same format as expected by the :py:func:`get_label_quality_scores <cleanlab.regression.rank.get_label_quality_scores>` function.
 
-    residual_scale: float, default = 10
-        Manipulates scale of the distribution of residual.
+    residual_scale: float, default = 5
+        Multiplicative factor to adjust scale (standard deviation) of the residuals relative to the labels.
 
-    frac_neighbors: float, default = 0.1
-        Fraction of examples that should be considered as n_neighbors to NearestNeighbors.
+    frac_neighbors: float, default = 0.5
+        Fraction of examples in dataset that should be considered as `n_neighbors` in the ``NearestNeighbors`` object used internally to assess outliers.
 
     neighbor_metric: str, default = "euclidean"
         The parameter is passed to sklearn NearestNeighbors. # TODO add reference to sklearn.NearestNeighbor?
