@@ -15,7 +15,7 @@
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
 """
-Methods to rank and score images in a semantic segmentation dataset , based on how likely they are to contain label errors.
+Methods to rank and score images in a semantic segmentation dataset, based on how likely they are to contain label errors.
 
 
 """
@@ -30,6 +30,7 @@ from cleanlab.segmentation.filter import find_label_issues
 def get_label_quality_scores(
     labels: np.ndarray,
     pred_probs: np.ndarray,
+    *,
     method: str = "softmin",
     batch_size: int = 10000,
     n_jobs: Optional[int] = 1,
@@ -78,7 +79,7 @@ def get_label_quality_scores(
     
     verbose : bool, optional
       For num_pixel_issues:
-      Whether to suppress print statements or not.
+      Set to ``False`` to suppress all print statements.
       
     **kwargs:
       downsample : int, optional

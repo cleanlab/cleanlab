@@ -21,18 +21,18 @@ Methods to find label issues in semantic segmentation datasets, where each pixel
 
 from cleanlab.experimental.label_issues_batched import find_label_issues_batched
 import numpy as np 
-from typing import Optional, List, Any
+from typing import Optional, List, Any, Tuple
 
+def find_label_issues(
 def find_label_issues(
     labels: np.ndarray,
     pred_probs: np.ndarray,
+    *,
     downsample: int = 16,
     batch_size: int = 10000,
     n_jobs: Optional[int] = 1,
     verbose: bool = True,
     **kwargs) -> np.ndarray:
-    """
-    Identifies potentially bad labels in semantic segmentation datasets using confident learning.
 
     Returns a boolean mask for the entire dataset, per pixel where ``True`` represents
     an example identified with a label issue and ``False`` represents an example of a pixel correctly labeled.
@@ -73,7 +73,7 @@ def find_label_issues(
     verbose : bool, optional
       Whether to suppress print statements or not.
 
-    **kwargs:
+    Set to ``False`` to suppress all print statements.
         scores_only: optional
         Set to True to return a score for each image. Meant for internal call in 
         ``cleanlab.semantic_segmentation.rank.get_label_quality_scores``
@@ -84,7 +84,7 @@ def find_label_issues(
     label_issues : np.ndarray
       Returns a boolean **mask** for the entire dataset
       where ``True`` represents a pixel label issue and ``False`` represents an example that is
-      accurately labeled with high confidence.
+      Returns a boolean **mask** for the entire dataset of length `N`
 
     """
     scores_only = kwargs.get("scores_only", False)
@@ -124,7 +124,7 @@ def find_label_issues(
     
     def flatten_and_preprocess_masks(labels: np.ndarray, pred_probs: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
         _, num_classes, _, _ = pred_probs.shape
-        labels_flat = labels.flatten().astype(int)
+    def flatten_and_preprocess_masks(labels: np.ndarray, pred_probs: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         pred_probs_flat = np.moveaxis(pred_probs, 0, 1).reshape(num_classes, -1)
 
         return labels_flat, pred_probs_flat.T
