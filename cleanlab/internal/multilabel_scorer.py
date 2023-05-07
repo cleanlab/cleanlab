@@ -1,4 +1,4 @@
-# Copyright (C) 2017-2022  Cleanlab Inc.
+# Copyright (C) 2017-2023  Cleanlab Inc.
 # This file is part of cleanlab.
 #
 # cleanlab is free software: you can redistribute it and/or modify
@@ -243,8 +243,10 @@ def softmin(
 
     def softmax(scores: np.ndarray) -> np.ndarray:
         """Softmax function."""
-        exp_scores = np.exp(scores / temperature)
-        return exp_scores / np.sum(exp_scores, axis=axis, keepdims=True)
+        scores = scores / temperature
+        scores_max = np.amax(scores, axis=axis, keepdims=True)
+        exp_scores_shifted = np.exp(scores - scores_max)
+        return exp_scores_shifted / np.sum(exp_scores_shifted, axis=axis, keepdims=True)
 
     return np.einsum("ij,ij->i", s, softmax(1 - s))
 
@@ -488,7 +490,7 @@ class MultilabelScorer:
         >>> labels = np.array([[0, 1, 0], [1, 0, 1]])
         >>> pred_probs = np.array([[0.1, 0.9, 0.7], [0.4, 0.1, 0.6]])
         >>> scorer = MultilabelScorer() # Use the default base scorer (SELF_CONFIDENCE)
-        >>> class_label_quality_scores = scorer.get_class_label_quality_scores(labels, pred_probs)
+        >>> class_label_quality_scores = scorer.get_label_quality_scores_per_class(labels, pred_probs)
         >>> class_label_quality_scores
         array([[0.9, 0.9, 0.3],
                [0.4, 0.9, 0.6]])

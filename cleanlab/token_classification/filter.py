@@ -1,4 +1,4 @@
-# Copyright (C) 2017-2022  Cleanlab Inc.
+# Copyright (C) 2017-2023  Cleanlab Inc.
 # This file is part of cleanlab.
 #
 # cleanlab is free software: you can redistribute it and/or modify
@@ -31,6 +31,7 @@ def find_label_issues(
     pred_probs: list,
     *,
     return_indices_ranked_by: str = "self_confidence",
+    **kwargs,
 ) -> List[Tuple[int, int]]:
     """Identifies tokens with label issues in a token classification dataset.
 
@@ -60,6 +61,10 @@ def find_label_issues(
         See :py:func:`cleanlab.filter.find_label_issues <cleanlab.filter.find_label_issues>`
         documentation for more details on each label quality scoring method.
 
+    kwargs:
+        Additional keyword arguments to pass into :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>`
+        which is internally applied at the token level. Can include values like `n_jobs` to control parallel processing, `frac_noise`, etc.
+
     Returns
     -------
     issues:
@@ -87,7 +92,10 @@ def find_label_issues(
     pred_probs_flatten = np.array([pred for pred_prob in pred_probs for pred in pred_prob])
 
     issues_main = find_label_issues_main(
-        labels_flatten, pred_probs_flatten, return_indices_ranked_by=return_indices_ranked_by
+        labels_flatten,
+        pred_probs_flatten,
+        return_indices_ranked_by=return_indices_ranked_by,
+        **kwargs,
     )
 
     lengths = [len(label) for label in labels]

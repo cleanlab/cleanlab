@@ -1,4 +1,4 @@
-# Copyright (C) 2017-2022  Cleanlab Inc.
+# Copyright (C) 2017-2023  Cleanlab Inc.
 # This file is part of cleanlab.
 #
 # cleanlab is free software: you can redistribute it and/or modify
@@ -26,6 +26,7 @@ from typing import Optional
 
 import numpy as np
 from cleanlab.internal.util import value_counts
+from cleanlab.internal.constants import FLOATING_POINT_COMPARISON
 
 
 def noise_matrix_is_valid(noise_matrix, py, *, verbose=False) -> bool:
@@ -65,7 +66,7 @@ def noise_matrix_is_valid(noise_matrix, py, *, verbose=False) -> bool:
     joint_noise = np.multiply(noise_matrix, py)  # / float(N)
 
     # Check that joint_probs is valid probability matrix
-    if not (abs(joint_noise.sum() - 1.0) < 1e-6):
+    if not (abs(joint_noise.sum() - 1.0) < FLOATING_POINT_COMPARISON):
         return False
 
     # Check that noise_matrix is a valid matrix
@@ -386,11 +387,9 @@ def generate_n_rand_probabilities_that_sum_to_m(
       An array of probabilities.
     """
 
-    epsilon = 1e-6  # Imprecision allowed for inequalities with floats
-
     if n == 0:
         return np.array([])
-    if (max_prob + epsilon) < m / float(n):
+    if (max_prob + FLOATING_POINT_COMPARISON) < m / float(n):
         raise ValueError(
             "max_prob must be greater or equal to m / n, but "
             + "max_prob = "
@@ -402,7 +401,7 @@ def generate_n_rand_probabilities_that_sum_to_m(
             + ", m / n = "
             + str(m / float(n))
         )
-    if min_prob > (m + epsilon) / float(n):
+    if min_prob > (m + FLOATING_POINT_COMPARISON) / float(n):
         raise ValueError(
             "min_prob must be less or equal to m / n, but "
             + "max_prob = "
@@ -422,7 +421,7 @@ def generate_n_rand_probabilities_that_sum_to_m(
 
     min_val = min(result)
     max_val = max(result)
-    while max_val > (max_prob + epsilon):
+    while max_val > (max_prob + FLOATING_POINT_COMPARISON):
         new_min = min_val + (max_val - max_prob)
         # This adjustment prevents the new max from always being max_prob.
         adjustment = (max_prob - new_min) * np.random.rand()
@@ -433,7 +432,7 @@ def generate_n_rand_probabilities_that_sum_to_m(
 
     min_val = min(result)
     max_val = max(result)
-    while min_val < (min_prob - epsilon):
+    while min_val < (min_prob - FLOATING_POINT_COMPARISON):
         min_val = min(result)
         max_val = max(result)
         new_max = max_val - (min_prob - min_val)

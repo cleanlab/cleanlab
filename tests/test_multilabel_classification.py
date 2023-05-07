@@ -1,4 +1,4 @@
-# Copyright (C) 2017-2022  Cleanlab Inc.
+# Copyright (C) 2017-2023  Cleanlab Inc.
 # This file is part of cleanlab.
 #
 # cleanlab is free software: you can redistribute it and/or modify
@@ -25,7 +25,15 @@ from sklearn.linear_model import LogisticRegression
 
 from cleanlab.internal import multilabel_scorer as ml_scorer
 from cleanlab.internal.multilabel_utils import stack_complement, get_onehot_num_classes, onehot2int
-from cleanlab import multilabel_classification as multilabel_classfication
+from cleanlab import multilabel_classification as ml_classification
+from cleanlab.multilabel_classification.dataset import (
+    common_multilabel_issues,
+    rank_classes_by_multilabel_quality,
+    overall_multilabel_health_score,
+    multilabel_health_summary,
+)
+from cleanlab.multilabel_classification.rank import get_label_quality_scores_per_class
+from cleanlab.multilabel_classification import filter
 
 
 @pytest.fixture
@@ -85,6 +93,41 @@ def pred_probs():
 
 
 @pytest.fixture
+def pred_probs_multilabel():
+    return np.array(
+        [
+            [0.9, 0.1, 0.0, 0.4, 0.1],
+            [0.7, 0.8, 0.2, 0.3, 0.1],
+            [0.9, 0.8, 0.4, 0.2, 0.1],
+            [0.1, 0.1, 0.8, 0.3, 0.1],
+            [0.4, 0.5, 0.1, 0.1, 0.1],
+            [0.1, 0.1, 0.2, 0.1, 0.1],
+            [0.8, 0.1, 0.2, 0.1, 0.1],
+        ]
+    )
+
+
+@pytest.fixture
+def labels_multilabel():
+    return [[0], [0, 1], [0, 1], [2], [0, 2, 3], [], []]
+
+
+@pytest.fixture
+def data_multilabel(num_classes=5):
+    labels = []
+    pred_probs = []
+    for i in range(0, 100):
+        q = [0.1] * num_classes
+        pos = i % num_classes
+        labels.append([pos])
+        if i > 90:
+            pos = (pos + 2) % num_classes
+        q[pos] = 0.9
+        pred_probs.append(q)
+    return labels, np.array(pred_probs)
+
+
+@pytest.fixture
 def cv():
     return sklearn.model_selection.StratifiedKFold(
         n_splits=2,
@@ -102,18 +145,18 @@ def dummy_features(labels):
 def test_public_label_quality_scores(labels, pred_probs):
     formatted_labels = onehot2int(labels)
     assert isinstance(formatted_labels, list)
-    scores1 = multilabel_classfication.get_label_quality_scores(formatted_labels, pred_probs)
+    scores1 = ml_classification.get_label_quality_scores(formatted_labels, pred_probs)
     assert len(scores1) == len(labels)
     assert (scores1 >= 0).all() and (scores1 <= 1).all()
-    scores2 = multilabel_classfication.get_label_quality_scores(
+    scores2 = ml_classification.get_label_quality_scores(
         formatted_labels, pred_probs, method="confidence_weighted_entropy"
     )
     assert not np.isclose(scores1, scores2).all()
-    scores3 = multilabel_classfication.get_label_quality_scores(
+    scores3 = ml_classification.get_label_quality_scores(
         formatted_labels, pred_probs, adjust_pred_probs=True
     )
     assert not np.isclose(scores1, scores3).all()
-    scores4 = multilabel_classfication.get_label_quality_scores(
+    scores4 = ml_classification.get_label_quality_scores(
         formatted_labels,
         pred_probs,
         method="normalized_margin",
@@ -121,7 +164,7 @@ def test_public_label_quality_scores(labels, pred_probs):
         aggregator_kwargs={"method": "exponential_moving_average"},
     )
     assert not np.isclose(scores1, scores4).all()
-    scores5 = multilabel_classfication.get_label_quality_scores(
+    scores5 = ml_classification.get_label_quality_scores(
         formatted_labels,
         pred_probs,
         method="normalized_margin",
@@ -129,7 +172,7 @@ def test_public_label_quality_scores(labels, pred_probs):
         aggregator_kwargs={"method": "softmin"},
     )
     assert not np.isclose(scores4, scores5).all()
-    scores6 = multilabel_classfication.get_label_quality_scores(
+    scores6 = ml_classification.get_label_quality_scores(
         formatted_labels,
         pred_probs,
         method="normalized_margin",
@@ -137,7 +180,7 @@ def test_public_label_quality_scores(labels, pred_probs):
         aggregator_kwargs={"method": "softmin", "temperature": 0.002},
     )
     assert not np.isclose(scores5, scores6).all()
-    scores7 = multilabel_classfication.get_label_quality_scores(
+    scores7 = ml_classification.get_label_quality_scores(
         formatted_labels,
         pred_probs,
         method="normalized_margin",
@@ -147,13 +190,13 @@ def test_public_label_quality_scores(labels, pred_probs):
     assert np.isclose(scores6, scores7, rtol=1e-3).all()
 
     with pytest.raises(ValueError) as e:
-        _ = multilabel_classfication.get_label_quality_scores(
+        _ = ml_classification.get_label_quality_scores(
             formatted_labels, pred_probs, method="badchoice"
         )
         assert "Invalid method name: badchoice" in str(e.value)
 
     with pytest.raises(ValueError) as e:
-        _ = multilabel_classfication.get_label_quality_scores(
+        _ = ml_classification.get_label_quality_scores(
             formatted_labels, pred_probs, aggregator_kwargs={"method": "invalid"}
         )
         assert "Invalid aggregation method specified: 'invalid'" in str(e.value)
@@ -172,7 +215,7 @@ class TestAggregator:
         ids=lambda x: x.__name__ if callable(x) else str(x),
     )
     def test_aggregator_callable(self, method):
-        aggregator = multilabel_classfication.Aggregator(method=method)
+        aggregator = ml_scorer.Aggregator(method=method)
         assert callable(aggregator.method), "Aggregator should store a callable method"
         assert callable(aggregator), "Aggregator should be callable"
 
@@ -189,24 +232,24 @@ class TestAggregator:
         ids=["min", "max", "mean", "median", "exponential_moving_average", "softmin"],
     )
     def test_aggregator_score(self, base_scores, method, expected_score):
-        aggregator = multilabel_classfication.Aggregator(method=method)
+        aggregator = ml_scorer.Aggregator(method=method)
         scores = aggregator(base_scores)
         assert np.isclose(scores, np.array([expected_score]), rtol=1e-3).all()
         assert scores.shape == (1,)
 
     def test_invalid_method(self):
         with pytest.raises(ValueError) as e:
-            _ = multilabel_classfication.Aggregator(method="invalid_method")
+            _ = ml_scorer.Aggregator(method="invalid_method")
             assert "Invalid aggregation method specified: 'invalid_method'" in str(
                 e.value
             ), "String constructor has limited options"
 
         with pytest.raises(TypeError) as e:
-            _ = multilabel_classfication.Aggregator(method=1)
+            _ = ml_scorer.Aggregator(method=1)
             assert "Expected callable method" in str(e.value), "Non-callable methods are not valid"
 
     def test_invalid_score(self, base_scores):
-        aggregator = multilabel_classfication.Aggregator(method=np.min)
+        aggregator = ml_scorer.Aggregator(method=np.min)
         with pytest.raises(ValueError) as e:
             _ = aggregator(base_scores[0])
             assert "Expected 2D array" in str(e.value), "Aggregator expects 2D array"
@@ -304,6 +347,152 @@ def test_is_multilabel(labels):
     assert not ml_scorer._is_multilabel(labels[:, 0])
 
 
+@pytest.mark.parametrize("class_names", [None, ["Apple", "Cat", "Dog", "Peach", "Bird"]])
+def test_common_multilabel_issues(class_names, pred_probs_multilabel, labels_multilabel):
+    df = common_multilabel_issues(
+        labels=labels_multilabel, pred_probs=pred_probs_multilabel, class_names=class_names
+    )
+    expected_issue_probabilities = [
+        0.14285714285714285,
+        0.14285714285714285,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+    ]
+    assert len(df) == 10
+    assert np.isclose(np.array(expected_issue_probabilities), df["Issue Probability"]).all()
+    if class_names:
+        expected_res = [
+            "Apple",
+            "Dog",
+            "Apple",
+            "Cat",
+            "Cat",
+            "Dog",
+            "Peach",
+            "Peach",
+            "Bird",
+            "Bird",
+        ]
+        assert list(df["Class Name"]) == expected_res
+    else:
+        assert "Class Name" not in df.columns
+
+
+@pytest.mark.parametrize("min_examples_per_class", [10, 90])
+def test_multilabel_min_examples_per_class(data_multilabel, min_examples_per_class):
+    labels, pred_probs = data_multilabel
+    issues = filter.find_label_issues(
+        labels=labels, pred_probs=pred_probs, min_examples_per_class=min_examples_per_class
+    )
+    if min_examples_per_class == 10:
+        assert sum(issues) == 9
+    else:
+        assert sum(issues) == 0
+
+
+@pytest.mark.parametrize("num_to_remove_per_class", [None, [1, 1, 0, 0, 2], [1, 1, 0, 0, 1]])
+def test_multilabel_num_to_remove_per_class(data_multilabel, num_to_remove_per_class):
+    labels, pred_probs = data_multilabel
+
+    issues = filter.find_label_issues(
+        labels=labels, pred_probs=pred_probs, num_to_remove_per_class=num_to_remove_per_class
+    )
+    num_issues = sum(issues)
+    if num_to_remove_per_class is None:
+        assert num_issues == 9
+    else:
+        assert num_issues == sum(num_to_remove_per_class)
+
+
+@pytest.mark.parametrize("class_names", [None, ["Apple", "Cat", "Dog", "Peach", "Bird"]])
+def test_rank_classes_by_multilabel_quality(pred_probs_multilabel, labels_multilabel, class_names):
+    df_ranked = rank_classes_by_multilabel_quality(
+        pred_probs=pred_probs_multilabel, labels=labels_multilabel, class_names=class_names
+    )
+    expected_Label_Issues = [1, 0, 0, 0, 0]
+
+    expected_Label_Noise = [0.14285714285714285, 0.0, 0.0, 0.0, 0.0]
+
+    expected_Label_Quality_Score = [0.8571428571428572, 1.0, 1.0, 1.0, 1.0]
+
+    expected_Inverse_Label_Issues = [0, 1, 0, 0, 0]
+
+    expected_Inverse_Label_Noise = [0.0, 0.14285714285714285, 0.0, 0.0, 0.0]
+    assert list(df_ranked["Label Issues"]) == expected_Label_Issues
+
+    assert np.isclose(np.array(expected_Label_Noise), df_ranked["Label Noise"]).all()
+    assert np.isclose(
+        np.array(expected_Label_Quality_Score), df_ranked["Label Quality Score"]
+    ).all()
+    assert list(df_ranked["Inverse Label Issues"]) == expected_Inverse_Label_Issues
+    assert np.isclose(
+        np.array(expected_Inverse_Label_Noise), df_ranked["Inverse Label Noise"]
+    ).all()
+    if class_names:
+        expected_res = [
+            "Dog",
+            "Apple",
+            "Cat",
+            "Peach",
+            "Bird",
+        ]
+        assert list(df_ranked["Class Name"]) == expected_res
+    else:
+        assert "Class Name" not in df_ranked.columns
+
+
+def test_overall_multilabel_health_score(data_multilabel):
+    labels, pred_probs = data_multilabel
+    overall_label_health_score = overall_multilabel_health_score(
+        pred_probs=pred_probs, labels=labels
+    )
+    assert np.isclose(overall_label_health_score, 0.91)
+
+
+def test_get_class_label_quality_scores():
+    pred_probs = np.array(
+        [
+            [0.9, 0.1, 0.0, 0.4, 0.1],
+            [0.7, 0.8, 0.2, 0.3, 0.1],
+            [0.9, 0.8, 0.4, 0.2, 0.1],
+            [0.1, 0.1, 0.8, 0.3, 0.1],
+            [0.4, 0.5, 0.1, 0.1, 0.1],
+            [0.1, 0.1, 0.2, 0.1, 0.1],
+            [0.8, 0.1, 0.2, 0.1, 0.1],
+        ]
+    )
+    labels = [[0], [0, 1], [0, 1], [2], [0, 2, 3], [], []]
+    scores = get_label_quality_scores_per_class(pred_probs=pred_probs, labels=labels)
+    expected_res = [
+        [0.9, 0.9, 1.0, 0.6, 0.9],
+        [0.7, 0.8, 0.8, 0.7, 0.9],
+        [0.9, 0.8, 0.6, 0.8, 0.9],
+        [0.9, 0.9, 0.8, 0.7, 0.9],
+        [0.4, 0.5, 0.1, 0.1, 0.9],
+        [0.9, 0.9, 0.8, 0.9, 0.9],
+        [0.2, 0.9, 0.8, 0.9, 0.9],
+    ]
+    assert np.isclose(scores, np.array(expected_res)).all()
+
+
+def test_health_summary_multilabel(pred_probs_multilabel, labels_multilabel):
+    health_summary_multilabel = multilabel_health_summary(
+        pred_probs=pred_probs_multilabel, labels=labels_multilabel
+    )
+    expected_keys = [
+        "classes_by_multilabel_quality",
+        "common_multilabel_issues",
+        "overall_multilabel_health_score",
+    ]
+    assert sorted(health_summary_multilabel.keys()) == expected_keys
+
+
 @pytest.mark.parametrize(
     "input",
     [
@@ -388,7 +577,6 @@ def test_multilabel_py(given_labels, expected):
 
 @pytest.mark.parametrize("K", [2, 3, 4], ids=["K=2", "K=3", "K=4"])
 def test_get_split_generator(cv, K):
-
     all_configurations = np.array(list(itertools.product([0, 1], repeat=K)))
     given_labels = np.repeat(all_configurations, 2, axis=0)
 
@@ -412,7 +600,6 @@ def test_get_split_generator(cv, K):
 # Test split_generator with rare/missing multilabel configurations
 @pytest.mark.parametrize("K", [2, 3, 4], ids=["K=2", "K=3", "K=4"])
 def test_get_split_generator_rare_configurations(cv, K):
-
     all_configurations = np.array(list(itertools.product([0, 1], repeat=K)))
     given_labels = np.repeat(all_configurations, 2, axis=0)
 

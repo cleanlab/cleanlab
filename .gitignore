@@ -118,6 +118,8 @@ venv.bak/
 /docs/source/notebooks/*.gz
 /docs/source/notebooks/spoken_digits
 /docs/source/notebooks/pretrained_models
+/docs/source/tutorials/datalab/datalab-files/
 
-# VS Code
+# Editor files
 .vscode/
+.idea/

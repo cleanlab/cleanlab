@@ -1,9 +1,9 @@
 cleanlab documentation
 ======================
 
-`cleanlab <https://github.com/cleanlab/cleanlab>`_ **automatically finds and fixes label issues in your ML datasets.**
+`cleanlab <https://github.com/cleanlab/cleanlab>`_ **automatically detects data and label issues in your ML datasets.**
 
-| This reduces manual work needed to fix data errors and helps train reliable ML models on noisy real-world datasets. cleanlab has already found thousands of `label errors <https://labelerrors.com>`_ in ImageNet, MNIST, and other popular ML benchmarking datasets, so let's get started with yours!
+| This helps you improve your data and train reliable ML models on noisy real-world datasets. cleanlab has already found thousands of `label errors <https://labelerrors.com>`_ in ImageNet, MNIST, and other popular ML benchmarking datasets. Beyond handling label errors, this is a comprehensive open-source library implementing many data-centric AI capabilities. Start using automation to improve your data in 5 minutes!
 
 Quickstart
 ==========
@@ -35,7 +35,7 @@ Quickstart
 2. Find label errors in your data
 ---------------------------------
 
-cleanlab finds issues in *any dataset that a classifier can be trained on*. The cleanlab package *works with any model* by using model outputs (predicted probabilities) as input -- it doesn't depend on which model created those outputs.
+cleanlab finds issues in *any dataset that a classifier can be trained on*. The cleanlab package *works with any ML model* by using model outputs (predicted probabilities) as input -- it doesn't depend on which model created those outputs.
 
 If you're using a scikit-learn-compatible model (option 1), you don't need to train a model -- you can pass the model, data, and labels into :py:meth:`CleanLearning.find_label_issues <cleanlab.classification.CleanLearning.find_label_issues>` and cleanlab will handle model training for you. If you want to use any non-sklearn-compatible model (option 2), you can input the trained model's out-of-sample predicted probabilities into :py:meth:`find_label_issues <cleanlab.filter.find_label_issues>`. Examples for both options are below.
 
@@ -54,15 +54,15 @@ If you're using a scikit-learn-compatible model (option 1), you don't need to tr
         return_indices_ranked_by='self_confidence',
     )
 
-:py:class:`CleanLearning <cleanlab.classification.CleanLearning>` (option 1) also works with models from most standard ML frameworks by wrapping the model for scikit-learn compliance, e.g. huggingface/tensorflow/keras (using our KerasWrapperModel), pytorch (using skorch package), etc.
+:py:class:`CleanLearning <cleanlab.classification.CleanLearning>` (option 1) also works with models from most standard ML frameworks by wrapping the model for scikit-learn compliance, e.g. `tensorflow/keras <tutorials/text.ipynb>`_ (using our KerasWrapperModel), `pytorch <tutorials/image.ipynb>`_ (using skorch package), etc.
 
 By default, :py:meth:`find_label_issues <cleanlab.filter.find_label_issues>` returns a boolean mask of label issues. You can instead return the indices of potential mislabeled examples by setting `return_indices_ranked_by` in :py:meth:`find_label_issues <cleanlab.filter.find_label_issues>`. The indices are ordered by likelihood of a label error (estimated via :py:meth:`rank.get_label_quality_scores <cleanlab.rank.get_label_quality_scores>`).
+
+Beyond standard classification tasks, cleanlab can also detect mislabeled examples in: `multi-label data <tutorials/multilabel_classification.ipynb>`_ (e.g. image/document tagging), `sequence prediction <tutorials/token_classification.ipynb>`_ (e.g. entity recognition), and `data labeled by multiple annotators <tutorials/multiannotator.ipynb>`_ (e.g. crowdsourcing).
 
 .. important::
    Cleanlab performs better if the ``pred_probs`` from your model are **out-of-sample**. Details on how to compute out-of-sample predicted probabilities for your entire dataset are :ref:`here <pred_probs_cross_val>`.
 
-..
-   TODO - include the url for tf and torch beginner tutorials
 
 3. Train robust models with noisy labels
 ----------------------------------------
@@ -86,9 +86,9 @@ When the :py:meth:`.fit() <cleanlab.classification.CleanLearning.fit>` method is
 4. Dataset curation: fix dataset-level issues
 ---------------------------------------------
 
-cleanlab's :py:mod:`dataset <cleanlab.dataset>` module helps you deal with dataset-level issues by  :ref:`finding overlapping classes <cleanlab.dataset.find_overlapping_classes>` (classes to merge), :ref:`rank class-level label quality <cleanlab.dataset.rank_classes_by_label_quality>` (classes to keep/delete), and :ref:`measure overall dataset health <cleanlab.dataset.overall_label_health_score>` (to track dataset quality as you make adjustments).
+cleanlab's `dataset <tutorials/dataset_health.ipynb>`_ module helps you deal with dataset-level issues -- :py:meth:`find overlapping classes <cleanlab.dataset.find_overlapping_classes>` (classes to merge), :py:meth:`rank class-level label quality <cleanlab.dataset.rank_classes_by_label_quality>` (classes to keep/delete), and :py:meth:`measure overall dataset health <cleanlab.dataset.overall_label_health_score>` (to track dataset quality as you make adjustments).
 
-The example below shows how to view all dataset-level issues in one line of code with :py:meth:`dataset.health_summary() <cleanlab.dataset.health_summary>`. Check out the dataset tutorial for more examples.
+View all dataset-level issues in one line of code with :py:meth:`dataset.health_summary() <cleanlab.dataset.health_summary>`.
 
 .. code-block:: python
 
@@ -96,6 +96,18 @@ The example below shows how to view all dataset-level issues in one line of code
 
    health_summary(labels, pred_probs, class_names=class_names)
 
+
+5. Improve your data via many other techniques
+----------------------------------------------
+
+Beyond handling label errors, cleanlab supports other data-centric AI capabilities including:
+
+- Detecting outliers and out-of-distribution examples in both training and future test data `(tutorial) <tutorials/outliers.ipynb>`_
+- Analyzing data labeled by multiple annotators to estimate consensus labels and their quality `(tutorial) <tutorials/multiannotator.ipynb>`_
+- Active learning with multiple annotators to identify which data is most informative to label or re-label next  `(tutorial) <https://github.com/cleanlab/examples/blob/master/active_learning_multiannotator/active_learning.ipynb>`_
+
+
+If you have questions, check out our `FAQ <tutorials/faq.ipynb>`_ and feel free to ask in `Slack <https://cleanlab.ai/slack>`_!
 
 Contributing
 ------------
@@ -114,9 +126,10 @@ Please see our `contributing guidelines <https://github.com/cleanlab/cleanlab/bl
    :hidden:
    :caption: Tutorials
 
+   Datalab Tutorials <tutorials/datalab/index>
    Workflows of Data-Centric AI <tutorials/indepth_overview>
    Image Classification (pytorch) <tutorials/image>
-   Text Classification (tensorflow) <tutorials/text>
+   Text Classification (transformers) <tutorials/text>
    Tabular Classification (sklearn) <tutorials/tabular>
    Audio Classification (speechbrain) <tutorials/audio>
    Find Dataset-level Issues <tutorials/dataset_health>
@@ -141,7 +154,9 @@ Please see our `contributing guidelines <https://github.com/cleanlab/cleanlab/bl
    cleanlab/multiannotator
    cleanlab/multilabel_classification
    cleanlab/token_classification/index
+   cleanlab/datalab/index
    cleanlab/benchmarking/index
+   cleanlab/models/index
    cleanlab/experimental/index
    cleanlab/internal/index
 
@@ -160,4 +175,4 @@ Please see our `contributing guidelines <https://github.com/cleanlab/cleanlab/bl
    GitHub <https://github.com/cleanlab/cleanlab>
    PyPI <https://pypi.org/project/cleanlab/>
    Conda <https://anaconda.org/Cleanlab/cleanlab>
-   Cleanlab Studio <https://cleanlab.ai/studio/>
+   Cleanlab Studio <https://cleanlab.ai/studio/?utm_source=github&utm_medium=docs&utm_campaign=clostostudio>

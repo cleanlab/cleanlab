@@ -1,4 +1,4 @@
-# Copyright (C) 2017-2022  Cleanlab Inc.
+# Copyright (C) 2017-2023  Cleanlab Inc.
 # This file is part of cleanlab.
 #
 # cleanlab is free software: you can redistribute it and/or modify
@@ -16,8 +16,11 @@
 
 import requests
 import pytest
+import hypothesis.extra.numpy as npst
+import hypothesis.strategies as st
 import io
 import numpy as np
+from hypothesis import given, settings
 from cleanlab.dataset import (
     health_summary,
     find_overlapping_classes,
@@ -445,6 +448,16 @@ def test_real_datasets(dataset_name):
     )
 
 
+@pytest.mark.parametrize("dataset_name", ["mnist"])
+def test_multilabel_error(dataset_name):
+    print("\n" + dataset_name.capitalize() + "\n")
+    class_names = eval(dataset_name)
+    pred_probs, labels = _get_pred_probs_labels_from_labelerrors_datasets(dataset_name)
+    # if this runs without issue no all four datasets, the test passes
+    with pytest.raises(ValueError) as e:
+        _ = find_overlapping_classes(labels=labels, pred_probs=pred_probs, multi_label=True)
+
+
 @pytest.mark.parametrize("asymmetric", [True, False])
 @pytest.mark.parametrize("dataset_name", ["mnist", "imdb"])
 def test_symmetry_df_size(asymmetric, dataset_name):
@@ -492,3 +505,44 @@ def test_value_error_missing_num_examples_with_joint(use_num_examples, use_label
             joint=joint,
             num_examples=len(labels) if use_num_examples else None,
         )
+
+
+confident_joint_strategy = npst.arrays(
+    np.int32,
+    shape=npst.array_shapes(min_dims=2, max_dims=2, min_side=2, max_side=10),
+    elements=st.integers(min_value=0, max_value=int(1e6)),
+).filter(lambda arr: arr.shape[0] == arr.shape[1])
+
+
+@pytest.mark.issue_651
+@given(confident_joint=confident_joint_strategy)
+@settings(deadline=500)
+def test_find_overlapping_classes_with_confident_joint(confident_joint):
+    # Setup
+    K = confident_joint.shape[0]
+    overlapping_classes = find_overlapping_classes(confident_joint=confident_joint)
+
+    # Test that the output dataframe has the expected columns
+    expected_columns = [
+        "Class Index A",
+        "Class Index B",
+        "Num Overlapping Examples",
+        "Joint Probability",
+    ]
+    assert set(overlapping_classes.columns) == set(expected_columns)
+
+    # Class indices must be valid
+    assert overlapping_classes["Class Index A"].between(0, K - 1).all()
+    assert overlapping_classes["Class Index B"].between(0, K - 1).all()
+
+    # Overlapping example count should be non-negative integers
+    assert (overlapping_classes["Num Overlapping Examples"] >= 0).all()
+    assert overlapping_classes["Num Overlapping Examples"].dtype == int
+
+    # Joint probabilities should be between 0 and 1
+    assert (overlapping_classes["Joint Probability"] >= 0).all()
+    assert (overlapping_classes["Joint Probability"] <= 1).all()
+
+    # Joint probabilities sorted in descending order
+    if K > 2:
+        assert (overlapping_classes["Joint Probability"].diff()[1:] <= 0).all()

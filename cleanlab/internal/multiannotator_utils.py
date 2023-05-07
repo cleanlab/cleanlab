@@ -1,4 +1,4 @@
-# Copyright (C) 2017-2022  Cleanlab Inc.
+# Copyright (C) 2017-2023  Cleanlab Inc.
 # This file is part of cleanlab.
 #
 # cleanlab is free software: you can redistribute it and/or modify
@@ -129,17 +129,23 @@ def assert_valid_inputs_multiannotator(
 
 
 def assert_valid_pred_probs(
-    pred_probs: np.ndarray,
+    pred_probs: Optional[np.ndarray] = None,
     pred_probs_unlabeled: Optional[np.ndarray] = None,
     ensemble: bool = False,
 ):
-    """Validate format of pred_probs for multiannotator functions"""
+    """Validate format of pred_probs for multiannotator active learning functions"""
+    if pred_probs is None and pred_probs_unlabeled is None:
+        raise ValueError(
+            "pred_probs and pred_probs_unlabeled cannot both be None, specify at least one of the two."
+        )
+
     if ensemble:
-        if pred_probs.ndim != 3:
-            error_message = "pred_probs must be a 3d array."
-            if pred_probs.ndim == 2:  # pragma: no cover
-                error_message += " If you have a 2d pred_probs array, use the non-ensemble version of this function."
-            raise ValueError(error_message)
+        if pred_probs is not None:
+            if pred_probs.ndim != 3:
+                error_message = "pred_probs must be a 3d array."
+                if pred_probs.ndim == 2:  # pragma: no cover
+                    error_message += " If you have a 2d pred_probs array (ie. only one predictor), use the non-ensemble version of this function."
+                raise ValueError(error_message)
 
         if pred_probs_unlabeled is not None:
             if pred_probs_unlabeled.ndim != 3:
@@ -148,19 +154,19 @@ def assert_valid_pred_probs(
                     error_message += " If you have a 2d pred_probs_unlabeled array, use the non-ensemble version of this function."
                 raise ValueError(error_message)
 
+        if pred_probs is not None and pred_probs_unlabeled is not None:
             if pred_probs.shape[2] != pred_probs_unlabeled.shape[2]:
                 raise ValueError(
                     "pred_probs and pred_probs_unlabeled must have the same number of classes"
                 )
 
     else:
-        if pred_probs.ndim != 2:
-            error_message = "pred_probs must be a 2d array."
-            if pred_probs.ndim == 3:  # pragma: no cover
-                error_message += (
-                    " If you have a 3d pred_probs array, use the ensemble version of this function."
-                )
-            raise ValueError(error_message)
+        if pred_probs is not None:
+            if pred_probs.ndim != 2:
+                error_message = "pred_probs must be a 2d array."
+                if pred_probs.ndim == 3:  # pragma: no cover
+                    error_message += " If you have a 3d pred_probs array, use the ensemble version of this function."
+                raise ValueError(error_message)
 
         if pred_probs_unlabeled is not None:
             if pred_probs_unlabeled.ndim != 2:
@@ -169,6 +175,7 @@ def assert_valid_pred_probs(
                     error_message += " If you have a 3d pred_probs_unlabeled array, use the non-ensemble version of this function."
                 raise ValueError(error_message)
 
+        if pred_probs is not None and pred_probs_unlabeled is not None:
             if pred_probs.shape[1] != pred_probs_unlabeled.shape[1]:
                 raise ValueError(
                     "pred_probs and pred_probs_unlabeled must have the same number of classes"
@@ -200,7 +207,7 @@ def format_multiannotator_labels(labels: LabelLike) -> Tuple[pd.DataFrame, dict]
     try:
         unique_labels = unique_labels[~np.isnan(unique_labels)]
         unique_labels.sort()
-    except (TypeError):  # np.unique / np.sort cannot handle string values or pd.NA types
+    except TypeError:  # np.unique / np.sort cannot handle string values or pd.NA types
         nan_mask = np.array([(l is np.NaN) or (l is pd.NA) or (l == "nan") for l in unique_labels])
         unique_labels = unique_labels[~nan_mask]
         unique_labels.sort()
