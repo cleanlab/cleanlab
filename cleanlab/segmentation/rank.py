@@ -17,7 +17,6 @@
 """
 Methods to rank and score images in a semantic segmentation dataset, based on how likely they are to contain label errors.
 
-
 """
 
 import pandas as pd
@@ -60,6 +59,9 @@ def get_label_quality_scores(
       
     method : {"softmin", "num_pixel_issues"}, default="softmin"
       Label quality scoring method.
+        "softmin" - Calculates the inner product between scores and softmax(1-scores). For efficiency, use instead of "num_pixel_issues".
+        "num_pixel_issues" - Uses the number of pixels with label issues for each image using :py:func:find_label_issues <cleanlab.segemntation.filter.find_label_issues>
+
 
     batch_size : int, optional
       For num_pixel_issues:
@@ -82,7 +84,7 @@ def get_label_quality_scores(
       decrease in performance
 
       temperature : float, optional
-        Temperature for softmin. Default ``0.1``
+      Temperature for softmin. Default ``0.1``
 
 
 
@@ -97,20 +99,8 @@ def get_label_quality_scores(
 
     """
         
-    def check_input(labels: np.ndarray, pred_probs: np.ndarray) -> None:
-        if len(labels.shape) != 3:
-            raise ValueError("labels must have a shape of (N, H, W)")
-
-        if len(pred_probs.shape) != 4:
-            raise ValueError("pred_probs must have a shape of (N, K, H, W)")
-
-        num_images, height, width = labels.shape
-        num_images_pred, num_classes, height_pred, width_pred = pred_probs.shape
-
-        if num_images != num_images_pred or height != height_pred or width != width_pred:
-            raise ValueError("labels and pred_probs must have matching dimensions for N, H, and W")
             
-    check_input(labels,pred_probs)
+    _check_input(labels,pred_probs)
     
     softmin_temperature = kwargs.get("temperature", 0.1) 
     downsample_num_pixel_issues = kwargs.get("downsample", 16) 
@@ -123,7 +113,7 @@ def get_label_quality_scores(
         masked_pred_probs = np.where(mask, pred_probs, 0)
         pixel_scores = masked_pred_probs.sum(axis=1)
         
-        return find_label_issues(labels,pred_probs, downsample=downsample_num_pixel_issues, n_jobs=n_jobs, scores_only=True, verbose=verbose,), pixel_scores
+        return find_label_issues(labels,pred_probs, downsample=downsample_num_pixel_issues, n_jobs=n_jobs, scores_only=True, verbose=verbose,batch_size=batch_size), pixel_scores
         
     if downsample_num_pixel_issues != 16:
         import warnings
@@ -139,43 +129,10 @@ def get_label_quality_scores(
         mask = [labels[image]==cls for cls in range(num_class)]
         image_probs = pred_probs[image][mask]
         pixel_scores.append(np.where(mask, pred_probs[image], 0).sum(axis=0))
-        image_scores.append(get_label_quality_per_image(np.array(image_probs),method = method, temperature=softmin_temperature))
+        image_scores.append(_get_label_quality_per_image(np.array(image_probs),method = method, temperature=softmin_temperature))
         if verbose:
             pbar.update(1)
     return np.array(image_scores), np.array(pixel_scores)
-
-
-def get_label_quality_per_image(image_scores,method=None,temperature=0.1):
-    from cleanlab.internal.multilabel_scorer import softmin
-    """
-    Image overall label quality scoring, curently using the "softmin" method.
-
-    Parameters
-    ----------
-    image_scores:
-        Per-pixel label quality scores in flattened array of shape ``(N, )``, where N is the number of pixels in the image.
-
-
-    temperature:
-        Temperature of the softmax function.
-
-        Lower values encourage this method to converge toward the label quality score of the pixel with the lowest quality label in the image.
-
-        Higher values encourage this method to converge toward the average label quality score of all pixels in the image.
-
-    Returns
-    ---------
-    image_score:
-        Float of the image's label quality score from 0 to 1, 0 being the lowest quality and 1 being the highest quality.
-
-    """
-    image_scores_64 = image_scores.astype("float64")
-    if method=="softmin":
-        return softmin(np.expand_dims(image_scores_64,axis=0), axis=1, temperature=temperature)[0]
-    else:
-        raise Exception("Invalid Method: Specify correct method")
-
-
 
 def issues_from_scores(
     image_scores: np.ndarray, pixel_scores: Optional[np.ndarray] = None, threshold: float = 0.1
@@ -229,10 +186,64 @@ def issues_from_scores(
 
     else:
         ranking = np.argsort(image_scores)
-        cutoff = 0
-        while image_scores[ranking[cutoff]] < threshold and cutoff < len(ranking)-1:
-            cutoff += 1
-        return ranking[:cutoff]
+        cutoff = np.searchsorted(image_scores[ranking], threshold)
+        return ranking[:cutoff+1]
 
+
+def _get_label_quality_per_image(pixel_scores,method=None,temperature=0.1):
+    from cleanlab.internal.multilabel_scorer import softmin
+    """
+    Input pixel scores and get label quality score for that image, curently using the "softmin" method.
+
+    Parameters
+    ----------
+    pixel_scores:
+        Per-pixel label quality scores in flattened array of shape ``(N, )``, where N is the number of pixels in the image.
+
+    method: default "softmin"
+        Method to use to calculate the image's label quality score.
+        Currently only supports "softmin".
+    temperature: default 0.1
+        Temperature of the softmax function.
+
+        Lower values encourage this method to converge toward the label quality score of the pixel with the lowest quality label in the image.
+
+        Higher values encourage this method to converge toward the average label quality score of all pixels in the image.
+
+    Returns
+    ---------
+    image_score:
+        Float of the image's label quality score from 0 to 1, 0 being the lowest quality and 1 being the highest quality.
+
+    """
+    pixel_scores_64 = pixel_scores.astype("float64")
+    if method=="softmin":
+        return softmin(np.expand_dims(pixel_scores_64,axis=0), axis=1, temperature=temperature)[0]
+    else:
+        raise Exception("Invalid Method: Specify correct method")
+
+def _check_input(labels: np.ndarray, pred_probs: np.ndarray) -> None:
+        """
+        Checks that the input labels and predicted probabilities are valid.
+
+        Parameters
+        ----------
+        labels:
+            Array of shape ``(N, H, W)`` of integer labels, where `N` is the number of images in the dataset and `H` and `W` are the height and width of the images.
+
+        pred_probs:
+            Array of shape ``(N, K, H, W)`` of predicted probabilities, where `N` is the number of images in the dataset, `K` is the number of classes, and `H` and `W` are the height and width of the images.
+        """
+        if len(labels.shape) != 3:
+            raise ValueError("labels must have a shape of (N, H, W)")
+
+        if len(pred_probs.shape) != 4:
+            raise ValueError("pred_probs must have a shape of (N, K, H, W)")
+
+        num_images, height, width = labels.shape
+        num_images_pred, num_classes, height_pred, width_pred = pred_probs.shape
+
+        if num_images != num_images_pred or height != height_pred or width != width_pred:
+            raise ValueError("labels and pred_probs must have matching dimensions for N, H, and W")
 
 

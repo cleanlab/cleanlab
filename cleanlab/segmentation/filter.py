@@ -22,6 +22,7 @@ Methods to find label issues in semantic segmentation datasets, where each pixel
 from cleanlab.experimental.label_issues_batched import find_label_issues_batched
 import numpy as np 
 from typing import Optional, List, Any, Tuple
+from cleanlab.segmentation.rank import _check_input
 
 def find_label_issues(
     labels: np.ndarray,
@@ -92,28 +93,15 @@ def find_label_issues(
     """
     scores_only = kwargs.get("scores_only", False)
     
-    def check_input(labels: np.ndarray, pred_probs: np.ndarray) -> None:
-        if len(labels.shape) != 3:
-            raise ValueError("labels must have a shape of (N, H, W)")
-
-        if len(pred_probs.shape) != 4:
-            raise ValueError("pred_probs must have a shape of (N, K, H, W)")
-
-        num_images, height, width = labels.shape
-        num_images_pred, num_classes, height_pred, width_pred = pred_probs.shape
-
-        if num_images != num_images_pred or height != height_pred or width != width_pred:
-            raise ValueError("labels and pred_probs must have matching dimensions for N, H, and W")
-        
-        #Check downsample
-        if height%downsample!=0 or width%downsample!=0:
-            raise ValueError(f"Height {height} and width {width} not divisible by downsample value of {downsample}")
-        return None
-    
     def downsample_arrays(labels: np.ndarray, pred_probs: np.ndarray, factor: int = 1) -> Tuple[np.ndarray, np.ndarray]:
         if factor == 1:
             return labels, pred_probs
+        
         num_image, num_classes, h, w = pred_probs.shape
+
+        #Check if possible to downsample
+        if h%downsample!=0 or w%downsample!=0:
+            raise ValueError(f"Height {h} and width {w} not divisible by downsample value of {downsample}")
         small_labels = np.round(labels.reshape((num_image, h // factor, factor,
                                                 w // factor, factor)).mean(4).mean(2))
         small_pred_probs = pred_probs.reshape((num_image, num_classes, h // factor, factor,
@@ -135,7 +123,7 @@ def find_label_issues(
     
     
     ##
-    check_input(labels, pred_probs)
+    _check_input(labels, pred_probs)
     
     
     #Added Downsampling
