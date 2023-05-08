@@ -20,9 +20,8 @@ Methods to rank and score images in a semantic segmentation dataset, based on ho
 """
 import numpy as np
 from typing import List, Optional, Union, Tuple
-
 from cleanlab.segmentation.filter import find_label_issues
-
+from cleanlab.segmentation.filter import _check_input
 
 def get_label_quality_scores(
     labels: np.ndarray,
@@ -220,28 +219,6 @@ def _get_label_quality_per_image(pixel_scores,method=None,temperature=0.1):
     else:
         raise Exception("Invalid Method: Specify correct method")
 
-def _check_input(labels: np.ndarray, pred_probs: np.ndarray) -> None:
-        """
-        Checks that the input labels and predicted probabilities are valid.
 
-        Parameters
-        ----------
-        labels:
-            Array of shape ``(N, H, W)`` of integer labels, where `N` is the number of images in the dataset and `H` and `W` are the height and width of the images.
-
-        pred_probs:
-            Array of shape ``(N, K, H, W)`` of predicted probabilities, where `N` is the number of images in the dataset, `K` is the number of classes, and `H` and `W` are the height and width of the images.
-        """
-        if len(labels.shape) != 3:
-            raise ValueError("labels must have a shape of (N, H, W)")
-
-        if len(pred_probs.shape) != 4:
-            raise ValueError("pred_probs must have a shape of (N, K, H, W)")
-
-        num_images, height, width = labels.shape
-        num_images_pred, num_classes, height_pred, width_pred = pred_probs.shape
-
-        if num_images != num_images_pred or height != height_pred or width != width_pred:
-            raise ValueError("labels and pred_probs must have matching dimensions for N, H, and W")
 
 
