@@ -111,7 +111,7 @@ def forget_rate_scheduler(epochs, forget_rate, num_gradual, exponent):
     """Tells Co-Teaching what fraction of examples to forget at each epoch."""
     # define how many things to forget at each rate schedule
     forget_rate_schedule = np.ones(epochs) * forget_rate
-    forget_rate_schedule[:num_gradual] = np.linspace(0, forget_rate**exponent, num_gradual)
+    forget_rate_schedule[:num_gradual] = np.linspace(0, forget_rate ** exponent, num_gradual)
     return forget_rate_schedule
 
 

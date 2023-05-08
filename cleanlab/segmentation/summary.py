@@ -25,13 +25,12 @@ import pandas as pd
 from tqdm import tqdm
 
 
-
 def display_issues(
     issues: np.ndarray,
-    labels: Optional[np.ndarray]=None,
-    pred_probs: Optional[np.ndarray]=None,
+    labels: Optional[np.ndarray] = None,
+    pred_probs: Optional[np.ndarray] = None,
     exclude: List[int] = [],
-    top: int = 20
+    top: int = 20,
 ) -> None:
     """
     Display semantic segmentation label issues, showing images with problematic pixels highlighted.
@@ -47,9 +46,9 @@ def display_issues(
 
       Same format as output by :py:func:`segmentation.filter.find_label_issues <cleanlab.segmentation.filter.find_label_issues>`
       or :py:func:`segmentation.rank.issues_from_scores <cleanlab.segmentation.rank.issues_from_scores>`.
-        
-    labels : np.ndarray 
-      A discrete array of noisy labels for a segmantic segmentation dataset, in the shape``(N,H,W,)``. 
+
+    labels : np.ndarray
+      A discrete array of noisy labels for a segmantic segmentation dataset, in the shape``(N,H,W,)``.
       where each pixel must be integer in 0, 1, ..., K-1.
 
       If `labels` is provided, this function also displays given label of the pixel identified with issue.
@@ -71,47 +70,46 @@ def display_issues(
         Maximum number of issues to be printed.
 
     """
-    if labels is None and len(exclude)>0:
+    if labels is None and len(exclude) > 0:
         raise ValueError("Provide labels to allow class exclusion")
 
     top = min(top, len(issues))
 
-    correct_ordering = np.argsort(-np.sum(issues, axis=(1,2)))[:top]
+    correct_ordering = np.argsort(-np.sum(issues, axis=(1, 2)))[:top]
 
     try:
         import matplotlib.pyplot as plt
     except:
-        raise ImportError("try \"pip install matplotlib\"")
-        
-        
-    output_plots = (pred_probs is not None) + (labels is not None) +1
-    
-    _,h,w = issues.shape
-    if output_plots >1: 
+        raise ImportError('try "pip install matplotlib"')
+
+    output_plots = (pred_probs is not None) + (labels is not None) + 1
+
+    _, h, w = issues.shape
+    if output_plots > 1:
         if pred_probs is not None:
-            _,num_classes,_,_ = pred_probs.shape
+            _, num_classes, _, _ = pred_probs.shape
         else:
-            num_classes = max(np.unique(labels))+1
+            num_classes = max(np.unique(labels)) + 1
         cmap = _generate_colormap(num_classes)
-    
+
     for i in correct_ordering:
 
         # Show images
-        fig, axes = plt.subplots(1, output_plots, figsize=(5*output_plots, 5))
+        fig, axes = plt.subplots(1, output_plots, figsize=(5 * output_plots, 5))
         plot_index = 0
-        
+
         # First image - Given truth labels
         if labels is not None:
             axes[plot_index].imshow(cmap[labels[i]])
             axes[plot_index].set_title("Given Labels")
-            plot_index+=1
-            
+            plot_index += 1
+
         # Second image - Argmaxed pred_probs
         if pred_probs is not None:
             axes[plot_index].imshow(cmap[np.argmax(pred_probs[i], axis=0)])
             axes[plot_index].set_title("Argmaxed Prediction Probabilities")
-            plot_index+=1
-        
+            plot_index += 1
+
         # Third image - Errors
 
         if output_plots == 1:
@@ -119,15 +117,14 @@ def display_issues(
         else:
             ax = axes[plot_index]
 
-        mask = np.full((h,w), True) if len(exclude)== 0 else ~np.isin(labels[i], exclude)
-        ax.imshow(issues[i]& mask, cmap='gray', vmin=0, vmax=1)
+        mask = np.full((h, w), True) if len(exclude) == 0 else ~np.isin(labels[i], exclude)
+        ax.imshow(issues[i] & mask, cmap="gray", vmin=0, vmax=1)
         ax.set_title(f"Suggested Errors in image index {i}")
         plt.show()
-        
+
         plot_index = 0
 
     return None
-
 
 
 def common_label_issues(
@@ -138,7 +135,7 @@ def common_label_issues(
     exclude: List[int] = [],
     top: int = 20,
     class_names: Optional[List[str]] = None,
-    verbose: bool = True
+    verbose: bool = True,
 ) -> pd.DataFrame:
     """
     Display the frequency of which label are swapped in the dataset.
@@ -161,8 +158,8 @@ def common_label_issues(
       Same format as output by :py:func:`segmentation.filter.find_label_issues <cleanlab.segmentation.filter.find_label_issues>`
       or :py:func:`segmentation.rank.issues_from_scores <cleanlab.segmentation.rank.issues_from_scores>`.
 
-    labels : np.ndarray 
-      A discrete array of noisy labels for a segmantic segmentation dataset, in the shape``(N,H,W,)``. 
+    labels : np.ndarray
+      A discrete array of noisy labels for a segmantic segmentation dataset, in the shape``(N,H,W,)``.
       where each pixel must be integer in 0, 1, ..., K-1.
 
     pred_probs : np.ndarray
@@ -229,14 +226,17 @@ def common_label_issues(
 
     if verbose:
         for idx, row in df.iterrows():
-            print(f"Class '{row['given_label']}' is potentially mislabeled as class '{row['predicted_label']}' "f"{row['num_label_issues']} times throughout the dataset")
+            print(
+                f"Class '{row['given_label']}' is potentially mislabeled as class '{row['predicted_label']}' "
+                f"{row['num_label_issues']} times throughout the dataset"
+            )
 
     return df
-    
+
 
 def filter_by_class(
-    class_index: int, issues: np.ndarray, labels: np.ndarray,pred_probs: np.ndarray 
-) -> np.ndarray :
+    class_index: int, issues: np.ndarray, labels: np.ndarray, pred_probs: np.ndarray
+) -> np.ndarray:
     """
     Return subset of label issues involving a particular class.
 
@@ -252,9 +252,9 @@ def filter_by_class(
 
       Same format as output by :py:func:`segmentation.filter.find_label_issues <cleanlab.segmentation.filter.find_label_issues>`
       or :py:func:`segmentation.rank.issues_from_scores <cleanlab.segmentation.rank.issues_from_scores>`.
-    
-    labels : np.ndarray 
-      A discrete array of noisy labels for a segmantic segmentation dataset, in the shape``(N,H,W,)``. 
+
+    labels : np.ndarray
+      A discrete array of noisy labels for a segmantic segmentation dataset, in the shape``(N,H,W,)``.
       where each pixel must be integer in 0, 1, ..., K-1.
 
     pred_probs : np.ndarray
@@ -271,23 +271,26 @@ def filter_by_class(
 
 
     """
-    issues_subset = (issues & np.isin(labels, class_index)) | (issues & np.isin(pred_probs.argmax(1), class_index))
+    issues_subset = (issues & np.isin(labels, class_index)) | (
+        issues & np.isin(pred_probs.argmax(1), class_index)
+    )
     return issues_subset
-    
+
+
 def _generate_colormap(num_colors):
-    
+
     """
     Finds a unique color map based on the number of colors inputted ideal for semantic segmentation.
     Parameters
     ----------
-    num_colors:int 
-        How many unique colors you want 
-        
+    num_colors:int
+        How many unique colors you want
+
     Returns
     -------
     colors:
-        colors with num_colors distinct colors 
-    
+        colors with num_colors distinct colors
+
     """
 
     try:
@@ -295,8 +298,8 @@ def _generate_colormap(num_colors):
         from matplotlib.colors import ListedColormap
         from matplotlib.cm import hsv
     except:
-        raise ImportError("try \"pip install matplotlib\"")
-    
+        raise ImportError('try "pip install matplotlib"')
+
     num_shades = 7
     num_colors_with_shades = -(-num_colors // num_shades) * num_shades
     linear_nums = np.linspace(0, 1, num_colors_with_shades, endpoint=False)
@@ -313,8 +316,14 @@ def _generate_colormap(num_colors):
     lower_half = lower_partitions_half * num_shades
     initial_cm[:lower_half, :3] *= np.linspace(0.2, 1, lower_half)[:, np.newaxis]
 
-    upper_half_indices = np.arange(lower_half, num_colors_with_shades).reshape(upper_partitions_half, num_shades)
-    modifier = (1 - initial_cm[upper_half_indices, :3]) * np.arange(upper_partitions_half)[:, np.newaxis, np.newaxis] / upper_partitions_half
+    upper_half_indices = np.arange(lower_half, num_colors_with_shades).reshape(
+        upper_partitions_half, num_shades
+    )
+    modifier = (
+        (1 - initial_cm[upper_half_indices, :3])
+        * np.arange(upper_partitions_half)[:, np.newaxis, np.newaxis]
+        / upper_partitions_half
+    )
     initial_cm[upper_half_indices, :3] += modifier
-    colors = (initial_cm[:num_colors])
+    colors = initial_cm[:num_colors]
     return colors
