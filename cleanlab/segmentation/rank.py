@@ -18,8 +18,6 @@
 Methods to rank and score images in a semantic segmentation dataset, based on how likely they are to contain label errors.
 
 """
-
-import pandas as pd
 import numpy as np
 from typing import List, Optional, Union, Tuple
 
@@ -32,7 +30,7 @@ def get_label_quality_scores(
     *,
     method: str = "softmin",
     batch_size: int = 10000,
-    n_jobs: Optional[int] = 1,
+    n_jobs: int = 1,
     verbose: bool = True,
     **kwargs
 ) -> Tuple[np.ndarray,np.ndarray]:
@@ -62,30 +60,28 @@ def get_label_quality_scores(
         "softmin" - Calculates the inner product between scores and softmax(1-scores). For efficiency, use instead of "num_pixel_issues".
         "num_pixel_issues" - Uses the number of pixels with label issues for each image using :py:func:find_label_issues <cleanlab.segemntation.filter.find_label_issues>
 
-
-    batch_size : int, optional
+    batch_size : int, 
       For num_pixel_issues:
       Size of mini-batches to use for estimating the label issues.
       To maximize efficiency, try to use the largest `batch_size` your memory allows.
       
-    n_jobs: int, optional
+    n_jobs: int, 
       For num_pixel_issues:
       Number of processes for multiprocessing (default value = 1). Only used on Linux.
       If `n_jobs=None`, will use either the number of: physical cores if psutil is installed, or logical cores otherwise.
     
-    verbose : bool, optional
+    verbose : bool, 
       For num_pixel_issues:
       Set to ``False`` to suppress all print statements.
       
     **kwargs:
-      downsample : int, optional
+      downsample : int, 
       Factor to shrink labels and pred_probs by for 'num_pixel_issues' only . Default ``16``
       Must be a factor divisible by both the labels and the pred_probs. Note that larger factors result in a linear 
       decrease in performance
 
-      temperature : float, optional
+      temperature : float, 
       Temperature for softmin. Default ``0.1``
-
 
 
     Returns
@@ -104,6 +100,8 @@ def get_label_quality_scores(
     
     softmin_temperature = kwargs.get("temperature", 0.1) 
     downsample_num_pixel_issues = kwargs.get("downsample", 16) 
+
+
 
     if method == "num_pixel_issues":
         _,K,_,_ = pred_probs.shape
