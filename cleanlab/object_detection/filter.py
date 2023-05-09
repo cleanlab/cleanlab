@@ -66,7 +66,7 @@ def find_label_issues(
         for the `i`-th image and ``bboxes[l]`` is a bounding box of coordinates in ``[x1,y1,x2,y2]`` format with given class label ``labels[j]``.
         ``image_name`` is an optional part of the labels that can be used to later refer to specific images.
 
-       For more information on proper labels formatting, check out the [MMDetection library](https://mmdetection.readthedocs.io/en/dev-3.x/advanced_guides/customize_dataset.html)
+       For more information on proper labels formatting, check out the `MMDetection library <https://mmdetection.readthedocs.io/en/dev-3.x/advanced_guides/customize_dataset.html>`
 
     predictions:
         Predictions output by a trained object detection model.

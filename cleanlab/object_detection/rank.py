@@ -223,7 +223,9 @@ def _prune_by_threshold(
             UserWarning,
         )
     if verbose:
-        print(f"Pruning {num_ann_to_zero} labels out of {total_ann} using threshold=={threshold}.")
+        print(
+            f"Pruning {num_ann_to_zero} predictions out of {total_ann} using threshold=={threshold}. These predictions are no longer considered as potential candidates for identifying label issues as their similarity with the given labels is no longer considered."
+        )
     return predictions_copy
 
 

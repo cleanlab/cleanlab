@@ -56,11 +56,13 @@ def visualize(
 
     label:
         The given label for a single image in the format ``{'bboxes': np.ndarray((L,4)), 'labels': np.ndarray((L,))}`` where
-        ``L`` is the number of bounding boxes for the `i`-th image and ``bboxes[j]`` is in the format ``[x,y,x,y]`` with given label ``labels[j]``.
+        ``L`` is the number of bounding boxes for the `i`-th image and ``bboxes[j]`` is in the format ``[x1,y1,x2,y2]`` with given label ``labels[j]``.
+
+        Note: Here, [x1,y1] corresponds to the coordinates of the bottom-left corner of the bounding box, while [x2,y2] corresponds to the coordinates of the top-right corner of the bounding box. The last column, pred_prob, represents the predicted probability that the bounding box contains an object of the class k.
 
     prediction:
         A prediction for a single image in the format ``np.ndarray((K,))`` and ``prediction[k]`` is of shape ``np.ndarray(N,5)``
-         where ``M`` is the number of predicted bounding boxes for class ``k`` and the five columns correspond to ``[x,y,x,y,pred_prob]`` where
+        where ``M`` is the number of predicted bounding boxes for class ``k`` and the five columns correspond to ``[x,y,x,y,pred_prob]`` where
         ``[x,y,x,y]`` are the bounding box coordinates predicted by the model and ``pred_prob`` is the model's confidence in ``predictions[i]``.
 
     prediction_threshold:
