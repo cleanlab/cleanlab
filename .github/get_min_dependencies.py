@@ -3,13 +3,12 @@ import json
 
 
 if __name__ == "__main__":
-    with open("../deps.json", "r") as f:
+    with open("./deps.json", "r") as f:
         deps = json.load(f)
 
     for package in deps:
         if package["package"]["package_name"] == "cleanlab":
             for dep in package["dependencies"]:
-                print(dep)
                 req_version = dep["required_version"]
                 with open("requirements-min.txt", "a") as f:
                     if req_version.startswith(">="):
