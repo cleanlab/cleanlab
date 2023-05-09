@@ -187,8 +187,6 @@ class TestDatalab:
         expected_outlier_issues = pd.DataFrame(
             {
                 **{key: mock_issues[key] for key in ["is_outlier_issue", "outlier_score"]},
-                "nearest_neighbor": mock_nearest_neighbor,
-                "distance_to_nearest_neighbor": mock_distance_to_nearest_neighbor,
             },
         )
         pd.testing.assert_frame_equal(outlier_issues, expected_outlier_issues, check_dtype=False)
