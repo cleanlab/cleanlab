@@ -103,7 +103,7 @@ class TestDatalab:
                 "predicted_label": [1, 1, 2, 0, 2],
                 # get_info("label") adds `class_names` from statistics
             },
-            "outlier": {
+            "near_duplicate": {
                 "nearest_neighbor": [1, 0, 0, 4, 3],
             },
         }
@@ -115,8 +115,8 @@ class TestDatalab:
         assert label_info["predicted_label"].tolist() == [4, 4, 5, 3, 5]
         assert label_info["class_names"] == [3, 4, 5]
 
-        outlier_info = lab.get_info("outlier")
-        assert outlier_info["nearest_neighbor"] == [1, 0, 0, 4, 3]
+        near_duplicate_info = lab.get_info("near_duplicate")
+        assert near_duplicate_info["nearest_neighbor"] == [1, 0, 0, 4, 3]
 
         assert lab.get_info() == lab.info == mock_info
 
@@ -146,15 +146,14 @@ class TestDatalab:
             {
                 "is_label_issue": [True, False, False, True, False],
                 "label_score": [0.2, 0.4, 0.6, 0.1, 0.8],
-                "is_outlier_issue": [False, True, True, False, True],
-                "outlier_score": [0.5, 0.3, 0.1, 0.7, 0.2],
+                "is_near_duplicate_issue": [False, True, True, False, True],
+                "near_duplicate_score": [0.5, 0.3, 0.1, 0.7, 0.2],
             },
         )
         monkeypatch.setattr(lab, "issues", mock_issues)
 
         mock_predicted_labels = np.array([0, 1, 2, 1, 2])
 
-        mock_nearest_neighbor = [1, 3, 5, 2, 0]
         mock_distance_to_nearest_neighbor = [0.1, 0.2, 0.3, 0.4, 0.5]
 
         lab.info.update(
@@ -163,8 +162,7 @@ class TestDatalab:
                     "given_label": lab.labels,
                     "predicted_label": mock_predicted_labels,
                 },
-                "outlier": {
-                    "nearest_neighbor": mock_nearest_neighbor,
+                "near_duplicate": {
                     "distance_to_nearest_neighbor": mock_distance_to_nearest_neighbor,
                 },
             }
@@ -182,14 +180,20 @@ class TestDatalab:
 
         pd.testing.assert_frame_equal(label_issues, expected_label_issues, check_dtype=False)
 
-        outlier_issues = lab.get_issues(issue_name="outlier")
+        near_duplicate_issues = lab.get_issues(issue_name="near_duplicate")
 
-        expected_outlier_issues = pd.DataFrame(
+        expected_near_duplicate_issues = pd.DataFrame(
             {
-                **{key: mock_issues[key] for key in ["is_outlier_issue", "outlier_score"]},
+                **{
+                    key: mock_issues[key]
+                    for key in ["is_near_duplicate_issue", "near_duplicate_score"]
+                },
+                "distance_to_nearest_neighbor": mock_distance_to_nearest_neighbor,
             },
         )
-        pd.testing.assert_frame_equal(outlier_issues, expected_outlier_issues, check_dtype=False)
+        pd.testing.assert_frame_equal(
+            near_duplicate_issues, expected_near_duplicate_issues, check_dtype=False
+        )
 
         issues = lab.get_issues()
         pd.testing.assert_frame_equal(issues, mock_issues, check_dtype=False)
