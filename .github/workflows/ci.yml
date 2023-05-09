@@ -50,12 +50,16 @@ jobs:
       - uses: actions/setup-python@v4
         with:
           python-version: '3.7'
-      - name: Install dependencies
+      - name: Install cleanlab
         run: |
           python -m  pip install --upgrade pip
           pip install .
+      - name: Install test dependencies
+        run: |
           pip install pytest pytest-lazy-fixture pipdeptree
           pipdeptree -j > deps.json
+      - name: Install minimum versions
+        run: |
           python ./.github/get_min_dependencies.py
           pip install -r .github/requirements-min.txt
       - name: Run tests
