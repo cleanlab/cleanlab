@@ -164,6 +164,16 @@ class NonIIDIssueManager(IssueManager):
             },
         )
 
+        num_issues = self.issues[f"is_{self.issue_name}_issue"].sum()
+        if self.p_value >= 0.05:
+            # Set all issues to False if the p-value is greater than 0.05
+            self.issues[f"is_{self.issue_name}_issue"] = False
+        elif num_issues == 0:
+            # Make the lowest scoring example an issue if there are no issues
+            self.issues.loc[
+                self.issues[self.issue_score_key].idxmin(), f"is_{self.issue_name}_issue"
+            ] = True
+
         self.summary = self.make_summary(score=self.p_value)
 
         if knn_graph is None:
