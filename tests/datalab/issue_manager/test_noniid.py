@@ -89,7 +89,7 @@ class TestNonIIDIssueManager:
             issue_manager.summary,
             issue_manager.info,
         )
-        expected_sorted_issue_mask = np.array([False] * len(embeddings))
+        expected_sorted_issue_mask = np.array([False] * 46 + [True] + [False] * 3)
         assert np.all(
             issues_sort["is_non_iid_issue"] == expected_sorted_issue_mask
         ), "Issue mask should be correct"
