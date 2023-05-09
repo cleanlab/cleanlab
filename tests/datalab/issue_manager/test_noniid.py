@@ -115,7 +115,8 @@ class TestNonIIDIssueManager:
             issues_perm["is_non_iid_issue"] == expected_permuted_issue_mask
         ), "Issue mask should be correct"
         assert summary_perm["issue_type"][0] == "non_iid"
-        assert summary_perm["score"][0] > 0.05  # cannot easily ensure precise value because random seed has different effects on different OS
+        # ensure score is large, cannot easily ensure precise value because random seed has different effects on different OS:
+        assert summary_perm["score"][0] > 0.05
         assert info_perm.get("p-value", None) is not None, "Should have p-value"
         assert summary_perm["score"][0] == pytest.approx(expected=info_perm["p-value"], abs=1e-7)
 
