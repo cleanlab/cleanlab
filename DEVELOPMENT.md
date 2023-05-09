@@ -301,7 +301,7 @@ Use relative linking to connect information between docs and jupyter notebooks, 
       - `` :py:func:`file.function_name <cleanlab.file.function_name>` `` for functions 
       - ``:py:class:`file.class_name <cleanlab.file.class_name>` `` for classes
 
-    Here you have more control over the text that is displayed to display the module name.
+    Here you have more control over the text that is displayed to display the module name.  When referring to a function that is alternatively defined in other modules as well, always use this option to be more explicit about which module you are referencing.
 - Link a tutorial (rst file) from within a source code docstring or rst file: ``:ref:`tutorial_name <tutorial_name>` ``
 - Link a tutorial notebook (ipynb file) from within a source code docstring or rst file: `` `notebook_name <tutorials/notebook_name.ipynb>`_ `` . (If the notebook is not the in the same folder as the source code, use a relative path)
 - Link a function from within a tutorial notebook: `[function_name](../cleanlab/file.rst#cleanlab.file.function_name)`
