@@ -61,7 +61,7 @@ jobs:
       - name: Install minimum versions
         run: |
           python ./.github/get_min_dependencies.py
-          pip install -r .github/requirements-min.txt
+          pip install -r requirements-min.txt
       - name: Run tests
         run: | # these tests provide 50% coverage
           pytest tests/test_multilabel_classification.py tests/test_multiannotator.py tests/test_filter_count.py
