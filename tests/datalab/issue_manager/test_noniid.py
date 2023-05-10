@@ -73,6 +73,7 @@ class TestNonIIDIssueManager:
         assert issue_manager.metric == "euclidean"
         assert issue_manager.k == 10
         assert issue_manager.num_permutations == 25
+        assert issue_manager.significance_threshold == 0.05
 
         issue_manager = NonIIDIssueManager(
             datalab=lab,
