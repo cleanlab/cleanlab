@@ -729,3 +729,45 @@ def test_near_duplicates_reuses_knn_graph():
     assert (
         time_outliers_before_near_duplicates < time_near_duplicates_and_outlier
     ), "KNN graph reuse should make this run of find_issues faster."
+
+
+class TestDatalabFindNonIIDIssues:
+    """This class focuses on testing the end-to-end functionality of calling Datalab.find_issues()
+    only for non-IID issues. The tests in this class are not meant to test the underlying
+    functionality of the non-IID issue finders themselves, but rather to test that the
+    Datalab.find_issues() method correctly calls the non-IID issue finders and results are consistent.
+    """
+
+    @pytest.fixture
+    def random_embeddings(self):
+        np.random.seed(SEED)
+        return np.random.rand(100, 10)
+
+    @pytest.fixture
+    def sorted_embeddings(self):
+        np.random.seed(SEED)
+        n_samples = 1000
+
+        # Stack features to create a 3D dataset
+        x = np.linspace(0, 4 * np.pi, n_samples)
+        y = np.sin(x) + np.random.normal(0, 0.1, n_samples)
+        z = np.cos(x) + np.random.normal(0, 0.1, n_samples)
+        return np.column_stack((x, y, z))
+
+    def test_find_non_iid_issues(self, random_embeddings):
+        data = {"labels": [0, 1, 0]}
+        lab = Datalab(data=data, label_name="labels")
+        lab.find_issues(features=random_embeddings, issue_types={"non_iid": {}})
+        summary = lab.get_issue_summary()
+        assert ["non_iid"] == summary["issue_type"].values
+        assert summary["score"].values[0] > 0.05
+        assert lab.get_issues()["is_non_iid_issue"].sum() == 0
+
+    def test_find_non_iid_issues_sorted(self, sorted_embeddings):
+        data = {"labels": [0, 1, 0]}
+        lab = Datalab(data=data, label_name="labels")
+        lab.find_issues(features=sorted_embeddings, issue_types={"non_iid": {}})
+        summary = lab.get_issue_summary()
+        assert ["non_iid"] == summary["issue_type"].values
+        assert summary["score"].values[0] == 0
+        assert lab.get_issues()["is_non_iid_issue"].sum() > 0

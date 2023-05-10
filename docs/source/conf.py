@@ -64,8 +64,11 @@ exclude_patterns = ["_build"]
 
 autosummary_generate = True
 
+# set the default role of `name` to make cross references
+default_role = "py:obj"
+
 # -- Options for doctest extension ---------------------------------------------
-nbsphinx_allow_errors = True # to allow make doctest to run
+nbsphinx_allow_errors = True  # to allow make doctest to run
 
 # -- Options for apidoc extension ----------------------------------------------
 
@@ -161,7 +164,7 @@ html_context = {
         "v2.3.0",
         "v2.2.0",
         "v2.1.0",
-        "v2.0.0", 
+        "v2.0.0",
         "v1.0.1",
     ],
     # fmt: on
@@ -190,7 +193,7 @@ nbsphinx_prolog = (
         .dataframe {
             background: #D7D7D7;
         }
-    
+
         th {
             color:black;
         }
