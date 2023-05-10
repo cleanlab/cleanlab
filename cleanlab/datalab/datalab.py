@@ -273,6 +273,7 @@ class Datalab:
         num_examples: int = 5,
         verbosity: Optional[int] = None,
         include_description: bool = True,
+        show_summary_score: bool = False,
     ) -> None:
         """Prints informative summary of all issues.
 
@@ -300,6 +301,7 @@ class Datalab:
             data_issues=self.data_issues,
             verbosity=verbosity,
             include_description=include_description,
+            show_summary_score=show_summary_score,
         )
         reporter.report(num_examples=num_examples)
 

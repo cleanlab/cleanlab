@@ -113,13 +113,13 @@ The package can be installed with the optional dependency (here called `gpu`) vi
 1. PyPI installation
 
 ```shell
-pip install -r cleanlab[gpu]
+pip install -r "cleanlab[gpu]"
 ```
 
 2. Editable installation
 
 ```shell
-pip install -e .[gpu]
+pip install -e ".[gpu]"
 ```
 
 ## Testing
@@ -293,8 +293,15 @@ Try to adhere to this standardized terminology unless you have good reason not t
 
 Use relative linking to connect information between docs and jupyter notebooks, and make sure links will remain valid in the future as new cleanlab versions are released! Sphinx/html works with relative paths so try to specify relative paths if necessary. For specific situations:
 
-- Link another function from within a source code docstring: ``:py:func:`function_name <cleanlab.file.function_name>` ``
-- Link another class from within a source code docstring: ``:py:class:`class_name <cleanlab.file.class_name>` ``
+- Link another function or class from within a source code docstring: 
+  - If you just want to specify the function/class name (ie. the function/class is unique throughout our library): `` `~cleanlab.file.function_or_class_name` ``. 
+  
+    This uses the [Sphinx's](https://www.sphinx-doc.org/en/master/usage/configuration.html#confval-default_role) `default_role = "py:obj"` setting, so the leading tilde shortens the link to only display `function_or_class_name`.
+  - If you want to additionally specify the module which the function belongs to: 
+      - `` :py:func:`file.function_name <cleanlab.file.function_name>` `` for functions 
+      - ``:py:class:`file.class_name <cleanlab.file.class_name>` `` for classes
+
+    Here you have more control over the text that is displayed to display the module name.  When referring to a function that is alternatively defined in other modules as well, always use this option to be more explicit about which module you are referencing.
 - Link a tutorial (rst file) from within a source code docstring or rst file: ``:ref:`tutorial_name <tutorial_name>` ``
 - Link a tutorial notebook (ipynb file) from within a source code docstring or rst file: `` `notebook_name <tutorials/notebook_name.ipynb>`_ `` . (If the notebook is not the in the same folder as the source code, use a relative path)
 - Link a function from within a tutorial notebook: `[function_name](../cleanlab/file.rst#cleanlab.file.function_name)`

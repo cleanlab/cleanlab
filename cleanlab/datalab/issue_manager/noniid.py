@@ -103,6 +103,8 @@ class NonIIDIssueManager(IssueManager):
         metric: Optional[str] = None,
         k: int = 10,
         num_permutations: int = 25,
+        seed: Optional[int] = 0,
+        significance_threshold: float = 0.05,
         **_,
     ):
         super().__init__(datalab)
@@ -113,6 +115,8 @@ class NonIIDIssueManager(IssueManager):
             "ks": simplified_kolmogorov_smirnov_test,
         }
         self.background_distribution = None
+        self.seed = seed
+        self.significance_threshold = significance_threshold
 
     def find_issues(self, features: Optional[npt.NDArray] = None, **kwargs) -> None:
         knn_graph = self._process_knn_graph_from_inputs(kwargs)
@@ -157,9 +161,14 @@ class NonIIDIssueManager(IssueManager):
 
         scores = self._score_dataset()
         score_median_threshold = np.median(scores) * 0.7
+        issue_mask = scores < score_median_threshold
+        if self.p_value >= self.significance_threshold:
+            issue_mask = np.zeros(self.N, dtype=bool)
+        elif issue_mask.sum() == 0:
+            issue_mask[scores.argmin()] = True
         self.issues = pd.DataFrame(
             {
-                f"is_{self.issue_name}_issue": scores < score_median_threshold,
+                f"is_{self.issue_name}_issue": issue_mask,
                 self.issue_score_key: scores,
             },
         )
@@ -239,6 +248,8 @@ class NonIIDIssueManager(IssueManager):
     def _permutation_test(self, num_permutations) -> float:
         N = self.N
 
+        if self.seed is not None:
+            np.random.seed(self.seed)
         perms = np.fromiter(
             itertools.chain.from_iterable(
                 np.random.permutation(N) for i in range(num_permutations)

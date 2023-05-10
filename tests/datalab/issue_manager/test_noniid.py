@@ -73,6 +73,7 @@ class TestNonIIDIssueManager:
         assert issue_manager.metric == "euclidean"
         assert issue_manager.k == 10
         assert issue_manager.num_permutations == 25
+        assert issue_manager.significance_threshold == 0.05
 
         issue_manager = NonIIDIssueManager(
             datalab=lab,
@@ -89,7 +90,7 @@ class TestNonIIDIssueManager:
             issue_manager.summary,
             issue_manager.info,
         )
-        expected_sorted_issue_mask = np.array([False] * len(embeddings))
+        expected_sorted_issue_mask = np.array([False] * 46 + [True] + [False] * 3)
         assert np.all(
             issues_sort["is_non_iid_issue"] == expected_sorted_issue_mask
         ), "Issue mask should be correct"
@@ -115,7 +116,8 @@ class TestNonIIDIssueManager:
             issues_perm["is_non_iid_issue"] == expected_permuted_issue_mask
         ), "Issue mask should be correct"
         assert summary_perm["issue_type"][0] == "non_iid"
-        assert summary_perm["score"][0] == pytest.approx(expected=0.310207044, abs=1e-7)
+        # ensure score is large, cannot easily ensure precise value because random seed has different effects on different OS:
+        assert summary_perm["score"][0] > 0.05
         assert info_perm.get("p-value", None) is not None, "Should have p-value"
         assert summary_perm["score"][0] == pytest.approx(expected=info_perm["p-value"], abs=1e-7)
 
@@ -154,3 +156,68 @@ class TestNonIIDIssueManager:
         assert info["p-value"] == 0
         assert info["metric"] == "euclidean"
         assert info["k"] == 10
+
+    @pytest.mark.parametrize(
+        "seed",
+        [
+            "default",
+            SEED,
+            None,
+        ],
+        ids=["default", "seed", "no_seed"],
+    )
+    def test_seed(self, lab, seed):
+        num_classes = 10
+        means = [
+            np.array([np.random.uniform(high=10), np.random.uniform(high=10)])
+            for _ in range(num_classes)
+        ]
+        sigmas = [np.random.uniform(high=1) for _ in range(num_classes)]
+        class_stats = list(zip(means, sigmas))
+        num_samples = 2000
+
+        def generate_data_iid():
+            # This should be IID, resulting in a larger p-value
+            samples = []
+            labels = []
+
+            for _ in range(num_samples):
+                label = np.random.choice(num_classes)
+                mean, sigma = class_stats[label]
+                sample = np.random.normal(mean, sigma)
+                samples.append(sample)
+                labels.append(label)
+            samples = np.array(samples)
+            labels = np.array(labels)
+            dataset = {"features": samples, "labels": labels}
+            return dataset
+
+        dataset = generate_data_iid()
+        embeddings = dataset["features"]
+
+        # Create new issue manager, ignore the lab assigned for this test
+        if seed == "default":
+            issue_manager = NonIIDIssueManager(
+                datalab=lab,
+                metric="euclidean",
+                k=10,
+            )
+        else:
+            issue_manager = NonIIDIssueManager(
+                datalab=lab,
+                metric="euclidean",
+                k=10,
+                seed=seed,
+            )
+        issue_manager.find_issues(features=embeddings)
+        p_value = issue_manager.info["p-value"]
+
+        # Run again with the same seed
+        issue_manager.find_issues(features=embeddings)
+        p_value2 = issue_manager.info["p-value"]
+
+        assert p_value > 0.0
+        if seed is not None or seed == "default":
+            assert p_value == p_value2
+        else:
+            assert p_value != p_value2
