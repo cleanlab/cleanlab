@@ -73,6 +73,7 @@ class TestNonIIDIssueManager:
         assert issue_manager.metric == "euclidean"
         assert issue_manager.k == 10
         assert issue_manager.num_permutations == 25
+        assert issue_manager.significance_threshold == 0.05
 
         issue_manager = NonIIDIssueManager(
             datalab=lab,
@@ -89,7 +90,7 @@ class TestNonIIDIssueManager:
             issue_manager.summary,
             issue_manager.info,
         )
-        expected_sorted_issue_mask = np.array([False] * len(embeddings))
+        expected_sorted_issue_mask = np.array([False] * 46 + [True] + [False] * 3)
         assert np.all(
             issues_sort["is_non_iid_issue"] == expected_sorted_issue_mask
         ), "Issue mask should be correct"
@@ -115,7 +116,8 @@ class TestNonIIDIssueManager:
             issues_perm["is_non_iid_issue"] == expected_permuted_issue_mask
         ), "Issue mask should be correct"
         assert summary_perm["issue_type"][0] == "non_iid"
-        assert summary_perm["score"][0] == pytest.approx(expected=0.310207044, abs=1e-7)
+        # ensure score is large, cannot easily ensure precise value because random seed has different effects on different OS:
+        assert summary_perm["score"][0] > 0.05
         assert info_perm.get("p-value", None) is not None, "Should have p-value"
         assert summary_perm["score"][0] == pytest.approx(expected=info_perm["p-value"], abs=1e-7)
 
