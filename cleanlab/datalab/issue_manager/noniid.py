@@ -163,20 +163,15 @@ class NonIIDIssueManager(IssueManager):
         score_median_threshold = np.median(scores) * 0.7
         issue_mask = scores < score_median_threshold
         if self.p_value >= self.significance_threshold:
-            self.issues = pd.DataFrame(
-                {
-                    f"is_{self.issue_name}_issue": np.zeros(self.N, dtype=bool),
-                    self.issue_score_key: scores,
-                },
-            )
+            issue_mask = np.zeros(self.N, dtype=bool)
         elif issue_mask.sum() == 0:
             issue_mask[scores.argmin()] = True
-            self.issues = pd.DataFrame(
-                {
-                    f"is_{self.issue_name}_issue": issue_mask,
-                    self.issue_score_key: scores,
-                },
-            )
+        self.issues = pd.DataFrame(
+            {
+                f"is_{self.issue_name}_issue": issue_mask,
+                self.issue_score_key: scores,
+            },
+        )
 
         self.summary = self.make_summary(score=self.p_value)
 
