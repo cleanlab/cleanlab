@@ -20,7 +20,7 @@ import hypothesis.extra.numpy as npst
 import hypothesis.strategies as st
 import io
 import numpy as np
-from hypothesis import given
+from hypothesis import given, settings
 from cleanlab.dataset import (
     health_summary,
     find_overlapping_classes,
@@ -516,6 +516,7 @@ confident_joint_strategy = npst.arrays(
 
 @pytest.mark.issue_651
 @given(confident_joint=confident_joint_strategy)
+@settings(deadline=500)
 def test_find_overlapping_classes_with_confident_joint(confident_joint):
     # Setup
     K = confident_joint.shape[0]

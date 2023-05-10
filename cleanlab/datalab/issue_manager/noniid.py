@@ -103,6 +103,7 @@ class NonIIDIssueManager(IssueManager):
         metric: Optional[str] = None,
         k: int = 10,
         num_permutations: int = 25,
+        seed: Optional[int] = 0,
         significance_threshold: float = 0.05,
         **_,
     ):
@@ -114,6 +115,7 @@ class NonIIDIssueManager(IssueManager):
             "ks": simplified_kolmogorov_smirnov_test,
         }
         self.background_distribution = None
+        self.seed = seed
         self.significance_threshold = significance_threshold
 
     def find_issues(self, features: Optional[npt.NDArray] = None, **kwargs) -> None:
@@ -251,6 +253,8 @@ class NonIIDIssueManager(IssueManager):
     def _permutation_test(self, num_permutations) -> float:
         N = self.N
 
+        if self.seed is not None:
+            np.random.seed(self.seed)
         perms = np.fromiter(
             itertools.chain.from_iterable(
                 np.random.permutation(N) for i in range(num_permutations)

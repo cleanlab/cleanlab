@@ -19,6 +19,12 @@ Quickstart
 
          pip install cleanlab
 
+      To install the package with all optional dependencies:
+
+      .. code-block:: bash
+
+         pip install "cleanlab[all]"
+
    .. tab:: conda
 
       .. code-block:: bash
@@ -30,6 +36,12 @@ Quickstart
       .. code-block:: bash
 
          pip install git+https://github.com/cleanlab/cleanlab.git
+
+      To install the package with all optional dependencies:
+
+      .. code-block:: bash
+
+         pip install "git+https://github.com/cleanlab/cleanlab.git#egg=cleanlab[all]"
 
 
 2. Find label errors in your data
