@@ -103,6 +103,7 @@ class NonIIDIssueManager(IssueManager):
         metric: Optional[str] = None,
         k: int = 10,
         num_permutations: int = 25,
+        significance_threshold: float = 0.05,
         **_,
     ):
         super().__init__(datalab)
@@ -113,6 +114,7 @@ class NonIIDIssueManager(IssueManager):
             "ks": simplified_kolmogorov_smirnov_test,
         }
         self.background_distribution = None
+        self.significance_threshold = significance_threshold
 
     def find_issues(self, features: Optional[npt.NDArray] = None, **kwargs) -> None:
         knn_graph = self._process_knn_graph_from_inputs(kwargs)
@@ -158,7 +160,7 @@ class NonIIDIssueManager(IssueManager):
         scores = self._score_dataset()
         score_median_threshold = np.median(scores) * 0.7
         issue_mask = scores < score_median_threshold
-        if self.p_value >= 0.05:
+        if self.p_value >= self.significance_threshold:
             self.issues = pd.DataFrame(
                 {
                     f"is_{self.issue_name}_issue": np.zeros(self.N, dtype=bool),
