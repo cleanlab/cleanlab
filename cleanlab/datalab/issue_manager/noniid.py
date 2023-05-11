@@ -123,6 +123,8 @@ class NonIIDIssueManager(IssueManager):
         old_knn_metric = self.datalab.get_info("statistics").get("knn_metric")
         metric_changes = self.metric and self.metric != old_knn_metric
 
+        knn = None  # Won't be used if knn_graph is not None
+
         if knn_graph is None or metric_changes:
             if features is None:
                 raise ValueError(
