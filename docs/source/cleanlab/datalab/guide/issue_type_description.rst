@@ -18,8 +18,7 @@ Datalab produces three estimates for **each** type of issue (called say `<ISSUE_
 2. A Boolean `is_<ISSUE_NAME>_issue` flag for each example from a dataset. Examples where this has value  `True` are those estimated to exhibit this issue. Access these via: the :py:attr:`Datalab.issues <cleanlab.datalab.datalab.Datalab.issues>` attribute or the method :py:meth:`Datalab.get_issues(\<ISSUE_NAME\>) <cleanlab.datalab.datalab.Datalab.get_issues>`.
 3. An overall dataset quality score (between 0 and 1), quantifying how severe this issue is overall across the entire dataset. Datasets with higher scores do not exhibit this issue as badly overall. Access these via: the :py:attr:`Datalab.issue_summary <cleanlab.datalab.datalab.Datalab.issue_summary>` attribute.
 
-Example (for the outlier issue type)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+**Example (for the outlier issue type)**
 
 .. code-block:: python
 
