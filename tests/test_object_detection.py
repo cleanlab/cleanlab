@@ -1,3 +1,5 @@
+import os
+
 from cleanlab.internal.object_detection_utils import (
     softmin1d,
     softmax,
@@ -51,6 +53,7 @@ import pytest
 
 from PIL import Image
 import numpy as np
+import copy
 
 # to suppress plt.show()
 import matplotlib.pyplot as plt
@@ -279,6 +282,59 @@ def test_compute_label_quality_scores():
     assert (scores == scores_with_min_threshold).all()
 
 
+def test_overlooked_score_shifts_in_correct_direction():
+    perfect_label = labels[0]
+    bad_label = copy.deepcopy(labels[0])
+    worst_label = copy.deepcopy(labels[0])
+
+    bad_label["bboxes"] = np.delete(bad_label["bboxes"], 2, axis=0)  # 0.79 pred_probs
+    worst_label["bboxes"] = np.delete(worst_label["bboxes"], -1, axis=0)  # 0.84 pred_probs
+
+    bad_label["labels"] = np.delete(bad_label["labels"], 2)
+    worst_label["labels"] = np.delete(worst_label["labels"], -1)
+
+    scores = _compute_label_quality_scores(
+        [perfect_label, bad_label, worst_label], [predictions[0], predictions[0], predictions[0]]
+    )
+
+    assert scores[0] > scores[1]
+    assert scores[1] > scores[2]
+
+
+def test_badloc_score_shifts_in_correct_direction():
+    perfect_label = labels[0]
+    bad_label = copy.deepcopy(labels[0])
+    worst_label = copy.deepcopy(labels[0])
+
+    bad_label["bboxes"][0] = bad_label["bboxes"][0] - 20
+    worst_label["bboxes"][0] = worst_label["bboxes"][0] - 100
+
+    scores = _compute_label_quality_scores(
+        [perfect_label, bad_label, worst_label], [predictions[0], predictions[0], predictions[0]]
+    )
+    assert scores[0] > scores[1]
+    assert scores[1] > scores[2]
+
+
+def test_swap_score_shifts_in_correct_direction():
+    perfect_label = labels[0]
+    bad_label = copy.deepcopy(labels[0])
+    worst_label = copy.deepcopy(labels[0])
+
+    bad_label["bboxes"][0] = bad_label["bboxes"][0] - 20
+    bad_label["labels"][0] = np.random.choice([i for i in range(10) if i != bad_label["labels"][0]])
+    worst_label["bboxes"][0] = worst_label["bboxes"][0] - 100
+    worst_label["labels"][0] = np.random.choice(
+        [i for i in range(10) if i != bad_label["labels"][0]]
+    )
+
+    scores = _compute_label_quality_scores(
+        [perfect_label, bad_label, worst_label], [predictions[0], predictions[0], predictions[0]]
+    )
+    assert scores[0] > scores[1]
+    assert scores[1] > scores[2]
+
+
 def test_find_label_issues():
     auxiliary_inputs = _get_valid_inputs_for_compute_scores(ALPHA, labels, predictions)
 
@@ -409,6 +465,7 @@ def test_visualize(monkeypatch, generate_single_image_file):
     visualize(img)
 
     visualize(img, save_path="./fake_path.pdf")
+    assert os.path.exists("./fake_path.pdf")
 
     visualize(generate_single_image_file, label=labels[0], prediction=predictions[0])
     visualize(generate_single_image_file, label=None, prediction=predictions[0])
