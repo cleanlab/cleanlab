@@ -773,3 +773,92 @@ class TestDatalabFindNonIIDIssues:
         assert ["non_iid"] == summary["issue_type"].values
         assert summary["score"].values[0] == 0
         assert lab.get_issues()["is_non_iid_issue"].sum() > 0
+
+    def test_incremental_search(self, sorted_embeddings):
+        data = {"labels": [0, 1, 0]}
+        lab = Datalab(data=data, label_name="labels")
+        lab.find_issues(features=sorted_embeddings)
+        lab.find_issues(features=sorted_embeddings, issue_types={"non_iid": {}})
+        summary = lab.get_issue_summary()
+        assert len(summary) == 3
+        assert "non_iid" in summary["issue_type"].values
+        non_iid_summary = lab.get_issue_summary("non_iid")
+        assert non_iid_summary["score"].values[0] == 0
+        assert non_iid_summary["num_issues"].values[0] > 0
+
+
+class TestDatalabFindLabelIssues:
+    @pytest.fixture
+    def random_embeddings(self):
+        np.random.seed(SEED)
+        return np.random.rand(100, 10)
+
+    @pytest.fixture
+    def pred_probs(self):
+        np.random.seed(SEED)
+        pred_probs_array = np.random.rand(100, 2)
+        return pred_probs_array / pred_probs_array.sum(axis=1, keepdims=True)
+
+    def test_incremental_search(self, pred_probs, random_embeddings):
+        data = {"labels": np.random.randint(0, 2, 100)}
+        lab = Datalab(data=data, label_name="labels")
+        lab.find_issues(features=random_embeddings)
+        lab.find_issues(pred_probs=pred_probs, issue_types={"label": {}})
+        summary = lab.get_issue_summary()
+        assert len(summary) == 3
+        assert "label" in summary["issue_type"].values
+        label_summary = lab.get_issue_summary("label")
+        assert label_summary["num_issues"].values[0] > 0
+
+
+class TestDatalabFindOutlierIssues:
+    @pytest.fixture
+    def random_embeddings(self):
+        np.random.seed(SEED)
+        X = np.random.rand(100, 10)
+        X[-1] += 10 * np.random.rand(10)
+        return np.random.rand(100, 10)
+
+    @pytest.fixture
+    def pred_probs(self):
+        np.random.seed(SEED)
+        pred_probs_array = np.random.rand(100, 2)
+        return pred_probs_array / pred_probs_array.sum(axis=1, keepdims=True)
+
+    def test_incremental_search(self, pred_probs, random_embeddings):
+        data = {"labels": np.random.randint(0, 2, 100)}
+        lab = Datalab(data=data, label_name="labels")
+        lab.find_issues(pred_probs=pred_probs, issue_types={"label": {}})
+        lab.find_issues(features=random_embeddings, issue_types={"outlier": {}})
+        summary = lab.get_issue_summary()
+        assert len(summary) == 2
+        assert "outlier" in summary["issue_type"].values
+        outlier_summary = lab.get_issue_summary("outlier")
+        assert outlier_summary["num_issues"].values[0] > 0
+
+
+class TestDatalabFindNearDuplicateIssues:
+    @pytest.fixture
+    def random_embeddings(self):
+        np.random.seed(SEED)
+        X = np.random.rand(100, 10)
+        X[-1] = X[-1] * -1
+        X[-2] = X[-1] + 0.0001 * np.random.rand(10)
+        return X
+
+    @pytest.fixture
+    def pred_probs(self):
+        np.random.seed(SEED)
+        pred_probs_array = np.random.rand(100, 2)
+        return pred_probs_array / pred_probs_array.sum(axis=1, keepdims=True)
+
+    def test_incremental_search(self, pred_probs, random_embeddings):
+        data = {"labels": np.random.randint(0, 2, 100)}
+        lab = Datalab(data=data, label_name="labels")
+        lab.find_issues(pred_probs=pred_probs, issue_types={"label": {}})
+        lab.find_issues(features=random_embeddings, issue_types={"near_duplicate": {}})
+        summary = lab.get_issue_summary()
+        assert len(summary) == 2
+        assert "near_duplicate" in summary["issue_type"].values
+        near_duplicate_summary = lab.get_issue_summary("near_duplicate")
+        assert near_duplicate_summary["num_issues"].values[0] > 1
