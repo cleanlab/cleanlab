@@ -24,7 +24,7 @@ Datalab produces three estimates for **each** type of issue (called say `<ISSUE_
 
     issue_name = "outlier"  # how to reference the outlier issue type in code
     issue_score = "outlier_score"  # name of column with quality scores for the outlier issue type, atypical datapoints receive lower scores 
-    is_issue = "is_outlier_issue"  # name of Boolean column which flags which datapoints are considered outliers in the dataset
+    is_issue = "is_outlier_issue"  # name of Boolean column flagging which datapoints are considered outliers in the dataset
 
 Datalab estimates various issues based on the four inputs below.
 Each input is optional, if you do not provide it, Datalab will skip checks for those types of issues that require this input.
