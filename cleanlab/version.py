@@ -15,13 +15,20 @@
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
 
-__version__ = "2.3.2"
+__version__ = "2.4.0"
 
-# 2.3.2 - Not yet released, you are using bleeding-edge developer version. See its documentation at: https://docs.cleanlab.ai/master/
+# 2.4.1 - Not yet released, you are using bleeding-edge developer version. See its documentation at: https://docs.cleanlab.ai/master/
 
 # ------------------------------------------------
 # | PREVIOUS MAJOR VERSION RELEASE NOTES SUMMARY |
 # ------------------------------------------------
+
+# 2.4.0 - One line of code to detect all sorts of dataset issues
+#
+#   Major new functionalities include:
+#   - Datalab: A unified audit to detect different types of issues in your data and labels. This is the primary way most users should apply cleanlab to their dataset.
+#   - Nicer APIs for label issues in multi-label classification datasets, including dataset-level issue summaries for multi-label classification.
+#   - Updated tutorials with more interesting datasets and ML models.
 
 # 2.3.0 - Extending cleanlab beyond label errors into a complete library for data-centric AI
 #
