@@ -1,3 +1,25 @@
+# Copyright (C) 2017-2023  Cleanlab Inc.
+# This file is part of cleanlab.
+#
+# cleanlab is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published
+# by the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# cleanlab is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
+
+"""
+Methods to flag which examples have label issues in multi-label classification datasets.
+Here each example can belong to one or more classes, or none of the classes at all.
+Unlike in standard multi-class classification, model-predicted class probabilities need not sum to 1 for each row in multi-label classification.
+"""
+
 import warnings
 from typing import Optional, Union, Tuple, List, Any
 import numpy as np

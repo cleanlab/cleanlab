@@ -164,7 +164,7 @@ Please see our `contributing guidelines <https://github.com/cleanlab/cleanlab/bl
    cleanlab/dataset
    cleanlab/outlier
    cleanlab/multiannotator
-   cleanlab/multilabel_classification
+   cleanlab/multilabel_classification/index
    cleanlab/token_classification/index
    cleanlab/datalab/index
    cleanlab/benchmarking/index
