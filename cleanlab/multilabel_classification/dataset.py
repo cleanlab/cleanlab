@@ -1,3 +1,25 @@
+# Copyright (C) 2017-2023  Cleanlab Inc.
+# This file is part of cleanlab.
+#
+# cleanlab is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published
+# by the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# cleanlab is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
+
+"""
+Methods to summarize overall labeling issues across a multi-label classification dataset.
+Here each example can belong to one or more classes, or none of the classes at all.
+Unlike in standard multi-class classification, model-predicted class probabilities need not sum to 1 for each row in multi-label classification.
+"""
+
 import pandas as pd
 import numpy as np
 from typing import Optional, cast, Dict, Any  # noqa: F401
