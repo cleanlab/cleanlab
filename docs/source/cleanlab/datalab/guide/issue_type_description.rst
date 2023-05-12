@@ -1,4 +1,4 @@
-Datalab issue types
+Datalab Issue Types
 *******************
 
 
@@ -201,9 +201,9 @@ Non-IID Issue Parameters
     non_iid_kwargs = {
     	"metric": # `metric` argument to constructor of `NonIIDIssueManager`. String for the distance metric used for nearest neighbors search if necessary. `metric` argument to constructor of `sklearn.neighbors.NearestNeighbors`,
     	"k": # `k` argument to constructor of `NonIIDIssueManager`. Integer representing the number of nearest neighbors for nearest neighbors search if necessary. `n_neighbors` argument to constructor of `sklearn.neighbors.NearestNeighbors`,
-		"num_permutations": # `num_permutations` argument to constructor of `NonIIDIssueManager`,
+        "num_permutations": # `num_permutations` argument to constructor of `NonIIDIssueManager`,
         "seed": # seed for numpy's random number generator (used for permutation tests),
-		"significance_threshold": # `significance_threshold` argument to constructor of `NonIIDIssueManager`. Floating value between 0 and 1 that determines the overall signicance of non-IID issues found in the dataset.
+        "significance_threshold": # `significance_threshold` argument to constructor of `NonIIDIssueManager`. Floating value between 0 and 1 that determines the overall signicance of non-IID issues found in the dataset.
     }
 
 .. note::

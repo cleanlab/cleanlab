@@ -304,7 +304,9 @@ Use relative linking to connect information between docs and jupyter notebooks, 
     Here you have more control over the text that is displayed to display the module name.  When referring to a function that is alternatively defined in other modules as well, always use this option to be more explicit about which module you are referencing.
 - Link a tutorial (rst file) from within a source code docstring or rst file: ``:ref:`tutorial_name <tutorial_name>` ``
 - Link a tutorial notebook (ipynb file) from within a source code docstring or rst file: `` `notebook_name <tutorials/notebook_name.ipynb>`_ `` . (If the notebook is not the in the same folder as the source code, use a relative path)
-- Link a function from within a tutorial notebook: `[function_name](../cleanlab/file.rst#cleanlab.file.function_name)`
+- Link a function from within a tutorial notebook: `[function_name](../cleanlab/file.html#cleanlab.file.function_name)`
+
+  Links from master branch tutorials will reference master branch functions, similarly links from tutorials in stable branch will reference stable branch functions since we are using relative paths.
 - Link a specific section of a notebook from within the notebook: `[section title](#section-title)`
 - Link a different tutorial notebook from within a tutorial notebook: `[another notebook](another_notebook.html)`. (Note this only works when the other notebook is in same folder as this notebook, otherwise may need to try relative path)
 - Link another specific section of different notebook from within a tutorial notebook: `[another notebook section title](another_notebook.html#another-notebook-section-title)`
