@@ -26,7 +26,7 @@ cleanlab.dataset.health_summary(labels, confident_joint=cl.confident_joint)
 Get started with: [documentation](https://docs.cleanlab.ai/), [tutorials](https://docs.cleanlab.ai/stable/tutorials/image.html), [examples](https://github.com/cleanlab/examples), and [blogs](https://cleanlab.ai/blog/).
 
  - Learn to run cleanlab on your data in 5 minutes for classification with: [image](https://docs.cleanlab.ai/stable/tutorials/image.html), [text](https://docs.cleanlab.ai/stable/tutorials/text.html), [audio](https://docs.cleanlab.ai/stable/tutorials/audio.html), or [tabular](https://docs.cleanlab.ai/stable/tutorials/tabular.html) data.
-- Use cleanlab to automatically: [find mislabeled data + train robust models](https://docs.cleanlab.ai/stable/tutorials/indepth_overview.html), [detect outliers](https://docs.cleanlab.ai/stable/tutorials/outliers.html), [estimate consensus + annotator-quality for multi-annotator datasets](https://docs.cleanlab.ai/stable/tutorials/multiannotator.html), [suggest which data is best to (re)label next (active learning)](https://github.com/cleanlab/examples/blob/master/active_learning_multiannotator/active_learning.ipynb). 
+- Use cleanlab to automatically: [detect data issues (outliers, duplicates, label errors, etc)](https://docs.cleanlab.ai/stable/tutorials/outliers.html), [train robust models](https://docs.cleanlab.ai/stable/tutorials/indepth_overview.html), [estimate consensus + annotator-quality for multi-annotator datasets](https://docs.cleanlab.ai/stable/tutorials/multiannotator.html), [suggest which data is best to (re)label next (active learning)](https://github.com/cleanlab/examples/blob/master/active_learning_multiannotator/active_learning.ipynb). 
 
 
 [![pypi](https://img.shields.io/pypi/v/cleanlab.svg)](https://pypi.org/pypi/cleanlab/)
@@ -39,7 +39,11 @@ Get started with: [documentation](https://docs.cleanlab.ai/), [tutorials](https:
 [![Twitter](https://img.shields.io/twitter/follow/CleanlabAI?style=social)](https://twitter.com/CleanlabAI)
 [![Cleanlab Studio](https://raw.githubusercontent.com/cleanlab/assets/master/shields/cl-studio-shield.svg)](https://cleanlab.ai/studio/?utm_source=github&utm_medium=readme&utm_campaign=clostostudio)
 
------
+![](https://raw.githubusercontent.com/cleanlab/assets/master/cleanlab/datalab_issues.png)
+<p align="center">
+    Examples of various issues in Cat/Dog dataset <b>automatically detected</b> by cleanlab (with 1 line of code).
+</p>
+
 
 ## So fresh, so cleanlab
 
@@ -73,7 +77,10 @@ cleanlab supports Linux, macOS, and Windows and runs on Python 3.7+.
 4. Try various modeling techniques to further improve performance.
 
 Most folks jump from Step 1 → 4, but you may achieve big gains without *any* change to your modeling code by using cleanlab!
-Continuously boost performance by iterating Steps 2 → 4 (and try to evaluate with *cleaned* data).  
+Continuously boost performance by iterating Steps 2 → 4 (and try to evaluate with *cleaned* data).
+
+![](https://raw.githubusercontent.com/cleanlab/assets/master/cleanlab/dcai_flowchart.png)
+
 
 ## Use cleanlab with any model for most ML tasks
 
