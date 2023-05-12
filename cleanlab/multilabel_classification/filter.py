@@ -65,7 +65,7 @@ def find_label_issues(
       To obtain out-of-sample predicted probabilities for every example in your dataset, you can use :ref:`cross-validation <pred_probs_cross_val>`.
       This is encouraged to get better results.
 
-    return_indices_ranked_by : {None, 'self_confidence', 'normalized_margin', 'confidence_weighted_entropy'}, default=None
+    return_indices_ranked_by : {None, 'self_confidence', 'normalized_margin', 'confidence_weighted_entropy'}, default = None
       This function can return a boolean mask (if None) or an array of the example-indices with issues sorted based on the specified ranking method.
       Refer to documentation for this argument in :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` for details.
 
@@ -74,12 +74,11 @@ def find_label_issues(
       label quality score (see :py:func:`rank.get_label_quality_scores
       <cleanlab.rank.get_label_quality_scores>`).
 
-    filter_by : {'prune_by_class', 'prune_by_noise_rate', 'both', 'confident_learning', 'predicted_neq_given',
-        'low_normalized_margin', 'low_self_confidence'}, default='prune_by_noise_rate'
+    filter_by : {'prune_by_class', 'prune_by_noise_rate', 'both', 'confident_learning', 'predicted_neq_given', 'low_normalized_margin', 'low_self_confidence'}, default='prune_by_noise_rate'
       The specific Confident Learning method to determine precisely which examples have label issues in a dataset.
       Refer to documentation for this argument in :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` for details.
 
-    frac_noise : float, default=1.0
+    frac_noise : float, default = 1.0
       This will return the "top" frac_noise * num_label_issues estimated label errors, dependent on the filtering method used,
       Refer to documentation for this argument in :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` for details.
 
@@ -87,7 +86,7 @@ def find_label_issues(
       An iterable that specifies the number of mislabeled examples to return from each class.
       Refer to documentation for this argument in :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` for details.
 
-    min_examples_per_class : int, default=1
+    min_examples_per_class : int, default = 1
       The minimum number of examples required per class below which examples from this class will not be flagged as label issues.
       Refer to documentation for this argument in :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` for details.
 
@@ -96,7 +95,7 @@ def find_label_issues(
       Entry ``(c, i, j)`` in this array is the number of examples confidently counted into a ``(class c, noisy label=i, true label=j)`` bin,
       where `i, j` are either 0 or 1 to denote whether this example belongs to class `c` or not
       (recall examples can belong to multiple classes in multi-label classification).
-      The `confident_joint` can be computed using :py:func:`count.compute_confident_joint <cleanlab.count.compute_confident_joint>` with multi_label=True.
+      The `confident_joint` can be computed using :py:func:`count.compute_confident_joint <cleanlab.count.compute_confident_joint>` with ``multi_label=True``.
       If not provided, it is computed from the given (noisy) `labels` and `pred_probs`.
 
     n_jobs : optional
@@ -160,70 +159,66 @@ def find_multilabel_issues_per_class(
     This method returns a list of size K, the number of classes in the dataset.
 
     Parameters
-     ----------
-     labels : List[List[int]]
-       List of noisy labels for multi-label classification where each example can belong to multiple classes.
-       Refer to documentation for this argument in :py:func:`find_label_issues <cleanlab.multilabel_classification.filter.find_label_issues>` for further details.
-       This method will identify whether ``labels[i][k]`` appears correct, for every example ``i`` and class ``k``.
+    ----------
+    labels : List[List[int]]
+      List of noisy labels for multi-label classification where each example can belong to multiple classes.
+      Refer to documentation for this argument in :py:func:`find_label_issues <cleanlab.multilabel_classification.filter.find_label_issues>` for further details.
+      This method will identify whether ``labels[i][k]`` appears correct, for every example ``i`` and class ``k``.
 
     pred_probs : np.ndarray
       An array of shape ``(N, K)`` of model-predicted class probabilities.
       Refer to documentation for this argument in :py:func:`find_label_issues <cleanlab.multilabel_classification.filter.find_label_issues>` for further details.
 
-     return_indices_ranked_by : {None, 'self_confidence', 'normalized_margin', 'confidence_weighted_entropy'}, default=None
-       This function can return a boolean mask (if this argument is ``None``) or a sorted array of indices based on the specified ranking method (if not ``None``).
-       Refer to documentation for this argument in :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` for details.
+    return_indices_ranked_by : {None, 'self_confidence', 'normalized_margin', 'confidence_weighted_entropy'}, default = None
+      This function can return a boolean mask (if this argument is ``None``) or a sorted array of indices based on the specified ranking method (if not ``None``).
+      Refer to documentation for this argument in :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` for details.
 
-     rank_by_kwargs : dict, optional
-       Optional keyword arguments to pass into scoring functions for ranking by.
-       label quality score (see :py:func:`rank.get_label_quality_scores
-       <cleanlab.rank.get_label_quality_scores>`).
+    rank_by_kwargs : dict, optional
+      Optional keyword arguments to pass into scoring functions for ranking by.
+      label quality score (see :py:func:`rank.get_label_quality_scores
+      <cleanlab.rank.get_label_quality_scores>`).
 
-     filter_by : {'prune_by_class', 'prune_by_noise_rate', 'both', 'confident_learning', 'predicted_neq_given',
-         'low_normalized_margin', 'low_self_confidence'}, default='prune_by_noise_rate'
-       The specific method that can be used to filter or prune examples with label issues from a dataset.
-       Refer to documentation for this argument in :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` for details.
+    filter_by : {'prune_by_class', 'prune_by_noise_rate', 'both', 'confident_learning', 'predicted_neq_given', 'low_normalized_margin', 'low_self_confidence'}, default = 'prune_by_noise_rate'
+      The specific method that can be used to filter or prune examples with label issues from a dataset.
+      Refer to documentation for this argument in :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` for details.
 
-     frac_noise : float, default=1.0
-       This will return the "top" frac_noise * num_label_issues estimated label errors, dependent on the filtering method used,
-       Refer to documentation for this argument in :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` for details.
+    frac_noise : float, default = 1.0
+      This will return the "top" frac_noise * num_label_issues estimated label errors, dependent on the filtering method used,
+      Refer to documentation for this argument in :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` for details.
 
-     num_to_remove_per_class : array_like
-       This parameter is an iterable that specifies the number of mislabeled examples to return from each class.
-       Refer to documentation for this argument in :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` for details.
+    num_to_remove_per_class : array_like
+      This parameter is an iterable that specifies the number of mislabeled examples to return from each class.
+      Refer to documentation for this argument in :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` for details.
 
-     min_examples_per_class : int, default=1
-       The minimum number of examples required per class to avoid flagging as label issues.
-       Refer to documentation for this argument in :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` for details.
+    min_examples_per_class : int, default = 1
+      The minimum number of examples required per class to avoid flagging as label issues.
+      Refer to documentation for this argument in :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` for details.
 
-     confident_joint : np.ndarray, optional
-       An array of shape ``(K, 2, 2)`` representing a one-vs-rest formatted confident joint.
-       Refer to documentation for this argument in :py:func:`cleanlab.multilabel_classification.filter.find_label_issues <cleanlab.multilabel_classification.filter.find_label_issues>` for details.
+    confident_joint : np.ndarray, optional
+      An array of shape ``(K, 2, 2)`` representing a one-vs-rest formatted confident joint.
+      Refer to documentation for this argument in :py:func:`cleanlab.multilabel_classification.filter.find_label_issues <cleanlab.multilabel_classification.filter.find_label_issues>` for details.
 
     n_jobs : optional
-       Number of processing threads used by multiprocessing.
-       Refer to documentation for this argument in :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` for details.
+      Number of processing threads used by multiprocessing.
+      Refer to documentation for this argument in :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` for details.
 
-     verbose : optional
-       If ``True``, prints when multiprocessing happens.
+    verbose : optional
+      If ``True``, prints when multiprocessing happens.
 
-     Returns
-     -------
-     per_class_label_issues : list(np.ndarray)
-        By default, this is a list of length K containing the examples where each class appears incorrectly annotated.
-        ``per_class_label_issues[k]`` is a Boolean mask of the same length as the dataset,
-        where ``True`` values indicate examples where class ``k`` appears incorrectly annotated.
+    Returns
+    -------
+    per_class_label_issues : list(np.ndarray)
+      By default, this is a list of length K containing the examples where each class appears incorrectly annotated.
+      ``per_class_label_issues[k]`` is a Boolean mask of the same length as the dataset,
+      where ``True`` values indicate examples where class ``k`` appears incorrectly annotated.
 
-        For more details, refer to :py:func:`cleanlab.multilabel_classification.filter.find_label_issues <cleanlab.multilabel_classification.filter.find_label_issues>`.
+      For more details, refer to :py:func:`cleanlab.multilabel_classification.filter.find_label_issues <cleanlab.multilabel_classification.filter.find_label_issues>`.
 
-        Otherwise if `return_indices_ranked_by` is not ``None``, then this method returns 3 objects (each of length K, the number of classes): `label_issues_list`, `labels_list`, `pred_probs_list`.
-
-        * *label_issues_list*: an ordered list of indices of examples where class k appears incorrectly annotated, sorted by the likelihood that class k is correctly annotated.
-
-        * *labels_list*: a binary one-hot representation of the original labels, useful if you want to compute label quality scores.
-
-        * *pred_probs_list*: a one-vs-rest representation of the original predicted probabilities of shape ``(N, 2)``, useful if you want to compute label quality scores.
-          ``pred_probs_list[k][i][0]`` is the estimated probability that example ``i`` belongs to class ``k``, and is equal to: ``1 - ``pred_probs_list[k][i][1]``.
+      Otherwise if `return_indices_ranked_by` is not ``None``, then this method returns 3 objects (each of length K, the number of classes): `label_issues_list`, `labels_list`, `pred_probs_list`.
+        - *label_issues_list*: an ordered list of indices of examples where class k appears incorrectly annotated, sorted by the likelihood that class k is correctly annotated.
+        - *labels_list*: a binary one-hot representation of the original labels, useful if you want to compute label quality scores.
+        - *pred_probs_list*: a one-vs-rest representation of the original predicted probabilities of shape ``(N, 2)``, useful if you want to compute label quality scores.
+          ``pred_probs_list[k][i][0]`` is the estimated probability that example ``i`` belongs to class ``k``, and is equal to: ``1 - pred_probs_list[k][i][1]``.
     """
     import cleanlab.filter
     from cleanlab.internal.multilabel_utils import get_onehot_num_classes, stack_complement
