@@ -44,7 +44,7 @@ Quickstart
          pip install "git+https://github.com/cleanlab/cleanlab.git#egg=cleanlab[all]"
 
 
-1. Find common issues in your data
+2. Find common issues in your data
 ----------------------------------
 
 cleanlab automatically detects various issues in *any dataset that a classifier can be trained on*. The cleanlab package *works with any ML model* by operating on model outputs (predicted class probabilities or feature embeddings) -- it doesn't require that a particular model created those outputs. For any classification dataset, use your trained model to produce `pred_probs` (predicted class probabilities) and/or `feature_embddings` (numeric vector representations of each datapoint). Then, these few lines of code can detect common real-world issues in your dataset like label errors, outliers, near duplicates, etc:
@@ -57,7 +57,7 @@ lab.find_issues(features=your_feature_matrix, pred_probs=your_pred_probs)
 lab.report()  # summarize issues in dataset, how severe they are, ... 
 ```
 
-2. Handle label errors and train robust models with noisy labels
+3. Handle label errors and train robust models with noisy labels
 ----------------------------------------------------------------
 
 Mislabeled data is a particularly concerning issue plaguing real-world datasets. To use a scikit-learn-compatible model for classification with noisy labels, you don't need to train a model to find label issues -- you can pass the untrained model object, data, and labels into :py:meth:`CleanLearning.find_label_issues <cleanlab.classification.CleanLearning.find_label_issues>` and cleanlab will handle model training for you.
