@@ -157,7 +157,8 @@ def test_normalized_entropy():
         # some NumPy versions have bugs, therefore we provide a fallback
         # (fallback is the value of the smalles datatype float16)
         smallest_normal = getattr(info, "smallest_normal", 6.104e-05)
-        for val in [info.eps, smallest_normal, info.smallest_subnormal, 0]:
+        smallest_subnormal = getattr(info, "smallest_subnormal", 6e-08)
+        for val in [info.eps, smallest_normal, smallest_subnormal, 0]:
             entropy = get_normalized_entropy(np.array([[1.0, val]], dtype=dtype))
             assert 0.0 <= entropy <= 1.0
     # test multiple _assert_valid_inputs
