@@ -99,11 +99,14 @@ def get_normalized_entropy(
       Each row of this matrix corresponds to an example x and contains the model-predicted
       probabilities that x belongs to each possible class: P(label=k|x)
 
-    min_allowed_prob : float, optional
+    min_allowed_prob : float, default: None, deprecated
       Minimum allowed probability value. If not `None` (default),
       entries of `pred_probs` below this value will be clipped to this value.
-      The Entropy is well-behaved even if `pred_probs` contains zeros,
-      this argument deprecated and will be removed.
+
+      .. deprecated:: 2.5.0
+         This keyword is deprecated and should be left to the default.
+         The Entropy is well-behaved even if `pred_probs` contains zeros,
+         clipping is unnecessary and (slightly) changes the results.
 
     Returns
     -------
