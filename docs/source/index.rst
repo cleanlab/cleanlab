@@ -50,6 +50,7 @@ Quickstart
 cleanlab automatically detects various issues in *any dataset that a classifier can be trained on*. The cleanlab package *works with any ML model* by operating on model outputs (predicted class probabilities or feature embeddings) -- it doesn't require that a particular model created those outputs. For any classification dataset, use your trained model to produce `pred_probs` (predicted class probabilities) and/or `feature_embddings` (numeric vector representations of each datapoint). Then, these few lines of code can detect common real-world issues in your dataset like label errors, outliers, near duplicates, etc:
 
 .. code-block:: python
+
     from cleanlab import Datalab
 
     lab = Datalab(data=your_dataset, label_name="column_name_of_labels")
