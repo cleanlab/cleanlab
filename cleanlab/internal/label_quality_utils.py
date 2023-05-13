@@ -20,7 +20,6 @@ import numpy as np
 from typing import Optional
 
 from cleanlab.count import get_confident_thresholds
-from cleanlab.internal.constants import CLIPPING_LOWER_BOUND
 
 
 def _subtract_confident_thresholds(
