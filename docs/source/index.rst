@@ -54,7 +54,7 @@ cleanlab automatically detects various issues in *any dataset that a classifier 
     from cleanlab import Datalab
 
     lab = Datalab(data=your_dataset, label_name="column_name_of_labels")
-    lab.find_issues(features=feature_embeddings, pred_probs=your_pred_probs)
+    lab.find_issues(features=feature_embeddings, pred_probs=pred_probs)
     lab.report()  # summarize issues in dataset, how severe they are, ... 
 
 
