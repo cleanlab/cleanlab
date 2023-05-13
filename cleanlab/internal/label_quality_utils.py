@@ -18,6 +18,7 @@
 import warnings
 import numpy as np
 from typing import Optional
+from scipy.special import xlogy
 
 from cleanlab.count import get_confident_thresholds
 
@@ -118,8 +119,5 @@ def get_normalized_entropy(
         )
         pred_probs = np.clip(pred_probs, a_min=min_allowed_prob, a_max=None)
 
-    finite = pred_probs != 0
-    entropy = -np.sum(pred_probs * np.log(pred_probs, where=finite), axis=1, where=finite)
     # Note that dividing by log(num_classes) changes the base of the log which rescales entropy to 0-1 range
-    entropy /= np.log(num_classes)
-    return entropy
+    return -np.sum(xlogy(pred_probs, pred_probs), axis=1) / np.log(num_classes)
