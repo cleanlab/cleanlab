@@ -29,9 +29,7 @@ from sklearn.neighbors import NearestNeighbors
 
 from cleanlab.outlier import OutOfDistribution
 from cleanlab.internal.regression_utils import assert_valid_inputs
-
-# Small value used to prevent division by zero
-EPS = 1e-30
+from cleanlab.internal.constants import TINY_VALUE
 
 
 def get_label_quality_scores(
@@ -168,8 +166,8 @@ def get_outre_score_for_each_label(
         Lower scores indicate more likely mislabled examples.
     """
     residual = predictions - labels
-    labels = (labels - labels.mean()) / (labels.std() + EPS)
-    residual = residual_scale * ((residual - residual.mean()) / (residual.std() + EPS))
+    labels = (labels - labels.mean()) / (labels.std() + TINY_VALUE)
+    residual = residual_scale * ((residual - residual.mean()) / (residual.std() + TINY_VALUE))
 
     # 2D features by combining labels and residual
     features = np.array([labels, residual]).T
