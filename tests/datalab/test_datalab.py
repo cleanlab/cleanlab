@@ -103,7 +103,7 @@ class TestDatalab:
                 "predicted_label": [1, 1, 2, 0, 2],
                 # get_info("label") adds `class_names` from statistics
             },
-            "outlier": {
+            "near_duplicate": {
                 "nearest_neighbor": [1, 0, 0, 4, 3],
             },
         }
@@ -115,8 +115,8 @@ class TestDatalab:
         assert label_info["predicted_label"].tolist() == [4, 4, 5, 3, 5]
         assert label_info["class_names"] == [3, 4, 5]
 
-        outlier_info = lab.get_info("outlier")
-        assert outlier_info["nearest_neighbor"] == [1, 0, 0, 4, 3]
+        near_duplicate_info = lab.get_info("near_duplicate")
+        assert near_duplicate_info["nearest_neighbor"] == [1, 0, 0, 4, 3]
 
         assert lab.get_info() == lab.info == mock_info
 
@@ -146,15 +146,14 @@ class TestDatalab:
             {
                 "is_label_issue": [True, False, False, True, False],
                 "label_score": [0.2, 0.4, 0.6, 0.1, 0.8],
-                "is_outlier_issue": [False, True, True, False, True],
-                "outlier_score": [0.5, 0.3, 0.1, 0.7, 0.2],
+                "is_near_duplicate_issue": [False, True, True, False, True],
+                "near_duplicate_score": [0.5, 0.3, 0.1, 0.7, 0.2],
             },
         )
         monkeypatch.setattr(lab, "issues", mock_issues)
 
         mock_predicted_labels = np.array([0, 1, 2, 1, 2])
 
-        mock_nearest_neighbor = [1, 3, 5, 2, 0]
         mock_distance_to_nearest_neighbor = [0.1, 0.2, 0.3, 0.4, 0.5]
 
         lab.info.update(
@@ -163,8 +162,7 @@ class TestDatalab:
                     "given_label": lab.labels,
                     "predicted_label": mock_predicted_labels,
                 },
-                "outlier": {
-                    "nearest_neighbor": mock_nearest_neighbor,
+                "near_duplicate": {
                     "distance_to_nearest_neighbor": mock_distance_to_nearest_neighbor,
                 },
             }
@@ -182,16 +180,20 @@ class TestDatalab:
 
         pd.testing.assert_frame_equal(label_issues, expected_label_issues, check_dtype=False)
 
-        outlier_issues = lab.get_issues(issue_name="outlier")
+        near_duplicate_issues = lab.get_issues(issue_name="near_duplicate")
 
-        expected_outlier_issues = pd.DataFrame(
+        expected_near_duplicate_issues = pd.DataFrame(
             {
-                **{key: mock_issues[key] for key in ["is_outlier_issue", "outlier_score"]},
-                "nearest_neighbor": mock_nearest_neighbor,
+                **{
+                    key: mock_issues[key]
+                    for key in ["is_near_duplicate_issue", "near_duplicate_score"]
+                },
                 "distance_to_nearest_neighbor": mock_distance_to_nearest_neighbor,
             },
         )
-        pd.testing.assert_frame_equal(outlier_issues, expected_outlier_issues, check_dtype=False)
+        pd.testing.assert_frame_equal(
+            near_duplicate_issues, expected_near_duplicate_issues, check_dtype=False
+        )
 
         issues = lab.get_issues()
         pd.testing.assert_frame_equal(issues, mock_issues, check_dtype=False)
@@ -729,3 +731,134 @@ def test_near_duplicates_reuses_knn_graph():
     assert (
         time_outliers_before_near_duplicates < time_near_duplicates_and_outlier
     ), "KNN graph reuse should make this run of find_issues faster."
+
+
+class TestDatalabFindNonIIDIssues:
+    """This class focuses on testing the end-to-end functionality of calling Datalab.find_issues()
+    only for non-IID issues. The tests in this class are not meant to test the underlying
+    functionality of the non-IID issue finders themselves, but rather to test that the
+    Datalab.find_issues() method correctly calls the non-IID issue finders and results are consistent.
+    """
+
+    @pytest.fixture
+    def random_embeddings(self):
+        np.random.seed(SEED)
+        return np.random.rand(100, 10)
+
+    @pytest.fixture
+    def sorted_embeddings(self):
+        np.random.seed(SEED)
+        n_samples = 1000
+
+        # Stack features to create a 3D dataset
+        x = np.linspace(0, 4 * np.pi, n_samples)
+        y = np.sin(x) + np.random.normal(0, 0.1, n_samples)
+        z = np.cos(x) + np.random.normal(0, 0.1, n_samples)
+        return np.column_stack((x, y, z))
+
+    def test_find_non_iid_issues(self, random_embeddings):
+        data = {"labels": [0, 1, 0]}
+        lab = Datalab(data=data, label_name="labels")
+        lab.find_issues(features=random_embeddings, issue_types={"non_iid": {}})
+        summary = lab.get_issue_summary()
+        assert ["non_iid"] == summary["issue_type"].values
+        assert summary["score"].values[0] > 0.05
+        assert lab.get_issues()["is_non_iid_issue"].sum() == 0
+
+    def test_find_non_iid_issues_sorted(self, sorted_embeddings):
+        data = {"labels": [0, 1, 0]}
+        lab = Datalab(data=data, label_name="labels")
+        lab.find_issues(features=sorted_embeddings, issue_types={"non_iid": {}})
+        summary = lab.get_issue_summary()
+        assert ["non_iid"] == summary["issue_type"].values
+        assert summary["score"].values[0] == 0
+        assert lab.get_issues()["is_non_iid_issue"].sum() > 0
+
+    def test_incremental_search(self, sorted_embeddings):
+        data = {"labels": [0, 1, 0]}
+        lab = Datalab(data=data, label_name="labels")
+        lab.find_issues(features=sorted_embeddings)
+        lab.find_issues(features=sorted_embeddings, issue_types={"non_iid": {}})
+        summary = lab.get_issue_summary()
+        assert len(summary) == 3
+        assert "non_iid" in summary["issue_type"].values
+        non_iid_summary = lab.get_issue_summary("non_iid")
+        assert non_iid_summary["score"].values[0] == 0
+        assert non_iid_summary["num_issues"].values[0] > 0
+
+
+class TestDatalabFindLabelIssues:
+    @pytest.fixture
+    def random_embeddings(self):
+        np.random.seed(SEED)
+        return np.random.rand(100, 10)
+
+    @pytest.fixture
+    def pred_probs(self):
+        np.random.seed(SEED)
+        pred_probs_array = np.random.rand(100, 2)
+        return pred_probs_array / pred_probs_array.sum(axis=1, keepdims=True)
+
+    def test_incremental_search(self, pred_probs, random_embeddings):
+        data = {"labels": np.random.randint(0, 2, 100)}
+        lab = Datalab(data=data, label_name="labels")
+        lab.find_issues(features=random_embeddings)
+        lab.find_issues(pred_probs=pred_probs, issue_types={"label": {}})
+        summary = lab.get_issue_summary()
+        assert len(summary) == 3
+        assert "label" in summary["issue_type"].values
+        label_summary = lab.get_issue_summary("label")
+        assert label_summary["num_issues"].values[0] > 0
+
+
+class TestDatalabFindOutlierIssues:
+    @pytest.fixture
+    def random_embeddings(self):
+        np.random.seed(SEED)
+        X = np.random.rand(100, 10)
+        X[-1] += 10 * np.random.rand(10)
+        return np.random.rand(100, 10)
+
+    @pytest.fixture
+    def pred_probs(self):
+        np.random.seed(SEED)
+        pred_probs_array = np.random.rand(100, 2)
+        return pred_probs_array / pred_probs_array.sum(axis=1, keepdims=True)
+
+    def test_incremental_search(self, pred_probs, random_embeddings):
+        data = {"labels": np.random.randint(0, 2, 100)}
+        lab = Datalab(data=data, label_name="labels")
+        lab.find_issues(pred_probs=pred_probs, issue_types={"label": {}})
+        lab.find_issues(features=random_embeddings, issue_types={"outlier": {}})
+        summary = lab.get_issue_summary()
+        assert len(summary) == 2
+        assert "outlier" in summary["issue_type"].values
+        outlier_summary = lab.get_issue_summary("outlier")
+        assert outlier_summary["num_issues"].values[0] > 0
+
+
+class TestDatalabFindNearDuplicateIssues:
+    @pytest.fixture
+    def random_embeddings(self):
+        np.random.seed(SEED)
+        X = np.random.rand(100, 10)
+        X[-1] = X[-1] * -1
+        X[-2] = X[-1] + 0.0001 * np.random.rand(10)
+        return X
+
+    @pytest.fixture
+    def pred_probs(self):
+        np.random.seed(SEED)
+        pred_probs_array = np.random.rand(100, 2)
+        return pred_probs_array / pred_probs_array.sum(axis=1, keepdims=True)
+
+    def test_incremental_search(self, pred_probs, random_embeddings):
+        data = {"labels": np.random.randint(0, 2, 100)}
+        lab = Datalab(data=data, label_name="labels")
+        lab.find_issues(pred_probs=pred_probs, issue_types={"label": {}})
+        lab.find_issues(features=random_embeddings, issue_types={"near_duplicate": {}})
+        summary = lab.get_issue_summary()
+        assert len(summary) == 2
+        assert "near_duplicate" in summary["issue_type"].values
+        near_duplicate_summary = lab.get_issue_summary("near_duplicate")
+        assert near_duplicate_summary["num_issues"].values[0] > 1

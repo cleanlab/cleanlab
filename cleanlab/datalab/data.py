@@ -24,7 +24,7 @@ except ImportError as error:
     raise ImportError(
         "Cannot import datasets package. "
         "Please install it and try again, or just install cleanlab with "
-        "all optional dependencies via: `pip install cleanlab[all]`"
+        "all optional dependencies via: `pip install 'cleanlab[all]'`"
     ) from error
 import numpy as np
 import pandas as pd
