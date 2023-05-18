@@ -18,23 +18,27 @@
 are to contain label errors. """
 
 import warnings
+
 from cleanlab.internal.constants import (
     ALPHA,
-    LOW_PROBABILITY_THRESHOLD,
-    HIGH_PROBABILITY_THRESHOLD,
-    TEMPERATURE,
-    EUC_FACTOR,
-    MAX_ALLOWED_BOX_PRUNE,
-    CUSTOM_SCORE_WEIGHT_OVERLOOKED,
     CUSTOM_SCORE_WEIGHT_BADLOC,
+    CUSTOM_SCORE_WEIGHT_OVERLOOKED,
     CUSTOM_SCORE_WEIGHT_SWAP,
+    EUC_FACTOR,
+    HIGH_PROBABILITY_THRESHOLD,
+    LOW_PROBABILITY_THRESHOLD,
+    MAX_ALLOWED_BOX_PRUNE,
+    TEMPERATURE,
 )
 
-from cleanlab.internal.object_detection_utils import softmin1d
+global CUSTOM_SCORE_WEIGHT_OVERLOOKED, CUSTOM_SCORE_WEIGHT_BADLOC, CUSTOM_SCORE_WEIGHT_SWAP
 
-from typing import List, Dict, Any, Optional, Tuple, TYPE_CHECKING, TypeVar
-import numpy as np
 import copy
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, TypeVar
+
+import numpy as np
+
+from cleanlab.internal.object_detection_utils import softmin1d
 
 if TYPE_CHECKING:  # pragma: no cover
     from typing import TypedDict
@@ -58,6 +62,11 @@ else:
 def get_label_quality_scores(
     labels: List[Dict[str, Any]],
     predictions: List[np.ndarray],
+    aggregation_weights: Optional[Dict[str, float]] = {
+        "overlooked": 0.6,
+        "swap": 0.2,
+        "badloc": 0.2,
+    },
     *,
     verbose: bool = True,
 ) -> np.ndarray:
@@ -89,6 +98,9 @@ def get_label_quality_scores(
         A list of ``N`` ``np.ndarray`` such that ``predictions[i]`` corresponds to the model predictions for the `i`-th image.
         Refer to documentation for this argument in :py:func:`find_label_issues <cleanlab.object_detection.filter.find_label_issues>` for further details.
 
+    aggregation_weights:
+       A dictionary used to assign weights for calculating scores to different types of errors in object detection, such as swapped examples, bad location examples, and overlooked examples.
+       It is important to ensure that the weights are non-negative values and that their sum equals 1.0.
     verbose : bool, default = True
       Set to ``False`` to suppress all print statements.
 
@@ -107,7 +119,11 @@ def get_label_quality_scores(
         method=method,
         threshold=probability_threshold,
     )
-
+    if aggregation_weights is not None:
+        global CUSTOM_SCORE_WEIGHT_OVERLOOKED, CUSTOM_SCORE_WEIGHT_SWAP, CUSTOM_SCORE_WEIGHT_BADLOC
+        CUSTOM_SCORE_WEIGHT_OVERLOOKED = aggregation_weights["overlooked"]
+        CUSTOM_SCORE_WEIGHT_SWAP = aggregation_weights["swap"]
+        CUSTOM_SCORE_WEIGHT_BADLOC = aggregation_weights["badloc"]
     return _compute_label_quality_scores(
         labels=labels,
         predictions=predictions,
