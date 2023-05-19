@@ -932,9 +932,6 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         self.label_issues_mask = None
         self.find_label_issues_kwargs = None
         self.label_quality_scores_kwargs = None
-        self.label_issues_df = None
-        self.label_issues_mask = None
-        self.sample_weight = None
         self.confident_joint = None
         self.py = None
         self.ps = None
