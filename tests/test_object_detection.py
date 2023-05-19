@@ -192,6 +192,24 @@ def test_get_label_quality_scores():
     assert (scores[5:] < 0.7).all()  # label issues get low scores
 
 
+@pytest.mark.parametrize(
+    "agg_weights",
+    [
+        {"overlooked": 1.0, "swap": 0.0, "badloc": 0.0},
+        {"overlooked": 0.0, "swap": 1.0, "badloc": 0.0},
+        {"overlooked": 0.0, "swap": 0.0, "badloc": 1.0},
+    ],
+)
+def test_get_label_quality_scores_custom_weights(agg_weights):
+    scores = get_label_quality_scores(labels, predictions, aggregation_weights=agg_weights)
+    if agg_weights["swap"] == 1.0:
+        assert (scores[:5] > 0.8).all()  # perfect annotations get high scores
+        assert (scores[5:9] < 0.7).all()  # only swapped label issues get low scores
+    else:
+        assert (scores[:5] > 0.9).all()  # perfect annotations get high scores
+        assert (scores[5:] < 0.7).all()  # label issues get low scores
+
+
 def test_issues_from_scores():
     scores = get_label_quality_scores(labels, predictions)
     real_issue_from_scores = issues_from_scores(scores, threshold=1.0)

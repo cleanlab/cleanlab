@@ -61,7 +61,7 @@ else:
 def get_label_quality_scores(
     labels: List[Dict[str, Any]],
     predictions: List[np.ndarray],
-    aggregation_weights: Optional[Dict[str, float]],
+    aggregation_weights: Optional[Dict[str, float]] = None,
     *,
     verbose: bool = True,
 ) -> np.ndarray:
@@ -98,7 +98,7 @@ def get_label_quality_scores(
        Its keys are: "overlooked", "swap", "badloc", and values should be nonnegative weights that sum to 1.
        Increase one of these weights to prioritize images with bounding boxes that were either:
        missing in the annotations (overlooked object), annotated with the wrong class label (class for the object should be swapped to another class), or annotated in a suboptimal location (badly located).
-       
+
        swapped examples, bad location examples, and overlooked examples.
        It is important to ensure that the weights are non-negative values and that their sum equals 1.0.
     verbose : bool, default = True
@@ -125,12 +125,13 @@ def get_label_quality_scores(
             "swap": CUSTOM_SCORE_WEIGHT_SWAP,
             "badloc": CUSTOM_SCORE_WEIGHT_BADLOC,
         }
-    weights = np.array(aggregation_weights.values())
-    if (not np.isclose(np.sum(weights), 1.0)) or (np.min(weights) < 0.0):
-        raise ValueError(
-            f"""Aggregation weights should be non-negative and must sum to 1.0
-            """
-        )
+    else:
+        weights = np.array(list(aggregation_weights.values()))
+        if (not np.isclose(np.sum(weights), 1.0)) or (np.min(weights) < 0.0):
+            raise ValueError(
+                f"""Aggregation weights should be non-negative and must sum to 1.0
+                """
+            )
 
     return _compute_label_quality_scores(
         labels=labels,
