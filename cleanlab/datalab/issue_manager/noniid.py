@@ -79,6 +79,11 @@ class NonIIDIssueManager(IssueManager):
         The number of trials to run when performing permutation testing to determine whether
         the distribution of index-distances between neighbors in the dataset is IID or not.
 
+    Note
+    ----
+    This class will only flag a single example as an issue if the dataset is considered non-IID. This type of issue
+    is more relevant to the entire dataset as a whole, rather than to individual examples.
+
     """
 
     description: ClassVar[
