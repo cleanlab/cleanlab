@@ -31,7 +31,6 @@ from cleanlab.internal.constants import (
     TEMPERATURE,
 )
 
-global CUSTOM_SCORE_WEIGHT_OVERLOOKED, CUSTOM_SCORE_WEIGHT_BADLOC, CUSTOM_SCORE_WEIGHT_SWAP
 
 import copy
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, TypeVar
@@ -62,11 +61,7 @@ else:
 def get_label_quality_scores(
     labels: List[Dict[str, Any]],
     predictions: List[np.ndarray],
-    aggregation_weights: Optional[Dict[str, float]] = {
-        "overlooked": 0.6,
-        "swap": 0.2,
-        "badloc": 0.2,
-    },
+    aggregation_weights: Optional[Dict[str, float]],
     *,
     verbose: bool = True,
 ) -> np.ndarray:
@@ -119,16 +114,25 @@ def get_label_quality_scores(
         method=method,
         threshold=probability_threshold,
     )
-    if aggregation_weights is not None:
-        global CUSTOM_SCORE_WEIGHT_OVERLOOKED, CUSTOM_SCORE_WEIGHT_SWAP, CUSTOM_SCORE_WEIGHT_BADLOC
-        CUSTOM_SCORE_WEIGHT_OVERLOOKED = aggregation_weights["overlooked"]
-        CUSTOM_SCORE_WEIGHT_SWAP = aggregation_weights["swap"]
-        CUSTOM_SCORE_WEIGHT_BADLOC = aggregation_weights["badloc"]
+    if aggregation_weights is None:
+        aggregation_weights = {
+            "overlooked": CUSTOM_SCORE_WEIGHT_OVERLOOKED,
+            "swap": CUSTOM_SCORE_WEIGHT_SWAP,
+            "badloc": CUSTOM_SCORE_WEIGHT_BADLOC,
+        }
+    weights = np.array(aggregation_weights.values())
+    if (not np.isclose(np.sum(weights), 1.0)) or (np.min(weights) < 0.0):
+        raise ValueError(
+            f"""Aggregation weights should be non-negative and must sum to 1.0
+            """
+        )
+
     return _compute_label_quality_scores(
         labels=labels,
         predictions=predictions,
         method=method,
         threshold=probability_threshold,
+        aggregation_weights=aggregation_weights,
         verbose=verbose,
     )
 
@@ -169,6 +173,7 @@ def issues_from_scores(label_quality_scores: np.ndarray, *, threshold: float = 0
 def _compute_label_quality_scores(
     labels: List[Dict[str, Any]],
     predictions: List[np.ndarray],
+    aggregation_weights=Dict[str, float],
     *,
     method: str = "objectlab",
     threshold: Optional[float] = None,
@@ -196,6 +201,7 @@ def _compute_label_quality_scores(
             low_probability_threshold=LOW_PROBABILITY_THRESHOLD,
             high_probability_threshold=HIGH_PROBABILITY_THRESHOLD,
             temperature=TEMPERATURE,
+            aggregation_weights=aggregation_weights,
         )
 
     return scores
@@ -801,6 +807,7 @@ def _get_subtype_label_quality_scores(
     low_probability_threshold: float,
     high_probability_threshold: float,
     temperature: float,
+    aggregation_weights: Dict[str, float],
 ) -> np.ndarray:
     """
     Returns a label quality score for each image.
@@ -859,8 +866,8 @@ def _get_subtype_label_quality_scores(
     swap_score_per_image = _pool_box_scores_per_image(swap_scores_per_box, temperature)
 
     scores = (
-        CUSTOM_SCORE_WEIGHT_OVERLOOKED * overlooked_score_per_image
-        + CUSTOM_SCORE_WEIGHT_BADLOC * badloc_score_per_image
-        + CUSTOM_SCORE_WEIGHT_SWAP * swap_score_per_image
+        aggregation_weights["overlooked"] * overlooked_score_per_image
+        + aggregation_weights["badloc"] * badloc_score_per_image
+        + aggregation_weights["swap"] * swap_score_per_image
     )
     return scores
