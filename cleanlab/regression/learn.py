@@ -15,6 +15,8 @@
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
 from typing import Optional, Union
+import inspect
+import warnings
 
 import math
 import numpy as np
@@ -27,8 +29,6 @@ from sklearn.linear_model import LinearRegression
 from sklearn.metrics import r2_score
 
 from cleanlab.internal.util import train_val_split, subset_X_y
-
-import warnings
 
 
 class CleanLearning(BaseEstimator):
@@ -71,6 +71,7 @@ class CleanLearning(BaseEstimator):
         X: np.ndarray,
         y: np.ndarray,
         *,
+        sample_weight: Optional[np.ndarray] = None,
         label_issues: Optional[np.ndarray] = None,
         model_kwargs: Optional[dict] = None,
         model_final_kwargs: Optional[dict] = None,
@@ -80,6 +81,19 @@ class CleanLearning(BaseEstimator):
         if model_final_kwargs is None:
             model_final_kwargs = {}
         model_final_kwargs = {**model_kwargs, **model_final_kwargs}
+
+        if "sample_weight" in model_kwargs or "sample_weight" in model_final_kwargs:
+            raise ValueError(
+                "sample_weight should be provided directly in fit() rather than in model_kwargs or model_final_kwargs"
+            )
+
+        if sample_weight is not None:
+            if "sample_weight" not in inspect.getfullargspec(self.model.fit).args:
+                raise ValueError(
+                    "sample_weight must be a supported fit() argument for your model in order to be specified here"
+                )
+            if len(sample_weight) != len(X):
+                raise ValueError("sample_weight must be a 1D array that has the same length as y.")
 
         if label_issues is None:
             if self.label_issues_df is not None and self.verbose:
@@ -111,7 +125,14 @@ class CleanLearning(BaseEstimator):
         if self.verbose:
             print(f"Pruning {np.sum(self.label_issues_mask)} examples with label issues ...")
             print(f"Remaining clean data has {len(y_cleaned)} examples.")
-            print("Fitting final model on the clean data ...")
+
+        if sample_weight is not None:
+            model_final_kwargs["sample_weight"] = sample_weight[X_mask]
+            if self.verbose:
+                print("Fitting final model on the clean data with custom sample_weight ...")
+        else:
+            if self.verbose:
+                print("Fitting final model on the clean data ...")
 
         self.model.fit(X_cleaned, y_cleaned, **model_final_kwargs)
 
@@ -122,17 +143,25 @@ class CleanLearning(BaseEstimator):
             )
         return self
 
-    def predict(self, X, *args, **kwargs):
+    def predict(self, X: np.ndarray, *args, **kwargs):
         return self.model.predict(X, *args, **kwargs)
 
-    def score(self, X, y):
-        # TODO: add sample weight arg
+    def score(
+        self,
+        X: np.ndarray,
+        y: np.ndarray,
+        sample_weight: Optional[np.ndarray] = None,
+    ):
         if hasattr(self.model, "score"):
-            return self.model.score(X, y)
+            if "sample_weight" in inspect.getfullargspec(self.model.score).args:
+                return self.model.score(X, y, sample_weight=sample_weight)
+            else:
+                return self.model.score(X, y)
         else:
             return r2_score(
                 y,
                 self.model.predict(X),
+                sample_weight=sample_weight,
             )
 
     def find_label_issues(
@@ -213,8 +242,6 @@ class CleanLearning(BaseEstimator):
             ]  # pointer to here to avoid duplication
         elif self.verbose:
             print("Not storing label_issues as attributes since save_space was specified.")
-
-        self._k = k
 
         return label_issues_df
 
@@ -393,6 +420,7 @@ class CleanLearning(BaseEstimator):
                 else:
                     best_k = fine_search_range[np.argmax(r2_fine)]
 
+        self._k = best_k
         return best_k
 
     def _process_label_issues_arg(
