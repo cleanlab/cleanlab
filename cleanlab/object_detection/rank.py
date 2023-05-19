@@ -132,6 +132,7 @@ def get_label_quality_scores(
 
 
 def _assert_valid_aggregation_weights(aggregation_weights):
+    """assert aggregation weights are in the proper format"""
     weights = np.array(list(aggregation_weights.values()))
     if (not np.isclose(np.sum(weights), 1.0)) or (np.min(weights) < 0.0):
         raise ValueError(
@@ -880,6 +881,7 @@ def _get_subtype_label_quality_scores(
 
 
 def _get_aggregation_weights(aggregation_weights):
+    """This function validates aggregation weights, returning the default weights if none are provided."""
     if aggregation_weights is None:
         aggregation_weights = {
             "overlooked": CUSTOM_SCORE_WEIGHT_OVERLOOKED,
