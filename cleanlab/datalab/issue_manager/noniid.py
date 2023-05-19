@@ -162,11 +162,8 @@ class NonIIDIssueManager(IssueManager):
         self.p_value = self._permutation_test(num_permutations=self.num_permutations)
 
         scores = self._score_dataset()
-        score_median_threshold = np.median(scores) * 0.7
-        issue_mask = scores < score_median_threshold
-        if self.p_value >= self.significance_threshold:
-            issue_mask = np.zeros(self.N, dtype=bool)
-        elif issue_mask.sum() == 0:
+        issue_mask = np.zeros(self.N, dtype=bool)
+        if self.p_value < self.significance_threshold:
             issue_mask[scores.argmin()] = True
         self.issues = pd.DataFrame(
             {

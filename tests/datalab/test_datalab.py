@@ -772,7 +772,7 @@ class TestDatalabFindNonIIDIssues:
         summary = lab.get_issue_summary()
         assert ["non_iid"] == summary["issue_type"].values
         assert summary["score"].values[0] == 0
-        assert lab.get_issues()["is_non_iid_issue"].sum() > 0
+        assert lab.get_issues()["is_non_iid_issue"].sum() == 1
 
     def test_incremental_search(self, sorted_embeddings):
         data = {"labels": [0, 1, 0]}
@@ -784,7 +784,7 @@ class TestDatalabFindNonIIDIssues:
         assert "non_iid" in summary["issue_type"].values
         non_iid_summary = lab.get_issue_summary("non_iid")
         assert non_iid_summary["score"].values[0] == 0
-        assert non_iid_summary["num_issues"].values[0] > 0
+        assert non_iid_summary["num_issues"].values[0] == 1
 
 
 class TestDatalabFindLabelIssues:
