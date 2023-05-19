@@ -56,15 +56,12 @@ class CleanLearning(BaseEstimator):
 
         self.model = model
         self.seed = seed
-
         self.cv_n_folds = cv_n_folds
         self.n_boot = n_boot
         self.verbose = verbose
-
         self.label_issues_df = None
         self.label_issues_mask = None
-
-        self._k = None  # frac flagged as issue
+        self.k = None  # frac flagged as issue
 
     def fit(
         self,
@@ -271,6 +268,17 @@ class CleanLearning(BaseEstimator):
         residual_predictions = self._get_cv_predictions(X, residual)
         return np.sqrt(np.var(residual_predictions))
 
+    def save_space(self):
+        if self.label_issues_df is None and self.verbose:
+            print("self.label_issues_df is already empty")
+
+        self.label_issues_df = None
+        self.label_issues_mask = None
+        self.k = None
+
+        if self.verbose:
+            print("Deleted non-sklearn attributes such as label_issues_df to save space.")
+
     def _get_cv_predictions(
         self,
         X: np.ndarray,
@@ -420,7 +428,7 @@ class CleanLearning(BaseEstimator):
                 else:
                     best_k = fine_search_range[np.argmax(r2_fine)]
 
-        self._k = best_k
+        self.k = best_k
         return best_k
 
     def _process_label_issues_arg(
