@@ -79,6 +79,11 @@ class NonIIDIssueManager(IssueManager):
         The number of trials to run when performing permutation testing to determine whether
         the distribution of index-distances between neighbors in the dataset is IID or not.
 
+    Note
+    ----
+    This class will only flag a single example as an issue if the dataset is considered non-IID. This type of issue
+    is more relevant to the entire dataset as a whole, rather than to individual examples.
+
     """
 
     description: ClassVar[
@@ -162,11 +167,8 @@ class NonIIDIssueManager(IssueManager):
         self.p_value = self._permutation_test(num_permutations=self.num_permutations)
 
         scores = self._score_dataset()
-        score_median_threshold = np.median(scores) * 0.7
-        issue_mask = scores < score_median_threshold
-        if self.p_value >= self.significance_threshold:
-            issue_mask = np.zeros(self.N, dtype=bool)
-        elif issue_mask.sum() == 0:
+        issue_mask = np.zeros(self.N, dtype=bool)
+        if self.p_value < self.significance_threshold:
             issue_mask[scores.argmin()] = True
         self.issues = pd.DataFrame(
             {

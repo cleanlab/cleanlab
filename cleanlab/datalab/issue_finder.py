@@ -325,7 +325,7 @@ class IssueFinder:
         --------
         :py:class:`REGISTRY <cleanlab.datalab.factory.REGISTRY>` : All available issue types and their corresponding issue managers can be found here.
         """
-        return ["label", "outlier", "near_duplicate"]
+        return ["label", "outlier", "near_duplicate", "non_iid"]
 
     def get_available_issue_types(self, **kwargs):
         """Returns a dictionary of issue types that can be used in :py:meth:`Datalab.find_issues
