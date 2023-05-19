@@ -79,6 +79,7 @@ class TestDatalab:
             "label",
             "outlier",
             "near_duplicate",
+            "non_iid",
         ]
 
     def tmp_path(self):
@@ -203,7 +204,7 @@ class TestDatalab:
         [None, {"label": {}}],
         ids=["Default issues", "Only label issues"],
     )
-    def test_find_issues(self, lab, pred_probs, issue_types):
+    def test_find_issues_with_pred_probs(self, lab, pred_probs, issue_types):
         assert lab.issues.empty, "Issues should be empty before calling find_issues"
         assert lab.issue_summary.empty, "Issue summary should be empty before calling find_issues"
         assert lab.info["statistics"]["health_score"] is None
@@ -238,6 +239,7 @@ class TestDatalab:
             {"label": {}},
             {"outlier": {}},
             {"near_duplicate": {}},
+            {"non_iid": {}},
             {"outlier": {}, "near_duplicate": {}},
         ],
         ids=[
@@ -245,6 +247,7 @@ class TestDatalab:
             "Only label issues",
             "Only outlier issues",
             "Only near_duplicate issues",
+            "Only non_iid issues",
             "Both outlier and near_duplicate issues",
         ],
     )
@@ -778,6 +781,8 @@ class TestDatalabFindNonIIDIssues:
         data = {"labels": [0, 1, 0]}
         lab = Datalab(data=data, label_name="labels")
         lab.find_issues(features=sorted_embeddings)
+        summary = lab.get_issue_summary()
+        assert len(summary) == 3
         lab.find_issues(features=sorted_embeddings, issue_types={"non_iid": {}})
         summary = lab.get_issue_summary()
         assert len(summary) == 3
@@ -803,9 +808,12 @@ class TestDatalabFindLabelIssues:
         data = {"labels": np.random.randint(0, 2, 100)}
         lab = Datalab(data=data, label_name="labels")
         lab.find_issues(features=random_embeddings)
-        lab.find_issues(pred_probs=pred_probs, issue_types={"label": {}})
         summary = lab.get_issue_summary()
         assert len(summary) == 3
+        assert "label" not in summary["issue_type"].values
+        lab.find_issues(pred_probs=pred_probs, issue_types={"label": {}})
+        summary = lab.get_issue_summary()
+        assert len(summary) == 4
         assert "label" in summary["issue_type"].values
         label_summary = lab.get_issue_summary("label")
         assert label_summary["num_issues"].values[0] > 0
@@ -829,6 +837,9 @@ class TestDatalabFindOutlierIssues:
         data = {"labels": np.random.randint(0, 2, 100)}
         lab = Datalab(data=data, label_name="labels")
         lab.find_issues(pred_probs=pred_probs, issue_types={"label": {}})
+        summary = lab.get_issue_summary()
+        assert len(summary) == 1
+        assert "outlier" not in summary["issue_type"].values
         lab.find_issues(features=random_embeddings, issue_types={"outlier": {}})
         summary = lab.get_issue_summary()
         assert len(summary) == 2
@@ -856,6 +867,9 @@ class TestDatalabFindNearDuplicateIssues:
         data = {"labels": np.random.randint(0, 2, 100)}
         lab = Datalab(data=data, label_name="labels")
         lab.find_issues(pred_probs=pred_probs, issue_types={"label": {}})
+        summary = lab.get_issue_summary()
+        assert len(summary) == 1
+        assert "near_duplicate" not in summary["issue_type"].values
         lab.find_issues(features=random_embeddings, issue_types={"near_duplicate": {}})
         summary = lab.get_issue_summary()
         assert len(summary) == 2
