@@ -94,7 +94,12 @@ def get_label_quality_scores(
         Refer to documentation for this argument in :py:func:`find_label_issues <cleanlab.object_detection.filter.find_label_issues>` for further details.
 
     aggregation_weights:
-       A dictionary used to assign weights for calculating scores to different types of errors in object detection, such as swapped examples, bad location examples, and overlooked examples.
+       Optional dictionary to specify weights for aggregating quality scores for subtype of label issue into an overall label quality score for the image.
+       Its keys are: "overlooked", "swap", "badloc", and values should be nonnegative weights that sum to 1.
+       Increase one of these weights to prioritize images with bounding boxes that were either:
+       missing in the annotations (overlooked object), annotated with the wrong class label (class for the object should be swapped to another class), or annotated in a suboptimal location (badly located).
+       
+       swapped examples, bad location examples, and overlooked examples.
        It is important to ensure that the weights are non-negative values and that their sum equals 1.0.
     verbose : bool, default = True
       Set to ``False`` to suppress all print statements.
