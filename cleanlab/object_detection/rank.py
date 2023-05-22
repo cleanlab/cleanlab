@@ -76,7 +76,6 @@ def get_label_quality_scores(
     Any of these annotation errors should lead to an image with a lower label quality score.
 
     Score is between 0 and 1.
-
         - 1 - clean label (given label is likely correct).
         - 0 - dirty label (given label is likely incorrect).
 
