@@ -26,8 +26,6 @@ jobs:
           python-version: ${{ matrix.python }}
       - name: Install cleanlab
         run: pip install -e .
-      - name: Check cleanlab runs without optional dependencies
-        run: python3 -c "import cleanlab"
       - name: Install development dependencies
         run: pip install -r requirements-dev.txt
       - name: Install fasttext for non-Windows machines
@@ -44,6 +42,29 @@ jobs:
         env:
           TEST_FASTTEXT: true
       - uses: codecov/codecov-action@v3
+  test-without-extras-min-versions:
+    name: Test without optional dependencies and with minimum compatible versions of dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.7'
+      - name: Install cleanlab
+        run: |
+          python -m  pip install --upgrade pip
+          pip install .
+      - name: Install test dependencies
+        run: |
+          pip install pytest pytest-lazy-fixture pipdeptree
+          pipdeptree -j > deps.json
+      - name: Install minimum versions
+        run: |
+          python ./.github/get_min_dependencies.py
+          pip install -r requirements-min.txt
+      - name: Run tests
+        run: |
+          pytest tests/test_multilabel_classification.py tests/test_multiannotator.py tests/test_filter_count.py
   typecheck:
     name: Type check
     runs-on: ubuntu-latest

@@ -24,7 +24,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 import numpy as np
-import numpy.typing as npt
 import pandas as pd
 
 import cleanlab
@@ -36,6 +35,7 @@ from cleanlab.datalab.serialize import _Serializer
 from cleanlab.datalab.report import Reporter
 
 if TYPE_CHECKING:  # pragma: no cover
+    import numpy.typing as npt
     from datasets.arrow_dataset import Dataset
     from scipy.sparse import csr_matrix
 
@@ -47,7 +47,9 @@ __all__ = ["Datalab"]
 class Datalab:
     """
     A single object to automatically detect all kinds of issues in datasets.
-    This is how we recommend you interface with the cleanlab library if you want to audit the quality of your data. If you have other specific goals, then consider using the other methods across this library. Even then, Datalab may be the easiest way to run specific analyses of your data. Datalab tracks intermediate state (e.g. data statistics) from certain cleanlab functions that can be re-used across other cleanlab functions for better efficiency.
+    This is how we recommend you interface with the cleanlab library if you want to audit the quality of your data and detect issues within it.
+    If you have other specific goals (or are doing a less standard ML task not supported by Datalab), then consider using the other methods across the library.
+    Datalab tracks intermediate state (e.g. data statistics) from certain cleanlab functions that can be re-used across other cleanlab functions for better efficiency.
 
     Parameters
     ----------
@@ -273,6 +275,7 @@ class Datalab:
         num_examples: int = 5,
         verbosity: Optional[int] = None,
         include_description: bool = True,
+        show_summary_score: bool = False,
     ) -> None:
         """Prints informative summary of all issues.
 
@@ -300,8 +303,9 @@ class Datalab:
             data_issues=self.data_issues,
             verbosity=verbosity,
             include_description=include_description,
+            show_summary_score=show_summary_score,
         )
-        print(reporter.get_report(num_examples=num_examples))
+        reporter.report(num_examples=num_examples)
 
     @property
     def issues(self) -> pd.DataFrame:
@@ -389,20 +393,21 @@ class Datalab:
         -------
         specific_issues :
             A DataFrame where each row corresponds to an example from the dataset and columns specify:
-            whether this example exhibits a particular type of issue and how severely (via a numeric quality score where lower values indicate more severe instances of the issue).
+            whether this example exhibits a particular type of issue, and how severely (via a numeric quality score where lower values indicate more severe instances of the issue).
+            The quality scores lie between 0-1 and are directly comparable between examples (for the same issue type), but not across different issue types.
 
             Additional columns may be present in the DataFrame depending on the type of issue specified.
         """
         return self.data_issues.get_issues(issue_name=issue_name)
 
-    def get_summary(self, issue_name: Optional[str] = None) -> pd.DataFrame:
+    def get_issue_summary(self, issue_name: Optional[str] = None) -> pd.DataFrame:
         """Summarize the issues found in dataset of a particular type,
         including how severe this type of issue is overall across the dataset.
 
         NOTE
         ----
         This is a wrapper around the
-        :py:meth:`DataIssues.get_summary <cleanlab.datalab.data_issues.DataIssues.get_summary>` method.
+        :py:meth:`DataIssues.get_issue_summary <cleanlab.datalab.data_issues.DataIssues.get_issue_summary>` method.
 
         Parameters
         ----------
@@ -411,12 +416,13 @@ class Datalab:
 
         Returns
         -------
-        summary :
+        issue_summary :
             DataFrame where each row corresponds to a type of issue, and columns quantify:
             the number of examples in the dataset estimated to exhibit this type of issue,
             and the overall severity of the issue across the dataset (via a numeric quality score where lower values indicate that the issue is overall more severe).
+            The quality scores lie between 0-1 and are directly comparable between multiple datasets (for the same issue type), but not across different issue types.
         """
-        return self.data_issues.get_summary(issue_name=issue_name)
+        return self.data_issues.get_issue_summary(issue_name=issue_name)
 
     def get_info(self, issue_name: Optional[str] = None) -> Dict[str, Any]:
         """Get the info for the issue_name key.

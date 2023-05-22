@@ -12,5 +12,5 @@ def test_datalab_unavailable():
 
         assert cleanlab.Datalab.message == (
             "Datalab is not available due to missing dependencies. "
-            "To install Datalab, run `pip install cleanlab[datalab]`."
+            "To install Datalab, run `pip install 'cleanlab[datalab]'`."
         )

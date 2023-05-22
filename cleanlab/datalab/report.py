@@ -54,11 +54,26 @@ class Reporter:
     """
 
     def __init__(
-        self, data_issues: "DataIssues", verbosity: int = 1, include_description: bool = True
+        self,
+        data_issues: "DataIssues",
+        verbosity: int = 1,
+        include_description: bool = True,
+        show_summary_score: bool = False,
     ):
         self.data_issues = data_issues
         self.verbosity = verbosity
         self.include_description = include_description
+        self.show_summary_score = show_summary_score
+
+    def report(self, num_examples: int) -> None:
+        """Prints a report about identified issues in the data.
+
+        Parameters
+        ----------
+        num_examples :
+            The number of examples to include in the report for each issue type.
+        """
+        print(self.get_report(num_examples=num_examples))
 
     def get_report(self, num_examples: int) -> str:
         """Constructs a report about identified issues in the data.
@@ -89,7 +104,7 @@ class Reporter:
         issue_reports = [
             _IssueManagerFactory.from_str(issue_type=key).report(
                 issues=self.data_issues.get_issues(issue_name=key),
-                summary=self.data_issues.get_summary(issue_name=key),
+                summary=self.data_issues.get_issue_summary(issue_name=key),
                 info=self.data_issues.get_info(issue_name=key),
                 num_examples=num_examples,
                 verbosity=self.verbosity,
@@ -102,9 +117,28 @@ class Reporter:
         return report_str
 
     def _write_summary(self, summary: pd.DataFrame) -> str:
+        statistics = self.data_issues.get_info("statistics")
+        num_examples = statistics["num_examples"]
+        num_classes = statistics.get(
+            "num_classes"
+        )  # This may not be required for all types of datasets  in the future (e.g. unlabeled/regression)
+
+        dataset_information = f"Dataset Information: num_examples: {num_examples}"
+        if num_classes is not None:
+            dataset_information += f", num_classes: {num_classes}"
+
+        if self.show_summary_score:
+            return (
+                "Here is a summary of the different kinds of issues found in the data:\n\n"
+                + summary.to_string(index=False)
+                + "\n\n"
+                + "(Note: A lower score indicates a more severe issue across all examples in the dataset.)\n\n"
+                + f"{dataset_information}\n\n\n"
+            )
+
         return (
             "Here is a summary of the different kinds of issues found in the data:\n\n"
-            + summary.to_string(index=False)
+            + summary.drop(columns=["score"]).to_string(index=False)
             + "\n\n"
-            + "(Note: A lower score indicates a more severe issue across all examples in the dataset.)\n\n\n"
+            + f"{dataset_information}\n\n\n"
         )

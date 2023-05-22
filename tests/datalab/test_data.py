@@ -5,7 +5,7 @@ from cleanlab.datalab.data import Data, DataFormatError, DatasetLoadError
 from datasets import Dataset, ClassLabel
 import numpy as np
 import hypothesis.strategies as st
-from hypothesis import given, assume, settings
+from hypothesis import given, assume, settings, HealthCheck
 
 
 NUM_COLS = 2
@@ -46,7 +46,7 @@ class TestData:
 
     @pytest.mark.slow
     @given(dataset=dataset_strategy())
-    @settings(max_examples=10)
+    @settings(max_examples=10, suppress_health_check=[HealthCheck.too_slow])
     def test_init_data_properties(self, dataset):
         data = Data(data=dataset, label_name="label")
         assert data._data == dataset

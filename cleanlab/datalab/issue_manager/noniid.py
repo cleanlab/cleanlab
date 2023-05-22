@@ -7,7 +7,6 @@ import itertools
 from scipy.stats import gaussian_kde
 import numpy as np
 import pandas as pd
-import numpy.typing as npt
 from scipy.sparse import csr_matrix
 from sklearn.neighbors import NearestNeighbors
 from sklearn.utils.validation import check_is_fitted
@@ -15,6 +14,7 @@ from sklearn.utils.validation import check_is_fitted
 from cleanlab.datalab.issue_manager import IssueManager
 
 if TYPE_CHECKING:  # pragma: no cover
+    import numpy.typing as npt
     from cleanlab.datalab.datalab import Datalab
 
 
@@ -79,6 +79,11 @@ class NonIIDIssueManager(IssueManager):
         The number of trials to run when performing permutation testing to determine whether
         the distribution of index-distances between neighbors in the dataset is IID or not.
 
+    Note
+    ----
+    This class will only flag a single example as an issue if the dataset is considered non-IID. This type of issue
+    is more relevant to the entire dataset as a whole, rather than to individual examples.
+
     """
 
     description: ClassVar[
@@ -103,6 +108,8 @@ class NonIIDIssueManager(IssueManager):
         metric: Optional[str] = None,
         k: int = 10,
         num_permutations: int = 25,
+        seed: Optional[int] = 0,
+        significance_threshold: float = 0.05,
         **_,
     ):
         super().__init__(datalab)
@@ -113,11 +120,15 @@ class NonIIDIssueManager(IssueManager):
             "ks": simplified_kolmogorov_smirnov_test,
         }
         self.background_distribution = None
+        self.seed = seed
+        self.significance_threshold = significance_threshold
 
     def find_issues(self, features: Optional[npt.NDArray] = None, **kwargs) -> None:
         knn_graph = self._process_knn_graph_from_inputs(kwargs)
         old_knn_metric = self.datalab.get_info("statistics").get("knn_metric")
         metric_changes = self.metric and self.metric != old_knn_metric
+
+        knn = None  # Won't be used if knn_graph is not None
 
         if knn_graph is None or metric_changes:
             if features is None:
@@ -156,10 +167,12 @@ class NonIIDIssueManager(IssueManager):
         self.p_value = self._permutation_test(num_permutations=self.num_permutations)
 
         scores = self._score_dataset()
-        score_median_threshold = np.median(scores) * 0.7
+        issue_mask = np.zeros(self.N, dtype=bool)
+        if self.p_value < self.significance_threshold:
+            issue_mask[scores.argmin()] = True
         self.issues = pd.DataFrame(
             {
-                f"is_{self.issue_name}_issue": scores < score_median_threshold,
+                f"is_{self.issue_name}_issue": issue_mask,
                 self.issue_score_key: scores,
             },
         )
@@ -239,6 +252,8 @@ class NonIIDIssueManager(IssueManager):
     def _permutation_test(self, num_permutations) -> float:
         N = self.N
 
+        if self.seed is not None:
+            np.random.seed(self.seed)
         perms = np.fromiter(
             itertools.chain.from_iterable(
                 np.random.permutation(N) for i in range(num_permutations)

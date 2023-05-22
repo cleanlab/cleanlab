@@ -118,14 +118,6 @@ class DataIssues:
                 given_label=info["given_label"], predicted_label=info["predicted_label"]
             )
 
-        if issue_name == "outlier":
-            column_dict = {
-                k: info.get(k)
-                for k in ["nearest_neighbor", "distance_to_nearest_neighbor"]
-                if info.get(k) is not None
-            }
-            specific_issues = specific_issues.assign(**column_dict)
-
         if issue_name == "near_duplicate":
             column_dict = {
                 k: info.get(k)
@@ -135,7 +127,7 @@ class DataIssues:
             specific_issues = specific_issues.assign(**column_dict)
         return specific_issues
 
-    def get_summary(self, issue_name: Optional[str] = None) -> pd.DataFrame:
+    def get_issue_summary(self, issue_name: Optional[str] = None) -> pd.DataFrame:
         """Summarize the issues found in dataset of a particular type,
         including how severe this type of issue is overall across the dataset.
 
@@ -146,7 +138,7 @@ class DataIssues:
 
         Returns
         -------
-        summary :
+        issue_summary :
             DataFrame where each row corresponds to a type of issue, and columns quantify:
             the number of examples in the dataset estimated to exhibit this type of issue,
             and the overall severity of the issue across the dataset (via a numeric quality score where lower values indicate that the issue is overall more severe).
@@ -154,7 +146,7 @@ class DataIssues:
         if self.issue_summary.empty:
             raise ValueError(
                 "No issues found in the dataset. "
-                "Call `find_issues` before calling `get_summary`."
+                "Call `find_issues` before calling `get_issue_summary`."
             )
 
         if issue_name is None:

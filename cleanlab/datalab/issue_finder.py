@@ -27,17 +27,18 @@ and collects the results to :py:class:`DataIssues <cleanlab.datalab.data_issues.
     This module is not intended to be used directly. Instead, use the public-facing
     :py:meth:`Datalab.find_issues <cleanlab.datalab.datalab.Datalab.find_issues>` method.
 """
+from __future__ import annotations
 
 from typing import Any, List, Optional, Dict, TYPE_CHECKING
 import warnings
 
 import numpy as np
-import numpy.typing as npt
 from scipy.sparse import csr_matrix
 
 from cleanlab.datalab.factory import _IssueManagerFactory, REGISTRY
 
 if TYPE_CHECKING:  # pragma: no cover
+    import numpy.typing as npt
     from cleanlab.datalab.datalab import Datalab
 
 
@@ -324,7 +325,7 @@ class IssueFinder:
         --------
         :py:class:`REGISTRY <cleanlab.datalab.factory.REGISTRY>` : All available issue types and their corresponding issue managers can be found here.
         """
-        return ["label", "outlier", "near_duplicate"]
+        return ["label", "outlier", "near_duplicate", "non_iid"]
 
     def get_available_issue_types(self, **kwargs):
         """Returns a dictionary of issue types that can be used in :py:meth:`Datalab.find_issues

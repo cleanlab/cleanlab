@@ -19,7 +19,6 @@ from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Union
 import warnings
 
 import numpy as np
-import numpy.typing as npt
 import pandas as pd
 from scipy.sparse import csr_matrix
 from sklearn.neighbors import NearestNeighbors
@@ -28,6 +27,7 @@ from sklearn.utils.validation import check_is_fitted
 from cleanlab.datalab.issue_manager import IssueManager
 
 if TYPE_CHECKING:  # pragma: no cover
+    import numpy.typing as npt
     from cleanlab.datalab.datalab import Datalab
 
 
@@ -45,8 +45,8 @@ class NearDuplicateIssueManager(IssueManager):
     issue_name: ClassVar[str] = "near_duplicate"
     verbosity_levels = {
         0: [],
-        1: ["threshold"],
-        2: [],
+        1: [],
+        2: ["threshold"],
     }
 
     def __init__(
