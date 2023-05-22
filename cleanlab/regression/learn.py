@@ -29,17 +29,18 @@ from sklearn.linear_model import LinearRegression
 from sklearn.metrics import r2_score
 
 from cleanlab.internal.util import train_val_split, subset_X_y
+from cleanlab.internal.regression_utils import assert_valid_regression_inputs
 
 
 class CleanLearning(BaseEstimator):
     def __init__(
         self,
-        model=None,
+        model: Optional[BaseEstimator] = None,
         *,
-        cv_n_folds=5,
-        n_boot=5,
-        verbose=False,
-        seed=None,
+        cv_n_folds: int = 5,
+        n_boot: int = 5,
+        verbose: bool = False,
+        seed: Optional[bool] = None,
     ):
         if model is None:
             # Use linear regression if no classifier is provided.
@@ -65,14 +66,19 @@ class CleanLearning(BaseEstimator):
 
     def fit(
         self,
-        X: np.ndarray,
+        X: Union[np.ndarray, pd.DataFrame],
         y: np.ndarray,
         *,
         sample_weight: Optional[np.ndarray] = None,
         label_issues: Optional[np.ndarray] = None,
+        find_label_issues_kwargs: Optional[dict] = None,
         model_kwargs: Optional[dict] = None,
         model_final_kwargs: Optional[dict] = None,
     ):
+        X, y = assert_valid_regression_inputs(X, y)
+
+        if find_label_issues_kwargs is None:
+            find_label_issues_kwargs = {}
         if model_kwargs is None:
             model_kwargs = {}
         if model_final_kwargs is None:
@@ -103,6 +109,7 @@ class CleanLearning(BaseEstimator):
                 X,
                 y,
                 model_kwargs=model_kwargs,
+                **find_label_issues_kwargs,
             )
         else:
             if self.verbose:
@@ -113,7 +120,6 @@ class CleanLearning(BaseEstimator):
                         "`self.get_label_issues()`. "
                     )
 
-        # TODO: assert right format
         self.label_issues_df = self._process_label_issues_arg(label_issues, y)
         self.label_issues_mask = self.label_issues_df["is_label_issue"].to_numpy()
 
@@ -172,7 +178,7 @@ class CleanLearning(BaseEstimator):
         save_space: bool = False,
         model_kwargs: Optional[dict] = None,
     ):
-        # TODO: add sample weight arg
+        X, y = assert_valid_regression_inputs(X, y)
 
         if model_kwargs is None:
             model_kwargs = {}
@@ -184,8 +190,9 @@ class CleanLearning(BaseEstimator):
         initial_predictions = self._get_cv_predictions(X, y, model_kwargs=model_kwargs)
         initial_residual = initial_predictions - y
         initial_sorted_index = np.argsort(abs(initial_residual))
+        initial_r2 = r2_score(y, initial_predictions)
 
-        k = self._find_best_k(
+        self.k, r2 = self._find_best_k(
             X=X,
             y=y,
             sorted_index=initial_sorted_index,
@@ -193,9 +200,13 @@ class CleanLearning(BaseEstimator):
             fine_search_size=fine_search_size,
         )
 
+        # check if initial r2 score (ie. not removing anything) is the best
+        if initial_r2 >= r2:
+            self.k = 0
+
         # get predictions using the best k
         predictions = self._get_cv_predictions(
-            X, y, sorted_index=initial_sorted_index, k=k, model_kwargs=model_kwargs
+            X, y, sorted_index=initial_sorted_index, k=self.k, model_kwargs=model_kwargs
         )
         residual = predictions - y
 
@@ -203,11 +214,16 @@ class CleanLearning(BaseEstimator):
             epistemic_uncertainty = self.get_epistemic_uncertainty(X, y)
             aleatoric_uncertainty = self.get_aleatoric_uncertainty(X, residual)
             uncertainty = epistemic_uncertainty + aleatoric_uncertainty
+        else:
+            if isinstance(uncertainty, np.ndarray) and len(y) != len(uncertainty):
+                raise ValueError(
+                    "If uncertainty is passed in as an array, it must have the same length as y."
+                )
 
         label_quality_scores = np.exp(-abs(residual / uncertainty))
 
         label_issues_mask = np.zeros(len(y), dtype=bool)
-        num_issues = math.ceil(len(y) * k)
+        num_issues = math.ceil(len(y) * self.k)
         issues_index = np.argsort(label_quality_scores)[:num_issues]
         label_issues_mask[issues_index] = True
 
@@ -254,6 +270,7 @@ class CleanLearning(BaseEstimator):
         X: np.ndarray,
         y: np.ndarray,
     ):
+        X, y = assert_valid_regression_inputs(X, y)
         bootstrap_predictions = np.zeros(shape=(len(y), self.n_boot))
         for i in range(self.n_boot):
             bootstrap_predictions[:, i] = self._get_cv_predictions(X, y, cv_n_folds=2)
@@ -265,6 +282,7 @@ class CleanLearning(BaseEstimator):
         X: np.ndarray,
         residual: np.ndarray,
     ):
+        X, residual = assert_valid_regression_inputs(X, residual)
         residual_predictions = self._get_cv_predictions(X, residual)
         return np.sqrt(np.var(residual_predictions))
 
@@ -315,6 +333,12 @@ class CleanLearning(BaseEstimator):
 
             X_out_of_sample = X[out_of_sample_idx]
             out_of_sample_predictions = np.zeros(shape=[len(out_of_sample_idx), cv_n_folds])
+
+        if len(in_sample_idx) < cv_n_folds:
+            raise ValueError(
+                f"There are too few examples to conduct {cv_n_folds}-fold cross validation. "
+                "You can either reduce cv_n_folds for cross validation, or decrease k to exclude less data."
+            )
 
         predictions = np.zeros(shape=len(y))
 
@@ -369,17 +393,22 @@ class CleanLearning(BaseEstimator):
             best_k = coarse_search_range[0]
         else:
             # conduct coarse search
-            coarse_search_range = np.sort(coarse_search_range)  # sort to conduct fine search well
+            coarse_search_range = sorted(coarse_search_range)  # sort to conduct fine search well
             r2_coarse = np.full(len(coarse_search_range), np.NaN)
             for i in range(len(coarse_search_range)):
                 curr_k = coarse_search_range[i]
-                predictions = self._get_cv_predictions(
-                    X=X,
-                    y=y,
-                    sorted_index=sorted_index,
-                    k=curr_k,
-                )
-                r2_coarse[i] = r2_score(y, predictions)
+                num_examples_kept = math.floor(len(y) * (1 - curr_k))
+                # check if there are too few examples to do cross val
+                if num_examples_kept < self.cv_n_folds:
+                    r2_coarse[i] = -1e30  # arbitrary large negative number
+                else:
+                    predictions = self._get_cv_predictions(
+                        X=X,
+                        y=y,
+                        sorted_index=sorted_index,
+                        k=curr_k,
+                    )
+                    r2_coarse[i] = r2_score(y, predictions)
 
             max_r2_ind = np.argmax(r2_coarse)
 
@@ -414,22 +443,28 @@ class CleanLearning(BaseEstimator):
                 r2_fine = np.full(len(fine_search_range), np.NaN)
                 for i in range(len(fine_search_range)):
                     curr_k = fine_search_range[i]
-                    predictions = self._get_cv_predictions(
-                        X=X,
-                        y=y,
-                        sorted_index=sorted_index,
-                        k=curr_k,
-                    )
-                    r2_fine[i] = r2_score(y, predictions)
+                    num_examples_kept = math.floor(len(y) * (1 - curr_k))
+                    # check if there are too few examples to do cross val
+                    if num_examples_kept < self.cv_n_folds:
+                        r2_fine[i] = -1e30  # arbitrary large negative number
+                    else:
+                        predictions = self._get_cv_predictions(
+                            X=X,
+                            y=y,
+                            sorted_index=sorted_index,
+                            k=curr_k,
+                        )
+                        r2_fine[i] = r2_score(y, predictions)
 
                 # check the max between coarse and fine search
                 if max(r2_coarse) > max(r2_fine):
                     best_k = coarse_search_range[np.argmax(r2_coarse)]
+                    best_r2 = np.max(r2_coarse)
                 else:
                     best_k = fine_search_range[np.argmax(r2_fine)]
+                    best_r2 = np.max(r2_fine)
 
-        self.k = best_k
-        return best_k
+        return best_k, best_r2
 
     def _process_label_issues_arg(
         self,

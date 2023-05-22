@@ -20,11 +20,12 @@ Helper functions internally used in cleanlab.regression.
 """
 
 import numpy as np
+import pandas as pd
 from numpy.typing import ArrayLike
-from typing import Tuple
+from typing import Tuple, Union
 
 
-def assert_valid_inputs(
+def assert_valid_prediction_inputs(
     labels: ArrayLike,
     predictions: ArrayLike,
     method: str,
@@ -64,6 +65,27 @@ def assert_valid_inputs(
     return valid_labels, valid_predictions
 
 
+def assert_valid_regression_inputs(
+    X: Union[np.ndarray, pd.DataFrame],
+    y: ArrayLike,
+) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Checks that regression inputs are properly formatted and returns the inputs in numpy array format.
+    """
+    try:
+        X = np.asarray(X)
+    except:
+        raise ValueError(f"X must be array_like.")
+
+    y = check_dimension_and_datatype(y, "y")
+    check_missing_values(y, text="y")
+
+    if len(X) != len(y):
+        raise ValueError("X and y must have same length.")
+
+    return X, y
+
+
 def check_dimension_and_datatype(check_input: np.ndarray, text: str) -> np.ndarray:
     """
     Raises errors related to:
@@ -75,7 +97,7 @@ def check_dimension_and_datatype(check_input: np.ndarray, text: str) -> np.ndarr
     """
 
     assert isinstance(
-        check_input, np.ndarray
+        np.asarray(check_input), np.ndarray
     ), f"{text} could not be converted to numpy array, check input."
 
     # Check if input is empty

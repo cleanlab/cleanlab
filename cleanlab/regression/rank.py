@@ -28,7 +28,8 @@ from numpy.typing import ArrayLike
 from sklearn.neighbors import NearestNeighbors
 
 from cleanlab.outlier import OutOfDistribution
-from cleanlab.internal.regression_utils import assert_valid_inputs
+from cleanlab.internal.regression_utils import assert_valid_prediction_inputs
+
 from cleanlab.internal.constants import TINY_VALUE
 
 
@@ -76,7 +77,9 @@ def get_label_quality_scores(
     """
 
     # Check if inputs are valid
-    labels, predictions = assert_valid_inputs(labels=labels, predictions=predictions, method=method)
+    labels, predictions = assert_valid_prediction_inputs(
+        labels=labels, predictions=predictions, method=method
+    )
 
     scoring_funcs: Dict[str, Callable[[np.ndarray, np.ndarray], np.ndarray]] = {
         "residual": get_residual_score_for_each_label,
