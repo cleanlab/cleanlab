@@ -287,6 +287,10 @@ While this open-source library **finds** data issues, an interface is needed to 
 * Need professional help with cleanlab?
 Join our [\#help Slack channel](https://cleanlab.ai/slack) and message us there, or reach out via email: team@cleanlab.ai
 
+## Commercial licensing cleanlab for enterprises
+
+Commercial licensing is available for teams and enterprises that need to use cleanlab in their ML and analytics workflows, but are unable to open-source their code. Please contact [us here](mailto:sales@cleanlab.ai).
+
 ## License
 
 Copyright (c) 2017 Cleanlab Inc.
