@@ -70,14 +70,14 @@ def get_label_quality_scores(
     For object detection datasets, the label quality score for an image estimates how likely it has been correctly labeled.
     Lower scores indicate images whose annotation is more likely imperfect.
     Annotators may have mislabeled an image because they:
+
     - overlooked an object (missing annotated bounding box),
     - chose the wrong class label for an annotated box in the correct location,
     - imperfectly annotated the location/edges of a bounding box.
-    Any of these annotation errors should lead to an image with a lower label quality score.
+    Any of these annotation errors should lead to an image with a lower label quality score. This quality score is between 0 and 1.
 
-    Score is between 0 and 1.
-        - 1 - clean label (given label is likely correct).
-        - 0 - dirty label (given label is likely incorrect).
+    - 1 - clean label (given label is likely correct).
+    - 0 - dirty label (given label is likely incorrect).
 
     A score is calculated for each of ``N`` images, with ``K`` total classes in the data.
     Each image has ``L`` annotated bounding boxes and ``M`` predicted bounding boxes.
