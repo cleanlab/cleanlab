@@ -28,6 +28,7 @@ from sklearn.model_selection import KFold
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import r2_score
 
+from cleanlab.internal.constants import TINY_VALUE
 from cleanlab.internal.util import train_val_split, subset_X_y
 from cleanlab.internal.regression_utils import assert_valid_regression_inputs
 
@@ -54,6 +55,11 @@ class CleanLearning(BaseEstimator):
 
         if seed is not None:
             np.random.seed(seed=seed)
+
+        if n_boot < 1:
+            raise ValueError("n_boot must be at least 1")
+        if cv_n_folds < 1:
+            raise ValueError("cv_n_folds must be at least 1")
 
         self.model = model
         self.seed = seed
@@ -220,7 +226,7 @@ class CleanLearning(BaseEstimator):
                     "If uncertainty is passed in as an array, it must have the same length as y."
                 )
 
-        label_quality_scores = np.exp(-abs(residual / uncertainty))
+        label_quality_scores = np.exp(-abs(residual) / (uncertainty + TINY_VALUE))
 
         label_issues_mask = np.zeros(len(y), dtype=bool)
         num_issues = math.ceil(len(y) * self.k)
@@ -390,6 +396,20 @@ class CleanLearning(BaseEstimator):
         if len(coarse_search_range) == 0:
             raise ValueError("coarse_search_range must have at least 1 value of k")
         elif len(coarse_search_range) == 1:
+            curr_k = coarse_search_range[0]
+            num_examples_kept = math.floor(len(y) * (1 - curr_k))
+            if num_examples_kept < self.cv_n_folds:
+                raise ValueError(
+                    f"There are too few examples to conduct {self.cv_n_folds}-fold cross validation. "
+                    "You can either reduce self.cv_n_folds for cross validation, or decrease k to exclude less data."
+                )
+            predictions = self._get_cv_predictions(
+                X=X,
+                y=y,
+                sorted_index=sorted_index,
+                k=curr_k,
+            )
+            best_r2 = r2_score(y, predictions)
             best_k = coarse_search_range[0]
         else:
             # conduct coarse search
@@ -417,6 +437,7 @@ class CleanLearning(BaseEstimator):
                 raise ValueError("fine_search_size must at least 0")
             elif fine_search_size == 0:
                 best_k = coarse_search_range[np.argmax(r2_coarse)]
+                best_r2 = np.max(r2_coarse)
             else:
                 fine_search_range = np.array([])
                 if max_r2_ind != 0:
@@ -468,7 +489,7 @@ class CleanLearning(BaseEstimator):
 
     def _process_label_issues_arg(
         self,
-        label_issues: Union[pd.DataFrame, np.ndarray],
+        label_issues: Union[pd.DataFrame, pd.Series, np.ndarray],
         y: np.ndarray,
     ):
         """
@@ -489,7 +510,7 @@ class CleanLearning(BaseEstimator):
                 raise ValueError("labels must match label_issues['given_label']")
             return label_issues
 
-        elif isinstance(label_issues, np.ndarray):
+        elif isinstance(label_issues, (pd.Series, np.ndarray)):
             if label_issues.dtype is not np.dtype("bool"):
                 raise ValueError("If label_issues is numpy.array, dtype must be 'bool'.")
             if label_issues.shape != y.shape:
@@ -497,4 +518,6 @@ class CleanLearning(BaseEstimator):
             return pd.DataFrame({"is_label_issue": label_issues, "given_label": y})
 
         else:
-            raise ValueError("label_issues must be either pandas.DataFrame or numpy.ndarray")
+            raise ValueError(
+                "label_issues must be either pandas.DataFrame, pandas.Series or numpy.ndarray"
+            )
