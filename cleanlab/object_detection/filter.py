@@ -27,13 +27,13 @@ from cleanlab.internal.constants import (
     BADLOC_THRESHOLD,
     SWAP_THRESHOLD,
 )
+from cleanlab.internal.object_detection_utils import assert_valid_inputs
 
 from cleanlab.object_detection.rank import (
     _get_valid_inputs_for_compute_scores,
     _compute_overlooked_box_scores,
     _compute_badloc_box_scores,
     _compute_swap_box_scores,
-    _assert_valid_inputs,
     get_label_quality_scores,
     issues_from_scores,
 )
@@ -95,7 +95,7 @@ def find_label_issues(
     """
     scoring_method = "objectlab"
 
-    _assert_valid_inputs(
+    assert_valid_inputs(
         labels=labels,
         predictions=predictions,
         method=scoring_method,

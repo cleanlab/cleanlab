@@ -36,8 +36,11 @@ import copy
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, TypeVar
 
 import numpy as np
-
-from cleanlab.internal.object_detection_utils import softmin1d
+from cleanlab.internal.object_detection_utils import (
+    softmin1d,
+    assert_valid_aggregation_weights,
+    assert_valid_inputs,
+)
 
 if TYPE_CHECKING:  # pragma: no cover
     from typing import TypedDict
@@ -112,7 +115,7 @@ def get_label_quality_scores(
     method = "objectlab"
     probability_threshold = 0.0
 
-    _assert_valid_inputs(
+    assert_valid_inputs(
         labels=labels,
         predictions=predictions,
         method=method,
@@ -128,16 +131,6 @@ def get_label_quality_scores(
         aggregation_weights=aggregation_weights,
         verbose=verbose,
     )
-
-
-def _assert_valid_aggregation_weights(aggregation_weights: Dict[str, Any]) -> None:
-    """assert aggregation weights are in the proper format"""
-    weights = np.array(list(aggregation_weights.values()))
-    if (not np.isclose(np.sum(weights), 1.0)) or (np.min(weights) < 0.0):
-        raise ValueError(
-            f"""Aggregation weights should be non-negative and must sum to 1.0
-                """
-        )
 
 
 def issues_from_scores(label_quality_scores: np.ndarray, *, threshold: float = 0.1) -> np.ndarray:
@@ -253,49 +246,6 @@ def _prune_by_threshold(
             f"Pruning {num_ann_to_zero} predictions out of {total_ann} using threshold=={threshold}. These predictions are no longer considered as potential candidates for identifying label issues as their similarity with the given labels is no longer considered."
         )
     return predictions_copy
-
-
-def _assert_valid_inputs(
-    labels: List[Dict[str, Any]],
-    predictions,
-    method: Optional[str] = None,
-    threshold: Optional[float] = None,
-):
-    """Asserts proper input format."""
-    if len(labels) != len(predictions):
-        raise ValueError(
-            f"labels and predictions length needs to match. len(labels) == {len(labels)} while len(predictions) == {len(predictions)}."
-        )
-    # Typecheck labels and predictions
-    if not isinstance(labels[0], dict):
-        raise ValueError(
-            f"Labels has to be a list of dicts. Instead it is list of {type(labels[0])}."
-        )
-    # check last column of predictions is probabilities ( < 1.)?
-    if not isinstance(predictions[0], (list, np.ndarray)):
-        raise ValueError(
-            f"Prediction has to be a list or np.ndarray. Instead it is type {type(predictions[0])}."
-        )
-    if not predictions[0][0].shape[1] == 5:
-        raise ValueError(
-            f"Prediction values have to be of format [x1,y1,x2,y2,pred_prob]. Please refer to the documentation for predicted probabilities under object_detection.rank.get_label_quality_scores for details"
-        )
-
-    valid_methods = ["objectlab"]
-    if method is not None and method not in valid_methods:
-        raise ValueError(
-            f"""
-            {method} is not a valid object detection scoring method!
-            Please choose a valid scoring_method: {valid_methods}
-            """
-        )
-
-    if threshold is not None and threshold > 1.0:
-        raise ValueError(
-            f"""
-            Threshold is a cutoff of predicted probabilities and therefore should be <= 1.
-            """
-        )
 
 
 def _separate_label(label: Dict[str, Any]) -> Tuple[np.ndarray, np.ndarray]:
@@ -583,7 +533,7 @@ def _get_aggregation_weights(
             "badloc": CUSTOM_SCORE_WEIGHT_BADLOC,
         }
     else:
-        _assert_valid_aggregation_weights(aggregation_weights)
+        assert_valid_aggregation_weights(aggregation_weights)
     return aggregation_weights
 
 
@@ -726,7 +676,7 @@ def _compute_badloc_box_scores_for_image(
         idx_at_least_low_probability_threshold = k_pred > low_probability_threshold
         k_similarity = k_similarity[idx_at_least_low_probability_threshold]
         k_pred = k_pred[idx_at_least_low_probability_threshold]
-        assert len(k_pred) == len(k_similarity)
+
         if len(k_pred) == 0:
             scores_badloc[iid] = min_possible_similarity
         else:
@@ -880,8 +830,6 @@ def _get_subtype_label_quality_scores(
     label_quality_scores:
         As returned by :py:func:`get_label_quality_scores <cleanlab.outlier.get_label_quality_scores>`. See function for more details.
     """
-    auxiliary_inputs = _get_valid_inputs_for_compute_scores(alpha, labels, predictions)
-    aggregation_weights = _get_aggregation_weights(aggregation_weights)
     (
         alpha,
         low_probability_threshold,
@@ -890,6 +838,8 @@ def _get_subtype_label_quality_scores(
     ) = _get_valid_subtype_score_params(
         alpha, low_probability_threshold, high_probability_threshold, temperature
     )
+    auxiliary_inputs = _get_valid_inputs_for_compute_scores(alpha, labels, predictions)
+    aggregation_weights = _get_aggregation_weights(aggregation_weights)
 
     overlooked_scores_per_box = _compute_overlooked_box_scores(
         alpha=alpha,
