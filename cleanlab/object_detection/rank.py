@@ -130,7 +130,7 @@ def get_label_quality_scores(
     )
 
 
-def _assert_valid_aggregation_weights(aggregation_weights):
+def _assert_valid_aggregation_weights(aggregation_weights: Dict[str, Any]) -> None:
     """assert aggregation weights are in the proper format"""
     weights = np.array(list(aggregation_weights.values()))
     if (not np.isclose(np.sum(weights), 1.0)) or (np.min(weights) < 0.0):
@@ -554,6 +554,39 @@ def _get_valid_score(scores_arr: np.ndarray, temperature: float) -> float:
     return valid_score
 
 
+def _get_valid_subtype_score_params(
+    alpha: Optional[float] = None,
+    low_probability_threshold: Optional[float] = None,
+    high_probability_threshold: Optional[float] = None,
+    temperature: Optional[float] = None,
+):
+    """This function returns valid params for subtype score. If param is None, then default constant is returned"""
+    if alpha is None:
+        alpha = ALPHA
+    if low_probability_threshold is None:
+        low_probability_threshold = LOW_PROBABILITY_THRESHOLD
+    if high_probability_threshold is None:
+        high_probability_threshold = HIGH_PROBABILITY_THRESHOLD
+    if temperature is None:
+        temperature = TEMPERATURE
+    return alpha, low_probability_threshold, high_probability_threshold, temperature
+
+
+def _get_aggregation_weights(
+    aggregation_weights: Optional[Dict[str, Any]] = None
+) -> Dict[str, Any]:
+    """This function validates aggregation weights, returning the default weights if none are provided."""
+    if aggregation_weights is None:
+        aggregation_weights = {
+            "overlooked": CUSTOM_SCORE_WEIGHT_OVERLOOKED,
+            "swap": CUSTOM_SCORE_WEIGHT_SWAP,
+            "badloc": CUSTOM_SCORE_WEIGHT_BADLOC,
+        }
+    else:
+        _assert_valid_aggregation_weights(aggregation_weights)
+    return aggregation_weights
+
+
 def _pool_box_scores_per_image(box_scores: List[np.ndarray], temperature: float) -> np.ndarray:
     image_scores = np.empty(
         shape=[
@@ -807,10 +840,10 @@ def _get_subtype_label_quality_scores(
     labels: List[Dict[str, Any]],
     predictions: List[np.ndarray],
     *,
-    alpha: float,
-    low_probability_threshold: float,
-    high_probability_threshold: float,
-    temperature: float,
+    alpha: Optional[float] = None,
+    low_probability_threshold: Optional[float] = None,
+    high_probability_threshold: Optional[float] = None,
+    temperature: Optional[float] = None,
     aggregation_weights: Optional[Dict[str, float]] = None,
 ) -> np.ndarray:
     """
@@ -849,6 +882,14 @@ def _get_subtype_label_quality_scores(
     """
     auxiliary_inputs = _get_valid_inputs_for_compute_scores(alpha, labels, predictions)
     aggregation_weights = _get_aggregation_weights(aggregation_weights)
+    (
+        alpha,
+        low_probability_threshold,
+        high_probability_threshold,
+        temperature,
+    ) = _get_valid_subtype_score_params(
+        alpha, low_probability_threshold, high_probability_threshold, temperature
+    )
 
     overlooked_scores_per_box = _compute_overlooked_box_scores(
         alpha=alpha,
@@ -877,16 +918,3 @@ def _get_subtype_label_quality_scores(
         + aggregation_weights["swap"] * swap_score_per_image
     )
     return scores
-
-
-def _get_aggregation_weights(aggregation_weights):
-    """This function validates aggregation weights, returning the default weights if none are provided."""
-    if aggregation_weights is None:
-        aggregation_weights = {
-            "overlooked": CUSTOM_SCORE_WEIGHT_OVERLOOKED,
-            "swap": CUSTOM_SCORE_WEIGHT_SWAP,
-            "badloc": CUSTOM_SCORE_WEIGHT_BADLOC,
-        }
-    else:
-        _assert_valid_aggregation_weights(aggregation_weights)
-    return aggregation_weights

@@ -22,6 +22,8 @@ from cleanlab.object_detection.rank import (
     _compute_badloc_box_scores,
     _compute_swap_box_scores,
     _get_prediction_type,
+    _get_valid_subtype_score_params,
+    _get_aggregation_weights,
 )
 
 from cleanlab.object_detection.filter import (
@@ -41,6 +43,10 @@ from cleanlab.internal.constants import (
     OVERLOOKED_THRESHOLD,
     BADLOC_THRESHOLD,
     SWAP_THRESHOLD,
+    TEMPERATURE,
+    CUSTOM_SCORE_WEIGHT_OVERLOOKED,
+    CUSTOM_SCORE_WEIGHT_SWAP,
+    CUSTOM_SCORE_WEIGHT_BADLOC,
 )
 
 import numpy as np
@@ -234,6 +240,47 @@ def test_get_valid_score():
     score_larger = _get_valid_score(np.array([0.8, 0.7, 0.6]), temperature=0.99)
     score_smaller = _get_valid_score(np.array([0.8, 0.7, 0.6]), temperature=0.2)
     assert score_smaller < score_larger
+
+
+def test_get_valid_subtype_score_params():
+    (
+        alpha,
+        low_probability_threshold,
+        high_probability_threshold,
+        temperature,
+    ) = _get_valid_subtype_score_params(None, None, None, None)
+    assert alpha == ALPHA
+    assert low_probability_threshold == LOW_PROBABILITY_THRESHOLD
+    assert high_probability_threshold == HIGH_PROBABILITY_THRESHOLD
+    assert temperature == TEMPERATURE
+
+
+def test_get_aggregation_weights():
+    correct_aggregation_weights = {
+        "overlooked": CUSTOM_SCORE_WEIGHT_OVERLOOKED,
+        "swap": CUSTOM_SCORE_WEIGHT_SWAP,
+        "badloc": CUSTOM_SCORE_WEIGHT_BADLOC,
+    }
+    weights = _get_aggregation_weights(None)
+    assert weights == correct_aggregation_weights
+
+    with pytest.raises(ValueError) as e:
+        _get_aggregation_weights(
+            {
+                "overlooked": -1.0,
+                "swap": CUSTOM_SCORE_WEIGHT_SWAP,
+                "badloc": CUSTOM_SCORE_WEIGHT_BADLOC,
+            }
+        )
+
+    with pytest.raises(ValueError) as e:
+        _get_aggregation_weights(
+            {
+                "overlooked": CUSTOM_SCORE_WEIGHT_OVERLOOKED,
+                "swap": 1.2,
+                "badloc": CUSTOM_SCORE_WEIGHT_BADLOC,
+            }
+        )
 
 
 def test_softmin1d():
