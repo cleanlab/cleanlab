@@ -112,7 +112,14 @@ def get_normalized_entropy(
     -------
     entropy : np.ndarray (shape (N, ))
       Each element is the normalized entropy of the corresponding row of ``pred_probs``.
+
+    Raises
+    ------
+    ValueError
+        If any of the probabilities is not in the interval [0, 1] an error is raised.
     """
+    if np.any(pred_probs < 0) or np.any(pred_probs > 1):
+        raise ValueError("All probabilities are required to be in the interval [0, 1].""")
     num_classes = pred_probs.shape[1]
 
     if min_allowed_prob is not None:

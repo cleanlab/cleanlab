@@ -2,6 +2,7 @@
 
 from cleanlab.internal import util
 import numpy as np
+import pytest
 
 from cleanlab.internal.label_quality_utils import get_normalized_entropy
 from cleanlab.internal.multilabel_utils import int2onehot, onehot2int
@@ -164,3 +165,8 @@ def test_normalized_entropy():
     # test multiple _assert_valid_inputs
     entropy = get_normalized_entropy(np.array([[0.0, 1.0], [0.5, 0.5]]))
     assert all((0.0 <= entropy) & (entropy <= 1.0))
+
+    # raise errors for wrong probabilities.
+    with pytest.raises(ValueError):
+        get_normalized_entropy(np.array([[-1.0, 0.5]]))  # negative
+        get_normalized_entropy(np.array([[2.0, 0.5]]))  # larger 1
