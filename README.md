@@ -287,7 +287,6 @@ While this open-source library **finds** data issues, an interface is needed to 
 * Need professional help with cleanlab?
 Join our [\#help Slack channel](https://cleanlab.ai/slack) and message us there, or reach out via email: team@cleanlab.ai
 
-
 ## License
 
 Copyright (c) 2017 Cleanlab Inc.
