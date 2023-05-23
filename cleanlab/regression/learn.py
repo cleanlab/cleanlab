@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
-from typing import Optional, Union
+from typing import Optional, Union, Tuple
 import inspect
 import warnings
 
@@ -61,14 +61,14 @@ class CleanLearning(BaseEstimator):
         if cv_n_folds < 1:
             raise ValueError("cv_n_folds must be at least 1")
 
-        self.model = model
-        self.seed = seed
-        self.cv_n_folds = cv_n_folds
-        self.n_boot = n_boot
-        self.verbose = verbose
-        self.label_issues_df = None
-        self.label_issues_mask = None
-        self.k = None  # frac flagged as issue
+        self.model: BaseEstimator = model
+        self.seed: Optional[int] = seed
+        self.cv_n_folds: int = cv_n_folds
+        self.n_boot: int = n_boot
+        self.verbose: bool = verbose
+        self.label_issues_df: Optional[pd.DataFrame] = None
+        self.label_issues_mask: Optional[np.ndarray] = None
+        self.k: Optional[float] = None  # frac flagged as issue
 
     def fit(
         self,
@@ -256,9 +256,7 @@ class CleanLearning(BaseEstimator):
                     "self.get_label_issues() will now return the newly identified label issues. "
                 )
             self.label_issues_df = label_issues_df
-            self.label_issues_mask = label_issues_df[
-                "is_label_issue"
-            ]  # pointer to here to avoid duplication
+            self.label_issues_mask = label_issues_df["is_label_issue"].to_numpy()
         elif self.verbose:
             print("Not storing label_issues as attributes since save_space was specified.")
 
@@ -392,7 +390,7 @@ class CleanLearning(BaseEstimator):
         sorted_index: np.ndarray,
         coarse_search_range: list = [0.01, 0.05, 0.1, 0.15, 0.2],
         fine_search_size: int = 3,
-    ):
+    ) -> Tuple[float, float]:
         if len(coarse_search_range) == 0:
             raise ValueError("coarse_search_range must have at least 1 value of k")
         elif len(coarse_search_range) == 1:
@@ -491,7 +489,7 @@ class CleanLearning(BaseEstimator):
         self,
         label_issues: Union[pd.DataFrame, pd.Series, np.ndarray],
         y: np.ndarray,
-    ):
+    ) -> pd.DataFrame:
         """
         Helper method to process the label_issues input into a well-formatted DataFrame.
         """

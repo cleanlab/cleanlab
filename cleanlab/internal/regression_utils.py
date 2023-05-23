@@ -86,7 +86,7 @@ def assert_valid_regression_inputs(
     return X, y
 
 
-def check_dimension_and_datatype(check_input: np.ndarray, text: str) -> np.ndarray:
+def check_dimension_and_datatype(check_input: ArrayLike, text: str) -> np.ndarray:
     """
     Raises errors related to:
     1. If input is empty
@@ -96,9 +96,10 @@ def check_dimension_and_datatype(check_input: np.ndarray, text: str) -> np.ndarr
     If all the checks are passed, it returns the squeezed 1-D array required by the main algorithm.
     """
 
-    assert isinstance(
-        np.asarray(check_input), np.ndarray
-    ), f"{text} could not be converted to numpy array, check input."
+    try:
+        check_input = np.asarray(check_input)
+    except:
+        raise ValueError(f"{text} could not be converted to numpy array, check input.")
 
     # Check if input is empty
     if not check_input.size:
