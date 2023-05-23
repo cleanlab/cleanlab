@@ -287,9 +287,6 @@ While this open-source library **finds** data issues, an interface is needed to 
 * Need professional help with cleanlab?
 Join our [\#help Slack channel](https://cleanlab.ai/slack) and message us there, or reach out via email: team@cleanlab.ai
 
-## Commercial licensing cleanlab for enterprises
-
-Commercial licensing is available for teams and enterprises that need to use cleanlab in their ML and analytics workflows, but are unable to open-source their code. Please contact [us here](mailto:sales@cleanlab.ai).
 
 ## License
 
@@ -301,3 +298,7 @@ cleanlab is distributed in the hope that it will be useful, but WITHOUT ANY WARR
 
 See [GNU Affero General Public LICENSE](https://github.com/cleanlab/cleanlab/blob/master/LICENSE) for details.
 You can email us to discuss licensing: team@cleanlab.ai
+
+### Commercial licensing cleanlab is available for enterprises
+
+Commercial licensing is available for teams and enterprises that need to use cleanlab in their ML and analytics workflows, but are unable to open-source their code. Please contact [us here](mailto:sales@cleanlab.ai).
