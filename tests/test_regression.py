@@ -144,8 +144,8 @@ def test_cleanlearning():
     assert isinstance(label_issues, pd.DataFrame)
 
     cl.fit(X, y, label_issues=label_issues)
-    cl.fit(X, y, label_issues=label_issues["is_label_issue"])
-    cl.fit(X, y, label_issues=label_issues["is_label_issue"].values)
+    cl.fit(X, pd.Series(y), label_issues=label_issues["is_label_issue"])
+    cl.fit(X, list(y), label_issues=label_issues["is_label_issue"].values)
 
 
 def test_optional_inputs():

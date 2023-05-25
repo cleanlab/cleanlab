@@ -14,6 +14,66 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
+"""
+cleanlab can be used for learning with noisy data for any dataset and model.
+
+For regression tasks, the :py:class:`regression.learn.CleanLearning <cleanlab.regression.learn.CleanLearning>`
+class wraps an instance of an sklearn model to allow you to train more robust regression models.
+The wrapped model must adhere to the `sklearn estimator API
+<https://scikit-learn.org/stable/developers/develop.html#rolling-your-own-estimator>`_,
+meaning it must define three functions:
+
+* ``model.fit(X, y, sample_weight=None)``
+* ``model.predict(X)``
+* ``model.score(X, y, sample_weight=None)``
+
+where ``X`` contains the data (i.e. features or independant variables) and ``y`` contains the target 
+value (ie. dependant variable). The first index of ``X`` and of ``y`` should correspond to the different 
+examples in the dataset, such that ``len(X) = len(y) = N`` (sample-size). Here `sample_weight` re-weights 
+examples in the loss function while training (supporting `sample_weight` in your model is 
+recommended but optional).
+
+Furthermore, your estimator should be correctly clonable via
+`sklearn.base.clone <https://scikit-learn.org/stable/modules/generated/sklearn.base.clone.html>`_:
+cleanlab internally creates multiple instances of the estimator, and if you e.g. manually wrap a 
+PyTorch model, you must ensure that every call to the estimator's ``__init__()`` creates an independent 
+instance of the model (for sklearn compatibility, the weights of neural network models should typically 
+be initialized inside of ``clf.fit()``).
+
+Example
+-------
+>>> from cleanlab.regression.learn import CleanLearning
+>>> from sklearn.linear_model import LinearRegression 
+>>> cl = CleanLearning(clf=LinearRegression()) # Pass in any model.
+>>> cl.fit(X, y_with_noise)
+>>> # Estimate the predictions as if you had trained without label issues.
+>>> predictions = cl.predict(y)
+
+If the model is not sklearn-compatible by default, it might be the case that standard packages can adapt 
+the model. For example, you can adapt PyTorch models using `skorch <https://skorch.readthedocs.io/>`_ 
+and adapt Keras models using `SciKeras <https://www.adriangb.com/scikeras/>`_.
+
+If an open-source adapter doesn't already exist, you can manually wrap the
+model to be sklearn-compatible. This is made easy by inheriting from
+`sklearn.base.BaseEstimator
+<https://scikit-learn.org/stable/modules/generated/sklearn.base.BaseEstimator.html>`_:
+
+.. code:: python
+
+    from sklearn.base import BaseEstimator
+
+    class YourModel(BaseEstimator):
+        def __init__(self, ):
+            pass
+        def fit(self, X, y, sample_weight=None):
+            pass
+        def predict(self, X):
+            pass
+        def score(self, X, y, sample_weight=None):
+            pass
+            
+"""
+
 from typing import Optional, Union, Tuple
 import inspect
 import warnings
@@ -28,12 +88,57 @@ from sklearn.model_selection import KFold
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import r2_score
 
+from cleanlab.typing import LabelLike
 from cleanlab.internal.constants import TINY_VALUE
 from cleanlab.internal.util import train_val_split, subset_X_y
 from cleanlab.internal.regression_utils import assert_valid_regression_inputs
 
 
 class CleanLearning(BaseEstimator):
+    """
+    CleanLearning = Machine Learning with cleaned data (even when training on messy, error-ridden data).
+
+    Automated and robust learning with noisy labels using any dataset and any model. This class
+    trains a ``model`` with error-prone, noisy labels as if the model had been instead trained
+    on a dataset with perfect labels. It achieves this by cleaning out the error and providing
+    cleaned data while training. This class is currently intended for standard regression tasks.
+
+    Parameters
+    ----------
+    model :
+        A model implementing the `sklearn estimator API <https://scikit-learn.org/stable/developers/develop.html#rolling-your-own-estimator>`_,
+        defining the following functions:
+
+        - ``model.fit(X, y, sample_weight=None)``
+        - ``model.predict(X)``
+        - ``model.score(X, y, sample_weight=None)``
+
+        If the model is not sklearn-compatible by default, it might be the case that
+        standard packages can adapt the model. For example, you can adapt PyTorch
+        models using `skorch <https://skorch.readthedocs.io/>`_ and adapt Keras models
+        using `SciKeras <https://www.adriangb.com/scikeras/>`_.
+
+        Stores the model used in CleanLearning.
+        Default model used is `sklearn.linear_model.LinearRegression
+        <https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LinearRegression.html>`_.
+
+    cv_n_folds :
+        This class needs holdout predictions for every data example and if not provided,
+        uses cross-validation to compute them. This argument sets the number of cross-validation
+        folds used to compute out-of-sample predictions for each example in ``X``. Default 5.
+
+    n_boot :
+        Number of bootstrap samplings iterations that should be conducted to estimate the model's
+        epistemic uncertainty. Default 5.
+
+    verbose :
+        Controls how much output is printed. Set to ``False`` to suppress print statements. Default `False`.
+
+    seed :
+        Set the default state of the random number generator used to split
+        the cross-validated folds. By default, uses ``np.random`` current random state.
+    """
+
     def __init__(
         self,
         model: Optional[BaseEstimator] = None,
@@ -44,7 +149,7 @@ class CleanLearning(BaseEstimator):
         seed: Optional[bool] = None,
     ):
         if model is None:
-            # Use linear regression if no classifier is provided.
+            # Use linear regression if no model is provided.
             model = LinearRegression()
 
         # Make sure the given regression model has the appropriate methods defined.
@@ -73,14 +178,73 @@ class CleanLearning(BaseEstimator):
     def fit(
         self,
         X: Union[np.ndarray, pd.DataFrame],
-        y: np.ndarray,
+        y: LabelLike,
         *,
-        sample_weight: Optional[np.ndarray] = None,
         label_issues: Optional[np.ndarray] = None,
+        sample_weight: Optional[np.ndarray] = None,
         find_label_issues_kwargs: Optional[dict] = None,
         model_kwargs: Optional[dict] = None,
         model_final_kwargs: Optional[dict] = None,
-    ):
+    ) -> BaseEstimator:
+        """
+        Train the ``model`` with error-prone, noisy labels as if the model had been instead trained
+        on a dataset with the correct labels. ``fit`` achieves this by first training ``model`` via
+        cross-validation on the noisy data, using the resulting predicted probabilities to identify label issues,
+        pruning the data with label issues, and finally training ``model`` on the remaining clean data.
+
+        Parameters
+        ----------
+        X :
+            Data features (i.e. training inputs for ML), typically an array of shape ``(N, ...)``,
+            where N is the number of examples.
+            Your model that this instance was initialized with, ``model``, must be able to ``fit()``
+            and ``predict()`` data of this format.
+
+        y :
+            An array of shape ``(N,)`` of noisy target values (dependant variables), where some values may be erroneous.
+
+        label_issues :
+            Specifies the label issues for each example in dataset. If ``pd.DataFrame``, must be formatted as the one returned by:
+            :py:meth:`self.find_label_issues <cleanlab.regression.learn.CleanLearning.find_label_issues>` or
+            :py:meth:`self.get_label_issues <cleanlab.regression.learn.CleanLearning.get_label_issues>`. The DataFrame must
+            have a column named ``is_label_issue``.
+
+            If ``np.ndarray``, the input must be a boolean mask of length ``N`` where examples that have label issues
+            have the value ``True``, and the rest of the examples have the value ``False``.
+
+        sample_weight :
+            Array of weights with shape ``(N,)`` that are assigned to individual samples. Specifies how to weight the examples in
+            the loss function while training.
+
+        find_label_issues_kwargs:
+            Optional keyword arguments to pass into :py:meth:`self.find_label_issues <cleanlab.regression.learn.CleanLearning.find_label_issues>`.
+
+        model_kwargs :
+            Optional keyword arguments to pass into model's ``fit()`` method.
+
+        model_final_kwargs :
+            Optional extra keyword arguments to pass into the final model's ``fit()`` on the cleaned data,
+            but not the ``fit()`` in each fold of cross-validation on the noisy data.
+            The final ``fit()`` will also receive the arguments in `clf_kwargs`, but these may be overwritten
+            by values in `clf_final_kwargs`. This can be useful for training differently in the final ``fit()``
+            than during cross-validation.
+
+        Returns
+        -------
+        self : CleanLearning
+            Fitted estimator that has all the same methods as any sklearn estimator.
+
+            After calling ``self.fit()``, this estimator also stores extra attributes such as:
+
+            - ``self.label_issues_df``: a ``pd.DataFrame`` containing quality scores, boolean flags
+                indicating which examples contain issues, and predicted values for each example.
+                Accessible via :py:meth:`self.get_label_issues <cleanlab.regression.learn.CleanLearning.get_label_issues>`,
+                of similar format as the one returned by :py:meth:`self.find_label_issues <cleanlab.regression.learn.CleanLearning.find_label_issues>`.
+                See documentation of :py:meth:`self.find_label_issues <cleanlab.regression.learn.CleanLearning.find_label_issues>`
+                for column descriptions.
+            - ``self.label_issues_mask``: a ``np.ndarray`` boolean mask indicating if a particular
+                example has been identified to have issues.
+        """
         X, y = assert_valid_regression_inputs(X, y)
 
         if find_label_issues_kwargs is None:
@@ -152,15 +316,48 @@ class CleanLearning(BaseEstimator):
             )
         return self
 
-    def predict(self, X: np.ndarray, *args, **kwargs):
+    def predict(self, X: np.ndarray, *args, **kwargs) -> np.ndarray:
+        """
+        Predict class labels using your wrapped model.
+        Works just like ``model.predict()``.
+
+        Parameters
+        ----------
+        X : np.ndarray or DatasetLike
+            Test data in the same format expected by your wrapped model.
+
+        Returns
+        -------
+        predictions : np.ndarray
+            Vector of predictions for the test examples.
+        """
         return self.model.predict(X, *args, **kwargs)
 
     def score(
         self,
-        X: np.ndarray,
+        X: Union[np.ndarray, pd.DataFrame],
         y: np.ndarray,
         sample_weight: Optional[np.ndarray] = None,
-    ):
+    ) -> float:
+        """Evaluates your wrapped model's score on a test set `X` with target values `y`.
+        Uses your model's default scoring function, or r-squared score if your model as no ``"score"`` attribute.
+
+        Parameters
+        ----------
+        X :
+            Test data in the same format expected by your wrapped model.
+
+        y :
+            Test labels in the same format as labels previously used in ``fit()``.
+
+        sample_weight :
+            An array of shape ``(N,)`` or ``(N, 1)`` used to weight each test example when computing the score.
+
+        Returns
+        -------
+        score : float
+            Number quantifying the performance of this model on the test data.
+        """
         if hasattr(self.model, "score"):
             if "sample_weight" in inspect.getfullargspec(self.model.score).args:
                 return self.model.score(X, y, sample_weight=sample_weight)
@@ -175,15 +372,65 @@ class CleanLearning(BaseEstimator):
 
     def find_label_issues(
         self,
-        X: np.ndarray,
-        y: np.ndarray,
+        X: Union[np.ndarray, pd.DataFrame],
+        y: LabelLike,
         *,
         uncertainty: Optional[Union[np.ndarray, float]] = None,
         coarse_search_range: list = [0.01, 0.05, 0.1, 0.15, 0.2],
         fine_search_size: int = 3,
         save_space: bool = False,
         model_kwargs: Optional[dict] = None,
-    ):
+    ) -> pd.DataFrame:
+        """
+        Identifies potential label issues in the dataset.
+
+        Note: this method computes the label issues from scratch. To access previously-computed label issues from
+        this :py:class:`CleanLearning <cleanlab.regression.learn.CleanLearning>` instance, use the
+        :py:meth:`self.get_label_issues <cleanlab.regression.learn.CleanLearning.get_label_issues>` method.
+
+        This is the method called to find label issues inside
+        :py:meth:`CleanLearning.fit() <cleanlab.regression.learn.CleanLearning.fit>`
+        and they share mostly the same parameters.
+
+        Parameters
+        ----------
+        uncertainty :
+            The estimated uncertainty for each example. Should be passed in as a float (constant uncertainty throughout all examples),
+            or a numpy array of length ``N`` (estimated uncertainty for each example).
+            If unprovided, this method will estimated the uncertainty as the sum of the epistemic and aleatoric uncertainty.
+
+        save_space :
+            If True, then returned ``label_issues_df`` will not be stored as attribute.
+            This means some other methods like ``self.get_label_issues()`` will no longer work.
+
+        coarse_search_range :
+            The coarse search range to find the value of ``k``, which represents the fraction of examples which have issues.
+
+        fine_search_size :
+            The fine search size to find the value of ``k``, which represents the fraction of examples which have issues.
+            A higher number represents a more thorough search.
+
+
+        For info about the **other parameters**, see the docstring of :py:meth:`CleanLearning.fit()
+        <cleanlab.regression.learn.CleanLearning.fit>`.
+
+        Returns
+        -------
+        label_issues_df : pd.DataFrame
+            DataFrame with info about label issues for each example.
+            Unless `save_space` argument is specified, same DataFrame is also stored as `self.label_issues_df` attribute accessible via
+            :py:meth:`get_label_issues<cleanlab.regression.learn.CleanLearning.get_label_issues>`.
+
+            Each row represents an example from our dataset and the DataFrame may contain the following columns:
+
+            - *is_label_issue*: boolean mask for the entire dataset where ``True`` represents a label issue and ``False`` represents an example
+              that is accurately labeled with high confidence.
+            - *label_quality*: Numeric score that measures the quality of each label (how likely it is to be correct,
+              with lower scores indicating potentially erroneous labels).
+            - *given_label*: Values originally given for this example (same as `y` input).
+            - *predicted_label*: Values predicted by the trained model.
+        """
+
         X, y = assert_valid_regression_inputs(X, y)
 
         if model_kwargs is None:
@@ -262,7 +509,18 @@ class CleanLearning(BaseEstimator):
 
         return label_issues_df
 
-    def get_label_issues(self):
+    def get_label_issues(self) -> Optional[pd.DataFrame]:
+        """
+        Accessor. Returns `label_issues_df` attribute if previously already computed.
+        This ``pd.DataFrame`` describes the issues identified for each example (each row corresponds to an example).
+        For column definitions, see the documentation of
+        :py:meth:`CleanLearning.find_label_issues<cleanlab.regression.learn.CleanLearning.find_label_issues>`.
+
+        Returns
+        -------
+        label_issues_df : pd.DataFrame
+            DataFrame with (precomputed) info about the label issues for each example.
+        """
         if self.label_issues_df is None:
             warnings.warn(
                 "Label issues have not yet been computed. Run `self.find_label_issues()` or `self.fit()` first."
@@ -273,7 +531,24 @@ class CleanLearning(BaseEstimator):
         self,
         X: np.ndarray,
         y: np.ndarray,
-    ):
+    ) -> np.ndarray:
+        """
+        Compute the epistemic uncertainty of the regression model. This uncertainty is estimated using the bootstrapped
+        variance of the model predictions.
+
+        Parameters
+        ----------
+        X :
+            Data features (i.e. training inputs for ML), typically an array of shape ``(N, ...)``, where N is the number of examples.
+
+        y :
+            An array of shape ``(N,)`` of target values (dependant variables), where some values may be erroneous.
+
+        Returns
+        _______
+        epistemic_uncertainty : np.ndarray
+            The estimated epistemic uncertainty for each example.
+        """
         X, y = assert_valid_regression_inputs(X, y)
         bootstrap_predictions = np.zeros(shape=(len(y), self.n_boot))
         for i in range(self.n_boot):
@@ -285,12 +560,36 @@ class CleanLearning(BaseEstimator):
         self,
         X: np.ndarray,
         residual: np.ndarray,
-    ):
+    ) -> float:
+        """
+        Compute the aleatoric uncertainty of the data. This uncertainty is estimated by the standard deviation
+        of the regression error.
+
+        Parameters
+        ----------
+        X :
+            Data features (i.e. training inputs for ML), typically an array of shape ``(N, ...)``, where N is the number of examples.
+
+        residual :
+            The difference between the given value and the model predicted value of each examples, ie.
+            `predictions - y`.
+
+        Returns
+        _______
+        aleatoric_uncertainty : float
+            The overall estimated aleatoric uncertainty for this dataset.
+        """
         X, residual = assert_valid_regression_inputs(X, residual)
         residual_predictions = self._get_cv_predictions(X, residual)
         return np.sqrt(np.var(residual_predictions))
 
     def save_space(self):
+        """
+        Clears non-sklearn attributes of this estimator to save space (in-place).
+        This includes the DataFrame attribute that stored label issues which may be large for big datasets.
+        You may want to call this method before deploying this model (i.e. if you just care about producing predictions).
+        After calling this method, certain non-prediction-related attributes/functionality will no longer be available
+        """
         if self.label_issues_df is None and self.verbose:
             print("self.label_issues_df is already empty")
 
@@ -311,7 +610,13 @@ class CleanLearning(BaseEstimator):
         cv_n_folds: Optional[int] = None,
         seed: Optional[int] = None,
         model_kwargs: Optional[dict] = None,
-    ):
+    ) -> np.ndarray:
+        """
+        Helper method to get out-of-fold predictions using cross validation.
+        This method also allows us to filter out the bottom k percent of label errors before training the cross-validation models
+        (both ``sorted_index`` and ``k`` has to be provided for this).
+
+        """
         # set to default unless specified otherwise
         if cv_n_folds is None:
             cv_n_folds = self.cv_n_folds
