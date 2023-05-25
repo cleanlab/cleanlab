@@ -697,6 +697,12 @@ def compute_overlooked_box_scores(
     scores_overlooked:
         A list of ``N`` numpy arrays where scores_overlooked[i] is an array of size ``M`` of overlooked scores per box for the `i`-th image.
     """
+    (
+        alpha,
+        low_probability_threshold,
+        high_probability_threshold,
+        temperature,
+    ) = _get_valid_subtype_score_params(alpha, None, high_probability_threshold, None)
 
     if auxiliary_inputs is None:
         auxiliary_inputs = _get_valid_inputs_for_compute_scores(alpha, labels, predictions)
