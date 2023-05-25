@@ -105,7 +105,7 @@ def get_normalized_entropy(
 
       .. deprecated:: 2.5.0
          This keyword is deprecated and should be left to the default.
-         The Entropy is well-behaved even if `pred_probs` contains zeros,
+         The entropy is well-behaved even if `pred_probs` contains zeros,
          clipping is unnecessary and (slightly) changes the results.
 
     Returns
@@ -116,7 +116,7 @@ def get_normalized_entropy(
     Raises
     ------
     ValueError
-        If any of the probabilities is not in the interval [0, 1] an error is raised.
+        An error is raised if any of the probabilities is not in the interval [0, 1].
     """
     if np.any(pred_probs < 0) or np.any(pred_probs > 1):
         raise ValueError("All probabilities are required to be in the interval [0, 1].")
