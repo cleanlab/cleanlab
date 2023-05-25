@@ -2,9 +2,11 @@
 
 from cleanlab.internal import util
 import numpy as np
+import pytest
 
-from cleanlab.internal.util import num_unique_classes, format_labels, get_missing_classes
+from cleanlab.internal.label_quality_utils import get_normalized_entropy
 from cleanlab.internal.multilabel_utils import int2onehot, onehot2int
+from cleanlab.internal.util import num_unique_classes, format_labels, get_missing_classes
 from cleanlab.internal.validation import assert_valid_class_labels
 
 
@@ -146,3 +148,25 @@ def test_format_labels():
     assert label_map[1] == "b"
     assert label_map[2] == "c"
     assert_valid_class_labels(labels)
+
+
+def test_normalized_entropy():
+    """Check that normalized entropy is well well-behaved and in [0, 1]."""
+    # test tiny numbers
+    for dtype in [np.float16, np.float32, np.float64]:
+        info = np.finfo(dtype)
+        # some NumPy versions have bugs, therefore we provide a fallback
+        # (fallback is the value of the smalles datatype float16)
+        smallest_normal = getattr(info, "smallest_normal", 6.104e-05)
+        smallest_subnormal = getattr(info, "smallest_subnormal", 6e-08)
+        for val in [info.eps, smallest_normal, smallest_subnormal, 0]:
+            entropy = get_normalized_entropy(np.array([[1.0, val]], dtype=dtype))
+            assert 0.0 <= entropy <= 1.0
+    # test multiple _assert_valid_inputs
+    entropy = get_normalized_entropy(np.array([[0.0, 1.0], [0.5, 0.5]]))
+    assert all((0.0 <= entropy) & (entropy <= 1.0))
+
+    # raise errors for wrong probabilities.
+    with pytest.raises(ValueError):
+        get_normalized_entropy(np.array([[-1.0, 0.5]]))  # negative
+        get_normalized_entropy(np.array([[2.0, 0.5]]))  # larger 1
