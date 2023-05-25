@@ -180,7 +180,7 @@ class CleanLearning(BaseEstimator):
         X: Union[np.ndarray, pd.DataFrame],
         y: LabelLike,
         *,
-        label_issues: Optional[np.ndarray] = None,
+        label_issues: Optional[Union[pd.DataFrame, np.ndarray]] = None,
         sample_weight: Optional[np.ndarray] = None,
         find_label_issues_kwargs: Optional[dict] = None,
         model_kwargs: Optional[dict] = None,
