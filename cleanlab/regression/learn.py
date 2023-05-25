@@ -616,6 +616,21 @@ class CleanLearning(BaseEstimator):
         This method also allows us to filter out the bottom k percent of label errors before training the cross-validation models
         (both ``sorted_index`` and ``k`` has to be provided for this).
 
+        Parameters
+        ----------
+        X :
+            Data features (i.e. training inputs for ML), typically an array of shape ``(N, ...)``, where N is the number of examples.
+
+        y :
+            An array of shape ``(N,)`` of target values (dependant variables), where some values may be erroneous.
+
+        sorted_index :
+            Index of each example sorted by their residuals in ascending order.
+
+        k :
+            The fraction of examples to hold out from the training sets. Usually this is the fraction of examples that are
+            deemed to contain errors.
+
         """
         # set to default unless specified otherwise
         if cv_n_folds is None:
@@ -696,6 +711,13 @@ class CleanLearning(BaseEstimator):
         coarse_search_range: list = [0.01, 0.05, 0.1, 0.15, 0.2],
         fine_search_size: int = 3,
     ) -> Tuple[float, float]:
+        """
+        Helper method that conducts a coarse and fine grained grid search to determine the best value
+        of k, the fraction of the dataset that contains issues.
+
+        Returns a tuple containing the the best value of k (ie. the one that has the best r squared score),
+        and the corrsponding r squared score obtained when dropping k% of the data.
+        """
         if len(coarse_search_range) == 0:
             raise ValueError("coarse_search_range must have at least 1 value of k")
         elif len(coarse_search_range) == 1:
