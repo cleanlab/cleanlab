@@ -103,6 +103,7 @@ def get_label_quality_scores(
 
        swapped examples, bad location examples, and overlooked examples.
        It is important to ensure that the weights are non-negative values and that their sum equals 1.0.
+
     verbose : bool, default = True
       Set to ``False`` to suppress all print statements.
 
@@ -434,13 +435,15 @@ def _get_valid_inputs_for_compute_scores_per_image(
     # ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, float]:
     if lab_labels is None or lab_bboxes is None:
         if label is None:
-            raise ValueError(f"Pass in either one of label or label labels. Both can not be None.")
+            raise ValueError(
+                f"Pass in either one of label or label labels into auxiliary inputs. Both can not be None."
+            )
         lab_bboxes, lab_labels = _separate_label(label)
 
     if pred_labels is None or pred_label_probs is None or pred_bboxes is None:
         if prediction is None:
             raise ValueError(
-                f"Pass in either one of prediction or prediction labels and prediction probabilities. Both can not be None."
+                f"Pass in either one of prediction or prediction labels and prediction probabilities into auxiliary inputs. Both can not be None."
             )
         pred_bboxes, pred_labels, pred_label_probs = _separate_prediction(prediction)
 
@@ -474,6 +477,7 @@ def _get_valid_inputs_for_compute_scores(
     labels: Optional[List[Dict[str, Any]]] = None,
     predictions: Optional[List[np.ndarray]] = None,
 ) -> List[AuxiliaryTypesDict]:
+    """Takes in alpha, labels and predictions and returns auxiliary input dictionary containing divided parts of labels and prediction per image."""
     if predictions is None or labels is None:
         raise ValueError(
             f"Predictions and labels can not be None. Both are needed to get valid inputs."
@@ -537,7 +541,37 @@ def _get_aggregation_weights(
     return aggregation_weights
 
 
-def _pool_box_scores_per_image(box_scores: List[np.ndarray], temperature: float) -> np.ndarray:
+def pool_box_scores_per_image(
+    box_scores: List[np.ndarray], *, temperature: Optional[float] = None
+) -> np.ndarray:
+    """
+    Aggregates scores per box and returns an array of scores for each image.
+    Scores are between 0 and 1.
+
+    - 1 - clean label (given label is likely correct).
+    - 0 - dirty label (given label is likely incorrect).
+
+    Parameters
+    ----------
+    box_scores:
+        A list of ``N`` numpy arrays where box_scores[i] is an array of badly located scores per box for the `i`-th image.
+
+    temperature:
+        Temperature of the softmin function where a lower score suggests softmin acts closer to min.
+
+    Returns
+    ---------
+    image_scores:
+        An array of size ``N`` where ``image_scores[i]`` represents the score for the `i`-th image.
+    """
+
+    (
+        alpha,
+        low_probability_threshold,
+        high_probability_threshold,
+        temperature,
+    ) = _get_valid_subtype_score_params(None, None, None, temperature)
+
     image_scores = np.empty(
         shape=[
             len(box_scores),
@@ -605,13 +639,65 @@ def _compute_overlooked_box_scores_for_image(
     return scores_overlooked
 
 
-def _compute_overlooked_box_scores(
-    alpha: float,
-    high_probability_threshold: float,
+def compute_overlooked_box_scores(
     labels: Optional[List[Dict[str, Any]]] = None,
     predictions: Optional[List[np.ndarray]] = None,
+    *,
+    alpha: Optional[float] = None,
+    high_probability_threshold: Optional[float] = None,
     auxiliary_inputs: Optional[List[AuxiliaryTypesDict]] = None,
 ) -> List[np.ndarray]:
+    """
+    Returns an array of overlooked box scores for each image.
+    Score per box is between 0 and 1.
+
+    - 1 - clean box (predicted box is likely correct).
+    - 0 - dirty box (predicted box is likely to be overlooked).
+
+    Each image has ``L`` annotated bounding boxes and ``M`` predicted bounding boxes.
+    A score is calculated for each of ``M`` predicted boxes in ``N`` images, with ``K`` total classes in the data.
+
+    Note: ``M`` and ``L`` can be a different values for each image, as the number of annotated and predicted boxes varies.
+
+    Parameters
+    ----------
+    labels:
+        A list of ``N`` dictionaries such that ``labels[i]`` contains the given labels for the `i`-th image.
+        Refer to documentation for this argument in :py:func:`find_label_issues <cleanlab.object_detection.filter.find_label_issues>` for further details.
+
+    predictions:
+        A list of ``N`` ``np.ndarray`` such that ``predictions[i]`` corresponds to the model predictions for the `i`-th image.
+        Refer to documentation for this argument in :py:func:`find_label_issues <cleanlab.object_detection.filter.find_label_issues>` for further details.
+
+    alpha:
+        Weight between IoU and distance when considering similarity matrix. High alpha means considering IoU more strongly over distance. If no alpha is provided, standard alpha is used.
+
+    high_probability_threshold:
+        The high probability threshold for considering predicted boxes when computing scores. If no threshold is provided, standard threshold is used.
+
+    auxiliary_inputs:
+        List of ``N`` dictionaries containing keys for sub-parts of label and prediction per image. Useful to minimize computation when computing multiple box scores for a single set of images.
+        For the `i`-th image, `auxiliary_inputs[i]` should contain following keys:
+       * pred_labels: np.ndarray
+            Array of predicted classes for `i`-th image of shape ``(M,)``.
+       * pred_label_probs: np.ndarray
+            Array of predicted class probabilities for `i`-th image of shape ``(M,)``.
+       * pred_bboxes: np.ndarray
+            Array of predicted bounding boxes for `i`-th image of shape ``(M, 4)``.
+       * lab_labels: np.ndarray
+            Array of given label classed for `i`-th image of shape ``(L,)``.
+       * lab_bboxes: np.ndarray
+            Array of given label bounding boxes for `i`-th image of shape ``(L, 4)``.
+       * similarity_matrix: np.ndarray
+            Similarity matrix between labels and predictions `i`-th image.
+       * min_possible_similarity: float
+            Minimum possible similarity value greater than 0 between labels and predictions for the entire dataset.
+    Returns
+    ---------
+    scores_overlooked:
+        A list of ``N`` numpy arrays where scores_overlooked[i] is an array of size ``M`` of overlooked scores per box for the `i`-th image.
+    """
+
     if auxiliary_inputs is None:
         auxiliary_inputs = _get_valid_inputs_for_compute_scores(alpha, labels, predictions)
 
@@ -684,13 +770,71 @@ def _compute_badloc_box_scores_for_image(
     return scores_badloc
 
 
-def _compute_badloc_box_scores(
-    alpha: float,
-    low_probability_threshold: float,
+def compute_badloc_box_scores(
     labels: Optional[List[Dict[str, Any]]] = None,
     predictions: Optional[List[np.ndarray]] = None,
+    *,
+    alpha: Optional[float] = None,
+    low_probability_threshold: Optional[float] = None,
     auxiliary_inputs: Optional[List[AuxiliaryTypesDict]] = None,
 ) -> List[np.ndarray]:
+    """
+    Returns an array of badly located given label box scores for each image.
+    Score per box is between 0 and 1.
+
+    - 1 - clean box (given label box is likely correct).
+    - 0 - dirty box (given label box is likely to be badly located).
+
+    Each image has ``L`` annotated bounding boxes and ``M`` predicted bounding boxes.
+    A score is calculated for each of ``L`` boxes in ``N`` images, with ``K`` total classes in the data.
+
+    Note: ``M`` and ``L`` can be a different values for each image, as the number of annotated and predicted boxes varies.
+
+    Parameters
+    ----------
+    labels:
+        A list of ``N`` dictionaries such that ``labels[i]`` contains the given labels for the `i`-th image.
+        Refer to documentation for this argument in :py:func:`find_label_issues <cleanlab.object_detection.filter.find_label_issues>` for further details.
+
+    predictions:
+        A list of ``N`` ``np.ndarray`` such that ``predictions[i]`` corresponds to the model predictions for the `i`-th image.
+        Refer to documentation for this argument in :py:func:`find_label_issues <cleanlab.object_detection.filter.find_label_issues>` for further details.
+
+    alpha:
+        Weight between IoU and distance when considering similarity matrix. High alpha means considering IoU more strongly over distance. If no alpha is provided, standard alpha is used.
+
+    low_probability_threshold:
+        The lowest predicted class probability threshold allowed when considering predicted boxes to compute scores.
+
+    auxiliary_inputs:
+        List of ``N`` dictionaries containing keys for sub-parts of label and prediction per image. Useful to minimize computation when computing multiple box scores for a single set of images.
+        For the `i`-th image, `auxiliary_inputs[i]` should contain following keys:
+       * pred_labels: np.ndarray
+            Array of predicted classes for `i`-th image of shape ``(M,)``.
+       * pred_label_probs: np.ndarray
+            Array of predicted class probabilities for `i`-th image of shape ``(M,)``.
+       * pred_bboxes: np.ndarray
+            Array of predicted bounding boxes for `i`-th image of shape ``(M, 4)``.
+       * lab_labels: np.ndarray
+            Array of given label classed for `i`-th image of shape ``(L,)``.
+       * lab_bboxes: np.ndarray
+            Array of given label bounding boxes for `i`-th image of shape ``(L, 4)``.
+       * similarity_matrix: np.ndarray
+            Similarity matrix between labels and predictions `i`-th image.
+       * min_possible_similarity: float
+            Minimum possible similarity value greater than 0 between labels and predictions for the entire dataset.
+    Returns
+    ---------
+    scores_badloc:
+        A list of ``N`` numpy arrays where scores_badloc[i] is an array of size ``L`` badly located scores per box for the `i`-th image.
+    """
+    (
+        alpha,
+        low_probability_threshold,
+        high_probability_threshold,
+        temperature,
+    ) = _get_valid_subtype_score_params(alpha, low_probability_threshold, None, None)
+
     if auxiliary_inputs is None:
         auxiliary_inputs = _get_valid_inputs_for_compute_scores(alpha, labels, predictions)
 
@@ -767,13 +911,71 @@ def _compute_swap_box_scores_for_image(
     return scores_swap
 
 
-def _compute_swap_box_scores(
-    alpha: float,
-    high_probability_threshold: float,
+def compute_swap_box_scores(
     labels: Optional[List[Dict[str, Any]]] = None,
     predictions: Optional[List[np.ndarray]] = None,
+    *,
+    alpha: Optional[float] = None,
+    high_probability_threshold: Optional[float] = None,
     auxiliary_inputs: Optional[List[AuxiliaryTypesDict]] = None,
 ) -> List[np.ndarray]:
+    """
+    Returns an array of swap given label box scores for each image.
+    Score per box is between 0 and 1.
+
+    - 1 - clean box (given label box is likely correct).
+    - 0 - dirty box (given label box is likely to be swapped).
+
+    Each image has ``L`` annotated bounding boxes and ``M`` predicted bounding boxes.
+    A score is calculated for each of ``L`` boxes in ``N`` images, with ``K`` total classes in the data.
+
+    Note: ``M`` and ``L`` can be a different values for each image, as the number of annotated and predicted boxes varies.
+
+    Parameters
+    ----------
+    labels:
+        A list of ``N`` dictionaries such that ``labels[i]`` contains the given labels for the `i`-th image.
+        Refer to documentation for this argument in :py:func:`find_label_issues <cleanlab.object_detection.filter.find_label_issues>` for further details.
+
+    predictions:
+        A list of ``N`` ``np.ndarray`` such that ``predictions[i]`` corresponds to the model predictions for the `i`-th image.
+        Refer to documentation for this argument in :py:func:`find_label_issues <cleanlab.object_detection.filter.find_label_issues>` for further details.
+
+    alpha:
+        Weight between IoU and distance when considering similarity matrix. High alpha means considering IoU more strongly over distance. If no alpha is provided, standard alpha is used.
+
+    high_probability_threshold:
+        The high probability threshold for considering predicted boxes when computing scores. If no threshold is provided, standard threshold is used.
+
+    auxiliary_inputs:
+        List of ``N`` dictionaries containing keys for sub-parts of label and prediction per image. Useful to minimize computation when computing multiple box scores for a single set of images.
+        For the `i`-th image, `auxiliary_inputs[i]` should contain following keys:
+       * pred_labels: np.ndarray
+            Array of predicted classes for `i`-th image of shape ``(M,)``.
+       * pred_label_probs: np.ndarray
+            Array of predicted class probabilities for `i`-th image of shape ``(M,)``.
+       * pred_bboxes: np.ndarray
+            Array of predicted bounding boxes for `i`-th image of shape ``(M, 4)``.
+       * lab_labels: np.ndarray
+            Array of given label classed for `i`-th image of shape ``(L,)``.
+       * lab_bboxes: np.ndarray
+            Array of given label bounding boxes for `i`-th image of shape ``(L, 4)``.
+       * similarity_matrix: np.ndarray
+            Similarity matrix between labels and predictions `i`-th image.
+       * min_possible_similarity: float
+            Minimum possible similarity value greater than 0 between labels and predictions for the entire dataset.
+    Returns
+    ---------
+    scores_swap:
+        A list of ``N`` numpy arrays where scores_swap[i] is an array of size ``L`` swap scores per box for the `i`-th image.
+    """
+    (
+        alpha,
+        low_probability_threshold,
+        high_probability_threshold,
+        temperature,
+    ) = _get_valid_subtype_score_params(alpha, None, high_probability_threshold, None)
+
     if auxiliary_inputs is None:
         auxiliary_inputs = _get_valid_inputs_for_compute_scores(alpha, labels, predictions)
 
@@ -841,26 +1043,30 @@ def _get_subtype_label_quality_scores(
     auxiliary_inputs = _get_valid_inputs_for_compute_scores(alpha, labels, predictions)
     aggregation_weights = _get_aggregation_weights(aggregation_weights)
 
-    overlooked_scores_per_box = _compute_overlooked_box_scores(
+    overlooked_scores_per_box = compute_overlooked_box_scores(
         alpha=alpha,
         high_probability_threshold=high_probability_threshold,
         auxiliary_inputs=auxiliary_inputs,
     )
-    overlooked_score_per_image = _pool_box_scores_per_image(overlooked_scores_per_box, temperature)
+    overlooked_score_per_image = pool_box_scores_per_image(
+        overlooked_scores_per_box, temperature=temperature
+    )
 
-    badloc_scores_per_box = _compute_badloc_box_scores(
+    badloc_scores_per_box = compute_badloc_box_scores(
         alpha=alpha,
         low_probability_threshold=low_probability_threshold,
         auxiliary_inputs=auxiliary_inputs,
     )
-    badloc_score_per_image = _pool_box_scores_per_image(badloc_scores_per_box, temperature)
+    badloc_score_per_image = pool_box_scores_per_image(
+        badloc_scores_per_box, temperature=temperature
+    )
 
-    swap_scores_per_box = _compute_swap_box_scores(
+    swap_scores_per_box = compute_swap_box_scores(
         alpha=alpha,
         high_probability_threshold=high_probability_threshold,
         auxiliary_inputs=auxiliary_inputs,
     )
-    swap_score_per_image = _pool_box_scores_per_image(swap_scores_per_box, temperature)
+    swap_score_per_image = pool_box_scores_per_image(swap_scores_per_box, temperature=temperature)
 
     scores = (
         aggregation_weights["overlooked"] * overlooked_score_per_image

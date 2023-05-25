@@ -31,9 +31,9 @@ from cleanlab.internal.object_detection_utils import assert_valid_inputs
 
 from cleanlab.object_detection.rank import (
     _get_valid_inputs_for_compute_scores,
-    _compute_overlooked_box_scores,
-    _compute_badloc_box_scores,
-    _compute_swap_box_scores,
+    compute_overlooked_box_scores,
+    compute_badloc_box_scores,
+    compute_swap_box_scores,
     get_label_quality_scores,
     issues_from_scores,
 )
@@ -123,7 +123,7 @@ def _find_label_issues(
     if scoring_method == "objectlab":
         auxiliary_inputs = _get_valid_inputs_for_compute_scores(ALPHA, labels, predictions)
 
-        overlooked_scores_per_box = _compute_overlooked_box_scores(
+        overlooked_scores_per_box = compute_overlooked_box_scores(
             alpha=ALPHA,
             high_probability_threshold=HIGH_PROBABILITY_THRESHOLD,
             auxiliary_inputs=auxiliary_inputs,
@@ -133,7 +133,7 @@ def _find_label_issues(
         )
         overlooked_issues_per_image = _pool_box_scores_per_image(overlooked_issues_per_box)
 
-        badloc_scores_per_box = _compute_badloc_box_scores(
+        badloc_scores_per_box = compute_badloc_box_scores(
             alpha=ALPHA,
             low_probability_threshold=LOW_PROBABILITY_THRESHOLD,
             auxiliary_inputs=auxiliary_inputs,
@@ -141,7 +141,7 @@ def _find_label_issues(
         badloc_issues_per_box = _find_label_issues_per_box(badloc_scores_per_box, BADLOC_THRESHOLD)
         badloc_issues_per_image = _pool_box_scores_per_image(badloc_issues_per_box)
 
-        swap_scores_per_box = _compute_swap_box_scores(
+        swap_scores_per_box = compute_swap_box_scores(
             alpha=ALPHA,
             high_probability_threshold=HIGH_PROBABILITY_THRESHOLD,
             auxiliary_inputs=auxiliary_inputs,

@@ -18,9 +18,9 @@ from cleanlab.object_detection.rank import (
     _get_overlap_matrix,
     _get_dist_matrix,
     _get_valid_inputs_for_compute_scores,
-    _compute_overlooked_box_scores,
-    _compute_badloc_box_scores,
-    _compute_swap_box_scores,
+    compute_overlooked_box_scores,
+    compute_badloc_box_scores,
+    compute_swap_box_scores,
     _get_prediction_type,
     _get_valid_subtype_score_params,
     _get_aggregation_weights,
@@ -403,13 +403,13 @@ def test_swap_score_shifts_in_correct_direction():
 def test_find_label_issues():
     auxiliary_inputs = _get_valid_inputs_for_compute_scores(ALPHA, labels, predictions)
 
-    overlooked_scores_per_box = _compute_overlooked_box_scores(
+    overlooked_scores_per_box = compute_overlooked_box_scores(
         alpha=ALPHA,
         high_probability_threshold=HIGH_PROBABILITY_THRESHOLD,
         auxiliary_inputs=auxiliary_inputs,
     )
 
-    overlooked_scores_no_auxillary_inputs = _compute_overlooked_box_scores(
+    overlooked_scores_no_auxillary_inputs = compute_overlooked_box_scores(
         alpha=ALPHA,
         high_probability_threshold=HIGH_PROBABILITY_THRESHOLD,
         labels=labels,
@@ -428,13 +428,13 @@ def test_find_label_issues():
     assert np.sum(overlooked_issues_per_image[5:]) == 5  # check bad labels were detected correctly
     assert overlooked_issues == 5
 
-    badloc_scores_per_box = _compute_badloc_box_scores(
+    badloc_scores_per_box = compute_badloc_box_scores(
         alpha=ALPHA,
         low_probability_threshold=LOW_PROBABILITY_THRESHOLD,
         auxiliary_inputs=auxiliary_inputs,
     )
 
-    badloc_scores_no_auxillary_inputs = _compute_badloc_box_scores(
+    badloc_scores_no_auxillary_inputs = compute_badloc_box_scores(
         alpha=ALPHA,
         low_probability_threshold=LOW_PROBABILITY_THRESHOLD,
         labels=labels,
@@ -452,13 +452,13 @@ def test_find_label_issues():
     assert np.sum(badloc_issues_per_image[5:]) == 5  # check bad labels were detected correctly
     assert badloc_issues == 5
 
-    swap_scores_per_box = _compute_swap_box_scores(
+    swap_scores_per_box = compute_swap_box_scores(
         alpha=ALPHA,
         high_probability_threshold=HIGH_PROBABILITY_THRESHOLD,
         auxiliary_inputs=auxiliary_inputs,
     )
 
-    swap_scores_no_auxillary_inputs = _compute_swap_box_scores(
+    swap_scores_no_auxillary_inputs = compute_swap_box_scores(
         alpha=ALPHA,
         high_probability_threshold=HIGH_PROBABILITY_THRESHOLD,
         labels=labels,
