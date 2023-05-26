@@ -1,5 +1,5 @@
 Datalab Tutorials
-=========
+=================
 
 .. toctree::
    :maxdepth: 1
@@ -8,5 +8,3 @@ Datalab Tutorials
    Perform Advanced Data Auditing with Datalab <datalab_advanced>
    Text Classification <text>
    Tabular Classification <tabular>
-   Image Classification Label Errors <image>
-   Audio Classification Label Errors <audio>
