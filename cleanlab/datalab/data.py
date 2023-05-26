@@ -161,7 +161,7 @@ class Data:
         return self._data_hash
 
     @property
-    def class_names(self) -> list:
+    def class_names(self) -> List[str]:
         return self.labels.class_names
 
     @property
@@ -225,7 +225,8 @@ class Label:
     def __init__(self, *, data: Dataset, label_name: Optional[str] = None) -> None:
         self._data = data
         self.label_name = label_name
-        self.labels, self.label_map = [], {}
+        self.labels = labels_to_array([])
+        self.label_map: Mapping[str, Any] = {}
         if label_name is not None:
             self.labels, self.label_map = _extract_labels(data, label_name)
             self._validate_labels()
@@ -250,7 +251,7 @@ class Label:
         return self.is_available
 
     @property
-    def class_names(self) -> list:
+    def class_names(self) -> List[str]:
         """A list of class names that are present in the dataset.
 
         Without labels, this will return an empty list.

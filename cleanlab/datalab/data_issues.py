@@ -269,7 +269,7 @@ class DataIssues:
         self.info["statistics"]["health_score"] = self.issue_summary["score"].mean()
 
 
-def get_data_statistics(data: Data):
+def get_data_statistics(data: Data) -> Dict[str, Any]:
     """Get statistics about a dataset.
 
     This function is called to initialize the "statistics" info in all `Datalab` objects.
@@ -279,7 +279,7 @@ def get_data_statistics(data: Data):
     data : Data
         Data object containing the dataset.
     """
-    statistics = {
+    statistics: Dict[str, Any] = {
         "num_examples": len(data),
         "multi_label": False,
         "health_score": None,
