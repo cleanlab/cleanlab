@@ -58,9 +58,6 @@ class TestLabelIssueManager:
             "confident_joint": [1 / 3, 1 / 3, 1 / 3],
             "multi_label": False,
         }
-        monkeypatch.setattr(
-            issue_manager.datalab, "_labels", mock_health_summary_parameters["labels"]
-        )
         pred_probs = np.random.rand(3, 3)
         monkeypatch.setattr(
             issue_manager, "health_summary_parameters", mock_health_summary_parameters
@@ -89,6 +86,9 @@ class TestLabelIssueManager:
 
         # Test missing "joint" key
         mock_health_summary_parameters.pop("joint")
+        monkeypatch.setattr(
+            issue_manager.datalab._labels, "labels", mock_health_summary_parameters["labels"]
+        )
         monkeypatch.setattr(
             issue_manager, "health_summary_parameters", mock_health_summary_parameters
         )

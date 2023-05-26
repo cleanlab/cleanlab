@@ -63,17 +63,10 @@ class DataIssues:
         self.issue_summary: pd.DataFrame = pd.DataFrame(
             columns=["issue_type", "score", "num_issues"]
         ).astype({"score": np.float64, "num_issues": np.int64})
-        class_names = data.class_names
         self.info: Dict[str, Dict[str, Any]] = {
-            "statistics": {
-                "num_examples": len(data),
-                "class_names": class_names,
-                "num_classes": len(class_names),
-                "multi_label": False,
-                "health_score": None,
-            },
+            "statistics": get_data_statistics(data),
         }
-        self._label_map = data._label_map
+        self._label_map = data.labels.label_map
 
     @property
     def statistics(self) -> Dict[str, Any]:
@@ -179,6 +172,11 @@ class DataIssues:
             )
         info = info.copy()
         if issue_name == "label":
+            if self._label_map is None:
+                raise ValueError(
+                    "The label map is not available. "
+                    "Most likely, no label column was provided when creating the Data object."
+                )
             # Labels that are stored as integers may need to be converted to strings.
             for key in ["given_label", "predicted_label"]:
                 labels = info.get(key, None)
@@ -269,3 +267,25 @@ class DataIssues:
         Currently, the health score is the mean of the scores for each issue type.
         """
         self.info["statistics"]["health_score"] = self.issue_summary["score"].mean()
+
+
+def get_data_statistics(data: Data):
+    """Get statistics about a dataset.
+
+    This function is called to initialize the "statistics" info in all `Datalab` objects.
+
+    Parameters
+    ----------
+    data : Data
+        Data object containing the dataset.
+    """
+    statistics = {
+        "num_examples": len(data),
+        "multi_label": False,
+        "health_score": None,
+    }
+    if data.labels.is_available:
+        class_names = data.class_names
+        statistics["class_names"] = class_names
+        statistics["num_classes"] = len(class_names)
+    return statistics
