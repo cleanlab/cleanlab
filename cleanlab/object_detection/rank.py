@@ -28,6 +28,7 @@ from cleanlab.internal.constants import (
     HIGH_PROBABILITY_THRESHOLD,
     LOW_PROBABILITY_THRESHOLD,
     MAX_ALLOWED_BOX_PRUNE,
+    TINY_VALUE,
     TEMPERATURE,
 )
 
@@ -762,7 +763,7 @@ def _compute_badloc_box_scores_for_image(
         k_pred = pred_label_probs[pred_labels == k]
 
         if len(k_pred) == 0:  # there are no predicted boxes of class k
-            scores_badloc[iid] = min_possible_similarity
+            scores_badloc[iid] = 1.0
             continue
 
         idx_at_least_low_probability_threshold = k_pred > low_probability_threshold
@@ -770,7 +771,7 @@ def _compute_badloc_box_scores_for_image(
         k_pred = k_pred[idx_at_least_low_probability_threshold]
 
         if len(k_pred) == 0:
-            scores_badloc[iid] = min_possible_similarity
+            scores_badloc[iid] = 1.0
         else:
             scores_badloc[iid] = np.max(k_similarity)
     return scores_badloc
@@ -1075,8 +1076,11 @@ def _get_subtype_label_quality_scores(
     swap_score_per_image = pool_box_scores_per_image(swap_scores_per_box, temperature=temperature)
 
     scores = (
-        aggregation_weights["overlooked"] * overlooked_score_per_image
-        + aggregation_weights["badloc"] * badloc_score_per_image
-        + aggregation_weights["swap"] * swap_score_per_image
+        aggregation_weights["overlooked"] * np.log(TINY_VALUE + overlooked_score_per_image)
+        + aggregation_weights["badloc"] * np.log(TINY_VALUE + badloc_score_per_image)
+        + aggregation_weights["swap"] * np.log(TINY_VALUE + swap_score_per_image)
     )
+
+    scores = np.exp(scores)
+
     return scores
