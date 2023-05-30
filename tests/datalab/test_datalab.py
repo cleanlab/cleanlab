@@ -879,7 +879,6 @@ class TestDatalabFindNearDuplicateIssues:
 
 
 class TestDatalabWithoutLabels:
-
     num_examples = 100
     num_features = 10
     K = 2
