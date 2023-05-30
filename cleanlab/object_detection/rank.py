@@ -677,8 +677,8 @@ def compute_overlooked_box_scores(
         The high probability threshold for considering predicted boxes when computing scores. If no threshold is provided, standard threshold is used.
 
     auxiliary_inputs:
-        List of ``N`` dictionaries containing keys for sub-parts of label and prediction per image. Useful to minimize computation when computing multiple box scores for a single set of images.
-        For the `i`-th image, `auxiliary_inputs[i]` should contain following keys:
+        List of ``N`` dictionaries containing keys for sub-parts of label and prediction per image. Useful to minimize computation when computing multiple box scores for a single set of images. For the `i`-th image, `auxiliary_inputs[i]` should contain following keys:
+
        * pred_labels: np.ndarray
             Array of predicted classes for `i`-th image of shape ``(M,)``.
        * pred_label_probs: np.ndarray
@@ -814,8 +814,8 @@ def compute_badloc_box_scores(
         The lowest predicted class probability threshold allowed when considering predicted boxes to compute scores.
 
     auxiliary_inputs:
-        List of ``N`` dictionaries containing keys for sub-parts of label and prediction per image. Useful to minimize computation when computing multiple box scores for a single set of images.
-        For the `i`-th image, `auxiliary_inputs[i]` should contain following keys:
+        List of ``N`` dictionaries containing keys for sub-parts of label and prediction per image. Useful to minimize computation when computing multiple box scores for a single set of images. For the `i`-th image, `auxiliary_inputs[i]` should contain following keys:
+
        * pred_labels: np.ndarray
             Array of predicted classes for `i`-th image of shape ``(M,)``.
        * pred_label_probs: np.ndarray
@@ -955,8 +955,8 @@ def compute_swap_box_scores(
         The high probability threshold for considering predicted boxes when computing scores. If no threshold is provided, standard threshold is used.
 
     auxiliary_inputs:
-        List of ``N`` dictionaries containing keys for sub-parts of label and prediction per image. Useful to minimize computation when computing multiple box scores for a single set of images.
-        For the `i`-th image, `auxiliary_inputs[i]` should contain following keys:
+        List of ``N`` dictionaries containing keys for sub-parts of label and prediction per image. Useful to minimize computation when computing multiple box scores for a single set of images. For the `i`-th image, `auxiliary_inputs[i]` should contain following keys:
+
        * pred_labels: np.ndarray
             Array of predicted classes for `i`-th image of shape ``(M,)``.
        * pred_label_probs: np.ndarray
