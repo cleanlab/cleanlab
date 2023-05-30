@@ -906,7 +906,7 @@ class TestDatalabWithoutLabels:
 
     def test_init(self, lab, features):
         assert np.array_equal(lab.data["X"], features)
-        assert lab.labels == []
+        assert np.array_equal(lab.labels, [])
 
     def test_find_issues(self, lab, features, pred_probs):
         lab = Datalab(data={"X": features})
