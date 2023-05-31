@@ -39,16 +39,3 @@ h5 {
 h6 {
     font-size: .75em;
 }
-
-.datalab-alert {
-    padding: 10px 10px 10px 30px;
-    background-color: #fdf0dd; /* Change this color for a different background */
-    color: #000; /* Change this color for a different text color */
-    border-radius: 5px;
-    border: 2px solid #67c0c9;
-    margin: 40px;
-}
-.datalab-alert h4 {
-    font-size: 20px;
-    font-weight: bold;
-}
