@@ -32,6 +32,7 @@ class TestReporter:
         assert reporter.data_issues == data_issues
         assert reporter.verbosity == 1
         assert reporter.include_description == True
+        assert reporter.show_summary_score == False
 
         another_reporter = Reporter(data_issues=data_issues, verbosity=2)
         assert another_reporter.verbosity == 2

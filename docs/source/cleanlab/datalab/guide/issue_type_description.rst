@@ -1,4 +1,4 @@
-Datalab issue types
+Datalab Issue Types
 *******************
 
 
@@ -18,14 +18,13 @@ Datalab produces three estimates for **each** type of issue (called say `<ISSUE_
 2. A Boolean `is_<ISSUE_NAME>_issue` flag for each example from a dataset. Examples where this has value  `True` are those estimated to exhibit this issue. Access these via: the :py:attr:`Datalab.issues <cleanlab.datalab.datalab.Datalab.issues>` attribute or the method :py:meth:`Datalab.get_issues(\<ISSUE_NAME\>) <cleanlab.datalab.datalab.Datalab.get_issues>`.
 3. An overall dataset quality score (between 0 and 1), quantifying how severe this issue is overall across the entire dataset. Datasets with higher scores do not exhibit this issue as badly overall. Access these via: the :py:attr:`Datalab.issue_summary <cleanlab.datalab.datalab.Datalab.issue_summary>` attribute.
 
-Example (pseudo-code)
-^^^^^^^^^^^^^^^^^^^^^
+**Example (for the outlier issue type)**
 
 .. code-block:: python
 
-    issue_name = "my_issue"
-    issue_score = "my_issue_score"
-    is_issue = "is_my_issue_issue"
+    issue_name = "outlier"  # how to reference the outlier issue type in code
+    issue_score = "outlier_score"  # name of column with quality scores for the outlier issue type, atypical datapoints receive lower scores 
+    is_issue = "is_outlier_issue"  # name of Boolean column flagging which datapoints are considered outliers in the dataset
 
 Datalab estimates various issues based on the four inputs below.
 Each input is optional, if you do not provide it, Datalab will skip checks for those types of issues that require this input.
@@ -93,9 +92,9 @@ More generally, examples which happen to be duplicated can affect the final mod
 Non-IID Issue
 -------------
 
-Whether the dataset exhibits statistically significant violations of the IID assumption like:  changepoints or shift, drift, autocorrelation, etc. The specific form of violation considered is whether the examples are ordered such that almost adjacent examples tend to have more similar feature values.
+Whether the dataset exhibits statistically significant violations of the IID assumption like:  changepoints or shift, drift, autocorrelation, etc. The specific form of violation considered is whether the examples are ordered such that almost adjacent examples tend to have more similar feature values. If you care about this check, do **not** first shuffle your dataset -- this check is entirely based on the sequential order of your data.
 
-The Non-IID issue is detected based on provided `features` or `knn_graph`. If you do not provide one of these arguments, this type of issue will not be considered. 
+The Non-IID issue is detected based on provided `features` or `knn_graph`. If you do not provide one of these arguments, this type of issue will not be considered.
 
 Mathematically, the **overall** Non-IID score for the dataset is defined as the p-value of a statistical test for whether the distribution of *index-gap* values differs between group A vs. group B defined as follows. For a pair of examples in the dataset `x1, x2`, we define their *index-gap* as the distance between the indices of these examples in the ordering of the data (e.g. if `x1` is the 10th example and `x2` is the 100th example in the dataset, their index-gap is 90). We construct group A from pairs of examples which are amongst the K nearest neighbors of each other, where neighbors are defined based on the provided `knn_graph` or via distances in the space of the provided vector `features` . Group B is constructed from random pairs of examples in the dataset. 
 
@@ -200,9 +199,11 @@ Non-IID Issue Parameters
 .. code-block:: python
 
     non_iid_kwargs = {
-    "metric": # `metric` argument to constructor of `NonIIDIssueManager`. String for the distance metric used for nearest neighbors search if necessary. `metric` argument to constructor of `sklearn.neighbors.NearestNeighbors`,
-    "k": # `k` argument to constructor of `NonIIDIssueManager`. Integer representing the number of nearest neighbors for nearest neighbors search if necessary. `n_neighbors` argument to constructor of `sklearn.neighbors.NearestNeighbors`
-    "num_permutations": # `num_permutations` argument to constructor of `NonIIDIssueManager`.
+    	"metric": # `metric` argument to constructor of `NonIIDIssueManager`. String for the distance metric used for nearest neighbors search if necessary. `metric` argument to constructor of `sklearn.neighbors.NearestNeighbors`,
+    	"k": # `k` argument to constructor of `NonIIDIssueManager`. Integer representing the number of nearest neighbors for nearest neighbors search if necessary. `n_neighbors` argument to constructor of `sklearn.neighbors.NearestNeighbors`,
+        "num_permutations": # `num_permutations` argument to constructor of `NonIIDIssueManager`,
+        "seed": # seed for numpy's random number generator (used for permutation tests),
+        "significance_threshold": # `significance_threshold` argument to constructor of `NonIIDIssueManager`. Floating value between 0 and 1 that determines the overall signicance of non-IID issues found in the dataset.
     }
 
 .. note::

@@ -59,11 +59,12 @@ class Reporter:
         data_issues: "DataIssues",
         verbosity: int = 1,
         include_description: bool = True,
-        **kwargs,
+        show_summary_score: bool = False,
     ):
         self.data_issues = data_issues
         self.verbosity = verbosity
         self.include_description = include_description
+        self.show_summary_score = show_summary_score
 
     def report(self, num_examples: int) -> None:
         """Prints a report about identified issues in the data.
@@ -140,12 +141,18 @@ class Reporter:
         if num_classes is not None:
             dataset_information += f", num_classes: {num_classes}"
 
-        return dataset_information + "\n"
+        if self.show_summary_score:
+            return (
+                "Here is a summary of the different kinds of issues found in the data:\n\n"
+                + summary.to_string(index=False)
+                + "\n\n"
+                + "(Note: A lower score indicates a more severe issue across all examples in the dataset.)\n\n"
+                + f"{dataset_information}\n\n\n"
+            )
 
-    def _write_summary(self, summary: pd.DataFrame) -> str:
         return (
             "Here is a summary of the different kinds of issues found in the data:\n\n"
-            + summary.to_string(index=False)
+            + summary.drop(columns=["score"]).to_string(index=False)
             + "\n\n"
-            + "(Note: A lower score indicates a more severe issue across all examples in the dataset.)\n\n"
+            + f"{dataset_information}\n\n\n"
         )
