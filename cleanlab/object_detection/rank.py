@@ -542,48 +542,6 @@ def _get_aggregation_weights(
     return aggregation_weights
 
 
-def pool_box_scores_per_image(
-    box_scores: List[np.ndarray], *, temperature: Optional[float] = None
-) -> np.ndarray:
-    """
-    Aggregates scores per box and returns an array of scores for each image.
-    Scores are between 0 and 1.
-
-    - 1 - clean label (given label is likely correct).
-    - 0 - dirty label (given label is likely incorrect).
-
-    Parameters
-    ----------
-    box_scores:
-        A list of ``N`` numpy arrays where box_scores[i] is an array of badly located scores per box for the `i`-th image.
-
-    temperature:
-        Temperature of the softmin function where a lower score suggests softmin acts closer to min.
-
-    Returns
-    ---------
-    image_scores:
-        An array of size ``N`` where ``image_scores[i]`` represents the score for the `i`-th image.
-    """
-
-    (
-        alpha,
-        low_probability_threshold,
-        high_probability_threshold,
-        temperature,
-    ) = _get_valid_subtype_score_params(None, None, None, temperature)
-
-    image_scores = np.empty(
-        shape=[
-            len(box_scores),
-        ]
-    )
-    for idx, box_score in enumerate(box_scores):
-        image_score = _get_valid_score(box_score, temperature=temperature)
-        image_scores[idx] = image_score
-    return image_scores
-
-
 def _compute_overlooked_box_scores_for_image(
     alpha: float,
     high_probability_threshold: float,
@@ -650,10 +608,7 @@ def compute_overlooked_box_scores(
 ) -> List[np.ndarray]:
     """
     Returns an array of overlooked box scores for each image.
-    Score per box is between 0 and 1.
-
-    - 1 - clean box (predicted box is likely correct).
-    - 0 - dirty box (predicted box is likely to be overlooked).
+    Score per high-confidence predicted bounding box is between 0 and 1, with lower values indicating boxes we are more confident were overlooked in the given label.
 
     Each image has ``L`` annotated bounding boxes and ``M`` predicted bounding boxes.
     A score is calculated for each of ``M`` predicted boxes in ``N`` images, with ``K`` total classes in the data.
@@ -671,13 +626,13 @@ def compute_overlooked_box_scores(
         Refer to documentation for this argument in :py:func:`find_label_issues <cleanlab.object_detection.filter.find_label_issues>` for further details.
 
     alpha:
-        Weight between IoU and distance when considering similarity matrix. High alpha means considering IoU more strongly over distance. If no alpha is provided, standard alpha is used.
+        Optional weighting between IoU and Euclidean distance when calculating similarity between predicted and annotated boxes. High alpha means weighting IoU more heavily over Euclidean distance. If no alpha is provided, a good default is used.
 
     high_probability_threshold:
-        The high probability threshold for considering predicted boxes when computing scores. If no threshold is provided, standard threshold is used.
+        Optional probability threshold that determines which predicted boxes are considered high-confidence when computing overlooked scores. If not provided, a good default is used.
 
     auxiliary_inputs:
-        List of ``N`` dictionaries containing keys for sub-parts of label and prediction per image. Useful to minimize computation when computing multiple box scores for a single set of images. For the `i`-th image, `auxiliary_inputs[i]` should contain following keys:
+        Optional list of ``N`` dictionaries containing keys for sub-parts of label and prediction per image. Useful to minimize computation when computing multiple box scores for a single set of images. For the `i`-th image, `auxiliary_inputs[i]` should contain following keys:
 
        * pred_labels: np.ndarray
             Array of predicted classes for `i`-th image of shape ``(M,)``.
@@ -696,7 +651,7 @@ def compute_overlooked_box_scores(
     Returns
     ---------
     scores_overlooked:
-        A list of ``N`` numpy arrays where scores_overlooked[i] is an array of size ``M`` of overlooked scores per box for the `i`-th image.
+        A list of ``N`` numpy arrays where scores_overlooked[i] is an array of size ``M`` of overlooked scores per predicted box for the `i`-th image.
     """
     (
         alpha,
@@ -787,10 +742,7 @@ def compute_badloc_box_scores(
 ) -> List[np.ndarray]:
     """
     Returns an array of badly located given label box scores for each image.
-    Score per box is between 0 and 1.
-
-    - 1 - clean box (given label box is likely correct).
-    - 0 - dirty box (given label box is likely to be badly located).
+    Score per high-confidence predicted bounding box is between 0 and 1, with lower values indicating boxes we are more confident were overlooked in the given label.
 
     Each image has ``L`` annotated bounding boxes and ``M`` predicted bounding boxes.
     A score is calculated for each of ``L`` boxes in ``N`` images, with ``K`` total classes in the data.
@@ -808,13 +760,13 @@ def compute_badloc_box_scores(
         Refer to documentation for this argument in :py:func:`find_label_issues <cleanlab.object_detection.filter.find_label_issues>` for further details.
 
     alpha:
-        Weight between IoU and distance when considering similarity matrix. High alpha means considering IoU more strongly over distance. If no alpha is provided, standard alpha is used.
+        Optional weighting between IoU and Euclidean distance when calculating similarity between predicted and annotated boxes. High alpha means weighting IoU more heavily over Euclidean distance. If no alpha is provided, a good default is used.
 
     low_probability_threshold:
-        The lowest predicted class probability threshold allowed when considering predicted boxes to compute scores.
+        Optional minimum probability threshold that determines which predicted boxes are considered when computing badly located scores. If not provided, a good default is used.
 
     auxiliary_inputs:
-        List of ``N`` dictionaries containing keys for sub-parts of label and prediction per image. Useful to minimize computation when computing multiple box scores for a single set of images. For the `i`-th image, `auxiliary_inputs[i]` should contain following keys:
+        Optional list of ``N`` dictionaries containing keys for sub-parts of label and prediction per image. Useful to minimize computation when computing multiple box scores for a single set of images. For the `i`-th image, `auxiliary_inputs[i]` should contain following keys:
 
        * pred_labels: np.ndarray
             Array of predicted classes for `i`-th image of shape ``(M,)``.
@@ -833,7 +785,7 @@ def compute_badloc_box_scores(
     Returns
     ---------
     scores_badloc:
-        A list of ``N`` numpy arrays where scores_badloc[i] is an array of size ``L`` badly located scores per box for the `i`-th image.
+        A list of ``N`` numpy arrays where scores_badloc[i] is an array of size ``L`` badly located scores per annotated box for the `i`-th image.
     """
     (
         alpha,
@@ -928,10 +880,7 @@ def compute_swap_box_scores(
 ) -> List[np.ndarray]:
     """
     Returns an array of swap given label box scores for each image.
-    Score per box is between 0 and 1.
-
-    - 1 - clean box (given label box is likely correct).
-    - 0 - dirty box (given label box is likely to be swapped).
+    Score per high-confidence predicted bounding box is between 0 and 1, with lower values indicating boxes we are more confident were overlooked in the given label.
 
     Each image has ``L`` annotated bounding boxes and ``M`` predicted bounding boxes.
     A score is calculated for each of ``L`` boxes in ``N`` images, with ``K`` total classes in the data.
@@ -949,13 +898,13 @@ def compute_swap_box_scores(
         Refer to documentation for this argument in :py:func:`find_label_issues <cleanlab.object_detection.filter.find_label_issues>` for further details.
 
     alpha:
-        Weight between IoU and distance when considering similarity matrix. High alpha means considering IoU more strongly over distance. If no alpha is provided, standard alpha is used.
+        Optional weighting between IoU and Euclidean distance when calculating similarity between predicted and annotated boxes. High alpha means weighting IoU more heavily over Euclidean distance. If no alpha is provided, a good default is used.
 
     high_probability_threshold:
-        The high probability threshold for considering predicted boxes when computing scores. If no threshold is provided, standard threshold is used.
+        Optional probability threshold that determines which predicted boxes are considered high-confidence when computing overlooked scores. If not provided, a good default is used.
 
     auxiliary_inputs:
-        List of ``N`` dictionaries containing keys for sub-parts of label and prediction per image. Useful to minimize computation when computing multiple box scores for a single set of images. For the `i`-th image, `auxiliary_inputs[i]` should contain following keys:
+        Optional list of ``N`` dictionaries containing keys for sub-parts of label and prediction per image. Useful to minimize computation when computing multiple box scores for a single set of images. For the `i`-th image, `auxiliary_inputs[i]` should contain following keys:
 
        * pred_labels: np.ndarray
             Array of predicted classes for `i`-th image of shape ``(M,)``.
@@ -974,7 +923,7 @@ def compute_swap_box_scores(
     Returns
     ---------
     scores_swap:
-        A list of ``N`` numpy arrays where scores_swap[i] is an array of size ``L`` swap scores per box for the `i`-th image.
+        A list of ``N`` numpy arrays where scores_swap[i] is an array of size ``L`` swap scores per annotated box for the `i`-th image.
     """
     (
         alpha,
@@ -993,6 +942,45 @@ def compute_swap_box_scores(
         )
         scores_swap.append(scores_swap_per_box)
     return scores_swap
+
+
+def pool_box_scores_per_image(
+    box_scores: List[np.ndarray], *, temperature: Optional[float] = None
+) -> np.ndarray:
+    """
+    Aggregates scores per box and returns an array of scores for each image.
+    Score per image is between 0 and 1, with lower values indicating we are more confident image contains an error.
+
+    Parameters
+    ----------
+    box_scores:
+        A list of ``N`` numpy arrays where box_scores[i] is an array of badly located scores per box for the `i`-th image.
+
+    temperature:
+        Optional temperature of the softmin function where a lower value suggests softmin acts closer to min. If not provided, a good default is used.
+
+    Returns
+    ---------
+    image_scores:
+        An array of size ``N`` where ``image_scores[i]`` represents the score for the `i`-th image.
+    """
+
+    (
+        alpha,
+        low_probability_threshold,
+        high_probability_threshold,
+        temperature,
+    ) = _get_valid_subtype_score_params(None, None, None, temperature)
+
+    image_scores = np.empty(
+        shape=[
+            len(box_scores),
+        ]
+    )
+    for idx, box_score in enumerate(box_scores):
+        image_score = _get_valid_score(box_score, temperature=temperature)
+        image_scores[idx] = image_score
+    return image_scores
 
 
 def _get_subtype_label_quality_scores(
@@ -1023,16 +1011,16 @@ def _get_subtype_label_quality_scores(
         Refer to documentation for this argument in :py:func:`find_label_issues <cleanlab.object_detection.filter.find_label_issues>` for further details.
 
     alpha:
-        Weight between IoU and distance when considering similarity matrix. High alpha means considering IoU more strongly over distance.
+        Optional weighting between IoU and Euclidean distance when calculating similarity between predicted and annotated boxes. High alpha means weighting IoU more heavily over Euclidean distance. If no alpha is provided, a good default is used.
 
     low_probability_threshold:
-        The lowest predicted class probability threshold allowed when considering predicted boxes to identify badly located label boxes.
+        Optional minimum probability threshold that determines which predicted boxes are considered when computing badly located scores. If not provided, a good default is used.
 
     high_probability_threshold:
-        The high probability threshold for considering predicted boxes to identify overlooked and swapped label boxes.
+        Optional probability threshold that determines which predicted boxes are considered high-confidence when computing overlooked and swapped scores. If not provided, a good default is used.
 
     temperature:
-        Temperature of the softmin function where a lower score suggests softmin acts closer to min.
+        Optional temperature of the softmin function where a lower score suggests softmin acts closer to min. If not provided, a good default is used.
 
     Returns
     ---------
