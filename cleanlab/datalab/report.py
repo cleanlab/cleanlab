@@ -21,12 +21,12 @@ from typing import TYPE_CHECKING
 
 import pandas as pd
 
-from cleanlab.datalab.issue_finder import IssueFinder
 from cleanlab.datalab.issue_manager_factory import _IssueManagerFactory
 
 
 if TYPE_CHECKING:  # pragma: no cover
     from cleanlab.datalab.data_issues import DataIssues
+    from cleanvision import Imagelab
 
 
 class Reporter:
@@ -57,6 +57,7 @@ class Reporter:
     def __init__(
         self,
         data_issues: "DataIssues",
+        imagelab: "Imagelab",
         verbosity: int = 1,
         include_description: bool = True,
         show_summary_score: bool = False,
@@ -65,6 +66,7 @@ class Reporter:
         self.verbosity = verbosity
         self.include_description = include_description
         self.show_summary_score = show_summary_score
+        self.imagelab = imagelab
 
     def report(self, num_examples: int) -> None:
         """Prints a report about identified issues in the data.
@@ -99,19 +101,18 @@ class Reporter:
         """
         report_str = ""
         issue_summary = self.data_issues.issue_summary
-
-        if issue_summary.empty:
-            report_str += self._write_dataset_info()
-            return report_str
-
         issue_summary_sorted = issue_summary.sort_values(by="num_issues", ascending=False)
-
         report_str += self._write_summary(summary=issue_summary_sorted)
-        report_str += self._write_dataset_info()
 
-        datalab_checks = list(
-            set(issue_summary["issue_type"]) & set(IssueFinder.list_possible_issue_types())
-        )
+        if self.imagelab:
+            issue_types = [
+                issue_type
+                for issue_type in issue_summary_sorted["issue_type"].tolist()
+                if issue_type not in self.imagelab.issue_summary["issue_type"].tolist()
+            ]
+        else:
+            issue_types = issue_summary_sorted["issue_type"].tolist()
+
         issue_reports = [
             _IssueManagerFactory.from_str(issue_type=key).report(
                 issues=self.data_issues.get_issues(issue_name=key),
@@ -121,23 +122,20 @@ class Reporter:
                 verbosity=self.verbosity,
                 include_description=self.include_description,
             )
-            for key in issue_summary_sorted["issue_type"].tolist()
-            if key in datalab_checks
+            for key in issue_types
         ]
 
         report_str += "\n\n\n".join(issue_reports)
         return report_str
 
-    def _write_dataset_info(self):
+    def _write_summary(self, summary: pd.DataFrame) -> str:
         statistics = self.data_issues.get_info("statistics")
-
         num_examples = statistics["num_examples"]
-        dataset_information = f"Dataset Information: num_examples: {num_examples}"
-
         num_classes = statistics.get(
             "num_classes"
         )  # This may not be required for all types of datasets  in the future (e.g. unlabeled/regression)
 
+        dataset_information = f"Dataset Information: num_examples: {num_examples}"
         if num_classes is not None:
             dataset_information += f", num_classes: {num_classes}"
 

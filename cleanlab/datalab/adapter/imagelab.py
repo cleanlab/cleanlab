@@ -18,7 +18,7 @@ from cleanlab.datalab.report import Reporter
 
 if TYPE_CHECKING:  # pragma: no cover
     from datasets.arrow_dataset import Dataset
-    from cleanvision.imagelab import Imagelab
+    from cleanvision import Imagelab
 
 
 def create_imagelab(dataset: "Dataset", image_key: Optional[str]) -> Optional["Imagelab"]:
@@ -114,13 +114,13 @@ class ImagelabDataIssuesAdapter(DataIssues):
 class ImagelabReporterAdapter(Reporter):
     def __init__(
         self,
-        data_issues: DataIssues,
-        imagelab,
+        data_issues: "DataIssues",
+        imagelab: "Imagelab",
         verbosity: int = 1,
         include_description: bool = True,
+        show_summary_score: bool = False,
     ):
-        super().__init__(data_issues, verbosity, include_description)
-        self.imagelab = imagelab
+        super().__init__(data_issues, imagelab, verbosity, include_description, show_summary_score)
 
     def report(self, num_examples: int, verbosity: Optional[int] = None) -> None:
         super().report(num_examples)
@@ -128,21 +128,21 @@ class ImagelabReporterAdapter(Reporter):
             self.imagelab.report(num_images=num_examples, print_summary=False)
 
 
-# How do we let `Datalab` call this in `Datalab.find_issues`?
 class ImagelabIssueFinderAdapter(IssueFinder):
-    # How should we initialize this?
     def __init__(self, datalab, verbosity):
         super().__init__(datalab, verbosity)
         self.imagelab = self.datalab._imagelab
 
     def _get_datalab_specific_default_issue_types(self):
-        issue_types = self.imagelab.list_default_issue_types()
-        filtered_issue_types = [
-            issue_type
-            for issue_type in issue_types
-            if issue_types not in ["near_duplicates", "exact_duplicates"]
+        return [
+            "dark",
+            "light",
+            "low_information",
+            "odd_aspect_ratio",
+            "odd_size",
+            "grayscale",
+            "blurry",
         ]
-        return filtered_issue_types
 
     def _get_imagelab_issue_types(self, issue_types, **kwargs):
         if issue_types is None:

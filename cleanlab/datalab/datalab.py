@@ -330,10 +330,10 @@ class Datalab:
 
         reporter = report_factory(self._imagelab)(
             data_issues=self.data_issues,
-            imagelab=self._imagelab,
             verbosity=verbosity,
             include_description=include_description,
             show_summary_score=show_summary_score,
+            imagelab=self._imagelab,
         )
         reporter.report(num_examples=num_examples)
 
