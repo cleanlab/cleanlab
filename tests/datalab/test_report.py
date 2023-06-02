@@ -26,15 +26,16 @@ class TestReporter:
 
     @pytest.fixture
     def reporter(self, data_issues):
-        return Reporter(data_issues=data_issues)
+        return Reporter(data_issues=data_issues, imagelab=None)
 
     def test_init(self, reporter, data_issues):
         assert reporter.data_issues == data_issues
         assert reporter.verbosity == 1
         assert reporter.include_description == True
         assert reporter.show_summary_score == False
+        assert reporter.imagelab is None
 
-        another_reporter = Reporter(data_issues=data_issues, verbosity=2)
+        another_reporter = Reporter(data_issues=data_issues, imagelab=None, verbosity=2)
         assert another_reporter.verbosity == 2
 
     def test_report(self, reporter):
@@ -84,7 +85,10 @@ class TestReporter:
         monkeypatch.setattr(data_issues, "issue_summary", mock_issue_summary)
 
         reporter = Reporter(
-            data_issues=data_issues, verbosity=0, include_description=include_description
+            data_issues=data_issues,
+            imagelab=None,
+            verbosity=0,
+            include_description=include_description,
         )
         monkeypatch.setattr(data_issues, "issues", mock_issues, raising=False)
         monkeypatch.setattr(data_issues, "info", mock_info, raising=False)
