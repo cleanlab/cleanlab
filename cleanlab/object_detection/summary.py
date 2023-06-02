@@ -137,12 +137,18 @@ def visualize(
             )
 
     if label or prediction is not None:
-        _ = _plot_legend(class_names, label, prediction)
+        legend, plt = _plot_legend(class_names, label, prediction)
 
     if save_path is not None:
-        plt.savefig(save_path)
-    else:
-        plt.show()
+        plt.savefig(
+            save_path,
+            bbox_extra_artists=(legend,),
+            bbox_inches="tight",
+            transparent=True,
+            pad_inches=0.5,
+        )
+
+    plt.show()
 
 
 def _plot_legend(class_names, label, prediction):
@@ -176,7 +182,7 @@ def _plot_legend(class_names, label, prediction):
         handles, labels, bbox_to_anchor=(1.04, 0.05), loc="lower left", borderaxespad=0
     )
 
-    return legend
+    return legend, plt
 
 
 def _draw_labels(ax, rect, label, edgecolor):
