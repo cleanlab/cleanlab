@@ -88,7 +88,7 @@ def get_label_quality_multiannotator(
 
     Parameters
     ----------
-    labels_multiannotator : pd.DataFrame of np.ndarray
+    labels_multiannotator : pd.DataFrame or np.ndarray
         2D pandas DataFrame or array of multiple given labels for each example with shape ``(N, M)``,
         where N is the number of examples and M is the number of annotators.
         ``labels_multiannotator[n][m]`` = label for n-th example given by m-th annotator.
@@ -363,7 +363,7 @@ def get_label_quality_multiannotator_ensemble(
 
     Parameters
     ----------
-    labels_multiannotator : pd.DataFrame of np.ndarray
+    labels_multiannotator : pd.DataFrame or np.ndarray
         Multiannotator labels in the same format expected by :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>`.
     pred_probs : np.ndarray
         An array of shape ``(P, N, K)`` where P is the number of models, consisting of predicted class probabilities from the ensemble models.
@@ -561,7 +561,7 @@ def get_active_learning_scores(
 
     Parameters
     ----------
-    labels_multiannotator : pd.DataFrame of np.ndarray, optional
+    labels_multiannotator : pd.DataFrame or np.ndarray, optional
         2D pandas DataFrame or array of multiple given labels for each example with shape ``(N, M)``,
         where N is the number of examples and M is the number of annotators. Note that this function also works with
         datasets where there is only one annotator (M=1).
