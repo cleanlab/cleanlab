@@ -178,7 +178,7 @@ def _find_label_issues_per_box(
     """Takes in a list of size ``N`` where each index is an array of scores for each bounding box in the `n-th` example
     and a threshold. Each box below or equal to the threshold will be marked as an issue.
 
-    Returns a list of size ``N`` where each index is a boolean array of length number of boxes per example `n `
+    Returns a list of size ``N`` where each index is a boolean array of length number of boxes per example `n`
     marking if a specific box is an issue - 1 or not - 0."""
     is_issue_per_box = []
     for idx, score_per_box in enumerate(scores_per_box):

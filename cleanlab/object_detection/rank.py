@@ -69,7 +69,7 @@ def get_label_quality_scores(
     *,
     verbose: bool = True,
 ) -> np.ndarray:
-    """Computes a label quality score for each image in the dataset.
+    """Computes a label quality score for each image of the ``N`` images in the dataset.
 
     For object detection datasets, the label quality score for an image estimates how likely it has been correctly labeled.
     Lower scores indicate images whose annotation is more likely imperfect.
@@ -78,13 +78,11 @@ def get_label_quality_scores(
     - overlooked an object (missing annotated bounding box),
     - chose the wrong class label for an annotated box in the correct location,
     - imperfectly annotated the location/edges of a bounding box.
+
     Any of these annotation errors should lead to an image with a lower label quality score. This quality score is between 0 and 1.
 
     - 1 - clean label (given label is likely correct).
     - 0 - dirty label (given label is likely incorrect).
-
-    A score is calculated for each of ``N`` images, with ``K`` total classes in the data.
-    Each image has ``L`` annotated bounding boxes and ``M`` predicted bounding boxes.
 
     Parameters
     ----------
@@ -136,8 +134,9 @@ def get_label_quality_scores(
 
 
 def issues_from_scores(label_quality_scores: np.ndarray, *, threshold: float = 0.1) -> np.ndarray:
-    """Apply thresholding to convert label quality scores to
-    Returns a list of indices of images with issues sorted from most to least severe cut off at threshold.
+    """Convert label quality scores to a list of indices of images with issues sorted from most to least severe cut off at threshold.
+
+    Returns the list of indices of images with issues sorted from most to least severe cut off at threshold.
     Useful to set an acceptable threshold for if an example should be considered an issue or not.
 
     Parameters
@@ -346,11 +345,6 @@ def _get_iou(bb1: Dict[str, Any], bb2: Dict[str, Any]) -> float:
     float
         in [0, 1]
     """
-    assert bb1["x1"] < bb1["x2"]
-    assert bb1["y1"] < bb1["y2"]
-    assert bb2["x1"] < bb2["x2"]
-    assert bb2["y1"] < bb2["y2"]
-
     # determine the coordinates of the intersection rectangle
     x_left = max(bb1["x1"], bb2["x1"])
     y_top = max(bb1["y1"], bb2["y1"])
@@ -367,16 +361,12 @@ def _get_iou(bb1: Dict[str, Any], bb2: Dict[str, Any]) -> float:
     # compute the area of both AABBs
     bb1_area = (bb1["x2"] - bb1["x1"]) * (bb1["y2"] - bb1["y1"])
     bb2_area = (bb2["x2"] - bb2["x1"]) * (bb2["y2"] - bb2["y1"])
-    assert intersection_area - 0.1 <= bb1_area
-    assert intersection_area - 0.1 <= bb2_area
 
     # compute the intersection over union by taking the intersection
     # area and dividing it by the sum of prediction + ground-truth
     # areas - the interesection area
     iou = intersection_area / float(bb1_area + bb2_area - intersection_area)
     # There are some hyper-parameters here like consider tile area/object area
-    assert iou >= 0.0
-    assert iou - 0.01 <= 1.0
     return iou
 
 
@@ -433,7 +423,7 @@ def _get_valid_inputs_for_compute_scores_per_image(
     similarity_matrix=None,
     min_possible_similarity: Optional[float] = None,
 ) -> AuxiliaryTypesDict:
-    # ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, float]:
+    """Returns valid inputs for compute scores by either passing through values or calculating the inputs internally."""
     if lab_labels is None or lab_bboxes is None:
         if label is None:
             raise ValueError(
@@ -611,7 +601,7 @@ def compute_overlooked_box_scores(
     Score per high-confidence predicted bounding box is between 0 and 1, with lower values indicating boxes we are more confident were overlooked in the given label.
 
     Each image has ``L`` annotated bounding boxes and ``M`` predicted bounding boxes.
-    A score is calculated for each of ``M`` predicted boxes in ``N`` images, with ``K`` total classes in the data.
+    A score is calculated for each predicted box in each of the ``N`` images in dataset.
 
     Note: ``M`` and ``L`` can be a different values for each image, as the number of annotated and predicted boxes varies.
 
@@ -706,7 +696,6 @@ def _compute_badloc_box_scores_for_image(
     pred_label_probs = auxiliary_input_dict["pred_label_probs"]
     lab_labels = auxiliary_input_dict["lab_labels"]
     similarity_matrix = auxiliary_input_dict["similarity_matrix"]
-    min_possible_similarity = auxiliary_input_dict["min_possible_similarity"]
 
     scores_badloc = np.empty(
         shape=[
@@ -745,7 +734,7 @@ def compute_badloc_box_scores(
     Score per high-confidence predicted bounding box is between 0 and 1, with lower values indicating boxes we are more confident were overlooked in the given label.
 
     Each image has ``L`` annotated bounding boxes and ``M`` predicted bounding boxes.
-    A score is calculated for each of ``L`` boxes in ``N`` images, with ``K`` total classes in the data.
+    A score is calculated for each predicted box in each of the ``N`` images in dataset.
 
     Note: ``M`` and ``L`` can be a different values for each image, as the number of annotated and predicted boxes varies.
 
@@ -883,7 +872,7 @@ def compute_swap_box_scores(
     Score per high-confidence predicted bounding box is between 0 and 1, with lower values indicating boxes we are more confident were overlooked in the given label.
 
     Each image has ``L`` annotated bounding boxes and ``M`` predicted bounding boxes.
-    A score is calculated for each of ``L`` boxes in ``N`` images, with ``K`` total classes in the data.
+    A score is calculated for each predicted box in each of the ``N`` images in dataset.
 
     Note: ``M`` and ``L`` can be a different values for each image, as the number of annotated and predicted boxes varies.
 
@@ -994,7 +983,7 @@ def _get_subtype_label_quality_scores(
     aggregation_weights: Optional[Dict[str, float]] = None,
 ) -> np.ndarray:
     """
-    Returns a label quality score for each image.
+    Returns a label quality score for each of the ``N`` images in the dataset.
     Score is between 0 and 1.
 
     1 - clean label (given label is likely correct).

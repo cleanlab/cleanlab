@@ -138,11 +138,19 @@ def visualize(
 
     if label or prediction is not None:
         legend, plt = _plot_legend(class_names, label, prediction)
-
-    if save_path is not None:
+        if save_path:  # save with legend
+            plt.savefig(
+                save_path,
+                format="pdf",
+                bbox_extra_artists=(legend,),
+                bbox_inches="tight",
+                transparent=True,
+                pad_inches=0.5,
+            )
+    elif save_path:
         plt.savefig(
             save_path,
-            bbox_extra_artists=(legend,),
+            format="pdf",
             bbox_inches="tight",
             transparent=True,
             pad_inches=0.5,
