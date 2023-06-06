@@ -18,6 +18,7 @@ from cleanlab.object_detection.rank import (
     _get_overlap_matrix,
     _get_dist_matrix,
     _get_valid_inputs_for_compute_scores,
+    _get_valid_inputs_for_compute_scores_per_image,
     compute_overlooked_box_scores,
     compute_badloc_box_scores,
     compute_swap_box_scores,
@@ -406,6 +407,11 @@ def test_swap_score_shifts_in_correct_direction():
 
 def test_find_label_issues():
     auxiliary_inputs = _get_valid_inputs_for_compute_scores(ALPHA, labels, predictions)
+    test_inputs = _get_valid_inputs_for_compute_scores_per_image(
+        alpha=ALPHA, label=labels[0], prediction=predictions[0]
+    )
+
+    assert (test_inputs["pred_label_probs"] == auxiliary_inputs[0]["pred_label_probs"]).all()
 
     overlooked_scores_per_box = compute_overlooked_box_scores(
         alpha=ALPHA,
@@ -529,6 +535,14 @@ def test_return_issues_ranked_by_scores():
 def test_bad_input_find_label_issues_internal():
     bad_label_issues = _find_label_issues(labels, predictions, scoring_method="bad_method")
     assert (bad_label_issues == -1).all()
+
+
+def test_find_label_issues_per_box():
+    scores_per_box = [np.array([0.2, 0.3]), np.array([]), np.array([0.9, 0.5, 0.9, 0.51])]
+    issues_per_box = _find_label_issues_per_box(scores_per_box, threshold=0.5)
+    assert issues_per_box[1] == np.array([False])
+    assert (issues_per_box[0] == np.array([True, True])).all()
+    assert (issues_per_box[2] == np.array([False, True, False, False])).all()
 
 
 @pytest.mark.usefixtures("generate_single_image_file")
