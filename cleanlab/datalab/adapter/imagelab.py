@@ -3,7 +3,7 @@ This allows low-quality images to be detected alongside other issues in computer
 """
 
 import warnings
-from typing import TYPE_CHECKING, Any, Dict, Optional
+from typing import TYPE_CHECKING, Any, Dict, Optional, List
 
 import numpy as np
 import numpy.typing as npt
@@ -81,7 +81,20 @@ class ImagelabDataIssuesAdapter(DataIssues):
     def __init__(self, data: Data) -> None:
         super().__init__(data)
 
-    def collect_issues_from_imagelab(self, imagelab: "Imagelab") -> None:
+    def _update_issues_imagelab(self, imagelab: "Imagelab", overlapping_issues: List[str]) -> None:
+        overwrite_columns = [f"is_{issue_type}_issue" for issue_type in overlapping_issues]
+        overwrite_columns.extend([f"{issue_type}_score" for issue_type in overlapping_issues])
+
+        if overwrite_columns:
+            warnings.warn(
+                f"Overwriting columns {overwrite_columns} in self.issues with "
+                f"columns from imagelab."
+            )
+            self.issues.drop(columns=overwrite_columns, inplace=True)
+        new_columnns = list(set(imagelab.issues.columns).difference(self.issues.columns))
+        self.issues = self.issues.join(imagelab.issues[new_columnns], how="outer")
+
+    def collect_issues_from_imagelab(self, imagelab: "Imagelab", issue_types: List[str]) -> None:
         """
         Collect results from Imagelab and update datalab.issues and datalab.issue_summary
 
@@ -90,24 +103,22 @@ class ImagelabDataIssuesAdapter(DataIssues):
         imagelab: Imagelab
             Imagelab instance that run all the checks for image issue types
         """
-        self._update_issues(imagelab)
+        overlapping_issues = list(set(self.issue_summary["issue_type"]) & set(issue_types))
+        self._update_issues_imagelab(imagelab, overlapping_issues)
 
-        common_rows = list(
-            set(imagelab.issue_summary["issue_type"]) & set(self.issue_summary["issue_type"])
-        )
-        if common_rows:
+        if overlapping_issues:
             warnings.warn(
-                f"Overwriting {common_rows} rows in self.issue_summary from issue manager {imagelab}."
+                f"Overwriting {overlapping_issues} rows in self.issue_summary from imagelab."
             )
-        self.issue_summary = self.issue_summary[~self.issue_summary["issue_type"].isin(common_rows)]
+        self.issue_summary = self.issue_summary[
+            ~self.issue_summary["issue_type"].isin(overlapping_issues)
+        ]
         imagelab_summary_copy = imagelab.issue_summary.copy()
         imagelab_summary_copy.rename({"num_images": "num_issues"}, axis=1, inplace=True)
         self.issue_summary = pd.concat(
             [self.issue_summary, imagelab_summary_copy], axis=0, ignore_index=True
         )
-        for issue_type in imagelab.info.keys():
-            if issue_type == "statistics":
-                continue
+        for issue_type in issue_types:
             self._update_issue_info(issue_type, imagelab.info[issue_type])
 
 
@@ -187,6 +198,8 @@ class ImagelabIssueFinderAdapter(IssueFinder):
             self.imagelab.find_issues(issue_types=issue_types_copy, verbose=False)
 
             self.datalab.data_issues.collect_statistics(self.imagelab)
-            self.datalab.data_issues.collect_issues_from_imagelab(self.imagelab)
+            self.datalab.data_issues.collect_issues_from_imagelab(
+                self.imagelab, issue_types_copy.keys()
+            )
         except Exception as e:
             print(f"Error in checking for image issues: {e}")
