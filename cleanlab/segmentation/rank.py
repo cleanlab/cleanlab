@@ -150,9 +150,7 @@ def get_label_quality_scores(
 
 
 def issues_from_scores(
-    image_scores: np.ndarray, 
-    pixel_scores: Optional[np.ndarray] = None, 
-    threshold: float = 0.1
+    image_scores: np.ndarray, pixel_scores: Optional[np.ndarray] = None, threshold: float = 0.1
 ) -> Union[list, np.ndarray]:
     """
     Converts scores output by :py:func:`segmentation.rank.get_label_quality_scores <cleanlab.segmentation.rank.get_label_quality_scores>`

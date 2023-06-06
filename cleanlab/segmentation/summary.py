@@ -108,7 +108,6 @@ def display_issues(
             cmap = _generate_colormap(num_classes)
         else:
             cmap = None
-        
 
     # Show a legend
     if class_names is not None and cmap is not None:
@@ -146,8 +145,8 @@ def display_issues(
             ax = axes
         else:
             ax = axes[plot_index]
-        
-        mask = np.full((h, w), True) 
+
+        mask = np.full((h, w), True)
         if labels is not None and len(exclude) != 0:
             mask = ~np.isin(labels[i], exclude)
         ax.imshow(issues[i] & mask, cmap=error_cmap, vmin=0, vmax=1)
