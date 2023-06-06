@@ -21,7 +21,7 @@ Methods to find label issues in semantic segmentation datasets, where each pixel
 
 from cleanlab.experimental.label_issues_batched import find_label_issues_batched
 import numpy as np
-from typing import Optional, Tuple
+from typing import Tuple
 
 
 def find_label_issues(

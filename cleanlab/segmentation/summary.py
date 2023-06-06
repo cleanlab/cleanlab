@@ -102,12 +102,16 @@ def display_issues(
     if output_plots > 1:
         if pred_probs is not None:
             _, num_classes, _, _ = pred_probs.shape
-        else:
+            cmap = _generate_colormap(num_classes)
+        elif labels is not None:
             num_classes = max(np.unique(labels)) + 1
-        cmap = _generate_colormap(num_classes)
+            cmap = _generate_colormap(num_classes)
+        else:
+            cmap = None
+        
 
     # Show a legend
-    if class_names is not None:
+    if class_names is not None and cmap is not None:
         patches = [
             mpatches.Patch(color=cmap[i], label=class_names[i]) for i in range(len(class_names))
         ]
