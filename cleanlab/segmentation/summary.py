@@ -322,8 +322,6 @@ def _generate_colormap(num_colors):
     """
 
     try:
-        import matplotlib.pyplot as plt
-        from matplotlib.colors import ListedColormap
         from matplotlib.cm import hsv
     except:
         raise ImportError('try "pip install matplotlib"')
