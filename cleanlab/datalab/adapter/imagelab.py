@@ -44,7 +44,7 @@ def create_imagelab(dataset: "Dataset", image_key: Optional[str]) -> Optional["I
         from datasets.arrow_dataset import Dataset
 
         if isinstance(dataset, Dataset):
-            imagelab = Imagelab(hf_dataset=dataset, image_key=image_key, verbosity=0)
+            imagelab = Imagelab(hf_dataset=dataset, image_key=image_key)
         else:
             raise ValueError(
                 "For now, only huggingface datasets are supported for running cleanvision checks inside cleanlab. You can easily convert most datasets to the huggingface dataset format."
@@ -122,10 +122,11 @@ class ImagelabReporterAdapter(Reporter):
     ):
         super().__init__(data_issues, imagelab, verbosity, include_description, show_summary_score)
 
-    def report(self, num_examples: int, verbosity: Optional[int] = None) -> None:
+    def report(self, num_examples: int) -> None:
         super().report(num_examples)
         if self.imagelab:
-            self.imagelab.report(num_images=num_examples, print_summary=False)
+            print("\n\n")
+            self.imagelab.report(num_images=num_examples, print_summary=False, verbosity=0)
 
 
 class ImagelabIssueFinderAdapter(IssueFinder):
@@ -183,7 +184,7 @@ class ImagelabIssueFinderAdapter(IssueFinder):
             if self.verbosity:
                 print(f'Finding {", ".join(issue_types_copy.keys())} images ...')
 
-            self.imagelab.find_issues(issue_types=issue_types_copy)
+            self.imagelab.find_issues(issue_types=issue_types_copy, verbose=False)
 
             self.datalab.data_issues.collect_statistics(self.imagelab)
             self.datalab.data_issues.collect_issues_from_imagelab(self.imagelab)
