@@ -29,6 +29,7 @@ def display_issues(
     issues: np.ndarray,
     labels: Optional[np.ndarray] = None,
     pred_probs: Optional[np.ndarray] = None,
+    class_names: Optional[List[str]] = None,
     exclude: List[int] = [],
     top: int = 20,
 ) -> None:
@@ -63,6 +64,16 @@ def display_issues(
     Tip: If your labels are one hot encoded you can `np.argmax(labels_one_hot,axis=1)` assuming that `labels_one_hot` is of dimension (N,K,H,W)
     before entering in the function
 
+    class_names: List[str], default=None
+    A list of strings, where each string represents the name of a class in the semantic segmentation problem.
+      The order of the names should correspond to the numerical order of the classes. The list length should be
+      equal to the number of unique classes present in the labels. If provided, this function will generate a legend 
+      showing the color mapping of each class in the provided colormap.
+
+      Example:
+      If there are three classes in your labels, represented by 0, 1, 2, then class_names might look like this:
+      class_names = ['background', 'person', 'dog']
+
     exclude:
         Optional list of label classes that can be ignored in the errors, each element must be 0, 1, ..., K-1
 
@@ -79,11 +90,14 @@ def display_issues(
 
     try:
         import matplotlib.pyplot as plt
+        import matplotlib.patches as mpatches
     except:
         raise ImportError('try "pip install matplotlib"')
 
     output_plots = (pred_probs is not None) + (labels is not None) + 1
 
+    #Colormap for errors
+    error_cmap = plt.cm.colors.ListedColormap(['none', 'red'])
     _, h, w = issues.shape
     if output_plots > 1:
         if pred_probs is not None:
@@ -91,6 +105,14 @@ def display_issues(
         else:
             num_classes = max(np.unique(labels)) + 1
         cmap = _generate_colormap(num_classes)
+
+    #Show a legend
+    if class_names is not None:
+        patches = [mpatches.Patch(color=cmap[i], label=class_names[i]) for i in range(len(class_names))]
+        legend = plt.figure()  # adjust figsize for larger legend
+        legend.legend(handles=patches, loc='center', ncol=len(class_names), facecolor='white',fontsize=20) # adjust fontsize for larger text
+        plt.axis('off')
+        plt.show()
 
     for i in correct_ordering:
 
@@ -118,8 +140,8 @@ def display_issues(
             ax = axes[plot_index]
 
         mask = np.full((h, w), True) if len(exclude) == 0 else ~np.isin(labels[i], exclude)
-        ax.imshow(issues[i] & mask, cmap="gray", vmin=0, vmax=1)
-        ax.set_title(f"Suggested Errors in image index {i}")
+        ax.imshow(issues[i] & mask, cmap=error_cmap, vmin=0, vmax=1)
+        ax.set_title(f"Image Index ({i}) Suggested Errors (Red)")
         plt.show()
 
         plot_index = 0
