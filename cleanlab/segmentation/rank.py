@@ -19,7 +19,7 @@ Methods to rank and score images in a semantic segmentation dataset, based on ho
 
 """
 import numpy as np
-from typing import List, Optional, Union, Tuple
+from typing import Optional, Union, Tuple
 from cleanlab.segmentation.filter import find_label_issues
 from cleanlab.segmentation.filter import _check_input
 
@@ -150,7 +150,9 @@ def get_label_quality_scores(
 
 
 def issues_from_scores(
-    image_scores: np.ndarray, pixel_scores: Optional[np.ndarray] = None, threshold: float = 0.1
+    image_scores: np.ndarray, 
+    pixel_scores: Optional[np.ndarray] = None, 
+    threshold: float = 0.1
 ) -> Union[list, np.ndarray]:
     """
     Converts scores output by :py:func:`segmentation.rank.get_label_quality_scores <cleanlab.segmentation.rank.get_label_quality_scores>`

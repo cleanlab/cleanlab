@@ -21,7 +21,7 @@ Methods to find label issues in semantic segmentation datasets, where each pixel
 
 from cleanlab.experimental.label_issues_batched import find_label_issues_batched
 import numpy as np
-from typing import Optional, List, Any, Tuple
+from typing import Optional, Tuple
 
 
 def find_label_issues(
@@ -30,7 +30,6 @@ def find_label_issues(
     *,
     downsample: int = 16,
     batch_size: int = 10000,
-    n_jobs: Optional[int] = 1,
     verbose: bool = True,
     **kwargs,
 ) -> np.ndarray:
@@ -71,17 +70,17 @@ def find_label_issues(
       Size of mini-batches to use for estimating the label issues.
       To maximize efficiency, try to use the largest `batch_size` your memory allows.
 
-    n_jobs: int, optional
-      Number of processes for multiprocessing (default value = 1). Only used on Linux.
-      If `n_jobs=None`, will use either the number of: physical cores if psutil is installed, or logical cores otherwise.
-
     verbose : bool, optional
       Set to ``False`` to suppress all print statements.
 
     **kwargs:
       scores_only: optional
-      Set to True to return a score for each image. Meant for internal call in
-      ``cleanlab.semantic_segmentation.rank.get_label_quality_scores``
+        Set to True to return a score for each image. Meant for internal call in
+        ``cleanlab.semantic_segmentation.rank.get_label_quality_scores``
+
+      n_jobs: int, optional
+        Number of processes for multiprocessing (default value = 1). Only used on Linux.
+        If `n_jobs=None`, will use either the number of: physical cores if psutil is installed, or logical cores otherwise.
 
 
     Returns
@@ -93,6 +92,7 @@ def find_label_issues(
 
     """
     scores_only = kwargs.get("scores_only", False)
+    n_jobs = kwargs.get("n_jobs", 1)
 
     def downsample_arrays(
         labels: np.ndarray, pred_probs: np.ndarray, factor: int = 1
