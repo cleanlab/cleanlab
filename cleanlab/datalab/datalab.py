@@ -95,16 +95,18 @@ class Datalab:
     def __init__(
         self,
         data: "DatasetLike",
-        label_name: str,
+        label_name: Optional[str] = None,
         image_key: Optional[str] = None,
         verbosity: int = 1,
     ) -> None:
         self._data = Data(data, label_name)
         self.data = self._data._data
-        self._labels, self._label_map = self._data._labels, self._data._label_map
+        self._labels = self._data.labels
+        self._label_map = self._labels.label_map
+        self.label_name = self._labels.label_name
         self._data_hash = self._data._data_hash
         self.label_name = self._data._label_name
-
+        self.data_issues = DataIssues(self._data)
         self.cleanlab_version = cleanlab.version.__version__
         self.verbosity = verbosity
         self._imagelab = create_imagelab(dataset=self.data, image_key=image_key)
@@ -121,12 +123,20 @@ class Datalab:
     @property
     def labels(self) -> np.ndarray:
         """Labels of the dataset, in a [0, 1, ..., K-1] format."""
-        return self._labels
+        return self._labels.labels
+
+    @property
+    def has_labels(self) -> bool:
+        """Whether the dataset has labels."""
+        return self._labels.is_available
 
     @property
     def class_names(self) -> List[str]:
-        """Names of the classes in the dataset."""
-        return self._data.class_names
+        """Names of the classes in the dataset.
+
+        If the dataset has no labels, returns an empty list.
+        """
+        return self._labels.class_names
 
     def find_issues(
         self,

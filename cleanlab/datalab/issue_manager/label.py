@@ -103,7 +103,7 @@ class LabelIssueManager(IssueManager):
         if not self.health_summary_parameters:
             statistics_dict = self.datalab.get_info("statistics")
             self.health_summary_parameters = {
-                "labels": self.datalab._labels,
+                "labels": self.datalab.labels,
                 "class_names": list(self.datalab._label_map.values()),
                 "num_examples": statistics_dict.get("num_examples"),
                 "joint": statistics_dict.get("joint", None),
@@ -124,7 +124,7 @@ class LabelIssueManager(IssueManager):
         self.health_summary_parameters.update({"pred_probs": pred_probs})
         # Find examples with label issues
         self.issues = self.cl.find_label_issues(
-            labels=self.datalab._labels,
+            labels=self.datalab.labels,
             pred_probs=pred_probs,
             **self._process_find_label_issues_kwargs(kwargs),
         )
@@ -180,7 +180,7 @@ class LabelIssueManager(IssueManager):
         else:
             summary_parameters = {
                 "pred_probs": pred_probs,
-                "labels": self.datalab._labels,
+                "labels": self.datalab.labels,
             }
 
         summary_parameters["class_names"] = self.health_summary_parameters["class_names"]
@@ -223,4 +223,4 @@ class LabelIssueManager(IssueManager):
         return info_dict
 
     def _validate_pred_probs(self, pred_probs) -> None:
-        assert_valid_inputs(X=None, y=self.datalab._labels, pred_probs=pred_probs)
+        assert_valid_inputs(X=None, y=self.datalab.labels, pred_probs=pred_probs)

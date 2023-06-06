@@ -16,7 +16,7 @@
 """Classes and methods for datasets that are loaded into Datalab."""
 
 import os
-from typing import Any, Callable, Dict, List, Mapping, Tuple, Union, cast, TYPE_CHECKING
+from typing import Any, Callable, Dict, List, Mapping, Optional, Tuple, Union, cast, TYPE_CHECKING
 
 try:
     import datasets
@@ -126,13 +126,11 @@ class Data:
         :py:class:`Datalab <cleanlab.datalab.datalab.Datalab>` to work.
     """
 
-    def __init__(self, data: "DatasetLike", label_name: str) -> None:
+    def __init__(self, data: "DatasetLike", label_name: Optional[str] = None) -> None:
         self._validate_data(data)
-        self._label_name = label_name
         self._data = self._load_data(data)
-        self._validate_data_and_labels(self._data, self._data[label_name])
         self._data_hash = hash(self._data)
-        self._labels, self._label_map = _extract_labels(self._data, label_name)
+        self.labels = Label(data=self._data, label_name=label_name)
 
     def _load_data(self, data: "DatasetLike") -> Dataset:
         """Checks the type of dataset and uses the correct loader method and
@@ -154,19 +152,22 @@ class Data:
     def __eq__(self, other) -> bool:
         if isinstance(other, Data):
             # Equality checks
-            hashes = self._data_hash == other._data_hash
-            labels = np.array_equal(self._labels, other._labels)
-            label_names = self._label_name == other._label_name
-            label_maps = self._label_map == other._label_map
-            return all([hashes, labels, label_names, label_maps])
+            hashes_are_equal = self._data_hash == other._data_hash
+            labels_are_equal = self.labels == other.labels
+            return all([hashes_are_equal, labels_are_equal])
         return False
 
     def __hash__(self) -> int:
         return self._data_hash
 
     @property
-    def class_names(self) -> list:
-        return list(self._label_map.values())
+    def class_names(self) -> List[str]:
+        return self.labels.class_names
+
+    @property
+    def has_labels(self) -> bool:
+        """Check if labels are available."""
+        return self.labels.is_available
 
     @staticmethod
     def _validate_data(data) -> None:
@@ -174,11 +175,6 @@ class Data:
             raise DatasetDictError()
         if not isinstance(data, (Dataset, pd.DataFrame, dict, list, str)):
             raise DataFormatError(data)
-
-    @staticmethod
-    def _validate_data_and_labels(data, labels) -> None:
-        assert isinstance(labels, (np.ndarray, list))
-        assert len(labels) == len(data)
 
     @staticmethod
     def _load_dataset_from_dict(data_dict: Dict[str, Any]) -> Dataset:
@@ -216,6 +212,65 @@ class Data:
         dataset = factory[extension](data_string)
         dataset_cast = cast(Dataset, dataset)
         return dataset_cast
+
+
+class Label:
+    """
+    Class to represent labels in a dataset.
+
+    Parameters
+    ----------
+    """
+
+    def __init__(self, *, data: Dataset, label_name: Optional[str] = None) -> None:
+        self._data = data
+        self.label_name = label_name
+        self.labels = labels_to_array([])
+        self.label_map: Mapping[str, Any] = {}
+        if label_name is not None:
+            self.labels, self.label_map = _extract_labels(data, label_name)
+            self._validate_labels()
+
+    def __len__(self) -> int:
+        if self.labels is None:
+            return 0
+        return len(self.labels)
+
+    def __eq__(self, __value: object) -> bool:
+        if isinstance(__value, Label):
+            labels_are_equal = np.array_equal(self.labels, __value.labels)
+            names_are_equal = self.label_name == __value.label_name
+            maps_are_equal = self.label_map == __value.label_map
+            return all([labels_are_equal, names_are_equal, maps_are_equal])
+        return False
+
+    def __getitem__(self, __index: Union[int, slice, np.ndarray]) -> np.ndarray:
+        return self.labels[__index]
+
+    def __bool__(self) -> bool:
+        return self.is_available
+
+    @property
+    def class_names(self) -> List[str]:
+        """A list of class names that are present in the dataset.
+
+        Without labels, this will return an empty list.
+        """
+        return list(self.label_map.values())
+
+    @property
+    def is_available(self) -> bool:
+        """Check if labels are available."""
+        empty_labels = self.labels is None or len(self.labels) == 0
+        empty_label_map = self.label_map is None or len(self.label_map) == 0
+        return not (empty_labels or empty_label_map)
+
+    def _validate_labels(self) -> None:
+        if self.label_name not in self._data.column_names:
+            raise ValueError(f"Label column '{self.label_name}' not found in dataset.")
+        labels = self._data[self.label_name]
+        assert isinstance(labels, (np.ndarray, list))
+        assert len(labels) == len(self._data)
 
 
 def _extract_labels(data: Dataset, label_name: str) -> Tuple[np.ndarray, Mapping]:
