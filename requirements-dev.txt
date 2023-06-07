@@ -1,5 +1,6 @@
 # Python dependencies for development
 coverage != 6.3, != 6.3.*
+datasets
 hypothesis
 mypy
 pandas-stubs
@@ -16,3 +17,5 @@ torch
 torchvision
 typing-extensions>=4.1.1
 wget
+matplotlib
+pillow

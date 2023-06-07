@@ -19,6 +19,12 @@ Quickstart
 
          pip install cleanlab
 
+      To install the package with all optional dependencies:
+
+      .. code-block:: bash
+
+         pip install "cleanlab[all]"
+
    .. tab:: conda
 
       .. code-block:: bash
@@ -31,45 +37,49 @@ Quickstart
 
          pip install git+https://github.com/cleanlab/cleanlab.git
 
+      To install the package with all optional dependencies:
 
-2. Find label errors in your data
----------------------------------
+      .. code-block:: bash
 
-cleanlab finds issues in *any dataset that a classifier can be trained on*. The cleanlab package *works with any ML model* by using model outputs (predicted probabilities) as input -- it doesn't depend on which model created those outputs.
+         pip install "git+https://github.com/cleanlab/cleanlab.git#egg=cleanlab[all]"
 
-If you're using a scikit-learn-compatible model (option 1), you don't need to train a model -- you can pass the model, data, and labels into :py:meth:`CleanLearning.find_label_issues <cleanlab.classification.CleanLearning.find_label_issues>` and cleanlab will handle model training for you. If you want to use any non-sklearn-compatible model (option 2), you can input the trained model's out-of-sample predicted probabilities into :py:meth:`find_label_issues <cleanlab.filter.find_label_issues>`. Examples for both options are below.
+
+2. Find common issues in your data
+----------------------------------
+
+cleanlab automatically detects various issues in *any dataset that a classifier can be trained on*. The cleanlab package *works with any ML model* by operating on model outputs (predicted class probabilities or feature embeddings) -- it doesn't require that a particular model created those outputs. For any classification dataset, use your trained model to produce `pred_probs` (predicted class probabilities) and/or `feature_embeddings` (numeric vector representations of each datapoint). Then, these few lines of code can detect common real-world issues in your dataset like label errors, outliers, near duplicates, etc:
+
+.. code-block:: python
+
+    from cleanlab import Datalab
+
+    lab = Datalab(data=your_dataset, label_name="column_name_of_labels")
+    lab.find_issues(features=feature_embeddings, pred_probs=pred_probs)
+    lab.report()  # summarize issues in dataset, how severe they are, ...
+
+
+3. Handle label errors and train robust models with noisy labels
+----------------------------------------------------------------
+
+Mislabeled data is a particularly concerning issue plaguing real-world datasets. To use a scikit-learn-compatible model for classification with noisy labels, you don't need to train a model to find label issues -- you can pass the untrained model object, data, and labels into :py:meth:`CleanLearning.find_label_issues <cleanlab.classification.CleanLearning.find_label_issues>` and cleanlab will handle model training for you.
 
 .. code-block:: python
 
     from cleanlab.classification import CleanLearning
-    from cleanlab.filter import find_label_issues
 
-    # Option 1 - works with sklearn-compatible models - just input the data and labels ツ
+    # This works with any sklearn-compatible model - just input data + labels and cleanlab will detect label issues ツ
     label_issues_info = CleanLearning(clf=sklearn_compatible_model).find_label_issues(data, labels)
 
-    # Option 2 - works with ANY ML model - just input the model's predicted probabilities
-    ordered_label_issues = find_label_issues(
-        labels=labels,
-        pred_probs=pred_probs,  # predicted probabilities from any model (ideally out-of-sample predictions)
-        return_indices_ranked_by='self_confidence',
-    )
+:py:class:`CleanLearning <cleanlab.classification.CleanLearning>` also works with models from most standard ML frameworks by wrapping the model for scikit-learn compliance, e.g. `tensorflow/keras <tutorials/text.ipynb>`_ (using our KerasWrapperModel), `pytorch <tutorials/image.ipynb>`_ (using skorch package), etc.
 
-:py:class:`CleanLearning <cleanlab.classification.CleanLearning>` (option 1) also works with models from most standard ML frameworks by wrapping the model for scikit-learn compliance, e.g. `tensorflow/keras <tutorials/text.ipynb>`_ (using our KerasWrapperModel), `pytorch <tutorials/image.ipynb>`_ (using skorch package), etc.
-
-By default, :py:meth:`find_label_issues <cleanlab.filter.find_label_issues>` returns a boolean mask of label issues. You can instead return the indices of potential mislabeled examples by setting `return_indices_ranked_by` in :py:meth:`find_label_issues <cleanlab.filter.find_label_issues>`. The indices are ordered by likelihood of a label error (estimated via :py:meth:`rank.get_label_quality_scores <cleanlab.rank.get_label_quality_scores>`).
+:py:meth:`find_label_issues <cleanlab.classification.CleanLearning.find_label_issues>` returns a boolean mask flagging which examples have label issues and a numeric label quality score for each example quantifying our confidence that its label is correct.
 
 Beyond standard classification tasks, cleanlab can also detect mislabeled examples in: `multi-label data <tutorials/multilabel_classification.ipynb>`_ (e.g. image/document tagging), `sequence prediction <tutorials/token_classification.ipynb>`_ (e.g. entity recognition), and `data labeled by multiple annotators <tutorials/multiannotator.ipynb>`_ (e.g. crowdsourcing).
 
 .. important::
    Cleanlab performs better if the ``pred_probs`` from your model are **out-of-sample**. Details on how to compute out-of-sample predicted probabilities for your entire dataset are :ref:`here <pred_probs_cross_val>`.
 
-
-3. Train robust models with noisy labels
-----------------------------------------
-
-cleanlab's :py:class:`CleanLearning <cleanlab.classification.CleanLearning>` class adapts any existing (`scikit-learn <https://scikit-learn.org/>`_ `compatible <https://scikit-learn.org/stable/developers/develop.html>`_) classification model, `clf`, to a more reliable one by allowing it to train directly on partially mislabeled datasets.
-
-When the :py:meth:`.fit() <cleanlab.classification.CleanLearning.fit>` method is called, it automatically removes any examples identified as "noisy" in the provided dataset and returns a model trained only on the clean data.
+cleanlab's :py:class:`CleanLearning <cleanlab.classification.CleanLearning>` class trains a more robust version of any existing (`scikit-learn <https://scikit-learn.org/>`_ `compatible <https://scikit-learn.org/stable/developers/develop.html>`_) classification model, `clf`, by fitting it to an automatically filtered version of your dataset with low-quality data removed. It returns a model trained only on the clean data, from which you can get predictions in the same way as your existing classifier.
 
 .. code-block:: python
 
@@ -79,7 +89,7 @@ When the :py:meth:`.fit() <cleanlab.classification.CleanLearning.fit>` method is
    cl = CleanLearning(clf=LogisticRegression())  # any sklearn-compatible classifier
    cl.fit(train_data, labels)
 
-   # Estimate the predictions you would have gotten if you trained without mislabeled data.
+   # Estimate the predictions you would have gotten if you trained without mislabeled data
    predictions = cl.predict(test_data)
 
 
@@ -126,11 +136,13 @@ Please see our `contributing guidelines <https://github.com/cleanlab/cleanlab/bl
    :hidden:
    :caption: Tutorials
 
+   Datalab Tutorials <tutorials/datalab/index>
    Workflows of Data-Centric AI <tutorials/indepth_overview>
    Image Classification (pytorch) <tutorials/image>
-   Text Classification (tensorflow) <tutorials/text>
+   Text Classification (transformers) <tutorials/text>
    Tabular Classification (sklearn) <tutorials/tabular>
    Audio Classification (speechbrain) <tutorials/audio>
+   Object Detection (detectron2) <tutorials/object_detection>
    Find Dataset-level Issues <tutorials/dataset_health>
    Identifying Outliers (pytorch) <tutorials/outliers>
    Improving Consensus Labels for Multiannotator Data <tutorials/multiannotator>
@@ -153,6 +165,8 @@ Please see our `contributing guidelines <https://github.com/cleanlab/cleanlab/bl
    cleanlab/multiannotator
    cleanlab/multilabel_classification/index
    cleanlab/token_classification/index
+   cleanlab/object_detection/index
+   cleanlab/datalab/index
    cleanlab/benchmarking/index
    cleanlab/models/index
    cleanlab/experimental/index
