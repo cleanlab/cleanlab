@@ -258,7 +258,7 @@ def common_label_issues(
         for idx, row in df.iterrows():
             print(
                 f"Class '{row['given_label']}' is potentially mislabeled as class for '{row['predicted_label']}' "
-                f"{row['num_label_issues']} pixels in the dataset"
+                f"{row['num_pixel_issues']} pixels in the dataset"
             )
 
     return df
