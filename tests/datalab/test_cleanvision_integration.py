@@ -1,5 +1,4 @@
 import pytest
-import os
 from datasets import load_dataset
 import numpy as np
 from PIL import Image
