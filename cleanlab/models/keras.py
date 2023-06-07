@@ -24,6 +24,8 @@ see the `Keras documentation <https://keras.io/>`_ for details.
 This is a good example of making any bespoke neural network compatible with cleanlab.
 
 You must have `Tensorflow 2 installed <https://www.tensorflow.org/install>`_ (only compatible with Python versions >= 3.7).
+This wrapper class is only fully compatible with ``tensorflow<2.11``, if using ``tensorflow>=2.11``, 
+please replace your Optimizer class with the legacy Optimizer `here <https://www.tensorflow.org/api_docs/python/tf/keras/optimizers/legacy/Optimizer>`_.
 
 Tips:
 
