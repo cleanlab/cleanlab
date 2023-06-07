@@ -337,7 +337,7 @@ class CleanLearning(BaseEstimator):
     def score(
         self,
         X: Union[np.ndarray, pd.DataFrame],
-        y: np.ndarray,
+        y: LabelLike,
         sample_weight: Optional[np.ndarray] = None,
     ) -> float:
         """Evaluates your wrapped model's score on a test set `X` with target values `y`.
@@ -816,7 +816,7 @@ class CleanLearning(BaseEstimator):
     def _process_label_issues_arg(
         self,
         label_issues: Union[pd.DataFrame, pd.Series, np.ndarray],
-        y: np.ndarray,
+        y: LabelLike,
     ) -> pd.DataFrame:
         """
         Helper method to process the label_issues input into a well-formatted DataFrame.
