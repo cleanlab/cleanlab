@@ -92,6 +92,7 @@ from cleanlab.typing import LabelLike
 from cleanlab.internal.constants import TINY_VALUE
 from cleanlab.internal.util import train_val_split, subset_X_y
 from cleanlab.internal.regression_utils import assert_valid_regression_inputs
+from cleanlab.internal.validation import labels_to_array
 
 
 class CleanLearning(BaseEstimator):
@@ -245,7 +246,7 @@ class CleanLearning(BaseEstimator):
             - ``self.label_issues_mask``: a ``np.ndarray`` boolean mask indicating if a particular
                 example has been identified to have issues.
         """
-        X, y = assert_valid_regression_inputs(X, y)
+        assert_valid_regression_inputs(X, y)
 
         if find_label_issues_kwargs is None:
             find_label_issues_kwargs = {}
@@ -820,6 +821,7 @@ class CleanLearning(BaseEstimator):
         """
         Helper method to process the label_issues input into a well-formatted DataFrame.
         """
+        y = labels_to_array(y)
 
         if isinstance(label_issues, pd.DataFrame):
             if "is_label_issue" not in label_issues.columns:

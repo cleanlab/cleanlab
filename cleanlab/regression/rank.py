@@ -43,8 +43,9 @@ def get_label_quality_scores(
     Returns label quality score for each example in the regression dataset.
 
     Each score is a continous value in the range [0,1]
-    1 - clean label (given label is likely correct).
-    0 - dirty label (given label is likely incorrect).
+
+    * 1 - clean label (given label is likely correct).
+    * 0 - dirty label (given label is likely incorrect).
 
     Parameters
     ----------

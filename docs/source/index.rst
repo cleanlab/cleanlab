@@ -143,6 +143,7 @@ Please see our `contributing guidelines <https://github.com/cleanlab/cleanlab/bl
    Tabular Classification (sklearn) <tutorials/tabular>
    Audio Classification (speechbrain) <tutorials/audio>
    Find Dataset-level Issues <tutorials/dataset_health>
+   Regression <tutorials/regression>
    Identifying Outliers (pytorch) <tutorials/outliers>
    Improving Consensus Labels for Multiannotator Data <tutorials/multiannotator>
    Multi-Label Classification <tutorials/multilabel_classification>

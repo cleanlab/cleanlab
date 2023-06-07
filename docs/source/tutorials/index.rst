@@ -11,10 +11,10 @@ Tutorials
    tabular
    audio
    dataset_health
+   regression
    outliers
    multiannotator
    multilabel_classification
    token_classification
-   regression
    pred_probs_cross_val
    faq
