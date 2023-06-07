@@ -29,14 +29,14 @@ import matplotlib.pyplot as plt
 # Filter
 from cleanlab.segmentation.filter import (
     find_label_issues,
-    _check_input,
+    # _check_input,
 )
 
 # Rank
 from cleanlab.segmentation.rank import (
     get_label_quality_scores,
     issues_from_scores,
-    _get_label_quality_per_image,
+    # _get_label_quality_per_image,
 )
 
 # Summary
@@ -44,7 +44,7 @@ from cleanlab.segmentation.summary import (
     display_issues,
     common_label_issues,
     filter_by_class,
-    _generate_colormap,
+    # _generate_colormap,
 )
 
 

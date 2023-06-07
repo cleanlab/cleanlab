@@ -286,7 +286,7 @@ def estimate_pu_f1(s, prob_s_eq_1) -> float:
     all_positives = sum(s)
     recall = true_positives / float(all_positives)
     frac_positive = sum(pred) / float(len(s))
-    return recall**2 / (2.0 * frac_positive) if frac_positive != 0 else np.nan
+    return recall ** 2 / (2.0 * frac_positive) if frac_positive != 0 else np.nan
 
 
 def confusion_matrix(true, pred) -> np.ndarray:

@@ -232,12 +232,16 @@ def find_label_issues(
         allow_one_class=allow_one_class,
     )
 
-    if filter_by in [
-        "confident_learning",
-        "predicted_neq_given",
-        "low_normalized_margin",
-        "low_self_confidence",
-    ] and (frac_noise != 1.0 or num_to_remove_per_class is not None):
+    if (
+        filter_by
+        in [
+            "confident_learning",
+            "predicted_neq_given",
+            "low_normalized_margin",
+            "low_self_confidence",
+        ]
+        and (frac_noise != 1.0 or num_to_remove_per_class is not None)
+    ):
         warn_str = (
             "frac_noise and num_to_remove_per_class parameters are only supported"
             " for filter_by 'prune_by_noise_rate', 'prune_by_class', and 'both'. They "
