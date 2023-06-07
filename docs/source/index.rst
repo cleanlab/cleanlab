@@ -143,6 +143,7 @@ Please see our `contributing guidelines <https://github.com/cleanlab/cleanlab/bl
    Tabular Classification (sklearn) <tutorials/tabular>
    Audio Classification (speechbrain) <tutorials/audio>
    Object Detection (detectron2) <tutorials/object_detection>
+   Semantic Segmentation (pytorch) <tutorials/segmentation>
    Find Dataset-level Issues <tutorials/dataset_health>
    Identifying Outliers (pytorch) <tutorials/outliers>
    Improving Consensus Labels for Multiannotator Data <tutorials/multiannotator>
@@ -166,6 +167,7 @@ Please see our `contributing guidelines <https://github.com/cleanlab/cleanlab/bl
    cleanlab/multilabel_classification/index
    cleanlab/token_classification/index
    cleanlab/object_detection/index
+   cleanlab/segmentation/index
    cleanlab/datalab/index
    cleanlab/benchmarking/index
    cleanlab/models/index

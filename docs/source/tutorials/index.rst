@@ -16,5 +16,6 @@ Tutorials
    multilabel_classification
    token_classification
    object_detection
+   segmentation
    pred_probs_cross_val
    faq
