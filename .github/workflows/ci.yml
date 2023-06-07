@@ -25,7 +25,7 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
       - name: Install cleanlab
-        run: pip install -e .
+        run: pip install -e ".[all]"
       - name: Install development dependencies
         run: pip install -r requirements-dev.txt
       - name: Install fasttext for non-Windows machines
