@@ -252,7 +252,7 @@ def common_label_issues(
                     info.append([class_name, class_names[pred_label], num_issues])
 
     info = sorted(info, key=lambda x: x[2], reverse=True)[:top]
-    df = pd.DataFrame(info, columns=["given_label", "predicted_label", "num_label_issues"])
+    df = pd.DataFrame(info, columns=["given_label", "predicted_label", "num_pixel_issues"])
 
     if verbose:
         for idx, row in df.iterrows():
