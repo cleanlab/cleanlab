@@ -21,24 +21,25 @@ import numpy as np
 import os
 import numpy as np
 import random
+
 np.random.seed(0)
 import pytest
 import matplotlib.pyplot as plt
 
-#Filter
+# Filter
 from cleanlab.segmentation.filter import (
     find_label_issues,
     _check_input,
 )
 
-#Rank
+# Rank
 from cleanlab.segmentation.rank import (
     get_label_quality_scores,
     issues_from_scores,
     _get_label_quality_per_image,
 )
 
-#Summary
+# Summary
 from cleanlab.segmentation.summary import (
     display_issues,
     common_label_issues,
@@ -48,22 +49,21 @@ from cleanlab.segmentation.summary import (
 
 
 def generate_three_image_dataset(bad_index):
-    
-    good_gt = np.zeros((10,10))
-    good_gt[:5,:] = 1.
-    bad_gt = np.ones((10,10))
-    bad_gt[:5,:] = 0.
-    good_pr = np.random.random((2,10,10))
-    good_pr[0,:5,:] = good_pr[0,:5,:]/10
-    good_pr[1,5:,:] = good_pr[1,5:,:]/10
+    good_gt = np.zeros((10, 10))
+    good_gt[:5, :] = 1.0
+    bad_gt = np.ones((10, 10))
+    bad_gt[:5, :] = 0.0
+    good_pr = np.random.random((2, 10, 10))
+    good_pr[0, :5, :] = good_pr[0, :5, :] / 10
+    good_pr[1, 5:, :] = good_pr[1, 5:, :] / 10
 
-    val = np.binary_repr([4,2,1][bad_index], width=3)
+    val = np.binary_repr([4, 2, 1][bad_index], width=3)
     error = [int(case) for case in val]
 
     labels = []
     pred = []
     for case in val:
-        if case =="0":
+        if case == "0":
             labels.append(good_gt)
             pred.append(good_pr)
         else:
@@ -74,19 +74,19 @@ def generate_three_image_dataset(bad_index):
     pred_probs = np.array(pred)
     return labels, pred_probs, error
 
+
 labels, pred_probs, error = generate_three_image_dataset(random.randint(0, 2))
 
+
 def test_find_label_issues():
-    issues = find_label_issues(labels, pred_probs,downsample = 1, n_jobs=None, batch_size=1000)
-    assert np.argmax(error)==np.argmax(issues.sum((1,2)))
-    
-    issues = find_label_issues(labels, pred_probs,downsample = 2, batch_size=1000)
-    assert np.argmax(error)==np.argmax(issues.sum((1,2)))
-    
-    issues = find_label_issues(labels, pred_probs,downsample = 5, n_jobs=None, batch_size=1000)
-    assert np.argmax(error)==np.argmax(issues.sum((1,2)))
-    
-    
+    issues = find_label_issues(labels, pred_probs, downsample=1, n_jobs=None, batch_size=1000)
+    assert np.argmax(error) == np.argmax(issues.sum((1, 2)))
+
+    issues = find_label_issues(labels, pred_probs, downsample=2, batch_size=1000)
+    assert np.argmax(error) == np.argmax(issues.sum((1, 2)))
+
+    issues = find_label_issues(labels, pred_probs, downsample=5, n_jobs=None, batch_size=1000)
+    assert np.argmax(error) == np.argmax(issues.sum((1, 2)))
 
 
 # def test_get_label_quality_per_image():
@@ -97,7 +97,7 @@ def test_find_label_issues():
 
 #     with pytest.raises(Exception) as e:
 #         _get_label_quality_per_image(rand_pixel_scores)
-        
-        
+
+
 # # test_find_label_issues()
 # test_get_label_quality_per_image()
