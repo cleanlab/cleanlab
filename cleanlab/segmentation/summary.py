@@ -122,7 +122,6 @@ def display_issues(
         plt.show()
 
     for i in correct_ordering:
-
         # Show images
         fig, axes = plt.subplots(1, output_plots, figsize=(5 * output_plots, 5))
         plot_index = 0
@@ -309,7 +308,6 @@ def filter_by_class(
 
 
 def _generate_colormap(num_colors):
-
     """
     Finds a unique color map based on the number of colors inputted ideal for semantic segmentation.
     Parameters
