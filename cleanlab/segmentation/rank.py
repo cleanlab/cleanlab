@@ -136,12 +136,11 @@ def get_label_quality_scores(
 
         pbar = tqdm(desc=f"images processed using {method}", total=num_im)
     for image in range(num_im):
-        mask = [labels[image] == cls for cls in range(num_class)]
-        image_probs = pred_probs[image][mask]
-        pixel_scores.append(np.where(mask, pred_probs[image], 0).sum(axis=0))
+        image_probs = pred_probs[image][labels[image], np.arange(labels[image].shape[0])[:,None], np.arange(labels[image].shape[1])]
+        pixel_scores.append(image_probs)
         image_scores.append(
             _get_label_quality_per_image(
-                np.array(image_probs), method=method, temperature=softmin_temperature
+                np.array(image_probs.flatten()), method=method, temperature=softmin_temperature
             )
         )
         if verbose:
