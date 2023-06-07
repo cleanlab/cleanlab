@@ -136,7 +136,11 @@ def get_label_quality_scores(
 
         pbar = tqdm(desc=f"images processed using {method}", total=num_im)
     for image in range(num_im):
-        image_probs = pred_probs[image][labels[image], np.arange(labels[image].shape[0])[:,None], np.arange(labels[image].shape[1])]
+        image_probs = pred_probs[image][
+            labels[image],
+            np.arange(labels[image].shape[0])[:, None],
+            np.arange(labels[image].shape[1]),
+        ]
         pixel_scores.append(image_probs)
         image_scores.append(
             _get_label_quality_per_image(
