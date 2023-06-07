@@ -34,8 +34,15 @@ DATALAB_REQUIRE = [
     "datasets>=2.7.0",
 ]
 
+CLEANVISION_REQUIRE = [
+    # Mainly for Datalab's data storage class.
+    # Still some type hints that require datasets
+    "cleanvision==0.3.0",
+]
+
 EXTRAS_REQUIRE = {
     "datalab": DATALAB_REQUIRE,
+    "cleanvision": CLEANVISION_REQUIRE,
     "all": [],
 }
 EXTRAS_REQUIRE["all"] = list(set(sum(EXTRAS_REQUIRE.values(), [])))
