@@ -145,7 +145,8 @@ class ImagelabIssueFinderAdapter(IssueFinder):
         super().__init__(datalab, verbosity)
         self.imagelab = self.datalab._imagelab
 
-    def _get_datalab_specific_default_issue_types(self):
+    @staticmethod
+    def _get_datalab_specific_default_issue_types():
         return [
             "dark",
             "light",
