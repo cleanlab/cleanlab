@@ -471,9 +471,9 @@ def test_symmetry_df_size(asymmetric, dataset_name):
         num_examples=len(labels),
     )
     if asymmetric:
-        assert len(df) == num_classes**2 - num_classes
+        assert len(df) == num_classes ** 2 - num_classes
     else:  # symmetric
-        assert len(df) == (num_classes**2 - num_classes) / 2
+        assert len(df) == (num_classes ** 2 - num_classes) / 2
 
         # Second test for symmetric
         # check that the row, col value returned is actually the sum from the joint.
