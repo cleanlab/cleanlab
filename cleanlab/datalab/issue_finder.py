@@ -325,7 +325,7 @@ class IssueFinder:
         --------
         :py:class:`REGISTRY <cleanlab.datalab.factory.REGISTRY>` : All available issue types and their corresponding issue managers can be found here.
         """
-        return ["label", "outlier", "near_duplicate"]
+        return ["label", "outlier", "near_duplicate", "non_iid"]
 
     def get_available_issue_types(self, **kwargs):
         """Returns a dictionary of issue types that can be used in :py:meth:`Datalab.find_issues
@@ -348,5 +348,23 @@ class IssueFinder:
                 for issue in self.list_default_issue_types()
                 if issue in issue_types_copy
             }
+
+        drop_label_check = "label" in issue_types_copy and not self.datalab.has_labels
+        if drop_label_check:
+            warnings.warn("No labels were provided. " "The 'label' issue type will not be run.")
+            issue_types_copy.pop("label")
+
+        outlier_check_needs_features = "outlier" in issue_types_copy and not self.datalab.has_labels
+        if outlier_check_needs_features:
+            no_features = features is None
+            no_knn_graph = knn_graph is None
+            pred_probs_given = issue_types_copy["outlier"].get("pred_probs", None) is not None
+
+            only_pred_probs_given = pred_probs_given and no_features and no_knn_graph
+            if only_pred_probs_given:
+                warnings.warn(
+                    "No labels were provided. " "The 'outlier' issue type will not be run."
+                )
+                issue_types_copy.pop("outlier")
 
         return issue_types_copy

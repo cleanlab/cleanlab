@@ -36,7 +36,7 @@ DATALAB_REQUIRE = [
 
 EXTRAS_REQUIRE = {
     "datalab": DATALAB_REQUIRE,
-    "all": [],
+    "all": ["matplotlib>=3.5.1"],
 }
 EXTRAS_REQUIRE["all"] = list(set(sum(EXTRAS_REQUIRE.values(), [])))
 

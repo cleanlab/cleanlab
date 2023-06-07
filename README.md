@@ -19,7 +19,7 @@ cl.fit(data, labels)
 # cleanlab estimates the predictions you would have gotten if you had trained with *no* label issues.
 cl.predict(test_data)
 
-# A true data-centric AI package, cleanlab quantifies class-level issues and overall data quality, for any dataset.
+# A universal data-centric AI tool, cleanlab quantifies class-level issues and overall data quality, for any dataset.
 cleanlab.dataset.health_summary(labels, confident_joint=cl.confident_joint)
 ```
 
@@ -50,7 +50,7 @@ Get started with: [documentation](https://docs.cleanlab.ai/), [tutorials](https:
 
 ## So fresh, so cleanlab
 
-cleanlab **clean**s your data's **lab**els via state-of-the-art *confident learning* algorithms, published in this [paper](https://jair.org/index.php/jair/article/view/12125) and [blog](https://l7.curtisnorthcutt.com/confident-learning). See some of the datasets cleaned with cleanlab at [labelerrors.com](https://labelerrors.com). This package helps you find label issues and other data issues, so you can train reliable ML models.
+cleanlab **clean**s your data's **lab**els via state-of-the-art *confident learning* algorithms, published in this [paper](https://jair.org/index.php/jair/article/view/12125) and [blog](https://l7.curtisnorthcutt.com/confident-learning). See some of the datasets cleaned with cleanlab at [labelerrors.com](https://labelerrors.com). This data-centric AI tool helps you find data and label issues, so you can train reliable ML models.
 
 cleanlab is:
 
@@ -135,7 +135,7 @@ Note, some libraries exist to give you sklearn-compatibility for free. For PyTor
 <br/>
 </details>
 
-cleanlab is useful across a wide variety of Machine Learning tasks. Specific tasks this package offers dedicated functionality for include:
+cleanlab is useful across a wide variety of Machine Learning tasks. Specific tasks this data-centric AI solution offers dedicated functionality for include:
 1. [Binary and multi-class classification](https://docs.cleanlab.ai/stable/tutorials/indepth_overview.html)
 2. [Multi-label classification](https://docs.cleanlab.ai/stable/tutorials/multilabel_classification.html) (e.g. image/document tagging)
 3. [Token classification](https://docs.cleanlab.ai/stable/tutorials/token_classification.html) (e.g. entity recognition in text)
@@ -278,7 +278,7 @@ While this open-source library **finds** data issues, an interface is needed to 
 
 * Have ideas for the future of cleanlab? How are you using cleanlab? [Join the discussion](https://github.com/cleanlab/cleanlab/discussions) and check out [our active/planned Projects and what we could use your help with](https://github.com/cleanlab/cleanlab/projects).
 
-* Interested in contributing? See the [contributing guide](CONTRIBUTING.md) and [ideas on useful contributions](https://github.com/cleanlab/cleanlab/wiki#ideas-for-contributing-to-cleanlab). We welcome your help building a standard open-source library for data-centric AI!
+* Interested in contributing? See the [contributing guide](CONTRIBUTING.md) and [ideas on useful contributions](https://github.com/cleanlab/cleanlab/wiki#ideas-for-contributing-to-cleanlab). We welcome your help building a standard open-source platform for data-centric AI!
 
 * Have code improvements for cleanlab? See the [development guide](DEVELOPMENT.md).
 
@@ -297,3 +297,7 @@ cleanlab is distributed in the hope that it will be useful, but WITHOUT ANY WARR
 
 See [GNU Affero General Public LICENSE](https://github.com/cleanlab/cleanlab/blob/master/LICENSE) for details.
 You can email us to discuss licensing: team@cleanlab.ai
+
+### Commercial licensing
+
+Commercial licensing is available for teams and enterprises that want to use cleanlab in production workflows, but are unable to open-source their code. Please contact us [here](mailto:sales@cleanlab.ai).

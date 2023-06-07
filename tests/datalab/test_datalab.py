@@ -79,6 +79,7 @@ class TestDatalab:
             "label",
             "outlier",
             "near_duplicate",
+            "non_iid",
         ]
 
     def tmp_path(self):
@@ -92,7 +93,7 @@ class TestDatalab:
         for attr in ["data", "label_name", "_labels", "info", "issues"]:
             assert hasattr(lab, attr), f"Missing attribute {attr}"
 
-        assert all(lab._labels == np.array([1, 1, 2, 0, 2]))
+        assert all(lab.labels == np.array([1, 1, 2, 0, 2]))
         assert isinstance(lab.issues, pd.DataFrame), "Issues should by in a dataframe"
         assert isinstance(lab.issue_summary, pd.DataFrame), "Issue summary should be a dataframe"
 
@@ -203,7 +204,7 @@ class TestDatalab:
         [None, {"label": {}}],
         ids=["Default issues", "Only label issues"],
     )
-    def test_find_issues(self, lab, pred_probs, issue_types):
+    def test_find_issues_with_pred_probs(self, lab, pred_probs, issue_types):
         assert lab.issues.empty, "Issues should be empty before calling find_issues"
         assert lab.issue_summary.empty, "Issue summary should be empty before calling find_issues"
         assert lab.info["statistics"]["health_score"] is None
@@ -238,6 +239,7 @@ class TestDatalab:
             {"label": {}},
             {"outlier": {}},
             {"near_duplicate": {}},
+            {"non_iid": {}},
             {"outlier": {}, "near_duplicate": {}},
         ],
         ids=[
@@ -245,6 +247,7 @@ class TestDatalab:
             "Only label issues",
             "Only outlier issues",
             "Only near_duplicate issues",
+            "Only non_iid issues",
             "Both outlier and near_duplicate issues",
         ],
     )
@@ -772,19 +775,21 @@ class TestDatalabFindNonIIDIssues:
         summary = lab.get_issue_summary()
         assert ["non_iid"] == summary["issue_type"].values
         assert summary["score"].values[0] == 0
-        assert lab.get_issues()["is_non_iid_issue"].sum() > 0
+        assert lab.get_issues()["is_non_iid_issue"].sum() == 1
 
     def test_incremental_search(self, sorted_embeddings):
         data = {"labels": [0, 1, 0]}
         lab = Datalab(data=data, label_name="labels")
         lab.find_issues(features=sorted_embeddings)
+        summary = lab.get_issue_summary()
+        assert len(summary) == 3
         lab.find_issues(features=sorted_embeddings, issue_types={"non_iid": {}})
         summary = lab.get_issue_summary()
         assert len(summary) == 3
         assert "non_iid" in summary["issue_type"].values
         non_iid_summary = lab.get_issue_summary("non_iid")
         assert non_iid_summary["score"].values[0] == 0
-        assert non_iid_summary["num_issues"].values[0] > 0
+        assert non_iid_summary["num_issues"].values[0] == 1
 
 
 class TestDatalabFindLabelIssues:
@@ -803,9 +808,12 @@ class TestDatalabFindLabelIssues:
         data = {"labels": np.random.randint(0, 2, 100)}
         lab = Datalab(data=data, label_name="labels")
         lab.find_issues(features=random_embeddings)
-        lab.find_issues(pred_probs=pred_probs, issue_types={"label": {}})
         summary = lab.get_issue_summary()
         assert len(summary) == 3
+        assert "label" not in summary["issue_type"].values
+        lab.find_issues(pred_probs=pred_probs, issue_types={"label": {}})
+        summary = lab.get_issue_summary()
+        assert len(summary) == 4
         assert "label" in summary["issue_type"].values
         label_summary = lab.get_issue_summary("label")
         assert label_summary["num_issues"].values[0] > 0
@@ -829,6 +837,9 @@ class TestDatalabFindOutlierIssues:
         data = {"labels": np.random.randint(0, 2, 100)}
         lab = Datalab(data=data, label_name="labels")
         lab.find_issues(pred_probs=pred_probs, issue_types={"label": {}})
+        summary = lab.get_issue_summary()
+        assert len(summary) == 1
+        assert "outlier" not in summary["issue_type"].values
         lab.find_issues(features=random_embeddings, issue_types={"outlier": {}})
         summary = lab.get_issue_summary()
         assert len(summary) == 2
@@ -856,9 +867,68 @@ class TestDatalabFindNearDuplicateIssues:
         data = {"labels": np.random.randint(0, 2, 100)}
         lab = Datalab(data=data, label_name="labels")
         lab.find_issues(pred_probs=pred_probs, issue_types={"label": {}})
+        summary = lab.get_issue_summary()
+        assert len(summary) == 1
+        assert "near_duplicate" not in summary["issue_type"].values
         lab.find_issues(features=random_embeddings, issue_types={"near_duplicate": {}})
         summary = lab.get_issue_summary()
         assert len(summary) == 2
         assert "near_duplicate" in summary["issue_type"].values
         near_duplicate_summary = lab.get_issue_summary("near_duplicate")
         assert near_duplicate_summary["num_issues"].values[0] > 1
+
+
+class TestDatalabWithoutLabels:
+    num_examples = 100
+    num_features = 10
+    K = 2
+
+    @pytest.fixture
+    def features(self):
+        np.random.seed(SEED)
+        return np.random.rand(self.num_examples, self.num_features)
+
+    @pytest.fixture
+    def pred_probs(self):
+        np.random.seed(SEED)
+        pred_probs_array = np.random.rand(self.num_examples, self.K)
+        return pred_probs_array / pred_probs_array.sum(axis=1, keepdims=True)
+
+    @pytest.fixture
+    def lab(self, features):
+        return Datalab(data={"X": features})
+
+    @pytest.fixture
+    def labels(self):
+        np.random.seed(SEED)
+        return np.random.randint(0, self.K, self.num_examples)
+
+    def test_init(self, lab, features):
+        assert np.array_equal(lab.data["X"], features)
+        assert np.array_equal(lab.labels, [])
+
+    def test_find_issues(self, lab, features, pred_probs):
+        lab = Datalab(data={"X": features})
+        lab.find_issues(pred_probs=pred_probs)
+        assert lab.issues.empty
+
+        lab = Datalab(data={"X": features})
+        lab.find_issues(features=features)
+        assert not lab.issues.empty
+
+    def test_find_issues_features_works_with_and_without_labels(self, features, labels):
+        lab_without_labels = Datalab(data={"X": features})
+        lab_without_labels.find_issues(features=features)
+
+        lab_with_labels = Datalab(data={"X": features, "labels": labels}, label_name="labels")
+        lab_with_labels.find_issues(features=features)
+
+        lab_without_label_name = Datalab(data={"X": features, "labels": labels})
+        lab_without_label_name.find_issues(features=features)
+
+        issues_without_labels = lab_without_labels.issues
+        issues_with_labels = lab_with_labels.issues
+        issues_without_label_name = lab_without_label_name.issues
+
+        pd.testing.assert_frame_equal(issues_without_labels, issues_with_labels)
+        pd.testing.assert_frame_equal(issues_without_labels, issues_without_label_name)

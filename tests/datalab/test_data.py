@@ -52,12 +52,12 @@ class TestData:
         assert data._data == dataset
 
         # All elements in the _labels attribute are integers in the range [0, num_classes - 1]
-        num_classes = len(set(data._label_map))
-        all_labels_are_ints = np.issubdtype(data._labels.dtype, np.integer)
-        assert all_labels_are_ints, f"{data._labels} should be a list of integers"
-        assert all(0 <= label < num_classes for label in data._labels)
+        num_classes = len(set(data.labels.label_map))
+        all_labels_are_ints = np.issubdtype(data.labels.labels.dtype, np.integer)
+        assert all_labels_are_ints, f"{data.labels.labels} should be a list of integers"
+        assert all(0 <= label < num_classes for label in data.labels.labels)
 
-        assert all(isinstance(label, int) for label in data._label_map.keys())
+        assert all(isinstance(label, int) for label in data.labels.label_map.keys())
 
     def test_init_data(self, dataset_and_label_name):
         dataset, label_name = dataset_and_label_name
