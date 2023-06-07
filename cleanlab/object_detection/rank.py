@@ -137,7 +137,6 @@ def issues_from_scores(label_quality_scores: np.ndarray, *, threshold: float = 0
     """Convert label quality scores to a list of indices of images with issues sorted from most to least severe cut off at threshold.
 
     Returns the list of indices of images with issues sorted from most to least severe cut off at threshold.
-    Useful to set an acceptable threshold for if an example should be considered an issue or not.
 
     Parameters
     ----------
@@ -730,7 +729,7 @@ def compute_badloc_box_scores(
     auxiliary_inputs: Optional[List[AuxiliaryTypesDict]] = None,
 ) -> List[np.ndarray]:
     """
-    Returns an array of badly located given label box scores for each image.
+    Returns a numeric score for each annotated bounding box in each image, estimating the likelihood that the edges of this box are not badly located.
     Score per high-confidence predicted bounding box is between 0 and 1, with lower values indicating boxes we are more confident were overlooked in the given label.
 
     Each image has ``L`` annotated bounding boxes and ``M`` predicted bounding boxes.
@@ -868,7 +867,7 @@ def compute_swap_box_scores(
     auxiliary_inputs: Optional[List[AuxiliaryTypesDict]] = None,
 ) -> List[np.ndarray]:
     """
-    Returns an array of swap given label box scores for each image.
+    Returns a numeric score for each annotated bounding box in each image, estimating the likelihood that the class label for this box was not accidentally swapped with another class.
     Score per high-confidence predicted bounding box is between 0 and 1, with lower values indicating boxes we are more confident were overlooked in the given label.
 
     Each image has ``L`` annotated bounding boxes and ``M`` predicted bounding boxes.
@@ -937,7 +936,7 @@ def pool_box_scores_per_image(
     box_scores: List[np.ndarray], *, temperature: Optional[float] = None
 ) -> np.ndarray:
     """
-    Aggregates scores per box and returns an array of scores for each image.
+    Aggregates multiple per-box scores within an image to return a single quality score for the image rather than for individual boxes within it.
     Score per image is between 0 and 1, with lower values indicating we are more confident image contains an error.
 
     Parameters
