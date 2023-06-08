@@ -223,7 +223,7 @@ def _get_label_quality_per_image(pixel_scores, method=None, temperature=0.1):
         Method to use to calculate the image's label quality score.
         Currently only supports "softmin".
     temperature: default 0.1
-        Temperature of the softmax function.
+        Temperature of the softmax function. Too small values may cause numerical underflow and NaN scores.
 
         Lower values encourage this method to converge toward the label quality score of the pixel with the lowest quality label in the image.
 
@@ -238,6 +238,8 @@ def _get_label_quality_per_image(pixel_scores, method=None, temperature=0.1):
     if pixel_scores is None or pixel_scores.size == 0:
         raise Exception("Invalid Input: pixel_scores cannot be None or an empty list")
 
+    if temperature == 0 or temperature is None:
+        raise Exception("Invalid Input: temperature cannot be zero or None")
     pixel_scores_64 = pixel_scores.astype("float64")
     if method is None or method == "softmin":
         if len(pixel_scores_64) > 0:
