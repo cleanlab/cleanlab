@@ -198,6 +198,9 @@ def issues_from_scores(
         falls below the `threshold` (also sorted by overall label quality score of each image).
 
     """
+
+    if threshold < 0 or threshold > 1:
+        raise ValueError("threshold must be between 0 and 1")
     if pixel_scores is not None:
         issues = np.where(pixel_scores < threshold, True, False)
         return issues
