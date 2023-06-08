@@ -240,7 +240,7 @@ def _get_label_quality_per_image(pixel_scores, method=None, temperature=0.1):
 
     if temperature == 0 or temperature is None:
         raise Exception("Invalid Input: temperature cannot be zero or None")
-    
+
     pixel_scores_64 = pixel_scores.astype("float64")
     if method == "softmin":
         if len(pixel_scores_64) > 0:
