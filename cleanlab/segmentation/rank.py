@@ -212,7 +212,7 @@ def _get_label_quality_per_image(pixel_scores, method=None, temperature=0.1):
     from cleanlab.internal.multilabel_scorer import softmin
 
     """
-    Input pixel scores and get label quality score for that image, curently using the "softmin" method.
+    Input pixel scores and get label quality score for that image, currently using the "softmin" method.
 
     Parameters
     ----------
@@ -235,8 +235,16 @@ def _get_label_quality_per_image(pixel_scores, method=None, temperature=0.1):
         Float of the image's label quality score from 0 to 1, 0 being the lowest quality and 1 being the highest quality.
 
     """
+    if not pixel_scores:
+        raise Exception("Invalid Input: pixel_scores cannot be None or an empty list")
+
     pixel_scores_64 = pixel_scores.astype("float64")
-    if method == "softmin":
-        return softmin(np.expand_dims(pixel_scores_64, axis=0), axis=1, temperature=temperature)[0]
+    if method is None or method == "softmin":
+        if len(pixel_scores_64) > 0:
+            return softmin(
+                np.expand_dims(pixel_scores_64, axis=0), axis=1, temperature=temperature
+            )[0]
+        else:
+            raise Exception("Invalid Input: pixel_scores is empty")
     else:
-        raise Exception("Invalid Method: Specify correct method")
+        raise Exception("Invalid Method: Specify correct method. Currently only supports 'softmin'")

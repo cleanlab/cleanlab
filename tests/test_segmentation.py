@@ -19,7 +19,7 @@ Scripts to test cleanlab.segmentation package
 """
 import numpy as np
 
-# import os
+
 import numpy as np
 import random
 
@@ -129,3 +129,12 @@ def test_get_label_quality_scores():
     )
 
     assert np.argmax(error) == np.argmin(image_scores_npi)
+
+
+def test_issues_from_scores():
+    image_scores_softmin, pixel_scores = get_label_quality_scores(
+        labels, pred_probs, method="softmin"
+    )
+    issues_from_score = issues_from_scores(image_scores_softmin, pixel_scores, threshold=1)
+    assert np.shape(issues_from_score) == pixel_scores
+    assert np.argmax(error) == np.argmax(issues_from_score.sum((1, 2)))
