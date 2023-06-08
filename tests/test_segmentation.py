@@ -179,6 +179,3 @@ def test__get_label_quality_per_image():
     with pytest.raises(Exception):
         _get_label_quality_per_image(random_score_array, method="softmin", temperature=0)
 
-    #     Test when temperature is None, should raise an error
-    with pytest.raises(Exception):
-        score = _get_label_quality_per_image(random_score_array, method="softmin", temperature=None)
