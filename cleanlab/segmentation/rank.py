@@ -138,8 +138,8 @@ def get_label_quality_scores(
     for image in range(num_im):
         image_probs = pred_probs[image][
             labels[image],
-            np.arange(labels[image].shape[0])[:, None],
-            np.arange(labels[image].shape[1]),
+            np.arange(h)[:, None],
+            np.arange(w),
         ]
         pixel_scores.append(image_probs)
         image_scores.append(
