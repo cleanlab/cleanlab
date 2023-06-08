@@ -19,6 +19,7 @@ Scripts to test cleanlab.segmentation package
 """
 import numpy as np
 
+# import matplotlib.pyplot as plt
 # import os
 import numpy as np
 import random
@@ -27,7 +28,6 @@ np.random.seed(0)
 import pytest
 from cleanlab.internal.multilabel_scorer import softmin
 
-# import matplotlib.pyplot as plt
 
 # Filter
 from cleanlab.segmentation.filter import (
@@ -87,14 +87,52 @@ def test_find_label_issues():
     issues = find_label_issues(labels, pred_probs, downsample=1, n_jobs=None, batch_size=1000)
     assert np.argmax(error) == np.argmax(issues.sum((1, 2)))
 
-    issues = find_label_issues(labels, pred_probs, downsample=2, batch_size=1000)
+    issues = find_label_issues(labels, pred_probs, downsample=2, batch_size=1739)
     assert np.argmax(error) == np.argmax(issues.sum((1, 2)))
 
-    issues = find_label_issues(labels, pred_probs, downsample=5, n_jobs=None, batch_size=1000)
+    issues = find_label_issues(labels, pred_probs, downsample=5, n_jobs=None, batch_size=2838)
     assert np.argmax(error) == np.argmax(issues.sum((1, 2)))
 
     with pytest.raises(Exception) as e:
         issues = find_label_issues(labels, pred_probs, downsample=4, n_jobs=None, batch_size=1000)
+
+    # Simple tests
+    # Test case 1: Test with larger batch_size
+    issues = find_label_issues(labels, pred_probs, downsample=1, n_jobs=None, batch_size=2000)
+    assert np.argmax(error) == np.argmax(issues.sum((1, 2)))
+
+    # Test case 2: Test with smaller batch_size
+    issues = find_label_issues(labels, pred_probs, downsample=1, n_jobs=None, batch_size=500)
+    assert np.argmax(error) == np.argmax(issues.sum((1, 2)))
+
+    # Test case 3: Test verbose off
+    issues = find_label_issues(labels, pred_probs, downsample=1, verbose=False)
+
+    assert np.argmax(error) == np.argmax(issues.sum((1, 2)))
+
+    # Test case 4: Test with scores_only parameter
+    scores = find_label_issues(labels, pred_probs, downsample=1, n_jobs=None, scores_only=True)
+    assert np.argmax(error) == np.argmin(scores)
+
+    # Test case 5: Test with invalid downsample value
+    with pytest.raises(Exception) as e:
+        issues = find_label_issues(labels, pred_probs, downsample=3, n_jobs=None, batch_size=1000)
+
+    # Test case 6: Test with n_jobs parameter
+    issues = find_label_issues(labels, pred_probs, downsample=1, n_jobs=2, batch_size=1000)
+    assert np.argmax(error) == np.argmax(issues.sum((1, 2)))
+
+    # Test case 7: Test with invalid labels
+    with pytest.raises(Exception) as e:
+        issues = find_label_issues(
+            np.array([[[[1, 2, 3]]]]), pred_probs, downsample=1, n_jobs=None, batch_size=1000
+        )
+
+    # Test case 8: Test with invalid pred_probs
+    with pytest.raises(Exception) as e:
+        issues = find_label_issues(
+            labels, np.array([[[[0.1, 0.2, 0.3]]]]), downsample=1, n_jobs=None, batch_size=1000
+        )
 
 
 def test__check_input():
@@ -131,6 +169,21 @@ def test_get_label_quality_scores():
     )
 
     assert np.argmax(error) == np.argmin(image_scores_npi)
+
+    with pytest.raises(Exception):
+        get_label_quality_scores(labels, pred_probs, method="invalid_method")
+
+    image_scores_softmin, pixel_scores = get_label_quality_scores(
+        labels, pred_probs, downsample=1, method="softmin"
+    )
+    assert len(image_scores_softmin) == labels.shape[0]
+    assert pixel_scores.shape == labels.shape
+
+    with pytest.raises(ValueError):
+        get_label_quality_scores(labels, pred_probs, method="num_pixel_issues", batch_size=-1)
+        get_label_quality_scores(
+            labels, pred_probs, method="num_pixel_issues", downsample=1, batch_size=0
+        )
 
 
 # Testing issues from scores

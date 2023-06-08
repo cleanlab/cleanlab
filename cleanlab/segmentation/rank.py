@@ -199,6 +199,8 @@ def issues_from_scores(
 
     """
 
+    if image_scores is None:
+        raise ValueError("pixel_scores must be provided")
     if threshold < 0 or threshold > 1 or threshold is None:
         raise ValueError("threshold must be between 0 and 1")
     if pixel_scores is not None:
