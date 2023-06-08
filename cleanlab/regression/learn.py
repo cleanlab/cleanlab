@@ -129,8 +129,8 @@ class CleanLearning(BaseEstimator):
         folds used to compute out-of-sample predictions for each example in ``X``. Default 5.
 
     n_boot :
-        Number of bootstrap samplings iterations that should be conducted to estimate the model's
-        epistemic uncertainty. Default 5.
+        Number of bootstrap resampling rounds used to estimate the model's epistemic uncertainty.
+        Default is 5. Higher values are expected to produce better results but require longer runtimes.
 
     verbose :
         Controls how much output is printed. Set to ``False`` to suppress print statements. Default `False`.
@@ -406,10 +406,11 @@ class CleanLearning(BaseEstimator):
 
         coarse_search_range :
             The coarse search range to find the value of ``k``, which represents the fraction of examples which have issues.
+            More values represent a more thorough search (better expected results but longer runtimes).
 
         fine_search_size :
-            The fine search size to find the value of ``k``, which represents the fraction of examples which have issues.
-            A higher number represents a more thorough search.
+            Size of fine-grained search grid to find the value of ``k``, which represents our estimate of the fraction of examples which have issues.
+            A higher number represents a more thorough search (better expected results but longer runtimes).
 
 
         For info about the **other parameters**, see the docstring of :py:meth:`CleanLearning.fit()
