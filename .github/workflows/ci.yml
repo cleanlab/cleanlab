@@ -37,6 +37,12 @@ jobs:
         run: |
           pip uninstall -y tensorflow
           pip install tensorflow-cpu
+      - name: Install cleanvision
+        run: |
+          git clone https://github.com/sanjanag/cleanvision.git
+          cd cleanvision
+          git checkout datalab-integration
+          pip install -e .
       - name: Test with coverage
         run: pytest --verbose --cov=cleanlab/ --cov-config .coveragerc --cov-report=xml
         env:
@@ -76,7 +82,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install .  # install dependencies
+          pip install ".[all]"  # install dependencies
           pip install -r requirements-dev.txt  # install development dependencies and type stubs
       - name: Type check
         run: mypy --install-types --non-interactive cleanlab
