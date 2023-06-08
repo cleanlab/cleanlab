@@ -235,7 +235,7 @@ def _get_label_quality_per_image(pixel_scores, method=None, temperature=0.1):
         Float of the image's label quality score from 0 to 1, 0 being the lowest quality and 1 being the highest quality.
 
     """
-    if not pixel_scores:
+    if pixel_scores is None or pixel_scores.size == 0:
         raise Exception("Invalid Input: pixel_scores cannot be None or an empty list")
 
     pixel_scores_64 = pixel_scores.astype("float64")
