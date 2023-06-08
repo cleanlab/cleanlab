@@ -133,6 +133,7 @@ def test_get_label_quality_scores():
     assert np.argmax(error) == np.argmin(image_scores_npi)
 
 
+# Testing issues from scores
 def test_issues_from_scores():
     image_scores_softmin, pixel_scores = get_label_quality_scores(
         labels, pred_probs, method="softmin"
@@ -149,6 +150,51 @@ def test_issues_from_scores():
 
     sort_by_score = issues_from_scores(image_scores_softmin, threshold=0.5)
     assert error[sort_by_score[0]] == 1
+
+
+def test_issues_from_scores_no_pixel_scores():
+    # Test if function works correctly when pixel_scores is None
+    image_scores_softmin, _ = get_label_quality_scores(labels, pred_probs, method="softmin")
+    issues_from_score_result = issues_from_scores(image_scores_softmin, None, threshold=1)
+    assert np.shape(issues_from_score_result) == (num_images,)
+
+
+def test_issues_from_scores_various_thresholds():
+    # Test if function works correctly for various values of threshold
+    image_scores_softmin, pixel_scores = get_label_quality_scores(
+        labels, pred_probs, method="softmin"
+    )
+    for threshold in [0.1, 0.5, 0.9]:
+        issues_from_score_result = issues_from_scores(
+            image_scores_softmin, pixel_scores, threshold=threshold
+        )
+        assert np.all(issues_from_score_result == (pixel_scores < threshold))
+
+
+def test_issues_from_scores_invalid_inputs():
+    # Test if function raises exception when input parameters are invalid
+    with pytest.raises(ValueError):
+        issues_from_scores(None)
+    with pytest.raises(ValueError):
+        issues_from_scores(np.array([0.1, 0.2, 0.3]), threshold=1.1)  # Threshold more than 1
+    with pytest.raises(ValueError):
+        issues_from_scores(np.array([0.1, 0.2, 0.3]), threshold=-0.1)  # Threshold less than 0
+
+
+def test_issues_from_scores_different_input_sizes():
+    # Test if function works correctly for different sizes of input arrays
+    for num_images in range(1, 5):
+        image_scores = np.random.rand(num_images)
+        pixel_scores = np.random.rand(num_images, 100, 100)
+        issues_from_score_result = issues_from_scores(image_scores, pixel_scores, threshold=0.5)
+        assert np.shape(issues_from_score_result) == np.shape(pixel_scores)
+
+
+def test_issues_from_scores_sorting():
+    # Test if function correctly sorts image_scores
+    image_scores_softmin, _ = get_label_quality_scores(labels, pred_probs, method="softmin")
+    issues_from_score_result = issues_from_scores(image_scores_softmin, None, threshold=0.5)
+    assert np.all(np.sort(image_scores_softmin) == image_scores_softmin[issues_from_score_result])
 
 
 def test__get_label_quality_per_image():
