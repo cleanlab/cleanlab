@@ -187,7 +187,7 @@ class DataIssues:
             info["class_names"] = self.statistics["class_names"]
         return info
 
-    def collect_statistics(self, issue_manager: Union[IssueManager, Imagelab]) -> None:
+    def collect_statistics(self, issue_manager: Union[IssueManager, "Imagelab"]) -> None:
         """Update the statistics in the info dictionary.
 
         Parameters
