@@ -84,6 +84,12 @@ jobs:
           python -m pip install --upgrade pip
           pip install ".[all]"  # install dependencies
           pip install -r requirements-dev.txt  # install development dependencies and type stubs
+      - name: Install cleanvision
+        run: |
+          git clone https://github.com/sanjanag/cleanvision.git
+          cd cleanvision
+          git checkout datalab-integration
+          pip install -e .
       - name: Type check
         run: mypy --install-types --non-interactive cleanlab
   fmt:
