@@ -199,7 +199,7 @@ def issues_from_scores(
 
     """
 
-    if threshold < 0 or threshold > 1:
+    if threshold < 0 or threshold > 1 or threshold is None:
         raise ValueError("threshold must be between 0 and 1")
     if pixel_scores is not None:
         issues = np.where(pixel_scores < threshold, True, False)
