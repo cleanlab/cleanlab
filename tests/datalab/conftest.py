@@ -3,8 +3,9 @@ import pandas as pd
 import pytest
 from datasets.arrow_dataset import Dataset
 from sklearn.neighbors import NearestNeighbors
-
+from PIL import Image
 from cleanlab.datalab.datalab import Datalab
+from datasets import load_dataset
 
 SEED = 42
 LABEL_NAME = "star"
@@ -107,3 +108,40 @@ def custom_issue_manager():
             self.summary = self.make_summary(score=summary_score)
 
     return CustomIssueManager
+
+
+@pytest.fixture
+def labels():
+    return ["class_0", "class_1", "class_2"]
+
+
+@pytest.fixture
+def nimages_per_class():
+    return 5
+
+
+def generate_image():
+    arr = np.random.randint(low=0, high=256, size=(300, 300, 3), dtype=np.uint8)
+    img = Image.fromarray(arr, mode="RGB")
+    return img
+
+
+@pytest.fixture
+def generate_imagefolder(tmp_path, labels, nimages_per_class):
+    data_dir = tmp_path / "data"
+    data_dir.mkdir()
+    for label in labels:
+        class_dir = data_dir / label
+        class_dir.mkdir()
+        for i in range(nimages_per_class):
+            img = generate_image()
+            img_name = f"image_{i}.png"
+            fn = class_dir / img_name
+            img.save(fn)
+    return data_dir
+
+
+@pytest.fixture
+def image_dataset(generate_imagefolder):
+    dataset = load_dataset("imagefolder", data_dir=generate_imagefolder, split="train")
+    return dataset

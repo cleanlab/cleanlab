@@ -20,39 +20,6 @@ IMAGELAB_ISSUE_TYPES = [
 
 class TestCleanvisionIntegration:
     @pytest.fixture
-    def labels(self):
-        return ["class_0", "class_1", "class_2"]
-
-    @pytest.fixture
-    def nimages_per_class(self):
-        return 5
-
-    def generate_image(self):
-        arr = np.random.randint(low=0, high=256, size=(300, 300, 3), dtype=np.uint8)
-        img = Image.fromarray(arr, mode="RGB")
-        return img
-
-    @pytest.fixture
-    def generate_imagefolder(self, tmp_path, labels, nimages_per_class):
-        data_dir = tmp_path / "data"
-        data_dir.mkdir()
-        for label in labels:
-            class_dir = data_dir / label
-            class_dir.mkdir()
-            for i in range(nimages_per_class):
-                img = self.generate_image()
-                img_name = f"image_{i}.png"
-                fn = class_dir / img_name
-                img.save(fn)
-        return data_dir
-
-    @pytest.fixture
-    def image_dataset(self, generate_imagefolder):
-        data_dir = generate_imagefolder
-        dataset = load_dataset("imagefolder", data_dir=data_dir, split="train")
-        return dataset
-
-    @pytest.fixture
     def features(self, image_dataset):
         return np.random.rand(len(image_dataset), 5)
 
