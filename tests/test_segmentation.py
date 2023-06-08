@@ -19,12 +19,13 @@ Scripts to test cleanlab.segmentation package
 """
 import numpy as np
 
-
+# import os
 import numpy as np
 import random
 
 np.random.seed(0)
 import pytest
+from cleanlab.internal.multilabel_scorer import softmin
 
 # import matplotlib.pyplot as plt
 
@@ -79,6 +80,7 @@ def generate_three_image_dataset(bad_index):
 
 labels, pred_probs, error = generate_three_image_dataset(random.randint(0, 2))
 labels, pred_probs = labels.astype(int), pred_probs.astype(float)
+num_images, num_classes, h, w = pred_probs.shape
 
 
 def test_find_label_issues():
@@ -136,5 +138,47 @@ def test_issues_from_scores():
         labels, pred_probs, method="softmin"
     )
     issues_from_score = issues_from_scores(image_scores_softmin, pixel_scores, threshold=1)
-    assert np.shape(issues_from_score) == pixel_scores
+    assert np.shape(issues_from_score) == np.shape(pixel_scores)
+    assert h * w * num_images == issues_from_score.sum()
+
+    issues_from_score = issues_from_scores(image_scores_softmin, pixel_scores, threshold=0)
+    assert 0 == issues_from_score.sum()
+
+    issues_from_score = issues_from_scores(image_scores_softmin, pixel_scores, threshold=0.5)
     assert np.argmax(error) == np.argmax(issues_from_score.sum((1, 2)))
+
+    sort_by_score = issues_from_scores(image_scores_softmin, threshold=0.5)
+    assert error[sort_by_score[0]] == 1
+
+
+def test__get_label_quality_per_image():
+    # Test when pixel_scores is a random list of 100 values, method is "softmin", and temperature is random
+    random_score_array = np.random.random((100,))
+    temp = random.random()
+    score = _get_label_quality_per_image(random_score_array, method="softmin", temperature=temp)
+
+    cleanlab_softmin = softmin(
+        np.expand_dims(random_score_array, axis=0), axis=1, temperature=temp
+    )[0]
+    assert cleanlab_softmin == score, "Expected cleanlab_softmin to be equal to score"
+
+    # Test when pixel_scores is an empty list, should raise an error
+    empty_score_array = np.array([])
+    with pytest.raises(Exception) as e:
+        _get_label_quality_per_image(empty_score_array, method="softmin", temperature=temp)
+
+    # Test when method is None
+    with pytest.raises(Exception):
+        _get_label_quality_per_image(random_score_array, method=None, temperature=temp)
+
+    # Test when method is not "softmin", should raise an exception
+    with pytest.raises(Exception):
+        _get_label_quality_per_image(random_score_array, method="invalid_method", temperature=temp)
+
+    #     Test when temperature is 0, should raise an error
+    with pytest.raises(Exception):
+        _get_label_quality_per_image(random_score_array, method="softmin", temperature=0)
+
+    #     Test when temperature is None, should raise an error
+    with pytest.raises(Exception):
+        score = _get_label_quality_per_image(random_score_array, method="softmin", temperature=None)
