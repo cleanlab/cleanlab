@@ -1,8 +1,10 @@
 import pytest
+import random
 import numpy as np
 import pandas as pd
 from sklearn.svm import SVR
 from sklearn.metrics import r2_score
+from sklearn.linear_model import LinearRegression
 from cleanlab.regression.rank import (
     get_label_quality_scores,
     get_residual_score_for_each_label,
@@ -10,20 +12,47 @@ from cleanlab.regression.rank import (
 )
 from cleanlab.regression.learn import CleanLearning
 
+# set seed for reproducability
+SEED = 1
+np.random.seed(SEED)
+random.seed(SEED)
 
-def make_data(num_examples=50, num_features=3, noise=0.2):
+
+def make_data(num_examples=200, num_features=3, noise=0.2, error_frac=0.1, error_noise=5):
     X = np.random.random(size=(num_examples, num_features))
     coefficients = np.random.uniform(-1, 1, size=num_features)
-    noise = np.random.normal(scale=noise, size=num_examples)
+    label_noise = np.random.normal(scale=noise, size=num_examples)
 
     true_y = np.dot(X, coefficients)
-    y = np.dot(X, coefficients) + noise
+    y = np.dot(X, coefficients) + label_noise
 
-    return X, true_y, y
+    # add extra noisy examples
+    num_errors = int(num_examples * error_frac)
+    extra_noise = np.random.normal(scale=error_noise, size=num_errors)
+    random_idx = np.random.choice(num_examples, num_errors)
+    y[random_idx] += extra_noise
+    error_idx = np.argsort(abs(y - true_y))[-num_errors:]  # get the noisiest examples idx
+
+    # create test set
+    X_test = np.random.random(size=(num_examples, num_features))
+    label_noise = np.random.normal(scale=noise, size=num_examples)
+    y_test = np.dot(X_test, coefficients) + label_noise
+
+    return {
+        "X": X,
+        "y": y,
+        "true_y": true_y,
+        "X_test": X_test,
+        "y_test": y_test,
+        "error_idx": error_idx,
+    }
 
 
 # To be used for most tests
-X, labels, predictions = make_data()
+data = make_data()
+X, labels, predictions = data["X"], data["y"], data["true_y"]
+error_idx = data["error_idx"]
+X_test, y_test = data["X_test"], data["y_test"]
 y = labels  # for ease
 
 # Used for characterization tests
@@ -130,12 +159,25 @@ def test_cleanlearning():
     # test fit and predict
     cl = CleanLearning()
     cl.fit(X, y)
-    predictions = cl.predict(X)
+    preds = cl.predict(X)
     cl_r2_score = cl.score(X, y)
-    manual_r2_score = r2_score(predictions, y)
-    assert len(predictions) == len(y)
+    manual_r2_score = r2_score(y, preds)
+    assert len(preds) == len(y)
     assert isinstance(cl_r2_score, float)
     assert cl_r2_score == manual_r2_score
+
+    # check if label issues were identified
+    label_issues = cl.get_label_issues()
+    identified_label_issues = label_issues[label_issues["is_label_issue"] == True].index
+    frac_errors_identified = np.mean([e in identified_label_issues for e in error_idx])
+    assert frac_errors_identified >= 0.9  # assert most errors were detected
+
+    # compare perf to base LinearRegression model
+    cl_score = cl.score(X_test, y_test)
+    lr = LinearRegression()
+    lr.fit(X, y)
+    lr_score = lr.score(X_test, y_test)
+    assert cl_score > lr_score
 
     # test passing in label issues in various forms
     # also test different regression model
@@ -164,14 +206,16 @@ def test_optional_inputs():
     cl.find_label_issues(X, y, coarse_search_range=[0.2])
     cl.find_label_issues(X, y, fine_search_size=0)
     cl.fit(
-        X, y, find_label_issues_kwargs={"coarse_search_range": [0.1, 0.2], "fine_search_size": 2}
+        X, y, find_label_issues_kwargs={"coarse_search_range": [0.2, 0.1], "fine_search_size": 2}
     )
 
 
 def test_low_example_count():
-    X_tiny, _, y_tiny = make_data(num_examples=3)
-    cl = CleanLearning()
+    data_tiny = make_data(num_examples=3)
+    X_tiny, y_tiny = data_tiny["X"], data_tiny["y"]
+
     try:
+        cl = CleanLearning()
         cl.find_label_issues(X_tiny, y_tiny)
     except ValueError as e:
         assert "There are too few examples" in str(e)
