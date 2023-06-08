@@ -1,10 +1,4 @@
-from cleanlab.datalab.adapter.imagelab import create_imagelab, ImagelabIssueFinderAdapter
-from datasets import load_dataset
-import os
-
-import pytest
-import numpy as np
-from PIL import Image
+from cleanlab.datalab.adapter.imagelab import ImagelabIssueFinderAdapter, create_imagelab
 
 
 class TestImagelabAdapater:

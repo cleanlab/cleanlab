@@ -1,9 +1,7 @@
-import pytest
-from datasets import load_dataset
 import numpy as np
-from PIL import Image
-from cleanlab import Datalab
+import pytest
 
+from cleanlab import Datalab
 
 LABEL_NAME = "label"
 IMAGE_NAME = "image"
