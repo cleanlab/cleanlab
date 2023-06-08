@@ -181,4 +181,3 @@ def test__get_label_quality_per_image():
 
     with pytest.raises(Exception):
         _get_label_quality_per_image(random_score_array, method="softmin", temperature=None)
-
