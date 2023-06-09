@@ -149,6 +149,7 @@ Please see our `contributing guidelines <https://github.com/cleanlab/cleanlab/bl
    Improving Consensus Labels for Multiannotator Data <tutorials/multiannotator>
    Multi-Label Classification <tutorials/multilabel_classification>
    Token Classification (text) <tutorials/token_classification>
+   Object Detection (detectron2) <tutorials/object_detection>
    Predicted Probabilities via Cross Validation <tutorials/pred_probs_cross_val>
    FAQ <tutorials/faq>
 
