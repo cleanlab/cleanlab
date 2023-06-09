@@ -167,8 +167,8 @@ Please see our `contributing guidelines <https://github.com/cleanlab/cleanlab/bl
    cleanlab/multiannotator
    cleanlab/multilabel_classification/index
    cleanlab/token_classification/index
-   cleanlab/object_detection/index
    cleanlab/segmentation/index
+   cleanlab/object_detection/index
    cleanlab/datalab/index
    cleanlab/benchmarking/index
    cleanlab/models/index

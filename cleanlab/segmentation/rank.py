@@ -15,7 +15,7 @@
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
 """
-Methods to rank and score images in a semantic segmentation dataset, based on how likely they are to contain label errors.
+Methods to rank and score images in a semantic segmentation dataset, based on how likely they are to contain mislabeled pixels.
 
 """
 import numpy as np

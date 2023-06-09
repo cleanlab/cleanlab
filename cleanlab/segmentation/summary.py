@@ -15,7 +15,7 @@
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
 """
-Methods to display images and their label issues in a semantic segmentation classification dataset, as well as summarize the types of issues identified.
+Methods to display images and their label issues in a semantic segmentation dataset, as well as summarize the overall types of issues identified.
 """
 
 from typing import Any, Dict, List, Optional

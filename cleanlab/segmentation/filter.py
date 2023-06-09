@@ -15,7 +15,7 @@
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
 """
-Methods to find label issues in semantic segmentation datasets, where each pixel in a image receives its own class label.
+Methods to find label issues in image semantic segmentation datasets, where each pixel in an image receives its own class label.
 
 """
 
@@ -49,17 +49,13 @@ def find_label_issues(
     ----------
     labels : np.ndarray
       A discrete array of shape ``(N,H,W,)`` of noisy labels for a classification dataset, i.e. some labels may be erroneous.
-      *Format requirements*: for a dataset with K classes, each pixel must be integer in 0, 1, ..., K-1.
+      *Format requirements*: for a dataset with K classes, each pixel must be labeled using an integer in 0, 1, ..., K-1.
 
-    Tip: If your labels are one hot encoded you can `np.argmax(labels_one_hot,axis=1)` assuming that `labels_one_hot` is of dimension (N,K,H,W)
-    before entering in the function
+    Tip: If your labels are one hot encoded you can do: ``labels = np.argmax(labels_one_hot,axis=1)`` assuming that `labels_one_hot` is of dimension ``(N,K,H,W)``, in order to get properly formatted `labels`
 
     pred_probs : np.ndarray
       An array of shape ``(N,K,H,W,)`` of model-predicted class probabilities,
-      ``P(label=k|x)``. Each pixel contains an array of K classes, where for
-      an example `x` the array at each pixel contains the model-predicted probabilities
-      that `x` belongs to each of the K classes. The columns must be ordered such that these probabilities
-      correspond to class 0, 1, ..., K-1.
+      ``P(label=k|x)`` for each pixel ``x``. The prediction for each pixel is an array corresponding to the estimated likelihood that this pixel belongs to each of the ``K`` classes. The 2nd dimension of `pred_probs` must be ordered such that these probabilities correspond to class 0, 1, ..., K-1.
 
     downsample : int, optional
       Factor to shrink labels and pred_probs by. Default ``16``
@@ -67,7 +63,7 @@ def find_label_issues(
       decrease in performance
 
     batch_size : int, optional
-      Size of mini-batches to use for estimating the label issues.
+      Size of image mini-batches used for computing the label issues in a streaming fashion (does not affect results, just the runtime and memory requirements). 
       To maximize efficiency, try to use the largest `batch_size` your memory allows.
 
     verbose : bool, optional
