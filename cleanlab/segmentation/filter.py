@@ -160,6 +160,10 @@ def find_label_issues(
     for num, ii, jj in zip(image_number, pixel_coor_i, pixel_coor_j):
         # only want to call it an error if pred_probs doesnt match the label at that pixel
         image[num, ii, jj] = True
+        if downsample == 1:
+            # check if pred_probs matches the label at that pixel
+            if np.argmax(pred_probs[num, :, ii, jj]) == labels[num, ii, jj]:
+                image[num, ii, jj] = False
 
     if downsample == 1:
         return image
