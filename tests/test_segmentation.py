@@ -26,6 +26,9 @@ import random
 
 np.random.seed(0)
 import pytest
+from unittest import mock
+import matplotlib.pyplot as plt
+
 from cleanlab.internal.multilabel_scorer import softmin
 
 
@@ -153,6 +156,7 @@ def test__check_input():
         _check_input(fewer_gt, smaller_pr)
 
 
+@pytest.mark.filterwarnings("ignore::UserWarning")  # Should be 1 warning
 def test_get_label_quality_scores():
     image_scores_softmin, pixel_scores = get_label_quality_scores(
         labels, pred_probs, method="softmin"
@@ -176,6 +180,7 @@ def test_get_label_quality_scores():
     image_scores_softmin, pixel_scores = get_label_quality_scores(
         labels, pred_probs, downsample=1, method="softmin"
     )
+
     assert len(image_scores_softmin) == labels.shape[0]
     assert pixel_scores.shape == labels.shape
 
@@ -280,3 +285,74 @@ def test__get_label_quality_per_image():
 
     with pytest.raises(Exception):
         _get_label_quality_per_image(random_score_array, method="softmin", temperature=None)
+
+
+def test_generate_color_map():
+    colors = _generate_colormap(0)
+    assert len(colors) == 0
+
+    colors = _generate_colormap(1)
+    assert len(colors) == 1
+    assert len(colors[0]) == 4
+
+    colors = _generate_colormap(-1)
+    assert len(colors) == 0
+
+    colors = _generate_colormap(5)
+    assert len(colors) == 5
+
+    # test unique
+    num_colors = 385  # max number of unique colors avalible
+    colors = _generate_colormap(num_colors)
+    unique_rows = np.unique(colors, axis=0)
+    assert unique_rows.shape[0] == num_colors
+
+
+@mock.patch("matplotlib.pyplot.figure")
+def test_display_issues_figure(mock_plt, monkeypatch):
+    monkeypatch.setattr(plt, "show", lambda: None)
+    issues = find_label_issues(labels, pred_probs, downsample=1, n_jobs=None, batch_size=1000)
+    display_issues(issues, pred_probs=pred_probs, labels=labels, top=2, class_names=["one", "two"])
+    assert mock_plt.called
+
+
+@mock.patch("matplotlib.pyplot.show")
+def test_display_issues_show(mock_plt):
+    issues = find_label_issues(labels, pred_probs, downsample=1, n_jobs=None, batch_size=1000)
+    display_issues(issues, top=1)
+    assert mock_plt.called
+
+
+def test_common_label_issues(capsys):
+    issues = find_label_issues(labels, pred_probs, downsample=1, n_jobs=None, batch_size=1000)
+
+    # test exclude
+    df = common_label_issues(issues, labels, pred_probs)
+    df_without_0 = common_label_issues(issues, labels, pred_probs, exclude=[0])
+    assert df.shape != df_without_0.shape
+
+    # test verbose
+    captured_words = capsys.readouterr()
+    df = common_label_issues(issues, labels, pred_probs, verbose=False)
+    captured_no_words = capsys.readouterr()
+    assert len(captured_no_words.out) == 0
+    assert len(captured_words.out) > 0
+
+    # test class names & top
+    df_class_names = common_label_issues(issues, labels, pred_probs, class_names=["one", "two"])
+    captured_top_all = capsys.readouterr()
+    df_top_1 = common_label_issues(issues, labels, pred_probs, top=1)
+    captured_top_1 = capsys.readouterr()
+    assert len(captured_top_1.out) < len(captured_top_all.out)
+    assert df_class_names["given_label"].to_list() != df["given_label"].to_list()
+
+
+def test_filter_by_class():
+    issues = find_label_issues(labels, pred_probs, downsample=1, n_jobs=None, batch_size=1000)
+    class_0_issues = filter_by_class(0, issues, labels=labels, pred_probs=pred_probs)
+    class_1_issues = filter_by_class(1, issues, labels=labels, pred_probs=pred_probs)
+
+    class_300_issues = filter_by_class(300, issues, labels=labels, pred_probs=pred_probs)
+
+    assert (class_0_issues == class_1_issues).all()  # mirror issues
+    assert np.sum(class_300_issues) == 0

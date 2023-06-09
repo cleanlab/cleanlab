@@ -27,6 +27,7 @@ from tqdm import tqdm
 
 def display_issues(
     issues: np.ndarray,
+    *,
     labels: Optional[np.ndarray] = None,
     pred_probs: Optional[np.ndarray] = None,
     class_names: Optional[List[str]] = None,
