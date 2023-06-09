@@ -106,9 +106,16 @@ def get_label_quality_scores(
         # Calculate pixel_scores
         masked_pred_probs = np.where(mask, pred_probs, 0)
         pixel_scores = masked_pred_probs.sum(axis=1)
-        scores = find_label_issues(labels,pred_probs,downsample=downsample_num_pixel_issues,n_jobs=n_jobs,verbose=verbose,batch_size=batch_size,)
-        img_scores = 1-np.mean(scores,axis=(1,2))
-        return (img_scores,pixel_scores)
+        scores = find_label_issues(
+            labels,
+            pred_probs,
+            downsample=downsample_num_pixel_issues,
+            n_jobs=n_jobs,
+            verbose=verbose,
+            batch_size=batch_size,
+        )
+        img_scores = 1 - np.mean(scores, axis=(1, 2))
+        return (img_scores, pixel_scores)
 
     if downsample_num_pixel_issues != 16:
         import warnings

@@ -274,7 +274,7 @@ def filter_by_class(
     Parameters
     ----------
     class_index:
-      A specific class you are interested in. 
+      A specific class you are interested in.
 
     issues:
       Boolean **mask** for the entire dataset
@@ -298,7 +298,7 @@ def filter_by_class(
     issues_subset:
       Boolean **mask** for the subset dataset
       where ``True`` represents a pixel label issue and ``False`` represents an example that is
-      accurately labeled for the labeled class. 
+      accurately labeled for the labeled class.
 
       Returned mask shows **all** instances that involve the particular class of interest.
 

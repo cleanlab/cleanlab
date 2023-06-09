@@ -62,7 +62,7 @@ def find_label_issues(
       Must be a factor divisible by both the labels and the pred_probs. Larger values of `downsample` produce faster runtimes but potentially less accurate results due to over-compression. Set to 1 to avoid any downsampling.
 
     batch_size : int, optional
-      Size of image mini-batches used for computing the label issues in a streaming fashion (does not affect results, just the runtime and memory requirements). 
+      Size of image mini-batches used for computing the label issues in a streaming fashion (does not affect results, just the runtime and memory requirements).
       To maximize efficiency, try to use the largest `batch_size` your memory allows.
 
     verbose : bool, optional
