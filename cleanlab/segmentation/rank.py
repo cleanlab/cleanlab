@@ -62,12 +62,12 @@ def get_label_quality_scores(
 
     batch_size : int,
       For num_pixel_issues:
-      Size of mini-batches to use for estimating the label issues.
+      Size of mini-batches to use for estimating the label issues for 'num_pixel_issues' only, not 'softmin'
       To maximize efficiency, try to use the largest `batch_size` your memory allows.
 
     n_jobs: int,
       For num_pixel_issues:
-      Number of processes for multiprocessing (default value = 1). Only used on Linux.
+      Number of processes for multiprocessing (default value = 1). Only used on Linux. For 'num_pixel_issues' only, not 'softmin'
       If `n_jobs=None`, will use either the number of: physical cores if psutil is installed, or logical cores otherwise.
 
     verbose : bool,
@@ -76,7 +76,7 @@ def get_label_quality_scores(
 
     **kwargs:
       downsample : int,
-      Factor to shrink labels and pred_probs by for 'num_pixel_issues' only . Default ``16``
+      Factor to shrink labels and pred_probs by for 'num_pixel_issues' only, not 'softmin' . Default ``16``
       Must be a factor divisible by both the labels and the pred_probs. Note that larger factors result in a linear
       decrease in performance
 

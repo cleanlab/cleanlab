@@ -150,7 +150,7 @@ def display_issues(
         if labels is not None and len(exclude) != 0:
             mask = ~np.isin(labels[i], exclude)
         ax.imshow(issues[i] & mask, cmap=error_cmap, vmin=0, vmax=1)
-        ax.set_title(f"Image Index ({i}) Suggested Errors (Red)")
+        ax.set_title(f"Image {i}: Suggested Errors (in Red)")
         plt.show()
 
         plot_index = 0
