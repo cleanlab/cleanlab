@@ -48,7 +48,7 @@ def find_label_issues(
     Parameters
     ----------
     labels : np.ndarray
-      A discrete array of shape ``(N,H,W,)`` of noisy labels for a classification dataset, i.e. some labels may be erroneous.
+      A discrete array of shape ``(N,H,W,)`` of noisy labels for a semantic segmentation dataset, i.e. some labels may be erroneous.
       *Format requirements*: for a dataset with K classes, each pixel must be labeled using an integer in 0, 1, ..., K-1.
 
     Tip: If your labels are one hot encoded you can do: ``labels = np.argmax(labels_one_hot,axis=1)`` assuming that `labels_one_hot` is of dimension ``(N,K,H,W)``, in order to get properly formatted `labels`
@@ -59,8 +59,7 @@ def find_label_issues(
 
     downsample : int, optional
       Factor to shrink labels and pred_probs by. Default ``16``
-      Must be a factor divisible by both the labels and the pred_probs. Note that larger factors result in a linear
-      decrease in performance
+      Must be a factor divisible by both the labels and the pred_probs. Larger values of `downsample` produce faster runtimes but potentially less accurate results due to over-compression. Set to 1 to avoid any downsampling.
 
     batch_size : int, optional
       Size of image mini-batches used for computing the label issues in a streaming fashion (does not affect results, just the runtime and memory requirements). 
@@ -70,10 +69,6 @@ def find_label_issues(
       Set to ``False`` to suppress all print statements.
 
     **kwargs:
-      scores_only: optional
-        Set to True to return a score for each image. Meant for internal call in
-        ``cleanlab.semantic_segmentation.rank.get_label_quality_scores``
-
       n_jobs: int, optional
         Number of processes for multiprocessing (default value = 1). Only used on Linux.
         If `n_jobs=None`, will use either the number of: physical cores if psutil is installed, or logical cores otherwise.
@@ -87,7 +82,6 @@ def find_label_issues(
 
 
     """
-    scores_only = kwargs.get("scores_only", False)
     n_jobs = kwargs.get("n_jobs", 1)
 
     def downsample_arrays(
@@ -146,9 +140,6 @@ def find_label_issues(
     relative_index = ranked_label_issues % (h * w)
     pixel_coor_i, pixel_coor_j = np.unravel_index(relative_index, (h, w))
     image_number = ranked_label_issues // (h * w)
-
-    if scores_only:
-        return 1 - np.bincount(image_number) / (h * w)
 
     # Upsample carefully maintaining indicies
     image = np.full((num_image, h, w), False)

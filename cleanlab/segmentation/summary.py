@@ -269,12 +269,12 @@ def filter_by_class(
     class_index: int, issues: np.ndarray, labels: np.ndarray, pred_probs: np.ndarray
 ) -> np.ndarray:
     """
-    Return subset of label issues involving a particular class.
+    Return label issues involving particular class. Note that this includes errors where the given label is the class of interest, and the predicted label is any other class.
 
     Parameters
     ----------
     class_index:
-      A specific class you are interested in
+      A specific class you are interested in. 
 
     issues:
       Boolean **mask** for the entire dataset
@@ -298,7 +298,9 @@ def filter_by_class(
     issues_subset:
       Boolean **mask** for the subset dataset
       where ``True`` represents a pixel label issue and ``False`` represents an example that is
-      accurately labeled for the labeled class.
+      accurately labeled for the labeled class. 
+
+      Returned mask shows **all** instances that involve the particular class of interest.
 
 
     """

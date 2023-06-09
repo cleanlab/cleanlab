@@ -77,8 +77,7 @@ def get_label_quality_scores(
     **kwargs:
       downsample : int,
       Factor to shrink labels and pred_probs by for 'num_pixel_issues' only, not 'softmin' . Default ``16``
-      Must be a factor divisible by both the labels and the pred_probs. Note that larger factors result in a linear
-      decrease in performance
+      Must be a factor divisible by both the labels and the pred_probs. Larger values of `downsample` produce faster runtimes but potentially less accurate results due to over-compression. Set to 1 to avoid any downsampling.
 
       temperature : float,
       Temperature for softmin. Default ``0.1``
@@ -107,19 +106,9 @@ def get_label_quality_scores(
         # Calculate pixel_scores
         masked_pred_probs = np.where(mask, pred_probs, 0)
         pixel_scores = masked_pred_probs.sum(axis=1)
-
-        return (
-            find_label_issues(
-                labels,
-                pred_probs,
-                downsample=downsample_num_pixel_issues,
-                n_jobs=n_jobs,
-                scores_only=True,
-                verbose=verbose,
-                batch_size=batch_size,
-            ),
-            pixel_scores,
-        )
+        scores = find_label_issues(labels,pred_probs,downsample=downsample_num_pixel_issues,n_jobs=n_jobs,verbose=verbose,batch_size=batch_size,)
+        img_scores = 1-np.mean(scores,axis=(1,2))
+        return (img_scores,pixel_scores)
 
     if downsample_num_pixel_issues != 16:
         import warnings
