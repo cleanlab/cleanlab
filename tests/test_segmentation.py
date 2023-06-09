@@ -308,6 +308,33 @@ def test_generate_color_map():
     assert unique_rows.shape[0] == num_colors
 
 
+def test_display_issues(monkeypatch):
+    monkeypatch.setattr(plt, "show", lambda: None)
+    issues = find_label_issues(labels, pred_probs, downsample=1, n_jobs=None, batch_size=1000)
+    display_issues(issues, top=1)
+
+    display_issues(issues, pred_probs=pred_probs, labels=labels, top=2, class_names=["one", "two"])
+
+    display_issues(issues, pred_probs=pred_probs, labels=labels, top=2)
+    display_issues(issues, labels=labels, top=2)
+    display_issues(issues, pred_probs=pred_probs, top=2)
+
+    # too many issues for top
+    display_issues(issues, pred_probs=pred_probs, labels=labels, top=len(issues) + 5)
+
+    class_issues = filter_by_class(0, issues, labels=labels, pred_probs=pred_probs)
+    display_issues(class_issues, pred_probs=pred_probs, labels=labels, top=2)
+
+    image_scores, pixel_scores = image_scores_softmin, pixel_scores = get_label_quality_scores(
+        labels, pred_probs, method="softmin"
+    )
+    issues_from_score = issues_from_scores(image_scores, pixel_scores, threshold=0.5)
+    display_issues(issues_from_score, pred_probs=pred_probs, labels=labels, top=2)
+
+    with pytest.raises(ValueError) as e:
+        display_issues(issues_from_score, pred_probs=pred_probs, labels=None, top=2, exclude=[0])
+
+
 @mock.patch("matplotlib.pyplot.figure")
 def test_display_issues_figure(mock_plt, monkeypatch):
     monkeypatch.setattr(plt, "show", lambda: None)
