@@ -132,6 +132,10 @@ class CleanLearning(BaseEstimator):
         Number of bootstrap resampling rounds used to estimate the model's epistemic uncertainty.
         Default is 5. Higher values are expected to produce better results but require longer runtimes.
 
+    include_aleatoric_uncertainty :
+        Specifies if the aleatoric uncertainty should be estimated during label error detection.
+        ``True`` by default, which is expected to produce better results but require longer runtimes.
+
     verbose :
         Controls how much output is printed. Set to ``False`` to suppress print statements. Default `False`.
 
@@ -146,6 +150,7 @@ class CleanLearning(BaseEstimator):
         *,
         cv_n_folds: int = 5,
         n_boot: int = 5,
+        include_aleatoric_uncertainty: bool = True,
         verbose: bool = False,
         seed: Optional[bool] = None,
     ):
@@ -162,15 +167,16 @@ class CleanLearning(BaseEstimator):
         if seed is not None:
             np.random.seed(seed=seed)
 
-        if n_boot < 1:
-            raise ValueError("n_boot must be at least 1")
-        if cv_n_folds < 1:
-            raise ValueError("cv_n_folds must be at least 1")
+        if n_boot < 0:
+            raise ValueError("n_boot cannot be a negative value")
+        if cv_n_folds < 2:
+            raise ValueError("cv_n_folds must be at least 2")
 
         self.model: BaseEstimator = model
         self.seed: Optional[int] = seed
         self.cv_n_folds: int = cv_n_folds
         self.n_boot: int = n_boot
+        self.include_aleatoric_uncertainty: bool = include_aleatoric_uncertainty
         self.verbose: bool = verbose
         self.label_issues_df: Optional[pd.DataFrame] = None
         self.label_issues_mask: Optional[np.ndarray] = None
@@ -466,8 +472,11 @@ class CleanLearning(BaseEstimator):
         residual = predictions - y
 
         if uncertainty is None:
-            epistemic_uncertainty = self.get_epistemic_uncertainty(X, y)
-            aleatoric_uncertainty = self.get_aleatoric_uncertainty(X, residual)
+            epistemic_uncertainty = self.get_epistemic_uncertainty(X, y, predictions=predictions)
+            if self.include_aleatoric_uncertainty:
+                aleatoric_uncertainty = self.get_aleatoric_uncertainty(X, residual)
+            else:
+                aleatoric_uncertainty = 0
             uncertainty = epistemic_uncertainty + aleatoric_uncertainty
         else:
             if isinstance(uncertainty, np.ndarray) and len(y) != len(uncertainty):
@@ -533,6 +542,7 @@ class CleanLearning(BaseEstimator):
         self,
         X: np.ndarray,
         y: np.ndarray,
+        predictions: Optional[np.ndarray] = None,
     ) -> np.ndarray:
         """
         Compute the epistemic uncertainty of the regression model. This uncertainty is estimated using the bootstrapped
@@ -546,17 +556,31 @@ class CleanLearning(BaseEstimator):
         y :
             An array of shape ``(N,)`` of target values (dependant variables), where some values may be erroneous.
 
+        predictions :
+            Model predicted values of y, will be used as an extra bootstrap iteration to calculate the variance.
+
         Returns
         _______
         epistemic_uncertainty : np.ndarray
             The estimated epistemic uncertainty for each example.
         """
         X, y = assert_valid_regression_inputs(X, y)
-        bootstrap_predictions = np.zeros(shape=(len(y), self.n_boot))
-        for i in range(self.n_boot):
-            bootstrap_predictions[:, i] = self._get_cv_predictions(X, y, cv_n_folds=2)
 
-        return np.sqrt(np.var(bootstrap_predictions, axis=1))
+        if self.n_boot == 0:  # does not estimate epistemic uncertainty
+            return np.zeros(len(y))
+        else:
+            bootstrap_predictions = np.zeros(shape=(len(y), self.n_boot))
+            for i in range(self.n_boot):
+                bootstrap_predictions[:, i] = self._get_cv_predictions(X, y, cv_n_folds=2)
+
+            # add a set of predictions from model that was already trained
+            if predictions is not None:
+                _, predictions = assert_valid_regression_inputs(X, predictions)
+                bootstrap_predictions = np.hstack(
+                    [bootstrap_predictions, predictions.reshape(-1, 1)]
+                )
+
+            return np.sqrt(np.var(bootstrap_predictions, axis=1))
 
     def get_aleatoric_uncertainty(
         self,

@@ -201,6 +201,10 @@ def test_optional_inputs():
     cl.find_label_issues(X, y, uncertainty=5)  # constant uncertainty
     cl.find_label_issues(X, y, uncertainty=np.random.random(size=len(y)))  # per-example uncertainty
 
+    # test with not calculating uncertainty
+    cl = CleanLearning(n_boot=0, include_aleatoric_uncertainty=False)
+    cl.find_label_issues(X, y)
+
     # test with odd grid search sizes
     cl = CleanLearning()
     cl.find_label_issues(X, y, coarse_search_range=[0.2])
