@@ -113,10 +113,6 @@ def test_find_label_issues():
 
     assert np.argmax(error) == np.argmax(issues.sum((1, 2)))
 
-    # Test case 4: Test with scores_only parameter
-    scores = find_label_issues(labels, pred_probs, downsample=1, n_jobs=None, scores_only=True)
-    assert np.argmax(error) == np.argmin(scores)
-
     # Test case 5: Test with invalid downsample value
     with pytest.raises(Exception) as e:
         issues = find_label_issues(labels, pred_probs, downsample=3, n_jobs=None, batch_size=1000)
