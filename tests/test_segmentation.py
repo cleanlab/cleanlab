@@ -87,7 +87,7 @@ num_images, num_classes, h, w = pred_probs.shape
 
 
 def test_find_label_issues():
-    issues = find_label_issues(labels, pred_probs, downsample=1, n_jobs=None, batch_size=1000)
+    issues = find_label_issues(labels, pred_probs, n_jobs=None, batch_size=1000)
     assert np.argmax(error) == np.argmax(issues.sum((1, 2)))
 
     issues = find_label_issues(labels, pred_probs, downsample=2, batch_size=1739)
@@ -134,6 +134,22 @@ def test_find_label_issues():
         )
 
 
+def test_find_label_issues_sizes():
+    # checks inputs of different sizes
+    labels, pred_probs = np.random.random((2, 9, 7)), np.random.random((2, 2, 9, 7))
+    issues = find_label_issues(labels, pred_probs)
+    assert np.argmax(error) == np.argmax(issues.sum((1, 2)))
+
+    labels, pred_probs = np.random.random((2, 13, 47)), np.random.random((2, 2, 13, 47))
+    issues = find_label_issues(labels, pred_probs)
+    assert np.argmax(error) == np.argmax(issues.sum((1, 2)))
+
+    h, w = np.random.randint(1, 100, 2)
+    labels, pred_probs = np.random.random((2, h, w)), np.random.random((2, 2, h, w))
+    issues = find_label_issues(labels, pred_probs)
+    assert np.argmax(error) == np.argmax(issues.sum((1, 2)))
+
+
 def test__check_input():
     bad_gt = np.random.random((5, 10, 20))
     with pytest.raises(Exception) as e:
@@ -162,8 +178,6 @@ def test_get_label_quality_scores():
     with pytest.raises(Exception) as e:
         get_label_quality_scores(labels, pred_probs, method="num_pixel_issues", downsample=4)
 
-    with pytest.raises(Exception) as e:
-        get_label_quality_scores(labels, pred_probs, method="num_pixel_issues")
     image_scores_npi, pixel_scores = get_label_quality_scores(
         labels, pred_probs, method="num_pixel_issues", downsample=1
     )
@@ -185,6 +199,29 @@ def test_get_label_quality_scores():
         get_label_quality_scores(
             labels, pred_probs, method="num_pixel_issues", downsample=1, batch_size=0
         )
+
+
+# different size inpits
+def test__get_label_quality_scores_sizes():
+    # checks inputs of different sizes
+    labels, pred_probs = np.random.random((2, 9, 7)), np.random.random((2, 2, 9, 7))
+    image_scores_softmin, pixel_scores = get_label_quality_scores(
+        labels, pred_probs, method="softmin"
+    )
+    assert np.argmax(error) == np.argmin(image_scores_softmin)
+
+    labels, pred_probs = np.random.random((2, 13, 47)), np.random.random((2, 2, 13, 47))
+    image_scores_softmin, pixel_scores = get_label_quality_scores(
+        labels, pred_probs, method="softmin"
+    )
+    assert np.argmax(error) == np.argmin(image_scores_softmin)
+
+    h, w = np.random.randint(1, 100, 2)
+    labels, pred_probs = np.random.random((2, h, w)), np.random.random((2, 2, h, w))
+    image_scores_softmin, pixel_scores = get_label_quality_scores(
+        labels, pred_probs, method="softmin"
+    )
+    assert np.argmax(error) == np.argmin(image_scores_softmin)
 
 
 # Testing issues from scores
