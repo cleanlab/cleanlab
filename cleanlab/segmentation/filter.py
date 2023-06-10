@@ -64,7 +64,7 @@ def find_label_issues(
     n_jobs: int, optional
         Number of processes for multiprocessing (default value = 1). Only used on Linux.
         If `n_jobs=None`, will use either the number of: physical cores if psutil is installed, or logical cores otherwise.
-    
+
     verbose : bool, optional
       Set to ``False`` to suppress all print statements.
 
@@ -79,10 +79,11 @@ def find_label_issues(
       Returns a boolean **mask** for the entire dataset of length `(N,H,W)`
       where ``True`` represents a pixel label issue and ``False`` represents an example that is correctly labeled.
 
-    
+
 
     """
     downsample = kwargs.get("downsample", 1)
+
     def downsample_arrays(
         labels: np.ndarray, pred_probs: np.ndarray, factor: int = 1
     ) -> Tuple[np.ndarray, np.ndarray]:
