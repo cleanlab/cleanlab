@@ -136,16 +136,16 @@ def test_find_label_issues():
 
 def test_find_label_issues_sizes():
     # checks inputs of different sizes
-    labels, pred_probs = np.random.random((2, 9, 7)), np.random.random((2, 2, 9, 7))
+    labels, pred_probs = np.random.randint(0, 2, (2, 9, 7)), np.random.random((2, 2, 9, 7))
     issues = find_label_issues(labels, pred_probs)
     assert np.argmax(error) == np.argmax(issues.sum((1, 2)))
 
-    labels, pred_probs = np.random.random((2, 13, 47)), np.random.random((2, 2, 13, 47))
+    labels, pred_probs = np.random.randint(0, 2, (2, 13, 47)), np.random.random((2, 2, 13, 47))
     issues = find_label_issues(labels, pred_probs)
     assert np.argmax(error) == np.argmax(issues.sum((1, 2)))
 
     h, w = np.random.randint(1, 100, 2)
-    labels, pred_probs = np.random.random((2, h, w)), np.random.random((2, 2, h, w))
+    labels, pred_probs = np.random.randint(0, 2, (2, h, w)), np.random.random((2, 2, h, w))
     issues = find_label_issues(labels, pred_probs)
     assert np.argmax(error) == np.argmax(issues.sum((1, 2)))
 
@@ -204,20 +204,20 @@ def test_get_label_quality_scores():
 # different size inpits
 def test__get_label_quality_scores_sizes():
     # checks inputs of different sizes
-    labels, pred_probs = np.random.random((2, 9, 7)), np.random.random((2, 2, 9, 7))
+    labels, pred_probs = np.random.randint(0, 2, (2, 9, 7)), np.random.random((2, 2, 9, 7))
     image_scores_softmin, pixel_scores = get_label_quality_scores(
         labels, pred_probs, method="softmin"
     )
     assert np.argmax(error) == np.argmin(image_scores_softmin)
 
-    labels, pred_probs = np.random.random((2, 13, 47)), np.random.random((2, 2, 13, 47))
+    labels, pred_probs = np.random.randint(0, 2, (2, 13, 47)), np.random.random((2, 2, 13, 47))
     image_scores_softmin, pixel_scores = get_label_quality_scores(
         labels, pred_probs, method="softmin"
     )
     assert np.argmax(error) == np.argmin(image_scores_softmin)
 
     h, w = np.random.randint(1, 100, 2)
-    labels, pred_probs = np.random.random((2, h, w)), np.random.random((2, 2, h, w))
+    labels, pred_probs = np.random.randint(0, 2, (2, h, w)), np.random.random((2, 2, h, w))
     image_scores_softmin, pixel_scores = get_label_quality_scores(
         labels, pred_probs, method="softmin"
     )
