@@ -95,7 +95,7 @@ def find_label_issues(
         # Check if possible to downsample
         if h % downsample != 0 or w % downsample != 0:
             raise ValueError(
-                f"Height {h} and width {w} not divisible by downsample value of {downsample}"
+                f"Height {h} and width {w} not divisible by downsample value of {downsample}. Set kwarg downsample to 1 to avoid downsampling."
             )
         small_labels = np.round(
             labels.reshape((num_image, h // factor, factor, w // factor, factor)).mean(4).mean(2)
