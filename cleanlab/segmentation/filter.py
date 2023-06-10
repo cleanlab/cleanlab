@@ -28,8 +28,8 @@ def find_label_issues(
     labels: np.ndarray,
     pred_probs: np.ndarray,
     *,
-    downsample: int = 16,
     batch_size: int = 10000,
+    n_jobs: int = 1,
     verbose: bool = True,
     **kwargs,
 ) -> np.ndarray:
@@ -57,22 +57,21 @@ def find_label_issues(
       An array of shape ``(N,K,H,W,)`` of model-predicted class probabilities,
       ``P(label=k|x)`` for each pixel ``x``. The prediction for each pixel is an array corresponding to the estimated likelihood that this pixel belongs to each of the ``K`` classes. The 2nd dimension of `pred_probs` must be ordered such that these probabilities correspond to class 0, 1, ..., K-1.
 
-    downsample : int, optional
-      Factor to shrink labels and pred_probs by. Default ``16``
-      Must be a factor divisible by both the labels and the pred_probs. Larger values of `downsample` produce faster runtimes but potentially less accurate results due to over-compression. Set to 1 to avoid any downsampling.
-
     batch_size : int, optional
       Size of image mini-batches used for computing the label issues in a streaming fashion (does not affect results, just the runtime and memory requirements).
       To maximize efficiency, try to use the largest `batch_size` your memory allows.
 
+    n_jobs: int, optional
+        Number of processes for multiprocessing (default value = 1). Only used on Linux.
+        If `n_jobs=None`, will use either the number of: physical cores if psutil is installed, or logical cores otherwise.
+    
     verbose : bool, optional
       Set to ``False`` to suppress all print statements.
 
     **kwargs:
-      n_jobs: int, optional
-        Number of processes for multiprocessing (default value = 1). Only used on Linux.
-        If `n_jobs=None`, will use either the number of: physical cores if psutil is installed, or logical cores otherwise.
-
+    downsample : int, optional
+      Factor to shrink labels and pred_probs by. Default ``1``
+      Must be a factor divisible by both the labels and the pred_probs. Larger values of `downsample` produce faster runtimes but potentially less accurate results due to over-compression. Set to 1 to avoid any downsampling.
 
     Returns
     -------
@@ -80,10 +79,10 @@ def find_label_issues(
       Returns a boolean **mask** for the entire dataset of length `(N,H,W)`
       where ``True`` represents a pixel label issue and ``False`` represents an example that is correctly labeled.
 
+    
 
     """
-    n_jobs = kwargs.get("n_jobs", 1)
-
+    downsample = kwargs.get("downsample", 1)
     def downsample_arrays(
         labels: np.ndarray, pred_probs: np.ndarray, factor: int = 1
     ) -> Tuple[np.ndarray, np.ndarray]:

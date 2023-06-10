@@ -97,7 +97,7 @@ def get_label_quality_scores(
     _check_input(labels, pred_probs)
 
     softmin_temperature = kwargs.get("temperature", 0.1)
-    downsample_num_pixel_issues = kwargs.get("downsample", 16)
+    downsample_num_pixel_issues = kwargs.get("downsample", 1)
 
     if method == "num_pixel_issues":
         _, K, _, _ = pred_probs.shape
@@ -117,7 +117,7 @@ def get_label_quality_scores(
         img_scores = 1 - np.mean(scores, axis=(1, 2))
         return (img_scores, pixel_scores)
 
-    if downsample_num_pixel_issues != 16:
+    if downsample_num_pixel_issues != 1:
         import warnings
 
         warnings.warn(
