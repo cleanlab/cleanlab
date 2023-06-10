@@ -331,6 +331,8 @@ def test_display_issues(monkeypatch):
     issues_from_score = issues_from_scores(image_scores, pixel_scores, threshold=0.5)
     display_issues(issues_from_score, pred_probs=pred_probs, labels=labels, top=2)
 
+    display_issues(issues_from_score, pred_probs=pred_probs, labels=labels, top=2, exclude=[0])
+
     with pytest.raises(ValueError) as e:
         display_issues(issues_from_score, pred_probs=pred_probs, labels=None, top=2, exclude=[0])
 
