@@ -21,15 +21,17 @@ Methods to find label issues in image semantic segmentation datasets, where each
 
 from cleanlab.experimental.label_issues_batched import find_label_issues_batched
 import numpy as np
-from typing import Tuple
+from typing import Tuple, Optional
+
+from cleanlab.internal.segmentation_utils import _get_valid_optional_params, _check_input
 
 
 def find_label_issues(
     labels: np.ndarray,
     pred_probs: np.ndarray,
     *,
-    batch_size: int = 10000,
-    n_jobs: int = 1,
+    batch_size: Optional[int] = None,
+    n_jobs: Optional[int] = None,
     verbose: bool = True,
     **kwargs,
 ) -> np.ndarray:
@@ -46,37 +48,38 @@ def find_label_issues(
 
     Parameters
     ----------
-    labels : np.ndarray
+    labels:
       A discrete array of shape ``(N,H,W,)`` of noisy labels for a semantic segmentation dataset, i.e. some labels may be erroneous.
       *Format requirements*: for a dataset with K classes, each pixel must be labeled using an integer in 0, 1, ..., K-1.
       Tip: If your labels are one hot encoded you can do: ``labels = np.argmax(labels_one_hot,axis=1)`` assuming that `labels_one_hot` is of dimension ``(N,K,H,W)``, in order to get properly formatted `labels`
 
-    pred_probs : np.ndarray
+    pred_probs:
       An array of shape ``(N,K,H,W,)`` of model-predicted class probabilities,
       ``P(label=k|x)`` for each pixel ``x``. The prediction for each pixel is an array corresponding to the estimated likelihood that this pixel belongs to each of the ``K`` classes. The 2nd dimension of `pred_probs` must be ordered such that these probabilities correspond to class 0, 1, ..., K-1.
 
-    batch_size : int, optional
+    batch_size:
       Optional size of image mini-batches used for computing the label issues in a streaming fashion (does not affect results, just the runtime and memory requirements).
       To maximize efficiency, try to use the largest `batch_size` your memory allows. If not provided, a good default is used.
 
-    n_jobs: int, optional
+    n_jobs:
       Optional number of processes for multiprocessing (default value = 1). Only used on Linux.
       If `n_jobs=None`, will use either the number of: physical cores if psutil is installed, or logical cores otherwise.
 
-    verbose : bool, optional
+    verbose:
       Set to ``False`` to suppress all print statements.
 
     **kwargs:
-      * downsample : int, optional
+      * downsample: int,
         Optional factor to shrink labels and pred_probs by. Default ``1``
         Must be a factor divisible by both the labels and the pred_probs. Larger values of `downsample` produce faster runtimes but potentially less accurate results due to over-compression. Set to 1 to avoid any downsampling.
 
     Returns
     -------
-    label_issues : np.ndarray
+    label_issues: np.ndarray
       Returns a boolean **mask** for the entire dataset of length `(N,H,W)`
       where ``True`` represents a pixel label issue and ``False`` represents an example that is correctly labeled.
     """
+    batch_size, n_jobs = _get_valid_optional_params(batch_size, n_jobs)
     downsample = kwargs.get("downsample", 1)
 
     def downsample_arrays(
@@ -165,28 +168,3 @@ def find_label_issues(
                         image[num, row, col] = False
 
         return image
-
-
-def _check_input(labels: np.ndarray, pred_probs: np.ndarray) -> None:
-    """
-    Checks that the input labels and predicted probabilities are valid.
-
-    Parameters
-    ----------
-    labels:
-        Array of shape ``(N, H, W)`` of integer labels, where `N` is the number of images in the dataset and `H` and `W` are the height and width of the images.
-
-    pred_probs:
-        Array of shape ``(N, K, H, W)`` of predicted probabilities, where `N` is the number of images in the dataset, `K` is the number of classes, and `H` and `W` are the height and width of the images.
-    """
-    if len(labels.shape) != 3:
-        raise ValueError("labels must have a shape of (N, H, W)")
-
-    if len(pred_probs.shape) != 4:
-        raise ValueError("pred_probs must have a shape of (N, K, H, W)")
-
-    num_images, height, width = labels.shape
-    num_images_pred, num_classes, height_pred, width_pred = pred_probs.shape
-
-    if num_images != num_images_pred or height != height_pred or width != width_pred:
-        raise ValueError("labels and pred_probs must have matching dimensions for N, H, and W")

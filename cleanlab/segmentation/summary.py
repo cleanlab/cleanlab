@@ -24,6 +24,8 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
+from cleanlab.internal.segmentation_utils import _get_summary_optional_params
+
 
 def display_issues(
     issues: np.ndarray,
@@ -31,8 +33,8 @@ def display_issues(
     labels: Optional[np.ndarray] = None,
     pred_probs: Optional[np.ndarray] = None,
     class_names: Optional[List[str]] = None,
-    exclude: List[int] = [],
-    top: int = 20,
+    exclude: Optional[List[int]] = None,
+    top: Optional[int] = None,
 ) -> None:
     """
     Display semantic segmentation label issues, showing images with problematic pixels highlighted.
@@ -49,13 +51,13 @@ def display_issues(
       Same format as output by :py:func:`segmentation.filter.find_label_issues <cleanlab.segmentation.filter.find_label_issues>`
       or :py:func:`segmentation.rank.issues_from_scores <cleanlab.segmentation.rank.issues_from_scores>`.
 
-    labels : np.ndarray
+    labels:
       Optional discrete array of noisy labels for a segmantic segmentation dataset, in the shape``(N,H,W,)``.
       where each pixel must be integer in 0, 1, ..., K-1.
       If `labels` is provided, this function also displays given label of the pixel identified with issue.
       Refer to documentation for this argument in :py:func:find_label_issues <cleanlab.segemntation.filter.find_label_issues> for more information.
 
-    pred_probs : np.ndarray
+    pred_probs:
       Optional array of shape ``(N,K,H,W,)`` of model-predicted class probabilities.
       If `pred_probs` is provided, this function also displays predicted label of the pixel identified with issue.
       Refer to documentation for this argument in :py:func:find_label_issues <cleanlab.segemntation.filter.find_label_issues> for more information.
@@ -63,7 +65,7 @@ def display_issues(
       Tip: If your labels are one hot encoded you can `np.argmax(labels_one_hot,axis=1)` assuming that `labels_one_hot` is of dimension (N,K,H,W)
       before entering in the function
 
-    class_names: List[str], default=None
+    class_names:
       Optional list of strings, where each string represents the name of a class in the semantic segmentation problem.
       The order of the names should correspond to the numerical order of the classes. The list length should be
       equal to the number of unique classes present in the labels.
@@ -74,13 +76,14 @@ def display_issues(
         If there are three classes in your labels, represented by 0, 1, 2, then class_names might look like this:
         class_names = ['background', 'person', 'dog']
 
+    top:
+        Optional maximum number of issues to be printed. If not provided, a good default is used.
+
     exclude:
         Optional list of label classes that can be ignored in the errors, each element must be 0, 1, ..., K-1
 
-    top: int, default=20
-        Optional maximum number of issues to be printed. If not provided, a good default is used.
-
     """
+    class_names, exclude, top = _get_summary_optional_params(class_names, exclude, top)
     if labels is None and len(exclude) > 0:
         raise ValueError("Provide labels to allow class exclusion")
 
@@ -139,7 +142,6 @@ def display_issues(
             plot_index += 1
 
         # Third image - Errors
-
         if output_plots == 1:
             ax = axes
         else:
@@ -152,8 +154,6 @@ def display_issues(
         ax.set_title(f"Image {i}: Suggested Errors (in Red)")
         plt.show()
 
-        plot_index = 0
-
     return None
 
 
@@ -162,9 +162,9 @@ def common_label_issues(
     labels: np.ndarray,
     pred_probs: np.ndarray,
     *,
-    exclude: List[int] = [],
-    top: int = 20,
     class_names: Optional[List[str]] = None,
+    exclude: Optional[List[int]] = None,
+    top: Optional[int] = None,
     verbose: bool = True,
 ) -> pd.DataFrame:
     """
@@ -187,12 +187,12 @@ def common_label_issues(
       Same format as output by :py:func:`segmentation.filter.find_label_issues <cleanlab.segmentation.filter.find_label_issues>`
       or :py:func:`segmentation.rank.issues_from_scores <cleanlab.segmentation.rank.issues_from_scores>`.
 
-    labels : np.ndarray
+    labels:
       A discrete array of noisy labels for a segmantic segmentation dataset, in the shape``(N,H,W,)``.
       where each pixel must be integer in 0, 1, ..., K-1.
       Refer to documentation for this argument in :py:func:`find_label_issues <cleanlab.segemntation.filter.find_label_issues>` for more information.
 
-    pred_probs : np.ndarray
+    pred_probs:
       An array of shape ``(N,K,H,W,)`` of model-predicted class probabilities.
       Refer to documentation for this argument in :py:func:`find_label_issues <cleanlab.segemntation.filter.find_label_issues>` for more information.
 
@@ -203,11 +203,11 @@ def common_label_issues(
       Optional length K list of names of each class, such that `class_names[i]` is the string name of the class corresponding to `labels` with value `i`.
       If `class_names` is provided, display these string names for predicted and given labels, otherwise display the integer index of classes.
 
-    top:
-      Optional maximum number of tokens to print information for. If not provided, a good default is used.
-
     exclude:
       Optional list of label classes that can be ignored in the errors, each element must be in 0, 1, ..., K-1.
+
+    top:
+      Optional maximum number of tokens to print information for. If not provided, a good default is used.
 
     verbose:
       Set to ``False`` to suppress all print statements.
@@ -225,6 +225,7 @@ def common_label_issues(
 
     assert labels.shape == (N, H, W), "labels must be of shape (N, H, W)"
 
+    class_names, exclude, top = _get_summary_optional_params(class_names, exclude, top)
     # Find issues by pixel coordinates
     issue_coords = np.column_stack(np.where(issues))
 
@@ -280,12 +281,12 @@ def filter_by_class(
       Same format as output by :py:func:`segmentation.filter.find_label_issues <cleanlab.segmentation.filter.find_label_issues>`
       or :py:func:`segmentation.rank.issues_from_scores <cleanlab.segmentation.rank.issues_from_scores>`.
 
-    labels : np.ndarray
+    labels:
       A discrete array of noisy labels for a segmantic segmentation dataset, in the shape``(N,H,W,)``.
       where each pixel must be integer in 0, 1, ..., K-1.
       Refer to documentation for this argument in :py:func:`find_label_issues <cleanlab.segemntation.filter.find_label_issues>` for further details.
 
-    pred_probs : np.ndarray
+    pred_probs:
       An array of shape ``(N,K,H,W,)`` of model-predicted class probabilities.
       Refer to documentation for this argument in :py:func:`find_label_issues <cleanlab.segemntation.filter.find_label_issues>` for further details.
 
@@ -310,7 +311,7 @@ def _generate_colormap(num_colors):
     Finds a unique color map based on the number of colors inputted ideal for semantic segmentation.
     Parameters
     ----------
-    num_colors:int
+    num_colors:
         How many unique colors you want
 
     Returns

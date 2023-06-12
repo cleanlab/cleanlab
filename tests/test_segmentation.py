@@ -32,10 +32,16 @@ import matplotlib.pyplot as plt
 from cleanlab.internal.multilabel_scorer import softmin
 
 
+# Segmentation utils
+from cleanlab.internal.segmentation_utils import (
+    _check_input,
+    _get_valid_optional_params,
+    _get_summary_optional_params,
+)
+
 # Filter
 from cleanlab.segmentation.filter import (
     find_label_issues,
-    _check_input,
 )
 
 # Rank
@@ -142,9 +148,10 @@ def test_find_label_issues_sizes():
     labels, pred_probs = np.random.randint(0, 2, (2, 13, 47)), np.random.random((2, 2, 13, 47))
     issues = find_label_issues(labels, pred_probs)
 
-    h, w = np.random.randint(1, 100, 2)
-    labels, pred_probs = np.random.randint(0, 2, (2, h, w)), np.random.random((2, 2, h, w))
-    issues = find_label_issues(labels, pred_probs)
+    for _ in range(5):
+        h, w = np.random.randint(1, 100, 2)
+        labels, pred_probs = np.random.randint(0, 2, (2, h, w)), np.random.random((2, 2, h, w))
+        issues = find_label_issues(labels, pred_probs)
 
 
 def test__check_input():
@@ -199,7 +206,7 @@ def test_get_label_quality_scores():
 
 
 # different size inpits
-def test__get_label_quality_scores_sizes():
+def test_get_label_quality_scores_sizes():
     # checks inputs of different sizes
     labels, pred_probs = np.random.randint(0, 2, (2, 9, 7)), np.random.random((2, 2, 9, 7))
     image_scores_softmin, pixel_scores = get_label_quality_scores(
@@ -211,11 +218,12 @@ def test__get_label_quality_scores_sizes():
         labels, pred_probs, method="softmin"
     )
 
-    h, w = np.random.randint(1, 100, 2)
-    labels, pred_probs = np.random.randint(0, 2, (2, h, w)), np.random.random((2, 2, h, w))
-    image_scores_softmin, pixel_scores = get_label_quality_scores(
-        labels, pred_probs, method="softmin"
-    )
+    for _ in range(5):
+        h, w = np.random.randint(1, 100, 2)
+        labels, pred_probs = np.random.randint(0, 2, (2, h, w)), np.random.random((2, 2, h, w))
+        image_scores_softmin, pixel_scores = get_label_quality_scores(
+            labels, pred_probs, method="softmin"
+        )
 
 
 # Testing issues from scores
@@ -412,3 +420,32 @@ def test_filter_by_class():
 
     assert (class_0_issues == class_1_issues).all()  # mirror issues
     assert np.sum(class_300_issues) == 0
+
+
+def test_summary_sizes(monkeypatch):
+    monkeypatch.setattr(plt, "show", lambda: None)
+
+    for _ in range(5):
+        h, w = np.random.randint(1, 100, 2)
+        labels, pred_probs = np.random.randint(0, 2, (2, h, w)), np.random.random((2, 2, h, w))
+        issues = find_label_issues(labels, pred_probs, downsample=1, n_jobs=None, batch_size=1000)
+        class_300_issues = filter_by_class(0, issues, labels=labels, pred_probs=pred_probs)
+        df = common_label_issues(issues, labels, pred_probs)
+        display_issues(issues)
+
+
+def test_get_valid_functions():
+    optional_batch_size = 10
+    optional_n_jobs = 2
+    x, y = _get_valid_optional_params(optional_batch_size, optional_n_jobs)
+    assert x == optional_batch_size and y == optional_n_jobs
+    x, y = _get_valid_optional_params(None, None)
+    assert x == 10000 and y == 1
+
+    optional_class_names = [1, 2]
+    optional_exclude = [1]
+    optional_top = 10
+    x, y, z = _get_summary_optional_params(optional_class_names, optional_exclude, optional_top)
+    assert x == optional_class_names and y == optional_exclude and z == optional_top
+    x, y, z = _get_summary_optional_params(None, None, None)
+    assert x == None and y == [] and z == 20
