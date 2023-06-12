@@ -50,36 +50,35 @@ def display_issues(
       or :py:func:`segmentation.rank.issues_from_scores <cleanlab.segmentation.rank.issues_from_scores>`.
 
     labels : np.ndarray
-      A discrete array of noisy labels for a segmantic segmentation dataset, in the shape``(N,H,W,)``.
+      Optional discrete array of noisy labels for a segmantic segmentation dataset, in the shape``(N,H,W,)``.
       where each pixel must be integer in 0, 1, ..., K-1.
-
       If `labels` is provided, this function also displays given label of the pixel identified with issue.
+      Refer to documentation for this argument in :py:func:find_label_issues <cleanlab.segemntation.filter.find_label_issues> for more information.
 
     pred_probs : np.ndarray
-      An array of shape ``(N,K,H,W,)`` of model-predicted class probabilities,
-
+      Optional array of shape ``(N,K,H,W,)`` of model-predicted class probabilities.
       If `pred_probs` is provided, this function also displays predicted label of the pixel identified with issue.
+      Refer to documentation for this argument in :py:func:find_label_issues <cleanlab.segemntation.filter.find_label_issues> for more information.
 
-    Refer to documentation for this argument in :py:func:find_label_issues <cleanlab.segemntation.filter.find_label_issues>
-
-    Tip: If your labels are one hot encoded you can `np.argmax(labels_one_hot,axis=1)` assuming that `labels_one_hot` is of dimension (N,K,H,W)
-    before entering in the function
+      Tip: If your labels are one hot encoded you can `np.argmax(labels_one_hot,axis=1)` assuming that `labels_one_hot` is of dimension (N,K,H,W)
+      before entering in the function
 
     class_names: List[str], default=None
-    A list of strings, where each string represents the name of a class in the semantic segmentation problem.
+      Optional list of strings, where each string represents the name of a class in the semantic segmentation problem.
       The order of the names should correspond to the numerical order of the classes. The list length should be
-      equal to the number of unique classes present in the labels. If provided, this function will generate a legend
+      equal to the number of unique classes present in the labels.
+      If provided, this function will generate a legend
       showing the color mapping of each class in the provided colormap.
 
       Example:
-      If there are three classes in your labels, represented by 0, 1, 2, then class_names might look like this:
-      class_names = ['background', 'person', 'dog']
+        If there are three classes in your labels, represented by 0, 1, 2, then class_names might look like this:
+        class_names = ['background', 'person', 'dog']
 
     exclude:
         Optional list of label classes that can be ignored in the errors, each element must be 0, 1, ..., K-1
 
     top: int, default=20
-        Maximum number of issues to be printed.
+        Optional maximum number of issues to be printed. If not provided, a good default is used.
 
     """
     if labels is None and len(exclude) > 0:
@@ -173,11 +172,10 @@ def common_label_issues(
 
     These may correspond to pixels that are ambiguous or systematically misunderstood by the data annotators.
 
-
-    N - Number of images in the dataset
-    K - Number of classes in the dataset
-    H - Height of each image
-    W - Width of each image
+    * N - Number of images in the dataset
+    * K - Number of classes in the dataset
+    * H - Height of each image
+    * W - Width of each image
 
     Parameters
     ----------
@@ -192,34 +190,33 @@ def common_label_issues(
     labels : np.ndarray
       A discrete array of noisy labels for a segmantic segmentation dataset, in the shape``(N,H,W,)``.
       where each pixel must be integer in 0, 1, ..., K-1.
+      Refer to documentation for this argument in :py:func:`find_label_issues <cleanlab.segemntation.filter.find_label_issues>` for more information.
 
     pred_probs : np.ndarray
-      An array of shape ``(N,K,H,W,)`` of model-predicted class probabilities,
+      An array of shape ``(N,K,H,W,)`` of model-predicted class probabilities.
+      Refer to documentation for this argument in :py:func:`find_label_issues <cleanlab.segemntation.filter.find_label_issues>` for more information.
 
-    Refer to documentation for this argument in :py:func:find_label_issues <cleanlab.segemntation.filter.find_label_issues>
+      Tip: If your labels are one hot encoded you can `np.argmax(labels_one_hot,axis=1)` assuming that `labels_one_hot` is of dimension (N,K,H,W)
+      before entering in the function
 
     class_names:
       Optional length K list of names of each class, such that `class_names[i]` is the string name of the class corresponding to `labels` with value `i`.
-
       If `class_names` is provided, display these string names for predicted and given labels, otherwise display the integer index of classes.
 
     top:
-      Maximum number of tokens to print information for.
+      Optional maximum number of tokens to print information for. If not provided, a good default is used.
 
     exclude:
-      Optional list of label classes that can be ignored in the errors, each element must be in 0, 1, ..., K-1
+      Optional list of label classes that can be ignored in the errors, each element must be in 0, 1, ..., K-1.
 
     verbose:
-      Whether to also print out the token information in the returned DataFrame `df`.
+      Set to ``False`` to suppress all print statements.
 
     Returns
     -------
     df:
-      DataFrame `df` contains columns ``['given_label',
-      'predicted_label', 'num_label_issues']``, and each row contains information for a
+      DataFrame `df` contains columns ``['given_label', 'predicted_label', 'num_label_issues']`` and each row contains information for a
       given/predicted label swap, ordered by the number of label issues inferred for this type of label swap.
-
-
     """
     try:
         N, K, H, W = pred_probs.shape
@@ -274,11 +271,10 @@ def filter_by_class(
     Parameters
     ----------
     class_index:
-      A specific class you are interested in.
+      The specific class you are interested in.
 
     issues:
-      Boolean **mask** for the entire dataset
-      where ``True`` represents a pixel label issue and ``False`` represents an example that is
+      Boolean **mask** for the entire dataset where ``True`` represents a pixel label issue and ``False`` represents an example that is
       accurately labeled.
 
       Same format as output by :py:func:`segmentation.filter.find_label_issues <cleanlab.segmentation.filter.find_label_issues>`
@@ -287,17 +283,16 @@ def filter_by_class(
     labels : np.ndarray
       A discrete array of noisy labels for a segmantic segmentation dataset, in the shape``(N,H,W,)``.
       where each pixel must be integer in 0, 1, ..., K-1.
+      Refer to documentation for this argument in :py:func:`find_label_issues <cleanlab.segemntation.filter.find_label_issues>` for further details.
 
     pred_probs : np.ndarray
-      An array of shape ``(N,K,H,W,)`` of model-predicted class probabilities,
-
-    Refer to documentation for this argument in :py:func:find_label_issues <cleanlab.segemntation.filter.find_label_issues>
+      An array of shape ``(N,K,H,W,)`` of model-predicted class probabilities.
+      Refer to documentation for this argument in :py:func:`find_label_issues <cleanlab.segemntation.filter.find_label_issues>` for further details.
 
     Returns
     ----------
     issues_subset:
-      Boolean **mask** for the subset dataset
-      where ``True`` represents a pixel label issue and ``False`` represents an example that is
+      Boolean **mask** for the subset dataset where ``True`` represents a pixel label issue and ``False`` represents an example that is
       accurately labeled for the labeled class.
 
       Returned mask shows **all** instances that involve the particular class of interest.

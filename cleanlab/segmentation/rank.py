@@ -15,8 +15,7 @@
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
 """
-Methods to rank and score images in a semantic segmentation dataset, based on how likely they are to contain mislabeled pixels.
-
+Methods to rank and score images in a semantic segmentation dataset based on how likely they are to contain mislabeled pixels.
 """
 import numpy as np
 from typing import Optional, Union, Tuple
@@ -39,59 +38,53 @@ def get_label_quality_scores(
     This is a function to compute label quality scores for semantic segmentation datasets,
     where lower scores indicate labels less likely to be correct.
 
-    N - Number of images in the dataset
-    K - Number of classes in the dataset
-    H - Height of each image
-    W - Width of each image
+    * N - Number of images in the dataset
+    * K - Number of classes in the dataset
+    * H - Height of each image
+    * W - Width of each image
 
     Parameters
     ----------
     labels : np.ndarray
       A discrete array of noisy labels for a segmantic segmentation dataset, in the shape``(N,H,W,)``.
       where each pixel must be integer in 0, 1, ..., K-1.
+      Refer to documentation for this argument in :py:func:find_label_issues <cleanlab.segemntation.filter.find_label_issues> for further details.
 
     pred_probs : np.ndarray
-      An array of shape ``(N,K,H,W,)`` of model-predicted class probabilities,
-
-    Refer to documentation for this argument in :py:func:find_label_issues <cleanlab.segemntation.filter.find_label_issues>
+      An array of shape ``(N,K,H,W,)`` of model-predicted class probabilities.
+      Refer to documentation for this argument in :py:func:find_label_issues <cleanlab.segemntation.filter.find_label_issues> for further details.
 
     method : {"softmin", "num_pixel_issues"}, default="softmin"
       Label quality scoring method.
-        "softmin" - Calculates the inner product between scores and softmax(1-scores). For efficiency, use instead of "num_pixel_issues".
-        "num_pixel_issues" - Uses the number of pixels with label issues for each image using :py:func:find_label_issues <cleanlab.segemntation.filter.find_label_issues>
+      - "softmin" - Calculates the inner product between scores and softmax(1-scores). For efficiency, use instead of "num_pixel_issues".
+      - "num_pixel_issues" - Uses the number of pixels with label issues for each image using :py:func:find_label_issues <cleanlab.segemntation.filter.find_label_issues>
 
     batch_size : int,
-      For num_pixel_issues:
-      Size of mini-batches to use for estimating the label issues for 'num_pixel_issues' only, not 'softmin'
-      To maximize efficiency, try to use the largest `batch_size` your memory allows.
+      Optional size of mini-batches to use for estimating the label issues for 'num_pixel_issues' only, not 'softmin'
+      To maximize efficiency, try to use the largest `batch_size` your memory allows. If not provided, a good default is used.
 
     n_jobs: int,
-      For num_pixel_issues:
-      Number of processes for multiprocessing (default value = 1). Only used on Linux. For 'num_pixel_issues' only, not 'softmin'
+      Optional number of processes for multiprocessing (default value = 1). Only used on Linux. For 'num_pixel_issues' only, not 'softmin'
       If `n_jobs=None`, will use either the number of: physical cores if psutil is installed, or logical cores otherwise.
 
     verbose : bool,
-      For num_pixel_issues:
       Set to ``False`` to suppress all print statements.
 
     **kwargs:
-      downsample : int,
-      Factor to shrink labels and pred_probs by for 'num_pixel_issues' only, not 'softmin' . Default ``16``
-      Must be a factor divisible by both the labels and the pred_probs. Larger values of `downsample` produce faster runtimes but potentially less accurate results due to over-compression. Set to 1 to avoid any downsampling.
-
-      temperature : float,
-      Temperature for softmin. Default ``0.1``
+      * downsample : int,
+          Factor to shrink labels and pred_probs by for 'num_pixel_issues' only, not 'softmin' . Default ``16``
+          Must be a factor divisible by both the labels and the pred_probs. Larger values of `downsample` produce faster runtimes but potentially less accurate results due to over-compression. Set to 1 to avoid any downsampling.
+      * temperature : float,
+          Temperature for softmin. Default ``0.1``
 
 
     Returns
     -------
-
     image_scores: np.ndarray
         Array of shape ``(N, )`` of scores between 0 and 1, one per image in the dataset.
         Lower scores indicate image more likely to contain a label issue.
-    pixel_scores:
+    pixel_scores: np.ndarray
         Array of shape ``(N,H,W)`` of scores between 0 and 1, one per pixel in the dataset.
-
     """
 
     _check_input(labels, pred_probs)
@@ -155,11 +148,12 @@ def issues_from_scores(
     Converts scores output by :py:func:`segmentation.rank.get_label_quality_scores <cleanlab.segmentation.rank.get_label_quality_scores>`
     to a list of issues of similar format as output by :py:func:`segmentation.filter.find_label_issues <cleanlab.segmentation.filter.find_label_issues>`.
 
-    Issues are sorted by label quality score, from most to least severe.
+    Issues are sorted by label quality score, from most to least severe.
 
     Only considers as issues those tokens with label quality score lower than `threshold`,
     so this parameter determines the number of issues that are returned.
-    This method is intended for converting the most severely mislabeled examples to a format compatible with
+
+    Note: This method is intended for converting the most severely mislabeled examples to a format compatible with
     ``summary`` methods like :py:func:`segmentation.summary.display_issues <cleanlab.segmentation.summary.display_issues>`.
     This method does not estimate the number of label errors since the `threshold` is arbitrary,
     for that instead use :py:func:`segmentation.filter.find_label_issues <cleanlab.segmentation.filter.find_label_issues>`,
@@ -168,18 +162,16 @@ def issues_from_scores(
     Parameters
     ----------
     image_scores:
-        Array of shape `(N, )` of overall image scores, where `N` is the number of images in the dataset.
-
-        Same format as the `image_scores` returned by :py:func:`segmentation.rank.get_label_quality_scores <cleanlab.segmentation.rank.get_label_quality_scores>`.
+      Array of shape `(N, )` of overall image scores, where `N` is the number of images in the dataset.
+      Same format as the `image_scores` returned by :py:func:`segmentation.rank.get_label_quality_scores <cleanlab.segmentation.rank.get_label_quality_scores>`.
 
     pixel_scores:
-        Array of shape ``(N,H,W)`` of scores between 0 and 1, one per pixel in the dataset.
-
-        Same format as the `pixel_scores` returned by :py:func:`segmentation.rank.get_label_quality_scores <cleanlab.segmentation.rank.get_label_quality_scores>`.
+      Optional array of shape ``(N,H,W)`` of scores between 0 and 1, one per pixel in the dataset.
+      Same format as the `pixel_scores` returned by :py:func:`segmentation.rank.get_label_quality_scores <cleanlab.segmentation.rank.get_label_quality_scores>`.
 
     threshold:
-        Pixels with quality scores above the `threshold` are not
-        included in the result.
+        Optional quality scores threshold that determines which pixels are included in result. Pixels with with quality scores above the `threshold` are not
+        included in the result. If not provided, all pixels are included in result.
 
     Returns
     ---------
@@ -191,7 +183,7 @@ def issues_from_scores(
       to view these issues within the original images.
 
       If `pixel_scores` is not provided, returns array of integer indices (rather than boolean mask) of the images whose label quality score
-        falls below the `threshold` (also sorted by overall label quality score of each image).
+      falls below the `threshold` (also sorted by overall label quality score of each image).
 
     """
 

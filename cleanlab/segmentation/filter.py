@@ -37,50 +37,45 @@ def find_label_issues(
     Returns a boolean mask for the entire dataset, per pixel where ``True`` represents
     an example identified with a label issue and ``False`` represents an example of a pixel correctly labeled.
 
-    N - Number of images in the dataset
-    K - Number of classes in the dataset
-    H - Height of each image
-    W - Width of each image
+    * N - Number of images in the dataset
+    * K - Number of classes in the dataset
+    * H - Height of each image
+    * W - Width of each image
 
-    Tip: if you encounter the error "pred_probs is not defined", try setting
-    ``n_jobs=1``.
+    Tip: if you encounter the error "pred_probs is not defined", try setting ``n_jobs=1``.
 
     Parameters
     ----------
     labels : np.ndarray
       A discrete array of shape ``(N,H,W,)`` of noisy labels for a semantic segmentation dataset, i.e. some labels may be erroneous.
       *Format requirements*: for a dataset with K classes, each pixel must be labeled using an integer in 0, 1, ..., K-1.
-
-    Tip: If your labels are one hot encoded you can do: ``labels = np.argmax(labels_one_hot,axis=1)`` assuming that `labels_one_hot` is of dimension ``(N,K,H,W)``, in order to get properly formatted `labels`
+      Tip: If your labels are one hot encoded you can do: ``labels = np.argmax(labels_one_hot,axis=1)`` assuming that `labels_one_hot` is of dimension ``(N,K,H,W)``, in order to get properly formatted `labels`
 
     pred_probs : np.ndarray
       An array of shape ``(N,K,H,W,)`` of model-predicted class probabilities,
       ``P(label=k|x)`` for each pixel ``x``. The prediction for each pixel is an array corresponding to the estimated likelihood that this pixel belongs to each of the ``K`` classes. The 2nd dimension of `pred_probs` must be ordered such that these probabilities correspond to class 0, 1, ..., K-1.
 
     batch_size : int, optional
-      Size of image mini-batches used for computing the label issues in a streaming fashion (does not affect results, just the runtime and memory requirements).
-      To maximize efficiency, try to use the largest `batch_size` your memory allows.
+      Optional size of image mini-batches used for computing the label issues in a streaming fashion (does not affect results, just the runtime and memory requirements).
+      To maximize efficiency, try to use the largest `batch_size` your memory allows. If not provided, a good default is used.
 
     n_jobs: int, optional
-        Number of processes for multiprocessing (default value = 1). Only used on Linux.
-        If `n_jobs=None`, will use either the number of: physical cores if psutil is installed, or logical cores otherwise.
+      Optional number of processes for multiprocessing (default value = 1). Only used on Linux.
+      If `n_jobs=None`, will use either the number of: physical cores if psutil is installed, or logical cores otherwise.
 
     verbose : bool, optional
       Set to ``False`` to suppress all print statements.
 
     **kwargs:
-    downsample : int, optional
-      Factor to shrink labels and pred_probs by. Default ``1``
-      Must be a factor divisible by both the labels and the pred_probs. Larger values of `downsample` produce faster runtimes but potentially less accurate results due to over-compression. Set to 1 to avoid any downsampling.
+      * downsample : int, optional
+        Optional factor to shrink labels and pred_probs by. Default ``1``
+        Must be a factor divisible by both the labels and the pred_probs. Larger values of `downsample` produce faster runtimes but potentially less accurate results due to over-compression. Set to 1 to avoid any downsampling.
 
     Returns
     -------
     label_issues : np.ndarray
       Returns a boolean **mask** for the entire dataset of length `(N,H,W)`
       where ``True`` represents a pixel label issue and ``False`` represents an example that is correctly labeled.
-
-
-
     """
     downsample = kwargs.get("downsample", 1)
 
