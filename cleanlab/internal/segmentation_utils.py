@@ -29,8 +29,6 @@ def _get_valid_optional_params(
     """Takes in optional args and returns good values for them if they are None."""
     if batch_size is None:
         batch_size = 10000
-    if n_jobs is None:
-        n_jobs = 1
     return batch_size, n_jobs
 
 

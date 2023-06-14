@@ -214,8 +214,8 @@ def common_label_issues(
 
     Returns
     -------
-    df:
-      DataFrame `df` contains columns ``['given_label', 'predicted_label', 'num_label_issues']`` and each row contains information for a
+    issues_df:
+      DataFrame `issues_df` contains columns ``['given_label', 'predicted_label', 'num_label_issues']`` and each row contains information for a
       given/predicted label swap, ordered by the number of label issues inferred for this type of label swap.
     """
     try:
@@ -251,16 +251,16 @@ def common_label_issues(
                     info.append([class_name, class_names[pred_label], num_issues])
 
     info = sorted(info, key=lambda x: x[2], reverse=True)[:top]
-    df = pd.DataFrame(info, columns=["given_label", "predicted_label", "num_pixel_issues"])
+    issues_df = pd.DataFrame(info, columns=["given_label", "predicted_label", "num_pixel_issues"])
 
     if verbose:
-        for idx, row in df.iterrows():
+        for idx, row in issues_df.iterrows():
             print(
                 f"Class '{row['given_label']}' is potentially mislabeled as class for '{row['predicted_label']}' "
                 f"{row['num_pixel_issues']} pixels in the dataset"
             )
 
-    return df
+    return issues_df
 
 
 def filter_by_class(
@@ -318,7 +318,6 @@ def _generate_colormap(num_colors):
     -------
     colors:
         colors with num_colors distinct colors
-
     """
 
     try:

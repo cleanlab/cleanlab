@@ -140,20 +140,18 @@ def find_label_issues(
     image_number = ranked_label_issues // (h * w)
 
     # Upsample carefully maintaining indicies
-    image = np.full((num_image, h, w), False)
+    label_issues = np.full((num_image, h, w), False)
 
     for num, ii, jj in zip(image_number, pixel_coor_i, pixel_coor_j):
         # only want to call it an error if pred_probs doesnt match the label at that pixel
-        image[num, ii, jj] = True
+        label_issues[num, ii, jj] = True
         if downsample == 1:
             # check if pred_probs matches the label at that pixel
             if np.argmax(pred_probs[num, :, ii, jj]) == labels[num, ii, jj]:
-                image[num, ii, jj] = False
+                label_issues[num, ii, jj] = False
 
-    if downsample == 1:
-        return image
-    else:
-        image = image.repeat(downsample, axis=1).repeat(downsample, axis=2)
+    if downsample != 1:
+        label_issues = label_issues.repeat(downsample, axis=1).repeat(downsample, axis=2)
 
         for num, ii, jj in zip(image_number, pixel_coor_i, pixel_coor_j):
             # Upsample the coordinates
@@ -164,7 +162,7 @@ def find_label_issues(
                 for col in range(upsampled_jj, upsampled_jj + downsample):
                     # Check if the predicted class (argmax) at the identified issue location matches the true label
                     if np.argmax(pred_probs[num, :, row, col]) == labels[num, row, col]:
-                        # If they match, set the corresponding entry in the image array to False
-                        image[num, row, col] = False
+                        # If they match, set the corresponding entry in the label_issues array to False
+                        label_issues[num, row, col] = False
 
-        return image
+    return label_issues

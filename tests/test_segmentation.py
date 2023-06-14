@@ -440,7 +440,7 @@ def test_get_valid_functions():
     x, y = _get_valid_optional_params(optional_batch_size, optional_n_jobs)
     assert x == optional_batch_size and y == optional_n_jobs
     x, y = _get_valid_optional_params(None, None)
-    assert x == 10000 and y == 1
+    assert x == 10000 and y == None
 
     optional_class_names = [1, 2]
     optional_exclude = [1]
