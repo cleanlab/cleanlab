@@ -144,7 +144,7 @@ def visualize(
         allowed_image_formats = set(["png", "pdf", "ps", "eps", "svg"])
         image_format = (
             save_path[-3:]
-            if len(save_path) > 2
+            if len(save_path) > 3
             and save_path[-4] == "."
             and save_path[-3:] in allowed_image_formats
             else None
