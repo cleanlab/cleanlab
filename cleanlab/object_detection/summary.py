@@ -142,10 +142,9 @@ def visualize(
 
     if save_path:
         allowed_image_formats = set(["png", "pdf", "ps", "eps", "svg"])
-        image_format: Optional[str] = save_path.split(".")[-1]
-        if "." not in save_path or image_format not in allowed_image_formats:
-            image_format = None
-
+        image_format: Optional[str] = None
+        if save_path.split(".")[-1] in allowed_image_formats and "." in save_path:
+            image_format = save_path.split(".")[-1]
         plt.savefig(
             save_path,
             format=image_format,
