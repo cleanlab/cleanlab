@@ -18,6 +18,7 @@
 Methods to rank and score images in a semantic segmentation dataset based on how likely they are to contain mislabeled pixels.
 """
 import numpy as np
+import warnings
 from typing import Optional, Union, Tuple
 from cleanlab.segmentation.filter import find_label_issues
 
@@ -112,8 +113,6 @@ def get_label_quality_scores(
         return (img_scores, pixel_scores)
 
     if downsample_num_pixel_issues != 1:
-        import warnings
-
         warnings.warn(
             f"image will not downsample for method {method} is only for method: num_pixel_issues"
         )

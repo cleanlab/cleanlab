@@ -109,8 +109,8 @@ def display_issues(
         elif labels is not None:
             num_classes = max(np.unique(labels)) + 1
             cmap = _generate_colormap(num_classes)
-        else:
-            cmap = None
+    else:
+        cmap = None
 
     # Show a legend
     if class_names is not None and cmap is not None:
