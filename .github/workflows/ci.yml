@@ -15,7 +15,7 @@ jobs:
           - macos-latest
           - windows-latest
         python:
-          - "3.7.16"
+          - "3.7.9"
           - "3.8"
           - "3.9"
           - "3.10"
