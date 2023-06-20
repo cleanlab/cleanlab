@@ -228,7 +228,7 @@ endings match the project style.
 ## Documentation
 
 You can build the docs from your local cleanlab version by following [these
-instructions](docs/README.md#build-the-cleanlab-docs-locally).
+instructions](./docs/README.md#build-the-cleanlab-docs-locally).
 
 If editing existing docs or adding new tutorials, please first read through our [guidelines](https://github.com/cleanlab/cleanlab/tree/master/docs#tips-for-editing-docstutorials).
 

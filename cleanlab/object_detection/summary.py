@@ -28,8 +28,8 @@ from cleanlab.object_detection.rank import (
 
 from cleanlab.internal.object_detection_utils import bbox_xyxy_to_xywh
 
-if TYPE_CHECKING:  # pragma: no cover
-    from PIL.Image import Image as Image
+if TYPE_CHECKING:
+    from PIL.Image import Image as Image  # pragma: no cover
 else:
     Image = TypeVar("Image")
 
@@ -77,7 +77,7 @@ def visualize(
         Optional dictionary mapping one-hot-encoded class labels back to their original class names in the format ``{"integer-label": "original-class-name"}``.
 
     save_path:
-        Path to save figure at. If a path is provided, the figure is saved instead of displayed.
+        Path to save figure at. If a path is provided, the figure is saved. To save in a specific image format, add desired file extension to the end of `save_path`. Allowed file extensions are: 'png', 'pdf', 'ps', 'eps', and 'svg'.
 
     figsize:
         Optional figure size for plotting the image.
@@ -115,7 +115,7 @@ def visualize(
         ax.imshow(image)
         if label is not None:
             fig, ax = _draw_boxes(
-                fig, ax, abbox, alabels, edgecolor="r", linestyle="-.", linewidth=1
+                fig, ax, abbox, alabels, edgecolor="r", linestyle="-", linewidth=1
             )
         if prediction is not None:
             _, _ = _draw_boxes(fig, ax, pbbox, plabels, edgecolor="b", linestyle="-.", linewidth=1)
@@ -135,27 +135,24 @@ def visualize(
             _, _ = _draw_boxes(
                 fig, axes[1], pbbox, plabels, edgecolor="b", linestyle="-.", linewidth=1
             )
-
+    bbox_extra_artists = None
     if label or prediction is not None:
         legend, plt = _plot_legend(class_names, label, prediction)
-        if save_path:  # save with legend
-            plt.savefig(
-                save_path,
-                format="pdf",
-                bbox_extra_artists=(legend,),
-                bbox_inches="tight",
-                transparent=True,
-                pad_inches=0.5,
-            )
-    elif save_path:
+        bbox_extra_artists = (legend,)
+
+    if save_path:
+        allowed_image_formats = set(["png", "pdf", "ps", "eps", "svg"])
+        image_format: Optional[str] = None
+        if save_path.split(".")[-1] in allowed_image_formats and "." in save_path:
+            image_format = save_path.split(".")[-1]
         plt.savefig(
             save_path,
-            format="pdf",
+            format=image_format,
+            bbox_extra_artists=bbox_extra_artists,
             bbox_inches="tight",
             transparent=True,
             pad_inches=0.5,
         )
-
     plt.show()
 
 
