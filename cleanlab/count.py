@@ -1004,7 +1004,11 @@ def estimate_confident_joint_and_cv_pred_proba(
                 "or you can implement the cross-validation outside of cleanlab "
                 "and pass in the obtained `pred_probs` to skip cleanlab's internal cross-validation"
             )
-
+        
+        # flatten X with shape > 2 to allow smooth application of default LogisticRegression classifier
+        if isinstance(clf_copy, LogReg) and len(X.shape) > 2:
+            X = X.reshape((len(X), -1))
+  
         # Select the training and holdout cross-validated sets.
         X_train_cv, X_holdout_cv, s_train_cv, s_holdout_cv = train_val_split(
             X, labels, cv_train_idx, cv_holdout_idx
@@ -1158,7 +1162,6 @@ def estimate_py_noise_matrices_and_cv_pred_proba(
     ----
     Multi-label classification is not supported in this method.
     """
-
     confident_joint, pred_probs = estimate_confident_joint_and_cv_pred_proba(
         X=X,
         labels=labels,
