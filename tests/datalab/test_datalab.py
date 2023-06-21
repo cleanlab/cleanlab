@@ -35,7 +35,6 @@ from cleanlab.datalab.datalab import Datalab
 from cleanlab.datalab.issue_finder import IssueFinder
 from cleanlab.datalab.report import Reporter
 
-
 SEED = 42
 
 
@@ -689,7 +688,7 @@ def test_report_for_outlier_issues_via_pred_probs(find_issues_kwargs):
     find_issues_kwargs["issue_types"] = {"outlier": {"k": 1}}
     lab.find_issues(**find_issues_kwargs)
 
-    reporter = Reporter(lab.data_issues, imagelab=None, verbosity=0, include_description=False)
+    reporter = Reporter(lab.data_issues, verbosity=0, include_description=False)
     report = reporter.get_report(num_examples=3)
     assert report, "Report should not be empty"
 
