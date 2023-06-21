@@ -1,4 +1,5 @@
-from cleanlab.datalab.adapter.imagelab import ImagelabIssueFinderAdapter, create_imagelab
+from cleanlab.datalab.adapter.imagelab import create_imagelab
+from cleanlab.datalab.adapter.constants import DEFAULT_CLEANVISION_ISSUES
 
 
 class TestImagelabAdapater:
@@ -10,7 +11,7 @@ class TestImagelabAdapater:
         assert hasattr(imagelab, "info")
 
     def test_imagelab_default_issue_types(self):
-        default_issues = ImagelabIssueFinderAdapter._get_datalab_specific_default_issue_types()
+        default_issues = DEFAULT_CLEANVISION_ISSUES
         assert set(default_issues) == set(
             [
                 "dark",

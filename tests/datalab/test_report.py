@@ -1,11 +1,11 @@
-import pytest
-import numpy as np
-import pandas as pd
 from unittest.mock import Mock, patch
 
-from cleanlab.datalab.report import Reporter
+import numpy as np
+import pandas as pd
+import pytest
 
 from cleanlab import Datalab
+from cleanlab.datalab.report import Reporter
 
 
 class TestReporter:
@@ -26,16 +26,15 @@ class TestReporter:
 
     @pytest.fixture
     def reporter(self, data_issues):
-        return Reporter(data_issues=data_issues, imagelab=None)
+        return Reporter(data_issues=data_issues)
 
     def test_init(self, reporter, data_issues):
         assert reporter.data_issues == data_issues
         assert reporter.verbosity == 1
         assert reporter.include_description == True
         assert reporter.show_summary_score == False
-        assert reporter.imagelab is None
 
-        another_reporter = Reporter(data_issues=data_issues, imagelab=None, verbosity=2)
+        another_reporter = Reporter(data_issues=data_issues, verbosity=2)
         assert another_reporter.verbosity == 2
 
     def test_report(self, reporter):
@@ -86,7 +85,6 @@ class TestReporter:
 
         reporter = Reporter(
             data_issues=data_issues,
-            imagelab=None,
             verbosity=0,
             include_description=include_description,
         )

@@ -3,22 +3,22 @@ This allows low-quality images to be detected alongside other issues in computer
 """
 
 import warnings
-from typing import TYPE_CHECKING, Any, Dict, Optional, List
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
 from scipy.sparse import csr_matrix
 
+from cleanlab.datalab.adapter.constants import DEFAULT_CLEANVISION_ISSUES
 from cleanlab.datalab.data import Data
 from cleanlab.datalab.data_issues import DataIssues
 from cleanlab.datalab.issue_finder import IssueFinder
 from cleanlab.datalab.report import Reporter
 
-
 if TYPE_CHECKING:  # pragma: no cover
-    from datasets.arrow_dataset import Dataset
     from cleanvision import Imagelab
+    from datasets.arrow_dataset import Dataset
 
 
 def create_imagelab(dataset: "Dataset", image_key: Optional[str]) -> Optional["Imagelab"]:
@@ -131,13 +131,18 @@ class ImagelabReporterAdapter(Reporter):
         include_description: bool = True,
         show_summary_score: bool = False,
     ):
-        super().__init__(data_issues, imagelab, verbosity, include_description, show_summary_score)
+        super().__init__(
+            data_issues=data_issues,
+            verbosity=verbosity,
+            include_description=include_description,
+            show_summary_score=show_summary_score,
+        )
+        self.imagelab = imagelab
 
     def report(self, num_examples: int) -> None:
         super().report(num_examples)
-        if self.imagelab:
-            print("\n\n")
-            self.imagelab.report(num_images=num_examples, print_summary=False, verbosity=0)
+        print("\n\n")
+        self.imagelab.report(num_images=num_examples, print_summary=False, verbosity=0)
 
 
 class ImagelabIssueFinderAdapter(IssueFinder):
@@ -145,23 +150,9 @@ class ImagelabIssueFinderAdapter(IssueFinder):
         super().__init__(datalab, verbosity)
         self.imagelab = self.datalab._imagelab
 
-    @staticmethod
-    def _get_datalab_specific_default_issue_types():
-        return [
-            "dark",
-            "light",
-            "low_information",
-            "odd_aspect_ratio",
-            "odd_size",
-            "grayscale",
-            "blurry",
-        ]
-
     def _get_imagelab_issue_types(self, issue_types, **kwargs):
         if issue_types is None:
-            issue_types_copy = {
-                issue_type: {} for issue_type in self._get_datalab_specific_default_issue_types()
-            }
+            issue_types_copy = {issue_type: {} for issue_type in DEFAULT_CLEANVISION_ISSUES}
         else:
             if "image_issue_types" not in issue_types:
                 return None
