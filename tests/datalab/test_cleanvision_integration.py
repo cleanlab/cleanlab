@@ -137,3 +137,29 @@ class TestCleanvisionIntegration:
         captured = capsys.readouterr()
         assert "label" in captured.out
         assert "dark" in captured.out
+
+    def test_labels_not_required_for_imagelab_issues(self, image_dataset, features, capsys):
+        datalab = Datalab(data=image_dataset, image_key=IMAGE_NAME)
+        datalab.find_issues(features=features)
+        captured = capsys.readouterr()
+        assert (
+            "Finding dark, light, low_information, odd_aspect_ratio, odd_size, grayscale, blurry images"
+            in captured.out
+        )
+        assert len(datalab.issues) == len(image_dataset)
+        assert len(datalab.issues.columns) == 20
+        assert len(datalab.issue_summary) == 10
+
+        all_keys = IMAGELAB_ISSUE_TYPES + [
+            "statistics",
+            "outlier",
+            "near_duplicate",
+            "non_iid",
+        ]
+
+        assert set(all_keys) == set(datalab.info.keys())
+        datalab.report()
+        captured = capsys.readouterr()
+
+        for issue_type in IMAGELAB_ISSUE_TYPES:
+            assert issue_type in captured.out
