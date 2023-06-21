@@ -5,6 +5,53 @@ on:
   schedule:
     - cron: '0 12 * * 1'
 jobs:
+  test37:
+    name: "Test: Python 3.7 on ${{ matrix.os }}"
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: 3.7.16
+      - name: Install cleanlab
+        run: pip install -e .
+      - name: Install development dependencies
+        run: pip install -r requirements-dev.txt
+      - name: Install fasttext for non-Windows machines
+        if: matrix.os != 'windows-latest'
+        run: |
+          pip install fasttext
+      - name: Test with coverage
+        run: pytest --verbose --cov=cleanlab/ --cov-config .coveragerc --cov-report=xml
+        env:
+          TEST_FASTTEXT: true
+      - uses: codecov/codecov-action@v3
+  test37-windows:
+    name: "Test: Python 3.7 on windows"
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: 3.7.9
+      - name: Install cleanlab
+        run: pip install -e .
+      - name: Install development dependencies
+        run: pip install -r requirements-dev.txt
+      - name: Overwrite tensorflow version on Windows
+        run: |
+          pip uninstall -y tensorflow
+          pip install tensorflow-cpu
+      - name: Test with coverage
+        run: pytest --verbose --cov=cleanlab/ --cov-config .coveragerc --cov-report=xml
+        env:
+          TEST_FASTTEXT: true
+      - uses: codecov/codecov-action@v3
   test:
     name: "Test: Python ${{ matrix.python }} on ${{ matrix.os }}"
     runs-on: ${{ matrix.os }}
@@ -15,7 +62,6 @@ jobs:
           - macos-latest
           - windows-latest
         python:
-          - "3.7.9"
           - "3.8"
           - "3.9"
           - "3.10"
