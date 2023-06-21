@@ -40,7 +40,7 @@ def create_imagelab(dataset: "Dataset", image_key: Optional[str]) -> Optional["I
     if not image_key:
         return imagelab
     try:
-        from cleanvision.imagelab import Imagelab
+        from cleanvision import Imagelab
         from datasets.arrow_dataset import Dataset
 
         if isinstance(dataset, Dataset):

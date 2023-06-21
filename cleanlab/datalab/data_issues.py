@@ -36,7 +36,7 @@ import pandas as pd
 if TYPE_CHECKING:  # pragma: no cover
     from cleanlab.datalab.data import Data
     from cleanlab.datalab.issue_manager import IssueManager
-    from cleanvision.imagelab import Imagelab
+    from cleanvision import Imagelab
 
 
 class DataIssues:
