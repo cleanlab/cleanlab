@@ -25,8 +25,6 @@ from cleanlab.datalab.adapter.constants import DEFAULT_CLEANVISION_ISSUES
 from cleanlab.datalab.issue_manager_factory import _IssueManagerFactory
 
 if TYPE_CHECKING:  # pragma: no cover
-    from cleanvision import Imagelab
-
     from cleanlab.datalab.data_issues import DataIssues
 
 
