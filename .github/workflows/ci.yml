@@ -41,7 +41,6 @@ jobs:
         run: |
           git clone https://github.com/sanjanag/cleanvision.git
           cd cleanvision
-          git checkout datalab-integration
           pip install -e .
       - name: Test with coverage
         run: pytest --verbose --cov=cleanlab/ --cov-config .coveragerc --cov-report=xml
@@ -88,7 +87,6 @@ jobs:
         run: |
           git clone https://github.com/sanjanag/cleanvision.git
           cd cleanvision
-          git checkout datalab-integration
           pip install -e .
       - name: Type check
         run: mypy --install-types --non-interactive cleanlab
