@@ -568,6 +568,7 @@ def _compute_overlooked_box_scores_for_image(
     lab_bboxes: Optional[np.ndarray] = None,
     similarity_matrix: Optional[np.ndarray] = None,
     min_possible_similarity: Optional[float] = None,
+    has_overlap_label_bboxes: Optional[float] = None,
 ) -> np.ndarray:
     """This method returns one score per predicted box (above threshold) in an image. Score from 0 to 1 ranking how overlooked the box is."""
 
@@ -582,6 +583,7 @@ def _compute_overlooked_box_scores_for_image(
         lab_bboxes=lab_bboxes,
         similarity_matrix=similarity_matrix,
         min_possible_similarity=min_possible_similarity,
+        has_overlap_label_bboxes=has_overlap_label_bboxes,
     )
 
     pred_labels = auxiliary_input_dict["pred_labels"]
@@ -700,6 +702,7 @@ def _compute_badloc_box_scores_for_image(
     lab_bboxes: Optional[np.ndarray] = None,
     similarity_matrix: Optional[np.ndarray] = None,
     min_possible_similarity: Optional[float] = None,
+    has_overlap_label_bboxes: Optional[np.ndarray] = None,
 ) -> np.ndarray:
     """This method returns one score per labeled box in an image. Score from 0 to 1 ranking how badly located the box is."""
 
@@ -714,6 +717,7 @@ def _compute_badloc_box_scores_for_image(
         lab_bboxes=lab_bboxes,
         similarity_matrix=similarity_matrix,
         min_possible_similarity=min_possible_similarity,
+        has_overlap_label_bboxes=has_overlap_label_bboxes,
     )
 
     pred_labels = auxiliary_input_dict["pred_labels"]
