@@ -387,10 +387,6 @@ def _has_overlap(label_boxes, labels):
     return np.array(res_overlap)
 
 
-def _find_overlapping_labels(labels):
-    return [_has_overlap(label) for label in labels]
-
-
 def _euc_dis(box1: List[float], box2: List[float]) -> float:
     """Calculates the Euclidean distance between `box1` and `box2`."""
     x1, y1 = (box1[0] + box1[2]) / 2, (box1[1] + box1[3]) / 2
