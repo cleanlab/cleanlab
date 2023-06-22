@@ -564,7 +564,7 @@ def _compute_overlooked_box_scores_for_image(
     lab_bboxes: Optional[np.ndarray] = None,
     similarity_matrix: Optional[np.ndarray] = None,
     min_possible_similarity: Optional[float] = None,
-    has_overlap_label_bboxes: Optional[float] = None,
+    has_overlap_label_bboxes: Optional[np.ndarray] = None,
 ) -> np.ndarray:
     """This method returns one score per predicted box (above threshold) in an image. Score from 0 to 1 ranking how overlooked the box is."""
 
