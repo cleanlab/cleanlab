@@ -864,6 +864,7 @@ def _compute_swap_box_scores_for_image(
         not_k_idx = pred_labels != k
         if has_overlap_label_bboxes[iid]:
             scores_swap[iid] = min_possible_similarity
+            continue
         if len(not_k_idx) == 0:
             scores_swap[iid] = 1.0
             continue
