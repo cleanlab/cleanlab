@@ -149,6 +149,8 @@ Please see our `contributing guidelines <https://github.com/cleanlab/cleanlab/bl
    Improving Consensus Labels for Multiannotator Data <tutorials/multiannotator>
    Multi-Label Classification <tutorials/multilabel_classification>
    Token Classification (text) <tutorials/token_classification>
+   Semantic Segmentation (pytorch) <tutorials/segmentation>
+   Object Detection (detectron2) <tutorials/object_detection>
    Predicted Probabilities via Cross Validation <tutorials/pred_probs_cross_val>
    FAQ <tutorials/faq>
 
@@ -167,6 +169,7 @@ Please see our `contributing guidelines <https://github.com/cleanlab/cleanlab/bl
    cleanlab/multilabel_classification/index
    cleanlab/regression/index
    cleanlab/token_classification/index
+   cleanlab/segmentation/index
    cleanlab/object_detection/index
    cleanlab/datalab/index
    cleanlab/benchmarking/index

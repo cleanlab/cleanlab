@@ -11,6 +11,7 @@ from . import token_classification
 from . import multilabel_classification
 from . import object_detection
 from . import regression
+from . import segmentation
 
 
 class DatalabUnavailable:

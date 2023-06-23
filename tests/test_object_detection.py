@@ -556,6 +556,15 @@ def test_visualize(monkeypatch, generate_single_image_file):
     visualize(img, save_path="./fake_path.pdf")
     assert os.path.exists("./fake_path.pdf")
 
+    visualize(img, save_path="./fake_path_no_ext")
+    assert os.path.exists("./fake_path_no_ext.png")
+
+    visualize(img, save_path="./fake_path.ps")
+    assert os.path.exists("./fake_path.ps")
+
+    visualize(img, save_path="./fake.path.pdf")
+    assert os.path.exists("./fake.path.pdf")
+
     visualize(generate_single_image_file, label=labels[0], prediction=predictions[0])
     visualize(generate_single_image_file, label=None, prediction=predictions[0])
     visualize(generate_single_image_file, label=labels[0], prediction=None)

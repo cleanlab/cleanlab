@@ -28,8 +28,8 @@ from cleanlab.object_detection.rank import (
 
 from cleanlab.internal.object_detection_utils import bbox_xyxy_to_xywh
 
-if TYPE_CHECKING:  # pragma: no cover
-    from PIL.Image import Image as Image
+if TYPE_CHECKING:
+    from PIL.Image import Image as Image  # pragma: no cover
 else:
     Image = TypeVar("Image")
 
@@ -142,14 +142,9 @@ def visualize(
 
     if save_path:
         allowed_image_formats = set(["png", "pdf", "ps", "eps", "svg"])
-        image_format = (
-            save_path[-3:]
-            if len(save_path) > 2
-            and save_path[-4] == "."
-            and save_path[-3:] in allowed_image_formats
-            else None
-        )
-
+        image_format: Optional[str] = None
+        if save_path.split(".")[-1] in allowed_image_formats and "." in save_path:
+            image_format = save_path.split(".")[-1]
         plt.savefig(
             save_path,
             format=image_format,

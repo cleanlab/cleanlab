@@ -246,6 +246,28 @@ cleanlab is based on peer-reviewed research. Here are relevant papers to cite if
 
 </details>
 
+<details><summary><a href="https://arxiv.org/abs/2305.15696"> Detecting Dataset Drift and Non-IID Sampling (ICML '23)</a> (<b>click to show bibtex</b>) </summary>
+
+    @inproceedings{cummings2023drift,
+        title={Detecting Dataset Drift and Non-IID Sampling via k-Nearest Neighbors},
+        author={Cummings, Jesse and Snorrason, Elías and Mueller, Jonas},
+        booktitle={ICML Workshop on Data-centric Machine Learning Research},
+        year={2023}
+    }
+
+</details>
+
+<details><summary><a href="https://arxiv.org/abs/2305.16583"> Detecting Errors in Numerical Data (ICML '23)</a> (<b>click to show bibtex</b>) </summary>
+
+    @inproceedings{zhou2023errors,
+        title={Detecting Errors in Numerical Data via any Regression Model},
+        author={Zhou, Hang and Mueller, Jonas and Kumar, Mayank and Wang, Jane-Ling and Lei, Jing},
+        booktitle={ICML Workshop on Data-centric Machine Learning Research},
+        year={2023}
+    }
+
+</details>
+
 
 To understand/cite other cleanlab functionality not described above, check out our [additional publications](https://cleanlab.ai/research/).
 
@@ -266,7 +288,7 @@ To understand/cite other cleanlab functionality not described above, check out o
 
 - [Cleanlab Studio](https://cleanlab.ai/studio/?utm_source=github&utm_medium=readme&utm_campaign=clostostudio): *No-code Data Improvement*
 
-While this open-source library **finds** data issues, an interface is needed to efficiently **fix** these issues in your dataset. [Cleanlab Studio](https://cleanlab.ai/studio/?utm_source=github&utm_medium=readme&utm_campaign=clostostudio) is a no-code platform to find and fix problems in real-world ML datasets. Studio automatically runs optimized versions of the algorithms from this open-source library on top of AutoML models fit to your data, and presents detected issues in a smart data editing interface. It's a data cleaning assistant to quickly turn unreliable data into reliable models/insights (via AI/automation + streamlined UX). [Try it for free!](https://cleanlab.typeform.com/to/NLnU1XZF?typeform-source=cleanlab.ai)
+While this open-source library **finds** data issues, its utility depends on you having a decent existing ML model and an interface to efficiently **fix** these issues in your dataset. Providing all these pieces, [Cleanlab Studio](https://cleanlab.ai/studio/?utm_source=github&utm_medium=readme&utm_campaign=clostostudio) is a no-code platform to **find and fix** problems in real-world ML datasets. Studio automatically runs optimized versions of the algorithms from this open-source library on top of AutoML & Foundation models fit to your data, and presents detected issues in a smart data editing interface. It's a data cleaning assistant to quickly turn unreliable data into reliable models/insights (via AI/automation + streamlined UX). [Try it for free!](https://cleanlab.typeform.com/to/NLnU1XZF?typeform-source=cleanlab.ai)
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/cleanlab/assets/master/cleanlab/studio.png" width=80% height=80%>

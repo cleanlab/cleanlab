@@ -121,8 +121,8 @@ def num_label_issues(
     num_issues :
       The estimated number of examples with label issues in the dataset.
     """
-    valid_methods = ["off_diagonal", "off_diagonal_calibrated"]
-    if isinstance(confident_joint, np.ndarray):
+    valid_methods = ["off_diagonal", "off_diagonal_calibrated", "off_diagonal_custom"]
+    if isinstance(confident_joint, np.ndarray) and estimation_method != "off_diagonal_custom":
         warn_str = (
             "The supplied `confident_joint` is ignored as `confident_joint` is recomuputed internally using "
             "the supplied `labels` and `pred_probs`. If you still want to use custom `confident_joint` call function "
