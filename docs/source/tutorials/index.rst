@@ -15,6 +15,7 @@ Tutorials
    multiannotator
    multilabel_classification
    token_classification
+   segmentation
    object_detection
    pred_probs_cross_val
    faq
