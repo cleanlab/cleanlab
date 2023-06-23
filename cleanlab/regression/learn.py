@@ -15,10 +15,11 @@
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
 """
-cleanlab can be used for learning with noisy data for any dataset and model.
+cleanlab can be used for learning with noisy data for any dataset and regression model.
 
 For regression tasks, the :py:class:`regression.learn.CleanLearning <cleanlab.regression.learn.CleanLearning>`
-class wraps an instance of an sklearn model to allow you to train more robust regression models.
+class wraps any instance of an sklearn model to allow you to train more robust regression models,
+or use the model to identify corrupted values in the dataset.
 The wrapped model must adhere to the `sklearn estimator API
 <https://scikit-learn.org/stable/developers/develop.html#rolling-your-own-estimator>`_,
 meaning it must define three functions:
@@ -27,16 +28,14 @@ meaning it must define three functions:
 * ``model.predict(X)``
 * ``model.score(X, y, sample_weight=None)``
 
-where ``X`` contains the data (i.e. features or independant variables) and ``y`` contains the target 
-value (ie. dependant variable). The first index of ``X`` and of ``y`` should correspond to the different 
-examples in the dataset, such that ``len(X) = len(y) = N`` (sample-size). Here `sample_weight` re-weights 
-examples in the loss function while training (supporting `sample_weight` in your model is 
-recommended but optional).
+where ``X`` contains the data (i.e. features, covariates, independant variables) and ``y`` contains the target 
+value (i.e. label, response/dependant variable). The first index of ``X`` and of ``y`` should correspond to the different 
+examples in the dataset, such that ``len(X) = len(y) = N`` (sample-size).
 
-Furthermore, your estimator should be correctly clonable via
+Your model should be correctly clonable via
 `sklearn.base.clone <https://scikit-learn.org/stable/modules/generated/sklearn.base.clone.html>`_:
-cleanlab internally creates multiple instances of the estimator, and if you e.g. manually wrap a 
-PyTorch model, you must ensure that every call to the estimator's ``__init__()`` creates an independent 
+cleanlab internally creates multiple instances of the model, and if you e.g. manually wrap a 
+PyTorch model, ensure that every call to the estimator's ``__init__()`` creates an independent 
 instance of the model (for sklearn compatibility, the weights of neural network models should typically 
 be initialized inside of ``clf.fit()``).
 
@@ -49,11 +48,11 @@ Example
 >>> # Estimate the predictions as if you had trained without label issues.
 >>> predictions = cl.predict(y)
 
-If the model is not sklearn-compatible by default, it might be the case that standard packages can adapt 
+If your model is not sklearn-compatible by default, it might be the case that standard packages can adapt 
 the model. For example, you can adapt PyTorch models using `skorch <https://skorch.readthedocs.io/>`_ 
 and adapt Keras models using `SciKeras <https://www.adriangb.com/scikeras/>`_.
 
-If an open-source adapter doesn't already exist, you can manually wrap the
+If an adapter doesn't already exist, you can manually wrap your 
 model to be sklearn-compatible. This is made easy by inheriting from
 `sklearn.base.BaseEstimator
 <https://scikit-learn.org/stable/modules/generated/sklearn.base.BaseEstimator.html>`_:
@@ -65,11 +64,11 @@ model to be sklearn-compatible. This is made easy by inheriting from
     class YourModel(BaseEstimator):
         def __init__(self, ):
             pass
-        def fit(self, X, y, sample_weight=None):
+        def fit(self, X, y):
             pass
         def predict(self, X):
             pass
-        def score(self, X, y, sample_weight=None):
+        def score(self, X, y):
             pass
             
 """
@@ -99,38 +98,35 @@ class CleanLearning(BaseEstimator):
     """
     CleanLearning = Machine Learning with cleaned data (even when training on messy, error-ridden data).
 
-    Automated and robust learning with noisy labels using any dataset and any model. This class
-    trains a ``model`` with error-prone, noisy labels as if the model had been instead trained
-    on a dataset with perfect labels. It achieves this by cleaning out the error and providing
-    cleaned data while training. This class is currently intended for standard regression tasks.
+    Automated and robust learning with noisy labels using any dataset and any regression model.
+    For regression tasks, this class trains a ``model`` with error-prone, noisy labels
+    as if the model had been instead trained on a dataset with perfect labels.
+    It achieves this by estimating which labels are noisy (you might solely use CleanLearning for this estimation)
+    and then removing examples estimated to have noisy labels, such that a more robust copy of the same model can be
+    trained on the remaining clean data.
 
     Parameters
     ----------
     model :
-        A model implementing the `sklearn estimator API <https://scikit-learn.org/stable/developers/develop.html#rolling-your-own-estimator>`_,
+        Any regression model implementing the `sklearn estimator API <https://scikit-learn.org/stable/developers/develop.html#rolling-your-own-estimator>`_,
         defining the following functions:
 
-        - ``model.fit(X, y, sample_weight=None)``
+        - ``model.fit(X, y)``
         - ``model.predict(X)``
-        - ``model.score(X, y, sample_weight=None)``
+        - ``model.score(X, y)``
 
-        If the model is not sklearn-compatible by default, it might be the case that
-        standard packages can adapt the model. For example, you can adapt PyTorch
-        models using `skorch <https://skorch.readthedocs.io/>`_ and adapt Keras models
-        using `SciKeras <https://www.adriangb.com/scikeras/>`_.
-
-        Stores the model used in CleanLearning.
         Default model used is `sklearn.linear_model.LinearRegression
         <https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LinearRegression.html>`_.
 
     cv_n_folds :
         This class needs holdout predictions for every data example and if not provided,
         uses cross-validation to compute them. This argument sets the number of cross-validation
-        folds used to compute out-of-sample predictions for each example in ``X``. Default 5.
+        folds used to compute out-of-sample predictions for each example in ``X``. Default is 5.
+        Larger values may produce better results, but requires longer to run.
 
     n_boot :
         Number of bootstrap resampling rounds used to estimate the model's epistemic uncertainty.
-        Default is 5. Higher values are expected to produce better results but require longer runtimes.
+        Default is 5. Larger values are expected to produce better results but require longer runtimes.
 
     include_aleatoric_uncertainty :
         Specifies if the aleatoric uncertainty should be estimated during label error detection.
@@ -141,7 +137,7 @@ class CleanLearning(BaseEstimator):
 
     seed :
         Set the default state of the random number generator used to split
-        the cross-validated folds. By default, uses ``np.random`` current random state.
+        the data. By default, uses ``np.random`` current random state.
     """
 
     def __init__(
@@ -194,7 +190,7 @@ class CleanLearning(BaseEstimator):
         model_final_kwargs: Optional[dict] = None,
     ) -> BaseEstimator:
         """
-        Train the ``model`` with error-prone, noisy labels as if the model had been instead trained
+        Train regression ``model`` with error-prone, noisy labels as if the model had been instead trained
         on a dataset with the correct labels. ``fit`` achieves this by first training ``model`` via
         cross-validation on the noisy data, using the resulting predicted probabilities to identify label issues,
         pruning the data with label issues, and finally training ``model`` on the remaining clean data.
@@ -202,16 +198,17 @@ class CleanLearning(BaseEstimator):
         Parameters
         ----------
         X :
-            Data features (i.e. training inputs for ML), typically an array of shape ``(N, ...)``,
-            where N is the number of examples.
-            Your model that this instance was initialized with, ``model``, must be able to ``fit()``
-            and ``predict()`` data of this format.
+            Data features (i.e. covariates, independent variables), typically an array of shape ``(N, ...)``,
+            where N is the number of examples (sample-size).
+            Your ``model``, must be able to ``fit()`` and ``predict()`` data of this format.
 
         y :
-            An array of shape ``(N,)`` of noisy target values (dependant variables), where some values may be erroneous.
+            An array of shape ``(N,)`` of noisy labels (i.e. target/response/dependant variable), where some values may be erroneous.
 
         label_issues :
-            Specifies the label issues for each example in dataset. If ``pd.DataFrame``, must be formatted as the one returned by:
+            Optional already-identified label issues in the dataset (if previously estimated).
+            Specify this to avoid re-estimating the label issues if already done.
+            If ``pd.DataFrame``, must be formatted as the one returned by:
             :py:meth:`self.find_label_issues <cleanlab.regression.learn.CleanLearning.find_label_issues>` or
             :py:meth:`self.get_label_issues <cleanlab.regression.learn.CleanLearning.get_label_issues>`. The DataFrame must
             have a column named ``is_label_issue``.
@@ -220,7 +217,7 @@ class CleanLearning(BaseEstimator):
             have the value ``True``, and the rest of the examples have the value ``False``.
 
         sample_weight :
-            Array of weights with shape ``(N,)`` that are assigned to individual samples. Specifies how to weight the examples in
+            Optional array of weights with shape ``(N,)`` that are assigned to individual samples. Specifies how to weight the examples in
             the loss function while training.
 
         find_label_issues_kwargs:
@@ -243,8 +240,8 @@ class CleanLearning(BaseEstimator):
 
             After calling ``self.fit()``, this estimator also stores extra attributes such as:
 
-            - ``self.label_issues_df``: a ``pd.DataFrame`` containing quality scores, boolean flags
-                indicating which examples contain issues, and predicted values for each example.
+            - ``self.label_issues_df``: a ``pd.DataFrame`` containing label quality scores, boolean flags
+                indicating which examples have label issues issues, and predicted label values for each example.
                 Accessible via :py:meth:`self.get_label_issues <cleanlab.regression.learn.CleanLearning.get_label_issues>`,
                 of similar format as the one returned by :py:meth:`self.find_label_issues <cleanlab.regression.learn.CleanLearning.find_label_issues>`.
                 See documentation of :py:meth:`self.find_label_issues <cleanlab.regression.learn.CleanLearning.find_label_issues>`
@@ -331,12 +328,12 @@ class CleanLearning(BaseEstimator):
         Parameters
         ----------
         X : np.ndarray or DatasetLike
-            Test data in the same format expected by your wrapped model.
+            Test data in the same format expected by your wrapped regression model.
 
         Returns
         -------
         predictions : np.ndarray
-            Vector of predictions for the test examples.
+            Predictions for the test examples.
         """
         return self.model.predict(X, *args, **kwargs)
 
@@ -346,7 +343,7 @@ class CleanLearning(BaseEstimator):
         y: LabelLike,
         sample_weight: Optional[np.ndarray] = None,
     ) -> float:
-        """Evaluates your wrapped model's score on a test set `X` with target values `y`.
+        """Evaluates your wrapped regression model's score on a test set `X` with target values `y`.
         Uses your model's default scoring function, or r-squared score if your model as no ``"score"`` attribute.
 
         Parameters
@@ -358,12 +355,12 @@ class CleanLearning(BaseEstimator):
             Test labels in the same format as labels previously used in ``fit()``.
 
         sample_weight :
-            An array of shape ``(N,)`` or ``(N, 1)`` used to weight each test example when computing the score.
+            Optional array of shape ``(N,)`` or ``(N, 1)`` used to weight each test example when computing the score.
 
         Returns
         -------
         score : float
-            Number quantifying the performance of this model on the test data.
+            Number quantifying the performance of this regression model on the test data.
         """
         if hasattr(self.model, "score"):
             if "sample_weight" in inspect.getfullargspec(self.model.score).args:
@@ -389,9 +386,9 @@ class CleanLearning(BaseEstimator):
         model_kwargs: Optional[dict] = None,
     ) -> pd.DataFrame:
         """
-        Identifies potential label issues in the dataset.
+        Identifies potential label issues (corrupted `y`-values) in the dataset, and estimates how noisy each label is.
 
-        Note: this method computes the label issues from scratch. To access previously-computed label issues from
+        Note: this method estimates the label issues from scratch. To access previously-estimated label issues from
         this :py:class:`CleanLearning <cleanlab.regression.learn.CleanLearning>` instance, use the
         :py:meth:`self.get_label_issues <cleanlab.regression.learn.CleanLearning.get_label_issues>` method.
 
@@ -401,21 +398,29 @@ class CleanLearning(BaseEstimator):
 
         Parameters
         ----------
+        X :
+            Data features (i.e. covariates, independent variables), typically an array of shape ``(N, ...)``,
+            where N is the number of examples (sample-size).
+            Your ``model``, must be able to ``fit()`` and ``predict()`` data of this format.
+        
+        y :
+            An array of shape ``(N,)`` of noisy labels (i.e. target/response/dependant variable), where some values may be erroneous.
+        
         uncertainty :
-            The estimated uncertainty for each example. Should be passed in as a float (constant uncertainty throughout all examples),
+            Optional estimated uncertainty for each example. Should be passed in as a float (constant uncertainty throughout all examples),
             or a numpy array of length ``N`` (estimated uncertainty for each example).
-            If unprovided, this method will estimated the uncertainty as the sum of the epistemic and aleatoric uncertainty.
+            If not provided, this method will estimate the uncertainty as the sum of the epistemic and aleatoric uncertainty.
 
         save_space :
             If True, then returned ``label_issues_df`` will not be stored as attribute.
             This means some other methods like ``self.get_label_issues()`` will no longer work.
 
         coarse_search_range :
-            The coarse search range to find the value of ``k``, which represents the fraction of examples which have issues.
+            The coarse search range to find the value of ``k``, which estimates the fraction of data which have label issues.
             More values represent a more thorough search (better expected results but longer runtimes).
 
         fine_search_size :
-            Size of fine-grained search grid to find the value of ``k``, which represents our estimate of the fraction of examples which have issues.
+            Size of fine-grained search grid to find the value of ``k``, which represents our estimate of the fraction of data which have label issues.
             A higher number represents a more thorough search (better expected results but longer runtimes).
 
 
@@ -545,7 +550,7 @@ class CleanLearning(BaseEstimator):
         predictions: Optional[np.ndarray] = None,
     ) -> np.ndarray:
         """
-        Compute the epistemic uncertainty of the regression model. This uncertainty is estimated using the bootstrapped
+        Compute the epistemic uncertainty of the regression model for each example. This uncertainty is estimated using the bootstrapped
         variance of the model predictions.
 
         Parameters
@@ -588,7 +593,7 @@ class CleanLearning(BaseEstimator):
         residual: np.ndarray,
     ) -> float:
         """
-        Compute the aleatoric uncertainty of the data. This uncertainty is estimated by the standard deviation
+        Compute the aleatoric uncertainty of the data. This uncertainty is estimated by predicting the standard deviation
         of the regression error.
 
         Parameters
