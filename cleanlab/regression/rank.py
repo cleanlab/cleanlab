@@ -85,8 +85,8 @@ def get_label_quality_scores(
     )
 
     scoring_funcs: Dict[str, Callable[[np.ndarray, np.ndarray], np.ndarray]] = {
-        "residual": get_residual_score_for_each_label,
-        "outre": get_outre_score_for_each_label,
+        "residual": _get_residual_score_for_each_label,
+        "outre": _get_outre_score_for_each_label,
     }
 
     scoring_func = scoring_funcs.get(method, None)
@@ -103,7 +103,7 @@ def get_label_quality_scores(
     return label_quality_scores
 
 
-def get_residual_score_for_each_label(
+def _get_residual_score_for_each_label(
     labels: np.ndarray,
     predictions: np.ndarray,
 ) -> np.ndarray:
@@ -135,7 +135,7 @@ def get_residual_score_for_each_label(
     return label_quality_scores
 
 
-def get_outre_score_for_each_label(
+def _get_outre_score_for_each_label(
     labels: np.ndarray,
     predictions: np.ndarray,
     *,

@@ -7,8 +7,8 @@ from sklearn.metrics import r2_score
 from sklearn.linear_model import LinearRegression
 from cleanlab.regression.rank import (
     get_label_quality_scores,
-    get_residual_score_for_each_label,
-    get_outre_score_for_each_label,
+    _get_residual_score_for_each_label,
+    _get_outre_score_for_each_label,
 )
 from cleanlab.regression.learn import CleanLearning
 
@@ -118,7 +118,7 @@ def test_input_shape_predictions():
 # test individual scoring functions
 @pytest.mark.parametrize(
     "scoring_funcs",
-    [get_residual_score_for_each_label, get_outre_score_for_each_label],
+    [_get_residual_score_for_each_label, _get_outre_score_for_each_label],
 )
 def test_individual_scoring_functions(scoring_funcs):
     scores = scoring_funcs(labels=labels, predictions=predictions)
