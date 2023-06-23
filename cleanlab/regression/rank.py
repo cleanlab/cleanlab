@@ -20,6 +20,8 @@ Methods to score the quality of each label in a regression dataset. These can be
 
 Note: Label quality scores are most accurate when they are computed based on out-of-sample `predictions` from your regression model.
 To obtain out-of-sample predictions for every datapoint in your dataset, you can use :ref:`cross-validation <pred_probs_cross_val>`. This is encouraged to get better results.
+
+If you have a sklearn-compatible regression model, consider using `cleanlab.regression.learn.CleanLearning` instead, which can more accurately identify noisy label values.
 """
 
 from typing import Dict, Callable
