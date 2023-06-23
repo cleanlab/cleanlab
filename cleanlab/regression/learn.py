@@ -241,7 +241,7 @@ class CleanLearning(BaseEstimator):
             After calling ``self.fit()``, this estimator also stores extra attributes such as:
 
             - ``self.label_issues_df``: a ``pd.DataFrame`` containing label quality scores, boolean flags
-                indicating which examples have label issues issues, and predicted label values for each example.
+                indicating which examples have label issues, and predicted label values for each example.
                 Accessible via :py:meth:`self.get_label_issues <cleanlab.regression.learn.CleanLearning.get_label_issues>`,
                 of similar format as the one returned by :py:meth:`self.find_label_issues <cleanlab.regression.learn.CleanLearning.find_label_issues>`.
                 See documentation of :py:meth:`self.find_label_issues <cleanlab.regression.learn.CleanLearning.find_label_issues>`
