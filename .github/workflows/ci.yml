@@ -28,9 +28,8 @@ jobs:
           pip install fasttext
       - name: Install cleanvision
         run: |
-          git clone https://github.com/sanjanag/cleanvision.git
-          cd cleanvision
-          pip install -e .
+          git clone https://github.com/cleanlab/cleanvision.git
+          pip install cleanvision/
       - name: Test with coverage
         run: pytest --verbose --cov=cleanlab/ --cov-config .coveragerc --cov-report=xml
         env:
@@ -54,9 +53,8 @@ jobs:
           pip install tensorflow-cpu
       - name: Install cleanvision
         run: |
-          git clone https://github.com/sanjanag/cleanvision.git
-          cd cleanvision
-          pip install -e .
+          git clone https://github.com/cleanlab/cleanvision.git
+          pip install cleanvision/
       - name: Test with coverage
         run: pytest --verbose --cov=cleanlab/ --cov-config .coveragerc --cov-report=xml
         env:
@@ -95,9 +93,8 @@ jobs:
           pip install tensorflow-cpu
       - name: Install cleanvision
         run: |
-          git clone https://github.com/sanjanag/cleanvision.git
-          cd cleanvision
-          pip install -e .
+          git clone https://github.com/cleanlab/cleanvision.git
+          pip install cleanvision/
       - name: Test with coverage
         run: pytest --verbose --cov=cleanlab/ --cov-config .coveragerc --cov-report=xml
         env:
@@ -141,9 +138,8 @@ jobs:
           pip install -r requirements-dev.txt  # install development dependencies and type stubs
       - name: Install cleanvision
         run: |
-          git clone https://github.com/sanjanag/cleanvision.git
-          cd cleanvision
-          pip install -e .
+          git clone https://github.com/cleanlab/cleanvision.git
+          pip install cleanvision/
       - name: Type check
         run: mypy --install-types --non-interactive cleanlab
   fmt:
