@@ -402,10 +402,10 @@ class CleanLearning(BaseEstimator):
             Data features (i.e. covariates, independent variables), typically an array of shape ``(N, ...)``,
             where N is the number of examples (sample-size).
             Your ``model``, must be able to ``fit()`` and ``predict()`` data of this format.
-        
+
         y :
             An array of shape ``(N,)`` of noisy labels (i.e. target/response/dependant variable), where some values may be erroneous.
-        
+
         uncertainty :
             Optional estimated uncertainty for each example. Should be passed in as a float (constant uncertainty throughout all examples),
             or a numpy array of length ``N`` (estimated uncertainty for each example).
