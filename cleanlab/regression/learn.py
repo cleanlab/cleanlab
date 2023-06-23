@@ -200,7 +200,7 @@ class CleanLearning(BaseEstimator):
         X :
             Data features (i.e. covariates, independent variables), typically an array of shape ``(N, ...)``,
             where N is the number of examples (sample-size).
-            Your ``model``, must be able to ``fit()`` and ``predict()`` data of this format.
+            Your ``model`` must be able to ``fit()`` and ``predict()`` data of this format.
 
         y :
             An array of shape ``(N,)`` of noisy labels (i.e. target/response/dependant variable), where some values may be erroneous.
@@ -413,7 +413,7 @@ class CleanLearning(BaseEstimator):
 
         save_space :
             If True, then returned ``label_issues_df`` will not be stored as attribute.
-            This means some other methods like ``self.get_label_issues()`` will no longer work.
+            This means some other methods like :py:meth:`self.get_label_issues <cleanlab.regression.learn.CleanLearning.get_label_issues>` will no longer work.
 
         coarse_search_range :
             The coarse search range to find the value of ``k``, which estimates the fraction of data which have label issues.
@@ -527,7 +527,7 @@ class CleanLearning(BaseEstimator):
 
     def get_label_issues(self) -> Optional[pd.DataFrame]:
         """
-        Accessor. Returns `label_issues_df` attribute if previously already computed.
+        Accessor, returns `label_issues_df` attribute if previously computed.
         This ``pd.DataFrame`` describes the issues identified for each example (each row corresponds to an example).
         For column definitions, see the documentation of
         :py:meth:`CleanLearning.find_label_issues<cleanlab.regression.learn.CleanLearning.find_label_issues>`.
