@@ -10,6 +10,7 @@ from . import outlier
 from . import token_classification
 from . import multilabel_classification
 from . import object_detection
+from . import segmentation
 
 
 class DatalabUnavailable:
