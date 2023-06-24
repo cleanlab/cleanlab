@@ -11,10 +11,10 @@ Tutorials
    tabular
    audio
    dataset_health
-   regression
    outliers
    multiannotator
    multilabel_classification
+   regression
    token_classification
    segmentation
    object_detection
