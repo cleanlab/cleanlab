@@ -642,7 +642,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
             if args:
                 X = args[0]
             elif "X" in kwargs:
-                X = kwargs["X"] 
+                X = kwargs["X"]
             elif "x" in kwargs:
                 X = kwargs["x"]
             else:
