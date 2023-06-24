@@ -127,10 +127,10 @@ def make_rare_label(data):
 
 def make_high_dim_data(seed=SEED):
     np.random.seed(seed=seed)
-    X_train = np.random.randint(0, 255, (4000, 28, 28))
-    label_train = np.random.randint(0, 10, 4000)
-    X_test = np.random.randint(0, 255, (1000, 28, 28))
-    label_test = np.random.randint(0, 10, 1000)
+    X_train = np.random.randint(0, 255, (200, 28, 28))
+    label_train = np.random.randint(0, 10, 200)
+    X_test = np.random.randint(0, 255, (50, 28, 28))
+    label_test = np.random.randint(0, 10, 50)
     X_train, X_test = X_train / 255.0, X_test / 255.0
 
     return {
@@ -170,15 +170,21 @@ def test_cl(data):
 
 
 def test_cl_default_clf():
-    cl = CleanLearning() # default clf is LogisticRegression
+    cl = CleanLearning()  # default clf is LogisticRegression
     X_train_og = deepcopy(HIGH_DIM_DATA["X_train"])
     cl.fit(HIGH_DIM_DATA["X_train"], HIGH_DIM_DATA["labels_train"])
     result = cl.predict(HIGH_DIM_DATA["X_test"])
     pred_proba = cl.predict_proba(HIGH_DIM_DATA["X_test"])
     score = cl.score(HIGH_DIM_DATA["X_test"], HIGH_DIM_DATA["labels_test"])
-    print(score, result, pred_proba)
 
     cl.find_label_issues(HIGH_DIM_DATA["X_train"], HIGH_DIM_DATA["labels_train"])
+
+    # assert result has the correct length
+    assert len(result) == len(HIGH_DIM_DATA["X_test"])
+
+    # assert pred_proba has the right dimensions (N x K),
+    # where K = 10 (number of classes) as specified in make_high_dim_data()
+    assert pred_proba.shape == (len(HIGH_DIM_DATA["X_test"]), 10)
 
     # ensure data has not been altered:
     assert (HIGH_DIM_DATA["X_train"] == X_train_og).all()

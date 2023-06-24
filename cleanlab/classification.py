@@ -183,7 +183,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
       Stores the classifier used in Confident Learning.
       Default classifier used is `sklearn.linear_model.LogisticRegression
       <https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html>`_.
-      Default classifier assumes that indexing along the first dimension of the dataset corresponds to 
+      Default classifier assumes that indexing along the first dimension of the dataset corresponds to
       selecting different training examples.
 
     seed : int, optional
@@ -610,7 +610,15 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
           Vector of class predictions for the test examples.
         """
         if self.default_clf:
-            X = force_two_dimensions(args[0])
+            if args:
+                X = args[0]
+            elif "X" in kwargs:
+                X = kwargs["X"]
+            elif "x" in kwargs:
+                X = kwargs["x"]
+            else:
+                raise ValueError("No input provided to predict")
+            X = force_two_dimensions(X)
             new_args = (X,) + args[1:]
             return self.clf.predict(*new_args, **kwargs)
         else:
@@ -631,7 +639,15 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
           ``(N x K)`` array of predicted class probabilities, one row for each test example.
         """
         if self.default_clf:
-            X = force_two_dimensions(args[0])
+            if args:
+                X = args[0]
+            elif "X" in kwargs:
+                X = kwargs["X"]
+            elif "x" in kwargs:
+                X = kwargs["x"]
+            else:
+                raise ValueError("No input provided to predict")
+            X = force_two_dimensions(X)
             new_args = (X,) + args[1:]
             return self.clf.predict_proba(*new_args, **kwargs)
         else:
