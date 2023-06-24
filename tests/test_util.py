@@ -30,6 +30,7 @@ joint_matrix_2 = np.array(
 
 single_element = np.array([1])
 
+
 def test_print_inm():
     for m in [noise_matrix, noise_matrix_2, single_element]:
         util.print_inverse_noise_matrix(m, round_places=3)
@@ -180,7 +181,10 @@ def test_force_two_dimensions():
     # Test with 4D array
     X = np.zeros((5, 5, 5, 5))
     X_reshaped = util.force_two_dimensions(X)
-    assert X_reshaped.shape == (5, 125), "The shape of 4D array should be flattened to two dimensions."
+    assert X_reshaped.shape == (
+        5,
+        125,
+    ), "The shape of 4D array should be flattened to two dimensions."
 
     # Test with None input
     assert util.force_two_dimensions(None) is None, "None input should return None."
