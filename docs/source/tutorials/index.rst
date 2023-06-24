@@ -11,6 +11,7 @@ Tutorials
    tabular
    audio
    dataset_health
+   regression
    outliers
    multiannotator
    multilabel_classification
