@@ -173,18 +173,31 @@ def test_cl_default_clf():
     cl = CleanLearning()  # default clf is LogisticRegression
     X_train_og = deepcopy(HIGH_DIM_DATA["X_train"])
     cl.fit(HIGH_DIM_DATA["X_train"], HIGH_DIM_DATA["labels_train"])
-    result = cl.predict(HIGH_DIM_DATA["X_test"])
-    pred_proba = cl.predict_proba(HIGH_DIM_DATA["X_test"])
-    score = cl.score(HIGH_DIM_DATA["X_test"], HIGH_DIM_DATA["labels_test"])
-
-    cl.find_label_issues(HIGH_DIM_DATA["X_train"], HIGH_DIM_DATA["labels_train"])
 
     # assert result has the correct length
+    result = cl.predict(HIGH_DIM_DATA["X_test"])
+    assert len(result) == len(HIGH_DIM_DATA["X_test"])
+
+    result = cl.predict(X=HIGH_DIM_DATA["X_test"])
+    assert len(result) == len(HIGH_DIM_DATA["X_test"])
+
+    result = cl.predict(x=HIGH_DIM_DATA["X_test"])
     assert len(result) == len(HIGH_DIM_DATA["X_test"])
 
     # assert pred_proba has the right dimensions (N x K),
     # where K = 10 (number of classes) as specified in make_high_dim_data()
+    pred_proba = cl.predict_proba(HIGH_DIM_DATA["X_test"])
     assert pred_proba.shape == (len(HIGH_DIM_DATA["X_test"]), 10)
+
+    pred_proba = cl.predict_proba(X=HIGH_DIM_DATA["X_test"])
+    assert pred_proba.shape == (len(HIGH_DIM_DATA["X_test"]), 10)
+
+    pred_proba = cl.predict_proba(x=HIGH_DIM_DATA["X_test"])
+    assert pred_proba.shape == (len(HIGH_DIM_DATA["X_test"]), 10)
+
+    score = cl.score(HIGH_DIM_DATA["X_test"], HIGH_DIM_DATA["labels_test"])
+
+    cl.find_label_issues(HIGH_DIM_DATA["X_train"], HIGH_DIM_DATA["labels_train"])
 
     # ensure data has not been altered:
     assert (HIGH_DIM_DATA["X_train"] == X_train_og).all()
