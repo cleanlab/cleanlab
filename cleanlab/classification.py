@@ -614,8 +614,10 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
                 X = args[0]
             elif "X" in kwargs:
                 X = kwargs["X"]
+                del kwargs["X"]
             elif "x" in kwargs:
                 X = kwargs["x"]
+                del kwargs["x"]
             else:
                 raise ValueError("No input provided to predict")
             X = force_two_dimensions(X)
@@ -643,8 +645,10 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
                 X = args[0]
             elif "X" in kwargs:
                 X = kwargs["X"]
+                del kwargs["X"]
             elif "x" in kwargs:
                 X = kwargs["x"]
+                del kwargs["x"]
             else:
                 raise ValueError("No input provided to predict")
             X = force_two_dimensions(X)
