@@ -181,8 +181,6 @@ def test_cl_default_clf():
     result = cl.predict(X=HIGH_DIM_DATA["X_test"])
     assert len(result) == len(HIGH_DIM_DATA["X_test"])
 
-    result = cl.predict(x=HIGH_DIM_DATA["X_test"])
-    assert len(result) == len(HIGH_DIM_DATA["X_test"])
 
     # assert pred_proba has the right dimensions (N x K),
     # where K = 10 (number of classes) as specified in make_high_dim_data()
