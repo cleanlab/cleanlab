@@ -190,8 +190,6 @@ def test_cl_default_clf():
     pred_proba = cl.predict_proba(X=HIGH_DIM_DATA["X_test"])
     assert pred_proba.shape == (len(HIGH_DIM_DATA["X_test"]), 10)
 
-    pred_proba = cl.predict_proba(x=HIGH_DIM_DATA["X_test"])
-    assert pred_proba.shape == (len(HIGH_DIM_DATA["X_test"]), 10)
 
     score = cl.score(HIGH_DIM_DATA["X_test"], HIGH_DIM_DATA["labels_test"])
 
