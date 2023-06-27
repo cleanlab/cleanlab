@@ -232,11 +232,11 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         label_quality_scores_kwargs={},
         verbose=False,
     ):
-        self.default_clf = False
+        self._default_clf = False
         if clf is None:
             # Use logistic regression if no classifier is provided.
             clf = LogReg(multi_class="auto", solver="lbfgs")
-            self.default_clf = True
+            self._default_clf = True
 
         # Make sure the given classifier has the appropriate methods defined.
         if not hasattr(clf, "fit"):
@@ -458,7 +458,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
             labels = y
         if labels is None:
             raise ValueError("You must specify `labels`.")
-        if self.default_clf:
+        if self._default_clf:
             X = force_two_dimensions(X)
 
         self.clf_final_kwargs = {**clf_kwargs, **clf_final_kwargs}
@@ -609,7 +609,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         class_predictions : np.ndarray
           Vector of class predictions for the test examples.
         """
-        if self.default_clf:
+        if self._default_clf:
             if args:
                 X = args[0]
             elif "X" in kwargs:
@@ -637,7 +637,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         pred_probs : np.ndarray
           ``(N x K)`` array of predicted class probabilities, one row for each test example.
         """
-        if self.default_clf:
+        if self._default_clf:
             if args:
                 X = args[0]
             elif "X" in kwargs:
@@ -671,7 +671,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         score: float
           Number quantifying the performance of this classifier on the test data.
         """
-        if self.default_clf:
+        if self._default_clf:
             X = force_two_dimensions(X)
         if hasattr(self.clf, "score"):
             # Check if sample_weight in clf.score()
@@ -765,7 +765,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
             t = np.round(np.trace(inverse_noise_matrix), 2)
             raise ValueError("Trace(inverse_noise_matrix) is {}. Must exceed 1.".format(t))
 
-        if self.default_clf:
+        if self._default_clf:
             X = force_two_dimensions(X)
         if noise_matrix is not None:
             label_matrix = noise_matrix
