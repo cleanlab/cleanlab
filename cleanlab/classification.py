@@ -643,11 +643,8 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
             elif "X" in kwargs:
                 X = kwargs["X"]
                 del kwargs["X"]
-            elif "x" in kwargs:
-                X = kwargs["x"]
-                del kwargs["x"]
             else:
-                raise ValueError("No input provided to predict")
+                raise ValueError("No input provided to predict, please provide X.")
             X = force_two_dimensions(X)
             new_args = (X,) + args[1:]
             return self.clf.predict_proba(*new_args, **kwargs)
