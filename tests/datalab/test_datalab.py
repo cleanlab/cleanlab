@@ -93,7 +93,7 @@ class TestDatalab:
         for attr in ["data", "label_name", "_labels", "info", "issues"]:
             assert hasattr(lab, attr), f"Missing attribute {attr}"
 
-        assert all(lab._labels == np.array([1, 1, 2, 0, 2]))
+        assert all(lab.labels == np.array([1, 1, 2, 0, 2]))
         assert isinstance(lab.issues, pd.DataFrame), "Issues should by in a dataframe"
         assert isinstance(lab.issue_summary, pd.DataFrame), "Issue summary should be a dataframe"
 
@@ -876,3 +876,59 @@ class TestDatalabFindNearDuplicateIssues:
         assert "near_duplicate" in summary["issue_type"].values
         near_duplicate_summary = lab.get_issue_summary("near_duplicate")
         assert near_duplicate_summary["num_issues"].values[0] > 1
+
+
+class TestDatalabWithoutLabels:
+    num_examples = 100
+    num_features = 10
+    K = 2
+
+    @pytest.fixture
+    def features(self):
+        np.random.seed(SEED)
+        return np.random.rand(self.num_examples, self.num_features)
+
+    @pytest.fixture
+    def pred_probs(self):
+        np.random.seed(SEED)
+        pred_probs_array = np.random.rand(self.num_examples, self.K)
+        return pred_probs_array / pred_probs_array.sum(axis=1, keepdims=True)
+
+    @pytest.fixture
+    def lab(self, features):
+        return Datalab(data={"X": features})
+
+    @pytest.fixture
+    def labels(self):
+        np.random.seed(SEED)
+        return np.random.randint(0, self.K, self.num_examples)
+
+    def test_init(self, lab, features):
+        assert np.array_equal(lab.data["X"], features)
+        assert np.array_equal(lab.labels, [])
+
+    def test_find_issues(self, lab, features, pred_probs):
+        lab = Datalab(data={"X": features})
+        lab.find_issues(pred_probs=pred_probs)
+        assert lab.issues.empty
+
+        lab = Datalab(data={"X": features})
+        lab.find_issues(features=features)
+        assert not lab.issues.empty
+
+    def test_find_issues_features_works_with_and_without_labels(self, features, labels):
+        lab_without_labels = Datalab(data={"X": features})
+        lab_without_labels.find_issues(features=features)
+
+        lab_with_labels = Datalab(data={"X": features, "labels": labels}, label_name="labels")
+        lab_with_labels.find_issues(features=features)
+
+        lab_without_label_name = Datalab(data={"X": features, "labels": labels})
+        lab_without_label_name.find_issues(features=features)
+
+        issues_without_labels = lab_without_labels.issues
+        issues_with_labels = lab_with_labels.issues
+        issues_without_label_name = lab_without_label_name.issues
+
+        pd.testing.assert_frame_equal(issues_without_labels, issues_with_labels)
+        pd.testing.assert_frame_equal(issues_without_labels, issues_without_label_name)

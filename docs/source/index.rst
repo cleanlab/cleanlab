@@ -55,7 +55,7 @@ cleanlab automatically detects various issues in *any dataset that a classifier 
 
     lab = Datalab(data=your_dataset, label_name="column_name_of_labels")
     lab.find_issues(features=feature_embeddings, pred_probs=pred_probs)
-    lab.report()  # summarize issues in dataset, how severe they are, ... 
+    lab.report()  # summarize issues in dataset, how severe they are, ...
 
 
 3. Handle label errors and train robust models with noisy labels
@@ -146,7 +146,10 @@ Please see our `contributing guidelines <https://github.com/cleanlab/cleanlab/bl
    Identifying Outliers (pytorch) <tutorials/outliers>
    Improving Consensus Labels for Multiannotator Data <tutorials/multiannotator>
    Multi-Label Classification <tutorials/multilabel_classification>
+   Noisy Labels in Regression <tutorials/regression>
    Token Classification (text) <tutorials/token_classification>
+   Semantic Segmentation (pytorch) <tutorials/segmentation>
+   Object Detection (detectron2) <tutorials/object_detection>
    Predicted Probabilities via Cross Validation <tutorials/pred_probs_cross_val>
    FAQ <tutorials/faq>
 
@@ -163,7 +166,10 @@ Please see our `contributing guidelines <https://github.com/cleanlab/cleanlab/bl
    cleanlab/outlier
    cleanlab/multiannotator
    cleanlab/multilabel_classification/index
+   cleanlab/regression/index
    cleanlab/token_classification/index
+   cleanlab/segmentation/index
+   cleanlab/object_detection/index
    cleanlab/datalab/index
    cleanlab/benchmarking/index
    cleanlab/models/index

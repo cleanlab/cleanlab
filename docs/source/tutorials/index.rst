@@ -14,6 +14,9 @@ Tutorials
    outliers
    multiannotator
    multilabel_classification
+   regression
    token_classification
+   segmentation
+   object_detection
    pred_probs_cross_val
    faq

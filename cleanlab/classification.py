@@ -207,8 +207,9 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
 
     find_label_issues_kwargs : dict, optional
       Keyword arguments to pass into :py:func:`filter.find_label_issues
-      <cleanlab.filter.find_label_issues>`. Options that may especially impact
-      accuracy include: `filter_by`, `frac_noise`, `min_examples_per_class`.
+      <cleanlab.filter.find_label_issues>`. Particularly useful options include:
+      `filter_by`, `frac_noise`, `min_examples_per_class` (which all impact ML accuracy),
+      `n_jobs` (set this to 1 to disable multi-processing if it's causing issues).
 
     label_quality_scores_kwargs : dict, optional
       Keyword arguments to pass into :py:func:`rank.get_label_quality_scores
