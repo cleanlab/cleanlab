@@ -24,6 +24,7 @@ related information and statistics about the issues.
 
 The collected information can be accessed using the
 :py:meth:`get_info <cleanlab.datalab.data_issues.DataIssues.get_info>` method.
+We recommend using that method instead of this module, which is just intended for internal use.
 """
 from __future__ import annotations
 

@@ -6,4 +6,4 @@ DEFAULT_CLEANVISION_ISSUES = [
     "odd_size",
     "grayscale",
     "blurry",
-]
+]  # list of CleanVision issue types considered by default in Datalab may differ from CleanVision package default

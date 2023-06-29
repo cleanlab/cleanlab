@@ -1,5 +1,6 @@
-"""A wrapper around the Imagelab class from the CleanVision package to incorporate it into Datalab.
+"""An internal wrapper around the Imagelab class from the CleanVision package to incorporate it into Datalab.
 This allows low-quality images to be detected alongside other issues in computer vision datasets.
+The methods/classes in this module are just intended for internal use.
 """
 
 import warnings
