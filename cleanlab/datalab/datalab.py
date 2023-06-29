@@ -76,8 +76,13 @@ class Datalab:
             - path to a local file: Text (.txt), CSV (.csv), JSON (.json)
             - or a dataset identifier on the Hugging Face Hub
 
-    label_name : str
+    label_name : str, optional
         The name of the label column in the dataset.
+
+    image_key : str, optional
+        Optional key that can be specified for image datasets to point to the field containing the actual images themselves.
+        If specified, additional image-specific issue types can be detected in the dataset.
+        See the CleanVision package `documentation <https://cleanvision.readthedocs.io/en/latest/>`_ for descriptions of these image-specific issue types.
 
     verbosity : int, optional
         The higher the verbosity level, the more information
