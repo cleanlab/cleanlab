@@ -17,6 +17,13 @@ import shutil
 
 sys.path.insert(0, os.path.abspath("../../cleanlab"))
 
+# doctest setup
+# If extensions (or modules to document with autodoc) are in another directory,
+# add these directories to sys.path here.
+import pathlib
+
+sys.path.insert(0, pathlib.Path(__file__).parents[2].resolve().as_posix())
+
 # -- Project information -----------------------------------------------------
 
 project = "cleanlab"
@@ -40,6 +47,7 @@ extensions = [
     "sphinx_copybutton",
     "sphinxcontrib.katex",
     "sphinx_autodoc_typehints",
+    "sphinx.ext.doctest",
 ]
 
 numpy_show_class_members = True
@@ -56,6 +64,9 @@ templates_path = ["_templates"]
 exclude_patterns = ["_build"]
 
 autosummary_generate = True
+
+# set the default role of `name` to make cross references
+default_role = "py:obj"
 
 # -- Options for apidoc extension ----------------------------------------------
 
@@ -147,9 +158,12 @@ html_context = {
     # Add new tags to RELEASE_VERSIONS before release
     # fmt: off
     "RELEASE_VERSIONS": [
+        "v2.4.0",
+        "v2.3.1",
+        "v2.3.0",
         "v2.2.0",
         "v2.1.0",
-        "v2.0.0", 
+        "v2.0.0",
         "v1.0.1",
     ],
     # fmt: on
@@ -178,7 +192,7 @@ nbsphinx_prolog = (
         .dataframe {
             background: #D7D7D7;
         }
-    
+
         th {
             color:black;
         }

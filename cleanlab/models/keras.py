@@ -24,22 +24,23 @@ see the `Keras documentation <https://keras.io/>`_ for details.
 This is a good example of making any bespoke neural network compatible with cleanlab.
 
 You must have `Tensorflow 2 installed <https://www.tensorflow.org/install>`_ (only compatible with Python versions >= 3.7).
+This wrapper class is only fully compatible with ``tensorflow<2.11``, if using ``tensorflow>=2.11``, 
+please replace your Optimizer class with the legacy Optimizer `here <https://www.tensorflow.org/api_docs/python/tf/keras/optimizers/legacy/Optimizer>`_.
 
 Tips:
 
 * If this class lacks certain functionality, you can alternatively try `scikeras <https://github.com/adriangb/scikeras>`_.
 * Unlike scikeras, our `KerasWrapper` classes can operate directly on ``tensorflow.data.Dataset`` objects (like regular Keras models).
 * To call ``fit()`` on a tensorflow ``Dataset`` object with a Keras model, the ``Dataset`` should already be batched.
-* Check out our `example <https://github.com/cleanlab/examples>`_ using this class: `huggingface_keras_imdb <https://github.com/cleanlab/examples/blob/master/huggingface_keras_imdb/huggingface_keras_imdb.ipynb>`_
+* Check out our example using this class: `huggingface_keras_imdb <https://github.com/cleanlab/examples/blob/master/huggingface_keras_imdb/huggingface_keras_imdb.ipynb>`_
 * Our `unit tests <https://github.com/cleanlab/cleanlab/blob/master/tests/test_frameworks.py>`_ also provide basic usage examples.
 
 """
 
 import tensorflow as tf
+import keras  # type: ignore
 import numpy as np
-import pandas as pd
 from typing import Callable, Optional
-from cleanlab.internal.validation import assert_valid_inputs
 
 
 class KerasWrapperModel:
@@ -52,7 +53,7 @@ class KerasWrapperModel:
     Parameters
     ----------
     model: Callable
-        A callable function to construct the Keras Model (using functional API). Pass in the function here, not the constructed model!
+        A callable function to construct the Keras Model (using functional API). Pass in the function here, not the constructed model!
 
         For example::
 
@@ -75,44 +76,63 @@ class KerasWrapperModel:
         compile_kwargs: dict = {
             "loss": tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
         },
+        params: Optional[dict] = None,
     ):
+        if params is None:
+            params = {}
+
         self.model = model
         self.model_kwargs = model_kwargs
         self.compile_kwargs = compile_kwargs
+        self.params = params
         self.net = None
 
     def get_params(self, deep=True):
+        """Returns the parameters of the Keras model."""
         return {
             "model": self.model,
             "model_kwargs": self.model_kwargs,
             "compile_kwargs": self.compile_kwargs,
+            "params": self.params,
         }
 
+    def set_params(self, **params):
+        """Set the parameters of the Keras model."""
+        self.params.update(params)
+        return self
+
     def fit(self, X, y=None, **kwargs):
-        """Trains a Keras classifier.
+        """Trains a Keras model.
 
         Parameters
         ----------
         X : tf.Dataset or np.array or pd.DataFrame
-            If `X` is a tensorflow dataset object, it must already contain the labels as is required for standard Keras fit.
+            If ``X`` is a tensorflow dataset object, it must already contain the labels as is required for standard Keras fit.
 
         y : np.array or pd.DataFrame, default = None
-            If `X` is a tensorflow dataset object, you can optionally provide the labels again here as argument `y` to be compatible with sklearn,
+            If ``X`` is a tensorflow dataset object, you can optionally provide the labels again here as argument `y` to be compatible with sklearn,
             but they are ignored.
-            If `X` is a numpy array or pandas dataframe, the labels have to be passed in using this argument.
+            If ``X`` is a numpy array or pandas dataframe, the labels have to be passed in using this argument.
         """
+        if self.net is None:
+            self.net = self.model(**self.model_kwargs)
+            self.net.compile(**self.compile_kwargs)
 
-        self.net = self.model(**self.model_kwargs)
-        self.net.compile(**self.compile_kwargs)
-
-        if isinstance(X, (np.ndarray, pd.DataFrame)):
-            assert_valid_inputs(X, y)
+        # TODO: check for generators
+        if y is not None and not isinstance(X, (tf.data.Dataset, keras.utils.Sequence)):
             kwargs["y"] = y
 
-        self.net.fit(X, **kwargs)
+        self.net.fit(X, **{**self.params, **kwargs})
 
     def predict_proba(self, X, *, apply_softmax=True, **kwargs):
-        """Set extra argument `apply_softmax` to True to indicate your network only outputs logits not probabilities."""
+        """Predict class probabilities for all classes using the wrapped Keras model.
+        Set extra argument `apply_softmax` to True to indicate your network only outputs logits not probabilities.
+
+        Parameters
+        ----------
+        X : tf.Dataset or np.array or pd.DataFrame
+            Data in the same format as the original ``X`` provided to ``fit()``.
+        """
         if self.net is None:
             raise ValueError("must call fit() before predict()")
         pred_probs = self.net.predict(X, **kwargs)
@@ -121,11 +141,24 @@ class KerasWrapperModel:
         return pred_probs
 
     def predict(self, X, **kwargs):
+        """Predict class labels using the wrapped Keras model.
+
+        Parameters
+        ----------
+        X : tf.Dataset or np.array or pd.DataFrame
+            Data in the same format as the original ``X`` provided to ``fit()``.
+
+        """
         pred_probs = self.predict_proba(X, **kwargs)
         return np.argmax(pred_probs, axis=1)
 
     def summary(self, **kwargs):
-        self.net.summary(**kwargs)
+        """Returns the summary of the Keras model."""
+        if self.net is None:
+            self.net = self.model(**self.model_kwargs)
+            self.net.compile(**self.compile_kwargs)
+
+        return self.net.summary(**kwargs)
 
 
 class KerasWrapperSequential:
@@ -154,43 +187,63 @@ class KerasWrapperSequential:
         compile_kwargs: dict = {
             "loss": tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
         },
+        params: Optional[dict] = None,
     ):
+        if params is None:
+            params = {}
+
         self.layers = layers
         self.name = name
         self.compile_kwargs = compile_kwargs
+        self.params = params
         self.net = None
 
     def get_params(self, deep=True):
+        """Returns the parameters of the Keras model."""
         return {
             "layers": self.layers,
             "name": self.name,
             "compile_kwargs": self.compile_kwargs,
+            "params": self.params,
         }
 
+    def set_params(self, **params):
+        """Set the parameters of the Keras model."""
+        self.params.update(params)
+        return self
+
     def fit(self, X, y=None, **kwargs):
-        """Trains a Sequential Keras classifier.
+        """Trains a Sequential Keras model.
 
         Parameters
         ----------
         X : tf.Dataset or np.array or pd.DataFrame
-            If `X` is a tensorflow dataset object, it must already contain the labels as is required for standard Keras fit.
+            If ``X`` is a tensorflow dataset object, it must already contain the labels as is required for standard Keras fit.
 
         y : np.array or pd.DataFrame, default = None
-            If `X` is a tensorflow dataset object, you can optionally provide the labels again here as argument `y` to be compatible with sklearn,
+            If ``X`` is a tensorflow dataset object, you can optionally provide the labels again here as argument `y` to be compatible with sklearn,
             but they are ignored.
-            If `X` is a numpy array or pandas dataframe, the labels have to be passed in using this argument.
+            If ``X`` is a numpy array or pandas dataframe, the labels have to be passed in using this argument.
         """
-        self.net = tf.keras.models.Sequential(self.layers, self.name)
-        self.net.compile(**self.compile_kwargs)
+        if self.net is None:
+            self.net = tf.keras.models.Sequential(self.layers, self.name)
+            self.net.compile(**self.compile_kwargs)
 
-        if isinstance(X, (np.ndarray, pd.DataFrame)):
-            assert_valid_inputs(X, y)
+        # TODO: check for generators
+        if y is not None and not isinstance(X, (tf.data.Dataset, keras.utils.Sequence)):
             kwargs["y"] = y
 
-        self.net.fit(X, **kwargs)
+        self.net.fit(X, **{**self.params, **kwargs})
 
     def predict_proba(self, X, *, apply_softmax=True, **kwargs):
-        """Set extra argument `apply_softmax` to True to indicate your network only outputs logits not probabilities."""
+        """Predict class probabilities for all classes using the wrapped Keras model.
+        Set extra argument `apply_softmax` to True to indicate your network only outputs logits not probabilities.
+
+        Parameters
+        ----------
+        X : tf.Dataset or np.array or pd.DataFrame
+            Data in the same format as the original ``X`` provided to ``fit()``.
+        """
         if self.net is None:
             raise ValueError("must call fit() before predict()")
         pred_probs = self.net.predict(X, **kwargs)
@@ -199,8 +252,20 @@ class KerasWrapperSequential:
         return pred_probs
 
     def predict(self, X, **kwargs):
+        """Predict class labels using the wrapped Keras model.
+
+        Parameters
+        ----------
+        X : tf.Dataset or np.array or pd.DataFrame
+            Data in the same format as the original ``X`` provided to ``fit()``.
+        """
         pred_probs = self.predict_proba(X, **kwargs)
         return np.argmax(pred_probs, axis=1)
 
     def summary(self, **kwargs):
-        self.net.summary(**kwargs)
+        """Returns the summary of the Keras model."""
+        if self.net is None:
+            self.net = tf.keras.models.Sequential(self.layers, self.name)
+            self.net.compile(**self.compile_kwargs)
+
+        return self.net.summary(**kwargs)

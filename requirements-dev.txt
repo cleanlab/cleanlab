@@ -1,14 +1,21 @@
 # Python dependencies for development
 coverage != 6.3, != 6.3.*
+datasets
+hypothesis
 mypy
 pandas-stubs
 pre-commit
+psutil
 pytest
 pytest-cov
 pytest-lazy-fixture
 requests
 scipy
-torch
-torchvision
 skorch
 tensorflow
+torch
+torchvision
+typing-extensions>=4.1.1
+wget
+matplotlib
+pillow
