@@ -490,7 +490,6 @@ def _find_label_issues_multilabel(
     n_jobs: Optional[int] = None,
     verbose: bool = False,
 ) -> npt.NDArray[Union[np.bool_, np.int_]]:
-    # TODO: add docstring in the same format as other functions with args and returns
     """
     Finds label issues in multi-label classification data where each example can belong to more than one class.
     This is done via a one-vs-rest reduction for each class and the results are subsequently aggregated across all classes.
