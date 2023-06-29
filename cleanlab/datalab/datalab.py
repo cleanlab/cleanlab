@@ -331,7 +331,7 @@ class Datalab:
             verbosity = self.verbosity
         if self.data_issues.issue_summary.empty:
             print(
-                "Please specify some issue types to run in datalab.find_issues() to see the report.\n"
+                "Please specify some `issue_types` in datalab.find_issues() to see a report.\n"
             )
             return
 
