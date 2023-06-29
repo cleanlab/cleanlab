@@ -12,12 +12,12 @@ to detect a custom-defined type of issue alongside the pre-defined issue types i
 
 .. seealso::
 
-    - :py:meth:`register <cleanlab.datalab.factory.register>`:
+    - :py:meth:`register <cleanlab.datalab.issue_manager_factory.register>`:
         You can either use this function at runtime to register a new issue manager:
 
         .. code-block:: python
 
-            from cleanlab.datalab.factory import register
+            from cleanlab.datalab.issue_manager_factory import register
             register(MyIssueManager)
 
         or add as a decorator to the class definition:
@@ -164,7 +164,7 @@ instance and run issue checks with the custom issue managers we created like so:
 
 .. code-block:: python
 
-    from cleanlab.datalab.factory import register
+    from cleanlab.datalab.issue_manager_factory import register
     from cleanlab import Datalab
 
 

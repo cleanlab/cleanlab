@@ -335,9 +335,7 @@ class Datalab:
         if verbosity is None:
             verbosity = self.verbosity
         if self.data_issues.issue_summary.empty:
-            print(
-                "Please specify some `issue_types` in datalab.find_issues() to see a report.\n"
-            )
+            print("Please specify some `issue_types` in datalab.find_issues() to see a report.\n")
             return
 
         reporter = report_factory(self._imagelab)(
@@ -500,7 +498,7 @@ class Datalab:
 
         See Also
         --------
-        :py:class:`REGISTRY <cleanlab.datalab.factory.REGISTRY>` : All available issue types and their corresponding issue managers can be found here.
+        :py:class:`REGISTRY <cleanlab.datalab.issue_manager_factory.REGISTRY>` : All available issue types and their corresponding issue managers can be found here.
         """
         return IssueFinder.list_possible_issue_types()
 
@@ -515,7 +513,7 @@ class Datalab:
 
         See Also
         --------
-        :py:class:`REGISTRY <cleanlab.datalab.factory.REGISTRY>` : All available issue types and their corresponding issue managers can be found here.
+        :py:class:`REGISTRY <cleanlab.datalab.issue_manager_factory.REGISTRY>` : All available issue types and their corresponding issue managers can be found here.
         """
         return IssueFinder.list_default_issue_types()
 

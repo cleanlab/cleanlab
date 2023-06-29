@@ -298,7 +298,7 @@ class IssueFinder:
 
         See Also
         --------
-        :py:class:`REGISTRY <cleanlab.datalab.factory.REGISTRY>` : All available issue types and their corresponding issue managers can be found here.
+        :py:class:`REGISTRY <cleanlab.datalab.issue_manager_factory.REGISTRY>` : All available issue types and their corresponding issue managers can be found here.
         """
         return list(REGISTRY.keys())
 
@@ -309,7 +309,7 @@ class IssueFinder:
 
         See Also
         --------
-        :py:class:`REGISTRY <cleanlab.datalab.factory.REGISTRY>` : All available issue types and their corresponding issue managers can be found here.
+        :py:class:`REGISTRY <cleanlab.datalab.issue_manager_factory.REGISTRY>` : All available issue types and their corresponding issue managers can be found here.
         """
         return ["label", "outlier", "near_duplicate", "non_iid"]
 

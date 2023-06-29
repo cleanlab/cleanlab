@@ -117,7 +117,7 @@ def register(cls: Type[IssueManager]) -> Type[IssueManager]:
     .. code-block:: python
 
         from cleanlab import IssueManager
-        from cleanlab.datalab.factory import register
+        from cleanlab.datalab.issue_manager_factory import register
 
         @register
         class MyIssueManager(IssueManager):
@@ -131,7 +131,7 @@ def register(cls: Type[IssueManager]) -> Type[IssueManager]:
     .. code-block:: python
 
         from cleanlab import IssueManager
-        from cleanlab.datalab.factory import register
+        from cleanlab.datalab.issue_manager_factory import register
 
         class MyIssueManager(IssueManager):
             issue_name: str = "my_issue"
