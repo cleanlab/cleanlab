@@ -208,7 +208,6 @@ class DataIssues:
 
         """
         key = "statistics"
-        # todo: check if the code breaks between get and pop
         statistics: Dict[str, Any] = issue_manager.info.get(key, {})
         if statistics:
             self.info[key].update(statistics)
