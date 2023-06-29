@@ -20,15 +20,14 @@ Ancillary helper methods used internally throughout this package; mostly related
 
 import warnings
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 from typing import Union, Tuple, TypeVar, Optional, Callable, List, Any, Dict, Set
 
 from cleanlab.typing import DatasetLike, LabelLike
 from cleanlab.internal.validation import labels_to_array
-import numpy.typing as npt
+from cleanlab.internal.constants import FLOATING_POINT_COMPARISON, TINY_VALUE
 
-
-TINY_VALUE = 1e-100
 
 T = TypeVar("T", bound=npt.NBitBase)
 
@@ -266,7 +265,7 @@ def round_preserving_sum(
     orig_sum = np.sum(floats).round()
     int_sum = np.sum(ints).round()
     # Adjust the integers so that they sum to orig_sum
-    while abs(int_sum - orig_sum) > 1e-6:
+    while abs(int_sum - orig_sum) > FLOATING_POINT_COMPARISON:
         diff = np.round(orig_sum - int_sum)
         increment = -1 if int(diff < 0.0) else 1
         changes = min(int(abs(diff)), len(iterable))
@@ -787,3 +786,24 @@ def smart_display_dataframe(df: pd.DataFrame) -> None:  # pragma: no cover
         display(df)
     except Exception:
         print(df)
+
+
+def force_two_dimensions(X) -> DatasetLike:
+    """
+    Enforce the dimensionality of a dataset to two dimensions for the use of CleanLearning default classifier,
+    which is `sklearn.linear_model.LogisticRegression
+      <https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html>`_.
+
+    Parameters
+    ----------
+    X : np.ndarray or DatasetLike
+
+    Returns
+    -------
+    X : np.ndarray or DatasetLike
+        The original dataset reduced to two dimensions, so that the dataset will have the shape ``(N, sum(...))``,
+        where N is still the number of examples.
+    """
+    if X is not None and len(X.shape) > 2:
+        X = X.reshape((len(X), -1))
+    return X

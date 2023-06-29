@@ -434,6 +434,13 @@ def test_get_active_learning_scores():
     assert len(active_learning_scores) == len(pred_probs)
     assert len(active_learning_scores_unlabeled) == 0
 
+    # test case where only passing unlabeled examples
+    active_learning_scores, active_learning_scores_unlabeled = get_active_learning_scores(
+        pred_probs_unlabeled=pred_probs_unlabeled
+    )
+    assert len(active_learning_scores) == 0
+    assert len(active_learning_scores_unlabeled) == len(pred_probs_unlabeled)
+
     # test case where number of classes do not match
     try:
         active_learning_scores, active_learning_scores_unlabeled = get_active_learning_scores(
@@ -484,6 +491,13 @@ def test_get_active_learning_scores_ensemble():
     assert isinstance(active_learning_scores, np.ndarray)
     assert len(active_learning_scores) == len(labels)
     assert len(active_learning_scores_unlabeled) == 0
+
+    # test case where only passing unlabeled examples
+    active_learning_scores, active_learning_scores_unlabeled = get_active_learning_scores_ensemble(
+        pred_probs_unlabeled=pred_probs_unlabeled
+    )
+    assert len(active_learning_scores) == 0
+    assert len(active_learning_scores_unlabeled) == len(labels_unlabeled)
 
     # test case where number of classes do not match
     try:
@@ -640,8 +654,21 @@ def test_get_consensus_label():
             [0.2, 0.4, 0.4],
         ]
     )
-
     consensus_label = get_majority_vote_label(labels_tiebreaks, pred_probs_tiebreaks)
+
+    # more tiebreak testing (without pred_probs + non-overlapping annotators)
+    labels_tiebreaks = np.array(
+        [
+            [1, np.NaN, np.NaN, 2, np.NaN],
+            [np.NaN, 1, 0, np.NaN, np.NaN],
+            [np.NaN, np.NaN, 0, np.NaN, np.NaN],
+            [np.NaN, 2, np.NaN, np.NaN, np.NaN],
+            [2, np.NaN, 0, 2, np.NaN],
+            [np.NaN, np.NaN, np.NaN, 2, 1],
+        ]
+    )
+    consensus_label = get_majority_vote_label(labels_tiebreaks)
+    assert all(consensus_label == np.array([1, 1, 0, 2, 2, 1]))
 
 
 def test_impute_nonoverlaping_annotators():

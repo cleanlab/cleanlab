@@ -28,7 +28,8 @@ import warnings
 import numpy as np
 from typing import Tuple
 
-from cleanlab.internal.util import value_counts, clip_values, clip_noise_rates, TINY_VALUE
+from cleanlab.internal.util import value_counts, clip_values, clip_noise_rates
+from cleanlab.internal.constants import TINY_VALUE, CLIPPING_LOWER_BOUND
 
 
 def compute_ps_py_inv_noise_matrix(
@@ -73,7 +74,7 @@ def compute_py_inv_noise_matrix(ps, noise_matrix) -> Tuple[np.ndarray, np.ndarra
 
     # No class should have probability 0, so we use .000001
     # Make sure valid probabilities that sum to 1.0
-    py = clip_values(py, low=1e-6, high=1.0, new_sum=1.0)
+    py = clip_values(py, low=CLIPPING_LOWER_BOUND, high=1.0, new_sum=1.0)
 
     # All the work is done in this function (below)
     return py, compute_inv_noise_matrix(py=py, noise_matrix=noise_matrix, ps=ps)
@@ -267,8 +268,8 @@ def compute_py(
         err += " should be in [cnt, eqn, marginal, marginal_ps]"
         raise ValueError(err)
 
-    # Clip py (0,1), s.t. no class should have prob 0, hence 1e-5
-    py = clip_values(py, low=1e-5, high=1.0, new_sum=1.0)
+    # Clip py (0,1), s.t. no class should have prob 0, hence 1e-6
+    py = clip_values(py, low=CLIPPING_LOWER_BOUND, high=1.0, new_sum=1.0)
     return py
 
 

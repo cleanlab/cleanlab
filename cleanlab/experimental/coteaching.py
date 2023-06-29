@@ -35,6 +35,7 @@ import numpy as np
 
 MINIMUM_BATCH_SIZE = 16
 
+
 # Loss function for Co-Teaching
 def loss_coteaching(
     y_1,

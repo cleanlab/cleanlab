@@ -28,6 +28,18 @@ with open(path.join(here, "README.md"), encoding="utf-8") as f:
 # Get version number and store it in __version__
 exec(open("cleanlab/version.py").read())
 
+DATALAB_REQUIRE = [
+    # Mainly for Datalab's data storage class.
+    # Still some type hints that require datasets
+    "datasets>=2.7.0",
+]
+
+EXTRAS_REQUIRE = {
+    "datalab": DATALAB_REQUIRE,
+    "all": ["matplotlib>=3.5.1"],
+}
+EXTRAS_REQUIRE["all"] = list(set(sum(EXTRAS_REQUIRE.values(), [])))
+
 setup(
     name="cleanlab",
     version=__version__,
@@ -62,10 +74,8 @@ setup(
         "Programming Language :: Python",
         "Topic :: Software Development",
         "Topic :: Scientific/Engineering",
-        "Topic :: Scientific/Engineering",
         "Topic :: Scientific/Engineering :: Mathematics",
         "Topic :: Scientific/Engineering :: Artificial Intelligence",
-        "Topic :: Software Development",
         "Topic :: Software Development :: Libraries",
         "Topic :: Software Development :: Libraries :: Python Modules",
     ],
@@ -94,4 +104,5 @@ setup(
         "pandas>=1.1.5",
         "termcolor>=2.0.0",
     ],
+    extras_require=EXTRAS_REQUIRE,
 )

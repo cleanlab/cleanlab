@@ -17,10 +17,9 @@
 """
 Methods to identify which examples have label issues in a classification dataset.
 The documentation below assumes a dataset with ``N`` examples and ``K`` classes.
-This module considers two types of datasets:
-
-* standard (multi-class) classification where each example is labeled as belonging to exactly one of K classes (e.g. ``labels = np.array([0,0,1,0,2,1])``)
-* multi-label classification where each example can be labeled as belonging to multiple classes (e.g. ``labels = [[1,2],[1],[0],[],...]``)
+This module is for standard (multi-class) classification where each example is labeled as belonging to exactly one of K classes (e.g. ``labels = np.array([0,0,1,0,2,1])``).
+Some methods here also work for multi-label classification data where each example can be labeled as belonging to multiple classes (e.g. ``labels = [[1,2],[1],[0],[],...]``),
+but we encourage using the methods in the ``cleanlab.multilabel_classification`` module instead for such data.
 """
 
 import numpy as np
@@ -28,14 +27,12 @@ from sklearn.metrics import confusion_matrix
 import multiprocessing
 import sys
 import warnings
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, Optional, Tuple, List
 from functools import reduce
 import platform
 
-from cleanlab.count import calibrate_confident_joint
-from cleanlab.rank import (
-    order_label_issues,
-)
+from cleanlab.count import calibrate_confident_joint, num_label_issues
+from cleanlab.rank import order_label_issues, get_label_quality_scores
 import cleanlab.internal.multilabel_scorer as ml_scorer
 from cleanlab.internal.validation import assert_valid_inputs
 from cleanlab.internal.util import (
@@ -45,6 +42,7 @@ from cleanlab.internal.util import (
 )
 from cleanlab.internal.multilabel_utils import stack_complement, get_onehot_num_classes, int2onehot
 from cleanlab.typing import LabelLike
+from cleanlab.multilabel_classification.filter import find_multilabel_issues_per_class
 
 # tqdm is a package to print time-to-complete when multiprocessing is used.
 # This package is not necessary, but when installed improves user experience for large datasets.
@@ -79,13 +77,13 @@ def find_label_issues(
     return_indices_ranked_by: Optional[str] = None,
     rank_by_kwargs: Optional[Dict[str, Any]] = None,
     filter_by: str = "prune_by_noise_rate",
-    multi_label: bool = False,
     frac_noise: float = 1.0,
-    num_to_remove_per_class: Optional[int] = None,
+    num_to_remove_per_class: Optional[List[int]] = None,
     min_examples_per_class=1,
     confident_joint: Optional[np.ndarray] = None,
     n_jobs: Optional[int] = None,
     verbose: bool = False,
+    multi_label: bool = False,
 ) -> np.ndarray:
     """
     Identifies potentially bad labels in a classification dataset using confident learning.
@@ -111,8 +109,6 @@ def find_label_issues(
       *Format requirements*: for dataset with K classes, each label must be integer in 0, 1, ..., K-1.
       For a standard (multi-class) classification dataset where each example is labeled with one class,
       `labels` should be 1D array of shape ``(N,)``, for example: ``labels = [1,0,2,1,1,0...]``.
-      For a multi-label classification dataset where each example can belong to multiple (or no) classes,
-      `labels` should be an iterable of iterables (e.g. ``List[List[int]]``) whose i-th element corresponds to list of classes that i-th example belongs to (e.g. ``labels = [[1,2],[1],[0],[],...]``).
 
     pred_probs : np.ndarray, optional
       An array of shape ``(N, K)`` of model-predicted class probabilities,
@@ -141,7 +137,7 @@ def find_label_issues(
       label quality score (see :py:func:`rank.get_label_quality_scores
       <cleanlab.rank.get_label_quality_scores>`).
 
-    filter_by : {'prune_by_class', 'prune_by_noise_rate', 'both', 'confident_learning', 'predicted_neq_given'}, default='prune_by_noise_rate'
+    filter_by : {'prune_by_class', 'prune_by_noise_rate', 'both', 'confident_learning', 'predicted_neq_given', 'low_normalized_margin', 'low_self_confidence'}, default='prune_by_noise_rate'
       Method to determine which examples are flagged as having label issue, so you can filter/prune them from the dataset. Options:
 
       - ``'prune_by_noise_rate'``: filters examples with *high probability* of being mislabeled for every non-diagonal in the confident joint (see `prune_counts_matrix` in `filter.py`). These are the examples where (with high confidence) the given label is unlikely to match the predicted label for the example.
@@ -149,13 +145,8 @@ def find_label_issues(
       - ``'both'``: filters only those examples that would be filtered by both ``'prune_by_noise_rate'`` and ``'prune_by_class'``.
       - ``'confident_learning'``: filters the examples counted as part of the off-diagonals of the confident joint. These are the examples that are confidently predicted to be a different label than their given label.
       - ``'predicted_neq_given'``: filters examples for which the predicted class (i.e. argmax of the predicted probabilities) does not match the given label.
-
-    multi_label : bool, optional
-      If ``True``, labels should be an iterable (e.g. list) of iterables, containing a
-      list of class labels for each example, instead of just a single label.
-      The multi-label setting supports classification tasks where an example can belong to more than 1 class or none of the classes (rather than exactly one class as in standard multi-class classification).
-      Example of a multi-labeled `labels` input: ``[[0,1], [1], [0,2], [0,1,2], [0], [1], [], ...]``. This says the first example in dataset belongs to both class 0 and class 1, according to its given label.
-      Each row of `pred_probs` no longer needs to sum to 1 in multi-label settings, since one example can now belong to multiple classes simultaneously.
+      - ``'low_normalized_margin'``: filters the examples with *smallest* normalized margin label quality score. The number of issues returned matches :py:func:`count.num_label_issues <cleanlab.count.num_label_issues>`.
+      - ``'low_self_confidence'``: filters the examples with *smallest* self confidence label quality score. The number of issues returned matches :py:func:`count.num_label_issues <cleanlab.count.num_label_issues>`.
 
     frac_noise : float, default=1.0
       Used to only return the "top" ``frac_noise * num_label_issues``. The choice of which "top"
@@ -167,7 +158,6 @@ def find_label_issues(
       When ``frac_noise=1.0``, return all "confident" estimated noise indices (recommended).
 
       frac_noise * number_of_mislabeled_examples_in_class_k.
-      Note: specifying `frac_noise` is not yet supported if `multi_label` is True.
 
     num_to_remove_per_class : array_like
       An iterable of length K, the number of classes.
@@ -195,7 +185,6 @@ def find_label_issues(
       Entry ``(j, k)`` in the matrix is the number of examples confidently counted into the pair of ``(noisy label=j, true label=k)`` classes.
       The `confident_joint` can be computed using :py:func:`count.compute_confident_joint <cleanlab.count.compute_confident_joint>`.
       If not provided, it is computed from the given (noisy) `labels` and `pred_probs`.
-      If `multi_label` is True, `confident_joint` should instead be a one-vs-rest array with shape ``(K, 2, 2)`` as returned by :py:func:`count.compute_confident_joint <cleanlab.count.compute_confident_joint>` function.
 
     n_jobs : optional
       Number of processing threads used by multiprocessing. Default ``None``
@@ -223,6 +212,8 @@ def find_label_issues(
         rank_by_kwargs = {}
 
     assert filter_by in [
+        "low_normalized_margin",
+        "low_self_confidence",
         "prune_by_noise_rate",
         "prune_by_class",
         "both",
@@ -241,23 +232,40 @@ def find_label_issues(
         allow_one_class=allow_one_class,
     )
 
-    if filter_by in ["confident_learning", "predicted_neq_given"] and (
-        frac_noise != 1.0 or num_to_remove_per_class is not None
-    ):
+    if filter_by in [
+        "confident_learning",
+        "predicted_neq_given",
+        "low_normalized_margin",
+        "low_self_confidence",
+    ] and (frac_noise != 1.0 or num_to_remove_per_class is not None):
         warn_str = (
-            "WARNING! frac_noise and num_to_remove_per_class parameters are only supported"
+            "frac_noise and num_to_remove_per_class parameters are only supported"
             " for filter_by 'prune_by_noise_rate', 'prune_by_class', and 'both'. They "
-            "are not supported for methods 'confident_learning' or "
-            "'predicted_neq_given'."
+            "are not supported for methods 'confident_learning', 'predicted_neq_given', "
+            "'low_normalized_margin' or 'low_self_confidence'."
         )
         warnings.warn(warn_str)
     if (num_to_remove_per_class is not None) and (
-        filter_by in ["confident_learning", "predicted_neq_given"]
+        filter_by
+        in [
+            "confident_learning",
+            "predicted_neq_given",
+            "low_normalized_margin",
+            "low_self_confidence",
+        ]
     ):
-        # TODO - add support for these two filters
+        # TODO - add support for these filters
         raise ValueError(
-            "filter_by 'confident_learning' or 'predicted_neq_given' is not supported (yet) when setting 'num_to_remove_per_class'"
+            "filter_by 'confident_learning', 'predicted_neq_given', 'low_normalized_margin' "
+            "or 'low_self_confidence' is not supported (yet) when setting 'num_to_remove_per_class'"
         )
+    if filter_by == "confident_learning" and isinstance(confident_joint, np.ndarray):
+        warn_str = (
+            "The supplied `confident_joint` is ignored when `filter_by = 'confident_learning'`; confident joint will be "
+            "re-estimated from the given labels. To use your supplied `confident_joint`, please specify a different "
+            "`filter_by` value."
+        )
+        warnings.warn(warn_str)
 
     K = get_num_classes(
         labels=labels, pred_probs=pred_probs, label_matrix=confident_joint, multi_label=multi_label
@@ -293,7 +301,10 @@ def find_label_issues(
     if multi_label:
         if not isinstance(labels, list):
             raise TypeError("`labels` must be list when `multi_label=True`.")
-
+        warnings.warn(
+            "The multi_label argument to filter.find_label_issues() is deprecated and will be removed in future versions. Please use `multilabel_classification.filter.find_label_issues()` instead.",
+            DeprecationWarning,
+        )
         return _find_label_issues_multilabel(
             labels,
             pred_probs,
@@ -322,6 +333,25 @@ def find_label_issues(
             multi_label=multi_label,
             return_indices_of_off_diagonals=True,
         )
+
+    if filter_by in ["low_normalized_margin", "low_self_confidence"]:
+        # TODO: consider setting adjust_pred_probs to true based on benchmarks (or adding it kwargs, or ignoring and leaving as false by default)
+        scores = get_label_quality_scores(
+            labels,
+            pred_probs,
+            method=filter_by[4:],
+            adjust_pred_probs=False,
+        )
+        num_errors = num_label_issues(
+            labels, pred_probs, multi_label=multi_label  # TODO: Check usage of multilabel
+        )
+        # Find label issues O(nlogn) solution (mapped to boolean mask later in the method)
+        cl_error_indices = np.argsort(scores)[:num_errors]
+        # The following is the O(n) fastest solution (check for one-off errors), but the problem is if lots of the scores are identical you will overcount,
+        # you can end up returning more or less and they aren't ranked in the boolean form so there's no way to drop the highest scores randomly
+        #     boundary = np.partition(scores, num_errors)[num_errors]  # O(n) solution
+        #     label_issues_mask = scores <= boundary
+
     if filter_by in ["prune_by_noise_rate", "prune_by_class", "both"]:
         # Create `prune_count_matrix` with the number of examples to remove in each class and
         # leave at least min_examples_per_class examples per class.
@@ -406,7 +436,7 @@ def find_label_issues(
     if filter_by == "both":
         label_issues_mask = label_issues_mask & label_issues_mask_by_class
 
-    if filter_by == "confident_learning":
+    if filter_by in ["confident_learning", "low_normalized_margin", "low_self_confidence"]:
         label_issues_mask = np.zeros(len(labels), dtype=bool)
         for idx in cl_error_indices:
             label_issues_mask[idx] = True
@@ -414,12 +444,12 @@ def find_label_issues(
     if filter_by == "predicted_neq_given":
         label_issues_mask = find_predicted_neq_given(labels, pred_probs, multi_label=multi_label)
 
-    # Remove label issues if given label == model prediction
-    # TODO: consider use of _multiclass_crossval_predict() here
-    pred = pred_probs.argmax(axis=1)
-    for i, pred_label in enumerate(pred):
-        if pred_label == labels[i]:
-            label_issues_mask[i] = False
+    if filter_by not in ["low_self_confidence", "low_normalized_margin"]:
+        # Remove label issues if given label == model prediction if issues haven't been removed yet
+        pred = pred_probs.argmax(axis=1)
+        for i, pred_label in enumerate(pred):
+            if pred_label == labels[i]:
+                label_issues_mask[i] = False
 
     if verbose:
         print("Number of label issues found: {}".format(sum(label_issues_mask)))
@@ -444,7 +474,7 @@ def _find_label_issues_multilabel(
     rank_by_kwargs={},
     filter_by: str = "prune_by_noise_rate",
     frac_noise: float = 1.0,
-    num_to_remove_per_class: Optional[int] = None,
+    num_to_remove_per_class: Optional[List[int]] = None,
     min_examples_per_class=1,
     confident_joint: Optional[np.ndarray] = None,
     n_jobs: Optional[int] = None,
@@ -455,7 +485,42 @@ def _find_label_issues_multilabel(
     This is done via a one-vs-rest reduction for each class and the results are subsequently aggregated across all classes.
     Here `labels` must be formatted as an iterable of iterables, e.g. ``List[List[int]]``.
     """
-    per_class_issues = _find_multilabel_issues_per_class(
+    if filter_by in ["low_normalized_margin", "low_self_confidence"]:
+        num_errors = sum(
+            find_label_issues(
+                labels=labels,
+                pred_probs=pred_probs,
+                confident_joint=confident_joint,
+                multi_label=True,
+                filter_by="confident_learning",
+            )
+        )
+
+        y_one, num_classes = get_onehot_num_classes(labels, pred_probs)
+        label_quality_scores = ml_scorer.get_label_quality_scores(
+            labels=y_one,
+            pred_probs=pred_probs,
+        )
+
+        cl_error_indices = np.argsort(label_quality_scores)[:num_errors]
+        label_issues_mask = np.zeros(len(labels), dtype=bool)
+        for idx in cl_error_indices:
+            label_issues_mask[idx] = True
+
+        if return_indices_ranked_by is not None:
+            label_quality_scores_issues = ml_scorer.get_label_quality_scores(
+                labels=y_one[label_issues_mask],
+                pred_probs=pred_probs[label_issues_mask],
+                method=ml_scorer.MultilabelScorer(
+                    base_scorer=ml_scorer.ClassLabelScorer.from_str(return_indices_ranked_by),
+                ),
+                base_scorer_kwargs=rank_by_kwargs,
+            )
+            return cl_error_indices[np.argsort(label_quality_scores_issues)]
+
+        return label_issues_mask
+
+    per_class_issues = find_multilabel_issues_per_class(
         labels,
         pred_probs,
         return_indices_ranked_by,
@@ -485,131 +550,6 @@ def _find_label_issues_multilabel(
         )
         label_quality_scores_issues = label_quality_scores[label_issues_idx]
         return label_issues_idx[np.argsort(label_quality_scores_issues)]
-
-
-def _find_multilabel_issues_per_class(
-    labels: list,
-    pred_probs: np.ndarray,
-    return_indices_ranked_by: Optional[str] = None,
-    rank_by_kwargs={},
-    filter_by: str = "prune_by_noise_rate",
-    frac_noise: float = 1.0,
-    num_to_remove_per_class: Optional[int] = None,
-    min_examples_per_class=1,
-    confident_joint: Optional[np.ndarray] = None,
-    n_jobs: Optional[int] = None,
-    verbose: bool = False,
-) -> Union[np.ndarray, Tuple[List[np.ndarray], List[Any], List[np.ndarray]]]:
-    """
-    Parameters
-    ----------
-    labels : List[List[int]]
-      List of noisy labels for multi-label classification where each example can belong to multiple classes (e.g. ``labels = [[1,2],[1],[0],[],...]`` indicates the first example in dataset belongs to both class 1 and class 2.
-
-
-    pred_probs : np.ndarray
-      An array of shape ``(N, K)`` of model-predicted probabilities,
-      ``P(label=k|x)``. Each row of this matrix corresponds
-      to an example `x` and contains the model-predicted probabilities that
-      `x` belongs to each possible class, for each of the K classes. The
-      columns must be ordered such that these probabilities correspond to
-      class 0, 1, ..., K-1. They need not sum to 1.0
-
-
-    return_indices_ranked_by : {None, 'self_confidence', 'normalized_margin', 'confidence_weighted_entropy'}, default=None
-      Refer to documentation for this argument in filter.find_label_issues() for details.
-
-    rank_by_kwargs : dict, optional
-      Refer to documentation for this argument in filter.find_label_issues() for details.
-
-    filter_by : {'prune_by_class', 'prune_by_noise_rate', 'both', 'confident_learning', 'predicted_neq_given'}, default='prune_by_noise_rate'
-      Refer to documentation for this argument in filter.find_label_issues() for details.
-
-    frac_noise : float, default=1.0
-      Refer to documentation for this argument in filter.find_label_issues() for details.
-
-    num_to_remove_per_class : array_like
-      Refer to documentation for this argument in filter.find_label_issues() for details.
-
-    min_examples_per_class : int, default=1
-      Refer to documentation for this argument in filter.find_label_issues() for details.
-
-    confident_joint : np.ndarray, optional
-      An array of shape ``(K, 2, 2)`` representing a one-vs-rest formatted confident joint.
-      Entry ``(c, i, j)`` in this array is the number of examples confidently counted into a ``(class c, noisy label=i, true label=j)`` bin,
-      where `i, j` are either 0 or 1 to denote whether this example belongs to class `c` or not
-      (recall examples can belong to multiple classes in multi-label classification).
-      The `confident_joint` can be computed using :py:func:`count.compute_confident_joint <cleanlab.count.compute_confident_joint>`.
-      If not provided, it is computed from the given (noisy) `labels` and `pred_probs`.
-
-    n_jobs : optional
-      Refer to documentation for this argument in filter.find_label_issues() for details.
-
-    verbose : optional
-      If ``True``, prints when multiprocessing happens.
-
-    Returns
-    -------
-    per_class_label_issues : list(np.ndarray)
-      If `return_indices_ranked_by` left unspecified, returns a list of boolean **masks** for the entire dataset
-      where ``True`` represents a label issue and ``False`` represents an example that is
-      accurately labeled with high confidence.
-      If `return_indices_ranked_by` is specified, returns a list of shorter arrays of **indices** of examples identified to have
-      label issues (i.e. those indices where the mask would be ``True``), sorting by likelihood that the corresponding label is correct is not supported yet.
-
-      Note
-      ----
-      Obtain the *indices* of label issues in your dataset by setting
-      `return_indices_ranked_by`.
-
-    """
-    y_one, num_classes = get_onehot_num_classes(labels, pred_probs)
-    if return_indices_ranked_by is None:
-        bissues = np.zeros(y_one.shape).astype(bool)
-    else:
-        label_issues_list = []
-    labels_list = []
-    pred_probs_list = []
-    if confident_joint is not None:
-        confident_joint_shape = confident_joint.shape
-        if confident_joint_shape == (num_classes, num_classes):
-            warnings.warn(
-                f"The new recommended format for `confident_joint` in multi_label settings is (num_classes,2,2) as output by compute_confident_joint(...,multi_label=True). Your K x K confident_joint in the old format is being ignored."
-            )
-            confident_joint = None
-        elif confident_joint_shape != (num_classes, 2, 2):
-            raise ValueError("confident_joint should be of shape (num_classes, 2, 2)")
-    for class_num, (label, pred_prob_for_class) in enumerate(zip(y_one.T, pred_probs.T)):
-        pred_probs_binary = stack_complement(pred_prob_for_class)
-        if confident_joint is None:
-            conf = None
-        else:
-            conf = confident_joint[class_num]
-        binary_label_issues = find_label_issues(
-            labels=label,
-            pred_probs=pred_probs_binary,
-            return_indices_ranked_by=return_indices_ranked_by,
-            frac_noise=frac_noise,
-            rank_by_kwargs=rank_by_kwargs,
-            filter_by=filter_by,
-            multi_label=False,
-            num_to_remove_per_class=num_to_remove_per_class,
-            min_examples_per_class=min_examples_per_class,
-            confident_joint=conf,
-            n_jobs=n_jobs,
-            verbose=verbose,
-        )
-
-        if return_indices_ranked_by is None:
-            bissues[:, class_num] = binary_label_issues
-        else:
-            label_issues_list.append(binary_label_issues)
-            labels_list.append(label)
-            pred_probs_list.append(pred_probs_binary)
-    if return_indices_ranked_by is None:
-        return bissues
-    else:
-        return label_issues_list, labels_list, pred_probs_list
 
 
 def _keep_at_least_n_per_class(
@@ -822,9 +762,6 @@ def find_label_issues_using_argmax_confusion_matrix(
       label issue and ``False`` represents an example that is accurately
       labeled with high confidence.
 
-    Note
-    ----
-    Multi-label classification is not supported in this method.
     """
 
     assert_valid_inputs(X=None, y=labels, pred_probs=pred_probs, multi_label=False)

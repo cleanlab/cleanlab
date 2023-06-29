@@ -251,11 +251,12 @@ def test_class_public_func():
 
     # Testing regular fit
     OOD_ood = OutOfDistribution()
+    print(OOD_ood.params)
     OOD_ood.fit(pred_probs=pred_probs, labels=labels)
-
+    print(OOD_ood.params)
     OOD_outlier = OutOfDistribution()
     OOD_outlier.fit(features=features)
-
+    print(OOD_outlier.params)
     assert OOD_ood.params["confident_thresholds"] is not None and OOD_ood.params["knn"] is None
     assert (
         OOD_outlier.params["knn"] is not None and OOD_outlier.params["confident_thresholds"] is None
