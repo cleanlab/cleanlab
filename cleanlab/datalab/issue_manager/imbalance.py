@@ -28,51 +28,49 @@ if TYPE_CHECKING:  # pragma: no cover
 
 
 class ClassImbalanceIssueManager(IssueManager):
-    """Manages issues related to imbalance class examples."""
-
-    description: ClassVar[
-        str
-    ] = """Examples belonging to the most under-represented class in the dataset.
+    """Manages issues related to imbalance class examples.
 
     Parameters
     ----------
-    datalab :
+    datalab:
         The Datalab instance that this issue manager searches for issues in.
 
-    fraction:
+    threshold:
         Minimum fraction of samples of each class that are present in a dataset without class imbalance.
+
     """
+
+    description: ClassVar[
+        str
+    ] = """Examples belonging to the most under-represented class in the dataset."""
+
     issue_name: ClassVar[str] = "class_imbalance"
     verbosity_levels = {
         0: [],
         1: [],
-        2: ["threshold"],
+        2: [],
     }
 
     def __init__(
         self,
         datalab: Datalab,
-        fraction: float = 0.1,
+        threshold: float = 0.1,
         **kwargs,
     ):
         super().__init__(datalab)
-        self.fraction = fraction
+        self.threshold = threshold
 
     def find_issues(
         self,
         **kwargs,
     ) -> None:
-
         labels = self.datalab.labels
         K = len(self.datalab.class_names)
         class_probs = np.bincount(labels) / len(labels)
-        imbalance_exists = class_probs.min() < self.fraction * (1 / K)
-        is_issue_column = np.full(len(labels), False)
-        scores = np.ones(len(labels))
-        if imbalance_exists:
-            rarest_class = np.argmin(class_probs)
-            is_issue_column[labels == rarest_class] = True
-            scores[labels == rarest_class] = class_probs[rarest_class]
+        imbalance_exists = class_probs.min() < self.threshold * (1 / K)
+        rarest_class = np.argmin(class_probs) if imbalance_exists else -1
+        is_issue_column = labels == rarest_class
+        scores = np.where(is_issue_column, class_probs[rarest_class], 1)
 
         self.issues = pd.DataFrame(
             {
@@ -81,3 +79,9 @@ class ClassImbalanceIssueManager(IssueManager):
             },
         )
         self.summary = self.make_summary(score=scores.mean())
+        self.info = self.collect_info()
+
+    def collect_info(self) -> dict:
+        params_dict = {"threshold": self.threshold}
+        info_dict = {**params_dict}
+        return info_dict
