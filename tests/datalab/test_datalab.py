@@ -970,3 +970,13 @@ class TestDataLabClassImbalanceIssues:
         assert "class_imbalance" in summary["issue_type"].values
         class_imbalance_summary = lab.get_issue_summary("class_imbalance")
         assert class_imbalance_summary["num_issues"].values[0] > 0
+
+    def test_find_imbalance_issues_no_args(self, imbalance_labels):
+        data = {"labels": imbalance_labels}
+        lab = Datalab(data=data, label_name="labels")
+        lab.find_issues(issue_types={"class_imbalance": {}})
+        summary = lab.get_issue_summary()
+        assert len(summary) == 1
+        assert "class_imbalance" in summary["issue_type"].values
+        class_imbalance_summary = lab.get_issue_summary("class_imbalance")
+        assert class_imbalance_summary["num_issues"].values[0] > 0
