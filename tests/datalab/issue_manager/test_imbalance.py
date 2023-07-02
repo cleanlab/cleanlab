@@ -24,7 +24,7 @@ class TestClassImbalanceIssueManager:
     def create_issue_manager(self, lab, labels, monkeypatch):
         def manager(labels=labels):
             monkeypatch.setattr(lab._labels, "labels", labels)
-            return ClassImbalanceIssueManager(datalab=lab, fraction=0.1)
+            return ClassImbalanceIssueManager(datalab=lab, threshold=0.1)
 
         return manager
 

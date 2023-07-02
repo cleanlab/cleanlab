@@ -15,15 +15,13 @@
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Union
-import warnings
+from typing import TYPE_CHECKING, ClassVar
 
 import numpy as np
 import pandas as pd
 from cleanlab.datalab.issue_manager import IssueManager
 
 if TYPE_CHECKING:  # pragma: no cover
-    import numpy.typing as npt
     from cleanlab.datalab.datalab import Datalab
 
 
@@ -51,12 +49,7 @@ class ClassImbalanceIssueManager(IssueManager):
         2: [],
     }
 
-    def __init__(
-        self,
-        datalab: Datalab,
-        threshold: float = 0.1,
-        **kwargs,
-    ):
+    def __init__(self, datalab: Datalab, threshold: float = 0.1):
         super().__init__(datalab)
         self.threshold = threshold
 
@@ -68,7 +61,7 @@ class ClassImbalanceIssueManager(IssueManager):
         K = len(self.datalab.class_names)
         class_probs = np.bincount(labels) / len(labels)
         imbalance_exists = class_probs.min() < self.threshold * (1 / K)
-        rarest_class = np.argmin(class_probs) if imbalance_exists else -1
+        rarest_class = int(np.argmin(class_probs)) if imbalance_exists else -1
         is_issue_column = labels == rarest_class
         scores = np.where(is_issue_column, class_probs[rarest_class], 1)
 
