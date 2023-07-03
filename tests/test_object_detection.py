@@ -630,5 +630,8 @@ def test_swap_overlap_labels(overlapping_label_check):
     label["labels"] = np.append(label["labels"], (label["labels"][-1] + 1) % 10)
     score = get_label_quality_scores(
         [label], [prediction], overlapping_label_check=overlapping_label_check
-    )
-    assert score < 0.1
+    )[0]
+    if overlapping_label_check:
+        assert score < 0.06
+    else:
+        assert score < 0.08
