@@ -476,7 +476,10 @@ def _get_valid_inputs_for_compute_scores_per_image(
             else np.min(similarity_matrix[np.nonzero(similarity_matrix)])
         )
     if has_overlap_label_bboxes is None:
-        has_overlap_label_bboxes = _has_overlap(lab_bboxes, lab_labels)
+        if overlapping_label_check:
+            has_overlap_label_bboxes = _has_overlap(lab_bboxes, lab_labels)
+        else:
+            has_overlap_label_bboxes = np.array([False] * len(lab_bboxes))
     auxiliary_input_dict: AuxiliaryTypesDict = {
         "pred_labels": pred_labels,
         "pred_label_probs": pred_label_probs,
@@ -842,7 +845,6 @@ def _compute_swap_box_scores_for_image(
     similarity_matrix: Optional[np.ndarray] = None,
     min_possible_similarity: Optional[float] = None,
     has_overlap_label_bboxes: Optional[np.ndarray] = None,
-    overlapping_label_check: bool = True,
 ) -> np.ndarray:
     """This method returns one score per labeled box in an image. Score from 0 to 1 ranking how likeley swapped the box is."""
 
@@ -873,7 +875,7 @@ def _compute_swap_box_scores_for_image(
     )  # same length as number of labeled boxes
     for iid, k in enumerate(lab_labels):
         not_k_idx = pred_labels != k
-        if has_overlap_label_bboxes[iid] and overlapping_label_check:
+        if has_overlap_label_bboxes[iid]:
             scores_swap[iid] = min_possible_similarity
             continue
         if len(not_k_idx) == 0:
@@ -905,7 +907,6 @@ def compute_swap_box_scores(
     alpha: Optional[float] = None,
     high_probability_threshold: Optional[float] = None,
     auxiliary_inputs: Optional[List[AuxiliaryTypesDict]] = None,
-    overlapping_label_check: bool = True,
 ) -> List[np.ndarray]:
     """
     Returns a numeric score for each annotated bounding box in each image, estimating the likelihood that the class label for this box was not accidentally swapped with another class.
@@ -1065,7 +1066,9 @@ def _get_subtype_label_quality_scores(
     ) = _get_valid_subtype_score_params(
         alpha, low_probability_threshold, high_probability_threshold, temperature
     )
-    auxiliary_inputs = _get_valid_inputs_for_compute_scores(alpha, labels, predictions)
+    auxiliary_inputs = _get_valid_inputs_for_compute_scores(
+        alpha, labels, predictions, overlapping_label_check
+    )
     aggregation_weights = _get_aggregation_weights(aggregation_weights)
 
     overlooked_scores_per_box = compute_overlooked_box_scores(
@@ -1090,7 +1093,6 @@ def _get_subtype_label_quality_scores(
         alpha=alpha,
         high_probability_threshold=high_probability_threshold,
         auxiliary_inputs=auxiliary_inputs,
-        overlapping_label_check=overlapping_label_check,
     )
     swap_score_per_image = pool_box_scores_per_image(swap_scores_per_box, temperature=temperature)
 
