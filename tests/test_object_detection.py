@@ -176,14 +176,16 @@ def generate_bbox(image_size):
 
 
 warnings.filterwarnings("ignore")
-
-good_labels = generate_annotations(5, num_classes=10, max_boxes=10)
+NUM_CLASSES = 10
+good_labels = generate_annotations(5, num_classes=NUM_CLASSES, max_boxes=10)
 good_predictions = generate_predictions(
-    5, good_labels, num_classes=10, max_boxes=12, is_issue=False
+    5, good_labels, num_classes=NUM_CLASSES, max_boxes=12, is_issue=False
 )
 
-bad_labels = generate_annotations(5, num_classes=10, max_boxes=10)
-bad_predictions = generate_predictions(5, bad_labels, num_classes=10, max_boxes=12, is_issue=True)
+bad_labels = generate_annotations(5, num_classes=NUM_CLASSES, max_boxes=10)
+bad_predictions = generate_predictions(
+    5, bad_labels, num_classes=NUM_CLASSES, max_boxes=12, is_issue=True
+)
 
 labels = good_labels + bad_labels  # 10 labels
 predictions = (
@@ -618,3 +620,15 @@ def test_has_labels_overlap():
     is_overlaps = _has_overlap(bboxes, label_classes)
     expected_res = np.array([True, False, False, False, True])
     assert np.array_equal(is_overlaps, expected_res)
+
+
+@pytest.mark.parametrize("overlapping_label_check", [True, False])
+def test_swap_overlap_labels(overlapping_label_check):
+    prediction = predictions[3].copy()
+    label = labels[3].copy()
+    label["bboxes"] = np.append(label["bboxes"], [label["bboxes"][-1]], axis=0)
+    label["labels"] = np.append(label["labels"], (label["labels"][-1] + 1) % 10)
+    score = get_label_quality_scores(
+        [label], [prediction], overlapping_label_check=overlapping_label_check
+    )
+    assert score < 0.1

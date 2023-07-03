@@ -67,6 +67,7 @@ def get_label_quality_scores(
     labels: List[Dict[str, Any]],
     predictions: List[np.ndarray],
     aggregation_weights: Optional[Dict[str, float]] = None,
+    overlapping_label_check: bool = True,
     *,
     verbose: bool = True,
 ) -> np.ndarray:
@@ -104,6 +105,9 @@ def get_label_quality_scores(
        swapped examples, bad location examples, and overlooked examples.
        It is important to ensure that the weights are non-negative values and that their sum equals 1.0.
 
+    overlapping_label_check:
+       A boolean that keeps a low swap score for an object that has more than 1 label associated with it.
+
     verbose : bool, default = True
       Set to ``False`` to suppress all print statements.
 
@@ -130,6 +134,7 @@ def get_label_quality_scores(
         method=method,
         threshold=probability_threshold,
         aggregation_weights=aggregation_weights,
+        overlapping_label_check=overlapping_label_check,
         verbose=verbose,
     )
 
@@ -174,6 +179,7 @@ def _compute_label_quality_scores(
     *,
     method: str = "objectlab",
     threshold: Optional[float] = None,
+    overlapping_label_check: bool = True,
     verbose: bool = True,
 ) -> np.ndarray:
     """Internal function to prune extra bounding boxes and compute label quality scores based on passed in method."""
@@ -200,6 +206,7 @@ def _compute_label_quality_scores(
             high_probability_threshold=HIGH_PROBABILITY_THRESHOLD,
             temperature=TEMPERATURE,
             aggregation_weights=aggregation_weights,
+            overlapping_label_check=overlapping_label_check,
         )
 
     return scores
@@ -440,6 +447,7 @@ def _get_valid_inputs_for_compute_scores_per_image(
     similarity_matrix=None,
     min_possible_similarity: Optional[float] = None,
     has_overlap_label_bboxes: Optional[np.ndarray] = None,
+    overlapping_label_check: bool = True,
 ) -> AuxiliaryTypesDict:
     """Returns valid inputs for compute scores by either passing through values or calculating the inputs internally."""
     if lab_labels is None or lab_bboxes is None:
@@ -487,6 +495,7 @@ def _get_valid_inputs_for_compute_scores(
     alpha: float,
     labels: Optional[List[Dict[str, Any]]] = None,
     predictions: Optional[List[np.ndarray]] = None,
+    overlapping_label_check: bool = True,
 ) -> List[AuxiliaryTypesDict]:
     """Takes in alpha, labels and predictions and returns auxiliary input dictionary containing divided parts of labels and prediction per image."""
     if predictions is None or labels is None:
@@ -503,6 +512,7 @@ def _get_valid_inputs_for_compute_scores(
             label=label,
             prediction=prediction,
             min_possible_similarity=min_possible_similarity,
+            overlapping_label_check=overlapping_label_check,
         )
         auxiliary_inputs.append(auxiliary_input_dict)
 
@@ -832,6 +842,7 @@ def _compute_swap_box_scores_for_image(
     similarity_matrix: Optional[np.ndarray] = None,
     min_possible_similarity: Optional[float] = None,
     has_overlap_label_bboxes: Optional[np.ndarray] = None,
+    overlapping_label_check: bool = True,
 ) -> np.ndarray:
     """This method returns one score per labeled box in an image. Score from 0 to 1 ranking how likeley swapped the box is."""
 
@@ -862,7 +873,7 @@ def _compute_swap_box_scores_for_image(
     )  # same length as number of labeled boxes
     for iid, k in enumerate(lab_labels):
         not_k_idx = pred_labels != k
-        if has_overlap_label_bboxes[iid]:
+        if has_overlap_label_bboxes[iid] and overlapping_label_check:
             scores_swap[iid] = min_possible_similarity
             continue
         if len(not_k_idx) == 0:
@@ -894,6 +905,7 @@ def compute_swap_box_scores(
     alpha: Optional[float] = None,
     high_probability_threshold: Optional[float] = None,
     auxiliary_inputs: Optional[List[AuxiliaryTypesDict]] = None,
+    overlapping_label_check: bool = True,
 ) -> List[np.ndarray]:
     """
     Returns a numeric score for each annotated bounding box in each image, estimating the likelihood that the class label for this box was not accidentally swapped with another class.
@@ -1009,6 +1021,7 @@ def _get_subtype_label_quality_scores(
     high_probability_threshold: Optional[float] = None,
     temperature: Optional[float] = None,
     aggregation_weights: Optional[Dict[str, float]] = None,
+    overlapping_label_check: bool = True,
 ) -> np.ndarray:
     """
     Returns a label quality score for each of the ``N`` images in the dataset.
@@ -1077,6 +1090,7 @@ def _get_subtype_label_quality_scores(
         alpha=alpha,
         high_probability_threshold=high_probability_threshold,
         auxiliary_inputs=auxiliary_inputs,
+        overlapping_label_check=overlapping_label_check,
     )
     swap_score_per_image = pool_box_scores_per_image(swap_scores_per_box, temperature=temperature)
 
