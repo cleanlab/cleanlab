@@ -125,10 +125,27 @@ def make_rare_label(data):
     return data
 
 
+def make_high_dim_data(seed=SEED):
+    np.random.seed(seed=seed)
+    X_train = np.random.randint(0, 255, (200, 28, 28))
+    label_train = np.random.randint(0, 10, 200)
+    X_test = np.random.randint(0, 255, (50, 28, 28))
+    label_test = np.random.randint(0, 10, 50)
+    X_train, X_test = X_train / 255.0, X_test / 255.0
+
+    return {
+        "X_train": X_train,
+        "labels_train": label_train,
+        "X_test": X_test,
+        "labels_test": label_test,
+    }
+
+
 DATA = make_data(format="numpy", seed=SEED)
 SPARSE_DATA = make_data(format="sparse", seed=SEED)
 DATAFRAME_DATA = make_data(format="dataframe", seed=SEED)
 SERIES_DATA = make_data(format="series", seed=SEED)  # special case not checked in most tests
+HIGH_DIM_DATA = make_high_dim_data(seed=SEED)
 DATA_FORMATS = {
     "numpy": DATA,
     "sparse": SPARSE_DATA,
@@ -150,6 +167,34 @@ def test_cl(data):
         assert (data["X_train"] == X_train_og).all()
     elif isinstance(X_train_og, pd.DataFrame):
         assert data["X_train"].equals(X_train_og)
+
+
+def test_cl_default_clf():
+    cl = CleanLearning()  # default clf is LogisticRegression
+    X_train_og = deepcopy(HIGH_DIM_DATA["X_train"])
+    cl.fit(HIGH_DIM_DATA["X_train"], HIGH_DIM_DATA["labels_train"])
+
+    # assert result has the correct length
+    result = cl.predict(HIGH_DIM_DATA["X_test"])
+    assert len(result) == len(HIGH_DIM_DATA["X_test"])
+
+    result = cl.predict(X=HIGH_DIM_DATA["X_test"])
+    assert len(result) == len(HIGH_DIM_DATA["X_test"])
+
+    # assert pred_proba has the right dimensions (N x K),
+    # where K = 10 (number of classes) as specified in make_high_dim_data()
+    pred_proba = cl.predict_proba(HIGH_DIM_DATA["X_test"])
+    assert pred_proba.shape == (len(HIGH_DIM_DATA["X_test"]), 10)
+
+    pred_proba = cl.predict_proba(X=HIGH_DIM_DATA["X_test"])
+    assert pred_proba.shape == (len(HIGH_DIM_DATA["X_test"]), 10)
+
+    score = cl.score(HIGH_DIM_DATA["X_test"], HIGH_DIM_DATA["labels_test"])
+
+    cl.find_label_issues(HIGH_DIM_DATA["X_train"], HIGH_DIM_DATA["labels_train"])
+
+    # ensure data has not been altered:
+    assert (HIGH_DIM_DATA["X_train"] == X_train_og).all()
 
 
 @pytest.mark.filterwarnings("ignore::UserWarning")
