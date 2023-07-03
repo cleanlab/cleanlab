@@ -371,7 +371,7 @@ def _get_iou(bb1: Dict[str, Any], bb2: Dict[str, Any]) -> float:
 
 
 def _has_overlap(label_boxes, labels):
-    """This function determines whether each labeled box overlaps with another box of a different class, returning a boolean array."""
+    """This function determines whether each labeled box overlaps with another box of a different class (i.e. virtually the same box having multiple conflicting annotations). It returns a boolean array."""
     iou_matrix = _get_overlap_matrix(label_boxes, label_boxes)
     res_overlap = []
     for i in range(0, len(iou_matrix)):
