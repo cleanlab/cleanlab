@@ -215,7 +215,7 @@ class IssueFinder:
             Dictionary of required arguments for each issue type, if available.
         """
         args_dict = {
-            "label": {"pred_probs": pred_probs},
+            "label": {"pred_probs": pred_probs, "features": features},
             "outlier": {"pred_probs": pred_probs, "features": features, "knn_graph": knn_graph},
             "near_duplicate": {"features": features, "knn_graph": knn_graph},
             "non_iid": {"features": features, "knn_graph": knn_graph},

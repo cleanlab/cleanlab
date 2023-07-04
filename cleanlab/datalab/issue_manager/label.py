@@ -18,6 +18,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional
 
 import numpy as np
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.model_selection import cross_val_predict
 
 from cleanlab.classification import CleanLearning
 from cleanlab.datalab.issue_manager import IssueManager
@@ -25,7 +27,7 @@ from cleanlab.internal.validation import assert_valid_inputs
 
 if TYPE_CHECKING:  # pragma: no cover
     import pandas as pd
-
+    import numpy.typing as npt
     from cleanlab.datalab.datalab import Datalab
 
 
@@ -63,6 +65,7 @@ class LabelIssueManager(IssueManager):
         datalab: Datalab,
         clean_learning_kwargs: Optional[Dict[str, Any]] = None,
         health_summary_parameters: Optional[Dict[str, Any]] = None,
+        k: int = 10,
         **_,
     ):
         super().__init__(datalab)
@@ -71,6 +74,7 @@ class LabelIssueManager(IssueManager):
             health_summary_parameters.copy() if health_summary_parameters else {}
         )
         self._reset()
+        self._k = k
 
     @staticmethod
     def _process_find_label_issues_kwargs(kwargs: Dict[str, Any]) -> Dict[str, Any]:
@@ -118,9 +122,21 @@ class LabelIssueManager(IssueManager):
 
     def find_issues(
         self,
-        pred_probs: np.ndarray,
+        pred_probs: Optional[npt.NDArray] = None,
+        features: Optional[npt.NDArray] = None,
         **kwargs,
     ) -> None:
+        if pred_probs is None and features is None:
+            raise ValueError(
+                "Either pred_probs or features must be provided to find label issues."
+            )
+        if pred_probs is None:
+            # produce out-of-sample pred_probs from features
+            knn = KNeighborsClassifier(n_neighbors=self._k)
+            pred_probs = cross_val_predict(
+                knn, features, self.datalab.labels, cv=5, method="predict_proba"
+            )
+            
         self.health_summary_parameters.update({"pred_probs": pred_probs})
         # Find examples with label issues
         self.issues = self.cl.find_label_issues(
