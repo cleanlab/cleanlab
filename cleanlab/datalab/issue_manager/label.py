@@ -127,16 +127,14 @@ class LabelIssueManager(IssueManager):
         **kwargs,
     ) -> None:
         if pred_probs is None and features is None:
-            raise ValueError(
-                "Either pred_probs or features must be provided to find label issues."
-            )
+            raise ValueError("Either pred_probs or features must be provided to find label issues.")
         if pred_probs is None:
             # produce out-of-sample pred_probs from features
             knn = KNeighborsClassifier(n_neighbors=self._k)
             pred_probs = cross_val_predict(
                 knn, features, self.datalab.labels, cv=5, method="predict_proba"
             )
-            
+
         self.health_summary_parameters.update({"pred_probs": pred_probs})
         # Find examples with label issues
         self.issues = self.cl.find_label_issues(
