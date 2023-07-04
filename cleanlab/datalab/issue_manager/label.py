@@ -17,7 +17,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional
 
-import numpy as np
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.model_selection import cross_val_predict
 

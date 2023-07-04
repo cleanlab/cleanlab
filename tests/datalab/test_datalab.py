@@ -809,14 +809,25 @@ class TestDatalabFindLabelIssues:
         lab = Datalab(data=data, label_name="labels")
         lab.find_issues(features=random_embeddings)
         summary = lab.get_issue_summary()
-        assert len(summary) == 3
-        assert "label" not in summary["issue_type"].values
+        assert len(summary) == 4
+        assert "label" in summary["issue_type"].values
         lab.find_issues(pred_probs=pred_probs, issue_types={"label": {}})
         summary = lab.get_issue_summary()
         assert len(summary) == 4
         assert "label" in summary["issue_type"].values
-        label_summary = lab.get_issue_summary("label")
-        assert label_summary["num_issues"].values[0] > 0
+        label_summary_pred_probs = lab.get_issue_summary("label")
+        assert label_summary_pred_probs["num_issues"].values[0] > 0
+        lab.find_issues(
+            features=random_embeddings, pred_probs=pred_probs, issue_types={"label": {}}
+        )
+        summary = lab.get_issue_summary()
+        assert len(summary) == 4
+        assert "label" in summary["issue_type"].values
+        label_summary_both = lab.get_issue_summary("label")
+        assert (
+            label_summary_both["num_issues"].values[0]
+            == label_summary_pred_probs["num_issues"].values[0]
+        )
 
 
 class TestDatalabFindOutlierIssues:
@@ -930,5 +941,6 @@ class TestDatalabWithoutLabels:
         issues_with_labels = lab_with_labels.issues
         issues_without_label_name = lab_without_label_name.issues
 
-        pd.testing.assert_frame_equal(issues_without_labels, issues_with_labels)
+        # issues_with_labels should have two additional columns about label issues
+        assert len(issues_without_labels.columns) + 2 == len(issues_with_labels.columns)
         pd.testing.assert_frame_equal(issues_without_labels, issues_without_label_name)
