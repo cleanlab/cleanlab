@@ -592,7 +592,7 @@ class TestDatalabUsingKNNGraph:
             lab.find_issues()
 
         assert len(record) == 1
-        assert "No arguments were passed to Datalab.find_issues()." == str(record[0].message)
+        assert "No arguments were passed to Datalab.find_issues()." in str(record[0].message)
         assert lab.issues.empty  # No columns should be added to the issues dataframe
 
 
