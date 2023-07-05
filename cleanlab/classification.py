@@ -470,7 +470,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
             )
 
         if sample_weight is not None:
-            if "sample_weight" not in inspect.getfullargspec(self.clf.fit).args:
+            if "sample_weight" not in inspect.signature(self.clf.fit).parameters:
                 raise ValueError(
                     "sample_weight must be a supported fit() argument for your model in order to be specified here"
                 )
@@ -528,7 +528,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         if sample_weight is None:
             # Check if sample_weight in args of clf.fit()
             if (
-                "sample_weight" in inspect.getfullargspec(self.clf.fit).args
+                "sample_weight" in inspect.signature(self.clf.fit).parameters
                 and "sample_weight" not in self.clf_final_kwargs
                 and self.noise_matrix is not None
             ):
@@ -564,7 +564,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
                         print("Fitting final model on the clean data with custom sample_weight ...")
                     else:
                         if (
-                            "sample_weight" in inspect.getfullargspec(self.clf.fit).args
+                            "sample_weight" in inspect.signature(self.clf.fit).parameters
                             and self.noise_matrix is None
                         ):
                             print(
@@ -676,7 +676,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
             X = force_two_dimensions(X)
         if hasattr(self.clf, "score"):
             # Check if sample_weight in clf.score()
-            if "sample_weight" in inspect.getfullargspec(self.clf.score).args:
+            if "sample_weight" in inspect.signature(self.clf.score).parameters:
                 return self.clf.score(X, y, sample_weight=sample_weight)
             else:
                 return self.clf.score(X, y)
