@@ -286,7 +286,7 @@ class Datalab:
 
         """
         if issue_types is not None and not issue_types:
-            warnings.warn("No issue types were specified. No issues will be found in the dataset.")
+            warnings.warn("No issue types were specified so no issues will be found in the dataset. Set `issue_types` as None to consider a default set of issues.")
             return None
         no_args_passed = all(arg is None for arg in [pred_probs, features, knn_graph, issue_types])
         if no_args_passed:
