@@ -363,7 +363,7 @@ class CleanLearning(BaseEstimator):
             Number quantifying the performance of this regression model on the test data.
         """
         if hasattr(self.model, "score"):
-            if "sample_weight" in inspect.signature(self.model.fit).parameters:
+            if "sample_weight" in inspect.signature(self.model.score).parameters:
                 return self.model.score(X, y, sample_weight=sample_weight)
             else:
                 return self.model.score(X, y)

@@ -676,7 +676,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
             X = force_two_dimensions(X)
         if hasattr(self.clf, "score"):
             # Check if sample_weight in clf.score()
-            if "sample_weight" in inspect.signature(self.clf.fit).parameters:
+            if "sample_weight" in inspect.signature(self.clf.score).parameters:
                 return self.clf.score(X, y, sample_weight=sample_weight)
             else:
                 return self.clf.score(X, y)
