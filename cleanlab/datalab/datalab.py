@@ -292,7 +292,10 @@ class Datalab:
             return None
         no_args_passed = all(arg is None for arg in [pred_probs, features, knn_graph, issue_types])
         if no_args_passed:
-            warnings.warn("No arguments were passed to Datalab.find_issues().")
+            warnings.warn(
+                "No arguments were passed to Datalab.find_issues(). This will fail skip any datalab specific issues. \
+                Please specify one of pred_probs, features, knn_graph to check for datalab specific issues."
+            )
 
         issue_finder = issue_finder_factory(self._imagelab)(datalab=self, verbosity=self.verbosity)
         issue_finder.find_issues(
