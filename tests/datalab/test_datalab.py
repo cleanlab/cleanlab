@@ -233,7 +233,7 @@ class TestDatalab:
             lab.find_issues(pred_probs=pred_probs, issue_types=issue_types)
         warning_message = record[0].message.args[0]
         assert (
-            "No issue types were specified. No issues will be found in the dataset."
+            "No issue types were specified so no issues will be found in the dataset. Set `issue_types` as None to consider a default set of issues."
             in warning_message
         )
 
