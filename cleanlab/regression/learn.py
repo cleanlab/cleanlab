@@ -265,7 +265,7 @@ class CleanLearning(BaseEstimator):
             )
 
         if sample_weight is not None:
-            if "sample_weight" not in inspect.getfullargspec(self.model.fit).args:
+            if "sample_weight" not in inspect.signature(self.model.fit).parameters:
                 raise ValueError(
                     "sample_weight must be a supported fit() argument for your model in order to be specified here"
                 )
@@ -363,7 +363,7 @@ class CleanLearning(BaseEstimator):
             Number quantifying the performance of this regression model on the test data.
         """
         if hasattr(self.model, "score"):
-            if "sample_weight" in inspect.getfullargspec(self.model.score).args:
+            if "sample_weight" in inspect.signature(self.model.fit).parameters:
                 return self.model.score(X, y, sample_weight=sample_weight)
             else:
                 return self.model.score(X, y)
