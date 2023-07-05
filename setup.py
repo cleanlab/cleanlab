@@ -34,7 +34,7 @@ DATALAB_REQUIRE = [
     "datasets>=2.7.0",
 ]
 
-CLEANVISION_REQUIRE = [
+IMAGE_REQUIRE = [
     # Mainly for Datalab's data storage class.
     # Still some type hints that require datasets
     "cleanvision==0.3.0",
@@ -42,7 +42,7 @@ CLEANVISION_REQUIRE = [
 
 EXTRAS_REQUIRE = {
     "datalab": DATALAB_REQUIRE,
-    "cleanvision": CLEANVISION_REQUIRE,
+    "image": IMAGE_REQUIRE,
     "all": ["matplotlib>=3.5.1"],
 }
 EXTRAS_REQUIRE["all"] = list(set(sum(EXTRAS_REQUIRE.values(), [])))
