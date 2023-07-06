@@ -41,7 +41,7 @@ Examples whose given label is estimated to be potentially incorrect (e.g. due to
 Datalab estimates which examples appear mislabeled as well as a numeric label quality score for each, which quantifies the likelihood that an example is correctly labeled.
 
 For now, Datalab can only detect label issues in a multi-class classification dataset.
-The cleanlab library has alternative methods you can us to detect label issues in other types of datasets (multi-label, multi-annotator, token classification, etc.). 
+The cleanlab library has alternative methods you can us to detect label issues in other types of datasets (multi-label, multi-annotator, token classification, etc.).
 
 Label issues are calculated based on provided `pred_probs` from a trained model. If you do not provide this argument, this type of issue will not be considered.
 For the most accurate results, provide out-of-sample `pred_probs` which can be obtained for a dataset via `cross-validation <https://docs.cleanlab.ai/stable/tutorials/pred_probs_cross_val.html>`_. 
@@ -50,6 +50,7 @@ Having mislabeled examples in your dataset may hamper the performance of supervi
 For evaluating models or performing other types of data analytics, mislabeled examples may lead you to draw incorrect conclusions.
 To handle mislabeled examples, you can either filter out the data with label issues or try to correct their labels.
 
+Learn more about the method used to detect label issues in our paper: `Confident Learning: Estimating Uncertainty in Dataset Labels <https://arxiv.org/abs/1911.00068>`_
 
 
 Outlier Issue
@@ -68,6 +69,8 @@ When based on `pred_probs`, the outlier quality of each example is scored invers
 Modeling data with outliers may have unexpected consequences.
 Closely inspect them and consider removing some outliers that may be negatively affecting your models.
 
+Learn more about the methods used to detect outliers in our article: `Out-of-Distribution Detection via Embeddings or Predictions <https://cleanlab.ai/blog/outlier-detection/>`_
+
 (Near) Duplicate Issue
 ----------------------
 
@@ -82,7 +85,7 @@ Near duplicated examples may record the same information with different:
 Near Duplicate issues are calculated based on provided `features` or `knn_graph`.
 If you do not provide one of these arguments, this type of issue will not be considered. 
 
-Datalab defines near duplicates as those examples whose distance to their nearest neighbor (in the space of provided `features`) in the dataset is less than `c * D`, where `0 < c < 1` is a fractional constant parameter, and `D` is the median (over the full dataset) of such distances between each example and its nearest neighbor.
+Datalab defines near duplicates as those examples whose distance to their nearest neighbor (in the space of provided `features`) in the dataset is less than `c * D`, where `0 < c < 1` is a small constant, and `D` is the median (over the full dataset) of such distances between each example and its nearest neighbor.
 Scoring the numeric quality of an example in terms of the near duplicate issue type is done proportionally to its distance to its nearest neighbor.
 
 Including near-duplicate examples in a dataset may negatively impact a ML model's generalization performance and lead to overfitting.
@@ -96,9 +99,9 @@ Whether the dataset exhibits statistically significant violations of the IID ass
 
 The Non-IID issue is detected based on provided `features` or `knn_graph`. If you do not provide one of these arguments, this type of issue will not be considered.
 
-Mathematically, the **overall** Non-IID score for the dataset is defined as the p-value of a statistical test for whether the distribution of *index-gap* values differs between group A vs. group B defined as follows. For a pair of examples in the dataset `x1, x2`, we define their *index-gap* as the distance between the indices of these examples in the ordering of the data (e.g. if `x1` is the 10th example and `x2` is the 100th example in the dataset, their index-gap is 90). We construct group A from pairs of examples which are amongst the K nearest neighbors of each other, where neighbors are defined based on the provided `knn_graph` or via distances in the space of the provided vector `features` . Group B is constructed from random pairs of examples in the dataset. 
+Mathematically, the **overall** Non-IID score for the dataset is defined as the p-value of a statistical test for whether the distribution of *index-gap* values differs between group A vs. group B defined as follows. For a pair of examples in the dataset `x1, x2`, we define their *index-gap* as the distance between the indices of these examples in the ordering of the data (e.g. if `x1` is the 10th example and `x2` is the 100th example in the dataset, their index-gap is 90). We construct group A from pairs of examples which are amongst the K nearest neighbors of each other, where neighbors are defined based on the provided `knn_graph` or via distances in the space of the provided vector `features` . Group B is constructed from random pairs of examples in the dataset.
 
-The Non-IID quality score for each example `x` is defined via a similarly computed p-value but with Group A constructed from the K nearest neighbors of `x` and Group B constructed from  random examples from the dataset paired with `x`.
+The Non-IID quality score for each example `x` is defined via a similarly computed p-value but with Group A constructed from the K nearest neighbors of `x` and Group B constructed from  random examples from the dataset paired with `x`. Learn more about the math behind this method in our paper: `Detecting Dataset Drift and Non-IID Sampling via k-Nearest Neighbors <https://arxiv.org/abs/2305.15696>`_
 
 The assumption that examples in a dataset are Independent and Identically Distributed (IID) is  fundamental to most proper modeling.  Detecting all possible violations of the IID assumption is statistically impossible. This issue type only considers specific forms of violation where examples that tend to be closer together in the dataset ordering also tend to have more similar feature values. This includes scenarios where:
 
