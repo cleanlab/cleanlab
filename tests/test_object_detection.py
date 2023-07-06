@@ -643,13 +643,9 @@ def test_swap_only_overlap_labels(overlapping_label_check):
     label = labels[3].copy()
     label["bboxes"] = np.append(label["bboxes"], [label["bboxes"][-1]], axis=0)
     label["labels"] = np.append(label["labels"], (label["labels"][-1] + 1) % 10)
-    aux_dict = _get_valid_inputs_for_compute_scores(
-        alpha=ALPHA,
-        labels=[label],
-        predictions=[prediction],
-        overlapping_label_check=overlapping_label_check,
-    )
-    score = compute_swap_box_scores([label], [prediction], auxiliary_inputs=aux_dict)[0]
+    score = compute_swap_box_scores(
+        [label], [prediction], overlapping_label_check=overlapping_label_check
+    )[0]
     if overlapping_label_check:
         assert np.allclose(score, np.array([0.88, 1.0, 0.95, 0.96, 1.0, 0.0, 0.0]), atol=1e-2)
     else:

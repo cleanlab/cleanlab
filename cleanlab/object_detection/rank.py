@@ -57,7 +57,6 @@ if TYPE_CHECKING:  # pragma: no cover
             "lab_bboxes": np.ndarray,
             "similarity_matrix": np.ndarray,
             "min_possible_similarity": float,
-            "has_overlap_label_bboxes": np.ndarray,
         },
     )
 else:
