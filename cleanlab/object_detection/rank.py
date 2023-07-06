@@ -492,7 +492,6 @@ def _get_valid_inputs_for_compute_scores(
     alpha: float,
     labels: Optional[List[Dict[str, Any]]] = None,
     predictions: Optional[List[np.ndarray]] = None,
-    overlapping_label_check: bool = True,
 ) -> List[AuxiliaryTypesDict]:
     """Takes in alpha, labels and predictions and returns auxiliary input dictionary containing divided parts of labels and prediction per image."""
     if predictions is None or labels is None:
@@ -1063,9 +1062,7 @@ def _get_subtype_label_quality_scores(
     ) = _get_valid_subtype_score_params(
         alpha, low_probability_threshold, high_probability_threshold, temperature
     )
-    auxiliary_inputs = _get_valid_inputs_for_compute_scores(
-        alpha, labels, predictions, overlapping_label_check
-    )
+    auxiliary_inputs = _get_valid_inputs_for_compute_scores(alpha, labels, predictions)
     aggregation_weights = _get_aggregation_weights(aggregation_weights)
 
     overlooked_scores_per_box = compute_overlooked_box_scores(
