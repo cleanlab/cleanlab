@@ -857,7 +857,7 @@ def _compute_swap_box_scores_for_image(
     if overlapping_label_check:
         has_overlap_label_bboxes = _has_overlap(lab_bboxes, lab_labels)
     else:
-        has_overlap_label_bboxes = np.array([False] * len(lab_bboxes))
+        has_overlap_label_bboxes = np.array([False] * len(lab_labels))
 
     scores_swap = np.empty(
         shape=[
