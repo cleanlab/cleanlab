@@ -170,3 +170,21 @@ def test_normalized_entropy():
     with pytest.raises(ValueError):
         get_normalized_entropy(np.array([[-1.0, 0.5]]))  # negative
         get_normalized_entropy(np.array([[2.0, 0.5]]))  # larger 1
+
+
+def test_force_two_dimensions():
+    # Test with 2D array
+    X = np.zeros((5, 5))
+    X_reshaped = util.force_two_dimensions(X)
+    assert X_reshaped.shape == (5, 5), "The shape of 2D array should remain unchanged."
+
+    # Test with 4D array
+    X = np.zeros((5, 5, 5, 5))
+    X_reshaped = util.force_two_dimensions(X)
+    assert X_reshaped.shape == (
+        5,
+        125,
+    ), "The shape of 4D array should be flattened to two dimensions."
+
+    # Test with None input
+    assert util.force_two_dimensions(None) is None, "None input should return None."

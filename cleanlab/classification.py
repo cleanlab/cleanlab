@@ -132,6 +132,7 @@ from cleanlab.internal.util import (
     compress_int_array,
     subset_X_y,
     get_num_classes,
+    force_two_dimensions,
 )
 from cleanlab.count import (
     estimate_py_noise_matrices_and_cv_pred_proba,
@@ -182,6 +183,8 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
       Stores the classifier used in Confident Learning.
       Default classifier used is `sklearn.linear_model.LogisticRegression
       <https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html>`_.
+      Default classifier assumes that indexing along the first dimension of the dataset corresponds to
+      selecting different training examples.
 
     seed : int, optional
       Set the default state of the random number generator used to split
@@ -230,9 +233,11 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         label_quality_scores_kwargs={},
         verbose=False,
     ):
+        self._default_clf = False
         if clf is None:
             # Use logistic regression if no classifier is provided.
             clf = LogReg(multi_class="auto", solver="lbfgs")
+            self._default_clf = True
 
         # Make sure the given classifier has the appropriate methods defined.
         if not hasattr(clf, "fit"):
@@ -454,6 +459,8 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
             labels = y
         if labels is None:
             raise ValueError("You must specify `labels`.")
+        if self._default_clf:
+            X = force_two_dimensions(X)
 
         self.clf_final_kwargs = {**clf_kwargs, **clf_final_kwargs}
 
@@ -463,7 +470,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
             )
 
         if sample_weight is not None:
-            if "sample_weight" not in inspect.getfullargspec(self.clf.fit).args:
+            if "sample_weight" not in inspect.signature(self.clf.fit).parameters:
                 raise ValueError(
                     "sample_weight must be a supported fit() argument for your model in order to be specified here"
                 )
@@ -521,7 +528,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         if sample_weight is None:
             # Check if sample_weight in args of clf.fit()
             if (
-                "sample_weight" in inspect.getfullargspec(self.clf.fit).args
+                "sample_weight" in inspect.signature(self.clf.fit).parameters
                 and "sample_weight" not in self.clf_final_kwargs
                 and self.noise_matrix is not None
             ):
@@ -557,7 +564,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
                         print("Fitting final model on the clean data with custom sample_weight ...")
                     else:
                         if (
-                            "sample_weight" in inspect.getfullargspec(self.clf.fit).args
+                            "sample_weight" in inspect.signature(self.clf.fit).parameters
                             and self.noise_matrix is None
                         ):
                             print(
@@ -603,8 +610,19 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         class_predictions : np.ndarray
           Vector of class predictions for the test examples.
         """
-
-        return self.clf.predict(*args, **kwargs)
+        if self._default_clf:
+            if args:
+                X = args[0]
+            elif "X" in kwargs:
+                X = kwargs["X"]
+                del kwargs["X"]
+            else:
+                raise ValueError("No input provided to predict, please provide X.")
+            X = force_two_dimensions(X)
+            new_args = (X,) + args[1:]
+            return self.clf.predict(*new_args, **kwargs)
+        else:
+            return self.clf.predict(*args, **kwargs)
 
     def predict_proba(self, *args, **kwargs) -> np.ndarray:
         """Predict class probabilities ``P(true label=k)`` using your wrapped classifier `clf`.
@@ -620,8 +638,19 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         pred_probs : np.ndarray
           ``(N x K)`` array of predicted class probabilities, one row for each test example.
         """
-
-        return self.clf.predict_proba(*args, **kwargs)
+        if self._default_clf:
+            if args:
+                X = args[0]
+            elif "X" in kwargs:
+                X = kwargs["X"]
+                del kwargs["X"]
+            else:
+                raise ValueError("No input provided to predict, please provide X.")
+            X = force_two_dimensions(X)
+            new_args = (X,) + args[1:]
+            return self.clf.predict_proba(*new_args, **kwargs)
+        else:
+            return self.clf.predict_proba(*args, **kwargs)
 
     def score(self, X, y, sample_weight=None) -> float:
         """Evaluates your wrapped classifier `clf`'s score on a test set `X` with labels `y`.
@@ -643,10 +672,11 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         score: float
           Number quantifying the performance of this classifier on the test data.
         """
-
+        if self._default_clf:
+            X = force_two_dimensions(X)
         if hasattr(self.clf, "score"):
             # Check if sample_weight in clf.score()
-            if "sample_weight" in inspect.getfullargspec(self.clf.score).args:
+            if "sample_weight" in inspect.signature(self.clf.score).parameters:
                 return self.clf.score(X, y, sample_weight=sample_weight)
             else:
                 return self.clf.score(X, y)
@@ -736,6 +766,8 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
             t = np.round(np.trace(inverse_noise_matrix), 2)
             raise ValueError("Trace(inverse_noise_matrix) is {}. Must exceed 1.".format(t))
 
+        if self._default_clf:
+            X = force_two_dimensions(X)
         if noise_matrix is not None:
             label_matrix = noise_matrix
         else:

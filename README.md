@@ -246,6 +246,28 @@ cleanlab is based on peer-reviewed research. Here are relevant papers to cite if
 
 </details>
 
+<details><summary><a href="https://arxiv.org/abs/2305.15696"> Detecting Dataset Drift and Non-IID Sampling (ICML '23)</a> (<b>click to show bibtex</b>) </summary>
+
+    @inproceedings{cummings2023drift,
+        title={Detecting Dataset Drift and Non-IID Sampling via k-Nearest Neighbors},
+        author={Cummings, Jesse and Snorrason, Elías and Mueller, Jonas},
+        booktitle={ICML Workshop on Data-centric Machine Learning Research},
+        year={2023}
+    }
+
+</details>
+
+<details><summary><a href="https://arxiv.org/abs/2305.16583"> Detecting Errors in Numerical Data (ICML '23)</a> (<b>click to show bibtex</b>) </summary>
+
+    @inproceedings{zhou2023errors,
+        title={Detecting Errors in Numerical Data via any Regression Model},
+        author={Zhou, Hang and Mueller, Jonas and Kumar, Mayank and Wang, Jane-Ling and Lei, Jing},
+        booktitle={ICML Workshop on Data-centric Machine Learning Research},
+        year={2023}
+    }
+
+</details>
+
 
 To understand/cite other cleanlab functionality not described above, check out our [additional publications](https://cleanlab.ai/research/).
 

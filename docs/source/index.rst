@@ -146,7 +146,9 @@ Please see our `contributing guidelines <https://github.com/cleanlab/cleanlab/bl
    Identifying Outliers (pytorch) <tutorials/outliers>
    Improving Consensus Labels for Multiannotator Data <tutorials/multiannotator>
    Multi-Label Classification <tutorials/multilabel_classification>
+   Noisy Labels in Regression <tutorials/regression>
    Token Classification (text) <tutorials/token_classification>
+   Semantic Segmentation (pytorch) <tutorials/segmentation>
    Object Detection (detectron2) <tutorials/object_detection>
    Predicted Probabilities via Cross Validation <tutorials/pred_probs_cross_val>
    FAQ <tutorials/faq>
@@ -164,7 +166,9 @@ Please see our `contributing guidelines <https://github.com/cleanlab/cleanlab/bl
    cleanlab/outlier
    cleanlab/multiannotator
    cleanlab/multilabel_classification/index
+   cleanlab/regression/index
    cleanlab/token_classification/index
+   cleanlab/segmentation/index
    cleanlab/object_detection/index
    cleanlab/datalab/index
    cleanlab/benchmarking/index
