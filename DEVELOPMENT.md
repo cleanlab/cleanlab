@@ -226,7 +226,7 @@ endings match the project style.
 
 ## Contributing new issue types to Datalab
 
-To contribute a new type of issue that Datalab can automatically detect in any dataset, refer to our guide on [Creating Your Own Issues Manager](https://docs.cleanlab.ai/stable/cleanlab/datalab/guide/custom_issue_manager.html).
+To contribute a new type of issue that Datalab can automatically detect in any dataset, refer to our guide on [Creating Your Own Issues Manager](https://docs.cleanlab.ai/master/cleanlab/datalab/guide/custom_issue_manager.html).
 
 Do not add your new issue type to the set of issues that Datalab detects by default, our team can add it to this default set later on once it's utility has been thoroughly validated.
 
