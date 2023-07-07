@@ -614,11 +614,12 @@ def test_has_labels_overlap():
             [472.0, 173.0, 508.0, 221.0],
             [486.0, 183.0, 517.0, 218.0],
             [359.0, 144.0, 470.0, 358.0],
+            [340.0, 22.0, 494.0, 323.0],
         ]
     )
-    label_classes = [0, 1, 2, 3, 2]
+    label_classes = [0, 1, 2, 3, 2, 1]
     is_overlaps = _has_overlap(bboxes, label_classes)
-    expected_res = np.array([True, False, False, False, True])
+    expected_res = np.array([True, False, False, False, True, False])
     assert np.array_equal(is_overlaps, expected_res)
 
 
