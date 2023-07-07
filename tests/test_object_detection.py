@@ -444,7 +444,6 @@ def test_find_label_issues():
     overlooked_issues = np.sum(overlooked_issues_per_image)
     assert np.sum(overlooked_issues_per_image[5:]) == 5  # check bad labels were detected correctly
     assert overlooked_issues == 5
-
     badloc_scores_per_box = compute_badloc_box_scores(
         alpha=ALPHA,
         low_probability_threshold=LOW_PROBABILITY_THRESHOLD,
@@ -650,3 +649,12 @@ def test_swap_only_overlap_labels(overlapping_label_check):
         assert np.allclose(score, np.array([0.88, 1.0, 0.95, 0.96, 1.0, 0.0, 0.0]), atol=1e-2)
     else:
         assert np.allclose(score, np.array([0.88, 1.0, 0.95, 0.96, 1.0, 0.88, 0.0]), atol=1e-2)
+
+
+def test_badloc_high_low_probability_threshold():
+    prediction = predictions[3].copy()
+    label = labels[3].copy()
+    label["bboxes"] = np.append(label["bboxes"], [label["bboxes"][-1]], axis=0)
+    label["labels"] = np.append(label["labels"], (label["labels"][-1] + 1) % 10)
+    score = compute_badloc_box_scores([label], [prediction], low_probability_threshold=1.0)[0]
+    assert np.allclose(score, np.ones_like(score), atol=1e-2)
