@@ -925,6 +925,9 @@ def compute_swap_box_scores(
     high_probability_threshold:
         Optional probability threshold that determines which predicted boxes are considered high-confidence when computing overlooked scores. If not provided, a good default is used.
 
+    overlapping_label_check : bool, default = True
+       If True, annotated examples with more than one label associated with them are intentionally given a low swap score.
+
     auxiliary_inputs:
         Optional list of ``N`` dictionaries containing keys for sub-parts of label and prediction per image. Useful to minimize computation when computing multiple box scores for a single set of images. For the `i`-th image, `auxiliary_inputs[i]` should contain following keys:
 
@@ -1047,6 +1050,9 @@ def _get_subtype_label_quality_scores(
 
     temperature:
         Optional temperature of the softmin function where a lower score suggests softmin acts closer to min. If not provided, a good default is used.
+
+    overlapping_label_check : bool, default = True
+       If True, annotated examples with more than one label associated with them are intentionally given a low swap score.
 
     Returns
     ---------
