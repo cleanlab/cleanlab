@@ -307,8 +307,9 @@ def test_bbox_xyxy_to_xywh():
 
 
 @pytest.mark.filterwarnings("ignore::UserWarning")  # Should be 2 warnings (first two calls)
-def test_prune_by_threshold():
-    pruned_predictions = _prune_by_threshold(predictions, 1.0)
+@pytest.mark.parametrize("verbose", [True, False])
+def test_prune_by_threshold(verbose):
+    pruned_predictions = _prune_by_threshold(predictions, 1.0, verbose=verbose)
     print(pruned_predictions)
     for image_pred in pruned_predictions:
         for class_pred in image_pred:
