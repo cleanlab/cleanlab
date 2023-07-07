@@ -658,3 +658,21 @@ def test_badloc_high_low_probability_threshold():
     label["labels"] = np.append(label["labels"], (label["labels"][-1] + 1) % 10)
     score = compute_badloc_box_scores([label], [prediction], low_probability_threshold=1.0)[0]
     assert np.allclose(score, np.ones_like(score), atol=1e-2)
+
+
+def test_overlooked_high_high_probability_threshold():
+    prediction = predictions[3].copy()
+    label = labels[3].copy()
+    label["bboxes"] = np.append(label["bboxes"], [label["bboxes"][-1]], axis=0)
+    label["labels"] = np.append(label["labels"], (label["labels"][-1] + 1) % 10)
+    score = compute_overlooked_box_scores([label], [prediction], high_probability_threshold=1.0)[0]
+    assert np.isnan(score).all()
+
+
+def test_swap_high_high_probability_threshold():
+    prediction = predictions[3].copy()
+    label = labels[3].copy()
+    label["bboxes"] = np.append(label["bboxes"], [label["bboxes"][-1]], axis=0)
+    label["labels"] = np.append(label["labels"], (label["labels"][-1] + 1) % 10)
+    score = compute_swap_box_scores([label], [prediction], high_probability_threshold=1.0)[0]
+    assert np.allclose(score, np.array([1.0, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0]), atol=1e-2)
