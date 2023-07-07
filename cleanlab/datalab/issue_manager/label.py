@@ -125,9 +125,9 @@ class LabelIssueManager(IssueManager):
         features: Optional[npt.NDArray] = None,
         **kwargs,
     ) -> None:
-        if pred_probs is None and features is None:
-            raise ValueError("Either pred_probs or features must be provided to find label issues.")
         if pred_probs is None:
+            if features is None:
+                raise ValueError("Either pred_probs or features must be provided to find label issues.")
             # produce out-of-sample pred_probs from features
             knn = KNeighborsClassifier(n_neighbors=self._k)
             pred_probs = cross_val_predict(
