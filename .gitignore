@@ -123,3 +123,6 @@ venv.bak/
 # Editor files
 .vscode/
 .idea/
+
+# Ignore all data folders except the test data folder
+!tests/datalab/data
