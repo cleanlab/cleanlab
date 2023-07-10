@@ -96,6 +96,9 @@ def get_label_quality_scores(
         A list of ``N`` ``np.ndarray`` such that ``predictions[i]`` corresponds to the model predictions for the `i`-th image.
         Refer to documentation for this argument in :py:func:`find_label_issues <cleanlab.object_detection.filter.find_label_issues>` for further details.
 
+    verbose : bool, default = True
+      Set to ``False`` to suppress all print statements.
+
     aggregation_weights:
        Optional dictionary to specify weights for aggregating quality scores for subtype of label issue into an overall label quality score for the image.
        Its keys are: "overlooked", "swap", "badloc", and values should be nonnegative weights that sum to 1.
@@ -107,9 +110,6 @@ def get_label_quality_scores(
 
     overlapping_label_check : bool, default = True
        If True, boxes annotated with more than one class label  have their swap score penalized.  Set this to False if you are not concerned when two very similar boxes exist with different class labels in the given annotations.
-
-    verbose : bool, default = True
-      Set to ``False`` to suppress all print statements.
 
     Returns
     ---------
