@@ -489,8 +489,8 @@ def _get_valid_inputs_for_compute_scores_per_image(
 
 def _get_valid_inputs_for_compute_scores(
     alpha: float,
-    labels: Optional[List[Dict[str, Any]]] = None,
-    predictions: Optional[List[np.ndarray]] = None,
+    labels: Optional[List[Dict[str, Any]]],
+    predictions: Optional[List[np.ndarray]],
 ) -> List[AuxiliaryTypesDict]:
     """Takes in alpha, labels and predictions and returns auxiliary input dictionary containing divided parts of labels and prediction per image."""
     if predictions is None or labels is None:
@@ -1015,8 +1015,8 @@ def pool_box_scores_per_image(
 
 
 def _get_subtype_label_quality_scores(
-    labels: List[Dict[str, Any]] = None,
-    predictions: List[np.ndarray] = None,
+    labels: List[Dict[str, Any]],
+    predictions: List[np.ndarray],
     *,
     alpha: Optional[float] = None,
     low_probability_threshold: Optional[float] = None,
