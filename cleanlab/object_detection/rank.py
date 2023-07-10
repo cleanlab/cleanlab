@@ -613,9 +613,9 @@ def _compute_overlooked_box_scores_for_image(
 
 
 def compute_overlooked_box_scores(
-    labels: List[Dict[str, Any]] = None,
-    predictions: List[np.ndarray] = None,
     *,
+    labels: Optional[List[Dict[str, Any]]] = None,
+    predictions: Optional[List[np.ndarray]] = None,
     alpha: Optional[float] = None,
     high_probability_threshold: Optional[float] = None,
     auxiliary_inputs: Optional[List[AuxiliaryTypesDict]] = None,
@@ -747,9 +747,9 @@ def _compute_badloc_box_scores_for_image(
 
 
 def compute_badloc_box_scores(
-    labels: List[Dict[str, Any]] = None,
-    predictions: List[np.ndarray] = None,
     *,
+    labels: Optional[List[Dict[str, Any]]] = None,
+    predictions: Optional[List[np.ndarray]] = None,
     alpha: Optional[float] = None,
     low_probability_threshold: Optional[float] = None,
     auxiliary_inputs: Optional[List[AuxiliaryTypesDict]] = None,
@@ -894,9 +894,9 @@ def _compute_swap_box_scores_for_image(
 
 
 def compute_swap_box_scores(
-    labels: List[Dict[str, Any]] = None,
-    predictions: List[np.ndarray] = None,
     *,
+    labels: Optional[List[Dict[str, Any]]] = None,
+    predictions: Optional[List[np.ndarray]] = None,
     alpha: Optional[float] = None,
     high_probability_threshold: Optional[float] = None,
     overlapping_label_check: Optional[bool] = True,
@@ -1015,8 +1015,8 @@ def pool_box_scores_per_image(
 
 
 def _get_subtype_label_quality_scores(
-    labels: List[Dict[str, Any]],
-    predictions: List[np.ndarray],
+    labels: List[Dict[str, Any]] = None,
+    predictions: List[np.ndarray] = None,
     *,
     alpha: Optional[float] = None,
     low_probability_threshold: Optional[float] = None,
