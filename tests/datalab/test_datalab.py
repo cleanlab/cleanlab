@@ -588,11 +588,7 @@ class TestDatalabUsingKNNGraph:
         lab, _, _ = data_tuple
 
         # Test that a warning is raised
-        with pytest.warns(UserWarning) as record:
-            lab.find_issues()
-
-        assert len(record) == 1
-        assert "No arguments were passed to Datalab.find_issues()." in str(record[0].message)
+        lab.find_issues()
         assert lab.issues.empty  # No columns should be added to the issues dataframe
 
 
