@@ -37,7 +37,7 @@ DATALAB_REQUIRE = [
 IMAGE_REQUIRE = [
     # Mainly for Datalab's data storage class.
     # Still some type hints that require datasets
-    "cleanvision==0.3.0",
+    "cleanvision==0.3.1",
 ]
 
 EXTRAS_REQUIRE = {
