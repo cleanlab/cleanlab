@@ -19,17 +19,13 @@ jobs:
         with:
           python-version: 3.7.16
       - name: Install cleanlab
-        run: pip install -e .
+        run: pip install -e ".[all]"
       - name: Install development dependencies
         run: pip install -r requirements-dev.txt
       - name: Install fasttext for non-Windows machines
         if: matrix.os != 'windows-latest'
         run: |
           pip install fasttext
-      - name: Install cleanvision
-        run: |
-          git clone https://github.com/cleanlab/cleanvision.git
-          pip install cleanvision/
       - name: Test with coverage
         run: pytest --verbose --cov=cleanlab/ --cov-config .coveragerc --cov-report=xml
         env:
@@ -44,17 +40,13 @@ jobs:
         with:
           python-version: 3.7
       - name: Install cleanlab
-        run: pip install -e .
+        run: pip install -e ".[all]"
       - name: Install development dependencies
         run: pip install -r requirements-dev.txt
       - name: Overwrite tensorflow version on Windows
         run: |
           pip uninstall -y tensorflow
           pip install tensorflow-cpu
-      - name: Install cleanvision
-        run: |
-          git clone https://github.com/cleanlab/cleanvision.git
-          pip install cleanvision/
       - name: Test with coverage
         run: pytest --verbose --cov=cleanlab/ --cov-config .coveragerc --cov-report=xml
         env:
@@ -91,10 +83,6 @@ jobs:
         run: |
           pip uninstall -y tensorflow
           pip install tensorflow-cpu
-      - name: Install cleanvision
-        run: |
-          git clone https://github.com/cleanlab/cleanvision.git
-          pip install cleanvision/
       - name: Test with coverage
         run: pytest --verbose --cov=cleanlab/ --cov-config .coveragerc --cov-report=xml
         env:
@@ -136,10 +124,6 @@ jobs:
           python -m pip install --upgrade pip
           pip install ".[all]"  # install dependencies
           pip install -r requirements-dev.txt  # install development dependencies and type stubs
-      - name: Install cleanvision
-        run: |
-          git clone https://github.com/cleanlab/cleanvision.git
-          pip install cleanvision/
       - name: Type check
         run: mypy --install-types --non-interactive cleanlab
   fmt:
