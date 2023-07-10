@@ -199,8 +199,8 @@ def _compute_label_quality_scores(
 
     if method == "objectlab":
         scores = _get_subtype_label_quality_scores(
-            labels,
-            predictions,
+            labels=labels,
+            predictions=predictions,
             alpha=ALPHA,
             low_probability_threshold=LOW_PROBABILITY_THRESHOLD,
             high_probability_threshold=HIGH_PROBABILITY_THRESHOLD,
@@ -1015,9 +1015,9 @@ def pool_box_scores_per_image(
 
 
 def _get_subtype_label_quality_scores(
+    labels: List[Dict[str, Any]] = None,
+    predictions: List[np.ndarray] = None,
     *,
-    labels: Optional[List[Dict[str, Any]]] = None,
-    predictions: Optional[List[np.ndarray]] = None,
     alpha: Optional[float] = None,
     low_probability_threshold: Optional[float] = None,
     high_probability_threshold: Optional[float] = None,
