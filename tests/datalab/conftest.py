@@ -121,7 +121,7 @@ def generate_image():
 
 @pytest.fixture
 def image_dataset():
-    data_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
+    data_path = "./tests/datalab/data"
     dataset = load_dataset(
         "imagefolder",
         data_dir=data_path,
