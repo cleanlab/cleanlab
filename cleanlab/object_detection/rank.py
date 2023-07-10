@@ -899,7 +899,7 @@ def compute_swap_box_scores(
     *,
     alpha: Optional[float] = None,
     high_probability_threshold: Optional[float] = None,
-    overlapping_label_check: bool = True,
+    overlapping_label_check: Optional[bool] = True,
     auxiliary_inputs: Optional[List[AuxiliaryTypesDict]] = None,
 ) -> List[np.ndarray]:
     """
