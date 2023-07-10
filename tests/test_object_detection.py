@@ -647,13 +647,43 @@ def test_swap_only_overlap_labels(overlapping_label_check):
     score = compute_swap_box_scores(
         [label], [prediction], overlapping_label_check=overlapping_label_check
     )[0]
+    is_issue = find_label_issues(
+        [label], [prediction], overlapping_label_check=overlapping_label_check
+    )
+    assert is_issue == True
     if overlapping_label_check:
         assert np.allclose(score, np.array([0.88, 1.0, 0.95, 0.96, 1.0, 0.0, 0.0]), atol=1e-2)
     else:
         assert np.allclose(score, np.array([0.88, 1.0, 0.95, 0.96, 1.0, 0.88, 0.0]), atol=1e-2)
 
 
-def test_badloc_high_low_probability_threshold():
+@pytest.mark.parametrize("overlapping_label_check", [True, False])
+def test_find_label_issues_overlapping_labels(overlapping_label_check):
+    bboxes = np.array(
+        [
+            [359.0, 146.0, 472.0, 360.0],
+            [340.0, 22.0, 494.0, 323.0],
+            [472.0, 173.0, 508.0, 221.0],
+            [486.0, 183.0, 517.0, 218.0],
+            [359.0, 144.0, 470.0, 358.0],
+            [340.0, 22.0, 494.0, 323.0],
+        ]
+    )
+    label_classes = [0, 1, 1, 1, 1, 1]
+    label = {"bboxes": bboxes, "labels": label_classes}
+    predicion = np.array(
+        [np.array([[340.0, 22.0, 494.0, 323.0, 0.9]]), np.empty(shape=(0, 2))], dtype=object
+    )
+    is_issue = find_label_issues(
+        [label], [predicion], overlapping_label_check=overlapping_label_check
+    )[0]
+    if overlapping_label_check:
+        assert is_issue == True
+    else:
+        assert is_issue == False
+
+
+def test_badloc_low_probability_threshold():
     prediction = predictions[3].copy()
     label = labels[3].copy()
     label["bboxes"] = np.append(label["bboxes"], [label["bboxes"][-1]], axis=0)
@@ -662,7 +692,7 @@ def test_badloc_high_low_probability_threshold():
     assert np.allclose(score, np.ones_like(score), atol=1e-2)
 
 
-def test_overlooked_high_high_probability_threshold():
+def test_overlooked_high_probability_threshold():
     prediction = predictions[3].copy()
     label = labels[3].copy()
     label["bboxes"] = np.append(label["bboxes"], [label["bboxes"][-1]], axis=0)
@@ -671,7 +701,7 @@ def test_overlooked_high_high_probability_threshold():
     assert np.isnan(score).all()
 
 
-def test_swap_high_high_probability_threshold():
+def test_swap_high_probability_threshold():
     prediction = predictions[3].copy()
     label = labels[3].copy()
     label["bboxes"] = np.append(label["bboxes"], [label["bboxes"][-1]], axis=0)
