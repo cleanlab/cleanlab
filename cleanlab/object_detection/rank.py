@@ -66,10 +66,10 @@ else:
 def get_label_quality_scores(
     labels: List[Dict[str, Any]],
     predictions: List[np.ndarray],
-    aggregation_weights: Optional[Dict[str, float]] = None,
-    overlapping_label_check: bool = True,
-    *,
     verbose: bool = True,
+    *,
+    aggregation_weights: Optional[Dict[str, float]] = None,
+    overlapping_label_check: Optional[bool] = True,
 ) -> np.ndarray:
     """Computes a label quality score for each image of the ``N`` images in the dataset.
 
@@ -106,7 +106,7 @@ def get_label_quality_scores(
        It is important to ensure that the weights are non-negative values and that their sum equals 1.0.
 
     overlapping_label_check : bool, default = True
-       If True, annotated examples with more than one label associated with them are intentionally given a low swap score.
+       If True, boxes annotated with more than one class label  have their swap score penalized.  Set this to False if you are not concerned when two very similar boxes exist with different class labels in the given annotations.
 
     verbose : bool, default = True
       Set to ``False`` to suppress all print statements.
@@ -175,12 +175,12 @@ def issues_from_scores(label_quality_scores: np.ndarray, *, threshold: float = 0
 def _compute_label_quality_scores(
     labels: List[Dict[str, Any]],
     predictions: List[np.ndarray],
-    aggregation_weights: Optional[Dict[str, float]] = None,
-    *,
     method: str = "objectlab",
-    threshold: Optional[float] = None,
-    overlapping_label_check: bool = True,
     verbose: bool = True,
+    *,
+    aggregation_weights: Optional[Dict[str, float]] = None,
+    threshold: Optional[float] = None,
+    overlapping_label_check: Optional[bool] = True,
 ) -> np.ndarray:
     """Internal function to prune extra bounding boxes and compute label quality scores based on passed in method."""
 
@@ -435,16 +435,16 @@ def _get_min_possible_similarity(
 
 
 def _get_valid_inputs_for_compute_scores_per_image(
-    *,
     alpha: float,
+    *,
     label: Optional[Dict[str, Any]] = None,
     prediction: Optional[np.ndarray] = None,
     pred_labels: Optional[np.ndarray] = None,
     pred_label_probs: Optional[np.ndarray] = None,
     pred_bboxes: Optional[np.ndarray] = None,
     lab_labels: Optional[np.ndarray] = None,
-    lab_bboxes=None,
-    similarity_matrix=None,
+    lab_bboxes: Optional[np.ndarray] = None,
+    similarity_matrix: Optional[np.ndarray] = None,
     min_possible_similarity: Optional[float] = None,
 ) -> AuxiliaryTypesDict:
     """Returns valid inputs for compute scores by either passing through values or calculating the inputs internally."""
@@ -613,8 +613,8 @@ def _compute_overlooked_box_scores_for_image(
 
 
 def compute_overlooked_box_scores(
-    labels: Optional[List[Dict[str, Any]]] = None,
-    predictions: Optional[List[np.ndarray]] = None,
+    labels: List[Dict[str, Any]] = None,
+    predictions: List[np.ndarray] = None,
     *,
     alpha: Optional[float] = None,
     high_probability_threshold: Optional[float] = None,
@@ -747,8 +747,8 @@ def _compute_badloc_box_scores_for_image(
 
 
 def compute_badloc_box_scores(
-    labels: Optional[List[Dict[str, Any]]] = None,
-    predictions: Optional[List[np.ndarray]] = None,
+    labels: List[Dict[str, Any]] = None,
+    predictions: List[np.ndarray] = None,
     *,
     alpha: Optional[float] = None,
     low_probability_threshold: Optional[float] = None,
@@ -833,7 +833,7 @@ def _compute_swap_box_scores_for_image(
     lab_bboxes: Optional[np.ndarray] = None,
     similarity_matrix: Optional[np.ndarray] = None,
     min_possible_similarity: Optional[float] = None,
-    overlapping_label_check: bool = True,
+    overlapping_label_check: Optional[bool] = True,
 ) -> np.ndarray:
     """This method returns one score per labeled box in an image. Score from 0 to 1 ranking how likeley swapped the box is."""
 
@@ -894,8 +894,8 @@ def _compute_swap_box_scores_for_image(
 
 
 def compute_swap_box_scores(
-    labels: Optional[List[Dict[str, Any]]] = None,
-    predictions: Optional[List[np.ndarray]] = None,
+    labels: List[Dict[str, Any]] = None,
+    predictions: List[np.ndarray] = None,
     *,
     alpha: Optional[float] = None,
     high_probability_threshold: Optional[float] = None,
@@ -929,7 +929,7 @@ def compute_swap_box_scores(
         Optional probability threshold that determines which predicted boxes are considered high-confidence when computing overlooked scores. If not provided, a good default is used.
 
     overlapping_label_check : bool, default = True
-       If True, annotated examples with more than one label associated with them are intentionally given a low swap score.
+       If True, boxes annotated with more than one class label  have their swap score penalized.  Set this to False if you are not concerned when two very similar boxes exist with different class labels in the given annotations.
 
     auxiliary_inputs:
         Optional list of ``N`` dictionaries containing keys for sub-parts of label and prediction per image. Useful to minimize computation when computing multiple box scores for a single set of images. For the `i`-th image, `auxiliary_inputs[i]` should contain following keys:
@@ -1023,7 +1023,7 @@ def _get_subtype_label_quality_scores(
     high_probability_threshold: Optional[float] = None,
     temperature: Optional[float] = None,
     aggregation_weights: Optional[Dict[str, float]] = None,
-    overlapping_label_check: bool = True,
+    overlapping_label_check: Optional[bool] = True,
 ) -> np.ndarray:
     """
     Returns a label quality score for each of the ``N`` images in the dataset.
@@ -1055,7 +1055,7 @@ def _get_subtype_label_quality_scores(
         Optional temperature of the softmin function where a lower score suggests softmin acts closer to min. If not provided, a good default is used.
 
     overlapping_label_check : bool, default = True
-       If True, annotated examples with more than one label associated with them are intentionally given a low swap score.
+       If True, boxes annotated with more than one class label  have their swap score penalized.  Set this to False if you are not concerned when two very similar boxes exist with different class labels in the given annotations.
 
     Returns
     ---------
