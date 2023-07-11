@@ -66,10 +66,10 @@ else:
 def get_label_quality_scores(
     labels: List[Dict[str, Any]],
     predictions: List[np.ndarray],
-    verbose: bool = True,
     *,
     aggregation_weights: Optional[Dict[str, float]] = None,
     overlapping_label_check: Optional[bool] = True,
+    verbose: bool = True,
 ) -> np.ndarray:
     """Computes a label quality score for each image of the ``N`` images in the dataset.
 
@@ -176,11 +176,11 @@ def _compute_label_quality_scores(
     labels: List[Dict[str, Any]],
     predictions: List[np.ndarray],
     method: str = "objectlab",
-    verbose: bool = True,
     *,
     aggregation_weights: Optional[Dict[str, float]] = None,
     threshold: Optional[float] = None,
     overlapping_label_check: Optional[bool] = True,
+    verbose: bool = True,
 ) -> np.ndarray:
     """Internal function to prune extra bounding boxes and compute label quality scores based on passed in method."""
 
