@@ -489,8 +489,8 @@ def _get_valid_inputs_for_compute_scores_per_image(
 
 def _get_valid_inputs_for_compute_scores(
     alpha: float,
-    labels: Optional[List[Dict[str, Any]]],
-    predictions: Optional[List[np.ndarray]],
+    labels: Optional[List[Dict[str, Any]]] = None,
+    predictions: Optional[List[np.ndarray]] = None,
 ) -> List[AuxiliaryTypesDict]:
     """Takes in alpha, labels and predictions and returns auxiliary input dictionary containing divided parts of labels and prediction per image."""
     if predictions is None or labels is None:
