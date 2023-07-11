@@ -710,3 +710,9 @@ def test_swap_high_probability_threshold():
         labels=[label], predictions=[prediction], high_probability_threshold=1.0
     )[0]
     assert np.allclose(score, np.array([1.0, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0]), atol=1e-2)
+
+
+def test_invalid_method_raises_value_error():
+    with pytest.raises(ValueError) as error:
+        method = "invalid_method"
+        scores = _compute_label_quality_scores(labels, predictions, method=method)

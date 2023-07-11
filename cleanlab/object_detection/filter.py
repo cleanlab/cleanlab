@@ -120,9 +120,9 @@ def find_label_issues(
 def _find_label_issues(
     labels: List[Dict[str, Any]],
     predictions: List[np.ndarray],
-    return_indices_ranked_by_score: bool = True,
-    scoring_method: str = "objectlab",
     *,
+    scoring_method: Optional[str] = "objectlab",
+    return_indices_ranked_by_score: Optional[bool] = True,
     overlapping_label_check: Optional[bool] = True,
 ):
     """Internal function to find label issues based on passed in method."""

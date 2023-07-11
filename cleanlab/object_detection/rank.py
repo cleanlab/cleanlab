@@ -208,7 +208,12 @@ def _compute_label_quality_scores(
             aggregation_weights=aggregation_weights,
             overlapping_label_check=overlapping_label_check,
         )
-
+    else:
+        raise ValueError(
+            "Invalid method: '{}' is not a valid method for finding label errors in object detection datasets. Please use the 'objectlab' method.".format(
+                method
+            )
+        )
     return scores
 
 
