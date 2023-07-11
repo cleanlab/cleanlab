@@ -86,7 +86,7 @@ def find_label_issues(
         Determines what is returned by this method (see description of return value for details).
 
     overlapping_label_check : bool, default = True
-       If True, boxes annotated with more than one class label  have their swap score penalized.  Set this to False if you are not concerned when two very similar boxes exist with different class labels in the given annotations.
+       If True, boxes annotated with more than one class label have their swap score penalized.  Set this to False if you are not concerned when two very similar boxes exist with different class labels in the given annotations.
 
 
     Returns
