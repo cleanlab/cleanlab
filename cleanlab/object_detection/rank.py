@@ -109,7 +109,7 @@ def get_label_quality_scores(
        It is important to ensure that the weights are non-negative values and that their sum equals 1.0.
 
     overlapping_label_check : bool, default = True
-       If True, boxes annotated with more than one class label  have their swap score penalized.  Set this to False if you are not concerned when two very similar boxes exist with different class labels in the given annotations.
+        If True, boxes annotated with more than one class label have their swap score penalized. Set this to False if you are not concerned when two very similar boxes exist with different class labels in the given annotations.
 
     Returns
     ---------
@@ -929,7 +929,7 @@ def compute_swap_box_scores(
         Optional probability threshold that determines which predicted boxes are considered high-confidence when computing overlooked scores. If not provided, a good default is used.
 
     overlapping_label_check : bool, default = True
-       If True, boxes annotated with more than one class label  have their swap score penalized.  Set this to False if you are not concerned when two very similar boxes exist with different class labels in the given annotations.
+        If True, boxes annotated with more than one class label have their swap score penalized. Set this to False if you are not concerned when two very similar boxes exist with different class labels in the given annotations.
 
     auxiliary_inputs:
         Optional list of ``N`` dictionaries containing keys for sub-parts of label and prediction per image. Useful to minimize computation when computing multiple box scores for a single set of images. For the `i`-th image, `auxiliary_inputs[i]` should contain following keys:
@@ -1055,7 +1055,7 @@ def _get_subtype_label_quality_scores(
         Optional temperature of the softmin function where a lower score suggests softmin acts closer to min. If not provided, a good default is used.
 
     overlapping_label_check : bool, default = True
-       If True, boxes annotated with more than one class label  have their swap score penalized.  Set this to False if you are not concerned when two very similar boxes exist with different class labels in the given annotations.
+            If True, boxes annotated with more than one class label have their swap score penalized. Set this to False if you are not concerned when two very similar boxes exist with different class labels in the given annotations.
 
     Returns
     ---------
