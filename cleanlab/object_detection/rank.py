@@ -1055,7 +1055,7 @@ def _get_subtype_label_quality_scores(
         Optional temperature of the softmin function where a lower score suggests softmin acts closer to min. If not provided, a good default is used.
 
     overlapping_label_check : bool, default = True
-            If True, boxes annotated with more than one class label have their swap score penalized. Set this to False if you are not concerned when two very similar boxes exist with different class labels in the given annotations.
+        If True, boxes annotated with more than one class label have their swap score penalized. Set this to False if you are not concerned when two very similar boxes exist with different class labels in the given annotations.
 
     Returns
     ---------
