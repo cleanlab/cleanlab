@@ -210,7 +210,7 @@ def _compute_label_quality_scores(
         )
     else:
         raise ValueError(
-            "Invalid method: '{}' is not a valid method for finding label errors in object detection datasets. Please use the 'objectlab' method.".format(
+            "Invalid method: '{}' is not a valid method for computing label quality scores. Please use the 'objectlab' method.".format(
                 method
             )
         )
