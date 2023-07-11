@@ -232,6 +232,8 @@ Do not add your new issue type to the set of issues that Datalab detects by defa
 
 Don't forget to update the [issue type descriptions guide](https://github.com/cleanlab/cleanlab/blob/master/docs/source/cleanlab/datalab/guide/issue_type_description.rst) with a brief description of your new issue type.
 
+Try to add tests for this new issue type. It's a good idea to start with some tests in a separate module in the [issue manager test directory](https://github.com/cleanlab/cleanlab/tree/master/tests/datalab/issue_manager). 
+
 ## Documentation
 
 You can build the docs from your local cleanlab version by following [these
