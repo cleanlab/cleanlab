@@ -42,8 +42,8 @@ from cleanlab.object_detection.rank import (
 def find_label_issues(
     labels: List[Dict[str, Any]],
     predictions: List[np.ndarray],
-    return_indices_ranked_by_score: bool = False,
     *,
+    return_indices_ranked_by_score: Optional[bool] = False,
     overlapping_label_check: Optional[bool] = True,
 ) -> np.ndarray:
     """

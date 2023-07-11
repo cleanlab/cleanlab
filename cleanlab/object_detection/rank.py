@@ -175,8 +175,8 @@ def issues_from_scores(label_quality_scores: np.ndarray, *, threshold: float = 0
 def _compute_label_quality_scores(
     labels: List[Dict[str, Any]],
     predictions: List[np.ndarray],
-    method: str = "objectlab",
     *,
+    method: Optional[str] = "objectlab",
     aggregation_weights: Optional[Dict[str, float]] = None,
     threshold: Optional[float] = None,
     overlapping_label_check: Optional[bool] = True,
