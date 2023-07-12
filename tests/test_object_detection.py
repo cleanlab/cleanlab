@@ -443,8 +443,10 @@ def test_find_label_issues():
     )
     overlooked_issues_per_image = _pool_box_scores_per_image(overlooked_issues_per_box)
     overlooked_issues = np.sum(overlooked_issues_per_image)
-    assert np.sum(overlooked_issues_per_image[5:]) == 5  # check bad labels were detected correctly
-    assert overlooked_issues == 5
+    assert (
+        np.sum(overlooked_issues_per_image[5:]) == 4
+    )  # check bad labels were detected correctly, one overlooked image overlap annotation
+    assert overlooked_issues == 4
     badloc_scores_per_box = compute_badloc_box_scores(
         alpha=ALPHA,
         low_probability_threshold=LOW_PROBABILITY_THRESHOLD,
@@ -466,8 +468,10 @@ def test_find_label_issues():
     badloc_issues_per_box = _find_label_issues_per_box(badloc_scores_per_box, BADLOC_THRESHOLD)
     badloc_issues_per_image = _pool_box_scores_per_image(badloc_issues_per_box)
     badloc_issues = np.sum(badloc_issues_per_image)
-    assert np.sum(badloc_issues_per_image[5:]) == 4  # check bad labels were detected correctly
-    assert badloc_issues == 4
+    assert (
+        np.sum(badloc_issues_per_image[5:]) == 2
+    )  # check bad labels were detected correctly, only two images have badloc issues that overlap
+    assert badloc_issues == 2
 
     swap_scores_per_box = compute_swap_box_scores(
         alpha=ALPHA,
