@@ -224,13 +224,22 @@ endings match the project style.
 - [x] Create a QuickStart (**docs/source/tutorials**) notebook that runs main module functionality in 5min or less and add it to index pages (**docs/source/tutorials/index.rst**, **docs/source/index.rst**). Clear cell output before pushing.
 - [x] Create an [examples](https://github.com/cleanlab/examples) notebook that runs more advanced module functionality with a more real-world application (can have a longer run time). Push with printed cell output.
 
+## Contributing new issue types to Datalab
+
+To contribute a new type of issue that Datalab can automatically detect in any dataset, refer to our guide on [Creating Your Own Issues Manager](https://docs.cleanlab.ai/master/cleanlab/datalab/guide/custom_issue_manager.html).
+
+Do not add your new issue type to the set of issues that Datalab detects by default, our team can add it to this default set later on once it's utility has been thoroughly validated.
+
+Don't forget to update the [issue type descriptions guide](https://github.com/cleanlab/cleanlab/blob/master/docs/source/cleanlab/datalab/guide/issue_type_description.rst) with a brief description of your new issue type.
+
+Try to add tests for this new issue type. It's a good idea to start with some tests in a separate module in the [issue manager test directory](https://github.com/cleanlab/cleanlab/tree/master/tests/datalab/issue_manager). 
 
 ## Documentation
 
 You can build the docs from your local cleanlab version by following [these
 instructions](./docs/README.md#build-the-cleanlab-docs-locally).
 
-If editing existing docs or adding new tutorials, please first read through our [guidelines](https://github.com/cleanlab/cleanlab/tree/master/docs#tips-for-editing-docstutorials).
+If editing existing docs or adding new tutorials, please first read through our [guidelines](./docs/README.md#tips-for-editing-docstutorials).
 
 
 ## Documentation style
