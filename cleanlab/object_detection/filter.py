@@ -16,7 +16,7 @@
 
 """Methods to find label issues in an object detection dataset, where each annotated bounding box in an image receives its own class label."""
 
-from typing import List, Any, Dict
+from typing import List, Any, Dict, Optional
 import numpy as np
 
 from cleanlab.internal.constants import (
@@ -43,7 +43,8 @@ def find_label_issues(
     labels: List[Dict[str, Any]],
     predictions: List[np.ndarray],
     *,
-    return_indices_ranked_by_score: bool = False,
+    return_indices_ranked_by_score: Optional[bool] = False,
+    overlapping_label_check: Optional[bool] = True,
 ) -> np.ndarray:
     """
     Identifies potentially mislabeled images in an object detection dataset.
@@ -84,6 +85,10 @@ def find_label_issues(
     return_indices_ranked_by_score:
         Determines what is returned by this method (see description of return value for details).
 
+    overlapping_label_check : bool, default = True
+       If True, boxes annotated with more than one class label have their swap score penalized.  Set this to False if you are not concerned when two very similar boxes exist with different class labels in the given annotations.
+
+
     Returns
     -------
     label_issues : np.ndarray
@@ -106,6 +111,7 @@ def find_label_issues(
         predictions,
         scoring_method=scoring_method,
         return_indices_ranked_by_score=return_indices_ranked_by_score,
+        overlapping_label_check=overlapping_label_check,
     )
 
     return is_issue
@@ -115,8 +121,9 @@ def _find_label_issues(
     labels: List[Dict[str, Any]],
     predictions: List[np.ndarray],
     *,
-    return_indices_ranked_by_score: bool = True,
-    scoring_method: str = "objectlab",
+    scoring_method: Optional[str] = "objectlab",
+    return_indices_ranked_by_score: Optional[bool] = True,
+    overlapping_label_check: Optional[bool] = True,
 ):
     """Internal function to find label issues based on passed in method."""
 
@@ -144,6 +151,7 @@ def _find_label_issues(
         swap_scores_per_box = compute_swap_box_scores(
             alpha=ALPHA,
             high_probability_threshold=HIGH_PROBABILITY_THRESHOLD,
+            overlapping_label_check=overlapping_label_check,
             auxiliary_inputs=auxiliary_inputs,
         )
         swap_issues_per_box = _find_label_issues_per_box(swap_scores_per_box, SWAP_THRESHOLD)

@@ -25,6 +25,7 @@ from cleanlab.object_detection.rank import (
     _get_prediction_type,
     _get_valid_subtype_score_params,
     _get_aggregation_weights,
+    _has_overlap,
 )
 
 from cleanlab.object_detection.filter import (
@@ -175,14 +176,16 @@ def generate_bbox(image_size):
 
 
 warnings.filterwarnings("ignore")
-
-good_labels = generate_annotations(5, num_classes=10, max_boxes=10)
+NUM_CLASSES = 10
+good_labels = generate_annotations(5, num_classes=NUM_CLASSES, max_boxes=10)
 good_predictions = generate_predictions(
-    5, good_labels, num_classes=10, max_boxes=12, is_issue=False
+    5, good_labels, num_classes=NUM_CLASSES, max_boxes=12, is_issue=False
 )
 
-bad_labels = generate_annotations(5, num_classes=10, max_boxes=10)
-bad_predictions = generate_predictions(5, bad_labels, num_classes=10, max_boxes=12, is_issue=True)
+bad_labels = generate_annotations(5, num_classes=NUM_CLASSES, max_boxes=10)
+bad_predictions = generate_predictions(
+    5, bad_labels, num_classes=NUM_CLASSES, max_boxes=12, is_issue=True
+)
 
 labels = good_labels + bad_labels  # 10 labels
 predictions = (
@@ -304,8 +307,9 @@ def test_bbox_xyxy_to_xywh():
 
 
 @pytest.mark.filterwarnings("ignore::UserWarning")  # Should be 2 warnings (first two calls)
-def test_prune_by_threshold():
-    pruned_predictions = _prune_by_threshold(predictions, 1.0)
+@pytest.mark.parametrize("verbose", [True, False])
+def test_prune_by_threshold(verbose):
+    pruned_predictions = _prune_by_threshold(predictions, 1.0, verbose=verbose)
     print(pruned_predictions)
     for image_pred in pruned_predictions:
         for class_pred in image_pred:
@@ -441,7 +445,6 @@ def test_find_label_issues():
     overlooked_issues = np.sum(overlooked_issues_per_image)
     assert np.sum(overlooked_issues_per_image[5:]) == 5  # check bad labels were detected correctly
     assert overlooked_issues == 5
-
     badloc_scores_per_box = compute_badloc_box_scores(
         alpha=ALPHA,
         low_probability_threshold=LOW_PROBABILITY_THRESHOLD,
@@ -601,3 +604,115 @@ def test_visualize(monkeypatch, generate_single_image_file):
         },
         overlay=False,
     )
+
+
+def test_has_labels_overlap():
+    bboxes = np.array(
+        [
+            [359.0, 146.0, 472.0, 360.0],
+            [340.0, 22.0, 494.0, 323.0],
+            [472.0, 173.0, 508.0, 221.0],
+            [486.0, 183.0, 517.0, 218.0],
+            [359.0, 144.0, 470.0, 358.0],
+            [340.0, 22.0, 494.0, 323.0],
+        ]
+    )
+    label_classes = [0, 1, 2, 3, 2, 1]
+    is_overlaps = _has_overlap(bboxes, label_classes)
+    expected_res = np.array([True, False, False, False, True, False])
+    assert np.array_equal(is_overlaps, expected_res)
+
+
+@pytest.mark.parametrize("overlapping_label_check", [True, False])
+def test_swap_overlap_labels(overlapping_label_check):
+    prediction = predictions[3].copy()
+    label = labels[3].copy()
+    label["bboxes"] = np.append(label["bboxes"], [label["bboxes"][-1]], axis=0)
+    label["labels"] = np.append(label["labels"], (label["labels"][-1] + 1) % 10)
+    score = get_label_quality_scores(
+        [label], [prediction], overlapping_label_check=overlapping_label_check
+    )[0]
+    if overlapping_label_check:
+        assert score < 0.06
+    else:
+        assert score < 0.08
+
+
+@pytest.mark.parametrize("overlapping_label_check", [True, False])
+def test_swap_only_overlap_labels(overlapping_label_check):
+    prediction = predictions[3].copy()
+    label = labels[3].copy()
+    label["bboxes"] = np.append(label["bboxes"], [label["bboxes"][-1]], axis=0)
+    label["labels"] = np.append(label["labels"], (label["labels"][-1] + 1) % 10)
+    score = compute_swap_box_scores(
+        labels=[label], predictions=[prediction], overlapping_label_check=overlapping_label_check
+    )[0]
+    if overlapping_label_check:
+        assert np.allclose(score, np.array([0.88, 1.0, 0.95, 0.96, 1.0, 0.0, 0.0]), atol=1e-2)
+    else:
+        assert np.allclose(score, np.array([0.88, 1.0, 0.95, 0.96, 1.0, 0.88, 0.0]), atol=1e-2)
+
+
+@pytest.mark.parametrize("overlapping_label_check", [True, False])
+def test_find_label_issues_overlapping_labels(overlapping_label_check):
+    bboxes = np.array(
+        [
+            [359.0, 146.0, 472.0, 360.0],
+            [340.0, 22.0, 494.0, 323.0],
+            [472.0, 173.0, 508.0, 221.0],
+            [486.0, 183.0, 517.0, 218.0],
+            [359.0, 144.0, 470.0, 358.0],
+            [340.0, 22.0, 494.0, 323.0],
+        ]
+    )
+    label_classes = [0, 1, 1, 1, 1, 1]
+    label = {"bboxes": bboxes, "labels": label_classes}
+    predicion = np.array(
+        [np.array([[340.0, 22.0, 494.0, 323.0, 0.9]]), np.empty(shape=(0, 2))], dtype=object
+    )
+    is_issue = find_label_issues(
+        [label], [predicion], overlapping_label_check=overlapping_label_check
+    )[0]
+    if overlapping_label_check:
+        assert is_issue == True
+    else:
+        assert is_issue == False
+
+
+def test_badloc_low_probability_threshold():
+    prediction = predictions[3].copy()
+    label = labels[3].copy()
+    label["bboxes"] = np.append(label["bboxes"], [label["bboxes"][-1]], axis=0)
+    label["labels"] = np.append(label["labels"], (label["labels"][-1] + 1) % 10)
+    score = compute_badloc_box_scores(
+        labels=[label], predictions=[prediction], low_probability_threshold=1.0
+    )[0]
+    assert np.allclose(score, np.ones_like(score), atol=1e-2)
+
+
+def test_overlooked_high_probability_threshold():
+    prediction = predictions[3].copy()
+    label = labels[3].copy()
+    label["bboxes"] = np.append(label["bboxes"], [label["bboxes"][-1]], axis=0)
+    label["labels"] = np.append(label["labels"], (label["labels"][-1] + 1) % 10)
+    score = compute_overlooked_box_scores(
+        labels=[label], predictions=[prediction], high_probability_threshold=1.0
+    )[0]
+    assert np.isnan(score).all()
+
+
+def test_swap_high_probability_threshold():
+    prediction = predictions[3].copy()
+    label = labels[3].copy()
+    label["bboxes"] = np.append(label["bboxes"], [label["bboxes"][-1]], axis=0)
+    label["labels"] = np.append(label["labels"], (label["labels"][-1] + 1) % 10)
+    score = compute_swap_box_scores(
+        labels=[label], predictions=[prediction], high_probability_threshold=1.0
+    )[0]
+    assert np.allclose(score, np.array([1.0, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0]), atol=1e-2)
+
+
+def test_invalid_method_raises_value_error():
+    with pytest.raises(ValueError) as error:
+        method = "invalid_method"
+        scores = _compute_label_quality_scores(labels, predictions, method=method)
