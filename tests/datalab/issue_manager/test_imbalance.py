@@ -8,11 +8,6 @@ SEED = 42
 
 class TestClassImbalanceIssueManager:
     @pytest.fixture
-    def embeddings(self, lab):
-        embeddings_array = np.arange(lab.get_info("statistics")["num_examples"] * 20).reshape(-1, 1)
-        return embeddings_array
-
-    @pytest.fixture
     def labels(self, lab):
         K = lab.get_info("statistics")["num_classes"]
         N = lab.get_info("statistics")["num_examples"] * 20
@@ -28,10 +23,10 @@ class TestClassImbalanceIssueManager:
 
         return manager
 
-    def test_find_issues(self, embeddings, create_issue_manager):
-        N = embeddings.shape[0]
+    def test_find_issues(self, create_issue_manager, labels):
+        N = len(labels)
         issue_manager = create_issue_manager()
-        issue_manager.find_issues(features=embeddings)
+        issue_manager.find_issues()
         issues, summary = issue_manager.issues, issue_manager.summary
         assert np.sum(issues["is_class_imbalance_issue"]) == 1
         expected_issue_mask = np.array([True] + [False] * (N - 1))
@@ -45,11 +40,11 @@ class TestClassImbalanceIssueManager:
         assert summary["issue_type"][0] == "class_imbalance"
         assert summary["score"][0] == pytest.approx(expected=0.9900999, abs=1e-7)
 
-    def test_find_issues_no_imbalance(self, embeddings, create_issue_manager, labels):
-        N = embeddings.shape[0]
+    def test_find_issues_no_imbalance(self, labels, create_issue_manager):
+        N = len(labels)
         labels[0] = 0
         issue_manager = create_issue_manager(labels)
-        issue_manager.find_issues(features=embeddings)
+        issue_manager.find_issues()
         issues, summary = issue_manager.issues, issue_manager.summary
         assert np.sum(issues["is_class_imbalance_issue"]) == 0
         assert np.all(
@@ -59,13 +54,13 @@ class TestClassImbalanceIssueManager:
         assert summary["issue_type"][0] == "class_imbalance"
         assert summary["score"][0] == pytest.approx(expected=1.0, abs=1e-7)
 
-    def test_find_issues_more_imbalance(self, lab, embeddings, create_issue_manager, labels):
+    def test_find_issues_more_imbalance(self, lab, labels, create_issue_manager):
         K = lab.get_info("statistics")["num_classes"]
-        N = embeddings.shape[0]
+        N = len(labels)
         labels[labels == K - 2] = 0
         labels[1:3] = K - 2
         issue_manager = create_issue_manager(labels)
-        issue_manager.find_issues(features=embeddings)
+        issue_manager.find_issues()
         issues, summary = issue_manager.issues, issue_manager.summary
         assert np.sum(issues["is_class_imbalance_issue"]) == 1
         expected_issue_mask = np.array([True] + [False] * (N - 1))
@@ -79,9 +74,9 @@ class TestClassImbalanceIssueManager:
         assert summary["issue_type"][0] == "class_imbalance"
         assert summary["score"][0] == pytest.approx(expected=0.9900999, abs=1e-7)
 
-    def test_report(self, embeddings, create_issue_manager):
+    def test_report(self, create_issue_manager):
         issue_manager = create_issue_manager()
-        issue_manager.find_issues(features=embeddings)
+        issue_manager.find_issues()
         report = issue_manager.report(
             issues=issue_manager.issues,
             summary=issue_manager.summary,
