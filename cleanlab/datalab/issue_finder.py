@@ -209,6 +209,9 @@ class IssueFinder:
         features :
             Name of column containing precomputed embeddings.
 
+        knn_graph :
+            Sparse matrix representing distances between examples in the dataset in a k nearest neighbor graph.
+
         Returns
         -------
         args_dict :

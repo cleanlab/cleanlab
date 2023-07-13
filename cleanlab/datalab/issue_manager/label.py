@@ -23,6 +23,7 @@ from sklearn.model_selection import cross_val_predict
 from cleanlab.classification import CleanLearning
 from cleanlab.datalab.issue_manager import IssueManager
 from cleanlab.internal.validation import assert_valid_inputs
+from sklearn.preprocessing import OneHotEncoder
 
 if TYPE_CHECKING:  # pragma: no cover
     import pandas as pd
@@ -37,6 +38,9 @@ class LabelIssueManager(IssueManager):
     ----------
     datalab :
         A Datalab instance.
+
+    k :
+        The number of nearest neighbors to consider when computing pred_probs from features.
 
     clean_learning_kwargs :
         Keyword arguments to pass to the :py:meth:`CleanLearning <cleanlab.classification.CleanLearning>` constructor.
@@ -62,18 +66,18 @@ class LabelIssueManager(IssueManager):
     def __init__(
         self,
         datalab: Datalab,
+        k: int = 10,
         clean_learning_kwargs: Optional[Dict[str, Any]] = None,
         health_summary_parameters: Optional[Dict[str, Any]] = None,
-        k: int = 10,
         **_,
     ):
         super().__init__(datalab)
         self.cl = CleanLearning(**(clean_learning_kwargs or {}))
+        self.k = k
         self.health_summary_parameters: Dict[str, Any] = (
             health_summary_parameters.copy() if health_summary_parameters else {}
         )
         self._reset()
-        self._k = k
 
     @staticmethod
     def _process_find_label_issues_kwargs(kwargs: Dict[str, Any]) -> Dict[str, Any]:
@@ -125,14 +129,31 @@ class LabelIssueManager(IssueManager):
         features: Optional[npt.NDArray] = None,
         **kwargs,
     ) -> None:
+        """Find label issues in the datalab.
+
+        Parameters
+        ----------
+        pred_probs :
+            The predicted probabilities for each example.
+
+        features :
+            The features for each example.
+        """
         if pred_probs is None:
             if features is None:
-                raise ValueError("Either pred_probs or features must be provided to find label issues.")
+                raise ValueError(
+                    "Either pred_probs or features must be provided to find label issues."
+                )
             # produce out-of-sample pred_probs from features
-            knn = KNeighborsClassifier(n_neighbors=self._k)
-            pred_probs = cross_val_predict(
-                knn, features, self.datalab.labels, cv=5, method="predict_proba"
-            )
+            knn = KNeighborsClassifier(n_neighbors=self.k)
+            knn.fit(features, self.datalab.labels)
+            pred_probs = knn.predict_proba(features)
+
+            encoder = OneHotEncoder(sparse_output=False)
+            label_transform = self.datalab.labels.reshape(-1, 1)
+            one_hot_label = encoder.fit_transform(label_transform)
+
+            pred_probs = (pred_probs - 1 / self.k * one_hot_label) * self.k / (self.k - 1)
 
         self.health_summary_parameters.update({"pred_probs": pred_probs})
         # Find examples with label issues

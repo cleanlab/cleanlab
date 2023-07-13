@@ -815,13 +815,29 @@ class TestDatalabFindLabelIssues:
         summary = lab.get_issue_summary()
         assert len(summary) == 4
         assert "label" in summary["issue_type"].values
+        label_summary = lab.get_issue_summary("label")
+        assert label_summary["num_issues"].values[0] > 0
+
+    def test_build_pred_probs_from_features(self, random_embeddings):
+        data = {"labels": np.random.randint(0, 2, 100)}
+        lab = Datalab(data=data, label_name="labels")
+        lab.find_issues(features=random_embeddings, issue_types={"label": {}})
+        summary = lab.get_issue_summary()
+        assert len(summary) == 1
+        assert "label" in summary["issue_type"].values
+
+    def test_pred_probs_precedence(self, pred_probs, random_embeddings):
+        data = {"labels": np.random.randint(0, 2, 100)}
+        lab = Datalab(data=data, label_name="labels")
+        lab.find_issues(pred_probs=pred_probs, issue_types={"label": {}})
+        summary = lab.get_issue_summary()
+        assert "label" in summary["issue_type"].values
         label_summary_pred_probs = lab.get_issue_summary("label")
         assert label_summary_pred_probs["num_issues"].values[0] > 0
         lab.find_issues(
             features=random_embeddings, pred_probs=pred_probs, issue_types={"label": {}}
         )
         summary = lab.get_issue_summary()
-        assert len(summary) == 4
         assert "label" in summary["issue_type"].values
         label_summary_both = lab.get_issue_summary("label")
         assert (
