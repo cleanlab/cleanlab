@@ -825,6 +825,10 @@ class TestDatalabFindLabelIssues:
         summary = lab.get_issue_summary()
         assert len(summary) == 1
         assert "label" in summary["issue_type"].values
+        lab.find_issues(features=random_embeddings, issue_types={"label": {"k": 5}})
+        summary = lab.get_issue_summary()
+        assert len(summary) == 1
+        assert "label" in summary["issue_type"].values
 
     def test_pred_probs_precedence(self, pred_probs, random_embeddings):
         data = {"labels": np.random.randint(0, 2, 100)}

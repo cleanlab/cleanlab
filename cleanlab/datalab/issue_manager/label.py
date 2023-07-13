@@ -20,6 +20,8 @@ from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.preprocessing import OneHotEncoder
 
+import numpy as np
+
 from cleanlab.classification import CleanLearning
 from cleanlab.datalab.issue_manager import IssueManager
 from cleanlab.internal.validation import assert_valid_inputs
@@ -152,7 +154,9 @@ class LabelIssueManager(IssueManager):
             label_transform = self.datalab.labels.reshape(-1, 1)
             one_hot_label = encoder.fit_transform(label_transform)
 
-            pred_probs = np.asarray((pred_probs - 1 / self.k * one_hot_label) * self.k / (self.k - 1))
+            pred_probs = np.asarray(
+                (pred_probs - 1 / self.k * one_hot_label) * self.k / (self.k - 1)
+            )
 
         self.health_summary_parameters.update({"pred_probs": pred_probs})
         # Find examples with label issues
