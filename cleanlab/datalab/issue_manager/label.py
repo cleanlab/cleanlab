@@ -152,7 +152,7 @@ class LabelIssueManager(IssueManager):
             label_transform = self.datalab.labels.reshape(-1, 1)
             one_hot_label = encoder.fit_transform(label_transform)
 
-            pred_probs = (pred_probs - 1 / self.k * one_hot_label) * self.k / (self.k - 1)
+            pred_probs = np.asarray((pred_probs - 1 / self.k * one_hot_label) * self.k / (self.k - 1))
 
         self.health_summary_parameters.update({"pred_probs": pred_probs})
         # Find examples with label issues
