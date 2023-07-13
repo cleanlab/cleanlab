@@ -148,8 +148,6 @@ def issues_from_scores(
     Converts scores output by :py:func:`segmentation.rank.get_label_quality_scores <cleanlab.segmentation.rank.get_label_quality_scores>`
     to a list of issues of similar format as output by :py:func:`segmentation.filter.find_label_issues <cleanlab.segmentation.filter.find_label_issues>`.
 
-    Issues are sorted by label quality score, from most to least severe.
-
     Only considers as issues those tokens with label quality score lower than `threshold`,
     so this parameter determines the number of issues that are returned.
 
@@ -183,7 +181,7 @@ def issues_from_scores(
       to view these issues within the original images.
 
       If `pixel_scores` is not provided, returns array of integer indices (rather than boolean mask) of the images whose label quality score
-      falls below the `threshold` (also sorted by overall label quality score of each image).
+      falls below the `threshold` (sorted by overall label quality score of each image).
 
     """
 
