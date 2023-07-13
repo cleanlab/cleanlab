@@ -148,7 +148,7 @@ class LabelIssueManager(IssueManager):
             knn.fit(features, self.datalab.labels)
             pred_probs = knn.predict_proba(features)
 
-            encoder = OneHotEncoder(sparse_output=False)
+            encoder = OneHotEncoder()
             label_transform = self.datalab.labels.reshape(-1, 1)
             one_hot_label = encoder.fit_transform(label_transform)
 
