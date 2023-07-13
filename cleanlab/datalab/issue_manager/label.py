@@ -18,12 +18,11 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional
 
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.model_selection import cross_val_predict
+from sklearn.preprocessing import OneHotEncoder
 
 from cleanlab.classification import CleanLearning
 from cleanlab.datalab.issue_manager import IssueManager
 from cleanlab.internal.validation import assert_valid_inputs
-from sklearn.preprocessing import OneHotEncoder
 
 if TYPE_CHECKING:  # pragma: no cover
     import pandas as pd
