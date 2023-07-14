@@ -50,16 +50,16 @@ def get_label_quality_scores(
     labels:
       A discrete array of noisy labels for a segmantic segmentation dataset, in the shape``(N,H,W,)``.
       where each pixel must be integer in 0, 1, ..., K-1.
-      Refer to documentation for this argument in :py:func:find_label_issues <cleanlab.segemntation.filter.find_label_issues> for further details.
+      Refer to documentation for this argument in :py:func:find_label_issues <cleanlab.segmentation.filter.find_label_issues> for further details.
 
     pred_probs:
       An array of shape ``(N,K,H,W,)`` of model-predicted class probabilities.
-      Refer to documentation for this argument in :py:func:find_label_issues <cleanlab.segemntation.filter.find_label_issues> for further details.
+      Refer to documentation for this argument in :py:func:find_label_issues <cleanlab.segmentation.filter.find_label_issues> for further details.
 
     method: {"softmin", "num_pixel_issues"}, default="softmin"
       Label quality scoring method.
       - "softmin" - Calculates the inner product between scores and softmax(1-scores). For efficiency, use instead of "num_pixel_issues".
-      - "num_pixel_issues" - Uses the number of pixels with label issues for each image using :py:func:find_label_issues <cleanlab.segemntation.filter.find_label_issues>
+      - "num_pixel_issues" - Uses the number of pixels with label issues for each image using :py:func:find_label_issues <cleanlab.segmentation.filter.find_label_issues>
 
     batch_size :
       Optional size of mini-batches to use for estimating the label issues for 'num_pixel_issues' only, not 'softmin'
