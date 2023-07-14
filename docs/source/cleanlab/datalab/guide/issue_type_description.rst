@@ -133,6 +133,7 @@ Label Issue Parameters
 .. code-block:: python
 
     label_kwargs = {
+        "k": # number of nearest neighbors to consider when computing pred_probs from features,
         "health_summary_parameters": # dict of potential keyword arguments to method `dataset.health_summary()`,
         "clean_learning_kwargs": # dict of keyword arguments to constructor `CleanLearning()` including keys like: "find_label_issues_kwargs" or "label_quality_scores_kwargs",
         "thresholds": # `thresholds` argument to `CleanLearning.find_label_issues()`,
