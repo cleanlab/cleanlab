@@ -52,7 +52,7 @@ def display_issues(
       or :py:func:`segmentation.rank.issues_from_scores <cleanlab.segmentation.rank.issues_from_scores>`.
 
     labels:
-      Optional discrete array of noisy labels for a segmantic segmentation dataset, in the shape``(N,H,W,)``.
+      Optional discrete array of noisy labels for a segmantic segmentation dataset, in the shape ``(N,H,W,)``,
       where each pixel must be integer in 0, 1, ..., K-1.
       If `labels` is provided, this function also displays given label of the pixel identified with issue.
       Refer to documentation for this argument in :py:func:`find_label_issues <cleanlab.segmentation.filter.find_label_issues>` for more information.
@@ -62,7 +62,9 @@ def display_issues(
       If `pred_probs` is provided, this function also displays predicted label of the pixel identified with issue.
       Refer to documentation for this argument in :py:func:`find_label_issues <cleanlab.segmentation.filter.find_label_issues>` for more information.
 
-      Tip: If your labels are one hot encoded you can `np.argmax(labels_one_hot,axis=1)` assuming that `labels_one_hot` is of dimension (N,K,H,W)
+      Tip
+      ---
+      If your labels are one hot encoded you can `np.argmax(labels_one_hot, axis=1)` assuming that `labels_one_hot` is of dimension (N,K,H,W)
       before entering in the function
 
     class_names:
@@ -73,8 +75,11 @@ def display_issues(
       showing the color mapping of each class in the provided colormap.
 
       Example:
-        If there are three classes in your labels, represented by 0, 1, 2, then class_names might look like this:
-        class_names = ['background', 'person', 'dog']
+      If there are three classes in your labels, represented by 0, 1, 2, then class_names might look like this:
+
+      .. code-block:: python
+
+            class_names = ['background', 'person', 'dog']
 
     top:
         Optional maximum number of issues to be printed. If not provided, a good default is used.
@@ -188,7 +193,7 @@ def common_label_issues(
       or :py:func:`segmentation.rank.issues_from_scores <cleanlab.segmentation.rank.issues_from_scores>`.
 
     labels:
-      A discrete array of noisy labels for a segmantic segmentation dataset, in the shape``(N,H,W,)``.
+      A discrete array of noisy labels for a segmantic segmentation dataset, in the shape ``(N,H,W,)``.
       where each pixel must be integer in 0, 1, ..., K-1.
       Refer to documentation for this argument in :py:func:`find_label_issues <cleanlab.segmentation.filter.find_label_issues>` for more information.
 
@@ -196,7 +201,9 @@ def common_label_issues(
       An array of shape ``(N,K,H,W,)`` of model-predicted class probabilities.
       Refer to documentation for this argument in :py:func:`find_label_issues <cleanlab.segmentation.filter.find_label_issues>` for more information.
 
-      Tip: If your labels are one hot encoded you can `np.argmax(labels_one_hot,axis=1)` assuming that `labels_one_hot` is of dimension (N,K,H,W)
+      Tip
+      ---
+      If your labels are one hot encoded you can `np.argmax(labels_one_hot, axis=1)` assuming that `labels_one_hot` is of dimension (N,K,H,W)
       before entering in the function
 
     class_names:
@@ -215,7 +222,7 @@ def common_label_issues(
     Returns
     -------
     issues_df:
-      DataFrame `issues_df` contains columns ``['given_label', 'predicted_label', 'num_label_issues']`` and each row contains information for a
+      DataFrame containing columns ``['given_label', 'predicted_label', 'num_label_issues']`` and each row contains information for a
       given/predicted label swap, ordered by the number of label issues inferred for this type of label swap.
     """
     try:
@@ -282,7 +289,7 @@ def filter_by_class(
       or :py:func:`segmentation.rank.issues_from_scores <cleanlab.segmentation.rank.issues_from_scores>`.
 
     labels:
-      A discrete array of noisy labels for a segmantic segmentation dataset, in the shape``(N,H,W,)``.
+      A discrete array of noisy labels for a segmantic segmentation dataset, in the shape ``(N,H,W,)``,
       where each pixel must be integer in 0, 1, ..., K-1.
       Refer to documentation for this argument in :py:func:`find_label_issues <cleanlab.segmentation.filter.find_label_issues>` for further details.
 

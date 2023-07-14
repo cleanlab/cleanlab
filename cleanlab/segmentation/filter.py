@@ -57,7 +57,7 @@ def find_label_issues(
 
       Tip
       ---
-      If your labels are one hot encoded you can do: ``labels = np.argmax(labels_one_hot, axis=1)`` assuming that `labels_one_hot` is of dimension ``(N,K,H,W)``, in order to get properly formatted `labels`
+      If your labels are one hot encoded you can do: ``labels = np.argmax(labels_one_hot, axis=1)`` assuming that `labels_one_hot` is of dimension ``(N,K,H,W)``, in order to get properly formatted `labels`.
 
     pred_probs:
       An array of shape ``(N,K,H,W,)`` of model-predicted class probabilities,
