@@ -811,6 +811,7 @@ class TestDatalabFindLabelIssues:
         summary = lab.get_issue_summary()
         assert len(summary) == 4
         assert "label" in summary["issue_type"].values
+        lab = Datalab(data=data, label_name="labels")
         lab.find_issues(pred_probs=pred_probs, issue_types={"label": {}})
         summary = lab.get_issue_summary()
         assert len(summary) == 4
@@ -825,6 +826,7 @@ class TestDatalabFindLabelIssues:
         summary = lab.get_issue_summary()
         assert len(summary) == 1
         assert "label" in summary["issue_type"].values
+        lab = Datalab(data=data, label_name="labels")
         lab.find_issues(features=random_embeddings, issue_types={"label": {"k": 5}})
         summary = lab.get_issue_summary()
         assert len(summary) == 1
