@@ -44,14 +44,20 @@ def find_label_issues(
     * H - Height of each image
     * W - Width of each image
 
-    Tip: if you encounter the error "pred_probs is not defined", try setting ``n_jobs=1``.
+    Tip
+    ---
+    If you encounter the error "pred_probs is not defined", try setting ``n_jobs=1``.
 
     Parameters
     ----------
     labels:
       A discrete array of shape ``(N,H,W,)`` of noisy labels for a semantic segmentation dataset, i.e. some labels may be erroneous.
-      *Format requirements*: for a dataset with K classes, each pixel must be labeled using an integer in 0, 1, ..., K-1.
-      Tip: If your labels are one hot encoded you can do: ``labels = np.argmax(labels_one_hot,axis=1)`` assuming that `labels_one_hot` is of dimension ``(N,K,H,W)``, in order to get properly formatted `labels`
+
+      *Format requirements*: For a dataset with K classes, each pixel must be labeled using an integer in 0, 1, ..., K-1.
+
+      Tip
+      ---
+      If your labels are one hot encoded you can do: ``labels = np.argmax(labels_one_hot, axis=1)`` assuming that `labels_one_hot` is of dimension ``(N,K,H,W)``, in order to get properly formatted `labels`
 
     pred_probs:
       An array of shape ``(N,K,H,W,)`` of model-predicted class probabilities,
