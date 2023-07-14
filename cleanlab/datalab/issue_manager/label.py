@@ -42,6 +42,7 @@ class LabelIssueManager(IssueManager):
 
     k :
         The number of nearest neighbors to consider when computing pred_probs from features.
+        Only applicable if features are provided and pred_probs are not.
 
     clean_learning_kwargs :
         Keyword arguments to pass to the :py:meth:`CleanLearning <cleanlab.classification.CleanLearning>` constructor.
