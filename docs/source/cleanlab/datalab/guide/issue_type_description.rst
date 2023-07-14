@@ -113,12 +113,11 @@ For datasets with low non-IID score, you should consider why your data are not I
 Class-Imbalance Issue
 ---------------------
 
-Class Imbalance issues are determined using the `labels` provided as part of the dataset. First, the proportion of samples belonging to each class in the dataset is calculated.
-If `q` is the proportion of samples of the rarest class and `q` is lesser than `threshold` `c,` where `0 < c < 1`, then the dataset is imbalanced, and the class imbalance examples are all samples
-belonging to the rarest class. For such examples, the class imbalance quality score is `q`, and it is `1.0` for all other examples.
+Class imbalance is diagnosed just using the `labels` provided as part of the dataset. The overall class imbalance quality score of a dataset is the proportion of examples belonging to the rarest class `q`. If this proportion `q` falls below a threshold, then we say this dataset suffers from the class imbalance issue.  
 
-Class Imbalance issues in a dataset can lead to sub-par model performance for the under-represented class. To handle such issues,
-you can increase the number of samples belonging to the under-represented class.
+In a dataset identified as having class imbalance, the class imbalance quality score for each example is set equal to `q` if it is labeled as the rarest class, and is equal to 1 for all other examples.
+
+Class imbalance in a dataset can lead to subpar model performance for the under-represented class. Consider collecting more data from the under-represented class, or at least take special care while modeling via techniques like over/under-sampling, SMOTE, asymmetric class weighting, etc.
 
 
 Optional Issue Parameters
