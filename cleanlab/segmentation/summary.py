@@ -55,12 +55,12 @@ def display_issues(
       Optional discrete array of noisy labels for a segmantic segmentation dataset, in the shape``(N,H,W,)``.
       where each pixel must be integer in 0, 1, ..., K-1.
       If `labels` is provided, this function also displays given label of the pixel identified with issue.
-      Refer to documentation for this argument in :py:func:find_label_issues <cleanlab.segmentation.filter.find_label_issues> for more information.
+      Refer to documentation for this argument in :py:func:`find_label_issues <cleanlab.segmentation.filter.find_label_issues>` for more information.
 
     pred_probs:
       Optional array of shape ``(N,K,H,W,)`` of model-predicted class probabilities.
       If `pred_probs` is provided, this function also displays predicted label of the pixel identified with issue.
-      Refer to documentation for this argument in :py:func:find_label_issues <cleanlab.segmentation.filter.find_label_issues> for more information.
+      Refer to documentation for this argument in :py:func:`find_label_issues <cleanlab.segmentation.filter.find_label_issues>` for more information.
 
       Tip: If your labels are one hot encoded you can `np.argmax(labels_one_hot,axis=1)` assuming that `labels_one_hot` is of dimension (N,K,H,W)
       before entering in the function
