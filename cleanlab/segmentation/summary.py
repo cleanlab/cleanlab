@@ -222,8 +222,9 @@ def common_label_issues(
     Returns
     -------
     issues_df:
-      DataFrame containing columns ``['given_label', 'predicted_label', 'num_label_issues']`` and each row contains information for a
-      given/predicted label swap, ordered by the number of label issues inferred for this type of label swap.
+      DataFrame with columns ``['given_label', 'predicted_label', 'num_label_issues']``
+      where each row contains information about a particular given/predicted label swap.
+      Rows are ordered by the number of label issues inferred to exhibit this type of label swap.
     """
     try:
         N, K, H, W = pred_probs.shape
