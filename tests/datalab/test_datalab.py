@@ -838,6 +838,7 @@ class TestDatalabFindLabelIssues:
         assert "label" in summary["issue_type"].values
         label_summary_pred_probs = lab.get_issue_summary("label")
         assert label_summary_pred_probs["num_issues"].values[0] > 0
+        lab = Datalab(data=data, label_name="labels")
         lab.find_issues(
             features=random_embeddings, pred_probs=pred_probs, issue_types={"label": {}}
         )
