@@ -53,7 +53,7 @@ jobs:
           pip install tensorflow-cpu
       - name: Download cleanvision test data
         run: |
-          wget -nc 'https://cleanlab-public.s3.amazonaws.com/Datalab/cleanvision_test_data.zip'
+          curl 'https://cleanlab-public.s3.amazonaws.com/Datalab/cleanvision_test_data.zip'
           unzip -q cleanvision_test_data.zip -d ./tests/datalab
       - name: Test with coverage
         run: pytest --verbose --cov=cleanlab/ --cov-config .coveragerc --cov-report=xml
