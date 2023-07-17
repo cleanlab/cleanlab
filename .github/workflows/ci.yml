@@ -26,6 +26,10 @@ jobs:
         if: matrix.os != 'windows-latest'
         run: |
           pip install fasttext
+      - name: Download cleanvision test data
+        run: |
+          wget -nc 'https://cleanlab-public.s3.amazonaws.com/Datalab/cleanvision_test_data.zip'
+          unzip -q cleanvision_test_data.zip -d ~/cleanlab_home/fork_cleanlab/tests/datalab
       - name: Test with coverage
         run: pytest --verbose --cov=cleanlab/ --cov-config .coveragerc --cov-report=xml
         env:
@@ -47,6 +51,10 @@ jobs:
         run: |
           pip uninstall -y tensorflow
           pip install tensorflow-cpu
+      - name: Download cleanvision test data
+        run: |
+          wget -nc 'https://cleanlab-public.s3.amazonaws.com/Datalab/cleanvision_test_data.zip'
+          unzip -q cleanvision_test_data.zip -d ~/cleanlab_home/fork_cleanlab/tests/datalab
       - name: Test with coverage
         run: pytest --verbose --cov=cleanlab/ --cov-config .coveragerc --cov-report=xml
         env:
@@ -83,6 +91,10 @@ jobs:
         run: |
           pip uninstall -y tensorflow
           pip install tensorflow-cpu
+      - name: Download cleanvision test data
+        run: |
+          wget -nc 'https://cleanlab-public.s3.amazonaws.com/Datalab/cleanvision_test_data.zip'
+          unzip -q cleanvision_test_data.zip -d ~/cleanlab_home/fork_cleanlab/tests/datalab
       - name: Test with coverage
         run: pytest --verbose --cov=cleanlab/ --cov-config .coveragerc --cov-report=xml
         env:
