@@ -143,7 +143,9 @@ class ImagelabReporterAdapter(Reporter):
     def report(self, num_examples: int) -> None:
         super().report(num_examples)
         print("\n\n")
-        self.imagelab.report(num_images=num_examples, print_summary=False, verbosity=0)
+        self.imagelab.report(
+            num_images=num_examples, print_summary=False, verbosity=0, show_id=True
+        )
 
 
 class ImagelabIssueFinderAdapter(IssueFinder):
