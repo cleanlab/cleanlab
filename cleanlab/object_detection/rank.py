@@ -891,18 +891,15 @@ def _compute_swap_box_scores_for_image(
         idx_at_least_high_probability_threshold = np.where(not_k_pred > high_probability_threshold)[
             0
         ]
-
+        print("idx_at_least_high_probability_threshold", idx_at_least_high_probability_threshold)
         if idx_at_least_high_probability_threshold.size == 0:
             scores_swap[iid] = 1.0
             continue
 
         not_k_similarity = not_k_similarity[idx_at_least_high_probability_threshold]
-        if not_k_similarity.size == 0:
-            scores_swap[iid] = 1.0
-        else:
-            closest_predicted_box = np.argmax(not_k_similarity)
-            score = np.max([min_possible_similarity, 1 - not_k_similarity[closest_predicted_box]])
-            scores_swap[iid] = score
+        closest_predicted_box = np.argmax(not_k_similarity)
+        score = np.max([min_possible_similarity, 1 - not_k_similarity[closest_predicted_box]])
+        scores_swap[iid] = score
 
     return scores_swap
 
