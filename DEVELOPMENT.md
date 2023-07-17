@@ -124,6 +124,13 @@ pip install -e ".[gpu]"
 
 ## Testing
 
+
+**Download test data**
+```shell
+wget -nc 'https://cleanlab-public.s3.amazonaws.com/Datalab/cleanvision_test_data.zip'
+unzip -q cleanvision_test_data.zip -d ./tests/datalab
+```
+
 **Run all the tests:**
 
 ```shell
