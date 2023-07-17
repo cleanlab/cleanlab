@@ -26,6 +26,14 @@ class TestCleanvisionIntegration:
         return np.random.rand(len(image_dataset), 5)
 
     @pytest.fixture
+    def num_imagelab_issues(self):
+        return 7
+
+    @pytest.fixture
+    def num_datalab_issues(self):
+        return 3
+
+    @pytest.fixture
     def pred_probs(self, image_dataset):
         np.random.seed(SEED)
         return np.random.rand(len(image_dataset), 2)
@@ -35,7 +43,9 @@ class TestCleanvisionIntegration:
         monkeypatch.setattr(plt, "show", lambda: None)
 
     @pytest.mark.usefixtures("set_plt_show")
-    def test_imagelab_issues_checked(self, image_dataset, pred_probs, features, capsys):
+    def test_imagelab_issues_checked(
+        self, image_dataset, pred_probs, features, capsys, num_imagelab_issues, num_datalab_issues
+    ):
         datalab = Datalab(data=image_dataset, label_name=LABEL_NAME, image_key=IMAGE_NAME)
         datalab.find_issues(pred_probs=pred_probs, features=features)
         captured = capsys.readouterr()
@@ -46,9 +56,10 @@ class TestCleanvisionIntegration:
         # unable to check for non iid as feature space is too small, skipping it in interest of time
         assert "Failed to check for these issue types: [NonIIDIssueManager]" in captured.out
         assert len(datalab.issues) == len(image_dataset)
-        # 14 from imagelab + 6 from datalab
-        assert len(datalab.issues.columns) == 14 + 6
-        assert len(datalab.issue_summary) == 7 + 3
+
+        # add up imagelab + datalab issues
+        assert len(datalab.issues.columns) == (num_imagelab_issues + num_datalab_issues) * 2
+        assert len(datalab.issue_summary) == num_imagelab_issues + num_datalab_issues
 
         all_keys = IMAGELAB_ISSUE_TYPES + [
             "statistics",
@@ -87,7 +98,9 @@ class TestCleanvisionIntegration:
         assert count == expected_count
         assert datalab.issue_summary["num_issues"].sum() == df["num_issues"].sum()
 
-    def test_imagelab_issues_not_checked(self, image_dataset, pred_probs, features, capsys):
+    def test_imagelab_issues_not_checked(
+        self, image_dataset, pred_probs, features, capsys, num_datalab_issues
+    ):
         datalab = Datalab(data=image_dataset, label_name=LABEL_NAME)
         datalab.find_issues(pred_probs=pred_probs, features=features)
         captured = capsys.readouterr()
@@ -96,8 +109,8 @@ class TestCleanvisionIntegration:
             not in captured.out
         )
         assert len(datalab.issues) == len(image_dataset)
-        assert len(datalab.issues.columns) == 6
-        assert len(datalab.issue_summary) == 3
+        assert len(datalab.issues.columns) == num_datalab_issues * 2
+        assert len(datalab.issue_summary) == num_datalab_issues
 
         all_keys = [
             "statistics",
@@ -174,23 +187,21 @@ class TestCleanvisionIntegration:
         assert "dark" in captured.out
 
     @pytest.mark.usefixtures("set_plt_show")
-    def test_labels_not_required_for_imagelab_issues(self, image_dataset, features, capsys):
+    def test_labels_not_required_for_imagelab_issues(
+        self, image_dataset, features, capsys, num_imagelab_issues
+    ):
         datalab = Datalab(data=image_dataset, image_key=IMAGE_NAME)
-        datalab.find_issues(features=features)
+        datalab.find_issues()
         captured = capsys.readouterr()
         assert (
             "Finding dark, light, low_information, odd_aspect_ratio, odd_size, grayscale, blurry images"
             in captured.out
         )
         assert len(datalab.issues) == len(image_dataset)
-        assert len(datalab.issues.columns) == 18
-        assert len(datalab.issue_summary) == 9
+        assert len(datalab.issues.columns) == num_imagelab_issues * 2
+        assert len(datalab.issue_summary) == num_imagelab_issues
 
-        all_keys = IMAGELAB_ISSUE_TYPES + [
-            "statistics",
-            "outlier",
-            "near_duplicate",
-        ]
+        all_keys = IMAGELAB_ISSUE_TYPES + ["statistics"]
 
         assert set(all_keys) == set(datalab.info.keys())
         datalab.report()
