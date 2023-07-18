@@ -24,8 +24,6 @@ jobs:
         run: |
           git clone https://github.com/cleanlab/assets.git
           mv assets\cleanlab_test_data tests\datalab\data
-          # curl https://cleanlab-public.s3.amazonaws.com/Datalab/cleanvision_test_data.zip -O cleanvision_test_data.zip 
-          # unzip -q cleanvision_test_data.zip -d tests\datalab
       - name: Install cleanlab
         run: pip install -e ".[all]"
       - name: Install development dependencies
