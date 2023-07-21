@@ -359,8 +359,6 @@ def test_overlooked_score_shifts_in_correct_direction():
     bad_label = copy.deepcopy(labels[0])
     worst_label = copy.deepcopy(labels[0])
 
-    print(predictions[0])
-    print(bad_label)
     bad_label["bboxes"] = np.delete(bad_label["bboxes"], 2, axis=0)  # 0.79 pred_probs
     worst_label["bboxes"] = np.delete(worst_label["bboxes"], -1, axis=0)  # 0.84 pred_probs
 
@@ -443,8 +441,10 @@ def test_find_label_issues():
     )
     overlooked_issues_per_image = _pool_box_scores_per_image(overlooked_issues_per_box)
     overlooked_issues = np.sum(overlooked_issues_per_image)
-    assert np.sum(overlooked_issues_per_image[5:]) == 5  # check bad labels were detected correctly
-    assert overlooked_issues == 5
+    assert (
+        np.sum(overlooked_issues_per_image[5:]) == 4
+    )  # check bad labels were detected correctly, one overlooked image overlap annotation
+    assert overlooked_issues == 4
     badloc_scores_per_box = compute_badloc_box_scores(
         alpha=ALPHA,
         low_probability_threshold=LOW_PROBABILITY_THRESHOLD,
@@ -466,8 +466,10 @@ def test_find_label_issues():
     badloc_issues_per_box = _find_label_issues_per_box(badloc_scores_per_box, BADLOC_THRESHOLD)
     badloc_issues_per_image = _pool_box_scores_per_image(badloc_issues_per_box)
     badloc_issues = np.sum(badloc_issues_per_image)
-    assert np.sum(badloc_issues_per_image[5:]) == 4  # check bad labels were detected correctly
-    assert badloc_issues == 4
+    assert (
+        np.sum(badloc_issues_per_image[5:]) == 2
+    )  # check bad labels were detected correctly, only two images have badloc issues that overlap
+    assert badloc_issues == 2
 
     swap_scores_per_box = compute_swap_box_scores(
         alpha=ALPHA,
@@ -708,6 +710,33 @@ def test_swap_high_probability_threshold():
     label["labels"] = np.append(label["labels"], (label["labels"][-1] + 1) % 10)
     score = compute_swap_box_scores(
         labels=[label], predictions=[prediction], high_probability_threshold=1.0
+    )[0]
+    assert np.allclose(score, np.array([1.0, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0]), atol=1e-2)
+
+    # test swap score does not trigger with low probability
+    low_prob = 0.73
+    prediction = predictions[3].copy()
+    for i in range(len(prediction)):
+        for j in range(len(prediction[i])):
+            if len(prediction[i][j]) > 0:
+                prediction[i][j][-1] = low_prob
+    label = labels[3].copy()
+    label["bboxes"] = np.append(label["bboxes"], [label["bboxes"][-1]], axis=0)
+    label["labels"] = np.append(label["labels"], (label["labels"][-1] + 1) % 10)
+    score = compute_swap_box_scores(
+        labels=[label],
+        predictions=[prediction],
+        high_probability_threshold=0.99,
+        overlapping_label_check=False,
+    )[0]
+    assert np.allclose(score, np.array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]), atol=1e-2)
+
+    # test overlapping label check ignores all probability of predicted boxes
+    score = compute_swap_box_scores(
+        labels=[label],
+        predictions=[prediction],
+        high_probability_threshold=0.99,
+        overlapping_label_check=True,
     )[0]
     assert np.allclose(score, np.array([1.0, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0]), atol=1e-2)
 
