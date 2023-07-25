@@ -48,14 +48,13 @@ from cleanlab.datalab.issue_manager import (
     NonIIDIssueManager,
 )
 
-
 REGISTRY: Dict[str, Type[IssueManager]] = {
     "outlier": OutlierIssueManager,
     "label": LabelIssueManager,
     "near_duplicate": NearDuplicateIssueManager,
     "non_iid": NonIIDIssueManager,
 }
-"""Registry of issue managers that can be constructed from a string 
+"""Registry of issue managers that can be constructed from a string
 and used in the Datalab class.
 
 :meta hide-value:
@@ -118,7 +117,7 @@ def register(cls: Type[IssueManager]) -> Type[IssueManager]:
     .. code-block:: python
 
         from cleanlab import IssueManager
-        from cleanlab.datalab.factory import register
+        from cleanlab.datalab.issue_manager_factory import register
 
         @register
         class MyIssueManager(IssueManager):
@@ -132,7 +131,7 @@ def register(cls: Type[IssueManager]) -> Type[IssueManager]:
     .. code-block:: python
 
         from cleanlab import IssueManager
-        from cleanlab.datalab.factory import register
+        from cleanlab.datalab.issue_manager_factory import register
 
         class MyIssueManager(IssueManager):
             issue_name: str = "my_issue"

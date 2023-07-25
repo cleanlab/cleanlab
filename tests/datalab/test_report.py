@@ -1,11 +1,11 @@
-import pytest
-import numpy as np
-import pandas as pd
 from unittest.mock import Mock, patch
 
-from cleanlab.datalab.report import Reporter
+import numpy as np
+import pandas as pd
+import pytest
 
 from cleanlab import Datalab
+from cleanlab.datalab.report import Reporter
 
 
 class TestReporter:
@@ -84,7 +84,9 @@ class TestReporter:
         monkeypatch.setattr(data_issues, "issue_summary", mock_issue_summary)
 
         reporter = Reporter(
-            data_issues=data_issues, verbosity=0, include_description=include_description
+            data_issues=data_issues,
+            verbosity=0,
+            include_description=include_description,
         )
         monkeypatch.setattr(data_issues, "issues", mock_issues, raising=False)
         monkeypatch.setattr(data_issues, "info", mock_info, raising=False)

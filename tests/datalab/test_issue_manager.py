@@ -3,7 +3,7 @@ import pandas as pd
 import pytest
 
 from cleanlab.datalab.issue_manager import IssueManager
-from cleanlab.datalab.factory import REGISTRY, register
+from cleanlab.datalab.issue_manager_factory import REGISTRY, register
 
 
 class TestCustomIssueManager:

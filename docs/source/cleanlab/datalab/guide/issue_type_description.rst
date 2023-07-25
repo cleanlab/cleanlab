@@ -34,6 +34,7 @@ Each input is optional, if you do not provide it, Datalab will skip checks for t
 3. ``features`` - numeric vector representations of the features for each example in the dataset. These may be embeddings from a (pre)trained model, or just a numerically-transformed version of the original data features.
 4. ``knn_graph`` - K nearest neighbor graph represented as a sparse matrix of dissimilarity values between examples in the dataset. If both `knn_graph` and `features` are provided, the `knn_graph` takes precedence, and if only `features` is provided, then a `knn_graph` is internally constructed based on the (either euclidean or cosine) distance between different examples’ features.
 
+
 Label Issue
 -----------
 
@@ -69,6 +70,7 @@ When based on `pred_probs`, the outlier quality of each example is scored invers
 Modeling data with outliers may have unexpected consequences.
 Closely inspect them and consider removing some outliers that may be negatively affecting your models.
 
+
 Learn more about the methods used to detect outliers in our article: `Out-of-Distribution Detection via Embeddings or Predictions <https://cleanlab.ai/blog/outlier-detection/>`_
 
 (Near) Duplicate Issue
@@ -92,6 +94,7 @@ Including near-duplicate examples in a dataset may negatively impact a ML model'
 In particular, it is questionable to include examples in a test dataset which are (nearly) duplicated in the corresponding training dataset.
 More generally, examples which happen to be duplicated can affect the final modeling results much more than other examples — so you should at least be aware of their presence.
 
+
 Non-IID Issue
 -------------
 
@@ -109,6 +112,15 @@ The assumption that examples in a dataset are Independent and Identically Distri
 - An example can influence the values of future examples in the dataset (not independent).
 
 For datasets with low non-IID score, you should consider why your data are not IID and act accordingly. For example, if the data distribution is drifting over time, consider employing a time-based train/test split instead of a random partition.  Note that shuffling the data ahead of time will ensure a good non-IID score, but this is not always a fix to the underlying problem (e.g. future deployment data may stem from a different distribution, or you may overlook the fact that examples influence each other). We thus recommend **not** shuffling your data to be able to diagnose this issue if it exists.
+
+
+Image-specific Issues
+---------------------
+
+For image datasets which are properly specified as such, Datalab can detect additional types of image-specific issues (if the necessary optional dependencies are installed).
+Specifically, low-quality images which are too: dark/bright, blurry, low information, abnormally sized, etc.
+Descriptions of these image-specific issues are provided in the `CleanVision package <https://github.com/cleanlab/cleanvision>`_ and its documentation.
+
 
 Optional Issue Parameters
 =========================

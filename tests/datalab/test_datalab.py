@@ -19,20 +19,20 @@ import contextlib
 import io
 import os
 import pickle
+import timeit
+from pathlib import Path
 from unittest.mock import MagicMock, Mock, patch
-from cleanlab.datalab.datalab import Datalab
 
-from scipy.sparse import csr_matrix
-from sklearn.neighbors import NearestNeighbors
-from datasets.dataset_dict import DatasetDict
 import numpy as np
 import pandas as pd
-
-from pathlib import Path
-
 import pytest
-import timeit
+from datasets.dataset_dict import DatasetDict
+from scipy.sparse import csr_matrix
+from sklearn.neighbors import NearestNeighbors
 
+import cleanlab
+from cleanlab.datalab.datalab import Datalab
+from cleanlab.datalab.issue_finder import IssueFinder
 from cleanlab.datalab.report import Reporter
 
 SEED = 42
@@ -43,6 +43,11 @@ def test_datalab_invalid_datasetdict(dataset, label_name):
         datadict = DatasetDict({"train": dataset, "test": dataset})
         Datalab(datadict, label_name)  # type: ignore
         assert "Please pass a single dataset, not a DatasetDict." in str(e)
+
+
+@pytest.fixture(scope="function")
+def list_possible_issue_types(monkeypatch, request):
+    monkeypatch.setattr(IssueFinder, "list_possible_issue_types", lambda *_: request.param)
 
 
 class TestDatalab:
@@ -228,7 +233,7 @@ class TestDatalab:
             lab.find_issues(pred_probs=pred_probs, issue_types=issue_types)
         warning_message = record[0].message.args[0]
         assert (
-            "No issue types were specified. No issues will be found in the dataset."
+            "No issue types were specified so no issues will be found in the dataset. Set `issue_types` as None to consider a default set of issues."
             in warning_message
         )
 
@@ -472,7 +477,8 @@ class TestDatalab:
             )
             assert expected_error_msg == str(excinfo.value)
 
-    def test_failed_issue_managers(self, lab, monkeypatch):
+    @pytest.mark.parametrize("list_possible_issue_types", [["erroneous_issue_type"]], indirect=True)
+    def test_failed_issue_managers(self, lab, monkeypatch, list_possible_issue_types):
         """Test that a failed issue manager will not be added to the Datalab instance after
         the call to `find_issues`."""
         mock_issue_types = {"erroneous_issue_type": {}}
@@ -502,7 +508,7 @@ class TestDatalab:
 
         assert lab.issues.empty
 
-    def test_report(self, lab):
+    def test_report(self, lab, monkeypatch, capsys):
         class MockReporter:
             def __init__(self, *args, **kwargs):
                 self.verbosity = kwargs.get("verbosity", None)
@@ -513,17 +519,23 @@ class TestDatalab:
                     f"Report with verbosity={self.verbosity} and k={kwargs.get('num_examples', 5)}"
                 )
 
-        with patch("cleanlab.datalab.datalab.Reporter", new=MockReporter):
-            # Call report with no arguments, test that it prints the report
-            with patch("builtins.print") as mock_print:
-                lab.report(verbosity=0)
-                mock_print.assert_called_once_with("Report with verbosity=0 and k=5")
-                mock_print.reset_mock()
-                lab.report(num_examples=10, verbosity=3)
-                mock_print.assert_called_once_with("Report with verbosity=3 and k=10")
-                mock_print.reset_mock()
-                lab.report()
-                mock_print.assert_called_once_with("Report with verbosity=1 and k=5")
+        monkeypatch.setattr(cleanlab.datalab.helper_factory, "Reporter", MockReporter)
+        monkeypatch.setattr(
+            lab.data_issues,
+            "issue_summary",
+            pd.DataFrame(np.random.randint(0, 100, size=(100, 4)), columns=list("ABCD")),
+        )
+        lab.report(verbosity=0)
+        captured = capsys.readouterr()
+        assert "Report with verbosity=0 and k=5" in captured.out
+
+        lab.report(num_examples=10, verbosity=3)
+        captured = capsys.readouterr()
+        assert "Report with verbosity=3 and k=10" in captured.out
+
+        lab.report()
+        captured = capsys.readouterr()
+        assert "Report with verbosity=1 and k=5" in captured.out
 
 
 class TestDatalabUsingKNNGraph:
@@ -576,12 +588,7 @@ class TestDatalabUsingKNNGraph:
         lab, _, _ = data_tuple
 
         # Test that a warning is raised
-        with pytest.warns(UserWarning) as record:
-            lab.find_issues()
-
-        assert len(record) == 2
-        assert "No arguments were passed to find_issues." == str(record[0].message)
-        assert "No issue check performed." == str(record[1].message)
+        lab.find_issues()
         assert lab.issues.empty  # No columns should be added to the issues dataframe
 
 
@@ -600,7 +607,7 @@ class TestDatalabIssueManagerInteraction:
         mock_registry = MagicMock()
         mock_registry.__getitem__.side_effect = KeyError("issue type not registered")
 
-        with patch("cleanlab.datalab.factory.REGISTRY", mock_registry):
+        with patch("cleanlab.datalab.issue_manager_factory.REGISTRY", mock_registry):
             with pytest.raises(ValueError) as excinfo:
                 lab.find_issues(issue_types={"custom_issue": {}})
 
@@ -613,7 +620,7 @@ class TestDatalabIssueManagerInteraction:
 
     def test_custom_issue_manager_registered(self, lab, custom_issue_manager):
         """Test that a custom issue manager that is registered will be used."""
-        from cleanlab.datalab.factory import register
+        from cleanlab.datalab.issue_manager_factory import register
 
         register(custom_issue_manager)
 
@@ -632,11 +639,12 @@ class TestDatalabIssueManagerInteraction:
         )
         assert pd.testing.assert_frame_equal(lab.issues, expected_issues) is None
 
+    @pytest.mark.parametrize("list_possible_issue_types", [["custom_issue"]], indirect=True)
     def test_find_issues_for_custom_issue_manager_with_custom_kwarg(
-        self, lab, custom_issue_manager
+        self, lab, custom_issue_manager, list_possible_issue_types
     ):
         """Test that a custom issue manager that is registered will be used."""
-        from cleanlab.datalab.factory import register
+        from cleanlab.datalab.issue_manager_factory import register
 
         register(custom_issue_manager)
 
@@ -656,7 +664,7 @@ class TestDatalabIssueManagerInteraction:
         assert pd.testing.assert_frame_equal(lab.issues, expected_issues) is None
 
         # Clean up registry
-        from cleanlab.datalab.factory import REGISTRY
+        from cleanlab.datalab.issue_manager_factory import REGISTRY
 
         REGISTRY.pop(custom_issue_manager.issue_name)
 

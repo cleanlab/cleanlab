@@ -1,7 +1,9 @@
 import numpy as np
 import pandas as pd
 import pytest
+from datasets import load_dataset
 from datasets.arrow_dataset import Dataset
+from PIL import Image
 from sklearn.neighbors import NearestNeighbors
 
 from cleanlab.datalab.datalab import Datalab
@@ -107,3 +109,20 @@ def custom_issue_manager():
             self.summary = self.make_summary(score=summary_score)
 
     return CustomIssueManager
+
+
+def generate_image():
+    arr = np.random.randint(low=0, high=256, size=(300, 300, 3), dtype=np.uint8)
+    img = Image.fromarray(arr, mode="RGB")
+    return img
+
+
+@pytest.fixture
+def image_dataset():
+    data_path = "./tests/datalab/data"
+    dataset = load_dataset(
+        "imagefolder",
+        data_dir=data_path,
+        split="train",
+    )
+    return dataset

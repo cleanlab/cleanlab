@@ -17,12 +17,12 @@
 Module that handles reporting of all types of issues identified in the data.
 """
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List
 
 import pandas as pd
 
-from cleanlab.datalab.factory import _IssueManagerFactory
-
+from cleanlab.datalab.adapter.constants import DEFAULT_CLEANVISION_ISSUES
+from cleanlab.datalab.issue_manager_factory import _IssueManagerFactory
 
 if TYPE_CHECKING:  # pragma: no cover
     from cleanlab.datalab.data_issues import DataIssues
@@ -59,6 +59,7 @@ class Reporter:
         verbosity: int = 1,
         include_description: bool = True,
         show_summary_score: bool = False,
+        **kwargs,
     ):
         self.data_issues = data_issues
         self.verbosity = verbosity
@@ -101,6 +102,8 @@ class Reporter:
         issue_summary_sorted = issue_summary.sort_values(by="num_issues", ascending=False)
         report_str += self._write_summary(summary=issue_summary_sorted)
 
+        issue_types = self._get_issue_types(issue_summary_sorted)
+
         issue_reports = [
             _IssueManagerFactory.from_str(issue_type=key).report(
                 issues=self.data_issues.get_issues(issue_name=key),
@@ -110,7 +113,7 @@ class Reporter:
                 verbosity=self.verbosity,
                 include_description=self.include_description,
             )
-            for key in issue_summary_sorted["issue_type"].tolist()
+            for key in issue_types
         ]
 
         report_str += "\n\n\n".join(issue_reports)
@@ -142,3 +145,11 @@ class Reporter:
             + "\n\n"
             + f"{dataset_information}\n\n\n"
         )
+
+    def _get_issue_types(self, issue_summary: pd.DataFrame) -> List[str]:
+        issue_types = [
+            issue_type
+            for issue_type in issue_summary["issue_type"].tolist()
+            if issue_type not in DEFAULT_CLEANVISION_ISSUES
+        ]
+        return issue_types
