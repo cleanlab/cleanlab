@@ -113,7 +113,7 @@ class NearDuplicateIssueManager(IssueManager):
         self.info = self.collect_info(knn_graph=knn_graph)
 
     @staticmethod
-    def _neighbors_within_radius(knn_graph: csr_matrix, radius: float):
+    def _neighbors_within_radius(knn_graph: csr_matrix, threshold: float):
         """Returns a list of lists of indices of near-duplicate examples.
 
         Each list of indices represents a set of near-duplicate examples.
@@ -125,7 +125,7 @@ class NearDuplicateIssueManager(IssueManager):
         N = knn_graph.shape[0]
         distances = knn_graph.data.reshape(N, -1)
         # Create a mask for the threshold
-        mask = distances < radius
+        mask = distances < threshold * np.median(distances[:, 0])
 
         # Update the indptr to reflect the new number of neighbors
         indptr = np.zeros(knn_graph.indptr.shape, dtype=knn_graph.indptr.dtype)
@@ -134,6 +134,15 @@ class NearDuplicateIssueManager(IssueManager):
         # Filter the knn_graph based on the threshold
         indices = knn_graph.indices[mask.ravel()]
         near_duplicate_sets = [indices[indptr[i] : indptr[i + 1]] for i in range(N)]
+
+        # Second pass over the data is required to ensure each item is included in the near-duplicate sets of its own near-duplicates.
+        # This is important because a "near-duplicate" relationship is reciprocal.
+        # For example, if item A is a near-duplicate of item B, then item B should also be considered a near-duplicate of item A.
+        # NOTE: This approach does not assure that the sets are ordered by increasing distance.
+        for i, near_duplicates in enumerate(near_duplicate_sets):
+            for j in near_duplicates:
+                if i not in near_duplicate_sets[j]:
+                    near_duplicate_sets[j] = np.append(near_duplicate_sets[j], i)
 
         return near_duplicate_sets
 
