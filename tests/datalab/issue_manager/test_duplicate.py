@@ -106,8 +106,7 @@ class TestNearDuplicateIssueManager:
         assert "Additional Information: " in report
 
     @given(embeddings=embeddings_strategy())
-    def test_near_duplicates_are_symmetric(self, embeddings):
-
+    def test_near_duplicate_sets(self, embeddings):
         data = {"metadata": ["" for _ in range(len(embeddings))]}
         lab = Datalab(data)
         issue_manager = NearDuplicateIssueManager(
@@ -118,6 +117,9 @@ class TestNearDuplicateIssueManager:
         embeddings = np.array(embeddings)
         issue_manager.find_issues(features=embeddings)
         near_duplicate_sets = issue_manager.info["near_duplicate_sets"]
+        issues = issue_manager.issues["is_near_duplicate_issue"]
+
+        # Test: Near duplicates are symmetric
         all_symmetric = all(
             i in near_duplicate_sets[j]
             for i, near_duplicates in enumerate(near_duplicate_sets)
@@ -125,21 +127,7 @@ class TestNearDuplicateIssueManager:
         )
         assert all_symmetric, "Some near duplicate sets are not symmetric"
 
-    @given(embeddings=embeddings_strategy())
-    def test_near_duplicate_sets_for_issues(self, embeddings):
-        data = {"metadata": ["" for _ in range(len(embeddings))]}
-        lab = Datalab(data)
-        issue_manager = NearDuplicateIssueManager(
-            datalab=lab,
-            metric="euclidean",
-            k=2,
-        )
-        embeddings = np.array(embeddings)
-        issue_manager.find_issues(features=embeddings)
-        issues = issue_manager.issues["is_near_duplicate_issue"]
-        near_duplicate_sets = issue_manager.info["near_duplicate_sets"]
-
-        # if an example is not a near duplicate issue, then the near_duplicate_set should be empty and vice versa
+        # Test: Near duplicate sets for issues
         assert all(
             len(near_duplicate_set) == 0
             for i, near_duplicate_set in enumerate(near_duplicate_sets)
