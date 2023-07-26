@@ -866,6 +866,28 @@ class TestDatalabFindNearDuplicateIssues:
         return X
 
     @pytest.fixture
+    def fixed_embeddings(self):
+        near_duplicate_scale = 0.0001
+        non_duplicate_scale = 100
+        X = np.array(
+            [[0, 0]] * 4  # Points with 3 exact duplicates
+            + [[1, 1]] * 2  # Points with 1 exact duplicate
+            + [[1, 0]] * 3
+            + [[1 + near_duplicate_scale, 0]]
+            + [
+                [1, 0 + near_duplicate_scale]
+            ]  # Points with 2 exact duplicates and 2 near duplicates
+            + [
+                [-1, -1] + np.random.rand(2) * near_duplicate_scale for _ in range(5)
+            ]  # Points with 5 near duplicates
+            + [
+                [-1, 0] + np.random.rand(2) * near_duplicate_scale for _ in range(2)
+            ]  # Points with 1 near duplicate
+            + (np.random.rand(20, 2) * non_duplicate_scale).tolist()  # Random points
+        )
+        return X
+
+    @pytest.fixture
     def pred_probs(self):
         np.random.seed(SEED)
         pred_probs_array = np.random.rand(100, 2)
@@ -884,6 +906,66 @@ class TestDatalabFindNearDuplicateIssues:
         assert "near_duplicate" in summary["issue_type"].values
         near_duplicate_summary = lab.get_issue_summary("near_duplicate")
         assert near_duplicate_summary["num_issues"].values[0] > 1
+
+    def test_fixed_embeddings_outputs(self, fixed_embeddings):
+        lab = Datalab(data={"a": ["" for _ in range(len(fixed_embeddings))]})
+        lab.find_issues(features=fixed_embeddings, issue_types={"near_duplicate": {}})
+        issues = lab.get_issues("near_duplicate")
+
+        assert issues["is_near_duplicate_issue"].sum() == 18
+        assert all(
+            issues["is_near_duplicate_issue"].values
+            == [True] * 18 + [False] * (len(fixed_embeddings) - 18)
+        )
+
+        # Test the first set of near duplicates (only 3 exact duplicates)
+        near_duplicate_sets = issues["near_duplicate_sets"].values
+
+        expected_near_duplicate_sets = np.array(
+            [
+                # 3 exact duplicates
+                np.array([3, 1, 2]),
+                np.array([0, 3, 2]),
+                np.array([0, 3, 1]),
+                np.array([0, 1, 2]),
+                # 1 exact duplicate
+                np.array([5]),
+                np.array([4]),
+                # 2 exact duplicates and 2 near duplicates
+                np.array([8, 7, 9, 10]),
+                np.array([8, 6, 9, 10]),
+                np.array([6, 7, 9, 10]),
+                np.array([8, 6, 7, 10]),
+                np.array([7, 8, 6, 9]),
+                # 4 near duplicates
+                np.array([15, 13, 14, 12]),
+                np.array([13, 14, 15, 11]),
+                np.array([14, 12, 15, 11]),
+                np.array([13, 12, 15, 11]),
+                np.array([11, 13, 14, 12]),
+                # 1 near duplicate
+                np.array([17]),
+                np.array([16]),
+            ]
+            +
+            # Random points
+            [np.array([])] * 20,
+            dtype=object,
+        )
+
+        # Exact duplicates may have arbitrary order, so sort the sets before comparing
+        equal_sets = [
+            np.array_equal(sorted(a), sorted(b))
+            for a, b in zip(near_duplicate_sets, expected_near_duplicate_sets)
+        ]
+        assert all(equal_sets)
+
+        # Assert self-idx is not included in near duplicate sets
+        assert all([i not in s for i, s in enumerate(near_duplicate_sets)])
+
+        # Assert near duplicate sets are unique, ignoring empty sets
+        unique_non_empty_sets = [tuple(s) for s in near_duplicate_sets if len(s) > 0]
+        assert len(set(unique_non_empty_sets)) == 18
 
 
 class TestDatalabWithoutLabels:
