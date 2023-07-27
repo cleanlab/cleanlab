@@ -20,7 +20,7 @@ Module that handles the string representation of Datalab objects.
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:  # pragma: no cover
-    from cleanlab.datalab.data_issues import DataIssues
+    from cleanlab.datalab.internal.data_issues import DataIssues
 
 
 class _Displayer:

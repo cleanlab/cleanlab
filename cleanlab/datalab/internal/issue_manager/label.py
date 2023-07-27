@@ -20,7 +20,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional
 import numpy as np
 
 from cleanlab.classification import CleanLearning
-from cleanlab.datalab.issue_manager import IssueManager
+from cleanlab.datalab.internal.issue_manager import IssueManager
 from cleanlab.internal.validation import assert_valid_inputs
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -79,7 +79,7 @@ class LabelIssueManager(IssueManager):
 
         Examples
         --------
-        >>> from cleanlab.datalab.issue_manager.label import LabelIssueManager
+        >>> from cleanlab.datalab.internal.issue_manager.label import LabelIssueManager
         >>> LabelIssueManager._process_clean_learning_kwargs(thresholds=[0.1, 0.9])
         {'thresholds': [0.1, 0.9]}
         """

@@ -17,7 +17,7 @@
 and a decorator for registering new issue managers.
 
 This module provides the :py:meth:`register` decorator for users to register new subclasses of
-:py:class:`IssueManager <cleanlab.datalab.issue_manager.issue_manager.IssueManager>`
+:py:class:`IssueManager <cleanlab.datalab.internal.issue_manager.issue_manager.IssueManager>`
 in the registry. Each IssueManager detects some particular type of issue in a dataset.
 
 
@@ -40,7 +40,7 @@ from __future__ import annotations
 
 from typing import Dict, List, Type
 
-from cleanlab.datalab.issue_manager import (
+from cleanlab.datalab.internal.issue_manager import (
     IssueManager,
     LabelIssueManager,
     NearDuplicateIssueManager,
@@ -61,10 +61,10 @@ and used in the Datalab class.
 
 Currently, the following issue managers are registered by default:
 
-- ``"outlier"``: :py:class:`OutlierIssueManager <cleanlab.datalab.issue_manager.outlier.OutlierIssueManager>`
-- ``"label"``: :py:class:`LabelIssueManager <cleanlab.datalab.issue_manager.label.LabelIssueManager>`
-- ``"near_duplicate"``: :py:class:`NearDuplicateIssueManager <cleanlab.datalab.issue_manager.duplicate.NearDuplicateIssueManager>`
-- ``"non_iid"``: :py:class:`NonIIDIssueManager <cleanlab.datalab.issue_manager.noniid.NonIIDIssueManager>`
+- ``"outlier"``: :py:class:`OutlierIssueManager <cleanlab.datalab.internal.issue_manager.outlier.OutlierIssueManager>`
+- ``"label"``: :py:class:`LabelIssueManager <cleanlab.datalab.internal.issue_manager.label.LabelIssueManager>`
+- ``"near_duplicate"``: :py:class:`NearDuplicateIssueManager <cleanlab.datalab.internal.issue_manager.duplicate.NearDuplicateIssueManager>`
+- ``"non_iid"``: :py:class:`NonIIDIssueManager <cleanlab.datalab.internal.issue_manager.noniid.NonIIDIssueManager>`
 
 Warning
 -------
@@ -100,7 +100,7 @@ def register(cls: Type[IssueManager]) -> Type[IssueManager]:
     ----------
     cls :
         A subclass of
-        :py:class:`IssueManager <cleanlab.datalab.issue_manager.issue_manager.IssueManager>`.
+        :py:class:`IssueManager <cleanlab.datalab.internal.issue_manager.issue_manager.IssueManager>`.
 
     Returns
     -------
@@ -111,13 +111,13 @@ def register(cls: Type[IssueManager]) -> Type[IssueManager]:
     -------
 
     When defining a new subclass of
-    :py:class:`IssueManager <cleanlab.datalab.issue_manager.issue_manager.IssueManager>`,
+    :py:class:`IssueManager <cleanlab.datalab.internal.issue_manager.issue_manager.IssueManager>`,
     you can register it like so:
 
     .. code-block:: python
 
         from cleanlab import IssueManager
-        from cleanlab.datalab.issue_manager_factory import register
+        from cleanlab.datalab.internal.issue_manager_factory import register
 
         @register
         class MyIssueManager(IssueManager):
@@ -131,7 +131,7 @@ def register(cls: Type[IssueManager]) -> Type[IssueManager]:
     .. code-block:: python
 
         from cleanlab import IssueManager
-        from cleanlab.datalab.issue_manager_factory import register
+        from cleanlab.datalab.internal.issue_manager_factory import register
 
         class MyIssueManager(IssueManager):
             issue_name: str = "my_issue"

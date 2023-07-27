@@ -21,11 +21,11 @@ from typing import TYPE_CHECKING, List
 
 import pandas as pd
 
-from cleanlab.datalab.adapter.constants import DEFAULT_CLEANVISION_ISSUES
-from cleanlab.datalab.issue_manager_factory import _IssueManagerFactory
+from cleanlab.datalab.internal.adapter.constants import DEFAULT_CLEANVISION_ISSUES
+from cleanlab.datalab.internal.issue_manager_factory import _IssueManagerFactory
 
 if TYPE_CHECKING:  # pragma: no cover
-    from cleanlab.datalab.data_issues import DataIssues
+    from cleanlab.datalab.internal.data_issues import DataIssues
 
 
 class Reporter:
@@ -92,7 +92,7 @@ class Reporter:
 
         Examples
         --------
-        >>> from cleanlab.datalab.report import Reporter
+        >>> from cleanlab.datalab.internal.report import Reporter
         >>> reporter = Reporter(data_issues=data_issues, include_description=False)
         >>> report_str = reporter.get_report(num_examples=5)
         >>> print(report_str)

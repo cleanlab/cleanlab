@@ -1,7 +1,7 @@
 import tempfile
 from unittest.mock import patch
 import pytest
-from cleanlab.datalab.data import Data, DataFormatError, DatasetLoadError
+from cleanlab.datalab.internal.data import Data, DataFormatError, DatasetLoadError
 from datasets import Dataset, ClassLabel
 import numpy as np
 import hypothesis.strategies as st

@@ -1,11 +1,11 @@
-from cleanlab.datalab.adapter.imagelab import (
+from cleanlab.datalab.internal.adapter.imagelab import (
     ImagelabIssueFinderAdapter,
     ImagelabDataIssuesAdapter,
     ImagelabReporterAdapter,
 )
-from cleanlab.datalab.data_issues import DataIssues
-from cleanlab.datalab.issue_finder import IssueFinder
-from cleanlab.datalab.report import Reporter
+from cleanlab.datalab.internal.data_issues import DataIssues
+from cleanlab.datalab.internal.issue_finder import IssueFinder
+from cleanlab.datalab.internal.report import Reporter
 
 
 def issue_finder_factory(imagelab):

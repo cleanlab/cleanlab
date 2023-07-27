@@ -18,7 +18,7 @@ Module for the :py:class:`DataIssues` class, which serves as a central repositor
 information and statistics about issues found in a dataset.
 
 It collects information from various
-:py:class:`IssueManager <cleanlab.datalab.issue_manager.issue_manager.IssueManager>`
+:py:class:`IssueManager <cleanlab.datalab.internal.issue_manager.issue_manager.IssueManager>`
 instances and keeps track of each issue, a summary for each type of issue,
 related information and statistics about the issues.
 
@@ -35,8 +35,8 @@ import numpy as np
 import pandas as pd
 
 if TYPE_CHECKING:  # pragma: no cover
-    from cleanlab.datalab.data import Data
-    from cleanlab.datalab.issue_manager import IssueManager
+    from cleanlab.datalab.internal.data import Data
+    from cleanlab.datalab.internal.issue_manager import IssueManager
     from cleanvision import Imagelab
 
 

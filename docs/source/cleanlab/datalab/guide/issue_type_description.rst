@@ -161,7 +161,7 @@ Label Issue Parameters
 
 .. note::
 
-    For more information, view the source code of:  :py:class:`datalab.issue_manager.label.LabelIssueManager <cleanlab.datalab.issue_manager.label.LabelIssueManager>`.
+    For more information, view the source code of:  :py:class:`datalab.issue_manager.label.LabelIssueManager <cleanlab.datalab.internal.issue_manager.label.LabelIssueManager>`.
 
 Outlier Issue Parameters
 ------------------------
@@ -186,7 +186,7 @@ Outlier Issue Parameters
 
 .. note::
 
-    For more information, view the source code of:  :py:class:`datalab.issue_manager.outlier.OutlierIssueManager <cleanlab.datalab.issue_manager.outlier.OutlierIssueManager>`.  
+    For more information, view the source code of:  :py:class:`datalab.issue_manager.outlier.OutlierIssueManager <cleanlab.datalab.internal.issue_manager.outlier.OutlierIssueManager>`.  
 
 Duplicate Issue Parameters
 --------------------------
@@ -205,7 +205,7 @@ Duplicate Issue Parameters
 
 .. note::
 
-    For more information, view the source code of:  :py:class:`datalab.issue_manager.duplicate.NearDuplicateIssueManager <cleanlab.datalab.issue_manager.duplicate.NearDuplicateIssueManager>`. 
+    For more information, view the source code of:  :py:class:`datalab.issue_manager.duplicate.NearDuplicateIssueManager <cleanlab.datalab.internal.issue_manager.duplicate.NearDuplicateIssueManager>`. 
 
 
 Non-IID Issue Parameters
@@ -223,4 +223,4 @@ Non-IID Issue Parameters
 
 .. note::
 
-    For more information, view the source code of:  :py:class:`datalab.issue_manager.noniid.NonIIDIssueManager <cleanlab.datalab.issue_manager.noniid.NonIIDIssueManager>`.
+    For more information, view the source code of:  :py:class:`datalab.issue_manager.noniid.NonIIDIssueManager <cleanlab.datalab.internal.issue_manager.noniid.NonIIDIssueManager>`.
