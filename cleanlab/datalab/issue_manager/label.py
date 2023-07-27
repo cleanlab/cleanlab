@@ -147,7 +147,7 @@ class LabelIssueManager(IssueManager):
                     "Either pred_probs or features must be provided to find label issues."
                 )
             # produce out-of-sample pred_probs from features
-            knn = KNeighborsClassifier(n_neighbors=self.k)
+            knn = KNeighborsClassifier(n_neighbors=self.k + 1)
             knn.fit(features, self.datalab.labels)
             pred_probs = knn.predict_proba(features)
 
