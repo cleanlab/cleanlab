@@ -187,13 +187,16 @@ class IssueFinder:
         features :
             Name of column containing precomputed embeddings.
 
+        knn_graph :
+            Sparse matrix representing distances between examples in the dataset in a k nearest neighbor graph.
+
         Returns
         -------
         args_dict :
             Dictionary of required arguments for each issue type, if available.
         """
         args_dict = {
-            "label": {"pred_probs": pred_probs},
+            "label": {"pred_probs": pred_probs, "features": features},
             "outlier": {"pred_probs": pred_probs, "features": features, "knn_graph": knn_graph},
             "near_duplicate": {"features": features, "knn_graph": knn_graph},
             "non_iid": {"features": features, "knn_graph": knn_graph},
