@@ -154,7 +154,7 @@ def assert_valid_pred_probs(
 
         if pred_probs_unlabeled is not None:
             if not isinstance(pred_probs_unlabeled, np.ndarray):
-                raise TypeError("pred_probs must be a numpy array.")
+                raise TypeError("pred_probs_unlabeled must be a numpy array.")
             if pred_probs_unlabeled.ndim != 3:
                 error_message = "pred_probs_unlabeled must be a 3d array."
                 if pred_probs_unlabeled.ndim == 2:  # pragma: no cover
@@ -179,7 +179,7 @@ def assert_valid_pred_probs(
 
         if pred_probs_unlabeled is not None:
             if not isinstance(pred_probs_unlabeled, np.ndarray):
-                raise TypeError("pred_probs must be a numpy array.")
+                raise TypeError("pred_probs_unlabeled must be a numpy array.")
             if pred_probs_unlabeled.ndim != 2:
                 error_message = "pred_probs_unlabeled must be a 2d array."
                 if pred_probs_unlabeled.ndim == 3:  # pragma: no cover
