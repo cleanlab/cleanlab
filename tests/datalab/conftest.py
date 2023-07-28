@@ -86,7 +86,7 @@ def pred_probs(dataset):
 
 @pytest.fixture
 def custom_issue_manager():
-    from cleanlab.datalab.issue_manager.issue_manager import IssueManager
+    from cleanlab.datalab.internal.issue_manager.issue_manager import IssueManager
 
     class CustomIssueManager(IssueManager):
         issue_name = "custom_issue"

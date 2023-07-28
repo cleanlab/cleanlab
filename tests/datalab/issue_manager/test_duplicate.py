@@ -6,7 +6,7 @@ from hypothesis.extra.numpy import arrays
 
 
 from cleanlab import Datalab
-from cleanlab.datalab.issue_manager.duplicate import NearDuplicateIssueManager
+from cleanlab.datalab.internal.issue_manager.duplicate import NearDuplicateIssueManager
 
 SEED = 42
 

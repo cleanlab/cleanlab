@@ -1,7 +1,7 @@
 import pytest
 import numpy as np
 
-from cleanlab.datalab.issue_finder import IssueFinder
+from cleanlab.datalab.internal.issue_finder import IssueFinder
 
 from cleanlab import Datalab
 

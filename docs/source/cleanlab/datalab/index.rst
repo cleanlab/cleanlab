@@ -1,9 +1,6 @@
 datalab
 =======
 
-.. warning::
-    Methods in this ``datalab`` module are bleeding edge and may have sharp edges. They are not guaranteed to be stable between different ``cleanlab`` versions.
-
 .. automodule:: cleanlab.datalab
    :autosummary:
    :members:
@@ -31,9 +28,4 @@ API Reference
     :maxdepth: 2
 
     datalab
-    data
-    data_issues
-    issue_finder
-    factory
-    issue_manager/index
-    report
+    internal/index

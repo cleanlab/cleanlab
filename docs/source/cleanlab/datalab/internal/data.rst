@@ -1,7 +1,7 @@
-factory
-=======
+data
+====
 
-.. automodule:: cleanlab.datalab.issue_manager_factory
+.. automodule:: cleanlab.datalab.internal.data
    :autosummary:
    :members:
    :undoc-members:

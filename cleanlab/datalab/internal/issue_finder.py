@@ -19,8 +19,8 @@ creating and running issue managers.
 
 It determines which types of issues to look for, instatiates the IssueManagers
 via a factory, run the issue managers
-(:py:meth:`IssueManager.find_issues <cleanlab.datalab.issue_manager.issue_manager.IssueManager.find_issues>`),
-and collects the results to :py:class:`DataIssues <cleanlab.datalab.data_issues.DataIssues>`.
+(:py:meth:`IssueManager.find_issues <cleanlab.datalab.internal.issue_manager.issue_manager.IssueManager.find_issues>`),
+and collects the results to :py:class:`DataIssues <cleanlab.datalab.internal.data_issues.DataIssues>`.
 
 .. note::
 
@@ -35,7 +35,7 @@ from typing import Any, List, Optional, Dict, TYPE_CHECKING
 import numpy as np
 from scipy.sparse import csr_matrix
 
-from cleanlab.datalab.issue_manager_factory import _IssueManagerFactory, REGISTRY
+from cleanlab.datalab.internal.issue_manager_factory import _IssueManagerFactory, REGISTRY
 
 if TYPE_CHECKING:  # pragma: no cover
     import numpy.typing as npt
@@ -136,7 +136,7 @@ class IssueFinder:
             which is responsible for detecting the particular issue type.
 
             .. seealso::
-                :py:class:`IssueManager <cleanlab.datalab.issue_manager.issue_manager.IssueManager>`
+                :py:class:`IssueManager <cleanlab.datalab.internal.issue_manager.issue_manager.IssueManager>`
         """
 
         issue_types_copy = self.get_available_issue_types(
@@ -301,7 +301,7 @@ class IssueFinder:
 
         See Also
         --------
-        :py:class:`REGISTRY <cleanlab.datalab.issue_manager_factory.REGISTRY>` : All available issue types and their corresponding issue managers can be found here.
+        :py:class:`REGISTRY <cleanlab.datalab.internal.issue_manager_factory.REGISTRY>` : All available issue types and their corresponding issue managers can be found here.
         """
         return list(REGISTRY.keys())
 
@@ -312,7 +312,7 @@ class IssueFinder:
 
         See Also
         --------
-        :py:class:`REGISTRY <cleanlab.datalab.issue_manager_factory.REGISTRY>` : All available issue types and their corresponding issue managers can be found here.
+        :py:class:`REGISTRY <cleanlab.datalab.internal.issue_manager_factory.REGISTRY>` : All available issue types and their corresponding issue managers can be found here.
         """
         return ["label", "outlier", "near_duplicate", "non_iid"]
 

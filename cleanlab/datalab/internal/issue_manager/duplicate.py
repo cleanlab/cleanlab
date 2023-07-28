@@ -24,7 +24,7 @@ from scipy.sparse import csr_matrix
 from sklearn.neighbors import NearestNeighbors
 from sklearn.utils.validation import check_is_fitted
 
-from cleanlab.datalab.issue_manager import IssueManager
+from cleanlab.datalab.internal.issue_manager import IssueManager
 
 if TYPE_CHECKING:  # pragma: no cover
     import numpy.typing as npt

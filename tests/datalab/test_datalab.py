@@ -32,8 +32,8 @@ from sklearn.neighbors import NearestNeighbors
 
 import cleanlab
 from cleanlab.datalab.datalab import Datalab
-from cleanlab.datalab.issue_finder import IssueFinder
-from cleanlab.datalab.report import Reporter
+from cleanlab.datalab.internal.issue_finder import IssueFinder
+from cleanlab.datalab.internal.report import Reporter
 
 SEED = 42
 
@@ -493,7 +493,7 @@ class TestDatalab:
                 return [mock_issue_manager]
 
         monkeypatch.setattr(
-            "cleanlab.datalab.issue_finder._IssueManagerFactory", MockIssueManagerFactory
+            "cleanlab.datalab.internal.issue_finder._IssueManagerFactory", MockIssueManagerFactory
         )
 
         assert lab.issues.empty
@@ -519,7 +519,7 @@ class TestDatalab:
                     f"Report with verbosity={self.verbosity} and k={kwargs.get('num_examples', 5)}"
                 )
 
-        monkeypatch.setattr(cleanlab.datalab.helper_factory, "Reporter", MockReporter)
+        monkeypatch.setattr(cleanlab.datalab.internal.helper_factory, "Reporter", MockReporter)
         monkeypatch.setattr(
             lab.data_issues,
             "issue_summary",
@@ -607,7 +607,7 @@ class TestDatalabIssueManagerInteraction:
         mock_registry = MagicMock()
         mock_registry.__getitem__.side_effect = KeyError("issue type not registered")
 
-        with patch("cleanlab.datalab.issue_manager_factory.REGISTRY", mock_registry):
+        with patch("cleanlab.datalab.internal.issue_manager_factory.REGISTRY", mock_registry):
             with pytest.raises(ValueError) as excinfo:
                 lab.find_issues(issue_types={"custom_issue": {}})
 
@@ -620,7 +620,7 @@ class TestDatalabIssueManagerInteraction:
 
     def test_custom_issue_manager_registered(self, lab, custom_issue_manager):
         """Test that a custom issue manager that is registered will be used."""
-        from cleanlab.datalab.issue_manager_factory import register
+        from cleanlab.datalab.internal.issue_manager_factory import register
 
         register(custom_issue_manager)
 
@@ -644,7 +644,7 @@ class TestDatalabIssueManagerInteraction:
         self, lab, custom_issue_manager, list_possible_issue_types
     ):
         """Test that a custom issue manager that is registered will be used."""
-        from cleanlab.datalab.issue_manager_factory import register
+        from cleanlab.datalab.internal.issue_manager_factory import register
 
         register(custom_issue_manager)
 
@@ -664,7 +664,7 @@ class TestDatalabIssueManagerInteraction:
         assert pd.testing.assert_frame_equal(lab.issues, expected_issues) is None
 
         # Clean up registry
-        from cleanlab.datalab.issue_manager_factory import REGISTRY
+        from cleanlab.datalab.internal.issue_manager_factory import REGISTRY
 
         REGISTRY.pop(custom_issue_manager.issue_name)
 

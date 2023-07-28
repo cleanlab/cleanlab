@@ -11,11 +11,11 @@ import numpy.typing as npt
 import pandas as pd
 from scipy.sparse import csr_matrix
 
-from cleanlab.datalab.adapter.constants import DEFAULT_CLEANVISION_ISSUES
-from cleanlab.datalab.data import Data
-from cleanlab.datalab.data_issues import DataIssues
-from cleanlab.datalab.issue_finder import IssueFinder
-from cleanlab.datalab.report import Reporter
+from cleanlab.datalab.internal.adapter.constants import DEFAULT_CLEANVISION_ISSUES
+from cleanlab.datalab.internal.data import Data
+from cleanlab.datalab.internal.data_issues import DataIssues
+from cleanlab.datalab.internal.issue_finder import IssueFinder
+from cleanlab.datalab.internal.report import Reporter
 
 if TYPE_CHECKING:  # pragma: no cover
     from cleanvision import Imagelab

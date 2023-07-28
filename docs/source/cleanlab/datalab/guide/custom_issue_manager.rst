@@ -6,18 +6,18 @@ Creating Your Own Issues Manager
 
 
 This guide walks through the process of creating creating your own 
-:py:class:`IssueManager <cleanlab.datalab.issue_manager.issue_manager.IssueManager>`
+:py:class:`IssueManager <cleanlab.datalab.internal.issue_manager.issue_manager.IssueManager>`
 to detect a custom-defined type of issue alongside the pre-defined issue types in 
 :py:class:`Datalab <cleanlab.datalab.datalab.Datalab>`.
 
 .. seealso::
 
-    - :py:meth:`register <cleanlab.datalab.issue_manager_factory.register>`:
+    - :py:meth:`register <cleanlab.datalab.internal.issue_manager_factory.register>`:
         You can either use this function at runtime to register a new issue manager:
 
         .. code-block:: python
 
-            from cleanlab.datalab.issue_manager_factory import register
+            from cleanlab.datalab.internal.issue_manager_factory import register
             register(MyIssueManager)
 
         or add as a decorator to the class definition:
@@ -64,11 +64,11 @@ Basic Issue Check
 
 
 To create a basic issue manager, inherit from the
-:py:class:`IssueManager <cleanlab.datalab.issue_manager.issue_manager.IssueManager>` class,
+:py:class:`IssueManager <cleanlab.datalab.internal.issue_manager.issue_manager.IssueManager>` class,
 assign a name to the class as the class-variable, `issue_name`, and implement the
-:py:meth:`find_issues <cleanlab.datalab.issue_manager.issue_manager.IssueManager.find_issues>` method.
+:py:meth:`find_issues <cleanlab.datalab.internal.issue_manager.issue_manager.IssueManager.find_issues>` method.
 
-The :py:meth:`find_issues <cleanlab.datalab.issue_manager.issue_manager.IssueManager.find_issues>`
+The :py:meth:`find_issues <cleanlab.datalab.internal.issue_manager.issue_manager.IssueManager.find_issues>`
 method should mark each example in the dataset as an issue or not with a boolean array.
 It should also provide a score for each example in the dataset that quantifies the quality of the example
 with regards to the issue.
@@ -164,7 +164,7 @@ instance and run issue checks with the custom issue managers we created like so:
 
 .. code-block:: python
 
-    from cleanlab.datalab.issue_manager_factory import register
+    from cleanlab.datalab.internal.issue_manager_factory import register
     from cleanlab import Datalab
 
 
