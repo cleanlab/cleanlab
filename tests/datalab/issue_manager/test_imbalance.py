@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from cleanlab.datalab.issue_manager.imbalance import ClassImbalanceIssueManager
+from cleanlab.datalab.internal.issue_manager.imbalance import ClassImbalanceIssueManager
 
 SEED = 42
 

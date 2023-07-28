@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING, ClassVar
 
 import numpy as np
 import pandas as pd
-from cleanlab.datalab.issue_manager import IssueManager
+from cleanlab.datalab.internal.issue_manager import IssueManager
 
 if TYPE_CHECKING:  # pragma: no cover
     from cleanlab.datalab.datalab import Datalab
