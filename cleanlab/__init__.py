@@ -43,7 +43,7 @@ def _datalab_import_factory():
 
 def _issue_manager_import_factory():
     try:
-        from .datalab.issue_manager import IssueManager as _IssueManager
+        from .datalab.internal.issue_manager import IssueManager as _IssueManager
 
         return _IssueManager
     except ImportError:
