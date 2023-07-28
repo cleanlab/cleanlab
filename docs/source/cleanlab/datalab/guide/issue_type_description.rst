@@ -44,7 +44,7 @@ Datalab estimates which examples appear mislabeled as well as a numeric label qu
 For now, Datalab can only detect label issues in a multi-class classification dataset.
 The cleanlab library has alternative methods you can us to detect label issues in other types of datasets (multi-label, multi-annotator, token classification, etc.).
 
-Label issues are calculated based on provided `pred_probs` from a trained model. If you do not provide this argument, this type of issue will not be considered.
+Label issues are calculated based on provided `pred_probs` from a trained model. If you do not provide this argument, but you do provide `features`, then a K Nearest Neighbor model will be fit to produce `pred_probs` based on your `features`. Otherwise if neither `pred_probs` nor `features` is provided, then this type of issue will not be considered.
 For the most accurate results, provide out-of-sample `pred_probs` which can be obtained for a dataset via `cross-validation <https://docs.cleanlab.ai/stable/tutorials/pred_probs_cross_val.html>`_. 
  
 Having mislabeled examples in your dataset may hamper the performance of supervised learning models you train on this data.
@@ -145,6 +145,7 @@ Label Issue Parameters
 .. code-block:: python
 
     label_kwargs = {
+        "k": # number of nearest neighbors to consider when computing pred_probs from features,
         "health_summary_parameters": # dict of potential keyword arguments to method `dataset.health_summary()`,
         "clean_learning_kwargs": # dict of keyword arguments to constructor `CleanLearning()` including keys like: "find_label_issues_kwargs" or "label_quality_scores_kwargs",
         "thresholds": # `thresholds` argument to `CleanLearning.find_label_issues()`,
