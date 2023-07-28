@@ -2,7 +2,7 @@ imbalance
 =========
 
 
-.. automodule:: cleanlab.datalab.issue_manager.imbalance
+.. automodule:: cleanlab.datalab.internal.issue_manager.imbalance
     :autosummary:
     :members:
     :undoc-members:

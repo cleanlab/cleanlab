@@ -246,4 +246,4 @@ Imbalance Issue Parameters
 
 .. note::
 
-    For more information, view the source code of:  :py:class:`datalab.internal.issue_manager.imbalance.ClassImbalanceIssueManager <cleanlab.datalab.issue_manager.imbalance.ClassImbalanceIssueManager>`.
+    For more information, view the source code of:  :py:class:`datalab.internal.issue_manager.imbalance.ClassImbalanceIssueManager <cleanlab.datalab.internal.issue_manager.imbalance.ClassImbalanceIssueManager>`.
