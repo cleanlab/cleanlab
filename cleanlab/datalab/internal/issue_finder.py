@@ -19,23 +19,23 @@ creating and running issue managers.
 
 It determines which types of issues to look for, instatiates the IssueManagers
 via a factory, run the issue managers
-(:py:meth:`IssueManager.find_issues <cleanlab.datalab.issue_manager.issue_manager.IssueManager.find_issues>`),
-and collects the results to :py:class:`DataIssues <cleanlab.datalab.data_issues.DataIssues>`.
+(:py:meth:`IssueManager.find_issues <cleanlab.datalab.internal.issue_manager.issue_manager.IssueManager.find_issues>`),
+and collects the results to :py:class:`DataIssues <cleanlab.datalab.internal.data_issues.DataIssues>`.
 
 .. note::
-    
+
     This module is not intended to be used directly. Instead, use the public-facing
     :py:meth:`Datalab.find_issues <cleanlab.datalab.datalab.Datalab.find_issues>` method.
 """
 from __future__ import annotations
 
-from typing import Any, List, Optional, Dict, TYPE_CHECKING
 import warnings
+from typing import Any, List, Optional, Dict, TYPE_CHECKING
 
 import numpy as np
 from scipy.sparse import csr_matrix
 
-from cleanlab.datalab.factory import _IssueManagerFactory, REGISTRY
+from cleanlab.datalab.internal.issue_manager_factory import _IssueManagerFactory, REGISTRY
 
 if TYPE_CHECKING:  # pragma: no cover
     import numpy.typing as npt
@@ -136,20 +136,8 @@ class IssueFinder:
             which is responsible for detecting the particular issue type.
 
             .. seealso::
-                :py:class:`IssueManager <cleanlab.datalab.issue_manager.issue_manager.IssueManager>`
+                :py:class:`IssueManager <cleanlab.datalab.internal.issue_manager.issue_manager.IssueManager>`
         """
-
-        if issue_types is not None and not issue_types:
-            warnings.warn(
-                "No issue types were specified. " "No issues will be found in the dataset."
-            )
-            return None
-
-        if issue_types is not None and not issue_types:
-            warnings.warn(
-                "No issue types were specified. " "No issues will be found in the dataset."
-            )
-            return None
 
         issue_types_copy = self.get_available_issue_types(
             pred_probs=pred_probs,
@@ -158,17 +146,13 @@ class IssueFinder:
             issue_types=issue_types,
         )
 
+        if not issue_types_copy:
+            return None
+
         new_issue_managers = [
             factory(datalab=self.datalab, **issue_types_copy.get(factory.issue_name, {}))
             for factory in _IssueManagerFactory.from_list(list(issue_types_copy.keys()))
         ]
-
-        if not new_issue_managers:
-            no_args_passed = all(arg is None for arg in [pred_probs, features, knn_graph])
-            if no_args_passed:
-                warnings.warn("No arguments were passed to find_issues.")
-            warnings.warn("No issue check performed.")
-            return None
 
         failed_managers = []
         data_issues = self.datalab.data_issues
@@ -177,19 +161,13 @@ class IssueFinder:
                 if self.verbosity:
                     print(f"Finding {issue_manager.issue_name} issues ...")
                 issue_manager.find_issues(**arg_dict)
-                data_issues.collect_statistics_from_issue_manager(issue_manager)
-                data_issues.collect_results_from_issue_manager(issue_manager)
+                data_issues.collect_statistics(issue_manager)
+                data_issues.collect_issues_from_issue_manager(issue_manager)
             except Exception as e:
                 print(f"Error in {issue_manager.issue_name}: {e}")
                 failed_managers.append(issue_manager)
-
-        if self.verbosity:
-            print(
-                f"Audit complete. {data_issues.issue_summary['num_issues'].sum()} issues found in the dataset."
-            )
         if failed_managers:
             print(f"Failed to check for these issue types: {failed_managers}")
-
         data_issues.set_health_score()
 
     def _resolve_required_args(self, pred_probs, features, knn_graph):
@@ -209,13 +187,16 @@ class IssueFinder:
         features :
             Name of column containing precomputed embeddings.
 
+        knn_graph :
+            Sparse matrix representing distances between examples in the dataset in a k nearest neighbor graph.
+
         Returns
         -------
         args_dict :
             Dictionary of required arguments for each issue type, if available.
         """
         args_dict = {
-            "label": {"pred_probs": pred_probs},
+            "label": {"pred_probs": pred_probs, "features": features},
             "outlier": {"pred_probs": pred_probs, "features": features, "knn_graph": knn_graph},
             "near_duplicate": {"features": features, "knn_graph": knn_graph},
             "non_iid": {"features": features, "knn_graph": knn_graph},
@@ -269,12 +250,20 @@ class IssueFinder:
             self._check_missing_args(required_defaults_dict, issue_types_copy)
         else:
             issue_types_copy = required_defaults_dict.copy()
+            # keep only default issue types
+            issue_types_copy = {
+                issue: issue_types_copy[issue]
+                for issue in self.list_default_issue_types()
+                if issue in issue_types_copy
+            }
+
         # Check that all required arguments are provided.
         self._validate_issue_types_dict(issue_types_copy, required_defaults_dict)
 
         # Remove None values from argument list, rely on default values in IssueManager
         for key, value in issue_types_copy.items():
             issue_types_copy[key] = {k: v for k, v in value.items() if v is not None}
+
         return issue_types_copy
 
     @staticmethod
@@ -312,7 +301,7 @@ class IssueFinder:
 
         See Also
         --------
-        :py:class:`REGISTRY <cleanlab.datalab.factory.REGISTRY>` : All available issue types and their corresponding issue managers can be found here.
+        :py:class:`REGISTRY <cleanlab.datalab.internal.issue_manager_factory.REGISTRY>` : All available issue types and their corresponding issue managers can be found here.
         """
         return list(REGISTRY.keys())
 
@@ -323,7 +312,7 @@ class IssueFinder:
 
         See Also
         --------
-        :py:class:`REGISTRY <cleanlab.datalab.factory.REGISTRY>` : All available issue types and their corresponding issue managers can be found here.
+        :py:class:`REGISTRY <cleanlab.datalab.internal.issue_manager_factory.REGISTRY>` : All available issue types and their corresponding issue managers can be found here.
         """
         return ["label", "outlier", "near_duplicate", "non_iid"]
 

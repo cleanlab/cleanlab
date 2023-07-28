@@ -158,6 +158,7 @@ Please see our `contributing guidelines <https://github.com/cleanlab/cleanlab/bl
    :hidden:
    :maxdepth: 3
 
+   cleanlab/datalab/index
    cleanlab/classification
    cleanlab/filter
    cleanlab/rank
@@ -170,7 +171,6 @@ Please see our `contributing guidelines <https://github.com/cleanlab/cleanlab/bl
    cleanlab/token_classification/index
    cleanlab/segmentation/index
    cleanlab/object_detection/index
-   cleanlab/datalab/index
    cleanlab/benchmarking/index
    cleanlab/models/index
    cleanlab/experimental/index

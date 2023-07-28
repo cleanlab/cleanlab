@@ -18,24 +18,26 @@ Module for the :py:class:`DataIssues` class, which serves as a central repositor
 information and statistics about issues found in a dataset.
 
 It collects information from various
-:py:class:`IssueManager <cleanlab.datalab.issue_manager.issue_manager.IssueManager>`
+:py:class:`IssueManager <cleanlab.datalab.internal.issue_manager.issue_manager.IssueManager>`
 instances and keeps track of each issue, a summary for each type of issue,
 related information and statistics about the issues.
 
-The collected information can be accessed using the 
-:py:meth:`get_info <cleanlab.datalab.data_issues.DataIssues.get_info>` method.
+The collected information can be accessed using the
+:py:meth:`get_info <cleanlab.datalab.internal.data_issues.DataIssues.get_info>` method.
+We recommend using that method instead of this module, which is just intended for internal use.
 """
 from __future__ import annotations
 
 import warnings
-from typing import TYPE_CHECKING, Any, Dict, Optional
+from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 import numpy as np
 
 import pandas as pd
 
 if TYPE_CHECKING:  # pragma: no cover
-    from cleanlab.datalab.data import Data
-    from cleanlab.datalab.issue_manager import IssueManager
+    from cleanlab.datalab.internal.data import Data
+    from cleanlab.datalab.internal.issue_manager import IssueManager
+    from cleanvision import Imagelab
 
 
 class DataIssues:
@@ -186,7 +188,7 @@ class DataIssues:
             info["class_names"] = self.statistics["class_names"]
         return info
 
-    def collect_statistics_from_issue_manager(self, issue_manager: IssueManager) -> None:
+    def collect_statistics(self, issue_manager: Union[IssueManager, "Imagelab"]) -> None:
         """Update the statistics in the info dictionary.
 
         Parameters
@@ -207,11 +209,26 @@ class DataIssues:
 
         """
         key = "statistics"
-        statistics: Dict[str, Any] = issue_manager.info.pop(key, {})
+        statistics: Dict[str, Any] = issue_manager.info.get(key, {})
         if statistics:
             self.info[key].update(statistics)
 
-    def collect_results_from_issue_manager(self, issue_manager: IssueManager) -> None:
+    def _update_issues(self, issue_manager):
+        overlapping_columns = list(set(self.issues.columns) & set(issue_manager.issues.columns))
+        if overlapping_columns:
+            warnings.warn(
+                f"Overwriting columns {overlapping_columns} in self.issues with "
+                f"columns from issue manager {issue_manager}."
+            )
+            self.issues.drop(columns=overlapping_columns, inplace=True)
+        self.issues = self.issues.join(issue_manager.issues, how="outer")
+
+    def _update_issue_info(self, issue_name, new_info):
+        if issue_name in self.info:
+            warnings.warn(f"Overwriting key {issue_name} in self.info")
+        self.info[issue_name] = new_info
+
+    def collect_issues_from_issue_manager(self, issue_manager: IssueManager) -> None:
         """
         Collects results from an IssueManager and update the corresponding
         attributes of the Datalab object.
@@ -226,14 +243,7 @@ class DataIssues:
         issue_manager :
             IssueManager object to collect results from.
         """
-        overlapping_columns = list(set(self.issues.columns) & set(issue_manager.issues.columns))
-        if overlapping_columns:
-            warnings.warn(
-                f"Overwriting columns {overlapping_columns} in self.issues with "
-                f"columns from issue manager {issue_manager}."
-            )
-            self.issues.drop(columns=overlapping_columns, inplace=True)
-        self.issues = self.issues.join(issue_manager.issues, how="outer")
+        self._update_issues(issue_manager)
 
         if issue_manager.issue_name in self.issue_summary["issue_type"].values:
             warnings.warn(
@@ -253,13 +263,7 @@ class DataIssues:
             axis=0,
             ignore_index=True,
         )
-
-        if issue_manager.issue_name in self.info:
-            warnings.warn(
-                f"Overwriting key {issue_manager.issue_name} in self.info with "
-                f"key from issue manager {issue_manager}."
-            )
-        self.info[issue_manager.issue_name] = issue_manager.info
+        self._update_issue_info(issue_manager.issue_name, issue_manager.info)
 
     def set_health_score(self) -> None:
         """Set the health score for the dataset based on the issue summary.

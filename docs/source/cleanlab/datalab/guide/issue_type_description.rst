@@ -34,6 +34,7 @@ Each input is optional, if you do not provide it, Datalab will skip checks for t
 3. ``features`` - numeric vector representations of the features for each example in the dataset. These may be embeddings from a (pre)trained model, or just a numerically-transformed version of the original data features.
 4. ``knn_graph`` - K nearest neighbor graph represented as a sparse matrix of dissimilarity values between examples in the dataset. If both `knn_graph` and `features` are provided, the `knn_graph` takes precedence, and if only `features` is provided, then a `knn_graph` is internally constructed based on the (either euclidean or cosine) distance between different examples’ features.
 
+
 Label Issue
 -----------
 
@@ -43,9 +44,9 @@ Datalab estimates which examples appear mislabeled as well as a numeric label qu
 For now, Datalab can only detect label issues in a multi-class classification dataset.
 The cleanlab library has alternative methods you can us to detect label issues in other types of datasets (multi-label, multi-annotator, token classification, etc.).
 
-Label issues are calculated based on provided `pred_probs` from a trained model. If you do not provide this argument, this type of issue will not be considered.
-For the most accurate results, provide out-of-sample `pred_probs` which can be obtained for a dataset via `cross-validation <https://docs.cleanlab.ai/stable/tutorials/pred_probs_cross_val.html>`_.
-
+Label issues are calculated based on provided `pred_probs` from a trained model. If you do not provide this argument, but you do provide `features`, then a K Nearest Neighbor model will be fit to produce `pred_probs` based on your `features`. Otherwise if neither `pred_probs` nor `features` is provided, then this type of issue will not be considered.
+For the most accurate results, provide out-of-sample `pred_probs` which can be obtained for a dataset via `cross-validation <https://docs.cleanlab.ai/stable/tutorials/pred_probs_cross_val.html>`_. 
+ 
 Having mislabeled examples in your dataset may hamper the performance of supervised learning models you train on this data.
 For evaluating models or performing other types of data analytics, mislabeled examples may lead you to draw incorrect conclusions.
 To handle mislabeled examples, you can either filter out the data with label issues or try to correct their labels.
@@ -69,6 +70,7 @@ When based on `pred_probs`, the outlier quality of each example is scored invers
 Modeling data with outliers may have unexpected consequences.
 Closely inspect them and consider removing some outliers that may be negatively affecting your models.
 
+
 Learn more about the methods used to detect outliers in our article: `Out-of-Distribution Detection via Embeddings or Predictions <https://cleanlab.ai/blog/outlier-detection/>`_
 
 (Near) Duplicate Issue
@@ -91,6 +93,7 @@ Scoring the numeric quality of an example in terms of the near duplicate issue t
 Including near-duplicate examples in a dataset may negatively impact a ML model's generalization performance and lead to overfitting.
 In particular, it is questionable to include examples in a test dataset which are (nearly) duplicated in the corresponding training dataset.
 More generally, examples which happen to be duplicated can affect the final modeling results much more than other examples — so you should at least be aware of their presence.
+
 
 Non-IID Issue
 -------------
@@ -119,6 +122,13 @@ In a dataset identified as having class imbalance, the class imbalance quality s
 
 Class imbalance in a dataset can lead to subpar model performance for the under-represented class. Consider collecting more data from the under-represented class, or at least take special care while modeling via techniques like over/under-sampling, SMOTE, asymmetric class weighting, etc.
 
+Image-specific Issues
+---------------------
+
+For image datasets which are properly specified as such, Datalab can detect additional types of image-specific issues (if the necessary optional dependencies are installed).
+Specifically, low-quality images which are too: dark/bright, blurry, low information, abnormally sized, etc.
+Descriptions of these image-specific issues are provided in the `CleanVision package <https://github.com/cleanlab/cleanvision>`_ and its documentation.
+
 
 Optional Issue Parameters
 =========================
@@ -143,6 +153,7 @@ Label Issue Parameters
 .. code-block:: python
 
     label_kwargs = {
+        "k": # number of nearest neighbors to consider when computing pred_probs from features,
         "health_summary_parameters": # dict of potential keyword arguments to method `dataset.health_summary()`,
         "clean_learning_kwargs": # dict of keyword arguments to constructor `CleanLearning()` including keys like: "find_label_issues_kwargs" or "label_quality_scores_kwargs",
         "thresholds": # `thresholds` argument to `CleanLearning.find_label_issues()`,
@@ -159,7 +170,7 @@ Label Issue Parameters
 
 .. note::
 
-    For more information, view the source code of:  :py:class:`datalab.issue_manager.label.LabelIssueManager <cleanlab.datalab.issue_manager.label.LabelIssueManager>`.
+    For more information, view the source code of:  :py:class:`datalab.internal.issue_manager.label.LabelIssueManager <cleanlab.datalab.internal.issue_manager.label.LabelIssueManager>`.
 
 Outlier Issue Parameters
 ------------------------
@@ -184,7 +195,7 @@ Outlier Issue Parameters
 
 .. note::
 
-    For more information, view the source code of:  :py:class:`datalab.issue_manager.outlier.OutlierIssueManager <cleanlab.datalab.issue_manager.outlier.OutlierIssueManager>`.
+    For more information, view the source code of:  :py:class:`datalab.internal.issue_manager.outlier.OutlierIssueManager <cleanlab.datalab.internal.issue_manager.outlier.OutlierIssueManager>`.  
 
 Duplicate Issue Parameters
 --------------------------
@@ -203,7 +214,7 @@ Duplicate Issue Parameters
 
 .. note::
 
-    For more information, view the source code of:  :py:class:`datalab.issue_manager.duplicate.NearDuplicateIssueManager <cleanlab.datalab.issue_manager.duplicate.NearDuplicateIssueManager>`.
+    For more information, view the source code of:  :py:class:`datalab.internal.issue_manager.duplicate.NearDuplicateIssueManager <cleanlab.datalab.internal.issue_manager.duplicate.NearDuplicateIssueManager>`. 
 
 
 Non-IID Issue Parameters
@@ -221,7 +232,7 @@ Non-IID Issue Parameters
 
 .. note::
 
-    For more information, view the source code of:  :py:class:`datalab.issue_manager.noniid.NonIIDIssueManager <cleanlab.datalab.issue_manager.noniid.NonIIDIssueManager>`.
+    For more information, view the source code of:  :py:class:`datalab.internal.issue_manager.noniid.NonIIDIssueManager <cleanlab.datalab.internal.issue_manager.noniid.NonIIDIssueManager>`.
 
 
 Imbalance Issue Parameters
@@ -235,4 +246,4 @@ Imbalance Issue Parameters
 
 .. note::
 
-    For more information, view the source code of:  :py:class:`datalab.issue_manager.imbalance.ClassImbalanceIssueManager <cleanlab.datalab.issue_manager.imbalance.ClassImbalanceIssueManager>`.
+    For more information, view the source code of:  :py:class:`datalab.internal.issue_manager.imbalance.ClassImbalanceIssueManager <cleanlab.datalab.issue_manager.imbalance.ClassImbalanceIssueManager>`.

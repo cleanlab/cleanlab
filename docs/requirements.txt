@@ -10,6 +10,7 @@ ipywidgets==7.6.5
 sphinx-multiversion==0.2.4
 sphinx-copybutton==0.5.0
 sphinxcontrib-katex==0.8.6
+sphinxcontrib-gtagjs==0.2.1
 sphinx-autodoc-typehints==1.19.2
 matplotlib==3.6.3
 requests==2.28.2

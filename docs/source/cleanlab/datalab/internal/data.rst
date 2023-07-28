@@ -1,7 +1,7 @@
 data
 ====
 
-.. automodule:: cleanlab.datalab.data
+.. automodule:: cleanlab.datalab.internal.data
    :autosummary:
    :members:
    :undoc-members:

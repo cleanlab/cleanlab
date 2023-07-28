@@ -1,8 +1,8 @@
-noniid
+outlier
 =======
 
 
-.. automodule:: cleanlab.datalab.issue_manager.noniid
+.. automodule:: cleanlab.datalab.internal.issue_manager.outlier
     :autosummary:
     :members:
     :undoc-members:

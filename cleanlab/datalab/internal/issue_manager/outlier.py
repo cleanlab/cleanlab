@@ -22,7 +22,7 @@ from scipy.stats import iqr
 import numpy as np
 import pandas as pd
 
-from cleanlab.datalab.issue_manager import IssueManager
+from cleanlab.datalab.internal.issue_manager import IssueManager
 from cleanlab.outlier import OutOfDistribution, transform_distances_to_scores
 
 if TYPE_CHECKING:  # pragma: no cover

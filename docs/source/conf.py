@@ -46,6 +46,7 @@ extensions = [
     "sphinx_multiversion",
     "sphinx_copybutton",
     "sphinxcontrib.katex",
+    "sphinxcontrib.gtagjs",
     "sphinx_autodoc_typehints",
     "sphinx.ext.doctest",
 ]
@@ -134,6 +135,10 @@ copybutton_prompt_is_regexp = True
 if os.getenv("CI") or shutil.which("katex") is not None:
     # requires that the machine have `katex` installed: `npm install -g katex`
     katex_prerender = True
+
+# -- Options for gtagjs extension -------------------------------------------
+
+gtagjs_ids = ["G-EV8RVEFX82"]
 
 # -- Variables Setting ---------------------------------------------------
 

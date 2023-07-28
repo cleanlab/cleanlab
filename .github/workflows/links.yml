@@ -26,4 +26,4 @@ jobs:
           tokens: |
             {"https://github.com": "${{ secrets.GITHUB_TOKEN }}"}
           swap_urls: |
-            {"^\(\..*\)\.md\(#?.*\)$": "\\1.md.html\\2"}
+            {"^(\\..*)\\.md(#?.*)$": "\\1.md.html\\2"}

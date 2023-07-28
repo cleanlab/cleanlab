@@ -23,7 +23,7 @@ from typing import TYPE_CHECKING, Optional
 import pandas as pd
 
 import cleanlab
-from cleanlab.datalab.data import Data
+from cleanlab.datalab.internal.data import Data
 
 if TYPE_CHECKING:  # pragma: no cover
     from datasets.arrow_dataset import Dataset

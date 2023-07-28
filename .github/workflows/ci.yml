@@ -5,63 +5,13 @@ on:
   schedule:
     - cron: '0 12 * * 1'
 jobs:
-  test37:
-    name: "Test: Python 3.7 on ${{ matrix.os }}"
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os:
-          - ubuntu-latest
-          - macos-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
-        with:
-          python-version: 3.7.16
-      - name: Install cleanlab
-        run: pip install -e .
-      - name: Install development dependencies
-        run: pip install -r requirements-dev.txt
-      - name: Install fasttext for non-Windows machines
-        if: matrix.os != 'windows-latest'
-        run: |
-          pip install fasttext
-      - name: Test with coverage
-        run: pytest --verbose --cov=cleanlab/ --cov-config .coveragerc --cov-report=xml
-        env:
-          TEST_FASTTEXT: true
-      - uses: codecov/codecov-action@v3
-  test37-windows:
-    name: "Test: Python 3.7 on windows"
+  test-windows:
+    name: "Test: Python ${{ matrix.python }} on windows"
     runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
-        with:
-          python-version: 3.7.9
-      - name: Install cleanlab
-        run: pip install -e .
-      - name: Install development dependencies
-        run: pip install -r requirements-dev.txt
-      - name: Overwrite tensorflow version on Windows
-        run: |
-          pip uninstall -y tensorflow
-          pip install tensorflow-cpu
-      - name: Test with coverage
-        run: pytest --verbose --cov=cleanlab/ --cov-config .coveragerc --cov-report=xml
-        env:
-          TEST_FASTTEXT: true
-      - uses: codecov/codecov-action@v3
-  test:
-    name: "Test: Python ${{ matrix.python }} on ${{ matrix.os }}"
-    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os:
-          - ubuntu-latest
-          - macos-latest
-          - windows-latest
         python:
+          - "3.7"
           - "3.8"
           - "3.9"
           - "3.10"
@@ -70,19 +20,52 @@ jobs:
       - uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python }}
+      - name: Download cleanvision test data
+        run: |
+          git clone https://github.com/cleanlab/assets.git
+          mv assets\cleanlab_test_data tests\datalab\data
       - name: Install cleanlab
-        run: pip install -e .
+        run: pip install -e ".[all]"
       - name: Install development dependencies
         run: pip install -r requirements-dev.txt
-      - name: Install fasttext for non-Windows machines
-        if: matrix.os != 'windows-latest'
-        run: |
-          pip install fasttext
       - name: Overwrite tensorflow version on Windows
-        if: matrix.os == 'windows-latest'
         run: |
           pip uninstall -y tensorflow
           pip install tensorflow-cpu
+      - name: Test with coverage
+        run: pytest --verbose --cov=cleanlab/ --cov-config .coveragerc --cov-report=xml
+        env:
+          TEST_FASTTEXT: true
+      - uses: codecov/codecov-action@v3
+  test-macos-linux:
+    name: "Test: Python ${{ matrix.python }} on ${{ matrix.os }}"
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+        python:
+          - "3.7"
+          - "3.8"
+          - "3.9"
+          - "3.10"
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Download cleanvision test data
+        run: |
+          git clone https://github.com/cleanlab/assets.git
+          mv assets/cleanlab_test_data ./tests/datalab/data
+      - name: Install cleanlab
+        run: pip install -e ".[all]"
+      - name: Install development dependencies
+        run: pip install -r requirements-dev.txt
+      - name: Install fasttext for non-Windows machines
+        run: |
+          pip install fasttext
       - name: Test with coverage
         run: pytest --verbose --cov=cleanlab/ --cov-config .coveragerc --cov-report=xml
         env:
@@ -122,7 +105,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install .  # install dependencies
+          pip install ".[all]"  # install dependencies
           pip install -r requirements-dev.txt  # install development dependencies and type stubs
       - name: Type check
         run: mypy --install-types --non-interactive cleanlab

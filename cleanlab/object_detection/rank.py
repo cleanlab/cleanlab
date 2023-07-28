@@ -56,6 +56,7 @@ if TYPE_CHECKING:  # pragma: no cover
             "lab_labels": np.ndarray,
             "lab_bboxes": np.ndarray,
             "similarity_matrix": np.ndarray,
+            "iou_matrix": np.ndarray,
             "min_possible_similarity": float,
         },
     )
@@ -450,6 +451,7 @@ def _get_valid_inputs_for_compute_scores_per_image(
     lab_labels: Optional[np.ndarray] = None,
     lab_bboxes: Optional[np.ndarray] = None,
     similarity_matrix: Optional[np.ndarray] = None,
+    iou_matrix: Optional[np.ndarray] = None,
     min_possible_similarity: Optional[float] = None,
 ) -> AuxiliaryTypesDict:
     """Returns valid inputs for compute scores by either passing through values or calculating the inputs internally."""
@@ -472,6 +474,9 @@ def _get_valid_inputs_for_compute_scores_per_image(
         dist_matrix = 1 - _get_dist_matrix(lab_bboxes, pred_bboxes)
         similarity_matrix = iou_matrix * alpha + (1 - alpha) * (1 - dist_matrix)
 
+    if iou_matrix is None:
+        iou_matrix = _get_overlap_matrix(lab_bboxes, pred_bboxes)
+
     if min_possible_similarity is None:
         min_possible_similarity = (
             1.0
@@ -486,6 +491,7 @@ def _get_valid_inputs_for_compute_scores_per_image(
         "lab_labels": lab_labels,
         "lab_bboxes": lab_bboxes,
         "similarity_matrix": similarity_matrix,
+        "iou_matrix": iou_matrix,
         "min_possible_similarity": min_possible_similarity,
     }
 
@@ -572,6 +578,7 @@ def _compute_overlooked_box_scores_for_image(
     lab_labels: Optional[np.ndarray] = None,
     lab_bboxes: Optional[np.ndarray] = None,
     similarity_matrix: Optional[np.ndarray] = None,
+    iou_matrix: Optional[np.ndarray] = None,
     min_possible_similarity: Optional[float] = None,
 ) -> np.ndarray:
     """This method returns one score per predicted box (above threshold) in an image. Score from 0 to 1 ranking how overlooked the box is."""
@@ -594,24 +601,23 @@ def _compute_overlooked_box_scores_for_image(
     lab_labels = auxiliary_input_dict["lab_labels"]
     similarity_matrix = auxiliary_input_dict["similarity_matrix"]
     min_possible_similarity = auxiliary_input_dict["min_possible_similarity"]
+    iou_matrix = auxiliary_input_dict["iou_matrix"]
 
-    scores_overlooked = np.empty(
-        shape=[
-            len(pred_labels),
-        ]
-    )  # same length as num of predicted boxes
+    scores_overlooked = np.empty(len(pred_labels))  # same length as num of predicted boxes
 
     for iid, k in enumerate(pred_labels):
-        if pred_label_probs[iid] < high_probability_threshold:
+        if pred_label_probs[iid] < high_probability_threshold or np.any(iou_matrix[:, iid] > 0):
             scores_overlooked[iid] = np.nan
             continue
 
         k_similarity = similarity_matrix[lab_labels == k, iid]
-        if len(k_similarity) == 0:  # if there is no annotated box
+
+        if len(k_similarity) == 0:  # if there are no annotated boxes of class k
             score = min_possible_similarity * (1 - pred_label_probs[iid])
         else:
             closest_annotated_box = np.argmax(k_similarity)
             score = k_similarity[closest_annotated_box]
+
         scores_overlooked[iid] = score
 
     return scores_overlooked
@@ -705,6 +711,7 @@ def _compute_badloc_box_scores_for_image(
     lab_labels: Optional[np.ndarray] = None,
     lab_bboxes: Optional[np.ndarray] = None,
     similarity_matrix: Optional[np.ndarray] = None,
+    iou_matrix: Optional[np.ndarray] = None,
     min_possible_similarity: Optional[float] = None,
 ) -> np.ndarray:
     """This method returns one score per labeled box in an image. Score from 0 to 1 ranking how badly located the box is."""
@@ -719,6 +726,7 @@ def _compute_badloc_box_scores_for_image(
         lab_labels=lab_labels,
         lab_bboxes=lab_bboxes,
         similarity_matrix=similarity_matrix,
+        iou_matrix=iou_matrix,
         min_possible_similarity=min_possible_similarity,
     )
 
@@ -726,28 +734,28 @@ def _compute_badloc_box_scores_for_image(
     pred_label_probs = auxiliary_input_dict["pred_label_probs"]
     lab_labels = auxiliary_input_dict["lab_labels"]
     similarity_matrix = auxiliary_input_dict["similarity_matrix"]
+    iou_matrix = auxiliary_input_dict["iou_matrix"]
 
-    scores_badloc = np.empty(
-        shape=[
-            len(lab_labels),
-        ]
-    )  # same length as number of labeled boxes
-    for iid, k in enumerate(lab_labels):  # for every annotated box
+    scores_badloc = np.empty(len(lab_labels))
+
+    for iid, k in enumerate(lab_labels):
         k_similarity = similarity_matrix[iid, pred_labels == k]
         k_pred = pred_label_probs[pred_labels == k]
+        k_iou = iou_matrix[iid, pred_labels == k]
 
-        if len(k_pred) == 0:  # there are no predicted boxes of class k
+        if len(k_pred) == 0 or np.max(k_pred) <= low_probability_threshold:
             scores_badloc[iid] = 1.0
             continue
 
-        idx_at_least_low_probability_threshold = k_pred > low_probability_threshold
-        k_similarity = k_similarity[idx_at_least_low_probability_threshold]
-        k_pred = k_pred[idx_at_least_low_probability_threshold]
+        idx_at_least_low_probability_threshold = np.where(k_pred > low_probability_threshold)[0]
+        idx_at_least_intersection_threshold = np.where(k_iou > 0)[0]
 
-        if len(k_pred) == 0:
-            scores_badloc[iid] = 1.0
-        else:
-            scores_badloc[iid] = np.max(k_similarity)
+        k_similarity = k_similarity[idx_at_least_low_probability_threshold][
+            idx_at_least_intersection_threshold
+        ]
+        k_pred = k_pred[idx_at_least_low_probability_threshold][idx_at_least_intersection_threshold]
+
+        scores_badloc[iid] = np.max(k_similarity) if len(k_pred) > 0 else 1.0
     return scores_badloc
 
 
@@ -837,6 +845,7 @@ def _compute_swap_box_scores_for_image(
     lab_labels: Optional[np.ndarray] = None,
     lab_bboxes: Optional[np.ndarray] = None,
     similarity_matrix: Optional[np.ndarray] = None,
+    iou_matrix: Optional[np.ndarray] = None,
     min_possible_similarity: Optional[float] = None,
     overlapping_label_check: Optional[bool] = True,
 ) -> np.ndarray:
@@ -866,35 +875,28 @@ def _compute_swap_box_scores_for_image(
     else:
         has_overlap_label_bboxes = np.array([False] * len(lab_labels))
 
-    scores_swap = np.empty(
-        shape=[
-            len(lab_labels),
-        ]
-    )  # same length as number of labeled boxes
+    scores_swap = np.empty(len(lab_labels))
+
     for iid, k in enumerate(lab_labels):
-        not_k_idx = pred_labels != k
+        not_k_idx = np.where(pred_labels != k)[0]
         if has_overlap_label_bboxes[iid]:
             scores_swap[iid] = min_possible_similarity
             continue
-        if len(not_k_idx) == 0:
+        if not_k_idx.size == 0 or np.all(pred_label_probs[not_k_idx] <= high_probability_threshold):
             scores_swap[iid] = 1.0
             continue
 
-        not_k_similarity = similarity_matrix[iid, not_k_idx]
         not_k_pred = pred_label_probs[not_k_idx]
+        idx_at_least_high_probability_threshold = np.where(not_k_pred > high_probability_threshold)[
+            0
+        ]
+        not_k_similarity = similarity_matrix[iid, not_k_idx][
+            idx_at_least_high_probability_threshold
+        ]
+        closest_predicted_box = np.argmax(not_k_similarity)
+        score = np.max([min_possible_similarity, 1 - not_k_similarity[closest_predicted_box]])
+        scores_swap[iid] = score
 
-        idx_at_least_high_probability_threshold = not_k_pred > high_probability_threshold
-        if len(idx_at_least_high_probability_threshold) == 0:
-            scores_swap[iid] = 1.0
-            continue
-
-        not_k_similarity = not_k_similarity[idx_at_least_high_probability_threshold]
-        if len(not_k_similarity) == 0:  # if there is no annotated box
-            scores_swap[iid] = 1.0
-        else:
-            closest_predicted_box = np.argmax(not_k_similarity)
-            score = np.max([min_possible_similarity, 1 - not_k_similarity[closest_predicted_box]])
-            scores_swap[iid] = score
     return scores_swap
 
 

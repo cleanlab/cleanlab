@@ -48,21 +48,22 @@ def get_label_quality_scores(
     Parameters
     ----------
     labels:
-      A discrete array of noisy labels for a segmantic segmentation dataset, in the shape``(N,H,W,)``.
+      A discrete array of noisy labels for a segmantic segmentation dataset, in the shape ``(N,H,W,)``,
       where each pixel must be integer in 0, 1, ..., K-1.
-      Refer to documentation for this argument in :py:func:find_label_issues <cleanlab.segemntation.filter.find_label_issues> for further details.
+      Refer to documentation for this argument in :py:func:`find_label_issues <cleanlab.segmentation.filter.find_label_issues>` for further details.
 
     pred_probs:
       An array of shape ``(N,K,H,W,)`` of model-predicted class probabilities.
-      Refer to documentation for this argument in :py:func:find_label_issues <cleanlab.segemntation.filter.find_label_issues> for further details.
+      Refer to documentation for this argument in :py:func:`find_label_issues <cleanlab.segmentation.filter.find_label_issues>` for further details.
 
     method: {"softmin", "num_pixel_issues"}, default="softmin"
       Label quality scoring method.
+
       - "softmin" - Calculates the inner product between scores and softmax(1-scores). For efficiency, use instead of "num_pixel_issues".
-      - "num_pixel_issues" - Uses the number of pixels with label issues for each image using :py:func:find_label_issues <cleanlab.segemntation.filter.find_label_issues>
+      - "num_pixel_issues" - Uses the number of pixels with label issues for each image using :py:func:`find_label_issues <cleanlab.segmentation.filter.find_label_issues>`
 
     batch_size :
-      Optional size of mini-batches to use for estimating the label issues for 'num_pixel_issues' only, not 'softmin'
+      Optional size of mini-batches to use for estimating the label issues for 'num_pixel_issues' only, not 'softmin'.
       To maximize efficiency, try to use the largest `batch_size` your memory allows. If not provided, a good default is used.
 
     n_jobs:
@@ -148,16 +149,13 @@ def issues_from_scores(
     Converts scores output by :py:func:`segmentation.rank.get_label_quality_scores <cleanlab.segmentation.rank.get_label_quality_scores>`
     to a list of issues of similar format as output by :py:func:`segmentation.filter.find_label_issues <cleanlab.segmentation.filter.find_label_issues>`.
 
-    Issues are sorted by label quality score, from most to least severe.
-
     Only considers as issues those tokens with label quality score lower than `threshold`,
     so this parameter determines the number of issues that are returned.
 
-    Note: This method is intended for converting the most severely mislabeled examples to a format compatible with
-    ``summary`` methods like :py:func:`segmentation.summary.display_issues <cleanlab.segmentation.summary.display_issues>`.
-    This method does not estimate the number of label errors since the `threshold` is arbitrary,
-    for that instead use :py:func:`segmentation.filter.find_label_issues <cleanlab.segmentation.filter.find_label_issues>`,
-    which estimates the label errors via Confident Learning rather than score thresholding.
+    Note
+    ----
+    - This method is intended for converting the most severely mislabeled examples into a format compatible with ``summary`` methods like :py:func:`segmentation.summary.display_issues <cleanlab.segmentation.summary.display_issues>`.
+    - This method does not estimate the number of label errors since the `threshold` is arbitrary, for that instead use :py:func:`segmentation.filter.find_label_issues <cleanlab.segmentation.filter.find_label_issues>`, which estimates the label errors via Confident Learning rather than score thresholding.
 
     Parameters
     ----------
@@ -183,7 +181,7 @@ def issues_from_scores(
       to view these issues within the original images.
 
       If `pixel_scores` is not provided, returns array of integer indices (rather than boolean mask) of the images whose label quality score
-      falls below the `threshold` (also sorted by overall label quality score of each image).
+      falls below the `threshold` (sorted by overall label quality score of each image).
 
     """
 
