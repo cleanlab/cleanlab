@@ -23,7 +23,7 @@ Datalab produces three estimates for **each** type of issue (called say `<ISSUE_
 .. code-block:: python
 
     issue_name = "outlier"  # how to reference the outlier issue type in code
-    issue_score = "outlier_score"  # name of column with quality scores for the outlier issue type, atypical datapoints receive lower scores 
+    issue_score = "outlier_score"  # name of column with quality scores for the outlier issue type, atypical datapoints receive lower scores
     is_issue = "is_outlier_issue"  # name of Boolean column flagging which datapoints are considered outliers in the dataset
 
 Datalab estimates various issues based on the four inputs below.
@@ -85,7 +85,7 @@ Near duplicated examples may record the same information with different:
 - Minor variations which naturally occur in many types of data (e.g. translated versions of an image).
 
 Near Duplicate issues are calculated based on provided `features` or `knn_graph`.
-If you do not provide one of these arguments, this type of issue will not be considered. 
+If you do not provide one of these arguments, this type of issue will not be considered.
 
 Datalab defines near duplicates as those examples whose distance to their nearest neighbor (in the space of provided `features`) in the dataset is less than `c * D`, where `0 < c < 1` is a small constant, and `D` is the median (over the full dataset) of such distances between each example and its nearest neighbor.
 Scoring the numeric quality of an example in terms of the near duplicate issue type is done proportionally to its distance to its nearest neighbor.
@@ -113,6 +113,14 @@ The assumption that examples in a dataset are Independent and Identically Distri
 
 For datasets with low non-IID score, you should consider why your data are not IID and act accordingly. For example, if the data distribution is drifting over time, consider employing a time-based train/test split instead of a random partition.  Note that shuffling the data ahead of time will ensure a good non-IID score, but this is not always a fix to the underlying problem (e.g. future deployment data may stem from a different distribution, or you may overlook the fact that examples influence each other). We thus recommend **not** shuffling your data to be able to diagnose this issue if it exists.
 
+Class-Imbalance Issue
+---------------------
+
+Class imbalance is diagnosed just using the `labels` provided as part of the dataset. The overall class imbalance quality score of a dataset is the proportion of examples belonging to the rarest class `q`. If this proportion `q` falls below a threshold, then we say this dataset suffers from the class imbalance issue.  
+
+In a dataset identified as having class imbalance, the class imbalance quality score for each example is set equal to `q` if it is labeled as the rarest class, and is equal to 1 for all other examples.
+
+Class imbalance in a dataset can lead to subpar model performance for the under-represented class. Consider collecting more data from the under-represented class, or at least take special care while modeling via techniques like over/under-sampling, SMOTE, asymmetric class weighting, etc.
 
 Image-specific Issues
 ---------------------
@@ -132,7 +140,7 @@ Appropriate defaults are used for any parameters you do not specify, so no need 
 .. code-block:: python
 
     possible_issue_types = {
-        "label": label_kwargs, "outlier": outlier_kwargs, 
+        "label": label_kwargs, "outlier": outlier_kwargs,
         "near_duplicate": near_duplicate_kwargs, "non_iid": non_iid_kwargs
     }
 
@@ -225,3 +233,17 @@ Non-IID Issue Parameters
 .. note::
 
     For more information, view the source code of:  :py:class:`datalab.internal.issue_manager.noniid.NonIIDIssueManager <cleanlab.datalab.internal.issue_manager.noniid.NonIIDIssueManager>`.
+
+
+Imbalance Issue Parameters
+--------------------------
+
+.. code-block:: python
+
+    class_imbalance_kwargs = {
+    	"threshold": # `threshold` argument to constructor of `ClassImbalanceIssueManager()`. Non-negative floating value between 0 and 1 indicating the minimum fraction of samples of each class that are present in a dataset without class imbalance.
+    }
+
+.. note::
+
+    For more information, view the source code of:  :py:class:`datalab.internal.issue_manager.imbalance.ClassImbalanceIssueManager <cleanlab.datalab.internal.issue_manager.imbalance.ClassImbalanceIssueManager>`.

@@ -1055,3 +1055,51 @@ class TestDatalabWithoutLabels:
         # issues_with_labels should have two additional columns about label issues
         assert len(issues_without_labels.columns) + 2 == len(issues_with_labels.columns)
         pd.testing.assert_frame_equal(issues_without_labels, issues_without_label_name)
+
+
+class TestDataLabClassImbalanceIssues:
+    K = 3
+    N = 100
+    num_features = 2
+
+    @pytest.fixture
+    def random_embeddings(self):
+        np.random.seed(SEED)
+        return np.random.rand(self.N, self.num_features)
+
+    @pytest.fixture
+    def imbalance_labels(self):
+        np.random.seed(SEED)
+        labels = np.random.choice(np.arange(self.K - 1), 100, p=[0.5] * (self.K - 1))
+        labels[0] = 2
+        return labels
+
+    @pytest.fixture
+    def pred_probs(self):
+        np.random.seed(SEED)
+        pred_probs_array = np.random.rand(self.N, self.K)
+        return pred_probs_array / pred_probs_array.sum(axis=1, keepdims=True)
+
+    def test_incremental_search(self, pred_probs, random_embeddings, imbalance_labels):
+        data = {"labels": imbalance_labels}
+        lab = Datalab(data=data, label_name="labels")
+        lab.find_issues(pred_probs=pred_probs, issue_types={"label": {}})
+        summary = lab.get_issue_summary()
+        assert len(summary) == 1
+        assert "class_imbalance" not in summary["issue_type"].values
+        lab.find_issues(features=random_embeddings, issue_types={"class_imbalance": {}})
+        summary = lab.get_issue_summary()
+        assert len(summary) == 2
+        assert "class_imbalance" in summary["issue_type"].values
+        class_imbalance_summary = lab.get_issue_summary("class_imbalance")
+        assert class_imbalance_summary["num_issues"].values[0] > 0
+
+    def test_find_imbalance_issues_no_args(self, imbalance_labels):
+        data = {"labels": imbalance_labels}
+        lab = Datalab(data=data, label_name="labels")
+        lab.find_issues(issue_types={"class_imbalance": {}})
+        summary = lab.get_issue_summary()
+        assert len(summary) == 1
+        assert "class_imbalance" in summary["issue_type"].values
+        class_imbalance_summary = lab.get_issue_summary("class_imbalance")
+        assert class_imbalance_summary["num_issues"].values[0] > 0
