@@ -78,16 +78,16 @@ def num_label_issues(
     ----------
     labels : np.ndarray or list
       Given class labels for each example in the dataset, some of which may be erroneous,
-      in same format expected by :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` function.
+      in same format expected by `~cleanlab.filter.find_label_issues` function.
 
     pred_probs :
       Model-predicted class probabilities for each example in the dataset,
-      in same format expected by :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` function.
+      in same format expected by `~cleanlab.filter.find_label_issues` function.
 
     confident_joint :
       Array of estimated class label error statisics used for identifying label issues,
-      in same format expected by :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` function.
-      The `confident_joint` can be computed using :py:func:`count.compute_confident_joint <cleanlab.count.compute_confident_joint>`.
+      in same format expected by `~cleanlab.filter.find_label_issues` function.
+      The `confident_joint` can be computed using `~cleanlab.count.compute_confident_joint`.
       It is internally computed from the given (noisy) `labels` and `pred_probs`.
 
     estimation_method :
@@ -114,7 +114,7 @@ def num_label_issues(
     multi_label : bool, optional
       Set ``False`` if your dataset is for regular (multi-class) classification, where each example belongs to exactly one class.
       Set ``True`` if your dataset is for multi-label classification, where each example can belong to multiple classes.
-      See documentation of :py:func:`compute_confident_joint <cleanlab.count.compute_confident_joint>` for details.
+      See documentation of `~cleanlab.count.compute_confident_joint` for details.
 
     Returns
     -------
@@ -204,7 +204,7 @@ def _num_label_issues_multilabel(
        Refer to documentation for this argument in ``count.calibrate_confident_joint()`` with `multi_label=True` for details.
 
     pred_probs : np.ndarray
-       Predicted-probabilities in the same format expected by the :py:func:`get_confident_thresholds <cleanlab.count.get_confident_thresholds>` function.
+       Predicted-probabilities in the same format expected by the `~cleanlab.count.get_confident_thresholds` function.
 
     Returns
     -------
@@ -246,18 +246,18 @@ def calibrate_confident_joint(
       An array of shape ``(K, K)`` representing the confident joint, the matrix used for identifying label issues, which
       estimates a confident subset of the joint distribution of the noisy and true labels, ``P_{noisy label, true label}``.
       Entry ``(j, k)`` in the matrix is the number of examples confidently counted into the pair of ``(noisy label=j, true label=k)`` classes.
-      The `confident_joint` can be computed using :py:func:`count.compute_confident_joint <cleanlab.count.compute_confident_joint>`.
+      The `confident_joint` can be computed using `~cleanlab.count.compute_confident_joint`.
       If not provided, it is computed from the given (noisy) `labels` and `pred_probs`.
       If `multi_label` is True, then the `confident_joint` should be a one-vs-rest array of shape ``(K, 2, 2)``, and an array of the same shape will be returned.
 
     labels : np.ndarray or list
       Given class labels for each example in the dataset, some of which may be erroneous,
-      in same format expected by :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` function.
+      in same format expected by `~cleanlab.filter.find_label_issues` function.
 
     multi_label : bool, optional
       If ``False``, dataset is for regular (multi-class) classification, where each example belongs to exactly one class.
       If ``True``, dataset is for multi-label classification, where each example can belong to multiple classes.
-      See documentation of :py:func:`compute_confident_joint <cleanlab.count.compute_confident_joint>` for details.
+      See documentation of `~cleanlab.count.compute_confident_joint` for details.
       In multi-label classification, the confident/calibrated joint arrays have shape ``(K, 2, 2)``
       formatted in a one-vs-rest fashion such that they contain a 2x2 matrix for each class
       that counts examples which are correctly/incorrectly labeled as belonging to that class.
@@ -352,22 +352,22 @@ def estimate_joint(
     ----------
     labels : np.ndarray or list
       Given class labels for each example in the dataset, some of which may be erroneous,
-      in same format expected by :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` function.
+      in same format expected by `~cleanlab.filter.find_label_issues` function.
 
     pred_probs : np.ndarray
       Model-predicted class probabilities for each example in the dataset,
-      in same format expected by :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` function.
+      in same format expected by `~cleanlab.filter.find_label_issues` function.
 
     confident_joint : np.ndarray, optional
       Array of estimated class label error statisics used for identifying label issues,
-      in same format expected by :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` function.
-      The `confident_joint` can be computed using :py:func:`count.compute_confident_joint <cleanlab.count.compute_confident_joint>`.
+      in same format expected by `~cleanlab.filter.find_label_issues` function.
+      The `confident_joint` can be computed using `~cleanlab.count.compute_confident_joint`.
       If not provided, it is internally computed from the given (noisy) `labels` and `pred_probs`.
 
     multi_label : bool, optional
       If ``False``, dataset is for regular (multi-class) classification, where each example belongs to exactly one class.
       If ``True``, dataset is for multi-label classification, where each example can belong to multiple classes.
-      See documentation of :py:func:`compute_confident_joint <cleanlab.count.compute_confident_joint>` for details.
+      See documentation of `~cleanlab.count.compute_confident_joint` for details.
 
     Returns
     -------
@@ -474,11 +474,11 @@ def compute_confident_joint(
     ----------
     labels : np.ndarray or list
       Given class labels for each example in the dataset, some of which may be erroneous,
-      in same format expected by :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` function.
+      in same format expected by `~cleanlab.filter.find_label_issues` function.
 
     pred_probs : np.ndarray
       Model-predicted class probabilities for each example in the dataset,
-      in same format expected by :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` function.
+      in same format expected by `~cleanlab.filter.find_label_issues` function.
 
     thresholds : array_like, optional
       An array of shape ``(K, 1)`` or ``(K,)`` of per-class threshold
@@ -730,7 +730,7 @@ def estimate_latent(
       An array of shape ``(K, K)`` representing the confident joint, the matrix used for identifying label issues, which
       estimates a confident subset of the joint distribution of the noisy and true labels, ``P_{noisy label, true label}``.
       Entry ``(j, k)`` in the matrix is the number of examples confidently counted into the pair of ``(noisy label=j, true label=k)`` classes.
-      The `confident_joint` can be computed using :py:func:`count.compute_confident_joint <cleanlab.count.compute_confident_joint>`.
+      The `confident_joint` can be computed using `~cleanlab.count.compute_confident_joint`.
       If not provided, it is computed from the given (noisy) `labels` and `pred_probs`.
 
     labels : np.ndarray
@@ -828,7 +828,7 @@ def estimate_py_and_noise_matrices_from_probabilities(
 
     pred_probs : np.ndarray
       Model-predicted class probabilities for each example in the dataset,
-      in same format expected by :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` function.
+      in same format expected by `~cleanlab.filter.find_label_issues` function.
 
     thresholds : array_like, optional
       An array of shape ``(K, 1)`` or ``(K,)`` of per-class threshold
@@ -1419,16 +1419,16 @@ def get_confident_thresholds(
     ----------
     labels : np.ndarray or list
       Given class labels for each example in the dataset, some of which may be erroneous,
-      in same format expected by :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` function.
+      in same format expected by `~cleanlab.filter.find_label_issues` function.
 
     pred_probs : np.ndarray
       Model-predicted class probabilities for each example in the dataset,
-      in same format expected by :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` function.
+      in same format expected by `~cleanlab.filter.find_label_issues` function.
 
     multi_label : bool, default = False
       Set ``False`` if your dataset is for regular (multi-class) classification, where each example belongs to exactly one class.
       Set ``True`` if your dataset is for multi-label classification, where each example can belong to multiple classes.
-      See documentation of :py:func:`compute_confident_joint <cleanlab.count.compute_confident_joint>` for details.
+      See documentation of `~cleanlab.count.compute_confident_joint` for details.
 
     Returns
     -------
@@ -1473,7 +1473,7 @@ def _get_confident_thresholds_multilabel(
        Refer to documentation for this argument in ``count.calibrate_confident_joint()`` with ``multi_label=True`` for details.
 
     pred_probs : np.ndarray
-       Predicted class probabilities in the same format expected by the :py:func:`get_confident_thresholds <cleanlab.count.get_confident_thresholds>` function.
+       Predicted class probabilities in the same format expected by the `~cleanlab.count.get_confident_thresholds` function.
 
     Returns
     -------
