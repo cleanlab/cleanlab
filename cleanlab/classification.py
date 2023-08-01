@@ -206,14 +206,12 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
       perfectly labeled (you are certain that there are no errors in that class).
 
     find_label_issues_kwargs : dict, optional
-      Keyword arguments to pass into :py:func:`filter.find_label_issues
-      <cleanlab.filter.find_label_issues>`. Particularly useful options include:
+      Keyword arguments to pass into `~cleanlab.filter.find_label_issues`. Particularly useful options include:
       `filter_by`, `frac_noise`, `min_examples_per_class` (which all impact ML accuracy),
       `n_jobs` (set this to 1 to disable multi-processing if it's causing issues).
 
     label_quality_scores_kwargs : dict, optional
-      Keyword arguments to pass into :py:func:`rank.get_label_quality_scores
-      <cleanlab.rank.get_label_quality_scores>`. Options include: `method`, `adjust_pred_probs`.
+      Keyword arguments to pass into `~cleanlab.rank.get_label_quality_scores`. Options include: `method`, `adjust_pred_probs`.
 
     verbose : bool, default=False
       Controls how much output is printed. Set to ``False`` to suppress print
@@ -364,9 +362,9 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
           :py:meth:`CleanLearning.get_label_issues
           <cleanlab.classification.CleanLearning.get_label_issues>`.
           If ``np.ndarray``, must contain either boolean `label_issues_mask` as output by:
-          default :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>`,
+          default `~cleanlab.filter.find_label_issues`,
           or integer indices as output by
-          :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>`
+          `~cleanlab.filter.find_label_issues`
           with its `return_indices_ranked_by` argument specified.
           Providing this argument significantly reduces the time this method takes to run by
           skipping the slow cross-validation step necessary to find label issues.
@@ -449,7 +447,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         ----
         If ``CleanLearning.fit()`` does not work for your data/model, you can run the same procedure yourself:
         * Utilize :ref:`cross-validation <pred_probs_cross_val>` to get out-of-sample `pred_probs` for each example.
-        * Call :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` with `pred_probs`.
+        * Call `~cleanlab.filter.find_label_issues` with `pred_probs`.
         * Filter the examples with detected issues and train your model on the remaining data.
         """
 
@@ -704,15 +702,12 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         Identifies potential label issues in the dataset using confident learning.
 
         Runs cross-validation to get out-of-sample pred_probs from `clf`
-        and then calls :py:func:`filter.find_label_issues
-        <cleanlab.filter.find_label_issues>` to find label issues.
+        and then calls `~cleanlab.filter.find_label_issues` to find label issues.
         These label issues are cached internally and returned in a pandas DataFrame.
-        Kwargs for :py:func:`filter.find_label_issues
-        <cleanlab.filter.find_label_issues>` must have already been specified
+        Kwargs for `~cleanlab.filter.find_label_issues` must have already been specified
         in the initialization of this class, not here.
 
-        Unlike :py:func:`filter.find_label_issues
-        <cleanlab.filter.find_label_issues>`, which requires `pred_probs`,
+        Unlike `~cleanlab.filter.find_label_issues`, which requires `pred_probs`,
         this method only requires a classifier and it can do the cross-validation for you.
         Both methods return the same boolean mask that identifies which examples have label issues.
         This is the preferred method to use if you plan to subsequently invoke:
@@ -750,7 +745,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
           Each row represents an example from our dataset and
           the DataFrame may contain the following columns:
 
-          * *is_label_issue*: boolean mask for the entire dataset where ``True`` represents a label issue and ``False`` represents an example that is accurately labeled with high confidence. This column is equivalent to `label_issues_mask` output from :py:func:`filter.find_label_issues<cleanlab.filter.find_label_issues>`.
+          * *is_label_issue*: boolean mask for the entire dataset where ``True`` represents a label issue and ``False`` represents an example that is accurately labeled with high confidence. This column is equivalent to `label_issues_mask` output from ~cleanlab.filter.find_label_issues`.
           * *label_quality*: Numeric score that measures the quality of each label (how likely it is to be correct, with lower scores indicating potentially erroneous labels).
           * *given_label*: Integer indices corresponding to the class label originally given for this example (same as `labels` input). Included here for ease of comparison against `clf` predictions, only present if "predicted_label" column is present.
           * *predicted_label*: Integer indices corresponding to the class predicted by trained `clf` model. Only present if ``pred_probs`` were provided as input or computed during label-issue-finding.
