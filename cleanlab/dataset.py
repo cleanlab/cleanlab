@@ -17,8 +17,8 @@
 """
 Provides dataset-level and class-level overviews of issues in your classification dataset.
 If your task allows you to modify the classes in your dataset, this module can help you determine
-which classes to remove (see :py:func:`rank_classes_by_label_quality <cleanlab.dataset.rank_classes_by_label_quality>`)
-and which classes to merge (see :py:func:`find_overlapping_classes <cleanlab.dataset.find_overlapping_classes>`).
+which classes to remove (see `~cleanlab.dataset.rank_classes_by_label_quality`)
+and which classes to merge (see `~cleanlab.dataset.find_overlapping_classes`).
 """
 
 from typing import Optional, cast
@@ -63,7 +63,7 @@ def rank_classes_by_label_quality(
     >>> pred_probs = cross_val_predict(yourFavoriteModel, data, labels, cv=3, method="predict_proba")
     >>> df = rank_classes_by_label_quality(labels=labels, pred_probs=pred_probs)
 
-    **Parameters**: For parameter info, see the docstring of :py:func:`find_overlapping_classes <cleanlab.dataset.find_overlapping_classes>`.
+    **Parameters**: For parameter info, see the docstring of `~cleanlab.dataset.find_overlapping_classes`.
 
     Returns
     -------
@@ -223,7 +223,7 @@ def find_overlapping_classes(
       An array of shape ``(K, K)`` representing the confident joint, the matrix used for identifying label issues, which
       estimates a confident subset of the joint distribution of the noisy and true labels, ``P_{noisy label, true label}``.
       Entry ``(j, k)`` in the matrix is the number of examples confidently counted into the pair of ``(noisy label=j, true label=k)`` classes.
-      The `confident_joint` can be computed using :py:func:`count.compute_confident_joint <cleanlab.count.compute_confident_joint>`.
+      The `confident_joint` can be computed using `~cleanlab.count.compute_confident_joint`.
       If not provided, it is computed from the given (noisy) `labels` and `pred_probs`.
 
     Returns
@@ -327,7 +327,7 @@ def overall_label_health_score(
     >>> pred_probs = cross_val_predict(yourFavoriteModel, data, labels, cv=3, method="predict_proba")
     >>> score = overall_label_health_score(labels=labels, pred_probs=pred_probs)  # doctest: +SKIP
 
-    **Parameters**: For parameter info, see the docstring of :py:func:`find_overlapping_classes <cleanlab.dataset.find_overlapping_classes>`.
+    **Parameters**: For parameter info, see the docstring of `~cleanlab.dataset.find_overlapping_classes`.
 
 
     Returns
@@ -398,17 +398,17 @@ def health_summary(
     >>> pred_probs = cross_val_predict(yourFavoriteModel, data, labels, cv=3, method="predict_proba")
     >>> summary = health_summary(labels=labels, pred_probs=pred_probs)  # doctest: +SKIP
 
-    **Parameters**: For parameter info, see the docstring of :py:func:`find_overlapping_classes <cleanlab.dataset.find_overlapping_classes>`.
+    **Parameters**: For parameter info, see the docstring of `~cleanlab.dataset.find_overlapping_classes`.
 
     Returns
     -------
     summary : dict
         A dictionary containing keys (see the corresponding functions' documentation to understand the values):
 
-        - ``"overall_label_health_score"``, corresponding to :py:func:`overall_label_health_score <cleanlab.dataset.overall_label_health_score>`
-        - ``"joint"``, corresponding to :py:func:`estimate_joint <cleanlab.count.estimate_joint>`
-        - ``"classes_by_label_quality"``, corresponding to :py:func:`rank_classes_by_label_quality <cleanlab.dataset.rank_classes_by_label_quality>`
-        - ``"overlapping_classes"``, corresponding to :py:func:`find_overlapping_classes <cleanlab.dataset.find_overlapping_classes>`
+        - ``"overall_label_health_score"``, corresponding to `~cleanlab.dataset.overall_label_health_score`
+        - ``"joint"``, corresponding to `~cleanlab.count.estimate_joint`
+        - ``"classes_by_label_quality"``, corresponding to `~cleanlab.dataset.rank_classes_by_label_quality`
+        - ``"overlapping_classes"``, corresponding to `~cleanlab.dataset.find_overlapping_classes`
     """
     from cleanlab.internal.util import smart_display_dataframe
 
