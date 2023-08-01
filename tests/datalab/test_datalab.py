@@ -237,10 +237,9 @@ class TestDatalab:
             in warning_message
         )
 
-    def test_find_issues_with_low_memory(self, dataset, label_name, pred_probs):
-        lab_lm = Datalab(data=dataset, label_name=label_name)
+    def test_find_issues_with_low_memory(self, lab, pred_probs):
         issue_types = {"label": {"clean_learning_kwargs": {"low_memory": True}}}
-        lab_lm.find_issues(pred_probs=pred_probs, issue_types=issue_types)
+        lab.find_issues(pred_probs=pred_probs, issue_types=issue_types)
 
     @pytest.mark.parametrize(
         "issue_types",
