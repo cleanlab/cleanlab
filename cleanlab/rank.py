@@ -17,7 +17,7 @@
 
 """
 Methods to rank examples in standard (multi-class) classification datasets by cleanlab's `label quality score`.
-Except for :py:func:`order_label_issues <cleanlab.rank.order_label_issues>`, which operates only on the subset of the data identified
+Except for `~cleanlab.rank.order_label_issues`, which operates only on the subset of the data identified
 as potential label issues/errors, the methods in this module can be used on whichever subset
 of the dataset you choose (including the entire dataset) and provide a `label quality score` for
 every example. You can then do something like: ``np.argsort(label_quality_score)`` to obtain ranked
@@ -25,7 +25,7 @@ indices of individual datapoints based on their quality.
 
 Note: multi-label classification is not supported by most methods in this module,
 each example must be labeled as belonging to a single class, e.g. format: ``labels = np.ndarray([1,0,2,1,1,0...])``.
-For multi-label classification, instead see :py:func:`multilabel_classification.get_label_quality_scores <cleanlab.multilabel_classification.get_label_quality_scores>`.
+For multi-label classification, instead see `~cleanlab.multilabel_classification.get_label_quality_scores`.
 
 Note: Label quality scores are most accurate when they are computed based on out-of-sample `pred_probs` from your model.
 To obtain out-of-sample predicted probabilities for every datapoint in your dataset, you can use :ref:`cross-validation <pred_probs_cross_val>`. This is encouraged to get better results.
@@ -196,19 +196,19 @@ def get_label_quality_ensemble_scores(
     Parameters
     ----------
     labels : np.ndarray
-      Labels in the same format expected by the :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>` function.
+      Labels in the same format expected by the `~cleanlab.rank.get_label_quality_scores` function.
 
     pred_probs_list : List[np.ndarray]
       Each element in this list should be an array of pred_probs in the same format
-      expected by the :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>` function.
+      expected by the `~cleanlab.rank.get_label_quality_scores` function.
       Each element of `pred_probs_list` corresponds to the predictions from one model for all examples.
 
     method : {"self_confidence", "normalized_margin", "confidence_weighted_entropy"}, default="self_confidence"
-      Label quality scoring method. See :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>`
+      Label quality scoring method. See `~cleanlab.rank.get_label_quality_scores`
       for scenarios on when to use each method.
 
     adjust_pred_probs : bool, optional
-      `adjust_pred_probs` in the same format expected by the :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>` function.
+      `adjust_pred_probs` in the same format expected by the `~cleanlab.rank.get_label_quality_scores` function.
 
     weight_ensemble_members_by : {"uniform", "accuracy", "log_loss_search", "custom"}, default="accuracy"
       Weighting scheme used to aggregate scores from each model:
@@ -427,18 +427,17 @@ def order_label_issues(
       high confidence.
 
     labels : np.ndarray
-      Labels in the same format expected by the :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>` function.
+      Labels in the same format expected by the `~cleanlab.rank.get_label_quality_scores` function.
 
     pred_probs : np.ndarray (shape (N, K))
-      Predicted-probabilities in the same format expected by the :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>` function.
+      Predicted-probabilities in the same format expected by the `~cleanlab.rank.get_label_quality_scores` function.
 
     rank_by : str, optional
       Score by which to order label error indices (in increasing order). See
-      the `method` argument of :py:func:`get_label_quality_scores
-      <cleanlab.rank.get_label_quality_scores>`.
+      the `method` argument of `~cleanlab.rank.get_label_quality_scores`.
 
     rank_by_kwargs : dict, optional
-      Optional keyword arguments to pass into :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>` function.
+      Optional keyword arguments to pass into `~cleanlab.rank.get_label_quality_scores` function.
       Accepted args include `adjust_pred_probs`.
 
     Returns
@@ -492,10 +491,10 @@ def get_self_confidence_for_each_label(
     Parameters
     ----------
     labels : np.ndarray
-      Labels in the same format expected by the :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>` function.
+      Labels in the same format expected by the `~cleanlab.rank.get_label_quality_scores` function.
 
     pred_probs : np.ndarray
-      Predicted-probabilities in the same format expected by the :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>` function.
+      Predicted-probabilities in the same format expected by the `~cleanlab.rank.get_label_quality_scores` function.
 
     Returns
     -------
@@ -531,10 +530,10 @@ def get_normalized_margin_for_each_label(
     Parameters
     ----------
     labels : np.ndarray
-      Labels in the same format expected by the :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>` function.
+      Labels in the same format expected by the `~cleanlab.rank.get_label_quality_scores` function.
 
     pred_probs : np.ndarray
-      Predicted-probabilities in the same format expected by the :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>` function.
+      Predicted-probabilities in the same format expected by the `~cleanlab.rank.get_label_quality_scores` function.
 
     Returns
     -------
@@ -564,10 +563,10 @@ def get_confidence_weighted_entropy_for_each_label(
     Parameters
     ----------
     labels : np.ndarray
-      Labels in the same format expected by the :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>` function.
+      Labels in the same format expected by the `~cleanlab.rank.get_label_quality_scores` function.
 
     pred_probs : np.ndarray
-      Predicted-probabilities in the same format expected by the :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>` function.
+      Predicted-probabilities in the same format expected by the `~cleanlab.rank.get_label_quality_scores` function.
 
     Returns
     -------
