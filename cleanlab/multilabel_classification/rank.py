@@ -84,11 +84,11 @@ def get_label_quality_scores(
     ----------
     labels : List[List[int]]
        List of noisy labels for multi-label classification where each example can belong to multiple classes.
-       Refer to documentation for this argument in :py:func:`multilabel_classification.filter.find_label_issues <cleanlab.multilabel_classification.filter.find_label_issues>` for further details.
+       Refer to documentation for this argument in `~cleanlab.multilabel_classification.filter.find_label_issues` for further details.
 
     pred_probs : np.ndarray
       An array of shape ``(N, K)`` of model-predicted class probabilities.
-      Refer to documentation for this argument in :py:func:`multilabel_classification.filter.find_label_issues <cleanlab.multilabel_classification.filter.find_label_issues>` for further details.
+      Refer to documentation for this argument in `~cleanlab.multilabel_classification.filter.find_label_issues` for further details.
 
     method : {"self_confidence", "normalized_margin", "confidence_weighted_entropy"}, default = "self_confidence"
       Method to calculate separate per-class annotation scores for an example that are then aggregated into an overall label quality score for the example.
@@ -97,11 +97,11 @@ def get_label_quality_scores(
 
       See also
       --------
-      :py:func:`rank.get_label_quality_scores <cleanlab.rank.get_label_quality_scores>` function for details about each option.
+      `~cleanlab.rank.get_label_quality_scores` function for details about each option.
 
     adjust_pred_probs : bool, default = False
       Account for class imbalance in the label-quality scoring by adjusting predicted probabilities.
-      Refer to documentation for this argument in :py:func:`rank.get_label_quality_scores <cleanlab.rank.get_label_quality_scores>` for details.
+      Refer to documentation for this argument in `~cleanlab.rank.get_label_quality_scores` for details.
 
 
     aggregator_kwargs : dict, default = {"method": "exponential_moving_average", "alpha": 0.8}
@@ -109,7 +109,7 @@ def get_label_quality_scores(
       Options for ``"method"`` include: ``"exponential_moving_average"`` or ``"softmin"`` or your own callable function.
       See :py:class:`internal.multilabel_scorer.Aggregator <cleanlab.internal.multilabel_scorer.Aggregator>` for details about each option and other possible hyperparameters.
 
-    To get a score for each class annotation for each example, use the :py:func:`multilabel_classification.classification.rank.get_label_quality_scores_per_class <cleanlab.multilabel_classification.rank.get_label_quality_scores_per_class>` method instead.
+    To get a score for each class annotation for each example, use the `~cleanlab.multilabel_classification.rank.get_label_quality_scores_per_class` method instead.
 
     Returns
     -------
@@ -145,28 +145,28 @@ def get_label_quality_scores_per_class(
 ) -> np.ndarray:
     """
     Computes a quality score quantifying how likely each individual class annotation is correct in a multi-label classification dataset.
-    This is similar to :py:func:`get_label_quality_scores <cleanlab.multilabel_classification.rank.get_label_quality_scores>`
+    This is similar to `~cleanlab.multilabel_classification.rank.get_label_quality_scores`
     but instead returns the per-class results without aggregation.
     For a dataset with K classes, each example receives K scores from this method.
-    Refer to documentation in :py:func:`get_label_quality_scores <cleanlab.multilabel_classification.rank.get_label_quality_scores>` for details.
+    Refer to documentation in `~cleanlab.multilabel_classification.rank.get_label_quality_scores` for details.
 
     Parameters
     ----------
     labels : List[List[int]]
        List of noisy labels for multi-label classification where each example can belong to multiple classes.
-       Refer to documentation for this argument in :py:func:`find_label_issues <cleanlab.multilabel_classification.filter.find_label_issues>` for further details.
+       Refer to documentation for this argument in `~cleanlab.multilabel_classification.filter.find_label_issues` for further details.
 
     pred_probs : np.ndarray
       An array of shape ``(N, K)`` of model-predicted class probabilities.
-      Refer to documentation for this argument in :py:func:`find_label_issues <cleanlab.multilabel_classification.filter.find_label_issues>` for further details.
+      Refer to documentation for this argument in `~cleanlab.multilabel_classification.filter.find_label_issues` for further details.
 
     method : {"self_confidence", "normalized_margin", "confidence_weighted_entropy"}, default = "self_confidence"
       Method to calculate separate per-class annotation scores (that quantify how likely a particular class annotation is correct for a particular example).
-      Refer to documentation for this argument in :py:func:`get_label_quality_scores <cleanlab.multilabel_classification.rank.get_label_quality_scores>` for further details.
+      Refer to documentation for this argument in `~cleanlab.multilabel_classification.rank.get_label_quality_scores` for further details.
 
     adjust_pred_probs : bool, default = False
       Account for class imbalance in the label-quality scoring by adjusting predicted probabilities.
-      Refer to documentation for this argument in :py:func:`rank.get_label_quality_scores <cleanlab.rank.get_label_quality_scores>` for details.
+      Refer to documentation for this argument in `~cleanlab.rank.get_label_quality_scores` for details.
 
     Returns
     -------
