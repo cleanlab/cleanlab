@@ -134,8 +134,7 @@ def find_label_issues(
 
     rank_by_kwargs : dict, optional
       Optional keyword arguments to pass into scoring functions for ranking by
-      label quality score (see :py:func:`rank.get_label_quality_scores
-      <cleanlab.rank.get_label_quality_scores>`).
+      label quality score (see `~cleanlab.rank.get_label_quality_scores`).
 
     filter_by : {'prune_by_class', 'prune_by_noise_rate', 'both', 'confident_learning', 'predicted_neq_given', 'low_normalized_margin', 'low_self_confidence'}, default='prune_by_noise_rate'
       Method to determine which examples are flagged as having label issue, so you can filter/prune them from the dataset. Options:
@@ -145,8 +144,8 @@ def find_label_issues(
       - ``'both'``: filters only those examples that would be filtered by both ``'prune_by_noise_rate'`` and ``'prune_by_class'``.
       - ``'confident_learning'``: filters the examples counted as part of the off-diagonals of the confident joint. These are the examples that are confidently predicted to be a different label than their given label.
       - ``'predicted_neq_given'``: filters examples for which the predicted class (i.e. argmax of the predicted probabilities) does not match the given label.
-      - ``'low_normalized_margin'``: filters the examples with *smallest* normalized margin label quality score. The number of issues returned matches :py:func:`count.num_label_issues <cleanlab.count.num_label_issues>`.
-      - ``'low_self_confidence'``: filters the examples with *smallest* self confidence label quality score. The number of issues returned matches :py:func:`count.num_label_issues <cleanlab.count.num_label_issues>`.
+      - ``'low_normalized_margin'``: filters the examples with *smallest* normalized margin label quality score. The number of issues returned matches `~cleanlab.count.num_label_issues`.
+      - ``'low_self_confidence'``: filters the examples with *smallest* self confidence label quality score. The number of issues returned matches `~cleanlab.count.num_label_issues`.
 
     frac_noise : float, default=1.0
       Used to only return the "top" ``frac_noise * num_label_issues``. The choice of which "top"
@@ -183,7 +182,7 @@ def find_label_issues(
       An array of shape ``(K, K)`` representing the confident joint, the matrix used for identifying label issues, which
       estimates a confident subset of the joint distribution of the noisy and true labels, ``P_{noisy label, true label}``.
       Entry ``(j, k)`` in the matrix is the number of examples confidently counted into the pair of ``(noisy label=j, true label=k)`` classes.
-      The `confident_joint` can be computed using :py:func:`count.compute_confident_joint <cleanlab.count.compute_confident_joint>`.
+      The `confident_joint` can be computed using `~cleanlab.count.compute_confident_joint`.
       If not provided, it is computed from the given (noisy) `labels` and `pred_probs`.
 
     n_jobs : optional
@@ -659,13 +658,13 @@ def find_predicted_neq_given(
     Parameters
     ----------
     labels : np.ndarray or list
-      Labels in the same format expected by the :py:func:`find_label_issues <cleanlab.filter.find_label_issues>` function.
+      Labels in the same format expected by the `~cleanlab.filter.find_label_issues` function.
 
     pred_probs : np.ndarray
-      Predicted-probabilities in the same format expected by the :py:func:`find_label_issues <cleanlab.filter.find_label_issues>` function.
+      Predicted-probabilities in the same format expected by the `~cleanlab.filter.find_label_issues` function.
 
     multi_label : bool, optional
-      Whether each example may have multiple labels or not (see documentation for the :py:func:`find_label_issues <cleanlab.filter.find_label_issues>` function).
+      Whether each example may have multiple labels or not (see documentation for the `~cleanlab.filter.find_label_issues` function).
 
     Returns
     -------
@@ -695,7 +694,7 @@ def _find_predicted_neq_given_multilabel(labels: list, pred_probs: np.ndarray) -
        (e.g. ``labels = [[1,2],[1],[0],[],...]`` indicates the first example in dataset belongs to both class 1 and class 2).
 
      pred_probs : np.ndarray
-       Predicted-probabilities in the same format expected by the :py:func:`find_label_issues <cleanlab.filter.find_label_issues>` function.
+       Predicted-probabilities in the same format expected by the `~cleanlab.filter.find_label_issues` function.
 
      Returns
      -------
@@ -726,11 +725,9 @@ def find_label_issues_using_argmax_confusion_matrix(
     of ``argmax(pred_probs)`` and labels as the confident joint and then uses cleanlab
     (confident learning) to find the label issues using this matrix.
 
-    The only difference between this and :py:func:`find_label_issues
-    <cleanlab.filter.find_label_issues>` is that it uses the confusion matrix
+    The only difference between this and `~cleanlab.filter.find_label_issues` is that it uses the confusion matrix
     based on the argmax and given label instead of using the confident joint
-    from :py:func:`count.compute_confident_joint
-    <cleanlab.count.compute_confident_joint>`.
+    from `~cleanlab.count.compute_confident_joint`.
 
     Parameters
     ----------
@@ -753,7 +750,7 @@ def find_label_issues_using_argmax_confusion_matrix(
         prior (given noisy labels) is correct based on the original labels.
 
     filter_by : str, default='prune_by_noise_rate'
-        See `filter_by` argument of :py:func:`find_label_issues <cleanlab.filter.find_label_issues>`.
+        See `filter_by` argument of `~cleanlab.filter.find_label_issues`.
 
     Returns
     -------
