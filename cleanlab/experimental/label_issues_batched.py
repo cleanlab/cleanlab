@@ -15,7 +15,7 @@
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
 """
-Implementation of :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>`
+Implementation of `~cleanlab.filter.find_label_issues`
 that does not need much memory by operating in mini-batches.
 You can also use this approach to estimate label quality scores or the number of label issues
 for big datasets with limited memory.
@@ -69,7 +69,7 @@ def find_label_issues_batched(
     num_issue_kwargs: Optional[dict] = None,
 ) -> np.ndarray:
     """
-    Variant of :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>`
+    Variant of `~cleanlab.filter.find_label_issues`
     that requires less memory by reading from `pred_probs`, `labels` in mini-batches.
     To avoid loading big `pred_probs`, `labels` arrays into memory,
     provide these as memory-mapped objects like Zarr arrays or memmap arrays instead of regular numpy arrays.
@@ -123,10 +123,10 @@ def find_label_issues_batched(
       Whether to suppress print statements or not.
 
     quality_score_kwargs : dict, optional
-      Keyword arguments to pass into :py:func:`rank.get_label_quality_scores <cleanlab.rank.get_label_quality_scores>`.
+      Keyword arguments to pass into `~cleanlab.rank.get_label_quality_scores`.
 
     num_issue_kwargs : dict, optional
-      Keyword arguments to :py:func:`count.num_label_issues <cleanlab.count.num_label_issues>`
+      Keyword arguments to `~cleanlab.count.num_label_issues`
       to control estimation of the number of label issues.
       The only supported kwarg here for now is: `estimation_method`.
 
@@ -235,7 +235,7 @@ class LabelInspector:
     Class for finding label issues in big datasets where memory becomes a problem for other cleanlab methods.
     Only create one such object per dataset and do not try to use the same ``LabelInspector`` across 2 datasets.
     For efficiency, this class does little input checking.
-    You can first run :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>`
+    You can first run `~cleanlab.filter.find_label_issues`
     on a small subset of your data to verify your inputs are properly formatted.
     Do NOT modify any of the attributes of this class yourself!
     Multi-label classification is not supported by this class, it is only for multi-class classification.
@@ -305,10 +305,10 @@ class LabelInspector:
       If `n_jobs=None`, will use either the number of: physical cores if psutil is installed, or logical cores otherwise.
 
     quality_score_kwargs : dict, optional
-      Keyword arguments to pass into :py:func:`rank.get_label_quality_scores <cleanlab.rank.get_label_quality_scores>`.
+      Keyword arguments to pass into `~cleanlab.rank.get_label_quality_scores`.
 
     num_issue_kwargs : dict, optional
-      Keyword arguments to :py:func:`count.num_label_issues <cleanlab.count.num_label_issues>`
+      Keyword arguments to `~cleanlab.count.num_label_issues`
       to control estimation of the number of label issues.
       The only supported kwarg here for now is: `estimation_method`.
     """
@@ -381,7 +381,7 @@ class LabelInspector:
     def get_confident_thresholds(self, silent: bool = False) -> np.ndarray:
         """
         Fetches already-computed confident thresholds from the data seen so far
-        in same format as: :py:func:`count.get_confident_thresholds <cleanlab.count.get_confident_thresholds>`.
+        in same format as: `~cleanlab.count.get_confident_thresholds`.
 
 
         Returns
@@ -403,9 +403,9 @@ class LabelInspector:
     def get_num_issues(self, silent: bool = False) -> int:
         """
         Fetches already-computed estimate of the number of label issues in the data seen so far
-        in the same format as: :py:func:`count.num_label_issues <cleanlab.count.num_label_issues>`.
+        in the same format as: `~cleanlab.count.num_label_issues`.
 
-        Note: The estimated number of issues may differ from :py:func:`count.num_label_issues <cleanlab.count.num_label_issues>`
+        Note: The estimated number of issues may differ from `~cleanlab.count.num_label_issues`
         by 1 due to rounding differences.
 
         Returns
@@ -435,7 +435,7 @@ class LabelInspector:
     def get_quality_scores(self) -> np.ndarray:
         """
         Fetches already-computed estimate of the label quality of each example seen so far
-        in the same format as: :py:func:`rank.get_label_quality_scores <cleanlab.rank.get_label_quality_scores>`.
+        in the same format as: `~cleanlab.rank.get_label_quality_scores`.
 
         Returns
         -------
@@ -455,7 +455,7 @@ class LabelInspector:
     def get_label_issues(self) -> np.ndarray:
         """
         Fetches already-computed estimate of indices of examples with label issues in the data seen so far,
-        in the same format as: :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>`
+        in the same format as: `~cleanlab.filter.find_label_issues`
         with its `return_indices_ranked_by` argument specified.
 
         Note: this method corresponds to ``filter.find_label_issues(..., filter_by=METHOD1, return_indices_ranked_by=METHOD2)``
@@ -463,7 +463,7 @@ class LabelInspector:
         or if this object was instantiated with ``quality_score_kwargs = {"method": "normalized_margin"}`` then we instead have:
         ``METHOD1="low_normalized_margin"``, ``METHOD2="normalized_margin"``.
 
-        Note: The estimated number of issues may differ from :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>`
+        Note: The estimated number of issues may differ from `~cleanlab.filter.find_label_issues`
         by 1 due to rounding differences.
 
         Returns
@@ -490,7 +490,7 @@ class LabelInspector:
     def update_confident_thresholds(self, labels: LabelLike, pred_probs: np.ndarray):
         """
         Updates the estimate of confident_thresholds stored in this class using a new batch of data.
-        Inputs should be in same format as for: :py:func:`count.get_confident_thresholds <cleanlab.count.get_confident_thresholds>`.
+        Inputs should be in same format as for: `~cleanlab.count.get_confident_thresholds`.
 
         Parameters
         ----------
@@ -528,7 +528,7 @@ class LabelInspector:
         """
         Scores the label quality of each example in the provided batch of data,
         and also updates the number of label issues stored in this class.
-        Inputs should be in same format as for: :py:func:`rank.get_label_quality_scores <cleanlab.rank.get_label_quality_scores>`.
+        Inputs should be in same format as for: `~cleanlab.rank.get_label_quality_scores`.
 
         Parameters
         ----------
