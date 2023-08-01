@@ -113,6 +113,7 @@ to the classifier during training. `labels` denotes the noisy labels instead of
 the :math:`\\tilde{y}` used in confident learning paper.
 """
 
+from cleanlab.experimental.label_issues_batched import find_label_issues_batched
 from sklearn.linear_model import LogisticRegression as LogReg
 from sklearn.metrics import accuracy_score
 from sklearn.base import BaseEstimator
@@ -218,6 +219,10 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
     verbose : bool, default=False
       Controls how much output is printed. Set to ``False`` to suppress print
       statements.
+
+    low_memory: bool, default=False
+      Uses :py:func:`experimental.label_issues_batched.find_label_issues_batched <cleanlab.experimental.label_issues_batched>`
+      to find label issues.
     """
 
     def __init__(
@@ -232,6 +237,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         find_label_issues_kwargs={},
         label_quality_scores_kwargs={},
         verbose=False,
+        low_memory=False,
     ):
         self._default_clf = False
         if clf is None:
@@ -269,6 +275,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         self.inverse_noise_matrix = None
         self.clf_kwargs = None
         self.clf_final_kwargs = None
+        self.low_memory = low_memory
 
     def fit(
         self,
@@ -894,11 +901,16 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         labels = labels_to_array(labels)
         if self.verbose:
             print("Using predicted probabilities to identify label issues ...")
-        label_issues_mask = filter.find_label_issues(
-            labels,
-            pred_probs,
-            **self.find_label_issues_kwargs,
-        )
+        if self.low_memory:
+            label_issues_indices = find_label_issues_batched(labels, pred_probs)
+            label_issues_mask = np.zeros(len(labels), dtype=bool)
+            label_issues_mask[label_issues_indices] = True
+        else:
+            label_issues_mask = filter.find_label_issues(
+                labels,
+                pred_probs,
+                **self.find_label_issues_kwargs,
+            )
         label_quality_scores = get_label_quality_scores(
             labels, pred_probs, **self.label_quality_scores_kwargs
         )

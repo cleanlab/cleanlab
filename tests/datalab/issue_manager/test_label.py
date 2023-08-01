@@ -103,3 +103,18 @@ class TestLabelIssueManager:
         summary_parameters.pop("pred_probs")
         expected_parameters.pop("pred_probs")
         assert summary_parameters == expected_parameters
+
+    def test_find_issues_low_memory(self, pred_probs, lab, issue_manager):
+        clean_learning_kwargs = {"low_memory": True}
+        issue_manager_lm = LabelIssueManager(
+            datalab=lab, clean_learning_kwargs=clean_learning_kwargs
+        )
+        issue_manager_lm.find_issues(pred_probs=pred_probs)
+        issue_manager.find_issues(pred_probs=pred_probs)
+
+        # check jaccard similarity:
+        intersection = len(
+            list(set(issue_manager_lm.issues).intersection(set(issue_manager.issues)))
+        )
+        union = len(set(issue_manager_lm.issues)) + len(set(issue_manager.issues)) - intersection
+        assert float(intersection) / union > 0.95
