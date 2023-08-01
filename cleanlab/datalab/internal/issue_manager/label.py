@@ -17,15 +17,18 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional
 
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.preprocessing import OneHotEncoder
+
 import numpy as np
 
 from cleanlab.classification import CleanLearning
-from cleanlab.datalab.issue_manager import IssueManager
+from cleanlab.datalab.internal.issue_manager import IssueManager
 from cleanlab.internal.validation import assert_valid_inputs
 
 if TYPE_CHECKING:  # pragma: no cover
     import pandas as pd
-
+    import numpy.typing as npt
     from cleanlab.datalab.datalab import Datalab
 
 
@@ -36,6 +39,10 @@ class LabelIssueManager(IssueManager):
     ----------
     datalab :
         A Datalab instance.
+
+    k :
+        The number of nearest neighbors to consider when computing pred_probs from features.
+        Only applicable if features are provided and pred_probs are not.
 
     clean_learning_kwargs :
         Keyword arguments to pass to the :py:meth:`CleanLearning <cleanlab.classification.CleanLearning>` constructor.
@@ -61,12 +68,14 @@ class LabelIssueManager(IssueManager):
     def __init__(
         self,
         datalab: Datalab,
+        k: int = 10,
         clean_learning_kwargs: Optional[Dict[str, Any]] = None,
         health_summary_parameters: Optional[Dict[str, Any]] = None,
         **_,
     ):
         super().__init__(datalab)
         self.cl = CleanLearning(**(clean_learning_kwargs or {}))
+        self.k = k
         self.health_summary_parameters: Dict[str, Any] = (
             health_summary_parameters.copy() if health_summary_parameters else {}
         )
@@ -79,7 +88,7 @@ class LabelIssueManager(IssueManager):
 
         Examples
         --------
-        >>> from cleanlab.datalab.issue_manager.label import LabelIssueManager
+        >>> from cleanlab.datalab.internal.issue_manager.label import LabelIssueManager
         >>> LabelIssueManager._process_clean_learning_kwargs(thresholds=[0.1, 0.9])
         {'thresholds': [0.1, 0.9]}
         """
@@ -118,9 +127,39 @@ class LabelIssueManager(IssueManager):
 
     def find_issues(
         self,
-        pred_probs: np.ndarray,
+        pred_probs: Optional[npt.NDArray] = None,
+        features: Optional[npt.NDArray] = None,
         **kwargs,
     ) -> None:
+        """Find label issues in the datalab.
+
+        Parameters
+        ----------
+        pred_probs :
+            The predicted probabilities for each example.
+
+        features :
+            The features for each example.
+        """
+        if pred_probs is None:
+            if features is None:
+                raise ValueError(
+                    "Either pred_probs or features must be provided to find label issues."
+                )
+            # produce out-of-sample pred_probs from features
+            knn = KNeighborsClassifier(n_neighbors=self.k + 1)
+            knn.fit(features, self.datalab.labels)
+            pred_probs = knn.predict_proba(features)
+
+            encoder = OneHotEncoder()
+            label_transform = self.datalab.labels.reshape(-1, 1)
+            one_hot_label = encoder.fit_transform(label_transform)
+
+            # adjust pred_probs so it is out-of-sample
+            pred_probs = np.asarray(
+                (pred_probs - 1 / (self.k + 1) * one_hot_label) * (self.k + 1) / self.k
+            )
+
         self.health_summary_parameters.update({"pred_probs": pred_probs})
         # Find examples with label issues
         self.issues = self.cl.find_label_issues(

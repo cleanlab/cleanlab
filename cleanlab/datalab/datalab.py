@@ -21,18 +21,25 @@ Datalab offers a unified audit to detect all kinds of issues in data and labels.
 """
 from __future__ import annotations
 
+import warnings
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 import numpy as np
 import pandas as pd
 
 import cleanlab
-from cleanlab.datalab.data import Data
-from cleanlab.datalab.data_issues import DataIssues
-from cleanlab.datalab.display import _Displayer
-from cleanlab.datalab.issue_finder import IssueFinder
-from cleanlab.datalab.serialize import _Serializer
-from cleanlab.datalab.report import Reporter
+from cleanlab.datalab.internal.adapter.imagelab import (
+    create_imagelab,
+)
+from cleanlab.datalab.internal.data import Data
+from cleanlab.datalab.internal.display import _Displayer
+from cleanlab.datalab.internal.helper_factory import (
+    data_issues_factory,
+    issue_finder_factory,
+    report_factory,
+)
+from cleanlab.datalab.internal.issue_finder import IssueFinder
+from cleanlab.datalab.internal.serialize import _Serializer
 
 if TYPE_CHECKING:  # pragma: no cover
     import numpy.typing as npt
@@ -69,8 +76,13 @@ class Datalab:
             - path to a local file: Text (.txt), CSV (.csv), JSON (.json)
             - or a dataset identifier on the Hugging Face Hub
 
-    label_name : str
+    label_name : str, optional
         The name of the label column in the dataset.
+
+    image_key : str, optional
+        Optional key that can be specified for image datasets to point to the field containing the actual images themselves.
+        If specified, additional image-specific issue types can be detected in the dataset.
+        See the CleanVision package `documentation <https://cleanvision.readthedocs.io/en/latest/>`_ for descriptions of these image-specific issue types.
 
     verbosity : int, optional
         The higher the verbosity level, the more information
@@ -89,6 +101,7 @@ class Datalab:
         self,
         data: "DatasetLike",
         label_name: Optional[str] = None,
+        image_key: Optional[str] = None,
         verbosity: int = 1,
     ) -> None:
         self._data = Data(data, label_name)
@@ -97,10 +110,12 @@ class Datalab:
         self._label_map = self._labels.label_map
         self.label_name = self._labels.label_name
         self._data_hash = self._data._data_hash
-        self.data_issues = DataIssues(self._data)
         self.cleanlab_version = cleanlab.version.__version__
         self.verbosity = verbosity
+        self._imagelab = create_imagelab(dataset=self.data, image_key=image_key)
+        self.data_issues = data_issues_factory(self._imagelab)(self._data)
 
+    # todo: check displayer methods
     def __repr__(self) -> str:
         return _Displayer(data_issues=self.data_issues).__repr__()
 
@@ -143,7 +158,7 @@ class Datalab:
 
         Note
         ----
-        This method acts as a wrapper around the :py:meth:`IssueFinder.find_issues <cleanlab.datalab.issue_finder.IssueFinder.find_issues>` method,
+        This method acts as a wrapper around the :py:meth:`IssueFinder.find_issues <cleanlab.datalab.internal.issue_finder.IssueFinder.find_issues>` method,
         where the core logic for issue detection is implemented.
 
         Note
@@ -187,7 +202,7 @@ class Datalab:
             which is responsible for detecting the particular issue type.
 
             .. seealso::
-                :py:class:`IssueManager <cleanlab.datalab.issue_manager.issue_manager.IssueManager>`
+                :py:class:`IssueManager <cleanlab.datalab.internal.issue_manager.issue_manager.IssueManager>`
 
         Examples
         --------
@@ -255,7 +270,7 @@ class Datalab:
 
             If you are advanced user who wants greater control, you can pass keyword arguments to the issue manager that handles the label issues.
             For example, if you want to pass the keyword argument "clean_learning_kwargs"
-            to the constructor of the :py:class:`LabelIssueManager <cleanlab.datalab.issue_manager.label.LabelIssueManager>`, you would pass:
+            to the constructor of the :py:class:`LabelIssueManager <cleanlab.datalab.internal.issue_manager.label.LabelIssueManager>`, you would pass:
 
 
             .. code-block:: python
@@ -270,13 +285,23 @@ class Datalab:
                 >>> # lab.find_issues(pred_probs=pred_probs, issue_types=issue_types)
 
         """
-        issue_finder = IssueFinder(datalab=self, verbosity=self.verbosity)
+        if issue_types is not None and not issue_types:
+            warnings.warn(
+                "No issue types were specified so no issues will be found in the dataset. Set `issue_types` as None to consider a default set of issues."
+            )
+            return None
+
+        issue_finder = issue_finder_factory(self._imagelab)(datalab=self, verbosity=self.verbosity)
         issue_finder.find_issues(
             pred_probs=pred_probs,
             features=features,
             knn_graph=knn_graph,
             issue_types=issue_types,
         )
+        if self.verbosity:
+            print(
+                f"\nAudit complete. {self.data_issues.issue_summary['num_issues'].sum()} issues found in the dataset."
+            )
 
     def report(
         self,
@@ -304,15 +329,20 @@ class Datalab:
         See Also
         --------
         For advanced usage, see documentation for the
-        :py:class:`Reporter <cleanlab.datalab.report.Reporter>` class.
+        :py:class:`Reporter <cleanlab.datalab.internal.report.Reporter>` class.
         """
         if verbosity is None:
             verbosity = self.verbosity
-        reporter = Reporter(
+        if self.data_issues.issue_summary.empty:
+            print("Please specify some `issue_types` in datalab.find_issues() to see a report.\n")
+            return
+
+        reporter = report_factory(self._imagelab)(
             data_issues=self.data_issues,
             verbosity=verbosity,
             include_description=include_description,
             show_summary_score=show_summary_score,
+            imagelab=self._imagelab,
         )
         reporter.report(num_examples=num_examples)
 
@@ -386,7 +416,7 @@ class Datalab:
 
         NOTE
         ----
-        This is a wrapper around the :py:meth:`DataIssues.get_issues <cleanlab.datalab.data_issues.DataIssues.get_issues>` method.
+        This is a wrapper around the :py:meth:`DataIssues.get_issues <cleanlab.datalab.internal.data_issues.DataIssues.get_issues>` method.
 
         Parameters
         ----------
@@ -416,7 +446,7 @@ class Datalab:
         NOTE
         ----
         This is a wrapper around the
-        :py:meth:`DataIssues.get_issue_summary <cleanlab.datalab.data_issues.DataIssues.get_issue_summary>` method.
+        :py:meth:`DataIssues.get_issue_summary <cleanlab.datalab.internal.data_issues.DataIssues.get_issue_summary>` method.
 
         Parameters
         ----------
@@ -441,7 +471,7 @@ class Datalab:
         NOTE
         ----
         This is a wrapper around the
-        :py:meth:`DataIssues.get_info <cleanlab.datalab.data_issues.DataIssues.get_info>` method.
+        :py:meth:`DataIssues.get_info <cleanlab.datalab.internal.data_issues.DataIssues.get_info>` method.
 
         Parameters
         ----------
@@ -450,7 +480,7 @@ class Datalab:
 
         Returns
         -------
-        :py:meth:`info <cleanlab.datalab.data_issues.DataIssues.get_info>` :
+        :py:meth:`info <cleanlab.datalab.internal.data_issues.DataIssues.get_info>` :
             The info for the issue_name.
         """
         return self.data_issues.get_info(issue_name)
@@ -463,11 +493,11 @@ class Datalab:
 
         Note
         ----
-        This method is a wrapper around :py:meth:`IssueFinder.list_possible_issue_types <cleanlab.datalab.issue_finder.IssueFinder.list_possible_issue_types>`.
+        This method is a wrapper around :py:meth:`IssueFinder.list_possible_issue_types <cleanlab.datalab.internal.issue_finder.IssueFinder.list_possible_issue_types>`.
 
         See Also
         --------
-        :py:class:`REGISTRY <cleanlab.datalab.factory.REGISTRY>` : All available issue types and their corresponding issue managers can be found here.
+        :py:class:`REGISTRY <cleanlab.datalab.internal.issue_manager_factory.REGISTRY>` : All available issue types and their corresponding issue managers can be found here.
         """
         return IssueFinder.list_possible_issue_types()
 
@@ -478,11 +508,11 @@ class Datalab:
 
         Note
         ----
-        This method is a wrapper around :py:meth:`IssueFinder.list_default_issue_types <cleanlab.datalab.issue_finder.IssueFinder.list_default_issue_types>`.
+        This method is a wrapper around :py:meth:`IssueFinder.list_default_issue_types <cleanlab.datalab.internal.issue_finder.IssueFinder.list_default_issue_types>`.
 
         See Also
         --------
-        :py:class:`REGISTRY <cleanlab.datalab.factory.REGISTRY>` : All available issue types and their corresponding issue managers can be found here.
+        :py:class:`REGISTRY <cleanlab.datalab.internal.issue_manager_factory.REGISTRY>` : All available issue types and their corresponding issue managers can be found here.
         """
         return IssueFinder.list_default_issue_types()
 

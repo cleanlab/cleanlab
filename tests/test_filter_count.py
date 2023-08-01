@@ -1341,3 +1341,24 @@ def test_low_filter_by_methods_multilabel():
         return_indices_ranked_by="self_confidence",
     )
     assert set(label_issues_sc) == set(label_issues_sc_sort)
+
+
+@pytest.mark.parametrize(
+    "filter_by",
+    ["prune_by_noise_rate", "prune_by_class", "both", "confident_learning", "predicted_neq_given"],
+)
+def test_does_not_flag_correct_examples(filter_by):
+    labels = data["labels"]
+    pred_probs = data["pred_probs"]
+    pred_labels = np.argmax(pred_probs, axis=1)
+
+    label_issues_mask = filter.find_label_issues(
+        labels=labels,
+        pred_probs=pred_probs,
+        filter_by=filter_by,
+    )
+
+    matching_mask = labels == pred_labels  # mask specifying whether label == prediction
+    assert (
+        any(label_issues_mask[matching_mask]) == False
+    )  # make sure none of these are flagged as label error

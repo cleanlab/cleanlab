@@ -1,8 +1,8 @@
-duplicate
+imbalance
 =========
 
 
-.. automodule:: cleanlab.datalab.issue_manager.duplicate
+.. automodule:: cleanlab.datalab.internal.issue_manager.imbalance
     :autosummary:
     :members:
     :undoc-members:

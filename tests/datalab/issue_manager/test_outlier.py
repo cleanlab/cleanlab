@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from cleanlab.datalab.issue_manager.outlier import OutlierIssueManager
+from cleanlab.datalab.internal.issue_manager.outlier import OutlierIssueManager
 from cleanlab.outlier import OutOfDistribution
 
 SEED = 42

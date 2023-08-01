@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from cleanlab.datalab.issue_manager.label import LabelIssueManager
+from cleanlab.datalab.internal.issue_manager.label import LabelIssueManager
 
 
 class TestLabelIssueManager:

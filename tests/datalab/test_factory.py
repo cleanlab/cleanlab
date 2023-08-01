@@ -1,8 +1,8 @@
 import pytest
 
-from cleanlab.datalab.factory import register, REGISTRY
+from cleanlab.datalab.internal.issue_manager_factory import register, REGISTRY
 from cleanlab import Datalab
-from cleanlab.datalab.issue_manager.issue_manager import IssueManager
+from cleanlab.datalab.internal.issue_manager.issue_manager import IssueManager
 
 
 @pytest.fixture
@@ -13,8 +13,8 @@ def registry():
 def test_list_possible_issue_types(registry):
     issue_types = Datalab.list_possible_issue_types()
     assert isinstance(issue_types, list)
-    defaults = ["label", "outlier", "near_duplicate", "non_iid"]
-    assert set(issue_types) == set(defaults)
+    possible_issues = ["label", "outlier", "near_duplicate", "non_iid", "class_imbalance"]
+    assert set(issue_types) == set(possible_issues)
 
     test_key = "test_for_list_possible_issue_types"
 
@@ -24,7 +24,7 @@ def test_list_possible_issue_types(registry):
 
     issue_types = Datalab.list_possible_issue_types()
     assert set(issue_types) == set(
-        defaults + [test_key]
+        possible_issues + [test_key]
     ), "New issue type should be added to the list"
 
     # Clean up

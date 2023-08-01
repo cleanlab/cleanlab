@@ -1,9 +1,33 @@
 import numpy as np
 import pytest
+from hypothesis import given, strategies as st
+from hypothesis.strategies import composite
+from hypothesis.extra.numpy import arrays
 
-from cleanlab.datalab.issue_manager.duplicate import NearDuplicateIssueManager
+
+from cleanlab import Datalab
+from cleanlab.datalab.internal.issue_manager.duplicate import NearDuplicateIssueManager
 
 SEED = 42
+
+
+@composite
+def embeddings_strategy(draw):
+    shape_strategy = st.tuples(
+        st.integers(min_value=3, max_value=20), st.integers(min_value=2, max_value=2)
+    )
+    element_strategy = st.floats(
+        min_value=0.0, max_value=1.0, allow_nan=False, allow_infinity=False
+    )
+    embeddings = draw(
+        arrays(
+            dtype=np.float64,
+            shape=shape_strategy,
+            elements=element_strategy,
+            unique=True,
+        )
+    )
+    return embeddings
 
 
 class TestNearDuplicateIssueManager:
@@ -80,3 +104,37 @@ class TestNearDuplicateIssueManager:
             verbosity=3,
         )
         assert "Additional Information: " in report
+
+    @given(embeddings=embeddings_strategy())
+    def test_near_duplicate_sets(self, embeddings):
+        data = {"metadata": ["" for _ in range(len(embeddings))]}
+        lab = Datalab(data)
+        issue_manager = NearDuplicateIssueManager(
+            datalab=lab,
+            metric="euclidean",
+            k=2,
+        )
+        embeddings = np.array(embeddings)
+        issue_manager.find_issues(features=embeddings)
+        near_duplicate_sets = issue_manager.info["near_duplicate_sets"]
+        issues = issue_manager.issues["is_near_duplicate_issue"]
+
+        # Test: Near duplicates are symmetric
+        all_symmetric = all(
+            i in near_duplicate_sets[j]
+            for i, near_duplicates in enumerate(near_duplicate_sets)
+            for j in near_duplicates
+        )
+        assert all_symmetric, "Some near duplicate sets are not symmetric"
+
+        # Test: Near duplicate sets for issues
+        assert all(
+            len(near_duplicate_set) == 0
+            for i, near_duplicate_set in enumerate(near_duplicate_sets)
+            if not issues[i]
+        ), "Non-issue examples should not have near duplicate sets"
+        assert all(
+            len(near_duplicate_set) > 0
+            for i, near_duplicate_set in enumerate(near_duplicate_sets)
+            if issues[i]
+        ), "Issue examples should have near duplicate sets"

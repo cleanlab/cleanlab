@@ -124,6 +124,14 @@ pip install -e ".[gpu]"
 
 ## Testing
 
+
+**Download test data**
+The test data for cleanlab resides in the assets repository. Use the following commands to download test data before running tests.
+```shell
+git clone https://github.com/cleanlab/assets.git
+mv assets/cleanlab_test_data cleanlab/tests/datalab/data
+```
+
 **Run all the tests:**
 
 ```shell

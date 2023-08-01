@@ -3,3 +3,4 @@ from .duplicate import NearDuplicateIssueManager
 from .label import LabelIssueManager
 from .outlier import OutlierIssueManager
 from .noniid import NonIIDIssueManager
+from .imbalance import ClassImbalanceIssueManager

@@ -19,21 +19,21 @@ import contextlib
 import io
 import os
 import pickle
+import timeit
+from pathlib import Path
 from unittest.mock import MagicMock, Mock, patch
-from cleanlab.datalab.datalab import Datalab
 
-from scipy.sparse import csr_matrix
-from sklearn.neighbors import NearestNeighbors
-from datasets.dataset_dict import DatasetDict
 import numpy as np
 import pandas as pd
-
-from pathlib import Path
-
 import pytest
-import timeit
+from datasets.dataset_dict import DatasetDict
+from scipy.sparse import csr_matrix
+from sklearn.neighbors import NearestNeighbors
 
-from cleanlab.datalab.report import Reporter
+import cleanlab
+from cleanlab.datalab.datalab import Datalab
+from cleanlab.datalab.internal.issue_finder import IssueFinder
+from cleanlab.datalab.internal.report import Reporter
 
 SEED = 42
 
@@ -43,6 +43,11 @@ def test_datalab_invalid_datasetdict(dataset, label_name):
         datadict = DatasetDict({"train": dataset, "test": dataset})
         Datalab(datadict, label_name)  # type: ignore
         assert "Please pass a single dataset, not a DatasetDict." in str(e)
+
+
+@pytest.fixture(scope="function")
+def list_possible_issue_types(monkeypatch, request):
+    monkeypatch.setattr(IssueFinder, "list_possible_issue_types", lambda *_: request.param)
 
 
 class TestDatalab:
@@ -228,7 +233,7 @@ class TestDatalab:
             lab.find_issues(pred_probs=pred_probs, issue_types=issue_types)
         warning_message = record[0].message.args[0]
         assert (
-            "No issue types were specified. No issues will be found in the dataset."
+            "No issue types were specified so no issues will be found in the dataset. Set `issue_types` as None to consider a default set of issues."
             in warning_message
         )
 
@@ -477,7 +482,8 @@ class TestDatalab:
             )
             assert expected_error_msg == str(excinfo.value)
 
-    def test_failed_issue_managers(self, lab, monkeypatch):
+    @pytest.mark.parametrize("list_possible_issue_types", [["erroneous_issue_type"]], indirect=True)
+    def test_failed_issue_managers(self, lab, monkeypatch, list_possible_issue_types):
         """Test that a failed issue manager will not be added to the Datalab instance after
         the call to `find_issues`."""
         mock_issue_types = {"erroneous_issue_type": {}}
@@ -492,7 +498,7 @@ class TestDatalab:
                 return [mock_issue_manager]
 
         monkeypatch.setattr(
-            "cleanlab.datalab.issue_finder._IssueManagerFactory", MockIssueManagerFactory
+            "cleanlab.datalab.internal.issue_finder._IssueManagerFactory", MockIssueManagerFactory
         )
 
         assert lab.issues.empty
@@ -507,7 +513,7 @@ class TestDatalab:
 
         assert lab.issues.empty
 
-    def test_report(self, lab):
+    def test_report(self, lab, monkeypatch, capsys):
         class MockReporter:
             def __init__(self, *args, **kwargs):
                 self.verbosity = kwargs.get("verbosity", None)
@@ -518,17 +524,23 @@ class TestDatalab:
                     f"Report with verbosity={self.verbosity} and k={kwargs.get('num_examples', 5)}"
                 )
 
-        with patch("cleanlab.datalab.datalab.Reporter", new=MockReporter):
-            # Call report with no arguments, test that it prints the report
-            with patch("builtins.print") as mock_print:
-                lab.report(verbosity=0)
-                mock_print.assert_called_once_with("Report with verbosity=0 and k=5")
-                mock_print.reset_mock()
-                lab.report(num_examples=10, verbosity=3)
-                mock_print.assert_called_once_with("Report with verbosity=3 and k=10")
-                mock_print.reset_mock()
-                lab.report()
-                mock_print.assert_called_once_with("Report with verbosity=1 and k=5")
+        monkeypatch.setattr(cleanlab.datalab.internal.helper_factory, "Reporter", MockReporter)
+        monkeypatch.setattr(
+            lab.data_issues,
+            "issue_summary",
+            pd.DataFrame(np.random.randint(0, 100, size=(100, 4)), columns=list("ABCD")),
+        )
+        lab.report(verbosity=0)
+        captured = capsys.readouterr()
+        assert "Report with verbosity=0 and k=5" in captured.out
+
+        lab.report(num_examples=10, verbosity=3)
+        captured = capsys.readouterr()
+        assert "Report with verbosity=3 and k=10" in captured.out
+
+        lab.report()
+        captured = capsys.readouterr()
+        assert "Report with verbosity=1 and k=5" in captured.out
 
 
 class TestDatalabUsingKNNGraph:
@@ -581,12 +593,7 @@ class TestDatalabUsingKNNGraph:
         lab, _, _ = data_tuple
 
         # Test that a warning is raised
-        with pytest.warns(UserWarning) as record:
-            lab.find_issues()
-
-        assert len(record) == 2
-        assert "No arguments were passed to find_issues." == str(record[0].message)
-        assert "No issue check performed." == str(record[1].message)
+        lab.find_issues()
         assert lab.issues.empty  # No columns should be added to the issues dataframe
 
 
@@ -605,7 +612,7 @@ class TestDatalabIssueManagerInteraction:
         mock_registry = MagicMock()
         mock_registry.__getitem__.side_effect = KeyError("issue type not registered")
 
-        with patch("cleanlab.datalab.factory.REGISTRY", mock_registry):
+        with patch("cleanlab.datalab.internal.issue_manager_factory.REGISTRY", mock_registry):
             with pytest.raises(ValueError) as excinfo:
                 lab.find_issues(issue_types={"custom_issue": {}})
 
@@ -618,7 +625,7 @@ class TestDatalabIssueManagerInteraction:
 
     def test_custom_issue_manager_registered(self, lab, custom_issue_manager):
         """Test that a custom issue manager that is registered will be used."""
-        from cleanlab.datalab.factory import register
+        from cleanlab.datalab.internal.issue_manager_factory import register
 
         register(custom_issue_manager)
 
@@ -637,11 +644,12 @@ class TestDatalabIssueManagerInteraction:
         )
         assert pd.testing.assert_frame_equal(lab.issues, expected_issues) is None
 
+    @pytest.mark.parametrize("list_possible_issue_types", [["custom_issue"]], indirect=True)
     def test_find_issues_for_custom_issue_manager_with_custom_kwarg(
-        self, lab, custom_issue_manager
+        self, lab, custom_issue_manager, list_possible_issue_types
     ):
         """Test that a custom issue manager that is registered will be used."""
-        from cleanlab.datalab.factory import register
+        from cleanlab.datalab.internal.issue_manager_factory import register
 
         register(custom_issue_manager)
 
@@ -661,7 +669,7 @@ class TestDatalabIssueManagerInteraction:
         assert pd.testing.assert_frame_equal(lab.issues, expected_issues) is None
 
         # Clean up registry
-        from cleanlab.datalab.factory import REGISTRY
+        from cleanlab.datalab.internal.issue_manager_factory import REGISTRY
 
         REGISTRY.pop(custom_issue_manager.issue_name)
 
@@ -814,14 +822,46 @@ class TestDatalabFindLabelIssues:
         lab = Datalab(data=data, label_name="labels")
         lab.find_issues(features=random_embeddings)
         summary = lab.get_issue_summary()
-        assert len(summary) == 3
-        assert "label" not in summary["issue_type"].values
+        assert len(summary) == 4
+        assert "label" in summary["issue_type"].values
         lab.find_issues(pred_probs=pred_probs, issue_types={"label": {}})
         summary = lab.get_issue_summary()
         assert len(summary) == 4
         assert "label" in summary["issue_type"].values
         label_summary = lab.get_issue_summary("label")
         assert label_summary["num_issues"].values[0] > 0
+
+    def test_build_pred_probs_from_features(self, random_embeddings):
+        data = {"labels": np.random.randint(0, 2, 100)}
+        lab = Datalab(data=data, label_name="labels")
+        lab.find_issues(features=random_embeddings, issue_types={"label": {}})
+        summary = lab.get_issue_summary()
+        assert len(summary) == 1
+        assert "label" in summary["issue_type"].values
+        lab.find_issues(features=random_embeddings, issue_types={"label": {"k": 5}})
+        summary = lab.get_issue_summary()
+        assert len(summary) == 1
+        assert "label" in summary["issue_type"].values
+
+    def test_pred_probs_precedence(self, pred_probs, random_embeddings):
+        data = {"labels": np.random.randint(0, 2, 100)}
+        lab = Datalab(data=data, label_name="labels")
+        lab.find_issues(pred_probs=pred_probs, issue_types={"label": {}})
+        summary = lab.get_issue_summary()
+        assert "label" in summary["issue_type"].values
+        label_summary_pred_probs = lab.get_issue_summary("label")
+        assert label_summary_pred_probs["num_issues"].values[0] > 0
+        lab = Datalab(data=data, label_name="labels")
+        lab.find_issues(
+            features=random_embeddings, pred_probs=pred_probs, issue_types={"label": {}}
+        )
+        summary = lab.get_issue_summary()
+        assert "label" in summary["issue_type"].values
+        label_summary_both = lab.get_issue_summary("label")
+        assert (
+            label_summary_both["num_issues"].values[0]
+            == label_summary_pred_probs["num_issues"].values[0]
+        )
 
 
 class TestDatalabFindOutlierIssues:
@@ -863,6 +903,28 @@ class TestDatalabFindNearDuplicateIssues:
         return X
 
     @pytest.fixture
+    def fixed_embeddings(self):
+        near_duplicate_scale = 0.0001
+        non_duplicate_scale = 100
+        X = np.array(
+            [[0, 0]] * 4  # Points with 3 exact duplicates
+            + [[1, 1]] * 2  # Points with 1 exact duplicate
+            + [[1, 0]] * 3
+            + [[1 + near_duplicate_scale, 0]]
+            + [
+                [1, 0 + near_duplicate_scale]
+            ]  # Points with 2 exact duplicates and 2 near duplicates
+            + [
+                [-1, -1] + np.random.rand(2) * near_duplicate_scale for _ in range(5)
+            ]  # Points with 5 near duplicates
+            + [
+                [-1, 0] + np.random.rand(2) * near_duplicate_scale for _ in range(2)
+            ]  # Points with 1 near duplicate
+            + (np.random.rand(20, 2) * non_duplicate_scale).tolist()  # Random points
+        )
+        return X
+
+    @pytest.fixture
     def pred_probs(self):
         np.random.seed(SEED)
         pred_probs_array = np.random.rand(100, 2)
@@ -881,6 +943,66 @@ class TestDatalabFindNearDuplicateIssues:
         assert "near_duplicate" in summary["issue_type"].values
         near_duplicate_summary = lab.get_issue_summary("near_duplicate")
         assert near_duplicate_summary["num_issues"].values[0] > 1
+
+    def test_fixed_embeddings_outputs(self, fixed_embeddings):
+        lab = Datalab(data={"a": ["" for _ in range(len(fixed_embeddings))]})
+        lab.find_issues(features=fixed_embeddings, issue_types={"near_duplicate": {}})
+        issues = lab.get_issues("near_duplicate")
+
+        assert issues["is_near_duplicate_issue"].sum() == 18
+        assert all(
+            issues["is_near_duplicate_issue"].values
+            == [True] * 18 + [False] * (len(fixed_embeddings) - 18)
+        )
+
+        # Test the first set of near duplicates (only 3 exact duplicates)
+        near_duplicate_sets = issues["near_duplicate_sets"].values
+
+        expected_near_duplicate_sets = np.array(
+            [
+                # 3 exact duplicates
+                np.array([3, 1, 2]),
+                np.array([0, 3, 2]),
+                np.array([0, 3, 1]),
+                np.array([0, 1, 2]),
+                # 1 exact duplicate
+                np.array([5]),
+                np.array([4]),
+                # 2 exact duplicates and 2 near duplicates
+                np.array([8, 7, 9, 10]),
+                np.array([8, 6, 9, 10]),
+                np.array([6, 7, 9, 10]),
+                np.array([8, 6, 7, 10]),
+                np.array([7, 8, 6, 9]),
+                # 4 near duplicates
+                np.array([15, 13, 14, 12]),
+                np.array([13, 14, 15, 11]),
+                np.array([14, 12, 15, 11]),
+                np.array([13, 12, 15, 11]),
+                np.array([11, 13, 14, 12]),
+                # 1 near duplicate
+                np.array([17]),
+                np.array([16]),
+            ]
+            +
+            # Random points
+            [np.array([])] * 20,
+            dtype=object,
+        )
+
+        # Exact duplicates may have arbitrary order, so sort the sets before comparing
+        equal_sets = [
+            np.array_equal(sorted(a), sorted(b))
+            for a, b in zip(near_duplicate_sets, expected_near_duplicate_sets)
+        ]
+        assert all(equal_sets)
+
+        # Assert self-idx is not included in near duplicate sets
+        assert all([i not in s for i, s in enumerate(near_duplicate_sets)])
+
+        # Assert near duplicate sets are unique, ignoring empty sets
+        unique_non_empty_sets = [tuple(s) for s in near_duplicate_sets if len(s) > 0]
+        assert len(set(unique_non_empty_sets)) == 18
 
 
 class TestDatalabWithoutLabels:
@@ -935,11 +1057,54 @@ class TestDatalabWithoutLabels:
         issues_with_labels = lab_with_labels.issues
         issues_without_label_name = lab_without_label_name.issues
 
-        pd.testing.assert_frame_equal(issues_without_labels, issues_with_labels)
+        # issues_with_labels should have two additional columns about label issues
+        assert len(issues_without_labels.columns) + 2 == len(issues_with_labels.columns)
         pd.testing.assert_frame_equal(issues_without_labels, issues_without_label_name)
 
 
-class TestDatalabWithLowMemory:
-    num_examples = 100
-    num_features = 10
-    K = 2
+class TestDataLabClassImbalanceIssues:
+    K = 3
+    N = 100
+    num_features = 2
+
+    @pytest.fixture
+    def random_embeddings(self):
+        np.random.seed(SEED)
+        return np.random.rand(self.N, self.num_features)
+
+    @pytest.fixture
+    def imbalance_labels(self):
+        np.random.seed(SEED)
+        labels = np.random.choice(np.arange(self.K - 1), 100, p=[0.5] * (self.K - 1))
+        labels[0] = 2
+        return labels
+
+    @pytest.fixture
+    def pred_probs(self):
+        np.random.seed(SEED)
+        pred_probs_array = np.random.rand(self.N, self.K)
+        return pred_probs_array / pred_probs_array.sum(axis=1, keepdims=True)
+
+    def test_incremental_search(self, pred_probs, random_embeddings, imbalance_labels):
+        data = {"labels": imbalance_labels}
+        lab = Datalab(data=data, label_name="labels")
+        lab.find_issues(pred_probs=pred_probs, issue_types={"label": {}})
+        summary = lab.get_issue_summary()
+        assert len(summary) == 1
+        assert "class_imbalance" not in summary["issue_type"].values
+        lab.find_issues(features=random_embeddings, issue_types={"class_imbalance": {}})
+        summary = lab.get_issue_summary()
+        assert len(summary) == 2
+        assert "class_imbalance" in summary["issue_type"].values
+        class_imbalance_summary = lab.get_issue_summary("class_imbalance")
+        assert class_imbalance_summary["num_issues"].values[0] > 0
+
+    def test_find_imbalance_issues_no_args(self, imbalance_labels):
+        data = {"labels": imbalance_labels}
+        lab = Datalab(data=data, label_name="labels")
+        lab.find_issues(issue_types={"class_imbalance": {}})
+        summary = lab.get_issue_summary()
+        assert len(summary) == 1
+        assert "class_imbalance" in summary["issue_type"].values
+        class_imbalance_summary = lab.get_issue_summary("class_imbalance")
+        assert class_imbalance_summary["num_issues"].values[0] > 0
