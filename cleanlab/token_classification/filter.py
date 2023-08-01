@@ -37,7 +37,7 @@ def find_label_issues(
 
     Tokens identified with issues will be ranked by their individual label quality score.
 
-    Instead use :py:func:`token_classification.rank.get_label_quality_scores <cleanlab.token_classification.rank.get_label_quality_scores>`
+    Instead use `~cleanlab.token_classification.rank.get_label_quality_scores`
     if you prefer to rank the sentences based on their overall label quality.
 
     Parameters
@@ -58,11 +58,11 @@ def find_label_issues(
     return_indices_ranked_by: {"self_confidence", "normalized_margin", "confidence_weighted_entropy"}, default="self_confidence"
         Returned token-indices are sorted by their label quality score.
 
-        See :py:func:`cleanlab.filter.find_label_issues <cleanlab.filter.find_label_issues>`
+        See `~cleanlab.filter.find_label_issues`
         documentation for more details on each label quality scoring method.
 
     kwargs:
-        Additional keyword arguments to pass into :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>`
+        Additional keyword arguments to pass into `~cleanlab.filter.find_label_issues`
         which is internally applied at the token level. Can include values like `n_jobs` to control parallel processing, `frac_noise`, etc.
 
     Returns
@@ -73,7 +73,7 @@ def find_label_issues(
 
         These tuples are ordered in `issues` list based on the likelihood that the corresponding token is mislabeled.
 
-        Use :py:func:`token_classification.summary.display_issues <cleanlab.token_classification.summary.display_issues>`
+        Use `~cleanlab.filter.find_label_issues`
         to view these issues within the original sentences.
 
     Examples

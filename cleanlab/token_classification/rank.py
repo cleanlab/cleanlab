@@ -74,7 +74,7 @@ def get_label_quality_scores(
     token_score_method: {"self_confidence", "normalized_margin", "confidence_weighted_entropy"}, default="self_confidence"
         Label quality scoring method for each token.
 
-        See :py:func:`cleanlab.rank.get_label_quality_scores <cleanlab.rank.get_label_quality_scores>` documentation for more info.
+        See `~cleanlab.rank.get_label_quality_scores` documentation for more info.
 
     sentence_score_kwargs:
         Optional keyword arguments for `sentence_score_method` function (for advanced users only).
@@ -151,17 +151,17 @@ def issues_from_scores(
     sentence_scores: np.ndarray, *, token_scores: Optional[list] = None, threshold: float = 0.1
 ) -> Union[list, np.ndarray]:
     """
-    Converts scores output by :py:func:`token_classification.rank.get_label_quality_scores <cleanlab.token_classification.rank.get_label_quality_scores>`
-    to a list of issues of similar format as output by :py:func:`token_classification.filter.find_label_issues <cleanlab.token_classification.filter.find_label_issues>`.
+    Converts scores output by `~cleanlab.token_classification.rank.get_label_quality_scores`
+    to a list of issues of similar format as output by `~cleanlab.token_classification.filter.find_label_issues`.
 
     Issues are sorted by label quality score, from most to least severe.
 
     Only considers as issues those tokens with label quality score lower than `threshold`,
     so this parameter determines the number of issues that are returned.
     This method is intended for converting the most severely mislabeled examples to a format compatible with
-    ``summary`` methods like :py:func:`token_classification.summary.display_issues <cleanlab.token_classification.summary.display_issues>`.
+    ``summary`` methods like `~cleanlab.token_classification.filter.find_label_issues`.
     This method does not estimate the number of label errors since the `threshold` is arbitrary,
-    for that instead use :py:func:`token_classification.filter.find_label_issues <cleanlab.token_classification.filter.find_label_issues>`,
+    for that instead use `~cleanlab.token_classification.filter.find_label_issues`,
     which estimates the label errors via Confident Learning rather than score thresholding.
 
     Parameters
@@ -169,12 +169,12 @@ def issues_from_scores(
     sentence_scores:
         Array of shape `(N, )` of overall sentence scores, where `N` is the number of sentences in the dataset.
 
-        Same format as the `sentence_scores` returned by :py:func:`token_classification.rank.get_label_quality_scores <cleanlab.token_classification.rank.get_label_quality_scores>`.
+        Same format as the `sentence_scores` returned by `~cleanlab.token_classification.rank.get_label_quality_scores`.
 
     token_scores:
         Optional list such that `token_scores[i]` contains the individual token scores for the `i`-th sentence.
 
-        Same format as the `token_scores` returned by :py:func:`token_classification.rank.get_label_quality_scores <cleanlab.token_classification.rank.get_label_quality_scores>`.
+        Same format as the `token_scores` returned by `~cleanlab.token_classification.rank.get_label_quality_scores`.
 
     threshold:
         Tokens (or sentences, if `token_scores` is not provided) with quality scores above the `threshold` are not
@@ -188,7 +188,7 @@ def issues_from_scores(
 
         These tuples are ordered in `issues` list based on the token label quality score.
 
-        Use :py:func:`token_classification.summary.display_issues <cleanlab.token_classification.summary.display_issues>`
+        Use `~cleanlab.token_classification.summary.display_issues`
         to view these issues within the original sentences.
 
         If `token_scores` is not provided, returns array of integer indices (rather than tuples) of the sentences whose label quality score

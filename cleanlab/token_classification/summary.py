@@ -46,8 +46,8 @@ def display_issues(
     issues:
         List of tuples ``(i, j)`` representing a label issue for the `j`-th token of the `i`-th sentence.
 
-        Same format as output by :py:func:`token_classification.filter.find_label_issues <cleanlab.token_classification.filter.find_label_issues>`
-        or :py:func:`token_classification.rank.issues_from_scores <cleanlab.token_classification.rank.issues_from_scores>`.
+        Same format as output by `~cleanlab.token_classification.filter.find_label_issues`
+        or `~cleanlab.token_classification.rank.issues_from_scores`.
 
     tokens:
         Nested list such that `tokens[i]` is a list of tokens (strings/words) that comprise the `i`-th sentence.
@@ -171,20 +171,20 @@ def common_label_issues(
     issues:
         List of tuples ``(i, j)`` representing a label issue for the `j`-th token of the `i`-th sentence.
 
-        Same format as output by :py:func:`token_classification.filter.find_label_issues <cleanlab.token_classification.filter.find_label_issues>`
-        or :py:func:`token_classification.rank.issues_from_scores <cleanlab.token_classification.rank.issues_from_scores>`.
+        Same format as output by `~cleanlab.token_classification.filter.find_label_issues`
+        or `~cleanlab.token_classification.rank.issues_from_scores`.
 
     tokens:
         Nested list such that `tokens[i]` is a list of tokens (strings/words) that comprise the `i`-th sentence.
 
     labels:
-        Optional nested list of given labels for all tokens in the same format as `labels` for :py:func:`token_classification.summary.display_issues <cleanlab.token_classification.summary.display_issues>`.
+        Optional nested list of given labels for all tokens in the same format as `labels` for `~cleanlab.token_classification.summary.display_issues`.
 
         If `labels` is provided, this function also displays given label of the token identified to commonly suffer from label issues.
 
     pred_probs:
         Optional list of model-predicted probabilities (np arrays) in the same format as `pred_probs` for
-        :py:func:`token_classification.summary.display_issues <cleanlab.token_classification.summary.display_issues>`.
+        `~cleanlab.token_classification.summary.display_issues`.
 
         If both `labels` and `pred_probs` are provided, also reports each type of given/predicted label swap for tokens identified to commonly suffer from label issues.
 
@@ -198,7 +198,7 @@ def common_label_issues(
 
     exclude:
         Optional list of given/predicted label swaps (tuples) to be ignored in the same format as `exclude` for
-        :py:func:`token_classification.summary.display_issues <cleanlab.token_classification.summary.display_issues>`.
+        `~cleanlab.token_classification.summary.display_issues`.
 
     verbose:
         Whether to also print out the token information in the returned DataFrame `df`.
@@ -326,8 +326,8 @@ def filter_by_token(
 
     issues:
         List of tuples ``(i, j)`` representing a label issue for the `j`-th token of the `i`-th sentence.
-        Same format as output by :py:func:`token_classification.filter.find_label_issues <cleanlab.token_classification.filter.find_label_issues>`
-        or :py:func:`token_classification.rank.issues_from_scores <cleanlab.token_classification.rank.issues_from_scores>`.
+        Same format as output by `~cleanlab.token_classification.filter.find_label_issues`
+        or `~cleanlab.token_classification.rank.issues_from_scores`.
 
     tokens:
         Nested list such that `tokens[i]` is a list of tokens (strings/words) that comprise the `i`-th sentence.
