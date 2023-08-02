@@ -159,7 +159,7 @@ def issues_from_scores(
     Only considers as issues those tokens with label quality score lower than `threshold`,
     so this parameter determines the number of issues that are returned.
     This method is intended for converting the most severely mislabeled examples to a format compatible with
-    ``summary`` methods like `~cleanlab.token_classification.filter.find_label_issues`.
+    ``summary`` methods like `~cleanlab.token_classification.summary.display_issues`.
     This method does not estimate the number of label errors since the `threshold` is arbitrary,
     for that instead use `~cleanlab.token_classification.filter.find_label_issues`,
     which estimates the label errors via Confident Learning rather than score thresholding.

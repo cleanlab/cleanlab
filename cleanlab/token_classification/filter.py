@@ -73,7 +73,7 @@ def find_label_issues(
 
         These tuples are ordered in `issues` list based on the likelihood that the corresponding token is mislabeled.
 
-        Use `~cleanlab.filter.find_label_issues`
+        Use `~cleanlab.token_classification.summary.display_issues`
         to view these issues within the original sentences.
 
     Examples
