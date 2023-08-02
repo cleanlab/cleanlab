@@ -747,13 +747,14 @@ def _compute_badloc_box_scores_for_image(
             scores_badloc[iid] = 1.0
             continue
 
-        idx_at_least_low_probability_threshold = np.where(k_pred > low_probability_threshold)[0]
-        idx_at_least_intersection_threshold = np.where(k_iou > 0)[0]
+        mask_at_least_low_probability_threshold = k_pred > low_probability_threshold
+        mask_at_least_intersection_threshold = k_iou > 0
+        idxs = np.where(
+            mask_at_least_low_probability_threshold & mask_at_least_intersection_threshold
+        )
 
-        k_similarity = k_similarity[idx_at_least_low_probability_threshold][
-            idx_at_least_intersection_threshold
-        ]
-        k_pred = k_pred[idx_at_least_low_probability_threshold][idx_at_least_intersection_threshold]
+        k_similarity = k_similarity[idxs]
+        k_pred = k_pred[idxs]
 
         scores_badloc[iid] = np.max(k_similarity) if len(k_pred) > 0 else 1.0
     return scores_badloc
