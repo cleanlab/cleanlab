@@ -743,8 +743,11 @@ def test_1D_formats():
     cl = CleanLearning(clf=ReshapingLogisticRegression())
     cl.fit(X, labels_df)
     cl.predict(X)
-    cl.predict_proba(X)
+    pred_probs = cl.predict_proba(X)
     cl.score(X, labels)
+    # Repeat with DataFrame labels and pred_probs
+    cl = CleanLearning(clf=ReshapingLogisticRegression())
+    cl.fit(X, labels_df, pred_probs=pred_probs)
     # Repeat with list labels:
     labels_list = list(labels)
     cl = CleanLearning(clf=ReshapingLogisticRegression())
