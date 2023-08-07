@@ -48,13 +48,23 @@ from cleanlab.datalab.internal.issue_manager import (
     NonIIDIssueManager,
     ClassImbalanceIssueManager,
 )
+from cleanlab.datalab.internal.issue_manager.regression import RegressionLabelIssueManager
+
 
 REGISTRY: Dict[str, Type[IssueManager]] = {
     "outlier": OutlierIssueManager,
-    "label": LabelIssueManager,
     "near_duplicate": NearDuplicateIssueManager,
     "non_iid": NonIIDIssueManager,
-    "class_imbalance": ClassImbalanceIssueManager,
+}
+
+TASK_SPECIFIC_REGISTRY: Dict[str, Dict[str, Type[IssueManager]]] = {
+    "classification": {
+        "label": LabelIssueManager,
+        "class_imbalance": ClassImbalanceIssueManager,  # TODO: check
+    },
+    "regression": {
+        "label": RegressionLabelIssueManager,
+    },
 }
 """Registry of issue managers that can be constructed from a string
 and used in the Datalab class.
@@ -64,7 +74,6 @@ and used in the Datalab class.
 Currently, the following issue managers are registered by default:
 
 - ``"outlier"``: :py:class:`OutlierIssueManager <cleanlab.datalab.internal.issue_manager.outlier.OutlierIssueManager>`
-- ``"label"``: :py:class:`LabelIssueManager <cleanlab.datalab.internal.issue_manager.label.LabelIssueManager>`
 - ``"near_duplicate"``: :py:class:`NearDuplicateIssueManager <cleanlab.datalab.internal.issue_manager.duplicate.NearDuplicateIssueManager>`
 - ``"non_iid"``: :py:class:`NonIIDIssueManager <cleanlab.datalab.internal.issue_manager.noniid.NonIIDIssueManager>`
 
@@ -79,23 +88,35 @@ class _IssueManagerFactory:
     """Factory class for constructing concrete issue managers."""
 
     @classmethod
-    def from_str(cls, issue_type: str) -> Type[IssueManager]:
+    def from_str(cls, issue_type: str, task: str = "classification") -> Type[IssueManager]:
         """Constructs a concrete issue manager class from a string."""
         if isinstance(issue_type, list):
             raise ValueError(
                 "issue_type must be a string, not a list. Try using from_list instead."
             )
-        if issue_type not in REGISTRY:
-            raise ValueError(f"Invalid issue type: {issue_type}")
+        if task is None:
+            if issue_type not in REGISTRY:
+                raise ValueError(f"Invalid issue type: {issue_type}")
+        else:
+            if task not in TASK_SPECIFIC_REGISTRY:
+                raise ValueError(
+                    f"Invalid task type: {task}, must be in {list(TASK_SPECIFIC_REGISTRY.keys())}"
+                )
+
+            if issue_type not in TASK_SPECIFIC_REGISTRY[task]:
+                raise ValueError(f"Invalid issue type: {issue_type} for task {task}")
+
         return REGISTRY[issue_type]
 
     @classmethod
-    def from_list(cls, issue_types: List[str]) -> List[Type[IssueManager]]:
+    def from_list(
+        cls, issue_types: List[str], task: str = "classification"
+    ) -> List[Type[IssueManager]]:
         """Constructs a list of concrete issue manager classes from a list of strings."""
-        return [cls.from_str(issue_type) for issue_type in issue_types]
+        return [cls.from_str(issue_type, task) for issue_type in issue_types]
 
 
-def register(cls: Type[IssueManager]) -> Type[IssueManager]:
+def register(cls: Type[IssueManager], task: str = "classification") -> Type[IssueManager]:
     """Registers the issue manager factory.
 
     Parameters
@@ -143,14 +164,30 @@ def register(cls: Type[IssueManager]) -> Type[IssueManager]:
 
         register(MyIssueManager)
     """
-    name: str = str(cls.issue_name)
-    if name in REGISTRY:
-        # Warn user that they are overwriting an existing issue manager
-        print(
-            f"Warning: Overwriting existing issue manager {name} with {cls}. "
-            "This may cause unexpected behavior."
-        )
+
     if not issubclass(cls, IssueManager):
         raise ValueError(f"Class {cls} must be a subclass of IssueManager")
+
+    name: str = str(cls.issue_name)
+
+    if task is None:
+        if name in REGISTRY:
+            print(
+                f"Warning: Overwriting existing issue manager {name} with {cls}. "
+                "This may cause unexpected behavior."
+            )
+
+    else:
+        if task not in TASK_SPECIFIC_REGISTRY:
+            raise ValueError(
+                f"Invalid task type: {task}, must be in {list(TASK_SPECIFIC_REGISTRY.keys())}"
+            )
+
+        if name in TASK_SPECIFIC_REGISTRY[task]:
+            print(
+                f"Warning: Overwriting existing issue manager {name} with {cls} for task {task}."
+                "This may cause unexpected behavior."
+            )
+
     REGISTRY[name] = cls
     return cls

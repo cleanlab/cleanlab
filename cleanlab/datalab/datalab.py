@@ -100,12 +100,14 @@ class Datalab:
     def __init__(
         self,
         data: "DatasetLike",
+        task: str = "classification",
         label_name: Optional[str] = None,
         image_key: Optional[str] = None,
         verbosity: int = 1,
     ) -> None:
         self._data = Data(data, label_name)
         self.data = self._data._data
+        self.task = task
         self._labels = self._data.labels
         self._label_map = self._labels.label_map
         self.label_name = self._labels.label_name
@@ -291,7 +293,7 @@ class Datalab:
             )
             return None
 
-        issue_finder = issue_finder_factory(self._imagelab)(datalab=self, verbosity=self.verbosity)
+        issue_finder = issue_finder_factory(self._imagelab)(datalab=self, task=self.task, verbosity=self.verbosity)
         issue_finder.find_issues(
             pred_probs=pred_probs,
             features=features,
@@ -339,6 +341,7 @@ class Datalab:
 
         reporter = report_factory(self._imagelab)(
             data_issues=self.data_issues,
+            task = self.task,
             verbosity=verbosity,
             include_description=include_description,
             show_summary_score=show_summary_score,
