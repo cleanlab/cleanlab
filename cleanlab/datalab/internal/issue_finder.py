@@ -152,7 +152,7 @@ class IssueFinder:
         new_issue_managers = [
             factory(datalab=self.datalab, **issue_types_copy.get(factory.issue_name, {}))
             for factory in _IssueManagerFactory.from_list(
-                list(issue_types_copy.keys()), task=self.task
+                list(issue_types_copy.keys()), task=self.datalab.task
             )
         ]
 
