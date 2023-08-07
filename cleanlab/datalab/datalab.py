@@ -293,9 +293,7 @@ class Datalab:
             )
             return None
 
-        issue_finder = issue_finder_factory(self._imagelab)(
-            datalab=self, task=self.task, verbosity=self.verbosity
-        )
+        issue_finder = issue_finder_factory(self._imagelab)(datalab=self, verbosity=self.verbosity)
         issue_finder.find_issues(
             pred_probs=pred_probs,
             features=features,
