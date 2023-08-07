@@ -106,6 +106,8 @@ class _IssueManagerFactory:
             if issue_type not in TASK_SPECIFIC_REGISTRY[task]:
                 raise ValueError(f"Invalid issue type: {issue_type} for task {task}")
 
+            REGISTRY[issue_type] = TASK_SPECIFIC_REGISTRY[task][issue_type]
+
         return REGISTRY[issue_type]
 
     @classmethod
