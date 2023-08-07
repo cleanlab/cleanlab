@@ -88,7 +88,7 @@ class _IssueManagerFactory:
     """Factory class for constructing concrete issue managers."""
 
     @classmethod
-    def from_str(cls, issue_type: str, task: str = "classification") -> Type[IssueManager]:
+    def from_str(cls, issue_type: str, task: str) -> Type[IssueManager]:
         """Constructs a concrete issue manager class from a string."""
         if isinstance(issue_type, list):
             raise ValueError(
