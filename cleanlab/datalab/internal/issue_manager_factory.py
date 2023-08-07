@@ -103,7 +103,7 @@ class _IssueManagerFactory:
                     f"Invalid task type: {task}, must be in {list(TASK_SPECIFIC_REGISTRY.keys())}"
                 )
 
-            if issue_type not in (TASK_SPECIFIC_REGISTRY[task] and REGISTRY):
+            if issue_type not in TASK_SPECIFIC_REGISTRY[task] and issue_type not in REGISTRY:
                 raise ValueError(f"Invalid issue type: {issue_type} for task {task}")
 
             REGISTRY[issue_type] = TASK_SPECIFIC_REGISTRY[task][issue_type]
