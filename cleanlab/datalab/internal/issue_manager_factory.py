@@ -121,7 +121,7 @@ class _IssueManagerFactory:
         return [cls.from_str(issue_type, task) for issue_type in issue_types]
 
 
-def register(cls: Type[IssueManager], task: str = "classification") -> Type[IssueManager]:
+def register(cls: Type[IssueManager], task: str) -> Type[IssueManager]:
     """Registers the issue manager factory.
 
     Parameters
