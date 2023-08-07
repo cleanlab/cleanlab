@@ -114,9 +114,7 @@ class _IssueManagerFactory:
         return REGISTRY[issue_type]
 
     @classmethod
-    def from_list(
-        cls, issue_types: List[str], task: str = "classification"
-    ) -> List[Type[IssueManager]]:
+    def from_list(cls, issue_types: List[str], task: str) -> List[Type[IssueManager]]:
         """Constructs a list of concrete issue manager classes from a list of strings."""
         return [cls.from_str(issue_type, task) for issue_type in issue_types]
 
