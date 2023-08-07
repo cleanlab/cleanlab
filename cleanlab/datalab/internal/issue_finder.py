@@ -70,9 +70,8 @@ class IssueFinder:
     `Datalab.find_issues` method which internally utilizes an IssueFinder instance.
     """
 
-    def __init__(self, datalab: "Datalab", task: str, verbosity=1):
+    def __init__(self, datalab: "Datalab", verbosity=1):
         self.datalab = datalab
-        self.task = task
         self.verbosity = verbosity
 
     def find_issues(

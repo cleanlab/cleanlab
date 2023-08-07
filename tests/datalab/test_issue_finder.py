@@ -17,7 +17,7 @@ class TestIssueFinder:
 
     @pytest.fixture
     def issue_finder(self, lab):
-        return IssueFinder(datalab=lab, task="classification")
+        return IssueFinder(datalab=lab)
 
     def test_init(self, issue_finder):
         assert issue_finder.verbosity == 1

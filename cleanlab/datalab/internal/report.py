@@ -56,14 +56,12 @@ class Reporter:
     def __init__(
         self,
         data_issues: "DataIssues",
-        task: str,
         verbosity: int = 1,
         include_description: bool = True,
         show_summary_score: bool = False,
         **kwargs,
     ):
         self.data_issues = data_issues
-        self.task = task
         self.verbosity = verbosity
         self.include_description = include_description
         self.show_summary_score = show_summary_score
