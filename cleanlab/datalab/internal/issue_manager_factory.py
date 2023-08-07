@@ -94,6 +94,8 @@ class _IssueManagerFactory:
             raise ValueError(
                 "issue_type must be a string, not a list. Try using from_list instead."
             )
+            
+        #TODO: refactor it
         if task is None:
             if issue_type not in REGISTRY:
                 raise ValueError(f"Invalid issue type: {issue_type}")
@@ -105,8 +107,9 @@ class _IssueManagerFactory:
 
             if issue_type not in TASK_SPECIFIC_REGISTRY[task] and issue_type not in REGISTRY:
                 raise ValueError(f"Invalid issue type: {issue_type} for task {task}")
-
-            REGISTRY[issue_type] = TASK_SPECIFIC_REGISTRY[task][issue_type]
+                
+            if issue_type in TASK_SPECIFIC_REGISTRY[task]:
+                REGISTRY[issue_type] = TASK_SPECIFIC_REGISTRY[task][issue_type]
 
         return REGISTRY[issue_type]
 
