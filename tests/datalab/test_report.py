@@ -26,7 +26,7 @@ class TestReporter:
 
     @pytest.fixture
     def reporter(self, data_issues):
-        return Reporter(data_issues=data_issues)
+        return Reporter(data_issues=data_issues, task="classifcation")
 
     def test_init(self, reporter, data_issues):
         assert reporter.data_issues == data_issues
