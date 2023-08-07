@@ -39,7 +39,7 @@ def test_register_custom_issue_manager(monkeypatch):
 
     assert "foo" not in REGISTRY
 
-    @register
+    @register(task=None)
     class Foo(IssueManager):
         issue_name = "foo"
 
@@ -53,7 +53,7 @@ def test_register_custom_issue_manager(monkeypatch):
 
     monkeypatch.setattr("sys.stdout", io.StringIO())
 
-    @register
+    @register(task=None)
     class NewFoo(IssueManager):
         issue_name = "foo"
 
