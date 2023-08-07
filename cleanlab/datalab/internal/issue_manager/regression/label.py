@@ -17,6 +17,7 @@
 from __future__ import annotations
 
 # from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional
+from typing import ClassVar
 
 # from sklearn.neighbors import KNeighborsClassifier
 # from sklearn.preprocessing import OneHotEncoder
@@ -25,6 +26,7 @@ from __future__ import annotations
 
 # from cleanlab.regression.learn import CleanLearning
 from cleanlab.datalab.internal.issue_manager import IssueManager
+
 # from cleanlab.internal.validation import assert_valid_inputs
 
 # if TYPE_CHECKING:  # pragma: no cover
@@ -50,5 +52,7 @@ class RegressionLabelIssueManager(IssueManager):
     health_summary_parameters :
         Keyword arguments to pass to the :py:meth:`health_summary <cleanlab.dataset.health_summary>` function.
     """
-    pass
 
+    issue_name: ClassVar[str] = "label"
+
+    pass

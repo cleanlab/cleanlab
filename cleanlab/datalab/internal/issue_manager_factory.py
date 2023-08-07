@@ -60,7 +60,7 @@ REGISTRY: Dict[str, Type[IssueManager]] = {
 TASK_SPECIFIC_REGISTRY: Dict[str, Dict[str, Type[IssueManager]]] = {
     "classification": {
         "label": LabelIssueManager,
-        "class_imbalance": ClassImbalanceIssueManager,  # TODO: check
+        "class_imbalance": ClassImbalanceIssueManager,
     },
     "regression": {
         "label": RegressionLabelIssueManager,

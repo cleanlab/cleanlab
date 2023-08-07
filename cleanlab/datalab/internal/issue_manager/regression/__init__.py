@@ -1,3 +1,1 @@
 from .label import RegressionLabelIssueManager
-
-

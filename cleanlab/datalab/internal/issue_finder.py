@@ -70,7 +70,7 @@ class IssueFinder:
     `Datalab.find_issues` method which internally utilizes an IssueFinder instance.
     """
 
-    def __init__(self, datalab: "Datalab", task: str = 'classification', verbosity=1):
+    def __init__(self, datalab: "Datalab", task: str = "classification", verbosity=1):
         self.datalab = datalab
         self.task = task
         self.verbosity = verbosity
@@ -152,7 +152,9 @@ class IssueFinder:
 
         new_issue_managers = [
             factory(datalab=self.datalab, **issue_types_copy.get(factory.issue_name, {}))
-            for factory in _IssueManagerFactory.from_list(list(issue_types_copy.keys()), task=self.task)
+            for factory in _IssueManagerFactory.from_list(
+                list(issue_types_copy.keys()), task=self.task
+            )
         ]
 
         failed_managers = []
