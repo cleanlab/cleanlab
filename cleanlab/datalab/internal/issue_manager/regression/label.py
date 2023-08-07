@@ -16,21 +16,21 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional
+# from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional
 
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.preprocessing import OneHotEncoder
+# from sklearn.neighbors import KNeighborsClassifier
+# from sklearn.preprocessing import OneHotEncoder
 
-import numpy as np
+# import numpy as np
 
-from cleanlab.regression.learn import CleanLearning
+# from cleanlab.regression.learn import CleanLearning
 from cleanlab.datalab.internal.issue_manager import IssueManager
-from cleanlab.internal.validation import assert_valid_inputs
+# from cleanlab.internal.validation import assert_valid_inputs
 
-if TYPE_CHECKING:  # pragma: no cover
-    import pandas as pd
-    import numpy.typing as npt
-    from cleanlab.datalab.datalab import Datalab
+# if TYPE_CHECKING:  # pragma: no cover
+#     import pandas as pd
+#     import numpy.typing as npt
+#     from cleanlab.datalab.datalab import Datalab
 
 
 class RegressionLabelIssueManager(IssueManager):
@@ -41,9 +41,8 @@ class RegressionLabelIssueManager(IssueManager):
     datalab :
         A Datalab instance.
 
-    k :
-        The number of nearest neighbors to consider when computing pred_probs from features.
-        Only applicable if features are provided and pred_probs are not.
+    ... :
+        ...
 
     clean_learning_kwargs :
         Keyword arguments to pass to the :py:meth:`CleanLearning <cleanlab.classification.CleanLearning>` constructor.
