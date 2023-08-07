@@ -56,12 +56,14 @@ class Reporter:
     def __init__(
         self,
         data_issues: "DataIssues",
+        task: str,
         verbosity: int = 1,
         include_description: bool = True,
         show_summary_score: bool = False,
         **kwargs,
     ):
         self.data_issues = data_issues
+        self.task = task
         self.verbosity = verbosity
         self.include_description = include_description
         self.show_summary_score = show_summary_score
@@ -105,7 +107,7 @@ class Reporter:
         issue_types = self._get_issue_types(issue_summary_sorted)
 
         issue_reports = [
-            _IssueManagerFactory.from_str(issue_type=key).report(
+            _IssueManagerFactory.from_str(issue_type=key, task=self.task).report(
                 issues=self.data_issues.get_issues(issue_name=key),
                 summary=self.data_issues.get_issue_summary(issue_name=key),
                 info=self.data_issues.get_info(issue_name=key),
