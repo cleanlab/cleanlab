@@ -39,12 +39,13 @@ def test_register_custom_issue_manager(monkeypatch):
 
     assert "foo" not in REGISTRY
 
-    @register()
     class Foo(IssueManager):
         issue_name = "foo"
 
         def find_issues(self):
             pass
+
+    Foo = register(Foo, task=None)
 
     assert "foo" in REGISTRY
     assert REGISTRY["foo"] == Foo
@@ -53,12 +54,13 @@ def test_register_custom_issue_manager(monkeypatch):
 
     monkeypatch.setattr("sys.stdout", io.StringIO())
 
-    @register()
     class NewFoo(IssueManager):
         issue_name = "foo"
 
         def find_issues(self):
             pass
+
+    NewFoo = register(NewFoo, task=None)
 
     assert "foo" in REGISTRY
     assert REGISTRY["foo"] == NewFoo

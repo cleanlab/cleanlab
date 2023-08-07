@@ -17,14 +17,16 @@ def test_list_possible_issue_types(registry):
     assert set(issue_types) == set(possible_issues)
 
     test_key = "test_for_list_possible_issue_types"
+
     class TestIssueManager(IssueManager):
         issue_name = test_key
+
+    TestIssueManager = register(TestIssueManager, task=None)
 
     issue_types = Datalab.list_possible_issue_types()
     assert set(issue_types) == set(
         possible_issues + [test_key]
     ), "New issue type should be added to the list"
-    TestIssueManager = register(TestIssueManager, task=None)
 
     # Clean up
     del registry[test_key]
