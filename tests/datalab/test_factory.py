@@ -18,7 +18,7 @@ def test_list_possible_issue_types(registry):
 
     test_key = "test_for_list_possible_issue_types"
 
-    @register
+    @register()
     class TestIssueManager(IssueManager):
         issue_name = test_key
 
