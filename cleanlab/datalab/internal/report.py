@@ -17,7 +17,7 @@
 Module that handles reporting of all types of issues identified in the data.
 """
 
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING, List, Optional
 
 import pandas as pd
 
@@ -56,7 +56,7 @@ class Reporter:
     def __init__(
         self,
         data_issues: "DataIssues",
-        task: str,
+        task: Optional[str],
         verbosity: int = 1,
         include_description: bool = True,
         show_summary_score: bool = False,
