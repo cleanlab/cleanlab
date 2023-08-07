@@ -56,7 +56,7 @@ class Reporter:
     def __init__(
         self,
         data_issues: "DataIssues",
-        task: str = "classification",
+        task: str,
         verbosity: int = 1,
         include_description: bool = True,
         show_summary_score: bool = False,
