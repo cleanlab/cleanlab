@@ -3,7 +3,11 @@ import pandas as pd
 import pytest
 
 from cleanlab.datalab.internal.issue_manager import IssueManager
-from cleanlab.datalab.internal.issue_manager_factory import REGISTRY, register
+from cleanlab.datalab.internal.issue_manager_factory import (
+    REGISTRY,
+    TASK_SPECIFIC_REGISTRY,
+    register,
+)
 
 
 class TestCustomIssueManager:
@@ -68,5 +72,27 @@ def test_register_custom_issue_manager(monkeypatch):
         [
             text in sys.stdout.getvalue()
             for text in ["Warning: Overwriting existing issue manager foo with ", "NewFoo"]
+        ]
+    ), "Should print a warning"
+
+    #
+    class NewerFoo(IssueManager):
+        issue_name = "label"
+
+        def find_issues(self):
+            pass
+
+    NewerFoo = register(NewerFoo, task="classification")
+
+    assert "label" in REGISTRY
+    assert REGISTRY["label"] == NewFoo
+    assert all(
+        [
+            text in sys.stdout.getvalue()
+            for text in [
+                "Warning: Overwriting existing issue manager label with ",
+                "NewerFoo",
+                " for task classification.",
+            ]
         ]
     ), "Should print a warning"
