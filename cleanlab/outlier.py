@@ -25,6 +25,7 @@ import numpy as np
 from cleanlab.count import get_confident_thresholds
 from sklearn.neighbors import NearestNeighbors
 from sklearn.exceptions import NotFittedError
+from scipy.special import softmax
 from typing import Optional, Union, Tuple, Dict, cast
 from cleanlab.internal.label_quality_utils import (
     _subtract_confident_thresholds,
@@ -94,7 +95,7 @@ class OutOfDistribution:
     """
 
     OUTLIER_PARAMS = {"k", "t", "knn"}
-    OOD_PARAMS = {"confident_thresholds", "adjust_pred_probs", "method"}
+    OOD_PARAMS = {"confident_thresholds", "adjust_pred_probs", "method", "M", "gamma"}
     DEFAULT_PARAM_DICT: Dict[str, Union[str, int, None, np.ndarray]] = {
         "k": None,  # ood features param
         "t": 1,  # ood features param
@@ -102,6 +103,8 @@ class OutOfDistribution:
         "adjust_pred_probs": True,  # ood pred_probs param
         "method": "entropy",  # ood pred_probs param
         "confident_thresholds": None,  # ood pred_probs param
+        "M": 100,  # ood pred_probs gen param
+        "gamma": 0.1,  # ood pred_probs gen param
     }
 
     def __init__(self, params: Optional[dict] = None) -> None:
@@ -452,6 +455,8 @@ def _get_ood_predictions_scores(
     confident_thresholds: Optional[np.ndarray] = None,
     adjust_pred_probs: bool = True,
     method: str = "entropy",
+    M: int = 100,
+    gamma: float = 0.1,
 ) -> Tuple[np.ndarray, Optional[np.ndarray]]:
     """Return an OOD (out of distribution) score for each example based on it pred_prob values.
 
@@ -471,11 +476,17 @@ def _get_ood_predictions_scores(
       Account for class imbalance in the label-quality scoring.
       For details, see key `adjust_pred_probs` in the params dict arg of `~cleanlab.outlier.OutOfDistribution`.
 
-    method : {"entropy", "least_confidence"}, default="entropy"
+    method : {"entropy", "least_confidence", "gen"}, default="entropy"
       OOD scoring method.
       For details see key `method` in the params dict arg of `~cleanlab.outlier.OutOfDistribution`.
 
+    M : int, default=100
+      For GEN method only. Number of top classes to consider when calculating OOD scores.
+    
+    gamma : float, default=0.1
+      For GEN method only. Hyperparameter that controls the weight of the second term in the GEN score.
 
+      
     Returns
     -------
     ood_predictions_scores : Tuple[np.ndarray, Optional[np.ndarray]]
@@ -484,6 +495,7 @@ def _get_ood_predictions_scores(
     valid_methods = (
         "entropy",
         "least_confidence",
+        "gen",
     )
 
     if (confident_thresholds is not None or labels is not None) and not adjust_pred_probs:
@@ -514,6 +526,15 @@ def _get_ood_predictions_scores(
         ood_predictions_scores = 1.0 - get_normalized_entropy(pred_probs)
     elif method == "least_confidence":
         ood_predictions_scores = pred_probs.max(axis=1)
+    elif method == "gen":
+        if pred_probs.shape[1] < M:
+            warnings.warn(
+                "GEN with the default hyperparameter settings is intended for datasets with at least 100 classes. You can change the params['M'] according to the number of classes in your dataset.",
+                UserWarning,
+            )
+        probs = softmax(pred_probs, axis=1)
+        probs_sorted = np.sort(probs, axis=1)[:,-M:]
+        ood_predictions_scores = -np.sum(probs_sorted**gamma * (1 - probs_sorted)**(gamma), axis=1)
     else:
         raise ValueError(
             f"""
