@@ -820,7 +820,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
                 "find_label_issues_kwargs": self.find_label_issues_kwargs,
             }
             for arg_name, arg_val in arg_values.items():
-                if arg_val:
+                if arg_val is not None:
                     warnings.warn(f"`{arg_name}` is not used when `low_memory=True`.")
             label_issues_indices = find_label_issues_batched(labels, pred_probs)
             label_issues_mask = np.zeros(len(labels), dtype=bool)
