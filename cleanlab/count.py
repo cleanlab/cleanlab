@@ -576,7 +576,6 @@ def compute_confident_joint(
 
     # labels needs to be a numpy array
     labels = np.asarray(labels)
-    # replacing with labels = labels_to_array(labels) resolves unit-test
 
     # Estimate the probability thresholds for confident counting
     if thresholds is None:

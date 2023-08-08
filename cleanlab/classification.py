@@ -767,6 +767,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
 
         # Check inputs
         assert_valid_inputs(X, labels, pred_probs)
+        labels = labels_to_array(labels)
         if noise_matrix is not None and np.trace(noise_matrix) <= 1:
             t = np.round(np.trace(noise_matrix), 2)
             raise ValueError("Trace(noise_matrix) is {}, but must exceed 1.".format(t))
