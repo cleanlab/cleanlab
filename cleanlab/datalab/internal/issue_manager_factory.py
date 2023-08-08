@@ -167,13 +167,13 @@ def register(cls: Type[IssueManager], task: str) -> Type[IssueManager]:
         register(MyIssueManager)
     """
 
-    if not issubclass(cls, IssueManager):
-        raise ValueError(f"Class {cls} must be a subclass of IssueManager")
-
     if task is not None and task not in TASK_SPECIFIC_REGISTRY:
         raise ValueError(
             f"Invalid task type: {task}, must be in {list(TASK_SPECIFIC_REGISTRY.keys())}"
         )
+
+    if not issubclass(cls, IssueManager):
+        raise ValueError(f"Class {cls} must be a subclass of IssueManager")
 
     name: str = str(cls.issue_name)
 
