@@ -5,7 +5,6 @@ import pytest
 from cleanlab.datalab.internal.issue_manager import IssueManager
 from cleanlab.datalab.internal.issue_manager_factory import (
     REGISTRY,
-    TASK_SPECIFIC_REGISTRY,
     register,
 )
 
@@ -85,7 +84,7 @@ def test_register_custom_issue_manager(monkeypatch):
     NewerFoo = register(NewerFoo, task="classification")
 
     assert "label" in REGISTRY
-    assert REGISTRY["label"] == NewFoo
+    assert REGISTRY["label"] == NewerFoo
     assert all(
         [
             text in sys.stdout.getvalue()
