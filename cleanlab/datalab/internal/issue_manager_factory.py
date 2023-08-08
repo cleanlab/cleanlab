@@ -167,25 +167,25 @@ def register(cls: Type[IssueManager], task: str) -> Type[IssueManager]:
         register(MyIssueManager)
     """
 
-    if task not in TASK_SPECIFIC_REGISTRY:
-        raise ValueError(
-            f"Invalid task type: {task}, must be in {list(TASK_SPECIFIC_REGISTRY.keys())}"
-        )
-
     if not issubclass(cls, IssueManager):
         raise ValueError(f"Class {cls} must be a subclass of IssueManager")
 
     name: str = str(cls.issue_name)
 
-    if task is None and name in REGISTRY:
-        print(
-            f"Warning: Overwriting existing issue manager {name} with {cls}."
-            "This may cause unexpected behavior."
+    if task is not None and task not in TASK_SPECIFIC_REGISTRY:
+        raise ValueError(
+            f"Invalid task type: {task}, must be in {list(TASK_SPECIFIC_REGISTRY.keys())}"
         )
 
     if task is not None and name in TASK_SPECIFIC_REGISTRY[task]:
         print(
             f"Warning: Overwriting existing issue manager {name} with {cls} for task {task}."
+            "This may cause unexpected behavior."
+        )
+
+    if task is None and name in REGISTRY:
+        print(
+            f"Warning: Overwriting existing issue manager {name} with {cls}."
             "This may cause unexpected behavior."
         )
 
