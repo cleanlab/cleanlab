@@ -74,7 +74,7 @@ def test_register_custom_issue_manager(monkeypatch):
         ]
     ), "Should print a warning"
 
-    #
+    # Reregistering for task should overwrite the existing class, put print a warning
     class NewerFoo(IssueManager):
         issue_name = "label"
 

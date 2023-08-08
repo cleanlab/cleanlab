@@ -95,7 +95,6 @@ class _IssueManagerFactory:
                 "issue_type must be a string, not a list. Try using from_list instead."
             )
 
-        # TODO: refactor it
         if task is None and issue_type not in REGISTRY:
             raise ValueError(f"Invalid issue type: {issue_type}")
         if task not in TASK_SPECIFIC_REGISTRY:
@@ -124,8 +123,9 @@ def register(cls: Type[IssueManager], task: str) -> Type[IssueManager]:
     cls :
         A subclass of
         :py:class:`IssueManager <cleanlab.datalab.internal.issue_manager.issue_manager.IssueManager>`.
+
     task :
-        TODO Machine learning task as classifcation, regression ...
+        Specific machine learning task like classification or regression.
 
     Returns
     -------
@@ -164,7 +164,7 @@ def register(cls: Type[IssueManager], task: str) -> Type[IssueManager]:
                 # Some logic to find issues
                 pass
 
-        register(MyIssueManager)
+        register(MyIssueManager, task="classification")
     """
 
     if not issubclass(cls, IssueManager):
