@@ -167,7 +167,7 @@ def register(cls: Type[IssueManager], task: str) -> Type[IssueManager]:
         register(MyIssueManager)
     """
 
-    if task is not None and task not in TASK_SPECIFIC_REGISTRY:
+    if task not in TASK_SPECIFIC_REGISTRY:
         raise ValueError(
             f"Invalid task type: {task}, must be in {list(TASK_SPECIFIC_REGISTRY.keys())}"
         )
