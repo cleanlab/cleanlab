@@ -134,6 +134,7 @@ class ImagelabReporterAdapter(Reporter):
     ):
         super().__init__(
             data_issues=data_issues,
+            task=imagelab.task,
             verbosity=verbosity,
             include_description=include_description,
             show_summary_score=show_summary_score,

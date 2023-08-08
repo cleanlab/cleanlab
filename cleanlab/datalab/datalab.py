@@ -29,17 +29,16 @@ import pandas as pd
 
 import cleanlab
 
-from cleanlab.datalab.internal.adapter.imagelab import (
-    create_imagelab,
-    ImagelabReporterAdapter,
-)
-from cleanlab.datalab.internal.data import Data
-from cleanlab.datalab.internal.display import _Displayer
+from cleanlab.datalab.internal.adapter.imagelab import create_imagelab
 from cleanlab.datalab.internal.helper_factory import (
     data_issues_factory,
     issue_finder_factory,
+    report_factory,
 )
-from cleanlab.datalab.internal.report import Reporter
+
+from cleanlab.datalab.internal.data import Data
+from cleanlab.datalab.internal.display import _Displayer
+
 
 from cleanlab.datalab.internal.issue_finder import IssueFinder
 from cleanlab.datalab.internal.serialize import _Serializer
@@ -342,25 +341,13 @@ class Datalab:
             print("Please specify some `issue_types` in datalab.find_issues() to see a report.\n")
             return
 
-        # TODO:refactor later
-        if self._imagelab:
-            reporter = ImagelabReporterAdapter(
-                data_issues=self.data_issues,
-                verbosity=verbosity,
-                include_description=include_description,
-                show_summary_score=show_summary_score,
-                imagelab=self._imagelab,
-            )
-        else:
-            reporter = Reporter(
-                data_issues=self.data_issues,
-                task=self.task,
-                verbosity=verbosity,
-                include_description=include_description,
-                show_summary_score=show_summary_score,
-                imagelab=self._imagelab,
-            )
-
+        reporter = report_factory(self._imagelab)(
+            data_issues=self.data_issues,
+            verbosity=verbosity,
+            include_description=include_description,
+            show_summary_score=show_summary_score,
+            imagelab=self._imagelab,
+        )
         reporter.report(num_examples=num_examples)
 
     @property
