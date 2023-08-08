@@ -343,6 +343,7 @@ class Datalab:
 
         reporter = report_factory(self._imagelab)(
             data_issues=self.data_issues,
+            task=self.task,
             verbosity=verbosity,
             include_description=include_description,
             show_summary_score=show_summary_score,
