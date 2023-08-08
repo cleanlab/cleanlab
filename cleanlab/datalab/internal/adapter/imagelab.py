@@ -128,13 +128,14 @@ class ImagelabReporterAdapter(Reporter):
         self,
         data_issues: "DataIssues",
         imagelab: "Imagelab",
+        task: str,
         verbosity: int = 1,
         include_description: bool = True,
         show_summary_score: bool = False,
     ):
         super().__init__(
             data_issues=data_issues,
-            task=imagelab.task,
+            task=task,
             verbosity=verbosity,
             include_description=include_description,
             show_summary_score=show_summary_score,
