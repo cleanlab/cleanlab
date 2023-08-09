@@ -112,7 +112,8 @@ class OutOfDistribution:
         self.params = self.DEFAULT_PARAM_DICT.copy()
         if params is not None:
             self.params.update(params)
-
+        if self.params['adjust_pred_probs']:
+            print("Caution: GEN method is not ended for use with adjusted pred_probs. To use GEN, we recommend setting:  params['adjust_pred_probs'] = False")
     def fit_score(
         self,
         *,
@@ -477,7 +478,7 @@ def _get_ood_predictions_scores(
       For details, see key `adjust_pred_probs` in the params dict arg of `~cleanlab.outlier.OutOfDistribution`.
 
     method : {"entropy", "least_confidence", "gen"}, default="entropy"
-      OOD scoring method.
+      Which method to use for computing outlier scores based on pred_probs.
       For details see key `method` in the params dict arg of `~cleanlab.outlier.OutOfDistribution`.
 
     M : int, default=100
@@ -527,7 +528,7 @@ def _get_ood_predictions_scores(
     elif method == "least_confidence":
         ood_predictions_scores = pred_probs.max(axis=1)
     elif method == "gen":
-        if pred_probs.shape[1] < M:
+        if pred_probs.shape[1] < M: # pragma: no cover
             warnings.warn(
                 f"GEN with the default hyperparameter settings is intended for datasets with at least {M} classes. You can adjust params['M'] according to the number of classes in your dataset.",
                 UserWarning,
