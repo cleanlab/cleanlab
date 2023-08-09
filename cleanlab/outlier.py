@@ -528,7 +528,7 @@ def _get_ood_predictions_scores(
     elif method == "least_confidence":
         ood_predictions_scores = pred_probs.max(axis=1)
     elif method == "gen":
-        if pred_probs.shape[1] < M: # pragma: no cover
+        if pred_probs.shape[1] < M:  # pragma: no cover
             warnings.warn(
                 f"GEN with the default hyperparameter settings is intended for datasets with at least {M} classes. You can adjust params['M'] according to the number of classes in your dataset.",
                 UserWarning,
