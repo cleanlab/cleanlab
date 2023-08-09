@@ -96,15 +96,15 @@ class OutOfDistribution:
 
     OUTLIER_PARAMS = {"k", "t", "knn"}
     OOD_PARAMS = {"confident_thresholds", "adjust_pred_probs", "method", "M", "gamma"}
-    DEFAULT_PARAM_DICT: Dict[str, Union[str, int, None, np.ndarray]] = {
-        "k": None,  # ood features param
-        "t": 1,  # ood features param
-        "knn": None,  # ood features param
-        "adjust_pred_probs": True,  # ood pred_probs param
-        "method": "entropy",  # ood pred_probs param
-        "confident_thresholds": None,  # ood pred_probs param
-        "M": 100,  # ood pred_probs gen param
-        "gamma": 0.1,  # ood pred_probs gen param
+    DEFAULT_PARAM_DICT: Dict[str, Union[str, int, float, None, np.ndarray]] = {
+        "k": None,  # param for feature based outlier detection (number of neighbors)
+        "t": 1,  # param for feature based outlier detection (controls transformation of outlier scores to 0-1 range)
+        "knn": None,  # param for features based outlier detection (precomputed nearest neighbors graph to use)
+        "method": "entropy",  # param specifying which pred_probs-based  outlier detection method to use
+        "adjust_pred_probs": True,  # param for pred_probs based outlier detection (whether to adjust the probabilities by class thresholds or not)
+        "confident_thresholds": None,  # param for pred_probs based outlier detection (precomputed confident thresholds to use for adjustment)
+        "M": 100,  # param for GEN method for pred_probs based outlier detection
+        "gamma": 0.1,  # param for GEN method for pred_probs based outlier detection
     }
 
     def __init__(self, params: Optional[dict] = None) -> None:
@@ -481,7 +481,7 @@ def _get_ood_predictions_scores(
       For details see key `method` in the params dict arg of `~cleanlab.outlier.OutOfDistribution`.
 
     M : int, default=100
-      For GEN method only. Number of top classes to consider when calculating OOD scores.
+      For GEN method only. Hyperparameter that controls the number of top classes to consider when calculating OOD scores.
     
     gamma : float, default=0.1
       For GEN method only. Hyperparameter that controls the weight of the second term in the GEN score.
@@ -529,7 +529,7 @@ def _get_ood_predictions_scores(
     elif method == "gen":
         if pred_probs.shape[1] < M:
             warnings.warn(
-                "GEN with the default hyperparameter settings is intended for datasets with at least 100 classes. You can change the params['M'] according to the number of classes in your dataset.",
+                f"GEN with the default hyperparameter settings is intended for datasets with at least {M} classes. You can adjust params['M'] according to the number of classes in your dataset.",
                 UserWarning,
             )
         probs = softmax(pred_probs, axis=1)
