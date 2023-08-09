@@ -85,12 +85,13 @@ class OutOfDistribution:
              If False, you do not have to pass in `labels` later to fit this OOD estimator.
              See `Northcutt et al., 2021 <https://jair.org/index.php/jair/article/view/12125>`_.
        *  method : {"entropy", "least_confidence"}, default="entropy"
-             OOD scoring method.
+             Method to use when computing outlier scores based on `pred_probs`.
              Letting length-K vector ``P = pred_probs[i]`` denote the given predicted class-probabilities
-             for the i-th particular example, its OOD score can either be:
+             for the i-th example in dataset, its outlier score can either be:
 
              - ``'entropy'``: ``1 - sum_{j} P[j] * log(P[j]) / log(K)``
-             - ``'least_confidence'``: ``max(P)``
+             - ``'least_confidence'``: ``max(P)`` (equivalent to Maximum Softmax Probability method from the OOD detection literature)
+             - ``gen``: Generalized ENtropy score from the paper of Liu, Lochman, and Zach (https://openaccess.thecvf.com/content/CVPR2023/papers/Liu_GEN_Pushing_the_Limits_of_Softmax-Based_Out-of-Distribution_Detection_CVPR_2023_paper.pdf)
 
     """
 
@@ -100,7 +101,7 @@ class OutOfDistribution:
         "k": None,  # param for feature based outlier detection (number of neighbors)
         "t": 1,  # param for feature based outlier detection (controls transformation of outlier scores to 0-1 range)
         "knn": None,  # param for features based outlier detection (precomputed nearest neighbors graph to use)
-        "method": "entropy",  # param specifying which pred_probs-based  outlier detection method to use
+        "method": "entropy",  # param specifying which pred_probs-based outlier detection method to use
         "adjust_pred_probs": True,  # param for pred_probs based outlier detection (whether to adjust the probabilities by class thresholds or not)
         "confident_thresholds": None,  # param for pred_probs based outlier detection (precomputed confident thresholds to use for adjustment)
         "M": 100,  # param for GEN method for pred_probs based outlier detection
@@ -112,8 +113,9 @@ class OutOfDistribution:
         self.params = self.DEFAULT_PARAM_DICT.copy()
         if params is not None:
             self.params.update(params)
-        if self.params['adjust_pred_probs']:
-            print("Caution: GEN method is not ended for use with adjusted pred_probs. To use GEN, we recommend setting:  params['adjust_pred_probs'] = False")
+        if self.params['adjust_pred_probs'] and self.params["method"] == "gen":
+            print("CAUTION: GEN method is not recommended for use with adjusted pred_probs. To use GEN, we recommend setting: params['adjust_pred_probs'] = False")
+
     def fit_score(
         self,
         *,
