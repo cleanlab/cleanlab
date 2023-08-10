@@ -16,23 +16,19 @@
 
 from __future__ import annotations
 
-# from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional
-from typing import ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional
 
-# from sklearn.neighbors import KNeighborsClassifier
-# from sklearn.preprocessing import OneHotEncoder
+import numpy as np
 
-# import numpy as np
-
-# from cleanlab.regression.learn import CleanLearning
+from cleanlab.regression.learn import CleanLearning
 from cleanlab.datalab.internal.issue_manager import IssueManager
 
-# from cleanlab.internal.validation import assert_valid_inputs
+from cleanlab.internal.validation import assert_valid_inputs
 
-# if TYPE_CHECKING:  # pragma: no cover
-#     import pandas as pd
-#     import numpy.typing as npt
-#     from cleanlab.datalab.datalab import Datalab
+if TYPE_CHECKING:  # pragma: no cover
+    import pandas as pd
+    import numpy.typing as npt
+    from cleanlab.datalab.datalab import Datalab
 
 
 class RegressionLabelIssueManager(IssueManager):
@@ -43,16 +39,89 @@ class RegressionLabelIssueManager(IssueManager):
     datalab :
         A Datalab instance.
 
-    ... :
-        ...
-
     clean_learning_kwargs :
         Keyword arguments to pass to the :py:meth:`CleanLearning <cleanlab.classification.CleanLearning>` constructor.
 
     health_summary_parameters :
         Keyword arguments to pass to the :py:meth:`health_summary <cleanlab.dataset.health_summary>` function.
     """
+    description: ClassVar[
+        str
+    ] = """Examples whose given label is estimated to be potentially incorrect
+    (e.g. due to annotation error) are flagged as having label issues.
+    """
 
     issue_name: ClassVar[str] = "label"
+    verbosity_levels = {
+        0: [],
+        1: [],
+        2: [],
+        3: [], #TODO
+    }
 
-    pass
+    def __init__(
+        self,
+        datalab: Datalab,
+        clean_learning_kwargs: Optional[Dict[str, Any]] = None,
+    ):
+        super().__init__(datalab)
+        self.cl = CleanLearning(**(clean_learning_kwargs or {}))
+
+    @staticmethod
+    def _process_find_label_issues_kwargs(kwargs: Dict[str, Any]) -> Dict[str, Any]:
+        """Searches for keyword arguments that are meant for the
+        CleanLearning.find_label_issues method call
+
+        Examples
+        --------
+        >>> from cleanlab.datalab.internal.issue_manager.regression.label import LabelIssueManager
+        >>> RegressionLabelIssueManager._process_find_label_issues_kwargs({'coarse_search_range': [0.1, 0.9]})
+        {'coarse_search_range': [0.1, 0.9]}
+        """
+        accepted_kwargs = [
+            "uncertainty",
+            "coarse_search_range",
+            "fine_search_size",
+            "save_space",
+            "model_kwargs",
+        ]
+        return {k: v for k, v in kwargs.items() if k in accepted_kwargs and v is not None}
+
+    def find_issues(
+        self,
+        **kwargs,
+    ) -> None:
+        """Find label issues in the datalab.
+        """
+        
+        # Find examples with label issues
+        X_with_y = self.datalab.data
+        y = X_with_y[self.datalab.label_name]
+        self.issues = self.cl.find_label_issues(
+            X=X_with_y.drop(columns=self.datalab.label_name),
+            y=y,
+            **self._process_find_label_issues_kwargs(kwargs),
+        )
+        
+    def collect_info(self, issues: pd.DataFrame, summary_dict: dict) -> dict:
+        issues_info = {
+            "num_label_issues": sum(issues[f"is_{self.issue_name}_issue"]),
+            "average_label_quality": issues[self.issue_score_key].mean(),
+            "given_label": issues["given_label"].tolist(),
+            "predicted_label": issues["predicted_label"].tolist(),
+        }
+
+        #TODO if required:
+        health_summary_info = {}
+        cl_info = {}
+
+        info_dict = {
+            **issues_info,
+            **health_summary_info,
+            **cl_info,
+        }
+
+        return info_dict
+
+
+
