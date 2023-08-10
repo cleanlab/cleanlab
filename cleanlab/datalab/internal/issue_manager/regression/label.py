@@ -18,16 +18,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional
 
-import numpy as np
-
 from cleanlab.regression.learn import CleanLearning
 from cleanlab.datalab.internal.issue_manager import IssueManager
 
-from cleanlab.internal.validation import assert_valid_inputs
-
 if TYPE_CHECKING:  # pragma: no cover
     import pandas as pd
-    import numpy.typing as npt
     from cleanlab.datalab.datalab import Datalab
 
 
@@ -42,9 +37,8 @@ class RegressionLabelIssueManager(IssueManager):
     clean_learning_kwargs :
         Keyword arguments to pass to the :py:meth:`CleanLearning <cleanlab.classification.CleanLearning>` constructor.
 
-    health_summary_parameters :
-        Keyword arguments to pass to the :py:meth:`health_summary <cleanlab.dataset.health_summary>` function.
     """
+
     description: ClassVar[
         str
     ] = """Examples whose given label is estimated to be potentially incorrect
@@ -56,7 +50,7 @@ class RegressionLabelIssueManager(IssueManager):
         0: [],
         1: [],
         2: [],
-        3: [], #TODO
+        3: [],  # TODO
     }
 
     def __init__(
@@ -91,18 +85,18 @@ class RegressionLabelIssueManager(IssueManager):
         self,
         **kwargs,
     ) -> None:
-        """Find label issues in the datalab.
-        """
-        
+        """Find label issues in the datalab."""
+
         # Find examples with label issues
-        X_with_y = self.datalab.data
+        X_with_y = self.datalab.data.to_pandas()
         y = X_with_y[self.datalab.label_name]
         self.issues = self.cl.find_label_issues(
-            X=X_with_y.drop(columns=self.datalab.label_name),
+            X=X_with_y.drop(columns=[self.datalab.label_name]),
             y=y,
             **self._process_find_label_issues_kwargs(kwargs),
         )
         
+
     def collect_info(self, issues: pd.DataFrame, summary_dict: dict) -> dict:
         issues_info = {
             "num_label_issues": sum(issues[f"is_{self.issue_name}_issue"]),
@@ -111,7 +105,7 @@ class RegressionLabelIssueManager(IssueManager):
             "predicted_label": issues["predicted_label"].tolist(),
         }
 
-        #TODO if required:
+        # TODO if required:
         health_summary_info = {}
         cl_info = {}
 
@@ -122,6 +116,3 @@ class RegressionLabelIssueManager(IssueManager):
         }
 
         return info_dict
-
-
-
