@@ -909,7 +909,7 @@ def test_find_issues_missing_classes():
 def test_find_issues_low_memory():
     X = DATA["X_train"]
     labels = DATA["labels"]
-    pred_probs = estimate_cv_predicted_probabilities(X=X, labels=labels)
+    pred_probs = estimate_cv_predicted_probabilities(X=X, labels=labels, seed=SEED)
     issues_df = CleanLearning().find_label_issues(labels=labels, pred_probs=pred_probs)
     issues_df_lm = CleanLearning(low_memory=True).find_label_issues(
         labels=labels, pred_probs=pred_probs
@@ -918,3 +918,14 @@ def test_find_issues_low_memory():
     intersection = len(list(set(issues_df).intersection(set(issues_df_lm))))
     union = len(set(issues_df)) + len(set(issues_df_lm)) - intersection
     assert float(intersection) / union > 0.95
+    # Without pred_probs
+    issues_df = CleanLearning(low_memory=True, verbose=True, seed=SEED).find_label_issues(
+        X=X, labels=labels
+    )
+    assert issues_df.equals(issues_df_lm)
+    # With unused arguments find_label_issues_kwargs and noise_matrix
+    find_label_issues_kwargs = {"min_examples_per_class": 2}
+    issues_df = CleanLearning(
+        low_memory=True, find_label_issues_kwargs=find_label_issues_kwargs, seed=SEED
+    ).find_label_issues(X=X, labels=labels, noise_matrix=DATA["noise_matrix"])
+    assert issues_df.equals(issues_df_lm)

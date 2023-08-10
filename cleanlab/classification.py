@@ -813,11 +813,12 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
             if self.verbose:
                 print("Using predicted probabilities to identify label issues ...")
 
+            if self.find_label_issues_kwargs:
+                warnings.warn(f"`find_label_issues_kwargs` is not used when `low_memory=True`.")
             arg_values = {
                 "thresholds": thresholds,
                 "noise_matrix": noise_matrix,
-                "inverst_noise_matrix": inverse_noise_matrix,
-                "find_label_issues_kwargs": self.find_label_issues_kwargs,
+                "inverse_noise_matrix": inverse_noise_matrix,
             }
             for arg_name, arg_val in arg_values.items():
                 if arg_val is not None:
