@@ -135,13 +135,18 @@ def _find_label_issues(
     if scoring_method == "objectlab":
         auxiliary_inputs = _get_valid_inputs_for_compute_scores(ALPHA, labels, predictions)
 
+        per_class_scores = get_res_score(labels, predictions)
+        label_list = [_separate_label(label)[1] for label in labels]
+        predic_list = [_separate_prediction(pred)[1] for pred in predictions]
+        pred_dict_res = _process_class_list(predic_list, per_class_scores)
+        lab_dict_res = _process_class_list(label_list, per_class_scores)
         overlooked_scores_per_box = compute_overlooked_box_scores(
             alpha=ALPHA,
             high_probability_threshold=HIGH_PROBABILITY_THRESHOLD,
             auxiliary_inputs=auxiliary_inputs,
         )
         overlooked_issues_per_box = _find_label_issues_per_box(
-            overlooked_scores_per_box, OVERLOOKED_THRESHOLD
+            overlooked_scores_per_box, pred_dict_res
         )
         overlooked_issues_per_image = _pool_box_scores_per_image(overlooked_issues_per_box)
 
@@ -150,7 +155,7 @@ def _find_label_issues(
             low_probability_threshold=LOW_PROBABILITY_THRESHOLD,
             auxiliary_inputs=auxiliary_inputs,
         )
-        badloc_issues_per_box = _find_label_issues_per_box(badloc_scores_per_box, BADLOC_THRESHOLD)
+        badloc_issues_per_box = _find_label_issues_per_box(badloc_scores_per_box, lab_dict_res)
         badloc_issues_per_image = _pool_box_scores_per_image(badloc_issues_per_box)
 
         swap_scores_per_box = compute_swap_box_scores(
@@ -159,7 +164,7 @@ def _find_label_issues(
             overlapping_label_check=overlapping_label_check,
             auxiliary_inputs=auxiliary_inputs,
         )
-        swap_issues_per_box = _find_label_issues_per_box(swap_scores_per_box, SWAP_THRESHOLD)
+        swap_issues_per_box = _find_label_issues_per_box(swap_scores_per_box, lab_dict_res)
         swap_issues_per_image = _pool_box_scores_per_image(swap_issues_per_box)
 
         issues_per_image = (
@@ -185,9 +190,7 @@ def _find_label_issues(
         return is_issue
 
 
-def _find_label_issues_per_box(
-    scores_per_box: List[np.ndarray], threshold: float, thr_classes
-) -> List[np.ndarray]:
+def _find_label_issues_per_box(scores_per_box: List[np.ndarray], thr_classes) -> List[np.ndarray]:
     """Takes in a list of size ``N`` where each index is an array of scores for each bounding box in the `n-th` example
     and a threshold. Each box below or equal to the threshold will be marked as an issue.
 
@@ -283,3 +286,11 @@ def _pool_box_scores_per_image(is_issue_per_box: List[np.ndarray]) -> np.ndarray
         if np.sum(issue_per_box) > 0:
             is_issue[idx] = 1
     return is_issue
+
+
+def _process_class_list(class_list, class_dict):
+    class_l2 = []
+    for i in class_list:
+        l3 = [class_dict[j] for j in i]
+        class_l2.append(l3)
+    return class_l2
