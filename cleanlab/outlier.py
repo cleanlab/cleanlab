@@ -537,7 +537,7 @@ def _get_ood_predictions_scores(
             )
         probs = softmax(pred_probs, axis=1)
         probs_sorted = np.sort(probs, axis=1)[:,-M:]
-        ood_predictions_scores = 1 - np.sum(probs_sorted**gamma * (1 - probs_sorted)**(gamma), axis=1)/M
+        ood_predictions_scores = 1 - np.sum(probs_sorted**gamma * (1 - probs_sorted)**(gamma), axis=1)/M  # Use 1 + original gen score/M to make the scores lie in 0-1
     else:
         raise ValueError(
             f"""
