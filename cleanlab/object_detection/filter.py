@@ -28,7 +28,11 @@ from cleanlab.internal.constants import (
     SWAP_THRESHOLD,
 )
 from cleanlab.internal.object_detection_utils import assert_valid_inputs
-from collections import Counter
+from cleanlab.object_detection.rank import (
+    _get_overlap_matrix,
+    _separate_label,
+    _separate_prediction,
+)
 from sklearn.metrics import f1_score
 from cleanlab.object_detection.rank import (
     _get_valid_inputs_for_compute_scores,
@@ -199,7 +203,7 @@ def _find_label_issues_per_box(
             issue_per_box = []
             for i in range(len(score_per_box)):
                 issue_per_box.append(score_per_box[i] <= thr_classes[idx][i])
-            is_issue_per_box.append(np.array(issue_per_box,bool))
+            is_issue_per_box.append(np.array(issue_per_box, bool))
     return is_issue_per_box
 
 
@@ -208,32 +212,20 @@ from collections import defaultdict
 
 def get_res_score(labels, predictions):
     IOU_CORRECT = 0.5
-    IOU_MISS = 0.1
-    dcl = defaultdict(Counter)
-
     res_matrix = defaultdict(lambda: defaultdict(list))
-
     for prediction, label in zip(predictions, labels):
         lab_bboxes, lab_labels = _separate_label(label)
         pred_bboxes, pred_labels, pred_probs = _separate_prediction(prediction)
         if len(pred_bboxes) == 0:
             for i in range(0, len(lab_labels)):
-                res_matrix[lab_labels[i]]['Y'].append(True)
-                res_matrix[lab_labels[i]]['pred'].append(False)
+                res_matrix[lab_labels[i]]["Y"].append(True)
+                res_matrix[lab_labels[i]]["pred"].append(False)
             continue
-        for i in range(0, len(lab_labels)):
-            dcl[lab_labels[i]]['label_count'] += 1
         iou_matrix = _get_overlap_matrix(lab_bboxes, pred_bboxes)
-        for i in range(0, len(pred_labels)):
-            dcl[pred_labels[i]]['pred_count'] += 1
-        done = set()
         ious_max_1 = iou_matrix.max(axis=1)
         if iou_matrix.shape[0] == 0:
             continue
-        ious_argmax_1 = iou_matrix.argmax(axis=1)
-
         ious_max_0 = iou_matrix.max(axis=0)
-        ious_argmax_0 = iou_matrix.argmax(axis=0)
         done_labels = set()
         done_preds = set()
         for i in range(0, iou_matrix.shape[0]):
@@ -244,36 +236,31 @@ def get_res_score(labels, predictions):
                     pred_label = pred_labels[j]
                     ann_label = lab_labels[i]
                     if pred_label == ann_label:
-                        dcl[pred_labels[j]]['label==pred'] += 1
-                        res_matrix[pred_label]['pred'].append(True)
-                        res_matrix[ann_label]['Y'].append(True)
+                        res_matrix[pred_label]["pred"].append(True)
+                        res_matrix[ann_label]["Y"].append(True)
                     else:
-                        res_matrix[pred_label]['pred'].append(True)
-                        res_matrix[pred_label]['Y'].append(False)
-                        res_matrix[ann_label]['pred'].append(False)
-                        res_matrix[ann_label]['Y'].append(True)
-                        dcl[pred_labels[j]]['label!=pred'] += 1
-
+                        res_matrix[pred_label]["pred"].append(True)
+                        res_matrix[pred_label]["Y"].append(False)
+                        res_matrix[ann_label]["pred"].append(False)
+                        res_matrix[ann_label]["Y"].append(True)
         for i in range(0, len(ious_max_1)):
-            if ious_max_1[i] < IOU_MISS:
+            if ious_max_1[i] < IOU_CORRECT:
                 ann_label = lab_labels[i]
                 if i not in done_labels:
                     done_labels.add(i)
-                    res_matrix[ann_label]['Y'].append(True)
-                    res_matrix[ann_label]['pred'].append(False)
-                    dcl[lab_labels[i]]['missed_prediction'] += 1
+                    res_matrix[ann_label]["Y"].append(True)
+                    res_matrix[ann_label]["pred"].append(False)
         for j in range(0, len(ious_max_0)):
             pred_label = pred_labels[j]
-            if ious_max_0[j] < IOU_MISS:
+            if ious_max_0[j] < IOU_CORRECT:
                 if j not in done_preds:
                     done_preds.add(j)
-                    res_matrix[pred_label]['pred'].append(True)
-                    res_matrix[pred_label]['Y'].append(False)
-                    dcl[pred_labels[j]]['overlooked_label'] += 1
+                    res_matrix[pred_label]["pred"].append(True)
+                    res_matrix[pred_label]["Y"].append(False)
     res_m = defaultdict()
     for i in res_matrix.keys():
-        predictions_t = res_matrix[i]['pred']
-        labels_t = res_matrix[i]['Y']
+        predictions_t = res_matrix[i]["pred"]
+        labels_t = res_matrix[i]["Y"]
         metrics = f1_score(predictions_t, labels_t)
         res_m[i] = metrics * IOU_CORRECT * 0.5
     return res_m
