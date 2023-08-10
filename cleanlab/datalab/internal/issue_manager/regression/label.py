@@ -89,9 +89,11 @@ class RegressionLabelIssueManager(IssueManager):
 
         # Find examples with label issues
         X_with_y = self.datalab.data.to_pandas()
+        X = X_with_y.drop(columns=self.datalab.label_name)
         y = X_with_y[self.datalab.label_name]
+        self.cl.fit(X, y)
         self.issues = self.cl.find_label_issues(
-            X=X_with_y.drop(columns=self.datalab.label_name),
+            X=X,
             y=y,
             **self._process_find_label_issues_kwargs(kwargs),
         )
