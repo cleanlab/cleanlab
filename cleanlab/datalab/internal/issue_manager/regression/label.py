@@ -91,11 +91,10 @@ class RegressionLabelIssueManager(IssueManager):
         X_with_y = self.datalab.data.to_pandas()
         y = X_with_y[self.datalab.label_name]
         self.issues = self.cl.find_label_issues(
-            X=X_with_y.drop(columns=[self.datalab.label_name]),
+            X=X_with_y.drop(columns=self.datalab.label_name),
             y=y,
             **self._process_find_label_issues_kwargs(kwargs),
         )
-        
 
     def collect_info(self, issues: pd.DataFrame, summary_dict: dict) -> dict:
         issues_info = {
