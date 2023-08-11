@@ -23,10 +23,9 @@ from cleanlab.internal.constants import (
     ALPHA,
     LOW_PROBABILITY_THRESHOLD,
     HIGH_PROBABILITY_THRESHOLD,
-    OVERLOOKED_THRESHOLD,
-    BADLOC_THRESHOLD,
-    SWAP_THRESHOLD,
 )
+from collections import defaultdict
+
 from cleanlab.internal.object_detection_utils import assert_valid_inputs
 from cleanlab.object_detection.rank import (
     _get_overlap_matrix,
@@ -135,19 +134,17 @@ def _find_label_issues(
     if scoring_method == "objectlab":
         auxiliary_inputs = _get_valid_inputs_for_compute_scores(ALPHA, labels, predictions)
 
-        per_class_scores = get_res_score(labels, predictions)
-        label_list = [_separate_label(label)[1] for label in labels]
-        predic_list = [_separate_prediction(pred)[1] for pred in predictions]
-        pred_dict_res = _process_class_list(predic_list, per_class_scores)
-        lab_dict_res = _process_class_list(label_list, per_class_scores)
+        per_class_scores = get_class_thresholds(labels, predictions)
+        lab_list = [_separate_label(label)[1] for label in labels]
+        pred_list = [_separate_prediction(pred)[1] for pred in predictions]
+        pred_dict = _process_class_list(pred_list, per_class_scores)
+        lab_dict = _process_class_list(lab_list, per_class_scores)
         overlooked_scores_per_box = compute_overlooked_box_scores(
             alpha=ALPHA,
             high_probability_threshold=HIGH_PROBABILITY_THRESHOLD,
             auxiliary_inputs=auxiliary_inputs,
         )
-        overlooked_issues_per_box = _find_label_issues_per_box(
-            overlooked_scores_per_box, pred_dict_res
-        )
+        overlooked_issues_per_box = _find_label_issues_per_box(overlooked_scores_per_box, pred_dict)
         overlooked_issues_per_image = _pool_box_scores_per_image(overlooked_issues_per_box)
 
         badloc_scores_per_box = compute_badloc_box_scores(
@@ -155,7 +152,7 @@ def _find_label_issues(
             low_probability_threshold=LOW_PROBABILITY_THRESHOLD,
             auxiliary_inputs=auxiliary_inputs,
         )
-        badloc_issues_per_box = _find_label_issues_per_box(badloc_scores_per_box, lab_dict_res)
+        badloc_issues_per_box = _find_label_issues_per_box(badloc_scores_per_box, lab_dict)
         badloc_issues_per_image = _pool_box_scores_per_image(badloc_issues_per_box)
 
         swap_scores_per_box = compute_swap_box_scores(
@@ -164,7 +161,7 @@ def _find_label_issues(
             overlapping_label_check=overlapping_label_check,
             auxiliary_inputs=auxiliary_inputs,
         )
-        swap_issues_per_box = _find_label_issues_per_box(swap_scores_per_box, lab_dict_res)
+        swap_issues_per_box = _find_label_issues_per_box(swap_scores_per_box, lab_dict)
         swap_issues_per_image = _pool_box_scores_per_image(swap_issues_per_box)
 
         issues_per_image = (
@@ -190,7 +187,9 @@ def _find_label_issues(
         return is_issue
 
 
-def _find_label_issues_per_box(scores_per_box: List[np.ndarray], thr_classes) -> List[np.ndarray]:
+def _find_label_issues_per_box(
+    scores_per_box: List[np.ndarray], thr_classes, fixed_threshold=None
+) -> List[np.ndarray]:
     """Takes in a list of size ``N`` where each index is an array of scores for each bounding box in the `n-th` example
     and a threshold. Each box below or equal to the threshold will be marked as an issue.
 
@@ -204,68 +203,64 @@ def _find_label_issues_per_box(scores_per_box: List[np.ndarray], thr_classes) ->
             score_per_box[np.isnan(score_per_box)] = 1.0
             score_per_box = score_per_box
             issue_per_box = []
-            for i in range(len(score_per_box)):
-                issue_per_box.append(score_per_box[i] <= thr_classes[idx][i])
+            if fixed_threshold is not None:
+                for i in range(len(score_per_box)):
+                    issue_per_box.append(score_per_box[i] <= thr_classes[idx][i])
+                else:
+                    issue_per_box.append(score_per_box <= fixed_threshold)
             is_issue_per_box.append(np.array(issue_per_box, bool))
     return is_issue_per_box
 
 
-from collections import defaultdict
-
-
-def get_res_score(labels, predictions):
-    IOU_CORRECT = 0.5
+def get_class_thresholds(labels, predictions):
     res_matrix = defaultdict(lambda: defaultdict(list))
+
     for prediction, label in zip(predictions, labels):
         lab_bboxes, lab_labels = _separate_label(label)
         pred_bboxes, pred_labels, pred_probs = _separate_prediction(prediction)
         if len(pred_bboxes) == 0:
-            for i in range(0, len(lab_labels)):
-                res_matrix[lab_labels[i]]["Y"].append(True)
-                res_matrix[lab_labels[i]]["pred"].append(False)
+            for lab_idx in range(0, len(lab_labels)):
+                res_matrix[lab_labels[lab_idx]]["Y"].append(True)
+                res_matrix[lab_labels[lab_idx]]["pred"].append(False)
+            continue
+        if len(lab_bboxes) == 0:
+            for pred_idx in range(0, len(pred_labels)):
+                res_matrix[pred_labels[pred_idx]]["Y"].append(False)
+                res_matrix[pred_labels[pred_idx]]["pred"].append(True)
             continue
         iou_matrix = _get_overlap_matrix(lab_bboxes, pred_bboxes)
-        ious_max_1 = iou_matrix.max(axis=1)
-        if iou_matrix.shape[0] == 0:
-            continue
-        ious_max_0 = iou_matrix.max(axis=0)
-        done_labels = set()
-        done_preds = set()
-        for i in range(0, iou_matrix.shape[0]):
-            for j in range(0, iou_matrix.shape[1]):
-                if iou_matrix[i][j] > IOU_CORRECT and pred_probs[j] > 0.95:
-                    done_labels.add(i)
-                    done_preds.add(j)
-                    pred_label = pred_labels[j]
-                    ann_label = lab_labels[i]
-                    if pred_label == ann_label:
-                        res_matrix[pred_label]["pred"].append(True)
-                        res_matrix[ann_label]["Y"].append(True)
-                    else:
-                        res_matrix[pred_label]["pred"].append(True)
-                        res_matrix[pred_label]["Y"].append(False)
-                        res_matrix[ann_label]["pred"].append(False)
-                        res_matrix[ann_label]["Y"].append(True)
-        for i in range(0, len(ious_max_1)):
-            if ious_max_1[i] < IOU_CORRECT:
-                ann_label = lab_labels[i]
-                if i not in done_labels:
-                    done_labels.add(i)
-                    res_matrix[ann_label]["Y"].append(True)
-                    res_matrix[ann_label]["pred"].append(False)
-        for j in range(0, len(ious_max_0)):
-            pred_label = pred_labels[j]
-            if ious_max_0[j] < IOU_CORRECT:
-                if j not in done_preds:
-                    done_preds.add(j)
-                    res_matrix[pred_label]["pred"].append(True)
-                    res_matrix[pred_label]["Y"].append(False)
+        iou_pred_max = iou_matrix.max(axis=0)
+        iou_pred_argmax = iou_matrix.argmax(axis=0)
+        iou_lab_max = iou_matrix.max(axis=1)
+        for pred_idx in range(0, len(iou_pred_argmax)):
+            if pred_probs[pred_idx] < HIGH_PROBABILITY_THRESHOLD:
+                continue
+            pred_label = pred_labels[pred_idx]
+            ann_label = lab_labels[iou_pred_argmax[pred_idx]]
+            if pred_label == ann_label:
+                res_matrix[pred_label]["pred"].append(True)
+                res_matrix[ann_label]["Y"].append(True)
+            else:
+                res_matrix[pred_label]["pred"].append(True)
+                res_matrix[pred_label]["Y"].append(False)
+                res_matrix[ann_label]["pred"].append(False)
+                res_matrix[ann_label]["Y"].append(True)
+        for pred_idx in range(0, len(iou_lab_max)):
+            if iou_lab_max[pred_idx] == 0.0:
+                ann_label = lab_labels[pred_idx]
+                res_matrix[ann_label]["Y"].append(True)
+                res_matrix[ann_label]["pred"].append(False)
+        for lab_idx in range(0, len(iou_pred_max)):
+            pred_label = pred_labels[lab_idx]
+            if iou_pred_max[lab_idx] == 0.0 and pred_probs[lab_idx] >= HIGH_PROBABILITY_THRESHOLD:
+                res_matrix[pred_label]["pred"].append(True)
+                res_matrix[pred_label]["Y"].append(False)
     res_m = defaultdict()
-    for i in res_matrix.keys():
-        predictions_t = res_matrix[i]["pred"]
-        labels_t = res_matrix[i]["Y"]
-        metrics = f1_score(predictions_t, labels_t)
-        res_m[i] = metrics * IOU_CORRECT * 0.5
+    for class_name in res_matrix.keys():
+        predictions_class = res_matrix[class_name]["pred"]
+        labels_class = res_matrix[class_name]["Y"]
+        metrics = f1_score(predictions_class, labels_class)
+        res_m[class_name] = metrics * 0.5 * 0.5
     return res_m
 
 
