@@ -32,6 +32,7 @@ LOW_PROBABILITY_THRESHOLD = 0.5  # Param for get_label_quality_score, lowest pre
 HIGH_PROBABILITY_THRESHOLD = 0.95  # Param for objectlab, high probability threshold for considering predicted boxes to identify overlooked and swapped label boxes
 TEMPERATURE = 0.1  # Param for objectlab, temperature of the softmin function used to pool the per-box quality scores for an error subtype across all boxes into a single subtype score for the image. With a lower temperature, softmin pooling acts more like minimum pooling, alternatively it acts more like mean pooling with high temperature.
 LABEL_OVERLAP_THRESHOLD = 0.95  # Param for objectlab, minimum IoU threshold for deciding when two boxes overlap used for deciding which objects have multiple conflicting annotations.
+IOU_CORRECT = 0.5  # Param for objectlab, minumim IoU threshold for deciding when 2 boxes overlap for per-class scoring.
 
 OVERLOOKED_THRESHOLD = 0.3  # Param for find_label_issues. Per-box label quality score threshold to determine max score for a box to be considered an overlooked issue
 BADLOC_THRESHOLD = 0.3  # Param for find_label_issues. Per-box label quality score threshold to determine max score for a box to be considered a bad location issue

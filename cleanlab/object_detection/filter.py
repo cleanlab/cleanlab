@@ -16,27 +16,26 @@
 
 """Methods to find label issues in an object detection dataset, where each annotated bounding box in an image receives its own class label."""
 
-from typing import List, Any, Dict, Optional
+from collections import defaultdict
+from typing import Any, Dict, List, Optional
+
 import numpy as np
+from sklearn.metrics import f1_score
 
 from cleanlab.internal.constants import (
     ALPHA,
-    LOW_PROBABILITY_THRESHOLD,
     HIGH_PROBABILITY_THRESHOLD,
+    LOW_PROBABILITY_THRESHOLD,
+    IOU_CORRECT,
 )
-from collections import defaultdict
-
 from cleanlab.internal.object_detection_utils import assert_valid_inputs
 from cleanlab.object_detection.rank import (
     _get_overlap_matrix,
+    _get_valid_inputs_for_compute_scores,
     _separate_label,
     _separate_prediction,
-)
-from sklearn.metrics import f1_score
-from cleanlab.object_detection.rank import (
-    _get_valid_inputs_for_compute_scores,
-    compute_overlooked_box_scores,
     compute_badloc_box_scores,
+    compute_overlooked_box_scores,
     compute_swap_box_scores,
     get_label_quality_scores,
     issues_from_scores,
@@ -134,7 +133,7 @@ def _find_label_issues(
     if scoring_method == "objectlab":
         auxiliary_inputs = _get_valid_inputs_for_compute_scores(ALPHA, labels, predictions)
 
-        per_class_scores = get_class_thresholds(labels, predictions)
+        per_class_scores = _get_per_class_thresholds(labels, predictions)
         lab_list = [_separate_label(label)[1] for label in labels]
         pred_list = [_separate_prediction(pred)[1] for pred in predictions]
         pred_dict = _process_class_list(pred_list, per_class_scores)
@@ -212,7 +211,10 @@ def _find_label_issues_per_box(
     return is_issue_per_box
 
 
-def get_class_thresholds(labels, predictions):
+def _get_per_class_thresholds(labels: List[Dict[str, Any]], predictions: List[np.ndarray]):
+    """
+    Internal code to find thresholding for each class for is_issue.
+    """
     res_matrix = defaultdict(lambda: defaultdict(list))
 
     for prediction, label in zip(predictions, labels):
@@ -233,7 +235,10 @@ def get_class_thresholds(labels, predictions):
         iou_pred_argmax = iou_matrix.argmax(axis=0)
         iou_lab_max = iou_matrix.max(axis=1)
         for pred_idx in range(0, len(iou_pred_argmax)):
-            if pred_probs[pred_idx] < HIGH_PROBABILITY_THRESHOLD:
+            if (
+                pred_probs[pred_idx] < HIGH_PROBABILITY_THRESHOLD
+                or iou_pred_max[pred_idx] < IOU_CORRECT
+            ):
                 continue
             pred_label = pred_labels[pred_idx]
             ann_label = lab_labels[iou_pred_argmax[pred_idx]]
