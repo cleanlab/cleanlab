@@ -32,8 +32,8 @@ from sklearn.neighbors import NearestNeighbors
 
 import cleanlab
 from cleanlab.datalab.datalab import Datalab
-from cleanlab.datalab.issue_finder import IssueFinder
-from cleanlab.datalab.report import Reporter
+from cleanlab.datalab.internal.issue_finder import IssueFinder
+from cleanlab.datalab.internal.report import Reporter
 
 SEED = 42
 
@@ -493,7 +493,7 @@ class TestDatalab:
                 return [mock_issue_manager]
 
         monkeypatch.setattr(
-            "cleanlab.datalab.issue_finder._IssueManagerFactory", MockIssueManagerFactory
+            "cleanlab.datalab.internal.issue_finder._IssueManagerFactory", MockIssueManagerFactory
         )
 
         assert lab.issues.empty
@@ -519,7 +519,7 @@ class TestDatalab:
                     f"Report with verbosity={self.verbosity} and k={kwargs.get('num_examples', 5)}"
                 )
 
-        monkeypatch.setattr(cleanlab.datalab.helper_factory, "Reporter", MockReporter)
+        monkeypatch.setattr(cleanlab.datalab.internal.helper_factory, "Reporter", MockReporter)
         monkeypatch.setattr(
             lab.data_issues,
             "issue_summary",
@@ -607,7 +607,7 @@ class TestDatalabIssueManagerInteraction:
         mock_registry = MagicMock()
         mock_registry.__getitem__.side_effect = KeyError("issue type not registered")
 
-        with patch("cleanlab.datalab.issue_manager_factory.REGISTRY", mock_registry):
+        with patch("cleanlab.datalab.internal.issue_manager_factory.REGISTRY", mock_registry):
             with pytest.raises(ValueError) as excinfo:
                 lab.find_issues(issue_types={"custom_issue": {}})
 
@@ -620,7 +620,7 @@ class TestDatalabIssueManagerInteraction:
 
     def test_custom_issue_manager_registered(self, lab, custom_issue_manager):
         """Test that a custom issue manager that is registered will be used."""
-        from cleanlab.datalab.issue_manager_factory import register
+        from cleanlab.datalab.internal.issue_manager_factory import register
 
         register(custom_issue_manager)
 
@@ -644,7 +644,7 @@ class TestDatalabIssueManagerInteraction:
         self, lab, custom_issue_manager, list_possible_issue_types
     ):
         """Test that a custom issue manager that is registered will be used."""
-        from cleanlab.datalab.issue_manager_factory import register
+        from cleanlab.datalab.internal.issue_manager_factory import register
 
         register(custom_issue_manager)
 
@@ -664,7 +664,7 @@ class TestDatalabIssueManagerInteraction:
         assert pd.testing.assert_frame_equal(lab.issues, expected_issues) is None
 
         # Clean up registry
-        from cleanlab.datalab.issue_manager_factory import REGISTRY
+        from cleanlab.datalab.internal.issue_manager_factory import REGISTRY
 
         REGISTRY.pop(custom_issue_manager.issue_name)
 
@@ -817,14 +817,56 @@ class TestDatalabFindLabelIssues:
         lab = Datalab(data=data, label_name="labels")
         lab.find_issues(features=random_embeddings)
         summary = lab.get_issue_summary()
-        assert len(summary) == 3
-        assert "label" not in summary["issue_type"].values
+        assert len(summary) == 4
+        assert "label" in summary["issue_type"].values
         lab.find_issues(pred_probs=pred_probs, issue_types={"label": {}})
         summary = lab.get_issue_summary()
         assert len(summary) == 4
         assert "label" in summary["issue_type"].values
         label_summary = lab.get_issue_summary("label")
         assert label_summary["num_issues"].values[0] > 0
+        # Compare results with low_memory=True
+        issues_df = lab.get_issues("label")
+        issue_types = {"label": {"clean_learning_kwargs": {"low_memory": True}}}
+        lab_lm = Datalab(data=data, label_name="labels")
+        lab_lm.find_issues(pred_probs=pred_probs, issue_types=issue_types)
+        issues_df_lm = lab_lm.get_issues("label")
+        # jaccard similarity
+        intersection = len(list(set(issues_df).intersection(set(issues_df_lm))))
+        union = len(set(issues_df)) + len(set(issues_df_lm)) - intersection
+        assert float(intersection) / union > 0.95
+
+    def test_build_pred_probs_from_features(self, random_embeddings):
+        data = {"labels": np.random.randint(0, 2, 100)}
+        lab = Datalab(data=data, label_name="labels")
+        lab.find_issues(features=random_embeddings, issue_types={"label": {}})
+        summary = lab.get_issue_summary()
+        assert len(summary) == 1
+        assert "label" in summary["issue_type"].values
+        lab.find_issues(features=random_embeddings, issue_types={"label": {"k": 5}})
+        summary = lab.get_issue_summary()
+        assert len(summary) == 1
+        assert "label" in summary["issue_type"].values
+
+    def test_pred_probs_precedence(self, pred_probs, random_embeddings):
+        data = {"labels": np.random.randint(0, 2, 100)}
+        lab = Datalab(data=data, label_name="labels")
+        lab.find_issues(pred_probs=pred_probs, issue_types={"label": {}})
+        summary = lab.get_issue_summary()
+        assert "label" in summary["issue_type"].values
+        label_summary_pred_probs = lab.get_issue_summary("label")
+        assert label_summary_pred_probs["num_issues"].values[0] > 0
+        lab = Datalab(data=data, label_name="labels")
+        lab.find_issues(
+            features=random_embeddings, pred_probs=pred_probs, issue_types={"label": {}}
+        )
+        summary = lab.get_issue_summary()
+        assert "label" in summary["issue_type"].values
+        label_summary_both = lab.get_issue_summary("label")
+        assert (
+            label_summary_both["num_issues"].values[0]
+            == label_summary_pred_probs["num_issues"].values[0]
+        )
 
 
 class TestDatalabFindOutlierIssues:
@@ -1020,5 +1062,54 @@ class TestDatalabWithoutLabels:
         issues_with_labels = lab_with_labels.issues
         issues_without_label_name = lab_without_label_name.issues
 
-        pd.testing.assert_frame_equal(issues_without_labels, issues_with_labels)
+        # issues_with_labels should have two additional columns about label issues
+        assert len(issues_without_labels.columns) + 2 == len(issues_with_labels.columns)
         pd.testing.assert_frame_equal(issues_without_labels, issues_without_label_name)
+
+
+class TestDataLabClassImbalanceIssues:
+    K = 3
+    N = 100
+    num_features = 2
+
+    @pytest.fixture
+    def random_embeddings(self):
+        np.random.seed(SEED)
+        return np.random.rand(self.N, self.num_features)
+
+    @pytest.fixture
+    def imbalance_labels(self):
+        np.random.seed(SEED)
+        labels = np.random.choice(np.arange(self.K - 1), 100, p=[0.5] * (self.K - 1))
+        labels[0] = 2
+        return labels
+
+    @pytest.fixture
+    def pred_probs(self):
+        np.random.seed(SEED)
+        pred_probs_array = np.random.rand(self.N, self.K)
+        return pred_probs_array / pred_probs_array.sum(axis=1, keepdims=True)
+
+    def test_incremental_search(self, pred_probs, random_embeddings, imbalance_labels):
+        data = {"labels": imbalance_labels}
+        lab = Datalab(data=data, label_name="labels")
+        lab.find_issues(pred_probs=pred_probs, issue_types={"label": {}})
+        summary = lab.get_issue_summary()
+        assert len(summary) == 1
+        assert "class_imbalance" not in summary["issue_type"].values
+        lab.find_issues(features=random_embeddings, issue_types={"class_imbalance": {}})
+        summary = lab.get_issue_summary()
+        assert len(summary) == 2
+        assert "class_imbalance" in summary["issue_type"].values
+        class_imbalance_summary = lab.get_issue_summary("class_imbalance")
+        assert class_imbalance_summary["num_issues"].values[0] > 0
+
+    def test_find_imbalance_issues_no_args(self, imbalance_labels):
+        data = {"labels": imbalance_labels}
+        lab = Datalab(data=data, label_name="labels")
+        lab.find_issues(issue_types={"class_imbalance": {}})
+        summary = lab.get_issue_summary()
+        assert len(summary) == 1
+        assert "class_imbalance" in summary["issue_type"].values
+        class_imbalance_summary = lab.get_issue_summary("class_imbalance")
+        assert class_imbalance_summary["num_issues"].values[0] > 0

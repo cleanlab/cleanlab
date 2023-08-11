@@ -1,5 +1,5 @@
-from cleanlab.datalab.adapter.imagelab import create_imagelab
-from cleanlab.datalab.adapter.constants import DEFAULT_CLEANVISION_ISSUES
+from cleanlab.datalab.internal.adapter.imagelab import create_imagelab
+from cleanlab.datalab.internal.adapter.constants import DEFAULT_CLEANVISION_ISSUES
 
 
 class TestImagelabAdapater:

@@ -5,7 +5,7 @@ import pandas as pd
 import pytest
 
 from cleanlab import Datalab
-from cleanlab.datalab.report import Reporter
+from cleanlab.datalab.internal.report import Reporter
 
 
 class TestReporter:
@@ -62,7 +62,9 @@ class TestReporter:
             def from_str(*args, **kwargs):
                 return mock_issue_manager
 
-        monkeypatch.setattr("cleanlab.datalab.report._IssueManagerFactory", MockIssueManagerFactory)
+        monkeypatch.setattr(
+            "cleanlab.datalab.internal.report._IssueManagerFactory", MockIssueManagerFactory
+        )
         mock_issues = pd.DataFrame(
             {
                 "is_foo_issue": [False, True, False, False, False],

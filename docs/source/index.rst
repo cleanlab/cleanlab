@@ -158,6 +158,7 @@ Please see our `contributing guidelines <https://github.com/cleanlab/cleanlab/bl
    :hidden:
    :maxdepth: 3
 
+   cleanlab/datalab/index
    cleanlab/classification
    cleanlab/filter
    cleanlab/rank
@@ -170,7 +171,6 @@ Please see our `contributing guidelines <https://github.com/cleanlab/cleanlab/bl
    cleanlab/token_classification/index
    cleanlab/segmentation/index
    cleanlab/object_detection/index
-   cleanlab/datalab/index
    cleanlab/benchmarking/index
    cleanlab/models/index
    cleanlab/experimental/index
@@ -192,3 +192,4 @@ Please see our `contributing guidelines <https://github.com/cleanlab/cleanlab/bl
    PyPI <https://pypi.org/project/cleanlab/>
    Conda <https://anaconda.org/Cleanlab/cleanlab>
    Cleanlab Studio <https://cleanlab.ai/studio/?utm_source=github&utm_medium=docs&utm_campaign=clostostudio>
+   Cleanlab Studio Docs <https://help.cleanlab.ai>

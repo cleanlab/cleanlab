@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from cleanlab.datalab.issue_manager.noniid import (
+from cleanlab.datalab.internal.issue_manager.noniid import (
     NonIIDIssueManager,
     simplified_kolmogorov_smirnov_test,
 )

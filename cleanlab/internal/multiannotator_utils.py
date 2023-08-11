@@ -91,6 +91,9 @@ def assert_valid_inputs_multiannotator(
 
     # Raise error if number of classes in labels_multiannoator does not match number of classes in pred_probs
     if pred_probs is not None:
+        if not isinstance(pred_probs, np.ndarray):
+            raise TypeError("pred_probs must be a numpy array.")
+
         if ensemble:
             if pred_probs.ndim != 3:
                 error_message = "pred_probs must be a 3d array."
@@ -141,6 +144,8 @@ def assert_valid_pred_probs(
 
     if ensemble:
         if pred_probs is not None:
+            if not isinstance(pred_probs, np.ndarray):
+                raise TypeError("pred_probs must be a numpy array.")
             if pred_probs.ndim != 3:
                 error_message = "pred_probs must be a 3d array."
                 if pred_probs.ndim == 2:  # pragma: no cover
@@ -148,6 +153,8 @@ def assert_valid_pred_probs(
                 raise ValueError(error_message)
 
         if pred_probs_unlabeled is not None:
+            if not isinstance(pred_probs_unlabeled, np.ndarray):
+                raise TypeError("pred_probs_unlabeled must be a numpy array.")
             if pred_probs_unlabeled.ndim != 3:
                 error_message = "pred_probs_unlabeled must be a 3d array."
                 if pred_probs_unlabeled.ndim == 2:  # pragma: no cover
@@ -162,6 +169,8 @@ def assert_valid_pred_probs(
 
     else:
         if pred_probs is not None:
+            if not isinstance(pred_probs, np.ndarray):
+                raise TypeError("pred_probs must be a numpy array.")
             if pred_probs.ndim != 2:
                 error_message = "pred_probs must be a 2d array."
                 if pred_probs.ndim == 3:  # pragma: no cover
@@ -169,6 +178,8 @@ def assert_valid_pred_probs(
                 raise ValueError(error_message)
 
         if pred_probs_unlabeled is not None:
+            if not isinstance(pred_probs_unlabeled, np.ndarray):
+                raise TypeError("pred_probs_unlabeled must be a numpy array.")
             if pred_probs_unlabeled.ndim != 2:
                 error_message = "pred_probs_unlabeled must be a 2d array."
                 if pred_probs_unlabeled.ndim == 3:  # pragma: no cover
