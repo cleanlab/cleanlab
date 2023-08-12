@@ -149,6 +149,7 @@ from cleanlab.internal.validation import (
     assert_valid_inputs,
     labels_to_array,
 )
+from cleanlab.experimental.label_issues_batched import find_label_issues_batched
 
 
 class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
@@ -216,6 +217,11 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
     verbose : bool, default=False
       Controls how much output is printed. Set to ``False`` to suppress print
       statements.
+
+    low_memory: bool, default=False
+      Set as ``True`` if you have a big dataset with limited memory.
+      Uses :py:func:`experimental.label_issues_batched.find_label_issues_batched <cleanlab.experimental.label_issues_batched>`
+      to find label issues.
     """
 
     def __init__(
@@ -230,6 +236,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         find_label_issues_kwargs={},
         label_quality_scores_kwargs={},
         verbose=False,
+        low_memory=False,
     ):
         self._default_clf = False
         if clf is None:
@@ -267,6 +274,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         self.inverse_noise_matrix = None
         self.clf_kwargs = None
         self.clf_final_kwargs = None
+        self.low_memory = low_memory
 
     def fit(
         self,
@@ -754,6 +762,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
 
         # Check inputs
         assert_valid_inputs(X, labels, pred_probs)
+        labels = labels_to_array(labels)
         if noise_matrix is not None and np.trace(noise_matrix) <= 1:
             t = np.round(np.trace(noise_matrix), 2)
             raise ValueError("Trace(noise_matrix) is {}, but must exceed 1.".format(t))
@@ -777,123 +786,161 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         self.ps = value_counts(labels) / float(len(labels))
 
         self.clf_kwargs = clf_kwargs
-        self._process_label_issues_kwargs(self.find_label_issues_kwargs)
-        # self._process_label_issues_kwargs might set self.confident_joint. If so, we should use it.
-        if self.confident_joint is not None:
-            self.py, noise_matrix, inv_noise_matrix = estimate_latent(
-                confident_joint=self.confident_joint,
-                labels=labels,
-            )
-
-        # If needed, compute noise rates (probability of class-conditional mislabeling).
-        if noise_matrix is not None:
-            self.noise_matrix = noise_matrix
-            if inverse_noise_matrix is None:
-                if self.verbose:
-                    print("Computing label noise estimates from provided noise matrix ...")
-                self.py, self.inverse_noise_matrix = compute_py_inv_noise_matrix(
-                    ps=self.ps,
-                    noise_matrix=self.noise_matrix,
-                )
-        if inverse_noise_matrix is not None:
-            self.inverse_noise_matrix = inverse_noise_matrix
-            if noise_matrix is None:
-                if self.verbose:
-                    print("Computing label noise estimates from provided inverse noise matrix ...")
-                self.noise_matrix = compute_noise_matrix_from_inverse(
-                    ps=self.ps,
-                    inverse_noise_matrix=self.inverse_noise_matrix,
-                )
-
-        if noise_matrix is None and inverse_noise_matrix is None:
+        if self.low_memory:
+            # If needed, compute P(label=k|x), denoted pred_probs (the predicted probabilities)
             if pred_probs is None:
                 if self.verbose:
                     print(
                         "Computing out of sample predicted probabilities via "
                         f"{self.cv_n_folds}-fold cross validation. May take a while ..."
                     )
-                (
-                    self.py,
-                    self.noise_matrix,
-                    self.inverse_noise_matrix,
-                    self.confident_joint,
-                    pred_probs,
-                ) = estimate_py_noise_matrices_and_cv_pred_proba(
+
+                pred_probs = estimate_cv_predicted_probabilities(
                     X=X,
                     labels=labels,
                     clf=self.clf,
                     cv_n_folds=self.cv_n_folds,
-                    thresholds=thresholds,
-                    converge_latent_estimates=self.converge_latent_estimates,
                     seed=self.seed,
                     clf_kwargs=self.clf_kwargs,
                     validation_func=validation_func,
                 )
-            else:  # pred_probs is provided by user (assumed holdout probabilities)
+
+            if self.verbose:
+                print("Using predicted probabilities to identify label issues ...")
+
+            if self.find_label_issues_kwargs:
+                warnings.warn(f"`find_label_issues_kwargs` is not used when `low_memory=True`.")
+            arg_values = {
+                "thresholds": thresholds,
+                "noise_matrix": noise_matrix,
+                "inverse_noise_matrix": inverse_noise_matrix,
+            }
+            for arg_name, arg_val in arg_values.items():
+                if arg_val is not None:
+                    warnings.warn(f"`{arg_name}` is not used when `low_memory=True`.")
+            label_issues_indices = find_label_issues_batched(labels, pred_probs)
+            label_issues_mask = np.zeros(len(labels), dtype=bool)
+            label_issues_mask[label_issues_indices] = True
+        else:
+            self._process_label_issues_kwargs(self.find_label_issues_kwargs)
+            # self._process_label_issues_kwargs might set self.confident_joint. If so, we should use it.
+            if self.confident_joint is not None:
+                self.py, noise_matrix, inv_noise_matrix = estimate_latent(
+                    confident_joint=self.confident_joint,
+                    labels=labels,
+                )
+
+            # If needed, compute noise rates (probability of class-conditional mislabeling).
+            if noise_matrix is not None:
+                self.noise_matrix = noise_matrix
+                if inverse_noise_matrix is None:
+                    if self.verbose:
+                        print("Computing label noise estimates from provided noise matrix ...")
+                    self.py, self.inverse_noise_matrix = compute_py_inv_noise_matrix(
+                        ps=self.ps,
+                        noise_matrix=self.noise_matrix,
+                    )
+            if inverse_noise_matrix is not None:
+                self.inverse_noise_matrix = inverse_noise_matrix
+                if noise_matrix is None:
+                    if self.verbose:
+                        print(
+                            "Computing label noise estimates from provided inverse noise matrix ..."
+                        )
+                    self.noise_matrix = compute_noise_matrix_from_inverse(
+                        ps=self.ps,
+                        inverse_noise_matrix=self.inverse_noise_matrix,
+                    )
+
+            if noise_matrix is None and inverse_noise_matrix is None:
+                if pred_probs is None:
+                    if self.verbose:
+                        print(
+                            "Computing out of sample predicted probabilities via "
+                            f"{self.cv_n_folds}-fold cross validation. May take a while ..."
+                        )
+                    (
+                        self.py,
+                        self.noise_matrix,
+                        self.inverse_noise_matrix,
+                        self.confident_joint,
+                        pred_probs,
+                    ) = estimate_py_noise_matrices_and_cv_pred_proba(
+                        X=X,
+                        labels=labels,
+                        clf=self.clf,
+                        cv_n_folds=self.cv_n_folds,
+                        thresholds=thresholds,
+                        converge_latent_estimates=self.converge_latent_estimates,
+                        seed=self.seed,
+                        clf_kwargs=self.clf_kwargs,
+                        validation_func=validation_func,
+                    )
+                else:  # pred_probs is provided by user (assumed holdout probabilities)
+                    if self.verbose:
+                        print("Computing label noise estimates from provided pred_probs ...")
+                    (
+                        self.py,
+                        self.noise_matrix,
+                        self.inverse_noise_matrix,
+                        self.confident_joint,
+                    ) = estimate_py_and_noise_matrices_from_probabilities(
+                        labels=labels,
+                        pred_probs=pred_probs,
+                        thresholds=thresholds,
+                        converge_latent_estimates=self.converge_latent_estimates,
+                    )
+            # If needed, compute P(label=k|x), denoted pred_probs (the predicted probabilities)
+            if pred_probs is None:
                 if self.verbose:
-                    print("Computing label noise estimates from provided pred_probs ...")
-                (
-                    self.py,
-                    self.noise_matrix,
-                    self.inverse_noise_matrix,
-                    self.confident_joint,
-                ) = estimate_py_and_noise_matrices_from_probabilities(
+                    print(
+                        "Computing out of sample predicted probabilities via "
+                        f"{self.cv_n_folds}-fold cross validation. May take a while ..."
+                    )
+
+                pred_probs = estimate_cv_predicted_probabilities(
+                    X=X,
+                    labels=labels,
+                    clf=self.clf,
+                    cv_n_folds=self.cv_n_folds,
+                    seed=self.seed,
+                    clf_kwargs=self.clf_kwargs,
+                    validation_func=validation_func,
+                )
+            # If needed, compute the confident_joint (e.g. occurs if noise_matrix was given)
+            if self.confident_joint is None:
+                self.confident_joint = compute_confident_joint(
                     labels=labels,
                     pred_probs=pred_probs,
                     thresholds=thresholds,
-                    converge_latent_estimates=self.converge_latent_estimates,
                 )
-        # If needed, compute P(label=k|x), denoted pred_probs (the predicted probabilities)
-        if pred_probs is None:
+
+            # if pulearning == the integer specifying the class without noise.
+            if self.num_classes == 2 and self.pulearning is not None:  # pragma: no cover
+                # pulearning = 1 (no error in 1 class) implies p(label=1|true_label=0) = 0
+                self.noise_matrix[self.pulearning][1 - self.pulearning] = 0
+                self.noise_matrix[1 - self.pulearning][1 - self.pulearning] = 1
+                # pulearning = 1 (no error in 1 class) implies p(true_label=0|label=1) = 0
+                self.inverse_noise_matrix[1 - self.pulearning][self.pulearning] = 0
+                self.inverse_noise_matrix[self.pulearning][self.pulearning] = 1
+                # pulearning = 1 (no error in 1 class) implies p(label=1,true_label=0) = 0
+                self.confident_joint[self.pulearning][1 - self.pulearning] = 0
+                self.confident_joint[1 - self.pulearning][1 - self.pulearning] = 1
+
+            # Add confident joint to find label issue args if it is not previously specified
+            if "confident_joint" not in self.find_label_issues_kwargs.keys():
+                # however does not add if users specify filter_by="confident_learning", as it will throw a warning
+                if not self.find_label_issues_kwargs.get("filter_by") == "confident_learning":
+                    self.find_label_issues_kwargs["confident_joint"] = self.confident_joint
+
+            labels = labels_to_array(labels)
             if self.verbose:
-                print(
-                    "Computing out of sample predicted probabilities via "
-                    f"{self.cv_n_folds}-fold cross validation. May take a while ..."
-                )
-
-            pred_probs = estimate_cv_predicted_probabilities(
-                X=X,
-                labels=labels,
-                clf=self.clf,
-                cv_n_folds=self.cv_n_folds,
-                seed=self.seed,
-                clf_kwargs=self.clf_kwargs,
-                validation_func=validation_func,
+                print("Using predicted probabilities to identify label issues ...")
+            label_issues_mask = filter.find_label_issues(
+                labels,
+                pred_probs,
+                **self.find_label_issues_kwargs,
             )
-        # If needed, compute the confident_joint (e.g. occurs if noise_matrix was given)
-        if self.confident_joint is None:
-            self.confident_joint = compute_confident_joint(
-                labels=labels,
-                pred_probs=pred_probs,
-                thresholds=thresholds,
-            )
-
-        # if pulearning == the integer specifying the class without noise.
-        if self.num_classes == 2 and self.pulearning is not None:  # pragma: no cover
-            # pulearning = 1 (no error in 1 class) implies p(label=1|true_label=0) = 0
-            self.noise_matrix[self.pulearning][1 - self.pulearning] = 0
-            self.noise_matrix[1 - self.pulearning][1 - self.pulearning] = 1
-            # pulearning = 1 (no error in 1 class) implies p(true_label=0|label=1) = 0
-            self.inverse_noise_matrix[1 - self.pulearning][self.pulearning] = 0
-            self.inverse_noise_matrix[self.pulearning][self.pulearning] = 1
-            # pulearning = 1 (no error in 1 class) implies p(label=1,true_label=0) = 0
-            self.confident_joint[self.pulearning][1 - self.pulearning] = 0
-            self.confident_joint[1 - self.pulearning][1 - self.pulearning] = 1
-
-        # Add confident joint to find label issue args if it is not previously specified
-        if "confident_joint" not in self.find_label_issues_kwargs.keys():
-            # however does not add if users specify filter_by="confident_learning", as it will throw a warning
-            if not self.find_label_issues_kwargs.get("filter_by") == "confident_learning":
-                self.find_label_issues_kwargs["confident_joint"] = self.confident_joint
-
-        labels = labels_to_array(labels)
-        if self.verbose:
-            print("Using predicted probabilities to identify label issues ...")
-        label_issues_mask = filter.find_label_issues(
-            labels,
-            pred_probs,
-            **self.find_label_issues_kwargs,
-        )
         label_quality_scores = get_label_quality_scores(
             labels, pred_probs, **self.label_quality_scores_kwargs
         )
