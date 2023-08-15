@@ -910,18 +910,33 @@ def get_majority_vote_label(
             labels_multiannotator, pred_probs, annotator_ids=annotator_ids
         )
 
-    # TODO temp
-    labels_multiannotator = pd.DataFrame(labels_multiannotator)
+    if pred_probs is not None:
+        num_classes = pred_probs.shape[1]
+    else:
+        num_classes = int(np.nanmax(labels_multiannotator) + 1)
+
+    def get_labels_mode(label_count, num_classes):
+        max_count_idx = np.where(label_count == np.nanmax(label_count))[0].astype(float)
+        return np.pad(
+            max_count_idx, (0, num_classes - len(max_count_idx)), "constant", constant_values=np.NaN
+        )
 
     majority_vote_label = np.full(len(labels_multiannotator), np.nan)
-    mode_labels_multiannotator = labels_multiannotator.mode(axis=1)
+    label_count = np.apply_along_axis(
+        lambda s: np.bincount(s[~np.isnan(s)].astype(int), minlength=num_classes),
+        axis=1,
+        arr=labels_multiannotator,
+    )
+    mode_labels_multiannotator = np.apply_along_axis(
+        get_labels_mode, axis=1, arr=label_count, num_classes=num_classes
+    )
 
     nontied_idx = []
     tied_idx = dict()
 
     # obtaining consensus using annotator majority vote
-    for idx in range(len(mode_labels_multiannotator)):
-        label_mode = mode_labels_multiannotator.iloc[idx].dropna().astype(int).to_numpy()
+    for idx, label_mode in enumerate(mode_labels_multiannotator):
+        label_mode = label_mode[~np.isnan(label_mode)].astype(int)
         if len(label_mode) == 1:
             majority_vote_label[idx] = label_mode[0]
             nontied_idx.append(idx)
@@ -943,15 +958,7 @@ def get_majority_vote_label(
     # tiebreak 2: using empirical class frequencies
     # current tiebreak will select the minority class (to prevent larger class imbalance)
     if len(tied_idx) > 0:
-        if pred_probs is not None:
-            num_classes = pred_probs.shape[1]
-        else:
-            num_classes = int(
-                np.nanmax(labels_multiannotator.replace({pd.NA: np.NaN}).astype(float).values) + 1
-            )
-        class_frequencies = labels_multiannotator.apply(
-            lambda s: pd.Series(np.bincount(s[s.notna()], minlength=num_classes)), axis=1
-        ).sum()
+        class_frequencies = label_count.sum(axis=0)
         for idx, label_mode in tied_idx.copy().items():
             min_frequency = np.where(
                 class_frequencies[label_mode] == np.min(class_frequencies[label_mode])
@@ -965,25 +972,29 @@ def get_majority_vote_label(
     # tiebreak 3: using initial annotator quality scores
     if len(tied_idx) > 0:
         nontied_majority_vote_label = majority_vote_label[nontied_idx]
-        nontied_labels_multiannotator = labels_multiannotator.iloc[nontied_idx]
-        annotator_agreement_with_consensus = nontied_labels_multiannotator.apply(
-            lambda s: np.mean(s[pd.notna(s)] == nontied_majority_vote_label[pd.notna(s)]),
-            axis=0,
-        )
+        nontied_labels_multiannotator = labels_multiannotator[nontied_idx]
+        annotator_agreement_with_consensus = np.zeros(nontied_labels_multiannotator.shape[1])
+        for i in range(len(annotator_agreement_with_consensus)):
+            labels = nontied_labels_multiannotator[:, i]
+            labels_mask = ~np.isnan(labels)
+            if np.sum(labels_mask) == 0:
+                annotator_agreement_with_consensus[i] = np.NaN
+            else:
+                annotator_agreement_with_consensus[i] = np.mean(
+                    labels[labels_mask] == nontied_majority_vote_label[labels_mask]
+                )
 
         # impute average annotator accuracy for any annotator that do not overlap with consensus
-        mask = annotator_agreement_with_consensus.isna()
-        avg_annotator_agreement = np.mean(annotator_agreement_with_consensus[~mask])
-        annotator_agreement_with_consensus[mask] = avg_annotator_agreement
+        nan_mask = np.isnan(annotator_agreement_with_consensus)
+        avg_annotator_agreement = np.mean(annotator_agreement_with_consensus[~nan_mask])
+        annotator_agreement_with_consensus[nan_mask] = avg_annotator_agreement
 
         for idx, label_mode in tied_idx.copy().items():
             label_quality_score = np.array(
                 [
                     np.mean(
                         annotator_agreement_with_consensus[
-                            labels_multiannotator.iloc[idx][
-                                labels_multiannotator.iloc[idx] == label
-                            ].index.values
+                            np.where(labels_multiannotator[idx] == label)[0]
                         ]
                     )
                     for label in label_mode
@@ -1281,36 +1292,11 @@ def _get_annotator_agreement_with_annotators(
         annotators that labeled the same examples.
     """
 
-    def get_single_annotator_agreement(
-        labels_multiannotator: np.ndarray,
-        num_annotations: np.ndarray,
-        annotator_idx: Union[int, str],
-    ):
-        annotator_agreement_per_example = np.zeros(len(labels_multiannotator))
-
-        for i, labels in enumerate(labels_multiannotator):
-            labels_subset = labels[~np.isnan(labels)]
-            examples_num_annotators = len(labels_subset)
-            if examples_num_annotators > 1:
-                annotator_agreement_per_example[i] = (
-                    np.sum(labels_subset == labels[annotator_idx]) - 1
-                ) / (examples_num_annotators - 1)
-
-        adjusted_num_annotations = num_annotations - 1
-        if np.sum(adjusted_num_annotations) == 0:
-            annotator_agreement = np.NaN
-        else:
-            annotator_agreement = np.average(
-                annotator_agreement_per_example, weights=num_annotations - 1
-            )
-
-        return annotator_agreement
-
     annotator_agreement_with_annotators = np.zeros(labels_multiannotator.shape[1])
     for i in range(len(annotator_agreement_with_annotators)):
         annotator_labels = labels_multiannotator[:, i]
         annotator_labels_mask = ~np.isnan(annotator_labels)
-        annotator_agreement_with_annotators[i] = get_single_annotator_agreement(
+        annotator_agreement_with_annotators[i] = _get_single_annotator_agreement(
             labels_multiannotator[annotator_labels_mask], num_annotations[annotator_labels_mask], i
         )
 
@@ -1327,6 +1313,50 @@ def _get_annotator_agreement_with_annotators(
         annotator_agreement_with_annotators[non_overlap_mask] = avg_annotator_agreement
 
     return annotator_agreement_with_annotators
+
+
+def _get_single_annotator_agreement(
+    labels_multiannotator: np.ndarray,
+    num_annotations: np.ndarray,
+    annotator_idx: int,
+) -> float:
+    """Returns the average agreement of a given annotator other annotators that label the same example.
+
+    Parameters
+    ----------
+    labels_multiannotator :
+        2D numpy array of multiple given labels for each example with shape ``(N, M)``,
+        where N is the number of examples and M is the number of annotators.
+        For more details, labels in the same format expected by the :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>`.
+    num_annotations :
+        An array of shape ``(N,)`` with the number of annotators that have labeled each example.
+    annotator_idx :
+        The index of the annotator we want to compute the annotator agreement for.
+
+    Returns
+    -------
+    annotator_agreement :
+        An float repesenting the agreement of each annotator with other annotators that labeled the same examples.
+    """
+    annotator_agreement_per_example = np.zeros(len(labels_multiannotator))
+
+    for i, labels in enumerate(labels_multiannotator):
+        labels_subset = labels[~np.isnan(labels)]
+        examples_num_annotators = len(labels_subset)
+        if examples_num_annotators > 1:
+            annotator_agreement_per_example[i] = (
+                np.sum(labels_subset == labels[annotator_idx]) - 1
+            ) / (examples_num_annotators - 1)
+
+    adjusted_num_annotations = num_annotations - 1
+    if np.sum(adjusted_num_annotations) == 0:
+        annotator_agreement = np.NaN
+    else:
+        annotator_agreement = np.average(
+            annotator_agreement_per_example, weights=num_annotations - 1
+        )
+
+    return annotator_agreement
 
 
 def _get_post_pred_probs_and_weights(
@@ -1387,9 +1417,10 @@ def _get_post_pred_probs_and_weights(
 
     if quality_method == "crowdlab":
         num_classes = get_num_classes(pred_probs=prior_pred_probs)
-        likelihood = np.mean(
-            annotator_agreement[num_annotations != 1]
-        )  # likelihood that any annotator will annotate the consensus label for any example
+
+        # likelihood that any annotator will or will not annotate the consensus label for any example
+        consensus_likelihood = np.mean(annotator_agreement[num_annotations != 1])
+        non_consensus_likelihood = (1 - consensus_likelihood) / (num_classes - 1)
 
         # subsetting the dataset to only includes examples with more than one annotation
         mask = num_annotations != 1
@@ -1430,13 +1461,13 @@ def _get_post_pred_probs_and_weights(
                 np.average(
                     [prior_pred_probs[i, true_label]]
                     + [
-                        likelihood
+                        consensus_likelihood
                         if annotator_label == true_label
-                        else (1 - likelihood) / (num_classes - 1)
+                        else non_consensus_likelihood
                         for annotator_label in labels_subset
                     ],
                     weights=np.concatenate(
-                        ([model_weight], adjusted_annotator_agreement[labels_mask])
+                        (np.array([model_weight]), adjusted_annotator_agreement[labels_mask])
                     ),
                 )
                 for true_label in range(num_classes)
@@ -1723,9 +1754,6 @@ def _get_annotator_quality(
         else:
             annotator_lqs = np.nanmean(detailed_label_quality, axis=0)
 
-        # TODO temp
-        # labels_multiannotator = pd.DataFrame(labels_multiannotator)
-
         mask = num_annotations != 1
         labels_multiannotator_subset = labels_multiannotator[mask]
         consensus_label_subset = consensus_label[mask]
@@ -1802,6 +1830,7 @@ def _get_annotator_worst_class(
     """
 
     def get_single_annotator_worst_class(labels, consensus_quality_score):
+        labels = pd.Series(labels)
         labels_mask = pd.notna(labels)
         class_accuracies = (
             (labels[labels_mask] == consensus_label[labels_mask]).groupby(labels).mean()
@@ -1833,11 +1862,17 @@ def _get_annotator_worst_class(
         # return first item even if there are ties - no better methods to tiebreak
         return quality_max_idx[0]
 
-    worst_class = (
-        pd.DataFrame(labels_multiannotator)
-        .apply(lambda s: get_single_annotator_worst_class(s, consensus_quality_score))
-        .to_numpy()
-        .astype("int64")
-    )
+    # worst_class = (
+    #     pd.DataFrame(labels_multiannotator)
+    #     .apply(lambda s: get_single_annotator_worst_class(s, consensus_quality_score))
+    #     .to_numpy()
+    #     .astype(int)
+    # )
+    worst_class = np.apply_along_axis(
+        get_single_annotator_worst_class,
+        axis=0,
+        arr=labels_multiannotator,
+        consensus_quality_score=consensus_quality_score,
+    ).astype(int)
 
     return worst_class
