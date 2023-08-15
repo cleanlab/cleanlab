@@ -10,7 +10,7 @@ class TestLabelIssueManager:
     def issue_manager(self, lab):
         return LabelIssueManager(datalab=lab)
 
-    def test_find_issues(self, pred_probs, issue_manager):
+    def test_find_issues(self, lab, pred_probs, issue_manager):
         """Test that the find_issues method works."""
         issue_manager.find_issues(pred_probs=pred_probs)
         issues, summary, info = issue_manager.issues, issue_manager.summary, issue_manager.info
@@ -35,6 +35,17 @@ class TestLabelIssueManager:
         assert all(
             [key in info_keys for key in expected_keys]
         ), f"Info should have the right keys, but is missing {set(expected_keys) - set(info_keys)}"
+        # Compare results with low_memory=True
+        clean_learning_kwargs = {"low_memory": True}
+        issue_manager_lm = LabelIssueManager(
+            datalab=lab, clean_learning_kwargs=clean_learning_kwargs
+        )
+        issue_manager_lm.find_issues(pred_probs=pred_probs)
+        issues_lm = issue_manager_lm.issues
+        # jaccard similarity
+        intersection = len(list(set(issues).intersection(set(issues_lm))))
+        union = len(set(issues)) + len(set(issues_lm)) - intersection
+        assert float(intersection) / union > 0.95
 
     def test_find_issues_with_kwargs(self, pred_probs, issue_manager):
         issue_manager.find_issues(pred_probs=pred_probs, thresholds=[0.2, 0.3, 0.1])

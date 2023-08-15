@@ -310,7 +310,6 @@ def test_bbox_xyxy_to_xywh():
 @pytest.mark.parametrize("verbose", [True, False])
 def test_prune_by_threshold(verbose):
     pruned_predictions = _prune_by_threshold(predictions, 1.0, verbose=verbose)
-    print(pruned_predictions)
     for image_pred in pruned_predictions:
         for class_pred in image_pred:
             assert class_pred.shape[0] == 0
@@ -386,6 +385,15 @@ def test_badloc_score_shifts_in_correct_direction():
     )
     assert scores[0] > scores[1]
     assert scores[1] > scores[2]
+
+
+def test_badloc_scores_indexed_correctly():
+    # test badloc scores indexed correctly when len(idx_at_least_low_probability_threshold) < len(idx_at_least_intersection_threshold)
+    low_prob = 0.2
+    prediction = copy.deepcopy(predictions[0])
+    prediction[3][1][-1] = low_prob  # artificially set low probability for box in class. 1 < 2
+    label = copy.deepcopy(labels[0])
+    _ = compute_badloc_box_scores(labels=[label], predictions=[prediction])
 
 
 def test_swap_score_shifts_in_correct_direction():
