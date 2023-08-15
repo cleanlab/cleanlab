@@ -313,7 +313,7 @@ def get_label_quality_multiannotator(
                     _get_annotator_label_quality_score,
                     axis=0,
                     arr=labels_multiannotator,
-                    pred_probs=pred_probs,
+                    pred_probs=post_pred_probs,
                     label_quality_score_kwargs=label_quality_score_kwargs,
                 )
                 detailed_label_quality_df = pd.DataFrame(
@@ -331,6 +331,7 @@ def get_label_quality_multiannotator(
                     annotator_weight=annotator_weight,
                     consensus_quality_score=consensus_quality_score,
                     detailed_label_quality=detailed_label_quality,
+                    annotator_ids=annotator_ids,
                     quality_method=quality_method,
                 )
 
@@ -1141,7 +1142,8 @@ def _get_annotator_stats(
     model_weight: np.ndarray,
     annotator_weight: np.ndarray,
     consensus_quality_score: np.ndarray,
-    detailed_label_quality: Optional[np.ndarray],
+    detailed_label_quality: Optional[np.ndarray] = None,
+    annotator_ids: Optional[pd.Index] = None,
     quality_method: str = "crowdlab",
 ) -> pd.DataFrame:
     """Returns a dictionary containing overall statistics about each annotator.
@@ -1219,7 +1221,8 @@ def _get_annotator_stats(
             "agreement_with_consensus": agreement_with_consensus,
             "worst_class": worst_class,
             "num_examples_labeled": num_examples_labeled,
-        }
+        },
+        index=annotator_ids,
     )
 
     return annotator_stats.sort_values(by=["annotator_quality", "agreement_with_consensus"])
@@ -1289,8 +1292,8 @@ def _get_annotator_agreement_with_annotators(
             labels_subset = labels[~np.isnan(labels)]
             examples_num_annotators = len(labels_subset)
             if examples_num_annotators > 1:
-                annotator_agreement_per_example[i] = np.sum(
-                    labels_subset == labels[annotator_idx]
+                annotator_agreement_per_example[i] = (
+                    np.sum(labels_subset == labels[annotator_idx]) - 1
                 ) / (examples_num_annotators - 1)
 
         adjusted_num_annotations = num_annotations - 1
@@ -1662,7 +1665,7 @@ def _get_annotator_quality(
     annotator_agreement: np.ndarray,
     model_weight: np.ndarray,
     annotator_weight: np.ndarray,
-    detailed_label_quality: Optional[np.ndarray],
+    detailed_label_quality: Optional[np.ndarray] = None,
     quality_method: str = "crowdlab",
 ) -> pd.DataFrame:
     """Returns annotator quality score for each annotator.
