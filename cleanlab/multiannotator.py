@@ -174,11 +174,13 @@ def get_label_quality_multiannotator(
 
     if isinstance(labels_multiannotator, pd.DataFrame):
         annotator_ids = labels_multiannotator.columns
+        index_col = labels_multiannotator.index
         labels_multiannotator = (
             labels_multiannotator.replace({pd.NA: np.NaN}).astype(float).to_numpy()
         )
     elif isinstance(labels_multiannotator, np.ndarray):
         annotator_ids = None
+        index_col = None
     else:
         raise ValueError("labels_multiannotator must be either a NumPy array or Pandas DataFrame.")
 
@@ -225,7 +227,7 @@ def get_label_quality_multiannotator(
             label_quality_score_kwargs=label_quality_score_kwargs,
         )
 
-    label_quality = pd.DataFrame({"num_annotations": num_annotations})
+    label_quality = pd.DataFrame({"num_annotations": num_annotations}, index=index_col)
     valid_methods = ["majority_vote", "best_quality"]
     main_method = True
 
@@ -317,7 +319,7 @@ def get_label_quality_multiannotator(
                     label_quality_score_kwargs=label_quality_score_kwargs,
                 )
                 detailed_label_quality_df = pd.DataFrame(
-                    detailed_label_quality, columns=annotator_ids
+                    detailed_label_quality, index=index_col, columns=annotator_ids
                 ).add_prefix("quality_annotator_")
 
             if return_annotator_stats:
