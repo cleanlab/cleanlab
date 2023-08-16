@@ -429,11 +429,24 @@ def get_label_quality_multiannotator_ensemble(
     --------
     get_label_quality_multiannotator
     """
-    if isinstance(labels_multiannotator, np.ndarray):
-        labels_multiannotator = pd.DataFrame(labels_multiannotator)
+    if isinstance(labels_multiannotator, pd.DataFrame):
+        annotator_ids = labels_multiannotator.columns
+        index_col = labels_multiannotator.index
+        labels_multiannotator = (
+            labels_multiannotator.replace({pd.NA: np.NaN}).astype(float).to_numpy()
+        )
+    elif isinstance(labels_multiannotator, np.ndarray):
+        annotator_ids = None
+        index_col = None
+    else:
+        raise ValueError("labels_multiannotator must be either a NumPy array or Pandas DataFrame.")
+
+    assert_valid_inputs_multiannotator(
+        labels_multiannotator, pred_probs, ensemble=True, annotator_ids=annotator_ids
+    )
 
     # Count number of non-NaN values for each example
-    num_annotations = labels_multiannotator.count(axis=1).to_numpy()
+    num_annotations = np.sum(~np.isnan(labels_multiannotator), axis=1)
 
     # temp scale pred_probs
     if calibrate_probs:
@@ -442,7 +455,7 @@ def get_label_quality_multiannotator_ensemble(
             optimal_temp = find_best_temp_scaler(labels_multiannotator, curr_pred_probs)
             pred_probs[i] = temp_scale_pred_probs(curr_pred_probs, optimal_temp)
 
-    label_quality = pd.DataFrame({"num_annotations": num_annotations})
+    label_quality = pd.DataFrame({"num_annotations": num_annotations}, index=index_col)
 
     # get majority vote stats
     avg_pred_probs = np.mean(pred_probs, axis=0)
@@ -520,14 +533,21 @@ def get_label_quality_multiannotator_ensemble(
         ]
     )
 
+    # default variable for _get_annotator_stats
+    detailed_label_quality = None
+
     if return_detailed_quality:
         # Compute the label quality scores for each annotators' labels
-        detailed_label_quality = labels_multiannotator.apply(
+        detailed_label_quality = np.apply_along_axis(
             _get_annotator_label_quality_score,
+            axis=0,
+            arr=labels_multiannotator,
             pred_probs=post_pred_probs,
-            **label_quality_score_kwargs,
+            label_quality_score_kwargs=label_quality_score_kwargs,
         )
-        detailed_label_quality = detailed_label_quality.add_prefix("quality_annotator_")
+        detailed_label_quality_df = pd.DataFrame(
+            detailed_label_quality, index=index_col, columns=annotator_ids
+        ).add_prefix("quality_annotator_")
 
     if return_annotator_stats:
         annotator_stats = _get_annotator_stats(
@@ -539,6 +559,8 @@ def get_label_quality_multiannotator_ensemble(
             model_weight=np.mean(model_weight),  # use average model weight when scoring annotators
             annotator_weight=annotator_weight,
             consensus_quality_score=consensus_quality_score,
+            detailed_label_quality=detailed_label_quality,
+            annotator_ids=annotator_ids,
         )
 
     labels_info = {
@@ -546,7 +568,7 @@ def get_label_quality_multiannotator_ensemble(
     }
 
     if return_detailed_quality:
-        labels_info["detailed_label_quality"] = detailed_label_quality
+        labels_info["detailed_label_quality"] = detailed_label_quality_df
     if return_annotator_stats:
         labels_info["annotator_stats"] = annotator_stats
     if return_weights:
@@ -1469,7 +1491,7 @@ def _get_post_pred_probs_and_weights(
                         for annotator_label in labels_subset
                     ],
                     weights=np.concatenate(
-                        (np.array([model_weight]), adjusted_annotator_agreement[labels_mask])
+                        ([model_weight], adjusted_annotator_agreement[labels_mask])
                     ),
                 )
                 for true_label in range(num_classes)
@@ -1498,7 +1520,7 @@ def _get_post_pred_probs_and_weights(
 
 
 def _get_post_pred_probs_and_weights_ensemble(
-    labels_multiannotator: pd.DataFrame,
+    labels_multiannotator: np.ndarray,
     consensus_label: np.ndarray,
     prior_pred_probs: np.ndarray,
     num_annotations: np.ndarray,
@@ -1510,8 +1532,8 @@ def _get_post_pred_probs_and_weights_ensemble(
 
     Parameters
     ----------
-    labels_multiannotator : pd.DataFrame
-        2D pandas DataFrame of multiple given labels for each example with shape ``(N, M)``,
+    labels_multiannotator :
+        2D numpy array of multiple given labels for each example with shape ``(N, M)``,
         where N is the number of examples and M is the number of annotators.
         For more details, labels in the same format expected by the :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>`.
     consensus_label : np.ndarray
@@ -1547,9 +1569,9 @@ def _get_post_pred_probs_and_weights_ensemble(
 
     num_classes = get_num_classes(pred_probs=prior_pred_probs[0])
 
-    likelihood = np.mean(
-        annotator_agreement[num_annotations != 1]
-    )  # likelihood that any annotator will annotate the consensus label for any example
+    # likelihood that any annotator will or will not annotate the consensus label for any example
+    consensus_likelihood = np.mean(annotator_agreement[num_annotations != 1])
+    non_consensus_likelihood = (1 - consensus_likelihood) / (num_classes - 1)
 
     # subsetting the dataset to only includes examples with more than one annotation
     mask = num_annotations != 1
@@ -1586,19 +1608,19 @@ def _get_post_pred_probs_and_weights_ensemble(
 
     # compute weighted average
     post_pred_probs = np.full(prior_pred_probs[0].shape, np.nan)
-    for i in range(len(labels_multiannotator)):
-        example_mask = labels_multiannotator.iloc[i].notna()
-        example = labels_multiannotator.iloc[i][example_mask]
+    for i, labels in enumerate(labels_multiannotator):
+        labels_mask = ~np.isnan(labels)
+        labels_subset = labels[labels_mask]
         post_pred_probs[i] = [
             np.average(
                 [prior_pred_probs[ind][i, true_label] for ind in range(prior_pred_probs.shape[0])]
                 + [
-                    likelihood
+                    consensus_likelihood
                     if annotator_label == true_label
-                    else (1 - likelihood) / (num_classes - 1)
-                    for annotator_label in example
+                    else non_consensus_likelihood
+                    for annotator_label in labels_subset
                 ],
-                weights=np.concatenate((model_weight, adjusted_annotator_agreement[example_mask])),
+                weights=np.concatenate((model_weight, adjusted_annotator_agreement[labels_mask])),
             )
             for true_label in range(num_classes)
         ]
