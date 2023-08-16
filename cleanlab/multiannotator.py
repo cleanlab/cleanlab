@@ -642,13 +642,22 @@ def get_active_learning_scores(
                 "or just pass in pred_probs_unlabeled to get active learning scores for unlabeled examples.",
             )
 
-        if isinstance(labels_multiannotator, np.ndarray):
-            labels_multiannotator = pd.DataFrame(labels_multiannotator)
+        if isinstance(labels_multiannotator, pd.DataFrame):
+            labels_multiannotator = (
+                labels_multiannotator.replace({pd.NA: np.NaN}).astype(float).to_numpy()
+            )
+        elif not isinstance(labels_multiannotator, np.ndarray):
+            raise ValueError(
+                "labels_multiannotator must be either a NumPy array or Pandas DataFrame."
+            )
+
+        # TODO temp
+        # labels_multiannotator = pd.DataFrame(labels_multiannotator)
 
         num_classes = get_num_classes(pred_probs=pred_probs)
 
         # if all examples are only labeled by a single annotator
-        if labels_multiannotator.apply(lambda s: len(s.dropna()) == 1, axis=1).all():
+        if (np.sum(~np.isnan(labels_multiannotator), axis=1) == 1).all():
             optimal_temp = 1.0  # do not temp scale for single annotator case, temperature is defined here for later use
 
             assert_valid_inputs_multiannotator(
@@ -687,12 +696,11 @@ def get_active_learning_scores(
 
         # compute scores for labeled data
         active_learning_scores = np.full(len(labels_multiannotator), np.nan)
-        for i in range(len(active_learning_scores)):
-            annotator_labels = labels_multiannotator.iloc[i]
+        for i, annotator_labels in enumerate(labels_multiannotator):
             active_learning_scores[i] = np.average(
                 (quality_of_consensus_labeled[i], 1 / num_classes),
                 weights=(
-                    np.sum(annotator_weight[annotator_labels.notna()]) + model_weight,
+                    np.sum(annotator_weight[~np.isnan(annotator_labels)]) + model_weight,
                     avg_annotator_weight,
                 ),
             )
