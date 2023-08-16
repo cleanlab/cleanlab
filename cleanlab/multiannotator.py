@@ -1290,7 +1290,7 @@ def _get_annotator_agreement_with_consensus(
     Parameters
     ----------
     labels_multiannotator : np.ndarray
-        2D numpy arrayof multiple given labels for each example with shape ``(N, M)``,
+        2D numpy array of multiple given labels for each example with shape ``(N, M)``,
         where N is the number of examples and M is the number of annotators.
         For more details, labels in the same format expected by the :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>`.
     consensus_label : np.ndarray

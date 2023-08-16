@@ -326,7 +326,6 @@ def find_best_temp_scaler(
         )
     soft_cross_entropy_fine = np.full(len(fine_search_range), np.NaN)
     for i, curr_temp in enumerate(fine_search_range):
-        curr_temp = fine_search_range[i]
         log_pred_probs = np.log(pred_probs) / curr_temp
         scaled_pred_probs = np.exp(log_pred_probs) / np.sum(np.exp(log_pred_probs))  # softmax
         soft_cross_entropy_fine[i] = np.mean(
