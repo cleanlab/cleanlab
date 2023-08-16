@@ -359,6 +359,15 @@ def test_label_quality_scores_multiannotator():
     except ValueError as e:
         assert "use the ensemble version of this function" in str(e)
 
+    # make sure error is thrown if labels are not 2D
+    labels_flat = labels.values[:, 0].flatten()
+    print(labels_flat.ndim)
+    print(labels_flat)
+    try:
+        multiannotator_dict = get_label_quality_multiannotator(labels_flat, pred_probs)
+    except ValueError as e:
+        assert "labels_multiannotator must be a 2D array or dataframe" in str(e)
+
 
 @pytest.mark.filterwarnings("ignore::UserWarning")
 def test_label_quality_scores_multiannotator_ensemble():
@@ -564,6 +573,15 @@ def test_single_label_active_learning():
 
     assert len(labels) == 20
 
+    # make sure error is thrown if labels are not 2D
+    labels_flat = np.array(small_data["complete_labels"]).reshape(1, -1)
+    try:
+        active_learning_scores, active_learning_scores_unlabeled = get_active_learning_scores(
+            labels, pred_probs, pred_probs_unlabeled
+        )
+    except ValueError as e:
+        assert "labels_multiannotator must be a 2D array or dataframe" in str(e)
+
 
 def test_single_label_active_learning_ensemble():
     labels = np.array(small_data["complete_labels"])
@@ -592,6 +610,20 @@ def test_single_label_active_learning_ensemble():
         pred_probs_unlabeled = np.delete(pred_probs_unlabeled, min_ind, axis=0)
 
     assert len(labels) == 20
+
+    # make sure error is thrown if labels are not 2D
+    labels_flat = np.array(small_data["complete_labels"]).reshape(1, -1)
+    try:
+        (
+            active_learning_scores,
+            active_learning_scores_unlabeled,
+        ) = get_active_learning_scores_ensemble(
+            labels,
+            np.array([pred_probs, pred_probs]),
+            np.array([pred_probs_unlabeled, pred_probs_unlabeled]),
+        )
+    except ValueError as e:
+        assert "labels_multiannotator must be a 2D array or dataframe" in str(e)
 
 
 def test_missing_class():
