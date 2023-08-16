@@ -646,13 +646,15 @@ def get_active_learning_scores(
             labels_multiannotator = (
                 labels_multiannotator.replace({pd.NA: np.NaN}).astype(float).to_numpy()
             )
-        elif isinstance(labels_multiannotator, np.ndarray):
-            # make sure it is a column array
-            if labels_multiannotator.ndim == 1:
-                labels_multiannotator = labels_multiannotator.reshape(-1, 1)
-        else:
+        elif not isinstance(labels_multiannotator, np.ndarray):
             raise ValueError(
                 "labels_multiannotator must be either a NumPy array or Pandas DataFrame."
+            )
+        # check that labels_multiannotator is a 2D array
+        if labels_multiannotator.ndim != 2:
+            raise ValueError(
+                "labels_multiannotator must be a 2D array or dataframe, "
+                "each row represents an example and each column represents an annotator."
             )
 
         num_classes = get_num_classes(pred_probs=pred_probs)
@@ -796,13 +798,16 @@ def get_active_learning_scores_ensemble(
             labels_multiannotator = (
                 labels_multiannotator.replace({pd.NA: np.NaN}).astype(float).to_numpy()
             )
-        elif isinstance(labels_multiannotator, np.ndarray):
-            # make sure it is a column array
-            if labels_multiannotator.ndim == 1:
-                labels_multiannotator = labels_multiannotator.reshape(-1, 1)
-        else:
+        elif not isinstance(labels_multiannotator, np.ndarray):
             raise ValueError(
                 "labels_multiannotator must be either a NumPy array or Pandas DataFrame."
+            )
+
+        # check that labels_multiannotator is a 2D array
+        if labels_multiannotator.ndim != 2:
+            raise ValueError(
+                "labels_multiannotator must be a 2D array or dataframe, "
+                "each row represents an example and each column represents an annotator."
             )
 
         num_classes = get_num_classes(pred_probs=pred_probs[0])

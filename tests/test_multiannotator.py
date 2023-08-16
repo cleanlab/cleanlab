@@ -307,8 +307,8 @@ def test_label_quality_scores_multiannotator():
         )
 
     # test error catching when labels_multiannotator has NaN columns
-    labels_NA = deepcopy(labels)
-    labels_NA[0] = pd.NA
+    labels_NA = deepcopy(labels_string_names)
+    labels_NA["anno_0"] = pd.NA
     try:
         multiannotator_dict = get_label_quality_multiannotator(
             labels_NA,
@@ -316,7 +316,19 @@ def test_label_quality_scores_multiannotator():
         )
     except ValueError as e:
         assert "cannot have columns with all NaN" in str(e)
-        assert "Annotators [0] did not label any examples." in str(e)
+        assert "Annotators ['anno_0'] did not label any examples." in str(e)
+
+    # try same thing as above but with numpy array
+    labels_nan = deepcopy(labels).values.astype(float)
+    labels_nan[:, 1] = np.NaN
+    try:
+        multiannotator_dict = get_label_quality_multiannotator(
+            labels_nan,
+            pred_probs,
+        )
+    except ValueError as e:
+        assert "cannot have columns with all NaN" in str(e)
+        assert "Annotators [1] did not label any examples." in str(e)
 
     # test error catching when labels_multiannotator has NaN rows
     labels_nan = pd.DataFrame(
@@ -545,7 +557,36 @@ def test_single_label_active_learning():
 
         min_ind = np.argmin(active_learning_scores_unlabeled)
 
-        labels = np.append(labels, labels_unlabeled[min_ind])
+        labels = np.append(labels, labels_unlabeled[min_ind]).reshape(-1, 1)
+        pred_probs = np.append(pred_probs, pred_probs_unlabeled[min_ind].reshape(1, -1), axis=0)
+        labels_unlabeled = np.delete(labels_unlabeled, min_ind)
+        pred_probs_unlabeled = np.delete(pred_probs_unlabeled, min_ind, axis=0)
+
+    assert len(labels) == 20
+
+
+def test_single_label_active_learning_ensemble():
+    labels = np.array(small_data["complete_labels"])
+    labels_unlabeled = small_data["true_labels_train_unlabeled"]
+    pred_probs = small_data["pred_probs_complete"]
+    pred_probs_unlabeled = small_data["pred_probs_unlabeled"]
+
+    assert len(labels) == 15
+
+    # test 5 rounds of active learning
+    for i in range(5):
+        (
+            active_learning_scores,
+            active_learning_scores_unlabeled,
+        ) = get_active_learning_scores_ensemble(
+            labels,
+            np.array([pred_probs, pred_probs]),
+            np.array([pred_probs_unlabeled, pred_probs_unlabeled]),
+        )
+
+        min_ind = np.argmin(active_learning_scores_unlabeled)
+
+        labels = np.append(labels, labels_unlabeled[min_ind]).reshape(-1, 1)
         pred_probs = np.append(pred_probs, pred_probs_unlabeled[min_ind].reshape(1, -1), axis=0)
         labels_unlabeled = np.delete(labels_unlabeled, min_ind)
         pred_probs_unlabeled = np.delete(pred_probs_unlabeled, min_ind, axis=0)
@@ -694,6 +735,9 @@ def test_impute_nonoverlaping_annotators():
     )
 
     multiannotator_dict = get_label_quality_multiannotator(labels, pred_probs)
+    multiannotator_dict = get_label_quality_multiannotator(
+        labels, pred_probs, quality_method="agreement"
+    )
 
 
 def test_format_multiannotator_labels():

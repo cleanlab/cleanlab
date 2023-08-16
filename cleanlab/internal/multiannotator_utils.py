@@ -37,6 +37,13 @@ def assert_valid_inputs_multiannotator(
     annotator_ids: Optional[pd.Index] = None,
 ) -> None:
     """Validate format of multi-annotator labels"""
+    # Check that labels_multiannotator is a 2D array
+    if labels_multiannotator.ndim != 2:
+        raise ValueError(
+            "labels_multiannotator must be a 2D array or dataframe, "
+            "each row represents an example and each column represents an annotator."
+        )
+
     # Raise error if labels are not formatted properly
     if any([isinstance(label, str) for label in labels_multiannotator.ravel()]):
         raise ValueError(
