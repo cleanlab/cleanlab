@@ -129,7 +129,8 @@ def display_issues(
                 given = class_names[given]
 
             shown += 1
-            print(f"Sentence {i}, token {j}")
+            print(f"Sentence index: {i}, Token index: {j}")
+            print(f"Token: {word}")
             if labels and not pred_probs:
                 print(f"Given label: {given}")
             elif not labels and pred_probs:
@@ -289,7 +290,7 @@ def common_label_issues(
                     )
                 else:
                     print(
-                        "labeled as class {i} but predicted to actually be class {j} {matrix[i][j]} times"
+                        f"labeled as class {i} but predicted to actually be class {j} {matrix[i][j]} times"
                     )
         print()
     info = []

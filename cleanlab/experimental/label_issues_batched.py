@@ -67,6 +67,7 @@ def find_label_issues_batched(
     verbose: bool = True,
     quality_score_kwargs: Optional[dict] = None,
     num_issue_kwargs: Optional[dict] = None,
+    return_mask: bool = False,
 ) -> np.ndarray:
     """
     Variant of :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>`
@@ -129,12 +130,17 @@ def find_label_issues_batched(
       Keyword arguments to :py:func:`count.num_label_issues <cleanlab.count.num_label_issues>`
       to control estimation of the number of label issues.
       The only supported kwarg here for now is: `estimation_method`.
+    return_mask : bool, optional
+       Determines what is returned by this method: If `return_mask=True`, return a boolean mask. Otherwise, return a list of indices np.ndarray.
 
     Returns
     -------
-    issue_indices : np.ndarray
-      Indices of examples with label issues, sorted by label quality score.
-
+    label_issues : np.ndarray
+      If `return_mask` is `True`, returns a boolean **mask** for the entire dataset
+      where ``True`` represents a label issue and ``False`` represents an example that is
+      accurately labeled with high confidence.
+      If `return_mask` is `False`, returns a shorter array of **indices** of examples identified to have
+      label issues (i.e. those indices where the mask would be ``True``), sorted by likelihood that the corresponding label is correct.
     Examples
     --------
     >>> batch_size = 10000  # for efficiency, set this to as large of a value as your memory can handle
@@ -227,7 +233,12 @@ def find_label_issues_batched(
     if verbose:
         pbar.close()
 
-    return lab.get_label_issues()
+    label_issues_indices = lab.get_label_issues()
+    if return_mask:
+        label_issues_mask = np.zeros(len(labels), dtype=bool)
+        label_issues_mask[label_issues_indices] = True
+        return label_issues_mask
+    return label_issues_indices
 
 
 class LabelInspector:

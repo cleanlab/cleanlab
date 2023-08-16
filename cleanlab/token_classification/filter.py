@@ -33,7 +33,7 @@ def find_label_issues(
     pred_probs: list,
     *,
     return_indices_ranked_by: str = "self_confidence",
-    low_memory=False,
+    low_memory: bool = False,
     **kwargs,
 ) -> List[Tuple[int, int]]:
     """Identifies tokens with label issues in a token classification dataset.
@@ -95,9 +95,8 @@ def find_label_issues(
     pred_probs_flatten = np.array([pred for pred_prob in pred_probs for pred in pred_prob])
 
     if low_memory:
-        if kwargs:
-            for arg_name, _ in kwargs.items():
-                warnings.warn(f"`{arg_name}` is not used when `low_memory=True`.")
+        for arg_name, _ in kwargs.items():
+            warnings.warn(f"`{arg_name}` is not used when `low_memory=True`.")
 
         issues_main = find_label_issues_batched(labels_flatten, pred_probs_flatten)
     else:
