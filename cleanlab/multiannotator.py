@@ -1711,7 +1711,7 @@ def _get_annotator_label_quality_score(
     annotator_label: np.ndarray,
     pred_probs: np.ndarray,
     label_quality_score_kwargs: dict = {},
-) -> pd.Series:
+) -> np.ndarray:
     """Returns quality scores for each datapoint.
     Very similar functionality as ``_get_consensus_quality_score`` with additional support for annotator labels that contain NaN values.
     For more info about parameters and returns, see the docstring of :py:func:`_get_consensus_quality_score <cleanlab.multiannotator._get_consensus_quality_score>`.
