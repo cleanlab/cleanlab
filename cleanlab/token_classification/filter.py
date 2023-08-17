@@ -97,8 +97,10 @@ def find_label_issues(
     if low_memory:
         for arg_name, _ in kwargs.items():
             warnings.warn(f"`{arg_name}` is not used when `low_memory=True`.")
-
-        issues_main = find_label_issues_batched(labels_flatten, pred_probs_flatten)
+        quality_score_kwargs = {"method": return_indices_ranked_by}
+        issues_main = find_label_issues_batched(
+            labels_flatten, pred_probs_flatten, quality_score_kwargs=quality_score_kwargs
+        )
     else:
         issues_main = find_label_issues_main(
             labels_flatten,
