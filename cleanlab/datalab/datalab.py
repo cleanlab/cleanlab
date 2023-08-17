@@ -48,7 +48,9 @@ if TYPE_CHECKING:  # pragma: no cover
     from datasets.arrow_dataset import Dataset
     from scipy.sparse import csr_matrix
 
-    DatasetLike = Union[Dataset, pd.DataFrame, Dict[str, Any], List[Dict[str, Any]], str]
+    DatasetLike = Union[
+        Dataset, pd.DataFrame, Dict[str, Any], List[Dict[str, Any]], str
+    ]
 
 __all__ = ["Datalab"]
 
@@ -117,7 +119,9 @@ class Datalab:
         self.cleanlab_version = cleanlab.version.__version__
         self.verbosity = verbosity
         self._imagelab = create_imagelab(dataset=self.data, image_key=image_key)
-        self.data_issues = data_issues_factory(self._imagelab)(self._data)
+        self.data_issues = data_issues_factory(self._imagelab)(
+            self._data, task=self.task
+        )
 
     # todo: check displayer methods
     def __repr__(self) -> str:
@@ -289,19 +293,22 @@ class Datalab:
                 >>> # lab.find_issues(pred_probs=pred_probs, issue_types=issue_types)
 
         """
+
         if issue_types is not None and not issue_types:
             warnings.warn(
                 "No issue types were specified so no issues will be found in the dataset. Set `issue_types` as None to consider a default set of issues."
             )
             return None
-
-        issue_finder = issue_finder_factory(self._imagelab)(datalab=self, verbosity=self.verbosity)
+        issue_finder = issue_finder_factory(self._imagelab)(
+            datalab=self, verbosity=self.verbosity
+        )
         issue_finder.find_issues(
             pred_probs=pred_probs,
             features=features,
             knn_graph=knn_graph,
             issue_types=issue_types,
         )
+
         if self.verbosity:
             print(
                 f"\nAudit complete. {self.data_issues.issue_summary['num_issues'].sum()} issues found in the dataset."
@@ -338,7 +345,9 @@ class Datalab:
         if verbosity is None:
             verbosity = self.verbosity
         if self.data_issues.issue_summary.empty:
-            print("Please specify some `issue_types` in datalab.find_issues() to see a report.\n")
+            print(
+                "Please specify some `issue_types` in datalab.find_issues() to see a report.\n"
+            )
             return
 
         reporter = report_factory(self._imagelab)(

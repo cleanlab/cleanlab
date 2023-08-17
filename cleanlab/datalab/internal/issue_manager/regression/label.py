@@ -57,9 +57,11 @@ class RegressionLabelIssueManager(IssueManager):
         self,
         datalab: Datalab,
         clean_learning_kwargs: Optional[Dict[str, Any]] = None,
+        health_summary_parameters: Optional[Dict[str, Any]] = None,
     ):
         super().__init__(datalab)
         self.cl = CleanLearning(**(clean_learning_kwargs or {}))
+        self.issue_score_key = "label_score"
 
     @staticmethod
     def _process_find_label_issues_kwargs(kwargs: Dict[str, Any]) -> Dict[str, Any]:
@@ -79,7 +81,9 @@ class RegressionLabelIssueManager(IssueManager):
             "save_space",
             "model_kwargs",
         ]
-        return {k: v for k, v in kwargs.items() if k in accepted_kwargs and v is not None}
+        return {
+            k: v for k, v in kwargs.items() if k in accepted_kwargs and v is not None
+        }
 
     def find_issues(
         self,
@@ -91,14 +95,25 @@ class RegressionLabelIssueManager(IssueManager):
         X_with_y = self.datalab.data.to_pandas()
         X = X_with_y.drop(columns=self.datalab.label_name)
         y = X_with_y[self.datalab.label_name]
-        self.cl.fit(X, y)
         self.issues = self.cl.find_label_issues(
             X=X,
             y=y,
             **self._process_find_label_issues_kwargs(kwargs),
         )
+        self.issues.rename(
+            columns={"label_quality": self.issue_score_key}, inplace=True
+        )
 
-    def collect_info(self, issues: pd.DataFrame, summary_dict: dict) -> dict:
+        # Get a summarized dataframe of the label issues
+        self.summary = self.make_summary(score=self.issues[self.issue_score_key].mean())
+
+        # Collect info about the label issues
+        self.info = self.collect_info(issues=self.issues)
+
+        # Drop columns from issues that are in the info
+        self.issues = self.issues.drop(columns=["given_label", "predicted_label"])
+
+    def collect_info(self, issues: pd.DataFrame) -> dict:
         issues_info = {
             "num_label_issues": sum(issues[f"is_{self.issue_name}_issue"]),
             "average_label_quality": issues[self.issue_score_key].mean(),
@@ -106,7 +121,7 @@ class RegressionLabelIssueManager(IssueManager):
             "predicted_label": issues["predicted_label"].tolist(),
         }
 
-        # TODO if required:
+        # health_summary_info, cl_info kept just for consistency with classification, but it could be just return issues_info
         health_summary_info = {}
         cl_info = {}
 

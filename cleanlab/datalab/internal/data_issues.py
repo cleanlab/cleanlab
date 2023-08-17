@@ -60,7 +60,7 @@ class DataIssues:
         A dictionary that contains information and statistics about the data and each issue type.
     """
 
-    def __init__(self, data: Data) -> None:
+    def __init__(self, data: Data, task: str) -> None:
         self.issues: pd.DataFrame = pd.DataFrame(index=range(len(data)))
         self.issue_summary: pd.DataFrame = pd.DataFrame(
             columns=["issue_type", "score", "num_issues"]
@@ -69,6 +69,7 @@ class DataIssues:
             "statistics": get_data_statistics(data),
         }
         self._label_map = data.labels.label_map
+        self.task = task
 
     @property
     def statistics(self) -> Dict[str, Any]:
@@ -108,6 +109,7 @@ class DataIssues:
             raise ValueError(f"No columns found for issue type '{issue_name}'.")
         specific_issues = self.issues[columns]
         info = self.get_info(issue_name=issue_name)
+
         if issue_name == "label":
             specific_issues = specific_issues.assign(
                 given_label=info["given_label"], predicted_label=info["predicted_label"]
@@ -167,12 +169,14 @@ class DataIssues:
         info:
             The info for the issue_name.
         """
+
         info = self.info.get(issue_name, None) if issue_name else self.info
         if info is None:
             raise ValueError(
                 f"issue_name {issue_name} not found in self.info. These have not been computed yet."
             )
         info = info.copy()
+
         if issue_name == "label":
             if self._label_map is None:
                 raise ValueError(
@@ -182,13 +186,19 @@ class DataIssues:
             # Labels that are stored as integers may need to be converted to strings.
             for key in ["given_label", "predicted_label"]:
                 labels = info.get(key, None)
-                if labels is not None:
+                # ugly workaround:
+                if labels is not None and self.task != "regression":
                     info[key] = np.vectorize(self._label_map.get)(labels)
+                if labels is not None and self.task == "regression":
+                    info[key] = labels
 
             info["class_names"] = self.statistics["class_names"]
+
         return info
 
-    def collect_statistics(self, issue_manager: Union[IssueManager, "Imagelab"]) -> None:
+    def collect_statistics(
+        self, issue_manager: Union[IssueManager, "Imagelab"]
+    ) -> None:
         """Update the statistics in the info dictionary.
 
         Parameters
@@ -214,7 +224,9 @@ class DataIssues:
             self.info[key].update(statistics)
 
     def _update_issues(self, issue_manager):
-        overlapping_columns = list(set(self.issues.columns) & set(issue_manager.issues.columns))
+        overlapping_columns = list(
+            set(self.issues.columns) & set(issue_manager.issues.columns)
+        )
         if overlapping_columns:
             warnings.warn(
                 f"Overwriting columns {overlapping_columns} in self.issues with "
