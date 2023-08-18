@@ -131,7 +131,8 @@ def find_label_issues_batched(
       to control estimation of the number of label issues.
       The only supported kwarg here for now is: `estimation_method`.
     return_mask : bool, optional
-       Determines what is returned by this method: If `return_mask=True`, return a boolean mask. Otherwise, return a list of indices np.ndarray.
+       Determines what is returned by this method: If `return_mask=True`, return a boolean mask.
+       If `False`, return a list of indices specifying examples with label issues, sorted by label quality score.
 
     Returns
     -------
@@ -139,9 +140,8 @@ def find_label_issues_batched(
       If `return_mask` is `True`, returns a boolean **mask** for the entire dataset
       where ``True`` represents a label issue and ``False`` represents an example that is
       accurately labeled with high confidence.
-      If `return_mask` is `False`, returns a shorter array of **indices** of examples identified to have
+      If `return_mask` is `False`, returns an array containing **indices** of examples identified to have
       label issues (i.e. those indices where the mask would be ``True``), sorted by likelihood that the corresponding label is correct.
-    Examples
     --------
     >>> batch_size = 10000  # for efficiency, set this to as large of a value as your memory can handle
     >>> # Just demonstrating how to save your existing numpy labels, pred_probs arrays to compatible .npy files:

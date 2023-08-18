@@ -134,10 +134,8 @@ def find_label_issues(
             warnings.warn(f"`rank_by_kwargs` is not used when `low_memory=True`.")
         arg_values = {
             "filter_by": filter_by,
-            "frac_noise": frac_noise,
             "num_to_remove_per_class": num_to_remove_per_class,
             "confident_joint": confident_joint,
-            "min_examples_per_class": min_examples_per_class,
             "n_jobs": n_jobs,
             "num_to_remove_per_class": num_to_remove_per_class,
         }
@@ -254,7 +252,7 @@ def find_multilabel_issues_per_class(
         label_issues_list = []
     labels_list = []
     pred_probs_list = []
-    if confident_joint is not None:
+    if confident_joint is not None and not low_memory:
         confident_joint_shape = confident_joint.shape
         if confident_joint_shape == (num_classes, num_classes):
             warnings.warn(
