@@ -21,6 +21,7 @@ Unlike in standard multi-class classification, model-predicted class probabiliti
 """
 
 import warnings
+import inspect
 from typing import Optional, Union, Tuple, List, Any
 import numpy as np
 
@@ -132,15 +133,24 @@ def find_label_issues(
     if low_memory:
         if rank_by_kwargs:
             warnings.warn(f"`rank_by_kwargs` is not used when `low_memory=True`.")
+
+        func_signature = inspect.signature(find_label_issues)
+        default_args = {
+            k: v.default
+            for k, v in func_signature.parameters.items()
+            if v.default is not inspect.Parameter.empty
+        }
         arg_values = {
             "filter_by": filter_by,
             "num_to_remove_per_class": num_to_remove_per_class,
             "confident_joint": confident_joint,
             "n_jobs": n_jobs,
             "num_to_remove_per_class": num_to_remove_per_class,
+            "frac_noise": frac_noise,
+            "min_examples_per_class": min_examples_per_class,
         }
         for arg_name, arg_val in arg_values.items():
-            if arg_val is not None:
+            if arg_val != default_args[arg_name]:
                 warnings.warn(f"`{arg_name}` is not used when `low_memory=True`.")
 
     return _find_label_issues_multilabel(
