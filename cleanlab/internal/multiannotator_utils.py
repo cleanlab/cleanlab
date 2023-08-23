@@ -19,7 +19,7 @@ Helper methods used internally in cleanlab.multiannotator
 """
 
 from cleanlab.typing import LabelLike
-from typing import List, Optional, Tuple
+from typing import Optional, Tuple
 import warnings
 import numpy as np
 import pandas as pd
