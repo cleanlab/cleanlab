@@ -24,6 +24,7 @@ import numpy as np
 from sklearn.model_selection import cross_val_predict
 from cleanlab.internal.multilabel_utils import _is_multilabel, stack_complement
 from cleanlab.internal.label_quality_utils import _subtract_confident_thresholds
+from cleanlab.internal.numerics import softmax
 from cleanlab.rank import (
     get_self_confidence_for_each_label,
     get_normalized_margin_for_each_label,
@@ -241,14 +242,7 @@ def softmin(
         Softmin score.
     """
 
-    def softmax(scores: np.ndarray) -> np.ndarray:
-        """Softmax function."""
-        scores = scores / temperature
-        scores_max = np.amax(scores, axis=axis, keepdims=True)
-        exp_scores_shifted = np.exp(scores - scores_max)
-        return exp_scores_shifted / np.sum(exp_scores_shifted, axis=axis, keepdims=True)
-
-    return np.einsum("ij,ij->i", s, softmax(1 - s))
+    return np.einsum("ij,ij->i", s, softmax(x=1 - s, temperature=temperature, axis=axis))
 
 
 class Aggregator:

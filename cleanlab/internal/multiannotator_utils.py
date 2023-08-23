@@ -19,11 +19,12 @@ Helper methods used internally in cleanlab.multiannotator
 """
 
 from cleanlab.typing import LabelLike
-from typing import Optional, Tuple
+from typing import List, Optional, Tuple
 import warnings
 import numpy as np
 import pandas as pd
 from cleanlab.internal.validation import assert_valid_class_labels
+from cleanlab.internal.numerics import softmax
 from cleanlab.internal.util import get_num_classes, value_counts
 
 SMALL_CONST = 1e-30
@@ -303,13 +304,26 @@ def find_best_temp_scaler(
         pred_probs = np.clip(pred_probs, a_min=SMALL_CONST, a_max=None)
         pred_probs = pred_probs / np.sum(pred_probs, axis=1)[:, np.newaxis]
 
-        log_pred_probs = np.log(pred_probs) / curr_temp
-        scaled_pred_probs = np.exp(log_pred_probs) / np.sum(np.exp(log_pred_probs))  # softmax
+        scaled_pred_probs = softmax(np.log(pred_probs), temperature=curr_temp, axis=1, shift=False)
         soft_cross_entropy_coarse[i] = np.mean(
             compute_soft_cross_entropy(labels_multiannotator, scaled_pred_probs)
         )
 
     min_entropy_ind = np.argmin(soft_cross_entropy_coarse)
+    fine_search_range = _set_fine_search_range(
+        coarse_search_range, fine_search_size, min_entropy_ind
+    )
+    soft_cross_entropy_fine = np.full(len(fine_search_range), np.NaN)
+    for i, curr_temp in enumerate(fine_search_range):
+        scaled_pred_probs = softmax(np.log(pred_probs), temperature=curr_temp, axis=1, shift=False)
+        soft_cross_entropy_fine[i] = np.mean(
+            compute_soft_cross_entropy(labels_multiannotator, scaled_pred_probs)
+        )
+    best_temp = fine_search_range[np.argmin(soft_cross_entropy_fine)]
+    return best_temp
+
+
+def _set_fine_search_range(coarse_search_range: list, fine_search_size: int, min_entropy_ind: int):
     fine_search_range = np.array([])
     if min_entropy_ind != 0:
         fine_search_range = np.append(
@@ -331,15 +345,7 @@ def find_best_temp_scaler(
                 endpoint=True,
             ),
         )
-    soft_cross_entropy_fine = np.full(len(fine_search_range), np.NaN)
-    for i, curr_temp in enumerate(fine_search_range):
-        log_pred_probs = np.log(pred_probs) / curr_temp
-        scaled_pred_probs = np.exp(log_pred_probs) / np.sum(np.exp(log_pred_probs))  # softmax
-        soft_cross_entropy_fine[i] = np.mean(
-            compute_soft_cross_entropy(labels_multiannotator, scaled_pred_probs)
-        )
-    best_temp = fine_search_range[np.argmin(soft_cross_entropy_fine)]
-    return best_temp
+    return fine_search_range
 
 
 def temp_scale_pred_probs(
@@ -352,8 +358,7 @@ def temp_scale_pred_probs(
     pred_probs = pred_probs / np.sum(pred_probs, axis=1)[:, np.newaxis]
 
     # apply temperate scale
-    log_pred_probs = np.log(pred_probs) / temp
-    scaled_pred_probs = np.exp(log_pred_probs) / np.sum(np.exp(log_pred_probs))  # softmax
+    scaled_pred_probs = softmax(np.log(pred_probs), temperature=temp, axis=1, shift=False)
     scaled_pred_probs = (
         scaled_pred_probs / np.sum(scaled_pred_probs, axis=1)[:, np.newaxis]
     )  # normalize
