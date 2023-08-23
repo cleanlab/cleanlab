@@ -823,9 +823,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
             for arg_name, arg_val in arg_values.items():
                 if arg_val is not None:
                     warnings.warn(f"`{arg_name}` is not used when `low_memory=True`.")
-            label_issues_indices = find_label_issues_batched(labels, pred_probs)
-            label_issues_mask = np.zeros(len(labels), dtype=bool)
-            label_issues_mask[label_issues_indices] = True
+            label_issues_mask = find_label_issues_batched(labels, pred_probs, return_mask=True)
         else:
             self._process_label_issues_kwargs(self.find_label_issues_kwargs)
             # self._process_label_issues_kwargs might set self.confident_joint. If so, we should use it.

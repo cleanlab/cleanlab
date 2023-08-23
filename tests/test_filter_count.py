@@ -926,6 +926,9 @@ def test_batched_label_issues():
         return_indices_ranked_by="self_confidence",
         filter_by="low_self_confidence",
     )
+    f1_mask = filter.find_label_issues(
+        labels=data["labels"], pred_probs=data["pred_probs"], filter_by="low_self_confidence"
+    )
     f2 = find_label_issues_batched(
         labels=data["labels"],
         pred_probs=data["pred_probs"],
@@ -954,6 +957,13 @@ def test_batched_label_issues():
         batch_size=len(data["labels"]),
         n_jobs=1,
     )
+    f_single_mask = find_label_issues_batched(
+        labels=data["labels"],
+        pred_probs=data["pred_probs"],
+        batch_size=len(data["labels"]),
+        n_jobs=1,
+        return_mask=True,
+    )
     assert np.all(f4 == f5)
     assert np.all(f4 == f3)
     assert np.all(f4 == f2)
@@ -963,6 +973,13 @@ def test_batched_label_issues():
     intersection = len(list(set(f1).intersection(set(f2))))
     union = len(set(f1)) + len(set(f2)) - intersection
     assert float(intersection) / union > 0.95
+    # check jaccard similarity for mask:
+    f1_mask_indices = np.where(f1_mask)[0]
+    f_single_mask_indices = np.where(f_single_mask)[0]
+    intersection = len(list(set(f1_mask_indices).intersection(set(f_single_mask_indices))))
+    union = len(set(f1_mask_indices)) + len(set(f_single_mask_indices)) - intersection
+    assert float(intersection) / union > 0.95
+
     n1 = count.num_label_issues(
         labels=data["labels"],
         pred_probs=data["pred_probs"],

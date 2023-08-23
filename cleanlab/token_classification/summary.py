@@ -34,7 +34,7 @@ def display_issues(
     pred_probs: Optional[list] = None,
     exclude: List[Tuple[int, int]] = [],
     class_names: Optional[List[str]] = None,
-    top: int = 20
+    top: int = 20,
 ) -> None:
     """
     Display token classification label issues, showing sentence with problematic token(s) highlighted.
@@ -129,22 +129,22 @@ def display_issues(
                 given = class_names[given]
 
             shown += 1
-            print("Sentence %d, token %d:" % (i, j))
+            print(f"Sentence index: {i}, Token index: {j}")
+            print(f"Token: {word}")
             if labels and not pred_probs:
-                print("Given label: %s" % str(given))
+                print(f"Given label: {given}")
             elif not labels and pred_probs:
-                print("Predicted label according to provided pred_probs: %s" % str(prediction))
+                print(f"Predicted label according to provided pred_probs: {prediction}")
             elif labels and pred_probs:
                 print(
-                    "Given label: %s, predicted label according to provided pred_probs: %s"
-                    % (str(given), str(prediction))
+                    f"Given label: {given}, predicted label according to provided pred_probs: {prediction}"
                 )
             print("----")
             print(color_sentence(sentence, word))
         else:
             shown += 1
             sentence = get_sentence(tokens[issue])
-            print("Sentence %d: %s" % (issue, sentence))
+            print(f"Sentence issue: {sentence}")
         if shown == top:
             break
         print("\n")
@@ -159,7 +159,7 @@ def common_label_issues(
     class_names: Optional[List[str]] = None,
     top: int = 10,
     exclude: List[Tuple[int, int]] = [],
-    verbose: bool = True
+    verbose: bool = True,
 ) -> pd.DataFrame:
     """
     Display the tokens (words) that most commonly have label issues.
@@ -243,8 +243,7 @@ def common_label_issues(
 
         for r in rank:
             print(
-                "Token '%s' is potentially mislabeled %d times throughout the dataset\n"
-                % (words[r], freq[r])
+                f"Token '{words[r]}' is potentially mislabeled {freq[r]} times throughout the dataset\n"
             )
 
         info = [[word, f] for word, f in zip(words, freq)]
@@ -275,8 +274,7 @@ def common_label_issues(
         matrix = count[words[r]]
         most_frequent = np.argsort(count[words[r]].flatten())[::-1]
         print(
-            "Token '%s' is potentially mislabeled %d times throughout the dataset"
-            % (words[r], freq[r])
+            f"Token '{words[r]}' is potentially mislabeled {freq[r]} times throughout the dataset"
         )
         if verbose:
             print(
@@ -288,13 +286,11 @@ def common_label_issues(
                     break
                 if class_names:
                     print(
-                        "labeled as class `%s` but predicted to actually be class `%s` %d times"
-                        % (class_names[i], class_names[j], matrix[i][j])
+                        f"labeled as class `{class_names[i]}` but predicted to actually be class `{class_names[j]}` {matrix[i][j]} times"
                     )
                 else:
                     print(
-                        "labeled as class %d but predicted to actually be class %d %d times"
-                        % (i, j, matrix[i][j])
+                        f"labeled as class {i} but predicted to actually be class {j} {matrix[i][j]} times"
                     )
         print()
     info = []
