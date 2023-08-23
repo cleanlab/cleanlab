@@ -147,7 +147,7 @@ While this open-source library **finds** data issues, its utility depends on you
 
    Datalab Tutorials <tutorials/datalab/index>
    Workflows of Data-Centric AI <tutorials/indepth_overview>
-   Image Classification (pytorch) <tutorials/image>
+   Image Classification (pytorch) <tutorials/fashion_mnist>
    Text Classification (transformers) <tutorials/text>
    Tabular Classification (sklearn) <tutorials/tabular>
    Audio Classification (speechbrain) <tutorials/audio>
