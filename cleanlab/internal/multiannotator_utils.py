@@ -299,7 +299,6 @@ def find_best_temp_scaler(
     and model pred_probs"""
 
     soft_cross_entropy_coarse = np.full(len(coarse_search_range), np.NaN)
-    # clip pred_probs to prevent taking log of 0
     log_pred_probs = np.log(
         pred_probs, where=pred_probs > 0, out=np.full(pred_probs.shape, -np.inf)
     )
