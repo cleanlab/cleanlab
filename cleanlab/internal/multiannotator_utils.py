@@ -323,7 +323,9 @@ def find_best_temp_scaler(
     return best_temp
 
 
-def _set_fine_search_range(coarse_search_range: list, fine_search_size: int, min_entropy_ind: int):
+def _set_fine_search_range(
+    coarse_search_range: list, fine_search_size: int, min_entropy_ind: int
+) -> np.ndarray:
     fine_search_range = np.array([])
     if min_entropy_ind != 0:
         fine_search_range = np.append(
