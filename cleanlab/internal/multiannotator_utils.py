@@ -300,9 +300,9 @@ def find_best_temp_scaler(
 
     soft_cross_entropy_coarse = np.full(len(coarse_search_range), np.NaN)
     # clip pred_probs to prevent taking log of 0
-    pred_probs = np.clip(pred_probs, a_min=SMALL_CONST, a_max=None)
-    pred_probs = pred_probs / np.sum(pred_probs, axis=1)[:, np.newaxis]
-    log_pred_probs = np.log(pred_probs)
+    log_pred_probs = np.log(
+        pred_probs, where=pred_probs > 0, out=np.full(pred_probs.shape, -np.inf)
+    )
     for i, curr_temp in enumerate(coarse_search_range):
         scaled_pred_probs = softmax(log_pred_probs, temperature=curr_temp, axis=1, shift=False)
         soft_cross_entropy_coarse[i] = np.mean(
