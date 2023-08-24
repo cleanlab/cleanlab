@@ -34,9 +34,9 @@ TEMPERATURE = 0.1  # Param for objectlab, temperature of the softmin function us
 LABEL_OVERLAP_THRESHOLD = 0.95  # Param for objectlab, minimum IoU threshold for deciding when two boxes overlap used for deciding which objects have multiple conflicting annotations.
 IOU_CORRECT = 0.5  # Param for objectlab, minumim IoU threshold for deciding when 2 boxes overlap for per-class scoring.
 
-OVERLOOKED_THRESHOLD = 0.3  # Param for find_label_issues. Per-box label quality score threshold to determine max score for a box to be considered an overlooked issue
-BADLOC_THRESHOLD = 0.3  # Param for find_label_issues. Per-box label quality score threshold to determine max score for a box to be considered a bad location issue
-SWAP_THRESHOLD = 0.3  # Param for find_label_issues. Per-box label quality score threshold to determine max score for a box to be considered a swap issue
+OVERLOOKED_THRESHOLD_FACTOR = 0.8  # Param for find_label_issues. Per-box label quality score threshold scale factor to determine max score for a box to be considered an overlooked issue
+BADLOC_THRESHOLD_FACTOR = 0.8  # Param for find_label_issues. Per-box label quality score threshold scale factor to determine max score for a box to be considered a bad location issue
+SWAP_THRESHOLD_FACTOR = 0.8  # Param for find_label_issues. Per-box label quality score threshold scale factor to determine max score for a box to be considered a swap issue
 
 CUSTOM_SCORE_WEIGHT_OVERLOOKED = (
     1 / 3
@@ -48,4 +48,4 @@ CUSTOM_SCORE_WEIGHT_SWAP = (
     1 / 3
 )  # Param for get_label_quality_score, weight to determine how much to value swap scores over other subtypes when deciding issues
 
-MAX_CLASS_TO_SHOW = 10  # Nmber of classes to show in legend during the visualize method. Classes over max_class_to_show are cut off.
+MAX_CLASS_TO_SHOW = 10  # Number of classes to show in legend during the visualize method. Classes over max_class_to_show are cut off.
