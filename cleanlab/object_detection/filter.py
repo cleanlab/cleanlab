@@ -137,7 +137,7 @@ def _find_label_issues(
     if scoring_method == "objectlab":
         auxiliary_inputs = _get_valid_inputs_for_compute_scores(ALPHA, labels, predictions)
 
-        per_class_scores = get_per_class_ap(labels, predictions)
+        per_class_scores = get_per_class_ap(predictions, labels)
         lab_list = [_separate_label(label)[1] for label in labels]
         pred_list = [_separate_prediction(pred)[1] for pred in predictions]
         pred_dict = _process_class_list(pred_list, per_class_scores)
@@ -359,5 +359,5 @@ def get_per_class_ap(predictions, labels):
             dres[j].append(b[j])
     dm = {}
     for i in dres:
-        dm[i] = np.mean(dres[i]) * 0.5
+        dm[i] = np.mean(dres[i]) * 0.25
     return dm
