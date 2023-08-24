@@ -42,9 +42,9 @@ from cleanlab.internal.constants import (
     ALPHA,
     LOW_PROBABILITY_THRESHOLD,
     HIGH_PROBABILITY_THRESHOLD,
-    OVERLOOKED_THRESHOLD,
-    BADLOC_THRESHOLD,
-    SWAP_THRESHOLD,
+    OVERLOOKED_THRESHOLD_FACTOR,
+    BADLOC_THRESHOLD_FACTOR,
+    SWAP_THRESHOLD_FACTOR,
     TEMPERATURE,
     CUSTOM_SCORE_WEIGHT_OVERLOOKED,
     CUSTOM_SCORE_WEIGHT_SWAP,
@@ -437,7 +437,7 @@ def test_find_label_issues():
         ).all()
 
     overlooked_issues_per_box = _find_label_issues_per_box(
-        overlooked_scores_per_box, OVERLOOKED_THRESHOLD
+        overlooked_scores_per_box, OVERLOOKED_THRESHOLD_FACTOR
     )
     overlooked_issues_per_image = _pool_box_scores_per_image(overlooked_issues_per_box)
     overlooked_issues = np.sum(overlooked_issues_per_image)
@@ -463,7 +463,7 @@ def test_find_label_issues():
     ):
         assert (score == no_auxiliary_inputs_score).all()
 
-    badloc_issues_per_box = _find_label_issues_per_box(badloc_scores_per_box, BADLOC_THRESHOLD)
+    badloc_issues_per_box = _find_label_issues_per_box(badloc_scores_per_box, BADLOC_THRESHOLD_FACTOR)
     badloc_issues_per_image = _pool_box_scores_per_image(badloc_issues_per_box)
     badloc_issues = np.sum(badloc_issues_per_image)
     assert (
@@ -489,7 +489,7 @@ def test_find_label_issues():
     ):
         assert (score == no_auxiliary_inputs_score).all()
 
-    swap_issues_per_box = _find_label_issues_per_box(swap_scores_per_box, SWAP_THRESHOLD)
+    swap_issues_per_box = _find_label_issues_per_box(swap_scores_per_box, SWAP_THRESHOLD_FACTOR)
     swap_issues_per_image = _pool_box_scores_per_image(swap_issues_per_box)
     swap_issues = np.sum(swap_issues_per_image)
     assert np.sum(swap_scores_per_box[2]) > np.sum(swap_scores_per_box[7])

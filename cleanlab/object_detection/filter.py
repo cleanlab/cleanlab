@@ -17,6 +17,7 @@
 """Methods to find label issues in an object detection dataset, where each annotated bounding box in an image receives its own class label."""
 
 from collections import defaultdict
+from multiprocessing import Pool
 from typing import Any, Dict, List, Optional
 
 import numpy as np
@@ -31,7 +32,7 @@ from cleanlab.internal.constants import (
     SWAP_THRESHOLD_FACTOR,
     IOU_CORRECT,
 )
-from cleanlab.internal.object_detection_utils import assert_valid_inputs, get_per_class_ap
+from cleanlab.internal.object_detection_utils import assert_valid_inputs
 from cleanlab.object_detection.rank import (
     _get_valid_inputs_for_compute_scores,
     _separate_label,
@@ -41,6 +42,7 @@ from cleanlab.object_detection.rank import (
     compute_swap_box_scores,
     get_label_quality_scores,
     issues_from_scores,
+    _get_overlap_matrix,
 )
 
 
@@ -203,7 +205,6 @@ def _find_label_issues_per_box(
     Returns a list of size ``N`` where each index is a boolean array of length number of boxes per example `n`
     marking if a specific box is an issue - 1 or not - 0."""
     is_issue_per_box = []
-    assert threshold_factor is not None
     for idx, score_per_box in enumerate(scores_per_box):
         if len(score_per_box) == 0:  # if no for specific image, then image not an issue
             is_issue_per_box.append(np.array([False]))
@@ -212,11 +213,7 @@ def _find_label_issues_per_box(
             score_per_box = score_per_box
             issue_per_box = []
             for i in range(len(score_per_box)):
-                if thr_classes[idx][i] is not None:
-                    issue_per_box.append(score_per_box[i] <= thr_classes[idx][i] * threshold_factor)
-                else:
-                    issue_per_box.append(score_per_box[i] <= thr_classes[idx][i])
-
+                issue_per_box.append(score_per_box[i] <= thr_classes[idx][i] * threshold_factor)
             is_issue_per_box.append(np.array(issue_per_box, bool))
     return is_issue_per_box
 
@@ -246,3 +243,121 @@ def _process_class_list(class_list, class_dict):
         l3 = [class_dict[j] for j in i]
         class_l2.append(l3)
     return class_l2
+
+
+def calculate_ap_per_class(
+    predictions,
+    labels,
+    iou_threshold=0.5,
+    num_procs=4,
+):
+    num_imgs = len(predictions)
+    num_scales = 1
+    num_classes = len(predictions[0])
+    if num_imgs > 1:
+        num_procs = min(num_procs, num_imgs)
+        pool = Pool(num_procs)
+    ap_per_class_list = []
+    for class_num in range(num_classes):
+        cls_dets, cls_gts = filter_by_class(predictions, labels, class_num)
+        if num_imgs > 1:
+            args = []
+            tpfp = pool.starmap(
+                _get_tp_fp,
+                zip(cls_dets, cls_gts, [iou_threshold for _ in range(num_imgs)], *args),
+            )
+        else:
+            tpfp = [
+                _get_tp_fp(
+                    cls_dets[0],
+                    cls_gts[0],
+                    iou_threshold,
+                )
+            ]
+        tp, fp = tuple(zip(*tpfp))
+        num_gts = np.zeros(num_scales, dtype=int)
+        for j, bbox in enumerate(cls_gts):
+            num_gts[0] += bbox.shape[0]
+        cls_dets = np.vstack(cls_dets)
+        sort_inds = np.argsort(-cls_dets[:, -1])
+        tp = np.hstack(tp)[:, sort_inds]
+        fp = np.hstack(fp)[:, sort_inds]
+        tp = np.cumsum(tp, axis=1)
+        fp = np.cumsum(fp, axis=1)
+        eps = np.finfo(np.float32).eps
+        recalls = tp / np.maximum(num_gts[:, np.newaxis], eps)
+        precisions = tp / np.maximum((tp + fp), eps)
+        recalls = recalls[0, :]
+        precisions = precisions[0, :]
+        ap = calculate_average_precision(recalls, precisions)
+        ap_per_class_list.append(ap)
+    if num_imgs > 1:
+        pool.close()
+    return ap_per_class_list
+
+
+def filter_by_class(predictions, labels, class_num):
+    pred_bboxes = [img_res[class_num] for img_res in predictions]
+    lab_bboxes = []
+    for label in labels:
+        gt_inds = label["labels"] == class_num
+        lab_bboxes.append(label["bboxes"][gt_inds, :])
+    return pred_bboxes, lab_bboxes
+
+
+def _get_tp_fp(pred_bboxes, lab_bboxes, iou_threshold=0.5):
+    num_dets = pred_bboxes.shape[0]
+    num_gts = lab_bboxes.shape[0]
+    num_scales = 1
+    tp = np.zeros((num_scales, num_dets), dtype=np.float32)
+    fp = np.zeros((num_scales, num_dets), dtype=np.float32)
+    if lab_bboxes.shape[0] == 0:
+        fp[...] = 1
+        return tp, fp
+    ious = _get_overlap_matrix(pred_bboxes, lab_bboxes)
+    ious_max = ious.max(axis=1)
+    ious_argmax = ious.argmax(axis=1)
+    sort_inds = np.argsort(-pred_bboxes[:, -1])
+    k = 0
+    gt_covered = np.zeros(num_gts, dtype=bool)
+    for i in sort_inds:
+        if ious_max[i] >= iou_threshold:
+            matched_gt = ious_argmax[i]
+            if not gt_covered[matched_gt]:
+                gt_covered[matched_gt] = True
+                tp[k, i] = 1
+            else:
+                fp[k, i] = 1
+        else:
+            fp[k, i] = 1
+    return tp, fp
+
+
+def calculate_average_precision(recall_list, precision_list):
+    recall_list = recall_list[np.newaxis, :]
+    precision_list = precision_list[np.newaxis, :]
+    num_scales = recall_list.shape[0]
+    ap = np.zeros(num_scales, dtype=np.float32)
+    zeros = np.zeros((num_scales, 1), dtype=recall_list.dtype)
+    ones = np.ones((num_scales, 1), dtype=recall_list.dtype)
+    mrec = np.hstack((zeros, recall_list, ones))
+    mpre = np.hstack((zeros, precision_list, zeros))
+    for i in range(mpre.shape[1] - 1, 0, -1):
+        mpre[:, i - 1] = np.maximum(mpre[:, i - 1], mpre[:, i])
+    for i in range(num_scales):
+        ind = np.where(mrec[i, 1:] != mrec[i, :-1])[0]
+        ap[i] = np.sum((mrec[i, ind + 1] - mrec[i, ind]) * mpre[i, ind + 1])
+    return ap
+
+
+def get_per_class_ap(predictions, labels):
+    iou_thrs = np.linspace(0.5, 0.95, int(np.round((0.95 - 0.5) / 0.05)) + 1, endpoint=True)
+    dres = defaultdict(list)
+    for thr in iou_thrs:
+        b = calculate_ap_per_class(predictions, labels, iou_threshold=thr)
+        for j in range(0, len(b)):
+            dres[j].append(b[j])
+    dm = {}
+    for i in dres:
+        dm[i] = np.mean(dres[i]) * 0.5
+    return dm
