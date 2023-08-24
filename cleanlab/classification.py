@@ -18,7 +18,7 @@
 cleanlab can be used for learning with noisy labels for any dataset and model.
 
 For regular (multi-class) classification tasks,
-the :py:class:`CleanLearning <cleanlab.classification.CleanLearning>` class wraps an instance of an
+the `~cleanlab.classification.CleanLearning` class wraps an instance of an
 sklearn classifier. The wrapped classifier must adhere to the `sklearn estimator API
 <https://scikit-learn.org/stable/developers/develop.html#rolling-your-own-estimator>`_,
 meaning it must define four functions:
@@ -369,8 +369,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
           If ``pd.DataFrame``, must be formatted as the one returned by:
           :py:meth:`CleanLearning.find_label_issues
           <cleanlab.classification.CleanLearning.find_label_issues>` or
-          :py:meth:`CleanLearning.get_label_issues
-          <cleanlab.classification.CleanLearning.get_label_issues>`.
+          `~cleanlab.classification.CleanLearning.get_label_issues`.
           If ``np.ndarray``, must contain either boolean `label_issues_mask` as output by:
           default :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>`,
           or integer indices as output by
@@ -432,8 +431,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
           After calling ``self.fit()``, this estimator also stores extra attributes such as:
 
           * *self.label_issues_df*: a ``pd.DataFrame`` accessible via
-          :py:meth:`get_label_issues
-          <cleanlab.classification.CleanLearning.get_label_issues>`
+          `~cleanlab.classification.CleanLearning.get_label_issues`
           of similar format as the one returned by: :py:meth:`CleanLearning.find_label_issues<cleanlab.classification.CleanLearning.find_label_issues>`.
           See documentation of :py:meth:`CleanLearning.find_label_issues<cleanlab.classification.CleanLearning.find_label_issues>`
           for column descriptions.
@@ -724,18 +722,14 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         this method only requires a classifier and it can do the cross-validation for you.
         Both methods return the same boolean mask that identifies which examples have label issues.
         This is the preferred method to use if you plan to subsequently invoke:
-        :py:meth:`CleanLearning.fit()
-        <cleanlab.classification.CleanLearning.fit>`.
+        `~cleanlab.classification.CleanLearning.fit`.
 
         Note: this method computes the label issues from scratch. To access
-        previously-computed label issues from this :py:class:`CleanLearning
-        <cleanlab.classification.CleanLearning>` instance, use the
-        :py:meth:`get_label_issues
-        <cleanlab.classification.CleanLearning.get_label_issues>` method.
+        previously-computed label issues from this `~cleanlab.classification.CleanLearning` instance, use the
+        `~cleanlab.classification.CleanLearning.get_label_issues` method.
 
         This is the method called to find label issues inside
-        :py:meth:`CleanLearning.fit()
-        <cleanlab.classification.CleanLearning.fit>`
+        `~cleanlab.classification.CleanLearning.fit`
         and they share mostly the same parameters.
 
         Parameters
@@ -745,8 +739,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
           This means some other methods like `self.get_label_issues()` will no longer work.
 
 
-        For info about the **other parameters**, see the docstring of :py:meth:`CleanLearning.fit()
-        <cleanlab.classification.CleanLearning.fit>`.
+        For info about the **other parameters**, see the docstring of `~cleanlab.classification.CleanLearning.fit`.
 
         Returns
         -------
@@ -754,7 +747,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
           DataFrame with info about label issues for each example.
           Unless `save_space` argument is specified, same DataFrame is also stored as
           `self.label_issues_df` attribute accessible via
-          :py:meth:`get_label_issues<cleanlab.classification.CleanLearning.get_label_issues>`.
+          `~cleanlab.classification.CleanLearning.get_label_issues`.
           Each row represents an example from our dataset and
           the DataFrame may contain the following columns:
 
@@ -762,7 +755,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
           * *label_quality*: Numeric score that measures the quality of each label (how likely it is to be correct, with lower scores indicating potentially erroneous labels).
           * *given_label*: Integer indices corresponding to the class label originally given for this example (same as `labels` input). Included here for ease of comparison against `clf` predictions, only present if "predicted_label" column is present.
           * *predicted_label*: Integer indices corresponding to the class predicted by trained `clf` model. Only present if ``pred_probs`` were provided as input or computed during label-issue-finding.
-          * *sample_weight*: Numeric values used to weight examples during the final training of `clf` in :py:meth:`CleanLearning.fit()<cleanlab.classification.CleanLearning.fit>`. This column may not be present after `self.find_label_issues()` but may be added after call to :py:meth:`CleanLearning.fit()<cleanlab.classification.CleanLearning.fit>`. For more precise definition of sample weights, see documentation of :py:meth:`CleanLearning.fit()<cleanlab.classification.CleanLearning.fit>`
+          * *sample_weight*: Numeric values used to weight examples during the final training of `clf` in `~cleanlab.classification.CleanLearning.fit`. This column may not be present after `self.find_label_issues()` but may be added after call to `~cleanlab.classification.CleanLearning.fit`. For more precise definition of sample weights, see documentation of `~cleanlab.classification.CleanLearning.fit`
         """
 
         # Check inputs
