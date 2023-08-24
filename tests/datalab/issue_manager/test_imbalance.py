@@ -9,6 +9,7 @@ SEED = 42
 class TestClassImbalanceIssueManager:
     @pytest.fixture
     def labels(self, lab):
+        np.random.seed(SEED)
         K = lab.get_info("statistics")["num_classes"]
         N = lab.get_info("statistics")["num_examples"] * 20
         labels = np.random.choice(np.arange(K - 1), size=N, p=[0.5] * (K - 1))
