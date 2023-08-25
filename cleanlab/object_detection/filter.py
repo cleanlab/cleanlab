@@ -196,10 +196,10 @@ def _find_label_issues(
 
 
 def _find_label_issues_per_box(
-    scores_per_box: List[np.ndarray], thr_classes, threshold_factor=1.0
+    scores_per_box: List[np.ndarray], threshold_classes, threshold_factor=1.0
 ) -> List[np.ndarray]:
     """Takes in a list of size ``N`` where each index is an array of scores for each bounding box in the `n-th` example
-    and a threshold. Each box below or equal to the corresponding threshold in thr_classes will be marked as an issue.
+    and a threshold. Each box below or equal to the corresponding threshold in threshold_classes will be marked as an issue.
 
     Returns a list of size ``N`` where each index is a boolean array of length number of boxes per example `n`
     marking if a specific box is an issue - 1 or not - 0."""
@@ -212,7 +212,9 @@ def _find_label_issues_per_box(
             score_per_box = score_per_box
             issue_per_box = []
             for i in range(len(score_per_box)):
-                issue_per_box.append(score_per_box[i] <= thr_classes[idx][i] * threshold_factor)
+                issue_per_box.append(
+                    score_per_box[i] <= threshold_classes[idx][i] * threshold_factor
+                )
             is_issue_per_box.append(np.array(issue_per_box, bool))
     return is_issue_per_box
 
@@ -238,7 +240,15 @@ def _pool_box_scores_per_image(is_issue_per_box: List[np.ndarray]) -> np.ndarray
 
 def _process_class_list(class_list: List[np.ndarray], class_dict: Dict[int, float]) -> List:
     """
-    Converts a list of classes using a float dictionary into a list where each class is replaced by its corresponding float value.
+    Converts a list of classes represented as numpy arrays using a class-to-float dictionary,
+    and returns a list where each class is replaced by its corresponding float value from the dictionary.
+
+    Args:
+        class_list (List[np.ndarray]): A list of classes represented as numpy arrays.
+        class_dict (Dict[int, float]): A dictionary mapping class indices to their corresponding float values.
+
+    Returns:
+        List[float]: A list of float values corresponding to the classes in the input list.
     """
     class_l2 = []
     for i in class_list:
