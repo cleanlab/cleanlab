@@ -244,10 +244,10 @@ def _process_class_list(class_list, class_dict):
 
 
 def calculate_ap_per_class(
-    labels,
-    predictions,
-    iou_threshold=0.5,
-    num_procs=4,
+    labels: List[Dict[str, Any]],
+    predictions: List[np.ndarray],
+    iou_threshold: float = 0.5,
+    num_procs: int = 4,
 ):
     num_imgs = len(predictions)
     num_scales = 1
@@ -257,12 +257,11 @@ def calculate_ap_per_class(
         pool = Pool(num_procs)
     ap_per_class_list = []
     for class_num in range(num_classes):
-        cls_dets, cls_gts = filter_by_class(predictions, labels, class_num)
+        cls_dets, cls_gts = filter_by_class(labels, predictions, class_num)
         if num_imgs > 1:
-            args = []
             tpfp = pool.starmap(
                 _get_tp_fp,
-                zip(cls_dets, cls_gts, [iou_threshold for _ in range(num_imgs)], *args),
+                zip(cls_dets, cls_gts, [iou_threshold for _ in range(num_imgs)]),
             )
         else:
             tpfp = [
@@ -294,7 +293,7 @@ def calculate_ap_per_class(
     return ap_per_class_list
 
 
-def filter_by_class(predictions, labels, class_num):
+def filter_by_class(labels: List[Dict[str, Any]], predictions: List[np.ndarray], class_num: int):
     pred_bboxes = [img_res[class_num] for img_res in predictions]
     lab_bboxes = []
     for label in labels:
@@ -303,7 +302,7 @@ def filter_by_class(predictions, labels, class_num):
     return pred_bboxes, lab_bboxes
 
 
-def _get_tp_fp(pred_bboxes, lab_bboxes, iou_threshold=0.5):
+def _get_tp_fp(pred_bboxes: np.ndarray, lab_bboxes: np.ndarray, iou_threshold: float = 0.5):
     num_dets = pred_bboxes.shape[0]
     num_gts = lab_bboxes.shape[0]
     num_scales = 1
@@ -331,7 +330,7 @@ def _get_tp_fp(pred_bboxes, lab_bboxes, iou_threshold=0.5):
     return tp, fp
 
 
-def calculate_average_precision(recall_list, precision_list):
+def calculate_average_precision(recall_list: np.ndarray, precision_list: np.ndarray):
     recall_list = recall_list[np.newaxis, :]
     precision_list = precision_list[np.newaxis, :]
     num_scales = recall_list.shape[0]
@@ -348,7 +347,7 @@ def calculate_average_precision(recall_list, precision_list):
     return ap
 
 
-def get_per_class_ap(labels, predictions):
+def get_per_class_ap(labels: List[Dict[str, Any]], predictions: List[np.ndarray]):
     iou_thrs = np.linspace(0.5, 0.95, int(np.round((0.95 - 0.5) / 0.05)) + 1, endpoint=True)
     dres = defaultdict(list)
     for thr in iou_thrs:
