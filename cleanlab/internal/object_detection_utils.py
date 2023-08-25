@@ -18,7 +18,6 @@
 Helper functions used internally for object detection tasks.
 """
 from typing import List, Optional, Dict, Any
-
 import numpy as np
 
 
