@@ -36,6 +36,7 @@ LABEL_OVERLAP_THRESHOLD = 0.95  # Param for objectlab, minimum IoU threshold for
 OVERLOOKED_THRESHOLD_FACTOR = 0.8  # Param for find_label_issues. Per-box label quality score threshold scale factor to determine max score for a box to be considered an overlooked issue
 BADLOC_THRESHOLD_FACTOR = 0.8  # Param for find_label_issues. Per-box label quality score threshold scale factor to determine max score for a box to be considered a bad location issue
 SWAP_THRESHOLD_FACTOR = 0.8  # Param for find_label_issues. Per-box label quality score threshold scale factor to determine max score for a box to be considered a swap issue
+AP_SCALE_FACTOR = 0.25  #  Param for find_label_issues. Scale factor for per-class precision to determine is_issue.
 
 CUSTOM_SCORE_WEIGHT_OVERLOOKED = (
     1 / 3

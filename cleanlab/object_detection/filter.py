@@ -29,6 +29,7 @@ from cleanlab.internal.constants import (
     OVERLOOKED_THRESHOLD_FACTOR,
     BADLOC_THRESHOLD_FACTOR,
     SWAP_THRESHOLD_FACTOR,
+    AP_SCALE_FACTOR,
 )
 from cleanlab.internal.object_detection_utils import assert_valid_inputs
 from cleanlab.object_detection.rank import (
@@ -315,18 +316,17 @@ def _get_tp_fp(pred_bboxes: np.ndarray, lab_bboxes: np.ndarray, iou_threshold: f
     ious_max = ious.max(axis=1)
     ious_argmax = ious.argmax(axis=1)
     sort_inds = np.argsort(-pred_bboxes[:, -1])
-    k = 0
     gt_covered = np.zeros(num_gts, dtype=bool)
-    for i in sort_inds:
-        if ious_max[i] >= iou_threshold:
-            matched_gt = ious_argmax[i]
+    for ind in sort_inds:
+        if ious_max[ind] >= iou_threshold:
+            matched_gt = ious_argmax[ind]
             if not gt_covered[matched_gt]:
                 gt_covered[matched_gt] = True
-                tp[k, i] = 1
+                tp[0, ind] = 1
             else:
-                fp[k, i] = 1
+                fp[0, ind] = 1
         else:
-            fp[k, i] = 1
+            fp[0, ind] = 1
     return tp, fp
 
 
@@ -350,11 +350,11 @@ def calculate_average_precision(recall_list: np.ndarray, precision_list: np.ndar
 def get_per_class_ap(labels: List[Dict[str, Any]], predictions: List[np.ndarray]):
     iou_thrs = np.linspace(0.5, 0.95, int(np.round((0.95 - 0.5) / 0.05)) + 1, endpoint=True)
     dres = defaultdict(list)
-    for thr in iou_thrs:
-        b = calculate_ap_per_class(labels, predictions, iou_threshold=thr)
-        for j in range(0, len(b)):
-            dres[j].append(b[j])
+    for threshold in iou_thrs:
+        ap_per_class = calculate_ap_per_class(labels, predictions, iou_threshold=threshold)
+        for class_num in range(0, len(ap_per_class)):
+            dres[class_num].append(ap_per_class[class_num])
     dm = {}
-    for i in dres:
-        dm[i] = np.mean(dres[i]) * 0.25
+    for class_num in dres:
+        dm[class_num] = np.mean(dres[class_num]) * AP_SCALE_FACTOR
     return dm
