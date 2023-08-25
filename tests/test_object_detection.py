@@ -194,7 +194,7 @@ bad_predictions = generate_predictions(
 labels = good_labels + bad_labels  # 10 labels
 predictions = (
     good_predictions + bad_predictions
-)  # 15 predictions, [:10] is perfect predictions, [5:] is bad predictions
+)  # 15 predictions, [:10] is perfect predictions, [10:] is bad predictions
 
 
 def test_get_label_quality_scores():
