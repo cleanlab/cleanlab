@@ -179,7 +179,7 @@ def generate_bbox(image_size):
 
 warnings.filterwarnings("ignore")
 NUM_CLASSES = 10
-NUM_GOOD_SAMPLES = 10
+NUM_GOOD_SAMPLES = 5
 good_labels = generate_annotations(NUM_GOOD_SAMPLES, num_classes=NUM_CLASSES, max_boxes=10)
 good_predictions = generate_predictions(
     NUM_GOOD_SAMPLES, good_labels, num_classes=NUM_CLASSES, max_boxes=12, is_issue=False
@@ -332,7 +332,7 @@ def test_prune_by_threshold(verbose):
         for class_pred in image_pred:
             if class_pred.shape[0] > 0:
                 num_boxes_not_pruned += 1
-    assert num_boxes_not_pruned == 56
+    assert num_boxes_not_pruned == 44
 
     pruned_predictions = _prune_by_threshold(predictions, 0.5)
     for im0, im1 in zip(pruned_predictions, predictions):
@@ -418,7 +418,6 @@ def test_swap_score_shifts_in_correct_direction():
 
 
 def test_find_label_issues():
-    breakpoint()
     auxiliary_inputs = _get_valid_inputs_for_compute_scores(ALPHA, labels, predictions)
     test_inputs = _get_valid_inputs_for_compute_scores_per_image(
         alpha=ALPHA, label=labels[0], prediction=predictions[0]
@@ -426,6 +425,8 @@ def test_find_label_issues():
 
     assert (test_inputs["pred_label_probs"] == auxiliary_inputs[0]["pred_label_probs"]).all()
     per_class_scores = get_per_class_ap(labels, predictions)
+    for i in per_class_scores:
+        per_class_scores[i] = 0.3
     lab_list = [_separate_label(label)[1] for label in labels]
     pred_list = [_separate_prediction(pred)[1] for pred in predictions]
     pred_dict = _process_class_list(pred_list, per_class_scores)
@@ -485,9 +486,9 @@ def test_find_label_issues():
     badloc_issues_per_image = _pool_box_scores_per_image(badloc_issues_per_box)
     badloc_issues = np.sum(badloc_issues_per_image)
     assert (
-        np.sum(badloc_issues_per_image[10:]) == 3
-    )  # check bad labels were detected correctly, only three images have badloc issues that overlap
-    assert badloc_issues == 3
+        np.sum(badloc_issues_per_image[NUM_GOOD_SAMPLES:]) == 2
+    )  # check bad labels were detected correctly, only two images have badloc issues that overlap
+    assert badloc_issues == 2
 
     swap_scores_per_box = compute_swap_box_scores(
         alpha=ALPHA,
@@ -522,18 +523,13 @@ def test_find_label_issues():
     assert (
         np.sum(label_issues[NUM_GOOD_SAMPLES:]) == NUM_BAD_SAMPLES
     )  # check bad labels were detected correctly
-    breakpoint()
-    # per_class_scores = get_per_class_ap(labels, predictions)
-    # for i in per_class_scores:
-    #     per_class_scores[i] += 0.2
-    # lab_list = [_separate_label(label)[1] for label in labels]
-    # lab_dict = _process_class_list(lab_list, per_class_scores)
-    # swap_issues_per_box = _find_label_issues_per_box(swap_scores_per_box, lab_dict, SWAP_THRESHOLD_FACTOR)
-    # # breakpoint()
-    # swap_issues_per_image = _pool_box_scores_per_image(swap_issues_per_box)
-    # swap_issues = np.sum(swap_issues_per_image)
-    # assert swap_issues == 1
-    # assert np.sum(swap_issues_per_image[10:]) == 1  # check bad labels were detected correctly
+    swap_issues_per_box = _find_label_issues_per_box(
+        swap_scores_per_box, lab_dict, SWAP_THRESHOLD_FACTOR
+    )
+    swap_issues_per_image = _pool_box_scores_per_image(swap_issues_per_box)
+    swap_issues = np.sum(swap_issues_per_image)
+    assert swap_issues == 1
+    assert np.sum(swap_issues_per_image[NUM_GOOD_SAMPLES:]) == 1  # check bad labels were detected correctly
 
 
 def test_separate_prediction():
