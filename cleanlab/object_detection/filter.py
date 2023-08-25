@@ -252,53 +252,53 @@ def _calculate_ap_per_class(
     predictions: List[np.ndarray],
     *,
     iou_threshold: Optional[float] = 0.5,
-    num_procs: int = 4,
+    num_procs: int = 1,
 ) -> List:
     """
     Computes the average precision for each class based on provided labels and predictions.
     It uses an Intersection over Union (IoU) threshold and supports parallel processing with a specified number of processes.
 
     """
-    num_imgs = len(predictions)
-    num_scales = 1
+    num_images = len(predictions)
+    num_scale = 1
     num_classes = len(predictions[0])
-    if num_imgs > 1:
-        num_procs = min(num_procs, num_imgs)
+    if num_images > 1:
+        num_procs = min(num_procs, num_images)
         pool = Pool(num_procs)
     ap_per_class_list = []
     for class_num in range(num_classes):
-        cls_dets, cls_gts = _filter_by_class(labels, predictions, class_num)
-        if num_imgs > 1:
+        pred_bboxes, lab_bboxes = _filter_by_class(labels, predictions, class_num)
+        if num_images > 1:
             tpfp = pool.starmap(
-                _get_tp_fp,
-                zip(cls_dets, cls_gts, [iou_threshold for _ in range(num_imgs)]),
+                _calculate_true_positives_false_positives,
+                zip(pred_bboxes, lab_bboxes, [iou_threshold for _ in range(num_images)]),
             )
         else:
             tpfp = [
-                _get_tp_fp(
-                    cls_dets[0],
-                    cls_gts[0],
+                _calculate_true_positives_false_positives(
+                    pred_bboxes[0],
+                    lab_bboxes[0],
                     iou_threshold,
                 )
             ]
-        tp, fp = tuple(zip(*tpfp))
-        num_gts = np.zeros(num_scales, dtype=int)
-        for j, bbox in enumerate(cls_gts):
+        true_positives, false_positives = tuple(zip(*tpfp))
+        num_gts = np.zeros(num_scale, dtype=int)
+        for j, bbox in enumerate(lab_bboxes):
             num_gts[0] += bbox.shape[0]
-        cls_dets = np.vstack(cls_dets)
-        sort_inds = np.argsort(-cls_dets[:, -1])
-        tp = np.hstack(tp)[:, sort_inds]
-        fp = np.hstack(fp)[:, sort_inds]
-        tp = np.cumsum(tp, axis=1)
-        fp = np.cumsum(fp, axis=1)
+        pred_bboxes = np.vstack(pred_bboxes)
+        sort_inds = np.argsort(-pred_bboxes[:, -1])
+        true_positives = np.hstack(true_positives)[:, sort_inds]
+        false_positives = np.hstack(false_positives)[:, sort_inds]
+        true_positives = np.cumsum(true_positives, axis=1)
+        false_positives = np.cumsum(false_positives, axis=1)
         eps = np.finfo(np.float32).eps
-        recalls = tp / np.maximum(num_gts[:, np.newaxis], eps)
-        precisions = tp / np.maximum((tp + fp), eps)
+        recalls = true_positives / np.maximum(num_gts[:, np.newaxis], eps)
+        precisions = true_positives / np.maximum((true_positives + false_positives), eps)
         recalls = recalls[0, :]
         precisions = precisions[0, :]
         ap = _calculate_average_precision(recalls, precisions)
         ap_per_class_list.append(ap)
-    if num_imgs > 1:
+    if num_images > 1:
         pool.close()
     return ap_per_class_list
 
@@ -317,54 +317,64 @@ def _filter_by_class(
     return pred_bboxes, lab_bboxes
 
 
-def _get_tp_fp(
+def _calculate_true_positives_false_positives(
     pred_bboxes: np.ndarray, lab_bboxes: np.ndarray, iou_threshold: Optional[float] = 0.5
 ) -> Tuple[np.ndarray, np.ndarray]:
     """Calculates true positives (TP) and false positives (FP) for object detection tasks.
     It takes predicted bounding boxes, ground truth bounding boxes, and an optional Intersection over Union (IoU) threshold as inputs.
     """
-    num_dets = pred_bboxes.shape[0]
-    num_gts = lab_bboxes.shape[0]
+    num_preds = pred_bboxes.shape[0]
+    num_labels = lab_bboxes.shape[0]
     num_scales = 1
-    tp = np.zeros((num_scales, num_dets), dtype=np.float32)
-    fp = np.zeros((num_scales, num_dets), dtype=np.float32)
+    true_positives = np.zeros((num_scales, num_preds), dtype=np.float32)
+    false_positives = np.zeros((num_scales, num_preds), dtype=np.float32)
     if lab_bboxes.shape[0] == 0:
-        fp[...] = 1
-        return tp, fp
+        false_positives[...] = 1
+        return true_positives, false_positives
     ious = _get_overlap_matrix(pred_bboxes, lab_bboxes)
     ious_max = ious.max(axis=1)
     ious_argmax = ious.argmax(axis=1)
-    sort_inds = np.argsort(-pred_bboxes[:, -1])
-    gt_covered = np.zeros(num_gts, dtype=bool)
-    for ind in sort_inds:
-        if ious_max[ind] >= iou_threshold:
-            matched_gt = ious_argmax[ind]
-            if not gt_covered[matched_gt]:
-                gt_covered[matched_gt] = True
-                tp[0, ind] = 1
+    sorted_indices = np.argsort(-pred_bboxes[:, -1])
+    is_covered = np.zeros(num_labels, dtype=bool)
+    for index in sorted_indices:
+        if ious_max[index] >= iou_threshold:
+            matching_label = ious_argmax[index]
+            if not is_covered[matching_label]:
+                is_covered[matching_label] = True
+                true_positives[0, index] = 1
             else:
-                fp[0, ind] = 1
+                false_positives[0, index] = 1
         else:
-            fp[0, ind] = 1
-    return tp, fp
+            false_positives[0, index] = 1
+    return true_positives, false_positives
 
 
-def _calculate_average_precision(recall_list: np.ndarray, precision_list: np.ndarray) -> np.ndarray:
+def _calculate_average_precision(
+    recall_values: np.ndarray, precision_values: np.ndarray
+) -> np.ndarray:
     """Computes the average precision (AP) for a set of recall and precision values. It takes arrays of recall and precision values as inputs."""
-    recall_list = recall_list[np.newaxis, :]
-    precision_list = precision_list[np.newaxis, :]
-    num_scales = recall_list.shape[0]
-    ap = np.zeros(num_scales, dtype=np.float32)
-    zeros = np.zeros((num_scales, 1), dtype=recall_list.dtype)
-    ones = np.ones((num_scales, 1), dtype=recall_list.dtype)
-    mrec = np.hstack((zeros, recall_list, ones))
-    mpre = np.hstack((zeros, precision_list, zeros))
-    for i in range(mpre.shape[1] - 1, 0, -1):
-        mpre[:, i - 1] = np.maximum(mpre[:, i - 1], mpre[:, i])
+    recall_values = recall_values[np.newaxis, :]
+    precision_values = precision_values[np.newaxis, :]
+    num_scales = recall_values.shape[0]
+    average_precision = np.zeros(num_scales, dtype=np.float32)
+    zeros_matrix = np.zeros((num_scales, 1), dtype=recall_values.dtype)
+    ones_matrix = np.ones((num_scales, 1), dtype=recall_values.dtype)
+    modified_recall = np.hstack((zeros_matrix, recall_values, ones_matrix))
+    modified_precision = np.hstack((zeros_matrix, precision_values, zeros_matrix))
+
+    for i in range(modified_precision.shape[1] - 1, 0, -1):
+        modified_precision[:, i - 1] = np.maximum(
+            modified_precision[:, i - 1], modified_precision[:, i]
+        )
+
     for i in range(num_scales):
-        ind = np.where(mrec[i, 1:] != mrec[i, :-1])[0]
-        ap[i] = np.sum((mrec[i, ind + 1] - mrec[i, ind]) * mpre[i, ind + 1])
-    return ap
+        index = np.where(modified_recall[i, 1:] != modified_recall[i, :-1])[0]
+        average_precision[i] = np.sum(
+            (modified_recall[i, index + 1] - modified_recall[i, index])
+            * modified_precision[i, index + 1]
+        )
+
+    return average_precision
 
 
 def _get_per_class_ap(
