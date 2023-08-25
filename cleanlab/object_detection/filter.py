@@ -238,7 +238,7 @@ def _pool_box_scores_per_image(is_issue_per_box: List[np.ndarray]) -> np.ndarray
 
 def _process_class_list(class_list: list[np.ndarray[Any, Any]], class_dict: Dict[int, float]):
     """
-    This function converts a list of classes using a float dictionary into a list where each class is replaced by its corresponding float value.
+    Converts a list of classes using a float dictionary into a list where each class is replaced by its corresponding float value.
     """
     class_l2 = []
     for i in class_list:
@@ -254,8 +254,8 @@ def calculate_ap_per_class(
     num_procs: int = 4,
 ):
     """
-    This function computes the average precision for each class based on provided labels and predictions.
-     It uses an Intersection over Union (IoU) threshold and supports parallel processing with a specified number of processes.
+    Computes the average precision for each class based on provided labels and predictions.
+    It uses an Intersection over Union (IoU) threshold and supports parallel processing with a specified number of processes.
 
     """
     num_imgs = len(predictions)
@@ -304,8 +304,7 @@ def calculate_ap_per_class(
 
 def filter_by_class(labels: List[Dict[str, Any]], predictions: List[np.ndarray], class_num: int):
     """
-    This function filters predictions and labels based on a specific class number.
-
+    Filters predictions and labels based on a specific class number.
     """
     pred_bboxes = [img_res[class_num] for img_res in predictions]
     lab_bboxes = []
@@ -316,7 +315,7 @@ def filter_by_class(labels: List[Dict[str, Any]], predictions: List[np.ndarray],
 
 
 def _get_tp_fp(pred_bboxes: np.ndarray, lab_bboxes: np.ndarray, iou_threshold: float = 0.5):
-    """This function calculates true positives (TP) and false positives (FP) for object detection tasks.
+    """Calculates true positives (TP) and false positives (FP) for object detection tasks.
     It takes predicted bounding boxes, ground truth bounding boxes, and an optional Intersection over Union (IoU) threshold as inputs.
     """
     num_dets = pred_bboxes.shape[0]
@@ -346,7 +345,7 @@ def _get_tp_fp(pred_bboxes: np.ndarray, lab_bboxes: np.ndarray, iou_threshold: f
 
 
 def calculate_average_precision(recall_list: np.ndarray, precision_list: np.ndarray):
-    """This function computes the average precision (AP) for a set of recall and precision values. It takes arrays of recall and precision values as inputs."""
+    """Computes the average precision (AP) for a set of recall and precision values. It takes arrays of recall and precision values as inputs."""
     recall_list = recall_list[np.newaxis, :]
     precision_list = precision_list[np.newaxis, :]
     num_scales = recall_list.shape[0]
@@ -364,7 +363,7 @@ def calculate_average_precision(recall_list: np.ndarray, precision_list: np.ndar
 
 
 def get_per_class_ap(labels: List[Dict[str, Any]], predictions: List[np.ndarray]):
-    """computes the Average Precision (AP) for each class in an object detection task.
+    """Computes the Average Precision (AP) for each class in an object detection task.
     It takes a list of label dictionaries and a list of prediction arrays as inputs.
     It calculates AP values for different Intersection over Union (IoU) thresholds, averages them per class, and then scales the AP values.
     """
