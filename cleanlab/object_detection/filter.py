@@ -236,7 +236,7 @@ def _pool_box_scores_per_image(is_issue_per_box: List[np.ndarray]) -> np.ndarray
     return is_issue
 
 
-def _process_class_list(class_list: list[np.ndarray[Any, Any]], class_dict: Dict[int, float]):
+def _process_class_list(class_list: List[np.ndarray[Any, Any]], class_dict: Dict[int, float]):
     """
     Converts a list of classes using a float dictionary into a list where each class is replaced by its corresponding float value.
     """
