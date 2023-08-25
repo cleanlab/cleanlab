@@ -137,7 +137,7 @@ def _find_label_issues(
     if scoring_method == "objectlab":
         auxiliary_inputs = _get_valid_inputs_for_compute_scores(ALPHA, labels, predictions)
 
-        per_class_scores = get_per_class_ap(predictions, labels)
+        per_class_scores = get_per_class_ap(labels, predictions)
         lab_list = [_separate_label(label)[1] for label in labels]
         pred_list = [_separate_prediction(pred)[1] for pred in predictions]
         pred_dict = _process_class_list(pred_list, per_class_scores)
@@ -246,8 +246,8 @@ def _process_class_list(class_list, class_dict):
 
 
 def calculate_ap_per_class(
-    predictions,
     labels,
+    predictions,
     iou_threshold=0.5,
     num_procs=4,
 ):
@@ -350,11 +350,11 @@ def calculate_average_precision(recall_list, precision_list):
     return ap
 
 
-def get_per_class_ap(predictions, labels):
+def get_per_class_ap(labels, predictions):
     iou_thrs = np.linspace(0.5, 0.95, int(np.round((0.95 - 0.5) / 0.05)) + 1, endpoint=True)
     dres = defaultdict(list)
     for thr in iou_thrs:
-        b = calculate_ap_per_class(predictions, labels, iou_threshold=thr)
+        b = calculate_ap_per_class(labels, predictions, iou_threshold=thr)
         for j in range(0, len(b)):
             dres[j].append(b[j])
     dm = {}
