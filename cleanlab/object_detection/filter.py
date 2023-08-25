@@ -21,7 +21,6 @@ from multiprocessing import Pool
 from typing import Any, Dict, List, Optional
 
 import numpy as np
-from sklearn.metrics import f1_score
 
 from cleanlab.internal.constants import (
     ALPHA,
