@@ -523,13 +523,17 @@ def test_find_label_issues():
     assert (
         np.sum(label_issues[NUM_GOOD_SAMPLES:]) == NUM_BAD_SAMPLES
     )  # check bad labels were detected correctly
-    swap_issues_per_box = _find_label_issues_per_box(
-        swap_scores_per_box, lab_dict, SWAP_THRESHOLD_FACTOR
-    )
+    for i in per_class_scores:
+        per_class_scores[i] = 0.7
+    lab_list = [_separate_label(label)[1] for label in labels]
+    lab_dict = _process_class_list(lab_list, per_class_scores)
+    swap_issues_per_box = _find_label_issues_per_box(swap_scores_per_box, lab_dict, 1.0)
     swap_issues_per_image = _pool_box_scores_per_image(swap_issues_per_box)
     swap_issues = np.sum(swap_issues_per_image)
     assert swap_issues == 1
-    assert np.sum(swap_issues_per_image[NUM_GOOD_SAMPLES:]) == 1  # check bad labels were detected correctly
+    assert (
+        np.sum(swap_issues_per_image[NUM_GOOD_SAMPLES:]) == 1
+    )  # check bad labels were detected correctly
 
 
 def test_separate_prediction():

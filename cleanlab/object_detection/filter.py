@@ -30,7 +30,6 @@ from cleanlab.internal.constants import (
     OVERLOOKED_THRESHOLD_FACTOR,
     BADLOC_THRESHOLD_FACTOR,
     SWAP_THRESHOLD_FACTOR,
-    IOU_CORRECT,
 )
 from cleanlab.internal.object_detection_utils import assert_valid_inputs
 from cleanlab.object_detection.rank import (
