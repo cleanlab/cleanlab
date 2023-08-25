@@ -33,7 +33,7 @@ from cleanlab.object_detection.filter import (
     _find_label_issues_per_box,
     _pool_box_scores_per_image,
     _find_label_issues,
-    get_per_class_ap,
+    _get_per_class_ap,
     _process_class_list,
 )
 
@@ -424,7 +424,7 @@ def test_find_label_issues():
     )
 
     assert (test_inputs["pred_label_probs"] == auxiliary_inputs[0]["pred_label_probs"]).all()
-    per_class_scores = get_per_class_ap(labels, predictions)
+    per_class_scores = _get_per_class_ap(labels, predictions)
     for i in per_class_scores:
         per_class_scores[i] = 0.3
     lab_list = [_separate_label(label)[1] for label in labels]

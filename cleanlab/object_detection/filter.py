@@ -18,7 +18,7 @@
 
 from collections import defaultdict
 from multiprocessing import Pool
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 
@@ -136,18 +136,18 @@ def _find_label_issues(
     if scoring_method == "objectlab":
         auxiliary_inputs = _get_valid_inputs_for_compute_scores(ALPHA, labels, predictions)
 
-        per_class_scores = get_per_class_ap(labels, predictions)
+        per_class_scores = _get_per_class_ap(labels, predictions)
         lab_list = [_separate_label(label)[1] for label in labels]
         pred_list = [_separate_prediction(pred)[1] for pred in predictions]
-        pred_dict = _process_class_list(pred_list, per_class_scores)
-        lab_dict = _process_class_list(lab_list, per_class_scores)
+        pred_thresholds_list = _process_class_list(pred_list, per_class_scores)
+        lab_thresholds_list = _process_class_list(lab_list, per_class_scores)
         overlooked_scores_per_box = compute_overlooked_box_scores(
             alpha=ALPHA,
             high_probability_threshold=HIGH_PROBABILITY_THRESHOLD,
             auxiliary_inputs=auxiliary_inputs,
         )
         overlooked_issues_per_box = _find_label_issues_per_box(
-            overlooked_scores_per_box, pred_dict, OVERLOOKED_THRESHOLD_FACTOR
+            overlooked_scores_per_box, pred_thresholds_list, OVERLOOKED_THRESHOLD_FACTOR
         )
         overlooked_issues_per_image = _pool_box_scores_per_image(overlooked_issues_per_box)
 
@@ -157,7 +157,7 @@ def _find_label_issues(
             auxiliary_inputs=auxiliary_inputs,
         )
         badloc_issues_per_box = _find_label_issues_per_box(
-            badloc_scores_per_box, lab_dict, BADLOC_THRESHOLD_FACTOR
+            badloc_scores_per_box, lab_thresholds_list, BADLOC_THRESHOLD_FACTOR
         )
         badloc_issues_per_image = _pool_box_scores_per_image(badloc_issues_per_box)
 
@@ -168,7 +168,7 @@ def _find_label_issues(
             auxiliary_inputs=auxiliary_inputs,
         )
         swap_issues_per_box = _find_label_issues_per_box(
-            swap_scores_per_box, lab_dict, SWAP_THRESHOLD_FACTOR
+            swap_scores_per_box, lab_thresholds_list, SWAP_THRESHOLD_FACTOR
         )
         swap_issues_per_image = _pool_box_scores_per_image(swap_issues_per_box)
 
@@ -199,7 +199,7 @@ def _find_label_issues_per_box(
     scores_per_box: List[np.ndarray], thr_classes, threshold_factor=1.0
 ) -> List[np.ndarray]:
     """Takes in a list of size ``N`` where each index is an array of scores for each bounding box in the `n-th` example
-    and a threshold. Each box below or equal to the threshold will be marked as an issue.
+    and a threshold. Each box below or equal to the corresponding threshold in thr_classes will be marked as an issue.
 
     Returns a list of size ``N`` where each index is a boolean array of length number of boxes per example `n`
     marking if a specific box is an issue - 1 or not - 0."""
@@ -236,7 +236,7 @@ def _pool_box_scores_per_image(is_issue_per_box: List[np.ndarray]) -> np.ndarray
     return is_issue
 
 
-def _process_class_list(class_list: List[np.ndarray], class_dict: Dict[int, float]):
+def _process_class_list(class_list: List[np.ndarray], class_dict: Dict[int, float]) -> List:
     """
     Converts a list of classes using a float dictionary into a list where each class is replaced by its corresponding float value.
     """
@@ -247,12 +247,13 @@ def _process_class_list(class_list: List[np.ndarray], class_dict: Dict[int, floa
     return class_l2
 
 
-def calculate_ap_per_class(
+def _calculate_ap_per_class(
     labels: List[Dict[str, Any]],
     predictions: List[np.ndarray],
-    iou_threshold: float = 0.5,
+    *,
+    iou_threshold: Optional[float] = 0.5,
     num_procs: int = 4,
-):
+) -> List:
     """
     Computes the average precision for each class based on provided labels and predictions.
     It uses an Intersection over Union (IoU) threshold and supports parallel processing with a specified number of processes.
@@ -266,7 +267,7 @@ def calculate_ap_per_class(
         pool = Pool(num_procs)
     ap_per_class_list = []
     for class_num in range(num_classes):
-        cls_dets, cls_gts = filter_by_class(labels, predictions, class_num)
+        cls_dets, cls_gts = _filter_by_class(labels, predictions, class_num)
         if num_imgs > 1:
             tpfp = pool.starmap(
                 _get_tp_fp,
@@ -295,18 +296,20 @@ def calculate_ap_per_class(
         precisions = tp / np.maximum((tp + fp), eps)
         recalls = recalls[0, :]
         precisions = precisions[0, :]
-        ap = calculate_average_precision(recalls, precisions)
+        ap = _calculate_average_precision(recalls, precisions)
         ap_per_class_list.append(ap)
     if num_imgs > 1:
         pool.close()
     return ap_per_class_list
 
 
-def filter_by_class(labels: List[Dict[str, Any]], predictions: List[np.ndarray], class_num: int):
+def _filter_by_class(
+    labels: List[Dict[str, Any]], predictions: List[np.ndarray], class_num: int
+) -> Tuple[List, List]:
     """
     Filters predictions and labels based on a specific class number.
     """
-    pred_bboxes = [img_res[class_num] for img_res in predictions]
+    pred_bboxes = [prediction[class_num] for prediction in predictions]
     lab_bboxes = []
     for label in labels:
         gt_inds = label["labels"] == class_num
@@ -314,7 +317,9 @@ def filter_by_class(labels: List[Dict[str, Any]], predictions: List[np.ndarray],
     return pred_bboxes, lab_bboxes
 
 
-def _get_tp_fp(pred_bboxes: np.ndarray, lab_bboxes: np.ndarray, iou_threshold: float = 0.5):
+def _get_tp_fp(
+    pred_bboxes: np.ndarray, lab_bboxes: np.ndarray, iou_threshold: Optional[float] = 0.5
+) -> Tuple[np.ndarray, np.ndarray]:
     """Calculates true positives (TP) and false positives (FP) for object detection tasks.
     It takes predicted bounding boxes, ground truth bounding boxes, and an optional Intersection over Union (IoU) threshold as inputs.
     """
@@ -344,7 +349,7 @@ def _get_tp_fp(pred_bboxes: np.ndarray, lab_bboxes: np.ndarray, iou_threshold: f
     return tp, fp
 
 
-def calculate_average_precision(recall_list: np.ndarray, precision_list: np.ndarray):
+def _calculate_average_precision(recall_list: np.ndarray, precision_list: np.ndarray) -> np.ndarray:
     """Computes the average precision (AP) for a set of recall and precision values. It takes arrays of recall and precision values as inputs."""
     recall_list = recall_list[np.newaxis, :]
     precision_list = precision_list[np.newaxis, :]
@@ -362,7 +367,9 @@ def calculate_average_precision(recall_list: np.ndarray, precision_list: np.ndar
     return ap
 
 
-def get_per_class_ap(labels: List[Dict[str, Any]], predictions: List[np.ndarray]):
+def _get_per_class_ap(
+    labels: List[Dict[str, Any]], predictions: List[np.ndarray]
+) -> Dict[int, float]:
     """Computes the Average Precision (AP) for each class in an object detection task.
     It takes a list of label dictionaries and a list of prediction arrays as inputs.
     It calculates AP values for different Intersection over Union (IoU) thresholds, averages them per class, and then scales the AP values.
@@ -370,7 +377,7 @@ def get_per_class_ap(labels: List[Dict[str, Any]], predictions: List[np.ndarray]
     iou_thrs = np.linspace(0.5, 0.95, int(np.round((0.95 - 0.5) / 0.05)) + 1, endpoint=True)
     class_num_to_iou_list = defaultdict(list)
     for threshold in iou_thrs:
-        ap_per_class = calculate_ap_per_class(labels, predictions, iou_threshold=threshold)
+        ap_per_class = _calculate_ap_per_class(labels, predictions, iou_threshold=threshold)
         for class_num in range(0, len(ap_per_class)):
             class_num_to_iou_list[class_num].append(ap_per_class[class_num])
     class_num_to_AP = {}
