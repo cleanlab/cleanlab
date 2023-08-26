@@ -17,7 +17,7 @@
 
 """
 Methods to rank examples in standard (multi-class) classification datasets by cleanlab's `label quality score`.
-Except for :py:func:`order_label_issues <cleanlab.rank.order_label_issues>`, which operates only on the subset of the data identified
+Except for `~cleanlab.rank.order_label_issues`, which operates only on the subset of the data identified
 as potential label issues/errors, the methods in this module can be used on whichever subset
 of the dataset you choose (including the entire dataset) and provide a `label quality score` for
 every example. You can then do something like: ``np.argsort(label_quality_score)`` to obtain ranked
