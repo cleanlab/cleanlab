@@ -661,13 +661,13 @@ def find_predicted_neq_given(
     Parameters
     ----------
     labels : np.ndarray or list
-      Labels in the same format expected by the :py:func:`find_label_issues <cleanlab.filter.find_label_issues>` function.
+      Labels in the same format expected by the `~cleanlab.filter.find_label_issues` function.
 
     pred_probs : np.ndarray
-      Predicted-probabilities in the same format expected by the :py:func:`find_label_issues <cleanlab.filter.find_label_issues>` function.
+      Predicted-probabilities in the same format expected by the `~cleanlab.filter.find_label_issues` function.
 
     multi_label : bool, optional
-      Whether each example may have multiple labels or not (see documentation for the :py:func:`find_label_issues <cleanlab.filter.find_label_issues>` function).
+      Whether each example may have multiple labels or not (see documentation for the `~cleanlab.filter.find_label_issues` function).
 
     Returns
     -------
@@ -697,7 +697,7 @@ def _find_predicted_neq_given_multilabel(labels: list, pred_probs: np.ndarray) -
        (e.g. ``labels = [[1,2],[1],[0],[],...]`` indicates the first example in dataset belongs to both class 1 and class 2).
 
      pred_probs : np.ndarray
-       Predicted-probabilities in the same format expected by the :py:func:`find_label_issues <cleanlab.filter.find_label_issues>` function.
+       Predicted-probabilities in the same format expected by the `~cleanlab.filter.find_label_issues` function.
 
      Returns
      -------
@@ -728,8 +728,7 @@ def find_label_issues_using_argmax_confusion_matrix(
     of ``argmax(pred_probs)`` and labels as the confident joint and then uses cleanlab
     (confident learning) to find the label issues using this matrix.
 
-    The only difference between this and :py:func:`find_label_issues
-    <cleanlab.filter.find_label_issues>` is that it uses the confusion matrix
+    The only difference between this and `~cleanlab.filter.find_label_issues` is that it uses the confusion matrix
     based on the argmax and given label instead of using the confident joint
     from :py:func:`count.compute_confident_joint
     <cleanlab.count.compute_confident_joint>`.
@@ -755,7 +754,7 @@ def find_label_issues_using_argmax_confusion_matrix(
         prior (given noisy labels) is correct based on the original labels.
 
     filter_by : str, default='prune_by_noise_rate'
-        See `filter_by` argument of :py:func:`find_label_issues <cleanlab.filter.find_label_issues>`.
+        See `filter_by` argument of `~cleanlab.filter.find_label_issues`.
 
     Returns
     -------
