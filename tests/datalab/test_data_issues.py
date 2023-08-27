@@ -1,16 +1,17 @@
 import pytest
 from cleanlab.datalab.internal.data import Data
-from cleanlab.datalab.internal.data_issues import DataIssues
+from cleanlab.datalab.internal.data_issues import DataIssues, _ClassificationInfoStrategy
 
 
 class TestDataIssues:
     labels = ["B", "A", "B"]
     label_name = "labels"
+    strategy = _ClassificationInfoStrategy
 
     @pytest.fixture
     def data_issues(self):
         data = Data(data={self.label_name: self.labels}, label_name=self.label_name)
-        data_issues = DataIssues(data=data)
+        data_issues = DataIssues(data=data, strategy=strategy)
         yield data_issues
 
     def test_data_issues_init(self, data_issues):
