@@ -79,7 +79,7 @@ def get_label_quality_scores(
     sentence_score_kwargs:
         Optional keyword arguments for `sentence_score_method` function (for advanced users only).
 
-        See `cleanlab.token_classification.rank._softmin_sentence_score` for more info about keyword arguments supported for that scoring method.
+        See `~cleanlab.token_classification.rank._softmin_sentence_score` for more info about keyword arguments supported for that scoring method.
 
     Returns
     -------
