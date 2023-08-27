@@ -24,7 +24,7 @@ def test_list_possible_issue_types(registry):
 
     TestIssueManager = register(TestIssueManager, task=None)
 
-    issue_types = Datalab.list_possible_issue_types()
+    issue_types = lab.list_possible_issue_types()
     assert set(issue_types) == set(
         possible_issues + [test_key]
     ), "New issue type should be added to the list"

@@ -46,7 +46,7 @@ class _InfoStrategy:
         data: Data,
         info: Dict[str, Dict[str, Any]],
         issue_name: Optional[str] = None,
-    ) -> Dict[str, Any]:
+    ):
         pass
 
     def get_info(
@@ -55,13 +55,11 @@ class _InfoStrategy:
         info: Dict[str, Dict[str, Any]],
         issue_name: Optional[str] = None,
     ) -> Dict[str, Any]:
-        info = info.get(issue_name, None)
-        if info is None:
+        if issue_name not in info:
             raise ValueError(
                 f"issue_name {issue_name} not found in self.info. These have not been computed yet."
             )
-
-        # Handle task-specific logic.
+        info = info[issue_name]
         info = self._get_info_for_task(data=data, info=info, issue_name=issue_name)
         return info
 
