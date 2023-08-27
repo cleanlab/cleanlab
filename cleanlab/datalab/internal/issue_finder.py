@@ -154,9 +154,7 @@ class IssueFinder:
             return None
 
         new_issue_managers = [
-            factory(
-                datalab=self.datalab, **issue_types_copy.get(factory.issue_name, {})
-            )
+            factory(datalab=self.datalab, **issue_types_copy.get(factory.issue_name, {}))
             for factory in _IssueManagerFactory.from_list(
                 list(issue_types_copy.keys()), task=self.datalab.task
             )
@@ -164,9 +162,7 @@ class IssueFinder:
 
         failed_managers = []
         data_issues = self.datalab.data_issues
-        for issue_manager, arg_dict in zip(
-            new_issue_managers, issue_types_copy.values()
-        ):
+        for issue_manager, arg_dict in zip(new_issue_managers, issue_types_copy.values()):
             try:
                 if self.verbosity:
                     print(f"Finding {issue_manager.issue_name} issues ...")
@@ -217,9 +213,7 @@ class IssueFinder:
         }
 
         args_dict = {
-            k: {k2: v2 for k2, v2 in v.items() if v2 is not None}
-            for k, v in args_dict.items()
-            if v
+            k: {k2: v2 for k2, v2 in v.items() if v2 is not None} for k, v in args_dict.items() if v
         }
 
         # Prefer `knn_graph` over `features` if both are provided.
@@ -285,9 +279,7 @@ class IssueFinder:
     @staticmethod
     def _check_missing_args(required_defaults_dict, issue_types):
         for key, issue_type_value in issue_types.items():
-            missing_args = set(required_defaults_dict.get(key, {})) - set(
-                issue_type_value.keys()
-            )
+            missing_args = set(required_defaults_dict.get(key, {})) - set(issue_type_value.keys())
             # Impute missing arguments with default values.
             missing_dict = {
                 missing_arg: required_defaults_dict[key][missing_arg]
@@ -302,9 +294,7 @@ class IssueFinder:
         missing_required_args_dict = {}
         for issue_name, required_args in required_defaults_dict.items():
             if issue_name in issue_types:
-                missing_args = set(required_args.keys()) - set(
-                    issue_types[issue_name].keys()
-                )
+                missing_args = set(required_args.keys()) - set(issue_types[issue_name].keys())
                 if missing_args:
                     missing_required_args_dict[issue_name] = missing_args
         if any(missing_required_args_dict.values()):
@@ -322,9 +312,7 @@ class IssueFinder:
         --------
         :py:class:`REGISTRY <cleanlab.datalab.internal.issue_manager_factory.REGISTRY>` : All available issue types and their corresponding issue managers can be found here.
         """
-        return list(REGISTRY.keys()) + list(
-            TASK_SPECIFIC_REGISTRY.get(self.datalab.task, [])
-        )
+        return list(REGISTRY.keys()) + list(TASK_SPECIFIC_REGISTRY.get(self.datalab.task, []))
 
     def list_default_issue_types(self) -> List[str]:
         """Returns a list of the issue types that are run by default
@@ -356,13 +344,9 @@ class IssueFinder:
         issue_types = kwargs.get("issue_types", None)
 
         # Determine which parameters are required for each issue type
-        required_args_per_issue_type = self._resolve_required_args(
-            pred_probs, features, knn_graph
-        )
+        required_args_per_issue_type = self._resolve_required_args(pred_probs, features, knn_graph)
 
-        issue_types_copy = self._set_issue_types(
-            issue_types, required_args_per_issue_type
-        )
+        issue_types_copy = self._set_issue_types(issue_types, required_args_per_issue_type)
         if issue_types is None:
             # Only run default issue types if no issue types are specified
             issue_types_copy = {
@@ -372,26 +356,19 @@ class IssueFinder:
             }
         drop_label_check = "label" in issue_types_copy and not self.datalab.has_labels
         if drop_label_check:
-            warnings.warn(
-                "No labels were provided. " "The 'label' issue type will not be run."
-            )
+            warnings.warn("No labels were provided. " "The 'label' issue type will not be run.")
             issue_types_copy.pop("label")
 
-        outlier_check_needs_features = (
-            "outlier" in issue_types_copy and not self.datalab.has_labels
-        )
+        outlier_check_needs_features = "outlier" in issue_types_copy and not self.datalab.has_labels
         if outlier_check_needs_features:
             no_features = features is None
             no_knn_graph = knn_graph is None
-            pred_probs_given = (
-                issue_types_copy["outlier"].get("pred_probs", None) is not None
-            )
+            pred_probs_given = issue_types_copy["outlier"].get("pred_probs", None) is not None
 
             only_pred_probs_given = pred_probs_given and no_features and no_knn_graph
             if only_pred_probs_given:
                 warnings.warn(
-                    "No labels were provided. "
-                    "The 'outlier' issue type will not be run."
+                    "No labels were provided. " "The 'outlier' issue type will not be run."
                 )
                 issue_types_copy.pop("outlier")
 

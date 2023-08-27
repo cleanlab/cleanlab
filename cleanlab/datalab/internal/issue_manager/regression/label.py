@@ -81,9 +81,7 @@ class RegressionLabelIssueManager(IssueManager):
             "save_space",
             "model_kwargs",
         ]
-        return {
-            k: v for k, v in kwargs.items() if k in accepted_kwargs and v is not None
-        }
+        return {k: v for k, v in kwargs.items() if k in accepted_kwargs and v is not None}
 
     def find_issues(
         self,
@@ -100,9 +98,7 @@ class RegressionLabelIssueManager(IssueManager):
             y=y,
             **self._process_find_label_issues_kwargs(kwargs),
         )
-        self.issues.rename(
-            columns={"label_quality": self.issue_score_key}, inplace=True
-        )
+        self.issues.rename(columns={"label_quality": self.issue_score_key}, inplace=True)
 
         # Get a summarized dataframe of the label issues
         self.summary = self.make_summary(score=self.issues[self.issue_score_key].mean())

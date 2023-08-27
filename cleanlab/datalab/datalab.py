@@ -49,9 +49,7 @@ if TYPE_CHECKING:  # pragma: no cover
     from datasets.arrow_dataset import Dataset
     from scipy.sparse import csr_matrix
 
-    DatasetLike = Union[
-        Dataset, pd.DataFrame, Dict[str, Any], List[Dict[str, Any]], str
-    ]
+    DatasetLike = Union[Dataset, pd.DataFrame, Dict[str, Any], List[Dict[str, Any]], str]
 
 __all__ = ["Datalab"]
 
@@ -303,9 +301,7 @@ class Datalab:
                 "No issue types were specified so no issues will be found in the dataset. Set `issue_types` as None to consider a default set of issues."
             )
             return None
-        issue_finder = issue_finder_factory(self._imagelab)(
-            datalab=self, verbosity=self.verbosity
-        )
+        issue_finder = issue_finder_factory(self._imagelab)(datalab=self, verbosity=self.verbosity)
         issue_finder.find_issues(
             pred_probs=pred_probs,
             features=features,
@@ -349,9 +345,7 @@ class Datalab:
         if verbosity is None:
             verbosity = self.verbosity
         if self.data_issues.issue_summary.empty:
-            print(
-                "Please specify some `issue_types` in datalab.find_issues() to see a report.\n"
-            )
+            print("Please specify some `issue_types` in datalab.find_issues() to see a report.\n")
             return
 
         reporter = report_factory(self._imagelab)(

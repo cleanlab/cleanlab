@@ -88,8 +88,6 @@ class _ClassificationInfoStrategy(_InfoStrategy):
                 labels = info.get(key, None)
                 if labels is not None:
                     info[key] = np.vectorize(label_map.get)(labels)
-
-            info["class_names"] = info["statistics"]["class_names"]
         return info
 
 
@@ -143,9 +141,7 @@ class DataIssues:
         self._strategy = strategy
 
     def get_info(self, issue_name: Optional[str] = None) -> Dict[str, Any]:
-        return self._strategy().get_info(
-            data=self._data, info=self.info, issue_name=issue_name
-        )
+        return self._strategy().get_info(data=self._data, info=self.info, issue_name=issue_name)
 
     @property
     def statistics(self) -> Dict[str, Any]:
@@ -230,9 +226,7 @@ class DataIssues:
             raise ValueError(f"Issue type {issue_name} not found in the summary.")
         return self.issue_summary[row_mask].reset_index(drop=True)
 
-    def collect_statistics(
-        self, issue_manager: Union[IssueManager, "Imagelab"]
-    ) -> None:
+    def collect_statistics(self, issue_manager: Union[IssueManager, "Imagelab"]) -> None:
         """Update the statistics in the info dictionary.
 
         Parameters
@@ -258,9 +252,7 @@ class DataIssues:
             self.info[key].update(statistics)
 
     def _update_issues(self, issue_manager):
-        overlapping_columns = list(
-            set(self.issues.columns) & set(issue_manager.issues.columns)
-        )
+        overlapping_columns = list(set(self.issues.columns) & set(issue_manager.issues.columns))
         if overlapping_columns:
             warnings.warn(
                 f"Overwriting columns {overlapping_columns} in self.issues with "
