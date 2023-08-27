@@ -35,11 +35,12 @@ from cleanlab.datalab.internal.helper_factory import (
     issue_finder_factory,
     report_factory,
 )
-
 from cleanlab.datalab.internal.data import Data
+from cleanlab.datalab.internal.data_issues import (
+    _ClassificationInfoStrategy,
+    _RegressionInfoStrategy,
+)
 from cleanlab.datalab.internal.display import _Displayer
-
-
 from cleanlab.datalab.internal.issue_finder import IssueFinder
 from cleanlab.datalab.internal.serialize import _Serializer
 
@@ -120,7 +121,10 @@ class Datalab:
         self.verbosity = verbosity
         self._imagelab = create_imagelab(dataset=self.data, image_key=image_key)
         self.data_issues = data_issues_factory(self._imagelab)(
-            self._data, task=self.task
+            self._data,
+            strategy=_RegressionInfoStrategy
+            if self.task == "regression"
+            else _ClassificationInfoStrategy,
         )
 
     # todo: check displayer methods
