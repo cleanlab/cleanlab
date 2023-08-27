@@ -80,6 +80,8 @@ class TestDatalab:
         assert lab.class_names == [-1, 0, 0.5, 4]
 
     def test_list_default_issue_types(self):
+        y = ["a", "3", "2", "3"]
+        lab = Datalab({"y": y}, label_name="y")
         assert lab.list_default_issue_types() == [
             "label",
             "class_imbalance",
