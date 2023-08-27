@@ -11,7 +11,7 @@ class TestDataIssues:
     @pytest.fixture
     def data_issues(self):
         data = Data(data={self.label_name: self.labels}, label_name=self.label_name)
-        data_issues = DataIssues(data=data, strategy=strategy)
+        data_issues = DataIssues(data=data, strategy=self.strategy)
         yield data_issues
 
     def test_data_issues_init(self, data_issues):
