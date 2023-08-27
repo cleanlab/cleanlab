@@ -497,8 +497,7 @@ class Datalab:
         """
         return self.data_issues.get_info(issue_name)
 
-    @staticmethod
-    def list_possible_issue_types() -> List[str]:
+    def list_possible_issue_types(self) -> List[str]:
         """Returns a list of all registered issue types.
 
         Any issue type that is not in this list cannot be used in the :py:meth:`find_issues` method.
@@ -511,10 +510,9 @@ class Datalab:
         --------
         :py:class:`REGISTRY <cleanlab.datalab.internal.issue_manager_factory.REGISTRY>` : All available issue types and their corresponding issue managers can be found here.
         """
-        return IssueFinder.list_possible_issue_types()
+        return IssueFinder(datalab=self).list_possible_issue_types()
 
-    @staticmethod
-    def list_default_issue_types() -> List[str]:
+    def list_default_issue_types(self) -> List[str]:
         """Returns a list of the issue types that are run by default
         when :py:meth:`find_issues` is called without specifying `issue_types`.
 
@@ -526,7 +524,7 @@ class Datalab:
         --------
         :py:class:`REGISTRY <cleanlab.datalab.internal.issue_manager_factory.REGISTRY>` : All available issue types and their corresponding issue managers can be found here.
         """
-        return IssueFinder.list_default_issue_types()
+        return IssueFinder(datalab=self).list_default_issue_types(self)
 
     def save(self, path: str, force: bool = False) -> None:
         """Saves this Datalab object to file (all files are in folder at `path/`).
