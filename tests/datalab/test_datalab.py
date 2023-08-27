@@ -80,8 +80,9 @@ class TestDatalab:
         assert lab.class_names == [-1, 0, 0.5, 4]
 
     def test_list_default_issue_types(self):
-        assert Datalab.list_default_issue_types() == [
+        assert lab.list_default_issue_types() == [
             "label",
+            "class_imbalance",
             "outlier",
             "near_duplicate",
             "non_iid",

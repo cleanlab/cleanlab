@@ -10,10 +10,16 @@ def registry():
     return REGISTRY
 
 
+# it should be done in different way
+@pytest.fixture
+def lab(self, dataset, label_name):
+    return Datalab(data=[], label_name=None)
+
+
 def test_list_possible_issue_types(registry):
-    issue_types = Datalab.list_possible_issue_types()
+    issue_types = lab().list_possible_issue_types()
     assert isinstance(issue_types, list)
-    possible_issues = ["outlier", "near_duplicate", "non_iid"]
+    possible_issues = ["outlier", "near_duplicate", "non_iid", "label", "class_imbalance"]
     assert set(issue_types) == set(possible_issues)
 
     test_key = "test_for_list_possible_issue_types"
