@@ -109,7 +109,7 @@ def get_label_quality_scores(
       Options for ``"method"`` include: ``"exponential_moving_average"`` or ``"softmin"`` or your own callable function.
       See :py:class:`internal.multilabel_scorer.Aggregator <cleanlab.internal.multilabel_scorer.Aggregator>` for details about each option and other possible hyperparameters.
 
-    To get a score for each class annotation for each example, use the :py:func:`multilabel_classification.classification.rank.get_label_quality_scores_per_class <cleanlab.multilabel_classification.rank.get_label_quality_scores_per_class>` method instead.
+    To get a score for each class annotation for each example, use the `~cleanlab.multilabel_classification.rank.get_label_quality_scores_per_class` method instead.
 
     Returns
     -------

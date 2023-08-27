@@ -132,7 +132,7 @@ def rank_classes_by_multilabel_quality(
     **Parameters**:
 
     For information about the arguments to this method, see the documentation of
-    :py:func:`common_multilabel_issues <cleanlab.multilabel_classification.dataset.common_multilabel_issues>`.
+    `~cleanlab.multilabel_classification.dataset.common_multilabel_issues`.
 
     Returns
     -------
@@ -208,7 +208,7 @@ def _get_num_examples_multilabel(labels=None, confident_joint: Optional[np.ndarr
 
     Parameters
     ----------
-    For parameter info, see the docstring of :py:func:`common_multilabel_issues <cleanlab.multilabel_classification.dataset.common_multilabel_issues>`.
+    For parameter info, see the docstring of `~cleanlab.multilabel_classification.dataset.common_multilabel_issues`.
 
     Returns
     -------
@@ -244,7 +244,7 @@ def overall_multilabel_health_score(
     score implies a higher quality dataset.
 
     **Parameters**: For information about the arguments to this method, see the documentation of
-    :py:func:`common_multilabel_issues <cleanlab.multilabel_classification.dataset.common_multilabel_issues>`.
+    `~cleanlab.multilabel_classification.dataset.common_multilabel_issues`.
 
     Returns
     -------
@@ -276,15 +276,15 @@ def multilabel_health_summary(
     * Overall label quality scores, summarizing how accurate the labels appear across the entire dataset.
 
     **Parameters**: For information about the arguments to this method, see the documentation of
-    :py:func:`common_multilabel_issues <cleanlab.multilabel_classification.dataset.common_multilabel_issues>`.
+    `~cleanlab.multilabel_classification.dataset.common_multilabel_issues`.
 
     Returns
     -------
     summary : dict
         A dictionary containing keys (see the corresponding functions' documentation to understand the values):
-            - ``"overall_label_health_score"``, corresponding to output of :py:func:`overall_multilabel_health_score <cleanlab.multilabel_classification.dataset.overall_multilabel_health_score>`
-            - ``"classes_by_multilabel_quality"``, corresponding to output of :py:func:`rank_classes_by_multilabel_quality <cleanlab.multilabel_classification.dataset.rank_classes_by_multilabel_quality>`
-            - ``"common_multilabel_issues"``, corresponding to output of :py:func:`common_multilabel_issues <cleanlab.multilabel_classification.dataset.common_multilabel_issues>`
+            - ``"overall_label_health_score"``, corresponding to output of `~cleanlab.multilabel_classification.dataset.overall_multilabel_health_score`
+            - ``"classes_by_multilabel_quality"``, corresponding to output of `~cleanlab.multilabel_classification.dataset.rank_classes_by_multilabel_quality`
+            - ``"common_multilabel_issues"``, corresponding to output of `~cleanlab.multilabel_classification.dataset.common_multilabel_issues`
     """
     from cleanlab.internal.util import smart_display_dataframe
 
