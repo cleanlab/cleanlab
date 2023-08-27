@@ -77,6 +77,7 @@ class _ClassificationInfoStrategy(_InfoStrategy):
     ) -> Dict[str, Any]:
         info = info.copy()
         label_map = data.labels.label_map
+
         if issue_name == "label":
             if label_map is None:
                 raise ValueError(
@@ -88,6 +89,7 @@ class _ClassificationInfoStrategy(_InfoStrategy):
                 labels = info.get(key, None)
                 if labels is not None:
                     info[key] = np.vectorize(label_map.get)(labels)
+            info["class_names"] = list(label_map.values())
         return info
 
 
