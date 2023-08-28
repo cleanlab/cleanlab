@@ -60,8 +60,9 @@ class ClassImbalanceIssueManager(IssueManager):
         labels = self.datalab.labels
         K = len(self.datalab.class_names)
         class_probs = np.bincount(labels) / len(labels)
-        imbalance_exists = class_probs.min() < self.threshold * (1 / K)
-        rarest_class = int(np.argmin(class_probs)) if imbalance_exists else -1
+        rarest_class_idx = int(np.argmin(class_probs))
+        imbalance_exists = class_probs[rarest_class_idx] < self.threshold * (1 / K)
+        rarest_class = rarest_class_idx if imbalance_exists else -1
         is_issue_column = labels == rarest_class
         scores = np.where(is_issue_column, class_probs[rarest_class], 1)
 
@@ -71,7 +72,7 @@ class ClassImbalanceIssueManager(IssueManager):
                 self.issue_score_key: scores,
             },
         )
-        self.summary = self.make_summary(score=scores.mean())
+        self.summary = self.make_summary(score=class_probs[rarest_class_idx])
         self.info = self.collect_info()
 
     def collect_info(self) -> dict:
