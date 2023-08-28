@@ -139,7 +139,7 @@ class DataIssues:
         self._strategy = strategy
 
     def get_info(self, issue_name: Optional[str] = None) -> Dict[str, Any]:
-        return self._strategy().get_info(data=self._data, info=self.info, issue_name=issue_name)
+        return self._strategy.get_info(data=self._data, info=self.info, issue_name=issue_name)
 
     @property
     def statistics(self) -> Dict[str, Any]:

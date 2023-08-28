@@ -524,7 +524,7 @@ class Datalab:
         --------
         :py:class:`REGISTRY <cleanlab.datalab.internal.issue_manager_factory.REGISTRY>` : All available issue types and their corresponding issue managers can be found here.
         """
-        return IssueFinder(datalab=self).list_default_issue_types(self)
+        return IssueFinder(datalab=self).list_default_issue_types()
 
     def save(self, path: str, force: bool = False) -> None:
         """Saves this Datalab object to file (all files are in folder at `path/`).
