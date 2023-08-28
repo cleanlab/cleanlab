@@ -242,7 +242,9 @@ def softmin(
         Softmin score.
     """
 
-    return np.einsum("ij,ij->i", s, softmax(x=1 - s, temperature=temperature, axis=axis))
+    return np.einsum(
+        "ij,ij->i", s, softmax(x=1 - s, temperature=temperature, axis=axis, shift=True)
+    )
 
 
 class Aggregator:

@@ -282,7 +282,9 @@ def _softmin_sentence_score(
         return np.array([np.mean(scores) for scores in token_scores])
 
     def fun(scores: np.ndarray) -> float:
-        return np.dot(scores, softmax(x=1 - np.array(scores), temperature=temperature, axis=0))
+        return np.dot(
+            scores, softmax(x=1 - np.array(scores), temperature=temperature, axis=0, shift=True)
+        )
 
     sentence_scores = list(map(fun, token_scores))
     return np.array(sentence_scores)

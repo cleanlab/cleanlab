@@ -3,7 +3,7 @@ import numpy as np
 
 
 def softmax(
-    x: np.ndarray, temperature: float = 1.0, axis: Optional[int] = None, shift: bool = True
+    x: np.ndarray, temperature: float = 1.0, axis: Optional[int] = None, shift: bool = False
 ) -> np.ndarray:
     """Softmax function.
 

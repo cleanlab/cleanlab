@@ -41,7 +41,7 @@ def bbox_xyxy_to_xywh(bbox: List[float]) -> Optional[List[float]]:
 def softmin1d(scores: np.ndarray, temperature: float = 0.99, axis: int = 0) -> float:
     """Returns softmin of passed in scores."""
     scores = np.array(scores)
-    softmax_scores = softmax(x=-1 * scores, temperature=temperature, axis=axis)
+    softmax_scores = softmax(x=-1 * scores, temperature=temperature, axis=axis, shift=True)
     return np.dot(softmax_scores, scores)
 
 
