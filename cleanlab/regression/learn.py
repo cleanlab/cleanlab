@@ -127,6 +127,7 @@ class CleanLearning(BaseEstimator):
     n_boot :
         Number of bootstrap resampling rounds used to estimate the model's epistemic uncertainty.
         Default is 5. Larger values are expected to produce better results but require longer runtimes.
+        Set as 0 to skip estimating the epistemic uncertainty and get results faster.
 
     include_aleatoric_uncertainty :
         Specifies if the aleatoric uncertainty should be estimated during label error detection.
