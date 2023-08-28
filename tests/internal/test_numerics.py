@@ -51,7 +51,6 @@ class TestSoftmax:
         ],
     )
     def test_shift(self, input_arr, expected_output):
-
         # Without shift, softmax overflows and gets a RuntimeWarning, but just returns nan
         with pytest.warns(RuntimeWarning):
             output_no_shift = softmax(input_arr, shift=False)
