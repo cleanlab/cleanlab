@@ -223,6 +223,11 @@ def test_find_label_issues(test_labels):
         test_labels, pred_probs, return_indices_ranked_by="normalized_margin", n_jobs=1
     )
     assert isinstance(issues2, list)
+    # Compare results with low_memory=True. Pass unused argument n_jobs=1
+    issues_lm = find_label_issues(test_labels, pred_probs, low_memory=True, n_jobs=1)
+    intersection = len(list(set(issues).intersection(set(issues_lm))))
+    union = len(set(issues)) + len(set(issues_lm)) - intersection
+    assert float(intersection) / union > 0.95
 
 
 def test_softmin_sentence_score():

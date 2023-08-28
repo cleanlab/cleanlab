@@ -33,6 +33,8 @@ from cleanlab.object_detection.filter import (
     _find_label_issues_per_box,
     _pool_box_scores_per_image,
     _find_label_issues,
+    _get_per_class_ap,
+    _process_class_list,
 )
 
 from cleanlab.object_detection.summary import (
@@ -42,9 +44,9 @@ from cleanlab.internal.constants import (
     ALPHA,
     LOW_PROBABILITY_THRESHOLD,
     HIGH_PROBABILITY_THRESHOLD,
-    OVERLOOKED_THRESHOLD,
-    BADLOC_THRESHOLD,
-    SWAP_THRESHOLD,
+    OVERLOOKED_THRESHOLD_FACTOR,
+    BADLOC_THRESHOLD_FACTOR,
+    SWAP_THRESHOLD_FACTOR,
     TEMPERATURE,
     CUSTOM_SCORE_WEIGHT_OVERLOOKED,
     CUSTOM_SCORE_WEIGHT_SWAP,
@@ -177,20 +179,22 @@ def generate_bbox(image_size):
 
 warnings.filterwarnings("ignore")
 NUM_CLASSES = 10
-good_labels = generate_annotations(5, num_classes=NUM_CLASSES, max_boxes=10)
+NUM_GOOD_SAMPLES = 5
+good_labels = generate_annotations(NUM_GOOD_SAMPLES, num_classes=NUM_CLASSES, max_boxes=10)
 good_predictions = generate_predictions(
-    5, good_labels, num_classes=NUM_CLASSES, max_boxes=12, is_issue=False
+    NUM_GOOD_SAMPLES, good_labels, num_classes=NUM_CLASSES, max_boxes=12, is_issue=False
 )
 
-bad_labels = generate_annotations(5, num_classes=NUM_CLASSES, max_boxes=10)
+NUM_BAD_SAMPLES = 5
+bad_labels = generate_annotations(NUM_BAD_SAMPLES, num_classes=NUM_CLASSES, max_boxes=10)
 bad_predictions = generate_predictions(
-    5, bad_labels, num_classes=NUM_CLASSES, max_boxes=12, is_issue=True
+    NUM_BAD_SAMPLES, bad_labels, num_classes=NUM_CLASSES, max_boxes=12, is_issue=True
 )
 
 labels = good_labels + bad_labels  # 10 labels
 predictions = (
     good_predictions + bad_predictions
-)  # 10 predictions, [:5] is perfect predictions, [5:] is bad predictions
+)  # 15 predictions, [:10] is perfect predictions, [10:] is bad predictions
 
 
 def test_get_label_quality_scores():
@@ -198,8 +202,8 @@ def test_get_label_quality_scores():
     assert len(scores) == len(labels)
     assert (scores <= 1.0).all()
     assert len(scores.shape) == 1
-    assert (scores[:5] > 0.9).all()  # perfect annotations get high scores
-    assert (scores[5:] < 0.7).all()  # label issues get low scores
+    assert (scores[:NUM_GOOD_SAMPLES] > 0.9).all()  # perfect annotations get high scores
+    assert (scores[-NUM_BAD_SAMPLES:] < 0.7).all()  # label issues get low scores
 
 
 @pytest.mark.parametrize(
@@ -212,14 +216,20 @@ def test_get_label_quality_scores():
 )
 def test_get_label_quality_scores_custom_weights(agg_weights):
     scores = get_label_quality_scores(labels, predictions, aggregation_weights=agg_weights)
-    assert (scores[:5] > 0.8).all()  # perfect annotations get high scores
+    assert (scores[:NUM_GOOD_SAMPLES] > 0.8).all()  # perfect annotations get high scores
 
     if agg_weights["swap"] == 1.0:
-        assert (scores[5:][scores[5:] != 1.0] < 0.8).any()  # swapped label issues get low scores
+        assert (
+            scores[-NUM_BAD_SAMPLES:][scores[-NUM_BAD_SAMPLES:] != 1.0] < 0.8
+        ).any()  # swapped label issues get low scores
     elif agg_weights["overlooked"] == 1.0:
-        assert (scores[5:][scores[5:] != 1.0] < 0.7).all()  # overlooked label issues get low scores
+        assert (
+            scores[-NUM_BAD_SAMPLES:][scores[-NUM_BAD_SAMPLES:] != 1.0] < 0.7
+        ).all()  # overlooked label issues get low scores
     elif agg_weights["badloc"] == 1.0:
-        assert (scores[5:][scores[5:] != 1.0] < 0.7).all()  # label issues get low scores
+        assert (
+            scores[-NUM_BAD_SAMPLES:][scores[-NUM_BAD_SAMPLES:] != 1.0] < 0.7
+        ).all()  # label issues get low scores
 
 
 def test_issues_from_scores():
@@ -422,6 +432,13 @@ def test_find_label_issues():
     )
 
     assert (test_inputs["pred_label_probs"] == auxiliary_inputs[0]["pred_label_probs"]).all()
+    per_class_scores = _get_per_class_ap(labels, predictions)
+    for i in per_class_scores:
+        per_class_scores[i] = 0.3
+    lab_list = [_separate_label(label)[1] for label in labels]
+    pred_list = [_separate_prediction(pred)[1] for pred in predictions]
+    pred_dict = _process_class_list(pred_list, per_class_scores)
+    lab_dict = _process_class_list(lab_list, per_class_scores)
 
     overlooked_scores_per_box = compute_overlooked_box_scores(
         alpha=ALPHA,
@@ -445,7 +462,7 @@ def test_find_label_issues():
         ).all()
 
     overlooked_issues_per_box = _find_label_issues_per_box(
-        overlooked_scores_per_box, OVERLOOKED_THRESHOLD
+        overlooked_scores_per_box, pred_dict, OVERLOOKED_THRESHOLD_FACTOR
     )
     overlooked_issues_per_image = _pool_box_scores_per_image(overlooked_issues_per_box)
     overlooked_issues = np.sum(overlooked_issues_per_image)
@@ -471,11 +488,13 @@ def test_find_label_issues():
     ):
         assert (score == no_auxiliary_inputs_score).all()
 
-    badloc_issues_per_box = _find_label_issues_per_box(badloc_scores_per_box, BADLOC_THRESHOLD)
+    badloc_issues_per_box = _find_label_issues_per_box(
+        badloc_scores_per_box, lab_dict, BADLOC_THRESHOLD_FACTOR
+    )
     badloc_issues_per_image = _pool_box_scores_per_image(badloc_issues_per_box)
     badloc_issues = np.sum(badloc_issues_per_image)
     assert (
-        np.sum(badloc_issues_per_image[5:]) == 2
+        np.sum(badloc_issues_per_image[NUM_GOOD_SAMPLES:]) == 2
     )  # check bad labels were detected correctly, only two images have badloc issues that overlap
     assert badloc_issues == 2
 
@@ -497,7 +516,9 @@ def test_find_label_issues():
     ):
         assert (score == no_auxiliary_inputs_score).all()
 
-    swap_issues_per_box = _find_label_issues_per_box(swap_scores_per_box, SWAP_THRESHOLD)
+    swap_issues_per_box = _find_label_issues_per_box(
+        swap_scores_per_box, lab_dict, SWAP_THRESHOLD_FACTOR
+    )
     swap_issues_per_image = _pool_box_scores_per_image(swap_issues_per_box)
     swap_issues = np.sum(swap_issues_per_image)
     assert np.sum(swap_scores_per_box[2]) > np.sum(swap_scores_per_box[7])
@@ -507,13 +528,20 @@ def test_find_label_issues():
     assert np.sum(label_issues) == np.sum(
         (swap_issues_per_image + badloc_issues_per_image + overlooked_issues_per_image) > 0
     )
-    assert np.sum(label_issues[5:]) == 5  # check bad labels were detected correctly
-
-    swap_issues_per_box = _find_label_issues_per_box(swap_scores_per_box, 0.7)
+    assert (
+        np.sum(label_issues[NUM_GOOD_SAMPLES:]) == NUM_BAD_SAMPLES
+    )  # check bad labels were detected correctly
+    for i in per_class_scores:
+        per_class_scores[i] = 0.7
+    lab_list = [_separate_label(label)[1] for label in labels]
+    lab_dict = _process_class_list(lab_list, per_class_scores)
+    swap_issues_per_box = _find_label_issues_per_box(swap_scores_per_box, lab_dict, 1.0)
     swap_issues_per_image = _pool_box_scores_per_image(swap_issues_per_box)
     swap_issues = np.sum(swap_issues_per_image)
     assert swap_issues == 1
-    assert np.sum(swap_issues_per_image[5:]) == 1  # check bad labels were detected correctly
+    assert (
+        np.sum(swap_issues_per_image[NUM_GOOD_SAMPLES:]) == 1
+    )  # check bad labels were detected correctly
 
 
 def test_separate_prediction():
@@ -540,9 +568,14 @@ def test_separate_prediction():
 def test_return_issues_ranked_by_scores():
     label_issue_idx = find_label_issues(labels, predictions, return_indices_ranked_by_score=True)
     assert (
-        len(set([5, 6, 7, 8, 9]).intersection(label_issue_idx[:5])) == 5
+        len(
+            set(list(range(NUM_GOOD_SAMPLES, NUM_GOOD_SAMPLES + NUM_BAD_SAMPLES))).intersection(
+                label_issue_idx[:5]
+            )
+        )
+        == NUM_BAD_SAMPLES
     )  # lower scores for bad examples
-    assert len(label_issue_idx) == 5  # no good example index returned
+    assert len(label_issue_idx) == NUM_BAD_SAMPLES  # no good example index returned
 
 
 def test_bad_input_find_label_issues_internal():
@@ -552,7 +585,8 @@ def test_bad_input_find_label_issues_internal():
 
 def test_find_label_issues_per_box():
     scores_per_box = [np.array([0.2, 0.3]), np.array([]), np.array([0.9, 0.5, 0.9, 0.51])]
-    issues_per_box = _find_label_issues_per_box(scores_per_box, threshold=0.5)
+    per_box_thr = [np.ones_like(i) * 0.5 for i in scores_per_box]
+    issues_per_box = _find_label_issues_per_box(scores_per_box, per_box_thr, 1.0)
     assert issues_per_box[1] == np.array([False])
     assert (issues_per_box[0] == np.array([True, True])).all()
     assert (issues_per_box[2] == np.array([False, True, False, False])).all()
@@ -675,13 +709,15 @@ def test_find_label_issues_overlapping_labels(overlapping_label_check):
             [340.0, 22.0, 494.0, 323.0],
         ]
     )
-    label_classes = [0, 1, 1, 1, 1, 1]
+    label_classes = np.array([0, 1, 1, 1, 1, 1])
+    perfect_pred = [[], []]
+    for i in range(0, len(label_classes)):
+        perfect_pred[label_classes[i]].append(list(bboxes[i]) + [0.95])
+    prediction = [np.array(p) for p in perfect_pred]
+    prediction = np.array(prediction, dtype=object)
     label = {"bboxes": bboxes, "labels": label_classes}
-    predicion = np.array(
-        [np.array([[340.0, 22.0, 494.0, 323.0, 0.9]]), np.empty(shape=(0, 2))], dtype=object
-    )
     is_issue = find_label_issues(
-        [label], [predicion], overlapping_label_check=overlapping_label_check
+        [label], [prediction], overlapping_label_check=overlapping_label_check
     )[0]
     if overlapping_label_check:
         assert is_issue == True

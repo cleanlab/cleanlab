@@ -384,6 +384,38 @@ def test_common_multilabel_issues(class_names, pred_probs_multilabel, labels_mul
         assert "Class Name" not in df.columns
 
 
+def test_multilabel_find_label_issues(data_multilabel):
+    labels, pred_probs = data_multilabel
+    issues = filter.find_label_issues(
+        labels=labels, pred_probs=pred_probs, return_indices_ranked_by="self_confidence"
+    )
+    issues_lm = filter.find_label_issues(
+        labels, pred_probs, low_memory=True, return_indices_ranked_by="self_confidence"
+    )
+    intersection = len(list(set(issues).intersection(set(issues_lm))))
+    union = len(set(issues)) + len(set(issues_lm)) - intersection
+    assert float(intersection) / union > 0.95
+    # Check with return_indices_ranked_by=None
+    issues_mask = filter.find_label_issues(labels=labels, pred_probs=pred_probs)
+    issues_lm_mask = filter.find_label_issues(labels, pred_probs, low_memory=True)
+    issues_from_mask = np.where(issues_mask)[0]
+    issues_lm_from_mask = np.where(issues_lm_mask)[0]
+    intersection = len(list(set(issues_from_mask).intersection(set(issues_lm_from_mask))))
+    union = len(set(issues_from_mask)) + len(set(issues_lm_from_mask)) - intersection
+    assert float(intersection) / union > 0.95
+    # Check with low_memory=True, unused parameters rank_by_kwargs and n_jobs
+    rank_by_kwargs = {"adjust_pred_probs": None}
+    issues_lm2 = filter.find_label_issues(
+        labels,
+        pred_probs,
+        low_memory=True,
+        return_indices_ranked_by="self_confidence",
+        rank_by_kwargs=rank_by_kwargs,
+        n_jobs=1,
+    )
+    np.testing.assert_array_equal(issues_lm2, issues_lm)
+
+
 @pytest.mark.parametrize("min_examples_per_class", [10, 90])
 def test_multilabel_min_examples_per_class(data_multilabel, min_examples_per_class):
     labels, pred_probs = data_multilabel
