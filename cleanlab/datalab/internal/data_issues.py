@@ -56,6 +56,8 @@ class _InfoStrategy(ABC):
         info: Dict[str, Dict[str, Any]],
         issue_name: Optional[str] = None,
     ) -> Dict[str, Any]:
+        if issue_name is None:
+            return None
         if issue_name not in info:
             raise ValueError(
                 f"issue_name {issue_name} not found in self.info. These have not been computed yet."
@@ -71,7 +73,8 @@ class _ClassificationInfoStrategy(_InfoStrategy):
         info: Dict[str, Dict[str, Any]],
         issue_name: Optional[str] = None,
     ) -> Dict[str, Any]:
-        info = _InfoStrategy._get_info_helper(info=info, issue_name=issue_name)
+        info_extracted = _InfoStrategy._get_info_helper(info=info, issue_name=issue_name)
+        info = info_extracted if info_extracted is not None else info
         label_map = data.labels.label_map
         if issue_name == "label":
             if label_map is None:
@@ -95,7 +98,8 @@ class _RegressionInfoStrategy(_InfoStrategy):
         info: Dict[str, Dict[str, Any]],
         issue_name: Optional[str] = None,
     ) -> Dict[str, Any]:
-        info = _InfoStrategy._get_info_helper(info=info, issue_name=issue_name)
+        info_extracted = _InfoStrategy._get_info_helper(info=info, issue_name=issue_name)
+        info = info_extracted if info_extracted is not None else info
         if issue_name == "label":
             for key in ["given_label", "predicted_label"]:
                 labels = info.get(key, None)
