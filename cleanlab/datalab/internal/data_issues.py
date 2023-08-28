@@ -29,6 +29,7 @@ We recommend using that method instead of this module, which is just intended fo
 from __future__ import annotations
 
 import warnings
+from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 import numpy as np
 
@@ -40,18 +41,18 @@ if TYPE_CHECKING:  # pragma: no cover
     from cleanvision import Imagelab
 
 
-class _InfoStrategy:
-    def _get_info_for_task(
+class _InfoStrategy(ABC):
+    @abstractmethod
+    def get_info(
         self,
         data: Data,
         info: Dict[str, Dict[str, Any]],
         issue_name: Optional[str] = None,
-    ):
+    ) -> Dict[str, Any]:
         pass
 
-    def get_info(
-        self,
-        data: Data,
+    @staticmethod
+    def _get_info_helper(
         info: Dict[str, Dict[str, Any]],
         issue_name: Optional[str] = None,
     ) -> Dict[str, Any]:
@@ -64,15 +65,14 @@ class _InfoStrategy:
 
 
 class _ClassificationInfoStrategy(_InfoStrategy):
-    def _get_info_for_task(
+    def get_info(
         self,
         data: Data,
         info: Dict[str, Dict[str, Any]],
         issue_name: Optional[str] = None,
     ) -> Dict[str, Any]:
-        info = self.get_info(data=data, info=info, issue_name=issue_name)
+        info = _InfoStrategy._get_info_helper(info=info, issue_name=issue_name)
         label_map = data.labels.label_map
-
         if issue_name == "label":
             if label_map is None:
                 raise ValueError(
@@ -89,13 +89,13 @@ class _ClassificationInfoStrategy(_InfoStrategy):
 
 
 class _RegressionInfoStrategy(_InfoStrategy):
-    def _get_info_for_task(
+    def get_info(
         self,
         data: Data,
         info: Dict[str, Dict[str, Any]],
         issue_name: Optional[str] = None,
     ) -> Dict[str, Any]:
-        info = self.get_info(data=data, info=info, issue_name=issue_name)
+        info = _InfoStrategy._get_info_helper(info=info, issue_name=issue_name)
         if issue_name == "label":
             for key in ["given_label", "predicted_label"]:
                 labels = info.get(key, None)
