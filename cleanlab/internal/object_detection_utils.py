@@ -17,10 +17,11 @@
 """
 Helper functions used internally for object detection tasks.
 """
-from typing import List, Optional, Dict, Any
-from cleanlab.internal.numerics import softmax
+from typing import Any, Dict, List, Optional
 
 import numpy as np
+
+from cleanlab.internal.numerics import softmax
 
 
 def bbox_xyxy_to_xywh(bbox: List[float]) -> Optional[List[float]]:
