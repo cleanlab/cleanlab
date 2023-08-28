@@ -59,8 +59,7 @@ class _InfoStrategy:
             raise ValueError(
                 f"issue_name {issue_name} not found in self.info. These have not been computed yet."
             )
-        info = info[issue_name]
-        info = self._get_info_for_task(data=data, info=info, issue_name=issue_name)
+        info = info[issue_name].copy()
         return info
 
 
@@ -71,7 +70,7 @@ class _ClassificationInfoStrategy(_InfoStrategy):
         info: Dict[str, Dict[str, Any]],
         issue_name: Optional[str] = None,
     ) -> Dict[str, Any]:
-        info = info.copy()
+        info = self.get_info(data=data, info=info, issue_name=issue_name)
         label_map = data.labels.label_map
 
         if issue_name == "label":
@@ -96,7 +95,7 @@ class _RegressionInfoStrategy(_InfoStrategy):
         info: Dict[str, Dict[str, Any]],
         issue_name: Optional[str] = None,
     ) -> Dict[str, Any]:
-        info = info.copy()
+        info = self.get_info(data=data, info=info, issue_name=issue_name)
         if issue_name == "label":
             for key in ["given_label", "predicted_label"]:
                 labels = info.get(key, None)
@@ -139,7 +138,7 @@ class DataIssues:
         self._strategy = strategy
 
     def get_info(self, issue_name: Optional[str] = None) -> Dict[str, Any]:
-        return self._strategy.get_info(data=self._data, info=self.info, issue_name=issue_name)
+        return self._strategy.get_info(self, data=self._data, info=self.info, issue_name=issue_name)
 
     @property
     def statistics(self) -> Dict[str, Any]:
