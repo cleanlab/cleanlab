@@ -84,7 +84,7 @@ class _ClassificationInfoStrategy(_InfoStrategy):
                 labels = info.get(key, None)
                 if labels is not None:
                     info[key] = np.vectorize(label_map.get)(labels)
-            info["class_names"] = [str(value) for value in label_map.values()]
+            info["class_names"] = list(label_map.values())
         return info
 
 
