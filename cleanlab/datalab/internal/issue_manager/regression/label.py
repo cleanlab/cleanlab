@@ -61,7 +61,6 @@ class RegressionLabelIssueManager(IssueManager):
     ):
         super().__init__(datalab)
         self.cl = CleanLearning(**(clean_learning_kwargs or {}))
-        self.issue_score_key = "label_score"
 
     @staticmethod
     def _process_find_label_issues_kwargs(kwargs: Dict[str, Any]) -> Dict[str, Any]:
@@ -88,6 +87,8 @@ class RegressionLabelIssueManager(IssueManager):
         **kwargs,
     ) -> None:
         """Find label issues in the datalab."""
+
+        RegressionLabelIssueManager.issue_score_key = "label_score"
 
         # Find examples with label issues
         X_with_y = self.datalab.data.to_pandas()
@@ -118,8 +119,8 @@ class RegressionLabelIssueManager(IssueManager):
         }
 
         # health_summary_info, cl_info kept just for consistency with classification, but it could be just return issues_info
-        health_summary_info = {}
-        cl_info = {}
+        health_summary_info: dict = {}
+        cl_info: dict = {}
 
         info_dict = {
             **issues_info,

@@ -63,14 +63,6 @@ class _InfoStrategy:
         info = self._get_info_for_task(data=data, info=info, issue_name=issue_name)
         return info
 
-    def __call__(
-        self,
-        data: Data,
-        info: Dict[str, Dict[str, Any]],
-        issue_name: Optional[str] = None,
-    ) -> Dict[str, Any]:
-        return self._get_info_for_task(data, info, issue_name)
-
 
 class _ClassificationInfoStrategy(_InfoStrategy):
     def _get_info_for_task(
@@ -93,7 +85,7 @@ class _ClassificationInfoStrategy(_InfoStrategy):
                 labels = info.get(key, None)
                 if labels is not None:
                     info[key] = np.vectorize(label_map.get)(labels)
-            info["class_names"] = label_map.values()
+            info["class_names"] = [str(value) for value in label_map.values()]
         return info
 
 
