@@ -43,6 +43,7 @@ if TYPE_CHECKING:  # pragma: no cover
 
 class _InfoStrategy(ABC):
     @staticmethod
+    @abstractmethod
     def get_info(
         data: Data,
         info: Dict[str, Dict[str, Any]],
