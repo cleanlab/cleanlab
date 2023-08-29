@@ -42,9 +42,8 @@ if TYPE_CHECKING:  # pragma: no cover
 
 
 class _InfoStrategy(ABC):
-    @abstractmethod
+    @staticmethod
     def get_info(
-        self,
         data: Data,
         info: Dict[str, Dict[str, Any]],
         issue_name: Optional[str] = None,
@@ -55,7 +54,7 @@ class _InfoStrategy(ABC):
     def _get_info_helper(
         info: Dict[str, Dict[str, Any]],
         issue_name: Optional[str] = None,
-    ) -> Dict[str, Any]:
+    ) -> Optional[Dict[str, Any]]:
         if issue_name is None:
             return None
         if issue_name not in info:
@@ -67,8 +66,8 @@ class _InfoStrategy(ABC):
 
 
 class _ClassificationInfoStrategy(_InfoStrategy):
+    @staticmethod
     def get_info(
-        self,
         data: Data,
         info: Dict[str, Dict[str, Any]],
         issue_name: Optional[str] = None,
@@ -92,8 +91,8 @@ class _ClassificationInfoStrategy(_InfoStrategy):
 
 
 class _RegressionInfoStrategy(_InfoStrategy):
+    @staticmethod
     def get_info(
-        self,
         data: Data,
         info: Dict[str, Dict[str, Any]],
         issue_name: Optional[str] = None,
@@ -142,7 +141,7 @@ class DataIssues:
         self._strategy = strategy
 
     def get_info(self, issue_name: Optional[str] = None) -> Dict[str, Any]:
-        return self._strategy.get_info(self, data=self._data, info=self.info, issue_name=issue_name)
+        return self._strategy.get_info(data=self._data, info=self.info, issue_name=issue_name)
 
     @property
     def statistics(self) -> Dict[str, Any]:
