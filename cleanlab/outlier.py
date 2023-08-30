@@ -30,6 +30,7 @@ from cleanlab.internal.label_quality_utils import (
     _subtract_confident_thresholds,
     get_normalized_entropy,
 )
+from cleanlab.internal.numerics import softmax
 from cleanlab.internal.outlier import transform_distances_to_scores
 from cleanlab.internal.validation import assert_valid_inputs, labels_to_array
 from cleanlab.typing import LabelLike
@@ -84,24 +85,27 @@ class OutOfDistribution:
              If False, you do not have to pass in `labels` later to fit this OOD estimator.
              See `Northcutt et al., 2021 <https://jair.org/index.php/jair/article/view/12125>`_.
        *  method : {"entropy", "least_confidence"}, default="entropy"
-             OOD scoring method.
+             Method to use when computing outlier scores based on `pred_probs`.
              Letting length-K vector ``P = pred_probs[i]`` denote the given predicted class-probabilities
-             for the i-th particular example, its OOD score can either be:
+             for the i-th example in dataset, its outlier score can either be:
 
              - ``'entropy'``: ``1 - sum_{j} P[j] * log(P[j]) / log(K)``
-             - ``'least_confidence'``: ``max(P)``
+             - ``'least_confidence'``: ``max(P)`` (equivalent to Maximum Softmax Probability method from the OOD detection literature)
+             - ``gen``: Generalized ENtropy score from the paper of Liu, Lochman, and Zach (https://openaccess.thecvf.com/content/CVPR2023/papers/Liu_GEN_Pushing_the_Limits_of_Softmax-Based_Out-of-Distribution_Detection_CVPR_2023_paper.pdf)
 
     """
 
     OUTLIER_PARAMS = {"k", "t", "knn"}
-    OOD_PARAMS = {"confident_thresholds", "adjust_pred_probs", "method"}
-    DEFAULT_PARAM_DICT: Dict[str, Union[str, int, None, np.ndarray]] = {
-        "k": None,  # ood features param
-        "t": 1,  # ood features param
-        "knn": None,  # ood features param
-        "adjust_pred_probs": True,  # ood pred_probs param
-        "method": "entropy",  # ood pred_probs param
-        "confident_thresholds": None,  # ood pred_probs param
+    OOD_PARAMS = {"confident_thresholds", "adjust_pred_probs", "method", "M", "gamma"}
+    DEFAULT_PARAM_DICT: Dict[str, Union[str, int, float, None, np.ndarray]] = {
+        "k": None,  # param for feature based outlier detection (number of neighbors)
+        "t": 1,  # param for feature based outlier detection (controls transformation of outlier scores to 0-1 range)
+        "knn": None,  # param for features based outlier detection (precomputed nearest neighbors graph to use)
+        "method": "entropy",  # param specifying which pred_probs-based outlier detection method to use
+        "adjust_pred_probs": True,  # param for pred_probs based outlier detection (whether to adjust the probabilities by class thresholds or not)
+        "confident_thresholds": None,  # param for pred_probs based outlier detection (precomputed confident thresholds to use for adjustment)
+        "M": 100,  # param for GEN method for pred_probs based outlier detection
+        "gamma": 0.1,  # param for GEN method for pred_probs based outlier detection
     }
 
     def __init__(self, params: Optional[dict] = None) -> None:
@@ -109,6 +113,11 @@ class OutOfDistribution:
         self.params = self.DEFAULT_PARAM_DICT.copy()
         if params is not None:
             self.params.update(params)
+        if self.params["adjust_pred_probs"] and self.params["method"] == "gen":
+            print(
+                "CAUTION: GEN method is not recommended for use with adjusted pred_probs. "
+                "To use GEN, we recommend setting: params['adjust_pred_probs'] = False"
+            )
 
     def fit_score(
         self,
@@ -452,6 +461,8 @@ def _get_ood_predictions_scores(
     confident_thresholds: Optional[np.ndarray] = None,
     adjust_pred_probs: bool = True,
     method: str = "entropy",
+    M: int = 100,
+    gamma: float = 0.1,
 ) -> Tuple[np.ndarray, Optional[np.ndarray]]:
     """Return an OOD (out of distribution) score for each example based on it pred_prob values.
 
@@ -471,9 +482,15 @@ def _get_ood_predictions_scores(
       Account for class imbalance in the label-quality scoring.
       For details, see key `adjust_pred_probs` in the params dict arg of `~cleanlab.outlier.OutOfDistribution`.
 
-    method : {"entropy", "least_confidence"}, default="entropy"
-      OOD scoring method.
+    method : {"entropy", "least_confidence", "gen"}, default="entropy"
+      Which method to use for computing outlier scores based on pred_probs.
       For details see key `method` in the params dict arg of `~cleanlab.outlier.OutOfDistribution`.
+
+    M : int, default=100
+      For GEN method only. Hyperparameter that controls the number of top classes to consider when calculating OOD scores.
+
+    gamma : float, default=0.1
+      For GEN method only. Hyperparameter that controls the weight of the second term in the GEN score.
 
 
     Returns
@@ -484,6 +501,7 @@ def _get_ood_predictions_scores(
     valid_methods = (
         "entropy",
         "least_confidence",
+        "gen",
     )
 
     if (confident_thresholds is not None or labels is not None) and not adjust_pred_probs:
@@ -514,6 +532,17 @@ def _get_ood_predictions_scores(
         ood_predictions_scores = 1.0 - get_normalized_entropy(pred_probs)
     elif method == "least_confidence":
         ood_predictions_scores = pred_probs.max(axis=1)
+    elif method == "gen":
+        if pred_probs.shape[1] < M:  # pragma: no cover
+            warnings.warn(
+                f"GEN with the default hyperparameter settings is intended for datasets with at least {M} classes. You can adjust params['M'] according to the number of classes in your dataset.",
+                UserWarning,
+            )
+        probs = softmax(pred_probs, axis=1)
+        probs_sorted = np.sort(probs, axis=1)[:, -M:]
+        ood_predictions_scores = (
+            1 - np.sum(probs_sorted**gamma * (1 - probs_sorted) ** (gamma), axis=1) / M
+        )  # Use 1 + original gen score/M to make the scores lie in 0-1
     else:
         raise ValueError(
             f"""
