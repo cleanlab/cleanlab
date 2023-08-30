@@ -729,7 +729,6 @@ def _compute_badloc_box_scores_for_image(
         iou_matrix=iou_matrix,
         min_possible_similarity=min_possible_similarity,
     )
-
     pred_labels = auxiliary_input_dict["pred_labels"]
     pred_label_probs = auxiliary_input_dict["pred_label_probs"]
     lab_labels = auxiliary_input_dict["lab_labels"]
@@ -749,11 +748,12 @@ def _compute_badloc_box_scores_for_image(
 
         idx_at_least_low_probability_threshold = np.where(k_pred > low_probability_threshold)[0]
         idx_at_least_intersection_threshold = np.where(k_iou > 0)[0]
+        combined_idx = np.intersect1d(
+            idx_at_least_low_probability_threshold, idx_at_least_intersection_threshold
+        )
 
-        k_similarity = k_similarity[idx_at_least_low_probability_threshold][
-            idx_at_least_intersection_threshold
-        ]
-        k_pred = k_pred[idx_at_least_low_probability_threshold][idx_at_least_intersection_threshold]
+        k_similarity = k_similarity[combined_idx]
+        k_pred = k_pred[combined_idx]
 
         scores_badloc[iid] = np.max(k_similarity) if len(k_pred) > 0 else 1.0
     return scores_badloc
@@ -821,7 +821,6 @@ def compute_badloc_box_scores(
         high_probability_threshold,
         temperature,
     ) = _get_valid_subtype_score_params(alpha, low_probability_threshold, None, None)
-
     if auxiliary_inputs is None:
         auxiliary_inputs = _get_valid_inputs_for_compute_scores(alpha, labels, predictions)
 
@@ -893,6 +892,7 @@ def _compute_swap_box_scores_for_image(
         not_k_similarity = similarity_matrix[iid, not_k_idx][
             idx_at_least_high_probability_threshold
         ]
+
         closest_predicted_box = np.argmax(not_k_similarity)
         score = np.max([min_possible_similarity, 1 - not_k_similarity[closest_predicted_box]])
         scores_swap[iid] = score

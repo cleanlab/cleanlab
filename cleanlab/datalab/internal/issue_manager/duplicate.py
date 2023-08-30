@@ -22,6 +22,7 @@ import numpy as np
 import pandas as pd
 from scipy.sparse import csr_matrix
 from sklearn.neighbors import NearestNeighbors
+from sklearn.exceptions import NotFittedError
 from sklearn.utils.validation import check_is_fitted
 
 from cleanlab.datalab.internal.issue_manager import IssueManager
@@ -91,7 +92,7 @@ class NearDuplicateIssueManager(IssueManager):
 
             try:
                 check_is_fitted(knn)
-            except:
+            except NotFittedError:
                 knn.fit(features)
 
             knn_graph = knn.kneighbors_graph(mode="distance")

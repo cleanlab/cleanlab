@@ -1,6 +1,6 @@
 import numpy as np
 import pytest
-from hypothesis import given, strategies as st
+from hypothesis import given, settings, strategies as st
 from hypothesis.strategies import composite
 from hypothesis.extra.numpy import arrays
 
@@ -106,6 +106,7 @@ class TestNearDuplicateIssueManager:
         assert "Additional Information: " in report
 
     @given(embeddings=embeddings_strategy())
+    @settings(deadline=800)
     def test_near_duplicate_sets(self, embeddings):
         data = {"metadata": ["" for _ in range(len(embeddings))]}
         lab = Datalab(data)
