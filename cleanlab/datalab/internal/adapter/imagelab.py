@@ -11,7 +11,10 @@ import numpy.typing as npt
 import pandas as pd
 from scipy.sparse import csr_matrix
 
-from cleanlab.datalab.internal.adapter.constants import DEFAULT_CLEANVISION_ISSUES
+from cleanlab.datalab.internal.adapter.constants import (
+    DEFAULT_CLEANVISION_ISSUES,
+    IMAGELAB_ISSUES_MAX_PREVALENCE,
+)
 from cleanlab.datalab.internal.data import Data
 from cleanlab.datalab.internal.data_issues import DataIssues
 from cleanlab.datalab.internal.issue_finder import IssueFinder
@@ -95,6 +98,14 @@ class ImagelabDataIssuesAdapter(DataIssues):
         new_columnns = list(set(imagelab.issues.columns).difference(self.issues.columns))
         self.issues = self.issues.join(imagelab.issues[new_columnns], how="outer")
 
+    def filter_based_on_max_prevalence(self, issue_summary: pd.DataFrame, max_num: int):
+        removed_issues = issue_summary[issue_summary["num_images"] > max_num]["issue_type"].tolist()
+        if len(removed_issues) > 0:
+            print(
+                f"Removing {', '.join(removed_issues)} from potential issues in the dataset as it exceeds max_prevalence={IMAGELAB_ISSUES_MAX_PREVALENCE}"
+            )
+        return issue_summary[issue_summary["num_images"] <= max_num].copy()
+
     def collect_issues_from_imagelab(self, imagelab: "Imagelab", issue_types: List[str]) -> None:
         """
         Collect results from Imagelab and update datalab.issues and datalab.issue_summary
@@ -115,6 +126,10 @@ class ImagelabDataIssuesAdapter(DataIssues):
             ~self.issue_summary["issue_type"].isin(overlapping_issues)
         ]
         imagelab_summary_copy = imagelab.issue_summary.copy()
+        imagelab_summary_copy = self.filter_based_on_max_prevalence(
+            imagelab_summary_copy, int(IMAGELAB_ISSUES_MAX_PREVALENCE * len(self.issues))
+        )
+
         imagelab_summary_copy.rename({"num_images": "num_issues"}, axis=1, inplace=True)
         self.issue_summary = pd.concat(
             [self.issue_summary, imagelab_summary_copy], axis=0, ignore_index=True
@@ -155,11 +170,18 @@ class ImagelabIssueFinderAdapter(IssueFinder):
 
     def _get_imagelab_issue_types(self, issue_types, **kwargs):
         if issue_types is None:
-            issue_types_copy = {issue_type: {} for issue_type in DEFAULT_CLEANVISION_ISSUES}
+            issue_types_copy = DEFAULT_CLEANVISION_ISSUES
         else:
             if "image_issue_types" not in issue_types:
                 return None
             else:
+                issue_types_copy = {}
+                for issue_type, params in issue_types["image_issue_types"].items():
+                    if params is None or not params:
+                        issue_types_copy[issue_type] = DEFAULT_CLEANVISION_ISSUES[issue_type]
+                    else:
+                        issue_types_copy[issue_type] = params
+
                 issue_types_copy = issue_types["image_issue_types"].copy()
         return issue_types_copy
 
