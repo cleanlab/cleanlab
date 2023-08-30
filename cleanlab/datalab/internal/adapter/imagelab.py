@@ -15,6 +15,10 @@ from cleanlab.datalab.internal.adapter.constants import (
     DEFAULT_CLEANVISION_ISSUES,
     IMAGELAB_ISSUES_MAX_PREVALENCE,
 )
+from cleanlab.datalab.internal.adapter.constants import (
+    DEFAULT_CLEANVISION_ISSUES,
+    IMAGELAB_ISSUES_MAX_PREVALENCE,
+)
 from cleanlab.datalab.internal.data import Data
 from cleanlab.datalab.internal.data_issues import DataIssues
 from cleanlab.datalab.internal.issue_finder import IssueFinder
@@ -99,8 +103,11 @@ class ImagelabDataIssuesAdapter(DataIssues):
         self.issues = self.issues.join(imagelab.issues[new_columnns], how="outer")
 
     def filter_based_on_max_prevalence(self, issue_summary: pd.DataFrame, max_num: int):
-        removed_issues = issue_summary[issue_summary["num_images"] > max_num]['issue_type'].tolist()
-        print(f"Removing {', '.join(removed_issues)} from potential issues in the dataset as it exceeds max_prevalence={IMAGELAB_ISSUES_MAX_PREVALENCE}")
+        removed_issues = issue_summary[issue_summary["num_images"] > max_num]["issue_type"].tolist()
+        if len(removed_issues) > 0:
+            print(
+                f"Removing {', '.join(removed_issues)} from potential issues in the dataset as it exceeds max_prevalence={IMAGELAB_ISSUES_MAX_PREVALENCE}"
+            )
         return issue_summary[issue_summary["num_images"] <= max_num].copy()
 
     def collect_issues_from_imagelab(self, imagelab: "Imagelab", issue_types: List[str]) -> None:
@@ -123,6 +130,10 @@ class ImagelabDataIssuesAdapter(DataIssues):
             ~self.issue_summary["issue_type"].isin(overlapping_issues)
         ]
         imagelab_summary_copy = imagelab.issue_summary.copy()
+        imagelab_summary_copy = self.filter_based_on_max_prevalence(
+            imagelab_summary_copy, int(IMAGELAB_ISSUES_MAX_PREVALENCE * len(self.issues))
+        )
+
         imagelab_summary_copy = self.filter_based_on_max_prevalence(
             imagelab_summary_copy, int(IMAGELAB_ISSUES_MAX_PREVALENCE * len(self.issues))
         )
