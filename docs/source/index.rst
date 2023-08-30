@@ -126,6 +126,15 @@ As cleanlab is an open-source project, we welcome contributions from the communi
 
 Please see our `contributing guidelines <https://github.com/cleanlab/cleanlab/blob/master/CONTRIBUTING.md>`_ for more information.
 
+Easy Mode
+---------
+
+While this open-source library **finds** data issues, its utility depends on you having a good ML model and  interface to efficiently **fix** these issues in your dataset. Providing all these pieces, `Cleanlab Studio <https://cleanlab.ai/studio/?utm_source=github&utm_medium=readme&utm_campaign=clostostudio>`_ is a *no-code* platform to **find and fix** problems in image/text/tabular datasets. Cleanlab Studio integrates the data quality algorithms from this library on top of cutting-edge AutoML & Foundation models fit to your data, and presents detected issues in a smart data editing interface. `There is no easier way <https://cleanlab.ai/blog/data-centric-ai/>`_ to turn *unreliable* raw data into *reliable* models/analytics. `Try it for free! <https://cleanlab.ai/signup/>`_
+
+.. image:: https://raw.githubusercontent.com/cleanlab/assets/master/cleanlab/full-automated-ai-pipeline.jpg
+   :width: 800
+   :alt: Stages of modern AI pipeline that can now be automated with Cleanlab Studio
+
 
 .. toctree::
    :hidden:
@@ -191,5 +200,5 @@ Please see our `contributing guidelines <https://github.com/cleanlab/cleanlab/bl
    GitHub <https://github.com/cleanlab/cleanlab>
    PyPI <https://pypi.org/project/cleanlab/>
    Conda <https://anaconda.org/Cleanlab/cleanlab>
-   Cleanlab Studio <https://cleanlab.ai/studio/?utm_source=github&utm_medium=docs&utm_campaign=clostostudio>
+   Cleanlab Studio <https://cleanlab.ai/blog/data-centric-ai/>
    Cleanlab Studio Docs <https://help.cleanlab.ai>
