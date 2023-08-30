@@ -25,12 +25,12 @@ import numpy as np
 from cleanlab.count import get_confident_thresholds
 from sklearn.neighbors import NearestNeighbors
 from sklearn.exceptions import NotFittedError
-from scipy.special import softmax
 from typing import Optional, Union, Tuple, Dict, cast
 from cleanlab.internal.label_quality_utils import (
     _subtract_confident_thresholds,
     get_normalized_entropy,
 )
+from cleanlab.internal.numerics import softmax
 from cleanlab.internal.outlier import transform_distances_to_scores
 from cleanlab.internal.validation import assert_valid_inputs, labels_to_array
 from cleanlab.typing import LabelLike
@@ -113,8 +113,11 @@ class OutOfDistribution:
         self.params = self.DEFAULT_PARAM_DICT.copy()
         if params is not None:
             self.params.update(params)
-        if self.params['adjust_pred_probs'] and self.params["method"] == "gen":
-            print("CAUTION: GEN method is not recommended for use with adjusted pred_probs. To use GEN, we recommend setting: params['adjust_pred_probs'] = False")
+        if self.params["adjust_pred_probs"] and self.params["method"] == "gen":
+            print(
+                "CAUTION: GEN method is not recommended for use with adjusted pred_probs. "
+                "To use GEN, we recommend setting: params['adjust_pred_probs'] = False"
+            )
 
     def fit_score(
         self,
@@ -485,11 +488,11 @@ def _get_ood_predictions_scores(
 
     M : int, default=100
       For GEN method only. Hyperparameter that controls the number of top classes to consider when calculating OOD scores.
-    
+
     gamma : float, default=0.1
       For GEN method only. Hyperparameter that controls the weight of the second term in the GEN score.
 
-      
+
     Returns
     -------
     ood_predictions_scores : Tuple[np.ndarray, Optional[np.ndarray]]
@@ -536,8 +539,10 @@ def _get_ood_predictions_scores(
                 UserWarning,
             )
         probs = softmax(pred_probs, axis=1)
-        probs_sorted = np.sort(probs, axis=1)[:,-M:]
-        ood_predictions_scores = 1 - np.sum(probs_sorted**gamma * (1 - probs_sorted)**(gamma), axis=1)/M  # Use 1 + original gen score/M to make the scores lie in 0-1
+        probs_sorted = np.sort(probs, axis=1)[:, -M:]
+        ood_predictions_scores = (
+            1 - np.sum(probs_sorted**gamma * (1 - probs_sorted) ** (gamma), axis=1) / M
+        )  # Use 1 + original gen score/M to make the scores lie in 0-1
     else:
         raise ValueError(
             f"""
