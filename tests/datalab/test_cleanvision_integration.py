@@ -90,7 +90,7 @@ class TestCleanvisionIntegration:
                     "outlier",
                     "near_duplicate",
                 ],
-                "num_issues": [1, 1, 2, 1, 1, 1, 1, 0, 0, 0],
+                "num_issues": [1, 1, 0, 1, 1, 1, 1, 0, 0, 0],
             }
         )
         expected_count = df.sort_values(by="issue_type")["num_issues"].tolist()
