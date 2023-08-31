@@ -13,7 +13,7 @@ from scipy.sparse import csr_matrix
 
 from cleanlab.datalab.internal.adapter.constants import DEFAULT_CLEANVISION_ISSUES
 from cleanlab.datalab.internal.data import Data
-from cleanlab.datalab.internal.data_issues import DataIssues
+from cleanlab.datalab.internal.data_issues import DataIssues, _InfoStrategy
 from cleanlab.datalab.internal.issue_finder import IssueFinder
 from cleanlab.datalab.internal.report import Reporter
 
@@ -67,6 +67,8 @@ class ImagelabDataIssuesAdapter(DataIssues):
     ----------
     data :
         The data object for which the issues are being collected.
+    strategy :
+        Strategy used for processing targets.
 
     Parameters
     ----------
@@ -79,8 +81,8 @@ class ImagelabDataIssuesAdapter(DataIssues):
         A dictionary that contains information and statistics about the data and each issue type.
     """
 
-    def __init__(self, data: Data) -> None:
-        super().__init__(data)
+    def __init__(self, data: Data, strategy: _InfoStrategy) -> None:
+        super().__init__(data, strategy)
 
     def _update_issues_imagelab(self, imagelab: "Imagelab", overlapping_issues: List[str]) -> None:
         overwrite_columns = [f"is_{issue_type}_issue" for issue_type in overlapping_issues]
