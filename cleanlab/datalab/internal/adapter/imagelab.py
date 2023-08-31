@@ -130,10 +130,6 @@ class ImagelabDataIssuesAdapter(DataIssues):
             imagelab_summary_copy, int(IMAGELAB_ISSUES_MAX_PREVALENCE * len(self.issues))
         )
 
-        imagelab_summary_copy = self.filter_based_on_max_prevalence(
-            imagelab_summary_copy, int(IMAGELAB_ISSUES_MAX_PREVALENCE * len(self.issues))
-        )
-
         imagelab_summary_copy.rename({"num_images": "num_issues"}, axis=1, inplace=True)
         self.issue_summary = pd.concat(
             [self.issue_summary, imagelab_summary_copy], axis=0, ignore_index=True
