@@ -15,10 +15,6 @@ from cleanlab.datalab.internal.adapter.constants import (
     DEFAULT_CLEANVISION_ISSUES,
     IMAGELAB_ISSUES_MAX_PREVALENCE,
 )
-from cleanlab.datalab.internal.adapter.constants import (
-    DEFAULT_CLEANVISION_ISSUES,
-    IMAGELAB_ISSUES_MAX_PREVALENCE,
-)
 from cleanlab.datalab.internal.data import Data
 from cleanlab.datalab.internal.data_issues import DataIssues
 from cleanlab.datalab.internal.issue_finder import IssueFinder
