@@ -87,6 +87,10 @@ class TestIssueFinder:
         N = 30
         K = 2
         y = np.random.randint(0, K, size=N)
-        lab = Datalab(data={"y": y}, label_name="y", task="reggression")
-        assert lab.list_default_issue_types() == ["label", "outlier", "near_duplicate", "non_iid"]
-        assert lab.get_available_issue_types() == ["label", "outlier", "near_duplicate", "non_iid"]
+        lab = Datalab(data={"y": y}, label_name="y", task="regression")
+        assert set(lab.list_default_issue_types()) == set(
+            ["label", "outlier", "near_duplicate", "non_iid"]
+        )
+        assert set(lab.get_available_issue_types()) == set(
+            ["label", "outlier", "near_duplicate", "non_iid"]
+        )
