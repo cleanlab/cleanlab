@@ -904,8 +904,8 @@ def test_regression():
     lab.find_issues()
     summary = lab.get_issue_summary()
 
-    assert len(summary) == 40
     assert "label" in summary["issue_type"].values
+    assert summary[summary["issue_type"] == "label"]["num_issues"] == 40
 
 
 class TestDatalabFindOutlierIssues:
