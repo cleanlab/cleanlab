@@ -4,6 +4,7 @@ import pytest
 import pandas as pd
 
 from cleanlab import Datalab
+import cleanlab.datalab.internal.adapter.imagelab as imagelab
 
 LABEL_NAME = "label"
 IMAGE_NAME = "image"
@@ -97,6 +98,36 @@ class TestCleanvisionIntegration:
         count = datalab.issue_summary.sort_values(by="issue_type")["num_issues"].tolist()
         assert count == expected_count
         assert datalab.issue_summary["num_issues"].sum() == df["num_issues"].sum()
+
+    @pytest.mark.usefixtures("set_plt_show")
+    def test_imagelab_max_prevalence(
+        self,
+        image_dataset,
+        pred_probs,
+        features,
+        capsys,
+        num_datalab_issues,
+        monkeypatch,
+    ):
+        max_prevalence = 0
+        monkeypatch.setattr(imagelab, "IMAGELAB_ISSUES_MAX_PREVALENCE", max_prevalence)
+        datalab = Datalab(data=image_dataset, label_name=LABEL_NAME, image_key=IMAGE_NAME)
+
+        datalab.find_issues(pred_probs=pred_probs, features=features)
+        captured = capsys.readouterr()
+        assert (
+            "Finding dark, light, low_information, odd_aspect_ratio, odd_size, grayscale, blurry images"
+            in captured.out
+        )
+        assert (
+            f"from potential issues in the dataset as it exceeds max_prevalence={max_prevalence}"
+            in captured.out
+        )
+
+        issue_summary = datalab.get_issue_summary()
+        assert (
+            len(issue_summary) == 1 + num_datalab_issues
+        )  # adding 1 as no low_information issues present
 
     def test_imagelab_issues_not_checked(
         self, image_dataset, pred_probs, features, capsys, num_datalab_issues
