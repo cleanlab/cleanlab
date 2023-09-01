@@ -902,6 +902,7 @@ def test_regression():
     test_df["y"] = y
     lab = Datalab(data=test_df, label_name="y", task="regression")
     lab.find_issues()
+    lab.report()
     summary = lab.get_issue_summary()
 
     assert "label" in summary["issue_type"].values
