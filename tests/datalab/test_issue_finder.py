@@ -91,6 +91,6 @@ class TestIssueFinder:
         assert set(lab.list_default_issue_types()) == set(
             ["label", "outlier", "near_duplicate", "non_iid"]
         )
-        assert set(lab.get_available_issue_types()) == set(
+        assert set(lab.list_possible_issue_types()) == set(
             ["label", "outlier", "near_duplicate", "non_iid"]
         )
