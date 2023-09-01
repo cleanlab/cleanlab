@@ -886,14 +886,14 @@ class TestDatalabFindRegressionLabelIssues:
         label_noise = np.random.normal(scale=noise, size=num_examples)
         y_test = np.dot(X_test, coefficients) + label_noise
 
-    return {
-        "X": X,
-        "y": y,
-        "true_y": true_y,
-        "X_test": X_test,
-        "y_test": y_test,
-        "error_idx": error_idx,
-    }
+        return {
+            "X": X,
+            "y": y,
+            "true_y": true_y,
+            "X_test": X_test,
+            "y_test": y_test,
+            "error_idx": error_idx,
+        }
 
     def test_regression(self, pred_probs, random_embeddings):
         test_data = make_data()
