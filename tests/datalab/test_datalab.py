@@ -867,6 +867,7 @@ class TestDatalabFindLabelIssues:
 class TestDatalabFindRegressionLabelIssues:
     @pytest.fixture
     def make_data(num_examples=200, num_features=3, noise=0.2, error_frac=0.1, error_noise=5):
+        np.random.seed(SEED)
         X = np.random.random(size=(num_examples, num_features))
         coefficients = np.random.uniform(-1, 1, size=num_features)
         label_noise = np.random.normal(scale=noise, size=num_examples)
@@ -895,11 +896,8 @@ class TestDatalabFindRegressionLabelIssues:
             "error_idx": error_idx,
         }
 
-    def test_regression(self, pred_probs, random_embeddings):
-        test_data = make_data()
-        X = test_data["X"]
-        y = test_data["y"]
-
+    def test_regression(self, make_data):
+        X, y = make_data["X"], make_data["y"]
         test_df = pd.DataFrame(X, columns=["c1", "c2", "c3"])
         test_df["y"] = y
         lab = Datalab(data=test_df, label_name="y", task="regression")
