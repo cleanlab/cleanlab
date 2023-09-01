@@ -633,6 +633,8 @@ def compute_overlooked_box_scores(
 ) -> List[np.ndarray]:
     """
     Returns an array of overlooked box scores for each image.
+    This is a helper method mostly for advanced users.
+
     An overlooked box error is when an image contains an object that is one of the given classes but there is no annotated bounding box around it.
     Score per high-confidence predicted bounding box is between 0 and 1, with lower values indicating boxes we are more confident were overlooked in the given label.
 
@@ -769,7 +771,9 @@ def compute_badloc_box_scores(
 ) -> List[np.ndarray]:
     """
     Returns a numeric score for each annotated bounding box in each image, estimating the likelihood that the edges of this box are not badly located.
-    An badly located box error is when a box has the correct label but incorrect coordinates so it does not correctly encapsulate the entire object it is for.
+    This is a helper method mostly for advanced users.
+
+    A badly located box error is when a box has the correct label but incorrect coordinates so it does not correctly encapsulate the entire object it is for.
     Score per high-confidence predicted bounding box is between 0 and 1, with lower values indicating boxes we are more confident were overlooked in the given label.
 
     Each image has ``L`` annotated bounding boxes and ``M`` predicted bounding boxes.
@@ -911,7 +915,9 @@ def compute_swap_box_scores(
 ) -> List[np.ndarray]:
     """
     Returns a numeric score for each annotated bounding box in each image, estimating the likelihood that the class label for this box was not accidentally swapped with another class.
-    A swapped box error occurs when a bounding box should be labeled as a class different to what the curent label is.
+    This is a helper method mostly for advanced users.
+
+    A swapped box error occurs when a bounding box should be labeled as a class different to what the current label is.
     Score per high-confidence predicted bounding box is between 0 and 1, with lower values indicating boxes we are more confident were overlooked in the given label.
 
     Each image has ``L`` annotated bounding boxes and ``M`` predicted bounding boxes.
@@ -986,7 +992,9 @@ def pool_box_scores_per_image(
     box_scores: List[np.ndarray], *, temperature: Optional[float] = None
 ) -> np.ndarray:
     """
-    Aggregates multiple per-box scores within an image to return a single quality score for the image rather than for individual boxes within it.
+    Aggregates all per-box scores within an image to return a single quality score for the image rather than for individual boxes within it.
+    This is a helper method mostly for advanced users to be used with the outputs of :py:func:`object_detection.rank.compute_overlooked_box_scores <cleanlab.object_detection.rank.compute_overlooked_box_scores>`, :py:func:`object_detection.rank.compute_badloc_box_scores <cleanlab.object_detection.rank.compute_badloc_box_scores>`, and :py:func:`object_detection.rank.compute_swap_box_scores <cleanlab.object_detection.rank.compute_swap_box_scores>`.
+
     Score per image is between 0 and 1, with lower values indicating we are more confident image contains an error.
 
     Parameters
