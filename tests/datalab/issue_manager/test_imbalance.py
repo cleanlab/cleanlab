@@ -9,6 +9,7 @@ SEED = 42
 class TestClassImbalanceIssueManager:
     @pytest.fixture
     def labels(self, lab):
+        np.random.seed(SEED)
         K = lab.get_info("statistics")["num_classes"]
         N = lab.get_info("statistics")["num_examples"] * 20
         labels = np.random.choice(np.arange(K - 1), size=N, p=[0.5] * (K - 1))
@@ -38,7 +39,7 @@ class TestClassImbalanceIssueManager:
             issues["class_imbalance_score"], expected_scores, err_msg="Scores should be correct"
         )
         assert summary["issue_type"][0] == "class_imbalance"
-        assert summary["score"][0] == pytest.approx(expected=0.9900999, abs=1e-7)
+        assert summary["score"][0] == 0.01
 
     def test_find_issues_no_imbalance(self, labels, create_issue_manager):
         N = len(labels)
@@ -52,7 +53,7 @@ class TestClassImbalanceIssueManager:
         ), "Issue mask should be correct"
         assert np.all(issues["class_imbalance_score"] == np.ones(N)), "Scores should be correct"
         assert summary["issue_type"][0] == "class_imbalance"
-        assert summary["score"][0] == pytest.approx(expected=1.0, abs=1e-7)
+        assert summary["score"][0] == 0.47
 
     def test_find_issues_more_imbalance(self, lab, labels, create_issue_manager):
         K = lab.get_info("statistics")["num_classes"]
@@ -72,7 +73,7 @@ class TestClassImbalanceIssueManager:
             issues["class_imbalance_score"], expected_scores, err_msg="Scores should be correct"
         )
         assert summary["issue_type"][0] == "class_imbalance"
-        assert summary["score"][0] == pytest.approx(expected=0.9900999, abs=1e-7)
+        assert summary["score"][0] == 0.01
 
     def test_report(self, create_issue_manager):
         issue_manager = create_issue_manager()

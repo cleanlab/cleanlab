@@ -17,9 +17,13 @@
 """
 Helper functions used internally for object detection tasks.
 """
-from typing import List, Optional, Dict, Any
+
+from typing import Any, Dict, List, Optional
+
 
 import numpy as np
+
+from cleanlab.internal.numerics import softmax
 
 
 def bbox_xyxy_to_xywh(bbox: List[float]) -> Optional[List[float]]:
@@ -34,18 +38,10 @@ def bbox_xyxy_to_xywh(bbox: List[float]) -> Optional[List[float]]:
         return None
 
 
-def softmax(x: np.ndarray, temperature: float = 0.99, axis: int = 0) -> np.ndarray:
-    """Gets softmax of scores."""
-    x = x / temperature
-    x_max = np.amax(x, axis=axis, keepdims=True)
-    exp_x_shifted = np.exp(x - x_max)
-    return exp_x_shifted / np.sum(exp_x_shifted, axis=axis, keepdims=True)
-
-
 def softmin1d(scores: np.ndarray, temperature: float = 0.99, axis: int = 0) -> float:
     """Returns softmin of passed in scores."""
     scores = np.array(scores)
-    softmax_scores = softmax(-1 * scores, temperature, axis)
+    softmax_scores = softmax(x=-1 * scores, temperature=temperature, axis=axis, shift=True)
     return np.dot(softmax_scores, scores)
 
 

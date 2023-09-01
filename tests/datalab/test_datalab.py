@@ -830,6 +830,16 @@ class TestDatalabFindLabelIssues:
         assert "label" in summary["issue_type"].values
         label_summary = lab.get_issue_summary("label")
         assert label_summary["num_issues"].values[0] > 0
+        # Compare results with low_memory=True
+        issues_df = lab.get_issues("label")
+        issue_types = {"label": {"clean_learning_kwargs": {"low_memory": True}}}
+        lab_lm = Datalab(data=data, label_name="labels")
+        lab_lm.find_issues(pred_probs=pred_probs, issue_types=issue_types)
+        issues_df_lm = lab_lm.get_issues("label")
+        # jaccard similarity
+        intersection = len(list(set(issues_df).intersection(set(issues_df_lm))))
+        union = len(set(issues_df)) + len(set(issues_df_lm)) - intersection
+        assert float(intersection) / union > 0.95
 
     def test_build_pred_probs_from_features(self, random_embeddings):
         data = {"labels": np.random.randint(0, 2, 100)}
