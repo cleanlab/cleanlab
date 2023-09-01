@@ -49,7 +49,7 @@ class _InfoStrategy(ABC):
         info: Dict[str, Dict[str, Any]],
         issue_name: Optional[str] = None,
     ) -> Dict[str, Any]:
-        pass
+        pass  # pragma: no cover
 
     @staticmethod
     def _get_info_helper(

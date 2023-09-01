@@ -864,6 +864,52 @@ class TestDatalabFindLabelIssues:
         )
 
 
+class TestDatalabFindRegressionLabelIssues:
+    @pytest.fixture
+    def make_data(num_examples=200, num_features=3, noise=0.2, error_frac=0.1, error_noise=5):
+        X = np.random.random(size=(num_examples, num_features))
+        coefficients = np.random.uniform(-1, 1, size=num_features)
+        label_noise = np.random.normal(scale=noise, size=num_examples)
+
+        true_y = np.dot(X, coefficients)
+        y = np.dot(X, coefficients) + label_noise
+
+        # add extra noisy examples
+        num_errors = int(num_examples * error_frac)
+        extra_noise = np.random.normal(scale=error_noise, size=num_errors)
+        random_idx = np.random.choice(num_examples, num_errors)
+        y[random_idx] += extra_noise
+        error_idx = np.argsort(abs(y - true_y))[-num_errors:]  # get the noisiest examples idx
+
+        # create test set
+        X_test = np.random.random(size=(num_examples, num_features))
+        label_noise = np.random.normal(scale=noise, size=num_examples)
+        y_test = np.dot(X_test, coefficients) + label_noise
+
+    return {
+        "X": X,
+        "y": y,
+        "true_y": true_y,
+        "X_test": X_test,
+        "y_test": y_test,
+        "error_idx": error_idx,
+    }
+
+    def test_regression(self, pred_probs, random_embeddings):
+        test_data = make_data()
+        X = test_data["X"]
+        y = test_data["y"]
+
+        test_df = pd.DataFrame(X, columns=["c1", "c2", "c3"])
+        test_df["y"] = y
+        lab = Datalab(data=test_df, label_name="y", task="regression")
+        lab.find_issues()
+        summary = lab.get_issue_summary()
+
+        assert len(summary) == 40
+        assert "label" in summary["issue_type"].values
+
+
 class TestDatalabFindOutlierIssues:
     @pytest.fixture
     def random_embeddings(self):

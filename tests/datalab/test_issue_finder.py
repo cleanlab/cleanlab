@@ -82,3 +82,11 @@ class TestIssueFinder:
                 missing_args = set(args.keys()) - set(defaults_dict[issue_type].keys())
                 for arg in missing_args:
                     assert issue_types_copy[issue_type][arg] == args[arg]
+
+    def test_regression(self):
+        N = 30
+        K = 2
+        y = np.random.randint(0, K, size=N)
+        lab = Datalab(data={"y": y}, label_name="y", task="reggression")
+        assert lab.list_default_issue_types() == ["label", "outlier", "near_duplicate", "non_iid"]
+        assert lab.get_available_issue_types() == ["label", "outlier", "near_duplicate", "non_iid"]
