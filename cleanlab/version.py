@@ -15,13 +15,17 @@
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
 
-__version__ = "2.4.1"
-
-# 2.4.1 - Not yet released, you are using bleeding-edge developer version. See its documentation at: https://docs.cleanlab.ai/master/
+__version__ = "2.5.0"
 
 # ------------------------------------------------
 # | PREVIOUS MAJOR VERSION RELEASE NOTES SUMMARY |
 # ------------------------------------------------
+
+# 2.5.0 - cleanlab detects label errors in most ML tasks
+#
+#   Major new functionalities include:
+#   - Support for: regression, object detection, image segmentation
+#   - Detection of low-quality images
 
 # 2.4.0 - One line of code to detect all sorts of dataset issues
 #
