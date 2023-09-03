@@ -18,9 +18,14 @@
 from typing import Optional, Any, Dict, Tuple, Union, TYPE_CHECKING, TypeVar
 
 import numpy as np
+import collections
 
-from cleanlab.internal.constants import MAX_CLASS_TO_SHOW
+from cleanlab.internal.constants import (
+    MAX_CLASS_TO_SHOW,
+    ALPHA,
+)
 from cleanlab.object_detection.rank import (
+    _get_valid_inputs_for_compute_scores,
     _separate_prediction,
     _separate_label,
     _get_prediction_type,
@@ -32,6 +37,36 @@ if TYPE_CHECKING:
     from PIL.Image import Image as Image  # pragma: no cover
 else:
     Image = TypeVar("Image")
+
+
+def get_object_count(labels, predictions):
+    auxiliary_inputs = _get_valid_inputs_for_compute_scores(ALPHA, labels, predictions)
+    return (
+        np.array([len(sample["lab_bboxes"]) for sample in auxiliary_inputs]),
+        np.array([len(sample["pred_bboxes"]) for sample in auxiliary_inputs]),
+    )
+
+
+def get_bbox_sizes(labels, predictions):
+    auxiliary_input = _get_valid_inputs_for_compute_scores(ALPHA, labels, predictions)
+    label_boxes = []
+    pred_boxes = []
+    for sample in auxiliary_input:
+        label_boxes.extend(_get_bbox_area(sample["lab_bboxes"]))
+        pred_boxes.extend(_get_bbox_area(sample["pred_bboxes"]))
+    return np.array(label_boxes), np.array(pred_boxes)
+
+
+def get_class_distribution(labels, predictions):
+    auxiliary_input = _get_valid_inputs_for_compute_scores(ALPHA, labels, predictions)
+    class_freq = collections.defaultdict(int)
+
+    for sample in auxiliary_input:
+        for cl in sample["lab_labels"]:
+            class_freq[cl] += 1
+
+    total = sum(class_freq.values())
+    return {k: v / total for k, v in class_freq.items()}
 
 
 def visualize(
@@ -154,6 +189,10 @@ def visualize(
             pad_inches=0.5,
         )
     plt.show()
+
+
+def _get_bbox_area(bboxes):
+    return [(bbox[2] - bbox[0]) * (bbox[3] - bbox[1]) for bbox in bboxes]
 
 
 def _plot_legend(class_names, label, prediction):

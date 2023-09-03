@@ -1,4 +1,5 @@
 import os
+import collections
 
 from cleanlab.internal.object_detection_utils import (
     softmin1d,
@@ -38,6 +39,9 @@ from cleanlab.object_detection.filter import (
 )
 
 from cleanlab.object_detection.summary import (
+    get_object_count,
+    get_bbox_sizes,
+    get_class_distribution,
     visualize,
 )
 from cleanlab.internal.constants import (
@@ -590,6 +594,30 @@ def test_find_label_issues_per_box():
     assert issues_per_box[1] == np.array([False])
     assert (issues_per_box[0] == np.array([True, True])).all()
     assert (issues_per_box[2] == np.array([False, True, False, False])).all()
+
+
+def test_get_object_count():
+    label_count, pred_count = get_object_count(labels, predictions)
+    assert (label_count == np.array([len(sample["bboxes"]) for sample in labels])).all()
+    assert (pred_count == np.array([sum([len(cl) for cl in pred]) for pred in predictions])).all()
+
+
+def test_get_bbox_sizes():
+    label_boxes, pred_boxes = get_bbox_sizes(labels, predictions)
+    assert np.all(label_boxes >= 0)
+    assert np.all(pred_boxes >= 0)
+
+
+def test_get_class_distribution():
+    class_freq = collections.defaultdict(int)
+
+    for sample in labels:
+        for cl in sample["labels"]:
+            class_freq[cl] += 1
+
+    total = sum(class_freq.values())
+    class_freq = {k: v / total for k, v in class_freq.items()}
+    assert get_class_distribution(labels, predictions) == class_freq
 
 
 @pytest.mark.usefixtures("generate_single_image_file")
