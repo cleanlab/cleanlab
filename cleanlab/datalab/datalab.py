@@ -61,11 +61,11 @@ class _DataIssuesBuilder:
         self.imagelab = None
         self.task = None
 
-    def set_imagelab(self, imagelab) -> "_DataIssuesBuilder":
+    def set_imagelab(self, imagelab):
         self.imagelab = imagelab
         return self
 
-    def set_task(self, task: str) -> "_DataIssuesBuilder":
+    def set_task(self, task: Optional[str]):
         self.task = task
         return self
 

@@ -108,7 +108,9 @@ class ImagelabDataIssuesAdapter(DataIssues):
             )
         return issue_summary[issue_summary["num_images"] <= max_num].copy()
 
-    def collect_issues_from_imagelab(self, imagelab: "Imagelab", issue_types: List[str]) -> None:
+    def collect_issues_from_issue_manager(
+        self, imagelab: "Imagelab", issue_types: List[str]
+    ) -> None:
         """
         Collect results from Imagelab and update datalab.issues and datalab.issue_summary
 
@@ -218,7 +220,7 @@ class ImagelabIssueFinderAdapter(IssueFinder):
             self.imagelab.find_issues(issue_types=issue_types_copy, verbose=False)
 
             self.datalab.data_issues.collect_statistics(self.imagelab)
-            self.datalab.data_issues.collect_issues_from_imagelab(
+            self.datalab.data_issues.collect_issues_from_issue_manager(
                 self.imagelab, issue_types_copy.keys()
             )
         except Exception as e:
