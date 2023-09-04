@@ -59,20 +59,19 @@ class _DataIssuesBuilder:
     def __init__(self, data: Data):
         self.data = data
         self.imagelab = None
-        self.task = None
+        self.task: Optional[str] = None
 
     def set_imagelab(self, imagelab):
         self.imagelab = imagelab
         return self
 
-    def set_task(self, task: Optional[str]):
+    def set_task(self, task):
         self.task = task
         return self
 
     def build(self) -> DataIssues:
         data_issues_class = self._data_issues_factory()
         strategy = self._create_info_strategy()
-
         return data_issues_class(self.data, strategy)
 
     def _data_issues_factory(self) -> Union[Type[DataIssues], Type[ImagelabDataIssuesAdapter]]:
