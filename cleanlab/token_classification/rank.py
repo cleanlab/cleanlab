@@ -25,6 +25,7 @@ import numpy as np
 from typing import List, Optional, Union, Tuple
 
 from cleanlab.rank import get_label_quality_scores as main_get_label_quality_scores
+from cleanlab.internal.numerics import softmax
 
 
 def get_label_quality_scores(
@@ -280,14 +281,10 @@ def _softmin_sentence_score(
     if temperature == np.inf:
         return np.array([np.mean(scores) for scores in token_scores])
 
-    def softmax(scores: np.ndarray) -> np.ndarray:
-        scores = scores / temperature
-        scores_max = np.amax(scores, axis=0, keepdims=True)
-        exp_scores_shifted = np.exp(scores - scores_max)
-        return exp_scores_shifted / np.sum(exp_scores_shifted, axis=0, keepdims=True)
-
     def fun(scores: np.ndarray) -> float:
-        return np.dot(scores, softmax(1 - np.array(scores)))
+        return np.dot(
+            scores, softmax(x=1 - np.array(scores), temperature=temperature, axis=0, shift=True)
+        )
 
     sentence_scores = list(map(fun, token_scores))
     return np.array(sentence_scores)

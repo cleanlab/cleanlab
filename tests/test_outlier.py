@@ -474,7 +474,8 @@ def test_not_enough_info_get_ood_features_scores():
 def test_ood_predictions_scores():
     # Create and add OOD datapoint to test set
     X = data["X_test"]
-    X_ood = np.array([[999999999.0, 999999999.0]])
+    means = [[3, 2], [7, 7], [0, 8]]
+    X_ood = np.array(means).mean(axis=0)
     X_with_ood = np.vstack([X, X_ood])
 
     y = data["true_labels_test"]
@@ -498,9 +499,28 @@ def test_ood_predictions_scores():
         adjust_pred_probs=False,
     )
 
+    ood_predictions_scores_gen, _ = outlier._get_ood_predictions_scores(
+        pred_probs=pred_probs,
+        method="gen",
+        adjust_pred_probs=False,
+        M=3,  # Totally three classes
+    )
+
     # check OOD scores calculated correctly
     assert (1.0 - get_normalized_entropy(pred_probs) == ood_predictions_scores_entropy).all()
     assert (pred_probs.max(axis=1) == ood_predictions_scores_least_confidence).all()
+    assert ood_predictions_scores_gen.max() < 1
+    assert ood_predictions_scores_gen.min() > 0
+    assert np.where(np.sort(ood_predictions_scores_entropy) == ood_predictions_scores_entropy[-1])[
+        0
+    ] < 0.02 * len(ood_predictions_scores_entropy)
+    assert np.where(
+        np.sort(ood_predictions_scores_least_confidence)
+        == ood_predictions_scores_least_confidence[-1]
+    )[0] < 0.02 * len(ood_predictions_scores_least_confidence)
+    assert np.where(np.sort(ood_predictions_scores_gen) == ood_predictions_scores_gen[-1])[
+        0
+    ] < 0.02 * len(ood_predictions_scores_gen)
 
     ### Test adjusted OOD score logic
     (

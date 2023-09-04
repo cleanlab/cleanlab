@@ -24,39 +24,49 @@ import warnings
 import numpy as np
 import pandas as pd
 from cleanlab.internal.validation import assert_valid_class_labels
+from cleanlab.internal.numerics import softmax
 from cleanlab.internal.util import get_num_classes, value_counts
 
 SMALL_CONST = 1e-30
 
 
 def assert_valid_inputs_multiannotator(
-    labels_multiannotator: pd.DataFrame,
+    labels_multiannotator: np.ndarray,
     pred_probs: Optional[np.ndarray] = None,
     ensemble: bool = False,
     allow_single_label: bool = False,
+    annotator_ids: Optional[pd.Index] = None,
 ) -> None:
     """Validate format of multi-annotator labels"""
+    # Check that labels_multiannotator is a 2D array
+    if labels_multiannotator.ndim != 2:
+        raise ValueError(
+            "labels_multiannotator must be a 2D array or dataframe, "
+            "each row represents an example and each column represents an annotator."
+        )
+
     # Raise error if labels are not formatted properly
-    if any([isinstance(label, str) for label in labels_multiannotator.values.ravel()]):
+    if any([isinstance(label, str) for label in labels_multiannotator.ravel()]):
         raise ValueError(
             "Labels cannot be strings, they must be zero-indexed integers corresponding to class indices."
         )
 
     # Raise error if labels_multiannotator has NaN rows
-    if labels_multiannotator.isna().all(axis=1).any():
-        nan_rows = list(
-            labels_multiannotator[labels_multiannotator.isna().all(axis=1) == True].index
-        )
+    nan_row_mask = np.isnan(labels_multiannotator).all(axis=1)
+    if nan_row_mask.any():
+        nan_rows = list(np.where(nan_row_mask)[0])
         raise ValueError(
             "labels_multiannotator cannot have rows with all NaN, each example must have at least one label.\n"
             f"Examples {nan_rows} do not have any labels."
         )
 
     # Raise error if labels_multiannotator has NaN columns
-    if labels_multiannotator.isna().all().any():
-        nan_columns = list(
-            labels_multiannotator.columns[labels_multiannotator.isna().all() == True]
-        )
+    nan_col_mask = np.isnan(labels_multiannotator).all(axis=0)
+    if nan_col_mask.any():
+        if annotator_ids is not None:
+            nan_columns = list(annotator_ids[np.where(nan_col_mask)[0]])
+        else:
+            nan_columns = list(np.where(nan_col_mask)[0])
         raise ValueError(
             "labels_multiannotator cannot have columns with all NaN, each annotator must annotator at least one example.\n"
             f"Annotators {nan_columns} did not label any examples."
@@ -64,14 +74,14 @@ def assert_valid_inputs_multiannotator(
 
     if not allow_single_label:
         # Raise error if labels_multiannotator has <= 1 column
-        if len(labels_multiannotator.columns) <= 1:
+        if labels_multiannotator.shape[1] <= 1:
             raise ValueError(
                 "labels_multiannotator must have more than one column.\n"
                 "If there is only one annotator, use cleanlab.rank.get_label_quality_scores instead"
             )
 
         # Raise error if labels_multiannotator only has 1 label per example
-        if labels_multiannotator.apply(lambda s: len(s.dropna()) == 1, axis=1).all():
+        if (np.sum(~np.isnan(labels_multiannotator), axis=1) == 1).all():
             raise ValueError(
                 "Each example only has one label, collapse the labels into a 1-D array and use "
                 "cleanlab.rank.get_label_quality_scores instead"
@@ -79,13 +89,15 @@ def assert_valid_inputs_multiannotator(
 
         # Raise warning if no examples with 2 or more annotators agree
         # TODO: might shift this later in the code to avoid extra compute
-        if labels_multiannotator.apply(
-            lambda s: np.array_equal(s.dropna().unique(), s.dropna()), axis=1
+        if np.apply_along_axis(
+            lambda s: np.array_equal(np.unique(s[~np.isnan(s)]), s[~np.isnan(s)]),
+            axis=1,
+            arr=labels_multiannotator,
         ).all():
             warnings.warn("Annotators do not agree on any example. Check input data.")
 
     # Check labels
-    all_labels_flatten = labels_multiannotator.replace({pd.NA: np.NaN}).astype(float).values.ravel()
+    all_labels_flatten = labels_multiannotator.ravel()
     all_labels_flatten = all_labels_flatten[~np.isnan(all_labels_flatten)]
     assert_valid_class_labels(all_labels_flatten, allow_one_class=True)
 
@@ -105,7 +117,6 @@ def assert_valid_inputs_multiannotator(
                 raise ValueError("each pred_probs and labels_multiannotator must have same length.")
 
             num_classes = pred_probs.shape[2]
-
         else:
             if pred_probs.ndim != 2:
                 error_message = "pred_probs must be a 2d array."
@@ -118,9 +129,7 @@ def assert_valid_inputs_multiannotator(
 
             num_classes = pred_probs.shape[1]
 
-        highest_class = (
-            np.nanmax(labels_multiannotator.replace({pd.NA: np.NaN}).astype(float).values) + 1
-        )
+        highest_class = np.nanmax(labels_multiannotator) + 1
 
         # this allows for missing labels, but not missing columns in pred_probs
         if num_classes < highest_class:
@@ -239,12 +248,12 @@ def format_multiannotator_labels(labels: LabelLike) -> Tuple[pd.DataFrame, dict]
 
 
 def check_consensus_label_classes(
-    labels_multiannotator: pd.DataFrame,
+    labels_multiannotator: np.ndarray,
     consensus_label: np.ndarray,
     consensus_method: str,
 ) -> None:
     """Check if any classes no longer appear in the set of consensus labels (established using the consensus_method stated)"""
-    unique_ma_labels = np.unique(labels_multiannotator.replace({pd.NA: np.NaN}).astype(float))
+    unique_ma_labels = np.unique(labels_multiannotator)
     unique_ma_labels = unique_ma_labels[~np.isnan(unique_ma_labels)]
     labels_set_difference = set(unique_ma_labels) - set(consensus_label)
 
@@ -259,18 +268,18 @@ def check_consensus_label_classes(
 
 
 def compute_soft_cross_entropy(
-    labels_multiannotator: pd.DataFrame,
+    labels_multiannotator: np.ndarray,
     pred_probs: np.ndarray,
 ) -> float:
     """Compute soft cross entropy between the annotators' empirical label distribution and model pred_probs"""
     num_classes = get_num_classes(pred_probs=pred_probs)
 
     empirical_label_distribution = np.full((len(labels_multiannotator), num_classes), np.NaN)
-    for i in range(len(labels_multiannotator)):
-        s = labels_multiannotator.iloc[i]
+    for i, labels in enumerate(labels_multiannotator):
+        labels_subset = labels[~np.isnan(labels)]
         empirical_label_distribution[i, :] = value_counts(
-            s.dropna(), num_classes=num_classes
-        ) / len(s.dropna())
+            labels_subset, num_classes=num_classes
+        ) / len(labels_subset)
 
     clipped_pred_probs = np.clip(pred_probs, a_min=SMALL_CONST, a_max=None)
     soft_cross_entropy = -np.sum(
@@ -281,7 +290,7 @@ def compute_soft_cross_entropy(
 
 
 def find_best_temp_scaler(
-    labels_multiannotator: pd.DataFrame,
+    labels_multiannotator: np.ndarray,
     pred_probs: np.ndarray,
     coarse_search_range: list = [0.1, 0.2, 0.5, 0.8, 1, 2, 3, 5, 8],
     fine_search_size: int = 4,
@@ -290,19 +299,32 @@ def find_best_temp_scaler(
     and model pred_probs"""
 
     soft_cross_entropy_coarse = np.full(len(coarse_search_range), np.NaN)
-    for i in range(len(coarse_search_range)):
-        curr_temp = coarse_search_range[i]
-        # clip pred_probs to prevent taking log of 0
-        pred_probs = np.clip(pred_probs, a_min=SMALL_CONST, a_max=None)
-        pred_probs = pred_probs / np.sum(pred_probs, axis=1)[:, np.newaxis]
-
-        log_pred_probs = np.log(pred_probs) / curr_temp
-        scaled_pred_probs = np.exp(log_pred_probs) / np.sum(np.exp(log_pred_probs))  # softmax
+    log_pred_probs = np.log(
+        pred_probs, where=pred_probs > 0, out=np.full(pred_probs.shape, -np.inf)
+    )
+    for i, curr_temp in enumerate(coarse_search_range):
+        scaled_pred_probs = softmax(log_pred_probs, temperature=curr_temp, axis=1, shift=False)
         soft_cross_entropy_coarse[i] = np.mean(
             compute_soft_cross_entropy(labels_multiannotator, scaled_pred_probs)
         )
 
     min_entropy_ind = np.argmin(soft_cross_entropy_coarse)
+    fine_search_range = _set_fine_search_range(
+        coarse_search_range, fine_search_size, min_entropy_ind
+    )
+    soft_cross_entropy_fine = np.full(len(fine_search_range), np.NaN)
+    for i, curr_temp in enumerate(fine_search_range):
+        scaled_pred_probs = softmax(log_pred_probs, temperature=curr_temp, axis=1, shift=False)
+        soft_cross_entropy_fine[i] = np.mean(
+            compute_soft_cross_entropy(labels_multiannotator, scaled_pred_probs)
+        )
+    best_temp = fine_search_range[np.argmin(soft_cross_entropy_fine)]
+    return best_temp
+
+
+def _set_fine_search_range(
+    coarse_search_range: list, fine_search_size: int, min_entropy_ind: np.intp
+) -> np.ndarray:
     fine_search_range = np.array([])
     if min_entropy_ind != 0:
         fine_search_range = np.append(
@@ -324,16 +346,7 @@ def find_best_temp_scaler(
                 endpoint=True,
             ),
         )
-    soft_cross_entropy_fine = np.full(len(fine_search_range), np.NaN)
-    for i in range(len(fine_search_range)):
-        curr_temp = fine_search_range[i]
-        log_pred_probs = np.log(pred_probs) / curr_temp
-        scaled_pred_probs = np.exp(log_pred_probs) / np.sum(np.exp(log_pred_probs))  # softmax
-        soft_cross_entropy_fine[i] = np.mean(
-            compute_soft_cross_entropy(labels_multiannotator, scaled_pred_probs)
-        )
-    best_temp = fine_search_range[np.argmin(soft_cross_entropy_fine)]
-    return best_temp
+    return fine_search_range
 
 
 def temp_scale_pred_probs(
@@ -346,8 +359,7 @@ def temp_scale_pred_probs(
     pred_probs = pred_probs / np.sum(pred_probs, axis=1)[:, np.newaxis]
 
     # apply temperate scale
-    log_pred_probs = np.log(pred_probs) / temp
-    scaled_pred_probs = np.exp(log_pred_probs) / np.sum(np.exp(log_pred_probs))  # softmax
+    scaled_pred_probs = softmax(np.log(pred_probs), temperature=temp, axis=1, shift=False)
     scaled_pred_probs = (
         scaled_pred_probs / np.sum(scaled_pred_probs, axis=1)[:, np.newaxis]
     )  # normalize

@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 from scipy.sparse import csr_matrix
 from sklearn.neighbors import NearestNeighbors
+from sklearn.exceptions import NotFittedError
 from sklearn.utils.validation import check_is_fitted
 
 from cleanlab.datalab.internal.issue_manager import IssueManager
@@ -89,9 +90,9 @@ class NonIIDIssueManager(IssueManager):
     description: ClassVar[
         str
     ] = """Whether the dataset exhibits statistically significant
-    violations of the IID assumption like: 
+    violations of the IID assumption like:
     changepoints or shift, drift, autocorrelation, etc.
-    The specific violation considered is whether the 
+    The specific violation considered is whether the
     examples are ordered such that almost adjacent examples
     tend to have more similar feature values.
     """
@@ -150,7 +151,7 @@ class NonIIDIssueManager(IssueManager):
 
             try:
                 check_is_fitted(knn)
-            except:
+            except NotFittedError:
                 knn.fit(features)
 
             self.neighbor_index_choices = self._get_neighbors(knn=knn)

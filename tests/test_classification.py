@@ -743,8 +743,11 @@ def test_1D_formats():
     cl = CleanLearning(clf=ReshapingLogisticRegression())
     cl.fit(X, labels_df)
     cl.predict(X)
-    cl.predict_proba(X)
+    pred_probs = cl.predict_proba(X)
     cl.score(X, labels)
+    # Repeat with DataFrame labels and pred_probs
+    cl = CleanLearning(clf=ReshapingLogisticRegression())
+    cl.fit(X, labels_df, pred_probs=pred_probs)
     # Repeat with list labels:
     labels_list = list(labels)
     cl = CleanLearning(clf=ReshapingLogisticRegression())
@@ -901,3 +904,28 @@ def test_find_issues_missing_classes():
         find_label_issues_kwargs={"min_examples_per_class": 0}
     ).find_label_issues(labels=labels2, pred_probs=pred_probs2)
     assert all(issues_df2["is_label_issue"].values == issues)
+
+
+def test_find_issues_low_memory():
+    X = DATA["X_train"]
+    labels = DATA["labels"]
+    pred_probs = estimate_cv_predicted_probabilities(X=X, labels=labels, seed=SEED)
+    issues_df = CleanLearning().find_label_issues(labels=labels, pred_probs=pred_probs)
+    issues_df_lm = CleanLearning(low_memory=True).find_label_issues(
+        labels=labels, pred_probs=pred_probs
+    )
+    # check jaccard similarity:
+    intersection = len(list(set(issues_df).intersection(set(issues_df_lm))))
+    union = len(set(issues_df)) + len(set(issues_df_lm)) - intersection
+    assert float(intersection) / union > 0.95
+    # Without pred_probs
+    issues_df = CleanLearning(low_memory=True, verbose=True, seed=SEED).find_label_issues(
+        X=X, labels=labels
+    )
+    assert issues_df.equals(issues_df_lm)
+    # With unused arguments find_label_issues_kwargs and noise_matrix
+    find_label_issues_kwargs = {"min_examples_per_class": 2}
+    issues_df = CleanLearning(
+        low_memory=True, find_label_issues_kwargs=find_label_issues_kwargs, seed=SEED
+    ).find_label_issues(X=X, labels=labels, noise_matrix=DATA["noise_matrix"])
+    assert issues_df.equals(issues_df_lm)

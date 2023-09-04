@@ -479,13 +479,14 @@ def _find_label_issues_multilabel(
     confident_joint: Optional[np.ndarray] = None,
     n_jobs: Optional[int] = None,
     verbose: bool = False,
+    low_memory: bool = False,
 ) -> np.ndarray:
     """
     Finds label issues in multi-label classification data where each example can belong to more than one class.
     This is done via a one-vs-rest reduction for each class and the results are subsequently aggregated across all classes.
     Here `labels` must be formatted as an iterable of iterables, e.g. ``List[List[int]]``.
     """
-    if filter_by in ["low_normalized_margin", "low_self_confidence"]:
+    if filter_by in ["low_normalized_margin", "low_self_confidence"] and not low_memory:
         num_errors = sum(
             find_label_issues(
                 labels=labels,
@@ -532,6 +533,7 @@ def _find_label_issues_multilabel(
         confident_joint,
         n_jobs,
         verbose,
+        low_memory,
     )
     if return_indices_ranked_by is None:
         assert isinstance(per_class_issues, np.ndarray)
