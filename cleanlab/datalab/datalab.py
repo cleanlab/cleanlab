@@ -22,16 +22,15 @@ Datalab offers a unified audit to detect all kinds of issues in data and labels.
 from __future__ import annotations
 
 import warnings
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union
 
 import numpy as np
 import pandas as pd
 
 import cleanlab
 
-from cleanlab.datalab.internal.adapter.imagelab import create_imagelab
+from cleanlab.datalab.internal.adapter.imagelab import create_imagelab, ImagelabDataIssuesAdapter
 from cleanlab.datalab.internal.helper_factory import (
-    data_issues_factory,
     issue_finder_factory,
     report_factory,
 )
@@ -39,6 +38,7 @@ from cleanlab.datalab.internal.data import Data
 from cleanlab.datalab.internal.data_issues import (
     _ClassificationInfoStrategy,
     _RegressionInfoStrategy,
+    DataIssues,
 )
 from cleanlab.datalab.internal.display import _Displayer
 from cleanlab.datalab.internal.issue_finder import IssueFinder
@@ -51,7 +51,41 @@ if TYPE_CHECKING:  # pragma: no cover
 
     DatasetLike = Union[Dataset, pd.DataFrame, Dict[str, Any], List[Dict[str, Any]], str]
 
+
 __all__ = ["Datalab"]
+
+
+class _DataIssuesBuilder:
+    def __init__(self, data: Data):
+        self.data = data
+        self.imagelab = None
+        self.task = None
+
+    def set_imagelab(self, imagelab):
+        self.imagelab = imagelab
+        return self
+
+    def set_task(self, task: str):
+        self.task = task
+        return self
+
+    def build(self) -> DataIssues:
+        data_issues_class = self._data_issues_factory()
+        strategy = self._create_info_strategy()
+
+        return data_issues_class(self.data, strategy)
+
+    def _data_issues_factory(self) -> Type[DataIssues]:
+        if self.imagelab:
+            return ImagelabDataIssuesAdapter
+        else:
+            return DataIssues
+
+    def _create_info_strategy(self):
+        if self.task == "regression":
+            return _RegressionInfoStrategy()
+        else:
+            return _ClassificationInfoStrategy()
 
 
 class Datalab:
@@ -118,12 +152,12 @@ class Datalab:
         self.cleanlab_version = cleanlab.version.__version__
         self.verbosity = verbosity
         self._imagelab = create_imagelab(dataset=self.data, image_key=image_key)
-        self.data_issues = data_issues_factory(self._imagelab)(
-            self._data,
-            strategy=_RegressionInfoStrategy
-            if self.task == "regression"
-            else _ClassificationInfoStrategy,
-        )
+
+        # Create the builder for DataIssues
+        builder = _DataIssuesBuilder(self._data)
+        builder.set_imagelab(self._imagelab)
+        builder.set_task(task)
+        self.data_issues = builder.build()
 
     # todo: check displayer methods
     def __repr__(self) -> str:
