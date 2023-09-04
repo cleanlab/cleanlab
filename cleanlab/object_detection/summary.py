@@ -40,6 +40,38 @@ else:
 
 
 def get_object_count(labels, predictions):
+    """Return the number of annotated and predicted objects in the dataset.
+
+    Parameters
+    ----------
+    labels:
+        Annotated boxes and class labels in the original dataset, which may contain some errors.
+        This is a list of ``N`` dictionaries such that ``labels[i]`` contains the given labels for the `i`-th image in the following format:
+        ``{'bboxes': np.ndarray((L,4)), 'labels': np.ndarray((L,)), 'image_name': str}`` where ``L`` is the number of annotated bounding boxes
+        for the `i`-th image and ``bboxes[l]`` is a bounding box of coordinates in ``[x1,y1,x2,y2]`` format with given class label ``labels[j]``.
+        ``image_name`` is an optional part of the labels that can be used to later refer to specific images.
+
+       For more information on proper labels formatting, check out the `MMDetection library <https://mmdetection.readthedocs.io/en/dev-3.x/advanced_guides/customize_dataset.html>`_.
+
+    predictions:
+        Predictions output by a trained object detection model.
+        For the most accurate results, predictions should be out-of-sample to avoid overfitting, eg. obtained via :ref:`cross-validation <pred_probs_cross_val>`.
+        This is a list of ``N`` ``np.ndarray`` such that ``predictions[i]`` corresponds to the model prediction for the `i`-th image.
+        For each possible class ``k`` in 0, 1, ..., K-1: ``predictions[i][k]`` is a ``np.ndarray`` of shape ``(M,5)``,
+        where ``M`` is the number of predicted bounding boxes for class ``k``. Here the five columns correspond to ``[x1,y1,x2,y2,pred_prob]``,
+        where ``[x1,y1,x2,y2]`` are coordinates of the bounding box predicted by the model
+        and ``pred_prob`` is the model's confidence in the predicted class label for this bounding box.
+
+        Note: Here, ``[x1,y1]`` corresponds to the coordinates of the bottom-left corner of the bounding box, while ``[x2,y2]`` corresponds to the coordinates of the top-right corner of the bounding box. The last column, pred_prob, represents the predicted probability that the bounding box contains an object of the class k.
+
+        For more information see the `MMDetection package <https://github.com/open-mmlab/mmdetection>`_ for an example object detection library that outputs predictions in the correct format.
+
+    Returns
+    -------
+    object_counts: Tuple[np.ndarray, label_issues : np.ndarray]
+        A tuple containing two ``np.ndarray`` objects. The first is an array of shape ``(N,)`` containing the number of annotated objects for each image in the dataset.
+        The second is an array of shape ``(N,)`` containing the number of predicted objects for each image in the dataset.
+    """
     auxiliary_inputs = _get_valid_inputs_for_compute_scores(ALPHA, labels, predictions)
     return (
         np.array([len(sample["lab_bboxes"]) for sample in auxiliary_inputs]),
@@ -48,6 +80,38 @@ def get_object_count(labels, predictions):
 
 
 def get_bbox_sizes(labels, predictions):
+    """Return the sizes of annotated and predicted bounding boxes in the dataset.
+
+    Parameters
+    ----------
+    labels:
+        Annotated boxes and class labels in the original dataset, which may contain some errors.
+        This is a list of ``N`` dictionaries such that ``labels[i]`` contains the given labels for the `i`-th image in the following format:
+        ``{'bboxes': np.ndarray((L,4)), 'labels': np.ndarray((L,)), 'image_name': str}`` where ``L`` is the number of annotated bounding boxes
+        for the `i`-th image and ``bboxes[l]`` is a bounding box of coordinates in ``[x1,y1,x2,y2]`` format with given class label ``labels[j]``.
+        ``image_name`` is an optional part of the labels that can be used to later refer to specific images.
+
+       For more information on proper labels formatting, check out the `MMDetection library <https://mmdetection.readthedocs.io/en/dev-3.x/advanced_guides/customize_dataset.html>`_.
+
+    predictions:
+        Predictions output by a trained object detection model.
+        For the most accurate results, predictions should be out-of-sample to avoid overfitting, eg. obtained via :ref:`cross-validation <pred_probs_cross_val>`.
+        This is a list of ``N`` ``np.ndarray`` such that ``predictions[i]`` corresponds to the model prediction for the `i`-th image.
+        For each possible class ``k`` in 0, 1, ..., K-1: ``predictions[i][k]`` is a ``np.ndarray`` of shape ``(M,5)``,
+        where ``M`` is the number of predicted bounding boxes for class ``k``. Here the five columns correspond to ``[x1,y1,x2,y2,pred_prob]``,
+        where ``[x1,y1,x2,y2]`` are coordinates of the bounding box predicted by the model
+        and ``pred_prob`` is the model's confidence in the predicted class label for this bounding box.
+
+        Note: Here, ``[x1,y1]`` corresponds to the coordinates of the bottom-left corner of the bounding box, while ``[x2,y2]`` corresponds to the coordinates of the top-right corner of the bounding box. The last column, pred_prob, represents the predicted probability that the bounding box contains an object of the class k.
+
+        For more information see the `MMDetection package <https://github.com/open-mmlab/mmdetection>`_ for an example object detection library that outputs predictions in the correct format.
+
+    Returns
+    -------
+    bbox_sizes: Tuple[np.ndarray, np.ndarray]
+        A tuple containing two ``np.ndarray`` objects. The first is an array of shape ``(N,)`` containing the sizes of annotated bounding boxes for each image in the dataset.
+        The second is an array of shape ``(N,)`` containing the sizes of predicted bounding boxes for each image in the dataset.
+    """
     auxiliary_input = _get_valid_inputs_for_compute_scores(ALPHA, labels, predictions)
     label_boxes = []
     pred_boxes = []
@@ -58,15 +122,53 @@ def get_bbox_sizes(labels, predictions):
 
 
 def get_class_distribution(labels, predictions):
+    """Return the distribution of classes in the dataset.
+
+    Parameters
+    ----------
+    labels:
+        Annotated boxes and class labels in the original dataset, which may contain some errors.
+        This is a list of ``N`` dictionaries such that ``labels[i]`` contains the given labels for the `i`-th image in the following format:
+        ``{'bboxes': np.ndarray((L,4)), 'labels': np.ndarray((L,)), 'image_name': str}`` where ``L`` is the number of annotated bounding boxes
+        for the `i`-th image and ``bboxes[l]`` is a bounding box of coordinates in ``[x1,y1,x2,y2]`` format with given class label ``labels[j]``.
+        ``image_name`` is an optional part of the labels that can be used to later refer to specific images.
+
+       For more information on proper labels formatting, check out the `MMDetection library <https://mmdetection.readthedocs.io/en/dev-3.x/advanced_guides/customize_dataset.html>`_.
+
+    predictions:
+        Predictions output by a trained object detection model.
+        For the most accurate results, predictions should be out-of-sample to avoid overfitting, eg. obtained via :ref:`cross-validation <pred_probs_cross_val>`.
+        This is a list of ``N`` ``np.ndarray`` such that ``predictions[i]`` corresponds to the model prediction for the `i`-th image.
+        For each possible class ``k`` in 0, 1, ..., K-1: ``predictions[i][k]`` is a ``np.ndarray`` of shape ``(M,5)``,
+        where ``M`` is the number of predicted bounding boxes for class ``k``. Here the five columns correspond to ``[x1,y1,x2,y2,pred_prob]``,
+        where ``[x1,y1,x2,y2]`` are coordinates of the bounding box predicted by the model
+        and ``pred_prob`` is the model's confidence in the predicted class label for this bounding box.
+
+        Note: Here, ``[x1,y1]`` corresponds to the coordinates of the bottom-left corner of the bounding box, while ``[x2,y2]`` corresponds to the coordinates of the top-right corner of the bounding box. The last column, pred_prob, represents the predicted probability that the bounding box contains an object of the class k.
+
+        For more information see the `MMDetection package <https://github.com/open-mmlab/mmdetection>`_ for an example object detection library that outputs predictions in the correct format.
+
+    Returns
+    -------
+    class_distribution: Tuple[Dict[Any, float], Dict[Any, float]]
+        A tuple containing two dictionaries. The first is a dictionary mapping each class label to its frequency in the dataset.
+        The second is a dictionary mapping each class label to its frequency in the predictions.
+    """
     auxiliary_input = _get_valid_inputs_for_compute_scores(ALPHA, labels, predictions)
-    class_freq = collections.defaultdict(int)
+
+    lab_freq, pred_freq = collections.defaultdict(int), collections.defaultdict(int)
 
     for sample in auxiliary_input:
         for cl in sample["lab_labels"]:
-            class_freq[cl] += 1
+            lab_freq[cl] += 1
+        for cl in sample["pred_labels"]:
+            pred_freq[cl] += 1
 
-    total = sum(class_freq.values())
-    return {k: v / total for k, v in class_freq.items()}
+    lab_total, pred_total = sum(lab_freq.values()), sum(pred_freq.values())
+    return (
+        {k: round(v / lab_total, 2) for k, v in lab_freq.items()},
+        {k: round(v / pred_total, 2) for k, v in pred_freq.items()},
+    )
 
 
 def visualize(

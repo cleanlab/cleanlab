@@ -609,15 +609,23 @@ def test_get_bbox_sizes():
 
 
 def test_get_class_distribution():
-    class_freq = collections.defaultdict(int)
+    lab_count, pred_count = collections.defaultdict(int), collections.defaultdict(int)
 
     for sample in labels:
         for cl in sample["labels"]:
-            class_freq[cl] += 1
+            lab_count[cl] += 1
 
-    total = sum(class_freq.values())
-    class_freq = {k: v / total for k, v in class_freq.items()}
-    assert get_class_distribution(labels, predictions) == class_freq
+    for sample in predictions:
+        for i, cl in enumerate(sample):
+            if len(cl) > 0:
+                pred_count[i] += len(cl)
+
+    lab_total, pred_total = sum(lab_count.values()), sum(pred_count.values())
+    lab_freq_ans = {k: round(v / lab_total, 2) for k, v in lab_count.items()}
+    pred_freq_ans = {k: round(v / pred_total, 2) for k, v in pred_count.items()}
+    lab_freq, pred_freq = get_class_distribution(labels, predictions)
+    assert lab_freq == lab_freq_ans
+    assert pred_freq == pred_freq_ans
 
 
 @pytest.mark.usefixtures("generate_single_image_file")
