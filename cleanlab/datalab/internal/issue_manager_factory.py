@@ -47,6 +47,7 @@ from cleanlab.datalab.internal.issue_manager import (
     OutlierIssueManager,
     NonIIDIssueManager,
     ClassImbalanceIssueManager,
+    UnderperfGroupIssueManager,
 )
 
 REGISTRY: Dict[str, Type[IssueManager]] = {
@@ -55,6 +56,7 @@ REGISTRY: Dict[str, Type[IssueManager]] = {
     "near_duplicate": NearDuplicateIssueManager,
     "non_iid": NonIIDIssueManager,
     "class_imbalance": ClassImbalanceIssueManager,
+    "underperforming_group": UnderperfGroupIssueManager,
 }
 """Registry of issue managers that can be constructed from a string
 and used in the Datalab class.
