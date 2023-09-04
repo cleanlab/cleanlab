@@ -61,11 +61,11 @@ class _DataIssuesBuilder:
         self.imagelab = None
         self.task = None
 
-    def set_imagelab(self, imagelab):
+    def set_imagelab(self, imagelab) -> "_DataIssuesBuilder":
         self.imagelab = imagelab
         return self
 
-    def set_task(self, task: str):
+    def set_task(self, task: str) -> "_DataIssuesBuilder":
         self.task = task
         return self
 
@@ -75,7 +75,7 @@ class _DataIssuesBuilder:
 
         return data_issues_class(self.data, strategy)
 
-    def _data_issues_factory(self) -> Type[DataIssues]:
+    def _data_issues_factory(self) -> Union[Type[DataIssues], Type[ImagelabDataIssuesAdapter]]:
         if self.imagelab:
             return ImagelabDataIssuesAdapter
         else:
