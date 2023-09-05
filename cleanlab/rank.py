@@ -96,7 +96,7 @@ def get_label_quality_scores(
       Note: the actual label quality scores returned by this method
       may be transformed versions of the above, in order to ensure
       their values lie between 0-1 with lower values indicating more likely mislabeled data.
-      
+
       Let ``C = {0, 1, ..., K-1}`` be the set of classes specified for our classification task.
 
       The `normalized_margin` score works better for identifying class conditional label errors,
