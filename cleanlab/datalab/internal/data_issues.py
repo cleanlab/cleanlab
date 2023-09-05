@@ -30,7 +30,7 @@ from __future__ import annotations
 
 import warnings
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Dict, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 import numpy as np
 
 import pandas as pd
@@ -303,6 +303,9 @@ class DataIssues:
             ignore_index=True,
         )
         self._update_issue_info(issue_manager.issue_name, issue_manager.info)
+
+    def collect_issues_from_imagelab(self, imagelab: "Imagelab", issue_types: List[str]) -> None:
+        pass  # pragma: no cover
 
     def set_health_score(self) -> None:
         """Set the health score for the dataset based on the issue summary.
