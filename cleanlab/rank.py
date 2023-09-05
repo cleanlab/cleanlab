@@ -93,17 +93,19 @@ def get_label_quality_scores(
       - ``'self_confidence'``: ``P[k]``
       - ``'confidence_weighted_entropy'``: ``entropy(P) / self_confidence``
 
-      Note: the actual label quality scores returned by this method may be transformed versions of the above,
-      in order to ensure their values lie between 0-1 with lower values indicating more likely mislabeled data.
+      Note: the actual label quality scores returned by this method
+      may be transformed versions of the above, in order to ensure
+      their values lie between 0-1 with lower values indicating more likely mislabeled data.
       
-      Let ``C = {0, 1, ..., K-1}`` denote the specified set of classes for our classification task.
+      Let ``C = {0, 1, ..., K-1}`` be the set of classes specified for our classification task.
 
       The `normalized_margin` score works better for identifying class conditional label errors,
       i.e. examples for which another label in ``C`` is appropriate but the given label is not.
 
-      The `self_confidence` score works better for identifying alternative label issues corresponding
-      to bad examples that are: not from any of the classes in ``C``, well-described by 2 or more labels in ``C``,
-      or generally just out-of-distribution (ie. anomalous outliers).
+      The `self_confidence` score works better for identifying alternative label issues
+      corresponding to bad examples that are: not from any of the classes in ``C``,
+      well-described by 2 or more labels in ``C``,
+      or generally just out-of-distribution (i.e. anomalous outliers).
 
     adjust_pred_probs : bool, optional
       Account for class imbalance in the label-quality scoring by adjusting predicted probabilities
