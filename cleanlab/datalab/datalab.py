@@ -74,7 +74,7 @@ class _DataIssuesBuilder:
         strategy = self._create_info_strategy()
         return data_issues_class(self.data, strategy)
 
-    def _data_issues_factory(self) -> Union[Type[DataIssues], Type[ImagelabDataIssuesAdapter]]:
+    def _data_issues_factory(self) -> Type[DataIssues]:
         if self.imagelab:
             return ImagelabDataIssuesAdapter
         else:
