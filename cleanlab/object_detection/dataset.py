@@ -14,8 +14,11 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
-"""Methods to display examples and their label issues in an object detection dataset."""
-from typing import Optional, Any, Dict, Tuple, Union, TYPE_CHECKING, TypeVar
+"""
+Methods to display examples and their label issues in an object detection dataset.
+Here each image can have multiple objects, each with its own bounding box and class label.
+"""
+from typing import Optional, Any, Dict, Tuple, Union, List, TYPE_CHECKING, TypeVar
 
 import numpy as np
 import collections
@@ -29,6 +32,7 @@ from cleanlab.object_detection.rank import (
     _separate_prediction,
     _separate_label,
     _get_prediction_type,
+    AuxiliaryTypesDict,
 )
 
 from cleanlab.internal.object_detection_utils import bbox_xyxy_to_xywh
@@ -39,12 +43,17 @@ else:
     Image = TypeVar("Image")
 
 
-def get_object_count(labels, predictions):
+def get_object_count(
+    labels: Optional[List[Dict[str, Any]]] = None,
+    predictions: Optional[List[np.ndarray]] = None,
+    *,
+    auxiliary_inputs: List[AuxiliaryTypesDict] = None,
+) -> Tuple[np.ndarray, np.ndarray]:
     """Return the number of annotated and predicted objects in the dataset.
 
     Parameters
     ----------
-    labels:
+    labels :
         Annotated boxes and class labels in the original dataset, which may contain some errors.
         This is a list of ``N`` dictionaries such that ``labels[i]`` contains the given labels for the `i`-th image in the following format:
         ``{'bboxes': np.ndarray((L,4)), 'labels': np.ndarray((L,)), 'image_name': str}`` where ``L`` is the number of annotated bounding boxes
@@ -53,7 +62,7 @@ def get_object_count(labels, predictions):
 
        For more information on proper labels formatting, check out the `MMDetection library <https://mmdetection.readthedocs.io/en/dev-3.x/advanced_guides/customize_dataset.html>`_.
 
-    predictions:
+    predictions :
         Predictions output by a trained object detection model.
         For the most accurate results, predictions should be out-of-sample to avoid overfitting, eg. obtained via :ref:`cross-validation <pred_probs_cross_val>`.
         This is a list of ``N`` ``np.ndarray`` such that ``predictions[i]`` corresponds to the model prediction for the `i`-th image.
@@ -66,20 +75,31 @@ def get_object_count(labels, predictions):
 
         For more information see the `MMDetection package <https://github.com/open-mmlab/mmdetection>`_ for an example object detection library that outputs predictions in the correct format.
 
+    auxiliary_inputs : optional
+        Auxiliary inputs to be used in the computation of counts.
+        The `auxiliary_inputs` can be computed using :py:func:`rank._get_valid_inputs_for_compute_scores <cleanlab.object_detection.rank._get_valid_inputs_for_compute_scores>`.
+        It is internally computed from the given `labels` and `predictions`.
+
     Returns
     -------
     object_counts: Tuple[np.ndarray, label_issues : np.ndarray]
         A tuple containing two ``np.ndarray`` objects. The first is an array of shape ``(N,)`` containing the number of annotated objects for each image in the dataset.
         The second is an array of shape ``(N,)`` containing the number of predicted objects for each image in the dataset.
     """
-    auxiliary_inputs = _get_valid_inputs_for_compute_scores(ALPHA, labels, predictions)
+    if auxiliary_inputs is None:
+        auxiliary_inputs = _get_valid_inputs_for_compute_scores(ALPHA, labels, predictions)
     return (
         np.array([len(sample["lab_bboxes"]) for sample in auxiliary_inputs]),
         np.array([len(sample["pred_bboxes"]) for sample in auxiliary_inputs]),
     )
 
 
-def get_bbox_sizes(labels, predictions):
+def get_bbox_sizes(
+    labels: Optional[List[Dict[str, Any]]] = None,
+    predictions: Optional[List[np.ndarray]] = None,
+    *,
+    auxiliary_inputs: List[AuxiliaryTypesDict] = None,
+) -> Tuple[np.ndarray, np.ndarray]:
     """Return the sizes of annotated and predicted bounding boxes in the dataset.
 
     Parameters
@@ -106,22 +126,34 @@ def get_bbox_sizes(labels, predictions):
 
         For more information see the `MMDetection package <https://github.com/open-mmlab/mmdetection>`_ for an example object detection library that outputs predictions in the correct format.
 
+    auxiliary_inputs : optional
+        Auxiliary inputs to be used in the computation of counts.
+        The `auxiliary_inputs` can be computed using :py:func:`rank._get_valid_inputs_for_compute_scores <cleanlab.object_detection.rank._get_valid_inputs_for_compute_scores>`.
+        It is internally computed from the given `labels` and `predictions`.
+
     Returns
     -------
     bbox_sizes: Tuple[np.ndarray, np.ndarray]
         A tuple containing two ``np.ndarray`` objects. The first is an array of shape ``(N,)`` containing the sizes of annotated bounding boxes for each image in the dataset.
         The second is an array of shape ``(N,)`` containing the sizes of predicted bounding boxes for each image in the dataset.
     """
-    auxiliary_input = _get_valid_inputs_for_compute_scores(ALPHA, labels, predictions)
+    if auxiliary_inputs is None:
+        auxiliary_inputs = _get_valid_inputs_for_compute_scores(ALPHA, labels, predictions)
+
     label_boxes = []
     pred_boxes = []
-    for sample in auxiliary_input:
+    for sample in auxiliary_inputs:
         label_boxes.extend(_get_bbox_area(sample["lab_bboxes"]))
         pred_boxes.extend(_get_bbox_area(sample["pred_bboxes"]))
     return np.array(label_boxes), np.array(pred_boxes)
 
 
-def get_class_distribution(labels, predictions):
+def get_class_distribution(
+    labels: Optional[List[Dict[str, Any]]] = None,
+    predictions: Optional[List[np.ndarray]] = None,
+    *,
+    auxiliary_inputs: List[AuxiliaryTypesDict] = None,
+) -> Tuple[Dict[Any, float], Dict[Any, float]]:
     """Return the distribution of classes in the dataset.
 
     Parameters
@@ -148,17 +180,22 @@ def get_class_distribution(labels, predictions):
 
         For more information see the `MMDetection package <https://github.com/open-mmlab/mmdetection>`_ for an example object detection library that outputs predictions in the correct format.
 
+    auxiliary_inputs : optional
+        Auxiliary inputs to be used in the computation of counts.
+        The `auxiliary_inputs` can be computed using :py:func:`rank._get_valid_inputs_for_compute_scores <cleanlab.object_detection.rank._get_valid_inputs_for_compute_scores>`.
+        It is internally computed from the given `labels` and `predictions`.
+
     Returns
     -------
     class_distribution: Tuple[Dict[Any, float], Dict[Any, float]]
         A tuple containing two dictionaries. The first is a dictionary mapping each class label to its frequency in the dataset.
         The second is a dictionary mapping each class label to its frequency in the predictions.
     """
-    auxiliary_input = _get_valid_inputs_for_compute_scores(ALPHA, labels, predictions)
+    if auxiliary_inputs is None:
+        auxiliary_inputs = _get_valid_inputs_for_compute_scores(ALPHA, labels, predictions)
 
     lab_freq, pred_freq = collections.defaultdict(int), collections.defaultdict(int)
-
-    for sample in auxiliary_input:
+    for sample in auxiliary_inputs:
         for cl in sample["lab_labels"]:
             lab_freq[cl] += 1
         for cl in sample["pred_labels"]:

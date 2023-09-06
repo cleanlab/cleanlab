@@ -38,7 +38,7 @@ from cleanlab.object_detection.filter import (
     _process_class_list,
 )
 
-from cleanlab.object_detection.summary import (
+from cleanlab.object_detection.dataset import (
     get_object_count,
     get_bbox_sizes,
     get_class_distribution,
@@ -597,18 +597,31 @@ def test_find_label_issues_per_box():
 
 
 def test_get_object_count():
+    auxiliary_inputs = _get_valid_inputs_for_compute_scores(ALPHA, labels, predictions)
+
     label_count, pred_count = get_object_count(labels, predictions)
+    assert (label_count == np.array([len(sample["bboxes"]) for sample in labels])).all()
+    assert (pred_count == np.array([sum([len(cl) for cl in pred]) for pred in predictions])).all()
+
+    label_count, pred_count = get_object_count(auxiliary_inputs=auxiliary_inputs)
     assert (label_count == np.array([len(sample["bboxes"]) for sample in labels])).all()
     assert (pred_count == np.array([sum([len(cl) for cl in pred]) for pred in predictions])).all()
 
 
 def test_get_bbox_sizes():
+    auxiliary_inputs = _get_valid_inputs_for_compute_scores(ALPHA, labels, predictions)
+
     label_boxes, pred_boxes = get_bbox_sizes(labels, predictions)
+    assert np.all(label_boxes >= 0)
+    assert np.all(pred_boxes >= 0)
+
+    label_boxes, pred_boxes = get_bbox_sizes(auxiliary_inputs=auxiliary_inputs)
     assert np.all(label_boxes >= 0)
     assert np.all(pred_boxes >= 0)
 
 
 def test_get_class_distribution():
+    auxiliary_inputs = _get_valid_inputs_for_compute_scores(ALPHA, labels, predictions)
     lab_count, pred_count = collections.defaultdict(int), collections.defaultdict(int)
 
     for sample in labels:
@@ -623,7 +636,12 @@ def test_get_class_distribution():
     lab_total, pred_total = sum(lab_count.values()), sum(pred_count.values())
     lab_freq_ans = {k: round(v / lab_total, 2) for k, v in lab_count.items()}
     pred_freq_ans = {k: round(v / pred_total, 2) for k, v in pred_count.items()}
+
     lab_freq, pred_freq = get_class_distribution(labels, predictions)
+    assert lab_freq == lab_freq_ans
+    assert pred_freq == pred_freq_ans
+
+    lab_freq, pred_freq = get_class_distribution(auxiliary_inputs=auxiliary_inputs)
     assert lab_freq == lab_freq_ans
     assert pred_freq == pred_freq_ans
 
