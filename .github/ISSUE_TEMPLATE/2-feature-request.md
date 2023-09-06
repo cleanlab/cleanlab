@@ -2,7 +2,9 @@
 name: Feature Request
 about: Use this template to ask for new functionality in cleanlab.
 title: "[Short summary of the feature]"
-labels: "needs triage"
+labels: needs triage
+assignees: ''
+
 ---
 
 <!-- Briefly summarize the proposed feature. -->
@@ -10,7 +12,7 @@ labels: "needs triage"
 # Details
 
 <!--
-Describe your proposed feature in more detail. Answer any of the following
+Describe your proposed feature in more detail. INCLUDE the exact code you are trying to run or would like to see, if your question is related to code. Answer any of the following
 questions that you can:
   * What is the problem you're trying to solve?
   * What tasks or workflows would be enabled by having support for your

@@ -2,10 +2,12 @@
 name: Bug Report
 about: Use this template to report a bug.
 title: "[Short summary of the bug]"
-labels: "needs triage"
+labels: needs triage
+assignees: ''
+
 ---
 
-<!-- Briefly summarize the issue. -->
+<!-- Briefly summarize the issue. INCLUDE the exact code you are trying to run! Ideally in a self-contained script so we can reproduce your bug. -->
 
 # Stack trace
 
