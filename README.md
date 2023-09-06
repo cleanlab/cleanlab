@@ -343,4 +343,4 @@ You can email us to discuss licensing: team@cleanlab.ai
 
 ### Commercial licensing
 
-Commercial licensing is available for teams and enterprises that want to use cleanlab in production workflows, but are unable to open-source their code. Please contact us [here](mailto:sales@cleanlab.ai).
+Commercial licensing is available for teams and enterprises that want to use cleanlab in production workflows, but are unable to open-source their code [as is required by the current license](https://github.com/cleanlab/cleanlab/blob/master/LICENSE). Please email us: team@cleanlab.ai
