@@ -213,7 +213,7 @@ cleanlab is based on peer-reviewed research. Here are relevant papers to cite if
 
 </details>
 
-<details><summary><a href="https://arxiv.org/abs/2210.06812"> CROWDLAB for data with multiple annotators (NeurIPS '22)</a> (<b>click to show bibtex</b>) </summary>
+<details><summary><a href="https://arxiv.org/abs/2210.06812"> CROWDLAB for Data with Multiple Annotators (NeurIPS '22)</a> (<b>click to show bibtex</b>) </summary>
 
     @inproceedings{goh2022crowdlab,
         title={CROWDLAB: Supervised learning to infer consensus labels and quality scores for data with multiple annotators},
@@ -268,6 +268,27 @@ cleanlab is based on peer-reviewed research. Here are relevant papers to cite if
 
 </details>
 
+<details><summary><a href="https://arxiv.org/abs/2309.00832"> ObjectLab: Mislabeled Images in Object Detection Data (ICML '23)</a> (<b>click to show bibtex</b>) </summary>
+
+    @inproceedings{tkachenko2023objectlab,
+        title={ObjectLab: Automated Diagnosis of Mislabeled Images in Object Detection Data},
+        author={Tkachenko, Ulyana and Thyagarajan, Aditya and Mueller, Jonas},
+        booktitle={ICML Workshop on Data-centric Machine Learning Research},
+        year={2023}
+    }
+
+</details>
+
+<details><summary><a href="https://arxiv.org/abs/2307.05080"> Label Errors in Segmentation Data (ICML '23)</a> (<b>click to show bibtex</b>) </summary>
+
+    @inproceedings{lad2023segmentation,
+        title={Estimating label quality and errors in semantic segmentation data via any model},
+        author={Lad, Vedang and Mueller, Jonas},
+        booktitle={ICML Workshop on Data-centric Machine Learning Research},
+        year={2023}
+    }
+
+</details>
 
 To understand/cite other cleanlab functionality not described above, check out our [additional publications](https://cleanlab.ai/research/).
 
