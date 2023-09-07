@@ -36,7 +36,10 @@ from cleanlab.datalab.internal.helper_factory import (
     issue_finder_factory,
     report_factory,
 )
-from cleanlab.datalab.internal.issue_finder import IssueFinder
+from cleanlab.datalab.internal.issue_manager_factory import (
+    list_default_issue_types,
+    list_possible_issue_types,
+)
 from cleanlab.datalab.internal.serialize import _Serializer
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -506,7 +509,7 @@ class Datalab:
         --------
         :py:class:`REGISTRY <cleanlab.datalab.internal.issue_manager_factory.REGISTRY>` : All available issue types and their corresponding issue managers can be found here.
         """
-        return IssueFinder(datalab=self).list_possible_issue_types()
+        return list_possible_issue_types(self.task)
 
     def list_default_issue_types(self) -> List[str]:
         """Returns a list of the issue types that are run by default
@@ -520,7 +523,7 @@ class Datalab:
         --------
         :py:class:`REGISTRY <cleanlab.datalab.internal.issue_manager_factory.REGISTRY>` : All available issue types and their corresponding issue managers can be found here.
         """
-        return IssueFinder(datalab=self).list_default_issue_types()
+        return list_default_issue_types(self.task)
 
     def save(self, path: str, force: bool = False) -> None:
         """Saves this Datalab object to file (all files are in folder at `path/`).

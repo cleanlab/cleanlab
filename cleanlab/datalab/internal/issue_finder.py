@@ -35,7 +35,10 @@ from typing import TYPE_CHECKING, Any, Dict, Optional
 import numpy as np
 from scipy.sparse import csr_matrix
 
-from cleanlab.datalab.internal.issue_manager_factory import _IssueManagerFactory
+from cleanlab.datalab.internal.issue_manager_factory import (
+    _IssueManagerFactory,
+    list_default_issue_types,
+)
 
 if TYPE_CHECKING:  # pragma: no cover
     import numpy.typing as npt
@@ -261,7 +264,7 @@ class IssueFinder:
             # keep only default issue types
             issue_types_copy = {
                 issue: issue_types_copy[issue]
-                for issue in _IssueManagerFactory.list_default_issue_types(self.task)
+                for issue in list_default_issue_types(self.task)
                 if issue in issue_types_copy
             }
 
@@ -318,7 +321,7 @@ class IssueFinder:
             # Only run default issue types if no issue types are specified
             issue_types_copy = {
                 issue: issue_types_copy[issue]
-                for issue in _IssueManagerFactory.list_default_issue_types(self.task)
+                for issue in list_default_issue_types(self.task)
                 if issue in issue_types_copy
             }
         drop_label_check = "label" in issue_types_copy and not self.datalab.has_labels
