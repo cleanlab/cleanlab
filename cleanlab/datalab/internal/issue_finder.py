@@ -30,19 +30,16 @@ and collects the results to :py:class:`DataIssues <cleanlab.datalab.internal.dat
 from __future__ import annotations
 
 import warnings
-from typing import Any, List, Optional, Dict, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
 import numpy as np
 from scipy.sparse import csr_matrix
 
-from cleanlab.datalab.internal.issue_manager_factory import (
-    _IssueManagerFactory,
-    REGISTRY,
-    TASK_SPECIFIC_REGISTRY,
-)
+from cleanlab.datalab.internal.issue_manager_factory import _IssueManagerFactory
 
 if TYPE_CHECKING:  # pragma: no cover
     import numpy.typing as npt
+
     from cleanlab.datalab.datalab import Datalab
 
 
@@ -76,6 +73,7 @@ class IssueFinder:
 
     def __init__(self, datalab: "Datalab", verbosity=1):
         self.datalab = datalab
+        self.task = self.datalab.task
         self.verbosity = verbosity
 
     def find_issues(
@@ -156,7 +154,7 @@ class IssueFinder:
         new_issue_managers = [
             factory(datalab=self.datalab, **issue_types_copy.get(factory.issue_name, {}))
             for factory in _IssueManagerFactory.from_list(
-                list(issue_types_copy.keys()), task=self.datalab.task
+                list(issue_types_copy.keys()), task=self.task
             )
         ]
 
@@ -263,7 +261,7 @@ class IssueFinder:
             # keep only default issue types
             issue_types_copy = {
                 issue: issue_types_copy[issue]
-                for issue in self.list_default_issue_types()
+                for issue in _IssueManagerFactory.list_default_issue_types(self.task)
                 if issue in issue_types_copy
             }
 
@@ -303,37 +301,6 @@ class IssueFinder:
                 error_message += f"Required argument {missing_required_args} for issue type {issue_name} was not provided.\n"
             raise ValueError(error_message)
 
-    def list_possible_issue_types(self) -> List[str]:
-        """Returns a list of all registered issue types.
-
-        Any issue type that is not in this list cannot be used in the :py:meth:`find_issues` method.
-
-        See Also
-        --------
-        :py:class:`REGISTRY <cleanlab.datalab.internal.issue_manager_factory.REGISTRY>` : All available issue types and their corresponding issue managers can be found here.
-        """
-        return list(REGISTRY.keys()) + list(TASK_SPECIFIC_REGISTRY.get(self.datalab.task, []))
-
-    def list_default_issue_types(self) -> List[str]:
-        """Returns a list of the issue types that are run by default
-        when :py:meth:`find_issues` is called without specifying `issue_types`.
-
-        See Also
-        --------
-        :py:class:`REGISTRY <cleanlab.datalab.internal.issue_manager_factory.REGISTRY>` : All available issue types and their corresponding issue managers can be found here.
-        """
-        if self.datalab.task == "regression":
-            default_issue_types = ["label", "outlier", "near_duplicate", "non_iid"]
-        else:
-            default_issue_types = [
-                "label",
-                "class_imbalance",
-                "outlier",
-                "near_duplicate",
-                "non_iid",
-            ]
-        return default_issue_types
-
     def get_available_issue_types(self, **kwargs):
         """Returns a dictionary of issue types that can be used in :py:meth:`Datalab.find_issues
         <cleanlab.datalab.datalab.Datalab.find_issues>` method."""
@@ -351,7 +318,7 @@ class IssueFinder:
             # Only run default issue types if no issue types are specified
             issue_types_copy = {
                 issue: issue_types_copy[issue]
-                for issue in self.list_default_issue_types()
+                for issue in _IssueManagerFactory.list_default_issue_types(self.task)
                 if issue in issue_types_copy
             }
         drop_label_check = "label" in issue_types_copy and not self.datalab.has_labels
@@ -372,7 +339,7 @@ class IssueFinder:
                 )
                 issue_types_copy.pop("outlier")
 
-        if self.datalab.task == "regression":
+        if self.task == "regression":
             issue_types_copy = {**issue_types_copy, **{"label": {}}}
 
         return issue_types_copy

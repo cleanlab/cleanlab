@@ -41,15 +41,14 @@ from __future__ import annotations
 from typing import Dict, List, Type
 
 from cleanlab.datalab.internal.issue_manager import (
+    ClassImbalanceIssueManager,
     IssueManager,
     LabelIssueManager,
     NearDuplicateIssueManager,
-    OutlierIssueManager,
     NonIIDIssueManager,
-    ClassImbalanceIssueManager,
+    OutlierIssueManager,
 )
 from cleanlab.datalab.internal.issue_manager.regression import RegressionLabelIssueManager
-
 
 REGISTRY: Dict[str, Type[IssueManager]] = {
     "outlier": OutlierIssueManager,
@@ -191,3 +190,36 @@ def register(cls: Type[IssueManager], task: str) -> Type[IssueManager]:
 
     REGISTRY[name] = cls
     return cls
+
+
+def list_possible_issue_types(task: str) -> List[str]:
+    """Returns a list of all registered issue types.
+
+    Any issue type that is not in this list cannot be used in the :py:meth:`find_issues` method.
+
+    See Also
+    --------
+    :py:class:`REGISTRY <cleanlab.datalab.internal.issue_manager_factory.REGISTRY>` : All available issue types and their corresponding issue managers can be found here.
+    """
+    return list(REGISTRY.keys()) + list(TASK_SPECIFIC_REGISTRY.get(task, []))
+
+
+def list_default_issue_types(task: str) -> List[str]:
+    """Returns a list of the issue types that are run by default
+    when :py:meth:`find_issues` is called without specifying `issue_types`.
+
+    See Also
+    --------
+    :py:class:`REGISTRY <cleanlab.datalab.internal.issue_manager_factory.REGISTRY>` : All available issue types and their corresponding issue managers can be found here.
+    """
+    if task == "regression":
+        default_issue_types = ["label", "outlier", "near_duplicate", "non_iid"]
+    else:
+        default_issue_types = [
+            "label",
+            "class_imbalance",
+            "outlier",
+            "near_duplicate",
+            "non_iid",
+        ]
+    return default_issue_types
