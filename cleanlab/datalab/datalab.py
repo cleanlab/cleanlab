@@ -22,25 +22,20 @@ Datalab offers a unified audit to detect all kinds of issues in data and labels.
 from __future__ import annotations
 
 import warnings
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 import numpy as np
 import pandas as pd
 
 import cleanlab
-
-from cleanlab.datalab.internal.adapter.imagelab import create_imagelab, ImagelabDataIssuesAdapter
+from cleanlab.datalab.internal.adapter.imagelab import create_imagelab
+from cleanlab.datalab.internal.data import Data
+from cleanlab.datalab.internal.display import _Displayer
 from cleanlab.datalab.internal.helper_factory import (
+    _DataIssuesBuilder,
     issue_finder_factory,
     report_factory,
 )
-from cleanlab.datalab.internal.data import Data
-from cleanlab.datalab.internal.data_issues import (
-    _ClassificationInfoStrategy,
-    _RegressionInfoStrategy,
-    DataIssues,
-)
-from cleanlab.datalab.internal.display import _Displayer
 from cleanlab.datalab.internal.issue_finder import IssueFinder
 from cleanlab.datalab.internal.serialize import _Serializer
 
@@ -53,38 +48,6 @@ if TYPE_CHECKING:  # pragma: no cover
 
 
 __all__ = ["Datalab"]
-
-
-class _DataIssuesBuilder:
-    def __init__(self, data: Data):
-        self.data = data
-        self.imagelab = None
-        self.task: Optional[str] = None
-
-    def set_imagelab(self, imagelab):
-        self.imagelab = imagelab
-        return self
-
-    def set_task(self, task):
-        self.task = task
-        return self
-
-    def build(self) -> DataIssues:
-        data_issues_class = self._data_issues_factory()
-        strategy = self._select_info_strategy()
-        return data_issues_class(self.data, strategy)
-
-    def _data_issues_factory(self) -> Type[DataIssues]:
-        if self.imagelab:
-            return ImagelabDataIssuesAdapter
-        else:
-            return DataIssues
-
-    def _select_info_strategy(self):
-        if self.task == "regression":
-            return _RegressionInfoStrategy
-        else:
-            return _ClassificationInfoStrategy
 
 
 class Datalab:
