@@ -88,8 +88,6 @@ class RegressionLabelIssueManager(IssueManager):
     ) -> None:
         """Find label issues in the datalab."""
 
-        RegressionLabelIssueManager.issue_score_key = "label_score"
-
         # Find examples with label issues
         X_with_y = self.datalab.data.to_pandas()
         X = X_with_y.drop(columns=self.datalab.label_name)
