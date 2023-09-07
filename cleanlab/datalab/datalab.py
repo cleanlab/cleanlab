@@ -71,7 +71,7 @@ class _DataIssuesBuilder:
 
     def build(self) -> DataIssues:
         data_issues_class = self._data_issues_factory()
-        strategy = self._create_info_strategy()
+        strategy = self._select_info_strategy()
         return data_issues_class(self.data, strategy)
 
     def _data_issues_factory(self) -> Type[DataIssues]:
@@ -80,11 +80,11 @@ class _DataIssuesBuilder:
         else:
             return DataIssues
 
-    def _create_info_strategy(self):
+    def _select_info_strategy(self):
         if self.task == "regression":
-            return _RegressionInfoStrategy()
+            return _RegressionInfoStrategy
         else:
-            return _ClassificationInfoStrategy()
+            return _ClassificationInfoStrategy
 
 
 class Datalab:
