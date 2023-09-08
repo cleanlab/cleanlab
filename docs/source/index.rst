@@ -189,8 +189,8 @@ While this open-source library **finds** data issues, its utility depends on you
    :caption: Guides
    :hidden:
 
+   Datalab issue types <cleanlab/datalab/guide/index>
    How to contribute <https://github.com/cleanlab/cleanlab/blob/master/CONTRIBUTING.md>
-   Migrating to v2.x <migrating/migrate_v2>
 
 .. toctree::
    :caption: Links
