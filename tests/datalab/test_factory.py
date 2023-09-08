@@ -20,7 +20,6 @@ def test_list_possible_issue_types(registry):
         "non_iid",
         "label",
         "class_imbalance",
-        "custom_issue",
     ]
     assert set(issue_types) == set(possible_issues)
 
