@@ -509,7 +509,7 @@ class Datalab:
         --------
         :py:class:`REGISTRY <cleanlab.datalab.internal.issue_manager_factory.REGISTRY>` : All available issue types and their corresponding issue managers can be found here.
         """
-        return list_possible_issue_types(self.task)
+        return list_possible_issue_types(task=self.task)
 
     def list_default_issue_types(self) -> List[str]:
         """Returns a list of the issue types that are run by default
@@ -523,7 +523,7 @@ class Datalab:
         --------
         :py:class:`REGISTRY <cleanlab.datalab.internal.issue_manager_factory.REGISTRY>` : All available issue types and their corresponding issue managers can be found here.
         """
-        return list_default_issue_types(self.task)
+        return list_default_issue_types(task=self.task)
 
     def save(self, path: str, force: bool = False) -> None:
         """Saves this Datalab object to file (all files are in folder at `path/`).
