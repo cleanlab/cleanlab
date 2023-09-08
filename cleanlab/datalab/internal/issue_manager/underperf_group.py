@@ -15,7 +15,7 @@
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Union, Tuple
 import warnings
 
 import numpy as np
@@ -25,7 +25,7 @@ from sklearn.neighbors import NearestNeighbors
 from sklearn.exceptions import NotFittedError
 from sklearn.utils.validation import check_is_fitted
 from sklearn.cluster import HDBSCAN
-from sklearn.metrics import calinski_harabasz_score
+from sklearn.base import ClusterMixin
 
 from cleanlab.datalab.internal.issue_manager import IssueManager
 from cleanlab.rank import get_self_confidence_for_each_label
@@ -35,23 +35,24 @@ if TYPE_CHECKING:  # pragma: no cover
     from cleanlab.datalab.datalab import Datalab
 
 
-class UnderperfGroupIssueManager(IssueManager):
-    """Manages issues related to near-duplicate examples."""
+class UnderperformingGroupIssueManager(IssueManager):
+    """Manages issues related to underperforming group examples."""
 
     description: ClassVar[
         str
-    ] = """A (near) duplicate issue refers to two or more examples in
-    a dataset that are extremely similar to each other, relative
-    to the rest of the dataset.  The examples flagged with this issue
-    may be exactly duplicated, or lie atypically close together when
-    represented as vectors (i.e. feature embeddings).
+    ] = """An underperforming group refers to a collection of “hard” examples
+    for which the model predictions are poor. The quality of predictions is
+    computed using the :py:func:`get_self_confidence_for_each_label <cleanlab.rank.get_self_confidence_for_each_label>` function.
     """
-    issue_name: ClassVar[str] = "underperf_group"
+    issue_name: ClassVar[str] = "underperforming_group"
     verbosity_levels = {
         0: [],
         1: [],
         2: ["threshold"],
     }
+
+    OUTLIER_LABELS = {"HDBSCAN": (-1, -2, -3)}
+    HIGHEST_PERFORMANCE = 1
 
     def __init__(
         self,
@@ -65,7 +66,6 @@ class UnderperfGroupIssueManager(IssueManager):
         self.metric = metric
         self.threshold = self._set_threshold(threshold)
         self.k = k
-        self.near_duplicate_sets: List[List[int]] = []
 
     def find_issues(
         self,
@@ -74,7 +74,30 @@ class UnderperfGroupIssueManager(IssueManager):
         **kwargs,
     ) -> None:
         labels = self.datalab.labels
-        knn_graph = self._process_knn_graph_from_inputs(kwargs)
+        knn_graph = self.set_knn_graph(features, kwargs)
+        unique_cluster_labels, cluster_labels, cluster_obj = self.perform_clustering(knn_graph)
+        n_clusters = len(unique_cluster_labels)
+        worst_cluster_id, worst_cluster_ratio = self.get_worst_cluster(
+            cluster_labels, unique_cluster_labels, labels, pred_probs
+        )
+        is_issue_column = cluster_labels == worst_cluster_id
+        scores = np.where(is_issue_column, worst_cluster_ratio, 1)
+        self.issues = pd.DataFrame(
+            {
+                f"is_{self.issue_name}_issue": is_issue_column,
+                self.issue_score_key: scores,
+            },
+        )
+        self.summary = self.make_summary(score=worst_cluster_ratio)
+        self.info = self.collect_info(
+            knn_graph=knn_graph,
+            n_clusters=n_clusters,
+            cluster_labels=cluster_labels,
+            cluster_obj=cluster_obj,
+        )
+
+    def set_knn_graph(self, features: np.ndarray, find_issues_kwargs: Dict) -> csr_matrix:
+        knn_graph = self._process_knn_graph_from_inputs(find_issues_kwargs)
         old_knn_metric = self.datalab.get_info("statistics").get("knn_metric")
         metric_changes = self.metric and self.metric != old_knn_metric
 
@@ -101,42 +124,49 @@ class UnderperfGroupIssueManager(IssueManager):
                 knn.fit(features)
 
             knn_graph = knn.kneighbors_graph(mode="distance", n_neighbors=features.shape[0] - 1)
-        full_loss = get_self_confidence_for_each_label(labels, pred_probs).mean()
+        return knn_graph
+
+    def perform_clustering(
+        self, knn_graph: csr_matrix
+    ) -> Tuple[np.ndarray, np.ndarray, ClusterMixin]:
         hdb = HDBSCAN(metric="precomputed")
         hdb.fit(knn_graph)
         cluster_labels = hdb.labels_
+        clustering_algo = hdb.__class__.__name__
+        unique_cluster_labels = [
+            label
+            for label in set(cluster_labels)
+            if label not in self.OUTLIER_LABELS[clustering_algo]
+        ]
+        return unique_cluster_labels, cluster_labels, hdb
 
-        unique_labels = set(cluster_labels)
-        n_outlier_clusters = sum(l in (-1, -2, -3) for l in unique_labels)
-        n_clusters = len(unique_labels) - n_outlier_clusters
-
-        min_loss = 10  # Assign some other value
-        min_loss_clusterid = -1
-        for i in range(n_clusters):
-            cluster_mask = cluster_labels == i
+    def get_worst_cluster(
+        self,
+        cluster_labels: np.ndarray,
+        unique_cluster_labels: np.ndarray,
+        labels: np.ndarray,
+        pred_probs: np.ndarray,
+    ):
+        worst_cluster_performance = self.HIGHEST_PERFORMANCE  # Assign some other value
+        worst_cluster_id = min(unique_cluster_labels) - 1
+        for cluster_id in unique_cluster_labels:
+            cluster_mask = cluster_labels == cluster_id
             cur_cluster_labels = labels[cluster_mask]
             cur_cluster_pred_probs = pred_probs[cluster_mask]
-            cluster_loss = get_self_confidence_for_each_label(
+            cluster_performance = get_self_confidence_for_each_label(
                 cur_cluster_labels, cur_cluster_pred_probs
             ).mean()
-            if cluster_loss < min_loss:
-                min_loss = cluster_loss
-                min_loss_clusterid = i
-        loss_ratio = min(min_loss / full_loss, 1.0)
-        print(min_loss, full_loss)
-        min_loss_clusterid = min_loss_clusterid if loss_ratio < self.threshold else n_clusters
-        is_issue_column = cluster_labels == min_loss_clusterid
-        scores = np.where(is_issue_column, loss_ratio, 1)
-        self.issues = pd.DataFrame(
-            {
-                f"is_{self.issue_name}_issue": is_issue_column,
-                self.issue_score_key: scores,
-            },
+            if cluster_performance < worst_cluster_performance:
+                worst_cluster_performance = cluster_performance
+                worst_cluster_id = cluster_id
+        mean_performance = get_self_confidence_for_each_label(labels, pred_probs).mean()
+        worst_cluster_ratio = min(worst_cluster_performance / mean_performance, 1.0)
+        worst_cluster_id = (
+            worst_cluster_id
+            if worst_cluster_ratio < self.threshold
+            else max(unique_cluster_labels) + 1
         )
-        self.summary = self.make_summary(score=loss_ratio)
-        self.info = self.collect_info(
-            knn_graph=knn_graph, n_clusters=n_clusters, cluster_labels=cluster_labels
-        )
+        return worst_cluster_id, worst_cluster_ratio
 
     def _process_knn_graph_from_inputs(self, kwargs: Dict[str, Any]) -> Union[csr_matrix, None]:
         """Determine if a knn_graph is provided in the kwargs or if one is already stored in the associated Datalab instance."""
@@ -158,9 +188,12 @@ class UnderperfGroupIssueManager(IssueManager):
         return knn_graph
 
     def collect_info(
-        self, knn_graph: csr_matrix, n_clusters: int, cluster_labels: np.ndarray
+        self,
+        knn_graph: csr_matrix,
+        n_clusters: int,
+        cluster_labels: np.ndarray,
+        cluster_obj: ClusterMixin,
     ) -> dict:
-
         params_dict = {
             "metric": self.metric,
             "k": self.k,
@@ -178,7 +211,9 @@ class UnderperfGroupIssueManager(IssueManager):
 
         statistics_dict = self._build_statistics_dictionary(knn_graph=knn_graph)
 
-        cluster_stat_dict = self._get_cluster_statistics(n_clusters=n_clusters)
+        cluster_stat_dict = self._get_cluster_statistics(
+            n_clusters=n_clusters, cluster_labels=cluster_labels, cluster_obj=cluster_obj
+        )
         info_dict = {**params_dict, **knn_info_dict, **statistics_dict, **cluster_stat_dict}
 
         return info_dict
@@ -202,8 +237,20 @@ class UnderperfGroupIssueManager(IssueManager):
 
         return statistics_dict
 
-    def _get_cluster_statistics(self, n_clusters: int) -> Dict[str, Dict[str, Any]]:
-        cluster_stats = {"HDBSCAN": {"n_clusters": n_clusters}}
+    def _get_cluster_statistics(
+        self, n_clusters: int, cluster_labels: np.ndarray, cluster_obj: ClusterMixin
+    ) -> Dict[str, Dict[str, Any]]:
+        cluster_stats = {
+            "clustering": {
+                "algorithm": cluster_obj.__class__.__name__,
+                "params": {**cluster_obj.get_params()},  # Only works for sklearn.cluster objects
+                "stats": {
+                    "n_clusters": n_clusters,
+                    "cluster_labels": cluster_labels
+                    # "silhouette_score": sklearn.metrics.silhouette_score(...)
+                },
+            }
+        }
         return cluster_stats
 
     def _set_threshold(
