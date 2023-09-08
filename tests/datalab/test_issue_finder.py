@@ -92,5 +92,5 @@ class TestIssueFinder:
             ["label", "outlier", "near_duplicate", "non_iid"]
         )
         assert set(lab.list_possible_issue_types()) == set(
-            ["label", "outlier", "near_duplicate", "non_iid"]
+            ["label", "outlier", "near_duplicate", "non_iid", "custom_issue"]
         )

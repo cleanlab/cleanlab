@@ -14,7 +14,14 @@ def test_list_possible_issue_types(registry):
     lab = Datalab(data=[], label_name=None)
     issue_types = lab.list_possible_issue_types()
     assert isinstance(issue_types, list)
-    possible_issues = ["outlier", "near_duplicate", "non_iid", "label", "class_imbalance"]
+    possible_issues = [
+        "outlier",
+        "near_duplicate",
+        "non_iid",
+        "label",
+        "class_imbalance",
+        "custom_issue",
+    ]
     assert set(issue_types) == set(possible_issues)
 
     test_key = "test_for_list_possible_issue_types"
