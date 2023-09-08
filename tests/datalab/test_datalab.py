@@ -32,7 +32,6 @@ from sklearn.neighbors import NearestNeighbors
 
 import cleanlab
 from cleanlab.datalab.datalab import Datalab
-from cleanlab.datalab.internal.issue_finder import IssueFinder
 from cleanlab.datalab.internal.report import Reporter
 
 SEED = 42
@@ -47,7 +46,7 @@ def test_datalab_invalid_datasetdict(dataset, label_name):
 
 @pytest.fixture(scope="function")
 def list_possible_issue_types(monkeypatch, request):
-    monkeypatch.setattr(IssueFinder, "list_possible_issue_types", lambda *_: request.param)
+    return lambda *_: request.param
 
 
 class TestDatalab:

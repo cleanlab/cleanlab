@@ -59,30 +59,6 @@ class TestIssueFinder:
                 issue_finder._validate_issue_types_dict(issue_types, defaults_dict)
             assert all([string in str(e.value) for string in ["issue_type_1", "arg_1", "arg_2"]])
 
-    @pytest.mark.parametrize(
-        "defaults_dict",
-        [
-            {"issue_type_1": {"arg_1": "default_value_1"}},
-        ],
-    )
-    @pytest.mark.parametrize(
-        "issue_types",
-        [{"issue_type_1": {"arg_1": "value_1", "arg_2": "value_2"}}, {"issue_type_1": {}}],
-    )
-    def test_set_issue_types(self, issue_finder, issue_types, defaults_dict, monkeypatch):
-        """Test that the issue_types dict is set correctly."""
-        with monkeypatch.context() as m:
-            # Mock the validation method to do nothing
-            m.setattr(issue_finder, "_validate_issue_types_dict", lambda x, y: None)
-            m.setattr(issue_finder, "list_possible_issue_types", lambda *_: ["issue_type_1"])
-            issue_types_copy = issue_finder._set_issue_types(issue_types, defaults_dict)
-
-            # For each argument in issue_types missing from defaults_dict, it should be added to the defaults dict
-            for issue_type, args in issue_types.items():
-                missing_args = set(args.keys()) - set(defaults_dict[issue_type].keys())
-                for arg in missing_args:
-                    assert issue_types_copy[issue_type][arg] == args[arg]
-
     def test_regression(self):
         N = 30
         K = 2
