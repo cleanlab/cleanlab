@@ -48,7 +48,7 @@ def get_object_count(
     predictions: Optional[List[np.ndarray]] = None,
     *,
     auxiliary_inputs: List[AuxiliaryTypesDict] = None,
-) -> Tuple[np.ndarray, np.ndarray]:
+) -> Tuple[List, List]:
     """Return the number of annotated and predicted objects in the dataset.
 
     Parameters
@@ -83,14 +83,14 @@ def get_object_count(
     Returns
     -------
     object_counts: Tuple[np.ndarray, label_issues : np.ndarray]
-        A tuple containing two ``np.ndarray`` objects. The first is an array of shape ``(N,)`` containing the number of annotated objects for each image in the dataset.
+        A tuple containing two lists. The first is an array of shape ``(N,)`` containing the number of annotated objects for each image in the dataset.
         The second is an array of shape ``(N,)`` containing the number of predicted objects for each image in the dataset.
     """
     if auxiliary_inputs is None:
         auxiliary_inputs = _get_valid_inputs_for_compute_scores(ALPHA, labels, predictions)
     return (
-        np.array([len(sample["lab_bboxes"]) for sample in auxiliary_inputs]),
-        np.array([len(sample["pred_bboxes"]) for sample in auxiliary_inputs]),
+        [len(sample["lab_bboxes"]) for sample in auxiliary_inputs],
+        [len(sample["pred_bboxes"]) for sample in auxiliary_inputs],
     )
 
 
@@ -99,8 +99,8 @@ def get_bbox_sizes(
     predictions: Optional[List[np.ndarray]] = None,
     *,
     auxiliary_inputs: List[AuxiliaryTypesDict] = None,
-) -> Tuple[np.ndarray, np.ndarray]:
-    """Return the sizes of annotated and predicted bounding boxes in the dataset.
+) -> Tuple[Dict[Any, List], Dict[Any, List]]:
+    """Return the sizes of annotated and predicted bounding boxes in the dataset for each class.
 
     Parameters
     ----------
@@ -133,19 +133,18 @@ def get_bbox_sizes(
 
     Returns
     -------
-    bbox_sizes: Tuple[np.ndarray, np.ndarray]
-        A tuple containing two ``np.ndarray`` objects. The first is an array of shape ``(N,)`` containing the sizes of annotated bounding boxes for each image in the dataset.
-        The second is an array of shape ``(N,)`` containing the sizes of predicted bounding boxes for each image in the dataset.
+    bbox_sizes: Tuple[Dict[Any, List], Dict[Any, List]]
+        A tuple containing two dictionaries. Each maps each class label to a list of the sizes of annotated bounding boxes for that class in the label and prediction datasets, respectively.
     """
     if auxiliary_inputs is None:
         auxiliary_inputs = _get_valid_inputs_for_compute_scores(ALPHA, labels, predictions)
 
-    label_boxes = []
-    pred_boxes = []
+    label_area, pred_area = collections.defaultdict(list), collections.defaultdict(list)
     for sample in auxiliary_inputs:
-        label_boxes.extend(_get_bbox_area(sample["lab_bboxes"]))
-        pred_boxes.extend(_get_bbox_area(sample["pred_bboxes"]))
-    return np.array(label_boxes), np.array(pred_boxes)
+        _get_bbox_area(sample["lab_labels"], sample["lab_bboxes"], label_area)
+        _get_bbox_area(sample["pred_labels"], sample["pred_bboxes"], pred_area)
+
+    return label_area, pred_area
 
 
 def get_class_distribution(
@@ -330,8 +329,10 @@ def visualize(
     plt.show()
 
 
-def _get_bbox_area(bboxes):
-    return [(bbox[2] - bbox[0]) * (bbox[3] - bbox[1]) for bbox in bboxes]
+def _get_bbox_area(labels, boxes, class_area_dict) -> None:
+    """Helper function to compute the area of bounding boxes for each class."""
+    for cl, bbox in zip(labels, boxes):
+        class_area_dict[cl].append((bbox[2] - bbox[0]) * (bbox[3] - bbox[1]))
 
 
 def _plot_legend(class_names, label, prediction):

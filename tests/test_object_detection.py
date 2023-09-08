@@ -600,24 +600,32 @@ def test_get_object_count():
     auxiliary_inputs = _get_valid_inputs_for_compute_scores(ALPHA, labels, predictions)
 
     label_count, pred_count = get_object_count(labels, predictions)
-    assert (label_count == np.array([len(sample["bboxes"]) for sample in labels])).all()
-    assert (pred_count == np.array([sum([len(cl) for cl in pred]) for pred in predictions])).all()
+    assert label_count == [len(sample["bboxes"]) for sample in labels]
+    assert pred_count == [sum([len(cl) for cl in pred]) for pred in predictions]
 
     label_count, pred_count = get_object_count(auxiliary_inputs=auxiliary_inputs)
-    assert (label_count == np.array([len(sample["bboxes"]) for sample in labels])).all()
-    assert (pred_count == np.array([sum([len(cl) for cl in pred]) for pred in predictions])).all()
+    assert label_count == [len(sample["bboxes"]) for sample in labels]
+    assert pred_count == [sum([len(cl) for cl in pred]) for pred in predictions]
 
 
 def test_get_bbox_sizes():
     auxiliary_inputs = _get_valid_inputs_for_compute_scores(ALPHA, labels, predictions)
 
     label_boxes, pred_boxes = get_bbox_sizes(labels, predictions)
-    assert np.all(label_boxes >= 0)
-    assert np.all(pred_boxes >= 0)
+    for areas in label_boxes.values():
+        for n in areas:
+            assert n >= 0
+    for areas in pred_boxes.values():
+        for n in areas:
+            assert n >= 0
 
     label_boxes, pred_boxes = get_bbox_sizes(auxiliary_inputs=auxiliary_inputs)
-    assert np.all(label_boxes >= 0)
-    assert np.all(pred_boxes >= 0)
+    for areas in label_boxes.values():
+        for n in areas:
+            assert n >= 0
+    for areas in pred_boxes.values():
+        for n in areas:
+            assert n >= 0
 
 
 def test_get_class_distribution():
