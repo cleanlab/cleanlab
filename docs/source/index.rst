@@ -147,18 +147,18 @@ While this open-source library **finds** data issues, its utility depends on you
 
    Datalab Tutorials <tutorials/datalab/index>
    Workflows of Data-Centric AI <tutorials/indepth_overview>
-   Image Classification (pytorch) <tutorials/image>
-   Text Classification (transformers) <tutorials/text>
-   Tabular Classification (sklearn) <tutorials/tabular>
-   Audio Classification (speechbrain) <tutorials/audio>
+   Image Classification <tutorials/image>
+   Text Classification <tutorials/text>
+   Tabular Classification <tutorials/tabular>
+   Audio Classification <tutorials/audio>
    Find Dataset-level Issues <tutorials/dataset_health>
-   Identifying Outliers (pytorch) <tutorials/outliers>
+   Identifying Outliers <tutorials/outliers>
    Improving Consensus Labels for Multiannotator Data <tutorials/multiannotator>
    Multi-Label Classification <tutorials/multilabel_classification>
    Noisy Labels in Regression <tutorials/regression>
    Token Classification (text) <tutorials/token_classification>
-   Semantic Segmentation (pytorch) <tutorials/segmentation>
-   Object Detection (detectron2) <tutorials/object_detection>
+   Image Segmentation <tutorials/segmentation>
+   Object Detection <tutorials/object_detection>
    Predicted Probabilities via Cross Validation <tutorials/pred_probs_cross_val>
    FAQ <tutorials/faq>
 
@@ -189,8 +189,8 @@ While this open-source library **finds** data issues, its utility depends on you
    :caption: Guides
    :hidden:
 
+   Datalab issue types <cleanlab/datalab/guide/index>
    How to contribute <https://github.com/cleanlab/cleanlab/blob/master/CONTRIBUTING.md>
-   Migrating to v2.x <migrating/migrate_v2>
 
 .. toctree::
    :caption: Links

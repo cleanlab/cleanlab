@@ -5,6 +5,6 @@ Datalab Tutorials
    :maxdepth: 1
 
    Detecting Common Data Issues with Datalab <datalab_quickstart>
-   Perform Advanced Data Auditing with Datalab <datalab_advanced>
-   Text Classification <text>
-   Tabular Classification <tabular>
+   Advanced Data Auditing with Datalab <datalab_advanced>
+   Text Dataset <text>
+   Tabular Data (Numeric/Categorical) <tabular>

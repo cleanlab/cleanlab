@@ -52,7 +52,7 @@ jobs:
           restore-keys: ${{ runner.os }}-pip-
 
       - name: Install cleanlab
-        run: pip install -e .
+        run: pip install -e ".[all]"
 
       - name: Install dependencies
         run: python3 -m pip install -r docs/requirements.txt
