@@ -18,7 +18,7 @@
 Methods to display examples and their label issues in an object detection dataset.
 Here each image can have multiple objects, each with its own bounding box and class label.
 """
-from typing import Optional, Any, Dict, Tuple, Union, List, TYPE_CHECKING, TypeVar
+from typing import Optional, Any, Dict, Tuple, Union, List, TYPE_CHECKING, TypeVar, DefaultDict
 
 import numpy as np
 import collections
@@ -32,7 +32,6 @@ from cleanlab.object_detection.rank import (
     _separate_prediction,
     _separate_label,
     _get_prediction_type,
-    AuxiliaryTypesDict,
 )
 
 from cleanlab.internal.object_detection_utils import bbox_xyxy_to_xywh
@@ -139,12 +138,13 @@ def get_bbox_sizes(
     if auxiliary_inputs is None:
         auxiliary_inputs = _get_valid_inputs_for_compute_scores(ALPHA, labels, predictions)
 
-    label_area, pred_area = collections.defaultdict(list), collections.defaultdict(list)
+    labl_area: DefaultDict[Any, list] = collections.defaultdict(list)
+    pred_area: DefaultDict[Any, list] = collections.defaultdict(list)
     for sample in auxiliary_inputs:
-        _get_bbox_area(sample["lab_labels"], sample["lab_bboxes"], label_area)
+        _get_bbox_area(sample["lab_labels"], sample["lab_bboxes"], labl_area)
         _get_bbox_area(sample["pred_labels"], sample["pred_bboxes"], pred_area)
 
-    return label_area, pred_area
+    return labl_area, pred_area
 
 
 def get_class_distribution(
@@ -193,16 +193,17 @@ def get_class_distribution(
     if auxiliary_inputs is None:
         auxiliary_inputs = _get_valid_inputs_for_compute_scores(ALPHA, labels, predictions)
 
-    lab_freq, pred_freq = collections.defaultdict(int), collections.defaultdict(int)
+    labl_area: DefaultDict[Any, int] = collections.defaultdict(int)
+    pred_freq: DefaultDict[Any, int] = collections.defaultdict(int)
     for sample in auxiliary_inputs:
         for cl in sample["lab_labels"]:
-            lab_freq[cl] += 1
+            labl_area[cl] += 1
         for cl in sample["pred_labels"]:
             pred_freq[cl] += 1
 
-    lab_total, pred_total = sum(lab_freq.values()), sum(pred_freq.values())
+    labl_total, pred_total = sum(labl_area.values()), sum(pred_freq.values())
     return (
-        {k: round(v / lab_total, 2) for k, v in lab_freq.items()},
+        {k: round(v / labl_total, 2) for k, v in labl_area.items()},
         {k: round(v / pred_total, 2) for k, v in pred_freq.items()},
     )
 
