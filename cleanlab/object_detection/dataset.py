@@ -44,10 +44,10 @@ else:
 
 
 def get_object_count(
-    labels: Optional[List[Dict[str, Any]]] = None,
-    predictions: Optional[List[np.ndarray]] = None,
+    labels=None,
+    predictions: Optional[List[np.ndarray]]=None,
     *,
-    auxiliary_inputs: List[AuxiliaryTypesDict] = None,
+    auxiliary_inputs=None,
 ) -> Tuple[List, List]:
     """Return the number of annotated and predicted objects in the dataset.
 
