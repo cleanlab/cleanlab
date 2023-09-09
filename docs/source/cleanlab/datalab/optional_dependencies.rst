@@ -1,4 +1,4 @@
-This package has additional dependencies that are not required for the core ``cleanlab`` package. To install them, run:
+Using Datalab requires additional dependencies beyond the rest of the ``cleanlab`` package. To install them, run:
 
 .. code-block:: console
 
