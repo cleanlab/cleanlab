@@ -45,7 +45,7 @@ else:
 
 def get_object_count(
     labels=None,
-    predictions: Optional[List[np.ndarray]]=None,
+    predictions=None,
     *,
     auxiliary_inputs=None,
 ) -> Tuple[List, List]:
@@ -95,10 +95,10 @@ def get_object_count(
 
 
 def get_bbox_sizes(
-    labels: Optional[List[Dict[str, Any]]] = None,
-    predictions: Optional[List[np.ndarray]] = None,
+    labels=None,
+    predictions=None,
     *,
-    auxiliary_inputs: List[AuxiliaryTypesDict] = None,
+    auxiliary_inputs=None,
 ) -> Tuple[Dict[Any, List], Dict[Any, List]]:
     """Return the sizes of annotated and predicted bounding boxes in the dataset for each class.
 
@@ -148,10 +148,10 @@ def get_bbox_sizes(
 
 
 def get_class_distribution(
-    labels: Optional[List[Dict[str, Any]]] = None,
-    predictions: Optional[List[np.ndarray]] = None,
+    labels=None,
+    predictions=None,
     *,
-    auxiliary_inputs: List[AuxiliaryTypesDict] = None,
+    auxiliary_inputs=None,
 ) -> Tuple[Dict[Any, float], Dict[Any, float]]:
     """Return the distribution of classes in the dataset.
 
