@@ -48,9 +48,10 @@ Get started with: [tutorials](https://docs.cleanlab.ai/stable/tutorials/image.ht
 </p>
 
 ```python
-    lab = cleanlab.Datalab(data=dataset, label="column_name_for_labels")  # supports many data formats
-    lab.find_issues(features=feature_embeddings, pred_probs=pred_probs)  # outputs from any ML model
-    lab.report()  # summarize issues detected in your dataset and labels
+        lab = cleanlab.Datalab(data=dataset, label="column_name_for_labels")
+        # Fit any ML model, get its feature_embeddings & pred_probs for your data
+        lab.find_issues(features=feature_embeddings, pred_probs=pred_probs)
+        lab.report()
 ```
 
 ## So fresh, so cleanlab
