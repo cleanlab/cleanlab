@@ -33,7 +33,6 @@ from cleanlab.datalab.internal.issue_manager import IssueManager
 
 if TYPE_CHECKING:  # pragma: no cover
     import pandas as pd
-    import numpy.typing as npt
     from cleanlab.datalab.datalab import Datalab
 
 
