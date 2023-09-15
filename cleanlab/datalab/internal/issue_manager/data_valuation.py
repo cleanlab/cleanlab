@@ -66,7 +66,6 @@ class DataValuationIssueManager(IssueManager):
         self.k = k
         self.threshold = threshold if threshold is not None else self.DEFAULT_THRESHOLDS
 
-
     def find_issues(
         self,
         **kwargs,
@@ -88,11 +87,7 @@ class DataValuationIssueManager(IssueManager):
 
         self.info = self.collect_info(self.issues)
 
-    def _knn_shapley_score(
-        self, 
-        knn_graph:csr_matrix, 
-        labels:np.ndarray
-    ) -> np.ndarray:
+    def _knn_shapley_score(self, knn_graph: csr_matrix, labels: np.ndarray) -> np.ndarray:
         N = labels.shape[0]
         scores = np.zeros((N, N))
         dist = knn_graph.indices.reshape(N, -1)
@@ -108,8 +103,8 @@ class DataValuationIssueManager(IssueManager):
                     int(ans[cur] == y) - int(ans[cur + 1] == y)
                 ) / self.k * (min(cur, self.k - 1) + 1) / (cur + 1)
                 cur -= 1
-        return np.mean(scores, axis=1)
-        
+        return 0.5 * (np.mean(scores, axis=1) + 1)
+
     def _process_knn_graph_from_inputs(self, kwargs: Dict[str, Any]) -> Union[csr_matrix, None]:
         """Determine if a knn_graph is provided in the kwargs or if one is already stored in the associated Datalab instance."""
         knn_graph_kwargs: Optional[csr_matrix] = kwargs.get("knn_graph", None)
