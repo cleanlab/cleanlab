@@ -29,6 +29,7 @@ import pytest
 from datasets.dataset_dict import DatasetDict
 from scipy.sparse import csr_matrix
 from sklearn.neighbors import NearestNeighbors
+from sklearn.datasets import make_blobs
 
 import cleanlab
 from cleanlab.datalab.datalab import Datalab
@@ -1113,3 +1114,91 @@ class TestDataLabClassImbalanceIssues:
         assert "class_imbalance" in summary["issue_type"].values
         class_imbalance_summary = lab.get_issue_summary("class_imbalance")
         assert class_imbalance_summary["num_issues"].values[0] > 0
+
+
+class TestDataLabUnderperformingIssue:
+    K = 3
+    N = 100
+    num_features = 2
+
+    @pytest.fixture
+    def data(self):
+        features, labels = make_blobs(
+            n_samples=self.N, centers=self.K, n_features=2, random_state=SEED
+        )
+        pred_probs = np.full((self.N, self.K), 0.01)
+        pred_probs[np.arange(self.N), labels] = 0.99
+        # Generate incorrect prediction for 0th label samples
+        zeroth_label_indices = np.nonzero(labels == 0)
+        pred_probs[zeroth_label_indices, 0] = 0.01
+        pred_probs[zeroth_label_indices, 1] = 0.99
+        pred_probs = pred_probs / np.sum(pred_probs, axis=-1, keepdims=True)
+        data = {"features": features, "pred_probs": pred_probs, "labels": labels}
+        return data
+
+    def test_incremental_search(self, data):
+        features, labels, pred_probs = data["features"], data["labels"], data["pred_probs"]
+        lab = Datalab(data={"labels": labels}, label_name="labels")
+        lab.find_issues(pred_probs=pred_probs, issue_types={"label": {}})
+        summary = lab.get_issue_summary()
+        assert len(summary) == 1
+        assert "underperforming_group" not in summary["issue_type"].values
+        lab.find_issues(
+            features=features, pred_probs=pred_probs, issue_types={"underperforming_group": {}}
+        )
+        summary = lab.get_issue_summary()
+        assert len(summary) == 2
+        assert "underperforming_group" in summary["issue_type"].values
+        underperf_group_summary = lab.get_issue_summary("underperforming_group")
+        assert underperf_group_summary["num_issues"].values[0] > 1
+
+
+class TestIssueManagersReuseKnnGraph:
+    """
+    `outlier`, `underperforming_group` and `near_duplicate` issue managers require
+    a KNN graph. This test ensures that the KNN graph is only computed once.  E.g. if outlier is called first,
+    then underperforming_group can reuse the resulting graph.
+    """
+
+    N = 3000
+    num_features = 10
+    k = 20
+    num_classes = 2
+
+    @pytest.fixture
+    def features(self):
+        np.random.seed(SEED)
+        return np.random.uniform(low=0, high=0.2, size=(self.N, self.num_features))
+
+    @pytest.fixture
+    def labels(self):
+        np.random.seed(SEED)
+        return np.random.randint(0, self.num_classes, size=self.N)
+
+    @pytest.fixture
+    def pred_probs(self):
+        np.random.seed(SEED)
+        pred_probs = np.random.rand(self.N, self.num_classes)
+        pred_probs = pred_probs / pred_probs.sum(axis=1, keepdims=True)
+        return pred_probs
+
+    def test_underperf_group_reuses_knn_graph(self, features, pred_probs, labels):
+        # Run 1: only underperforming_group
+        lab = Datalab(data={"labels": labels}, label_name="labels")
+        find_issues_kwargs = {"issue_types": {"underperforming_group": {}}}
+        time_only_underperf_group = timeit.timeit(
+            lambda: lab.find_issues(features=features, pred_probs=pred_probs, **find_issues_kwargs),
+            number=1,
+        )
+
+        # Run 2: Run outlier issue first, then underperforming_group
+        find_issues_kwargs = {
+            "issue_types": {"outlier": {"k": self.k}, "underperforming_group": {}},
+        }
+        time_underperf_after_outlier = timeit.timeit(
+            lambda: lab.find_issues(features=features, pred_probs=pred_probs, **find_issues_kwargs),
+            number=1,
+        )
+        assert (
+            time_underperf_after_outlier < time_only_underperf_group
+        ), "KNN graph reuse should make this run of find_issues faster."

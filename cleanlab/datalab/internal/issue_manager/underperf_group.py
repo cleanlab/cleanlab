@@ -26,6 +26,7 @@ from sklearn.exceptions import NotFittedError
 from sklearn.utils.validation import check_is_fitted
 from sklearn.cluster import HDBSCAN
 from sklearn.base import ClusterMixin
+from sklearn.metrics import silhouette_score
 
 from cleanlab.datalab.internal.issue_manager import IssueManager
 from cleanlab.rank import get_self_confidence_for_each_label
@@ -59,23 +60,25 @@ class UnderperformingGroupIssueManager(IssueManager):
         datalab: Datalab,
         metric: Optional[str] = None,
         threshold: float = 0.1,
-        k: int = 10,
         **_,
     ):
         super().__init__(datalab)
         self.metric = metric
         self.threshold = self._set_threshold(threshold)
-        self.k = k
 
     def find_issues(
         self,
-        features,
-        pred_probs,
+        features: npt.NDArray,
+        pred_probs: npt.NDArray,
         **kwargs,
     ) -> None:
         labels = self.datalab.labels
         knn_graph = self.set_knn_graph(features, kwargs)
         unique_cluster_labels, cluster_labels, cluster_obj = self.perform_clustering(knn_graph)
+        if not unique_cluster_labels.size:
+            raise ValueError(
+                "No meaningful clusters were generated for determining underperforming group."
+            )
         n_clusters = len(unique_cluster_labels)
         worst_cluster_id, worst_cluster_ratio = self.get_worst_cluster(
             cluster_labels, unique_cluster_labels, labels, pred_probs
@@ -96,7 +99,7 @@ class UnderperformingGroupIssueManager(IssueManager):
             cluster_obj=cluster_obj,
         )
 
-    def set_knn_graph(self, features: np.ndarray, find_issues_kwargs: Dict) -> csr_matrix:
+    def set_knn_graph(self, features: npt.NDArray, find_issues_kwargs: Dict) -> csr_matrix:
         knn_graph = self._process_knn_graph_from_inputs(find_issues_kwargs)
         old_knn_metric = self.datalab.get_info("statistics").get("knn_metric")
         metric_changes = self.metric and self.metric != old_knn_metric
@@ -108,7 +111,7 @@ class UnderperformingGroupIssueManager(IssueManager):
                 )
             if self.metric is None:
                 self.metric = "cosine" if features.shape[1] > 3 else "euclidean"
-            knn = NearestNeighbors(n_neighbors=self.k, metric=self.metric)
+            knn = NearestNeighbors(metric=self.metric)
 
             if self.metric and self.metric != knn.metric:
                 warnings.warn(
@@ -128,26 +131,28 @@ class UnderperformingGroupIssueManager(IssueManager):
 
     def perform_clustering(
         self, knn_graph: csr_matrix
-    ) -> Tuple[np.ndarray, np.ndarray, ClusterMixin]:
+    ) -> Tuple[npt.NDArray[np.int_], npt.NDArray[np.int_], ClusterMixin]:
         hdb = HDBSCAN(metric="precomputed")
         hdb.fit(knn_graph)
         cluster_labels = hdb.labels_
         clustering_algo = hdb.__class__.__name__
-        unique_cluster_labels = [
-            label
-            for label in set(cluster_labels)
-            if label not in self.OUTLIER_LABELS[clustering_algo]
-        ]
+        unique_cluster_labels = np.array(
+            [
+                label
+                for label in set(cluster_labels)
+                if label not in self.OUTLIER_LABELS[clustering_algo]
+            ]
+        )
         return unique_cluster_labels, cluster_labels, hdb
 
     def get_worst_cluster(
         self,
-        cluster_labels: np.ndarray,
-        unique_cluster_labels: np.ndarray,
-        labels: np.ndarray,
-        pred_probs: np.ndarray,
-    ):
-        worst_cluster_performance = self.HIGHEST_PERFORMANCE  # Assign some other value
+        cluster_labels: npt.NDArray[np.int_],
+        unique_cluster_labels: npt.NDArray[np.int_],
+        labels: npt.NDArray,
+        pred_probs: npt.NDArray,
+    ) -> Tuple[int, float]:
+        worst_cluster_performance = self.HIGHEST_PERFORMANCE
         worst_cluster_id = min(unique_cluster_labels) - 1
         for cluster_id in unique_cluster_labels:
             cluster_mask = cluster_labels == cluster_id
@@ -179,24 +184,17 @@ class UnderperformingGroupIssueManager(IssueManager):
         elif knn_graph_stats is not None:
             knn_graph = knn_graph_stats
 
-        if isinstance(knn_graph, csr_matrix) and kwargs.get("k", 0) > (
-            knn_graph.nnz // knn_graph.shape[0]
-        ):
-            # If the provided knn graph is insufficient, then we need to recompute the knn graph
-            # with the provided features
-            knn_graph = None
         return knn_graph
 
     def collect_info(
         self,
         knn_graph: csr_matrix,
         n_clusters: int,
-        cluster_labels: np.ndarray,
+        cluster_labels: npt.NDArray[np.int_],
         cluster_obj: ClusterMixin,
     ) -> dict:
         params_dict = {
             "metric": self.metric,
-            "k": self.k,
             "threshold": self.threshold,
         }
 
@@ -212,7 +210,10 @@ class UnderperformingGroupIssueManager(IssueManager):
         statistics_dict = self._build_statistics_dictionary(knn_graph=knn_graph)
 
         cluster_stat_dict = self._get_cluster_statistics(
-            n_clusters=n_clusters, cluster_labels=cluster_labels, cluster_obj=cluster_obj
+            n_clusters=n_clusters,
+            cluster_labels=cluster_labels,
+            cluster_obj=cluster_obj,
+            knn_graph=knn_graph,
         )
         info_dict = {**params_dict, **knn_info_dict, **statistics_dict, **cluster_stat_dict}
 
@@ -238,19 +239,30 @@ class UnderperformingGroupIssueManager(IssueManager):
         return statistics_dict
 
     def _get_cluster_statistics(
-        self, n_clusters: int, cluster_labels: np.ndarray, cluster_obj: ClusterMixin
+        self,
+        n_clusters: int,
+        cluster_labels: npt.NDArray[np.int_],
+        cluster_obj: ClusterMixin,
+        knn_graph: csr_matrix,
     ) -> Dict[str, Dict[str, Any]]:
         cluster_stats = {
             "clustering": {
                 "algorithm": cluster_obj.__class__.__name__,
                 "params": {**cluster_obj.get_params()},  # Only works for sklearn.cluster objects
-                "stats": {
-                    "n_clusters": n_clusters,
-                    "cluster_labels": cluster_labels
-                    # "silhouette_score": sklearn.metrics.silhouette_score(...)
-                },
+                "stats": {"n_clusters": n_clusters, "cluster_labels": cluster_labels},
             }
         }
+        try:
+            sc = silhouette_score(knn_graph, cluster_labels, metric="precomputed")
+            cluster_stats["clustering"]["stats"]["silhouette_score"] = sc
+            if sc < 0:
+                warnings.warn(
+                    f"A negative silhoutte score ({sc}) could indicate that some samples have been assigned to the wrong cluster."
+                )
+        except ValueError as err:
+            warnings.warn(
+                f"Error computing Silhouette Score - {err}. \n `silhouette_score` will not be present in info."
+            )
         return cluster_stats
 
     def _set_threshold(

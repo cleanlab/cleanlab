@@ -86,6 +86,18 @@ class TestUnderperformingGroupIssueManager:
         assert clustering_info["algorithm"] == "HDBSCAN"
         assert clustering_info["params"]["metric"] == "precomputed"
         assert clustering_info["stats"]["n_clusters"] == 4
+        assert clustering_info["stats"]["silhouette_score"] == pytest.approx(0.7918, rel=1e-3)
+
+    def test_no_meaningful_clusters(self, issue_manager, make_data):
+        np.random.seed(SEED)
+        N = 10
+        features = np.random.uniform(0, 20, (N, 10))
+        data = make_data()
+        pred_probs = data["pred_probs"]
+        try:
+            issue_manager.find_issues(features=features, pred_probs=pred_probs[:N])
+        except ValueError as err:
+            assert "No meaningful clusters" in str(err)
 
     def test_report(self, issue_manager, make_data):
         data = make_data()
