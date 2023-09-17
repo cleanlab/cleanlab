@@ -25,7 +25,7 @@ cleanlab.dataset.health_summary(labels, confident_joint=cl.confident_joint)
 
 Get started with: [tutorials](https://docs.cleanlab.ai/stable/tutorials/image.html), [documentation](https://docs.cleanlab.ai/), [examples](https://github.com/cleanlab/examples), and [blogs](https://cleanlab.ai/blog/).
 
- - Learn to run cleanlab on your data in 5 minutes for: [image](https://docs.cleanlab.ai/stable/tutorials/datalab/image.html), [text](https://docs.cleanlab.ai/stable/tutorials/datalab/text.html), [audio](https://docs.cleanlab.ai/stable/tutorials/audio.html), or [tabular](https://docs.cleanlab.ai/stable/tutorials/datalab/tabular.html) data.
+ - Learn to run cleanlab on your data in 5 minutes for: [image](https://docs.cleanlab.ai/stable/tutorials/image.html), [text](https://docs.cleanlab.ai/stable/tutorials/datalab/text.html), [audio](https://docs.cleanlab.ai/stable/tutorials/audio.html), or [tabular](https://docs.cleanlab.ai/stable/tutorials/datalab/tabular.html) data.
 - Use cleanlab to automatically: [detect data issues (outliers, duplicates, label errors, etc)](https://docs.cleanlab.ai/stable/tutorials/datalab/datalab_quickstart.html), [train robust models](https://docs.cleanlab.ai/stable/tutorials/indepth_overview.html), [infer consensus + annotator-quality for multi-annotator data](https://docs.cleanlab.ai/stable/tutorials/multiannotator.html), [suggest data to (re)label next (active learning)](https://github.com/cleanlab/examples/blob/master/active_learning_multiannotator/active_learning.ipynb). 
 
 
