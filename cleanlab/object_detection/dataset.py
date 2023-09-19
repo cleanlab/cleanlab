@@ -42,13 +42,15 @@ else:
     Image = TypeVar("Image")
 
 
-def get_object_count(
+def object_counts_per_image(
     labels=None,
     predictions=None,
     *,
     auxiliary_inputs=None,
 ) -> Tuple[List, List]:
-    """Return the number of annotated and predicted objects in the dataset.
+    """Return the number of annotated and predicted objects for each image in the dataset.
+    
+    This method can help you discover images with abnormally many/few object annotations.
 
     Parameters
     ----------
@@ -93,13 +95,15 @@ def get_object_count(
     )
 
 
-def get_bbox_sizes(
+def bounding_box_size_distribution(
     labels=None,
     predictions=None,
     *,
     auxiliary_inputs=None,
 ) -> Tuple[Dict[Any, List], Dict[Any, List]]:
-    """Return the sizes of annotated and predicted bounding boxes in the dataset for each class.
+    """Return the distribution over sizes of annotated and predicted bounding boxes across the dataset, broken down by each class.
+    
+    This method can help you find annotated/predicted boxes for a particular class that are abnormally big/small. 
 
     Parameters
     ----------
@@ -147,13 +151,15 @@ def get_bbox_sizes(
     return labl_area, pred_area
 
 
-def get_class_distribution(
+def class_label_distribution(
     labels=None,
     predictions=None,
     *,
     auxiliary_inputs=None,
 ) -> Tuple[Dict[Any, float], Dict[Any, float]]:
-    """Return the distribution of classes in the dataset.
+    """Returns the distribution of class labels associated with all annotated bounding boxes (or predicted bounding boxes) in the dataset.
+    
+    This method can help you understand which classes are: rare or over/under-predicted by the model overall.
 
     Parameters
     ----------
