@@ -505,7 +505,7 @@ def get_self_confidence_for_each_label(
     """
 
     # To make this work for multi-label (but it will slow down runtime), return:
-    # np.mean(pred_probs[np.arange(labels.shape[0]), labels], axis=1)
+    # np.array([np.mean(pred_probs[i, l]) for i, l in enumerate(labels)])
     return pred_probs[np.arange(labels.shape[0]), labels]
 
 
