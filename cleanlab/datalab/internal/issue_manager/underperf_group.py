@@ -53,7 +53,6 @@ class UnderperformingGroupIssueManager(IssueManager):
     }
 
     OUTLIER_LABELS = {"HDBSCAN": (-1, -2, -3)}
-    HIGHEST_PERFORMANCE = 1
 
     def __init__(
         self,
@@ -152,7 +151,7 @@ class UnderperformingGroupIssueManager(IssueManager):
         labels: npt.NDArray,
         pred_probs: npt.NDArray,
     ) -> Tuple[int, float]:
-        worst_cluster_performance = self.HIGHEST_PERFORMANCE
+        worst_cluster_performance = 1  # Largest possible probability value
         worst_cluster_id = min(unique_cluster_labels) - 1
         for cluster_id in unique_cluster_labels:
             cluster_mask = cluster_labels == cluster_id
@@ -242,13 +241,12 @@ class UnderperformingGroupIssueManager(IssueManager):
         self,
         n_clusters: int,
         cluster_labels: npt.NDArray[np.int_],
-        cluster_obj: ClusterMixin,
         knn_graph: csr_matrix,
     ) -> Dict[str, Dict[str, Any]]:
         cluster_stats = {
             "clustering": {
-                "algorithm": cluster_obj.__class__.__name__,
-                "params": {**cluster_obj.get_params()},  # Only works for sklearn.cluster objects
+                "algorithm": "HDBSCAN",
+                "params": {"metric": "precomputed"},
                 "stats": {"n_clusters": n_clusters, "cluster_labels": cluster_labels},
             }
         }
