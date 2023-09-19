@@ -187,7 +187,7 @@ def get_class_distribution(
     Returns
     -------
     class_distribution: Tuple[Dict[Any, float], Dict[Any, float]]
-        A tuple containing two dictionaries. The first is a dictionary mapping each class label to its frequency in the dataset.
+        A tuple containing two dictionaries. The first is a dictionary mapping each class label to its frequency in the dataset annotations.
         The second is a dictionary mapping each class label to its frequency in the model predictions across all images in the dataset.
     """
     if auxiliary_inputs is None:
