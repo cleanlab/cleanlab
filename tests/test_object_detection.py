@@ -38,10 +38,10 @@ from cleanlab.object_detection.filter import (
     _process_class_list,
 )
 
-from cleanlab.object_detection.dataset import (
-    get_object_count,
-    get_bbox_sizes,
-    get_class_distribution,
+from cleanlab.object_detection.summary import (
+    object_counts_per_image,
+    bounding_box_size_distribution,
+    class_label_distribution,
     visualize,
 )
 from cleanlab.internal.constants import (
@@ -188,6 +188,8 @@ good_labels = generate_annotations(NUM_GOOD_SAMPLES, num_classes=NUM_CLASSES, ma
 good_predictions = generate_predictions(
     NUM_GOOD_SAMPLES, good_labels, num_classes=NUM_CLASSES, max_boxes=12, is_issue=False
 )
+# generate test class name mappings i.e. "1": "a", "2": "b", etc.
+class_names = {i:str(chr(97 + i)) for i in range(NUM_CLASSES)}
 
 NUM_BAD_SAMPLES = 5
 bad_labels = generate_annotations(NUM_BAD_SAMPLES, num_classes=NUM_CLASSES, max_boxes=10)
@@ -596,22 +598,22 @@ def test_find_label_issues_per_box():
     assert (issues_per_box[2] == np.array([False, True, False, False])).all()
 
 
-def test_get_object_count():
+def test_object_counts_per_image():
     auxiliary_inputs = _get_valid_inputs_for_compute_scores(ALPHA, labels, predictions)
 
-    label_count, pred_count = get_object_count(labels, predictions)
+    label_count, pred_count = object_counts_per_image(labels, predictions)
     assert label_count == [len(sample["bboxes"]) for sample in labels]
     assert pred_count == [sum([len(cl) for cl in pred]) for pred in predictions]
 
-    label_count, pred_count = get_object_count(auxiliary_inputs=auxiliary_inputs)
+    label_count, pred_count = object_counts_per_image(auxiliary_inputs=auxiliary_inputs)
     assert label_count == [len(sample["bboxes"]) for sample in labels]
-    assert pred_count == [sum([len(cl) for cl in pred]) for pred in predictions]
+    assert pred_count == [sum([len(cl) for cl in pred]) for pred in predictions]    
 
 
-def test_get_bbox_sizes():
+def test_bounding_box_size_distribution():
     auxiliary_inputs = _get_valid_inputs_for_compute_scores(ALPHA, labels, predictions)
 
-    label_boxes, pred_boxes = get_bbox_sizes(labels, predictions)
+    label_boxes, pred_boxes = bounding_box_size_distribution(labels, predictions)
     for areas in label_boxes.values():
         for n in areas:
             assert n >= 0
@@ -619,7 +621,7 @@ def test_get_bbox_sizes():
         for n in areas:
             assert n >= 0
 
-    label_boxes, pred_boxes = get_bbox_sizes(auxiliary_inputs=auxiliary_inputs)
+    label_boxes, pred_boxes = bounding_box_size_distribution(auxiliary_inputs=auxiliary_inputs)
     for areas in label_boxes.values():
         for n in areas:
             assert n >= 0
@@ -627,8 +629,14 @@ def test_get_bbox_sizes():
         for n in areas:
             assert n >= 0
 
+    label_boxes, pred_boxes = bounding_box_size_distribution(labels, predictions, class_names=class_names)
+    for c in label_boxes:
+        assert c in class_names.values()
+    for c in pred_boxes:
+        assert c in class_names.values()
 
-def test_get_class_distribution():
+
+def test_class_label_distribution():
     auxiliary_inputs = _get_valid_inputs_for_compute_scores(ALPHA, labels, predictions)
     lab_count, pred_count = collections.defaultdict(int), collections.defaultdict(int)
 
@@ -645,13 +653,20 @@ def test_get_class_distribution():
     lab_freq_ans = {k: round(v / lab_total, 2) for k, v in lab_count.items()}
     pred_freq_ans = {k: round(v / pred_total, 2) for k, v in pred_count.items()}
 
-    lab_freq, pred_freq = get_class_distribution(labels, predictions)
+    lab_freq, pred_freq = class_label_distribution(labels, predictions)
     assert lab_freq == lab_freq_ans
     assert pred_freq == pred_freq_ans
 
-    lab_freq, pred_freq = get_class_distribution(auxiliary_inputs=auxiliary_inputs)
+    lab_freq, pred_freq = class_label_distribution(auxiliary_inputs=auxiliary_inputs)
     assert lab_freq == lab_freq_ans
     assert pred_freq == pred_freq_ans
+
+    lab_freq, pred_freq = class_label_distribution(labels, predictions, class_names=class_names)
+    for c in lab_freq:
+        assert c in class_names.values()
+    for c in pred_freq:
+        assert c in class_names.values()
+
 
 
 @pytest.mark.usefixtures("generate_single_image_file")
@@ -696,18 +711,7 @@ def test_visualize(monkeypatch, generate_single_image_file):
         label=labels[0],
         prediction=predictions[0],
         prediction_threshold=0.99,
-        class_names={
-            "0": "car",
-            "1": "chair",
-            "2": "cup",
-            "3": "person",
-            "4": "traffic light",
-            "5": "5",
-            "6": "6",
-            "7": "7",
-            "8": "8",
-            "9": "9",
-        },
+        class_names=class_names,
         overlay=False,
     )
 

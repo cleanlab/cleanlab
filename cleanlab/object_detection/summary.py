@@ -76,14 +76,14 @@ def object_counts_per_image(
 
         For more information see the `MMDetection package <https://github.com/open-mmlab/mmdetection>`_ for an example object detection library that outputs predictions in the correct format.
 
-    auxiliary_inputs : optional
+    auxiliary_inputs: optional
         Auxiliary inputs to be used in the computation of counts.
         The `auxiliary_inputs` can be computed using :py:func:`rank._get_valid_inputs_for_compute_scores <cleanlab.object_detection.rank._get_valid_inputs_for_compute_scores>`.
         It is internally computed from the given `labels` and `predictions`.
 
     Returns
     -------
-    object_counts: Tuple[np.ndarray, label_issues : np.ndarray]
+    object_counts: Tuple[List, List]
         A tuple containing two lists. The first is an array of shape ``(N,)`` containing the number of annotated objects for each image in the dataset.
         The second is an array of shape ``(N,)`` containing the number of predicted objects for each image in the dataset.
     """
@@ -100,6 +100,7 @@ def bounding_box_size_distribution(
     predictions=None,
     *,
     auxiliary_inputs=None,
+    class_names: Optional[Dict[Any, Any]] = None,
 ) -> Tuple[Dict[Any, List], Dict[Any, List]]:
     """Return the distribution over sizes of annotated and predicted bounding boxes across the dataset, broken down by each class.
     
@@ -129,10 +130,13 @@ def bounding_box_size_distribution(
 
         For more information see the `MMDetection package <https://github.com/open-mmlab/mmdetection>`_ for an example object detection library that outputs predictions in the correct format.
 
-    auxiliary_inputs : optional
+    auxiliary_inputs: optional
         Auxiliary inputs to be used in the computation of counts.
         The `auxiliary_inputs` can be computed using :py:func:`rank._get_valid_inputs_for_compute_scores <cleanlab.object_detection.rank._get_valid_inputs_for_compute_scores>`.
         It is internally computed from the given `labels` and `predictions`.
+
+    class_names: optional
+        A dictionary mapping one-hot-encoded class labels back to their original class names in the format ``{"integer-label": "original-class-name"}``.
 
     Returns
     -------
@@ -145,8 +149,8 @@ def bounding_box_size_distribution(
     labl_area: DefaultDict[Any, list] = collections.defaultdict(list)
     pred_area: DefaultDict[Any, list] = collections.defaultdict(list)
     for sample in auxiliary_inputs:
-        _get_bbox_area(sample["lab_labels"], sample["lab_bboxes"], labl_area)
-        _get_bbox_area(sample["pred_labels"], sample["pred_bboxes"], pred_area)
+        _get_bbox_areas(sample["lab_labels"], sample["lab_bboxes"], labl_area, class_names)
+        _get_bbox_areas(sample["pred_labels"], sample["pred_bboxes"], pred_area, class_names)
 
     return labl_area, pred_area
 
@@ -156,6 +160,7 @@ def class_label_distribution(
     predictions=None,
     *,
     auxiliary_inputs=None,
+    class_names: Optional[Dict[Any, Any]] = None,
 ) -> Tuple[Dict[Any, float], Dict[Any, float]]:
     """Returns the distribution of class labels associated with all annotated bounding boxes (or predicted bounding boxes) in the dataset.
     
@@ -185,10 +190,13 @@ def class_label_distribution(
 
         For more information see the `MMDetection package <https://github.com/open-mmlab/mmdetection>`_ for an example object detection library that outputs predictions in the correct format.
 
-    auxiliary_inputs : optional
+    auxiliary_inputs: optional
         Auxiliary inputs to be used in the computation of counts.
         The `auxiliary_inputs` can be computed using :py:func:`rank._get_valid_inputs_for_compute_scores <cleanlab.object_detection.rank._get_valid_inputs_for_compute_scores>`.
         It is internally computed from the given `labels` and `predictions`.
+
+    class_names: optional
+        Optional dictionary mapping one-hot-encoded class labels back to their original class names in the format ``{"integer-label": "original-class-name"}``.
 
     Returns
     -------
@@ -199,17 +207,15 @@ def class_label_distribution(
     if auxiliary_inputs is None:
         auxiliary_inputs = _get_valid_inputs_for_compute_scores(ALPHA, labels, predictions)
 
-    labl_area: DefaultDict[Any, int] = collections.defaultdict(int)
+    labl_freq: DefaultDict[Any, int] = collections.defaultdict(int)
     pred_freq: DefaultDict[Any, int] = collections.defaultdict(int)
     for sample in auxiliary_inputs:
-        for cl in sample["lab_labels"]:
-            labl_area[cl] += 1
-        for cl in sample["pred_labels"]:
-            pred_freq[cl] += 1
+        _get_class_instances(sample["lab_labels"], labl_freq, class_names)
+        _get_class_instances(sample["pred_labels"], pred_freq, class_names)
 
-    labl_total, pred_total = sum(labl_area.values()), sum(pred_freq.values())
+    labl_total, pred_total = sum(labl_freq.values()), sum(pred_freq.values())
     return (
-        {k: round(v / labl_total, 2) for k, v in labl_area.items()},
+        {k: round(v / labl_total, 2) for k, v in labl_freq.items()},
         {k: round(v / pred_total, 2) for k, v in pred_freq.items()},
     )
 
@@ -336,11 +342,19 @@ def visualize(
     plt.show()
 
 
-def _get_bbox_area(labels, boxes, class_area_dict) -> None:
+def _get_bbox_areas(labels, boxes, class_area_dict, class_names=None) -> None:
     """Helper function to compute the area of bounding boxes for each class."""
     for cl, bbox in zip(labels, boxes):
+        if class_names is not None:
+            cl = class_names[cl]
         class_area_dict[cl].append((bbox[2] - bbox[0]) * (bbox[3] - bbox[1]))
 
+def _get_class_instances(labels, class_instances_dict, class_names=None) -> None:
+    """Helper function to count the number of class instances in each image."""
+    for cl in labels:
+        if class_names is not None:
+            cl = class_names[cl]
+        class_instances_dict[cl] += 1
 
 def _plot_legend(class_names, label, prediction):
     colors = ["black"]
