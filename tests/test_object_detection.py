@@ -189,7 +189,7 @@ good_predictions = generate_predictions(
     NUM_GOOD_SAMPLES, good_labels, num_classes=NUM_CLASSES, max_boxes=12, is_issue=False
 )
 # generate test class name mappings i.e. "1": "a", "2": "b", etc.
-class_names = {i:str(chr(97 + i)) for i in range(NUM_CLASSES)}
+class_names = {i: str(chr(97 + i)) for i in range(NUM_CLASSES)}
 
 NUM_BAD_SAMPLES = 5
 bad_labels = generate_annotations(NUM_BAD_SAMPLES, num_classes=NUM_CLASSES, max_boxes=10)
@@ -607,7 +607,7 @@ def test_object_counts_per_image():
 
     label_count, pred_count = object_counts_per_image(auxiliary_inputs=auxiliary_inputs)
     assert label_count == [len(sample["bboxes"]) for sample in labels]
-    assert pred_count == [sum([len(cl) for cl in pred]) for pred in predictions]    
+    assert pred_count == [sum([len(cl) for cl in pred]) for pred in predictions]
 
 
 def test_bounding_box_size_distribution():
@@ -629,7 +629,9 @@ def test_bounding_box_size_distribution():
         for n in areas:
             assert n >= 0
 
-    label_boxes, pred_boxes = bounding_box_size_distribution(labels, predictions, class_names=class_names)
+    label_boxes, pred_boxes = bounding_box_size_distribution(
+        labels, predictions, class_names=class_names
+    )
     for c in label_boxes:
         assert c in class_names.values()
     for c in pred_boxes:
@@ -666,7 +668,6 @@ def test_class_label_distribution():
         assert c in class_names.values()
     for c in pred_freq:
         assert c in class_names.values()
-
 
 
 @pytest.mark.usefixtures("generate_single_image_file")

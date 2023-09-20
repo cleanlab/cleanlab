@@ -49,7 +49,7 @@ def object_counts_per_image(
     auxiliary_inputs=None,
 ) -> Tuple[List, List]:
     """Return the number of annotated and predicted objects for each image in the dataset.
-    
+
     This method can help you discover images with abnormally many/few object annotations.
 
     Parameters
@@ -103,8 +103,8 @@ def bounding_box_size_distribution(
     class_names: Optional[Dict[Any, Any]] = None,
 ) -> Tuple[Dict[Any, List], Dict[Any, List]]:
     """Return the distribution over sizes of annotated and predicted bounding boxes across the dataset, broken down by each class.
-    
-    This method can help you find annotated/predicted boxes for a particular class that are abnormally big/small. 
+
+    This method can help you find annotated/predicted boxes for a particular class that are abnormally big/small.
 
     Parameters
     ----------
@@ -163,7 +163,7 @@ def class_label_distribution(
     class_names: Optional[Dict[Any, Any]] = None,
 ) -> Tuple[Dict[Any, float], Dict[Any, float]]:
     """Returns the distribution of class labels associated with all annotated bounding boxes (or predicted bounding boxes) in the dataset.
-    
+
     This method can help you understand which classes are: rare or over/under-predicted by the model overall.
 
     Parameters
@@ -349,12 +349,14 @@ def _get_bbox_areas(labels, boxes, class_area_dict, class_names=None) -> None:
             cl = class_names[cl]
         class_area_dict[cl].append((bbox[2] - bbox[0]) * (bbox[3] - bbox[1]))
 
+
 def _get_class_instances(labels, class_instances_dict, class_names=None) -> None:
     """Helper function to count the number of class instances in each image."""
     for cl in labels:
         if class_names is not None:
             cl = class_names[cl]
         class_instances_dict[cl] += 1
+
 
 def _plot_legend(class_names, label, prediction):
     colors = ["black"]
