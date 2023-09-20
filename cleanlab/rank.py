@@ -509,9 +509,9 @@ def get_self_confidence_for_each_label(
       Lower scores indicate more likely mislabeled examples.
     """
 
-    # To make this work for multi-label (but it will slow down runtime), replace:
-    # pred_probs[i, l] -> np.mean(pred_probs[i, l])
-    return np.array([pred_probs[i, l] for i, l in enumerate(labels)])
+    # To make this work for multi-label (but it will slow down runtime), return:
+    # np.array([np.mean(pred_probs[i, l]) for i, l in enumerate(labels)])
+    return pred_probs[np.arange(labels.shape[0]), labels]
 
 
 def get_normalized_margin_for_each_label(
@@ -551,8 +551,10 @@ def get_normalized_margin_for_each_label(
     """
 
     self_confidence = get_self_confidence_for_each_label(labels, pred_probs)
-    max_prob_not_label = np.array(
-        [max(np.delete(pred_probs[i], l, -1)) for i, l in enumerate(labels)]
+    N, K = pred_probs.shape
+    del_indices = np.arange(N) * K + labels
+    max_prob_not_label = np.max(
+        np.delete(pred_probs, del_indices, axis=None).reshape(N, K - 1), axis=-1
     )
     label_quality_scores = (self_confidence - max_prob_not_label + 1) / 2
     return label_quality_scores
