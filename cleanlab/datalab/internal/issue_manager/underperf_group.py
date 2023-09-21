@@ -30,6 +30,7 @@ from sklearn.metrics import silhouette_score
 
 from cleanlab.datalab.internal.issue_manager import IssueManager
 from cleanlab.rank import get_self_confidence_for_each_label
+import scipy.sparse as sp
 
 if TYPE_CHECKING:  # pragma: no cover
     import numpy.typing as npt
@@ -51,19 +52,20 @@ class UnderperformingGroupIssueManager(IssueManager):
         1: [],
         2: ["threshold"],
     }
-
-    OUTLIER_LABELS = {"HDBSCAN": (-1, -2, -3)}
+    OUTLIER_LABELS = (-1, -2, -3)
 
     def __init__(
         self,
         datalab: Datalab,
         metric: Optional[str] = None,
         threshold: float = 0.1,
+        k: int = 10,
         **_,
     ):
         super().__init__(datalab)
         self.metric = metric
         self.threshold = self._set_threshold(threshold)
+        self.k = k
 
     def find_issues(
         self,
@@ -72,8 +74,9 @@ class UnderperformingGroupIssueManager(IssueManager):
         **kwargs,
     ) -> None:
         labels = self.datalab.labels
-        knn_graph = self.set_knn_graph(features, kwargs)
-        unique_cluster_labels, cluster_labels, cluster_obj = self.perform_clustering(knn_graph)
+        knn_graph, original_knn_graph = self.set_knn_graph(features, kwargs)
+        cluster_labels = self.perform_clustering(knn_graph)
+        unique_cluster_labels = self.filter_cluster_labels(cluster_labels)
         if not unique_cluster_labels.size:
             raise ValueError(
                 "No meaningful clusters were generated for determining underperforming group."
@@ -92,10 +95,9 @@ class UnderperformingGroupIssueManager(IssueManager):
         )
         self.summary = self.make_summary(score=worst_cluster_ratio)
         self.info = self.collect_info(
-            knn_graph=knn_graph,
+            knn_graph=original_knn_graph,
             n_clusters=n_clusters,
             cluster_labels=cluster_labels,
-            cluster_obj=cluster_obj,
         )
 
     def set_knn_graph(self, features: npt.NDArray, find_issues_kwargs: Dict) -> csr_matrix:
@@ -110,7 +112,7 @@ class UnderperformingGroupIssueManager(IssueManager):
                 )
             if self.metric is None:
                 self.metric = "cosine" if features.shape[1] > 3 else "euclidean"
-            knn = NearestNeighbors(metric=self.metric)
+            knn = NearestNeighbors(n_neighbors=self.k, metric=self.metric)
 
             if self.metric and self.metric != knn.metric:
                 warnings.warn(
@@ -125,24 +127,84 @@ class UnderperformingGroupIssueManager(IssueManager):
             except NotFittedError:
                 knn.fit(features)
 
-            knn_graph = knn.kneighbors_graph(mode="distance", n_neighbors=features.shape[0] - 1)
-        return knn_graph
+            knn_graph = knn.kneighbors_graph(mode="distance")
+            symmetric_knn_graph = self._symmetrize_knn_graph(knn_graph)
+        return symmetric_knn_graph, knn_graph
 
-    def perform_clustering(
-        self, knn_graph: csr_matrix
-    ) -> Tuple[npt.NDArray[np.int_], npt.NDArray[np.int_], ClusterMixin]:
-        hdb = HDBSCAN(metric="precomputed")
-        hdb.fit(knn_graph)
-        cluster_labels = hdb.labels_
-        clustering_algo = hdb.__class__.__name__
-        unique_cluster_labels = np.array(
-            [
-                label
-                for label in set(cluster_labels)
-                if label not in self.OUTLIER_LABELS[clustering_algo]
-            ]
+    def _symmetrize_knn_graph(self, knn_graph: csr_matrix) -> csr_matrix:
+        binary_adjacency = (knn_graph > 0).astype(int)
+        symmetric_adjacency = binary_adjacency.maximum(binary_adjacency.T)
+        symmetric_distances = knn_graph + knn_graph.T.multiply(
+            symmetric_adjacency - binary_adjacency
         )
-        return unique_cluster_labels, cluster_labels, hdb
+        return symmetric_distances
+
+    def perform_clustering(self, knn_graph: csr_matrix) -> npt.NDArray[np.int_]:
+        # hdb = HDBSCAN(metric="precomputed")
+        # hdb.fit(knn_graph)
+        # cluster_labels = hdb.labels_
+        # ALTERNATIVE FORMULATION: Connect the graph using a dummy node before HDBSCAN.
+        # Adapted from - https://github.com/scikit-learn-contrib/hdbscan/issues/82#issuecomment-1242604639
+        # knn_graph = self.connect_knn_graph(knn_graph)
+        cluster_labels = self.run_hdbscan_on_components(knn_graph)
+
+        return cluster_labels[:200]  # Slicing applicable if connect_knn_graph is called
+
+    def run_hdbscan_on_components(
+        self, knn_graph: csr_matrix, min_cluster_size: int = 5, **hdbscan_params: Dict[str, Any]
+    ) -> npt.NDArray[np.int_]:
+        n_components, component_labels = sp.csgraph.connected_components(
+            csgraph=knn_graph, directed=False, return_labels=True
+        )
+        all_clusters = np.empty(knn_graph.shape[0], dtype=object)
+        offset = 0
+        for component_idx in range(n_components):
+            component_mask = component_labels == component_idx
+            component_subgraph = knn_graph[component_mask, :][:, component_mask]
+            knn_subgraph = self._symmetrize_knn_graph(component_subgraph)
+            clusterer = HDBSCAN(metric="precomputed")
+            component_clusters = clusterer.fit_predict(knn_subgraph)
+            outliers_mask = np.in1d(component_clusters, self.OUTLIER_LABELS)
+            component_clusters[~outliers_mask] += offset
+            all_clusters[component_mask] = component_clusters
+            offset = np.max(component_clusters) + 1
+        return all_clusters
+
+    def connect_knn_graph(
+        self, knn_graph: csr_matrix, new_node_dist: Optional[float] = None
+    ) -> csr_matrix:
+        """
+        This function takes in a sparse graph (csr_matrix) that has more than
+        one component (multiple unconnected subgraphs) and appends another
+        node to the graph that is weakly connected to all other nodes.
+        RH 2022
+
+        Args:
+            d (scipy.sparse.csr_matrix):
+                Sparse graph with multiple components.
+                See scipy.sparse.csgraph.connected_components
+            dist_fullyConnectedNode (float):
+                Value to use for the connection strengh to all other nodes.
+                Value will be appended as elements in a new row and column at
+                the ends of the 'd' matrix.
+
+        Returns:
+            d2 (scipy.sparse.csr_matrix):
+                Sparse graph with only one component.
+        """
+        N = knn_graph.shape[0]
+        if new_node_dist is None:
+            new_node_dist = (knn_graph.max() - knn_graph.min()) * 1000
+        connected_knn_graph = knn_graph.copy()
+        connected_knn_graph = sp.vstack((connected_knn_graph, np.full((1, N), new_node_dist)))
+        connected_knn_graph = sp.hstack((connected_knn_graph, np.full((N + 1, 1), new_node_dist)))
+        return connected_knn_graph.tocsr()
+
+    def filter_cluster_labels(self, cluster_labels: npt.NDArray[np.int_]) -> npt.NDArray[np.int_]:
+        unique_cluster_labels = np.array(
+            [label for label in set(cluster_labels) if label not in self.OUTLIER_LABELS]
+        )
+        return unique_cluster_labels
 
     def get_worst_cluster(
         self,
@@ -190,7 +252,6 @@ class UnderperformingGroupIssueManager(IssueManager):
         knn_graph: csr_matrix,
         n_clusters: int,
         cluster_labels: npt.NDArray[np.int_],
-        cluster_obj: ClusterMixin,
     ) -> dict:
         params_dict = {
             "metric": self.metric,
@@ -211,7 +272,6 @@ class UnderperformingGroupIssueManager(IssueManager):
         cluster_stat_dict = self._get_cluster_statistics(
             n_clusters=n_clusters,
             cluster_labels=cluster_labels,
-            cluster_obj=cluster_obj,
             knn_graph=knn_graph,
         )
         info_dict = {**params_dict, **knn_info_dict, **statistics_dict, **cluster_stat_dict}

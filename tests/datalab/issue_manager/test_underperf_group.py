@@ -12,7 +12,7 @@ class TestUnderperformingGroupIssueManager:
     def make_data(self, lab, noisy=False):
         def data(noisy=noisy):
             N = lab.get_info("statistics")["num_examples"] * 40
-            K = lab.get_info("statistics")["num_classes"] + 1
+            K = lab.get_info("statistics")["num_classes"]
             features, labels = make_blobs(n_samples=N, centers=K, n_features=2, random_state=SEED)
             pred_probs = np.full((N, K), 0.1)
             pred_probs[np.arange(N), labels] = 0.9
@@ -90,7 +90,7 @@ class TestUnderperformingGroupIssueManager:
 
     def test_no_meaningful_clusters(self, issue_manager, make_data):
         np.random.seed(SEED)
-        N = 10
+        N = 15  # Assign value greater than k
         features = np.random.uniform(0, 20, (N, 10))
         data = make_data()
         pred_probs = data["pred_probs"]
