@@ -177,20 +177,20 @@ class UnderperformingGroupIssueManager(IssueManager):
         This function takes in a sparse graph (csr_matrix) that has more than
         one component (multiple unconnected subgraphs) and appends another
         node to the graph that is weakly connected to all other nodes.
-        RH 2022
 
         Args:
-            d (scipy.sparse.csr_matrix):
+            knn_graph (scipy.sparse.csr_matrix):
                 Sparse graph with multiple components.
                 See scipy.sparse.csgraph.connected_components
-            dist_fullyConnectedNode (float):
+            new_node_dist (float):
                 Value to use for the connection strengh to all other nodes.
                 Value will be appended as elements in a new row and column at
-                the ends of the 'd' matrix.
+                the ends of the distance matrix.
 
         Returns:
-            d2 (scipy.sparse.csr_matrix):
+            connected_knn_graph (scipy.sparse.csr_matrix):
                 Sparse graph with only one component.
+        Source: https://github.com/scikit-learn-contrib/hdbscan/issues/82#issuecomment-1242604639
         """
         N = knn_graph.shape[0]
         if new_node_dist is None:
