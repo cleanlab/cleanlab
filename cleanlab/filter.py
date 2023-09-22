@@ -438,8 +438,7 @@ def find_label_issues(
 
     if filter_by in ["confident_learning", "low_normalized_margin", "low_self_confidence"]:
         label_issues_mask = np.zeros(len(labels), dtype=bool)
-        for idx in cl_error_indices:
-            label_issues_mask[idx] = True
+        label_issues_mask[cl_error_indices] = True
 
     if filter_by == "predicted_neq_given":
         label_issues_mask = find_predicted_neq_given(labels, pred_probs, multi_label=multi_label)
@@ -447,9 +446,7 @@ def find_label_issues(
     if filter_by not in ["low_self_confidence", "low_normalized_margin"]:
         # Remove label issues if given label == model prediction if issues haven't been removed yet
         pred = pred_probs.argmax(axis=1)
-        for i, pred_label in enumerate(pred):
-            if pred_label == labels[i]:
-                label_issues_mask[i] = False
+        label_issues_mask[pred == labels] = False
 
     if verbose:
         print("Number of label issues found: {}".format(sum(label_issues_mask)))
@@ -505,8 +502,7 @@ def _find_label_issues_multilabel(
 
         cl_error_indices = np.argsort(label_quality_scores)[:num_errors]
         label_issues_mask = np.zeros(len(labels), dtype=bool)
-        for idx in cl_error_indices:
-            label_issues_mask[idx] = True
+        label_issues_mask[cl_error_indices] = True
 
         if return_indices_ranked_by is not None:
             label_quality_scores_issues = ml_scorer.get_label_quality_scores(
