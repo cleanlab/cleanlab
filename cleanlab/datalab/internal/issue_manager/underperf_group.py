@@ -24,7 +24,7 @@ from scipy.sparse import csr_matrix
 from sklearn.neighbors import NearestNeighbors
 from sklearn.exceptions import NotFittedError
 from sklearn.utils.validation import check_is_fitted
-from sklearn.cluster import HDBSCAN
+from sklearn.cluster import HDBSCAN, DBSCAN
 from sklearn.base import ClusterMixin
 from sklearn.metrics import silhouette_score
 
@@ -35,6 +35,42 @@ import scipy.sparse as sp
 if TYPE_CHECKING:  # pragma: no cover
     import numpy.typing as npt
     from cleanlab.datalab.datalab import Datalab
+
+
+def _symmetrize_knn_graph(knn_graph: csr_matrix) -> csr_matrix:
+    binary_adjacency = (knn_graph > 0).astype(int)
+    symmetric_adjacency = binary_adjacency.maximum(binary_adjacency.T)
+    symmetric_distances = knn_graph + knn_graph.T.multiply(symmetric_adjacency - binary_adjacency)
+    return symmetric_distances
+
+
+def _connect_knn_graph(knn_graph: csr_matrix, new_node_dist: Optional[float] = None) -> csr_matrix:
+    """
+    This function takes in a sparse graph (csr_matrix) that has more than
+    one component (multiple unconnected subgraphs) and appends another
+    node to the graph that is weakly connected to all other nodes.
+
+    Args:
+        knn_graph (scipy.sparse.csr_matrix):
+            Sparse graph with multiple components.
+            See scipy.sparse.csgraph.connected_components
+        new_node_dist (float):
+            Value to use for the connection strengh to all other nodes.
+            Value will be appended as elements in a new row and column at
+            the ends of the distance matrix.
+
+    Returns:
+        connected_knn_graph (scipy.sparse.csr_matrix):
+            Sparse graph with only one component.
+    Source: https://github.com/scikit-learn-contrib/hdbscan/issues/82#issuecomment-1242604639
+    """
+    N = knn_graph.shape[0]
+    if new_node_dist is None:
+        new_node_dist = (knn_graph.max() - knn_graph.min()) * 1000
+    connected_knn_graph = knn_graph.copy()
+    connected_knn_graph = sp.vstack((connected_knn_graph, np.full((1, N), new_node_dist)))
+    connected_knn_graph = sp.hstack((connected_knn_graph, np.full((N + 1, 1), new_node_dist)))
+    return connected_knn_graph.tocsr()
 
 
 class UnderperformingGroupIssueManager(IssueManager):
@@ -74,8 +110,9 @@ class UnderperformingGroupIssueManager(IssueManager):
         **kwargs,
     ) -> None:
         labels = self.datalab.labels
-        knn_graph, original_knn_graph = self.set_knn_graph(features, kwargs)
-        cluster_labels = self.perform_clustering(knn_graph)
+        knn_graph = self.set_knn_graph(features, kwargs)
+        symmetric_knn_graph = _symmetrize_knn_graph(knn_graph)
+        cluster_labels = self.perform_clustering(symmetric_knn_graph)
         unique_cluster_labels = self.filter_cluster_labels(cluster_labels)
         if not unique_cluster_labels.size:
             raise ValueError(
@@ -95,7 +132,7 @@ class UnderperformingGroupIssueManager(IssueManager):
         )
         self.summary = self.make_summary(score=worst_cluster_ratio)
         self.info = self.collect_info(
-            knn_graph=original_knn_graph,
+            knn_graph=knn_graph,
             n_clusters=n_clusters,
             cluster_labels=cluster_labels,
         )
@@ -126,31 +163,23 @@ class UnderperformingGroupIssueManager(IssueManager):
                 check_is_fitted(knn)
             except NotFittedError:
                 knn.fit(features)
-
             knn_graph = knn.kneighbors_graph(mode="distance")
-            symmetric_knn_graph = self._symmetrize_knn_graph(knn_graph)
-        return symmetric_knn_graph, knn_graph
-
-    def _symmetrize_knn_graph(self, knn_graph: csr_matrix) -> csr_matrix:
-        binary_adjacency = (knn_graph > 0).astype(int)
-        symmetric_adjacency = binary_adjacency.maximum(binary_adjacency.T)
-        symmetric_distances = knn_graph + knn_graph.T.multiply(
-            symmetric_adjacency - binary_adjacency
-        )
-        return symmetric_distances
+        return knn_graph
 
     def perform_clustering(self, knn_graph: csr_matrix) -> npt.NDArray[np.int_]:
-        # hdb = HDBSCAN(metric="precomputed")
-        # hdb.fit(knn_graph)
-        # cluster_labels = hdb.labels_
+        clusterer = DBSCAN(metric="precomputed")
+        clusterer.fit(knn_graph)
+        cluster_labels = clusterer.labels_
         # ALTERNATIVE FORMULATION: Connect the graph using a dummy node before HDBSCAN.
         # Adapted from - https://github.com/scikit-learn-contrib/hdbscan/issues/82#issuecomment-1242604639
-        # knn_graph = self.connect_knn_graph(knn_graph)
-        cluster_labels = self.run_hdbscan_on_components(knn_graph)
+        # Need to check if graph is actually disconnected before running _connect_knn_graph
+        # connected_knn_graph = _connect_knn_graph(knn_graph)
+        # cluster_labels = self._run_hdbscan_on_components(connected_knn_graph)
+        # cluster_labels = cluster_labels[:200] # -> Slicing applicable if _connect_knn_graph is called
 
-        return cluster_labels[:200]  # Slicing applicable if connect_knn_graph is called
+        return cluster_labels
 
-    def run_hdbscan_on_components(
+    def _run_hdbscan_on_components(
         self, knn_graph: csr_matrix, min_cluster_size: int = 5, **hdbscan_params: Dict[str, Any]
     ) -> npt.NDArray[np.int_]:
         n_components, component_labels = sp.csgraph.connected_components(
@@ -161,44 +190,14 @@ class UnderperformingGroupIssueManager(IssueManager):
         for component_idx in range(n_components):
             component_mask = component_labels == component_idx
             component_subgraph = knn_graph[component_mask, :][:, component_mask]
-            knn_subgraph = self._symmetrize_knn_graph(component_subgraph)
-            clusterer = HDBSCAN(metric="precomputed")
+            knn_subgraph = _symmetrize_knn_graph(component_subgraph)
+            clusterer = HDBSCAN(metric="precomputed", min_cluster_size=min_cluster_size)
             component_clusters = clusterer.fit_predict(knn_subgraph)
             outliers_mask = np.in1d(component_clusters, self.OUTLIER_LABELS)
             component_clusters[~outliers_mask] += offset
             all_clusters[component_mask] = component_clusters
             offset = np.max(component_clusters) + 1
         return all_clusters
-
-    def connect_knn_graph(
-        self, knn_graph: csr_matrix, new_node_dist: Optional[float] = None
-    ) -> csr_matrix:
-        """
-        This function takes in a sparse graph (csr_matrix) that has more than
-        one component (multiple unconnected subgraphs) and appends another
-        node to the graph that is weakly connected to all other nodes.
-
-        Args:
-            knn_graph (scipy.sparse.csr_matrix):
-                Sparse graph with multiple components.
-                See scipy.sparse.csgraph.connected_components
-            new_node_dist (float):
-                Value to use for the connection strengh to all other nodes.
-                Value will be appended as elements in a new row and column at
-                the ends of the distance matrix.
-
-        Returns:
-            connected_knn_graph (scipy.sparse.csr_matrix):
-                Sparse graph with only one component.
-        Source: https://github.com/scikit-learn-contrib/hdbscan/issues/82#issuecomment-1242604639
-        """
-        N = knn_graph.shape[0]
-        if new_node_dist is None:
-            new_node_dist = (knn_graph.max() - knn_graph.min()) * 1000
-        connected_knn_graph = knn_graph.copy()
-        connected_knn_graph = sp.vstack((connected_knn_graph, np.full((1, N), new_node_dist)))
-        connected_knn_graph = sp.hstack((connected_knn_graph, np.full((N + 1, 1), new_node_dist)))
-        return connected_knn_graph.tocsr()
 
     def filter_cluster_labels(self, cluster_labels: npt.NDArray[np.int_]) -> npt.NDArray[np.int_]:
         unique_cluster_labels = np.array(
@@ -244,6 +243,13 @@ class UnderperformingGroupIssueManager(IssueManager):
             knn_graph = knn_graph_kwargs
         elif knn_graph_stats is not None:
             knn_graph = knn_graph_stats
+
+        if isinstance(knn_graph, csr_matrix) and kwargs.get("k", 0) > (
+            knn_graph.nnz // knn_graph.shape[0]
+        ):
+            # If the provided knn graph is insufficient, then we need to recompute the knn graph
+            # with the provided features
+            knn_graph = None
 
         return knn_graph
 
@@ -305,7 +311,7 @@ class UnderperformingGroupIssueManager(IssueManager):
     ) -> Dict[str, Dict[str, Any]]:
         cluster_stats = {
             "clustering": {
-                "algorithm": "HDBSCAN",
+                "algorithm": "DBSCAN",
                 "params": {"metric": "precomputed"},
                 "stats": {"n_clusters": n_clusters, "cluster_labels": cluster_labels},
             }
