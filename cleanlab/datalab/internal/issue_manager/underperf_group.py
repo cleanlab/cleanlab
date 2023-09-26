@@ -25,7 +25,6 @@ from sklearn.neighbors import NearestNeighbors
 from sklearn.exceptions import NotFittedError
 from sklearn.utils.validation import check_is_fitted
 from sklearn.cluster import HDBSCAN, DBSCAN
-from sklearn.base import ClusterMixin
 from sklearn.metrics import silhouette_score
 
 from cleanlab.datalab.internal.issue_manager import IssueManager
@@ -96,7 +95,7 @@ class UnderperformingGroupIssueManager(IssueManager):
         metric: Optional[str] = None,
         threshold: float = 0.1,
         k: int = 10,
-        **_,
+        **_: Any,
     ):
         super().__init__(datalab)
         self.metric = metric
@@ -107,7 +106,7 @@ class UnderperformingGroupIssueManager(IssueManager):
         self,
         features: npt.NDArray,
         pred_probs: npt.NDArray,
-        **kwargs,
+        **kwargs: Any,
     ) -> None:
         labels = self.datalab.labels
         knn_graph = self.set_knn_graph(features, kwargs)
@@ -137,7 +136,9 @@ class UnderperformingGroupIssueManager(IssueManager):
             cluster_labels=cluster_labels,
         )
 
-    def set_knn_graph(self, features: npt.NDArray, find_issues_kwargs: Dict) -> csr_matrix:
+    def set_knn_graph(
+        self, features: npt.NDArray, find_issues_kwargs: Dict[str, Any]
+    ) -> csr_matrix:
         knn_graph = self._process_knn_graph_from_inputs(find_issues_kwargs)
         old_knn_metric = self.datalab.get_info("statistics").get("knn_metric")
         metric_changes = self.metric and self.metric != old_knn_metric
@@ -258,7 +259,7 @@ class UnderperformingGroupIssueManager(IssueManager):
         knn_graph: csr_matrix,
         n_clusters: int,
         cluster_labels: npt.NDArray[np.int_],
-    ) -> dict:
+    ) -> Dict[str, Any]:
         params_dict = {
             "metric": self.metric,
             "threshold": self.threshold,
@@ -309,7 +310,7 @@ class UnderperformingGroupIssueManager(IssueManager):
         cluster_labels: npt.NDArray[np.int_],
         knn_graph: csr_matrix,
     ) -> Dict[str, Dict[str, Any]]:
-        cluster_stats = {
+        cluster_stats: Dict[str, Dict[str, Any]] = {
             "clustering": {
                 "algorithm": "DBSCAN",
                 "params": {"metric": "precomputed"},
