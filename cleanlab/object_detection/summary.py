@@ -26,6 +26,7 @@ import collections
 from cleanlab.internal.constants import (
     MAX_CLASS_TO_SHOW,
     ALPHA,
+    IOU_THRESHOLD,
 )
 from cleanlab.object_detection.rank import (
     _get_valid_inputs_for_compute_scores,
@@ -110,30 +111,15 @@ def bounding_box_size_distribution(
     ----------
     labels:
         Annotated boxes and class labels in the original dataset, which may contain some errors.
-        This is a list of ``N`` dictionaries such that ``labels[i]`` contains the given labels for the `i`-th image in the following format:
-        ``{'bboxes': np.ndarray((L,4)), 'labels': np.ndarray((L,)), 'image_name': str}`` where ``L`` is the number of annotated bounding boxes
-        for the `i`-th image and ``bboxes[l]`` is a bounding box of coordinates in ``[x1,y1,x2,y2]`` format with given class label ``labels[j]``.
-        ``image_name`` is an optional part of the labels that can be used to later refer to specific images.
-
-       For more information on proper labels formatting, check out the `MMDetection library <https://mmdetection.readthedocs.io/en/dev-3.x/advanced_guides/customize_dataset.html>`_.
+        Refer to documentation for this argument in :py:func:`object_counts_per_image <cleanlab.object_detection.summary.object_counts_per_image>` for further details.
 
     predictions:
         Predictions output by a trained object detection model.
-        For the most accurate results, predictions should be out-of-sample to avoid overfitting, eg. obtained via :ref:`cross-validation <pred_probs_cross_val>`.
-        This is a list of ``N`` ``np.ndarray`` such that ``predictions[i]`` corresponds to the model prediction for the `i`-th image.
-        For each possible class ``k`` in 0, 1, ..., K-1: ``predictions[i][k]`` is a ``np.ndarray`` of shape ``(M,5)``,
-        where ``M`` is the number of predicted bounding boxes for class ``k``. Here the five columns correspond to ``[x1,y1,x2,y2,pred_prob]``,
-        where ``[x1,y1,x2,y2]`` are coordinates of the bounding box predicted by the model
-        and ``pred_prob`` is the model's confidence in the predicted class label for this bounding box.
-
-        Note: Here, ``[x1,y1]`` corresponds to the coordinates of the bottom-left corner of the bounding box, while ``[x2,y2]`` corresponds to the coordinates of the top-right corner of the bounding box. The last column, pred_prob, represents the predicted probability that the bounding box contains an object of the class k.
-
-        For more information see the `MMDetection package <https://github.com/open-mmlab/mmdetection>`_ for an example object detection library that outputs predictions in the correct format.
+        Refer to documentation for this argument in :py:func:`object_counts_per_image <cleanlab.object_detection.summary.object_counts_per_image>` for further details.
 
     auxiliary_inputs: optional
         Auxiliary inputs to be used in the computation of counts.
-        The `auxiliary_inputs` can be computed using :py:func:`rank._get_valid_inputs_for_compute_scores <cleanlab.object_detection.rank._get_valid_inputs_for_compute_scores>`.
-        It is internally computed from the given `labels` and `predictions`.
+        Refer to documentation for this argument in :py:func:`object_counts_per_image <cleanlab.object_detection.summary.object_counts_per_image>` for further details.
 
     class_names: optional
         A dictionary mapping one-hot-encoded class labels back to their original class names in the format ``{"integer-label": "original-class-name"}``.
@@ -170,30 +156,15 @@ def class_label_distribution(
     ----------
     labels:
         Annotated boxes and class labels in the original dataset, which may contain some errors.
-        This is a list of ``N`` dictionaries such that ``labels[i]`` contains the given labels for the `i`-th image in the following format:
-        ``{'bboxes': np.ndarray((L,4)), 'labels': np.ndarray((L,)), 'image_name': str}`` where ``L`` is the number of annotated bounding boxes
-        for the `i`-th image and ``bboxes[l]`` is a bounding box of coordinates in ``[x1,y1,x2,y2]`` format with given class label ``labels[j]``.
-        ``image_name`` is an optional part of the labels that can be used to later refer to specific images.
-
-       For more information on proper labels formatting, check out the `MMDetection library <https://mmdetection.readthedocs.io/en/dev-3.x/advanced_guides/customize_dataset.html>`_.
+        Refer to documentation for this argument in :py:func:`object_counts_per_image <cleanlab.object_detection.summary.object_counts_per_image>` for further details.
 
     predictions:
         Predictions output by a trained object detection model.
-        For the most accurate results, predictions should be out-of-sample to avoid overfitting, eg. obtained via :ref:`cross-validation <pred_probs_cross_val>`.
-        This is a list of ``N`` ``np.ndarray`` such that ``predictions[i]`` corresponds to the model prediction for the `i`-th image.
-        For each possible class ``k`` in 0, 1, ..., K-1: ``predictions[i][k]`` is a ``np.ndarray`` of shape ``(M,5)``,
-        where ``M`` is the number of predicted bounding boxes for class ``k``. Here the five columns correspond to ``[x1,y1,x2,y2,pred_prob]``,
-        where ``[x1,y1,x2,y2]`` are coordinates of the bounding box predicted by the model
-        and ``pred_prob`` is the model's confidence in the predicted class label for this bounding box.
-
-        Note: Here, ``[x1,y1]`` corresponds to the coordinates of the bottom-left corner of the bounding box, while ``[x2,y2]`` corresponds to the coordinates of the top-right corner of the bounding box. The last column, pred_prob, represents the predicted probability that the bounding box contains an object of the class k.
-
-        For more information see the `MMDetection package <https://github.com/open-mmlab/mmdetection>`_ for an example object detection library that outputs predictions in the correct format.
+        Refer to documentation for this argument in :py:func:`object_counts_per_image <cleanlab.object_detection.summary.object_counts_per_image>` for further details.
 
     auxiliary_inputs: optional
         Auxiliary inputs to be used in the computation of counts.
-        The `auxiliary_inputs` can be computed using :py:func:`rank._get_valid_inputs_for_compute_scores <cleanlab.object_detection.rank._get_valid_inputs_for_compute_scores>`.
-        It is internally computed from the given `labels` and `predictions`.
+        Refer to documentation for this argument in :py:func:`object_counts_per_image <cleanlab.object_detection.summary.object_counts_per_image>` for further details.
 
     class_names: optional
         Optional dictionary mapping one-hot-encoded class labels back to their original class names in the format ``{"integer-label": "original-class-name"}``.
@@ -218,6 +189,268 @@ def class_label_distribution(
         {k: round(v / labl_total, 2) for k, v in labl_freq.items()},
         {k: round(v / pred_total, 2) for k, v in pred_freq.items()},
     )
+
+
+def class_accuracy(
+    labels=None,
+    predictions=None,
+    *,
+    auxiliary_inputs=None,
+    class_names: Optional[Dict[Any, Any]] = None,
+    verbose=False,
+) -> Dict[Any, Dict[str, float]]:
+    """
+    Calculate the accuracy per class.
+
+    This method can help you understand the classes on which the model performs well or poorly.
+
+    For object detection model, evaluation metrics are defined as follows:
+    - True Positive (TP): the predicted bounding box overlaps with a ground truth bounding box with the same class label
+    - False Positive (FP): the predicted bounding box overlaps with a ground truth bounding box with a different class label or does not overlap with any ground truth bounding box
+    - False Negative (FN): the ground truth bounding box does not overlap with any predicted bounding box
+    - True Negative (TN): not applicable
+
+    Parameters
+    ----------
+    labels:
+        Annotated boxes and class labels in the original dataset, which may contain some errors.
+        Refer to documentation for this argument in :py:func:`object_counts_per_image <cleanlab.object_detection.summary.object_counts_per_image>` for further details.
+
+    predictions:
+        Predictions output by a trained object detection model.
+        Refer to documentation for this argument in :py:func:`object_counts_per_image <cleanlab.object_detection.summary.object_counts_per_image>` for further details.
+
+    auxiliary_inputs: optional
+        Auxiliary inputs to be used in the computation of counts.
+        Refer to documentation for this argument in :py:func:`object_counts_per_image <cleanlab.object_detection.summary.object_counts_per_image>` for further details.
+
+    class_names: optional
+        Optional dictionary mapping one-hot-encoded class labels back to their original class names in the format ``{"integer-label": "original-class-name"}``.
+
+    verbose: optional
+        If True, return the metrics (i.e. TP, FP, FN) in addition to accuracy.
+
+    Returns
+    -------
+    class_metrics: Dict[Any, Dict[str, float]]
+        A dictionary mapping each class label to its accuracy score.
+        If verbose is True, each class label is mapped to a dictionary that also contains the metrics (i.e. TP, FP, FN).
+    """
+    if auxiliary_inputs is None:
+        auxiliary_inputs = _get_valid_inputs_for_compute_scores(ALPHA, labels, predictions)
+    # TP: True Positive, FP: False Positive, FN: False Negative
+    class_metrics = collections.defaultdict(lambda: {"TP": 0, "FP": 0, "FN": 0})
+
+    for sample in auxiliary_inputs:
+        matched_label_idx = (
+            set()
+        )  # indices of ground truth bounding boxes that have been matched with a predicted bounding box
+
+        iou_t = sample["iou_matrix"].T  # row: prediction bbox, col: label bbox
+        for pred_box_idx in range(len(iou_t)):
+            pred_label = (
+                sample["pred_labels"][pred_box_idx]
+                if class_names is None
+                else class_names[str(sample["pred_labels"][pred_box_idx])]
+            )
+
+            # when the predicted bounding box overlaps with multiple ground truth bounding boxes, choose the one with the highest IoU score
+            max_iou, max_iou_idx = -1, -1
+            for lab_box_idx in range(len(iou_t[0])):
+                iou_score = iou_t[pred_box_idx][lab_box_idx]
+                if iou_score >= 0.5 and iou_score > max_iou:
+                    max_iou, max_iou_idx = iou_score, lab_box_idx
+
+            if max_iou_idx == -1:
+                # FP case: the predicted bounding box does not overlap with any ground truth bounding box
+                class_metrics[pred_label]["FP"] += 1
+                continue
+            else:
+                lab_label = (
+                    sample["lab_labels"][max_iou_idx]
+                    if class_names is None
+                    else class_names[str(sample["lab_labels"][max_iou_idx])]
+                )
+                if pred_label == lab_label:
+                    # TP case: the predicted bounding box overlaps with a ground truth bounding box with the same class label
+                    class_metrics[lab_label]["TP"] += 1
+                    matched_label_idx.add(max_iou_idx)
+                else:
+                    # FP case: the predicted bounding box overlaps with a ground truth bounding box with a different class label
+                    class_metrics[lab_label]["FP"] += 1
+
+        # FN case - any ground truth bounding box that does not have an overlap with any predicted bounding box
+        missed_labels = set(range(len(iou_t[0]))) - matched_label_idx
+        for idx in missed_labels:
+            lab_label = (
+                sample["lab_labels"][idx]
+                if class_names is None
+                else class_names[str(sample["lab_labels"][idx])]
+            )
+            class_metrics[lab_label]["FN"] += 1
+
+    for c in class_metrics.keys():
+        acc_score = class_metrics[c]["TP"] / (
+            class_metrics[c]["TP"] + class_metrics[c]["FP"] + class_metrics[c]["FN"]
+        )
+        if verbose:
+            class_metrics[c]["accuracy"] = round(acc_score, 2)
+        else:
+            class_metrics[c] = {"accuracy": round(acc_score, 2)}
+    return class_metrics
+
+
+def get_sorted_bbox_count_idxs(labels, predictions):
+    """
+    Returns a tuple of idxs and bounding box counts of images sorted from highest to lowest number of bounding boxes.
+
+    This plot can help you discover images with abnormally many/few object annotations.
+
+    Parameters
+    ----------
+    labels:
+        Annotated boxes and class labels in the original dataset, which may contain some errors.
+        Refer to documentation for this argument in :py:func:`object_counts_per_image <cleanlab.object_detection.summary.object_counts_per_image>` for further details.
+
+    predictions:
+        Predictions output by a trained object detection model.
+        Refer to documentation for this argument in :py:func:`object_counts_per_image <cleanlab.object_detection.summary.object_counts_per_image>` for further details.
+
+
+    Returns
+    -------
+    sorted_idxs: List[Tuple[int, int]], List[Tuple[int, int]]
+        A tuple containing two lists. The first is an array of shape ``(N,)`` containing the number of annotated objects for each image in the dataset.
+        The second is an array of shape ``(N,)`` containing the number of predicted objects for each image in the dataset.
+    """
+    lab_count, pred_count = object_counts_per_image(labels, predictions)
+    lab_grouped = zip([i for i in range(len(labels))], lab_count)
+    pred_grouped = zip([i for i in range(len(predictions))], pred_count)
+
+    sorted_lab = sorted(lab_grouped, key=lambda x: x[1], reverse=True)
+    sorted_pred = sorted(pred_grouped, key=lambda x: x[1], reverse=True)
+
+    return sorted_lab, sorted_pred
+
+
+def plot_class_size_distributions(
+    labels, predictions, class_names=None, class_to_show=MAX_CLASS_TO_SHOW
+):
+    """
+    Plots the size distributions for bounding boxes for each class.
+
+    This plot can help you find annotated/predicted boxes for a particular class that are abnormally big/small.
+
+    Parameters
+    ----------
+    labels:
+        Annotated boxes and class labels in the original dataset, which may contain some errors.
+        Refer to documentation for this argument in :py:func:`object_counts_per_image <cleanlab.object_detection.summary.object_counts_per_image>` for further details.
+
+    predictions:
+        Predictions output by a trained object detection model.
+        Refer to documentation for this argument in :py:func:`object_counts_per_image <cleanlab.object_detection.summary.object_counts_per_image>` for further details.
+
+    class_names: optional
+        Optional dictionary mapping one-hot-encoded class labels back to their original class names in the format ``{"integer-label": "original-class-name"}``.
+
+    class_to_show: optional
+        The number of classes to show in the plots. Classes over `class_to_show` are hidden.
+    """
+    try:
+        import matplotlib.pyplot as plt
+    except ImportError as e:
+        raise ImportError(
+            "This functionality requires matplotlib. Install it via: `pip install matplotlib`"
+        )
+
+    lab_boxes, pred_boxes = bounding_box_size_distribution(
+        labels, predictions, class_names=class_names
+    )
+
+    for i, c in enumerate(lab_boxes.keys()):
+        if i >= class_to_show:
+            break
+        fig, axs = plt.subplots(1, 2, figsize=(10, 5))
+        fig.suptitle(f"Size distributions for bounding box for class {c}")
+        for i, l in enumerate([lab_boxes, pred_boxes]):
+            axs[i].hist(l[c], bins="auto")
+            axs[i].set_xlabel("box area (pixels)")
+            axs[i].set_ylabel("count")
+            axs[i].set_title("annotated" if i == 0 else "predicted")
+
+        plt.show()
+
+
+def plot_class_distribution(labels, predictions, class_names=None):
+    """
+    Plots the distribution of class labels associated with all annotated bounding boxes and predicted bounding boxes in the dataset.
+
+    This plot can help you understand which classes are: rare or over/under-predicted by the model overall.
+
+    Parameters
+    ----------
+    labels:
+        Annotated boxes and class labels in the original dataset, which may contain some errors.
+        Refer to documentation for this argument in :py:func:`object_counts_per_image <cleanlab.object_detection.summary.object_counts_per_image>` for further details.
+
+    predictions:
+        Predictions output by a trained object detection model.
+        Refer to documentation for this argument in :py:func:`object_counts_per_image <cleanlab.object_detection.summary.object_counts_per_image>` for further details.
+
+    class_names: optional
+        Optional dictionary mapping one-hot-encoded class labels back to their original class names in the format ``{"integer-label": "original-class-name"}``.
+    """
+    try:
+        import matplotlib.pyplot as plt
+    except ImportError as e:
+        raise ImportError(
+            "This functionality requires matplotlib. Install it via: `pip install matplotlib`"
+        )
+
+    lab_dist, pred_dist = class_label_distribution(labels, predictions, class_names=class_names)
+    fig, axs = plt.subplots(1, 2, figsize=(10, 5))
+    fig.suptitle(f"Distribution of classes in the dataset")
+    for i, d in enumerate([lab_dist, pred_dist]):
+        axs[i].pie(d.values(), labels=d.keys(), autopct="%1.1f%%")
+        axs[i].set_title("Annotated" if i == 0 else "Predicted")
+
+    plt.show()
+
+
+def plot_class_accuracy(labels, predictions, class_names=None):
+    """
+    Plots the accuracy per class.
+
+    This plot can help you understand the classes on which the model performs well or poorly.
+
+    Parameters
+    ----------
+    labels:
+        Annotated boxes and class labels in the original dataset, which may contain some errors.
+        Refer to documentation for this argument in :py:func:`object_counts_per_image <cleanlab.object_detection.summary.object_counts_per_image>` for further details.
+
+    predictions:
+        Predictions output by a trained object detection model.
+        Refer to documentation for this argument in :py:func:`object_counts_per_image <cleanlab.object_detection.summary.object_counts_per_image>` for further details.
+
+    class_names: optional
+        Optional dictionary mapping one-hot-encoded class labels back to their original class names in the format ``{"integer-label": "original-class-name"}``.
+    """
+    try:
+        import matplotlib.pyplot as plt
+    except ImportError as e:
+        raise ImportError(
+            "This functionality requires matplotlib. Install it via: `pip install matplotlib`"
+        )
+
+    class_acc = class_accuracy(labels, predictions, class_names=class_names)
+    f = lambda x: [v["accuracy"] for v in x]
+    plt.bar(class_acc.keys(), f(class_acc.values()))
+    plt.xlabel("class")
+    plt.ylabel("accuracy")
+    plt.title("accuracy per class")
+    plt.show()
 
 
 def visualize(
@@ -346,7 +579,7 @@ def _get_bbox_areas(labels, boxes, class_area_dict, class_names=None) -> None:
     """Helper function to compute the area of bounding boxes for each class."""
     for cl, bbox in zip(labels, boxes):
         if class_names is not None:
-            cl = class_names[cl]
+            cl = class_names[str(cl)]
         class_area_dict[cl].append((bbox[2] - bbox[0]) * (bbox[3] - bbox[1]))
 
 
@@ -354,7 +587,7 @@ def _get_class_instances(labels, class_instances_dict, class_names=None) -> None
     """Helper function to count the number of class instances in each image."""
     for cl in labels:
         if class_names is not None:
-            cl = class_names[cl]
+            cl = class_names[str(cl)]
         class_instances_dict[cl] += 1
 
 
