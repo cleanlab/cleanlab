@@ -258,7 +258,7 @@ def class_accuracy(
             max_iou, max_iou_idx = -1, -1
             for lab_box_idx in range(len(iou_t[0])):
                 iou_score = iou_t[pred_box_idx][lab_box_idx]
-                if iou_score >= 0.5 and iou_score > max_iou:
+                if iou_score >= IOU_THRESHOLD and iou_score > max_iou:
                     max_iou, max_iou_idx = iou_score, lab_box_idx
 
             if max_iou_idx == -1:
