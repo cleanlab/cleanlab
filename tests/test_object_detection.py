@@ -676,7 +676,7 @@ def test_class_label_distribution():
 
 
 def test_class_accuracy():
-    class_metrics = class_accuracy(labels, predictions, verbose=True)
+    class_metrics = class_accuracy(labels, predictions)
 
     total_TP = total_FP = total_FN = 0
     for c in class_metrics.keys():
@@ -717,7 +717,7 @@ def test_class_accuracy():
     dummy_labels = [lab1]
     dummy_predictions = [pred1]
 
-    class_metrics = class_accuracy(dummy_labels, dummy_predictions, verbose=True)
+    class_metrics = class_accuracy(dummy_labels, dummy_predictions)
     assert class_metrics[1]["TP"] == 2
     assert class_metrics[0]["FN"] == 1
 

@@ -227,19 +227,17 @@ def class_accuracy(
     class_names: optional
         Optional dictionary mapping one-hot-encoded class labels back to their original class names in the format ``{"integer-label": "original-class-name"}``.
 
-    verbose: optional
-        If True, return the metrics (i.e. TP, FP, FN) in addition to accuracy.
-
     Returns
     -------
     class_metrics: Dict[Any, Dict[str, float]]
-        A dictionary mapping each class label to its accuracy score.
-        If verbose is True, each class label is mapped to a dictionary that also contains the metrics (i.e. TP, FP, FN).
+        A dictionary mapping each class label to its metrics - TP, FP, FN, accuracy.
     """
     if auxiliary_inputs is None:
         auxiliary_inputs = _get_valid_inputs_for_compute_scores(ALPHA, labels, predictions)
     # TP: True Positive, FP: False Positive, FN: False Negative
-    class_metrics = collections.defaultdict(lambda: {"TP": 0, "FP": 0, "FN": 0})
+    class_metrics: DefaultDict[Any, Any] = collections.defaultdict(
+        lambda: {"TP": 0, "FP": 0, "FN": 0, "accuracy": 0}
+    )
 
     for sample in auxiliary_inputs:
         matched_label_idx = (
@@ -293,10 +291,8 @@ def class_accuracy(
         acc_score = class_metrics[c]["TP"] / (
             class_metrics[c]["TP"] + class_metrics[c]["FP"] + class_metrics[c]["FN"]
         )
-        if verbose:
-            class_metrics[c]["accuracy"] = round(acc_score, 2)
-        else:
-            class_metrics[c] = {"accuracy": round(acc_score, 2)}
+        class_metrics[c]["accuracy"] = round(acc_score, 2)
+
     return class_metrics
 
 
