@@ -445,7 +445,7 @@ def plot_class_accuracy(labels, predictions, class_names=None):
     plt.bar(class_acc.keys(), f(class_acc.values()))
     plt.xlabel("class")
     plt.ylabel("accuracy")
-    plt.title("accuracy per class")
+    plt.title("Model's accuracy per class")
     plt.show()
 
 
