@@ -198,7 +198,7 @@ def class_accuracy(
     auxiliary_inputs=None,
     class_names: Optional[Dict[Any, Any]] = None,
     verbose=False,
-) -> Dict[Any, Dict[str, float]]:
+):
     """
     Calculate the accuracy per class.
 
