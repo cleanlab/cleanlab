@@ -1185,7 +1185,7 @@ class TestIssueManagersReuseKnnGraph:
     def test_underperf_group_reuses_knn_graph(self, features, pred_probs, labels):
         # Run 1: only underperforming_group
         lab = Datalab(data={"labels": labels}, label_name="labels")
-        find_issues_kwargs = {"issue_types": {"underperforming_group": {}}}
+        find_issues_kwargs = {"issue_types": {"underperforming_group": {"k": self.k}}}
         time_only_underperf_group = timeit.timeit(
             lambda: lab.find_issues(features=features, pred_probs=pred_probs, **find_issues_kwargs),
             number=1,

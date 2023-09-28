@@ -17,6 +17,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional, Union, Tuple
 import warnings
+import inspect
 
 import numpy as np
 import pandas as pd
@@ -25,7 +26,6 @@ from sklearn.neighbors import NearestNeighbors
 from sklearn.exceptions import NotFittedError
 from sklearn.utils.validation import check_is_fitted
 from sklearn.cluster import DBSCAN
-from sklearn.metrics import silhouette_score
 
 from cleanlab.datalab.internal.issue_manager import IssueManager
 from cleanlab.rank import get_self_confidence_for_each_label
@@ -50,7 +50,7 @@ class UnderperformingGroupIssueManager(IssueManager):
         1: [],
         2: ["threshold"],
     }
-    OUTLIER_LABELS = (-1, -2, -3)
+    OUTLIER_LABELS = (-1,)
 
     def __init__(
         self,
@@ -58,22 +58,31 @@ class UnderperformingGroupIssueManager(IssueManager):
         metric: Optional[str] = None,
         threshold: float = 0.1,
         k: int = 10,
+        clustering_kwargs: Dict[str, Any] = {},
         **_: Any,
     ):
         super().__init__(datalab)
         self.metric = metric
         self.threshold = self._set_threshold(threshold)
         self.k = k
+        self.clustering_kwargs = clustering_kwargs
 
     def find_issues(
         self,
         features: npt.NDArray,
         pred_probs: npt.NDArray,
+        cluster_labels: npt.NDArray[np.int_] = None,
         **kwargs: Any,
     ) -> None:
         labels = self.datalab.labels
         knn_graph = self.set_knn_graph(features, kwargs)
-        cluster_labels = self.perform_clustering(knn_graph)
+        if cluster_labels is None:
+            cluster_labels = self.perform_clustering(knn_graph)
+        else:
+            if self.clustering_kwargs:
+                warnings.warn(
+                    "`clustering_kwargs` will not be used since `cluster_labels` have been passed."
+                )
         unique_cluster_labels = self.filter_cluster_labels(cluster_labels)
         if not unique_cluster_labels.size:
             raise ValueError(
@@ -130,7 +139,14 @@ class UnderperformingGroupIssueManager(IssueManager):
         return knn_graph
 
     def perform_clustering(self, knn_graph: csr_matrix) -> npt.NDArray[np.int_]:
-        clusterer = DBSCAN(metric="precomputed")
+        DBSCAN_VALID_KEYS = inspect.signature(DBSCAN).parameters.keys()
+        dbscan_params = {
+            key: value
+            for key, value in ((k, self.clustering_kwargs.get(k, None)) for k in DBSCAN_VALID_KEYS)
+            if value is not None
+        }
+        dbscan_params["metric"] = "precomputed"
+        clusterer = DBSCAN(**dbscan_params)
         clusterer.fit(knn_graph)
         cluster_labels = clusterer.labels_
         return cluster_labels
@@ -214,7 +230,6 @@ class UnderperformingGroupIssueManager(IssueManager):
         cluster_stat_dict = self._get_cluster_statistics(
             n_clusters=n_clusters,
             cluster_labels=cluster_labels,
-            knn_graph=knn_graph,
         )
         info_dict = {**params_dict, **knn_info_dict, **statistics_dict, **cluster_stat_dict}
 
@@ -243,7 +258,6 @@ class UnderperformingGroupIssueManager(IssueManager):
         self,
         n_clusters: int,
         cluster_labels: npt.NDArray[np.int_],
-        knn_graph: csr_matrix,
     ) -> Dict[str, Dict[str, Any]]:
         cluster_stats: Dict[str, Dict[str, Any]] = {
             "clustering": {
@@ -252,17 +266,6 @@ class UnderperformingGroupIssueManager(IssueManager):
                 "stats": {"n_clusters": n_clusters, "cluster_labels": cluster_labels},
             }
         }
-        try:
-            sc = silhouette_score(knn_graph, cluster_labels, metric="precomputed")
-            cluster_stats["clustering"]["stats"]["silhouette_score"] = sc
-            if sc < 0:
-                warnings.warn(
-                    f"A negative silhoutte score ({sc}) could indicate that some samples have been assigned to the wrong cluster."
-                )
-        except ValueError as err:
-            warnings.warn(
-                f"Error computing Silhouette Score - {err}. \n `silhouette_score` will not be present in info."
-            )
         return cluster_stats
 
     def _set_threshold(
