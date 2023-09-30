@@ -147,8 +147,7 @@ class UnderperformingGroupIssueManager(IssueManager):
         }
         dbscan_params["metric"] = "precomputed"
         clusterer = DBSCAN(**dbscan_params)
-        clusterer.fit(knn_graph)
-        knn_graph.eliminate_zeros()  # Reset KNN Graph
+        clusterer.fit(knn_graph.copy())  # Copy to avoid modification
         cluster_labels = clusterer.labels_
         return cluster_labels
 
