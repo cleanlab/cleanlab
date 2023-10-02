@@ -1117,14 +1117,14 @@ class TestDataLabClassImbalanceIssues:
 
 
 class TestDataLabUnderperformingIssue:
-    K = 3
-    N = 100
+    K = 4
+    N = 400
     num_features = 2
 
     @pytest.fixture
     def data(self):
         features, labels = make_blobs(
-            n_samples=self.N, centers=self.K, n_features=2, random_state=SEED
+            n_samples=self.N, centers=self.K, n_features=self.num_features, random_state=SEED
         )
         pred_probs = np.full((self.N, self.K), 0.01)
         pred_probs[np.arange(self.N), labels] = 0.99
@@ -1151,6 +1151,40 @@ class TestDataLabUnderperformingIssue:
         assert "underperforming_group" in summary["issue_type"].values
         underperf_group_summary = lab.get_issue_summary("underperforming_group")
         assert underperf_group_summary["num_issues"].values[0] > 1
+
+    def test_precomputed_cluster_labels(self, data):
+        features, labels, pred_probs = data["features"], data["labels"], data["pred_probs"]
+        lab = Datalab(data={"labels": labels}, label_name="labels")
+        lab.find_issues(
+            features=features,
+            pred_probs=pred_probs,
+            issue_types={"underperforming_group": {"cluster_labels": labels}},
+        )
+        info = lab.get_info("underperforming_group")
+        assert "algorithm" not in info["clustering"]
+        underperf_group_summary = lab.get_issue_summary("underperforming_group")
+        assert underperf_group_summary["num_issues"].values[0] > 1
+
+        # find_issues must be slower when clustering needs to be performed.
+        time_with_clustering = timeit.timeit(
+            lambda: lab.find_issues(
+                features=features, pred_probs=pred_probs, issue_types={"underperforming_group": {}}
+            ),
+            number=1,
+        )
+
+        time_without_clustering = timeit.timeit(
+            lambda: lab.find_issues(
+                features=features,
+                pred_probs=pred_probs,
+                issue_types={"underperforming_group": {"cluster_labels": labels}},
+            ),
+            number=1,
+        )
+
+        assert (
+            time_without_clustering < time_with_clustering
+        ), "Passing cluster labels should make this run of find_issues faster."
 
 
 class TestIssueManagersReuseKnnGraph:
@@ -1193,7 +1227,7 @@ class TestIssueManagersReuseKnnGraph:
 
         # Run 2: Run outlier issue first, then underperforming_group
         find_issues_kwargs = {
-            "issue_types": {"outlier": {"k": self.k}, "underperforming_group": {}},
+            "issue_types": {"outlier": {"k": self.k}, "underperforming_group": {"k": self.k}},
         }
         time_underperf_after_outlier = timeit.timeit(
             lambda: lab.find_issues(features=features, pred_probs=pred_probs, **find_issues_kwargs),

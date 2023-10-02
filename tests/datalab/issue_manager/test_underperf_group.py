@@ -113,7 +113,7 @@ class TestUnderperformingGroupIssueManager:
 
     def test_collect_info(self, issue_manager, make_data):
         data = make_data()
-        features, pred_probs = data["features"], data["pred_probs"]
+        features, pred_probs, labels = data["features"], data["pred_probs"], data["labels"]
         issue_manager.find_issues(features=features, pred_probs=pred_probs)
         info = issue_manager.info
         assert "clustering" in info
@@ -121,6 +121,11 @@ class TestUnderperformingGroupIssueManager:
         assert clustering_info["algorithm"] == "DBSCAN"
         assert clustering_info["params"]["metric"] == "precomputed"
         assert clustering_info["stats"]["n_clusters"] == 4
+        issue_manager.find_issues(features=features, pred_probs=pred_probs, cluster_labels=labels)
+        info = issue_manager.info
+        clustering_info = info["clustering"]
+        assert "algoruthm" not in clustering_info
+        assert "params" not in clustering_info
 
     def test_no_meaningful_clusters(self, issue_manager, make_data, monkeypatch):
         np.random.seed(SEED)
@@ -157,9 +162,11 @@ class TestUnderperformingGroupIssueManager:
         issue_manager.find_issues(features=single_feature, pred_probs=pred_probs)
         assert np.sum(issue_manager.issues["is_underperforming_group_issue"]) == 16
         # Find underperforming group based on two features
+        monkeypatch.setattr(issue_manager, "info", {})
         issue_manager.find_issues(features=features[:, [1, 3]], pred_probs=pred_probs)
         assert np.sum(issue_manager.issues["is_underperforming_group_issue"]) == 49
         # Find underperforming group based on all features
+        monkeypatch.setattr(issue_manager, "info", {})
         issue_manager.find_issues(features=features, pred_probs=pred_probs)
         assert np.sum(issue_manager.issues["is_underperforming_group_issue"]) == 48
 

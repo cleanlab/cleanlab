@@ -78,11 +78,13 @@ class UnderperformingGroupIssueManager(IssueManager):
         knn_graph = self.set_knn_graph(features, kwargs)
         if cluster_labels is None:
             cluster_labels = self.perform_clustering(knn_graph)
+            performed_clustering = True
         else:
             if self.clustering_kwargs:
                 warnings.warn(
                     "`clustering_kwargs` will not be used since `cluster_labels` have been passed."
                 )
+            performed_clustering = False
         unique_cluster_labels = self.filter_cluster_labels(cluster_labels)
         if not unique_cluster_labels.size:
             raise ValueError(
@@ -105,6 +107,7 @@ class UnderperformingGroupIssueManager(IssueManager):
             knn_graph=knn_graph,
             n_clusters=n_clusters,
             cluster_labels=cluster_labels,
+            performed_clustering=performed_clustering,
         )
 
     def set_knn_graph(
@@ -210,6 +213,7 @@ class UnderperformingGroupIssueManager(IssueManager):
         knn_graph: csr_matrix,
         n_clusters: int,
         cluster_labels: npt.NDArray[np.int_],
+        performed_clustering: bool,
     ) -> Dict[str, Any]:
         params_dict = {
             "metric": self.metric,
@@ -230,6 +234,7 @@ class UnderperformingGroupIssueManager(IssueManager):
         cluster_stat_dict = self._get_cluster_statistics(
             n_clusters=n_clusters,
             cluster_labels=cluster_labels,
+            performed_clustering=performed_clustering,
         )
         info_dict = {**params_dict, **knn_info_dict, **statistics_dict, **cluster_stat_dict}
 
@@ -258,14 +263,18 @@ class UnderperformingGroupIssueManager(IssueManager):
         self,
         n_clusters: int,
         cluster_labels: npt.NDArray[np.int_],
+        performed_clustering: bool = True,
     ) -> Dict[str, Dict[str, Any]]:
         cluster_stats: Dict[str, Dict[str, Any]] = {
             "clustering": {
-                "algorithm": "DBSCAN",
-                "params": {"metric": "precomputed"},
                 "stats": {"n_clusters": n_clusters, "cluster_labels": cluster_labels},
             }
         }
+        if performed_clustering:
+            cluster_stats["clustering"].update(
+                {"algorithm": "DBSCAN", "params": {"metric": "precomputed"}}
+            )
+
         return cluster_stats
 
     def _set_threshold(

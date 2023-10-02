@@ -45,8 +45,8 @@ For now, Datalab can only detect label issues in a multi-class classification da
 The cleanlab library has alternative methods you can us to detect label issues in other types of datasets (multi-label, multi-annotator, token classification, etc.).
 
 Label issues are calculated based on provided `pred_probs` from a trained model. If you do not provide this argument, but you do provide `features`, then a K Nearest Neighbor model will be fit to produce `pred_probs` based on your `features`. Otherwise if neither `pred_probs` nor `features` is provided, then this type of issue will not be considered.
-For the most accurate results, provide out-of-sample `pred_probs` which can be obtained for a dataset via `cross-validation <https://docs.cleanlab.ai/stable/tutorials/pred_probs_cross_val.html>`_. 
- 
+For the most accurate results, provide out-of-sample `pred_probs` which can be obtained for a dataset via `cross-validation <https://docs.cleanlab.ai/stable/tutorials/pred_probs_cross_val.html>`_.
+
 Having mislabeled examples in your dataset may hamper the performance of supervised learning models you train on this data.
 For evaluating models or performing other types of data analytics, mislabeled examples may lead you to draw incorrect conclusions.
 To handle mislabeled examples, you can either filter out the data with label issues or try to correct their labels.
@@ -116,7 +116,7 @@ For datasets with low non-IID score, you should consider why your data are not I
 Class-Imbalance Issue
 ---------------------
 
-Class imbalance is diagnosed just using the `labels` provided as part of the dataset. The overall class imbalance quality score of a dataset is the proportion of examples belonging to the rarest class `q`. If this proportion `q` falls below a threshold, then we say this dataset suffers from the class imbalance issue.  
+Class imbalance is diagnosed just using the `labels` provided as part of the dataset. The overall class imbalance quality score of a dataset is the proportion of examples belonging to the rarest class `q`. If this proportion `q` falls below a threshold, then we say this dataset suffers from the class imbalance issue.
 
 In a dataset identified as having class imbalance, the class imbalance quality score for each example is set equal to `q` if it is labeled as the rarest class, and is equal to 1 for all other examples.
 
@@ -128,6 +128,22 @@ Image-specific Issues
 For image datasets which are properly specified as such, Datalab can detect additional types of image-specific issues (if the necessary optional dependencies are installed).
 Specifically, low-quality images which are too: dark/bright, blurry, low information, abnormally sized, etc.
 Descriptions of these image-specific issues are provided in the `CleanVision package <https://github.com/cleanlab/cleanvision>`_ and its documentation.
+
+Underperforming Group Issue
+---------------------
+
+An underperforming group refers to a collection of “hard” examples for which the model predictions are poor.
+
+Underperforming Group issues are calculated based on provided `features`  and `pred_probs`.
+If you do not provide both these arguments, this type of issue will not be considered.
+
+To find the underperforming group, Datalab clusters the data using the provided `features` and determines the cluster `c` with the lowest confidence `q`, where the confidence for
+each cluster is calculated using :py:func:`get_self_confidence_for_each_label <cleanlab.rank.get_self_confidence_for_each_label>`. If the confidence of the whole dataset is
+`r`, then `c` is an underperforming group if `q/r` falls below a threshold and we say that the dataset suffers from the underperforming group issue.
+
+If you have precomputed cluster labels for each datapoint, you can pass them explicitly to Datalab.
+This is especially useful for tabular datasets where you want to cluster the data using a categorical column. An integer encoding of the categorical column  can be passed as cluster labels
+for finding the underperforming group.
 
 
 Optional Issue Parameters
@@ -141,7 +157,8 @@ Appropriate defaults are used for any parameters you do not specify, so no need 
 
     possible_issue_types = {
         "label": label_kwargs, "outlier": outlier_kwargs,
-        "near_duplicate": near_duplicate_kwargs, "non_iid": non_iid_kwargs
+        "near_duplicate": near_duplicate_kwargs, "non_iid": non_iid_kwargs,
+        "class_imbalance": class_imbalance_kwargs, "underperforming_group": underperforming_group_kwargs
     }
 
 
@@ -195,7 +212,7 @@ Outlier Issue Parameters
 
 .. note::
 
-    For more information, view the source code of:  :py:class:`datalab.internal.issue_manager.outlier.OutlierIssueManager <cleanlab.datalab.internal.issue_manager.outlier.OutlierIssueManager>`.  
+    For more information, view the source code of:  :py:class:`datalab.internal.issue_manager.outlier.OutlierIssueManager <cleanlab.datalab.internal.issue_manager.outlier.OutlierIssueManager>`.
 
 Duplicate Issue Parameters
 --------------------------
@@ -214,7 +231,7 @@ Duplicate Issue Parameters
 
 .. note::
 
-    For more information, view the source code of:  :py:class:`datalab.internal.issue_manager.duplicate.NearDuplicateIssueManager <cleanlab.datalab.internal.issue_manager.duplicate.NearDuplicateIssueManager>`. 
+    For more information, view the source code of:  :py:class:`datalab.internal.issue_manager.duplicate.NearDuplicateIssueManager <cleanlab.datalab.internal.issue_manager.duplicate.NearDuplicateIssueManager>`.
 
 
 Non-IID Issue Parameters
@@ -241,9 +258,28 @@ Imbalance Issue Parameters
 .. code-block:: python
 
     class_imbalance_kwargs = {
-    	"threshold": # `threshold` argument to constructor of `ClassImbalanceIssueManager()`. Non-negative floating value between 0 and 1 indicating the minimum fraction of samples of each class that are present in a dataset without class imbalance.
+    	"threshold": # `threshold` argument to constructor of `ClassImbalanceIssueManager`. Non-negative floating value between 0 and 1 indicating the minimum fraction of samples of each class that are present in a dataset without class imbalance.
     }
 
 .. note::
 
     For more information, view the source code of:  :py:class:`datalab.internal.issue_manager.imbalance.ClassImbalanceIssueManager <cleanlab.datalab.internal.issue_manager.imbalance.ClassImbalanceIssueManager>`.
+
+
+
+Underperforming Group Issue Parameters
+--------------------------
+
+.. code-block:: python
+
+    underperforming_group_kwargs = {
+    	"threshold": # `threshold` argument to constructor of `UnderperformingGroupIssueManager`. Non-negative floating value between 0 and 1 used for determinining group of points with low confidence.
+        "metric": # `metric` argument to constructor of `UnderperformingGroupIssueManager`. String for the distance metric used for nearest neighbors search if necessary. `metric` argument to constructor of `sklearn.neighbors.NearestNeighbors`,
+    	"k": # `k` argument to constructor of `UnderperformingGroupIssueManager`. Integer representing the number of nearest neighbors for constructing the nearest neighbour graph. `n_neighbors` argument to constructor of `sklearn.neighbors.NearestNeighbors`,
+        "clustering_kwargs": # `clustering_kwargs` dict of keyword arguments to constructor of `UnderperformingGroupIssueManager`. Key-value pairs representing arguments for the constructor of the clustering algorithm class.
+        "cluster_labels": # `cluster_labels` argument to constructor of `UnderperformingGroupIssueManager`. A 1-D numpy array containing cluster labels for each sample in the dataset. If passed, these cluster labels are used for determining the underperforming group.
+    }
+
+.. note::
+
+    For more information, view the source code of:  :py:class:`datalab.internal.issue_manager.underperf_group.UnderperformingGroupIssueManager <cleanlab.datalab.internal.issue_manager.underperf_group.UnderperformingGroupIssueManager>`.
