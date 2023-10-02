@@ -277,7 +277,7 @@ Underperforming Group Issue Parameters
         "metric": # `metric` argument to constructor of `UnderperformingGroupIssueManager`. String for the distance metric used for nearest neighbors search if necessary. `metric` argument to constructor of `sklearn.neighbors.NearestNeighbors`,
     	"k": # `k` argument to constructor of `UnderperformingGroupIssueManager`. Integer representing the number of nearest neighbors for constructing the nearest neighbour graph. `n_neighbors` argument to constructor of `sklearn.neighbors.NearestNeighbors`,
         "clustering_kwargs": # `clustering_kwargs` dict of keyword arguments to constructor of `UnderperformingGroupIssueManager`. Key-value pairs representing arguments for the constructor of the clustering algorithm class.
-        "cluster_labels": # `cluster_labels` argument to constructor of `UnderperformingGroupIssueManager`. A 1-D numpy array containing cluster labels for each sample in the dataset. If passed, these cluster labels are used for determining the underperforming group.
+        "cluster_ids": # `cluster_ids` argument to constructor of `UnderperformingGroupIssueManager`. A 1-D numpy array containing cluster labels for each sample in the dataset. If passed, these cluster labels are used for determining the underperforming group.
     }
 
 .. note::

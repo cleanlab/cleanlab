@@ -1152,36 +1152,38 @@ class TestDataLabUnderperformingIssue:
         underperf_group_summary = lab.get_issue_summary("underperforming_group")
         assert underperf_group_summary["num_issues"].values[0] > 1
 
-    def test_precomputed_cluster_labels(self, data):
+    def test_precomputed_cluster_ids(self, data):
         features, labels, pred_probs = data["features"], data["labels"], data["pred_probs"]
         lab = Datalab(data={"labels": labels}, label_name="labels")
         lab.find_issues(
             features=features,
             pred_probs=pred_probs,
-            issue_types={"underperforming_group": {"cluster_labels": labels}},
+            issue_types={"underperforming_group": {"cluster_ids": labels}},
         )
         info = lab.get_info("underperforming_group")
-        assert "algorithm" not in info["clustering"]
+        assert info["clustering"]["algorithm"] is None
         underperf_group_summary = lab.get_issue_summary("underperforming_group")
         assert underperf_group_summary["num_issues"].values[0] > 1
 
-        # find_issues must be slower when clustering needs to be performed.
+        # Use new datalab instance to compute KNN graph and perform clustering
+        lab = Datalab(data={"labels": labels}, label_name="labels")
         time_with_clustering = timeit.timeit(
             lambda: lab.find_issues(
                 features=features, pred_probs=pred_probs, issue_types={"underperforming_group": {}}
             ),
             number=1,
         )
-
+        # Use another datalab instance to emphasize absense of precomputed info
+        lab = Datalab(data={"labels": labels}, label_name="labels")
         time_without_clustering = timeit.timeit(
             lambda: lab.find_issues(
                 features=features,
                 pred_probs=pred_probs,
-                issue_types={"underperforming_group": {"cluster_labels": labels}},
+                issue_types={"underperforming_group": {"cluster_ids": labels}},
             ),
             number=1,
         )
-
+        # find_issues must be slower when clustering needs to be performed.
         assert (
             time_without_clustering < time_with_clustering
         ), "Passing cluster labels should make this run of find_issues faster."

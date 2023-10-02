@@ -71,30 +71,31 @@ class UnderperformingGroupIssueManager(IssueManager):
         self,
         features: npt.NDArray,
         pred_probs: npt.NDArray,
-        cluster_labels: npt.NDArray[np.int_] = None,
+        cluster_ids: npt.NDArray[np.int_] = None,
         **kwargs: Any,
     ) -> None:
         labels = self.datalab.labels
-        knn_graph = self.set_knn_graph(features, kwargs)
-        if cluster_labels is None:
-            cluster_labels = self.perform_clustering(knn_graph)
+        if cluster_ids is None:
+            knn_graph = self.set_knn_graph(features, kwargs)
+            cluster_ids = self.perform_clustering(knn_graph)
             performed_clustering = True
         else:
             if self.clustering_kwargs:
                 warnings.warn(
-                    "`clustering_kwargs` will not be used since `cluster_labels` have been passed."
+                    "`clustering_kwargs` will not be used since `cluster_ids` have been passed."
                 )
             performed_clustering = False
-        unique_cluster_labels = self.filter_cluster_labels(cluster_labels)
-        if not unique_cluster_labels.size:
+            knn_graph = None
+        unique_cluster_ids = self.filter_cluster_ids(cluster_ids)
+        if not unique_cluster_ids.size:
             raise ValueError(
                 "No meaningful clusters were generated for determining underperforming group."
             )
-        n_clusters = len(unique_cluster_labels)
+        n_clusters = len(unique_cluster_ids)
         worst_cluster_id, worst_cluster_ratio = self.get_worst_cluster(
-            cluster_labels, unique_cluster_labels, labels, pred_probs
+            cluster_ids, unique_cluster_ids, labels, pred_probs
         )
-        is_issue_column = cluster_labels == worst_cluster_id
+        is_issue_column = cluster_ids == worst_cluster_id
         scores = np.where(is_issue_column, worst_cluster_ratio, 1)
         self.issues = pd.DataFrame(
             {
@@ -106,7 +107,7 @@ class UnderperformingGroupIssueManager(IssueManager):
         self.info = self.collect_info(
             knn_graph=knn_graph,
             n_clusters=n_clusters,
-            cluster_labels=cluster_labels,
+            cluster_ids=cluster_ids,
             performed_clustering=performed_clustering,
         )
 
@@ -150,31 +151,31 @@ class UnderperformingGroupIssueManager(IssueManager):
         }
         dbscan_params["metric"] = "precomputed"
         clusterer = DBSCAN(**dbscan_params)
-        clusterer.fit(knn_graph.copy())  # Copy to avoid modification
-        cluster_labels = clusterer.labels_
-        return cluster_labels
+        clusterer.fit(knn_graph.copy())  # Copy to avoid modification by DBSCAN
+        cluster_ids = clusterer.labels_
+        return cluster_ids
 
-    def filter_cluster_labels(self, cluster_labels: npt.NDArray[np.int_]) -> npt.NDArray[np.int_]:
-        unique_cluster_labels = np.array(
-            [label for label in set(cluster_labels) if label not in self.OUTLIER_LABELS]
+    def filter_cluster_ids(self, cluster_ids: npt.NDArray[np.int_]) -> npt.NDArray[np.int_]:
+        unique_cluster_ids = np.array(
+            [label for label in set(cluster_ids) if label not in self.OUTLIER_LABELS]
         )
-        return unique_cluster_labels
+        return unique_cluster_ids
 
     def get_worst_cluster(
         self,
-        cluster_labels: npt.NDArray[np.int_],
-        unique_cluster_labels: npt.NDArray[np.int_],
+        cluster_ids: npt.NDArray[np.int_],
+        unique_cluster_ids: npt.NDArray[np.int_],
         labels: npt.NDArray,
         pred_probs: npt.NDArray,
     ) -> Tuple[int, float]:
         worst_cluster_performance = 1  # Largest possible probability value
-        worst_cluster_id = min(unique_cluster_labels) - 1
-        for cluster_id in unique_cluster_labels:
-            cluster_mask = cluster_labels == cluster_id
-            cur_cluster_labels = labels[cluster_mask]
+        worst_cluster_id = min(unique_cluster_ids) - 1
+        for cluster_id in unique_cluster_ids:
+            cluster_mask = cluster_ids == cluster_id
+            cur_cluster_ids = labels[cluster_mask]
             cur_cluster_pred_probs = pred_probs[cluster_mask]
             cluster_performance = get_self_confidence_for_each_label(
-                cur_cluster_labels, cur_cluster_pred_probs
+                cur_cluster_ids, cur_cluster_pred_probs
             ).mean()
             if cluster_performance < worst_cluster_performance:
                 worst_cluster_performance = cluster_performance
@@ -184,7 +185,7 @@ class UnderperformingGroupIssueManager(IssueManager):
         worst_cluster_id = (
             worst_cluster_id
             if worst_cluster_ratio < self.threshold
-            else max(unique_cluster_labels) + 1
+            else max(unique_cluster_ids) + 1
         )
         return worst_cluster_id, worst_cluster_ratio
 
@@ -212,28 +213,31 @@ class UnderperformingGroupIssueManager(IssueManager):
         self,
         knn_graph: csr_matrix,
         n_clusters: int,
-        cluster_labels: npt.NDArray[np.int_],
+        cluster_ids: npt.NDArray[np.int_],
         performed_clustering: bool,
     ) -> Dict[str, Any]:
+
         params_dict = {
+            "k": self.k,
             "metric": self.metric,
             "threshold": self.threshold,
         }
 
-        N = knn_graph.shape[0]
-        dists = knn_graph.data.reshape(N, -1)[:, 0]
-        nn_ids = knn_graph.indices.reshape(N, -1)[:, 0]
+        knn_info_dict = {}
+        if knn_graph is not None:
+            N = knn_graph.shape[0]
+            dists = knn_graph.data.reshape(N, -1)[:, 0]
+            nn_ids = knn_graph.indices.reshape(N, -1)[:, 0]
 
-        knn_info_dict = {
-            "nearest_neighbor": nn_ids.tolist(),
-            "distance_to_nearest_neighbor": dists.tolist(),
-        }
-
+            knn_info_dict = {
+                "nearest_neighbor": nn_ids.tolist(),
+                "distance_to_nearest_neighbor": dists.tolist(),
+            }
         statistics_dict = self._build_statistics_dictionary(knn_graph=knn_graph)
 
         cluster_stat_dict = self._get_cluster_statistics(
             n_clusters=n_clusters,
-            cluster_labels=cluster_labels,
+            cluster_ids=cluster_ids,
             performed_clustering=performed_clustering,
         )
         info_dict = {**params_dict, **knn_info_dict, **statistics_dict, **cluster_stat_dict}
@@ -249,25 +253,28 @@ class UnderperformingGroupIssueManager(IssueManager):
         old_graph_exists = old_knn_graph is not None
         prefer_new_graph = (
             not old_graph_exists
-            or knn_graph.nnz > old_knn_graph.nnz
+            or (isinstance(knn_graph, csr_matrix) and knn_graph.nnz > old_knn_graph.nnz)
             or self.metric != self.datalab.get_info("statistics").get("knn_metric", None)
         )
         if prefer_new_graph:
-            statistics_dict["statistics"][graph_key] = knn_graph
-            if self.metric is not None:
-                statistics_dict["statistics"]["knn_metric"] = self.metric
+            if knn_graph is not None:
+                statistics_dict["statistics"][graph_key] = knn_graph
+                if self.metric is not None:
+                    statistics_dict["statistics"]["knn_metric"] = self.metric
 
         return statistics_dict
 
     def _get_cluster_statistics(
         self,
         n_clusters: int,
-        cluster_labels: npt.NDArray[np.int_],
+        cluster_ids: npt.NDArray[np.int_],
         performed_clustering: bool = True,
     ) -> Dict[str, Dict[str, Any]]:
         cluster_stats: Dict[str, Dict[str, Any]] = {
             "clustering": {
-                "stats": {"n_clusters": n_clusters, "cluster_labels": cluster_labels},
+                "algorithm": None,
+                "params": {},
+                "stats": {"n_clusters": n_clusters, "cluster_ids": cluster_ids},
             }
         }
         if performed_clustering:

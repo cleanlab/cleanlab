@@ -1,6 +1,7 @@
 import numpy as np
 import pytest
 import pandas as pd
+import scipy.sparse as sp
 
 from cleanlab.datalab.internal.issue_manager.underperf_group import UnderperformingGroupIssueManager
 from sklearn.datasets import make_blobs, load_iris
@@ -69,8 +70,8 @@ class TestUnderperformingGroupIssueManager:
         )
         assert summary["issue_type"][0] == "underperforming_group"
         assert summary["score"][0] == 1.0
-        # Check with cluster_labels param
-        issue_manager.find_issues(features=features, pred_probs=pred_probs, cluster_labels=labels)
+        # Check with cluster_ids param
+        issue_manager.find_issues(features=features, pred_probs=pred_probs, cluster_ids=labels)
         issues_with_clabels, summary_with_clabels = issue_manager.issues, issue_manager.summary
         pd.testing.assert_frame_equal(issues_with_clabels, issues)
         pd.testing.assert_frame_equal(summary_with_clabels, summary)
@@ -98,34 +99,42 @@ class TestUnderperformingGroupIssueManager:
         )
         assert summary["issue_type"][0] == "underperforming_group"
         assert summary["score"][0] == pytest.approx(expected_loss_ratio, rel=1e-3)
-        # Check with cluster_labels param
-        issue_manager.find_issues(features=features, pred_probs=pred_probs, cluster_labels=labels)
+        # Check with cluster_ids param
+        issue_manager.find_issues(features=features, pred_probs=pred_probs, cluster_ids=labels)
         issues_with_clabels, summary_with_clabels = issue_manager.issues, issue_manager.summary
         pd.testing.assert_frame_equal(issues_with_clabels, issues)
         pd.testing.assert_frame_equal(summary_with_clabels, summary)
-        # With shifted cluster IDs
-        issue_manager.find_issues(
-            features=features, pred_probs=pred_probs, cluster_labels=labels + 10
-        )
+        # With shifted cluster_ids
+        issue_manager.find_issues(features=features, pred_probs=pred_probs, cluster_ids=labels + 10)
         issues_with_clabels, summary_with_clabels = issue_manager.issues, issue_manager.summary
         pd.testing.assert_frame_equal(issues_with_clabels, issues)
         pd.testing.assert_frame_equal(summary_with_clabels, summary)
 
     def test_collect_info(self, issue_manager, make_data):
+        """Test some values in the info dict.
+
+        Mainly focused on the clustering info.
+        """
+
         data = make_data()
         features, pred_probs, labels = data["features"], data["pred_probs"], data["labels"]
         issue_manager.find_issues(features=features, pred_probs=pred_probs)
         info = issue_manager.info
+        assert "weighted_knn_graph" in info["statistics"]
         assert "clustering" in info
         clustering_info = info["clustering"]
         assert clustering_info["algorithm"] == "DBSCAN"
         assert clustering_info["params"]["metric"] == "precomputed"
         assert clustering_info["stats"]["n_clusters"] == 4
-        issue_manager.find_issues(features=features, pred_probs=pred_probs, cluster_labels=labels)
+        # Test collect_info() with cluster_ids
+        issue_manager.find_issues(features=features, pred_probs=pred_probs, cluster_ids=labels)
         info = issue_manager.info
+        assert "nearest_neighbor" not in info
+        assert "distance_to_nearest_neighbor" not in info
+        assert info["statistics"] == {}
         clustering_info = info["clustering"]
-        assert "algoruthm" not in clustering_info
-        assert "params" not in clustering_info
+        assert clustering_info["algorithm"] is None
+        assert clustering_info["params"] == {}
 
     def test_no_meaningful_clusters(self, issue_manager, make_data, monkeypatch):
         np.random.seed(SEED)
@@ -142,10 +151,10 @@ class TestUnderperformingGroupIssueManager:
         with pytest.raises(ValueError, match=exception_pattern):
             issue_manager.find_issues(features=features, pred_probs=pred_probs)
         # Cluster labels passed containing all outliers
-        cluster_labels = np.full(N, -1)  # -1 is the outlier label for DBSCAN
+        cluster_ids = np.full(N, -1)  # -1 is the outlier label for DBSCAN
         with pytest.raises(ValueError, match=exception_pattern):
             issue_manager.find_issues(
-                features=features, pred_probs=pred_probs, cluster_labels=cluster_labels
+                features=features, pred_probs=pred_probs, cluster_ids=cluster_ids
             )
 
     def test_find_issues_feature_subset(self, issue_manager, iris_data, monkeypatch):
@@ -169,6 +178,15 @@ class TestUnderperformingGroupIssueManager:
         monkeypatch.setattr(issue_manager, "info", {})
         issue_manager.find_issues(features=features, pred_probs=pred_probs)
         assert np.sum(issue_manager.issues["is_underperforming_group_issue"]) == 48
+
+    def test_knn_graph_change(self, issue_manager):
+        dist_matrix = np.random.randint(1, 5, size=(10, 10))
+        np.fill_diagonal(dist_matrix, 0)  # Make diagonal 0 to mimic distance matrix
+        knn_graph = sp.csr_matrix(dist_matrix)
+        nnz_before_clustering = knn_graph.nnz
+        issue_manager.perform_clustering(knn_graph)
+        nnz_after_clustering = knn_graph.nnz
+        assert nnz_before_clustering == nnz_after_clustering
 
     def test_report(self, issue_manager, make_data):
         data = make_data()
