@@ -24,7 +24,7 @@ class NullIssueManager(IssueManager):
         """
     issue_name: ClassVar[str] = "null"
     verbosity_levels = {
-        0: ["null_scores"],
+        0: ["average_null_score"],
         1: [],
         2: [],
     }
