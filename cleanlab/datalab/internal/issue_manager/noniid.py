@@ -124,7 +124,8 @@ class NonIIDIssueManager(IssueManager):
         self.seed = seed
         self.significance_threshold = significance_threshold
 
-    def find_issues(self, features: Optional[npt.NDArray] = None, **kwargs) -> None:
+    def find_issues(self, features: Optional[npt.NDArray] = None,
+                    pred_probs: Optional[np.ndarray] = None, **kwargs) -> None:
         knn_graph = self._process_knn_graph_from_inputs(kwargs)
         old_knn_metric = self.datalab.get_info("statistics").get("knn_metric")
         metric_changes = self.metric and self.metric != old_knn_metric
@@ -133,9 +134,14 @@ class NonIIDIssueManager(IssueManager):
 
         if knn_graph is None or metric_changes:
             if features is None:
-                raise ValueError(
-                    "If a knn_graph is not provided, features must be provided to fit a new knn."
-                )
+                if pred_probs is None:
+                    raise ValueError(
+                        "If a knn_graph is not provided and features is not provided, pred_probs must be provided "
+                        "to fit a new knn."
+                    )
+                else:
+                    # using pred_probs as features if features are not provided
+                    features = pred_probs
 
             if self.metric is None:
                 self.metric = "cosine" if features.shape[1] > 3 else "euclidean"
