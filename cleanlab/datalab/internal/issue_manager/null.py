@@ -17,7 +17,12 @@ if TYPE_CHECKING:  # pragma: no cover
 
 
 class NullIssueManager(IssueManager):
-    """Manages issues related to null/missing values in rows of features."""
+    """Manages issues related to null/missing values in the rows of features.
+    Parameters
+    ----------
+    datalab :
+        The Datalab instance that this issue manager searches for issues in.
+    """
     description: ClassVar[
         str
     ] = """Whether the dataset has any missing/null values
