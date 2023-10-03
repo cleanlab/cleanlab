@@ -40,9 +40,7 @@ class NullIssueManager(IssueManager):
         **kwargs,
     ) -> None:
         if features is None:
-            raise ValueError(
-                "features must be provided to check for null values."
-            )
+            raise ValueError("features must be provided to check for null values.")
         rows = features.shape[0]
         cols = features.shape[1]
         scores = np.zeros_like((rows, 1)).astype(np.float32)
