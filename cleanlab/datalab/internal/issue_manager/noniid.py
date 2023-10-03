@@ -124,8 +124,12 @@ class NonIIDIssueManager(IssueManager):
         self.seed = seed
         self.significance_threshold = significance_threshold
 
-    def find_issues(self, features: Optional[npt.NDArray] = None,
-                    pred_probs: Optional[np.ndarray] = None, **kwargs) -> None:
+    def find_issues(
+        self,
+        features: Optional[npt.NDArray] = None,
+        pred_probs: Optional[np.ndarray] = None,
+        **kwargs,
+    ) -> None:
         knn_graph = self._process_knn_graph_from_inputs(kwargs)
         old_knn_metric = self.datalab.get_info("statistics").get("knn_metric")
         metric_changes = self.metric and self.metric != old_knn_metric
