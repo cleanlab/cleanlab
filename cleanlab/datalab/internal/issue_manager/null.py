@@ -19,6 +19,7 @@ class NullIssueManager(IssueManager):
     datalab :
         The Datalab instance that this issue manager searches for issues in.
     """
+
     description: ClassVar[
         str
     ] = """Whether the dataset has any missing/null values
@@ -48,7 +49,7 @@ class NullIssueManager(IssueManager):
                 if null_tracker[row].any():
                     is_null_issue[row] = True
                     null_row_count = np.count_nonzero(np.isnan(null_tracker[row])).astype(np.float)
-                    scores[row] = null_row_count/cols
+                    scores[row] = null_row_count / cols
 
         self.issues = pd.DataFrame(
             {
@@ -60,10 +61,6 @@ class NullIssueManager(IssueManager):
         self.summary = self.make_summary(score=scores.mean())
 
     def collect_info(self) -> dict:
-        issues_dict = {
-            "average_null_score": self.issues[self.issue_score_key].mean()
-        }
-        info_dict: Dict[str, Any] = {
-            **issues_dict
-        }
+        issues_dict = {"average_null_score": self.issues[self.issue_score_key].mean()}
+        info_dict: Dict[str, Any] = {**issues_dict}
         return info_dict
