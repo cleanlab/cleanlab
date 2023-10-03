@@ -1,0 +1,68 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional, Tuple, Union, cast
+
+from scipy.sparse import csr_matrix
+from scipy.stats import iqr
+import numpy as np
+import pandas as pd
+
+from cleanlab.datalab.internal.issue_manager import IssueManager
+from cleanlab.outlier import OutOfDistribution, transform_distances_to_scores
+
+if TYPE_CHECKING:  # pragma: no cover
+    import numpy.typing as npt
+    from sklearn.neighbors import NearestNeighbors
+    from cleanlab.datalab.datalab import Datalab
+
+
+class NullIssueManager(IssueManager):
+    """Manages issues related to null/missing values in rows of features."""
+    description: ClassVar[
+        str
+    ] = """Whether the dataset has any missing/null values
+        """
+    issue_name: ClassVar[str] = "null"
+    verbosity_levels = {
+        0: ["null_scores"],
+        1: [],
+        2: [],
+    }
+
+    def __init__(self, datalab: Datalab):
+        super().__init__(datalab)
+
+    def find_issues(
+        self,
+        features: Optional[npt.NDArray] = None,
+        **kwargs,
+    ) -> None:
+        rows = features.shape[0]
+        cols = features.shape[1]
+        scores = np.zeros_like((rows, 1)).astype(np.float)
+        is_null_issue = np.full((rows, 1), False)
+        null_tracker = np.isnan(features)
+        if null_tracker.any():
+            for row in range(rows):
+                if null_tracker[row].any():
+                    is_null_issue[row] = True
+                    null_row_count = np.count_nonzero(np.isnan(null_tracker[row])).astype(np.float)
+                    scores[row] = null_row_count/cols
+
+        self.issues = pd.DataFrame(
+            {
+                f"is_{self.issue_name}_issue": is_null_issue,
+                self.issue_score_key: scores,
+            },
+        )
+
+        self.summary = self.make_summary(score=scores.mean())
+
+    def collect_info(self) -> dict:
+        issues_dict = {
+            "average_null_score": self.issues[self.issue_score_key].mean()
+        }
+        info_dict: Dict[str, Any] = {
+            **issues_dict
+        }
+        return info_dict
