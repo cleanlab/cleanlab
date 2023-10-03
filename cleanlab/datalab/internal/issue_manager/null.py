@@ -39,16 +39,20 @@ class NullIssueManager(IssueManager):
         features: Optional[npt.NDArray] = None,
         **kwargs,
     ) -> None:
+        if features is None:
+            raise ValueError(
+                "features must be provided to check for null values."
+            )
         rows = features.shape[0]
         cols = features.shape[1]
-        scores = np.zeros_like((rows, 1)).astype(np.float)
+        scores = np.zeros_like((rows, 1)).astype(np.float32)
         is_null_issue = np.full((rows, 1), False)
         null_tracker = np.isnan(features)
         if null_tracker.any():
             for row in range(rows):
                 if null_tracker[row].any():
                     is_null_issue[row] = True
-                    null_row_count = np.count_nonzero(np.isnan(null_tracker[row])).astype(np.float)
+                    null_row_count = np.count_nonzero(np.isnan(null_tracker[row]))
                     scores[row] = null_row_count / cols
 
         self.issues = pd.DataFrame(
