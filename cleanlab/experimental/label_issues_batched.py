@@ -28,7 +28,9 @@ or follow the examples script for the ``LabelInspector`` class if you require gr
 """
 
 import numpy as np
-from typing import Optional, List, Tuple, Any
+from typing import Optional, List, Tuple, Any, Union
+from skimage.transform import resize
+from functools import partial
 
 from cleanlab.count import get_confident_thresholds
 from cleanlab.rank import find_top_issues, _compute_label_quality_scores
@@ -54,6 +56,14 @@ except ImportError:  # pragma: no cover
 adj_confident_thresholds_shared: np.ndarray
 labels_shared: LabelLike
 pred_probs_shared: np.ndarray
+
+# Constants for confident_thresholds and other thresholds
+CONFIDENT_THRESHOLDS_LOWER_BOUND = 0.0
+FLOATING_POINT_COMPARISON = 1e-10
+CLIPPING_LOWER_BOUND = 1e-10
+
+# Define a custom type for labels
+LabelLike = Union[np.ndarray, List[int]]
 
 
 def find_label_issues_batched(
@@ -388,6 +398,47 @@ class LabelInspector:
                     print(
                         f"Multiprocessing will default to using the number of logical cores ({self.n_jobs}). To default to number of physical cores: pip install psutil"
                     )
+
+    def flatten_and_preprocess(self, labels: LabelLike, pred_probs: np.ndarray,
+        resize_shape: Optional[Tuple[int, int]] = None,
+        preprocessing_steps: Optional[List[callable]] = None,):
+        """
+        Preprocesses the data by flattening and applying custom preprocessing steps.
+
+        Parameters
+        ----------
+        labels: np.ndarray or list
+          Given class labels for each example.
+
+        pred_probs: np.ndarray
+          4D array of model-predicted class probabilities for each example in the format (batch_size, height, width, num_classes).
+
+        resize_shape: Tuple[int, int], optional
+          Desired shape for resizing the images. If None, no resizing is performed.
+
+        preprocessing_steps: list of callable, optional
+          List of custom preprocessing functions to apply to the images.
+
+        Returns
+        -------
+        labels_processed: np.ndarray
+          Processed labels.
+
+        pred_probs_processed: np.ndarray
+          Processed predicted probabilities.
+        """
+        if len(pred_probs.shape) != 4:
+            raise ValueError("Input data is not in the expected format (batch_size, height, width, num_classes).")
+
+        # Flatten the images
+        flattened_images = pred_probs.reshape(pred_probs.shape[0], -1)
+
+        # Resize images if specified
+        if resize_shape is not None:
+            resized_images = np.array([resize(img, resize_shape) for img in pred_probs])
+            flattened_images = resized_images.reshape(resized_images.shape[0], -1)
+            
+        return labels, flattened_images
 
     def get_confident_thresholds(self, silent: bool = False) -> np.ndarray:
         """
