@@ -598,7 +598,7 @@ def test_visualize(monkeypatch, generate_single_image_file):
 
     arr = np.random.randint(low=0, high=256, size=(300, 300, 3), dtype=np.uint8)
     visualize(arr)
-    
+
     img = Image.fromarray(arr, mode="RGB")
     visualize(img)
 
