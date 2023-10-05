@@ -25,7 +25,6 @@ import pandas as pd
 from tqdm import tqdm
 
 from cleanlab.internal.segmentation_utils import _get_summary_optional_params
-from matplotlib.colors import ListedColormap
 
 
 def display_issues(
@@ -100,6 +99,7 @@ def display_issues(
     try:
         import matplotlib.pyplot as plt
         import matplotlib.patches as mpatches
+        from matplotlib.colors import ListedColormap
     except:
         raise ImportError('try "pip install matplotlib"')
 
