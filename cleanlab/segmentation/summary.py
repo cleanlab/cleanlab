@@ -25,6 +25,7 @@ import pandas as pd
 from tqdm import tqdm
 
 from cleanlab.internal.segmentation_utils import _get_summary_optional_params
+from matplotlib.colors import ListedColormap
 
 
 def display_issues(
@@ -105,7 +106,7 @@ def display_issues(
     output_plots = (pred_probs is not None) + (labels is not None) + 1
 
     # Colormap for errors
-    error_cmap = plt.cm.colors.ListedColormap(["none", "red"])
+    error_cmap = ListedColormap(["none", "red"])
     _, h, w = issues.shape
     if output_plots > 1:
         if pred_probs is not None:

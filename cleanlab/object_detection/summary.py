@@ -35,7 +35,7 @@ else:
 
 
 def visualize(
-    image: Union[str, Image],
+    image: Union[str, np.ndarray],
     *,
     label: Optional[Dict[str, Any]] = None,
     prediction: Optional[np.ndarray] = None,
