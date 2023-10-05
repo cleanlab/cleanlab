@@ -28,11 +28,6 @@ from cleanlab.object_detection.rank import (
 
 from cleanlab.internal.object_detection_utils import bbox_xyxy_to_xywh
 
-if TYPE_CHECKING:
-    from PIL.Image import Image as Image  # pragma: no cover
-else:
-    Image = TypeVar("Image")
-
 
 def visualize(
     image: Union[str, np.ndarray],
