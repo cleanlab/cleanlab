@@ -102,6 +102,7 @@ class Datalab:
         data: "DatasetLike",
         label_name: Optional[str] = None,
         image_key: Optional[str] = None,
+        trained_datalab: Optional[Datalab] = None,
         verbosity: int = 1,
     ) -> None:
         self._data = Data(data, label_name)
@@ -114,6 +115,16 @@ class Datalab:
         self.verbosity = verbosity
         self._imagelab = create_imagelab(dataset=self.data, image_key=image_key)
         self.data_issues = data_issues_factory(self._imagelab)(self._data)
+        if trained_datalab is not None:
+            warnings.warn(
+                "An existing Datalab instacne has been passed, the new datalab will use the existing statistics."
+            )
+            self.data_issues._update_issue_info(
+                "statistics", trained_datalab.get_info("statistics")
+            )
+            self.trained_statistics = True
+        else:
+            self.trained_statistics = False
 
     # todo: check displayer methods
     def __repr__(self) -> str:
@@ -139,6 +150,11 @@ class Datalab:
         If the dataset has no labels, returns an empty list.
         """
         return self._labels.class_names
+
+    @property
+    def has_trained_statistics(self) -> bool:
+        """Whether the dataset has trained statistics."""
+        return self.trained_statistics
 
     def find_issues(
         self,
