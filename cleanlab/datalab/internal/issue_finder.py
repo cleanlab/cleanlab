@@ -219,6 +219,18 @@ class IssueFinder:
 
         return args_dict
 
+    def _resolve_trained_statistics_args(self, issue_types: Dict[str, Any], **kwargs):
+        """For label error only now"""
+        confident_joint = kwargs.get("confident_joint", None)
+        py = kwargs.get("py", None)
+        noise_matrix = kwargs.get("noise_matrix", None)
+        inverse_noise_matrix = kwargs.get("inverse_noise_matrix", None)
+        issue_types["label"]["confident_joint"] = confident_joint
+        issue_types["label"]["py"] = py
+        issue_types["label"]["noise_matrix"] = noise_matrix
+        issue_types["label"]["inverse_noise_matrix"] = inverse_noise_matrix
+        return issue_types
+
     def _set_issue_types(
         self,
         issue_types: Optional[Dict[str, Any]],
@@ -342,6 +354,17 @@ class IssueFinder:
         if drop_label_check:
             warnings.warn("No labels were provided. " "The 'label' issue type will not be run.")
             issue_types_copy.pop("label")
+
+        label_use_trained_statistics = (
+            "label" in issue_types_copy
+            and self.datalab.has_trained_statistics
+            and not drop_label_check
+        )
+        if label_use_trained_statistics:
+            warnings.warn("Using precomputed statistics from a previously trained datalab. ")
+            issue_types_copy = self._resolve_trained_statistics_args(
+                issue_types_copy, kwargs=kwargs
+            )
 
         outlier_check_needs_features = "outlier" in issue_types_copy and not self.datalab.has_labels
         if outlier_check_needs_features:
