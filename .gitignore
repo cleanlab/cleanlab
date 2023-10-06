@@ -53,6 +53,10 @@ coverage.xml
 *.cover
 .hypothesis/
 .pytest_cache/
+.coverage*
+*.py,cover
+.hypothesis/**
+.pytest_cache/**
 
 # Translations
 *.mo
@@ -62,6 +66,7 @@ coverage.xml
 *.log
 local_settings.py
 db.sqlite3
+logs/
 
 # Flask stuff:
 instance/
@@ -98,6 +103,7 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+.direnv
 
 # Spyder project settings
 .spyderproject
@@ -123,3 +129,32 @@ venv.bak/
 # Editor files
 .vscode/
 .idea/
+
+# jupyter notebooks
+.ipynb_checkpoints/
+
+# Misc
+results/
+image_files*
+
+# datasets
+cifar*
+
+# IPython
+profile_default/
+ipython_config.py
+__pypackages__/
+
+
+# Data files
+**.zip
+**-ubyte
+**.gz
+**.tar
+**.7Z
+**.BZ2
+**.rar
+
+# other files
+outputs/**
+wandb/**
