@@ -155,6 +155,3 @@ __pypackages__/
 **.BZ2
 **.rar
 
-# other files
-outputs/**
-wandb/**
