@@ -62,8 +62,9 @@ class TestNonIIDIssueManager:
 
     @pytest.fixture
     def pred_probs(self, lab):
-        pred_probs_array = (np.arange(lab.get_info("statistics")["num_examples"] * 10).reshape(-1, 1)) / len(
-            np.arange(lab.get_info("statistics")["num_examples"] * 10).reshape(-1, 1))
+        pred_probs_array = (
+            np.arange(lab.get_info("statistics")["num_examples"] * 10).reshape(-1, 1)
+        ) / len(np.arange(lab.get_info("statistics")["num_examples"] * 10).reshape(-1, 1))
         return pred_probs_array
 
     @pytest.fixture
@@ -178,9 +179,9 @@ class TestNonIIDIssueManager:
 
         assert isinstance(report, str)
         assert (
-                   "---------------------- non_iid issues ----------------------\n\n"
-                   "Number of examples with this issue:"
-               ) in report
+            "---------------------- non_iid issues ----------------------\n\n"
+            "Number of examples with this issue:"
+        ) in report
 
         report = issue_manager.report(
             issues=issue_manager.issues,
@@ -201,9 +202,9 @@ class TestNonIIDIssueManager:
 
         assert isinstance(report, str)
         assert (
-                   "---------------------- non_iid issues ----------------------\n\n"
-                   "Number of examples with this issue:"
-               ) in report
+            "---------------------- non_iid issues ----------------------\n\n"
+            "Number of examples with this issue:"
+        ) in report
 
         report = issue_manager.report(
             issues=issue_manager.issues,
@@ -306,7 +307,7 @@ class TestNonIIDIssueManager:
 
         # using pred_probs
         # normalizing pred_probs (0 to 1)
-        pred_probs = embeddings/(np.max(embeddings)-np.min(embeddings))
+        pred_probs = embeddings / (np.max(embeddings) - np.min(embeddings))
         if seed == "default":
             issue_manager = NonIIDIssueManager(
                 datalab=lab,
