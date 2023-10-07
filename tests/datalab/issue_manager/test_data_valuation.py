@@ -70,4 +70,4 @@ class TestDataValuationIssueManager:
 
     def test_find_issue_no_knn_graph(self, issue_manager):
         with pytest.raises(AssertionError):
-            issue_manager.find_issues()
+            issue_manager.find_issues(k=4)
