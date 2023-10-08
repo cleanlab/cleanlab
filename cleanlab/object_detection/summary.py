@@ -22,7 +22,6 @@ from typing import Optional, Any, Dict, Tuple, Union, List, TYPE_CHECKING, TypeV
 
 import numpy as np
 import collections
-import sys
 
 from cleanlab.internal.constants import (
     MAX_CLASS_TO_SHOW,
