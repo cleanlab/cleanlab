@@ -27,9 +27,7 @@ class TestNullIssueManager:
     def test_init(self, lab, issue_manager):
         assert issue_manager.datalab == lab
 
-    @pytest.mark.parametrize('embeddings',
-                             [True, False],
-                             indirect=['embeddings'])
+    @pytest.mark.parametrize("embeddings", [True, False], indirect=["embeddings"])
     def test_find_issues(self, issue_manager, embeddings):
         np.random.seed(SEED)
         embeddings, no_null_flag = embeddings
@@ -66,9 +64,7 @@ class TestNullIssueManager:
                 expected=info_sort["average_null_score"], abs=1e-7
             )
 
-    @pytest.mark.parametrize('embeddings',
-                             [True, False],
-                             indirect=['embeddings'])
+    @pytest.mark.parametrize("embeddings", [True, False], indirect=["embeddings"])
     def test_report(self, issue_manager, embeddings):
         np.random.seed(SEED)
         embeddings, no_null_flag = embeddings
@@ -93,9 +89,7 @@ class TestNullIssueManager:
         )
         assert "Additional Information: " in report
 
-    @pytest.mark.parametrize('embeddings',
-                             [True, False],
-                             indirect=['embeddings'])
+    @pytest.mark.parametrize("embeddings", [True, False], indirect=["embeddings"])
     def test_collect_info(self, issue_manager, embeddings):
         """Test some values in the info dict."""
         embeddings, no_null_flag = embeddings
