@@ -42,11 +42,11 @@ from cleanlab.object_detection.summary import (
     object_counts_per_image,
     bounding_box_size_distribution,
     class_label_distribution,
-    class_accuracy,
+    get_class_metrics,
     get_sorted_bbox_count_idxs,
     plot_class_size_distributions,
     plot_class_distribution,
-    plot_class_accuracy,
+    plot_class_metrics,
     visualize,
 )
 from cleanlab.internal.constants import (
@@ -642,6 +642,27 @@ def test_bounding_box_size_distribution():
     for c in pred_boxes:
         assert c in class_names.values()
 
+    # test class_names with limited classes
+    class_to_show = 2
+    assert class_to_show <= NUM_CLASSES
+    limited_class_names = {str(i): str(chr(97 + i)) for i in range(class_to_show)}
+    label_boxes, pred_boxes = bounding_box_size_distribution(
+        labels, predictions, class_names=limited_class_names
+    )
+    assert len(label_boxes) == class_to_show
+    assert len(pred_boxes) == class_to_show
+
+    # test sort by number of class occurrences
+    label_boxes, pred_boxes = bounding_box_size_distribution(labels, predictions, sort=True)
+    prev = float("inf")
+    for c in label_boxes:
+        assert len(label_boxes[c]) <= prev
+        prev = len(label_boxes[c])
+    prev = float("inf")
+    for c in pred_boxes:
+        assert len(pred_boxes[c]) <= prev
+        prev = len(pred_boxes[c])
+
 
 def test_class_label_distribution():
     auxiliary_inputs = _get_valid_inputs_for_compute_scores(ALPHA, labels, predictions)
@@ -675,8 +696,8 @@ def test_class_label_distribution():
         assert c in class_names.values()
 
 
-def test_class_accuracy():
-    class_metrics = class_accuracy(labels, predictions)
+def test_get_class_metrics():
+    class_metrics = get_class_metrics(labels, predictions)
 
     total_TP = total_FP = total_FN = 0
     for c in class_metrics.keys():
@@ -698,12 +719,18 @@ def test_class_accuracy():
     # total TP + FP + FN should be less than sum of labels and predictions
     assert total_TP + total_FP + total_FN <= total_preds + total_labs
 
-    class_metrics = class_accuracy(labels, predictions, class_names=class_names)
+    class_metrics = get_class_metrics(labels, predictions, class_names=class_names)
     for c in class_metrics.keys():
         assert c in class_names.values()
 
     for v in class_metrics.values():
         assert v["accuracy"] >= 0 and v["accuracy"] <= 1
+
+    class_to_show = 2
+    assert class_to_show <= NUM_CLASSES
+    limited_class_names = {str(i): str(chr(97 + i)) for i in range(class_to_show)}
+    limited_class_metrics = get_class_metrics(labels, predictions, class_names=limited_class_names)
+    assert len(limited_class_metrics) == class_to_show
 
     lab1 = {
         "bboxes": np.array([[1, 1, 10, 15], [50, 50, 110, 110], [100, 100, 110, 110]]),
@@ -717,7 +744,7 @@ def test_class_accuracy():
     dummy_labels = [lab1]
     dummy_predictions = [pred1]
 
-    class_metrics = class_accuracy(dummy_labels, dummy_predictions)
+    class_metrics = get_class_metrics(dummy_labels, dummy_predictions)
     assert class_metrics[1]["TP"] == 2
     assert class_metrics[0]["FN"] == 1
 
@@ -755,9 +782,9 @@ def test_plot_class_distribution(monkeypatch):
     plot_class_distribution(labels, predictions, class_names=class_names)
 
 
-def test_plot_class_accuracy(monkeypatch):
+def test_plot_class_metrics(monkeypatch):
     monkeypatch.setattr(plt, "show", lambda: None)
-    plot_class_accuracy(labels, predictions, class_names=class_names)
+    plot_class_metrics(labels, predictions, class_names=class_names)
 
 
 @pytest.mark.usefixtures("generate_single_image_file")

@@ -22,11 +22,13 @@ from typing import Optional, Any, Dict, Tuple, Union, List, TYPE_CHECKING, TypeV
 
 import numpy as np
 import collections
+import sys
 
 from cleanlab.internal.constants import (
     MAX_CLASS_TO_SHOW,
     ALPHA,
     IOU_THRESHOLD,
+    EPSILON,
 )
 from cleanlab.object_detection.rank import (
     _get_valid_inputs_for_compute_scores,
@@ -102,6 +104,7 @@ def bounding_box_size_distribution(
     *,
     auxiliary_inputs=None,
     class_names: Optional[Dict[Any, Any]] = None,
+    sort: bool = False,
 ) -> Tuple[Dict[Any, List], Dict[Any, List]]:
     """Return the distribution over sizes of annotated and predicted bounding boxes across the dataset, broken down by each class.
 
@@ -123,6 +126,10 @@ def bounding_box_size_distribution(
 
     class_names: optional
         A dictionary mapping one-hot-encoded class labels back to their original class names in the format ``{"integer-label": "original-class-name"}``.
+        You can use this argument to control the classes for which the size distribution is computed.
+
+    sort: bool
+        If True, the returned dictionaries are sorted by the number of instances of each class in the dataset in descending order.
 
     Returns
     -------
@@ -132,13 +139,17 @@ def bounding_box_size_distribution(
     if auxiliary_inputs is None:
         auxiliary_inputs = _get_valid_inputs_for_compute_scores(ALPHA, labels, predictions)
 
-    labl_area: DefaultDict[Any, list] = collections.defaultdict(list)
+    lab_area: DefaultDict[Any, list] = collections.defaultdict(list)
     pred_area: DefaultDict[Any, list] = collections.defaultdict(list)
     for sample in auxiliary_inputs:
-        _get_bbox_areas(sample["lab_labels"], sample["lab_bboxes"], labl_area, class_names)
+        _get_bbox_areas(sample["lab_labels"], sample["lab_bboxes"], lab_area, class_names)
         _get_bbox_areas(sample["pred_labels"], sample["pred_bboxes"], pred_area, class_names)
 
-    return labl_area, pred_area
+    if sort:
+        lab_area = dict(sorted(lab_area.items(), key=lambda x: -len(x[1])))
+        pred_area = dict(sorted(pred_area.items(), key=lambda x: -len(x[1])))
+
+    return lab_area, pred_area
 
 
 def class_label_distribution(
@@ -178,26 +189,24 @@ def class_label_distribution(
     if auxiliary_inputs is None:
         auxiliary_inputs = _get_valid_inputs_for_compute_scores(ALPHA, labels, predictions)
 
-    labl_freq: DefaultDict[Any, int] = collections.defaultdict(int)
+    lab_freq: DefaultDict[Any, int] = collections.defaultdict(int)
     pred_freq: DefaultDict[Any, int] = collections.defaultdict(int)
     for sample in auxiliary_inputs:
-        _get_class_instances(sample["lab_labels"], labl_freq, class_names)
+        _get_class_instances(sample["lab_labels"], lab_freq, class_names)
         _get_class_instances(sample["pred_labels"], pred_freq, class_names)
 
-    labl_total, pred_total = sum(labl_freq.values()), sum(pred_freq.values())
-    return (
-        {k: round(v / labl_total, 2) for k, v in labl_freq.items()},
-        {k: round(v / pred_total, 2) for k, v in pred_freq.items()},
-    )
+    label_norm = _normalize_by_total(lab_freq)
+    pred_norm = _normalize_by_total(pred_freq)
+
+    return label_norm, pred_norm
 
 
-def class_accuracy(
+def get_class_metrics(
     labels=None,
     predictions=None,
     *,
     auxiliary_inputs=None,
     class_names: Optional[Dict[Any, Any]] = None,
-    verbose=False,
 ):
     """
     Calculate the accuracy per class.
@@ -226,6 +235,7 @@ def class_accuracy(
 
     class_names: optional
         Optional dictionary mapping one-hot-encoded class labels back to their original class names in the format ``{"integer-label": "original-class-name"}``.
+        You can use this argument to control the classes for which the size distribution is plotted.
 
     Returns
     -------
@@ -246,11 +256,9 @@ def class_accuracy(
 
         iou_t = sample["iou_matrix"].T  # row: prediction bbox, col: label bbox
         for pred_box_idx in range(len(iou_t)):
-            pred_label = (
-                sample["pred_labels"][pred_box_idx]
-                if class_names is None
-                else class_names[str(sample["pred_labels"][pred_box_idx])]
-            )
+            pred_label = _idx_to_class(sample["pred_labels"], pred_box_idx, class_names)
+            if pred_label is None:
+                continue
 
             # when the predicted bounding box overlaps with multiple ground truth bounding boxes, choose the one with the highest IoU score
             max_iou, max_iou_idx = -1, -1
@@ -264,11 +272,10 @@ def class_accuracy(
                 class_metrics[pred_label]["FP"] += 1
                 continue
             else:
-                lab_label = (
-                    sample["lab_labels"][max_iou_idx]
-                    if class_names is None
-                    else class_names[str(sample["lab_labels"][max_iou_idx])]
-                )
+                lab_label = _idx_to_class(sample["lab_labels"], max_iou_idx, class_names)
+                if lab_label is None:
+                    continue
+
                 if pred_label == lab_label:
                     # TP case: the predicted bounding box overlaps with a ground truth bounding box with the same class label
                     class_metrics[lab_label]["TP"] += 1
@@ -280,18 +287,17 @@ def class_accuracy(
         # FN case - any ground truth bounding box that does not have an overlap with any predicted bounding box
         missed_labels = set(range(len(iou_t[0]))) - matched_label_idx
         for idx in missed_labels:
-            lab_label = (
-                sample["lab_labels"][idx]
-                if class_names is None
-                else class_names[str(sample["lab_labels"][idx])]
-            )
+            lab_label = _idx_to_class(sample["lab_labels"], idx, class_names)
+            if lab_label is None:
+                continue
+
             class_metrics[lab_label]["FN"] += 1
 
-    for c in class_metrics.keys():
-        acc_score = class_metrics[c]["TP"] / (
-            class_metrics[c]["TP"] + class_metrics[c]["FP"] + class_metrics[c]["FN"]
+    for cl in class_metrics.keys():
+        acc_score = class_metrics[cl]["TP"] / (
+            class_metrics[cl]["TP"] + class_metrics[cl]["FP"] + class_metrics[cl]["FN"] + EPSILON
         )
-        class_metrics[c]["accuracy"] = round(acc_score, 2)
+        class_metrics[cl]["accuracy"] = round(acc_score, 2)
 
     return class_metrics
 
@@ -320,8 +326,8 @@ def get_sorted_bbox_count_idxs(labels, predictions):
         The second is an array of shape ``(N,)`` containing the number of predicted objects for each image in the dataset.
     """
     lab_count, pred_count = object_counts_per_image(labels, predictions)
-    lab_grouped = zip([i for i in range(len(labels))], lab_count)
-    pred_grouped = zip([i for i in range(len(predictions))], pred_count)
+    lab_grouped = list(enumerate(lab_count))
+    pred_grouped = list(enumerate(pred_count))
 
     sorted_lab = sorted(lab_grouped, key=lambda x: x[1], reverse=True)
     sorted_pred = sorted(pred_grouped, key=lambda x: x[1], reverse=True)
@@ -349,9 +355,11 @@ def plot_class_size_distributions(
 
     class_names: optional
         Optional dictionary mapping one-hot-encoded class labels back to their original class names in the format ``{"integer-label": "original-class-name"}``.
+        You can use this argument to control the classes for which the size distribution is plotted.
 
     class_to_show: optional
-        The number of classes to show in the plots. Classes over `class_to_show` are hidden.
+        The number of classes to show in the plots. Classes over `class_to_show` are hidden. If this argument is provided, then the classes are sorted by the number of instances in the dataset.
+        Defaults to `MAX_CLASS_TO_SHOW` which is set to 10.
     """
     try:
         import matplotlib.pyplot as plt
@@ -361,7 +369,10 @@ def plot_class_size_distributions(
         )
 
     lab_boxes, pred_boxes = bounding_box_size_distribution(
-        labels, predictions, class_names=class_names
+        labels,
+        predictions,
+        class_names=class_names,
+        sort=True if class_to_show is not None else False,
     )
 
     for i, c in enumerate(lab_boxes.keys()):
@@ -382,7 +393,7 @@ def plot_class_distribution(labels, predictions, class_names=None):
     """
     Plots the distribution of class labels associated with all annotated bounding boxes and predicted bounding boxes in the dataset.
 
-    This plot can help you understand which classes are: rare or over/under-predicted by the model overall.
+    This plot can help you understand which classes are rare or over/under-predicted by the model overall.
 
     Parameters
     ----------
@@ -414,7 +425,7 @@ def plot_class_distribution(labels, predictions, class_names=None):
     plt.show()
 
 
-def plot_class_accuracy(labels, predictions, class_names=None):
+def plot_class_metrics(labels, predictions, class_names=None):
     """
     Plots the accuracy per class.
 
@@ -432,6 +443,7 @@ def plot_class_accuracy(labels, predictions, class_names=None):
 
     class_names: optional
         Optional dictionary mapping one-hot-encoded class labels back to their original class names in the format ``{"integer-label": "original-class-name"}``.
+        You can use this argument to control the classes for which the size distribution is plotted.
     """
     try:
         import matplotlib.pyplot as plt
@@ -440,7 +452,7 @@ def plot_class_accuracy(labels, predictions, class_names=None):
             "This functionality requires matplotlib. Install it via: `pip install matplotlib`"
         )
 
-    class_acc = class_accuracy(labels, predictions, class_names=class_names)
+    class_acc = get_class_metrics(labels, predictions, class_names=class_names)
     f = lambda x: [v["accuracy"] for v in x]
     plt.bar(class_acc.keys(), f(class_acc.values()))
     plt.xlabel("class")
@@ -571,10 +583,25 @@ def visualize(
     plt.show()
 
 
+def _normalize_by_total(freq):
+    """Helper function to normalize a frequency distribution."""
+    total = sum(freq.values())
+    return {k: round(v / (total + EPSILON), 2) for k, v in freq.items()}
+
+
+def _idx_to_class(label_array, idx, class_names=None):
+    """Helper function to convert a class index to a class name."""
+    if class_names is None:
+        return label_array[idx]
+    return class_names.get(str(label_array[idx]))
+
+
 def _get_bbox_areas(labels, boxes, class_area_dict, class_names=None) -> None:
     """Helper function to compute the area of bounding boxes for each class."""
     for cl, bbox in zip(labels, boxes):
         if class_names is not None:
+            if str(cl) not in class_names:
+                continue
             cl = class_names[str(cl)]
         class_area_dict[cl].append((bbox[2] - bbox[0]) * (bbox[3] - bbox[1]))
 

@@ -26,7 +26,10 @@ TINY_VALUE = 1e-100  # very tiny value for clipping
 # Object Detection Constants
 EUC_FACTOR = 0.1  # Factor to control magnitude of euclidian distance. Increasing the factor makes the distances between two objects go to zero more rapidly.
 MAX_ALLOWED_BOX_PRUNE = 0.97  # This is max allowed percent of boxes that are pruned before a warning is thrown given a specific threshold. Pruning too many boxes negatively affects performance.
-IOU_THRESHOLD = 0.5  # Threshold for considering the predicted boxe and label box to be overlapping
+IOU_THRESHOLD = (
+    0.5  # Threshold for considering the predicted box and annotated box to be overlapping
+)
+EPSILON = 1e-6  # Small value to prevent division by zero
 
 ALPHA = 0.9  # Param for objectlab, weight between IoU and distance when considering similarity matrix. High alpha means considering IoU more strongly over distance
 LOW_PROBABILITY_THRESHOLD = 0.5  # Param for get_label_quality_score, lowest predicted class probability threshold allowed when considering predicted boxes to identify badly located label boxes.
