@@ -43,14 +43,14 @@ class NullIssueManager(IssueManager):
             raise ValueError("features must be provided to check for null values.")
         rows = features.shape[0]
         cols = features.shape[1]
-        scores = np.zeros_like((rows, 1)).astype(np.float32)
-        is_null_issue = np.full((rows, 1), False)
+        scores = np.zeros(rows).astype(np.float32)
+        is_null_issue = np.full(rows, False)
         null_tracker = np.isnan(features)
         if null_tracker.any():
             for row in range(rows):
                 if null_tracker[row].any():
                     is_null_issue[row] = True
-                    null_row_count = np.count_nonzero(np.isnan(null_tracker[row]))
+                    null_row_count = np.count_nonzero(null_tracker[row])
                     scores[row] = null_row_count / cols
 
         self.issues = pd.DataFrame(
@@ -61,6 +61,7 @@ class NullIssueManager(IssueManager):
         )
 
         self.summary = self.make_summary(score=scores.mean())
+        self.info = self.collect_info()
 
     def collect_info(self) -> dict:
         issues_dict = {"average_null_score": self.issues[self.issue_score_key].mean()}
