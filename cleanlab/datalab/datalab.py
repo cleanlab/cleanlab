@@ -116,15 +116,16 @@ class Datalab:
         self._imagelab = create_imagelab(dataset=self.data, image_key=image_key)
         self.data_issues = data_issues_factory(self._imagelab)(self._data)
         if trained_datalab is not None:
+            """The internal field _trained_statistics is used to indicate whether the datalab already has statistics information from an existing datalab trained with similar data distribution."""
             warnings.warn(
                 "An existing Datalab instacne has been passed, the new datalab will use the existing statistics."
             )
             self.data_issues._update_issue_info(
                 "statistics", trained_datalab.get_info("statistics")
             )
-            self.trained_statistics = True
+            self._trained_statistics = True
         else:
-            self.trained_statistics = False
+            self._trained_statistics = False
 
     # todo: check displayer methods
     def __repr__(self) -> str:
@@ -153,8 +154,8 @@ class Datalab:
 
     @property
     def has_trained_statistics(self) -> bool:
-        """Whether the dataset has trained statistics."""
-        return self.trained_statistics
+        """Whether the dataset already has statistics information from an existing datalab trained with similar data distribution."""
+        return self._trained_statistics
 
     def find_issues(
         self,
