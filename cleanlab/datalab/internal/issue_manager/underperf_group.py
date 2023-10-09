@@ -59,6 +59,7 @@ class UnderperformingGroupIssueManager(IssueManager):
         threshold: float = 0.1,
         k: int = 10,
         clustering_kwargs: Dict[str, Any] = {},
+        min_cluster_samples: int = 5,
         **_: Any,
     ):
         super().__init__(datalab)
@@ -66,6 +67,7 @@ class UnderperformingGroupIssueManager(IssueManager):
         self.threshold = self._set_threshold(threshold)
         self.k = k
         self.clustering_kwargs = clustering_kwargs
+        self.min_cluster_samples = min_cluster_samples
 
     def find_issues(
         self,
@@ -159,6 +161,14 @@ class UnderperformingGroupIssueManager(IssueManager):
         unique_cluster_ids = np.array(
             [label for label in set(cluster_ids) if label not in self.OUTLIER_LABELS]
         )
+        frequencies = np.bincount(cluster_ids[cluster_ids != -1])
+        unique_cluster_ids = np.array(
+            [
+                cluster_id
+                for cluster_id in unique_cluster_ids
+                if frequencies[cluster_id] > self.min_cluster_samples
+            ]
+        )
         return unique_cluster_ids
 
     def get_worst_cluster(
@@ -185,7 +195,7 @@ class UnderperformingGroupIssueManager(IssueManager):
         worst_cluster_id = (
             worst_cluster_id
             if worst_cluster_ratio < self.threshold
-            else max(unique_cluster_ids) + 1
+            else min(self.OUTLIER_LABELS) - 1
         )
         return worst_cluster_id, worst_cluster_ratio
 
