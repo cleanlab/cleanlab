@@ -66,8 +66,8 @@ class TestNonIIDIssueManager:
     @pytest.fixture
     def pred_probs(self, lab):
         pred_probs_array = (
-                               np.arange(lab.get_info("statistics")["num_examples"] * 10).reshape(-1, 1)
-                           ) / len(np.arange(lab.get_info("statistics")["num_examples"] * 10).reshape(-1, 1))
+            np.arange(lab.get_info("statistics")["num_examples"] * 10).reshape(-1, 1)
+        ) / len(np.arange(lab.get_info("statistics")["num_examples"] * 10).reshape(-1, 1))
         return pred_probs_array
 
     @pytest.fixture
@@ -92,11 +92,20 @@ class TestNonIIDIssueManager:
 
         assert issue_manager.num_permutations == 15
 
-    @pytest.mark.parametrize("datalab_flag, features_flag",
-                             [(True, True), (False, False), (False, True), (True, False)])
-    def test_find_issues(self, issue_manager, embeddings, pred_probs, lab, datalab_flag, features_flag, dataset,
-                         label_name):
-
+    @pytest.mark.parametrize(
+        "datalab_flag, features_flag", [(True, True), (False, False), (False, True), (True, False)]
+    )
+    def test_find_issues(
+        self,
+        issue_manager,
+        embeddings,
+        pred_probs,
+        lab,
+        datalab_flag,
+        features_flag,
+        dataset,
+        label_name,
+    ):
         np.random.seed(SEED)
         if datalab_flag:
             if features_flag:
@@ -165,8 +174,9 @@ class TestNonIIDIssueManager:
         assert info_perm.get("p-value", None) is not None, "Should have p-value"
         assert summary_perm["score"][0] == pytest.approx(expected=info_perm["p-value"], abs=1e-7)
 
-    @pytest.mark.parametrize("datalab_flag, features_flag",
-                             [(True, True), (False, False), (False, True), (True, False)])
+    @pytest.mark.parametrize(
+        "datalab_flag, features_flag", [(True, True), (False, False), (False, True), (True, False)]
+    )
     def test_report(self, issue_manager, embeddings, lab, pred_probs, datalab_flag, features_flag):
         np.random.seed(SEED)
         if datalab_flag:
@@ -175,13 +185,16 @@ class TestNonIIDIssueManager:
             else:
                 lab.find_issues(pred_probs=pred_probs)
             lab.data_issues.issue_summary = lab.data_issues.issue_summary[
-                lab.data_issues.issue_summary["issue_type"] == "non_iid"]
+                lab.data_issues.issue_summary["issue_type"] == "non_iid"
+            ]
             reporter = report_factory(lab._imagelab)(
                 data_issues=lab.data_issues,
                 verbosity=0,
                 imagelab=lab._imagelab,
             )
-            report = reporter.get_report(num_examples=len(embeddings) if features_flag else len(pred_probs))
+            report = reporter.get_report(
+                num_examples=len(embeddings) if features_flag else len(pred_probs)
+            )
         else:
             if features_flag:
                 issue_manager.find_issues(features=embeddings)
@@ -195,15 +208,17 @@ class TestNonIIDIssueManager:
 
         assert isinstance(report, str)
         if datalab_flag:
-            assert ('Here is a summary of the different kinds of issues found in the data:\n'
-                    '\n'
-                    'issue_type  num_issues\n'
-                    '   non_iid') in report
+            assert (
+                "Here is a summary of the different kinds of issues found in the data:\n"
+                "\n"
+                "issue_type  num_issues\n"
+                "   non_iid"
+            ) in report
         else:
             assert (
-                       "---------------------- non_iid issues ----------------------\n\n"
-                       "Number of examples with this issue:"
-                   ) in report
+                "---------------------- non_iid issues ----------------------\n\n"
+                "Number of examples with this issue:"
+            ) in report
 
         if datalab_flag:
             if features_flag:
@@ -211,13 +226,16 @@ class TestNonIIDIssueManager:
             else:
                 lab.find_issues(pred_probs=pred_probs)
             lab.data_issues.issue_summary = lab.data_issues.issue_summary[
-                lab.data_issues.issue_summary["issue_type"] == "non_iid"]
+                lab.data_issues.issue_summary["issue_type"] == "non_iid"
+            ]
             reporter = report_factory(lab._imagelab)(
                 data_issues=lab.data_issues,
                 verbosity=3,
                 imagelab=lab._imagelab,
             )
-            report = reporter.get_report(num_examples=len(embeddings) if features_flag else len(pred_probs))
+            report = reporter.get_report(
+                num_examples=len(embeddings) if features_flag else len(pred_probs)
+            )
         else:
             if features_flag:
                 issue_manager.find_issues(features=embeddings)
@@ -232,9 +250,12 @@ class TestNonIIDIssueManager:
 
         assert "Additional Information: " in report
 
-    @pytest.mark.parametrize("datalab_flag, features_flag",
-                             [(True, True), (False, False), (False, True), (True, False)])
-    def test_collect_info(self, issue_manager, embeddings, pred_probs, lab, datalab_flag, features_flag):
+    @pytest.mark.parametrize(
+        "datalab_flag, features_flag", [(True, True), (False, False), (False, True), (True, False)]
+    )
+    def test_collect_info(
+        self, issue_manager, embeddings, pred_probs, lab, datalab_flag, features_flag
+    ):
         """Test some values in the info dict.
 
         Mainly focused on the nearest neighbor info.

@@ -408,7 +408,7 @@ class NonIIDIssueManager(IssueManager):
         shifted_neighbors[:, 1:] = sorted_neighbors[:, :-1]
         diffs = sorted_neighbors - shifted_neighbors  # the distances between the sorted indices
 
-        area_beginning = (double_distances ** 2) / (N - 1)
+        area_beginning = (double_distances**2) / (N - 1)
         length = N - 2 * double_distances - 1
         a = 2 * double_distances / (N - 1)
         area_middle = 0.5 * (a + 1) * length
@@ -416,7 +416,7 @@ class NonIIDIssueManager(IssueManager):
         # compute the area under the CDF for each of the indices in sorted_neighbors
         background_area = np.zeros(diffs.shape)
         background_diffs = np.zeros(diffs.shape)
-        background_area[set_beginning] = ((sorted_neighbors ** 2) / (N - 1))[set_beginning]
+        background_area[set_beginning] = ((sorted_neighbors**2) / (N - 1))[set_beginning]
         background_area[set_middle] = (
             area_beginning
             + 0.5
