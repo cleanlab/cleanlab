@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional, Union, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional, Union, cast, Tuple
 import warnings
 import itertools
 
@@ -124,6 +124,72 @@ class NonIIDIssueManager(IssueManager):
         self.seed = seed
         self.significance_threshold = significance_threshold
 
+    @staticmethod
+    def _determine_features(
+        features: Optional[npt.NDArray],
+        pred_probs: Optional[np.ndarray],
+    ) -> npt.NDArray:
+        """
+        Determines the feature array to be used for the non-IID check. Prioritizing the original features array over pred_probs.
+
+        Parameters:
+        - features: Original feature array or None.
+        - pred_probs: Predicted probabilities array or None.
+
+        Returns:
+        - Selected feature array.
+
+        Raises:
+        - ValueError: If both `features` and `pred_probs` are None.
+        """
+        if features is not None:
+            return features
+
+        if pred_probs is not None:
+            return pred_probs
+
+        raise ValueError(
+            "If a knn_graph is not provided, either 'features' or 'pred_probs' must be provided to fit a new knn."
+        )
+
+    def _select_features_and_setup_knn(
+        self,
+        features: Optional[npt.NDArray],
+        pred_probs: Optional[np.ndarray],
+        knn_graph,
+        metric_changes: bool,
+    ) -> Tuple[Optional[NearestNeighbors], npt.NDArray]:
+        """
+        Selects features (or pred_probs if features are None) and sets up a NearestNeighbors object if needed.
+
+        # Add type-hints and document the arguments.
+        """
+        features_to_use = self._determine_features(features, pred_probs)
+
+        if self.metric is None:
+            self.metric = "cosine" if features_to_use.shape[1] > 3 else "euclidean"
+            metric_changes = True
+
+        if knn_graph is not None and not metric_changes:
+            return None, features_to_use
+
+        knn = NearestNeighbors(n_neighbors=self.k, metric=self.metric)
+
+        if self.metric != knn.metric:
+            warnings.warn(
+                f"Metric {self.metric} does not match metric {knn.metric} used to fit knn. "
+                "Most likely an existing NearestNeighbors object was passed in, but a different "
+                "metric was specified."
+            )
+        self.metric = knn.metric
+
+        try:
+            check_is_fitted(knn)
+        except NotFittedError:
+            knn.fit(features_to_use)
+
+        return knn, features_to_use
+
     def find_issues(
         self,
         features: Optional[npt.NDArray] = None,
@@ -134,36 +200,12 @@ class NonIIDIssueManager(IssueManager):
         old_knn_metric = self.datalab.get_info("statistics").get("knn_metric")
         metric_changes = self.metric and self.metric != old_knn_metric
 
-        knn = None  # Won't be used if knn_graph is not None
+        # This block of code has been extracted to a helper method for readability and making the code more modular.
+        knn, features_used = self._select_features_and_setup_knn(
+            features, pred_probs, knn_graph, metric_changes
+        )
 
         if knn_graph is None or metric_changes:
-            if features is None:
-                if pred_probs is None:
-                    raise ValueError(
-                        "If a knn_graph is not provided and features is not provided, pred_probs must be provided "
-                        "to fit a new knn."
-                    )
-                else:
-                    # using pred_probs as features if features are not provided
-                    features = pred_probs
-
-            if self.metric is None:
-                self.metric = "cosine" if features.shape[1] > 3 else "euclidean"
-            knn = NearestNeighbors(n_neighbors=self.k, metric=self.metric)
-
-            if self.metric and self.metric != knn.metric:
-                warnings.warn(
-                    f"Metric {self.metric} does not match metric {knn.metric} used to fit knn. "
-                    "Most likely an existing NearestNeighbors object was passed in, but a different "
-                    "metric was specified."
-                )
-            self.metric = knn.metric
-
-            try:
-                check_is_fitted(knn)
-            except NotFittedError:
-                knn.fit(features)
-
             self.neighbor_index_choices = self._get_neighbors(knn=knn)
         else:
             self.neighbor_index_choices = self._get_neighbors(knn_graph=knn_graph)
@@ -366,7 +408,7 @@ class NonIIDIssueManager(IssueManager):
         shifted_neighbors[:, 1:] = sorted_neighbors[:, :-1]
         diffs = sorted_neighbors - shifted_neighbors  # the distances between the sorted indices
 
-        area_beginning = (double_distances**2) / (N - 1)
+        area_beginning = (double_distances ** 2) / (N - 1)
         length = N - 2 * double_distances - 1
         a = 2 * double_distances / (N - 1)
         area_middle = 0.5 * (a + 1) * length
@@ -374,7 +416,7 @@ class NonIIDIssueManager(IssueManager):
         # compute the area under the CDF for each of the indices in sorted_neighbors
         background_area = np.zeros(diffs.shape)
         background_diffs = np.zeros(diffs.shape)
-        background_area[set_beginning] = ((sorted_neighbors**2) / (N - 1))[set_beginning]
+        background_area[set_beginning] = ((sorted_neighbors ** 2) / (N - 1))[set_beginning]
         background_area[set_middle] = (
             area_beginning
             + 0.5
