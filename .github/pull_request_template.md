@@ -9,7 +9,8 @@
 ## Impact
 
 > What is the scope of your changes and who/where do you think they will affect?
-
+> If your change modifies documentation or a tutorial notebook, please include
+> screenshots showing the rendered outputs for a quicker initial review.
 
 
 ## Testing
