@@ -198,7 +198,7 @@ class NonIIDIssueManager(IssueManager):
     ) -> None:
         knn_graph = self._process_knn_graph_from_inputs(kwargs)
         old_knn_metric = self.datalab.get_info("statistics").get("knn_metric")
-        metric_changes = self.metric and self.metric != old_knn_metric
+        metric_changes = True if (self.metric and self.metric != old_knn_metric) else False
 
         # This block of code has been extracted to a helper method for readability and making the code more modular.
         knn, features_used = self._select_features_and_setup_knn(
