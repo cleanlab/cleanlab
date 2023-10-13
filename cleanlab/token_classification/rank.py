@@ -151,7 +151,7 @@ def issues_from_scores(
     sentence_scores: np.ndarray, *, token_scores: Optional[list] = None, threshold: float = 0.1
 ) -> Union[list, np.ndarray]:
     """
-    Converts scores output by :py:func:`token_classification.rank.get_label_quality_scores <cleanlab.token_classification.rank.get_label_quality_scores>`
+    Converts scores output by `~cleanlab.token_classification.rank.get_label_quality_scores`
     to a list of issues of similar format as output by :py:func:`token_classification.filter.find_label_issues <cleanlab.token_classification.filter.find_label_issues>`.
 
     Issues are sorted by label quality score, from most to least severe.
