@@ -303,6 +303,19 @@ class Datalab:
                 f"\nAudit complete. {self.data_issues.issue_summary['num_issues'].sum()} issues found in the dataset."
             )
 
+    def _spurious_correlations(self) -> pd.DataFrame: 
+        """
+        Use this after finding issues to which examples suffer from which types of issues.
+
+        NOTE: 
+        
+        Returns: 
+        --------
+        A DataFrame where each row corresponds to image_property ('dark', 'grayscale')
+        and overall datascore for that image_property
+        """
+        return self.SpuriousCorrelations.spurious_correlation    
+    
     def report(
         self,
         *,
