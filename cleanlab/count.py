@@ -148,14 +148,11 @@ def num_label_issues(
         )
 
         label_issues_mask = np.zeros(len(labels), dtype=bool)
-        for idx in cl_error_indices:
-            label_issues_mask[idx] = True
+        label_issues_mask[cl_error_indices] = True
 
         # Remove label issues if given label == model prediction
         pred = pred_probs.argmax(axis=1)
-        for i, pred_label in enumerate(pred):
-            if pred_label == labels[i]:
-                label_issues_mask[i] = False
+        label_issues_mask[pred == labels] = False
         num_issues = np.sum(label_issues_mask)
     elif estimation_method == "off_diagonal_calibrated":
         calculated_confident_joint = compute_confident_joint(

@@ -461,7 +461,7 @@ def plot_class_metrics(labels, predictions, class_names=None):
 
 
 def visualize(
-    image: Union[str, Image],
+    image: Union[str, np.ndarray, Image],
     *,
     label: Optional[Dict[str, Any]] = None,
     prediction: Optional[np.ndarray] = None,
