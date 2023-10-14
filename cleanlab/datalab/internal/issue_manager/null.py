@@ -76,7 +76,7 @@ class NullIssueManager(IssueManager):
     @staticmethod
     def most_common_issue(
         null_tracker: np.ndarray,
-    ) -> dict[str, dict[str, str | int | list[int]]]:
+    ) -> dict[str, dict[str, str | int | list[int] | list[int | None]]]:
         """
         Identify and return the most common null value pattern across all rows
         and count the number of rows with this pattern.
@@ -93,7 +93,7 @@ class NullIssueManager(IssueManager):
         """
         # Convert the boolean null_tracker matrix into a list of strings.
         most_frequent_pattern = "no_null"
-        rows_affected = []
+        rows_affected: List[int] = []
         occurrence_of_most_frequent_pattern = 0
         if null_tracker.any():
             null_patterns_as_strings = [
