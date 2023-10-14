@@ -74,7 +74,7 @@ class NullIssueManager(IssueManager):
         self.info = self.collect_info(null_tracker)
 
     @staticmethod
-    def most_common_issue(null_tracker: np.ndarray) -> Dict[str, Union[Dict[str, float], List]]:
+    def most_common_issue(null_tracker: np.ndarray) -> Dict[str, Union[Dict[str, float], List[int]]]:
         """
         Identify and return the most common null value pattern across all rows
         and count the number of rows with this pattern.
