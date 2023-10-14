@@ -200,6 +200,7 @@ class IssueFinder:
             "outlier": {"pred_probs": pred_probs, "features": features, "knn_graph": knn_graph},
             "near_duplicate": {"features": features, "knn_graph": knn_graph},
             "non_iid": {"features": features, "knn_graph": knn_graph},
+            "data_valuation": {"knn_graph": knn_graph},
         }
 
         args_dict = {
