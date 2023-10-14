@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections import Counter
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional, List
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional, List, Union
 
 import numpy as np
 import pandas as pd
@@ -74,7 +74,7 @@ class NullIssueManager(IssueManager):
         self.info = self.collect_info(null_tracker)
 
     @staticmethod
-    def most_common_issue(null_tracker: np.ndarray) -> Dict[str, Dict[str, float]]:
+    def most_common_issue(null_tracker: np.ndarray) -> Dict[str, Union[Dict[str, float], List]]:
         """
         Identify and return the most common null value pattern across all rows
         and count the number of rows with this pattern.
