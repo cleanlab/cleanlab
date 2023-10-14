@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections import Counter
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional, List, Union
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional, List
 
 import numpy as np
 import pandas as pd
