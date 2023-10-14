@@ -591,6 +591,27 @@ class TestDatalabUsingKNNGraph:
         lab.find_issues()
         assert lab.issues.empty  # No columns should be added to the issues dataframe
 
+    def test_data_valuation_issue_with_knn_graph(self, data_tuple):  # TODO
+        lab, knn_graph, _ = data_tuple
+        assert lab.get_info("statistics").get("weighted_knn_graph") is None
+        lab.find_issues(knn_graph=knn_graph, issue_types={"data_valuation": {}})
+        score = lab.get_issues().get(["data_valuation_score"])
+        assert isinstance(score, pd.DataFrame)
+        assert len(score) == len(lab.data)
+
+    def test_data_valuation_issue_with_existing_knn_graph(self, data_tuple):
+        lab, _, feature = data_tuple
+        lab.find_issues(features=feature, issue_types={"outlier": {"k": 3}})
+        lab.find_issues(issue_types={"data_valuation": {}})
+        score = lab.get_issues().get(["data_valuation_score"])
+        assert isinstance(score, pd.DataFrame)
+        assert len(score) == len(lab.data)
+
+    def test_data_valuation_issue_without_knn_graph(self, data_tuple):
+        lab, _, feature = data_tuple
+        lab.find_issues(features=feature, issue_types={"data_valuation": {}})
+        assert lab.issues.empty
+
 
 class TestDatalabIssueManagerInteraction:
     """The Datalab class should integrate with the IssueManager class correctly.
