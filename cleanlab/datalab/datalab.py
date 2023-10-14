@@ -110,7 +110,7 @@ class Datalab:
         self._label_map = self._labels.label_map
         self.label_name = self._labels.label_name
         self._data_hash = self._data._data_hash
-        # self.cleanlab_version = cleanlab.version.__version__
+        self.cleanlab_version = cleanlab.version.__version__
         self.verbosity = verbosity
         self._imagelab = create_imagelab(dataset=self.data, image_key=image_key)
         self.data_issues = data_issues_factory(self._imagelab)(self._data)
