@@ -168,7 +168,6 @@ class NonIIDIssueManager(IssueManager):
 
         if self.metric is None:
             self.metric = "cosine" if features_to_use.shape[1] > 3 else "euclidean"
-            metric_changes = True
 
         if knn_graph is not None and not metric_changes:
             return None, features_to_use
