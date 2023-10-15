@@ -166,7 +166,7 @@ class UnderperformingGroupIssueManager(IssueManager):
             [
                 cluster_id
                 for cluster_id in unique_cluster_ids
-                if frequencies[cluster_id] > self.min_cluster_samples
+                if frequencies[cluster_id] >= self.min_cluster_samples
             ]
         )
         return unique_cluster_ids

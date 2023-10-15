@@ -157,6 +157,24 @@ class TestUnderperformingGroupIssueManager:
                 features=features, pred_probs=pred_probs, cluster_ids=cluster_ids
             )
 
+    def test_min_cluster_samples(self, lab, issue_manager, make_data):
+        data = make_data()
+        features, pred_probs, labels = data["features"], data["pred_probs"], data["labels"]
+        labels[:3] = max(labels) + 1  # New cluster with very few samples
+        n_clusters = len(set(labels))
+        # Check if small cluster is filtered
+        issue_manager.find_issues(features=features, pred_probs=pred_probs, cluster_ids=labels)
+        clustering_info = issue_manager.info["clustering"]
+        assert clustering_info["stats"]["n_clusters"] == n_clusters - 1
+
+        # New issue manager to consider small cluster as well
+        issue_manager = UnderperformingGroupIssueManager(
+            datalab=lab, threshold=0.2, min_cluster_samples=3
+        )
+        issue_manager.find_issues(features=features, pred_probs=pred_probs, cluster_ids=labels)
+        clustering_info = issue_manager.info["clustering"]
+        assert clustering_info["stats"]["n_clusters"] == n_clusters
+
     def test_find_issues_feature_subset(self, issue_manager, iris_data, monkeypatch):
         features, pred_probs, labels = (
             iris_data["features"],
