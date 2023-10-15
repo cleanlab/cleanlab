@@ -174,3 +174,4 @@ jobs:
           external_only: true
           url_ignore_re: |
             ^https://pradyunsg.me/
+            ^https://keras.io/
