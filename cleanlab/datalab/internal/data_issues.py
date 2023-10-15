@@ -42,6 +42,17 @@ if TYPE_CHECKING:  # pragma: no cover
 
 
 class _InfoStrategy(ABC):
+    """
+    Abstract base class for strategies that fetch information about data issues.
+
+    Subclasses must implement the `get_info` method, which takes a `Data` object, a dictionary of
+    information about data issues, and an optional issue name, and returns a dictionary of
+    information about the specified issue, augmented with dataset about the dataset as a whole.
+
+    This class also provides a helper method, `_get_info_helper`, which takes an information
+    dictionary and an optional issue name, and returns a copy of the information dictionary for
+    the specified issue. If the issue name is `None`, this method returns `None`.
+    """
     @staticmethod
     @abstractmethod
     def get_info(
