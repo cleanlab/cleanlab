@@ -92,6 +92,8 @@ class _ClassificationInfoStrategy(_InfoStrategy):
 
 
 class _RegressionInfoStrategy(_InfoStrategy):
+    """Strategy for computing information about data issues related to regression tasks."""
+
     @staticmethod
     def get_info(
         data: Data,
