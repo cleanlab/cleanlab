@@ -67,6 +67,8 @@ class _InfoStrategy(ABC):
 
 
 class _ClassificationInfoStrategy(_InfoStrategy):
+    """Strategy for computing information about data issues related to classification tasks."""
+
     @staticmethod
     def get_info(
         data: Data,
