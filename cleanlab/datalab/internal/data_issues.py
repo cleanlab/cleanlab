@@ -53,6 +53,7 @@ class _InfoStrategy(ABC):
     dictionary and an optional issue name, and returns a copy of the information dictionary for
     the specified issue. If the issue name is `None`, this method returns `None`.
     """
+
     @staticmethod
     @abstractmethod
     def get_info(

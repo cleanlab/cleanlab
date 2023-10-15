@@ -120,8 +120,7 @@ class Datalab:
 
         # Create the builder for DataIssues
         builder = _DataIssuesBuilder(self._data)
-        builder.set_imagelab(self._imagelab)
-        builder.set_task(task)
+        builder.set_imagelab(self._imagelab).set_task(task)
         self.data_issues = builder.build()
 
     # todo: check displayer methods
