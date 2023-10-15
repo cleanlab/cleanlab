@@ -559,3 +559,15 @@ class Datalab:
         load_message = f"Datalab loaded from folder: {path}"
         print(load_message)
         return datalab
+
+    def _spurious_correlations(self) -> pd.DataFrame: 
+        """
+        Use this after finding issues to which examples suffer from which types of issues.
+        NOTE: 
+        
+        Returns: 
+        --------
+        A DataFrame where each row corresponds to image_property ('dark', 'grayscale')
+        and overall datascore for that image_property
+        """
+        return self.spurious_correlation.SpuriousCorrelation.spurious_correlations
