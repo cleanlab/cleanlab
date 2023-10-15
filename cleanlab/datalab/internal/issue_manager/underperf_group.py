@@ -161,7 +161,7 @@ class UnderperformingGroupIssueManager(IssueManager):
         unique_cluster_ids = np.array(
             [label for label in set(cluster_ids) if label not in self.OUTLIER_LABELS]
         )
-        frequencies = np.bincount(cluster_ids[cluster_ids != -1])
+        frequencies = np.bincount(cluster_ids[~np.isin(cluster_ids, self.OUTLIER_LABELS)])
         unique_cluster_ids = np.array(
             [
                 cluster_id
