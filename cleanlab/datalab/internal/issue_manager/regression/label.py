@@ -35,7 +35,7 @@ class RegressionLabelIssueManager(IssueManager):
         A Datalab instance.
 
     clean_learning_kwargs :
-        Keyword arguments to pass to the :py:meth:`CleanLearning <cleanlab.classification.CleanLearning>` constructor.
+        Keyword arguments to pass to the :py:meth:`CleanLearning <cleanlab.regression.learn.CleanLearning>` constructor.
 
     """
 
