@@ -49,6 +49,27 @@ class _InfoStrategy(ABC):
         info: Dict[str, Dict[str, Any]],
         issue_name: Optional[str] = None,
     ) -> Dict[str, Any]:
+        """
+        Get information about a data issue from an information dictionary.
+
+        Parameters
+        ----------
+        info : dict
+            A dictionary of information about data issues.
+        issue_name : str or None, optional (default=None)
+            The name of the issue to get information about. If `None`, this method returns `None`.
+
+        Returns
+        -------
+        dict or None
+            A copy of the information dictionary for the specified issue, or `None` if the issue
+            name is `None`.
+
+        Raises
+        ------
+        ValueError
+            If the specified issue name is not found in the information dictionary.
+        """
         pass  # pragma: no cover
 
     @staticmethod
