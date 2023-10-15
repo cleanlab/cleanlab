@@ -38,7 +38,7 @@ from cleanlab.datalab.internal.helper_factory import (
 )
 from cleanlab.datalab.internal.issue_manager_factory import (
     list_default_issue_types,
-    list_possible_issue_types,
+    list_possible_issue_types as _list_possible_issue_types,
 )
 from cleanlab.datalab.internal.serialize import _Serializer
 
@@ -508,7 +508,7 @@ class Datalab:
         --------
         :py:class:`REGISTRY <cleanlab.datalab.internal.issue_manager_factory.REGISTRY>` : All available issue types and their corresponding issue managers can be found here.
         """
-        return list_possible_issue_types(task=self.task)
+        return _list_possible_issue_types(task=self.task)
 
     def list_default_issue_types(self) -> List[str]:
         """Returns a list of the issue types that are run by default
