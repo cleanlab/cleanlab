@@ -342,6 +342,8 @@ class IssueFinder:
                 )
                 issue_types_copy.pop("outlier")
 
+        # Ensure that we retain issue types from e.g. knn_graph if they are provided in get_available_issue_types.
+        # For regression, we need add label, as we can't detect it from pred_probs in get_available_issue_types.
         if self.task == "regression":
             issue_types_copy = {**issue_types_copy, **{"label": {}}}
 
