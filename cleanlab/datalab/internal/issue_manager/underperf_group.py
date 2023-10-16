@@ -73,7 +73,7 @@ class UnderperformingGroupIssueManager(IssueManager):
         self,
         features: npt.NDArray,
         pred_probs: npt.NDArray,
-        cluster_ids: npt.NDArray[np.int_] = None,
+        cluster_ids: Optional[npt.NDArray[np.int_]] = None,
         **kwargs: Any,
     ) -> None:
         labels = self.datalab.labels
@@ -111,6 +111,7 @@ class UnderperformingGroupIssueManager(IssueManager):
             n_clusters=n_clusters,
             cluster_ids=cluster_ids,
             performed_clustering=performed_clustering,
+            worst_cluster_id=worst_cluster_id,
         )
 
     def set_knn_graph(
@@ -225,8 +226,8 @@ class UnderperformingGroupIssueManager(IssueManager):
         n_clusters: int,
         cluster_ids: npt.NDArray[np.int_],
         performed_clustering: bool,
+        worst_cluster_id: int,
     ) -> Dict[str, Any]:
-
         params_dict = {
             "k": self.k,
             "metric": self.metric,
@@ -249,6 +250,7 @@ class UnderperformingGroupIssueManager(IssueManager):
             n_clusters=n_clusters,
             cluster_ids=cluster_ids,
             performed_clustering=performed_clustering,
+            worst_cluster_id=worst_cluster_id,
         )
         info_dict = {**params_dict, **knn_info_dict, **statistics_dict, **cluster_stat_dict}
 
@@ -278,13 +280,18 @@ class UnderperformingGroupIssueManager(IssueManager):
         self,
         n_clusters: int,
         cluster_ids: npt.NDArray[np.int_],
-        performed_clustering: bool = True,
+        performed_clustering: bool,
+        worst_cluster_id: int,
     ) -> Dict[str, Dict[str, Any]]:
         cluster_stats: Dict[str, Dict[str, Any]] = {
             "clustering": {
                 "algorithm": None,
                 "params": {},
-                "stats": {"n_clusters": n_clusters, "cluster_ids": cluster_ids},
+                "stats": {
+                    "n_clusters": n_clusters,
+                    "cluster_ids": cluster_ids,
+                    "underperforming_cluster_id": worst_cluster_id,
+                },
             }
         }
         if performed_clustering:

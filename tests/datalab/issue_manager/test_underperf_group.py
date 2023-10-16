@@ -116,7 +116,7 @@ class TestUnderperformingGroupIssueManager:
         Mainly focused on the clustering info.
         """
 
-        data = make_data()
+        data = make_data(noisy=True)
         features, pred_probs, labels = data["features"], data["pred_probs"], data["labels"]
         issue_manager.find_issues(features=features, pred_probs=pred_probs)
         info = issue_manager.info
@@ -135,6 +135,7 @@ class TestUnderperformingGroupIssueManager:
         clustering_info = info["clustering"]
         assert clustering_info["algorithm"] is None
         assert clustering_info["params"] == {}
+        assert clustering_info["stats"]["underperforming_cluster_id"] == 0
 
     def test_no_meaningful_clusters(self, issue_manager, make_data, monkeypatch):
         np.random.seed(SEED)

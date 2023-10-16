@@ -1152,6 +1152,71 @@ class TestDataLabUnderperformingIssue:
         underperf_group_summary = lab.get_issue_summary("underperforming_group")
         assert underperf_group_summary["num_issues"].values[0] > 1
 
+    def test_underperforming_cluster_id(self):
+        """
+        Test that the issue manager finds the correct underperforming cluster ID.
+        """
+        np.random.seed(SEED)
+        N = 200
+        K = 5
+        n_clusters = 4
+        bad_cluster_id = 2
+        flip_rate = 0.95
+        cluster_ids = np.random.choice(np.arange(n_clusters), size=N)
+        labels = np.random.choice(np.arange(K), size=N)
+        pred_probs = np.full((N, K), 0.001)
+        pred_probs[np.arange(N), labels] = 0.99  # Set any high value
+        pred_probs = pred_probs / np.sum(pred_probs, axis=-1, keepdims=True)
+        # Flip prediction probabilities of bad cluster samples
+        bad_cluster_indices = np.where(cluster_ids == bad_cluster_id)[0]
+        flip_indices = np.random.choice(
+            bad_cluster_indices, size=int(flip_rate * len(bad_cluster_indices)), replace=False
+        )
+        pred_probs[flip_indices] = 1 - pred_probs[flip_indices]  # Incorrect predictions
+        features = np.random.rand(len(labels), 2)
+        lab = Datalab(data={"labels": labels}, label_name="labels")
+        lab.find_issues(
+            features=features,
+            pred_probs=pred_probs,
+            issue_types={"underperforming_group": {"cluster_ids": cluster_ids}},
+        )
+        info = lab.get_info("underperforming_group")
+        assert info["clustering"]["stats"]["underperforming_cluster_id"] == bad_cluster_id
+        # Check that no underperforming cluster is found for correct predictions
+        pred_probs[flip_indices] = 1 - pred_probs[flip_indices]
+        lab.find_issues(
+            features=features,
+            pred_probs=pred_probs,
+            issue_types={"underperforming_group": {"cluster_ids": cluster_ids}},
+        )
+        info = lab.get_info("underperforming_group")
+        assert info["clustering"]["stats"]["underperforming_cluster_id"] not in cluster_ids
+
+    def test_features_and_knn_graph(self, data):
+        """
+        Test that if the pre-computed knn graph is passed as an argument to `find_issues`,
+        it is preferred over the `features` argument.
+        """
+        np.random.seed(SEED)
+        features, labels, pred_probs = data["features"], data["labels"], data["pred_probs"]
+        lab = Datalab(data={"labels": labels}, label_name="labels")
+        lab.find_issues(
+            features=features, pred_probs=pred_probs, issue_types={"underperforming_group": {}}
+        )
+        issues_1 = lab.get_issues("underperforming_group")
+        knn_graph = lab.get_info("statistics")["weighted_knn_graph"]
+        # Use another datalab instance to check preference of knn graph over features
+        lab = Datalab(data={"labels": labels}, label_name="labels")
+        features = np.random.rand(len(labels), 2)
+        lab.find_issues(
+            features=features,
+            pred_probs=pred_probs,
+            knn_graph=knn_graph,
+            issue_types={"underperforming_group": {}},
+        )
+        issues_2 = lab.get_issues("underperforming_group")
+        pd.testing.assert_frame_equal(issues_1, issues_2)
+
     def test_precomputed_cluster_ids(self, data):
         features, labels, pred_probs = data["features"], data["labels"], data["pred_probs"]
         lab = Datalab(data={"labels": labels}, label_name="labels")
