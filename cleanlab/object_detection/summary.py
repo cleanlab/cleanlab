@@ -137,8 +137,8 @@ def bounding_box_size_distribution(
     if auxiliary_inputs is None:
         auxiliary_inputs = _get_valid_inputs_for_compute_scores(ALPHA, labels, predictions)
 
-    lab_area: DefaultDict[Any, list] = collections.defaultdict(list)
-    pred_area: DefaultDict[Any, list] = collections.defaultdict(list)
+    lab_area: Dict[Any, list] = collections.defaultdict(list)
+    pred_area: Dict[Any, list] = collections.defaultdict(list)
     for sample in auxiliary_inputs:
         _get_bbox_areas(sample["lab_labels"], sample["lab_bboxes"], lab_area, class_names)
         _get_bbox_areas(sample["pred_labels"], sample["pred_bboxes"], pred_area, class_names)
