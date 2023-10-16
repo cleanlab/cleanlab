@@ -449,6 +449,7 @@ def _normalize_by_total(freq):
     total = sum(freq.values())
     return {k: round(v / (total + EPSILON), 2) for k, v in freq.items()}
 
+
 def _get_bbox_areas(labels, boxes, class_area_dict, class_names=None) -> None:
     """Helper function to compute the area of bounding boxes for each class."""
     for cl, bbox in zip(labels, boxes):
