@@ -26,7 +26,6 @@ import collections
 from cleanlab.internal.constants import (
     MAX_CLASS_TO_SHOW,
     ALPHA,
-    IOU_THRESHOLD,
     EPSILON,
 )
 from cleanlab.object_detection.rank import (
@@ -449,21 +448,6 @@ def _normalize_by_total(freq):
     """Helper function to normalize a frequency distribution."""
     total = sum(freq.values())
     return {k: round(v / (total + EPSILON), 2) for k, v in freq.items()}
-
-
-def _idx_to_class(label_array, idx, class_names=None):
-    """Helper function to convert a class index to a class name."""
-    if class_names is None:
-        return label_array[idx]
-    class_name = class_names.get(str(label_array[idx]))
-    if class_name is None:
-        return label_array[idx]
-    return class_name
-
-    # if class_names is None:
-    #     return label_array[idx]
-    # return class_names.get(str(label_array[idx]))
-
 
 def _get_bbox_areas(labels, boxes, class_area_dict, class_names=None) -> None:
     """Helper function to compute the area of bounding boxes for each class."""
