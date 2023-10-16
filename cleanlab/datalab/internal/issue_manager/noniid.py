@@ -156,7 +156,7 @@ class NonIIDIssueManager(IssueManager):
         self,
         features: Optional[npt.NDArray],
         pred_probs: Optional[np.ndarray],
-        knn_graph,
+        knn_graph:Any,
         metric_changes: Any,
     ) -> Tuple[Optional[NearestNeighbors], npt.NDArray]:
         """
