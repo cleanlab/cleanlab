@@ -1,5 +1,5 @@
-cleanlab documentation
-======================
+cleanlab open-source documentation
+==================================
 
 `cleanlab <https://github.com/cleanlab/cleanlab>`_ **automatically detects data and label issues in your ML datasets.**
 
