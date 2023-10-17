@@ -1113,3 +1113,23 @@ class TestDataLabClassImbalanceIssues:
         assert "class_imbalance" in summary["issue_type"].values
         class_imbalance_summary = lab.get_issue_summary("class_imbalance")
         assert class_imbalance_summary["num_issues"].values[0] > 0
+
+class TestSpuriousCorrelations: 
+
+    def test_spurious_correlations(self): 
+        dark_scores = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+        labels = np.array([0, 1, 0, 1, 0, 1, 0, 1, 0, 1])
+        issue_summary = pd.DataFrame({
+            'issue_type': ['dark'],
+            'num_issues': 10,
+        })
+
+        data = {
+            'issues': pd.DataFrame({'dark_score': dark_scores}),
+            'labels': labels,
+            'issue_summary': issue_summary,
+        }
+
+        pass
+
+
