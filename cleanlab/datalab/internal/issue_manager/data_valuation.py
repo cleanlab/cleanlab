@@ -71,6 +71,10 @@ class DataValuationIssueManager(IssueManager):
         self,
         **kwargs,
     ) -> None:
+        """Calculate the data valuation score with a provided or existing knn graph.
+        Based on KNN-Shapley value described in https://arxiv.org/abs/1911.07128
+        The larger the score, the more valuable the data point is, thr more contribution it will make to the model's training.
+        """
         knn_graph = self._process_knn_graph_from_inputs(kwargs)
         labels = self.datalab.labels.reshape(-1, 1)
         assert knn_graph is not None, "knn_graph must be already calculated by other issue managers"
@@ -89,10 +93,6 @@ class DataValuationIssueManager(IssueManager):
         self.info = self.collect_info(self.issues)
 
     def _knn_shapley_score(self, knn_graph: csr_matrix, labels: np.ndarray) -> np.ndarray:
-        """Calculate the data valuation score with a provided or existing knn graph.
-        Based on KNN-Shapley value described in https://arxiv.org/abs/1911.07128
-        The larger the score, the more valuable the data point is, thr more contribution it will make to the model's training.
-        """
         N = labels.shape[0]
         scores = np.zeros((N, N))
         dist = knn_graph.indices.reshape(N, -1)
