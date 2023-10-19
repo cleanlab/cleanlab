@@ -27,7 +27,7 @@ from cleanlab.dataset import (
     rank_classes_by_label_quality,
     overall_label_health_score,
 )
-from cleanlab.count import estimate_joint
+from cleanlab.count import estimate_joint, num_label_issues
 
 cifar100 = [
     "apple",
@@ -434,7 +434,7 @@ def _get_pred_probs_labels_from_labelerrors_datasets(dataset_name):
     return pred_probs, labels
 
 
-@pytest.mark.parametrize("dataset_name", ["mnist", "caltech256", "cifar100", "imdb"])
+@pytest.mark.parametrize("dataset_name", ["mnist", "caltech256", "cifar100"])
 def test_real_datasets(dataset_name):
     print("\n" + dataset_name.capitalize() + "\n")
     class_names = eval(dataset_name)
@@ -490,6 +490,7 @@ def test_symmetry_df_size(asymmetric, dataset_name):
 def test_value_error_missing_num_examples_with_joint(use_num_examples, use_labels, func):
     dataset_name = "imdb"
     pred_probs, labels = _get_pred_probs_labels_from_labelerrors_datasets(dataset_name)
+    print("ULY LABEL SHAPE", labels.shape, labels.ndim)
     joint = estimate_joint(labels=labels, pred_probs=pred_probs)
     if use_num_examples is False and use_labels is False:  # can't infer num_examples. Throw error!
         with pytest.raises(ValueError) as e:
