@@ -490,7 +490,6 @@ def test_symmetry_df_size(asymmetric, dataset_name):
 def test_value_error_missing_num_examples_with_joint(use_num_examples, use_labels, func):
     dataset_name = "imdb"
     pred_probs, labels = _get_pred_probs_labels_from_labelerrors_datasets(dataset_name)
-    print("ULY LABEL SHAPE", labels.shape, labels.ndim)
     joint = estimate_joint(labels=labels, pred_probs=pred_probs)
     if use_num_examples is False and use_labels is False:  # can't infer num_examples. Throw error!
         with pytest.raises(ValueError) as e:
@@ -507,6 +506,12 @@ def test_value_error_missing_num_examples_with_joint(use_num_examples, use_label
             num_examples=len(labels) if use_num_examples else None,
         )
 
+@pytest.mark.parametrize("dataset_name", ["mnist", "caltech256", "cifar100"])
+def test_overall_label_health_score_is_correct(dataset_name):
+    pred_probs, labels = _get_pred_probs_labels_from_labelerrors_datasets(dataset_name)
+    num_issues = num_label_issues(labels=labels, pred_probs=pred_probs)
+    score = overall_label_health_score(labels=labels, pred_probs=pred_probs)
+    assert 1 - num_issues / labels.shape[0] == score
 
 confident_joint_strategy = npst.arrays(
     np.int32,
