@@ -341,7 +341,7 @@ def overall_label_health_score(
             "For multilabel data, please instead call: multilabel_classification.dataset.overall_multilabel_health_score()"
         )
     if num_examples is None:
-        num_examples = _get_num_examples(labels=labels)
+        num_examples = _get_num_examples(labels=labels, confident_joint=confident_joint)
 
     if pred_probs is None or labels is None:
         if joint is None:
@@ -366,29 +366,6 @@ def overall_label_health_score(
             f" ** The overall label health score for this dataset is: {health_score:.2f}."
         )
     return health_score
-
-    # if multi_label:
-    #     raise ValueError(
-    #         "For multilabel data, please instead call: multilabel_classification.dataset.overall_multilabel_health_score()"
-    #     )
-    #
-    # if joint is None:
-    #     joint = estimate_joint(
-    #         labels=labels,
-    #         pred_probs=pred_probs,
-    #         confident_joint=confident_joint,
-    #     )
-    # if num_examples is None:
-    #     num_examples = _get_num_examples(labels=labels)
-    # joint_trace = joint.trace()
-    # if verbose:
-    #     num_issues = (num_examples * (1 - joint_trace)).round().astype(int)
-    #     print(
-    #         f" * Overall, about {1 - joint_trace:.0%} ({num_issues:,} of the {num_examples:,}) "
-    #         f"labels in your dataset have potential issues.\n"
-    #         f" ** The overall label health score for this dataset is: {joint_trace:.2f}."
-    #     )
-    # return joint_trace
 
 
 def health_summary(
