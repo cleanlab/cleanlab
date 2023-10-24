@@ -43,9 +43,11 @@ from cleanlab.object_detection.summary import (
     bounding_box_size_distribution,
     class_label_distribution,
     get_sorted_bbox_count_idxs,
+    get_class_metrics,
     plot_class_size_distributions,
     plot_class_distribution,
     visualize,
+    _get_class_confusion_matrix,
 )
 from cleanlab.internal.constants import (
     ALPHA,
@@ -713,6 +715,75 @@ def test_get_sorted_bbox_count_idxs():
             total += len(c)
         assert total <= prev
         prev = total
+
+
+def test_get_class_confusion_matrix():
+    auxiliary_inputs = _get_valid_inputs_for_compute_scores(ALPHA, labels, predictions)
+    class_confusion_matrix = _get_class_confusion_matrix(auxiliary_inputs)
+
+    total_TP = total_FP = total_FN = 0
+    for c in class_confusion_matrix.keys():
+        total_TP += class_confusion_matrix[c]["TP"]
+        total_FP += class_confusion_matrix[c]["FP"]
+        total_FN += class_confusion_matrix[c]["FN"]
+
+    total_preds = 0
+    for p in predictions:
+        for c in p:
+            total_preds += len(c)
+
+    total_labs = 0
+    for l in labels:
+        total_labs += len(l["labels"])
+
+    # total TP + FP should equal to total number of predictions
+    assert total_TP + total_FP == total_preds
+    # total TP + FP + FN should be less than sum of labels and predictions
+    assert total_TP + total_FP + total_FN <= total_preds + total_labs
+
+    # test with a dummy example
+    lab1 = {
+        "bboxes": np.array([
+            [1, 1, 10, 15], # FN(0)
+            [20, 22, 30, 31],
+            [40, 51, 40, 51], 
+            [50, 62, 50, 61], # FN(1)
+            [60, 72, 60, 71], # FN(1)
+        ]),
+        "labels": np.array([0, 1, 0, 1, 1]),
+    }
+    pred1 = [
+        np.array([[125, 130, 130, 140, 0.95], [40, 50, 40, 51, 0.95], [50, 60, 50, 60, 0.85]]), # 1 * TP(0), 2 * FP(0)
+        np.array([[20, 20, 30, 30, 0.95], [0, 5, 0, 5, 0.95]]) # 1 * TP(1) 1 * FP(1)
+    ]
+
+    dummy_labels = [lab1]
+    dummy_predictions = [pred1]
+    auxiliary_inputs = _get_valid_inputs_for_compute_scores(ALPHA, dummy_labels, dummy_predictions)
+    confusion_matrix = _get_class_confusion_matrix(auxiliary_inputs)
+
+    # from inspection, we know the confusion matrix should be:
+    assert confusion_matrix[0]["TP"] == 1
+    assert confusion_matrix[0]["FP"] == 2
+    assert confusion_matrix[0]["FN"] == 1
+    assert confusion_matrix[1]["TP"] == 1
+    assert confusion_matrix[1]["FP"] == 1
+    assert confusion_matrix[1]["FN"] == 2
+
+
+def test_get_class_metrics():
+    class_metrics = get_class_metrics(labels, predictions, class_names=class_names)
+    for c in class_metrics.keys():
+        assert c in class_names.values()
+
+    for v in class_metrics.values():
+        assert v["accuracy"] >= 0 and v["accuracy"] <= 1
+
+    class_to_show = 2
+    assert class_to_show <= NUM_CLASSES
+    limited_class_names = {str(i): str(chr(97 + i)) for i in range(class_to_show)}
+    limited_class_metrics = get_class_metrics(labels, predictions, class_names=limited_class_names)
+    assert len(limited_class_metrics) == class_to_show
 
 
 def test_plot_class_size_distributions(monkeypatch):

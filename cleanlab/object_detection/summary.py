@@ -232,6 +232,71 @@ def get_sorted_bbox_count_idxs(labels, predictions):
     return sorted_lab, sorted_pred
 
 
+def get_class_metrics(
+    labels=None,
+    predictions=None,
+    *,
+    auxiliary_inputs=None,
+    class_names: Optional[Dict[Any, Any]] = None,
+):
+    """
+    Calculate the accuracy per class.
+
+    This method can help you understand the classes on which the model performs well or poorly.
+
+    For object detection model, evaluation metrics are defined as follows:
+    - True Positive (TP): the predicted bounding box overlaps with a ground truth bounding box with the same class label
+    - False Positive (FP): the predicted bounding box overlaps with a ground truth bounding box with a different class label or does not overlap with any ground truth bounding box
+    - False Negative (FN): the ground truth bounding box does not overlap with any predicted bounding box
+    - True Negative (TN): not applicable
+
+    Therefore, accuracy is defined as TP / (TP + FP + FN).
+
+    Parameters
+    ----------
+    labels:
+        Annotated boxes and class labels in the original dataset, which may contain some errors.
+        Refer to documentation for this argument in :py:func:`object_counts_per_image <cleanlab.object_detection.summary.object_counts_per_image>` for further details.
+
+    predictions:
+        Predictions output by a trained object detection model.
+        Refer to documentation for this argument in :py:func:`object_counts_per_image <cleanlab.object_detection.summary.object_counts_per_image>` for further details.
+
+    auxiliary_inputs: optional
+        Auxiliary inputs to be used in the computation of counts.
+        Refer to documentation for this argument in :py:func:`object_counts_per_image <cleanlab.object_detection.summary.object_counts_per_image>` for further details.
+
+    class_names: optional
+        Optional dictionary mapping one-hot-encoded class labels back to their original class names in the format ``{"integer-label": "original-class-name"}``.
+        You can use this argument to control the classes for which the size distribution is plotted.
+
+    Returns
+    -------
+    class_metrics: Dict[Any, Dict[str, float]]
+        A dictionary mapping each class label to its metrics - TP, FP, FN, accuracy.
+    """
+    if auxiliary_inputs is None:
+        auxiliary_inputs = _get_valid_inputs_for_compute_scores(ALPHA, labels, predictions)
+
+    class_metrics: DefaultDict[int, Any] = _get_class_confusion_matrix(auxiliary_inputs)
+
+    class_metrics_disp: DefaultDict[Any, Any] = collections.defaultdict(lambda: {"accuracy": 0})
+
+    # only display classes that are present in the class_names dict
+    for cl in class_metrics.keys():   
+        if class_names is not None and str(cl) not in class_names:
+            continue
+                    
+        accuracy = class_metrics[cl]["TP"] / (
+            class_metrics[cl]["TP"] + class_metrics[cl]["FP"] + class_metrics[cl]["FN"] + EPSILON
+        )
+
+        disp_name = class_names[str(cl)] if class_names is not None else cl
+        class_metrics_disp[disp_name]["accuracy"] = round(accuracy, 2)
+
+    return class_metrics_disp
+
+
 def plot_class_size_distributions(
     labels, predictions, class_names=None, class_to_show=MAX_CLASS_TO_SHOW
 ):
@@ -442,6 +507,53 @@ def visualize(
             pad_inches=0.5,
         )
     plt.show()
+
+
+def _get_class_confusion_matrix(auxiliary_inputs):
+    """
+    Calculate the confusion matrix per class.
+    In the context of object detection, the confusion matrix is defined as follows:
+    - True Positive (TP): the predicted bounding box overlaps with a ground truth bounding box with the same class label
+    - False Positive (FP): the predicted bounding box overlaps with a ground truth bounding box with a different class label or does not overlap with any ground truth bounding box
+    - False Negative (FN): the ground truth bounding box does not overlap with any predicted bounding box
+    - True Negative (TN): not applicable
+    """
+    # TP: True Positive, FP: False Positive, FN: False Negative
+    class_metrics: DefaultDict[Any, Any] = collections.defaultdict(
+        lambda: {"TP": 0, "FP": 0, "FN": 0}
+    )
+
+    for sample in auxiliary_inputs:
+        matched_label_idx = set()
+
+        iou_t = sample["iou_matrix"].T  # row: prediction bbox, col: label bbox
+        for i, pred_overlaps in enumerate(iou_t):
+            pred_label = sample["pred_labels"][i]
+            max_iou_idx = np.argmax(pred_overlaps)
+            max_iou = pred_overlaps[max_iou_idx]
+            lab_label = sample['lab_labels'][max_iou_idx]
+    
+            if max_iou < 0.5:
+                # FP case: the prediction does not have sufficient overlap with any ground truth bounding box
+                class_metrics[pred_label]["FP"] += 1
+            elif max_iou_idx in matched_label_idx:
+                # FP case: the prediction overlaps with a ground truth bounding box that has already been matched with a different prediction
+                class_metrics[pred_label]["FP"] += 1
+            elif pred_label == lab_label:
+                # TP case: the prediction overlaps with a ground truth bounding box with the same class label
+                class_metrics[pred_label]["TP"] += 1
+                matched_label_idx.add(max_iou_idx)
+            else:
+                # FP case: the prediction overlaps with a ground truth bounding box with a different class label
+                class_metrics[pred_label]["FP"] += 1
+
+        # FN case - any not detected ground truth bounding box
+        for idx in range(len(sample['lab_labels'])):
+            if idx not in matched_label_idx:
+                lab_label = sample['lab_labels'][idx]
+                class_metrics[lab_label]["FN"] += 1
+    
+    return class_metrics
 
 
 def _normalize_by_total(freq):
