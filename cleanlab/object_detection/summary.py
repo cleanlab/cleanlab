@@ -283,10 +283,10 @@ def get_class_metrics(
     class_metrics_disp: DefaultDict[Any, Any] = collections.defaultdict(lambda: {"accuracy": 0})
 
     # only display classes that are present in the class_names dict
-    for cl in class_metrics.keys():   
+    for cl in class_metrics.keys():
         if class_names is not None and str(cl) not in class_names:
             continue
-                    
+
         accuracy = class_metrics[cl]["TP"] / (
             class_metrics[cl]["TP"] + class_metrics[cl]["FP"] + class_metrics[cl]["FN"] + EPSILON
         )
@@ -531,8 +531,8 @@ def _get_class_confusion_matrix(auxiliary_inputs):
             pred_label = sample["pred_labels"][i]
             max_iou_idx = np.argmax(pred_overlaps)
             max_iou = pred_overlaps[max_iou_idx]
-            lab_label = sample['lab_labels'][max_iou_idx]
-    
+            lab_label = sample["lab_labels"][max_iou_idx]
+
             if max_iou < 0.5:
                 # FP case: the prediction does not have sufficient overlap with any ground truth bounding box
                 class_metrics[pred_label]["FP"] += 1
@@ -548,11 +548,11 @@ def _get_class_confusion_matrix(auxiliary_inputs):
                 class_metrics[pred_label]["FP"] += 1
 
         # FN case - any not detected ground truth bounding box
-        for idx in range(len(sample['lab_labels'])):
+        for idx in range(len(sample["lab_labels"])):
             if idx not in matched_label_idx:
-                lab_label = sample['lab_labels'][idx]
+                lab_label = sample["lab_labels"][idx]
                 class_metrics[lab_label]["FN"] += 1
-    
+
     return class_metrics
 
 
