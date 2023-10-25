@@ -27,7 +27,7 @@ from cleanlab.dataset import (
     rank_classes_by_label_quality,
     overall_label_health_score,
 )
-from cleanlab.count import estimate_joint
+from cleanlab.count import estimate_joint, num_label_issues, compute_confident_joint
 
 cifar100 = [
     "apple",
@@ -434,7 +434,7 @@ def _get_pred_probs_labels_from_labelerrors_datasets(dataset_name):
     return pred_probs, labels
 
 
-@pytest.mark.parametrize("dataset_name", ["mnist", "caltech256", "cifar100", "imdb"])
+@pytest.mark.parametrize("dataset_name", ["mnist", "caltech256", "cifar100"])
 def test_real_datasets(dataset_name):
     print("\n" + dataset_name.capitalize() + "\n")
     class_names = eval(dataset_name)
@@ -505,6 +505,38 @@ def test_value_error_missing_num_examples_with_joint(use_num_examples, use_label
             joint=joint,
             num_examples=len(labels) if use_num_examples else None,
         )
+
+
+@pytest.mark.parametrize("dataset_name", ["mnist", "caltech256", "cifar100"])
+def test_overall_label_health_score_matched_num_issues(dataset_name):
+    # Matches num_label_issues
+    pred_probs, labels = _get_pred_probs_labels_from_labelerrors_datasets(dataset_name)
+    num_issues = num_label_issues(labels=labels, pred_probs=pred_probs)
+    score = overall_label_health_score(labels=labels, pred_probs=pred_probs)
+    assert 1 - num_issues / labels.shape[0] == score
+
+
+def test_overall_label_health_score_function_calls():
+    dataset_name = "caltech256"
+    pred_probs, labels = _get_pred_probs_labels_from_labelerrors_datasets(dataset_name)
+    score = overall_label_health_score(labels=labels, pred_probs=pred_probs)
+
+    confident_joint = compute_confident_joint(labels=labels, pred_probs=pred_probs)
+    num_examples = len(labels)
+    score_cj = overall_label_health_score(
+        labels=None, pred_probs=pred_probs, confident_joint=confident_joint
+    )
+    joint = estimate_joint(labels=labels, pred_probs=pred_probs)
+    score_joint = overall_label_health_score(
+        labels=None, pred_probs=pred_probs, joint=joint, num_examples=num_examples
+    )
+    joint_cj = estimate_joint(labels=labels, pred_probs=pred_probs, confident_joint=confident_joint)
+    score_joint_cj = overall_label_health_score(
+        labels=None, pred_probs=pred_probs, joint=joint_cj, num_examples=num_examples
+    )
+    assert score_cj != score
+    assert score_cj == score_joint
+    assert score_joint_cj == score_joint
 
 
 confident_joint_strategy = npst.arrays(

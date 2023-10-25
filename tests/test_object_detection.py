@@ -1,4 +1,5 @@
 import os
+import collections
 
 from cleanlab.internal.object_detection_utils import (
     softmin1d,
@@ -38,6 +39,12 @@ from cleanlab.object_detection.filter import (
 )
 
 from cleanlab.object_detection.summary import (
+    object_counts_per_image,
+    bounding_box_size_distribution,
+    class_label_distribution,
+    get_sorted_bbox_count_idxs,
+    plot_class_size_distributions,
+    plot_class_distribution,
     visualize,
 )
 from cleanlab.internal.constants import (
@@ -184,6 +191,8 @@ good_labels = generate_annotations(NUM_GOOD_SAMPLES, num_classes=NUM_CLASSES, ma
 good_predictions = generate_predictions(
     NUM_GOOD_SAMPLES, good_labels, num_classes=NUM_CLASSES, max_boxes=12, is_issue=False
 )
+# generate test class name mappings i.e. "1": "a", "2": "b", etc.
+class_names = {str(i): str(chr(97 + i)) for i in range(NUM_CLASSES)}
 
 NUM_BAD_SAMPLES = 5
 bad_labels = generate_annotations(NUM_BAD_SAMPLES, num_classes=NUM_CLASSES, max_boxes=10)
@@ -592,6 +601,132 @@ def test_find_label_issues_per_box():
     assert (issues_per_box[2] == np.array([False, True, False, False])).all()
 
 
+def test_object_counts_per_image():
+    auxiliary_inputs = _get_valid_inputs_for_compute_scores(ALPHA, labels, predictions)
+
+    label_count, pred_count = object_counts_per_image(labels, predictions)
+    assert label_count == [len(sample["bboxes"]) for sample in labels]
+    assert pred_count == [sum([len(cl) for cl in pred]) for pred in predictions]
+
+    label_count, pred_count = object_counts_per_image(auxiliary_inputs=auxiliary_inputs)
+    assert label_count == [len(sample["bboxes"]) for sample in labels]
+    assert pred_count == [sum([len(cl) for cl in pred]) for pred in predictions]
+
+
+def test_bounding_box_size_distribution():
+    auxiliary_inputs = _get_valid_inputs_for_compute_scores(ALPHA, labels, predictions)
+
+    label_boxes, pred_boxes = bounding_box_size_distribution(labels, predictions)
+    for areas in label_boxes.values():
+        for n in areas:
+            assert n >= 0
+    for areas in pred_boxes.values():
+        for n in areas:
+            assert n >= 0
+
+    label_boxes, pred_boxes = bounding_box_size_distribution(auxiliary_inputs=auxiliary_inputs)
+    for areas in label_boxes.values():
+        for n in areas:
+            assert n >= 0
+    for areas in pred_boxes.values():
+        for n in areas:
+            assert n >= 0
+
+    label_boxes, pred_boxes = bounding_box_size_distribution(
+        labels, predictions, class_names=class_names
+    )
+    for c in label_boxes:
+        assert c in class_names.values()
+    for c in pred_boxes:
+        assert c in class_names.values()
+
+    # test class_names with limited classes
+    class_to_show = 2
+    assert class_to_show <= NUM_CLASSES
+    limited_class_names = {str(i): str(chr(97 + i)) for i in range(class_to_show)}
+    label_boxes, pred_boxes = bounding_box_size_distribution(
+        labels, predictions, class_names=limited_class_names
+    )
+    assert len(label_boxes) == class_to_show
+    assert len(pred_boxes) == class_to_show
+
+    # test sort by number of class occurrences
+    label_boxes, pred_boxes = bounding_box_size_distribution(labels, predictions, sort=True)
+    prev = float("inf")
+    for c in label_boxes:
+        assert len(label_boxes[c]) <= prev
+        prev = len(label_boxes[c])
+    prev = float("inf")
+    for c in pred_boxes:
+        assert len(pred_boxes[c]) <= prev
+        prev = len(pred_boxes[c])
+
+
+def test_class_label_distribution():
+    auxiliary_inputs = _get_valid_inputs_for_compute_scores(ALPHA, labels, predictions)
+    lab_count, pred_count = collections.defaultdict(int), collections.defaultdict(int)
+
+    for sample in labels:
+        for cl in sample["labels"]:
+            lab_count[cl] += 1
+
+    for sample in predictions:
+        for i, cl in enumerate(sample):
+            if len(cl) > 0:
+                pred_count[i] += len(cl)
+
+    lab_total, pred_total = sum(lab_count.values()), sum(pred_count.values())
+    lab_freq_ans = {k: round(v / lab_total, 2) for k, v in lab_count.items()}
+    pred_freq_ans = {k: round(v / pred_total, 2) for k, v in pred_count.items()}
+
+    lab_freq, pred_freq = class_label_distribution(labels, predictions)
+    assert lab_freq == lab_freq_ans
+    assert pred_freq == pred_freq_ans
+
+    lab_freq, pred_freq = class_label_distribution(auxiliary_inputs=auxiliary_inputs)
+    assert lab_freq == lab_freq_ans
+    assert pred_freq == pred_freq_ans
+
+    lab_freq, pred_freq = class_label_distribution(labels, predictions, class_names=class_names)
+    for c in lab_freq:
+        assert c in class_names.values()
+    for c in pred_freq:
+        assert c in class_names.values()
+
+
+def test_get_sorted_bbox_count_idxs():
+    sorted_lab, sorted_pred = get_sorted_bbox_count_idxs(labels, predictions)
+
+    assert len(sorted_lab) == len(labels)
+    assert len(sorted_pred) == len(predictions)
+
+    # assert sorted by number of bboxes
+    prev = float("inf")
+    for i, _ in sorted_lab:
+        assert len(labels[i]["labels"]) <= prev
+        prev = len(labels[i]["labels"])
+
+    prev = float("inf")
+    for i, _ in sorted_pred:
+        total = 0
+        for c in predictions[i]:
+            total += len(c)
+        assert total <= prev
+        prev = total
+
+
+def test_plot_class_size_distributions(monkeypatch):
+    monkeypatch.setattr(plt, "show", lambda: None)
+    plot_class_size_distributions(labels, predictions, class_names=class_names)
+
+    plot_class_size_distributions(labels, predictions, class_names=class_names, class_to_show=3)
+
+
+def test_plot_class_distribution(monkeypatch):
+    monkeypatch.setattr(plt, "show", lambda: None)
+    plot_class_distribution(labels, predictions, class_names=class_names)
+
+
 @pytest.mark.usefixtures("generate_single_image_file")
 def test_visualize(monkeypatch, generate_single_image_file):
     monkeypatch.setattr(plt, "show", lambda: None)
@@ -636,18 +771,7 @@ def test_visualize(monkeypatch, generate_single_image_file):
         label=labels[0],
         prediction=predictions[0],
         prediction_threshold=0.99,
-        class_names={
-            "0": "car",
-            "1": "chair",
-            "2": "cup",
-            "3": "person",
-            "4": "traffic light",
-            "5": "5",
-            "6": "6",
-            "7": "7",
-            "8": "8",
-            "9": "9",
-        },
+        class_names=class_names,
         overlay=False,
     )
 
