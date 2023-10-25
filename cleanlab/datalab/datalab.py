@@ -40,6 +40,7 @@ from cleanlab.datalab.internal.helper_factory import (
 )
 from cleanlab.datalab.internal.issue_finder import IssueFinder
 from cleanlab.datalab.internal.serialize import _Serializer
+from cleanlab.datalab.internal.spurious_correlation import SpuriousCorrelations
 
 if TYPE_CHECKING:  # pragma: no cover
     import numpy.typing as npt
@@ -314,7 +315,7 @@ class Datalab:
         A DataFrame where each row corresponds to image_property ('dark', 'grayscale')
         and overall datascore for that image_property
         """
-        return self.SpuriousCorrelations.spurious_correlation    
+        return SpuriousCorrelations.spurious_correlations(self)
     
     def report(
         self,

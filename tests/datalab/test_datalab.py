@@ -21,11 +21,13 @@ import os
 import pickle
 import timeit
 from pathlib import Path
+from PIL import Image
 from unittest.mock import MagicMock, Mock, patch
 
 import numpy as np
 import pandas as pd
 import pytest
+from datasets import Dataset
 from datasets.dataset_dict import DatasetDict
 from scipy.sparse import csr_matrix
 from sklearn.neighbors import NearestNeighbors
@@ -1114,22 +1116,27 @@ class TestDataLabClassImbalanceIssues:
         class_imbalance_summary = lab.get_issue_summary("class_imbalance")
         assert class_imbalance_summary["num_issues"].values[0] > 0
 
-class TestSpuriousCorrelations: 
+class TestSpuriousCorrelation:
+    def create_data(self):
+        images = [Image.new("RGB", (32, 32), (25, 25, 25))] * 5 + \
+                 [Image.new("RGB", (32, 32), (255, 255, 255))] * 5
 
-    def test_spurious_correlations(self): 
-        dark_scores = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
-        labels = np.array([0, 1, 0, 1, 0, 1, 0, 1, 0, 1])
-        issue_summary = pd.DataFrame({
-            'issue_type': ['dark'],
-            'num_issues': 10,
-        })
+        rand_images = (np.random.rand(40, 32, 32, 3) * 255).astype(np.uint8)
+        images = images + [Image.fromarray(img) for img in rand_images]
 
+        labels = np.array([0] * 5 + [1] * 5 + [2] * 40)
         data = {
-            'issues': pd.DataFrame({'dark_score': dark_scores}),
-            'labels': labels,
-            'issue_summary': issue_summary,
+            "image": images,
+            "label": labels
         }
+        dataset = Dataset.from_dict(data)
+        lab = Dataset(data=dataset, image_key="image", label_name="label")
+        features = np.array([np.array(img).flatten() for img in images])
+        return lab, features
 
-        pass
-
+    def test_spurious_correlation(self):
+        imagelab, features = self.create_data()
+        imagelab.find_issues(features=features)
+        corrs = imagelab._spurious_correlation()
+        assert corrs
 
