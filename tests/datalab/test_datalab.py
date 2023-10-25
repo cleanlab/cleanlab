@@ -375,7 +375,7 @@ class TestDatalab:
         expected_issue_summary_df = pd.DataFrame(
             {
                 "issue_type": ["foo", "label"],
-                "score": [0.72, 0.6],
+                "score": [0.72, 0.4],
                 "num_issues": [1, 0],
             }
         )
