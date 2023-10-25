@@ -13,7 +13,7 @@ class SpuriousCorrelations:
         self.issue_summary: pd.DataFrame = data.issue_summary
 
     def spurious_correlations(self) -> pd.DataFrame:
-        baseline_accuracy = np.bincount(self.labels).max() / len(self.labels)
+        baseline_accuracy = np.bincount(self.labels).argmax() / len(self.labels)
         property_scores = {}
         image_properties_of_interest = ['outlier','near_duplicate','non_iid','low_information','dark','blurry','light','grayscale','odd_aspect_ratio','odd_size']
         image_properties = [i for i in image_properties_of_interest if i in self.issue_summary['issue_type'].tolist()]
