@@ -42,14 +42,14 @@ class NullIssueManager(IssueManager):
     def _calculate_null_issues(features: npt.NDArray) -> tuple[ndarray, ndarray, Any]:
         rows = features.shape[0]
         cols = features.shape[1]
-        scores = np.zeros(rows).astype(np.float32)
+        scores = np.ones(rows).astype(np.float32)
         is_null_issue = np.full(rows, False)
         null_tracker = np.isnan(features)
         if null_tracker.any():
             for row in range(rows):
                 if null_tracker[row].any():
-                    null_row_count = np.count_nonzero(~null_tracker[row])
-                    scores[row] = null_row_count / cols
+                    non_null_col_count = np.count_nonzero(~null_tracker[row])
+                    scores[row] = non_null_col_count / cols
                     if scores[row] == 0.00:
                         is_null_issue[row] = True
         return is_null_issue, scores, null_tracker

@@ -43,7 +43,7 @@ class TestNullIssueManager:
             issues_sort["is_null_issue"] == expected_sorted_issue_mask
         ), "Issue mask should be correct"
         assert summary_sort["issue_type"][0] == "null"
-        assert summary_sort["score"][0] == pytest.approx(expected=0.0, abs=1e-7)
+        assert summary_sort["score"][0] == pytest.approx(expected=1.0, abs=1e-7)
         assert (
             info_sort.get("average_null_score", None) is not None
         ), "Should have average null score"
@@ -64,7 +64,7 @@ class TestNullIssueManager:
             issues_sort["is_null_issue"] == expected_sorted_issue_mask
         ), "Issue mask should be correct"
         assert summary_sort["issue_type"][0] == "null"
-        assert summary_sort["score"][0] == pytest.approx(expected=0.16666667, abs=1e-7)
+        assert summary_sort["score"][0] == pytest.approx(expected=8/12, abs=1e-7)
         assert (
             info_sort.get("average_null_score", None) is not None
         ), "Should have average null score"
@@ -122,7 +122,7 @@ class TestNullIssueManager:
         """Test some values in the info dict."""
         issue_manager.find_issues(features=embeddings)
         info = issue_manager.info
-        assert info["average_null_score"] == 0.0
+        assert info["average_null_score"] == 1.0
         assert info["most_common_issue"]["pattern"] == "no_null"
         assert info["most_common_issue"]["count"] == 0
         assert info["most_common_issue"]["rows_affected"] == []
@@ -132,7 +132,7 @@ class TestNullIssueManager:
         """Test some values in the info dict."""
         issue_manager.find_issues(features=embeddings_with_null)
         info = issue_manager.info
-        assert info["average_null_score"] == pytest.approx(expected=0.16666667, abs=1e-7)
+        assert info["average_null_score"] == pytest.approx(expected=8/12, abs=1e-7)
         assert info["most_common_issue"]["pattern"] == "100"
         assert info["most_common_issue"]["count"] == 1
         assert info["most_common_issue"]["rows_affected"] == [0]
