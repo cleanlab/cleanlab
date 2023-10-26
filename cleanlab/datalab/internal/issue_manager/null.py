@@ -11,7 +11,6 @@ from cleanlab.datalab.internal.issue_manager import IssueManager
 
 if TYPE_CHECKING:  # pragma: no cover
     import numpy.typing as npt
-    from cleanlab.datalab.datalab import Datalab
 
 
 class NullIssueManager(IssueManager):
@@ -34,9 +33,6 @@ class NullIssueManager(IssueManager):
         ],
         2: [],
     }
-
-    def __init__(self, datalab: Datalab):
-        super().__init__(datalab)
 
     @staticmethod
     def _calculate_null_issues(features: npt.NDArray) -> tuple[ndarray, ndarray, Any]:
