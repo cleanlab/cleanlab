@@ -1,5 +1,8 @@
 import numpy as np
 import pytest
+from hypothesis.extra.numpy import arrays, array_shapes
+from hypothesis.strategies import floats, just
+from hypothesis import HealthCheck, given, settings
 
 from cleanlab.datalab.internal.issue_manager.null import NullIssueManager
 
@@ -135,3 +138,39 @@ class TestNullIssueManager:
         assert info["most_common_issue"]["count"] == 1
         assert info["most_common_issue"]["rows_affected"] == [0]
         assert info["column_impact"] == [0.5, 0.25, 0.25]
+
+    # Strategy for generating NaN values
+    nan_strategy = just(np.nan)
+
+    # Strategy for generating regular float values, including NaNs
+    float_with_nan = floats(allow_nan=True)
+
+    # Strategy for generating NumPy arrays with some NaN values
+    features_with_nan_strategy = arrays(
+        dtype=np.float64,
+        shape=array_shapes(min_dims=2, max_dims=2, min_side=1, max_side=5),
+        elements=float_with_nan,
+        fill=nan_strategy,
+    )
+    
+    @settings(suppress_health_check=[HealthCheck.function_scoped_fixture]) # No need to reset state of issue_manager fixture
+    @given(embeddings=features_with_nan_strategy)
+    def test_quality_scores_and_full_null_row_identification(self, issue_manager, embeddings):
+
+        # Run the find_issues method
+        issue_manager.find_issues(features=embeddings)
+        issues_sort, _, _ = (
+            issue_manager.issues,
+            issue_manager.summary,
+            issue_manager.info,
+        )
+
+        # Check for the two main properties:
+
+        # 1. The quality score for each row should be the fraction of features which are not null in that row.
+        non_null_fractions = [np.count_nonzero(~np.isnan(row)) / len(row) for row in embeddings]
+        assert np.allclose(issues_sort[issue_manager.issue_score_key], non_null_fractions, atol=1e-7)
+
+        # 2. The rows that are marked as is_null_issue should ONLY be those rows which are 100% null values.
+        all_rows_are_null = np.all(np.isnan(embeddings), axis=1)
+        assert np.all(issues_sort["is_null_issue"] == all_rows_are_null)
