@@ -1,9 +1,7 @@
 import numpy as np
 import pytest
 
-from cleanlab.datalab.internal.issue_manager.null import (
-    NullIssueManager,
-)
+from cleanlab.datalab.internal.issue_manager.null import NullIssueManager
 
 SEED = 42
 
