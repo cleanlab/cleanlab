@@ -70,7 +70,7 @@ class NullIssueManager(IssueManager):
         self.info = self.collect_info(null_tracker)
 
     @staticmethod
-    def most_common_issue(
+    def _most_common_issue(
         null_tracker: np.ndarray,
     ) -> dict[str, dict[str, str | int | list[int] | list[int | None]]]:
         """
@@ -115,7 +115,7 @@ class NullIssueManager(IssueManager):
         }
 
     @staticmethod
-    def column_impact(null_tracker: np.ndarray) -> Dict[str, List[float]]:
+    def _column_impact(null_tracker: np.ndarray) -> Dict[str, List[float]]:
         """
         Calculate and return the impact of null values per column, represented as the proportion
         of rows having null values in each column.
@@ -138,8 +138,8 @@ class NullIssueManager(IssueManager):
         return {"column_impact": proportion_of_nulls_per_column.tolist()}
 
     def collect_info(self, null_tracker: np.ndarray) -> dict:
-        most_common_issue = self.most_common_issue(null_tracker=null_tracker)
-        column_impact = self.column_impact(null_tracker=null_tracker)
+        most_common_issue = self._most_common_issue(null_tracker=null_tracker)
+        column_impact = self._column_impact(null_tracker=null_tracker)
         average_null_score = {"average_null_score": self.issues[self.issue_score_key].mean()}
         issues_dict = {**average_null_score, **most_common_issue, **column_impact}
         info_dict: Dict[str, Any] = {**issues_dict}
