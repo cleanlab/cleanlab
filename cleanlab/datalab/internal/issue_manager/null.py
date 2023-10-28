@@ -36,6 +36,9 @@ class NullIssueManager(IssueManager):
 
     @staticmethod
     def _calculate_null_issues(features: npt.NDArray) -> tuple[ndarray, ndarray, Any]:
+        """Tracks the number of null values in each row of a feature array,
+        computes quality scores based on the fraction of null values in each row,
+        and returns a boolean array indicating whether each row only has null values."""
         rows = features.shape[0]
         cols = features.shape[1]
         scores = np.ones(rows).astype(np.float32)
