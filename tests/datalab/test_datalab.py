@@ -1253,6 +1253,16 @@ class TestDataLabUnderperformingIssue:
             time_without_clustering < time_with_clustering
         ), "Passing cluster labels should make this run of find_issues faster."
 
+    def test_no_cluster_ids(self, data):
+        features, labels, pred_probs = data["features"], data["labels"], data["pred_probs"]
+        lab = Datalab(data={"labels": labels}, label_name="labels")
+        lab.find_issues(
+            features=features,
+            pred_probs=pred_probs,
+            issue_types={"underperforming_group": {"cluster_ids": np.array([])}},
+        )
+        assert len(lab.issue_summary["issue_type"].values) == 0
+
 
 class TestIssueManagersReuseKnnGraph:
     """

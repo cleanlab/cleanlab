@@ -77,6 +77,7 @@ class TestUnderperformingGroupIssueManager:
         pd.testing.assert_frame_equal(summary_with_clabels, summary)
 
     def test_find_issues(self, issue_manager, make_data):
+        UNDERPERF_CLUSTER_ID = 0
         data = make_data(noisy=True)
         features, labels, pred_probs = data["features"], data["labels"], data["pred_probs"]
         N = len(labels)
@@ -115,13 +116,14 @@ class TestUnderperformingGroupIssueManager:
 
         Mainly focused on the clustering info.
         """
-
+        UNDERPERF_CLUSTER_ID = 0
         data = make_data(noisy=True)
         features, pred_probs, labels = data["features"], data["pred_probs"], data["labels"]
         issue_manager.find_issues(features=features, pred_probs=pred_probs)
         info = issue_manager.info
         assert "weighted_knn_graph" in info["statistics"]
         assert "clustering" in info
+        # Check clustering info
         clustering_info = info["clustering"]
         assert clustering_info["algorithm"] == "DBSCAN"
         assert clustering_info["params"]["metric"] == "precomputed"
@@ -132,10 +134,19 @@ class TestUnderperformingGroupIssueManager:
         assert "nearest_neighbor" not in info
         assert "distance_to_nearest_neighbor" not in info
         assert info["statistics"] == {}
+        # Check clustering info
         clustering_info = info["clustering"]
         assert clustering_info["algorithm"] is None
         assert clustering_info["params"] == {}
-        assert clustering_info["stats"]["underperforming_cluster_id"] == 0
+        assert clustering_info["stats"]["underperforming_cluster_id"] == UNDERPERF_CLUSTER_ID
+        cluster_labels = clustering_info["stats"]["cluster_ids"]
+        issues = issue_manager.issues
+        issue_indices = issues.index[issues["is_underperforming_group_issue"]].values
+        assert np.all(
+            cluster_labels[issue_indices] == UNDERPERF_CLUSTER_ID
+        ), "All samples with issue should belong to underperforming cluster"
+
+        np.testing.assert_equal(clustering_info["stats"]["cluster_ids"], labels)
 
     def test_no_meaningful_clusters(self, issue_manager, make_data, monkeypatch):
         np.random.seed(SEED)
@@ -156,6 +167,11 @@ class TestUnderperformingGroupIssueManager:
         with pytest.raises(ValueError, match=exception_pattern):
             issue_manager.find_issues(
                 features=features, pred_probs=pred_probs, cluster_ids=cluster_ids
+            )
+        # Empty cluster ids
+        with pytest.raises(ValueError, match=exception_pattern):
+            issue_manager.find_issues(
+                features=features, pred_probs=pred_probs, cluster_ids=np.array([], dtype=int)
             )
 
     def test_min_cluster_samples(self, lab, issue_manager, make_data):
