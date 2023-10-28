@@ -165,8 +165,8 @@ class NonIIDIssueManager(IssueManager):
         self,
         features: Optional[npt.NDArray],
         pred_probs: Optional[np.ndarray],
-        knn_graph: Any,
-        metric_changes: Any,
+        knn_graph: Optional[csr_matrix],
+        metric_changes: bool,
     ) -> Tuple[Optional[NearestNeighbors], npt.NDArray]:
         """
         Selects features (or pred_probs if features are None) and sets up a NearestNeighbors object if needed.
