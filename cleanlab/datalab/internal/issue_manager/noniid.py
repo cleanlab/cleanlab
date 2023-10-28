@@ -132,15 +132,24 @@ class NonIIDIssueManager(IssueManager):
         """
         Determines the feature array to be used for the non-IID check. Prioritizing the original features array over pred_probs.
 
-        Parameters:
-        - features: Original feature array or None.
-        - pred_probs: Predicted probabilities array or None.
+        Parameters
+        ----------
+        features : 
+            Original feature array or None.
+        
+        pred_probs :
+            Predicted probabilities array or None.
 
-        Returns:
-        - Selected feature array.
+        Returns
+        -------
+        features_to_use :
+            Either the original feature array or the predicted probabilities array,
+            intended to be used for the non-IID check.
 
-        Raises:
-        - ValueError: If both `features` and `pred_probs` are None.
+        Raises
+        ------
+        ValueError :
+            If both `features` and `pred_probs` are None.
         """
         if features is not None:
             return features
