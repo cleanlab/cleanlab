@@ -170,7 +170,8 @@ class TestNullIssueManager:
 
         # 1. The quality score for each row should be the fraction of features which are not null in that row.
         non_null_fractions = [np.count_nonzero(~np.isnan(row)) / len(row) for row in embeddings]
-        assert np.allclose(issues_sort[issue_manager.issue_score_key], non_null_fractions, atol=1e-7)
+        scores = issues_sort[issue_manager.issue_score_key]
+        assert np.allclose(scores, non_null_fractions, atol=1e-7)
 
         # 2. The rows that are marked as is_null_issue should ONLY be those rows which are 100% null values.
         all_rows_are_null = np.all(np.isnan(embeddings), axis=1)
