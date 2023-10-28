@@ -779,9 +779,8 @@ class TestDatalabFindNonIIDIssues:
     def test_find_non_iid_issues_using_pred_probs(self, random_embeddings):
         data = {"labels": [0, 1, 0]}
         lab = Datalab(data=data, label_name="labels")
-        lab.find_issues(
-            pred_probs=random_embeddings, issue_types={"non_iid": {"pred_probs": random_embeddings}}
-        )
+        pred_probs = random_embeddings / random_embeddings.sum(axis=1, keepdims=True)
+        lab.find_issues(pred_probs=pred_probs, issue_types={"non_iid": {}})
         summary = lab.get_issue_summary()
         assert ["non_iid"] == summary["issue_type"].values
         assert summary["score"].values[0] > 0.05
@@ -799,9 +798,8 @@ class TestDatalabFindNonIIDIssues:
     def test_find_non_iid_issues_sorted_using_pred_probs(self, sorted_embeddings):
         data = {"labels": [0, 1, 0]}
         lab = Datalab(data=data, label_name="labels")
-        lab.find_issues(
-            pred_probs=sorted_embeddings, issue_types={"non_iid": {"pred_probs": sorted_embeddings}}
-        )
+        pred_probs = sorted_embeddings / sorted_embeddings.sum(axis=1, keepdims=True)
+        lab.find_issues(pred_probs=pred_probs, issue_types={"non_iid": {}})
         summary = lab.get_issue_summary()
         assert ["non_iid"] == summary["issue_type"].values
         assert summary["score"].values[0] == 0
@@ -824,14 +822,11 @@ class TestDatalabFindNonIIDIssues:
     def test_incremental_search_using_pred_probs(self, sorted_embeddings):
         data = {"labels": [0, 1, 0]}
         lab = Datalab(data=data, label_name="labels")
-        lab.find_issues(
-            pred_probs=sorted_embeddings, issue_types={"non_iid": {"pred_probs": sorted_embeddings}}
-        )
+        pred_probs = sorted_embeddings / sorted_embeddings.sum(axis=1, keepdims=True)
+        lab.find_issues(pred_probs=pred_probs, issue_types={"non_iid": {}})
         summary = lab.get_issue_summary()
         assert len(summary) == 1
-        lab.find_issues(
-            pred_probs=sorted_embeddings, issue_types={"non_iid": {"pred_probs": sorted_embeddings}}
-        )
+        lab.find_issues(pred_probs=pred_probs, issue_types={"non_iid": {}})
         summary = lab.get_issue_summary()
         assert len(summary) == 1
         assert "non_iid" in summary["issue_type"].values
