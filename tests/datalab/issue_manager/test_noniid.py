@@ -89,15 +89,7 @@ class TestNonIIDIssueManager:
 
         assert issue_manager.num_permutations == 15
 
-    def test_find_issues(
-        self,
-        issue_manager,
-        embeddings,
-        pred_probs,
-        lab,
-        dataset,
-        label_name,
-    ):
+    def test_find_issues(self, issue_manager, embeddings):
         np.random.seed(SEED)
         issue_manager.find_issues(features=embeddings)
         issues_sort, summary_sort, info_sort = (
@@ -137,15 +129,7 @@ class TestNonIIDIssueManager:
         assert info_perm.get("p-value", None) is not None, "Should have p-value"
         assert summary_perm["score"][0] == pytest.approx(expected=info_perm["p-value"], abs=1e-7)
 
-    def test_find_issues_using_pred_probs(
-        self,
-        issue_manager,
-        embeddings,
-        pred_probs,
-        lab,
-        dataset,
-        label_name,
-    ):
+    def test_find_issues_using_pred_probs(self, issue_manager, pred_probs):
         np.random.seed(SEED)
         issue_manager.find_issues(pred_probs=pred_probs)
         issues_sort, summary_sort, info_sort = (
@@ -162,7 +146,7 @@ class TestNonIIDIssueManager:
         assert info_sort.get("p-value", None) is not None, "Should have p-value"
         assert summary_sort["score"][0] == pytest.approx(expected=info_sort["p-value"], abs=1e-7)
 
-        permutation = np.random.permutation(len(embeddings))
+        permutation = np.random.permutation(len(pred_probs))
         new_issue_manager = NonIIDIssueManager(
             datalab=issue_manager.datalab,
             metric="euclidean",
@@ -175,7 +159,7 @@ class TestNonIIDIssueManager:
             new_issue_manager.summary,
             new_issue_manager.info,
         )
-        expected_permuted_issue_mask = np.array([False] * len(embeddings))
+        expected_permuted_issue_mask = np.array([False] * len(pred_probs))
         assert np.all(
             issues_perm["is_non_iid_issue"] == expected_permuted_issue_mask
         ), "Issue mask should be correct"
@@ -186,7 +170,7 @@ class TestNonIIDIssueManager:
         assert info_perm.get("p-value", None) is not None, "Should have p-value"
         assert summary_perm["score"][0] == pytest.approx(expected=info_perm["p-value"], abs=1e-7)
 
-    def test_report(self, issue_manager, embeddings, lab, pred_probs):
+    def test_report(self, issue_manager, embeddings):
         np.random.seed(SEED)
         issue_manager.find_issues(features=embeddings)
         report = issue_manager.report(
@@ -211,7 +195,7 @@ class TestNonIIDIssueManager:
 
         assert "Additional Information: " in report
 
-    def test_report_using_pred_probs(self, issue_manager, embeddings, lab, pred_probs):
+    def test_report_using_pred_probs(self, issue_manager, pred_probs):
         np.random.seed(SEED)
         issue_manager.find_issues(pred_probs=pred_probs)
         report = issue_manager.report(
@@ -235,7 +219,7 @@ class TestNonIIDIssueManager:
 
         assert "Additional Information: " in report
 
-    def test_collect_info(self, issue_manager, embeddings, pred_probs, lab):
+    def test_collect_info(self, issue_manager, embeddings):
         """Test some values in the info dict.
 
         Mainly focused on the nearest neighbor info.
@@ -248,7 +232,7 @@ class TestNonIIDIssueManager:
         assert info["metric"] == "euclidean"
         assert info["k"] == 10
 
-    def test_collect_info_using_pred_probs(self, issue_manager, embeddings, pred_probs, lab):
+    def test_collect_info_using_pred_probs(self, issue_manager, pred_probs):
         """Test some values in the info dict.
 
         Mainly focused on the nearest neighbor info.
