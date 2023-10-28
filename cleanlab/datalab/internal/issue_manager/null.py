@@ -15,6 +15,7 @@ if TYPE_CHECKING:  # pragma: no cover
 
 class NullIssueManager(IssueManager):
     """Manages issues related to null/missing values in the rows of features.
+
     Parameters
     ----------
     datalab :
@@ -28,9 +29,7 @@ class NullIssueManager(IssueManager):
     issue_name: ClassVar[str] = "null"
     verbosity_levels = {
         0: ["average_null_score"],
-        1: [
-            "most_common_issue",
-        ],
+        1: ["most_common_issue"],
         2: [],
     }
 

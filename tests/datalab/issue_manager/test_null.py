@@ -65,7 +65,7 @@ class TestNullIssueManager:
             issues_sort["is_null_issue"] == expected_sorted_issue_mask
         ), "Issue mask should be correct"
         assert summary_sort["issue_type"][0] == "null"
-        assert summary_sort["score"][0] == pytest.approx(expected=8/12, abs=1e-7)
+        assert summary_sort["score"][0] == pytest.approx(expected=8 / 12, abs=1e-7)
         assert (
             info_sort.get("average_null_score", None) is not None
         ), "Should have average null score"
@@ -133,7 +133,7 @@ class TestNullIssueManager:
         """Test some values in the info dict."""
         issue_manager.find_issues(features=embeddings_with_null)
         info = issue_manager.info
-        assert info["average_null_score"] == pytest.approx(expected=8/12, abs=1e-7)
+        assert info["average_null_score"] == pytest.approx(expected=8 / 12, abs=1e-7)
         assert info["most_common_issue"]["pattern"] == "100"
         assert info["most_common_issue"]["count"] == 1
         assert info["most_common_issue"]["rows_affected"] == [0]
@@ -152,11 +152,12 @@ class TestNullIssueManager:
         elements=float_with_nan,
         fill=nan_strategy,
     )
-    
-    @settings(suppress_health_check=[HealthCheck.function_scoped_fixture]) # No need to reset state of issue_manager fixture
+
+    @settings(
+        suppress_health_check=[HealthCheck.function_scoped_fixture]
+    )  # No need to reset state of issue_manager fixture
     @given(embeddings=features_with_nan_strategy)
     def test_quality_scores_and_full_null_row_identification(self, issue_manager, embeddings):
-
         # Run the find_issues method
         issue_manager.find_issues(features=embeddings)
         issues_sort, _, _ = (
