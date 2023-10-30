@@ -185,7 +185,8 @@ class Datalab:
             evenly distributed across the rows.
             The non-zero entries must be the distances between the corresponding examples. Self-distances must be omitted
             (i.e. the diagonal must be all zeros and the k nearest neighbors of each example must not include itself).
-
+            The data must be sorted in row-major order, and within each row, the values must be sorted in ascending order.
+            
             For any duplicated examples i,j whose distance is 0, there should be an *explicit* zero stored in the matrix, i.e. ``knn_graph[i,j] = 0``.
 
             If both `knn_graph` and `features` are provided, the `knn_graph` will take precendence.
