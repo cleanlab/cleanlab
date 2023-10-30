@@ -283,3 +283,4 @@ Underperforming Group Issue Parameters
 .. note::
 
     For more information, view the source code of:  :py:class:`datalab.internal.issue_manager.underperf_group.UnderperformingGroupIssueManager <cleanlab.datalab.internal.issue_manager.underperf_group.UnderperformingGroupIssueManager>`.
+    For more information on generating `cluster_ids` for this issue manager, refer to :doc:`Generating Cluster IDs <generating_cluster_ids>`
