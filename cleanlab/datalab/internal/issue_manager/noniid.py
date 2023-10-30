@@ -123,7 +123,11 @@ class NonIIDIssueManager(IssueManager):
         self.background_distribution = None
         self.seed = seed
         self.significance_threshold = significance_threshold
-
+        
+        # TODO: Temporary flag introduced to decide on storing knn graphs based on pred_probs. 
+        # Revisit and finalize the implementation.
+        self._skip_storing_knn_graph_for_pred_probs: bool = False
+        
     @staticmethod
     def _determine_features(
         features: Optional[npt.NDArray],
@@ -173,6 +177,8 @@ class NonIIDIssueManager(IssueManager):
 
         # Add type-hints and document the arguments.
         """
+        if features is None and pred_probs is not None:
+            self._skip_storing_knn_graph_for_pred_probs = True
         features_to_use = self._determine_features(features, pred_probs)
 
         if self.metric is None:
@@ -214,6 +220,7 @@ class NonIIDIssueManager(IssueManager):
         if knn_graph is None or metric_changes:
             self.neighbor_index_choices = self._get_neighbors(knn=knn)
         else:
+            self._skip_storing_knn_graph_for_pred_probs = False
             self.neighbor_index_choices = self._get_neighbors(knn_graph=knn_graph)
 
         self.num_neighbors = self.k
@@ -292,6 +299,8 @@ class NonIIDIssueManager(IssueManager):
     def _build_statistics_dictionary(self, knn_graph: csr_matrix) -> Dict[str, Dict[str, Any]]:
         statistics_dict: Dict[str, Dict[str, Any]] = {"statistics": {}}
 
+        if self._skip_storing_knn_graph_for_pred_probs:
+            return statistics_dict
         # Add the knn graph as a statistic if necessary
         graph_key = "weighted_knn_graph"
         old_knn_graph = self.datalab.get_info("statistics").get(graph_key, None)
