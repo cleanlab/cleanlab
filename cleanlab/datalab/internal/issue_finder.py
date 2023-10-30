@@ -119,7 +119,20 @@ class IssueFinder:
             evenly distributed across the rows.
             The non-zero entries must be the distances between the corresponding examples. Self-distances must be omitted
             (i.e. the diagonal must be all zeros and the k nearest neighbors of each example must not include itself).
-            The data must be sorted in row-major order, and within each row, the values must be sorted in ascending order.
+            Within each row, the non-zero entries (distances) must be sorted in ascending order, and the CSR column indices should reflect this order of distances. This sorting ensures correct neighbor relationships for subsequent analyses.
+
+            .. code-block:: python
+
+               knn_graph.todense()
+               # matrix([[0. , 0.3, 0.2],
+               #         [0.3, 0. , 0.4],
+               #         [0.2, 0.4, 0. ]])
+
+               knn_graph.data
+               # array([0.2, 0.3, 0.3, 0.4, 0.2, 0.4])
+
+               knn_graph.indices
+               # array([2, 1, 0, 2, 0, 1])
 
             For any duplicated examples i,j whose distance is 0, there should be an *explicit* zero stored in the matrix, i.e. ``knn_graph[i,j] = 0``.
 
