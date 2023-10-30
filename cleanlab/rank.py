@@ -93,14 +93,19 @@ def get_label_quality_scores(
       - ``'self_confidence'``: ``P[k]``
       - ``'confidence_weighted_entropy'``: ``entropy(P) / self_confidence``
 
-      Let ``C = {0, 1, ..., K-1}`` denote the specified set of classes for our classification task.
+      Note: the actual label quality scores returned by this method
+      may be transformed versions of the above, in order to ensure
+      their values lie between 0-1 with lower values indicating more likely mislabeled data.
 
-      The normalized_margin score works better for identifying class conditional label errors,
-      i.e. examples for which another label in C is appropriate but the given label is not.
+      Let ``C = {0, 1, ..., K-1}`` be the set of classes specified for our classification task.
 
-      The self_confidence score works better for identifying alternative label issues corresponding
-      to bad examples that are: not from any of the classes in C, well-described by 2 or more labels in C,
-      or generally just out-of-distribution (ie. anomalous outliers).
+      The `normalized_margin` score works better for identifying class conditional label errors,
+      i.e. examples for which another label in ``C`` is appropriate but the given label is not.
+
+      The `self_confidence` score works better for identifying alternative label issues
+      corresponding to bad examples that are: not from any of the classes in ``C``,
+      well-described by 2 or more labels in ``C``,
+      or generally just out-of-distribution (i.e. anomalous outliers).
 
     adjust_pred_probs : bool, optional
       Account for class imbalance in the label-quality scoring by adjusting predicted probabilities
@@ -504,9 +509,9 @@ def get_self_confidence_for_each_label(
       Lower scores indicate more likely mislabeled examples.
     """
 
-    # To make this work for multi-label (but it will slow down runtime), replace:
-    # pred_probs[i, l] -> np.mean(pred_probs[i, l])
-    return np.array([pred_probs[i, l] for i, l in enumerate(labels)])
+    # To make this work for multi-label (but it will slow down runtime), return:
+    # np.array([np.mean(pred_probs[i, l]) for i, l in enumerate(labels)])
+    return pred_probs[np.arange(labels.shape[0]), labels]
 
 
 def get_normalized_margin_for_each_label(
@@ -518,14 +523,16 @@ def get_normalized_margin_for_each_label(
     This is a function to compute label-quality scores for classification datasets,
     where lower scores indicate labels less likely to be correct.
 
-    Letting k denote the given label for a datapoint, the normalized margin is
+    Letting ``k`` denote the given label for a datapoint, the margin is
     ``(p(label = k) - max(p(label != k)))``, i.e. the probability
     of the given label minus the probability of the argmax label that is not
-    the given label (``normalized_margin = prob_label - max_prob_not_label``).
+    the given label (``margin = prob_label - max_prob_not_label``).
     This gives you an idea of how likely an example is BOTH its given label AND not another label,
     and therefore, scores its likelihood of being a good label or a label error.
+    The normalized margin is simply a transformed version of the margin,
+    to ensure values between 0-1 with lower values indicating more likely mislabeled data.
 
-    Normalized margin works better for finding class conditional label errors where
+    Normalized margin works best for finding class conditional label errors where
     there is another label in the set of classes that is clearly better than the given label.
 
     Parameters
@@ -544,8 +551,10 @@ def get_normalized_margin_for_each_label(
     """
 
     self_confidence = get_self_confidence_for_each_label(labels, pred_probs)
-    max_prob_not_label = np.array(
-        [max(np.delete(pred_probs[i], l, -1)) for i, l in enumerate(labels)]
+    N, K = pred_probs.shape
+    del_indices = np.arange(N) * K + labels
+    max_prob_not_label = np.max(
+        np.delete(pred_probs, del_indices, axis=None).reshape(N, K - 1), axis=-1
     )
     label_quality_scores = (self_confidence - max_prob_not_label + 1) / 2
     return label_quality_scores
@@ -559,7 +568,9 @@ def get_confidence_weighted_entropy_for_each_label(
     This is a function to compute label-quality scores for classification datasets,
     where lower scores indicate labels less likely to be correct.
 
-    "confidence weighted entropy" is the normalized entropy divided by "self-confidence".
+    "confidence weighted entropy" is defined as the normalized entropy divided by "self-confidence".
+    The returned values are a transformed version of this score, in order to
+    ensure values between 0-1 with lower values indicating more likely mislabeled data.
 
     Parameters
     ----------

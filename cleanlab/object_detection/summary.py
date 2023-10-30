@@ -14,13 +14,22 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
-"""Methods to display examples and their label issues in an object detection dataset."""
-from typing import Optional, Any, Dict, Tuple, Union, TYPE_CHECKING, TypeVar
+"""
+Methods to display examples and their label issues in an object detection dataset.
+Here each image can have multiple objects, each with its own bounding box and class label.
+"""
+from typing import Optional, Any, Dict, Tuple, Union, List, TYPE_CHECKING, TypeVar, DefaultDict
 
 import numpy as np
+import collections
 
-from cleanlab.internal.constants import MAX_CLASS_TO_SHOW
+from cleanlab.internal.constants import (
+    MAX_CLASS_TO_SHOW,
+    ALPHA,
+    EPSILON,
+)
 from cleanlab.object_detection.rank import (
+    _get_valid_inputs_for_compute_scores,
     _separate_prediction,
     _separate_label,
     _get_prediction_type,
@@ -34,8 +43,287 @@ else:
     Image = TypeVar("Image")
 
 
+def object_counts_per_image(
+    labels=None,
+    predictions=None,
+    *,
+    auxiliary_inputs=None,
+) -> Tuple[List, List]:
+    """Return the number of annotated and predicted objects for each image in the dataset.
+
+    This method can help you discover images with abnormally many/few object annotations.
+
+    Parameters
+    ----------
+    labels :
+        Annotated boxes and class labels in the original dataset, which may contain some errors.
+        This is a list of ``N`` dictionaries such that ``labels[i]`` contains the given labels for the `i`-th image in the following format:
+        ``{'bboxes': np.ndarray((L,4)), 'labels': np.ndarray((L,)), 'image_name': str}`` where ``L`` is the number of annotated bounding boxes
+        for the `i`-th image and ``bboxes[l]`` is a bounding box of coordinates in ``[x1,y1,x2,y2]`` format with given class label ``labels[j]``.
+        ``image_name`` is an optional part of the labels that can be used to later refer to specific images.
+
+       For more information on proper labels formatting, check out the `MMDetection library <https://mmdetection.readthedocs.io/en/dev-3.x/advanced_guides/customize_dataset.html>`_.
+
+    predictions :
+        Predictions output by a trained object detection model.
+        For the most accurate results, predictions should be out-of-sample to avoid overfitting, eg. obtained via :ref:`cross-validation <pred_probs_cross_val>`.
+        This is a list of ``N`` ``np.ndarray`` such that ``predictions[i]`` corresponds to the model prediction for the `i`-th image.
+        For each possible class ``k`` in 0, 1, ..., K-1: ``predictions[i][k]`` is a ``np.ndarray`` of shape ``(M,5)``,
+        where ``M`` is the number of predicted bounding boxes for class ``k``. Here the five columns correspond to ``[x1,y1,x2,y2,pred_prob]``,
+        where ``[x1,y1,x2,y2]`` are coordinates of the bounding box predicted by the model
+        and ``pred_prob`` is the model's confidence in the predicted class label for this bounding box.
+
+        Note: Here, ``[x1,y1]`` corresponds to the coordinates of the bottom-left corner of the bounding box, while ``[x2,y2]`` corresponds to the coordinates of the top-right corner of the bounding box. The last column, pred_prob, represents the predicted probability that the bounding box contains an object of the class k.
+
+        For more information see the `MMDetection package <https://github.com/open-mmlab/mmdetection>`_ for an example object detection library that outputs predictions in the correct format.
+
+    auxiliary_inputs: optional
+        Auxiliary inputs to be used in the computation of counts.
+        The `auxiliary_inputs` can be computed using :py:func:`rank._get_valid_inputs_for_compute_scores <cleanlab.object_detection.rank._get_valid_inputs_for_compute_scores>`.
+        It is internally computed from the given `labels` and `predictions`.
+
+    Returns
+    -------
+    object_counts: Tuple[List, List]
+        A tuple containing two lists. The first is an array of shape ``(N,)`` containing the number of annotated objects for each image in the dataset.
+        The second is an array of shape ``(N,)`` containing the number of predicted objects for each image in the dataset.
+    """
+    if auxiliary_inputs is None:
+        auxiliary_inputs = _get_valid_inputs_for_compute_scores(ALPHA, labels, predictions)
+    return (
+        [len(sample["lab_bboxes"]) for sample in auxiliary_inputs],
+        [len(sample["pred_bboxes"]) for sample in auxiliary_inputs],
+    )
+
+
+def bounding_box_size_distribution(
+    labels=None,
+    predictions=None,
+    *,
+    auxiliary_inputs=None,
+    class_names: Optional[Dict[Any, Any]] = None,
+    sort: bool = False,
+) -> Tuple[Dict[Any, List], Dict[Any, List]]:
+    """Return the distribution over sizes of annotated and predicted bounding boxes across the dataset, broken down by each class.
+
+    This method can help you find annotated/predicted boxes for a particular class that are abnormally big/small.
+
+    Parameters
+    ----------
+    labels:
+        Annotated boxes and class labels in the original dataset, which may contain some errors.
+        Refer to documentation for this argument in :py:func:`object_counts_per_image <cleanlab.object_detection.summary.object_counts_per_image>` for further details.
+
+    predictions:
+        Predictions output by a trained object detection model.
+        Refer to documentation for this argument in :py:func:`object_counts_per_image <cleanlab.object_detection.summary.object_counts_per_image>` for further details.
+
+    auxiliary_inputs: optional
+        Auxiliary inputs to be used in the computation of counts.
+        Refer to documentation for this argument in :py:func:`object_counts_per_image <cleanlab.object_detection.summary.object_counts_per_image>` for further details.
+
+    class_names: optional
+        A dictionary mapping one-hot-encoded class labels back to their original class names in the format ``{"integer-label": "original-class-name"}``.
+        You can use this argument to control the classes for which the size distribution is computed.
+
+    sort: bool
+        If True, the returned dictionaries are sorted by the number of instances of each class in the dataset in descending order.
+
+    Returns
+    -------
+    bbox_sizes: Tuple[Dict[Any, List], Dict[Any, List]]
+        A tuple containing two dictionaries. Each maps each class label to a list of the sizes of annotated bounding boxes for that class in the label and prediction datasets, respectively.
+    """
+    if auxiliary_inputs is None:
+        auxiliary_inputs = _get_valid_inputs_for_compute_scores(ALPHA, labels, predictions)
+
+    lab_area: Dict[Any, list] = collections.defaultdict(list)
+    pred_area: Dict[Any, list] = collections.defaultdict(list)
+    for sample in auxiliary_inputs:
+        _get_bbox_areas(sample["lab_labels"], sample["lab_bboxes"], lab_area, class_names)
+        _get_bbox_areas(sample["pred_labels"], sample["pred_bboxes"], pred_area, class_names)
+
+    if sort:
+        lab_area = dict(sorted(lab_area.items(), key=lambda x: -len(x[1])))
+        pred_area = dict(sorted(pred_area.items(), key=lambda x: -len(x[1])))
+
+    return lab_area, pred_area
+
+
+def class_label_distribution(
+    labels=None,
+    predictions=None,
+    *,
+    auxiliary_inputs=None,
+    class_names: Optional[Dict[Any, Any]] = None,
+) -> Tuple[Dict[Any, float], Dict[Any, float]]:
+    """Returns the distribution of class labels associated with all annotated bounding boxes (or predicted bounding boxes) in the dataset.
+
+    This method can help you understand which classes are: rare or over/under-predicted by the model overall.
+
+    Parameters
+    ----------
+    labels:
+        Annotated boxes and class labels in the original dataset, which may contain some errors.
+        Refer to documentation for this argument in :py:func:`object_counts_per_image <cleanlab.object_detection.summary.object_counts_per_image>` for further details.
+
+    predictions:
+        Predictions output by a trained object detection model.
+        Refer to documentation for this argument in :py:func:`object_counts_per_image <cleanlab.object_detection.summary.object_counts_per_image>` for further details.
+
+    auxiliary_inputs: optional
+        Auxiliary inputs to be used in the computation of counts.
+        Refer to documentation for this argument in :py:func:`object_counts_per_image <cleanlab.object_detection.summary.object_counts_per_image>` for further details.
+
+    class_names: optional
+        Optional dictionary mapping one-hot-encoded class labels back to their original class names in the format ``{"integer-label": "original-class-name"}``.
+
+    Returns
+    -------
+    class_distribution: Tuple[Dict[Any, float], Dict[Any, float]]
+        A tuple containing two dictionaries. The first is a dictionary mapping each class label to its frequency in the dataset annotations.
+        The second is a dictionary mapping each class label to its frequency in the model predictions across all images in the dataset.
+    """
+    if auxiliary_inputs is None:
+        auxiliary_inputs = _get_valid_inputs_for_compute_scores(ALPHA, labels, predictions)
+
+    lab_freq: DefaultDict[Any, int] = collections.defaultdict(int)
+    pred_freq: DefaultDict[Any, int] = collections.defaultdict(int)
+    for sample in auxiliary_inputs:
+        _get_class_instances(sample["lab_labels"], lab_freq, class_names)
+        _get_class_instances(sample["pred_labels"], pred_freq, class_names)
+
+    label_norm = _normalize_by_total(lab_freq)
+    pred_norm = _normalize_by_total(pred_freq)
+
+    return label_norm, pred_norm
+
+
+def get_sorted_bbox_count_idxs(labels, predictions):
+    """
+    Returns a tuple of idxs and bounding box counts of images sorted from highest to lowest number of bounding boxes.
+
+    This plot can help you discover images with abnormally many/few object annotations.
+
+    Parameters
+    ----------
+    labels:
+        Annotated boxes and class labels in the original dataset, which may contain some errors.
+        Refer to documentation for this argument in :py:func:`object_counts_per_image <cleanlab.object_detection.summary.object_counts_per_image>` for further details.
+
+    predictions:
+        Predictions output by a trained object detection model.
+        Refer to documentation for this argument in :py:func:`object_counts_per_image <cleanlab.object_detection.summary.object_counts_per_image>` for further details.
+
+
+    Returns
+    -------
+    sorted_idxs: List[Tuple[int, int]], List[Tuple[int, int]]
+        A tuple containing two lists. The first is an array of shape ``(N,)`` containing the number of annotated objects for each image in the dataset.
+        The second is an array of shape ``(N,)`` containing the number of predicted objects for each image in the dataset.
+    """
+    lab_count, pred_count = object_counts_per_image(labels, predictions)
+    lab_grouped = list(enumerate(lab_count))
+    pred_grouped = list(enumerate(pred_count))
+
+    sorted_lab = sorted(lab_grouped, key=lambda x: x[1], reverse=True)
+    sorted_pred = sorted(pred_grouped, key=lambda x: x[1], reverse=True)
+
+    return sorted_lab, sorted_pred
+
+
+def plot_class_size_distributions(
+    labels, predictions, class_names=None, class_to_show=MAX_CLASS_TO_SHOW
+):
+    """
+    Plots the size distributions for bounding boxes for each class.
+
+    This plot can help you find annotated/predicted boxes for a particular class that are abnormally big/small.
+
+    Parameters
+    ----------
+    labels:
+        Annotated boxes and class labels in the original dataset, which may contain some errors.
+        Refer to documentation for this argument in :py:func:`object_counts_per_image <cleanlab.object_detection.summary.object_counts_per_image>` for further details.
+
+    predictions:
+        Predictions output by a trained object detection model.
+        Refer to documentation for this argument in :py:func:`object_counts_per_image <cleanlab.object_detection.summary.object_counts_per_image>` for further details.
+
+    class_names: optional
+        Optional dictionary mapping one-hot-encoded class labels back to their original class names in the format ``{"integer-label": "original-class-name"}``.
+        You can use this argument to control the classes for which the size distribution is plotted.
+
+    class_to_show: optional
+        The number of classes to show in the plots. Classes over `class_to_show` are hidden. If this argument is provided, then the classes are sorted by the number of instances in the dataset.
+        Defaults to `MAX_CLASS_TO_SHOW` which is set to 10.
+    """
+    try:
+        import matplotlib.pyplot as plt
+    except ImportError as e:
+        raise ImportError(
+            "This functionality requires matplotlib. Install it via: `pip install matplotlib`"
+        )
+
+    lab_boxes, pred_boxes = bounding_box_size_distribution(
+        labels,
+        predictions,
+        class_names=class_names,
+        sort=True if class_to_show is not None else False,
+    )
+
+    for i, c in enumerate(lab_boxes.keys()):
+        if i >= class_to_show:
+            break
+        fig, axs = plt.subplots(1, 2, figsize=(10, 5))
+        fig.suptitle(f"Size distributions for bounding box for class {c}")
+        for i, l in enumerate([lab_boxes, pred_boxes]):
+            axs[i].hist(l[c], bins="auto")
+            axs[i].set_xlabel("box area (pixels)")
+            axs[i].set_ylabel("count")
+            axs[i].set_title("annotated" if i == 0 else "predicted")
+
+        plt.show()
+
+
+def plot_class_distribution(labels, predictions, class_names=None):
+    """
+    Plots the distribution of class labels associated with all annotated bounding boxes and predicted bounding boxes in the dataset.
+
+    This plot can help you understand which classes are rare or over/under-predicted by the model overall.
+
+    Parameters
+    ----------
+    labels:
+        Annotated boxes and class labels in the original dataset, which may contain some errors.
+        Refer to documentation for this argument in :py:func:`object_counts_per_image <cleanlab.object_detection.summary.object_counts_per_image>` for further details.
+
+    predictions:
+        Predictions output by a trained object detection model.
+        Refer to documentation for this argument in :py:func:`object_counts_per_image <cleanlab.object_detection.summary.object_counts_per_image>` for further details.
+
+    class_names: optional
+        Optional dictionary mapping one-hot-encoded class labels back to their original class names in the format ``{"integer-label": "original-class-name"}``.
+    """
+    try:
+        import matplotlib.pyplot as plt
+    except ImportError as e:
+        raise ImportError(
+            "This functionality requires matplotlib. Install it via: `pip install matplotlib`"
+        )
+
+    lab_dist, pred_dist = class_label_distribution(labels, predictions, class_names=class_names)
+    fig, axs = plt.subplots(1, 2, figsize=(10, 5))
+    fig.suptitle(f"Distribution of classes in the dataset")
+    for i, d in enumerate([lab_dist, pred_dist]):
+        axs[i].pie(d.values(), labels=d.keys(), autopct="%1.1f%%")
+        axs[i].set_title("Annotated" if i == 0 else "Predicted")
+
+    plt.show()
+
+
 def visualize(
-    image: Union[str, Image],
+    image: Union[str, np.ndarray, Image],
     *,
     label: Optional[Dict[str, Any]] = None,
     prediction: Optional[np.ndarray] = None,
@@ -154,6 +442,30 @@ def visualize(
             pad_inches=0.5,
         )
     plt.show()
+
+
+def _normalize_by_total(freq):
+    """Helper function to normalize a frequency distribution."""
+    total = sum(freq.values())
+    return {k: round(v / (total + EPSILON), 2) for k, v in freq.items()}
+
+
+def _get_bbox_areas(labels, boxes, class_area_dict, class_names=None) -> None:
+    """Helper function to compute the area of bounding boxes for each class."""
+    for cl, bbox in zip(labels, boxes):
+        if class_names is not None:
+            if str(cl) not in class_names:
+                continue
+            cl = class_names[str(cl)]
+        class_area_dict[cl].append((bbox[2] - bbox[0]) * (bbox[3] - bbox[1]))
+
+
+def _get_class_instances(labels, class_instances_dict, class_names=None) -> None:
+    """Helper function to count the number of class instances in each image."""
+    for cl in labels:
+        if class_names is not None:
+            cl = class_names[str(cl)]
+        class_instances_dict[cl] += 1
 
 
 def _plot_legend(class_names, label, prediction):

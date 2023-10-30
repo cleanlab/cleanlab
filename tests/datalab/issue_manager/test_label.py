@@ -18,7 +18,7 @@ class TestLabelIssueManager:
 
         assert isinstance(summary, pd.DataFrame), "Summary should be a dataframe"
         assert summary["issue_type"].values[0] == "label"
-        assert pytest.approx(summary["score"].values[0]) == 0.6
+        assert pytest.approx(summary["score"].values[0]) == 0.4
 
         assert isinstance(info, dict), "Info should be a dict"
         info_keys = info.keys()
