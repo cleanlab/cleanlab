@@ -1077,7 +1077,7 @@ class TestDatalabWithoutLabels:
     def test_find_issues(self, lab, features, pred_probs):
         lab = Datalab(data={"X": features})
         lab.find_issues(pred_probs=pred_probs)
-        assert lab.issues.empty
+        assert set(lab.issues.columns) == {"is_non_iid_issue", "non_iid_score"}
 
         lab = Datalab(data={"X": features})
         lab.find_issues(features=features)
