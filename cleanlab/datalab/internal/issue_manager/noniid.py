@@ -123,11 +123,11 @@ class NonIIDIssueManager(IssueManager):
         self.background_distribution = None
         self.seed = seed
         self.significance_threshold = significance_threshold
-        
-        # TODO: Temporary flag introduced to decide on storing knn graphs based on pred_probs. 
+
+        # TODO: Temporary flag introduced to decide on storing knn graphs based on pred_probs.
         # Revisit and finalize the implementation.
         self._skip_storing_knn_graph_for_pred_probs: bool = False
-        
+
     @staticmethod
     def _determine_features(
         features: Optional[npt.NDArray],
@@ -138,9 +138,9 @@ class NonIIDIssueManager(IssueManager):
 
         Parameters
         ----------
-        features : 
+        features :
             Original feature array or None.
-        
+
         pred_probs :
             Predicted probabilities array or None.
 
