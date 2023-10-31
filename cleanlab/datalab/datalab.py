@@ -179,14 +179,14 @@ class Datalab:
             If provided, this must be a 2D array with shape (num_examples, num_features).
 
         knn_graph :
-            Sparse matrix representing distances between examples in the dataset in a k nearest neighbor graph.
+            Sparse matrix of precomputed distances between examples in the dataset in a k nearest neighbor graph.
 
             If provided, this must be a square CSR matrix with shape (num_examples, num_examples) and (k*num_examples) non-zero entries (k is the number of nearest neighbors considered for each example)
-            evenly distributed across the rows.
+            evenly distributed across the rows in a particular format.
             The non-zero entries must be the distances between the corresponding examples. Self-distances must be omitted
             (i.e. the diagonal must be all zeros and the k nearest neighbors of each example must not include itself).
-            Within each row, the non-zero entries (distances) must be sorted in ascending order, and the CSR column indices should reflect this order of distances. This sorting ensures correct neighbor relationships for subsequent analyses.
-
+            Within each row of this matrix, the non-zero entries (distances) must be sorted in ascending order, and the CSR column indices should reflect this ordering of the distances.
+            This type of matrix is returned by the method: `sklearn.`TODO
             .. code-block:: python
 
                knn_graph.todense()
