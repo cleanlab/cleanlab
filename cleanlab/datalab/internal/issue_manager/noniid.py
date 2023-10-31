@@ -179,17 +179,17 @@ class NonIIDIssueManager(IssueManager):
         ----------
         features :
             Original feature array or None.
-            
+
         pred_probs :
             Predicted probabilities array or None.
-            
+
         knn_graph :
             A precomputed KNN-graph stored in a csr_matrix or None. If None, a new NearestNeighbors object will be created.
-        
+
         metric_changes :
             Whether the metric used to compute the KNN-graph has changed.
             This is a result of comparing the metric of a pre-existing KNN-graph and the metric specified by the user.
-    
+
         Returns
         -------
         knn :
@@ -231,9 +231,7 @@ class NonIIDIssueManager(IssueManager):
         knn_graph = self._process_knn_graph_from_inputs(kwargs)
         old_knn_metric = self.datalab.get_info("statistics").get("knn_metric")
         metric_changes = bool(self.metric and self.metric != old_knn_metric)
-        knn = self._setup_knn(
-            features, pred_probs, knn_graph, metric_changes
-        )
+        knn = self._setup_knn(features, pred_probs, knn_graph, metric_changes)
 
         if knn_graph is None or metric_changes:
             self.neighbor_index_choices = self._get_neighbors(knn=knn)
