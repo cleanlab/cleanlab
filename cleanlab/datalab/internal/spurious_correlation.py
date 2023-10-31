@@ -1,62 +1,85 @@
+from dataclasses import dataclass
+from typing import List, Optional, Union
+import warnings
+
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import cross_val_score
 from sklearn.naive_bayes import GaussianNB
-from cleanlab import Datalab
+
+warnings.filterwarnings("ignore")
 
 
+@dataclass
 class SpuriousCorrelations:
-    def __init__(self, data: Datalab) -> None:
-        self.data = data
-        self.issues: pd.DataFrame = data.issues
-        self.labels: np.ndarray = data.labels
-        self.issue_summary: pd.DataFrame = data.issue_summary
+    data: pd.DataFrame
+    labels: Union[np.ndarray, list]
+    properties_of_interest: Optional[List[str]] = None
 
-    def spurious_correlations(self) -> pd.DataFrame:
-        baseline_accuracy = np.bincount(self.labels).argmax() / len(self.labels)
-        property_scores = {}
-        image_properties_of_interest = [
-            "outlier",
-            "near_duplicate",
-            "non_iid",
-            "low_information",
-            "dark",
-            "blurry",
-            "light",
-            "grayscale",
-            "odd_aspect_ratio",
-            "odd_size",
-        ]
-        image_properties = [
-            i
-            for i in image_properties_of_interest
-            if i in self.issue_summary["issue_type"].tolist()
-        ]
-        for property_of_interest in image_properties:
-            if (
-                self.issue_summary[self.issue_summary["issue_type"] == property_of_interest][
-                    "num_issues"
-                ].values[0]
-                > 0
-            ):
-                S = self.calculate_spurious_correlation(property_of_interest, baseline_accuracy)
-                property_scores[f"{property_of_interest}"] = S
-        data_score = pd.DataFrame(
-            list(property_scores.items()), columns=["image_property", "label_prediction_error"]
-        )
+    def __post_init__(self):
+        # Must have same number of rows
+        if not len(self.data) == len(self.labels):
+            raise ValueError(
+                "The number of rows in the data dataframe must be the same as the number of labels."
+            )
+
+        # Set default properties_of_interest if not provided
+        if self.properties_of_interest is None:
+            self.properties_of_interest = self.data.columns.tolist()
+
+        assert all(
+            isinstance(p, str) for p in self.properties_of_interest
+        ), "properties_of_interest must be a list of strings."
+
+    def calculate_correlations(self) -> pd.DataFrame:
+        """Calculates the spurious correlation scores for each property of interest found in the dataset."""
+        baseline_accuracy = self._get_baseline()
+        assert (
+            self.properties_of_interest is not None
+        ), "properties_of_interest must be set, but is None."
+        property_scores = {
+            str(property_of_interest): self.calculate_spurious_correlation(
+                property_of_interest, baseline_accuracy
+            )
+            for property_of_interest in self.properties_of_interest
+        }
+        data_score = pd.DataFrame(list(property_scores.items()), columns=["property", "score"])
         return data_score
 
+    def _get_baseline(self) -> float:
+        """Calculates the baseline accuracy of the dataset. The baseline model is predicting the most common label."""
+        baseline_accuracy = np.bincount(self.labels).argmax() / len(self.labels)
+        return float(baseline_accuracy)
+
     def calculate_spurious_correlation(
-        self, property_of_interest: str, baseline_accuracy: float, cv_folds: int = 5
+        self, property_of_interest, baseline_accuracy: float
     ) -> float:
-        X = self.issues[f"{property_of_interest}_score"].values.reshape(-1, 1)
+        """Scores the dataset based on a given property of interest.
+
+        Parameters
+        ----------
+        property_of_interest :
+            The property of interest to score the dataset on.
+
+        baseline_accuracy :
+            The accuracy of the baseline model.
+
+        Returns
+        -------
+        score :
+            A correlation score of the dataset's labels to the property of interest.
+        """
+        X = self.data[property_of_interest].values.reshape(-1, 1)
         y = self.labels
-        classifier = GaussianNB()
-        cv_accuracies = cross_val_score(classifier, X, y, cv=cv_folds, scoring="accuracy")
-        mean_accuracy = np.mean(cv_accuracies)
-        eps = 1e-8
-        S = min(1, (1 - mean_accuracy) / (1 - baseline_accuracy + eps))
-        return S
+        mean_accuracy = _train_and_eval(X, y)
+        return relative_room_for_improvement(baseline_accuracy, float(mean_accuracy))
+
+
+def _train_and_eval(X, y, cv=5) -> float:
+    classifier = GaussianNB()  # TODO: Make this a parameter
+    cv_accuracies = cross_val_score(classifier, X, y, cv=cv, scoring="accuracy")
+    mean_accuracy = float(np.mean(cv_accuracies))
+    return mean_accuracy
 
 
 def relative_room_for_improvement(
