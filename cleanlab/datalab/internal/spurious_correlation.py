@@ -57,3 +57,35 @@ class SpuriousCorrelations:
         eps = 1e-8
         S = min(1, (1 - mean_accuracy) / (1 - baseline_accuracy + eps))
         return S
+
+
+def relative_room_for_improvement(
+    baseline_accuracy: float, mean_accuracy: float, eps: float = 1e-8
+):
+    """
+    Calculate the relative room for improvement given a baseline and trial accuracy.
+
+    This function computes the ratio of the difference between perfect accuracy (1.0)
+    and the trial accuracy to the difference between perfect accuracy and the baseline accuracy.
+    If the baseline accuracy is perfect (i.e., 1.0), an epsilon value is added to the denominator
+    to avoid division by zero.
+
+    Parameters
+    ----------
+    baseline_accuracy :
+        The accuracy of the baseline model. Must be between 0 and 1.
+    mean_accuracy :
+        The accuracy of the trial model being compared. Must be between 0 and 1.
+    eps :
+        A small constant to avoid division by zero when baseline accuracy is 1. Defaults to 1e-8.
+
+    Returns
+    -------
+    score :
+        The relative room for improvement, bounded between 0 and 1.
+    """
+    numerator = 1 - mean_accuracy
+    denominator = 1 - baseline_accuracy
+    if baseline_accuracy == 1:
+        denominator += eps
+    return min(1, numerator / denominator)
