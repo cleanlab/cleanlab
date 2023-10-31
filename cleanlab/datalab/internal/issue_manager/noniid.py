@@ -175,7 +175,25 @@ class NonIIDIssueManager(IssueManager):
         """
         Selects features (or pred_probs if features are None) and sets up a NearestNeighbors object if needed.
 
-        # Add type-hints and document the arguments.
+        Parameters
+        ----------
+        features :
+            Original feature array or None.
+            
+        pred_probs :
+            Predicted probabilities array or None.
+            
+        knn_graph :
+            A precomputed KNN-graph stored in a csr_matrix or None. If None, a new NearestNeighbors object will be created.
+        
+        metric_changes :
+            Whether the metric used to compute the KNN-graph has changed.
+            This is a result of comparing the metric of a pre-existing KNN-graph and the metric specified by the user.
+    
+        Returns
+        -------
+        knn :
+            A NearestNeighbors object or None.
         """
         if features is None and pred_probs is not None:
             self._skip_storing_knn_graph_for_pred_probs = True
