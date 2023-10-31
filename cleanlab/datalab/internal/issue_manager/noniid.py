@@ -165,13 +165,13 @@ class NonIIDIssueManager(IssueManager):
             "If a knn_graph is not provided, either 'features' or 'pred_probs' must be provided to fit a new knn."
         )
 
-    def _select_features_and_setup_knn(
+    def _setup_knn(
         self,
         features: Optional[npt.NDArray],
         pred_probs: Optional[np.ndarray],
         knn_graph: Optional[csr_matrix],
         metric_changes: bool,
-    ) -> Tuple[Optional[NearestNeighbors], npt.NDArray]:
+    ) -> Optional[NearestNeighbors]:
         """
         Selects features (or pred_probs if features are None) and sets up a NearestNeighbors object if needed.
 
@@ -185,7 +185,7 @@ class NonIIDIssueManager(IssueManager):
             self.metric = "cosine" if features_to_use.shape[1] > 3 else "euclidean"
 
         if knn_graph is not None and not metric_changes:
-            return None, features_to_use
+            return None
 
         knn = NearestNeighbors(n_neighbors=self.k, metric=self.metric)
 
@@ -202,7 +202,7 @@ class NonIIDIssueManager(IssueManager):
         except NotFittedError:
             knn.fit(features_to_use)
 
-        return knn, features_to_use
+        return knn
 
     def find_issues(
         self,
@@ -213,7 +213,7 @@ class NonIIDIssueManager(IssueManager):
         knn_graph = self._process_knn_graph_from_inputs(kwargs)
         old_knn_metric = self.datalab.get_info("statistics").get("knn_metric")
         metric_changes = bool(self.metric and self.metric != old_knn_metric)
-        knn, features_used = self._select_features_and_setup_knn(
+        knn = self._setup_knn(
             features, pred_probs, knn_graph, metric_changes
         )
 
