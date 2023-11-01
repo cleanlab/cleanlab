@@ -17,6 +17,7 @@
 """
 Scripts to test cleanlab.segmentation package
 """
+import zarr
 import numpy as np
 import random
 
@@ -167,6 +168,37 @@ def test_find_label_issues_memmap(tmp_path: Path):
     end_time = time.time()
     print(f"Max memory used: {end_mem - start_mem} MiB")
     print(f"Time taken: {end_time - start_time} seconds")
+
+
+# @pytest.mark.slow
+# def test_find_label_issues_zarr(tmp_path: Path):
+#     """
+#     Test that find_label_issues works with large zarr arrays
+#     """
+#     # for mem testing
+#     start_time = time.time()
+#     start_mem = max(memory_usage(interval=0.01))
+
+#     # Create dummy versions of pred_probs and labels
+#     # write to the pytest tmp_path so that the files are deleted after the test
+#     pred_probs_file = tmp_path / "pred_probs.zarr"
+#     labels_file = tmp_path / "labels.zarr"
+#     pred_probs = np.random.rand(20, 5, 200, 200)
+#     labels = np.random.randint(0, 2, (20, 200, 200))
+#     zarr.convenience.save_array(str(pred_probs_file), pred_probs)
+#     zarr.convenience.save_array(str(labels_file), labels)
+
+#     # Load the zarr arrays from disk
+#     pred_probs = zarr.convenience.open(str(pred_probs_file), mode="r")
+#     labels = zarr.convenience.open(str(labels_file), mode="r")
+
+#     _ = find_label_issues(labels, pred_probs, n_jobs=None, batch_size=1000)
+
+#     # for mem testing
+#     end_mem = max(memory_usage(interval=0.01))
+#     end_time = time.time()
+#     print(f"Max memory used: {end_mem - start_mem} MiB")
+#     print(f"Time taken: {end_time - start_time} seconds")
 
 
 def test_find_label_issues_sizes():
