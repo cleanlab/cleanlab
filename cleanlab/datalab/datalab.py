@@ -306,40 +306,60 @@ class Datalab:
 
     def _spurious_correlations(self, properties: Optional[List[str]] = None) -> pd.DataFrame: 
         """
-        Use this after finding issues to which examples suffer from which types of issues.
+        Identify potential spurious correlations between image properties and their corresponding scores.
 
-        NOTE: 
-        
+
+        Parameters:
+        -----------
+        properties : Optional[List[str]]
+            A list of specific image properties (e.g. 'dark', 'grayscale') to be analyzed.
+            If None, all available properties from the issue summary will be considered.
+
         Returns: 
         --------
-        A DataFrame where each row corresponds to image_property ('dark', 'grayscale')
-        and overall datascore for that image_property
+        A DataFrame indicating correlations for each image property.
+        
+        Note
+        ----
+        This method is a wrapper around the :py:meth:`SpuriousCorrelations.calculate_correlations <cleanlab.datalab.internal.spurious_correlation.SpuriousCorrelations.calculate_correlations>` method.
+        
+        It is still a work in progress and may be subject to change in future versions.
+        
+        See Also
+        --------
+        cleanlab.datalab.internal.spurious_correlation.SpuriousCorrelations
         """
+        # TODO: Update this check when support for more properties is added.
+        if self._imagelab is None:
+            raise NotImplementedError("No ImageLab instance found. Please specify properties.")
         
-        assert not self.issues.empty, "No issues found. Please run find_issues() first."
+        # TODO: Update this check when support for more properties is added.
+        if self._imagelab.issue_summary.empty or self.issues.empty:
+            raise ValueError("No issues found in ImageLab. Please run find_issues() first.")
         
+        # Default to all available properties from the issue summary.
         if properties is None:
-            _issue_summary = self.issue_summary if self._imagelab is None else self._imagelab.issue_summary
+            _issue_summary = self._imagelab.issue_summary
             properties = _issue_summary["issue_type"].values.tolist()
-            if self._imagelab is not None:
-                # Take the intersection of the issue_summary from datalab and imagelab, as Datalab may drop some issues from the imagelab
-                # So we compary the _issue_summart["issue_type"] with self.issue_summary["issue_type"]
+            
+            # Ensure only properties present in both datalab and imagelab are considered.
+            if self._imagelab:
                 properties = [p for p in properties if p in self.issue_summary["issue_type"].values.tolist()]
-        for p in properties:
-            assert p in self.issue_summary["issue_type"].values.tolist(), f"{p} is not a valid property. Please choose from {self.issue_summary['issue_type'].values.tolist()}"
-        # assert all([p in self.issue_summary["issue_type"] for p in properties]), "Some properties are not in the issues dataframe."
-        # Fetch a dataframe with issues flags and scores for an issue type, called
-        # a property.
-        issues = self.issues
-        # Each property ends with either _score or is wrapped within is_ and _issue.
-        # We will measure the correlation between the property scores and the labels.
-        score_column_to_column_name = lambda name_score: name_score.split("_score")[0]
-        score_columns = [c for c in issues.columns if c.endswith("_score")]
-        columns = [score_column_to_column_name(c) for c in score_columns]
 
-        df = issues[score_columns].rename(columns=dict(zip(score_columns, columns)))
-        columns = [c for c in columns if c in properties]
-        df = df[columns]
+        # Validate the input properties.
+        valid_properties = self.issue_summary["issue_type"].values.tolist()
+        for p in properties:
+            if p not in valid_properties:
+                raise ValueError(f"{p} is not a valid property. Available options: {valid_properties}")
+
+        # Convert score column names to regular column names for easier querying.
+        score_column_to_column_name = lambda name_score: name_score.split("_score")[0]
+        score_columns = [c for c in self.issues.columns if c.endswith("_score")]
+        rename_map = dict(zip(score_columns, [score_column_to_column_name(c) for c in score_columns]))
+
+        # Filter and rename columns in the issues dataframe.
+        df = self.issues[score_columns].rename(columns=rename_map)
+        df = df[[c for c in rename_map.values() if c in properties]]
         
         return SpuriousCorrelations(data=df, labels=self.labels).calculate_correlations()
     
