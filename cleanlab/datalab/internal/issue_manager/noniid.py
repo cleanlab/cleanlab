@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional, Union, cast, Tuple
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional, Union, cast
 import warnings
 import itertools
 
@@ -165,17 +165,35 @@ class NonIIDIssueManager(IssueManager):
             "If a knn_graph is not provided, either 'features' or 'pred_probs' must be provided to fit a new knn."
         )
 
-    def _select_features_and_setup_knn(
+    def _setup_knn(
         self,
         features: Optional[npt.NDArray],
         pred_probs: Optional[np.ndarray],
         knn_graph: Optional[csr_matrix],
         metric_changes: bool,
-    ) -> Tuple[Optional[NearestNeighbors], npt.NDArray]:
+    ) -> Optional[NearestNeighbors]:
         """
         Selects features (or pred_probs if features are None) and sets up a NearestNeighbors object if needed.
 
-        # Add type-hints and document the arguments.
+        Parameters
+        ----------
+        features :
+            Original feature array or None.
+
+        pred_probs :
+            Predicted probabilities array or None.
+
+        knn_graph :
+            A precomputed KNN-graph stored in a csr_matrix or None. If None, a new NearestNeighbors object will be created.
+
+        metric_changes :
+            Whether the metric used to compute the KNN-graph has changed.
+            This is a result of comparing the metric of a pre-existing KNN-graph and the metric specified by the user.
+
+        Returns
+        -------
+        knn :
+            A NearestNeighbors object or None.
         """
         if features is None and pred_probs is not None:
             self._skip_storing_knn_graph_for_pred_probs = True
@@ -185,7 +203,7 @@ class NonIIDIssueManager(IssueManager):
             self.metric = "cosine" if features_to_use.shape[1] > 3 else "euclidean"
 
         if knn_graph is not None and not metric_changes:
-            return None, features_to_use
+            return None
 
         knn = NearestNeighbors(n_neighbors=self.k, metric=self.metric)
 
@@ -202,7 +220,7 @@ class NonIIDIssueManager(IssueManager):
         except NotFittedError:
             knn.fit(features_to_use)
 
-        return knn, features_to_use
+        return knn
 
     def find_issues(
         self,
@@ -212,10 +230,8 @@ class NonIIDIssueManager(IssueManager):
     ) -> None:
         knn_graph = self._process_knn_graph_from_inputs(kwargs)
         old_knn_metric = self.datalab.get_info("statistics").get("knn_metric")
-        metric_changes = self.metric and self.metric != old_knn_metric
-        knn, features_used = self._select_features_and_setup_knn(
-            features, pred_probs, knn_graph, metric_changes
-        )
+        metric_changes = bool(self.metric and self.metric != old_knn_metric)
+        knn = self._setup_knn(features, pred_probs, knn_graph, metric_changes)
 
         if knn_graph is None or metric_changes:
             self.neighbor_index_choices = self._get_neighbors(knn=knn)
