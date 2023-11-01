@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import List, Optional, Union
+from typing import List, Optional, Union, cast
 
 import numpy as np
 import pandas as pd
@@ -40,6 +40,8 @@ class SpuriousCorrelations:
     """The colletion of labels to compute the spurious correlation scores on."""
     properties_of_interest: Optional[List[str]] = None
     """A list of strings in the dataframe to score the dataset on. If None, all columns in the dataframe will be scored."""
+    cv_fold: int = 5
+    """The number of cross-validation folds to use when calculating the spurious correlation scores."""
 
     def __post_init__(self):
         # Must have same number of rows
@@ -88,7 +90,7 @@ class SpuriousCorrelations:
         return float(baseline_accuracy)
 
     def calculate_spurious_correlation(
-        self, property_of_interest, baseline_accuracy: float
+        self, property_of_interest: str, baseline_accuracy: float
     ) -> float:
         """Scores the dataset based on a given property of interest.
 
@@ -109,13 +111,15 @@ class SpuriousCorrelations:
         --------
         relative_room_for_improvement
         """
-        X = self.data[property_of_interest].values.reshape(-1, 1)
+        X = self.data[property_of_interest].values
+        X_np_array = cast(np.ndarray, X)
+        X_np_array = X_np_array.reshape(-1, 1)
         y = self.labels
-        mean_accuracy = _train_and_eval(X, y)
+        mean_accuracy = _train_and_eval(X=X_np_array, y=y, cv=self.cv_fold)
         return relative_room_for_improvement(baseline_accuracy, float(mean_accuracy))
 
 
-def _train_and_eval(X, y, cv=5) -> float:
+def _train_and_eval(X: np.ndarray, y: Union[np.ndarray, list], cv: int) -> float:
     classifier = GaussianNB()  # TODO: Make this a parameter
     cv_accuracies = cross_val_score(classifier, X, y, cv=cv, scoring="accuracy")
     mean_accuracy = float(np.mean(cv_accuracies))
