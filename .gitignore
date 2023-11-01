@@ -154,4 +154,6 @@ __pypackages__/
 **.7Z
 **.BZ2
 **.rar
+**.zarr
+**.npy
 

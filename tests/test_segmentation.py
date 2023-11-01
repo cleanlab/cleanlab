@@ -18,10 +18,6 @@
 Scripts to test cleanlab.segmentation package
 """
 import numpy as np
-
-# import matplotlib.pyplot as plt
-# import os
-import numpy as np
 import random
 
 np.random.seed(0)
@@ -30,6 +26,9 @@ from unittest import mock
 import matplotlib.pyplot as plt
 
 from cleanlab.internal.multilabel_scorer import softmin
+
+from memory_profiler import memory_usage
+import time
 
 
 # Segmentation utils
@@ -138,6 +137,35 @@ def test_find_label_issues():
         issues = find_label_issues(
             labels, np.array([[[[0.1, 0.2, 0.3]]]]), downsample=1, n_jobs=None, batch_size=1000
         )
+
+
+@pytest.mark.slow
+def test_find_label_issues_memmap():
+    """
+    Test that find_label_issues works with large memmap arrays
+    """
+    # for mem testing
+    start_time = time.time()
+    start_mem = max(memory_usage(interval=0.01))
+
+    print(pred_probs.shape)
+    print(labels.shape)
+
+    # Create dummy versions of pred_probs and labels
+    np.save("pred_probs.npy", np.random.rand(20, 5, 200, 200))
+    np.save("labels.npy", np.random.randint(0, 2, (20, 200, 200)))
+
+    # Load the numpy arrays from disk and convert to zarr arrays
+    z = np.load("pred_probs.npy", mmap_mode="r")
+    zarr_labels = np.load("labels.npy", mmap_mode="r")
+
+    _ = find_label_issues(zarr_labels, z, n_jobs=None, batch_size=1000)
+
+    # for mem testing
+    end_mem = max(memory_usage(interval=0.01))
+    end_time = time.time()
+    print(f"Max memory used: {end_mem - start_mem} MiB")
+    print(f"Time taken: {end_time - start_time} seconds")
 
 
 def test_find_label_issues_sizes():
