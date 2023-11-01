@@ -12,6 +12,7 @@ sphinx-copybutton==0.5.0
 sphinxcontrib-katex==0.8.6
 sphinxcontrib-gtagjs==0.2.1
 sphinx-autodoc-typehints==1.19.2
+sphinxext-opengraph==0.9.0
 matplotlib==3.6.3
 requests==2.28.2
 tensorflow==2.9.1

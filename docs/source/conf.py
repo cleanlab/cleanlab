@@ -24,6 +24,11 @@ import pathlib
 
 sys.path.insert(0, pathlib.Path(__file__).parents[2].resolve().as_posix())
 
+# Open Graph extension
+ogp_site_url = "https://docs.cleanlab.ai"
+ogp_image = "https://raw.githubusercontent.com/cleanlab/assets/master/cleanlab/clos-preview-card.png"
+
+
 # -- Project information -----------------------------------------------------
 
 project = "cleanlab"
@@ -49,6 +54,7 @@ extensions = [
     "sphinxcontrib.gtagjs",
     "sphinx_autodoc_typehints",
     "sphinx.ext.doctest",
+    "sphinxext.opengraph",
 ]
 
 numpy_show_class_members = True
