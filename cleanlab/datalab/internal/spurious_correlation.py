@@ -43,7 +43,7 @@ class SpuriousCorrelations:
     cv_fold: int = 5
     """The number of cross-validation folds to use when calculating the spurious correlation scores."""
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         # Must have same number of rows
         if not len(self.data) == len(self.labels):
             raise ValueError(
@@ -128,7 +128,7 @@ def _train_and_eval(X: np.ndarray, y: Union[np.ndarray, list], cv: int) -> float
 
 def relative_room_for_improvement(
     baseline_accuracy: float, mean_accuracy: float, eps: float = 1e-8
-):
+) -> float:
     """
     Calculate the relative room for improvement given a baseline and trial accuracy.
 
