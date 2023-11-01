@@ -24,6 +24,7 @@ np.random.seed(0)
 import pytest
 from unittest import mock
 import matplotlib.pyplot as plt
+from pathlib import Path
 
 from cleanlab.internal.multilabel_scorer import softmin
 
@@ -140,7 +141,7 @@ def test_find_label_issues():
 
 
 @pytest.mark.slow
-def test_find_label_issues_memmap():
+def test_find_label_issues_memmap(tmp_path: Path):
     """
     Test that find_label_issues works with large memmap arrays
     """
@@ -148,18 +149,18 @@ def test_find_label_issues_memmap():
     start_time = time.time()
     start_mem = max(memory_usage(interval=0.01))
 
-    print(pred_probs.shape)
-    print(labels.shape)
-
     # Create dummy versions of pred_probs and labels
-    np.save("pred_probs.npy", np.random.rand(20, 5, 200, 200))
-    np.save("labels.npy", np.random.randint(0, 2, (20, 200, 200)))
+    # write to the pytest tmp_path so that the files are deleted after the test
+    pred_probs_file = tmp_path / "pred_probs.npy"
+    labels_file = tmp_path / "labels.npy"
+    np.save(pred_probs_file, np.random.rand(20, 5, 200, 200))
+    np.save(labels_file, np.random.randint(0, 2, (20, 200, 200)))
 
     # Load the numpy arrays from disk and convert to zarr arrays
-    z = np.load("pred_probs.npy", mmap_mode="r")
-    zarr_labels = np.load("labels.npy", mmap_mode="r")
+    pred_probs = np.load(pred_probs_file, mmap_mode="r")
+    pred_labels = np.load(labels_file, mmap_mode="r")
 
-    _ = find_label_issues(zarr_labels, z, n_jobs=None, batch_size=1000)
+    _ = find_label_issues(pred_labels, pred_probs, n_jobs=None, batch_size=1000)
 
     # for mem testing
     end_mem = max(memory_usage(interval=0.01))

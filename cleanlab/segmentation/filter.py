@@ -167,6 +167,7 @@ def find_label_issues(
     if verbose:
         pbar.close()
         pbar = tqdm(desc="number of examples processed for checking labels", total=n)
+
     i = 0
     while i < n:
         end_index = i + batch_size
