@@ -56,11 +56,11 @@ def test_calculate_correlations(spurious_instance):
     # Check that the output dataframe reflects the input dataframe
     assert isinstance(data_scores, pd.DataFrame)
     assert len(data_scores) == 2
-    assert set(data_scores.columns) == {"property", "score"}
+    assert set(data_scores.columns) == {"property", "label_prediction_error"}
     assert data_scores["property"].tolist() == ["blurry_correlated", "dark_uncorrelated"]
 
     # Check that the scores are replicable
-    scores = data_scores["score"].tolist()
+    scores = data_scores["label_prediction_error"].tolist()
     np.testing.assert_almost_equal(scores, [0.100, 0.420], decimal=3)
 
 

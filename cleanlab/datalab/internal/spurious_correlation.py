@@ -31,9 +31,9 @@ class SpuriousCorrelations:
     >>>
     >>> # Calculate the spurious correlation scores
     >>> SpuriousCorrelations(data, labels).calculate_correlations()
-          property	   score
-    0   property_a	0.315789
-    1   property_b	0.052632
+          property  label_prediction_error
+    0   property_a	              0.315789
+    1   property_b	              0.052632
 
     """
 
@@ -80,7 +80,7 @@ class SpuriousCorrelations:
             )
             for property_of_interest in self.properties_of_interest
         }
-        data_score = pd.DataFrame(list(property_scores.items()), columns=["property", "score"])
+        data_score = pd.DataFrame(list(property_scores.items()), columns=["property", "label_prediction_error"])
         return data_score
 
     def _get_baseline(self) -> float:
