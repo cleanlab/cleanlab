@@ -1115,8 +1115,8 @@ class TestDataLabClassImbalanceIssues:
         class_imbalance_summary = lab.get_issue_summary("class_imbalance")
         assert class_imbalance_summary["num_issues"].values[0] > 0
 
-class TestSpuriousCorrelations: 
 
+class TestSpuriousCorrelations:
     @pytest.fixture
     def lab(self):
         # Load dataset, sample for speed
@@ -1129,15 +1129,26 @@ class TestSpuriousCorrelations:
         lab.find_issues()
         return lab
 
-    def test_spurious_correlations(self, lab): 
+    def test_spurious_correlations(self, lab):
         scores = lab._spurious_correlations()
-        
-        expected_df = pd.DataFrame({
-            "property": ["blurry", "odd_aspect_ratio", "odd_size", "low_information", "dark", "light"],
-            "score": [0.862069, 0.896552, 0.896552, 0.724138, 0.965517, 0.896552],
-        })
-        assert pd.testing.assert_frame_equal(
-            scores.sort_values(by="property").reset_index(drop=True),
-            expected_df.sort_values(by="property").reset_index(drop=True),
-        ) is None
 
+        expected_df = pd.DataFrame(
+            {
+                "property": [
+                    "blurry",
+                    "odd_aspect_ratio",
+                    "odd_size",
+                    "low_information",
+                    "dark",
+                    "light",
+                ],
+                "score": [0.862069, 0.896552, 0.896552, 0.724138, 0.965517, 0.896552],
+            }
+        )
+        assert (
+            pd.testing.assert_frame_equal(
+                scores.sort_values(by="property").reset_index(drop=True),
+                expected_df.sort_values(by="property").reset_index(drop=True),
+            )
+            is None
+        )

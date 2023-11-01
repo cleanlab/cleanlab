@@ -8,11 +8,14 @@ from cleanlab.datalab.internal.spurious_correlation import (
     relative_room_for_improvement,
 )
 
+
 def generate_correlated_feature(labels, correlation_coefficient):
     # Generate a random feature
     random_feature = np.random.randn(len(labels))
     # Create a correlated feature
-    correlated_feature = correlation_coefficient * labels + (1 - correlation_coefficient) * random_feature
+    correlated_feature = (
+        correlation_coefficient * labels + (1 - correlation_coefficient) * random_feature
+    )
     return correlated_feature
 
 
@@ -23,11 +26,13 @@ def sample_data():
     np.random.seed(42)
     _proportion = 0.5 + np.random.rand() * 0.2
     _labels = np.random.choice([0, 1], size=N, p=[_proportion, 1 - _proportion])
-    
-    _data = pd.DataFrame({
-        "blurry_correlated": generate_correlated_feature(_labels, 0.7),
-        "dark_uncorrelated": generate_correlated_feature(_labels, 0.01),
-    })
+
+    _data = pd.DataFrame(
+        {
+            "blurry_correlated": generate_correlated_feature(_labels, 0.7),
+            "dark_uncorrelated": generate_correlated_feature(_labels, 0.01),
+        }
+    )
     return {"data": _data, "labels": _labels}
 
 
@@ -40,19 +45,20 @@ def test_initialization(spurious_instance):
     assert hasattr(spurious_instance, "data")
     assert hasattr(spurious_instance, "labels")
     assert hasattr(spurious_instance, "properties_of_interest")
-    
+
+
 def test_calculate_correlations(spurious_instance):
     """Test that scoring on arbitrary dataframes with property scores for columns works."""
-    
+
     # Run main method
     data_scores = spurious_instance.calculate_correlations()
-    
+
     # Check that the output dataframe reflects the input dataframe
     assert isinstance(data_scores, pd.DataFrame)
     assert len(data_scores) == 2
     assert set(data_scores.columns) == {"property", "score"}
     assert data_scores["property"].tolist() == ["blurry_correlated", "dark_uncorrelated"]
-    
+
     # Check that the scores are replicable
     scores = data_scores["score"].tolist()
     np.testing.assert_almost_equal(scores, [0.100, 0.420], decimal=3)

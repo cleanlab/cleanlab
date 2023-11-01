@@ -13,7 +13,7 @@ warnings.filterwarnings("ignore")
 @dataclass
 class SpuriousCorrelations:
     """Calculates the spurious correlation scores for a given dataset.
-    
+
     Examples
     --------
     >>> import pandas as pd
@@ -34,9 +34,9 @@ class SpuriousCorrelations:
           property	   score
     0   property_a	0.315789
     1   property_b	0.052632
-    
+
     """
-    
+
     data: pd.DataFrame
     """A dataframe containing the data to be scored."""
     labels: Union[np.ndarray, list]
@@ -58,14 +58,14 @@ class SpuriousCorrelations:
         assert all(
             isinstance(p, str) for p in self.properties_of_interest
         ), "properties_of_interest must be a list of strings."
-        
+
         assert all(
             p in self.data.columns for p in self.properties_of_interest
         ), "properties_of_interest must be a subset of the columns in the data dataframe."
 
     def calculate_correlations(self) -> pd.DataFrame:
         """Calculates the spurious correlation scores for each property of interest found in the dataset.
-                    
+
         See Also
         --------
         relative_room_for_improvement
@@ -105,7 +105,7 @@ class SpuriousCorrelations:
         -------
         score :
             A correlation score of the dataset's labels to the property of interest.
-            
+
         See Also
         --------
         relative_room_for_improvement
