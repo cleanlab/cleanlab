@@ -99,13 +99,14 @@ def display_issues(
     try:
         import matplotlib.pyplot as plt
         import matplotlib.patches as mpatches
+        from matplotlib.colors import ListedColormap
     except:
         raise ImportError('try "pip install matplotlib"')
 
     output_plots = (pred_probs is not None) + (labels is not None) + 1
 
     # Colormap for errors
-    error_cmap = plt.cm.colors.ListedColormap(["none", "red"])
+    error_cmap = ListedColormap(["none", "red"])
     _, h, w = issues.shape
     if output_plots > 1:
         if pred_probs is not None:
