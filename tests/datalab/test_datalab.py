@@ -27,6 +27,7 @@ import numpy as np
 import pandas as pd
 import pytest
 from datasets.dataset_dict import DatasetDict
+from datasets import load_dataset
 from scipy.sparse import csr_matrix
 from sklearn.neighbors import NearestNeighbors
 
@@ -1116,20 +1117,27 @@ class TestDataLabClassImbalanceIssues:
 
 class TestSpuriousCorrelations: 
 
-    def test_spurious_correlations(self): 
-        dark_scores = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
-        labels = np.array([0, 1, 0, 1, 0, 1, 0, 1, 0, 1])
-        issue_summary = pd.DataFrame({
-            'issue_type': ['dark'],
-            'num_issues': 10,
+    @pytest.fixture
+    def lab(self):
+        # Load dataset, sample for speed
+        dataset = load_dataset("fashion_mnist", split="train").shuffle(seed=0).select(range(30))
+
+        # Initialize Datalab
+        lab = Datalab(data=dataset, label_name="label", image_key="image")
+
+        # Find issues first, (should just look for issues via Imagelab with this configuration)
+        lab.find_issues()
+        return lab
+
+    def test_spurious_correlations(self, lab): 
+        scores = lab._spurious_correlations()
+        
+        expected_df = pd.DataFrame({
+            "property": ["blurry", "odd_aspect_ratio", "odd_size", "low_information", "dark", "light"],
+            "score": [0.862069, 0.896552, 0.896552, 0.724138, 0.965517, 0.896552],
         })
-
-        data = {
-            'issues': pd.DataFrame({'dark_score': dark_scores}),
-            'labels': labels,
-            'issue_summary': issue_summary,
-        }
-
-        pass
-
+        assert pd.testing.assert_frame_equal(
+            scores.sort_values(by="property").reset_index(drop=True),
+            expected_df.sort_values(by="property").reset_index(drop=True),
+        ) is None
 
