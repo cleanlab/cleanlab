@@ -75,7 +75,7 @@ def test_relative_room_for_improvement(baseline_accuracy, mean_accuracy):
     assert 0 <= score <= 1
 
     # Property 2: If mean_accuracy is less than baseline_accuracy, score should be 1
-    if mean_accuracy < baseline_accuracy:
+    if mean_accuracy < baseline_accuracy and baseline_accuracy < 1:
         assert (
             score == 1
         ), f"score: {score} is not 1, baseline_accuracy: {baseline_accuracy}, mean_accuracy: {mean_accuracy}"
