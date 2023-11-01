@@ -28,9 +28,9 @@ class SpuriousCorrelations:
     >>>
     >>> # Calculate the spurious correlation scores
     >>> SpuriousCorrelations(data, labels).calculate_correlations()
-          property  label_prediction_error
-    0   property_a	              0.315789
-    1   property_b	              0.052632
+         property  label_prediction_error
+    0  property_a                0.315789
+    1  property_b                0.052632
 
     """
 
