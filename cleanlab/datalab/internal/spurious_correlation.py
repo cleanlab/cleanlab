@@ -12,9 +12,37 @@ warnings.filterwarnings("ignore")
 
 @dataclass
 class SpuriousCorrelations:
+    """Calculates the spurious correlation scores for a given dataset.
+    
+    Examples
+    --------
+    >>> import pandas as pd
+    >>> import numpy as np
+    >>> from cleanlab.datalab.internal.spurious_correlation import SpuriousCorrelations
+    >>>
+    >>> # Generate a dataset with properties potentially correlated with the labels
+    >>> data = pd.DataFrame({
+    >>>     "property_a": [-0.28, 0.99, -0.1, 0.81, -0.84, -0.66, 3.12, 0.77, 0.28, 0.28, -0.39, -0.38,
+    ...                     -0.2,  1.28, 0.18, 1.64, 1.24, -0.22, 0.73, -0.55],
+    ...     "property_b": [0.75, 0.55, -0.05, 1.09, 0.07, -0.03, 0.68, 0.61, 0.31, 0.7,  0.89, -0.27,
+    ...                     0.49, 0.05, 0.57, 0.69, 0.89, 1.01, 0.76, 0.77],
+    ... })
+    >>> labels = np.array([1, 1, 0, 1, 0, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1])
+    >>>
+    >>> # Calculate the spurious correlation scores
+    >>> SpuriousCorrelations(data, labels).calculate_correlations()
+          property	   score
+    0   property_a	0.315789
+    1   property_b	0.052632
+    
+    """
+    
     data: pd.DataFrame
+    """A dataframe containing the data to be scored."""
     labels: Union[np.ndarray, list]
+    """The colletion of labels to compute the spurious correlation scores on."""
     properties_of_interest: Optional[List[str]] = None
+    """A list of strings in the dataframe to score the dataset on. If None, all columns in the dataframe will be scored."""
 
     def __post_init__(self):
         # Must have same number of rows
@@ -36,7 +64,12 @@ class SpuriousCorrelations:
         ), "properties_of_interest must be a subset of the columns in the data dataframe."
 
     def calculate_correlations(self) -> pd.DataFrame:
-        """Calculates the spurious correlation scores for each property of interest found in the dataset."""
+        """Calculates the spurious correlation scores for each property of interest found in the dataset.
+                    
+        See Also
+        --------
+        relative_room_for_improvement
+        """
         baseline_accuracy = self._get_baseline()
         assert (
             self.properties_of_interest is not None
@@ -72,6 +105,10 @@ class SpuriousCorrelations:
         -------
         score :
             A correlation score of the dataset's labels to the property of interest.
+            
+        See Also
+        --------
+        relative_room_for_improvement
         """
         X = self.data[property_of_interest].values.reshape(-1, 1)
         y = self.labels
