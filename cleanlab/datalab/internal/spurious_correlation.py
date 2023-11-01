@@ -1,13 +1,10 @@
 from dataclasses import dataclass
 from typing import List, Optional, Union
-import warnings
 
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import cross_val_score
 from sklearn.naive_bayes import GaussianNB
-
-warnings.filterwarnings("ignore")
 
 
 @dataclass
@@ -80,7 +77,9 @@ class SpuriousCorrelations:
             )
             for property_of_interest in self.properties_of_interest
         }
-        data_score = pd.DataFrame(list(property_scores.items()), columns=["property", "label_prediction_error"])
+        data_score = pd.DataFrame(
+            list(property_scores.items()), columns=["property", "label_prediction_error"]
+        )
         return data_score
 
     def _get_baseline(self) -> float:
