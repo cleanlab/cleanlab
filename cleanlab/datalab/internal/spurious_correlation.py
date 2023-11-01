@@ -30,6 +30,10 @@ class SpuriousCorrelations:
         assert all(
             isinstance(p, str) for p in self.properties_of_interest
         ), "properties_of_interest must be a list of strings."
+        
+        assert all(
+            p in self.data.columns for p in self.properties_of_interest
+        ), "properties_of_interest must be a subset of the columns in the data dataframe."
 
     def calculate_correlations(self) -> pd.DataFrame:
         """Calculates the spurious correlation scores for each property of interest found in the dataset."""
