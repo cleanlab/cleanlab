@@ -19,7 +19,7 @@ Methods to find label issues in image semantic segmentation datasets, where each
 
 """
 
-from cleanlab.experimental.label_issues_batched import find_label_issues_batched
+from cleanlab.experimental.label_issues_batched import LabelInspector
 import numpy as np
 from typing import Tuple, Optional
 
@@ -131,14 +131,57 @@ def find_label_issues(
     # Added Downsampling
     pre_labels, pre_pred_probs = downsample_arrays(labels, pred_probs, downsample)
 
-    num_image, num_classes, h, w = pre_pred_probs.shape
+    num_image, _, h, w = pre_pred_probs.shape
     # flatten images just preps labels and pred_probs
 
     pre_labels, pre_pred_probs = flatten_and_preprocess_masks(pre_labels, pre_pred_probs)
 
-    ranked_label_issues = find_label_issues_batched(
-        pre_labels, pre_pred_probs, batch_size=batch_size, n_jobs=n_jobs, verbose=verbose
+    ### This section is a modified version of find_label_issues_batched(), old code is commented out
+    # ranked_label_issues = find_label_issues_batched(
+    #     pre_labels, pre_pred_probs, batch_size=batch_size, n_jobs=n_jobs, verbose=verbose
+    # )
+    lab = LabelInspector(
+        num_class=pre_pred_probs.shape[1],
+        verbose=verbose,
+        n_jobs=n_jobs,
+        quality_score_kwargs=None,
+        num_issue_kwargs=None,
     )
+    n = len(pre_labels)
+
+    if verbose:
+        from tqdm.auto import tqdm
+
+        pbar = tqdm(desc="number of examples processed for estimating thresholds", total=n)
+
+    i = 0
+    while i < n:
+        end_index = i + batch_size
+        labels_batch = pre_labels[i:end_index]
+        pred_probs_batch = pre_pred_probs[i:end_index, :]
+        i = end_index
+        lab.update_confident_thresholds(labels_batch, pred_probs_batch)
+        if verbose:
+            pbar.update(batch_size)
+
+    if verbose:
+        pbar.close()
+        pbar = tqdm(desc="number of examples processed for checking labels", total=n)
+    i = 0
+    while i < n:
+        end_index = i + batch_size
+        labels_batch = pre_labels[i:end_index]
+        pred_probs_batch = pre_pred_probs[i:end_index, :]
+        i = end_index
+        _ = lab.score_label_quality(labels_batch, pred_probs_batch)
+        if verbose:
+            pbar.update(batch_size)
+
+    if verbose:
+        pbar.close()
+
+    ranked_label_issues = lab.get_label_issues()
+    ### End find_label_issues_batched() section
 
     # Finding the right indicies
     relative_index = ranked_label_issues % (h * w)
