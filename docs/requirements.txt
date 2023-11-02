@@ -23,4 +23,4 @@ torch==1.13.1
 torchvision==0.14.1
 torchaudio==0.13.1
 timm==0.6.12
-datasets>=2.9.0
+datasets>=2.14.6
