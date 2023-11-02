@@ -17,7 +17,6 @@ These are the issue managers that Datalab has registered.
     duplicate
     noniid
     imbalance
-    underperf_group
 
 Unregistered issue managers
 ---------------------------
