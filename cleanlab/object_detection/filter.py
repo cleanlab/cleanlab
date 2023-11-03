@@ -328,16 +328,21 @@ def _filter_by_class(
 
 
 def _calculate_true_positives_false_positives(
-    pred_bboxes: np.ndarray, lab_bboxes: np.ndarray, iou_threshold: Optional[float] = 0.5
+    pred_bboxes: np.ndarray,
+    lab_bboxes: np.ndarray,
+    iou_threshold: Optional[float] = 0.5,
+    return_false_negative=False,
 ) -> Tuple[np.ndarray, np.ndarray]:
     """Calculates true positives (TP) and false positives (FP) for object detection tasks.
     It takes predicted bounding boxes, ground truth bounding boxes, and an optional Intersection over Union (IoU) threshold as inputs.
+    If return_false_negative is True, it returns array of False negatives as well.
     """
     num_preds = pred_bboxes.shape[0]
     num_labels = lab_bboxes.shape[0]
     num_scales = 1
     true_positives = np.zeros((num_scales, num_preds), dtype=np.float32)
     false_positives = np.zeros((num_scales, num_preds), dtype=np.float32)
+
     if lab_bboxes.shape[0] == 0:
         false_positives[...] = 1
         return true_positives, false_positives
@@ -356,6 +361,13 @@ def _calculate_true_positives_false_positives(
                 false_positives[0, index] = 1
         else:
             false_positives[0, index] = 1
+    if return_false_negative:
+        false_negatives = np.zeros((num_scales, num_labels), dtype=np.float32)
+        for label_index in range(num_labels):
+            if not is_covered[label_index]:
+                false_negatives[0, label_index] = 1
+    if return_false_negative:
+        return true_positives, false_positives, false_negatives
     return true_positives, false_positives
 
 
