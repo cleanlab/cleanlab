@@ -132,9 +132,6 @@ def find_label_issues(
     pre_labels, pre_pred_probs = downsample_arrays(labels, pred_probs, downsample)
 
     num_image, _, h, w = pre_pred_probs.shape
-    # flatten images just preps labels and pred_probs
-
-    pre_labels, pre_pred_probs = flatten_and_preprocess_masks(pre_labels, pre_pred_probs)
 
     ### This section is a modified version of find_label_issues_batched(), old code is commented out
     # ranked_label_issues = find_label_issues_batched(
@@ -156,13 +153,19 @@ def find_label_issues(
 
     i = 0
     while i < n:
-        end_index = i + batch_size
-        labels_batch = pre_labels[i:end_index]
-        pred_probs_batch = pre_pred_probs[i:end_index, :]
+        # continuously load images until number of pixels greater than batch size
+        images_to_load = 1
+        while np.prod(pre_pred_probs[i : i + images_to_load].shape[1:]) < batch_size:
+            images_to_load += 1
+
+        end_index = i + images_to_load
+        labels_batch, pred_probs_batch = flatten_and_preprocess_masks(
+            pre_labels[i:end_index], pre_pred_probs[i:end_index]
+        )
         i = end_index
         lab.update_confident_thresholds(labels_batch, pred_probs_batch)
         if verbose:
-            pbar.update(batch_size)
+            pbar.update(images_to_load)
 
     if verbose:
         pbar.close()
@@ -170,13 +173,19 @@ def find_label_issues(
 
     i = 0
     while i < n:
-        end_index = i + batch_size
-        labels_batch = pre_labels[i:end_index]
-        pred_probs_batch = pre_pred_probs[i:end_index, :]
+        # continuously load images until number of pixels greater than batch size
+        images_to_load = 1
+        while np.prod(pre_pred_probs[i : i + images_to_load].shape[1:]) < batch_size:
+            images_to_load += 1
+
+        end_index = i + images_to_load
+        labels_batch, pred_probs_batch = flatten_and_preprocess_masks(
+            pre_labels[i:end_index], pre_pred_probs[i:end_index]
+        )
         i = end_index
         _ = lab.score_label_quality(labels_batch, pred_probs_batch)
         if verbose:
-            pbar.update(batch_size)
+            pbar.update(images_to_load)
 
     if verbose:
         pbar.close()
