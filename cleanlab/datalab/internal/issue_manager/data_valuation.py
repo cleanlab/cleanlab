@@ -41,8 +41,9 @@ class DataValuationIssueManager(IssueManager):
 
     description: ClassVar[
         str
-    ] = """Examples who won't contribute a lot for a model's training
-        will have lower valuation scores.
+    ] = """
+    Examples that contribute minimally to a model's training
+    receive lower valuation scores.
     """
 
     issue_name: ClassVar[str] = "data_valuation"
