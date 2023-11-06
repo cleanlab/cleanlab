@@ -73,14 +73,14 @@ class DataValuationIssueManager(IssueManager):
     ) -> None:
         """Calculate the data valuation score with a provided or existing knn graph.
         Based on KNN-Shapley value described in https://arxiv.org/abs/1911.07128
-        The larger the score, the more valuable the data point is, thr more contribution it will make to the model's training.
+        The larger the score, the more valuable the data point is, the more contribution it will make to the model's training.
         """
         knn_graph = self._process_knn_graph_from_inputs(kwargs)
         labels = self.datalab.labels.reshape(-1, 1)
         assert knn_graph is not None, "knn_graph must be already calculated by other issue managers"
         assert labels is not None, "labels must be provided"
 
-        scores = self._knn_shapley_score(knn_graph, labels)
+        scores = _knn_shapley_score(knn_graph, labels)
 
         self.issues = pd.DataFrame(
             {
@@ -91,24 +91,6 @@ class DataValuationIssueManager(IssueManager):
         self.summary = self.make_summary(score=scores.mean())
 
         self.info = self.collect_info(self.issues)
-
-    def _knn_shapley_score(self, knn_graph: csr_matrix, labels: np.ndarray) -> np.ndarray:
-        N = labels.shape[0]
-        scores = np.zeros((N, N))
-        dist = knn_graph.indices.reshape(N, -1)
-        self.k = dist.shape[1]
-
-        for i, y in enumerate(labels):
-            idx = dist[i][::-1]
-            ans = labels[idx]
-            scores[idx[self.k - 1]][i] = float(ans[self.k - 1] == y) / self.k
-            cur = self.k - 2
-            for j in range(self.k - 1):
-                scores[idx[cur]][i] = scores[idx[cur + 1]][i] + float(
-                    int(ans[cur] == y) - int(ans[cur + 1] == y)
-                ) / self.k * (min(cur, self.k - 1) + 1) / (cur + 1)
-                cur -= 1
-        return 0.5 * (np.mean(scores, axis=1) + 1)
 
     def _process_knn_graph_from_inputs(self, kwargs: Dict[str, Any]) -> Union[csr_matrix, None]:
         """Determine if a knn_graph is provided in the kwargs or if one is already stored in the associated Datalab instance."""
@@ -140,3 +122,23 @@ class DataValuationIssueManager(IssueManager):
         }
 
         return info_dict
+
+
+def _knn_shapley_score(knn_graph: csr_matrix, labels: np.ndarray) -> np.ndarray:
+    """Compute the Shapley values of data points based on a knn graph."""
+    N = labels.shape[0]
+    scores = np.zeros((N, N))
+    dist = knn_graph.indices.reshape(N, -1)
+    k = dist.shape[1]
+
+    for i, y in enumerate(labels):
+        idx = dist[i][::-1]
+        ans = labels[idx]
+        scores[idx[k - 1]][i] = float(ans[k - 1] == y) / k
+        cur = k - 2
+        for j in range(k - 1):
+            scores[idx[cur]][i] = scores[idx[cur + 1]][i] + float(
+                int(ans[cur] == y) - int(ans[cur + 1] == y)
+            ) / k * (min(cur, k - 1) + 1) / (cur + 1)
+            cur -= 1
+    return 0.5 * (np.mean(scores, axis=1) + 1)
