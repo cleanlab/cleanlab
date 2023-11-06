@@ -606,18 +606,19 @@ class TestDatalabUsingKNNGraph:
         score = lab.get_issues().get(["data_valuation_score"])
         assert isinstance(score, pd.DataFrame)
         assert len(score) == len(lab.data)
-        
+
         # Compare this with directly passing in a knn_graph
         lab_2 = Datalab(data=lab.data, label_name=lab.label_name)
         lab_2.find_issues(knn_graph=knn_graph, issue_types={"data_valuation": {}})
         score_2 = lab_2.get_issues().get(["data_valuation_score"])
         pd.testing.assert_frame_equal(score, score_2)
-        
 
     def test_data_valuation_issue_without_knn_graph(self, data_tuple):
         lab, _, features = data_tuple
         lab.find_issues(features=features, issue_types={"data_valuation": {}})
-        assert lab.issues.empty, "The issues dataframe should be empty as the issue manager expects an existing knn_graph"
+        assert (
+            lab.issues.empty
+        ), "The issues dataframe should be empty as the issue manager expects an existing knn_graph"
 
 
 class TestDatalabIssueManagerInteraction:
