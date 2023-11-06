@@ -591,8 +591,8 @@ class TestDatalabUsingKNNGraph:
         lab.find_issues()
         assert lab.issues.empty  # No columns should be added to the issues dataframe
 
-    def test_data_valuation_issue_with_knn_graph(self, data_tuple):  # TODO
-        lab, knn_graph, _ = data_tuple
+    def test_data_valuation_issue_with_knn_graph(self, data_tuple):
+        lab, knn_graph, features = data_tuple
         assert lab.get_info("statistics").get("weighted_knn_graph") is None
         lab.find_issues(knn_graph=knn_graph, issue_types={"data_valuation": {}})
         score = lab.get_issues().get(["data_valuation_score"])
@@ -600,17 +600,24 @@ class TestDatalabUsingKNNGraph:
         assert len(score) == len(lab.data)
 
     def test_data_valuation_issue_with_existing_knn_graph(self, data_tuple):
-        lab, _, feature = data_tuple
-        lab.find_issues(features=feature, issue_types={"outlier": {"k": 3}})
+        lab, knn_graph, features = data_tuple
+        lab.find_issues(features=features, issue_types={"outlier": {"k": 3}})
         lab.find_issues(issue_types={"data_valuation": {}})
         score = lab.get_issues().get(["data_valuation_score"])
         assert isinstance(score, pd.DataFrame)
         assert len(score) == len(lab.data)
+        
+        # Compare this with directly passing in a knn_graph
+        lab_2 = Datalab(data=lab.data, label_name=lab.label_name)
+        lab_2.find_issues(knn_graph=knn_graph, issue_types={"data_valuation": {}})
+        score_2 = lab_2.get_issues().get(["data_valuation_score"])
+        pd.testing.assert_frame_equal(score, score_2)
+        
 
     def test_data_valuation_issue_without_knn_graph(self, data_tuple):
-        lab, _, feature = data_tuple
-        lab.find_issues(features=feature, issue_types={"data_valuation": {}})
-        assert lab.issues.empty
+        lab, _, features = data_tuple
+        lab.find_issues(features=features, issue_types={"data_valuation": {}})
+        assert lab.issues.empty, "The issues dataframe should be empty as the issue manager expects an existing knn_graph"
 
 
 class TestDatalabIssueManagerInteraction:
