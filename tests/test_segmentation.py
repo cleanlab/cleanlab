@@ -17,7 +17,6 @@
 """
 Scripts to test cleanlab.segmentation package
 """
-import zarr
 import numpy as np
 import random
 
@@ -29,9 +28,8 @@ from pathlib import Path
 
 from cleanlab.internal.multilabel_scorer import softmin
 
-from memory_profiler import memory_usage
 import time
-
+from memory_profiler import memory_usage
 
 # Segmentation utils
 from cleanlab.internal.segmentation_utils import (
@@ -142,32 +140,73 @@ def test_find_label_issues():
 
 
 @pytest.mark.slow
-def test_find_label_issues_memmap(tmp_path: Path):
+def test_find_label_issues_memmap_low_batch_size(tmp_path: Path):
     """
     Test that find_label_issues works with large memmap arrays
     """
-    # for mem testing
-    start_time = time.time()
-    start_mem = max(memory_usage(interval=0.1))
 
     # Create dummy versions of pred_probs and labels
     # write to the pytest tmp_path so that the files are deleted after the test
     pred_probs_file = tmp_path / "pred_probs.npy"
     labels_file = tmp_path / "labels.npy"
-    np.save(pred_probs_file, np.random.rand(20, 5, 200, 200))
-    np.save(labels_file, np.random.randint(0, 2, (20, 200, 200)))
+    np.save(pred_probs_file, np.random.rand(100, 2, 14, 14))
+    np.save(labels_file, np.random.randint(0, 2, (100, 14, 14)))
 
-    # Load the numpy arrays from disk and convert to zarr arrays
+    # Load the numpy arrays from disk
     pred_probs = np.load(pred_probs_file, mmap_mode="r")
     pred_labels = np.load(labels_file, mmap_mode="r")
 
-    _ = find_label_issues(pred_labels, pred_probs, n_jobs=None, batch_size=1000)
+    # Test with high batch size
+    batch_size = 5
+    peak_mem_low_batch_size = memory_usage(
+        proc=(
+            find_label_issues,
+            (pred_labels, pred_probs),
+            {"n_jobs": None, "batch_size": batch_size},
+        ),
+        interval=0.01,
+        max_usage=True,
+        include_children=True,
+    )
+    print(f"Peak memory used with batch size {batch_size}: {peak_mem_low_batch_size} MiB")
 
-    # for mem testing
-    end_mem = max(memory_usage(interval=0.1))
-    end_time = time.time()
-    print(f"Average memory used: {end_mem - start_mem} MiB")
-    print(f"Time taken: {end_time - start_time} seconds")
+    # assert memory usage is lower for smaller batch size
+    assert peak_mem_low_batch_size
+
+
+@pytest.mark.slow
+def test_find_label_issues_memmap_high_batch_size(tmp_path: Path):
+    """
+    Test that find_label_issues works with large memmap arrays
+    """
+
+    # Create dummy versions of pred_probs and labels
+    # write to the pytest tmp_path so that the files are deleted after the test
+    pred_probs_file = tmp_path / "pred_probs.npy"
+    labels_file = tmp_path / "labels.npy"
+    np.save(pred_probs_file, np.random.rand(100, 2, 14, 14))
+    np.save(labels_file, np.random.randint(0, 2, (100, 14, 14)))
+
+    # Load the numpy arrays from disk
+    pred_probs = np.load(pred_probs_file, mmap_mode="r")
+    pred_labels = np.load(labels_file, mmap_mode="r")
+
+    # Test with high batch size
+    batch_size = 1000
+    peak_mem_high_batch_size = memory_usage(
+        proc=(
+            find_label_issues,
+            (pred_labels, pred_probs),
+            {"n_jobs": None, "batch_size": batch_size},
+        ),
+        interval=0.01,
+        max_usage=True,
+        include_children=True,
+    )
+    print(f"Peak memory used with batch size {batch_size}: {peak_mem_high_batch_size} MiB")
+
+    # assert memory usage is lower for smaller batch size
+    assert peak_mem_high_batch_size
 
 
 def test_find_label_issues_sizes():

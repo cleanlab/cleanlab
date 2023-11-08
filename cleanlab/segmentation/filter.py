@@ -155,7 +155,10 @@ def find_label_issues(
     while i < n:
         # continuously load images until number of pixels greater than batch size
         images_to_load = 1
-        while np.prod(pre_pred_probs[i : i + images_to_load].shape[1:]) < batch_size:
+        while (
+            np.prod(pre_pred_probs[i : i + images_to_load].shape[1:]) < batch_size
+            and i + images_to_load < n
+        ):
             images_to_load += 1
 
         end_index = i + images_to_load
@@ -175,7 +178,10 @@ def find_label_issues(
     while i < n:
         # continuously load images until number of pixels greater than batch size
         images_to_load = 1
-        while np.prod(pre_pred_probs[i : i + images_to_load].shape[1:]) < batch_size:
+        while (
+            np.prod(pre_pred_probs[i : i + images_to_load].shape[1:]) < batch_size
+            and i + images_to_load < n
+        ):
             images_to_load += 1
 
         end_index = i + images_to_load
