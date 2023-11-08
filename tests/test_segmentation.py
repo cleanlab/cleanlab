@@ -28,7 +28,6 @@ from pathlib import Path
 
 from cleanlab.internal.multilabel_scorer import softmin
 
-import time
 from memory_profiler import memory_usage
 
 # Segmentation utils
