@@ -125,6 +125,18 @@ def find_label_issues(
 
         return labels_flat, pred_probs_flat.T
 
+    def get_images_to_load(pre_pred_probs, i, n, batch_size):
+        """
+        This function loads images until the batch size is reached or the end of the dataset is reached.
+        """
+        images_to_load = 1
+        while (
+            np.prod(pre_pred_probs[i : i + images_to_load].shape[1:]) < batch_size
+            and i + images_to_load < n
+        ):
+            images_to_load += 1
+        return images_to_load
+
     ##
     _check_input(labels, pred_probs)
 
@@ -153,14 +165,7 @@ def find_label_issues(
 
     i = 0
     while i < n:
-        # continuously load images until number of pixels greater than batch size
-        images_to_load = 1
-        while (
-            np.prod(pre_pred_probs[i : i + images_to_load].shape[1:]) < batch_size
-            and i + images_to_load < n
-        ):
-            images_to_load += 1
-
+        images_to_load = get_images_to_load(pre_pred_probs, i, n, batch_size)
         end_index = i + images_to_load
         labels_batch, pred_probs_batch = flatten_and_preprocess_masks(
             pre_labels[i:end_index], pre_pred_probs[i:end_index]
@@ -176,13 +181,7 @@ def find_label_issues(
 
     i = 0
     while i < n:
-        # continuously load images until number of pixels greater than batch size
-        images_to_load = 1
-        while (
-            np.prod(pre_pred_probs[i : i + images_to_load].shape[1:]) < batch_size
-            and i + images_to_load < n
-        ):
-            images_to_load += 1
+        images_to_load = get_images_to_load(pre_pred_probs, i, n, batch_size)
 
         end_index = i + images_to_load
         labels_batch, pred_probs_batch = flatten_and_preprocess_masks(

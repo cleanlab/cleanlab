@@ -139,18 +139,17 @@ def test_find_label_issues():
         )
 
 
-@pytest.mark.slow
 def test_find_label_issues_memmap_low_batch_size(tmp_path: Path):
     """
-    Test that find_label_issues works with large memmap arrays
+    Test that find_label_issues works with large memmap arrays at low batch size
     """
 
     # Create dummy versions of pred_probs and labels
     # write to the pytest tmp_path so that the files are deleted after the test
     pred_probs_file = tmp_path / "pred_probs.npy"
     labels_file = tmp_path / "labels.npy"
-    np.save(pred_probs_file, np.random.rand(100, 2, 14, 14))
-    np.save(labels_file, np.random.randint(0, 2, (100, 14, 14)))
+    np.save(pred_probs_file, np.random.rand(100, 2, 5, 5))
+    np.save(labels_file, np.random.randint(0, 2, (100, 5, 5)))
 
     # Load the numpy arrays from disk
     pred_probs = np.load(pred_probs_file, mmap_mode="r")
@@ -164,28 +163,24 @@ def test_find_label_issues_memmap_low_batch_size(tmp_path: Path):
             (pred_labels, pred_probs),
             {"n_jobs": None, "batch_size": batch_size},
         ),
-        interval=0.01,
+        interval=0.1,
         max_usage=True,
         include_children=True,
     )
-    print(f"Peak memory used with batch size {batch_size}: {peak_mem_low_batch_size} MiB")
-
-    # assert memory usage is lower for smaller batch size
-    assert peak_mem_low_batch_size
+    assert peak_mem_low_batch_size < 200
 
 
-@pytest.mark.slow
 def test_find_label_issues_memmap_high_batch_size(tmp_path: Path):
     """
-    Test that find_label_issues works with large memmap arrays
+    Test that find_label_issues works with large memmap arrays and high batch size
     """
 
     # Create dummy versions of pred_probs and labels
     # write to the pytest tmp_path so that the files are deleted after the test
     pred_probs_file = tmp_path / "pred_probs.npy"
     labels_file = tmp_path / "labels.npy"
-    np.save(pred_probs_file, np.random.rand(100, 2, 14, 14))
-    np.save(labels_file, np.random.randint(0, 2, (100, 14, 14)))
+    np.save(pred_probs_file, np.random.rand(100, 2, 5, 5))
+    np.save(labels_file, np.random.randint(0, 2, (100, 5, 5)))
 
     # Load the numpy arrays from disk
     pred_probs = np.load(pred_probs_file, mmap_mode="r")
@@ -199,14 +194,12 @@ def test_find_label_issues_memmap_high_batch_size(tmp_path: Path):
             (pred_labels, pred_probs),
             {"n_jobs": None, "batch_size": batch_size},
         ),
-        interval=0.01,
+        interval=0.1,
         max_usage=True,
         include_children=True,
     )
-    print(f"Peak memory used with batch size {batch_size}: {peak_mem_high_batch_size} MiB")
 
-    # assert memory usage is lower for smaller batch size
-    assert peak_mem_high_batch_size
+    assert peak_mem_high_batch_size < 200
 
 
 def test_find_label_issues_sizes():
