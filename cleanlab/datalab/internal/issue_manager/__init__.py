@@ -5,3 +5,4 @@ from .outlier import OutlierIssueManager
 from .noniid import NonIIDIssueManager
 from .imbalance import ClassImbalanceIssueManager
 from .underperf_group import UnderperformingGroupIssueManager
+from .data_valuation import DataValuationIssueManager

@@ -205,6 +205,7 @@ class IssueFinder:
                 "features": features,
                 "knn_graph": knn_graph,
             },
+            "data_valuation": {"knn_graph": knn_graph},
         }
 
         args_dict = {
