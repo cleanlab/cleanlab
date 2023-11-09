@@ -83,6 +83,10 @@ class UnderperformingGroupIssueManager(IssueManager):
     ) -> None:
         labels = self.datalab.labels
         if cluster_ids is None:
+            warnings.warn(
+                "Underperforming Group Issue Manager may not produce accurate results when \
+                          cluster IDs are not passed explicitly."
+            )
             knn_graph = self.set_knn_graph(features, kwargs)
             cluster_ids = self.perform_clustering(knn_graph)
             performed_clustering = True
