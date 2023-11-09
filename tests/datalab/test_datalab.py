@@ -1294,7 +1294,7 @@ class TestDataLabUnderperformingIssue:
         lab.find_issues(
             features=features,
             pred_probs=pred_probs,
-            issue_types={"underperforming_group": {"cluster_ids": np.array([])}},
+            issue_types={"underperforming_group": {"cluster_ids": np.array([], dtype=int)}},
         )
         assert len(lab.issue_summary["issue_type"].values) == 0
 

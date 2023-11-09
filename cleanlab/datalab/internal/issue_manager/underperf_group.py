@@ -35,6 +35,10 @@ if TYPE_CHECKING:  # pragma: no cover
     from cleanlab.datalab.datalab import Datalab
 
 
+CLUSTERING_ALGO = "DBSCAN"
+CLUSTERING_PARAMS_DEFAULT = {"metric": "precomputed"}
+
+
 class UnderperformingGroupIssueManager(IssueManager):
     """Manages issues related to underperforming group examples."""
 
@@ -50,7 +54,8 @@ class UnderperformingGroupIssueManager(IssueManager):
         1: [],
         2: ["threshold"],
     }
-    OUTLIER_LABELS = (-1,)
+    OUTLIER_CLUSTER_LABELS = (-1,)
+    NO_UNDERPERF_CLUSTER_ID = min(OUTLIER_CLUSTER_LABELS) - 1
 
     def __init__(
         self,
@@ -160,9 +165,9 @@ class UnderperformingGroupIssueManager(IssueManager):
 
     def filter_cluster_ids(self, cluster_ids: npt.NDArray[np.int_]) -> npt.NDArray[np.int_]:
         unique_cluster_ids = np.array(
-            [label for label in set(cluster_ids) if label not in self.OUTLIER_LABELS]
+            [label for label in set(cluster_ids) if label not in self.OUTLIER_CLUSTER_LABELS]
         )
-        frequencies = np.bincount(cluster_ids[~np.isin(cluster_ids, self.OUTLIER_LABELS)])
+        frequencies = np.bincount(cluster_ids[~np.isin(cluster_ids, self.OUTLIER_CLUSTER_LABELS)])
         unique_cluster_ids = np.array(
             [
                 cluster_id
@@ -196,7 +201,7 @@ class UnderperformingGroupIssueManager(IssueManager):
         worst_cluster_id = (
             worst_cluster_id
             if worst_cluster_ratio < self.threshold
-            else min(self.OUTLIER_LABELS) - 1
+            else self.NO_UNDERPERF_CLUSTER_ID
         )
         return worst_cluster_id, worst_cluster_ratio
 
@@ -296,7 +301,7 @@ class UnderperformingGroupIssueManager(IssueManager):
         }
         if performed_clustering:
             cluster_stats["clustering"].update(
-                {"algorithm": "DBSCAN", "params": {"metric": "precomputed"}}
+                {"algorithm": CLUSTERING_ALGO, "params": CLUSTERING_PARAMS_DEFAULT}
             )
 
         return cluster_stats
