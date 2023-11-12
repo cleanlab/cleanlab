@@ -592,6 +592,35 @@ class TestDatalabUsingKNNGraph:
         lab.find_issues()
         assert lab.issues.empty  # No columns should be added to the issues dataframe
 
+    def test_data_valuation_issue_with_knn_graph(self, data_tuple):
+        lab, knn_graph, features = data_tuple
+        assert lab.get_info("statistics").get("weighted_knn_graph") is None
+        lab.find_issues(knn_graph=knn_graph, issue_types={"data_valuation": {}})
+        score = lab.get_issues().get(["data_valuation_score"])
+        assert isinstance(score, pd.DataFrame)
+        assert len(score) == len(lab.data)
+
+    def test_data_valuation_issue_with_existing_knn_graph(self, data_tuple):
+        lab, knn_graph, features = data_tuple
+        lab.find_issues(features=features, issue_types={"outlier": {"k": 3}})
+        lab.find_issues(issue_types={"data_valuation": {}})
+        score = lab.get_issues().get(["data_valuation_score"])
+        assert isinstance(score, pd.DataFrame)
+        assert len(score) == len(lab.data)
+
+        # Compare this with directly passing in a knn_graph
+        lab_2 = Datalab(data=lab.data, label_name=lab.label_name)
+        lab_2.find_issues(knn_graph=knn_graph, issue_types={"data_valuation": {}})
+        score_2 = lab_2.get_issues().get(["data_valuation_score"])
+        pd.testing.assert_frame_equal(score, score_2)
+
+    def test_data_valuation_issue_without_knn_graph(self, data_tuple):
+        lab, _, features = data_tuple
+        lab.find_issues(features=features, issue_types={"data_valuation": {}})
+        assert (
+            lab.issues.empty
+        ), "The issues dataframe should be empty as the issue manager expects an existing knn_graph"
+
 
 class TestDatalabIssueManagerInteraction:
     """The Datalab class should integrate with the IssueManager class correctly.
@@ -777,10 +806,30 @@ class TestDatalabFindNonIIDIssues:
         assert summary["score"].values[0] > 0.05
         assert lab.get_issues()["is_non_iid_issue"].sum() == 0
 
+    def test_find_non_iid_issues_using_pred_probs(self, random_embeddings):
+        data = {"labels": [0, 1, 0]}
+        lab = Datalab(data=data, label_name="labels")
+        pred_probs = random_embeddings / random_embeddings.sum(axis=1, keepdims=True)
+        lab.find_issues(pred_probs=pred_probs, issue_types={"non_iid": {}})
+        summary = lab.get_issue_summary()
+        assert ["non_iid"] == summary["issue_type"].values
+        assert summary["score"].values[0] > 0.05
+        assert lab.get_issues()["is_non_iid_issue"].sum() == 0
+
     def test_find_non_iid_issues_sorted(self, sorted_embeddings):
         data = {"labels": [0, 1, 0]}
         lab = Datalab(data=data, label_name="labels")
         lab.find_issues(features=sorted_embeddings, issue_types={"non_iid": {}})
+        summary = lab.get_issue_summary()
+        assert ["non_iid"] == summary["issue_type"].values
+        assert summary["score"].values[0] == 0
+        assert lab.get_issues()["is_non_iid_issue"].sum() == 1
+
+    def test_find_non_iid_issues_sorted_using_pred_probs(self, sorted_embeddings):
+        data = {"labels": [0, 1, 0]}
+        lab = Datalab(data=data, label_name="labels")
+        pred_probs = sorted_embeddings / sorted_embeddings.sum(axis=1, keepdims=True)
+        lab.find_issues(pred_probs=pred_probs, issue_types={"non_iid": {}})
         summary = lab.get_issue_summary()
         assert ["non_iid"] == summary["issue_type"].values
         assert summary["score"].values[0] == 0
@@ -795,6 +844,21 @@ class TestDatalabFindNonIIDIssues:
         lab.find_issues(features=sorted_embeddings, issue_types={"non_iid": {}})
         summary = lab.get_issue_summary()
         assert len(summary) == 3
+        assert "non_iid" in summary["issue_type"].values
+        non_iid_summary = lab.get_issue_summary("non_iid")
+        assert non_iid_summary["score"].values[0] == 0
+        assert non_iid_summary["num_issues"].values[0] == 1
+
+    def test_incremental_search_using_pred_probs(self, sorted_embeddings):
+        data = {"labels": [0, 1, 0]}
+        lab = Datalab(data=data, label_name="labels")
+        pred_probs = sorted_embeddings / sorted_embeddings.sum(axis=1, keepdims=True)
+        lab.find_issues(pred_probs=pred_probs, issue_types={"non_iid": {}})
+        summary = lab.get_issue_summary()
+        assert len(summary) == 1
+        lab.find_issues(pred_probs=pred_probs, issue_types={"non_iid": {}})
+        summary = lab.get_issue_summary()
+        assert len(summary) == 1
         assert "non_iid" in summary["issue_type"].values
         non_iid_summary = lab.get_issue_summary("non_iid")
         assert non_iid_summary["score"].values[0] == 0
@@ -1043,7 +1107,7 @@ class TestDatalabWithoutLabels:
     def test_find_issues(self, lab, features, pred_probs):
         lab = Datalab(data={"X": features})
         lab.find_issues(pred_probs=pred_probs)
-        assert lab.issues.empty
+        assert set(lab.issues.columns) == {"is_non_iid_issue", "non_iid_score"}
 
         lab = Datalab(data={"X": features})
         lab.find_issues(features=features)

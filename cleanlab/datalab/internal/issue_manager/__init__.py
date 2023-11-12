@@ -4,3 +4,4 @@ from .label import LabelIssueManager
 from .outlier import OutlierIssueManager
 from .noniid import NonIIDIssueManager
 from .imbalance import ClassImbalanceIssueManager
+from .data_valuation import DataValuationIssueManager
