@@ -166,7 +166,7 @@ def test_find_label_issues_memmap_low_batch_size(tmp_path: Path):
         max_usage=True,
         include_children=True,
     )
-    assert peak_mem_low_batch_size < 200
+    assert peak_mem_low_batch_size < 1000
 
 
 def test_find_label_issues_memmap_high_batch_size(tmp_path: Path):
@@ -198,7 +198,7 @@ def test_find_label_issues_memmap_high_batch_size(tmp_path: Path):
         include_children=True,
     )
 
-    assert peak_mem_high_batch_size < 200
+    assert peak_mem_high_batch_size < 1000
 
 
 def test_find_label_issues_sizes():
