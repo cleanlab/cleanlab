@@ -1,5 +1,5 @@
 import math
-from hypothesis import given, settings, strategies as st
+from hypothesis import given, strategies as st
 import numpy as np
 from scipy.sparse import csr_matrix
 
@@ -43,7 +43,7 @@ class TestKNNGraph:
 
     @staticmethod
     def assert_indices_unique(indices):
-        """Check that indices are unique across columns and don't have the row's index."""
+        """Check that neighbor indices are unique and don't have the row's index."""
         for row_idx, row in enumerate(indices):
             assert len(set(row)) == len(row)  # Check uniqueness
             assert row_idx not in row  # Check that row's index is not in the row
