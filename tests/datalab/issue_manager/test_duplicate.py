@@ -1,12 +1,15 @@
 import numpy as np
 import pytest
-from hypothesis import given, settings, strategies as st
+from hypothesis import assume, given, settings, strategies as st
 from hypothesis.strategies import composite
 from hypothesis.extra.numpy import arrays
+from scipy.sparse import csr_matrix
 
 
 from cleanlab import Datalab
 from cleanlab.datalab.internal.issue_manager.duplicate import NearDuplicateIssueManager
+
+from tests.datalab.issue_manager.test_knn_graph import knn_graph_strategy
 
 SEED = 42
 
@@ -139,3 +142,58 @@ class TestNearDuplicateIssueManager:
             for i, near_duplicate_set in enumerate(near_duplicate_sets)
             if issues[i]
         ), "Issue examples should have near duplicate sets"
+
+
+def build_issue_manager(draw, num_samples_strategy, k_neighbors_strategy, with_issues=False, threshold=None):
+    knn_graph = draw(knn_graph_strategy(num_samples=num_samples_strategy, k_neighbors=k_neighbors_strategy))
+    
+    lab = Datalab(data={})
+    inputs = {"datalab": lab, "threshold": threshold}
+    inputs = {k:v for k,v in inputs.items() if v is not None}
+    issue_manager = NearDuplicateIssueManager(**inputs)
+    issue_manager.find_issues(knn_graph=knn_graph)
+    issues = issue_manager.issues["is_near_duplicate_issue"]
+    
+    if with_issues:
+        assume(any(issues))
+    else:
+        assume(not any(issues))
+    return issue_manager
+
+@st.composite
+def no_issue_issue_manager_strategy(draw):
+    return build_issue_manager(draw, st.integers(min_value=10, max_value=50), st.integers(min_value=2, max_value=5), with_issues=False)
+
+@st.composite
+def issue_manager_with_issues_strategy(draw):
+    return build_issue_manager(draw, st.integers(min_value=10, max_value=20), st.integers(min_value=2, max_value=5), with_issues=True, threshold=0.9)
+
+
+class TestNearDuplicateSets:
+    
+    @given(issue_manager=no_issue_issue_manager_strategy())
+    @settings(deadline=800)
+    def test_near_duplicate_sets_empty_if_no_issue_next(self, issue_manager):
+        near_duplicate_sets = issue_manager.info["near_duplicate_sets"]
+        assert all(len(near_duplicate_set) == 0 for near_duplicate_set in near_duplicate_sets)
+        
+    @given(issue_manager=issue_manager_with_issues_strategy())
+    @settings(deadline=800, max_examples=1000)
+    def test_symmetric_and_flagged_consistency(self, issue_manager):
+        near_duplicate_sets = issue_manager.info["near_duplicate_sets"]
+        issues = issue_manager.issues["is_near_duplicate_issue"]
+
+        # Test symmetry: If A is in near_duplicate_set of B, then B should be in near_duplicate_set of A.
+        for i, near_duplicates in enumerate(near_duplicate_sets):
+            for j in near_duplicates:
+                assert i in near_duplicate_sets[j], f"Example {j} is in near_duplicate_set of {i}, but not vice versa"
+
+        # Test consistency of flags with near_duplicate_sets
+        for i, near_duplicate_set in enumerate(near_duplicate_sets):
+            if issues[i]:
+                # Near duplicate sets of flagged examples should not be empty
+                assert len(near_duplicate_set) > 0, f"Near duplicate set of flagged example {i} is empty"
+
+                # Check if all examples in the near_duplicate_set of a flagged example are also flagged
+                flagged_in_set = [issues[j] for j in near_duplicate_set]
+                assert all(flagged_in_set), f"Example {i} is flagged as near_duplicate but some examples in its near_duplicate_set are not flagged"
