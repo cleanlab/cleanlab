@@ -86,7 +86,7 @@ class SpuriousCorrelations:
 
     def _get_baseline(self) -> float:
         """Calculates the baseline accuracy of the dataset. The baseline model is predicting the most common label."""
-        baseline_accuracy = np.bincount(self.labels).argmax() / len(self.labels)
+        baseline_accuracy = np.mean(self.labels == np.bincount(self.labels).argmax())
         return float(baseline_accuracy)
 
     def calculate_spurious_correlation(
