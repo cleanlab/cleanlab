@@ -9,7 +9,7 @@ from scipy.sparse import csr_matrix
 from cleanlab import Datalab
 from cleanlab.datalab.internal.issue_manager.duplicate import NearDuplicateIssueManager
 
-from tests.datalab.issue_manager.test_knn_graph import knn_graph_strategy
+from .conftest import knn_graph_strategy
 
 SEED = 42
 
