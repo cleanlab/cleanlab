@@ -73,6 +73,7 @@ class TestKNNGraph:
 
     @given(knn_graph=knn_graph_strategy(num_samples=st.integers(min_value=10, max_value=50), k_neighbors=st.integers(min_value=2, max_value=5)))
     def test_knn_graph(self, knn_graph):
+        """Run through the property tests defined above."""
         N = knn_graph.shape[0]
         distances = knn_graph.data.reshape(N, -1)
         indices = knn_graph.indices.reshape(N, -1)

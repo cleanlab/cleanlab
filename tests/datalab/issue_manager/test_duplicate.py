@@ -145,6 +145,11 @@ class TestNearDuplicateIssueManager:
 
 
 def build_issue_manager(draw, num_samples_strategy, k_neighbors_strategy, with_issues=False, threshold=None):
+    """Create a random knn_graph with the given number of samples and k neighbors.
+    Run the NearDuplicateIssueManager on the knn_graph and return the issue manager.
+    A threshold can be provided to control the number of issues for small graphs.
+    A with_issues flag can be provided to control whether the issue manager should have issues.
+    """
     knn_graph = draw(knn_graph_strategy(num_samples=num_samples_strategy, k_neighbors=k_neighbors_strategy))
     
     lab = Datalab(data={})
@@ -162,15 +167,17 @@ def build_issue_manager(draw, num_samples_strategy, k_neighbors_strategy, with_i
 
 @st.composite
 def no_issue_issue_manager_strategy(draw):
+    """Strategy for generating NearDuplicateIssueManagers with no issues."""
     return build_issue_manager(draw, st.integers(min_value=10, max_value=50), st.integers(min_value=2, max_value=5), with_issues=False)
 
 @st.composite
 def issue_manager_with_issues_strategy(draw):
+    """Strategy for generating NearDuplicateIssueManagers with issues."""
     return build_issue_manager(draw, st.integers(min_value=10, max_value=20), st.integers(min_value=2, max_value=5), with_issues=True, threshold=0.9)
 
 
 class TestNearDuplicateSets:
-    
+    """Property-based tests properties of near duplicate sets found in a knn graph."""
     @given(issue_manager=no_issue_issue_manager_strategy())
     @settings(deadline=800)
     def test_near_duplicate_sets_empty_if_no_issue_next(self, issue_manager):
