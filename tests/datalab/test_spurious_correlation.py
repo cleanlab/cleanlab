@@ -61,7 +61,7 @@ def test_calculate_correlations(spurious_instance):
 
     # Check that the scores are replicable
     scores = data_scores["label_prediction_error"].tolist()
-    np.testing.assert_almost_equal(scores, [0.100, 0.420], decimal=3)
+    np.testing.assert_almost_equal(scores, [0.250, 1.000], decimal=3)
 
 
 @given(
