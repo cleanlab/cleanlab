@@ -168,8 +168,8 @@ class ImagelabReporterAdapter(Reporter):
 
 
 class ImagelabIssueFinderAdapter(IssueFinder):
-    def __init__(self, datalab, verbosity):
-        super().__init__(datalab, verbosity)
+    def __init__(self, datalab, task, verbosity):
+        super().__init__(datalab, task, verbosity)
         self.imagelab = self.datalab._imagelab
 
     def _get_imagelab_issue_types(self, issue_types, **kwargs):

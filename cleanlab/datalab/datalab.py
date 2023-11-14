@@ -78,6 +78,10 @@ class Datalab:
             - path to a local file: Text (.txt), CSV (.csv), JSON (.json)
             - or a dataset identifier on the Hugging Face Hub
 
+    task : str
+        The type of machine learning task that the dataset is used for.
+        By default, this is set to "classification", but you can also set it to "regression" if you are working with a regression dataset.
+
     label_name : str, optional
         The name of the label column in the dataset.
 
@@ -299,7 +303,7 @@ class Datalab:
                 "No issue types were specified so no issues will be found in the dataset. Set `issue_types` as None to consider a default set of issues."
             )
             return None
-        issue_finder = issue_finder_factory(self._imagelab)(datalab=self, verbosity=self.verbosity)
+        issue_finder = issue_finder_factory(self._imagelab)(datalab=self, task=self.task, verbosity=self.verbosity)
         issue_finder.find_issues(
             pred_probs=pred_probs,
             features=features,

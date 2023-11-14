@@ -65,6 +65,9 @@ class IssueFinder:
     datalab : Datalab
         The Datalab instance associated with this IssueFinder.
 
+    task : str
+        The type of machine learning task that the dataset is used for.
+
     verbosity : int
         Controls the verbosity of the output during the issue finding process.
 
@@ -74,9 +77,9 @@ class IssueFinder:
     `Datalab.find_issues` method which internally utilizes an IssueFinder instance.
     """
 
-    def __init__(self, datalab: "Datalab", verbosity=1):
+    def __init__(self, datalab: "Datalab", task: str, verbosity=1):
         self.datalab = datalab
-        self.task = self.datalab.task
+        self.task = task
         self.verbosity = verbosity
 
     def find_issues(

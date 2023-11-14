@@ -7,6 +7,8 @@ from cleanlab import Datalab
 
 
 class TestIssueFinder:
+    task = "classification"
+
     @pytest.fixture
     def lab(self):
         N = 30
@@ -17,7 +19,7 @@ class TestIssueFinder:
 
     @pytest.fixture
     def issue_finder(self, lab):
-        return IssueFinder(datalab=lab)
+        return IssueFinder(datalab=lab, task=self.task)
 
     def test_init(self, issue_finder):
         assert issue_finder.verbosity == 1
