@@ -77,7 +77,6 @@ class TestUnderperformingGroupIssueManager:
         pd.testing.assert_frame_equal(summary_with_clabels, summary)
 
     def test_find_issues(self, issue_manager, make_data):
-        UNDERPERF_CLUSTER_ID = 0
         data = make_data(noisy=True)
         features, labels, pred_probs = data["features"], data["labels"], data["pred_probs"]
         N = len(labels)

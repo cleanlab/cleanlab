@@ -84,8 +84,8 @@ class UnderperformingGroupIssueManager(IssueManager):
         labels = self.datalab.labels
         if cluster_ids is None:
             warnings.warn(
-                "Underperforming Group Issue Manager may not produce accurate results when \
-                          cluster IDs are not passed explicitly."
+                "Underperforming Group Issue Manager may not produce reliable results when \
+                         performing clustering using the provided features or knn-graph."
             )
             knn_graph = self.set_knn_graph(features, kwargs)
             cluster_ids = self.perform_clustering(knn_graph)

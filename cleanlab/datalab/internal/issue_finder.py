@@ -170,7 +170,7 @@ class IssueFinder:
             print(f"Failed to check for these issue types: {failed_managers}")
         data_issues.set_health_score()
 
-    def _resolve_required_args(self, pred_probs, features, knn_graph):
+    def _resolve_required_args(self, pred_probs, features, knn_graph, cluster_ids):
         """Resolves the required arguments for each issue type.
 
         This is a helper function that filters out any issue manager
@@ -190,6 +190,10 @@ class IssueFinder:
         knn_graph :
             Sparse matrix representing distances between examples in the dataset in a k nearest neighbor graph.
 
+        cluster_ids :
+            A list of ids corresponding to the cluster or group that each example belongs to.
+            This can be the result of a clustering algorithm like KMeans or DBSCAN. It can also be a categorical variable column.
+
         Returns
         -------
         args_dict :
@@ -204,6 +208,7 @@ class IssueFinder:
                 "pred_probs": pred_probs,
                 "features": features,
                 "knn_graph": knn_graph,
+                "cluster_ids": cluster_ids,
             },
             "data_valuation": {"knn_graph": knn_graph},
         }
@@ -212,8 +217,17 @@ class IssueFinder:
             k: {k2: v2 for k2, v2 in v.items() if v2 is not None} for k, v in args_dict.items() if v
         }
 
+        # Prefer `cluster_ids`` over `knn_graph`` and `features``.
         # Prefer `knn_graph` over `features` if both are provided.
         for v in args_dict.values():
+
+            if "cluster_ids" in v and ("knn_graph" in v or "features" in v):
+                warnings.warn(
+                    "`cluster_ids` have been provided with `knn_graph` or `features`."
+                    "Issue managers that require cluster labels will prefer"
+                    "`cluster_ids` over computation of cluster labels using"
+                    "`knn_graph` or `features`. "
+                )
             if "knn_graph" in v and "features" in v:
                 warnings.warn(
                     "Both `features` and `knn_graph` were provided. "
@@ -330,9 +344,12 @@ class IssueFinder:
         features = kwargs.get("features", None)
         knn_graph = kwargs.get("knn_graph", None)
         issue_types = kwargs.get("issue_types", None)
+        cluster_ids = kwargs.get("cluster_ids", None)
 
         # Determine which parameters are required for each issue type
-        required_args_per_issue_type = self._resolve_required_args(pred_probs, features, knn_graph)
+        required_args_per_issue_type = self._resolve_required_args(
+            pred_probs, features, knn_graph, cluster_ids
+        )
 
         issue_types_copy = self._set_issue_types(issue_types, required_args_per_issue_type)
 
