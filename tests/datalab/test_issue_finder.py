@@ -61,14 +61,46 @@ class TestIssueFinder:
                 issue_finder._validate_issue_types_dict(issue_types, defaults_dict)
             assert all([string in str(e.value) for string in ["issue_type_1", "arg_1", "arg_2"]])
 
-    def test_regression(self):
+
+class TestRegressionIssueFinder:
+    task = "regression"
+
+    @pytest.fixture
+    def lab(self):
         N = 30
         K = 2
         y = np.random.randint(0, K, size=N)
-        lab = Datalab(data={"y": y}, label_name="y", task="regression")
-        assert set(lab.list_default_issue_types()) == set(
-            ["label", "outlier", "near_duplicate", "non_iid"]
-        )
-        assert set(lab.list_possible_issue_types()) == set(
-            ["label", "outlier", "near_duplicate", "non_iid"]
-        )
+        lab = Datalab(data={"y": y}, label_name="y", task=self.task)
+        return lab
+
+    @pytest.fixture
+    def issue_finder(self, lab):
+        return IssueFinder(datalab=lab, task=self.task)
+
+    def test_get_available_issue_types(self, issue_finder):
+        expected_issue_types = {"label": {}}
+
+        # Test with no kwargs
+        for key in ["pred_probs", "features", "knn_graph"]:
+            issue_types = issue_finder.get_available_issue_types(**{key: None})
+            assert (
+                issue_types == expected_issue_types
+            ), "Regression should only support label issues"
+
+        # Test with issue_types:
+        issue_types_dicts = [
+            {"label": {}},
+            {"label": {"some_arg": "some_value"}},
+            {"label": {"some_arg": "some_value"}, "outlier": {}},
+            {},
+        ]
+        for issue_types in issue_types_dicts:
+            available_issue_types = issue_finder.get_available_issue_types(issue_types=issue_types)
+            fail_msg = f"Failed to get available issue types with issue_types={issue_types}"
+            assert available_issue_types == issue_types, fail_msg
+
+        # Test with all kwargs
+        kwargs = {k: k for k in ["pred_probs", "features", "knn_graph"]}
+        kwargs["issue_types"] = {"label": {}}
+        available_issue_types = issue_finder.get_available_issue_types(**kwargs)
+        assert available_issue_types == {"label": {}}

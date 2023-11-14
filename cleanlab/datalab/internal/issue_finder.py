@@ -46,6 +46,93 @@ if TYPE_CHECKING:  # pragma: no cover
     from cleanlab.datalab.datalab import Datalab
 
 
+_CLASSIFICATION_ARGS_DICT = {
+    "label": ["pred_probs", "features"],
+    "outlier": ["pred_probs", "features", "knn_graph"],
+    "near_duplicate": ["features", "knn_graph"],
+    "non_iid": ["features", "knn_graph"],
+}
+_REGRESSION_ARGS_DICT = {
+    "label": [],
+}
+
+
+def _resolve_required_args_for_classification(**kwargs):
+    """Resolves the required arguments for each issue type intended for classification tasks."""
+    initial_args_dict = _CLASSIFICATION_ARGS_DICT.copy()
+    args_dict = {
+        issue_type: {arg: kwargs.get(arg, None) for arg in initial_args_dict[issue_type]}
+        for issue_type in initial_args_dict
+    }
+
+    # Remove None values from argument list, rely on default values in IssueManager
+    args_dict = {
+        k: {k2: v2 for k2, v2 in v.items() if v2 is not None} for k, v in args_dict.items() if v
+    }
+
+    # Prefer `knn_graph` over `features` if both are provided.
+    for v in args_dict.values():
+        if "knn_graph" in v and "features" in v:
+            warnings.warn(
+                "Both `features` and `knn_graph` were provided. "
+                "Most issue managers will likely prefer using `knn_graph` "
+                "instead of `features` for efficiency."
+            )
+
+    # Only keep issue types that have at least one argument
+    args_dict = {k: v for k, v in args_dict.items() if v}
+
+    return args_dict
+
+
+def _resolve_required_args_for_regression(**kwargs):
+    """Resolves the required arguments for each issue type intended for regression tasks."""
+    initial_args_dict = _REGRESSION_ARGS_DICT.copy()
+    args_dict = {
+        issue_type: {arg: kwargs.get(arg, None) for arg in initial_args_dict[issue_type]}
+        for issue_type in initial_args_dict
+    }
+
+    # Remove None values from argument list, rely on default values in IssueManager
+    args_dict = {
+        k: {k2: v2 for k2, v2 in v.items() if v2 is not None}
+        for k, v in args_dict.items()
+        if v or k == "label"  # Allow label issues to require no arguments
+    }
+
+    return args_dict
+
+
+def _select_strategy_for_resolving_required_args(task: str) -> Callable:
+    """Helper function that selects the strategy for resolving required arguments for each issue type.
+
+    Each strategy resolves the required arguments for each issue type.
+
+    This is a helper function that filters out any issue manager
+    that does not have the required arguments.
+
+    This does not consider custom hyperparameters for each issue type.
+
+    Parameters
+    ----------
+    task : str
+        The type of machine learning task that the dataset is used for.
+
+    Returns
+    -------
+    args_dict :
+        Dictionary of required arguments for each issue type, if available.
+    """
+    strategies = {
+        "classification": _resolve_required_args_for_classification,
+        "regression": _resolve_required_args_for_regression,
+    }
+    selected_strategy = strategies.get(task, None)
+    if selected_strategy is None:
+        raise ValueError(f"No strategy for resolving required arguments for task '{task}'")
+    return selected_strategy
+
+
 class IssueFinder:
     """
     The IssueFinder class is responsible for managing the process of identifying
@@ -180,59 +267,6 @@ class IssueFinder:
             print(f"Failed to check for these issue types: {failed_managers}")
         data_issues.set_health_score()
 
-    def _resolve_required_args(self, pred_probs, features, knn_graph):
-        """Resolves the required arguments for each issue type.
-
-        This is a helper function that filters out any issue manager
-        that does not have the required arguments.
-
-        This does not consider custom hyperparameters for each issue type.
-
-
-        Parameters
-        ----------
-        pred_probs :
-            Out-of-sample predicted probabilities made on the data.
-
-        features :
-            Name of column containing precomputed embeddings.
-
-        knn_graph :
-            Sparse matrix representing distances between examples in the dataset in a k nearest neighbor graph.
-
-        Returns
-        -------
-        args_dict :
-            Dictionary of required arguments for each issue type, if available.
-        """
-        args_dict = {
-            "label": {"pred_probs": pred_probs, "features": features},
-            "outlier": {
-                "pred_probs": pred_probs,
-                "features": features,
-                "knn_graph": knn_graph,
-            },
-            "near_duplicate": {"features": features, "knn_graph": knn_graph},
-            "non_iid": {"features": features, "knn_graph": knn_graph},
-        }
-
-        args_dict = {
-            k: {k2: v2 for k2, v2 in v.items() if v2 is not None} for k, v in args_dict.items() if v
-        }
-
-        # Prefer `knn_graph` over `features` if both are provided.
-        for v in args_dict.values():
-            if "knn_graph" in v and "features" in v:
-                warnings.warn(
-                    "Both `features` and `knn_graph` were provided. "
-                    "Most issue managers will likely prefer using `knn_graph` "
-                    "instead of `features` for efficiency."
-                )
-
-        args_dict = {k: v for k, v in args_dict.items() if v}
-
-        return args_dict
-
     def _set_issue_types(
         self,
         issue_types: Optional[Dict[str, Any]],
@@ -317,7 +351,10 @@ class IssueFinder:
         issue_types = kwargs.get("issue_types", None)
 
         # Determine which parameters are required for each issue type
-        required_args_per_issue_type = self._resolve_required_args(pred_probs, features, knn_graph)
+        strategy_for_resolving_required_args = _select_strategy_for_resolving_required_args(
+            self.task
+        )
+        required_args_per_issue_type = strategy_for_resolving_required_args(**kwargs)
 
         issue_types_copy = self._set_issue_types(issue_types, required_args_per_issue_type)
         if issue_types is None:
@@ -344,10 +381,5 @@ class IssueFinder:
                     "No labels were provided. " "The 'outlier' issue type will not be run."
                 )
                 issue_types_copy.pop("outlier")
-
-        # Ensure that we retain issue types from e.g. knn_graph if they are provided in get_available_issue_types.
-        # For regression, we need add label, as we can't detect it from pred_probs in get_available_issue_types.
-        if self.task == "regression":
-            issue_types_copy = {**issue_types_copy, **{"label": {}}}
 
         return issue_types_copy
