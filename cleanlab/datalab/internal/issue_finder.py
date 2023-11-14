@@ -220,7 +220,6 @@ class IssueFinder:
         # Prefer `cluster_ids`` over `knn_graph`` and `features``.
         # Prefer `knn_graph` over `features` if both are provided.
         for v in args_dict.values():
-
             if "cluster_ids" in v and ("knn_graph" in v or "features" in v):
                 warnings.warn(
                     "`cluster_ids` have been provided with `knn_graph` or `features`."
