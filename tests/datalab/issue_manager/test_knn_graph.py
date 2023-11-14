@@ -4,12 +4,13 @@ import pytest
 
 from .conftest import knn_graph_strategy
 
+
 class TestKNNGraph:
     @staticmethod
     def assert_distances_sorted(distances):
         """Check distances are sorted in ascending order for each row."""
         for row in distances:
-            assert all(row[i] <= row[i+1] for i in range(len(row)-1))
+            assert all(row[i] <= row[i + 1] for i in range(len(row) - 1))
 
     @staticmethod
     def assert_indices_unique(indices):
@@ -26,7 +27,9 @@ class TestKNNGraph:
                 if i in indices[j]:
                     d_ij = distances[i][list(indices[i]).index(j)]
                     d_ji = distances[j][list(indices[j]).index(i)]
-                    assert math.isclose(d_ij, d_ji), f"Distances between {i} and {j} do not match: {d_ij} vs {d_ji}"
+                    assert math.isclose(
+                        d_ij, d_ji
+                    ), f"Distances between {i} and {j} do not match: {d_ij} vs {d_ji}"
 
     @staticmethod
     def assert_mutual_consistency_of_knn_distances(distances, indices):
@@ -39,10 +42,17 @@ class TestKNNGraph:
                 d_ij = distances[i][list(indices[i]).index(j)]
                 j_neighbors_distances = distances[j]
                 if d_ij < max(j_neighbors_distances):
-                    assert i in indices[j], f"Point {i} should be a neighbor of point {j}, it's closer than the farthest neighbor of {j}"
+                    assert (
+                        i in indices[j]
+                    ), f"Point {i} should be a neighbor of point {j}, it's closer than the farthest neighbor of {j}"
 
     @pytest.mark.slow
-    @given(knn_graph=knn_graph_strategy(num_samples=st.integers(min_value=10, max_value=50), k_neighbors=st.integers(min_value=2, max_value=5)))
+    @given(
+        knn_graph=knn_graph_strategy(
+            num_samples=st.integers(min_value=10, max_value=50),
+            k_neighbors=st.integers(min_value=2, max_value=5),
+        )
+    )
     @settings(suppress_health_check=[HealthCheck.too_slow])
     def test_knn_graph(self, knn_graph):
         """Run through the property tests defined above."""
