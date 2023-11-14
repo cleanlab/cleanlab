@@ -1,5 +1,6 @@
 import math
-from hypothesis import given, strategies as st
+from hypothesis import HealthCheck, given, settings, strategies as st
+import pytest
 
 from .conftest import knn_graph_strategy
 
@@ -40,7 +41,9 @@ class TestKNNGraph:
                 if d_ij < max(j_neighbors_distances):
                     assert i in indices[j], f"Point {i} should be a neighbor of point {j}, it's closer than the farthest neighbor of {j}"
 
+    @pytest.mark.slow
     @given(knn_graph=knn_graph_strategy(num_samples=st.integers(min_value=10, max_value=50), k_neighbors=st.integers(min_value=2, max_value=5)))
+    @settings(suppress_health_check=[HealthCheck.too_slow])
     def test_knn_graph(self, knn_graph):
         """Run through the property tests defined above."""
         N = knn_graph.shape[0]

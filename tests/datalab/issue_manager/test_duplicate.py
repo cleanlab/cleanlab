@@ -1,9 +1,8 @@
 import numpy as np
 import pytest
-from hypothesis import assume, given, settings, strategies as st
+from hypothesis import HealthCheck, assume, given, settings, strategies as st
 from hypothesis.strategies import composite
 from hypothesis.extra.numpy import arrays
-from scipy.sparse import csr_matrix
 
 
 from cleanlab import Datalab
@@ -178,14 +177,15 @@ def issue_manager_with_issues_strategy(draw):
 
 class TestNearDuplicateSets:
     """Property-based tests properties of near duplicate sets found in a knn graph."""
+    @pytest.mark.slow
     @given(issue_manager=no_issue_issue_manager_strategy())
-    @settings(deadline=800)
+    @settings(deadline=800, suppress_health_check=[HealthCheck.too_slow])
     def test_near_duplicate_sets_empty_if_no_issue_next(self, issue_manager):
         near_duplicate_sets = issue_manager.info["near_duplicate_sets"]
         assert all(len(near_duplicate_set) == 0 for near_duplicate_set in near_duplicate_sets)
         
     @given(issue_manager=issue_manager_with_issues_strategy())
-    @settings(deadline=800, max_examples=1000)
+    @settings(deadline=800, max_examples=1000, suppress_health_check=[HealthCheck.too_slow])
     def test_symmetric_and_flagged_consistency(self, issue_manager):
         near_duplicate_sets = issue_manager.info["near_duplicate_sets"]
         issues = issue_manager.issues["is_near_duplicate_issue"]
