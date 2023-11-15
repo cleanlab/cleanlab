@@ -221,14 +221,8 @@ class IssueFinder:
 
     def _resolve_trained_statistics_args(self, issue_types: Dict[str, Any], **kwargs):
         """For label error only now"""
-        confident_joint = kwargs.get("confident_joint", None)
-        py = kwargs.get("py", None)
-        noise_matrix = kwargs.get("noise_matrix", None)
-        inverse_noise_matrix = kwargs.get("inverse_noise_matrix", None)
-        issue_types["label"]["confident_joint"] = confident_joint
-        issue_types["label"]["py"] = py
-        issue_types["label"]["noise_matrix"] = noise_matrix
-        issue_types["label"]["inverse_noise_matrix"] = inverse_noise_matrix
+        keys = ["confident_joint", "py", "noise_matrix", "inverse_noise_matrix"]
+        issue_types["label"].update({key: kwargs.get(key, None) for key in keys})
         return issue_types
 
     def _set_issue_types(
