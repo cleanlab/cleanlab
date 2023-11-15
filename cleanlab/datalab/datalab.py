@@ -120,9 +120,8 @@ class Datalab:
             warnings.warn(
                 "An existing Datalab instacne has been passed, the new datalab will use the existing statistics."
             )
-            self.data_issues._update_issue_info(
-                "statistics", trained_datalab.get_info("statistics")
-            )
+            for k in trained_datalab.get_info().keys():
+                self.data_issues._update_issue_info(k, trained_datalab.get_info(k))
             self._trained_statistics = True
         else:
             self._trained_statistics = False
