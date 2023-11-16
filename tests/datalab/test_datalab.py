@@ -874,6 +874,13 @@ class TestDatalabFindNonIIDIssues:
         assert non_iid_summary["num_issues"].values[0] == 1
 
     def test_non_iid_issues_pred_probs_knn_graph_checks(self, lab, random_embeddings):
+        """
+        Note
+        ----
+        If the user did provides `features` or there was already a KNN graph
+        constructed in Datalab, the results should be returned as they currently
+        are, not using the `pred_probs` at all.
+        """
         pred_probs = pred_probs_from_features(random_embeddings)
         # knn graph is computed and stored
         lab.find_issues(
