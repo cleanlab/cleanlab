@@ -18,7 +18,7 @@
 
 from collections import defaultdict
 from multiprocessing import Pool
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 
@@ -332,7 +332,7 @@ def _calculate_true_positives_false_positives(
     lab_bboxes: np.ndarray,
     iou_threshold: Optional[float] = 0.5,
     return_false_negative=False,
-) -> Tuple[np.ndarray, np.ndarray]:
+) -> Union[Tuple[np.ndarray, np.ndarray], Tuple[np.ndarray, np.ndarray, np.ndarray]]:
     """Calculates true positives (TP) and false positives (FP) for object detection tasks.
     It takes predicted bounding boxes, ground truth bounding boxes, and an optional Intersection over Union (IoU) threshold as inputs.
     If return_false_negative is True, it returns array of False negatives as well.
