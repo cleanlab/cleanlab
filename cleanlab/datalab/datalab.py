@@ -303,7 +303,9 @@ class Datalab:
                 "No issue types were specified so no issues will be found in the dataset. Set `issue_types` as None to consider a default set of issues."
             )
             return None
-        issue_finder = issue_finder_factory(self._imagelab)(datalab=self, task=self.task, verbosity=self.verbosity)
+        issue_finder = issue_finder_factory(self._imagelab)(
+            datalab=self, task=self.task, verbosity=self.verbosity
+        )
         issue_finder.find_issues(
             pred_probs=pred_probs,
             features=features,
