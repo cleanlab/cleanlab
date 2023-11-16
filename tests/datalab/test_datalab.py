@@ -774,6 +774,16 @@ def test_near_duplicates_reuses_knn_graph():
 
 
 def pred_probs_from_features(features):
+    """
+    Converts an array of features into an array of predicted probabilities
+    by normalizing each row to sum to 1.
+
+    Note
+    ----
+    This function is only used for testing purposes
+    and may not align with conventional methodologies
+    used in real-world applications.
+    """
     return features / features.sum(axis=1, keepdims=True)
 
 
