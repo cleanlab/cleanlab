@@ -773,6 +773,10 @@ def test_near_duplicates_reuses_knn_graph():
     ), "KNN graph reuse should make this run of find_issues faster."
 
 
+def pred_probs_from_features(features):
+    return features / features.sum(axis=1, keepdims=True)
+
+
 class TestDatalabFindNonIIDIssues:
     """This class focuses on testing the end-to-end functionality of calling Datalab.find_issues()
     only for non-IID issues. The tests in this class are not meant to test the underlying
@@ -796,47 +800,43 @@ class TestDatalabFindNonIIDIssues:
         z = np.cos(x) + np.random.normal(0, 0.1, n_samples)
         return np.column_stack((x, y, z))
 
-    def test_find_non_iid_issues(self, random_embeddings):
+    @pytest.fixture
+    def lab(self):
         data = {"labels": [0, 1, 0]}
         lab = Datalab(data=data, label_name="labels")
+        return lab
+
+    def test_find_non_iid_issues(self, lab, random_embeddings):
         lab.find_issues(features=random_embeddings, issue_types={"non_iid": {}})
         summary = lab.get_issue_summary()
         assert ["non_iid"] == summary["issue_type"].values
         assert summary["score"].values[0] > 0.05
         assert lab.get_issues()["is_non_iid_issue"].sum() == 0
 
-    def test_find_non_iid_issues_using_pred_probs(self, random_embeddings):
-        data = {"labels": [0, 1, 0]}
-        lab = Datalab(data=data, label_name="labels")
-        pred_probs = random_embeddings / random_embeddings.sum(axis=1, keepdims=True)
+    def test_find_non_iid_issues_using_pred_probs(self, lab, random_embeddings):
+        pred_probs = pred_probs_from_features(random_embeddings)
         lab.find_issues(pred_probs=pred_probs, issue_types={"non_iid": {}})
         summary = lab.get_issue_summary()
         assert ["non_iid"] == summary["issue_type"].values
         assert summary["score"].values[0] > 0.05
         assert lab.get_issues()["is_non_iid_issue"].sum() == 0
 
-    def test_find_non_iid_issues_sorted(self, sorted_embeddings):
-        data = {"labels": [0, 1, 0]}
-        lab = Datalab(data=data, label_name="labels")
+    def test_find_non_iid_issues_sorted(self, lab, sorted_embeddings):
         lab.find_issues(features=sorted_embeddings, issue_types={"non_iid": {}})
         summary = lab.get_issue_summary()
         assert ["non_iid"] == summary["issue_type"].values
         assert summary["score"].values[0] == 0
         assert lab.get_issues()["is_non_iid_issue"].sum() == 1
 
-    def test_find_non_iid_issues_sorted_using_pred_probs(self, sorted_embeddings):
-        data = {"labels": [0, 1, 0]}
-        lab = Datalab(data=data, label_name="labels")
-        pred_probs = sorted_embeddings / sorted_embeddings.sum(axis=1, keepdims=True)
+    def test_find_non_iid_issues_sorted_using_pred_probs(self, lab, sorted_embeddings):
+        pred_probs = pred_probs_from_features(sorted_embeddings)
         lab.find_issues(pred_probs=pred_probs, issue_types={"non_iid": {}})
         summary = lab.get_issue_summary()
         assert ["non_iid"] == summary["issue_type"].values
         assert summary["score"].values[0] == 0
         assert lab.get_issues()["is_non_iid_issue"].sum() == 1
 
-    def test_incremental_search(self, sorted_embeddings):
-        data = {"labels": [0, 1, 0]}
-        lab = Datalab(data=data, label_name="labels")
+    def test_incremental_search(self, lab, sorted_embeddings):
         lab.find_issues(features=sorted_embeddings)
         summary = lab.get_issue_summary()
         assert len(summary) == 3
@@ -848,10 +848,8 @@ class TestDatalabFindNonIIDIssues:
         assert non_iid_summary["score"].values[0] == 0
         assert non_iid_summary["num_issues"].values[0] == 1
 
-    def test_incremental_search_using_pred_probs(self, sorted_embeddings):
-        data = {"labels": [0, 1, 0]}
-        lab = Datalab(data=data, label_name="labels")
-        pred_probs = sorted_embeddings / sorted_embeddings.sum(axis=1, keepdims=True)
+    def test_incremental_search_using_pred_probs(self, lab, sorted_embeddings):
+        pred_probs = pred_probs_from_features(sorted_embeddings)
         lab.find_issues(pred_probs=pred_probs, issue_types={"non_iid": {}})
         summary = lab.get_issue_summary()
         assert len(summary) == 1
