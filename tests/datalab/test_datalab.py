@@ -773,6 +773,20 @@ def test_near_duplicates_reuses_knn_graph():
     ), "KNN graph reuse should make this run of find_issues faster."
 
 
+def pred_probs_from_features(features):
+    """
+    Converts an array of features into an array of predicted probabilities
+    by normalizing each row to sum to 1.
+
+    Note
+    ----
+    This function is only used for testing purposes
+    and may not align with conventional methodologies
+    used in real-world applications.
+    """
+    return features / features.sum(axis=1, keepdims=True)
+
+
 class TestDatalabFindNonIIDIssues:
     """This class focuses on testing the end-to-end functionality of calling Datalab.find_issues()
     only for non-IID issues. The tests in this class are not meant to test the underlying
@@ -796,47 +810,45 @@ class TestDatalabFindNonIIDIssues:
         z = np.cos(x) + np.random.normal(0, 0.1, n_samples)
         return np.column_stack((x, y, z))
 
-    def test_find_non_iid_issues(self, random_embeddings):
+    @pytest.fixture
+    def lab(self):
         data = {"labels": [0, 1, 0]}
         lab = Datalab(data=data, label_name="labels")
+        return lab
+
+    def test_find_non_iid_issues(self, lab, random_embeddings):
         lab.find_issues(features=random_embeddings, issue_types={"non_iid": {}})
         summary = lab.get_issue_summary()
         assert ["non_iid"] == summary["issue_type"].values
         assert summary["score"].values[0] > 0.05
         assert lab.get_issues()["is_non_iid_issue"].sum() == 0
 
-    def test_find_non_iid_issues_using_pred_probs(self, random_embeddings):
-        data = {"labels": [0, 1, 0]}
-        lab = Datalab(data=data, label_name="labels")
-        pred_probs = random_embeddings / random_embeddings.sum(axis=1, keepdims=True)
+    def test_find_non_iid_issues_using_pred_probs(self, lab, random_embeddings):
+        pred_probs = pred_probs_from_features(random_embeddings)
         lab.find_issues(pred_probs=pred_probs, issue_types={"non_iid": {}})
         summary = lab.get_issue_summary()
         assert ["non_iid"] == summary["issue_type"].values
         assert summary["score"].values[0] > 0.05
         assert lab.get_issues()["is_non_iid_issue"].sum() == 0
+        assert "weighted_knn_graph" not in lab.get_info("statistics")
 
-    def test_find_non_iid_issues_sorted(self, sorted_embeddings):
-        data = {"labels": [0, 1, 0]}
-        lab = Datalab(data=data, label_name="labels")
+    def test_find_non_iid_issues_sorted(self, lab, sorted_embeddings):
         lab.find_issues(features=sorted_embeddings, issue_types={"non_iid": {}})
         summary = lab.get_issue_summary()
         assert ["non_iid"] == summary["issue_type"].values
         assert summary["score"].values[0] == 0
         assert lab.get_issues()["is_non_iid_issue"].sum() == 1
 
-    def test_find_non_iid_issues_sorted_using_pred_probs(self, sorted_embeddings):
-        data = {"labels": [0, 1, 0]}
-        lab = Datalab(data=data, label_name="labels")
-        pred_probs = sorted_embeddings / sorted_embeddings.sum(axis=1, keepdims=True)
+    def test_find_non_iid_issues_sorted_using_pred_probs(self, lab, sorted_embeddings):
+        pred_probs = pred_probs_from_features(sorted_embeddings)
         lab.find_issues(pred_probs=pred_probs, issue_types={"non_iid": {}})
         summary = lab.get_issue_summary()
         assert ["non_iid"] == summary["issue_type"].values
         assert summary["score"].values[0] == 0
         assert lab.get_issues()["is_non_iid_issue"].sum() == 1
+        assert "weighted_knn_graph" not in lab.get_info("statistics")
 
-    def test_incremental_search(self, sorted_embeddings):
-        data = {"labels": [0, 1, 0]}
-        lab = Datalab(data=data, label_name="labels")
+    def test_incremental_search(self, lab, sorted_embeddings):
         lab.find_issues(features=sorted_embeddings)
         summary = lab.get_issue_summary()
         assert len(summary) == 3
@@ -848,10 +860,8 @@ class TestDatalabFindNonIIDIssues:
         assert non_iid_summary["score"].values[0] == 0
         assert non_iid_summary["num_issues"].values[0] == 1
 
-    def test_incremental_search_using_pred_probs(self, sorted_embeddings):
-        data = {"labels": [0, 1, 0]}
-        lab = Datalab(data=data, label_name="labels")
-        pred_probs = sorted_embeddings / sorted_embeddings.sum(axis=1, keepdims=True)
+    def test_incremental_search_using_pred_probs(self, lab, sorted_embeddings):
+        pred_probs = pred_probs_from_features(sorted_embeddings)
         lab.find_issues(pred_probs=pred_probs, issue_types={"non_iid": {}})
         summary = lab.get_issue_summary()
         assert len(summary) == 1
@@ -862,6 +872,39 @@ class TestDatalabFindNonIIDIssues:
         non_iid_summary = lab.get_issue_summary("non_iid")
         assert non_iid_summary["score"].values[0] == 0
         assert non_iid_summary["num_issues"].values[0] == 1
+
+    def test_non_iid_issues_pred_probs_knn_graph_checks(self, lab, random_embeddings):
+        """
+        Note
+        ----
+        If the user did provides `features` or there was already a KNN graph
+        constructed in Datalab, the results should be returned as they currently
+        are, not using the `pred_probs` at all.
+        """
+        pred_probs = pred_probs_from_features(random_embeddings)
+        # knn graph is computed and stored
+        lab.find_issues(
+            features=random_embeddings, pred_probs=pred_probs, issue_types={"outlier": {}}
+        )
+        cached_knn_graph = lab.get_info("statistics").get("weighted_knn_graph")
+        assert cached_knn_graph is not None
+        lab.find_issues(pred_probs=pred_probs, issue_types={"non_iid": {}})
+        knn_graph_after_non_iid = lab.get_info("statistics").get("weighted_knn_graph")
+        # Check if stored knn graph is same as before
+        assert cached_knn_graph is knn_graph_after_non_iid
+        issues_1 = lab.get_issues("non_iid")
+
+        lab_2 = Datalab(data={"labels": lab._labels}, label_name="labels")
+        lab_2.find_issues(
+            pred_probs=pred_probs, knn_graph=cached_knn_graph, issue_types={"non_iid": {}}
+        )
+        knn_graph_after_non_iid = lab.get_info("statistics").get("weighted_knn_graph")
+        # Check if stored knn graph is same as the knn graph passed to find_issues
+        assert cached_knn_graph is knn_graph_after_non_iid
+        # Check that explicitly passing the cached knn-graph to a new datalab instance
+        # leads to the same results.
+        issues_2 = lab_2.get_issues("non_iid")
+        pd.testing.assert_frame_equal(issues_1, issues_2)
 
 
 class TestDatalabFindLabelIssues:
