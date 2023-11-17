@@ -13,6 +13,7 @@ from sklearn.exceptions import NotFittedError
 from sklearn.utils.validation import check_is_fitted
 
 from cleanlab.datalab.internal.issue_manager import IssueManager
+from cleanlab.datalab.internal.issue_manager.utils import ConstructedKNNGraph
 
 if TYPE_CHECKING:  # pragma: no cover
     import numpy.typing as npt
@@ -228,7 +229,7 @@ class NonIIDIssueManager(IssueManager):
         pred_probs: Optional[np.ndarray] = None,
         **kwargs,
     ) -> None:
-        knn_graph = self._process_knn_graph_from_inputs(kwargs)
+        knn_graph = ConstructedKNNGraph(self.datalab).process_knn_graph_from_inputs(kwargs)
         old_knn_metric = self.datalab.get_info("statistics").get("knn_metric")
         metric_changes = bool(self.metric and self.metric != old_knn_metric)
         knn = self._setup_knn(features, pred_probs, knn_graph, metric_changes)
@@ -264,28 +265,6 @@ class NonIIDIssueManager(IssueManager):
         if knn_graph is None:
             self.info = self.collect_info(knn=knn)
         self.info = self.collect_info(knn_graph=knn_graph, knn=knn)
-
-    def _process_knn_graph_from_inputs(self, kwargs: Dict[str, Any]) -> Union[csr_matrix, None]:
-        """Determine if a knn_graph is provided in the kwargs or if one is already stored in the associated Datalab instance."""
-        knn_graph_kwargs: Optional[csr_matrix] = kwargs.get("knn_graph", None)
-        knn_graph_stats = self.datalab.get_info("statistics").get("weighted_knn_graph", None)
-
-        knn_graph: Optional[csr_matrix] = None
-        if knn_graph_kwargs is not None:
-            knn_graph = knn_graph_kwargs
-        elif knn_graph_stats is not None:
-            knn_graph = knn_graph_stats
-
-        need_to_recompute_knn = isinstance(knn_graph, csr_matrix) and (
-            kwargs.get("k", 0) > knn_graph.nnz // knn_graph.shape[0]
-            or self.k > knn_graph.nnz // knn_graph.shape[0]
-        )
-
-        if need_to_recompute_knn:
-            # If the provided knn graph is insufficient, then we need to recompute the knn graph
-            # with the provided features
-            knn_graph = None
-        return knn_graph
 
     def collect_info(
         self, knn_graph: Optional[csr_matrix] = None, knn: Optional[NearestNeighbors] = None

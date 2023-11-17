@@ -23,6 +23,7 @@ import numpy as np
 import pandas as pd
 
 from cleanlab.datalab.internal.issue_manager import IssueManager
+from cleanlab.datalab.internal.issue_manager.utils import ConstructedKNNGraph
 from cleanlab.outlier import OutOfDistribution, transform_distances_to_scores
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -94,7 +95,7 @@ class OutlierIssueManager(IssueManager):
         pred_probs: Optional[np.ndarray] = None,
         **kwargs,
     ) -> None:
-        knn_graph = self._process_knn_graph_from_inputs(kwargs)
+        knn_graph = ConstructedKNNGraph(self.datalab).process_knn_graph_from_inputs(kwargs)
         distances: Optional[np.ndarray] = None
 
         if knn_graph is not None:
@@ -148,25 +149,6 @@ class OutlierIssueManager(IssueManager):
         self.summary = self.make_summary(score=scores.mean())
 
         self.info = self.collect_info(knn_graph=knn_graph)
-
-    def _process_knn_graph_from_inputs(self, kwargs: Dict[str, Any]) -> Union[csr_matrix, None]:
-        """Determine if a knn_graph is provided in the kwargs or if one is already stored in the associated Datalab instance."""
-        knn_graph_kwargs: Optional[csr_matrix] = kwargs.get("knn_graph", None)
-        knn_graph_stats = self.datalab.get_info("statistics").get("weighted_knn_graph", None)
-
-        knn_graph: Optional[csr_matrix] = None
-        if knn_graph_kwargs is not None:
-            knn_graph = knn_graph_kwargs
-        elif knn_graph_stats is not None:
-            knn_graph = knn_graph_stats
-
-        if isinstance(knn_graph, csr_matrix) and kwargs.get("k", 0) > (
-            knn_graph.nnz // knn_graph.shape[0]
-        ):
-            # If the provided knn graph is insufficient, then we need to recompute the knn graph
-            # with the provided features
-            knn_graph = None
-        return knn_graph
 
     def _compute_threshold_and_issue_column_from_distances(
         self, distances: np.ndarray, threshold: Optional[float] = None
