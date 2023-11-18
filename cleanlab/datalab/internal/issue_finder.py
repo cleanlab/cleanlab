@@ -364,7 +364,7 @@ class IssueFinder:
                 for issue in list_default_issue_types(self.task)
                 if issue in issue_types_copy
             }
-        drop_label_check = "label" in issue_types_copy and not self.datalab.has_labels
+        drop_label_check = "label" in issue_types_copy and not self.datalab.has_labels and self.task != "regression"
         if drop_label_check:
             warnings.warn("No labels were provided. " "The 'label' issue type will not be run.")
             issue_types_copy.pop("label")

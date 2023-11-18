@@ -94,7 +94,7 @@ class RegressionLabelIssueManager(IssueManager):
         y = X_with_y[self.datalab.label_name]
         self.issues = self.cl.find_label_issues(
             X=X,
-            y=y,
+            y=self.datalab.labels,
             **self._process_find_label_issues_kwargs(kwargs),
         )
         self.issues.rename(columns={"label_quality": self.issue_score_key}, inplace=True)

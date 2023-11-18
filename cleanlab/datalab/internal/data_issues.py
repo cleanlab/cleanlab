@@ -110,14 +110,16 @@ class _ClassificationInfoStrategy(_InfoStrategy):
     ) -> Dict[str, Any]:
         info_extracted = _InfoStrategy._get_info_helper(info=info, issue_name=issue_name)
         info = info_extracted if info_extracted is not None else info
-        label_map = data.labels.label_map
         if issue_name == "label":
-            if label_map is None:
+            if data.labels.is_available is False:
                 raise ValueError(
-                    "The label map is not available. "
+                    "The labels are not available. "
                     "Most likely, no label column was provided when creating the Data object."
                 )
             # Labels that are stored as integers may need to be converted to strings.
+            label_map = data.labels.label_map
+            if not label_map:
+                raise ValueError("The label map is not available.")
             for key in ["given_label", "predicted_label"]:
                 labels = info.get(key, None)
                 if labels is not None:

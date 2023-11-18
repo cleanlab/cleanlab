@@ -111,7 +111,11 @@ class Datalab:
         image_key: Optional[str] = None,
         verbosity: int = 1,
     ) -> None:
-        self._data = Data(data, label_name)
+        # Assume continuous values of labels for regression task
+        # Map labels to integers for classification task
+        map_labels_to_int = task == "classification"  # TODO: handle more generally
+
+        self._data = Data(data, label_name, map_to_int=map_labels_to_int)
         self.data = self._data._data
         self.task = task
         self._labels = self._data.labels
@@ -141,7 +145,7 @@ class Datalab:
 
     @property
     def has_labels(self) -> bool:
-        """Whether the dataset has labels."""
+        """Whether the dataset has labels, and that they are in a [0, 1, ..., K-1] format."""
         return self._labels.is_available
 
     @property
