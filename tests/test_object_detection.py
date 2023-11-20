@@ -933,22 +933,40 @@ def test_calculate_true_positives_false_positives(return_false_negative):
         for j, tpfp_j in enumerate(tpfp):
             for k, tpfp_k in enumerate(tpfp_j):
                 counter_dict[class_num][k] += np.sum(tpfp_k)
+    lab_empty = np.array([], dtype=np.float32)
+    pred_bboxes = np.array([[1, 1, 5, 5]])
+    lab_bboxes = np.array([[1, 1, 6, 6], [3, 3, 8, 8]])
     if return_false_negative:
         assert len(counter_dict[0]) == 3
         assert counter_dict[0][2] == 2
-        pred_bboxes = np.array([[1, 1, 5, 5]])
-        lab_bboxes = np.array([[1, 1, 6, 6], [3, 3, 8, 8]])
+
         (
             true_positives,
             false_positives,
             false_negatives,
         ) = _calculate_true_positives_false_positives(
-            pred_bboxes, lab_bboxes, iou_threshold=0.5, return_false_negative=True
+            pred_bboxes, lab_bboxes, iou_threshold=0.5, return_false_negative=return_false_negative
         )
         expected_false_negatives = np.array([[0.0, 1.0]])
         np.testing.assert_array_equal(false_negatives, expected_false_negatives)
+        (
+            true_positives,
+            false_positives,
+            false_negatives,
+        ) = _calculate_true_positives_false_positives(
+            pred_bboxes, lab_empty, iou_threshold=0.5, return_false_negative=return_false_negative
+        )
+        assert len(false_negatives) == 0
 
     else:
         assert len(counter_dict[0]) == 2
+        (
+            true_positives,
+            false_positives,
+        ) = _calculate_true_positives_false_positives(
+            pred_bboxes, lab_empty, iou_threshold=0.5, return_false_negative=return_false_negative
+        )
+        expected_false_positives = np.array([[1.0]])
+        np.testing.assert_array_equal(expected_false_positives, false_positives)
     assert counter_dict[4][0] == 5
     assert counter_dict[0][1] == 4
