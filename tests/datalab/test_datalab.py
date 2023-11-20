@@ -32,7 +32,6 @@ from sklearn.neighbors import NearestNeighbors
 
 import cleanlab
 from cleanlab.datalab.datalab import Datalab
-from cleanlab.datalab.internal.issue_finder import IssueFinder
 from cleanlab.datalab.internal.report import Reporter
 
 SEED = 42
@@ -47,7 +46,7 @@ def test_datalab_invalid_datasetdict(dataset, label_name):
 
 @pytest.fixture(scope="function")
 def list_possible_issue_types(monkeypatch, request):
-    monkeypatch.setattr(IssueFinder, "list_possible_issue_types", lambda *_: request.param)
+    return lambda *_: request.param
 
 
 class TestDatalab:
@@ -80,7 +79,9 @@ class TestDatalab:
         assert lab.class_names == [-1, 0, 0.5, 4]
 
     def test_list_default_issue_types(self):
-        assert Datalab.list_default_issue_types() == [
+        y = ["a", "3", "2", "3"]
+        lab = Datalab({"y": y}, label_name="y")
+        assert lab.list_default_issue_types() == [
             "label",
             "outlier",
             "near_duplicate",
@@ -695,7 +696,8 @@ class TestDatalabIssueManagerInteraction:
         # Clean up registry
         from cleanlab.datalab.internal.issue_manager_factory import REGISTRY
 
-        REGISTRY.pop(custom_issue_manager.issue_name)
+        # Find the custom issue manager in the registry and remove it
+        REGISTRY["classification"].pop(custom_issue_manager.issue_name)
 
 
 @pytest.mark.parametrize(
@@ -713,7 +715,9 @@ def test_report_for_outlier_issues_via_pred_probs(find_issues_kwargs):
     find_issues_kwargs["issue_types"] = {"outlier": {"k": 1}}
     lab.find_issues(**find_issues_kwargs)
 
-    reporter = Reporter(lab.data_issues, verbosity=0, include_description=False)
+    reporter = Reporter(
+        lab.data_issues, task="classification", verbosity=0, include_description=False
+    )
     report = reporter.get_report(num_examples=3)
     assert report, "Report should not be empty"
 
@@ -974,6 +978,55 @@ class TestDatalabFindLabelIssues:
             label_summary_both["num_issues"].values[0]
             == label_summary_pred_probs["num_issues"].values[0]
         )
+
+
+def make_data(num_examples=200, num_features=3, noise=0.2, error_frac=0.1, error_noise=5):
+    np.random.seed(SEED)
+    X = np.random.random(size=(num_examples, num_features))
+    coefficients = np.random.uniform(-1, 1, size=num_features)
+    label_noise = np.random.normal(scale=noise, size=num_examples)
+
+    true_y = np.dot(X, coefficients)
+    y = np.dot(X, coefficients) + label_noise
+
+    # add extra noisy examples
+    num_errors = int(num_examples * error_frac)
+    extra_noise = np.random.normal(scale=error_noise, size=num_errors)
+    random_idx = np.random.choice(num_examples, num_errors)
+    y[random_idx] += extra_noise
+    error_idx = np.argsort(abs(y - true_y))[-num_errors:]  # get the noisiest examples idx
+
+    # create test set
+    X_test = np.random.random(size=(num_examples, num_features))
+    label_noise = np.random.normal(scale=noise, size=num_examples)
+    y_test = np.dot(X_test, coefficients) + label_noise
+
+    return {
+        "X": X,
+        "y": y,
+        "true_y": true_y,
+        "X_test": X_test,
+        "y_test": y_test,
+        "error_idx": error_idx,
+    }
+
+
+def test_regression():
+    data = make_data()
+    X, y = data["X"], data["y"]
+    test_df = pd.DataFrame(X, columns=["c1", "c2", "c3"])
+    test_df["y"] = y
+    lab = Datalab(data=test_df, label_name="y", task="regression")
+
+    assert set(lab.list_default_issue_types()) == set(["label"])
+    assert set(lab.list_possible_issue_types()) == set(["label"])
+
+    lab.find_issues(features=X)
+    lab.report()
+    summary = lab.get_issue_summary()
+
+    assert "label" in summary["issue_type"].values
+    assert (summary[summary["issue_type"] == "label"]["num_issues"] == 40).all()
 
 
 class TestDatalabFindOutlierIssues:

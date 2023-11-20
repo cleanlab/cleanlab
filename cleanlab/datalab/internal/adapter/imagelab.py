@@ -16,7 +16,7 @@ from cleanlab.datalab.internal.adapter.constants import (
     IMAGELAB_ISSUES_MAX_PREVALENCE,
 )
 from cleanlab.datalab.internal.data import Data
-from cleanlab.datalab.internal.data_issues import DataIssues
+from cleanlab.datalab.internal.data_issues import DataIssues, _InfoStrategy
 from cleanlab.datalab.internal.issue_finder import IssueFinder
 from cleanlab.datalab.internal.report import Reporter
 
@@ -70,6 +70,8 @@ class ImagelabDataIssuesAdapter(DataIssues):
     ----------
     data :
         The data object for which the issues are being collected.
+    strategy :
+        Strategy used for processing info dictionaries.
 
     Parameters
     ----------
@@ -82,8 +84,8 @@ class ImagelabDataIssuesAdapter(DataIssues):
         A dictionary that contains information and statistics about the data and each issue type.
     """
 
-    def __init__(self, data: Data) -> None:
-        super().__init__(data)
+    def __init__(self, data: Data, strategy: _InfoStrategy) -> None:
+        super().__init__(data, strategy)
 
     def _update_issues_imagelab(self, imagelab: "Imagelab", overlapping_issues: List[str]) -> None:
         overwrite_columns = [f"is_{issue_type}_issue" for issue_type in overlapping_issues]
@@ -143,12 +145,14 @@ class ImagelabReporterAdapter(Reporter):
         self,
         data_issues: "DataIssues",
         imagelab: "Imagelab",
+        task: str,
         verbosity: int = 1,
         include_description: bool = True,
         show_summary_score: bool = False,
     ):
         super().__init__(
             data_issues=data_issues,
+            task=task,
             verbosity=verbosity,
             include_description=include_description,
             show_summary_score=show_summary_score,
@@ -164,8 +168,8 @@ class ImagelabReporterAdapter(Reporter):
 
 
 class ImagelabIssueFinderAdapter(IssueFinder):
-    def __init__(self, datalab, verbosity):
-        super().__init__(datalab, verbosity)
+    def __init__(self, datalab, task, verbosity):
+        super().__init__(datalab, task, verbosity)
         self.imagelab = self.datalab._imagelab
 
     def _get_imagelab_issue_types(self, issue_types, **kwargs):
