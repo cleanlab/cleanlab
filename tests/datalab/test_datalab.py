@@ -83,7 +83,6 @@ class TestDatalab:
         lab = Datalab({"y": y}, label_name="y")
         assert lab.list_default_issue_types() == [
             "label",
-            "class_imbalance",
             "outlier",
             "near_duplicate",
             "non_iid",

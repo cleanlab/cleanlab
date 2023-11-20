@@ -200,7 +200,6 @@ def list_default_issue_types(task: str) -> List[str]:
     else:
         default_issue_types = [
             "label",
-            "class_imbalance",
             "outlier",
             "near_duplicate",
             "non_iid",
