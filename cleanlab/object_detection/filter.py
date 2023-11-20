@@ -346,7 +346,7 @@ def _calculate_true_positives_false_positives(
     if lab_bboxes.shape[0] == 0:
         false_positives[...] = 1
         if return_false_negative:
-            return true_positives, false_positives, np.array([],dtype=np.float32)
+            return true_positives, false_positives, np.array([], dtype=np.float32)
         else:
             return true_positives, false_positives
     ious = _get_overlap_matrix(pred_bboxes, lab_bboxes)
