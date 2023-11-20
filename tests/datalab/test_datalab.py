@@ -624,7 +624,7 @@ class TestDatalabIssueManagerInteraction:
         """Test that a custom issue manager that is registered will be used."""
         from cleanlab.datalab.internal.issue_manager_factory import register
 
-        register(custom_issue_manager, task=None)
+        register(custom_issue_manager)
 
         assert lab.issues.empty
         assert lab.issue_summary.empty
@@ -648,7 +648,7 @@ class TestDatalabIssueManagerInteraction:
         """Test that a custom issue manager that is registered will be used."""
         from cleanlab.datalab.internal.issue_manager_factory import register
 
-        register(custom_issue_manager, task=None)
+        register(custom_issue_manager)
 
         assert lab.issues.empty
         assert lab.issue_summary.empty
@@ -668,7 +668,8 @@ class TestDatalabIssueManagerInteraction:
         # Clean up registry
         from cleanlab.datalab.internal.issue_manager_factory import REGISTRY
 
-        REGISTRY.pop(custom_issue_manager.issue_name)
+        # Find the custom issue manager in the registry and remove it
+        REGISTRY["classification"].pop(custom_issue_manager.issue_name)
 
 
 @pytest.mark.parametrize(
@@ -910,6 +911,10 @@ def test_regression():
     test_df = pd.DataFrame(X, columns=["c1", "c2", "c3"])
     test_df["y"] = y
     lab = Datalab(data=test_df, label_name="y", task="regression")
+
+    assert set(lab.list_default_issue_types()) == set(["label"])
+    assert set(lab.list_possible_issue_types()) == set(["label"])
+
     lab.find_issues(features=X)
     lab.report()
     summary = lab.get_issue_summary()

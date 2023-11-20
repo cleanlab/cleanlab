@@ -48,10 +48,9 @@ def test_register_custom_issue_manager(monkeypatch):
         def find_issues(self):
             pass
 
-    Foo = register(Foo, task=None)
+    Foo = register(Foo)
 
-    assert "foo" in REGISTRY
-    assert REGISTRY["foo"] == Foo
+    assert REGISTRY["classification"].get("foo") == Foo
 
     # Reregistering should overwrite the existing class, put print a warning
 
@@ -63,14 +62,17 @@ def test_register_custom_issue_manager(monkeypatch):
         def find_issues(self):
             pass
 
-    NewFoo = register(NewFoo, task=None)
+    NewFoo = register(NewFoo)
 
-    assert "foo" in REGISTRY
-    assert REGISTRY["foo"] == NewFoo
+    assert REGISTRY["classification"].get("foo") == NewFoo
     assert all(
         [
             text in sys.stdout.getvalue()
-            for text in ["Warning: Overwriting existing issue manager foo with ", "NewFoo"]
+            for text in [
+                "Warning: Overwriting existing issue manager foo with ",
+                "NewFoo",
+                " for task classification.",
+            ]
         ]
     ), "Should print a warning"
 
@@ -83,8 +85,7 @@ def test_register_custom_issue_manager(monkeypatch):
 
     NewerFoo = register(NewerFoo, task="classification")
 
-    assert "label" in REGISTRY
-    assert REGISTRY["label"] == NewerFoo
+    assert REGISTRY["classification"].get("label") == NewerFoo
     assert all(
         [
             text in sys.stdout.getvalue()
@@ -95,3 +96,14 @@ def test_register_custom_issue_manager(monkeypatch):
             ]
         ]
     ), "Should print a warning"
+
+    # Registering any issue manager for another task is permitted
+    class Bar(IssueManager):
+        issue_name = "bar"
+
+        def find_issues(self):
+            pass
+        
+    Bar = register(Bar, task="regression")
+    
+    assert REGISTRY["regression"].get("bar") == Bar

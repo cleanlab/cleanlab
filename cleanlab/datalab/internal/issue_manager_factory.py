@@ -50,16 +50,14 @@ from cleanlab.datalab.internal.issue_manager import (
 )
 from cleanlab.datalab.internal.issue_manager.regression import RegressionLabelIssueManager
 
-REGISTRY: Dict[str, Type[IssueManager]] = {
-    "outlier": OutlierIssueManager,
-    "near_duplicate": NearDuplicateIssueManager,
-    "non_iid": NonIIDIssueManager,
-}
 
-TASK_SPECIFIC_REGISTRY: Dict[str, Dict[str, Type[IssueManager]]] = {
+REGISTRY: Dict[str, Dict[str, Type[IssueManager]]] = {
     "classification": {
         "label": LabelIssueManager,
         "class_imbalance": ClassImbalanceIssueManager,
+        "outlier": OutlierIssueManager,
+        "near_duplicate": NearDuplicateIssueManager,
+        "non_iid": NonIIDIssueManager,
     },
     "regression": {
         "label": RegressionLabelIssueManager,
@@ -94,19 +92,14 @@ class _IssueManagerFactory:
                 "issue_type must be a string, not a list. Try using from_list instead."
             )
 
-        if task is None and issue_type not in REGISTRY:
-            raise ValueError(f"Invalid issue type: {issue_type}")
-        if task not in TASK_SPECIFIC_REGISTRY:
+        if task not in REGISTRY:
             raise ValueError(
-                f"Invalid task type: {task}, must be in {list(TASK_SPECIFIC_REGISTRY.keys())}"
+                f"Invalid task type: {task}, must be in {list(REGISTRY.keys())}"
             )
-        if issue_type not in TASK_SPECIFIC_REGISTRY[task] and issue_type not in REGISTRY:
+        if issue_type not in REGISTRY[task]:
             raise ValueError(f"Invalid issue type: {issue_type} for task {task}")
 
-        if issue_type in TASK_SPECIFIC_REGISTRY[task]:
-            return TASK_SPECIFIC_REGISTRY[task][issue_type]
-
-        return REGISTRY[issue_type]
+        return REGISTRY[task][issue_type]
 
     @classmethod
     def from_list(cls, issue_types: List[str], task: str) -> List[Type[IssueManager]]:
@@ -114,7 +107,7 @@ class _IssueManagerFactory:
         return [cls.from_str(issue_type, task) for issue_type in issue_types]
 
 
-def register(cls: Type[IssueManager], task: str) -> Type[IssueManager]:
+def register(cls: Type[IssueManager], task: str="classification") -> Type[IssueManager]:
     """Registers the issue manager factory.
 
     Parameters
@@ -171,24 +164,18 @@ def register(cls: Type[IssueManager], task: str) -> Type[IssueManager]:
 
     name: str = str(cls.issue_name)
 
-    if task is not None and task not in TASK_SPECIFIC_REGISTRY:
+    if task not in REGISTRY:
         raise ValueError(
-            f"Invalid task type: {task}, must be in {list(TASK_SPECIFIC_REGISTRY.keys())}"
+            f"Invalid task type: {task}, must be in {list(REGISTRY.keys())}"
         )
 
-    if task is not None and name in TASK_SPECIFIC_REGISTRY[task]:
+    if name in REGISTRY[task]:
         print(
             f"Warning: Overwriting existing issue manager {name} with {cls} for task {task}."
             "This may cause unexpected behavior."
         )
 
-    if task is None and name in REGISTRY:
-        print(
-            f"Warning: Overwriting existing issue manager {name} with {cls}."
-            "This may cause unexpected behavior."
-        )
-
-    REGISTRY[name] = cls
+    REGISTRY[task][name] = cls
     return cls
 
 
@@ -201,7 +188,7 @@ def list_possible_issue_types(task: str) -> List[str]:
     --------
     :py:class:`REGISTRY <cleanlab.datalab.internal.issue_manager_factory.REGISTRY>` : All available issue types and their corresponding issue managers can be found here.
     """
-    return list(REGISTRY.keys()) + list(TASK_SPECIFIC_REGISTRY.get(task, []))
+    return list(REGISTRY.get(task, []))
 
 
 def list_default_issue_types(task: str) -> List[str]:
@@ -213,7 +200,7 @@ def list_default_issue_types(task: str) -> List[str]:
     :py:class:`REGISTRY <cleanlab.datalab.internal.issue_manager_factory.REGISTRY>` : All available issue types and their corresponding issue managers can be found here.
     """
     if task == "regression":
-        default_issue_types = ["label", "outlier", "near_duplicate", "non_iid"]
+        default_issue_types = ["label"]
     else:
         default_issue_types = [
             "label",

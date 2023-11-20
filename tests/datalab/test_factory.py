@@ -28,7 +28,7 @@ def test_list_possible_issue_types(registry):
     class TestIssueManager(IssueManager):
         issue_name = test_key
 
-    TestIssueManager = register(TestIssueManager, task=None)
+    TestIssueManager = register(TestIssueManager)
 
     issue_types = lab.list_possible_issue_types()
     assert set(issue_types) == set(
@@ -36,4 +36,4 @@ def test_list_possible_issue_types(registry):
     ), "New issue type should be added to the list"
 
     # Clean up
-    del registry[test_key]
+    del registry["classification"][test_key]

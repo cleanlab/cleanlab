@@ -94,6 +94,7 @@ class TestRegressionIssueFinder:
             {"label": {"some_arg": "some_value"}, "outlier": {}},
             {},
         ]
+        supported_issue_types = ["label"]
         for issue_types in issue_types_dicts:
             available_issue_types = issue_finder.get_available_issue_types(issue_types=issue_types)
             fail_msg = f"Failed to get available issue types with issue_types={issue_types}"
@@ -103,4 +104,4 @@ class TestRegressionIssueFinder:
         kwargs = {k: k for k in ["pred_probs", "features", "knn_graph"]}
         kwargs["issue_types"] = {"label": {}}
         available_issue_types = issue_finder.get_available_issue_types(**kwargs)
-        assert available_issue_types == {"label": {}}
+        assert available_issue_types == {"label": {"features": "features"}}
