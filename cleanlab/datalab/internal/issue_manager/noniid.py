@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional, Union, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional, cast
 import warnings
 import itertools
 
@@ -124,6 +124,7 @@ class NonIIDIssueManager(IssueManager):
         self.background_distribution = None
         self.seed = seed
         self.significance_threshold = significance_threshold
+        self.constructed_knn_graph = ConstructedKNNGraph(datalab)
 
         # TODO: Temporary flag introduced to decide on storing knn graphs based on pred_probs.
         # Revisit and finalize the implementation.
@@ -229,7 +230,7 @@ class NonIIDIssueManager(IssueManager):
         pred_probs: Optional[np.ndarray] = None,
         **kwargs,
     ) -> None:
-        knn_graph = ConstructedKNNGraph(self.datalab).process_knn_graph_from_inputs(kwargs)
+        knn_graph = self.constructed_knn_graph.process_knn_graph_from_inputs(kwargs)
         old_knn_metric = self.datalab.get_info("statistics").get("knn_metric")
         metric_changes = bool(self.metric and self.metric != old_knn_metric)
         knn = self._setup_knn(features, pred_probs, knn_graph, metric_changes)

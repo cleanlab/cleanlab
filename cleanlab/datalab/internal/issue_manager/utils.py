@@ -1,4 +1,4 @@
-from typing import Dict, Union, Optional, Any
+from typing import Dict, Optional, Any
 from scipy.sparse import csr_matrix
 
 
@@ -8,7 +8,7 @@ class ConstructedKNNGraph:
     def __init__(self, datalab):
         self.datalab = datalab
 
-    def process_knn_graph_from_inputs(self, kwargs: Dict[str, Any]) -> Union[csr_matrix, None]:
+    def process_knn_graph_from_inputs(self, kwargs: Dict[str, Any]) -> Optional[csr_matrix]:
         """Determine if a knn_graph is provided in the kwargs or if one is already stored in the associated Datalab instance."""
         knn_graph_kwargs: Optional[csr_matrix] = kwargs.get("knn_graph", None)
         knn_graph_stats = self.datalab.get_info("statistics").get("weighted_knn_graph", None)

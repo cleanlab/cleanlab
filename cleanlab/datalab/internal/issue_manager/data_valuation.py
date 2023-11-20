@@ -17,12 +17,10 @@ from __future__ import annotations
 
 from typing import (
     TYPE_CHECKING,
-    Any,
     ClassVar,
     Dict,
     List,
     Optional,
-    Union,
 )
 
 import numpy as np
@@ -68,6 +66,7 @@ class DataValuationIssueManager(IssueManager):
         super().__init__(datalab)
         self.k = k
         self.threshold = threshold if threshold is not None else self.DEFAULT_THRESHOLDS
+        self.constructed_knn_graph = ConstructedKNNGraph(datalab)
 
     def find_issues(
         self,
@@ -77,7 +76,7 @@ class DataValuationIssueManager(IssueManager):
         Based on KNN-Shapley value described in https://arxiv.org/abs/1911.07128
         The larger the score, the more valuable the data point is, the more contribution it will make to the model's training.
         """
-        knn_graph = ConstructedKNNGraph(self.datalab).process_knn_graph_from_inputs(kwargs)
+        knn_graph = self.constructed_knn_graph.process_knn_graph_from_inputs(kwargs)
         labels = self.datalab.labels.reshape(-1, 1)
         assert knn_graph is not None, "knn_graph must be already calculated by other issue managers"
         assert labels is not None, "labels must be provided"

@@ -15,7 +15,7 @@
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional
 import warnings
 
 import numpy as np
@@ -64,13 +64,14 @@ class NearDuplicateIssueManager(IssueManager):
         self.threshold = self._set_threshold(threshold)
         self.k = k
         self.near_duplicate_sets: List[List[int]] = []
+        self.constructed_knn_graph = ConstructedKNNGraph(datalab)
 
     def find_issues(
         self,
         features: Optional[npt.NDArray] = None,
         **kwargs,
     ) -> None:
-        knn_graph = ConstructedKNNGraph(self.datalab).process_knn_graph_from_inputs(kwargs)
+        knn_graph = self.constructed_knn_graph.process_knn_graph_from_inputs(kwargs)
         old_knn_metric = self.datalab.get_info("statistics").get("knn_metric")
         metric_changes = self.metric and self.metric != old_knn_metric
 

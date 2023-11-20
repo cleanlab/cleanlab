@@ -15,7 +15,7 @@
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional, Tuple, Union, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional, Tuple, cast
 
 from scipy.sparse import csr_matrix
 from scipy.stats import iqr
@@ -88,6 +88,7 @@ class OutlierIssueManager(IssueManager):
         self.threshold = threshold
         self._embeddings: Optional[np.ndarray] = None
         self._metric: str = None  # type: ignore
+        self.constructed_knn_graph = ConstructedKNNGraph(datalab)
 
     def find_issues(
         self,
@@ -95,7 +96,7 @@ class OutlierIssueManager(IssueManager):
         pred_probs: Optional[np.ndarray] = None,
         **kwargs,
     ) -> None:
-        knn_graph = ConstructedKNNGraph(self.datalab).process_knn_graph_from_inputs(kwargs)
+        knn_graph = self.constructed_knn_graph.process_knn_graph_from_inputs(kwargs)
         distances: Optional[np.ndarray] = None
 
         if knn_graph is not None:
