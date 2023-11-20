@@ -50,7 +50,8 @@ _CLASSIFICATION_ARGS_DICT = {
     "label": ["pred_probs", "features"],
     "outlier": ["pred_probs", "features", "knn_graph"],
     "near_duplicate": ["features", "knn_graph"],
-    "non_iid": ["features", "knn_graph"],
+    "non_iid": ["pred_probs", "features", "knn_graph"],
+    "data_valuation": ["knn_graph"],
 }
 _REGRESSION_ARGS_DICT = {
     "label": ["features"],

@@ -53,7 +53,7 @@ class _DataIssuesBuilder:
     desired configuration, before calling the `build` method to
     construct the DataIssues instance.
     """
-    
+
     def __init__(self, data: Data):
         self.data = data
         self.imagelab = None
@@ -82,7 +82,7 @@ class _DataIssuesBuilder:
             return DataIssues
 
     def _select_info_strategy(self):
-        """The DataIssues class takes in a strategy class 
+        """The DataIssues class takes in a strategy class
         for processing info dictionaries. This method selects
         the appropriate strategy class based on the task during
         the `build` method-call.

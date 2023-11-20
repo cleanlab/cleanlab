@@ -42,6 +42,7 @@ from typing import Dict, List, Type
 
 from cleanlab.datalab.internal.issue_manager import (
     ClassImbalanceIssueManager,
+    DataValuationIssueManager,
     IssueManager,
     LabelIssueManager,
     NearDuplicateIssueManager,
@@ -50,14 +51,14 @@ from cleanlab.datalab.internal.issue_manager import (
 )
 from cleanlab.datalab.internal.issue_manager.regression import RegressionLabelIssueManager
 
-
 REGISTRY: Dict[str, Dict[str, Type[IssueManager]]] = {
     "classification": {
-        "label": LabelIssueManager,
-        "class_imbalance": ClassImbalanceIssueManager,
         "outlier": OutlierIssueManager,
+        "label": LabelIssueManager,
         "near_duplicate": NearDuplicateIssueManager,
         "non_iid": NonIIDIssueManager,
+        "class_imbalance": ClassImbalanceIssueManager,
+        "data_valuation": DataValuationIssueManager,
     },
     "regression": {
         "label": RegressionLabelIssueManager,

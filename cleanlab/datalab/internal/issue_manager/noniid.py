@@ -124,38 +124,119 @@ class NonIIDIssueManager(IssueManager):
         self.seed = seed
         self.significance_threshold = significance_threshold
 
-    def find_issues(self, features: Optional[npt.NDArray] = None, **kwargs) -> None:
+        # TODO: Temporary flag introduced to decide on storing knn graphs based on pred_probs.
+        # Revisit and finalize the implementation.
+        self._skip_storing_knn_graph_for_pred_probs: bool = False
+
+    @staticmethod
+    def _determine_features(
+        features: Optional[npt.NDArray],
+        pred_probs: Optional[np.ndarray],
+    ) -> npt.NDArray:
+        """
+        Determines the feature array to be used for the non-IID check. Prioritizing the original features array over pred_probs.
+
+        Parameters
+        ----------
+        features :
+            Original feature array or None.
+
+        pred_probs :
+            Predicted probabilities array or None.
+
+        Returns
+        -------
+        features_to_use :
+            Either the original feature array or the predicted probabilities array,
+            intended to be used for the non-IID check.
+
+        Raises
+        ------
+        ValueError :
+            If both `features` and `pred_probs` are None.
+        """
+        if features is not None:
+            return features
+
+        if pred_probs is not None:
+            return pred_probs
+
+        raise ValueError(
+            "If a knn_graph is not provided, either 'features' or 'pred_probs' must be provided to fit a new knn."
+        )
+
+    def _setup_knn(
+        self,
+        features: Optional[npt.NDArray],
+        pred_probs: Optional[np.ndarray],
+        knn_graph: Optional[csr_matrix],
+        metric_changes: bool,
+    ) -> Optional[NearestNeighbors]:
+        """
+        Selects features (or pred_probs if features are None) and sets up a NearestNeighbors object if needed.
+
+        Parameters
+        ----------
+        features :
+            Original feature array or None.
+
+        pred_probs :
+            Predicted probabilities array or None.
+
+        knn_graph :
+            A precomputed KNN-graph stored in a csr_matrix or None. If None, a new NearestNeighbors object will be created.
+
+        metric_changes :
+            Whether the metric used to compute the KNN-graph has changed.
+            This is a result of comparing the metric of a pre-existing KNN-graph and the metric specified by the user.
+
+        Returns
+        -------
+        knn :
+            A NearestNeighbors object or None.
+        """
+        if features is None and pred_probs is not None:
+            self._skip_storing_knn_graph_for_pred_probs = True
+        features_to_use = self._determine_features(features, pred_probs)
+
+        if self.metric is None:
+            self.metric = "cosine" if features_to_use.shape[1] > 3 else "euclidean"
+
+        if knn_graph is not None and not metric_changes:
+            return None
+
+        knn = NearestNeighbors(n_neighbors=self.k, metric=self.metric)
+
+        if self.metric != knn.metric:
+            warnings.warn(
+                f"Metric {self.metric} does not match metric {knn.metric} used to fit knn. "
+                "Most likely an existing NearestNeighbors object was passed in, but a different "
+                "metric was specified."
+            )
+        self.metric = knn.metric
+
+        try:
+            check_is_fitted(knn)
+        except NotFittedError:
+            knn.fit(features_to_use)
+
+        return knn
+
+    def find_issues(
+        self,
+        features: Optional[npt.NDArray] = None,
+        pred_probs: Optional[np.ndarray] = None,
+        **kwargs,
+    ) -> None:
         knn_graph = self._process_knn_graph_from_inputs(kwargs)
         old_knn_metric = self.datalab.get_info("statistics").get("knn_metric")
-        metric_changes = self.metric and self.metric != old_knn_metric
-
-        knn = None  # Won't be used if knn_graph is not None
+        metric_changes = bool(self.metric and self.metric != old_knn_metric)
+        knn = self._setup_knn(features, pred_probs, knn_graph, metric_changes)
 
         if knn_graph is None or metric_changes:
-            if features is None:
-                raise ValueError(
-                    "If a knn_graph is not provided, features must be provided to fit a new knn."
-                )
-
-            if self.metric is None:
-                self.metric = "cosine" if features.shape[1] > 3 else "euclidean"
-            knn = NearestNeighbors(n_neighbors=self.k, metric=self.metric)
-
-            if self.metric and self.metric != knn.metric:
-                warnings.warn(
-                    f"Metric {self.metric} does not match metric {knn.metric} used to fit knn. "
-                    "Most likely an existing NearestNeighbors object was passed in, but a different "
-                    "metric was specified."
-                )
-            self.metric = knn.metric
-
-            try:
-                check_is_fitted(knn)
-            except NotFittedError:
-                knn.fit(features)
-
             self.neighbor_index_choices = self._get_neighbors(knn=knn)
         else:
+            self._skip_storing_knn_graph_for_pred_probs = False
             self.neighbor_index_choices = self._get_neighbors(knn_graph=knn_graph)
 
         self.num_neighbors = self.k
@@ -234,6 +315,8 @@ class NonIIDIssueManager(IssueManager):
     def _build_statistics_dictionary(self, knn_graph: csr_matrix) -> Dict[str, Dict[str, Any]]:
         statistics_dict: Dict[str, Dict[str, Any]] = {"statistics": {}}
 
+        if self._skip_storing_knn_graph_for_pred_probs:
+            return statistics_dict
         # Add the knn graph as a statistic if necessary
         graph_key = "weighted_knn_graph"
         old_knn_graph = self.datalab.get_info("statistics").get(graph_key, None)
