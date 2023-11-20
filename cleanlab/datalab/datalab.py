@@ -301,7 +301,6 @@ class Datalab:
                 >>> # lab.find_issues(pred_probs=pred_probs, issue_types=issue_types)
 
         """
-
         if issue_types is not None and not issue_types:
             warnings.warn(
                 "No issue types were specified so no issues will be found in the dataset. Set `issue_types` as None to consider a default set of issues."

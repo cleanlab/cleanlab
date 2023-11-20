@@ -156,7 +156,7 @@ class DataIssues:
     data :
         The data object for which the issues are being collected.
     strategy :
-        Strategy used for processing targets.
+        Strategy used for processing info dictionaries.
 
     Attributes
     ----------

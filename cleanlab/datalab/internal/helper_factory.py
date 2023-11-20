@@ -46,6 +46,14 @@ def report_factory(imagelab):
 
 
 class _DataIssuesBuilder:
+    """A helper class for constructing DataIssues instances.
+    It uses the builder pattern to allow users to specify the desired
+    configuration of the DataIssues instance.
+    It uses the `set_X` naming convention for methods that set the
+    desired configuration, before calling the `build` method to
+    construct the DataIssues instance.
+    """
+    
     def __init__(self, data: Data):
         self.data = data
         self.imagelab = None
@@ -65,12 +73,20 @@ class _DataIssuesBuilder:
         return data_issues_class(self.data, strategy)
 
     def _data_issues_factory(self) -> Type[DataIssues]:
+        """Factory method that selects the appropriate class for
+        constructing the DataIssues instance.
+        """
         if self.imagelab:
             return ImagelabDataIssuesAdapter
         else:
             return DataIssues
 
     def _select_info_strategy(self):
+        """The DataIssues class takes in a strategy class 
+        for processing info dictionaries. This method selects
+        the appropriate strategy class based on the task during
+        the `build` method-call.
+        """
         if self.task == "regression":
             return _RegressionInfoStrategy
         else:
