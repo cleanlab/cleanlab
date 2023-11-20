@@ -53,7 +53,7 @@ _CLASSIFICATION_ARGS_DICT = {
     "non_iid": ["features", "knn_graph"],
 }
 _REGRESSION_ARGS_DICT = {
-    "label": [],
+    "label": ["features"],
 }
 
 

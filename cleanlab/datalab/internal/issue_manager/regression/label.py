@@ -58,6 +58,7 @@ class RegressionLabelIssueManager(IssueManager):
         datalab: Datalab,
         clean_learning_kwargs: Optional[Dict[str, Any]] = None,
         health_summary_parameters: Optional[Dict[str, Any]] = None,
+        **_,
     ):
         super().__init__(datalab)
         self.cl = CleanLearning(**(clean_learning_kwargs or {}))
@@ -84,16 +85,18 @@ class RegressionLabelIssueManager(IssueManager):
 
     def find_issues(
         self,
+        features: np.ndarray,
         **kwargs,
     ) -> None:
         """Find label issues in the datalab."""
-
-        # Find examples with label issues
-        X_with_y = self.datalab.data.to_pandas()
-        X = X_with_y.drop(columns=self.datalab.label_name)
-        y = X_with_y[self.datalab.label_name]
+        if features is None:
+            raise ValueError(
+                "Regression requires numerical `features` "
+                "to be passed in as an argument to `find_issues`."
+            )
+            
         self.issues = self.cl.find_label_issues(
-            X=X,
+            X=features,
             y=self.datalab.labels,
             **self._process_find_label_issues_kwargs(kwargs),
         )

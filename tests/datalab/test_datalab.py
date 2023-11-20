@@ -910,7 +910,7 @@ def test_regression():
     test_df = pd.DataFrame(X, columns=["c1", "c2", "c3"])
     test_df["y"] = y
     lab = Datalab(data=test_df, label_name="y", task="regression")
-    lab.find_issues()
+    lab.find_issues(features=X)
     lab.report()
     summary = lab.get_issue_summary()
 
