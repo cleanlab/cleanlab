@@ -22,6 +22,7 @@ from cleanlab.regression.learn import CleanLearning
 from cleanlab.datalab.internal.issue_manager import IssueManager
 
 if TYPE_CHECKING:  # pragma: no cover
+    import numpy as np
     import pandas as pd
     from cleanlab.datalab.datalab import Datalab
 

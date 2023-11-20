@@ -42,6 +42,7 @@ from cleanlab.datalab.internal.issue_manager_factory import (
 
 if TYPE_CHECKING:  # pragma: no cover
     import numpy.typing as npt
+    from typing import Callable
 
     from cleanlab.datalab.datalab import Datalab
 
