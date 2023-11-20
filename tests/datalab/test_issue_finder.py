@@ -24,6 +24,29 @@ class TestIssueFinder:
     def test_init(self, issue_finder):
         assert issue_finder.verbosity == 1
 
+    def test_get_available_issue_types(self, issue_finder):
+        expected_issue_types = {}
+        # Test with no kwargs, no issue type expected to be returned
+        for key in ["pred_probs", "features", "knn_graph"]:
+            issue_types = issue_finder.get_available_issue_types(**{key: None})
+            assert (
+                issue_types == expected_issue_types
+            ), "Every issue type for classification requires some kwargs, expected empty dict"
+            
+        # Test with only issue_types, input should be
+        issue_types_dicts = [
+            {"label": {}},
+            {"label": {"some_arg": "some_value"}},
+            {"label": {"some_arg": "some_value"}, "outlier": {}},
+            {"label": {}, "outlier": {}, "some_issue_type": {"some_arg": "some_value"}},
+            {},
+        ]
+        for issue_types in issue_types_dicts:
+            available_issue_types = issue_finder.get_available_issue_types(issue_types=issue_types)
+            fail_msg = f"Failed to get available issue types with issue_types={issue_types}"
+            assert available_issue_types == issue_types, fail_msg
+
+
     def test_find_issues(self, issue_finder, lab):
         N = len(lab.data)
         K = lab.get_info("statistics")["num_classes"]
