@@ -93,9 +93,7 @@ class _IssueManagerFactory:
             )
 
         if task not in REGISTRY:
-            raise ValueError(
-                f"Invalid task type: {task}, must be in {list(REGISTRY.keys())}"
-            )
+            raise ValueError(f"Invalid task type: {task}, must be in {list(REGISTRY.keys())}")
         if issue_type not in REGISTRY[task]:
             raise ValueError(f"Invalid issue type: {issue_type} for task {task}")
 
@@ -107,7 +105,7 @@ class _IssueManagerFactory:
         return [cls.from_str(issue_type, task) for issue_type in issue_types]
 
 
-def register(cls: Type[IssueManager], task: str="classification") -> Type[IssueManager]:
+def register(cls: Type[IssueManager], task: str = "classification") -> Type[IssueManager]:
     """Registers the issue manager factory.
 
     Parameters
@@ -165,9 +163,7 @@ def register(cls: Type[IssueManager], task: str="classification") -> Type[IssueM
     name: str = str(cls.issue_name)
 
     if task not in REGISTRY:
-        raise ValueError(
-            f"Invalid task type: {task}, must be in {list(REGISTRY.keys())}"
-        )
+        raise ValueError(f"Invalid task type: {task}, must be in {list(REGISTRY.keys())}")
 
     if name in REGISTRY[task]:
         print(

@@ -94,7 +94,7 @@ class RegressionLabelIssueManager(IssueManager):
                 "Regression requires numerical `features` "
                 "to be passed in as an argument to `find_issues`."
             )
-            
+
         self.issues = self.cl.find_label_issues(
             X=features,
             y=self.datalab.labels,

@@ -103,7 +103,7 @@ def test_register_custom_issue_manager(monkeypatch):
 
         def find_issues(self):
             pass
-        
+
     Bar = register(Bar, task="regression")
-    
+
     assert REGISTRY["regression"].get("bar") == Bar

@@ -130,7 +130,9 @@ class Data:
         :py:class:`Datalab <cleanlab.datalab.datalab.Datalab>` to work.
     """
 
-    def __init__(self, data: "DatasetLike", label_name: Optional[str] = None, map_to_int: bool = True) -> None:
+    def __init__(
+        self, data: "DatasetLike", label_name: Optional[str] = None, map_to_int: bool = True
+    ) -> None:
         self._validate_data(data)
         self._data = self._load_data(data)
         self._data_hash = hash(self._data)
@@ -221,7 +223,7 @@ class Data:
 class Label:
     """
     Class to represent labels in a dataset.
-    
+
     It stores the labels as a numpy array and maps them to integers if necessary.
     If a mapping is not necessary, e.g. for regression tasks, the mapping will be an empty dictionary.
 
@@ -229,16 +231,18 @@ class Label:
     ----------
     data :
         A Hugging Face Dataset object.
-        
+
     label_name : str
         Name of the label column in the dataset.
-        
+
     map_to_int : bool
         Whether to map the labels to integers, e.g. [0, 1, ..., K-1] where K is the number of classes.
         If False, the labels are not mapped to integers, e.g. for regression tasks.
     """
 
-    def __init__(self, *, data: Dataset, label_name: Optional[str] = None, map_to_int: bool = True) -> None:
+    def __init__(
+        self, *, data: Dataset, label_name: Optional[str] = None, map_to_int: bool = True
+    ) -> None:
         self._data = data
         self.label_name = label_name
         self.labels = labels_to_array([])
@@ -303,7 +307,7 @@ def _extract_labels(data: Dataset, label_name: str, map_to_int: bool) -> Tuple[n
     ----------
     data : datasets.Dataset
         A Hugging Face Dataset object.
-    
+
     label_name : str
         Name of the column in the dataset that contains the labels.
 

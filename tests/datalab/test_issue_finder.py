@@ -32,7 +32,7 @@ class TestIssueFinder:
             assert (
                 issue_types == expected_issue_types
             ), "Every issue type for classification requires some kwargs, expected empty dict"
-            
+
         # Test with only issue_types, input should be
         issue_types_dicts = [
             {"label": {}},
@@ -45,7 +45,6 @@ class TestIssueFinder:
             available_issue_types = issue_finder.get_available_issue_types(issue_types=issue_types)
             fail_msg = f"Failed to get available issue types with issue_types={issue_types}"
             assert available_issue_types == issue_types, fail_msg
-
 
     def test_find_issues(self, issue_finder, lab):
         N = len(lab.data)
