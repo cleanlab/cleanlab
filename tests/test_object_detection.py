@@ -936,6 +936,17 @@ def test_calculate_true_positives_false_positives(return_false_negative):
     if return_false_negative:
         assert len(counter_dict[0]) == 3
         assert counter_dict[0][2] == 2
+        pred_bboxes = np.array([[1, 1, 5, 5]])
+        lab_bboxes = np.array([[1, 1, 6, 6], [3, 3, 8, 8]])
+        (
+            true_positives,
+            false_positives,
+            false_negatives,
+        ) = _calculate_true_positives_false_positives(
+            pred_bboxes, lab_bboxes, iou_threshold=0.5, return_false_negative=True
+        )
+        expected_false_negatives = np.array([[0.0, 1.0]])
+        np.testing.assert_array_equal(false_negatives, expected_false_negatives)
 
     else:
         assert len(counter_dict[0]) == 2
