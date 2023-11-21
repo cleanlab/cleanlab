@@ -82,7 +82,7 @@ class UnderperformingGroupIssueManager(IssueManager):
         **_: Any,
     ):
         """
-            Note: The `min_cluster_samples` argument should not be confused with the
+        Note: The `min_cluster_samples` argument should not be confused with the
         `min_samples` argument of sklearn.cluster.DBSCAN.
         """
         super().__init__(datalab)
@@ -199,7 +199,7 @@ class UnderperformingGroupIssueManager(IssueManager):
 
         Returns:
             unique_cluster_ids (npt.NDArray[np.int_]):  List of unique cluster IDs after
-            removing Outlier clusters and clusters with less than `self.min_cluster_samples`
+            removing outlier clusters and clusters with less than `self.min_cluster_samples`
             number of datapoints.
         """
         unique_cluster_ids = np.array(
