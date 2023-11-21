@@ -347,8 +347,8 @@ class UnderperformingGroupIssueManager(IssueManager):
         Args:
             n_clusters (int): Number of clusters
             cluster_ids (npt.NDArray[np.int_]): Cluster IDs for each datapoint.
-            performed_clustering (bool): If True, clustering was performed on
-            features passed to `find_issues`. If False, `cluster_ids` were explicitly
+            performed_clustering (bool): Set to True to indicate that clustering was performed on
+            `features` passed to `find_issues`. Set to False to suggest that `cluster_ids` were explicitly
             passed to `find_issues`.
             worst_cluster_id (int): Uderperforming cluster ID.
 
