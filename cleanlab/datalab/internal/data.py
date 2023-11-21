@@ -116,6 +116,10 @@ class Data:
     label_name : Union[str, List[str]]
         Name of the label column in the dataset.
 
+    map_to_int : bool
+        Whether to map the labels to integers, e.g. [0, 1, ..., K-1] where K is the number of classes.
+        If False, the labels are not mapped to integers, e.g. for regression tasks.
+
     Warnings
     --------
     Optional dependencies:
@@ -126,11 +130,13 @@ class Data:
         :py:class:`Datalab <cleanlab.datalab.datalab.Datalab>` to work.
     """
 
-    def __init__(self, data: "DatasetLike", label_name: Optional[str] = None) -> None:
+    def __init__(
+        self, data: "DatasetLike", label_name: Optional[str] = None, map_to_int: bool = True
+    ) -> None:
         self._validate_data(data)
         self._data = self._load_data(data)
         self._data_hash = hash(self._data)
-        self.labels = Label(data=self._data, label_name=label_name)
+        self.labels = Label(data=self._data, label_name=label_name, map_to_int=map_to_int)
 
     def _load_data(self, data: "DatasetLike") -> Dataset:
         """Checks the type of dataset and uses the correct loader method and
@@ -218,17 +224,31 @@ class Label:
     """
     Class to represent labels in a dataset.
 
+    It stores the labels as a numpy array and maps them to integers if necessary.
+    If a mapping is not necessary, e.g. for regression tasks, the mapping will be an empty dictionary.
+
     Parameters
     ----------
+    data :
+        A Hugging Face Dataset object.
+
+    label_name : str
+        Name of the label column in the dataset.
+
+    map_to_int : bool
+        Whether to map the labels to integers, e.g. [0, 1, ..., K-1] where K is the number of classes.
+        If False, the labels are not mapped to integers, e.g. for regression tasks.
     """
 
-    def __init__(self, *, data: Dataset, label_name: Optional[str] = None) -> None:
+    def __init__(
+        self, *, data: Dataset, label_name: Optional[str] = None, map_to_int: bool = True
+    ) -> None:
         self._data = data
         self.label_name = label_name
         self.labels = labels_to_array([])
         self.label_map: Mapping[str, Any] = {}
         if label_name is not None:
-            self.labels, self.label_map = _extract_labels(data, label_name)
+            self.labels, self.label_map = _extract_labels(data, label_name, map_to_int)
             self._validate_labels()
 
     def __len__(self) -> int:
@@ -273,7 +293,7 @@ class Label:
         assert len(labels) == len(self._data)
 
 
-def _extract_labels(data: Dataset, label_name: str) -> Tuple[np.ndarray, Mapping]:
+def _extract_labels(data: Dataset, label_name: str, map_to_int: bool) -> Tuple[np.ndarray, Mapping]:
     """
     Picks out labels from the dataset and formats them to be [0, 1, ..., K-1]
     where K is the number of classes. Also returns a mapping from the formatted
@@ -285,9 +305,15 @@ def _extract_labels(data: Dataset, label_name: str) -> Tuple[np.ndarray, Mapping
 
     Parameters
     ----------
+    data : datasets.Dataset
+        A Hugging Face Dataset object.
+
     label_name : str
         Name of the column in the dataset that contains the labels.
 
+    map_to_int : bool
+        Whether to map the labels to integers, e.g. [0, 1, ..., K-1] where K is the number of classes.
+        If False, the labels are not mapped to integers, e.g. for regression tasks.
     Returns
     -------
     formatted_labels : np.ndarray
@@ -301,6 +327,9 @@ def _extract_labels(data: Dataset, label_name: str) -> Tuple[np.ndarray, Mapping
     if labels.ndim != 1:
         raise ValueError("labels must be 1D numpy array.")
 
+    if not map_to_int:
+        # Don't map labels to integers, e.g. for regression tasks
+        return labels, {}
     label_name_feature = data.features[label_name]
     if isinstance(label_name_feature, ClassLabel):
         label_map = {label: label_name_feature.str2int(label) for label in label_name_feature.names}
