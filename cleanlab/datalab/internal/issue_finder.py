@@ -219,10 +219,10 @@ class IssueFinder:
 
         return args_dict
 
-    def _resolve_trained_statistics_args(self, issue_types: Dict[str, Any], **kwargs):
+    def _resolve_trained_statistics_args(self, issue_types: Dict[str, Any]):
         """For label error only now"""
-        keys = ["confident_joint", "py", "noise_matrix", "inverse_noise_matrix"]
-        issue_types["label"].update({key: kwargs.get(key, None) for key in keys})
+        for issue in issue_types:
+            issue_types[issue].update({k: v for k, v in self.datalab.get_info(issue).items()})
         return issue_types
 
     def _set_issue_types(
@@ -356,9 +356,7 @@ class IssueFinder:
         )
         if label_use_trained_statistics:
             warnings.warn("Using precomputed statistics from a previously trained datalab. ")
-            issue_types_copy = self._resolve_trained_statistics_args(
-                issue_types_copy, kwargs=kwargs
-            )
+            issue_types_copy = self._resolve_trained_statistics_args(issue_types_copy)
 
         outlier_check_needs_features = "outlier" in issue_types_copy and not self.datalab.has_labels
         if outlier_check_needs_features:
