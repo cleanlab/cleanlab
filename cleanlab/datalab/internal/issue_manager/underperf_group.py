@@ -43,6 +43,9 @@ class UnderperformingGroupIssueManager(IssueManager):
     """
     Manages issues related to underperforming group examples.
 
+    Note: The `min_cluster_samples` argument should not be confused with the
+    `min_samples` argument of sklearn.cluster.DBSCAN.
+
     Examples
     --------
     >>> from cleanlab import Datalab
@@ -81,10 +84,6 @@ class UnderperformingGroupIssueManager(IssueManager):
         min_cluster_samples: int = 5,
         **_: Any,
     ):
-        """
-        Note: The `min_cluster_samples` argument should not be confused with the
-        `min_samples` argument of sklearn.cluster.DBSCAN.
-        """
         super().__init__(datalab)
         self.metric = metric
         self.threshold = self._set_threshold(threshold)
