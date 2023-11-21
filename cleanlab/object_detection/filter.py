@@ -369,7 +369,6 @@ def _calculate_true_positives_false_positives(
         for label_index in range(num_labels):
             if not is_covered[label_index]:
                 false_negatives[0, label_index] = 1
-    if return_false_negative:
         return true_positives, false_positives, false_negatives
     return true_positives, false_positives
 
