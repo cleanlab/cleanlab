@@ -59,6 +59,21 @@ class TestIssueFinder:
                 issue_finder._validate_issue_types_dict(issue_types, defaults_dict)
             assert all([string in str(e.value) for string in ["issue_type_1", "arg_1", "arg_2"]])
 
+    def test_resolve_trained_statistics_args(self, issue_finder, lab, monkeypatch):
+        """Test that the required args for statistics info reusing is set correctly."""
+        N = len(lab.data)
+        K = lab.get_info("statistics")["num_classes"]
+        X = np.random.rand(N, 2)
+        pred_probs = np.random.rand(N, K)
+        pred_probs = pred_probs / pred_probs.sum(axis=1, keepdims=True)
+        lab.find_issues(pred_probs=pred_probs, issue_types={"label": {}})
+        # construct a datalab with statistics info and `has_trained_statistics` set to True
+        new_lab = Datalab(trained_datalab=lab, data=lab.data, label_name="y")
+        issue_finder.datalab = new_lab
+        issue_types = issue_finder.get_available_issue_types(issue_types={"label": {}})
+        for k in lab.get_info("label").keys():
+            assert k in issue_types["label"]
+
     @pytest.mark.parametrize(
         "defaults_dict",
         [
