@@ -40,7 +40,21 @@ CLUSTERING_PARAMS_DEFAULT = {"metric": "precomputed"}
 
 
 class UnderperformingGroupIssueManager(IssueManager):
-    """Manages issues related to underperforming group examples."""
+    """
+    Manages issues related to underperforming group examples.
+
+    Examples
+    --------
+    >>> from cleanlab import Datalab
+    >>> import numpy as np
+    >>> X = np.random.normal(size=(50, 2))
+    >>> y = np.random.randint(2, size=50)
+    >>> pred_probs = X / X.sum(axis=1, keepdims=True)
+    >>> data = {"X": X, "y": y}
+    >>> lab = Datalab(data, label_name="y")
+    >>> issue_types={"underperforming_group": {"clustering_kwargs": {"eps": 0.5}}}
+    >>> lab.find_issues(pred_probs=pred_probs, features=X, issue_types=issue_types)
+    """
 
     description: ClassVar[
         str
@@ -67,6 +81,10 @@ class UnderperformingGroupIssueManager(IssueManager):
         min_cluster_samples: int = 5,
         **_: Any,
     ):
+        """
+            Note: The `min_cluster_samples` argument should not be confused with the
+        `min_samples` argument of sklearn.cluster.DBSCAN.
+        """
         super().__init__(datalab)
         self.metric = metric
         self.threshold = self._set_threshold(threshold)
@@ -83,10 +101,6 @@ class UnderperformingGroupIssueManager(IssueManager):
     ) -> None:
         labels = self.datalab.labels
         if cluster_ids is None:
-            warnings.warn(
-                "Underperforming Group Issue Manager may not produce reliable results when \
-                         performing clustering using the provided features or knn-graph."
-            )
             knn_graph = self.set_knn_graph(features, kwargs)
             cluster_ids = self.perform_clustering(knn_graph)
             performed_clustering = True
@@ -155,6 +169,14 @@ class UnderperformingGroupIssueManager(IssueManager):
         return knn_graph
 
     def perform_clustering(self, knn_graph: csr_matrix) -> npt.NDArray[np.int_]:
+        """Perform clustering of datapoints using a knn graph as distance matrix.
+
+        Args:
+            knn_graph (csr_matrix): Sparse Distance Matrix.
+
+        Returns:
+            cluster_ids (npt.NDArray[np.int_]): Cluster IDs for each datapoint.
+        """
         DBSCAN_VALID_KEYS = inspect.signature(DBSCAN).parameters.keys()
         dbscan_params = {
             key: value
@@ -163,11 +185,23 @@ class UnderperformingGroupIssueManager(IssueManager):
         }
         dbscan_params["metric"] = "precomputed"
         clusterer = DBSCAN(**dbscan_params)
-        clusterer.fit(knn_graph.copy())  # Copy to avoid modification by DBSCAN
-        cluster_ids = clusterer.labels_
+        cluster_ids = clusterer.fit_predict(
+            knn_graph.copy()
+        )  # Copy to avoid modification by DBSCAN
         return cluster_ids
 
     def filter_cluster_ids(self, cluster_ids: npt.NDArray[np.int_]) -> npt.NDArray[np.int_]:
+        """Remove outlier clusters and return IDs of clusters with at least `self.min_cluster_samples` number of datapoints.
+
+
+        Args:
+            cluster_ids (npt.NDArray[np.int_]): Cluster IDs for each datapoint.
+
+        Returns:
+            unique_cluster_ids (npt.NDArray[np.int_]):  List of unique cluster IDs after
+            removing Outlier clusters and clusters with less than `self.min_cluster_samples`
+            number of datapoints.
+        """
         unique_cluster_ids = np.array(
             [label for label in set(cluster_ids) if label not in self.OUTLIER_CLUSTER_LABELS]
         )
@@ -188,6 +222,17 @@ class UnderperformingGroupIssueManager(IssueManager):
         labels: npt.NDArray,
         pred_probs: npt.NDArray,
     ) -> Tuple[int, float]:
+        """Get ID and quality score of underperforming cluster.
+
+        Args:
+            cluster_ids (npt.NDArray[np.int_]): _description_
+            unique_cluster_ids (npt.NDArray[np.int_]): _description_
+            labels (npt.NDArray): _description_
+            pred_probs (npt.NDArray): _description_
+
+        Returns:
+            Tuple[int, float]: (Underperforming Cluster ID, Cluster Quality Score)
+        """
         worst_cluster_performance = 1  # Largest possible probability value
         worst_cluster_id = min(unique_cluster_ids) - 1
         for cluster_id in unique_cluster_ids:
@@ -261,7 +306,12 @@ class UnderperformingGroupIssueManager(IssueManager):
             performed_clustering=performed_clustering,
             worst_cluster_id=worst_cluster_id,
         )
-        info_dict = {**params_dict, **knn_info_dict, **statistics_dict, **cluster_stat_dict}
+        info_dict = {
+            **params_dict,
+            **knn_info_dict,
+            **statistics_dict,
+            **cluster_stat_dict,
+        }
 
         return info_dict
 
@@ -292,6 +342,19 @@ class UnderperformingGroupIssueManager(IssueManager):
         performed_clustering: bool,
         worst_cluster_id: int,
     ) -> Dict[str, Dict[str, Any]]:
+        """Get relevant cluster statistics.
+
+        Args:
+            n_clusters (int): Number of clusters
+            cluster_ids (npt.NDArray[np.int_]): Cluster IDs for each datapoint.
+            performed_clustering (bool): If True, clustering was performed on
+            features passed to `find_issues`. If False, `cluster_ids` were explicitly
+            passed to `find_issues`.
+            worst_cluster_id (int): Uderperforming cluster ID.
+
+        Returns:
+            cluster_stats (Dict[str, Dict[str, Any]]): Cluster Statistics
+        """
         cluster_stats: Dict[str, Dict[str, Any]] = {
             "clustering": {
                 "algorithm": None,
