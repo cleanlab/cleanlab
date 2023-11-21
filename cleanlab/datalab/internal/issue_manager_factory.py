@@ -41,24 +41,32 @@ from __future__ import annotations
 from typing import Dict, List, Type
 
 from cleanlab.datalab.internal.issue_manager import (
+    ClassImbalanceIssueManager,
+    DataValuationIssueManager,
     IssueManager,
     LabelIssueManager,
     NearDuplicateIssueManager,
-    OutlierIssueManager,
     NonIIDIssueManager,
     ClassImbalanceIssueManager,
     UnderperformingGroupIssueManager,
     DataValuationIssueManager,
+    OutlierIssueManager,
 )
+from cleanlab.datalab.internal.issue_manager.regression import RegressionLabelIssueManager
 
-REGISTRY: Dict[str, Type[IssueManager]] = {
-    "outlier": OutlierIssueManager,
-    "label": LabelIssueManager,
-    "near_duplicate": NearDuplicateIssueManager,
-    "non_iid": NonIIDIssueManager,
-    "class_imbalance": ClassImbalanceIssueManager,
-    "underperforming_group": UnderperformingGroupIssueManager,
-    "data_valuation": DataValuationIssueManager,
+REGISTRY: Dict[str, Dict[str, Type[IssueManager]]] = {
+    "classification": {
+        "outlier": OutlierIssueManager,
+        "label": LabelIssueManager,
+        "near_duplicate": NearDuplicateIssueManager,
+        "non_iid": NonIIDIssueManager,
+        "class_imbalance": ClassImbalanceIssueManager,
+        "underperforming_group": UnderperformingGroupIssueManager,
+        "data_valuation": DataValuationIssueManager,
+    },
+    "regression": {
+        "label": RegressionLabelIssueManager,
+    },
 }
 """Registry of issue managers that can be constructed from a string
 and used in the Datalab class.
@@ -68,7 +76,6 @@ and used in the Datalab class.
 Currently, the following issue managers are registered by default:
 
 - ``"outlier"``: :py:class:`OutlierIssueManager <cleanlab.datalab.internal.issue_manager.outlier.OutlierIssueManager>`
-- ``"label"``: :py:class:`LabelIssueManager <cleanlab.datalab.internal.issue_manager.label.LabelIssueManager>`
 - ``"near_duplicate"``: :py:class:`NearDuplicateIssueManager <cleanlab.datalab.internal.issue_manager.duplicate.NearDuplicateIssueManager>`
 - ``"non_iid"``: :py:class:`NonIIDIssueManager <cleanlab.datalab.internal.issue_manager.noniid.NonIIDIssueManager>`
 
@@ -83,23 +90,27 @@ class _IssueManagerFactory:
     """Factory class for constructing concrete issue managers."""
 
     @classmethod
-    def from_str(cls, issue_type: str) -> Type[IssueManager]:
+    def from_str(cls, issue_type: str, task: str) -> Type[IssueManager]:
         """Constructs a concrete issue manager class from a string."""
         if isinstance(issue_type, list):
             raise ValueError(
                 "issue_type must be a string, not a list. Try using from_list instead."
             )
-        if issue_type not in REGISTRY:
-            raise ValueError(f"Invalid issue type: {issue_type}")
-        return REGISTRY[issue_type]
+
+        if task not in REGISTRY:
+            raise ValueError(f"Invalid task type: {task}, must be in {list(REGISTRY.keys())}")
+        if issue_type not in REGISTRY[task]:
+            raise ValueError(f"Invalid issue type: {issue_type} for task {task}")
+
+        return REGISTRY[task][issue_type]
 
     @classmethod
-    def from_list(cls, issue_types: List[str]) -> List[Type[IssueManager]]:
+    def from_list(cls, issue_types: List[str], task: str) -> List[Type[IssueManager]]:
         """Constructs a list of concrete issue manager classes from a list of strings."""
-        return [cls.from_str(issue_type) for issue_type in issue_types]
+        return [cls.from_str(issue_type, task) for issue_type in issue_types]
 
 
-def register(cls: Type[IssueManager]) -> Type[IssueManager]:
+def register(cls: Type[IssueManager], task: str = "classification") -> Type[IssueManager]:
     """Registers the issue manager factory.
 
     Parameters
@@ -107,6 +118,9 @@ def register(cls: Type[IssueManager]) -> Type[IssueManager]:
     cls :
         A subclass of
         :py:class:`IssueManager <cleanlab.datalab.internal.issue_manager.issue_manager.IssueManager>`.
+
+    task :
+        Specific machine learning task like classification or regression.
 
     Returns
     -------
@@ -145,16 +159,54 @@ def register(cls: Type[IssueManager]) -> Type[IssueManager]:
                 # Some logic to find issues
                 pass
 
-        register(MyIssueManager)
+        register(MyIssueManager, task="classification")
     """
-    name: str = str(cls.issue_name)
-    if name in REGISTRY:
-        # Warn user that they are overwriting an existing issue manager
-        print(
-            f"Warning: Overwriting existing issue manager {name} with {cls}. "
-            "This may cause unexpected behavior."
-        )
+
     if not issubclass(cls, IssueManager):
         raise ValueError(f"Class {cls} must be a subclass of IssueManager")
-    REGISTRY[name] = cls
+
+    name: str = str(cls.issue_name)
+
+    if task not in REGISTRY:
+        raise ValueError(f"Invalid task type: {task}, must be in {list(REGISTRY.keys())}")
+
+    if name in REGISTRY[task]:
+        print(
+            f"Warning: Overwriting existing issue manager {name} with {cls} for task {task}."
+            "This may cause unexpected behavior."
+        )
+
+    REGISTRY[task][name] = cls
     return cls
+
+
+def list_possible_issue_types(task: str) -> List[str]:
+    """Returns a list of all registered issue types.
+
+    Any issue type that is not in this list cannot be used in the :py:meth:`find_issues` method.
+
+    See Also
+    --------
+    :py:class:`REGISTRY <cleanlab.datalab.internal.issue_manager_factory.REGISTRY>` : All available issue types and their corresponding issue managers can be found here.
+    """
+    return list(REGISTRY.get(task, []))
+
+
+def list_default_issue_types(task: str) -> List[str]:
+    """Returns a list of the issue types that are run by default
+    when :py:meth:`find_issues` is called without specifying `issue_types`.
+
+    See Also
+    --------
+    :py:class:`REGISTRY <cleanlab.datalab.internal.issue_manager_factory.REGISTRY>` : All available issue types and their corresponding issue managers can be found here.
+    """
+    if task == "regression":
+        default_issue_types = ["label"]
+    else:
+        default_issue_types = [
+            "label",
+            "outlier",
+            "near_duplicate",
+            "non_iid",
+        ]
+    return default_issue_types

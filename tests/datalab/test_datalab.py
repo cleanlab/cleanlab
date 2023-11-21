@@ -33,7 +33,6 @@ from sklearn.datasets import make_blobs
 
 import cleanlab
 from cleanlab.datalab.datalab import Datalab
-from cleanlab.datalab.internal.issue_finder import IssueFinder
 from cleanlab.datalab.internal.report import Reporter
 
 SEED = 42
@@ -48,7 +47,7 @@ def test_datalab_invalid_datasetdict(dataset, label_name):
 
 @pytest.fixture(scope="function")
 def list_possible_issue_types(monkeypatch, request):
-    monkeypatch.setattr(IssueFinder, "list_possible_issue_types", lambda *_: request.param)
+    return lambda *_: request.param
 
 
 class TestDatalab:
@@ -81,7 +80,9 @@ class TestDatalab:
         assert lab.class_names == [-1, 0, 0.5, 4]
 
     def test_list_default_issue_types(self):
-        assert Datalab.list_default_issue_types() == [
+        y = ["a", "3", "2", "3"]
+        lab = Datalab({"y": y}, label_name="y")
+        assert lab.list_default_issue_types() == [
             "label",
             "outlier",
             "near_duplicate",
@@ -696,7 +697,8 @@ class TestDatalabIssueManagerInteraction:
         # Clean up registry
         from cleanlab.datalab.internal.issue_manager_factory import REGISTRY
 
-        REGISTRY.pop(custom_issue_manager.issue_name)
+        # Find the custom issue manager in the registry and remove it
+        REGISTRY["classification"].pop(custom_issue_manager.issue_name)
 
 
 @pytest.mark.parametrize(
@@ -714,7 +716,9 @@ def test_report_for_outlier_issues_via_pred_probs(find_issues_kwargs):
     find_issues_kwargs["issue_types"] = {"outlier": {"k": 1}}
     lab.find_issues(**find_issues_kwargs)
 
-    reporter = Reporter(lab.data_issues, verbosity=0, include_description=False)
+    reporter = Reporter(
+        lab.data_issues, task="classification", verbosity=0, include_description=False
+    )
     report = reporter.get_report(num_examples=3)
     assert report, "Report should not be empty"
 
@@ -774,6 +778,20 @@ def test_near_duplicates_reuses_knn_graph():
     ), "KNN graph reuse should make this run of find_issues faster."
 
 
+def pred_probs_from_features(features):
+    """
+    Converts an array of features into an array of predicted probabilities
+    by normalizing each row to sum to 1.
+
+    Note
+    ----
+    This function is only used for testing purposes
+    and may not align with conventional methodologies
+    used in real-world applications.
+    """
+    return features / features.sum(axis=1, keepdims=True)
+
+
 class TestDatalabFindNonIIDIssues:
     """This class focuses on testing the end-to-end functionality of calling Datalab.find_issues()
     only for non-IID issues. The tests in this class are not meant to test the underlying
@@ -797,47 +815,45 @@ class TestDatalabFindNonIIDIssues:
         z = np.cos(x) + np.random.normal(0, 0.1, n_samples)
         return np.column_stack((x, y, z))
 
-    def test_find_non_iid_issues(self, random_embeddings):
+    @pytest.fixture
+    def lab(self):
         data = {"labels": [0, 1, 0]}
         lab = Datalab(data=data, label_name="labels")
+        return lab
+
+    def test_find_non_iid_issues(self, lab, random_embeddings):
         lab.find_issues(features=random_embeddings, issue_types={"non_iid": {}})
         summary = lab.get_issue_summary()
         assert ["non_iid"] == summary["issue_type"].values
         assert summary["score"].values[0] > 0.05
         assert lab.get_issues()["is_non_iid_issue"].sum() == 0
 
-    def test_find_non_iid_issues_using_pred_probs(self, random_embeddings):
-        data = {"labels": [0, 1, 0]}
-        lab = Datalab(data=data, label_name="labels")
-        pred_probs = random_embeddings / random_embeddings.sum(axis=1, keepdims=True)
+    def test_find_non_iid_issues_using_pred_probs(self, lab, random_embeddings):
+        pred_probs = pred_probs_from_features(random_embeddings)
         lab.find_issues(pred_probs=pred_probs, issue_types={"non_iid": {}})
         summary = lab.get_issue_summary()
         assert ["non_iid"] == summary["issue_type"].values
         assert summary["score"].values[0] > 0.05
         assert lab.get_issues()["is_non_iid_issue"].sum() == 0
+        assert "weighted_knn_graph" not in lab.get_info("statistics")
 
-    def test_find_non_iid_issues_sorted(self, sorted_embeddings):
-        data = {"labels": [0, 1, 0]}
-        lab = Datalab(data=data, label_name="labels")
+    def test_find_non_iid_issues_sorted(self, lab, sorted_embeddings):
         lab.find_issues(features=sorted_embeddings, issue_types={"non_iid": {}})
         summary = lab.get_issue_summary()
         assert ["non_iid"] == summary["issue_type"].values
         assert summary["score"].values[0] == 0
         assert lab.get_issues()["is_non_iid_issue"].sum() == 1
 
-    def test_find_non_iid_issues_sorted_using_pred_probs(self, sorted_embeddings):
-        data = {"labels": [0, 1, 0]}
-        lab = Datalab(data=data, label_name="labels")
-        pred_probs = sorted_embeddings / sorted_embeddings.sum(axis=1, keepdims=True)
+    def test_find_non_iid_issues_sorted_using_pred_probs(self, lab, sorted_embeddings):
+        pred_probs = pred_probs_from_features(sorted_embeddings)
         lab.find_issues(pred_probs=pred_probs, issue_types={"non_iid": {}})
         summary = lab.get_issue_summary()
         assert ["non_iid"] == summary["issue_type"].values
         assert summary["score"].values[0] == 0
         assert lab.get_issues()["is_non_iid_issue"].sum() == 1
+        assert "weighted_knn_graph" not in lab.get_info("statistics")
 
-    def test_incremental_search(self, sorted_embeddings):
-        data = {"labels": [0, 1, 0]}
-        lab = Datalab(data=data, label_name="labels")
+    def test_incremental_search(self, lab, sorted_embeddings):
         lab.find_issues(features=sorted_embeddings)
         summary = lab.get_issue_summary()
         assert len(summary) == 3
@@ -849,10 +865,8 @@ class TestDatalabFindNonIIDIssues:
         assert non_iid_summary["score"].values[0] == 0
         assert non_iid_summary["num_issues"].values[0] == 1
 
-    def test_incremental_search_using_pred_probs(self, sorted_embeddings):
-        data = {"labels": [0, 1, 0]}
-        lab = Datalab(data=data, label_name="labels")
-        pred_probs = sorted_embeddings / sorted_embeddings.sum(axis=1, keepdims=True)
+    def test_incremental_search_using_pred_probs(self, lab, sorted_embeddings):
+        pred_probs = pred_probs_from_features(sorted_embeddings)
         lab.find_issues(pred_probs=pred_probs, issue_types={"non_iid": {}})
         summary = lab.get_issue_summary()
         assert len(summary) == 1
@@ -863,6 +877,39 @@ class TestDatalabFindNonIIDIssues:
         non_iid_summary = lab.get_issue_summary("non_iid")
         assert non_iid_summary["score"].values[0] == 0
         assert non_iid_summary["num_issues"].values[0] == 1
+
+    def test_non_iid_issues_pred_probs_knn_graph_checks(self, lab, random_embeddings):
+        """
+        Note
+        ----
+        If the user did provides `features` or there was already a KNN graph
+        constructed in Datalab, the results should be returned as they currently
+        are, not using the `pred_probs` at all.
+        """
+        pred_probs = pred_probs_from_features(random_embeddings)
+        # knn graph is computed and stored
+        lab.find_issues(
+            features=random_embeddings, pred_probs=pred_probs, issue_types={"outlier": {}}
+        )
+        cached_knn_graph = lab.get_info("statistics").get("weighted_knn_graph")
+        assert cached_knn_graph is not None
+        lab.find_issues(pred_probs=pred_probs, issue_types={"non_iid": {}})
+        knn_graph_after_non_iid = lab.get_info("statistics").get("weighted_knn_graph")
+        # Check if stored knn graph is same as before
+        assert cached_knn_graph is knn_graph_after_non_iid
+        issues_1 = lab.get_issues("non_iid")
+
+        lab_2 = Datalab(data={"labels": lab._labels}, label_name="labels")
+        lab_2.find_issues(
+            pred_probs=pred_probs, knn_graph=cached_knn_graph, issue_types={"non_iid": {}}
+        )
+        knn_graph_after_non_iid = lab.get_info("statistics").get("weighted_knn_graph")
+        # Check if stored knn graph is same as the knn graph passed to find_issues
+        assert cached_knn_graph is knn_graph_after_non_iid
+        # Check that explicitly passing the cached knn-graph to a new datalab instance
+        # leads to the same results.
+        issues_2 = lab_2.get_issues("non_iid")
+        pd.testing.assert_frame_equal(issues_1, issues_2)
 
 
 class TestDatalabFindLabelIssues:
@@ -932,6 +979,55 @@ class TestDatalabFindLabelIssues:
             label_summary_both["num_issues"].values[0]
             == label_summary_pred_probs["num_issues"].values[0]
         )
+
+
+def make_data(num_examples=200, num_features=3, noise=0.2, error_frac=0.1, error_noise=5):
+    np.random.seed(SEED)
+    X = np.random.random(size=(num_examples, num_features))
+    coefficients = np.random.uniform(-1, 1, size=num_features)
+    label_noise = np.random.normal(scale=noise, size=num_examples)
+
+    true_y = np.dot(X, coefficients)
+    y = np.dot(X, coefficients) + label_noise
+
+    # add extra noisy examples
+    num_errors = int(num_examples * error_frac)
+    extra_noise = np.random.normal(scale=error_noise, size=num_errors)
+    random_idx = np.random.choice(num_examples, num_errors)
+    y[random_idx] += extra_noise
+    error_idx = np.argsort(abs(y - true_y))[-num_errors:]  # get the noisiest examples idx
+
+    # create test set
+    X_test = np.random.random(size=(num_examples, num_features))
+    label_noise = np.random.normal(scale=noise, size=num_examples)
+    y_test = np.dot(X_test, coefficients) + label_noise
+
+    return {
+        "X": X,
+        "y": y,
+        "true_y": true_y,
+        "X_test": X_test,
+        "y_test": y_test,
+        "error_idx": error_idx,
+    }
+
+
+def test_regression():
+    data = make_data()
+    X, y = data["X"], data["y"]
+    test_df = pd.DataFrame(X, columns=["c1", "c2", "c3"])
+    test_df["y"] = y
+    lab = Datalab(data=test_df, label_name="y", task="regression")
+
+    assert set(lab.list_default_issue_types()) == set(["label"])
+    assert set(lab.list_possible_issue_types()) == set(["label"])
+
+    lab.find_issues(features=X)
+    lab.report()
+    summary = lab.get_issue_summary()
+
+    assert "label" in summary["issue_type"].values
+    assert (summary[summary["issue_type"] == "label"]["num_issues"] == 40).all()
 
 
 class TestDatalabFindOutlierIssues:
