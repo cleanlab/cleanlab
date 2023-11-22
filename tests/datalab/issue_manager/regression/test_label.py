@@ -103,8 +103,9 @@ class TestRegressionLabelIssueManagerIntegration:
     for the label issue detection. The gaussian noise contributes to lower label quality
     scores.
     """
+
     BIAS = 1.0
-    
+
     @pytest.fixture()
     def regression_dataset(self):
         """For integration tests, a simple regression dataset is simpler than
@@ -124,23 +125,21 @@ class TestRegressionLabelIssueManagerIntegration:
             coef=True,
         )
         return X, y, coef
-    
+
     @pytest.fixture()
     def issue_manager(self, regression_dataset):
-
-        _, y, _  = regression_dataset
+        _, y, _ = regression_dataset
         lab = Datalab({"y": y}, label_name="y", task="regression")
         return RegressionLabelIssueManager(datalab=lab, clean_learning_kwargs={"seed": 0})
-    
+
     def test_find_issues_with_features(self, regression_dataset, issue_manager):
         X, _, _ = regression_dataset
         issue_manager.find_issues(features=X)
         summary = issue_manager.summary
         assert np.isclose(summary["score"], 0.262423, atol=1e-5)
 
-
     def test_find_issues_with_predictions(self, regression_dataset, issue_manager):
-        X, _ , coef = regression_dataset
+        X, _, coef = regression_dataset
         y_pred = X @ coef + self.BIAS
         issue_manager.find_issues(predictions=y_pred)
         summary = issue_manager.summary
