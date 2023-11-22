@@ -1036,7 +1036,8 @@ class TestDatalabForRegression:
 
         assert "label" in summary["issue_type"].values
         assert (summary[summary["issue_type"] == "label"]["num_issues"] == 40).all()
-
+        assert np.isclose(summary[summary["issue_type"] == "label"]["score"].values[0], 0.672974, atol=1e-5)
+        
 
 class TestDatalabFindOutlierIssues:
     @pytest.fixture
