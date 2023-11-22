@@ -1014,15 +1014,22 @@ class TestDatalabForRegression:
             "error_idx": error_idx,
         }
 
-    def test_regression(self, regression_data):
+    @pytest.fixture
+    def lab(self, regression_data):
         X, y = regression_data["X"], regression_data["y"]
         test_df = pd.DataFrame(X, columns=["c1", "c2", "c3"])
         test_df["y"] = y
         lab = Datalab(data=test_df, label_name="y", task="regression")
+        return lab
 
+    def test_available_issue_types(self, lab):
         assert set(lab.list_default_issue_types()) == set(["label"])
         assert set(lab.list_possible_issue_types()) == set(["label"])
 
+    def test_regression_with_features(self, lab, regression_data):
+        """Test that the regression issue checks finds 40 label issues, based on the
+        numerical features."""
+        X = regression_data["X"]
         lab.find_issues(features=X)
         lab.report()
         summary = lab.get_issue_summary()
