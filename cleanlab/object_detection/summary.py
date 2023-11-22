@@ -460,8 +460,6 @@ def _get_per_class_confusion_matrix_dict_(
     """
     num_classes = len(predictions[0])
     num_images = len(predictions)
-    if num_images > 1:
-        num_procs = min(num_procs, num_images)
     pool = Pool(num_procs)
     counter_dict: DefaultDict[int, collections.Counter[int]] = collections.defaultdict(
         collections.Counter
