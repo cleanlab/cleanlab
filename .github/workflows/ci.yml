@@ -33,7 +33,7 @@ jobs:
           pip uninstall -y tensorflow
           pip install tensorflow-cpu
       - name: Test with coverage
-        run: pytest --verbose --cov=cleanlab/ --cov-config .coveragerc --cov-report=xml
+        run: pytest --verbose --maxfail=3 --order-tests --cov=cleanlab/ --cov-config .coveragerc --cov-report=xml
         env:
           TEST_FASTTEXT: true
       - uses: codecov/codecov-action@v3
@@ -67,7 +67,7 @@ jobs:
         run: |
           pip install fasttext
       - name: Test with coverage
-        run: pytest --verbose --cov=cleanlab/ --cov-config .coveragerc --cov-report=xml
+        run: pytest --verbose --maxfail=3 --order-tests --cov=cleanlab/ --cov-config .coveragerc --cov-report=xml
         env:
           TEST_FASTTEXT: true
       - uses: codecov/codecov-action@v3

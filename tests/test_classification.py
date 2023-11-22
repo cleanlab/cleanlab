@@ -757,6 +757,7 @@ def test_1D_formats():
     cl.score(X, labels)
 
 
+@pytest.mark.slow
 def test_sklearn_gridsearchcv():
     # hyper-parameters for grid search
     param_grid = {

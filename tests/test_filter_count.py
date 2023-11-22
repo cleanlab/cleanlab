@@ -1113,6 +1113,7 @@ def test_missing_classes():
         assert all(filter.find_label_issues(labels, pred_probs, filter_by=fb) == issues)
 
 
+@pytest.mark.slow
 @pytest.mark.filterwarnings("ignore:WARNING!")
 def test_find_label_issues_match_multiprocessing():
     # minimal version of this test was run in test_missing_classes

@@ -384,6 +384,7 @@ def test_common_multilabel_issues(class_names, pred_probs_multilabel, labels_mul
         assert "Class Name" not in df.columns
 
 
+@pytest.mark.slow
 def test_multilabel_find_label_issues(data_multilabel):
     labels, pred_probs = data_multilabel
     issues = filter.find_label_issues(
@@ -513,6 +514,7 @@ def test_get_class_label_quality_scores():
     assert np.isclose(scores, np.array(expected_res)).all()
 
 
+@pytest.mark.slow
 def test_health_summary_multilabel(pred_probs_multilabel, labels_multilabel):
     health_summary_multilabel = multilabel_health_summary(
         pred_probs=pred_probs_multilabel, labels=labels_multilabel

@@ -434,6 +434,7 @@ def test_swap_score_shifts_in_correct_direction():
     assert scores[1] > scores[2]
 
 
+@pytest.mark.slow
 def test_find_label_issues():
     auxiliary_inputs = _get_valid_inputs_for_compute_scores(ALPHA, labels, predictions)
     test_inputs = _get_valid_inputs_for_compute_scores_per_image(
