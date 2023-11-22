@@ -589,9 +589,10 @@ class Datalab:
         print(load_message)
         return datalab
 
+
 def _ensure_single_prediction_input(pred_probs: Any, predictions: Any, task: str) -> None:
     """Helper function for resolving conflicting inputs.
-    
+
     For greater coverage, it checks if both pred_probs and predictions are provided, regardless of task.
     If that's not the case, it checks if the provided input is unsupported for the given task.
 
