@@ -18,6 +18,7 @@
 Methods to display examples and their label issues in an object detection dataset.
 Here each image can have multiple objects, each with its own bounding box and class label.
 """
+from multiprocessing import Pool
 from typing import Optional, Any, Dict, Tuple, Union, List, TYPE_CHECKING, TypeVar, DefaultDict
 
 import numpy as np
@@ -27,6 +28,10 @@ from cleanlab.internal.constants import (
     MAX_CLASS_TO_SHOW,
     ALPHA,
     EPSILON,
+)
+from cleanlab.object_detection.filter import (
+    _filter_by_class,
+    _calculate_true_positives_false_positives,
 )
 from cleanlab.object_detection.rank import (
     _get_valid_inputs_for_compute_scores,
@@ -230,71 +235,6 @@ def get_sorted_bbox_count_idxs(labels, predictions):
     sorted_pred = sorted(pred_grouped, key=lambda x: x[1], reverse=True)
 
     return sorted_lab, sorted_pred
-
-
-def get_class_metrics(
-    labels=None,
-    predictions=None,
-    *,
-    auxiliary_inputs=None,
-    class_names: Optional[Dict[Any, Any]] = None,
-):
-    """
-    Calculate the accuracy per class.
-
-    This method can help you understand the classes on which the model performs well or poorly.
-
-    For object detection model, evaluation metrics are defined as follows:
-    - True Positive (TP): the predicted bounding box overlaps with a ground truth bounding box with the same class label
-    - False Positive (FP): the predicted bounding box overlaps with a ground truth bounding box with a different class label or does not overlap with any ground truth bounding box
-    - False Negative (FN): the ground truth bounding box does not overlap with any predicted bounding box
-    - True Negative (TN): not applicable
-
-    Therefore, accuracy is defined as TP / (TP + FP + FN).
-
-    Parameters
-    ----------
-    labels:
-        Annotated boxes and class labels in the original dataset, which may contain some errors.
-        Refer to documentation for this argument in :py:func:`object_counts_per_image <cleanlab.object_detection.summary.object_counts_per_image>` for further details.
-
-    predictions:
-        Predictions output by a trained object detection model.
-        Refer to documentation for this argument in :py:func:`object_counts_per_image <cleanlab.object_detection.summary.object_counts_per_image>` for further details.
-
-    auxiliary_inputs: optional
-        Auxiliary inputs to be used in the computation of counts.
-        Refer to documentation for this argument in :py:func:`object_counts_per_image <cleanlab.object_detection.summary.object_counts_per_image>` for further details.
-
-    class_names: optional
-        Optional dictionary mapping one-hot-encoded class labels back to their original class names in the format ``{"integer-label": "original-class-name"}``.
-        You can use this argument to control the classes for which the size distribution is plotted.
-
-    Returns
-    -------
-    class_metrics: Dict[Any, Dict[str, float]]
-        A dictionary mapping each class label to its metrics - TP, FP, FN, accuracy.
-    """
-    if auxiliary_inputs is None:
-        auxiliary_inputs = _get_valid_inputs_for_compute_scores(ALPHA, labels, predictions)
-
-    class_metrics: DefaultDict[int, Any] = _get_class_confusion_matrix(auxiliary_inputs)
-
-    class_metrics_disp: DefaultDict[Any, Any] = collections.defaultdict(lambda: {"accuracy": 0})
-
-    # only display classes that are present in the class_names dict
-    for cl in class_metrics.keys():
-        if class_names is not None and str(cl) not in class_names:
-            continue
-
-        accuracy = class_metrics[cl]["TP"] / (
-            class_metrics[cl]["TP"] + class_metrics[cl]["FP"] + class_metrics[cl]["FN"] + EPSILON
-        )
-
-        disp_name = class_names[str(cl)] if class_names is not None else cl
-        class_metrics_disp[disp_name]["accuracy"] = round(accuracy, 2)
-
-    return class_metrics_disp
 
 
 def plot_class_size_distributions(
@@ -509,51 +449,115 @@ def visualize(
     plt.show()
 
 
-def _get_class_confusion_matrix(auxiliary_inputs):
+def _get_per_class_confusion_matrix_(
+    labels: List[Dict[str, Any]] = None,
+    predictions: List[np.ndarray] = None,
+    iou_threshold: Optional[float] = 0.5,
+    num_procs: int = 1,
+):
+    num_classes = len(predictions[0])
+    num_images = len(predictions)
+    if num_images > 1:
+        num_procs = min(num_procs, num_images)
+    pool = Pool(num_procs)
+    counter_dict = collections.defaultdict(collections.Counter)
+
+    for class_num in range(num_classes):
+        pred_bboxes, lab_bboxes = _filter_by_class(labels, predictions, class_num)
+        tpfp = pool.starmap(
+            _calculate_true_positives_false_positives,
+            zip(
+                pred_bboxes,
+                lab_bboxes,
+                [iou_threshold for _ in range(num_images)],
+                [True for _ in range(num_images)],
+            ),
+        )
+        for j, tpfp_j in enumerate(tpfp):
+            for k, tpfp_k in enumerate(tpfp_j):
+                counter_dict[class_num][k] += np.sum(tpfp_k)
+
+    results_dict = {}
+    for class_num in counter_dict:
+        results_dict[class_num]["TP"] = counter_dict[class_num][0]
+        results_dict[class_num]["FP"] = counter_dict[class_num][1]
+        results_dict[class_num]["FN"] = counter_dict[class_num][2]
+    return results_dict
+
+
+def _get_average_per_class_confusion_matrix_(
+    labels: List[Dict[str, Any]], predictions: List[np.ndarray], num_procs: int = 1
+):
+    iou_thrs = np.linspace(0.5, 0.95, int(np.round((0.95 - 0.5) / 0.05)) + 1, endpoint=True)
+    num_classes = len(predictions[0])
+    avg_metrics = {class_num: {"TP": 0, "FP": 0, "FN": 0} for class_num in range(num_classes)}
+
+    for iou_threshold in iou_thrs:
+        results_dict = _get_per_class_confusion_matrix_(
+            labels, predictions, iou_threshold, num_procs
+        )
+
+        for class_num in results_dict:
+            tp = results_dict[class_num]["TP"]
+            fp = results_dict[class_num]["FP"]
+            fn = results_dict[class_num]["FN"]
+
+            avg_metrics[class_num]["TP"] += tp
+            avg_metrics[class_num]["FP"] += fp
+            avg_metrics[class_num]["FN"] += fn
+
+    num_thresholds = len(iou_thrs) * len(results_dict)
+
+    for class_num in avg_metrics:
+        avg_metrics[class_num]["TP"] /= num_thresholds
+        avg_metrics[class_num]["FP"] /= num_thresholds
+        avg_metrics[class_num]["FN"] /= num_thresholds
+    return avg_metrics
+
+
+def calculate_per_class_metrics(
+    labels: List[Dict[str, Any]], predictions: List[np.ndarray], num_procs: int = 1
+) -> Dict[int, Dict[str, float]]:
     """
-    Calculate the confusion matrix per class.
-    In the context of object detection, the confusion matrix is defined as follows:
-    - True Positive (TP): the predicted bounding box overlaps with a ground truth bounding box with the same class label
-    - False Positive (FP): the predicted bounding box overlaps with a ground truth bounding box with a different class label or does not overlap with any ground truth bounding box
-    - False Negative (FN): the ground truth bounding box does not overlap with any predicted bounding box
-    - True Negative (TN): not applicable
+    Parameters
+    ----------
+    labels:
+        A list of ``N`` dictionaries such that ``labels[i]`` contains the given labels for the `i`-th image.
+        Refer to documentation for this argument in :py:func:`find_label_issues <cleanlab.object_detection.filter.find_label_issues>` for further details.
+
+    predictions:
+        A list of ``N`` ``np.ndarray`` such that ``predictions[i]`` corresponds to the model predictions for the `i`-th image.
+        Refer to documentation for this argument in :py:func:`find_label_issues <cleanlab.object_detection.filter.find_label_issues>` for further details.
+
+    num_procs:
+        Number of processes for parallelization. Default is 1.
+
+    Returns
+    -------
+    per_class_metrics: dict
+        A dictionary containing per-class metrics.
+
     """
-    # TP: True Positive, FP: False Positive, FN: False Negative
-    class_metrics: DefaultDict[Any, Any] = collections.defaultdict(
-        lambda: {"TP": 0, "FP": 0, "FN": 0}
-    )
+    avg_metrics = _get_average_per_class_confusion_matrix_(labels, predictions, num_procs)
 
-    for sample in auxiliary_inputs:
-        matched_label_idx = set()
+    avg_metrics_dict = {}
 
-        iou_t = sample["iou_matrix"].T  # row: prediction bbox, col: label bbox
-        for i, pred_overlaps in enumerate(iou_t):
-            pred_label = sample["pred_labels"][i]
-            max_iou_idx = np.argmax(pred_overlaps)
-            max_iou = pred_overlaps[max_iou_idx]
-            lab_label = sample["lab_labels"][max_iou_idx]
+    for class_num in avg_metrics:
+        tp = avg_metrics[class_num]["TP"]
+        fp = avg_metrics[class_num]["FP"]
+        fn = avg_metrics[class_num]["FN"]
 
-            if max_iou < 0.5:
-                # FP case: the prediction does not have sufficient overlap with any ground truth bounding box
-                class_metrics[pred_label]["FP"] += 1
-            elif max_iou_idx in matched_label_idx:
-                # FP case: the prediction overlaps with a ground truth bounding box that has already been matched with a different prediction
-                class_metrics[pred_label]["FP"] += 1
-            elif pred_label == lab_label:
-                # TP case: the prediction overlaps with a ground truth bounding box with the same class label
-                class_metrics[pred_label]["TP"] += 1
-                matched_label_idx.add(max_iou_idx)
-            else:
-                # FP case: the prediction overlaps with a ground truth bounding box with a different class label
-                class_metrics[pred_label]["FP"] += 1
+        precision = tp / (tp + fp + 1e-12)  # Avoid division by zero
+        recall = tp / (tp + fn + 1e-12)  # Avoid division by zero
+        f1 = 2 * (precision * recall) / (precision + recall + 1e-12)  # Avoid division by zero
 
-        # FN case - any not detected ground truth bounding box
-        for idx in range(len(sample["lab_labels"])):
-            if idx not in matched_label_idx:
-                lab_label = sample["lab_labels"][idx]
-                class_metrics[lab_label]["FN"] += 1
+        avg_metrics_dict[class_num] = {
+            "average precision": precision,
+            "average recall": recall,
+            "average f1": f1,
+        }
 
-    return class_metrics
+    return avg_metrics_dict
 
 
 def _normalize_by_total(freq):
