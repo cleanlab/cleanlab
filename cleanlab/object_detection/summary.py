@@ -449,18 +449,23 @@ def visualize(
     plt.show()
 
 
-def _get_per_class_confusion_matrix_(
-    labels: List[Dict[str, Any]] = None,
-    predictions: List[np.ndarray] = None,
+def _get_per_class_confusion_matrix_dict_(
+    labels: List[Dict[str, Any]],
+    predictions: List[np.ndarray],
     iou_threshold: Optional[float] = 0.5,
     num_procs: int = 1,
-):
+) -> DefaultDict[int, Dict[str, int]]:
+    """
+    Returns a confusion matrix dictionary for each class containing TP,FP and FN.
+    """
     num_classes = len(predictions[0])
     num_images = len(predictions)
     if num_images > 1:
         num_procs = min(num_procs, num_images)
     pool = Pool(num_procs)
-    counter_dict = collections.defaultdict(collections.Counter)
+    counter_dict: DefaultDict[int, collections.Counter[int]] = collections.defaultdict(
+        collections.Counter
+    )
 
     for class_num in range(num_classes):
         pred_bboxes, lab_bboxes = _filter_by_class(labels, predictions, class_num)
@@ -477,23 +482,41 @@ def _get_per_class_confusion_matrix_(
             for k, tpfp_k in enumerate(tpfp_j):
                 counter_dict[class_num][k] += np.sum(tpfp_k)
 
-    results_dict = {}
+    results: DefaultDict[int, Dict[str, int]] = collections.defaultdict(dict)
     for class_num in counter_dict:
-        results_dict[class_num]["TP"] = counter_dict[class_num][0]
-        results_dict[class_num]["FP"] = counter_dict[class_num][1]
-        results_dict[class_num]["FN"] = counter_dict[class_num][2]
-    return results_dict
+        results[class_num]["TP"] = counter_dict[class_num][0]
+        results[class_num]["FP"] = counter_dict[class_num][1]
+        results[class_num]["FN"] = counter_dict[class_num][2]
+    return results
 
 
 def _get_average_per_class_confusion_matrix_(
     labels: List[Dict[str, Any]], predictions: List[np.ndarray], num_procs: int = 1
-):
+) -> dict[int, Dict[str, float]]:
+    """
+    Parameters
+    ----------
+    labels:
+        A list of ``N`` dictionaries such that ``labels[i]`` contains the given labels for the `i`-th image.
+        Refer to documentation for this argument in :py:func:`find_label_issues <cleanlab.object_detection.filter.find_label_issues>` for further details.
+
+    predictions:
+        A list of ``N`` ``np.ndarray`` such that ``predictions[i]`` corresponds to the model predictions for the `i`-th image.
+        Refer to documentation for this argument in :py:func:`find_label_issues <cleanlab.object_detection.filter.find_label_issues>` for further details.
+
+    num_procs:
+        Number of processes for parallelization. Default is 1.
+
+    Returns
+    -------
+        Average of TP,FP, FN for each class across iou thresholds.
+    """
     iou_thrs = np.linspace(0.5, 0.95, int(np.round((0.95 - 0.5) / 0.05)) + 1, endpoint=True)
     num_classes = len(predictions[0])
-    avg_metrics = {class_num: {"TP": 0, "FP": 0, "FN": 0} for class_num in range(num_classes)}
+    avg_metrics = {class_num: {"TP": 0.0, "FP": 0.0, "FN": 0.0} for class_num in range(num_classes)}
 
     for iou_threshold in iou_thrs:
-        results_dict = _get_per_class_confusion_matrix_(
+        results_dict = _get_per_class_confusion_matrix_dict_(
             labels, predictions, iou_threshold, num_procs
         )
 
