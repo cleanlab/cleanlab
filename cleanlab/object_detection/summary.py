@@ -18,15 +18,22 @@
 Methods to display examples and their label issues in an object detection dataset.
 Here each image can have multiple objects, each with its own bounding box and class label.
 """
+from multiprocessing import Pool
+
 from typing import Optional, Any, Dict, Tuple, Union, List, TYPE_CHECKING, TypeVar, DefaultDict
 
 import numpy as np
 import collections
+from collections import defaultdict
 
 from cleanlab.internal.constants import (
     MAX_CLASS_TO_SHOW,
     ALPHA,
     EPSILON,
+)
+from cleanlab.object_detection.filter import (
+    _calculate_true_positives_false_positives,
+    _filter_by_class,
 )
 from cleanlab.object_detection.rank import (
     _get_valid_inputs_for_compute_scores,
@@ -549,3 +556,90 @@ def _draw_boxes(fig, ax, bboxes, labels, edgecolor="g", linestyle="-", linewidth
             ax = _draw_labels(ax, rect, label, edgecolor)
 
     return fig, ax
+
+
+def _get_per_class_confusion_matrix_(
+    labels: List[Dict[str, Any]] = None,
+    predictions: List[np.ndarray] = None,
+    iou_threshold: Optional[float] = 0.5,
+    num_procs: int = 1,
+):
+    num_classes = len(predictions[0])
+    num_images = len(predictions)
+    if num_images > 1:
+        num_procs = min(num_procs, num_images)
+    pool = Pool(num_procs)
+    counter_dict = defaultdict(collections.Counter)
+
+    for class_num in range(num_classes):
+        pred_bboxes, lab_bboxes = _filter_by_class(labels, predictions, class_num)
+        tpfp = pool.starmap(
+            _calculate_true_positives_false_positives,
+            zip(
+                pred_bboxes,
+                lab_bboxes,
+                [iou_threshold for _ in range(num_images)],
+                [True for _ in range(num_images)],
+            ),
+        )
+        for j, tpfp_j in enumerate(tpfp):
+            for k, tpfp_k in enumerate(tpfp_j):
+                counter_dict[class_num][k] += np.sum(tpfp_k)
+
+    results_dict = {}
+    for class_num in counter_dict:
+        results_dict[class_num]["TP"] = counter_dict[class_num][0]
+        results_dict[class_num]["FP"] = counter_dict[class_num][1]
+        results_dict[class_num]["FN"] = counter_dict[class_num][2]
+    return results_dict
+
+
+def _get_average_per_class_confusion_matrix_(labels, predictions, num_procs=1):
+    iou_thrs = np.linspace(0.5, 0.95, int(np.round((0.95 - 0.5) / 0.05)) + 1, endpoint=True)
+    num_classes = len(predictions[0])
+    avg_metrics = {class_num: {"TP": 0, "FP": 0, "FN": 0} for class_num in range(num_classes)}
+
+    for iou_threshold in iou_thrs:
+        results_dict = _get_per_class_confusion_matrix_(
+            labels, predictions, iou_threshold, num_procs
+        )
+
+        for class_num in results_dict:
+            tp = results_dict[class_num]["TP"]
+            fp = results_dict[class_num]["FP"]
+            fn = results_dict[class_num]["FN"]
+
+            avg_metrics[class_num]["TP"] += tp
+            avg_metrics[class_num]["FP"] += fp
+            avg_metrics[class_num]["FN"] += fn
+
+    num_thresholds = len(iou_thrs) * len(results_dict)
+
+    for class_num in avg_metrics:
+        avg_metrics[class_num]["TP"] /= num_thresholds
+        avg_metrics[class_num]["FP"] /= num_thresholds
+        avg_metrics[class_num]["FN"] /= num_thresholds
+    return avg_metrics
+
+
+def calculate_average_precision_recall_f1_per_class(labels, predictions, num_procs=1):
+    avg_metrics = _get_average_per_class_confusion_matrix_(labels, predictions, num_procs)
+
+    avg_metrics_dict = {}
+
+    for class_num in avg_metrics:
+        tp = avg_metrics[class_num]["TP"]
+        fp = avg_metrics[class_num]["FP"]
+        fn = avg_metrics[class_num]["FN"]
+
+        precision = tp / (tp + fp + 1e-12)  # Avoid division by zero
+        recall = tp / (tp + fn + 1e-12)  # Avoid division by zero
+        f1 = 2 * (precision * recall) / (precision + recall + 1e-12)  # Avoid division by zero
+
+        avg_metrics_dict[class_num] = {
+            "average precision": precision,
+            "average recall": recall,
+            "average f1": f1,
+        }
+
+    return avg_metrics_dict
