@@ -39,6 +39,10 @@ class RegressionLabelIssueManager(IssueManager):
     clean_learning_kwargs :
         Keyword arguments to pass to the :py:meth:`CleanLearning <cleanlab.regression.learn.CleanLearning>` constructor.
 
+    threshold :
+        The threshold to use to determine if an example has a label issue. Only used if
+        predictions are provided to `~RegressionLabelIssueManager.find_issues`, not if
+        features are provided. Default is 0.1.
     """
 
     description: ClassVar[
@@ -59,6 +63,7 @@ class RegressionLabelIssueManager(IssueManager):
         self,
         datalab: Datalab,
         clean_learning_kwargs: Optional[Dict[str, Any]] = None,
+        threshold: float = 0.1,
         health_summary_parameters: Optional[Dict[str, Any]] = None,
         **_,
     ):
@@ -66,6 +71,7 @@ class RegressionLabelIssueManager(IssueManager):
         self.cl = CleanLearning(**(clean_learning_kwargs or {}))
         # This is a field for prioritizing features only when using a custom model
         self._uses_custom_model = "model" in (clean_learning_kwargs or {})
+        self.threshold = threshold
 
     def find_issues(
         self,
@@ -97,7 +103,7 @@ class RegressionLabelIssueManager(IssueManager):
             self.issues = find_issues_with_predictions(
                 predictions=predictions,
                 y=self.datalab.labels,
-                **kwargs,  # function sanitizes kwargs
+                **{**kwargs, **{"threshold": self.threshold}},  # function sanitizes kwargs
             )
 
         # Get a summarized dataframe of the label issues
@@ -133,7 +139,7 @@ class RegressionLabelIssueManager(IssueManager):
 def find_issues_with_predictions(
     predictions: np.ndarray,
     y: np.ndarray,
-    threshold=0.1,
+    threshold: float,
     **kwargs,
 ) -> pd.DataFrame:
     """Find label issues in a regression dataset based on predictions.
@@ -150,7 +156,6 @@ def find_issues_with_predictions(
 
     threshold :
         The threshold to use to determine if an example has a label issue.
-        Default is 0.1.
 
     **kwargs :
         Various keyword arguments.
