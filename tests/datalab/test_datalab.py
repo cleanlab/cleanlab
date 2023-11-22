@@ -1063,6 +1063,16 @@ class TestDatalabForRegression:
         assert (summary[summary["issue_type"] == "label"]["num_issues"] == 22).all()
         assert np.isclose(summary[summary["issue_type"] == "label"]["score"].values[0], 0.58768, atol=1e-5)
         
+    def test_regression_with_model_and_features(self, lab, regression_data):
+        """Test that the regression issue checks find label issue with another model."""
+        from sklearn.neighbors import KNeighborsRegressor
+        model = KNeighborsRegressor(n_neighbors=5)
+        X = regression_data["X"]
+        lab.find_issues(features=X, issue_types={"label": {"clean_learning_kwargs": {"model": model}}})
+        summary = lab.get_issue_summary()
+        assert (summary[summary["issue_type"] == "label"]["num_issues"] == 30).all()
+        assert np.isclose(summary[summary["issue_type"] == "label"]["score"].values[0], 0.777305, atol=1e-5)
+        
 
 class TestDatalabFindOutlierIssues:
     @pytest.fixture
