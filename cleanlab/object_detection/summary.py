@@ -492,7 +492,7 @@ def _get_per_class_confusion_matrix_dict_(
 
 def _get_average_per_class_confusion_matrix_(
     labels: List[Dict[str, Any]], predictions: List[np.ndarray], num_procs: int = 1
-) -> dict[int, Dict[str, float]]:
+) -> Dict[int, Dict[str, float]]:
     """
     Parameters
     ----------
