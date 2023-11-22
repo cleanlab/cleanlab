@@ -488,7 +488,7 @@ def _get_per_class_confusion_matrix_dict_(
     return results
 
 
-def _get_average_per_class_confusion_matrix_(
+def get_average_per_class_confusion_matrix_(
     labels: List[Dict[str, Any]], predictions: List[np.ndarray], num_procs: int = 1
 ) -> Dict[int, Dict[str, float]]:
     """
@@ -559,7 +559,7 @@ def calculate_per_class_metrics(
         A dictionary containing per-class metrics.
 
     """
-    avg_metrics = _get_average_per_class_confusion_matrix_(labels, predictions, num_procs)
+    avg_metrics = get_average_per_class_confusion_matrix_(labels, predictions, num_procs)
 
     avg_metrics_dict = {}
 
