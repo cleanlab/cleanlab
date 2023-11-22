@@ -3,7 +3,9 @@ import pytest
 import pandas as pd
 import scipy.sparse as sp
 
-from cleanlab.datalab.internal.issue_manager.underperf_group import UnderperformingGroupIssueManager
+from cleanlab.datalab.internal.issue_manager.underperforming_group import (
+    UnderperformingGroupIssueManager,
+)
 from sklearn.datasets import make_blobs, load_iris
 
 SEED = 42
