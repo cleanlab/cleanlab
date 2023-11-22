@@ -53,7 +53,7 @@ class TestUnderperformingGroupIssueManager:
             datalab=lab, threshold=0.2, clustering_kwargs=clustering_kwargs
         )
 
-    def test_find_issues_no_underperf_group(self, issue_manager, make_data):
+    def test_find_issues_no_underperforming_group(self, issue_manager, make_data):
         data = make_data()
         features, labels, pred_probs = data["features"], data["labels"], data["pred_probs"]
         N = len(labels)
@@ -117,7 +117,7 @@ class TestUnderperformingGroupIssueManager:
 
         Mainly focused on the clustering info.
         """
-        UNDERPERF_CLUSTER_ID = 0
+        UNDERPERFORMING_CLUSTER_ID = 0
         data = make_data(noisy=True)
         features, pred_probs, labels = data["features"], data["pred_probs"], data["labels"]
         issue_manager.find_issues(features=features, pred_probs=pred_probs)
@@ -139,12 +139,12 @@ class TestUnderperformingGroupIssueManager:
         clustering_info = info["clustering"]
         assert clustering_info["algorithm"] is None
         assert clustering_info["params"] == {}
-        assert clustering_info["stats"]["underperforming_cluster_id"] == UNDERPERF_CLUSTER_ID
+        assert clustering_info["stats"]["underperforming_cluster_id"] == UNDERPERFORMING_CLUSTER_ID
         cluster_labels = clustering_info["stats"]["cluster_ids"]
         issues = issue_manager.issues
         issue_indices = issues.index[issues["is_underperforming_group_issue"]].values
         assert np.all(
-            cluster_labels[issue_indices] == UNDERPERF_CLUSTER_ID
+            cluster_labels[issue_indices] == UNDERPERFORMING_CLUSTER_ID
         ), "All samples with issue should belong to underperforming cluster"
 
         np.testing.assert_equal(clustering_info["stats"]["cluster_ids"], labels)

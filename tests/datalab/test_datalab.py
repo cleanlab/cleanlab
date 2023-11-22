@@ -1309,8 +1309,8 @@ class TestDataLabUnderperformingIssue:
         summary = lab.get_issue_summary()
         assert len(summary) == 2
         assert "underperforming_group" in summary["issue_type"].values
-        underperf_group_summary = lab.get_issue_summary("underperforming_group")
-        assert underperf_group_summary["num_issues"].values[0] > 1
+        underperforming_group_summary = lab.get_issue_summary("underperforming_group")
+        assert underperforming_group_summary["num_issues"].values[0] > 1
 
     def test_underperforming_cluster_id(self):
         """
@@ -1387,8 +1387,8 @@ class TestDataLabUnderperformingIssue:
         )
         info = lab.get_info("underperforming_group")
         assert info["clustering"]["algorithm"] is None
-        underperf_group_summary = lab.get_issue_summary("underperforming_group")
-        assert underperf_group_summary["num_issues"].values[0] > 1
+        underperforming_group_summary = lab.get_issue_summary("underperforming_group")
+        assert underperforming_group_summary["num_issues"].values[0] > 1
 
         # Use new datalab instance to compute KNN graph and perform clustering
         lab = Datalab(data={"labels": labels}, label_name="labels")
@@ -1453,11 +1453,11 @@ class TestIssueManagersReuseKnnGraph:
         pred_probs = pred_probs / pred_probs.sum(axis=1, keepdims=True)
         return pred_probs
 
-    def test_underperf_group_reuses_knn_graph(self, features, pred_probs, labels):
+    def test_underperforming_group_reuses_knn_graph(self, features, pred_probs, labels):
         # Run 1: only underperforming_group
         lab = Datalab(data={"labels": labels}, label_name="labels")
         find_issues_kwargs = {"issue_types": {"underperforming_group": {"k": self.k}}}
-        time_only_underperf_group = timeit.timeit(
+        time_only_underperforming_group = timeit.timeit(
             lambda: lab.find_issues(features=features, pred_probs=pred_probs, **find_issues_kwargs),
             number=1,
         )
@@ -1466,10 +1466,10 @@ class TestIssueManagersReuseKnnGraph:
         find_issues_kwargs = {
             "issue_types": {"outlier": {"k": self.k}, "underperforming_group": {"k": self.k}},
         }
-        time_underperf_after_outlier = timeit.timeit(
+        time_underperforming_after_outlier = timeit.timeit(
             lambda: lab.find_issues(features=features, pred_probs=pred_probs, **find_issues_kwargs),
             number=1,
         )
         assert (
-            time_underperf_after_outlier < time_only_underperf_group
+            time_underperforming_after_outlier < time_only_underperforming_group
         ), "KNN graph reuse should make this run of find_issues faster."

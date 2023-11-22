@@ -72,7 +72,7 @@ class UnderperformingGroupIssueManager(IssueManager):
         2: ["threshold"],
     }
     OUTLIER_CLUSTER_LABELS = (-1,)
-    NO_UNDERPERF_CLUSTER_ID = min(OUTLIER_CLUSTER_LABELS) - 1
+    NO_UNDERPERFORMING_CLUSTER_ID = min(OUTLIER_CLUSTER_LABELS) - 1
 
     def __init__(
         self,
@@ -249,7 +249,7 @@ class UnderperformingGroupIssueManager(IssueManager):
         worst_cluster_id = (
             worst_cluster_id
             if worst_cluster_ratio < self.threshold
-            else self.NO_UNDERPERF_CLUSTER_ID
+            else self.NO_UNDERPERFORMING_CLUSTER_ID
         )
         return worst_cluster_id, worst_cluster_ratio
 
