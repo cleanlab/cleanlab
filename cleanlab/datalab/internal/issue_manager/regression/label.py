@@ -17,13 +17,14 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional
+import numpy as np
+import pandas as pd
 
 from cleanlab.regression.learn import CleanLearning
 from cleanlab.datalab.internal.issue_manager import IssueManager
+from cleanlab.regression.rank import get_label_quality_scores
 
 if TYPE_CHECKING:  # pragma: no cover
-    import numpy as np
-    import pandas as pd
     from cleanlab.datalab.datalab import Datalab
 
 
@@ -63,45 +64,41 @@ class RegressionLabelIssueManager(IssueManager):
     ):
         super().__init__(datalab)
         self.cl = CleanLearning(**(clean_learning_kwargs or {}))
-
-    @staticmethod
-    def _process_find_label_issues_kwargs(kwargs: Dict[str, Any]) -> Dict[str, Any]:
-        """Searches for keyword arguments that are meant for the
-        CleanLearning.find_label_issues method call
-
-        Examples
-        --------
-        >>> from cleanlab.datalab.internal.issue_manager.regression.label import LabelIssueManager
-        >>> RegressionLabelIssueManager._process_find_label_issues_kwargs({'coarse_search_range': [0.1, 0.9]})
-        {'coarse_search_range': [0.1, 0.9]}
-        """
-        accepted_kwargs = [
-            "uncertainty",
-            "coarse_search_range",
-            "fine_search_size",
-            "save_space",
-            "model_kwargs",
-        ]
-        return {k: v for k, v in kwargs.items() if k in accepted_kwargs and v is not None}
+        # This is a field for prioritizing features only when using a custom model
+        self._uses_custom_model = "model" in (clean_learning_kwargs or {})
 
     def find_issues(
         self,
-        features: np.ndarray,
+        features: Optional[np.ndarray] = None,
+        predictions: Optional[np.ndarray] = None,
         **kwargs,
     ) -> None:
         """Find label issues in the datalab."""
-        if features is None:
+        if features is None and predictions is None:
             raise ValueError(
-                "Regression requires numerical `features` "
+                "Regression requires numerical `features` or `predictions` "
                 "to be passed in as an argument to `find_issues`."
             )
+        # If features are provided and either a custom model is used or no predictions are provided
+        use_features = features is not None and (self._uses_custom_model or predictions is None)
+        if use_features:
+            assert features is not None  # mypy won't narrow the type for some reason
+            self.issues = find_issues_with_features(
+                features=features,
+                y=self.datalab.labels,
+                cl=self.cl,
+                **kwargs,  # function sanitizes kwargs
+            )
+            self.issues.rename(columns={"label_quality": self.issue_score_key}, inplace=True)
 
-        self.issues = self.cl.find_label_issues(
-            X=features,
-            y=self.datalab.labels,
-            **self._process_find_label_issues_kwargs(kwargs),
-        )
-        self.issues.rename(columns={"label_quality": self.issue_score_key}, inplace=True)
+        # Otherwise, if predictions are provided, process them
+        else:
+            assert predictions is not None  # mypy won't narrow the type for some reason
+            self.issues = find_issues_with_predictions(
+                predictions=predictions,
+                y=self.datalab.labels,
+                **kwargs,  # function sanitizes kwargs
+            )
 
         # Get a summarized dataframe of the label issues
         self.summary = self.make_summary(score=self.issues[self.issue_score_key].mean())
@@ -131,3 +128,104 @@ class RegressionLabelIssueManager(IssueManager):
         }
 
         return info_dict
+
+
+def find_issues_with_predictions(
+    predictions: np.ndarray,
+    y: np.ndarray,
+    threshold=0.1,
+    **kwargs,
+) -> pd.DataFrame:
+    """Find label issues in a regression dataset based on predictions.
+    This uses a threshold to determine if an example has a label issue
+    based on the quality score.
+
+    Parameters
+    ----------
+    predictions :
+        The predictions from a regression model.
+
+    y :
+        The given labels.
+
+    threshold :
+        The threshold to use to determine if an example has a label issue.
+        Default is 0.1.
+
+    **kwargs :
+        Various keyword arguments.
+
+    Returns
+    -------
+    issues :
+        A dataframe of the issues. It contains the following columns:
+        - is_label_issue : bool
+            True if the example has a label issue.
+        - label_score : float
+            The quality score of the label.
+        - given_label : float
+            The given label. It is the same as the y parameter.
+        - predicted_label : float
+            The predicted label. It is the same as the predictions parameter.
+    """
+    _accepted_kwargs = ["method"]
+    _kwargs = {k: kwargs.get(k) for k in _accepted_kwargs}
+    _kwargs = {k: v for k, v in _kwargs.items() if v is not None}
+    quality_scores = get_label_quality_scores(labels=y, predictions=predictions, **_kwargs)
+
+    median_score = np.median(quality_scores)
+    is_label_issue_mask = quality_scores < median_score * threshold
+
+    issues = pd.DataFrame(
+        {
+            "is_label_issue": is_label_issue_mask,
+            "label_score": quality_scores,
+            "given_label": y,
+            "predicted_label": predictions,
+        }
+    )
+    return issues
+
+
+def find_issues_with_features(
+    features: np.ndarray,
+    y: np.ndarray,
+    cl: CleanLearning,
+    **kwargs,
+) -> pd.DataFrame:
+    """Find label issues in a regression dataset based on features.
+    This delegates the work to the CleanLearning.find_label_issues method.
+
+    Parameters
+    ----------
+    features :
+        The numerical features from a regression dataset.
+
+    y :
+        The given labels.
+
+    **kwargs :
+        Various keyword arguments.
+
+    Returns
+    -------
+    issues :
+        A dataframe of the issues. It contains the following columns:
+        - is_label_issue : bool
+            True if the example has a label issue.
+        - label_score : float
+            The quality score of the label.
+        - given_label : float
+            The given label. It is the same as the y parameter.
+        - predicted_label : float
+            The predicted label. It is determined by the CleanLearning.find_label_issues method.
+    """
+    _accepted_kwargs = [
+        "uncertainty",
+        "coarse_search_range",
+        "fine_search_size",
+        "save_space",
+        "model_kwargs",
+    ]
+    _kwargs = {k: v for k, v in kwargs.items() if k in _accepted_kwargs and v is not None}
+    return cl.find_label_issues(X=features, y=y, **_kwargs)
