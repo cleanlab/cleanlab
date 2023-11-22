@@ -1038,6 +1038,31 @@ class TestDatalabForRegression:
         assert (summary[summary["issue_type"] == "label"]["num_issues"] == 40).all()
         assert np.isclose(summary[summary["issue_type"] == "label"]["score"].values[0], 0.672974, atol=1e-5)
         
+    def test_regression_with_predictions(self, lab, regression_data):
+        """Test that the regression issue checks find 12 label issues, based on the
+        predictions of a model.
+        
+        Instead of running a model, we use the ground-truth to emulate a perfect model's predictions.
+        
+        Testing the default behavior, we expect to find some label issues with a given mean score.
+        Increasing a threshold for flagging issues will flag more issues, but won't change the score.
+        """
+        
+        # Use ground-truth to emulate a perfect model's predictions
+        y_pred = regression_data["true_y"]
+        
+        lab.find_issues(predictions=y_pred)
+        summary = lab.get_issue_summary()
+        assert (summary[summary["issue_type"] == "label"]["num_issues"] == 12).all()
+        assert np.isclose(summary[summary["issue_type"] == "label"]["score"].values[0], 0.58768, atol=1e-5)
+        
+        # Apply a threshold for flagging issues. A larger threshold will flag more issues,
+        # but won't change the score.
+        lab.find_issues(predictions=y_pred, issue_types={"label": {"threshold": 0.5}})
+        summary = lab.get_issue_summary()
+        assert (summary[summary["issue_type"] == "label"]["num_issues"] == 22).all()
+        assert np.isclose(summary[summary["issue_type"] == "label"]["score"].values[0], 0.58768, atol=1e-5)
+        
 
 class TestDatalabFindOutlierIssues:
     @pytest.fixture
