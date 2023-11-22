@@ -56,7 +56,7 @@ from cleanlab.object_detection.summary import (
     plot_class_distribution,
     plot_class_size_distributions,
     visualize,
-    _get_class_confusion_matrix,
+    calculate_per_class_metrics,
 )
 
 np.random.seed(0)
@@ -1007,6 +1007,7 @@ def test_calculate_true_positives_false_positives(return_false_negative):
         for j, tpfp_j in enumerate(tpfp):
             for k, tpfp_k in enumerate(tpfp_j):
                 counter_dict[class_num][k] += np.sum(tpfp_k)
+
     lab_empty = np.array([], dtype=np.float32)
     pred_bboxes = np.array([[1, 1, 5, 5]])
     lab_bboxes = np.array([[1, 1, 6, 6], [3, 3, 8, 8]])
@@ -1044,3 +1045,10 @@ def test_calculate_true_positives_false_positives(return_false_negative):
         np.testing.assert_array_equal(expected_false_positives, false_positives)
     assert counter_dict[4][0] == 5
     assert counter_dict[0][1] == 4
+
+
+def test_per_class_metrics():
+    per_class_metrics = calculate_per_class_metrics(labels, predictions)
+    assert len(per_class_metrics) == len(predictions[0])
+    assert np.isclose(per_class_metrics[9]["average precision"], 0.5)
+    assert np.isclose(per_class_metrics[6]["average f1"], 0.66666)
