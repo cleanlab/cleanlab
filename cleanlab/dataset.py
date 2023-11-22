@@ -24,7 +24,7 @@ and which classes to merge (see :py:func:`find_overlapping_classes <cleanlab.dat
 from typing import Optional, cast
 import numpy as np
 import pandas as pd
-from cleanlab.count import estimate_joint
+from cleanlab.count import estimate_joint, num_label_issues
 
 
 def rank_classes_by_label_quality(
@@ -298,8 +298,8 @@ def overall_label_health_score(
     pred_probs=None,
     *,
     num_examples=None,
-    joint=None,
     confident_joint=None,
+    joint=None,
     multi_label=False,
     verbose=True,
 ) -> float:
@@ -340,24 +340,32 @@ def overall_label_health_score(
         raise ValueError(
             "For multilabel data, please instead call: multilabel_classification.dataset.overall_multilabel_health_score()"
         )
-
-    if joint is None:
-        joint = estimate_joint(
-            labels=labels,
-            pred_probs=pred_probs,
-            confident_joint=confident_joint,
-        )
     if num_examples is None:
-        num_examples = _get_num_examples(labels=labels)
-    joint_trace = joint.trace()
-    if verbose:
+        num_examples = _get_num_examples(labels=labels, confident_joint=confident_joint)
+
+    if pred_probs is None or labels is None:
+        if joint is None:
+            joint = estimate_joint(
+                labels=labels,
+                pred_probs=pred_probs,
+                confident_joint=confident_joint,
+            )
+        joint_trace = joint.trace()
         num_issues = (num_examples * (1 - joint_trace)).round().astype(int)
-        print(
-            f" * Overall, about {1 - joint_trace:.0%} ({num_issues:,} of the {num_examples:,}) "
-            f"labels in your dataset have potential issues.\n"
-            f" ** The overall label health score for this dataset is: {joint_trace:.2f}."
+        health_score = joint_trace
+    else:
+        num_issues = num_label_issues(
+            labels=labels, pred_probs=pred_probs, confident_joint=confident_joint
         )
-    return joint_trace
+        health_score = 1 - num_issues / num_examples
+
+    if verbose:
+        print(
+            f" * Overall, about {(1 - health_score):.0%} ({num_issues:,} of the {num_examples:,}) "
+            f"labels in your dataset have potential issues.\n"
+            f" ** The overall label health score for this dataset is: {health_score:.2f}."
+        )
+    return health_score
 
 
 def health_summary(
@@ -477,7 +485,6 @@ def health_summary(
         labels=labels,
         pred_probs=pred_probs,
         num_examples=num_examples,
-        joint=joint,
         confident_joint=confident_joint,
         verbose=verbose,
     )

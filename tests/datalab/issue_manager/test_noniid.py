@@ -61,6 +61,13 @@ class TestNonIIDIssueManager:
         return embeddings_array
 
     @pytest.fixture
+    def pred_probs(self, lab):
+        pred_probs_array = (
+            np.arange(lab.get_info("statistics")["num_examples"] * 10).reshape(-1, 1)
+        ) / len(np.arange(lab.get_info("statistics")["num_examples"] * 10).reshape(-1, 1))
+        return pred_probs_array
+
+    @pytest.fixture
     def issue_manager(self, lab):
         return NonIIDIssueManager(
             datalab=lab,
@@ -116,7 +123,49 @@ class TestNonIIDIssueManager:
             issues_perm["is_non_iid_issue"] == expected_permuted_issue_mask
         ), "Issue mask should be correct"
         assert summary_perm["issue_type"][0] == "non_iid"
-        # ensure score is large, cannot easily ensure precise value because random seed has different effects on different OS:
+        # ensure score is large, cannot easily ensure precise value because random seed has different effects on
+        # different OS:
+        assert summary_perm["score"][0] > 0.05
+        assert info_perm.get("p-value", None) is not None, "Should have p-value"
+        assert summary_perm["score"][0] == pytest.approx(expected=info_perm["p-value"], abs=1e-7)
+
+    def test_find_issues_using_pred_probs(self, issue_manager, pred_probs):
+        np.random.seed(SEED)
+        issue_manager.find_issues(pred_probs=pred_probs)
+        issues_sort, summary_sort, info_sort = (
+            issue_manager.issues,
+            issue_manager.summary,
+            issue_manager.info,
+        )
+        expected_sorted_issue_mask = np.array([False] * 46 + [True] + [False] * 3)
+        assert np.all(
+            issues_sort["is_non_iid_issue"] == expected_sorted_issue_mask
+        ), "Issue mask should be correct"
+        assert summary_sort["issue_type"][0] == "non_iid"
+        assert summary_sort["score"][0] == pytest.approx(expected=0.0, abs=1e-7)
+        assert info_sort.get("p-value", None) is not None, "Should have p-value"
+        assert summary_sort["score"][0] == pytest.approx(expected=info_sort["p-value"], abs=1e-7)
+
+        permutation = np.random.permutation(len(pred_probs))
+        new_issue_manager = NonIIDIssueManager(
+            datalab=issue_manager.datalab,
+            metric="euclidean",
+            k=10,
+        )
+
+        new_issue_manager.find_issues(pred_probs=pred_probs[permutation])
+        issues_perm, summary_perm, info_perm = (
+            new_issue_manager.issues,
+            new_issue_manager.summary,
+            new_issue_manager.info,
+        )
+        expected_permuted_issue_mask = np.array([False] * len(pred_probs))
+        assert np.all(
+            issues_perm["is_non_iid_issue"] == expected_permuted_issue_mask
+        ), "Issue mask should be correct"
+        assert summary_perm["issue_type"][0] == "non_iid"
+        # ensure score is large, cannot easily ensure precise value because random seed has different effects on
+        # different OS:
         assert summary_perm["score"][0] > 0.05
         assert info_perm.get("p-value", None) is not None, "Should have p-value"
         assert summary_perm["score"][0] == pytest.approx(expected=info_perm["p-value"], abs=1e-7)
@@ -136,12 +185,38 @@ class TestNonIIDIssueManager:
             "Number of examples with this issue:"
         ) in report
 
+        issue_manager.find_issues(features=embeddings)
         report = issue_manager.report(
             issues=issue_manager.issues,
             summary=issue_manager.summary,
             info=issue_manager.info,
             verbosity=3,
         )
+
+        assert "Additional Information: " in report
+
+    def test_report_using_pred_probs(self, issue_manager, pred_probs):
+        np.random.seed(SEED)
+        issue_manager.find_issues(pred_probs=pred_probs)
+        report = issue_manager.report(
+            issues=issue_manager.issues,
+            summary=issue_manager.summary,
+            info=issue_manager.info,
+        )
+
+        assert (
+            "---------------------- non_iid issues ----------------------\n\n"
+            "Number of examples with this issue:"
+        ) in report
+
+        issue_manager.find_issues(pred_probs=pred_probs)
+        report = issue_manager.report(
+            issues=issue_manager.issues,
+            summary=issue_manager.summary,
+            info=issue_manager.info,
+            verbosity=3,
+        )
+
         assert "Additional Information: " in report
 
     def test_collect_info(self, issue_manager, embeddings):
@@ -151,6 +226,18 @@ class TestNonIIDIssueManager:
         """
 
         issue_manager.find_issues(features=embeddings)
+        info = issue_manager.info
+
+        assert info["p-value"] == 0
+        assert info["metric"] == "euclidean"
+        assert info["k"] == 10
+
+    def test_collect_info_using_pred_probs(self, issue_manager, pred_probs):
+        """Test some values in the info dict.
+
+        Mainly focused on the nearest neighbor info.
+        """
+        issue_manager.find_issues(pred_probs=pred_probs)
         info = issue_manager.info
 
         assert info["p-value"] == 0
@@ -214,6 +301,35 @@ class TestNonIIDIssueManager:
 
         # Run again with the same seed
         issue_manager.find_issues(features=embeddings)
+        p_value2 = issue_manager.info["p-value"]
+
+        assert p_value > 0.0
+        if seed is not None or seed == "default":
+            assert p_value == p_value2
+        else:
+            assert p_value != p_value2
+
+        # using pred_probs
+        # normalizing pred_probs (0 to 1)
+        pred_probs = embeddings / (np.max(embeddings) - np.min(embeddings))
+        if seed == "default":
+            issue_manager = NonIIDIssueManager(
+                datalab=lab,
+                metric="euclidean",
+                k=10,
+            )
+        else:
+            issue_manager = NonIIDIssueManager(
+                datalab=lab,
+                metric="euclidean",
+                k=10,
+                seed=seed,
+            )
+        issue_manager.find_issues(pred_probs=pred_probs)
+        p_value = issue_manager.info["p-value"]
+
+        # Run again with the same seed
+        issue_manager.find_issues(pred_probs=pred_probs)
         p_value2 = issue_manager.info["p-value"]
 
         assert p_value > 0.0

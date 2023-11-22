@@ -3,7 +3,10 @@ import pandas as pd
 import pytest
 
 from cleanlab.datalab.internal.issue_manager import IssueManager
-from cleanlab.datalab.internal.issue_manager_factory import REGISTRY, register
+from cleanlab.datalab.internal.issue_manager_factory import (
+    REGISTRY,
+    register,
+)
 
 
 class TestCustomIssueManager:
@@ -39,32 +42,68 @@ def test_register_custom_issue_manager(monkeypatch):
 
     assert "foo" not in REGISTRY
 
-    @register
     class Foo(IssueManager):
         issue_name = "foo"
 
         def find_issues(self):
             pass
 
-    assert "foo" in REGISTRY
-    assert REGISTRY["foo"] == Foo
+    Foo = register(Foo)
+
+    assert REGISTRY["classification"].get("foo") == Foo
 
     # Reregistering should overwrite the existing class, put print a warning
 
     monkeypatch.setattr("sys.stdout", io.StringIO())
 
-    @register
     class NewFoo(IssueManager):
         issue_name = "foo"
 
         def find_issues(self):
             pass
 
-    assert "foo" in REGISTRY
-    assert REGISTRY["foo"] == NewFoo
+    NewFoo = register(NewFoo)
+
+    assert REGISTRY["classification"].get("foo") == NewFoo
     assert all(
         [
             text in sys.stdout.getvalue()
-            for text in ["Warning: Overwriting existing issue manager foo with ", "NewFoo"]
+            for text in [
+                "Warning: Overwriting existing issue manager foo with ",
+                "NewFoo",
+                " for task classification.",
+            ]
         ]
     ), "Should print a warning"
+
+    # Reregistering for task should overwrite the existing class, put print a warning
+    class NewerFoo(IssueManager):
+        issue_name = "label"
+
+        def find_issues(self):
+            pass
+
+    NewerFoo = register(NewerFoo, task="classification")
+
+    assert REGISTRY["classification"].get("label") == NewerFoo
+    assert all(
+        [
+            text in sys.stdout.getvalue()
+            for text in [
+                "Warning: Overwriting existing issue manager label with ",
+                "NewerFoo",
+                " for task classification.",
+            ]
+        ]
+    ), "Should print a warning"
+
+    # Registering any issue manager for another task is permitted
+    class Bar(IssueManager):
+        issue_name = "bar"
+
+        def find_issues(self):
+            pass
+
+    Bar = register(Bar, task="regression")
+
+    assert REGISTRY["regression"].get("bar") == Bar

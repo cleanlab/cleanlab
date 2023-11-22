@@ -30,16 +30,109 @@ and collects the results to :py:class:`DataIssues <cleanlab.datalab.internal.dat
 from __future__ import annotations
 
 import warnings
-from typing import Any, List, Optional, Dict, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
 import numpy as np
 from scipy.sparse import csr_matrix
 
-from cleanlab.datalab.internal.issue_manager_factory import _IssueManagerFactory, REGISTRY
+from cleanlab.datalab.internal.issue_manager_factory import (
+    _IssueManagerFactory,
+    list_default_issue_types,
+)
 
 if TYPE_CHECKING:  # pragma: no cover
     import numpy.typing as npt
+    from typing import Callable
+
     from cleanlab.datalab.datalab import Datalab
+
+
+_CLASSIFICATION_ARGS_DICT = {
+    "label": ["pred_probs", "features"],
+    "outlier": ["pred_probs", "features", "knn_graph"],
+    "near_duplicate": ["features", "knn_graph"],
+    "non_iid": ["pred_probs", "features", "knn_graph"],
+    "data_valuation": ["knn_graph"],
+}
+_REGRESSION_ARGS_DICT = {
+    "label": ["features"],
+}
+
+
+def _resolve_required_args_for_classification(**kwargs):
+    """Resolves the required arguments for each issue type intended for classification tasks."""
+    initial_args_dict = _CLASSIFICATION_ARGS_DICT.copy()
+    args_dict = {
+        issue_type: {arg: kwargs.get(arg, None) for arg in initial_args_dict[issue_type]}
+        for issue_type in initial_args_dict
+    }
+
+    # Remove None values from argument list, rely on default values in IssueManager
+    args_dict = {
+        k: {k2: v2 for k2, v2 in v.items() if v2 is not None} for k, v in args_dict.items() if v
+    }
+
+    # Prefer `knn_graph` over `features` if both are provided.
+    for v in args_dict.values():
+        if "knn_graph" in v and "features" in v:
+            warnings.warn(
+                "Both `features` and `knn_graph` were provided. "
+                "Most issue managers will likely prefer using `knn_graph` "
+                "instead of `features` for efficiency."
+            )
+
+    # Only keep issue types that have at least one argument
+    args_dict = {k: v for k, v in args_dict.items() if v}
+
+    return args_dict
+
+
+def _resolve_required_args_for_regression(**kwargs):
+    """Resolves the required arguments for each issue type intended for regression tasks."""
+    initial_args_dict = _REGRESSION_ARGS_DICT.copy()
+    args_dict = {
+        issue_type: {arg: kwargs.get(arg, None) for arg in initial_args_dict[issue_type]}
+        for issue_type in initial_args_dict
+    }
+
+    # Remove None values from argument list, rely on default values in IssueManager
+    args_dict = {
+        k: {k2: v2 for k2, v2 in v.items() if v2 is not None}
+        for k, v in args_dict.items()
+        if v or k == "label"  # Allow label issues to require no arguments
+    }
+
+    return args_dict
+
+
+def _select_strategy_for_resolving_required_args(task: str) -> Callable:
+    """Helper function that selects the strategy for resolving required arguments for each issue type.
+
+    Each strategy resolves the required arguments for each issue type.
+
+    This is a helper function that filters out any issue manager
+    that does not have the required arguments.
+
+    This does not consider custom hyperparameters for each issue type.
+
+    Parameters
+    ----------
+    task : str
+        The type of machine learning task that the dataset is used for.
+
+    Returns
+    -------
+    args_dict :
+        Dictionary of required arguments for each issue type, if available.
+    """
+    strategies = {
+        "classification": _resolve_required_args_for_classification,
+        "regression": _resolve_required_args_for_regression,
+    }
+    selected_strategy = strategies.get(task, None)
+    if selected_strategy is None:
+        raise ValueError(f"No strategy for resolving required arguments for task '{task}'")
+    return selected_strategy
 
 
 class IssueFinder:
@@ -61,6 +154,9 @@ class IssueFinder:
     datalab : Datalab
         The Datalab instance associated with this IssueFinder.
 
+    task : str
+        The type of machine learning task that the dataset is used for.
+
     verbosity : int
         Controls the verbosity of the output during the issue finding process.
 
@@ -70,8 +166,9 @@ class IssueFinder:
     `Datalab.find_issues` method which internally utilizes an IssueFinder instance.
     """
 
-    def __init__(self, datalab: "Datalab", verbosity=1):
+    def __init__(self, datalab: "Datalab", task: str, verbosity=1):
         self.datalab = datalab
+        self.task = task
         self.verbosity = verbosity
 
     def find_issues(
@@ -151,7 +248,9 @@ class IssueFinder:
 
         new_issue_managers = [
             factory(datalab=self.datalab, **issue_types_copy.get(factory.issue_name, {}))
-            for factory in _IssueManagerFactory.from_list(list(issue_types_copy.keys()))
+            for factory in _IssueManagerFactory.from_list(
+                list(issue_types_copy.keys()), task=self.task
+            )
         ]
 
         failed_managers = []
@@ -169,55 +268,6 @@ class IssueFinder:
         if failed_managers:
             print(f"Failed to check for these issue types: {failed_managers}")
         data_issues.set_health_score()
-
-    def _resolve_required_args(self, pred_probs, features, knn_graph):
-        """Resolves the required arguments for each issue type.
-
-        This is a helper function that filters out any issue manager
-        that does not have the required arguments.
-
-        This does not consider custom hyperparameters for each issue type.
-
-
-        Parameters
-        ----------
-        pred_probs :
-            Out-of-sample predicted probabilities made on the data.
-
-        features :
-            Name of column containing precomputed embeddings.
-
-        knn_graph :
-            Sparse matrix representing distances between examples in the dataset in a k nearest neighbor graph.
-
-        Returns
-        -------
-        args_dict :
-            Dictionary of required arguments for each issue type, if available.
-        """
-        args_dict = {
-            "label": {"pred_probs": pred_probs, "features": features},
-            "outlier": {"pred_probs": pred_probs, "features": features, "knn_graph": knn_graph},
-            "near_duplicate": {"features": features, "knn_graph": knn_graph},
-            "non_iid": {"features": features, "knn_graph": knn_graph},
-        }
-
-        args_dict = {
-            k: {k2: v2 for k2, v2 in v.items() if v2 is not None} for k, v in args_dict.items() if v
-        }
-
-        # Prefer `knn_graph` over `features` if both are provided.
-        for v in args_dict.values():
-            if "knn_graph" in v and "features" in v:
-                warnings.warn(
-                    "Both `features` and `knn_graph` were provided. "
-                    "Most issue managers will likely prefer using `knn_graph` "
-                    "instead of `features` for efficiency."
-                )
-
-        args_dict = {k: v for k, v in args_dict.items() if v}
-
-        return args_dict
 
     def _set_issue_types(
         self,
@@ -253,7 +303,7 @@ class IssueFinder:
             # keep only default issue types
             issue_types_copy = {
                 issue: issue_types_copy[issue]
-                for issue in self.list_default_issue_types()
+                for issue in list_default_issue_types(self.task)
                 if issue in issue_types_copy
             }
 
@@ -293,29 +343,6 @@ class IssueFinder:
                 error_message += f"Required argument {missing_required_args} for issue type {issue_name} was not provided.\n"
             raise ValueError(error_message)
 
-    @staticmethod
-    def list_possible_issue_types() -> List[str]:
-        """Returns a list of all registered issue types.
-
-        Any issue type that is not in this list cannot be used in the :py:meth:`find_issues` method.
-
-        See Also
-        --------
-        :py:class:`REGISTRY <cleanlab.datalab.internal.issue_manager_factory.REGISTRY>` : All available issue types and their corresponding issue managers can be found here.
-        """
-        return list(REGISTRY.keys())
-
-    @staticmethod
-    def list_default_issue_types() -> List[str]:
-        """Returns a list of the issue types that are run by default
-        when :py:meth:`find_issues` is called without specifying `issue_types`.
-
-        See Also
-        --------
-        :py:class:`REGISTRY <cleanlab.datalab.internal.issue_manager_factory.REGISTRY>` : All available issue types and their corresponding issue managers can be found here.
-        """
-        return ["label", "outlier", "near_duplicate", "non_iid"]
-
     def get_available_issue_types(self, **kwargs):
         """Returns a dictionary of issue types that can be used in :py:meth:`Datalab.find_issues
         <cleanlab.datalab.datalab.Datalab.find_issues>` method."""
@@ -326,19 +353,24 @@ class IssueFinder:
         issue_types = kwargs.get("issue_types", None)
 
         # Determine which parameters are required for each issue type
-        required_args_per_issue_type = self._resolve_required_args(pred_probs, features, knn_graph)
+        strategy_for_resolving_required_args = _select_strategy_for_resolving_required_args(
+            self.task
+        )
+        required_args_per_issue_type = strategy_for_resolving_required_args(**kwargs)
 
         issue_types_copy = self._set_issue_types(issue_types, required_args_per_issue_type)
-
         if issue_types is None:
             # Only run default issue types if no issue types are specified
             issue_types_copy = {
                 issue: issue_types_copy[issue]
-                for issue in self.list_default_issue_types()
+                for issue in list_default_issue_types(self.task)
                 if issue in issue_types_copy
             }
-
-        drop_label_check = "label" in issue_types_copy and not self.datalab.has_labels
+        drop_label_check = (
+            "label" in issue_types_copy
+            and not self.datalab.has_labels
+            and self.task != "regression"
+        )
         if drop_label_check:
             warnings.warn("No labels were provided. " "The 'label' issue type will not be run.")
             issue_types_copy.pop("label")
