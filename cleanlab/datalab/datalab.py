@@ -160,6 +160,7 @@ class Datalab:
         self,
         *,
         pred_probs: Optional[np.ndarray] = None,
+        predictions: Optional[np.ndarray] = None,
         features: Optional[npt.NDArray] = None,
         knn_graph: Optional[csr_matrix] = None,
         issue_types: Optional[Dict[str, Any]] = None,
@@ -188,6 +189,13 @@ class Datalab:
             To best detect label issues, provide this input obtained from the most accurate model you can produce.
 
             If provided, this must be a 2D array with shape (num_examples, K) where K is the number of classes in the dataset.
+            Must not be provided if `predictions` is provided.
+
+        predictions :
+            Out-of-sample predicted output variables made by the model for every example in the dataset.
+            To best detect label issues, provide this input obtained from the most accurate model you can produce.
+
+            Must not be provided if `pred_probs` is provided.
 
         features : Optional[np.ndarray]
             Feature embeddings (vector representations) of every example in the dataset.
@@ -301,6 +309,9 @@ class Datalab:
                 >>> # lab.find_issues(pred_probs=pred_probs, issue_types=issue_types)
 
         """
+        # Check for conflicting inputs
+        _ensure_single_prediction_input(pred_probs, predictions, task=self.task)
+
         if issue_types is not None and not issue_types:
             warnings.warn(
                 "No issue types were specified so no issues will be found in the dataset. Set `issue_types` as None to consider a default set of issues."
@@ -311,6 +322,7 @@ class Datalab:
         )
         issue_finder.find_issues(
             pred_probs=pred_probs,
+            predictions=predictions,
             features=features,
             knn_graph=knn_graph,
             issue_types=issue_types,
@@ -576,3 +588,33 @@ class Datalab:
         load_message = f"Datalab loaded from folder: {path}"
         print(load_message)
         return datalab
+
+def _ensure_single_prediction_input(pred_probs: Any, predictions: Any, task: str) -> None:
+    """Helper function for resolving conflicting inputs.
+    
+    For greater coverage, it checks if both pred_probs and predictions are provided, regardless of task.
+    If that's not the case, it checks if the provided input is unsupported for the given task.
+
+    Raises
+    ------
+    ValueError
+        If both `pred_probs` and `predictions` are provided.
+        Or if `pred_probs` is provided for a regression task.
+        Or if `predictions` is provided for a classification task.
+    """
+    # Edge-case, someone passes both pred_probs and predictions
+    error_msg = ""
+    if pred_probs is not None and predictions is not None:
+        error_msg = "Only one of `pred_probs` or `predictions` can be provided."
+        task_tips = {
+            "classification": "pred_probs",
+            "regression": "predictions",
+        }
+        if task in task_tips:
+            error_msg += f" For a {task} task, consider passing `{task_tips[task]}` instead."
+    elif task == "classification" and predictions is not None:
+        error_msg = "`predictions` is not supported for classification tasks. Consider passing `pred_probs` instead."
+    elif task == "regression" and pred_probs is not None:
+        error_msg = "`pred_probs` is not supported for regression tasks. Consider passing `predictions` instead."
+    if error_msg:
+        raise ValueError(error_msg)

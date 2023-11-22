@@ -55,7 +55,7 @@ _CLASSIFICATION_ARGS_DICT = {
     "data_valuation": ["knn_graph"],
 }
 _REGRESSION_ARGS_DICT = {
-    "label": ["features"],
+    "label": ["features", "predictions"],
 }
 
 
@@ -175,6 +175,7 @@ class IssueFinder:
         self,
         *,
         pred_probs: Optional[np.ndarray] = None,
+        predictions: Optional[np.ndarray] = None,
         features: Optional[npt.NDArray] = None,
         knn_graph: Optional[csr_matrix] = None,
         issue_types: Optional[Dict[str, Any]] = None,
@@ -238,6 +239,7 @@ class IssueFinder:
 
         issue_types_copy = self.get_available_issue_types(
             pred_probs=pred_probs,
+            predictions=predictions,
             features=features,
             knn_graph=knn_graph,
             issue_types=issue_types,
