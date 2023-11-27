@@ -11,10 +11,10 @@ def knn_graph_strategy(draw, num_samples, k_neighbors):
     Parameters
     ----------
     draw: A function used to draw values from search strategies.
-    
+
     num_samples (int or SearchStrategy): The number of samples in the graph.
         If a SearchStrategy is provided, a value will be drawn from it.
-    
+
     k_neighbors (int or SearchStrategy): The number of nearest neighbors to consider for each sample.
         If a SearchStrategy is provided, a value will be drawn from it.
 
