@@ -49,11 +49,11 @@ class TestKNNGraph:
     @pytest.mark.slow
     @given(
         knn_graph=knn_graph_strategy(
-            num_samples=st.integers(min_value=10, max_value=50),
+            num_samples=st.integers(min_value=6, max_value=10),
             k_neighbors=st.integers(min_value=2, max_value=5),
         )
     )
-    @settings(suppress_health_check=[HealthCheck.too_slow])
+    @settings(suppress_health_check=[HealthCheck.too_slow], max_examples=1000, deadline=None)
     def test_knn_graph(self, knn_graph):
         """Run through the property tests defined above."""
         N = knn_graph.shape[0]
