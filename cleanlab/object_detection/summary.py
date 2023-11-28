@@ -456,7 +456,7 @@ def _get_per_class_confusion_matrix_dict_(
     num_procs: int = 1,
 ) -> DefaultDict[int, Dict[str, int]]:
     """
-    Returns a confusion matrix dictionary for each class containing TP,FP and FN.
+    Returns a confusion matrix dictionary for each class containing the number of True Positive, False Positive, and False Negative detections from the object detection model.
     """
     num_classes = len(predictions[0])
     num_images = len(predictions)
@@ -488,26 +488,33 @@ def _get_per_class_confusion_matrix_dict_(
     return results
 
 
-def get_average_per_class_confusion_matrix_(
+def get_average_per_class_confusion_matrix(
     labels: List[Dict[str, Any]], predictions: List[np.ndarray], num_procs: int = 1
 ) -> Dict[int, Dict[str, float]]:
     """
+    Compute a confusion matrix dictionary for each class containing the average number of True Positive, False Positive, and False Negative detections from the object detection model across a range of Intersection over Union thresholds.
+
+    The confusion matrices can help you identify model strengths and determine potential biases.
+
     Parameters
     ----------
     labels:
         A list of ``N`` dictionaries such that ``labels[i]`` contains the given labels for the `i`-th image.
-        Refer to documentation for this argument in :py:func:`find_label_issues <cleanlab.object_detection.filter.find_label_issues>` for further details.
+        Refer to documentation for this argument in :py:func:`object_detection.filter.find_label_issues <cleanlab.object_detection.filter.find_label_issues>` for further details.
 
     predictions:
         A list of ``N`` ``np.ndarray`` such that ``predictions[i]`` corresponds to the model predictions for the `i`-th image.
-        Refer to documentation for this argument in :py:func:`find_label_issues <cleanlab.object_detection.filter.find_label_issues>` for further details.
+        Refer to documentation for this argument in :py:func:`object_detection.filter.find_label_issues <cleanlab.object_detection.filter.find_label_issues>` for further details.
 
     num_procs:
         Number of processes for parallelization. Default is 1.
 
     Returns
     -------
-        Average of TP,FP, FN for each class across iou thresholds.
+    avg_metrics: dict
+        A distionary containing the average confusion matrix.
+
+        The default range of Intersection over Union thresholds is from 0.5 to 0.95 with a step size of 0.05.
     """
     iou_thrs = np.linspace(0.5, 0.95, int(np.round((0.95 - 0.5) / 0.05)) + 1, endpoint=True)
     num_classes = len(predictions[0])
@@ -540,15 +547,19 @@ def calculate_per_class_metrics(
     labels: List[Dict[str, Any]], predictions: List[np.ndarray], num_procs: int = 1
 ) -> Dict[int, Dict[str, float]]:
     """
+    Calculate the object detection model's precision, recall, and F1 score for each class in the dataset.
+
+    These metrics can help you identify model strengths and weaknesses, and provide reference statistics for model evaluation and comparisons.
+
     Parameters
     ----------
     labels:
         A list of ``N`` dictionaries such that ``labels[i]`` contains the given labels for the `i`-th image.
-        Refer to documentation for this argument in :py:func:`find_label_issues <cleanlab.object_detection.filter.find_label_issues>` for further details.
+        Refer to documentation for this argument in :py:func:`object_detection.filter.find_label_issues <cleanlab.object_detection.filter.find_label_issues>` for further details.
 
     predictions:
         A list of ``N`` ``np.ndarray`` such that ``predictions[i]`` corresponds to the model predictions for the `i`-th image.
-        Refer to documentation for this argument in :py:func:`find_label_issues <cleanlab.object_detection.filter.find_label_issues>` for further details.
+        Refer to documentation for this argument in :py:func:`object_detection.filter.find_label_issues <cleanlab.object_detection.filter.find_label_issues>` for further details.
 
     num_procs:
         Number of processes for parallelization. Default is 1.
@@ -556,10 +567,11 @@ def calculate_per_class_metrics(
     Returns
     -------
     per_class_metrics: dict
-        A dictionary containing per-class metrics.
+        A dictionary containing per-class metrics computed from the object detection model's average confusion matrix values across a range of Intersection over Union thresholds.
 
+        The default range of Intersection over Union thresholds is from 0.5 to 0.95 with a step size of 0.05.
     """
-    avg_metrics = get_average_per_class_confusion_matrix_(labels, predictions, num_procs)
+    avg_metrics = get_average_per_class_confusion_matrix(labels, predictions, num_procs)
 
     avg_metrics_dict = {}
 
