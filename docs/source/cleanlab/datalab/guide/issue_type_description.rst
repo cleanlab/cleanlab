@@ -45,8 +45,8 @@ For now, Datalab can only detect label issues in a multi-class classification da
 The cleanlab library has alternative methods you can us to detect label issues in other types of datasets (multi-label, multi-annotator, token classification, etc.).
 
 Label issues are calculated based on provided `pred_probs` from a trained model. If you do not provide this argument, but you do provide `features`, then a K Nearest Neighbor model will be fit to produce `pred_probs` based on your `features`. Otherwise if neither `pred_probs` nor `features` is provided, then this type of issue will not be considered.
-For the most accurate results, provide out-of-sample `pred_probs` which can be obtained for a dataset via `cross-validation <https://docs.cleanlab.ai/stable/tutorials/pred_probs_cross_val.html>`_. 
- 
+For the most accurate results, provide out-of-sample `pred_probs` which can be obtained for a dataset via `cross-validation <https://docs.cleanlab.ai/stable/tutorials/pred_probs_cross_val.html>`_.
+
 Having mislabeled examples in your dataset may hamper the performance of supervised learning models you train on this data.
 For evaluating models or performing other types of data analytics, mislabeled examples may lead you to draw incorrect conclusions.
 To handle mislabeled examples, you can either filter out the data with label issues or try to correct their labels.
@@ -116,7 +116,7 @@ For datasets with low non-IID score, you should consider why your data are not I
 Class-Imbalance Issue
 ---------------------
 
-Class imbalance is diagnosed just using the `labels` provided as part of the dataset. The overall class imbalance quality score of a dataset is the proportion of examples belonging to the rarest class `q`. If this proportion `q` falls below a threshold, then we say this dataset suffers from the class imbalance issue.  
+Class imbalance is diagnosed just using the `labels` provided as part of the dataset. The overall class imbalance quality score of a dataset is the proportion of examples belonging to the rarest class `q`. If this proportion `q` falls below a threshold, then we say this dataset suffers from the class imbalance issue.
 
 In a dataset identified as having class imbalance, the class imbalance quality score for each example is set equal to `q` if it is labeled as the rarest class, and is equal to 1 for all other examples.
 
@@ -129,7 +129,6 @@ For image datasets which are properly specified as such, Datalab can detect addi
 Specifically, low-quality images which are too: dark/bright, blurry, low information, abnormally sized, etc.
 Descriptions of these image-specific issues are provided in the `CleanVision package <https://github.com/cleanlab/cleanvision>`_ and its documentation.
 
-
 Optional Issue Parameters
 =========================
 
@@ -141,7 +140,8 @@ Appropriate defaults are used for any parameters you do not specify, so no need 
 
     possible_issue_types = {
         "label": label_kwargs, "outlier": outlier_kwargs,
-        "near_duplicate": near_duplicate_kwargs, "non_iid": non_iid_kwargs
+        "near_duplicate": near_duplicate_kwargs, "non_iid": non_iid_kwargs,
+        "class_imbalance": class_imbalance_kwargs
     }
 
 
@@ -195,7 +195,7 @@ Outlier Issue Parameters
 
 .. note::
 
-    For more information, view the source code of:  :py:class:`datalab.internal.issue_manager.outlier.OutlierIssueManager <cleanlab.datalab.internal.issue_manager.outlier.OutlierIssueManager>`.  
+    For more information, view the source code of:  :py:class:`datalab.internal.issue_manager.outlier.OutlierIssueManager <cleanlab.datalab.internal.issue_manager.outlier.OutlierIssueManager>`.
 
 Duplicate Issue Parameters
 --------------------------
@@ -214,7 +214,7 @@ Duplicate Issue Parameters
 
 .. note::
 
-    For more information, view the source code of:  :py:class:`datalab.internal.issue_manager.duplicate.NearDuplicateIssueManager <cleanlab.datalab.internal.issue_manager.duplicate.NearDuplicateIssueManager>`. 
+    For more information, view the source code of:  :py:class:`datalab.internal.issue_manager.duplicate.NearDuplicateIssueManager <cleanlab.datalab.internal.issue_manager.duplicate.NearDuplicateIssueManager>`.
 
 
 Non-IID Issue Parameters
@@ -241,7 +241,7 @@ Imbalance Issue Parameters
 .. code-block:: python
 
     class_imbalance_kwargs = {
-    	"threshold": # `threshold` argument to constructor of `ClassImbalanceIssueManager()`. Non-negative floating value between 0 and 1 indicating the minimum fraction of samples of each class that are present in a dataset without class imbalance.
+    	"threshold": # `threshold` argument to constructor of `ClassImbalanceIssueManager`. Non-negative floating value between 0 and 1 indicating the minimum fraction of samples of each class that are present in a dataset without class imbalance.
     }
 
 .. note::
