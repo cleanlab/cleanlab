@@ -37,7 +37,7 @@ class RegressionLabelIssueManager(IssueManager):
         A Datalab instance.
 
     clean_learning_kwargs :
-        Keyword arguments to pass to the :py:meth:`CleanLearning <cleanlab.regression.learn.CleanLearning>` constructor.
+        Keyword arguments to pass to the :py:meth:`regression.learn.CleanLearning <cleanlab.regression.learn.CleanLearning>` constructor.
 
     threshold :
         The threshold to use to determine if an example has a label issue. It is a multiplier
