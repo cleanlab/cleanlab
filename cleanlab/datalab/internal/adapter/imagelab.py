@@ -192,7 +192,6 @@ class ImagelabIssueFinderAdapter(IssueFinder):
         self,
         *,
         pred_probs: Optional[np.ndarray] = None,
-        predictions: Optional[np.ndarray] = None,
         features: Optional[npt.NDArray] = None,
         knn_graph: Optional[csr_matrix] = None,
         issue_types: Optional[Dict[str, Any]] = None,
@@ -204,7 +203,6 @@ class ImagelabIssueFinderAdapter(IssueFinder):
         )
         super().find_issues(
             pred_probs=pred_probs,
-            predictions=predictions,
             features=features,
             knn_graph=knn_graph,
             issue_types=datalab_issue_types,

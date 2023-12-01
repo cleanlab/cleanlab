@@ -1053,7 +1053,7 @@ class TestDatalabForRegression:
         # Use ground-truth to emulate a perfect model's predictions
         y_pred = regression_data["true_y"]
 
-        lab.find_issues(predictions=y_pred)
+        lab.find_issues(pred_probs=y_pred)
         summary = lab.get_issue_summary()
         assert (summary[summary["issue_type"] == "label"]["num_issues"] == 12).all()
         assert np.isclose(
@@ -1062,7 +1062,7 @@ class TestDatalabForRegression:
 
         # Apply a threshold for flagging issues. A larger threshold will flag more issues,
         # but won't change the score.
-        lab.find_issues(predictions=y_pred, issue_types={"label": {"threshold": 0.5}})
+        lab.find_issues(pred_probs=y_pred, issue_types={"label": {"threshold": 0.5}})
         summary = lab.get_issue_summary()
         assert (summary[summary["issue_type"] == "label"]["num_issues"] == 22).all()
         assert np.isclose(
