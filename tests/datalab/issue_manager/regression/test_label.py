@@ -10,7 +10,6 @@ def ground_truth_target_function(x):
     return 10 * x + 1
 
 
-@pytest.mark.cleanvision
 class TestRegressionLabelIssueManager:
     def test_manager_found_in_registry(self):
         from cleanlab.datalab.internal.issue_manager_factory import REGISTRY
