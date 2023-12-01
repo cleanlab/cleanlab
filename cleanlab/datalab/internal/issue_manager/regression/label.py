@@ -40,7 +40,8 @@ class RegressionLabelIssueManager(IssueManager):
         Keyword arguments to pass to the :py:meth:`CleanLearning <cleanlab.regression.learn.CleanLearning>` constructor.
 
     threshold :
-        The threshold to use to determine if an example has a label issue. Only used if
+        The threshold to use to determine if an example has a label issue. It is a multiplier
+        of the median label quality score that sets the absolute threshold. Only used if
         predictions are provided to `~RegressionLabelIssueManager.find_issues`, not if
         features are provided. Default is 0.1.
     """
@@ -84,6 +85,11 @@ class RegressionLabelIssueManager(IssueManager):
             raise ValueError(
                 "Regression requires numerical `features` or `predictions` "
                 "to be passed in as an argument to `find_issues`."
+            )
+        if features is None and self._uses_custom_model:
+            raise ValueError(
+                "Regression requires numerical `features` to be passed in as an argument to `find_issues` "
+                "when using a custom model."
             )
         # If features are provided and either a custom model is used or no predictions are provided
         use_features = features is not None and (self._uses_custom_model or predictions is None)
@@ -155,7 +161,8 @@ def find_issues_with_predictions(
         The given labels.
 
     threshold :
-        The threshold to use to determine if an example has a label issue.
+        The threshold to use to determine if an example has a label issue. It is a multiplier
+        of the median label quality score that sets the absolute threshold.
 
     **kwargs :
         Various keyword arguments.
