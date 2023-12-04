@@ -205,7 +205,7 @@ class IssueFinder:
 
             If provided (for classification), this must be a 2D array with shape (num_examples, K) where K is the number of classes in the dataset.
             If provided (for regression), this must be a 1D array with shape (num_examples,).
-            
+
         features : Optional[np.ndarray]
             Feature embeddings (vector representations) of every example in the dataset.
 
