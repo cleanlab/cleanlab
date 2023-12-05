@@ -21,7 +21,7 @@ to detect a custom-defined type of issue alongside the pre-defined issue types i
             register(MyIssueManager)  # Defaults to task="classification"
             # register(MyIssueManagerForRegression, task="regression") # For regression tasks
 
-        or add as a decorator to the class definition (currently only works for classification tasks)
+        or add as a decorator to the class definition (currently only works for classification tasks):
 
         .. code-block:: python
 
