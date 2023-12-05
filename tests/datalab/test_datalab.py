@@ -1048,12 +1048,11 @@ class TestDatalabForRegression:
         intersection = len(list(set(issue_ids).intersection(set(expected_issue_ids))))
         union = len(set(issue_ids)) + len(set(expected_issue_ids)) - intersection
         assert float(intersection) / union >= 0.6
-        
+
         # FPR
         fpr = len(list(set(issue_ids).difference(set(expected_issue_ids)))) / len(issue_ids)
         assert fpr < 0.05
-        
-        
+
     def test_regression_with_predictions(self, lab, regression_data):
         """Test that the regression issue checks find 9 label issues, based on the
         predictions of a model.
@@ -1073,20 +1072,20 @@ class TestDatalabForRegression:
         assert np.isclose(
             summary[summary["issue_type"] == "label"]["score"].values[0], 0.876453, atol=1e-5
         )
-        
+
         issues = lab.get_issues("label")
         issue_ids = issues.query("is_label_issue").index
         expected_issue_ids = regression_data["error_idx"]
-    
+
         # jaccard similarity
         intersection = len(list(set(issue_ids).intersection(set(expected_issue_ids))))
         union = len(set(issue_ids)) + len(set(expected_issue_ids)) - intersection
         assert float(intersection) / union >= 0.9
-        
+
         # FPR
         fpr = len(list(set(issue_ids).difference(set(expected_issue_ids)))) / len(issue_ids)
         assert fpr < 0.05
-        
+
         # Apply a threshold for flagging issues. A larger threshold will flag more issues,
         # but won't change the score.
         lab.find_issues(pred_probs=y_pred, issue_types={"label": {"threshold": 0.9}})
@@ -1112,13 +1111,15 @@ class TestDatalabForRegression:
         )
         issues = lab.get_issues("label")
         issue_ids = issues.query("is_label_issue").index
-        expected_issue_ids = regression_data["error_idx"]  # Set to 5% of the data, but random noise may be too small to detect
-        
+        expected_issue_ids = regression_data[
+            "error_idx"
+        ]  # Set to 5% of the data, but random noise may be too small to detect
+
         # jaccard similarity
         intersection = len(list(set(issue_ids).intersection(set(expected_issue_ids))))
         union = len(set(issue_ids)) + len(set(expected_issue_ids)) - intersection
         assert float(intersection) / union >= 0.80
-        
+
         # FPR
         fpr = len(list(set(issue_ids).difference(set(expected_issue_ids)))) / len(issue_ids)
         assert fpr < 0.05
