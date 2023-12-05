@@ -984,7 +984,7 @@ class TestDatalabFindLabelIssues:
 class TestDatalabForRegression:
     @pytest.fixture
     def regression_data(
-        self, num_examples=200, num_features=3, noise=0.2, error_frac=0.1, error_noise=5
+        self, num_examples=200, num_features=3, noise=0.01, error_frac=0.05, error_noise=10
     ):
         np.random.seed(SEED)
         X = np.random.random(size=(num_examples, num_features))
@@ -1036,13 +1036,26 @@ class TestDatalabForRegression:
         summary = lab.get_issue_summary()
 
         assert "label" in summary["issue_type"].values
-        assert (summary[summary["issue_type"] == "label"]["num_issues"] == 40).all()
+        assert (summary[summary["issue_type"] == "label"]["num_issues"] == 6).all()
         assert np.isclose(
-            summary[summary["issue_type"] == "label"]["score"].values[0], 0.672974, atol=1e-5
+            summary[summary["issue_type"] == "label"]["score"].values[0], 0.915695, atol=1e-5
         )
+        issues = lab.get_issues("label")
+        issue_ids = issues.query("is_label_issue").index
+        expected_issue_ids = regression_data["error_idx"]
 
+        # jaccard similarity
+        intersection = len(list(set(issue_ids).intersection(set(expected_issue_ids))))
+        union = len(set(issue_ids)) + len(set(expected_issue_ids)) - intersection
+        assert float(intersection) / union >= 0.6
+        
+        # FPR
+        fpr = len(list(set(issue_ids).difference(set(expected_issue_ids)))) / len(issue_ids)
+        assert fpr < 0.05
+        
+        
     def test_regression_with_predictions(self, lab, regression_data):
-        """Test that the regression issue checks find 12 label issues, based on the
+        """Test that the regression issue checks find 9 label issues, based on the
         predictions of a model.
 
         Instead of running a model, we use the ground-truth to emulate a perfect model's predictions.
@@ -1056,34 +1069,59 @@ class TestDatalabForRegression:
 
         lab.find_issues(pred_probs=y_pred)
         summary = lab.get_issue_summary()
-        assert (summary[summary["issue_type"] == "label"]["num_issues"] == 12).all()
+        assert (summary[summary["issue_type"] == "label"]["num_issues"] == 9).all()
         assert np.isclose(
-            summary[summary["issue_type"] == "label"]["score"].values[0], 0.58768, atol=1e-5
+            summary[summary["issue_type"] == "label"]["score"].values[0], 0.876453, atol=1e-5
         )
-
+        
+        issues = lab.get_issues("label")
+        issue_ids = issues.query("is_label_issue").index
+        expected_issue_ids = regression_data["error_idx"]
+    
+        # jaccard similarity
+        intersection = len(list(set(issue_ids).intersection(set(expected_issue_ids))))
+        union = len(set(issue_ids)) + len(set(expected_issue_ids)) - intersection
+        assert float(intersection) / union >= 0.9
+        
+        # FPR
+        fpr = len(list(set(issue_ids).difference(set(expected_issue_ids)))) / len(issue_ids)
+        assert fpr < 0.05
+        
         # Apply a threshold for flagging issues. A larger threshold will flag more issues,
         # but won't change the score.
-        lab.find_issues(pred_probs=y_pred, issue_types={"label": {"threshold": 0.5}})
+        lab.find_issues(pred_probs=y_pred, issue_types={"label": {"threshold": 0.9}})
         summary = lab.get_issue_summary()
-        assert (summary[summary["issue_type"] == "label"]["num_issues"] == 22).all()
+        assert (summary[summary["issue_type"] == "label"]["num_issues"] == 18).all()
         assert np.isclose(
-            summary[summary["issue_type"] == "label"]["score"].values[0], 0.58768, atol=1e-5
+            summary[summary["issue_type"] == "label"]["score"].values[0], 0.876453, atol=1e-5
         )
 
     def test_regression_with_model_and_features(self, lab, regression_data):
         """Test that the regression issue checks find label issue with another model."""
         from sklearn.neighbors import KNeighborsRegressor
 
-        model = KNeighborsRegressor(n_neighbors=5)
+        model = KNeighborsRegressor(n_neighbors=2)
         X = regression_data["X"]
         lab.find_issues(
             features=X, issue_types={"label": {"clean_learning_kwargs": {"model": model}}}
         )
         summary = lab.get_issue_summary()
-        assert (summary[summary["issue_type"] == "label"]["num_issues"] == 30).all()
+        assert (summary[summary["issue_type"] == "label"]["num_issues"] == 8).all()
         assert np.isclose(
-            summary[summary["issue_type"] == "label"]["score"].values[0], 0.777305, atol=1e-5
+            summary[summary["issue_type"] == "label"]["score"].values[0], 0.945047, atol=1e-5
         )
+        issues = lab.get_issues("label")
+        issue_ids = issues.query("is_label_issue").index
+        expected_issue_ids = regression_data["error_idx"]  # Set to 5% of the data, but random noise may be too small to detect
+        
+        # jaccard similarity
+        intersection = len(list(set(issue_ids).intersection(set(expected_issue_ids))))
+        union = len(set(issue_ids)) + len(set(expected_issue_ids)) - intersection
+        assert float(intersection) / union >= 0.80
+        
+        # FPR
+        fpr = len(list(set(issue_ids).difference(set(expected_issue_ids)))) / len(issue_ids)
+        assert fpr < 0.05
 
 
 class TestDatalabFindOutlierIssues:
