@@ -53,6 +53,7 @@ _CLASSIFICATION_ARGS_DICT = {
     "outlier": ["pred_probs", "features", "knn_graph"],
     "near_duplicate": ["features", "knn_graph"],
     "non_iid": ["pred_probs", "features", "knn_graph"],
+    "underperforming_group": ["pred_probs", "features", "knn_graph", "cluster_ids"],
     "data_valuation": ["knn_graph"],
 }
 _REGRESSION_ARGS_DICT = {
@@ -75,6 +76,13 @@ def _resolve_required_args_for_classification(**kwargs):
 
     # Prefer `knn_graph` over `features` if both are provided.
     for v in args_dict.values():
+        if "cluster_ids" in v and ("knn_graph" in v or "features" in v):
+            warnings.warn(
+                "`cluster_ids` have been provided with `knn_graph` or `features`."
+                "Issue managers that require cluster labels will prefer"
+                "`cluster_ids` over computation of cluster labels using"
+                "`knn_graph` or `features`. "
+            )
         if "knn_graph" in v and "features" in v:
             warnings.warn(
                 "Both `features` and `knn_graph` were provided. "
@@ -349,7 +357,6 @@ class IssueFinder:
         """Returns a dictionary of issue types that can be used in :py:meth:`Datalab.find_issues
         <cleanlab.datalab.datalab.Datalab.find_issues>` method."""
 
-        pred_probs = kwargs.get("pred_probs", None)
         features = kwargs.get("features", None)
         knn_graph = kwargs.get("knn_graph", None)
         issue_types = kwargs.get("issue_types", None)

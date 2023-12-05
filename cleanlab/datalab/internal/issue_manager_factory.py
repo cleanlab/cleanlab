@@ -47,6 +47,9 @@ from cleanlab.datalab.internal.issue_manager import (
     LabelIssueManager,
     NearDuplicateIssueManager,
     NonIIDIssueManager,
+    ClassImbalanceIssueManager,
+    UnderperformingGroupIssueManager,
+    DataValuationIssueManager,
     OutlierIssueManager,
 )
 from cleanlab.datalab.internal.issue_manager.regression import RegressionLabelIssueManager
@@ -58,6 +61,7 @@ REGISTRY: Dict[str, Dict[str, Type[IssueManager]]] = {
         "near_duplicate": NearDuplicateIssueManager,
         "non_iid": NonIIDIssueManager,
         "class_imbalance": ClassImbalanceIssueManager,
+        "underperforming_group": UnderperformingGroupIssueManager,
         "data_valuation": DataValuationIssueManager,
     },
     "regression": {
