@@ -357,6 +357,7 @@ class IssueFinder:
         """Returns a dictionary of issue types that can be used in :py:meth:`Datalab.find_issues
         <cleanlab.datalab.datalab.Datalab.find_issues>` method."""
 
+        pred_probs = kwargs.get("pred_probs", None)
         features = kwargs.get("features", None)
         knn_graph = kwargs.get("knn_graph", None)
         issue_types = kwargs.get("issue_types", None)
