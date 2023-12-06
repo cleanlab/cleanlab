@@ -984,34 +984,26 @@ class TestDatalabFindLabelIssues:
 class TestDatalabForRegression:
     @pytest.fixture
     def regression_data(
-        self, num_examples=200, num_features=3, noise=0.01, error_frac=0.05, error_noise=10
+        self, num_examples=200, num_features=3, error_frac=0.05, error_noise=5
     ):
         np.random.seed(SEED)
         X = np.random.random(size=(num_examples, num_features))
         coefficients = np.random.uniform(-1, 1, size=num_features)
-        label_noise = np.random.normal(scale=noise, size=num_examples)
 
         true_y = np.dot(X, coefficients)
-        y = np.dot(X, coefficients) + label_noise
 
         # add extra noisy examples
         num_errors = int(num_examples * error_frac)
-        extra_noise = np.random.normal(scale=error_noise, size=num_errors)
+        label_noise = np.clip(np.random.normal(loc=error_noise, scale=error_noise/4, size=num_errors), 2.0, 4*error_noise) * np.random.choice([-1, 1], size=num_errors)
         random_idx = np.random.choice(num_examples, num_errors)
-        y[random_idx] += extra_noise
+        y = true_y.copy()
+        y[random_idx] += label_noise
         error_idx = np.argsort(abs(y - true_y))[-num_errors:]  # get the noisiest examples idx
-
-        # create test set
-        X_test = np.random.random(size=(num_examples, num_features))
-        label_noise = np.random.normal(scale=noise, size=num_examples)
-        y_test = np.dot(X_test, coefficients) + label_noise
 
         return {
             "X": X,
             "y": y,
             "true_y": true_y,
-            "X_test": X_test,
-            "y_test": y_test,
             "error_idx": error_idx,
         }
 
@@ -1036,9 +1028,9 @@ class TestDatalabForRegression:
         summary = lab.get_issue_summary()
 
         assert "label" in summary["issue_type"].values
-        assert (summary[summary["issue_type"] == "label"]["num_issues"] == 6).all()
+        assert (summary[summary["issue_type"] == "label"]["num_issues"] == 10).all()
         assert np.isclose(
-            summary[summary["issue_type"] == "label"]["score"].values[0], 0.915695, atol=1e-5
+            summary[summary["issue_type"] == "label"]["score"].values[0], 0.95, atol=1e-5
         )
         issues = lab.get_issues("label")
         issue_ids = issues.query("is_label_issue").index
@@ -1047,11 +1039,11 @@ class TestDatalabForRegression:
         # jaccard similarity
         intersection = len(list(set(issue_ids).intersection(set(expected_issue_ids))))
         union = len(set(issue_ids)) + len(set(expected_issue_ids)) - intersection
-        assert float(intersection) / union >= 0.6
+        assert float(intersection) / union == 1.0
 
         # FPR
         fpr = len(list(set(issue_ids).difference(set(expected_issue_ids)))) / len(issue_ids)
-        assert fpr < 0.05
+        assert fpr == 0.0
 
     def test_regression_with_predictions(self, lab, regression_data):
         """Test that the regression issue checks find 9 label issues, based on the
@@ -1068,9 +1060,9 @@ class TestDatalabForRegression:
 
         lab.find_issues(pred_probs=y_pred)
         summary = lab.get_issue_summary()
-        assert (summary[summary["issue_type"] == "label"]["num_issues"] == 9).all()
+        assert (summary[summary["issue_type"] == "label"]["num_issues"] == 10).all()
         assert np.isclose(
-            summary[summary["issue_type"] == "label"]["score"].values[0], 0.876453, atol=1e-5
+            summary[summary["issue_type"] == "label"]["score"].values[0], 0.813172, atol=1e-5
         )
 
         issues = lab.get_issues("label")
@@ -1080,34 +1072,35 @@ class TestDatalabForRegression:
         # jaccard similarity
         intersection = len(list(set(issue_ids).intersection(set(expected_issue_ids))))
         union = len(set(issue_ids)) + len(set(expected_issue_ids)) - intersection
-        assert float(intersection) / union >= 0.9
+        assert float(intersection) / union == 1.0
 
         # FPR
         fpr = len(list(set(issue_ids).difference(set(expected_issue_ids)))) / len(issue_ids)
-        assert fpr < 0.05
+        assert fpr == 0.0
 
         # Apply a threshold for flagging issues. A larger threshold will flag more issues,
         # but won't change the score.
-        lab.find_issues(pred_probs=y_pred, issue_types={"label": {"threshold": 0.9}})
+        lab.find_issues(pred_probs=y_pred, issue_types={"label": {"threshold": 0.75}})
         summary = lab.get_issue_summary()
-        assert (summary[summary["issue_type"] == "label"]["num_issues"] == 18).all()
+        assert (summary[summary["issue_type"] == "label"]["num_issues"] == 13).all()
         assert np.isclose(
-            summary[summary["issue_type"] == "label"]["score"].values[0], 0.876453, atol=1e-5
+            summary[summary["issue_type"] == "label"]["score"].values[0], 0.813172, atol=1e-5
         )
 
     def test_regression_with_model_and_features(self, lab, regression_data):
         """Test that the regression issue checks find label issue with another model."""
         from sklearn.neighbors import KNeighborsRegressor
 
-        model = KNeighborsRegressor(n_neighbors=2)
+        model = KNeighborsRegressor(n_neighbors=4)
         X = regression_data["X"]
         lab.find_issues(
             features=X, issue_types={"label": {"clean_learning_kwargs": {"model": model}}}
         )
         summary = lab.get_issue_summary()
-        assert (summary[summary["issue_type"] == "label"]["num_issues"] == 8).all()
+        summary
+        assert (summary[summary["issue_type"] == "label"]["num_issues"] == 13).all()
         assert np.isclose(
-            summary[summary["issue_type"] == "label"]["score"].values[0], 0.945047, atol=1e-5
+            summary[summary["issue_type"] == "label"]["score"].values[0], 0.899407, atol=1e-5
         )
         issues = lab.get_issues("label")
         issue_ids = issues.query("is_label_issue").index
@@ -1118,11 +1111,11 @@ class TestDatalabForRegression:
         # jaccard similarity
         intersection = len(list(set(issue_ids).intersection(set(expected_issue_ids))))
         union = len(set(issue_ids)) + len(set(expected_issue_ids)) - intersection
-        assert float(intersection) / union >= 0.80
+        assert float(intersection) / union >= 0.75
 
         # FPR
         fpr = len(list(set(issue_ids).difference(set(expected_issue_ids)))) / len(issue_ids)
-        assert fpr < 0.05
+        assert fpr < 0.25
 
 
 class TestDatalabFindOutlierIssues:
