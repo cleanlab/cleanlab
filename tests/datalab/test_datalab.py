@@ -1084,7 +1084,7 @@ class TestDatalabForRegression:
         # but won't change the score.
         lab.find_issues(pred_probs=y_pred, issue_types={"label": {"threshold": 0.75}})
         summary = lab.get_issue_summary()
-        assert summary[summary["issue_type"] == "label"]["num_issues"].values[0] ==13
+        assert summary[summary["issue_type"] == "label"]["num_issues"].values[0] == 13
         assert np.isclose(
             summary[summary["issue_type"] == "label"]["score"].values[0], 0.813172, atol=1e-5
         )
@@ -1099,7 +1099,7 @@ class TestDatalabForRegression:
             features=X, issue_types={"label": {"clean_learning_kwargs": {"model": model}}}
         )
         summary = lab.get_issue_summary()
-        assert summary[summary["issue_type"] == "label"]["num_issues"].values[0] ==13
+        assert summary[summary["issue_type"] == "label"]["num_issues"].values[0] == 13
         assert np.isclose(
             summary[summary["issue_type"] == "label"]["score"].values[0], 0.899407, atol=1e-5
         )
