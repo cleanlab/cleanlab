@@ -983,9 +983,7 @@ class TestDatalabFindLabelIssues:
 
 class TestDatalabForRegression:
     @pytest.fixture
-    def regression_data(
-        self, num_examples=200, num_features=3, error_frac=0.05, error_noise=5
-    ):
+    def regression_data(self, num_examples=200, num_features=3, error_frac=0.05, error_noise=5):
         np.random.seed(SEED)
         X = np.random.random(size=(num_examples, num_features))
         coefficients = np.random.uniform(-1, 1, size=num_features)
@@ -994,7 +992,11 @@ class TestDatalabForRegression:
 
         # add extra noisy examples
         num_errors = int(num_examples * error_frac)
-        label_noise = np.clip(np.random.normal(loc=error_noise, scale=error_noise/4, size=num_errors), 2.0, 4*error_noise) * np.random.choice([-1, 1], size=num_errors)
+        label_noise = np.clip(
+            np.random.normal(loc=error_noise, scale=error_noise / 4, size=num_errors),
+            2.0,
+            4 * error_noise,
+        ) * np.random.choice([-1, 1], size=num_errors)
         random_idx = np.random.choice(num_examples, num_errors)
         y = true_y.copy()
         y[random_idx] += label_noise
