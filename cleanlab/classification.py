@@ -381,7 +381,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
           pruned from the data before training the final `clf` model.
 
           Caution: If you provide `label_issues` without having previously called
-          :py:meth:`self.find_label_issues<cleanlab.classification.CleanLearning.find_label_issues>`,
+          `~cleanlab.classification.CleanLearning.find_label_issues`
           e.g. as a ``np.ndarray``, then some functionality like training with sample weights may be disabled.
 
         sample_weight : array_like, optional
@@ -432,7 +432,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
 
           * *self.label_issues_df*: a ``pd.DataFrame`` accessible via
           `~cleanlab.classification.CleanLearning.get_label_issues`
-          of similar format as the one returned by: :py:meth:`CleanLearning.find_label_issues<cleanlab.classification.CleanLearning.find_label_issues>`.
+          of similar format as the one returned by: `~cleanlab.classification.CleanLearning.find_label_issues`.
           See documentation of :py:meth:`CleanLearning.find_label_issues<cleanlab.classification.CleanLearning.find_label_issues>`
           for column descriptions.
 
@@ -973,7 +973,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         This ``pd.DataFrame`` describes the label issues identified for each example
         (each row corresponds to an example).
         For column definitions, see the documentation of
-        :py:meth:`CleanLearning.find_label_issues<cleanlab.classification.CleanLearning.find_label_issues>`.
+        `~cleanlab.classification.CleanLearning.find_label_issues`.
 
         Returns
         -------

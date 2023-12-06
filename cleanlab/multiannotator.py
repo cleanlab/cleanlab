@@ -28,11 +28,11 @@ To analyze a fixed dataset labeled by multiple annotators, use the
 The algorithms to compute these estimates are described in `the CROWDLAB paper <https://arxiv.org/abs/2210.06812>`_.
 
 If you have some labeled and unlabeled data (with multiple annotators for some labeled examples) and want to decide what data to collect additional labels for,
-use the `~cleanlab.multiannotator.get_active_learning_scores` function, which is intended for active learning. 
+use the `~cleanlab.multiannotator.get_active_learning_scores` function, which is intended for active learning.
 This function estimates an ActiveLab quality score for each example,
 which can be used to prioritize which examples are most informative to collect additional labels for.
 This function is effective for settings where some examples have been labeled by one or more annotators and other examples can have no labels at all so far,
-as well as settings where new labels are collected either in batches of examples or one at a time. 
+as well as settings where new labels are collected either in batches of examples or one at a time.
 Here is an `example notebook <https://github.com/cleanlab/examples/blob/master/active_learning_multiannotator/active_learning.ipynb>`_ showcasing the use of this ActiveLab method for active learning with data re-labeling.
 
 The algorithms to compute these active learning scores are described in `the ActiveLab paper <https://arxiv.org/abs/2301.11856>`_.
@@ -1373,7 +1373,7 @@ def _get_single_annotator_agreement(
     labels_multiannotator : np.ndarray
         2D numpy array of multiple given labels for each example with shape ``(N, M)``,
         where N is the number of examples and M is the number of annotators.
-        For more details, labels in the same format expected by the :py:func:`get_label_quality_multiannotator <cleanlab.multiannotator.get_label_quality_multiannotator>`.
+        For more details, labels in the same format expected by the `~cleanlab.multiannotator.get_label_quality_multiannotator`.
     num_annotations : np.ndarray
         An array of shape ``(N,)`` with the number of annotators that have labeled each example.
     annotator_idx : int

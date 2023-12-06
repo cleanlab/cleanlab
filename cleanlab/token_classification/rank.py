@@ -169,12 +169,12 @@ def issues_from_scores(
     sentence_scores:
         Array of shape `(N, )` of overall sentence scores, where `N` is the number of sentences in the dataset.
 
-        Same format as the `sentence_scores` returned by :py:func:`token_classification.rank.get_label_quality_scores <cleanlab.token_classification.rank.get_label_quality_scores>`.
+        Same format as the `sentence_scores` returned by `~cleanlab.token_classification.rank.get_label_quality_scores`.
 
     token_scores:
         Optional list such that `token_scores[i]` contains the individual token scores for the `i`-th sentence.
 
-        Same format as the `token_scores` returned by :py:func:`token_classification.rank.get_label_quality_scores <cleanlab.token_classification.rank.get_label_quality_scores>`.
+        Same format as the `token_scores` returned by `~cleanlab.token_classification.rank.get_label_quality_scores`.
 
     threshold:
         Tokens (or sentences, if `token_scores` is not provided) with quality scores above the `threshold` are not

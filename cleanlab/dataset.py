@@ -406,7 +406,7 @@ def health_summary(
         A dictionary containing keys (see the corresponding functions' documentation to understand the values):
 
         - ``"overall_label_health_score"``, corresponding to `~cleanlab.dataset.overall_label_health_score`
-        - ``"joint"``, corresponding to :py:func:`estimate_joint <cleanlab.count.estimate_joint>`
+        - ``"joint"``, corresponding to :py:func:`count.estimate_joint <cleanlab.count.estimate_joint>`
         - ``"classes_by_label_quality"``, corresponding to `~cleanlab.dataset.rank_classes_by_label_quality`
         - ``"overlapping_classes"``, corresponding to `~cleanlab.dataset.find_overlapping_classes`
     """
