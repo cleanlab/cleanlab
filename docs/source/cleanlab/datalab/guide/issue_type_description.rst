@@ -141,7 +141,7 @@ To find the underperforming group, Datalab clusters the data using the provided 
 each cluster is calculated using :py:func:`rank.get_self_confidence_for_each_label <cleanlab.rank.get_self_confidence_for_each_label>`. If the confidence of the whole dataset is
 `r`, then `c` is an underperforming group if `q/r` falls below a threshold and we say that the dataset suffers from the underperforming group issue.
 
-If you have precomputed cluster labels for each datapoint, you can pass them explicitly to Datalab.
+If you have precomputed cluster labels for each datapoint, you can pass them explicitly to :py:meth:`Datalab.find_issues <cleanlab.datalab.datalab.Datalab.find_issues>` using the `cluster_ids` key in the `issue_types` argument.
 This is especially useful for tabular datasets where you want to cluster the data using a categorical column. An integer encoding of the categorical column  can be passed as cluster labels
 for finding the underperforming group.
 
@@ -271,12 +271,15 @@ Underperforming Group Issue Parameters
 .. code-block:: python
 
     underperforming_group_kwargs = {
-    	"threshold": # `threshold` argument to constructor of `UnderperformingGroupIssueManager`. Non-negative floating value between 0 and 1 used for determinining group of points with low confidence.
-        "metric": # `metric` argument to constructor of `UnderperformingGroupIssueManager`. String for the distance metric used for nearest neighbors search if necessary. `metric` argument to constructor of `sklearn.neighbors.NearestNeighbors`,
-    	"k": # `k` argument to constructor of `UnderperformingGroupIssueManager`. Integer representing the number of nearest neighbors for constructing the nearest neighbour graph. `n_neighbors` argument to constructor of `sklearn.neighbors.NearestNeighbors`,
-        "min_cluster_samples": # `min_cluster_samples` argument to constructor of `UnderperformingGroupIssueManager`.  Non-negative integer value specifying the minimum number of examples required for a cluster to be considered as the underperforming group.
-        "clustering_kwargs": # `clustering_kwargs` dict of keyword arguments to constructor of `UnderperformingGroupIssueManager`. Key-value pairs representing arguments for the constructor of the clustering algorithm class.
-        "cluster_ids": # `cluster_ids` argument to constructor of `UnderperformingGroupIssueManager`. A 1-D numpy array containing cluster labels for each sample in the dataset. If passed, these cluster labels are used for determining the underperforming group.
+        # Constructor arguments for `UnderperformingGroupIssueManager`
+        "threshold": # Non-negative floating value between 0 and 1 used for determinining group of points with low confidence.
+        "metric": # String for the distance metric used for nearest neighbors search if necessary. `metric` argument to constructor of `sklearn.neighbors.NearestNeighbors`.
+        "k": # Integer representing the number of nearest neighbors for constructing the nearest neighbour graph. `n_neighbors` argument to constructor of `sklearn.neighbors.NearestNeighbors`.
+        "min_cluster_samples": # Non-negative integer value specifying the minimum number of examples required for a cluster to be considered as the underperforming group.
+        "clustering_kwargs": # Key-value pairs representing arguments for the constructor of the clustering algorithm class.
+
+        # Argument for the find_issues() method of UnderperformingGroupIssueManager
+        "cluster_ids": # A 1-D numpy array containing cluster labels for each sample in the dataset. If passed, these cluster labels are used for determining the underperforming group.
     }
 
 .. note::
