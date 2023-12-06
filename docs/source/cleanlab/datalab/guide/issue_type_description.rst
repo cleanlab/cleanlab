@@ -129,6 +129,23 @@ For image datasets which are properly specified as such, Datalab can detect addi
 Specifically, low-quality images which are too: dark/bright, blurry, low information, abnormally sized, etc.
 Descriptions of these image-specific issues are provided in the `CleanVision package <https://github.com/cleanlab/cleanvision>`_ and its documentation.
 
+Underperforming Group Issue
+---------------------
+
+An underperforming group refers to a collection of “hard” examples for which the model predictions are poor.
+
+Underperforming Group issues are calculated based on provided `features`  and `pred_probs`.
+If you do not provide both these arguments, this type of issue will not be considered.
+
+To find the underperforming group, Datalab clusters the data using the provided `features` and determines the cluster `c` with the lowest confidence `q`, where the confidence for
+each cluster is calculated using :py:func:`rank.get_self_confidence_for_each_label <cleanlab.rank.get_self_confidence_for_each_label>`. If the confidence of the whole dataset is
+`r`, then `c` is an underperforming group if `q/r` falls below a threshold and we say that the dataset suffers from the underperforming group issue.
+
+If you have precomputed cluster labels for each datapoint, you can pass them explicitly to Datalab.
+This is especially useful for tabular datasets where you want to cluster the data using a categorical column. An integer encoding of the categorical column  can be passed as cluster labels
+for finding the underperforming group.
+
+
 Optional Issue Parameters
 =========================
 
@@ -141,7 +158,7 @@ Appropriate defaults are used for any parameters you do not specify, so no need 
     possible_issue_types = {
         "label": label_kwargs, "outlier": outlier_kwargs,
         "near_duplicate": near_duplicate_kwargs, "non_iid": non_iid_kwargs,
-        "class_imbalance": class_imbalance_kwargs
+        "class_imbalance": class_imbalance_kwargs, "underperforming_group": underperforming_group_kwargs
     }
 
 
@@ -247,3 +264,22 @@ Imbalance Issue Parameters
 .. note::
 
     For more information, view the source code of:  :py:class:`datalab.internal.issue_manager.imbalance.ClassImbalanceIssueManager <cleanlab.datalab.internal.issue_manager.imbalance.ClassImbalanceIssueManager>`.
+
+Underperforming Group Issue Parameters
+--------------------------
+
+.. code-block:: python
+
+    underperforming_group_kwargs = {
+    	"threshold": # `threshold` argument to constructor of `UnderperformingGroupIssueManager`. Non-negative floating value between 0 and 1 used for determinining group of points with low confidence.
+        "metric": # `metric` argument to constructor of `UnderperformingGroupIssueManager`. String for the distance metric used for nearest neighbors search if necessary. `metric` argument to constructor of `sklearn.neighbors.NearestNeighbors`,
+    	"k": # `k` argument to constructor of `UnderperformingGroupIssueManager`. Integer representing the number of nearest neighbors for constructing the nearest neighbour graph. `n_neighbors` argument to constructor of `sklearn.neighbors.NearestNeighbors`,
+        "min_cluster_samples": # `min_cluster_samples` argument to constructor of `UnderperformingGroupIssueManager`.  Non-negative integer value specifying the minimum number of examples required for a cluster to be considered as the underperforming group.
+        "clustering_kwargs": # `clustering_kwargs` dict of keyword arguments to constructor of `UnderperformingGroupIssueManager`. Key-value pairs representing arguments for the constructor of the clustering algorithm class.
+        "cluster_ids": # `cluster_ids` argument to constructor of `UnderperformingGroupIssueManager`. A 1-D numpy array containing cluster labels for each sample in the dataset. If passed, these cluster labels are used for determining the underperforming group.
+    }
+
+.. note::
+
+    For more information, view the source code of:  :py:class:`datalab.internal.issue_manager.underperf_group.UnderperformingGroupIssueManager <cleanlab.datalab.internal.issue_manager.underperf_group.UnderperformingGroupIssueManager>`.
+    For more information on generating `cluster_ids` for this issue manager, refer to this `FAQ Section <../../../tutorials/faq.html#How-do-I-generate-cluster-IDs-and-pass-them-to-find_issues-for-the-Underperforming-Group-Issue-Manager?>`_.
