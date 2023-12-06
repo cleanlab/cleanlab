@@ -284,6 +284,6 @@ Underperforming Group Issue Parameters
 
 .. note::
 
-    For more information, view the source code of:  :py:class:`datalab.internal.issue_manager.underperf_group.UnderperformingGroupIssueManager <cleanlab.datalab.internal.issue_manager.underperf_group.UnderperformingGroupIssueManager>`.
+    For more information, view the source code of:  :py:class:`datalab.internal.issue_manager.underperforming_group.UnderperformingGroupIssueManager <cleanlab.datalab.internal.issue_manager.underperforming_group.UnderperformingGroupIssueManager>`.
 
     For more information on generating `cluster_ids` for this issue manager, refer to this `FAQ Section <../../../tutorials/faq.html#How-do-I-generate-cluster-IDs-and-pass-them-to-find_issues-for-the-Underperforming-Group-Issue-Manager?>`_.
