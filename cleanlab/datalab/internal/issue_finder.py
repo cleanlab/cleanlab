@@ -211,8 +211,8 @@ class IssueFinder:
             Out-of-sample predicted class probabilities made by the model for every example in the dataset.
             To best detect label issues, provide this input obtained from the most accurate model you can produce.
 
-            If provided for classification, this must be a 2D array with shape (num_examples, K) where K is the number of classes in the dataset.
-            If provided for regression, this must be a 1D array with shape (num_examples,).
+            If provided for classification, this must be a 2D array with shape ``(num_examples, K)`` where K is the number of classes in the dataset.
+            If provided for regression, this must be a 1D array with shape ``(num_examples,)``.
 
         features : Optional[np.ndarray]
             Feature embeddings (vector representations) of every example in the dataset.
