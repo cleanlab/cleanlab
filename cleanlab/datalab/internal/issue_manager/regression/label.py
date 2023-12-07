@@ -29,7 +29,7 @@ if TYPE_CHECKING:  # pragma: no cover
 
 
 class RegressionLabelIssueManager(IssueManager):
-    """Manages label issues in a Datalab.
+    """Manages label issues in a Datalab for regression tasks.
 
     Parameters
     ----------
@@ -80,7 +80,14 @@ class RegressionLabelIssueManager(IssueManager):
         predictions: Optional[np.ndarray] = None,
         **kwargs,
     ) -> None:
-        """Find label issues in the datalab."""
+        """Find label issues in the datalab.
+
+        .. admonition:: Priority Order for finding issues:
+
+            1. Custom Model: Requires `features` to be passed to this method. Used if a model is set up in the constructor.
+            2. Predictions: Uses `predictions` if provided and no model is set up in the constructor.
+            3. Default Model: Defaults to a standard model using `features` if no model or predictions are provided.
+        """
         if features is None and predictions is None:
             raise ValueError(
                 "Regression requires numerical `features` or `predictions` "
