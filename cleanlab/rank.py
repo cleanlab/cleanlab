@@ -434,8 +434,7 @@ def order_label_issues(
 
     rank_by : str, optional
       Score by which to order label error indices (in increasing order). See
-      the `method` argument of :py:func:`get_label_quality_scores
-      <cleanlab.rank.get_label_quality_scores>`.
+      the `method` argument of `~cleanlab.rank.get_label_quality_scores`.
 
     rank_by_kwargs : dict, optional
       Optional keyword arguments to pass into `~cleanlab.rank.get_label_quality_scores` function.
