@@ -145,10 +145,10 @@ def get_label_quality_scores_per_class(
 ) -> np.ndarray:
     """
     Computes a quality score quantifying how likely each individual class annotation is correct in a multi-label classification dataset.
-    This is similar to :py:func:`get_label_quality_scores <cleanlab.multilabel_classification.rank.get_label_quality_scores>`
+    This is similar to `~cleanlab.multilabel_classification.rank.get_label_quality_scores`
     but instead returns the per-class results without aggregation.
     For a dataset with K classes, each example receives K scores from this method.
-    Refer to documentation in :py:func:`get_label_quality_scores <cleanlab.multilabel_classification.rank.get_label_quality_scores>` for details.
+    Refer to documentation in `~cleanlab.multilabel_classification.rank.get_label_quality_scores` for details.
 
     Parameters
     ----------
@@ -162,7 +162,7 @@ def get_label_quality_scores_per_class(
 
     method : {"self_confidence", "normalized_margin", "confidence_weighted_entropy"}, default = "self_confidence"
       Method to calculate separate per-class annotation scores (that quantify how likely a particular class annotation is correct for a particular example).
-      Refer to documentation for this argument in :py:func:`get_label_quality_scores <cleanlab.multilabel_classification.rank.get_label_quality_scores>` for further details.
+      Refer to documentation for this argument in `~cleanlab.multilabel_classification.rank.get_label_quality_scores` for further details.
 
     adjust_pred_probs : bool, default = False
       Account for class imbalance in the label-quality scoring by adjusting predicted probabilities.

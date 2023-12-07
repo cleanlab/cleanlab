@@ -151,10 +151,10 @@ def _get_outre_score_for_each_label(
     Parameters
     ----------
     labels: np.ndarray
-        Labels in the same format as expected by the :py:func:`get_label_quality_scores <cleanlab.regression.rank.get_label_quality_scores>` function.
+        Labels in the same format as expected by the `~cleanlab.regression.rank.get_label_quality_scores` function.
 
     predictions: np.ndarray
-        Predicted labels in the same format as expected by the :py:func:`get_label_quality_scores <cleanlab.regression.rank.get_label_quality_scores>` function.
+        Predicted labels in the same format as expected by the `~cleanlab.regression.rank.get_label_quality_scores` function.
 
     residual_scale: float, default = 5
         Multiplicative factor to adjust scale (standard deviation) of the residuals relative to the labels.
