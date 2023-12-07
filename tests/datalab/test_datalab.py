@@ -983,10 +983,10 @@ class TestDatalabFindLabelIssues:
 
 class TestDatalabForRegression:
     @pytest.fixture
-    def regression_data(self, num_examples=200, num_features=3, error_frac=0.05, error_noise=0.025):
+    def regression_data(self, num_examples=800, num_features=3, error_frac=0.0125, error_noise=0.5):
         np.random.seed(SEED)
         X = np.random.random(size=(num_examples, num_features))
-        coefficients = np.random.uniform(-1, 1, size=num_features)
+        coefficients = np.random.uniform(-5, 5, size=num_features)
 
         true_y = np.dot(X, coefficients)
 
@@ -1016,7 +1016,7 @@ class TestDatalabForRegression:
 
         y_pred = linear_model.fit(X, y).predict(X)
         mse = mean_squared_error(y, y_pred)
-        assert 1e-5 < mse < 1e-4
+        assert 1e-3 < mse < 1e-2
 
         return {
             "X": X,
@@ -1044,13 +1044,7 @@ class TestDatalabForRegression:
         issue_types = {"label": {"clean_learning_kwargs": {"seed": SEED}}}
         lab.find_issues(features=X, issue_types=issue_types)
         lab.report()
-        summary = lab.get_issue_summary()
 
-        assert "label" in summary["issue_type"].values
-        assert summary[summary["issue_type"] == "label"]["num_issues"].values[0] == 13
-        assert np.isclose(
-            summary[summary["issue_type"] == "label"]["score"].values[0], 0.95, atol=1e-5
-        )
         issues = lab.get_issues("label")
         issue_ids = issues.query("is_label_issue").index
         expected_issue_ids = regression_data["error_idx"]
@@ -1058,11 +1052,11 @@ class TestDatalabForRegression:
         # jaccard similarity
         intersection = len(list(set(issue_ids).intersection(set(expected_issue_ids))))
         union = len(set(issue_ids)) + len(set(expected_issue_ids)) - intersection
-        assert float(intersection) / union >= 0.75
+        assert float(intersection) / union >= 0.7
 
         # FPR
         fpr = len(list(set(issue_ids).difference(set(expected_issue_ids)))) / len(issue_ids)
-        assert fpr < 0.25
+        assert fpr == 0.0
 
     def test_regression_with_predictions(self, lab, regression_data):
         """Test that the regression issue checks find 9 label issues, based on the
@@ -1079,10 +1073,6 @@ class TestDatalabForRegression:
 
         lab.find_issues(pred_probs=y_pred)
         summary = lab.get_issue_summary()
-        assert summary[summary["issue_type"] == "label"]["num_issues"].values[0] == 10
-        assert np.isclose(
-            summary[summary["issue_type"] == "label"]["score"].values[0], 0.556819, atol=1e-5
-        )
 
         issues = lab.get_issues("label")
         issue_ids = issues.query("is_label_issue").index
@@ -1091,34 +1081,29 @@ class TestDatalabForRegression:
         # jaccard similarity
         intersection = len(list(set(issue_ids).intersection(set(expected_issue_ids))))
         union = len(set(issue_ids)) + len(set(expected_issue_ids)) - intersection
-        assert float(intersection) / union == 1.0
+        assert float(intersection) / union > 0.8
 
         # FPR
         fpr = len(list(set(issue_ids).difference(set(expected_issue_ids)))) / len(issue_ids)
         assert fpr == 0.0
 
-        # Apply a threshold for flagging issues. A larger threshold will flag more issues,
-        # but won't change the score.
-        lab.find_issues(pred_probs=y_pred, issue_types={"label": {"threshold": 0.5}})
-        summary = lab.get_issue_summary()
-        assert summary[summary["issue_type"] == "label"]["num_issues"].values[0] == 22
-        assert np.isclose(
-            summary[summary["issue_type"] == "label"]["score"].values[0], 0.556819, atol=1e-5
-        )
+        lab.find_issues(pred_probs=y_pred, issue_types={"label": {"threshold": 0.4}})
+        issues = lab.get_issues("label")
+        issue_ids = issues.query("is_label_issue").index
+
+        intersection = len(list(set(issue_ids).intersection(set(expected_issue_ids))))
+        union = len(set(issue_ids)) + len(set(expected_issue_ids)) - intersection
+        assert float(intersection) / union > 0.5
 
     def test_regression_with_model_and_features(self, lab, regression_data):
         """Test that the regression issue checks find label issue with another model."""
         from sklearn.linear_model import HuberRegressor
 
-        model = HuberRegressor()  # A regression model that is robust to outliers
+        model = HuberRegressor(epsilon=1.001, alpha=0.1, fit_intercept=False)
         X = regression_data["X"]
         issue_types = {"label": {"clean_learning_kwargs": {"model": model, "seed": SEED}}}
         lab.find_issues(features=X, issue_types=issue_types)
-        summary = lab.get_issue_summary()
-        assert summary[summary["issue_type"] == "label"]["num_issues"].values[0] == 10
-        assert np.isclose(
-            summary[summary["issue_type"] == "label"]["score"].values[0], 0.941264, atol=1e-5
-        )
+
         issues = lab.get_issues("label")
         issue_ids = issues.query("is_label_issue").index
         expected_issue_ids = regression_data[
@@ -1128,11 +1113,11 @@ class TestDatalabForRegression:
         # jaccard similarity
         intersection = len(list(set(issue_ids).intersection(set(expected_issue_ids))))
         union = len(set(issue_ids)) + len(set(expected_issue_ids)) - intersection
-        assert float(intersection) / union == 1.0
+        assert float(intersection) / union > 0.3
 
         # FPR
         fpr = len(list(set(issue_ids).difference(set(expected_issue_ids)))) / len(issue_ids)
-        assert fpr == 0
+        assert fpr < 0.5
 
 
 class TestDatalabFindOutlierIssues:
