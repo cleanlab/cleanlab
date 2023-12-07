@@ -130,20 +130,16 @@ Specifically, low-quality images which are too: dark/bright, blurry, low informa
 Descriptions of these image-specific issues are provided in the `CleanVision package <https://github.com/cleanlab/cleanvision>`_ and its documentation.
 
 Underperforming Group Issue
----------------------
+------------------------------
 
-An underperforming group refers to a collection of “hard” examples for which the model predictions are poor.
+An underperforming group refers to a cluster of similar examples (i.e. a slice) in the dataset for which the ML model predictions are poor.  The examples in this underperforming group may have noisy labels or feature values, or the trained ML model may not have learned how to properly handle them (consider collecting more data from this subpopulation or up-weighting the existing data from this group).
 
-Underperforming Group issues are calculated based on provided `features`  and `pred_probs`.
+Underperforming Group issues are detected based on provided `features`  and `pred_probs`.
 If you do not provide both these arguments, this type of issue will not be considered.
 
-To find the underperforming group, Datalab clusters the data using the provided `features` and determines the cluster `c` with the lowest confidence `q`, where the confidence for
-each cluster is calculated using :py:func:`rank.get_self_confidence_for_each_label <cleanlab.rank.get_self_confidence_for_each_label>`. If the confidence of the whole dataset is
-`r`, then `c` is an underperforming group if `q/r` falls below a threshold and we say that the dataset suffers from the underperforming group issue.
+To find the underperforming group, Cleanlab clusters the data using the provided `features` and determines the cluster `c` with the lowest average model predictive performance. Model predictive performance is evaluated via the model's self-confidence of the given labels, calculated using :py:func:`rank.get_self_confidence_for_each_label <cleanlab.rank.get_self_confidence_for_each_label>`. Suppose the average predictive power across the full dataset is `r` and is `q` within a cluster of examples. This cluster is considered to be an underperforming group if `q/r` falls below a threshold. A dataset suffers from the Underperforming Group issue if there exists such a cluster within it.
 
-If you have precomputed cluster labels for each datapoint, you can pass them explicitly to :py:meth:`Datalab.find_issues <cleanlab.datalab.datalab.Datalab.find_issues>` using the `cluster_ids` key in the `issue_types` argument.
-This is especially useful for tabular datasets where you want to cluster the data using a categorical column. An integer encoding of the categorical column  can be passed as cluster labels
-for finding the underperforming group.
+Advanced users:  If you have pre-computed cluster assignments for each example in the dataset, you can pass them explicitly to :py:meth:`Datalab.find_issues <cleanlab.datalab.datalab.Datalab.find_issues>` using the `cluster_ids` key in the `issue_types` dict argument.  This is useful for tabular datasets where you want to group/slice the data based on a categorical column. An integer encoding of the categorical column can be passed as cluster assignments for finding the underperforming group, based on the data slices you define.
 
 
 Optional Issue Parameters
