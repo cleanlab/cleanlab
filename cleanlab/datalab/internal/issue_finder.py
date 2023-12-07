@@ -39,6 +39,7 @@ from cleanlab.datalab.internal.issue_manager_factory import (
     _IssueManagerFactory,
     list_default_issue_types,
 )
+from cleanlab.datalab.internal.model_outputs import MultiClassPredProbs, RegressionPredictions
 
 if TYPE_CHECKING:  # pragma: no cover
     import numpy.typing as npt
@@ -56,7 +57,7 @@ _CLASSIFICATION_ARGS_DICT = {
     "data_valuation": ["knn_graph"],
 }
 _REGRESSION_ARGS_DICT = {
-    "label": ["features"],
+    "label": ["features", "predictions"],
 }
 
 
@@ -210,7 +211,8 @@ class IssueFinder:
             Out-of-sample predicted class probabilities made by the model for every example in the dataset.
             To best detect label issues, provide this input obtained from the most accurate model you can produce.
 
-            If provided, this must be a 2D array with shape (num_examples, K) where K is the number of classes in the dataset.
+            If provided for classification, this must be a 2D array with shape ``(num_examples, K)`` where K is the number of classes in the dataset.
+            If provided for regression, this must be a 1D array with shape ``(num_examples,)``.
 
         features : Optional[np.ndarray]
             Feature embeddings (vector representations) of every example in the dataset.
@@ -355,9 +357,23 @@ class IssueFinder:
         """Returns a dictionary of issue types that can be used in :py:meth:`Datalab.find_issues
         <cleanlab.datalab.datalab.Datalab.find_issues>` method."""
 
+        pred_probs = kwargs.get("pred_probs", None)
         features = kwargs.get("features", None)
         knn_graph = kwargs.get("knn_graph", None)
         issue_types = kwargs.get("issue_types", None)
+
+        model_output = None
+        if pred_probs is not None:
+            if self.task == "regression":
+                model_output = RegressionPredictions(pred_probs)
+            elif self.task == "classification":
+                model_output = MultiClassPredProbs(pred_probs)
+            else:
+                raise ValueError(f"Unknown task type '{self.task}'")
+
+        if model_output is not None:
+            # A basic trick to assign the model output to the correct argument
+            kwargs.update({model_output.argument: model_output.collect()})
 
         # Determine which parameters are required for each issue type
         strategy_for_resolving_required_args = _select_strategy_for_resolving_required_args(

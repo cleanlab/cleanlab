@@ -981,53 +981,144 @@ class TestDatalabFindLabelIssues:
         )
 
 
-def make_data(num_examples=200, num_features=3, noise=0.2, error_frac=0.1, error_noise=5):
-    np.random.seed(SEED)
-    X = np.random.random(size=(num_examples, num_features))
-    coefficients = np.random.uniform(-1, 1, size=num_features)
-    label_noise = np.random.normal(scale=noise, size=num_examples)
+class TestDatalabForRegression:
+    @pytest.fixture
+    def regression_data(self, num_examples=400, num_features=3, error_frac=0.025, error_noise=0.25):
+        np.random.seed(SEED)
+        X = np.random.random(size=(num_examples, num_features))
+        coefficients = np.random.uniform(-5, 5, size=num_features)
 
-    true_y = np.dot(X, coefficients)
-    y = np.dot(X, coefficients) + label_noise
+        true_y = np.dot(X, coefficients)
 
-    # add extra noisy examples
-    num_errors = int(num_examples * error_frac)
-    extra_noise = np.random.normal(scale=error_noise, size=num_errors)
-    random_idx = np.random.choice(num_examples, num_errors)
-    y[random_idx] += extra_noise
-    error_idx = np.argsort(abs(y - true_y))[-num_errors:]  # get the noisiest examples idx
+        # add extra noisy examples
+        num_errors = int(num_examples * error_frac)
+        label_noise = np.clip(
+            np.random.normal(loc=error_noise, scale=error_noise / 4, size=num_errors),
+            0.25 * error_noise,
+            4 * error_noise,
+        ) * np.random.choice([-1, 1], size=num_errors)
+        random_idx = np.random.choice(num_examples, num_errors)
+        y = true_y.copy()
+        y[random_idx] += label_noise
+        error_idx = np.argsort(abs(y - true_y))[-num_errors:]  # get the noisiest examples idx
 
-    # create test set
-    X_test = np.random.random(size=(num_examples, num_features))
-    label_noise = np.random.normal(scale=noise, size=num_examples)
-    y_test = np.dot(X_test, coefficients) + label_noise
+        # Ensure that the MSE is not too large
+        from sklearn.linear_model import LinearRegression
 
-    return {
-        "X": X,
-        "y": y,
-        "true_y": true_y,
-        "X_test": X_test,
-        "y_test": y_test,
-        "error_idx": error_idx,
-    }
+        linear_model = LinearRegression()
 
+        # Validate that the label noise affects the MSE for a linear model
+        from sklearn.metrics import mean_squared_error
 
-def test_regression():
-    data = make_data()
-    X, y = data["X"], data["y"]
-    test_df = pd.DataFrame(X, columns=["c1", "c2", "c3"])
-    test_df["y"] = y
-    lab = Datalab(data=test_df, label_name="y", task="regression")
+        y_pred_true = linear_model.fit(X, true_y).predict(X)
+        mse_true = mean_squared_error(true_y, y_pred_true)
+        assert mse_true < 1e-10
 
-    assert set(lab.list_default_issue_types()) == set(["label"])
-    assert set(lab.list_possible_issue_types()) == set(["label"])
+        y_pred = linear_model.fit(X, y).predict(X)
+        mse = mean_squared_error(y, y_pred)
+        assert 1e-3 < mse < 1e-2
 
-    lab.find_issues(features=X)
-    lab.report()
-    summary = lab.get_issue_summary()
+        return {
+            "X": X,
+            "y": y,
+            "true_y": true_y,
+            "error_idx": error_idx,
+        }
 
-    assert "label" in summary["issue_type"].values
-    assert (summary[summary["issue_type"] == "label"]["num_issues"] == 40).all()
+    @pytest.fixture
+    def lab(self, regression_data):
+        X, y = regression_data["X"], regression_data["y"]
+        test_df = pd.DataFrame(X, columns=["c1", "c2", "c3"])
+        test_df["y"] = y
+        lab = Datalab(data=test_df, label_name="y", task="regression")
+        return lab
+
+    def test_available_issue_types(self, lab):
+        assert set(lab.list_default_issue_types()) == set(["label"])
+        assert set(lab.list_possible_issue_types()) == set(["label"])
+
+    def test_regression_with_features(self, lab, regression_data):
+        """Test that the regression issue checks finds 40 label issues, based on the
+        numerical features."""
+        X = regression_data["X"]
+        issue_types = {"label": {"clean_learning_kwargs": {"seed": SEED}}}
+        lab.find_issues(features=X, issue_types=issue_types)
+        lab.report()
+
+        issues = lab.get_issues("label")
+        issue_ids = issues.query("is_label_issue").index
+        expected_issue_ids = regression_data["error_idx"]
+
+        # jaccard similarity
+        intersection = len(list(set(issue_ids).intersection(set(expected_issue_ids))))
+        union = len(set(issue_ids)) + len(set(expected_issue_ids)) - intersection
+        assert float(intersection) / union >= 0.7
+
+        # FPR
+        fpr = len(list(set(issue_ids).difference(set(expected_issue_ids)))) / len(issue_ids)
+        assert fpr < 0.2
+
+    def test_regression_with_predictions(self, lab, regression_data):
+        """Test that the regression issue checks find 9 label issues, based on the
+        predictions of a model.
+
+        Instead of running a model, we use the ground-truth to emulate a perfect model's predictions.
+
+        Testing the default behavior, we expect to find some label issues with a given mean score.
+        Increasing a threshold for flagging issues will flag more issues, but won't change the score.
+        """
+
+        # Use ground-truth to emulate a perfect model's predictions
+        y_pred = regression_data["true_y"]
+
+        lab.find_issues(pred_probs=y_pred)
+        summary = lab.get_issue_summary()
+
+        issues = lab.get_issues("label")
+        issue_ids = issues.query("is_label_issue").index
+        expected_issue_ids = regression_data["error_idx"]
+
+        # jaccard similarity
+        intersection = len(list(set(issue_ids).intersection(set(expected_issue_ids))))
+        union = len(set(issue_ids)) + len(set(expected_issue_ids)) - intersection
+        assert float(intersection) / union > 0.8
+
+        # FPR
+        fpr = len(list(set(issue_ids).difference(set(expected_issue_ids)))) / len(issue_ids)
+        assert fpr == 0.0
+
+        # Try running with a different threshold
+        lab.find_issues(pred_probs=y_pred, issue_types={"label": {"threshold": 0.4}})
+        issues = lab.get_issues("label")
+        issue_ids = issues.query("is_label_issue").index
+
+        intersection = len(list(set(issue_ids).intersection(set(expected_issue_ids))))
+        union = len(set(issue_ids)) + len(set(expected_issue_ids)) - intersection
+        assert float(intersection) / union > 0.3
+
+    def test_regression_with_model_and_features(self, lab, regression_data):
+        """Test that the regression issue checks find label issue with another model."""
+        from sklearn.linear_model import RANSACRegressor
+
+        model = RANSACRegressor(random_state=SEED)
+        X = regression_data["X"]
+        issue_types = {"label": {"clean_learning_kwargs": {"model": model, "seed": SEED}}}
+        lab.find_issues(features=X, issue_types=issue_types)
+
+        issues = lab.get_issues("label")
+        issue_ids = issues.query("is_label_issue").index
+        expected_issue_ids = regression_data[
+            "error_idx"
+        ]  # Set to 5% of the data, but random noise may be too small to detect
+
+        # jaccard similarity
+        intersection = len(list(set(issue_ids).intersection(set(expected_issue_ids))))
+        union = len(set(issue_ids)) + len(set(expected_issue_ids)) - intersection
+        assert float(intersection) / union > 0.3
+
+        # FPR
+        fpr = len(list(set(issue_ids).difference(set(expected_issue_ids)))) / len(issue_ids)
+        assert fpr < 0.3
 
 
 class TestDatalabFindOutlierIssues:

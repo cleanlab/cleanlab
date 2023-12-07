@@ -126,4 +126,9 @@ class TestRegressionIssueFinder:
         kwargs = {k: k for k in ["pred_probs", "features", "knn_graph"]}
         kwargs["issue_types"] = {"label": {}}
         available_issue_types = issue_finder.get_available_issue_types(**kwargs)
-        assert available_issue_types == {"label": {"features": "features"}}
+        assert available_issue_types == {
+            "label": {
+                "predictions": "pred_probs",  # Expect the ModelOutput.argument class variable to replace the key
+                "features": "features",
+            },
+        }
