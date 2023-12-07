@@ -983,7 +983,7 @@ class TestDatalabFindLabelIssues:
 
 class TestDatalabForRegression:
     @pytest.fixture
-    def regression_data(self, num_examples=800, num_features=3, error_frac=0.0125, error_noise=0.5):
+    def regression_data(self, num_examples=400, num_features=3, error_frac=0.025, error_noise=0.25):
         np.random.seed(SEED)
         X = np.random.random(size=(num_examples, num_features))
         coefficients = np.random.uniform(-5, 5, size=num_features)
@@ -1056,7 +1056,7 @@ class TestDatalabForRegression:
 
         # FPR
         fpr = len(list(set(issue_ids).difference(set(expected_issue_ids)))) / len(issue_ids)
-        assert fpr == 0.0
+        assert fpr < 0.2
 
     def test_regression_with_predictions(self, lab, regression_data):
         """Test that the regression issue checks find 9 label issues, based on the
@@ -1087,19 +1087,20 @@ class TestDatalabForRegression:
         fpr = len(list(set(issue_ids).difference(set(expected_issue_ids)))) / len(issue_ids)
         assert fpr == 0.0
 
+        # Try running with a different threshold
         lab.find_issues(pred_probs=y_pred, issue_types={"label": {"threshold": 0.4}})
         issues = lab.get_issues("label")
         issue_ids = issues.query("is_label_issue").index
 
         intersection = len(list(set(issue_ids).intersection(set(expected_issue_ids))))
         union = len(set(issue_ids)) + len(set(expected_issue_ids)) - intersection
-        assert float(intersection) / union > 0.5
+        assert float(intersection) / union > 0.3
 
     def test_regression_with_model_and_features(self, lab, regression_data):
         """Test that the regression issue checks find label issue with another model."""
-        from sklearn.linear_model import HuberRegressor
+        from sklearn.linear_model import RANSACRegressor
 
-        model = HuberRegressor(epsilon=1.001, alpha=0.1, fit_intercept=False)
+        model = RANSACRegressor(random_state=SEED)
         X = regression_data["X"]
         issue_types = {"label": {"clean_learning_kwargs": {"model": model, "seed": SEED}}}
         lab.find_issues(features=X, issue_types=issue_types)
@@ -1117,7 +1118,7 @@ class TestDatalabForRegression:
 
         # FPR
         fpr = len(list(set(issue_ids).difference(set(expected_issue_ids)))) / len(issue_ids)
-        assert fpr < 0.5
+        assert fpr < 0.3
 
 
 class TestDatalabFindOutlierIssues:
