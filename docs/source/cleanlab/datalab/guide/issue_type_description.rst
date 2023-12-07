@@ -138,7 +138,7 @@ Underperforming Group issues are detected based on provided `features`  and `pre
 If you do not provide both these arguments, this type of issue will not be considered.
 
 To find the underperforming group, Cleanlab clusters the data using the provided `features` and determines the cluster `c` with the lowest average model predictive performance. Model predictive performance is evaluated via the model's self-confidence of the given labels, calculated using :py:func:`rank.get_self_confidence_for_each_label <cleanlab.rank.get_self_confidence_for_each_label>`. Suppose the average predictive power across the full dataset is `r` and is `q` within a cluster of examples. This cluster is considered to be an underperforming group if `q/r` falls below a threshold. A dataset suffers from the Underperforming Group issue if there exists such a cluster within it.
-
+The underperforming group quality score is equal to `q/r` for examples belonging to the underperforming group, and is equal to 1 for all other examples.
 Advanced users:  If you have pre-computed cluster assignments for each example in the dataset, you can pass them explicitly to :py:meth:`Datalab.find_issues <cleanlab.datalab.datalab.Datalab.find_issues>` using the `cluster_ids` key in the `issue_types` dict argument.  This is useful for tabular datasets where you want to group/slice the data based on a categorical column. An integer encoding of the categorical column can be passed as cluster assignments for finding the underperforming group, based on the data slices you define.
 
 
@@ -271,8 +271,8 @@ Underperforming Group Issue Parameters
         "threshold": # Non-negative floating value between 0 and 1 used for determinining group of points with low confidence.
         "metric": # String for the distance metric used for nearest neighbors search if necessary. `metric` argument to constructor of `sklearn.neighbors.NearestNeighbors`.
         "k": # Integer representing the number of nearest neighbors for constructing the nearest neighbour graph. `n_neighbors` argument to constructor of `sklearn.neighbors.NearestNeighbors`.
-        "min_cluster_samples": # Non-negative integer value specifying the minimum number of examples required for a cluster to be considered as the underperforming group.
-        "clustering_kwargs": # Key-value pairs representing arguments for the constructor of the clustering algorithm class.
+        "min_cluster_samples": # Non-negative integer value specifying the minimum number of examples required for a cluster to be considered as the underperforming group. Used in `UnderperformingGroupIssueManager.filter_cluster_ids`.
+        "clustering_kwargs": # Key-value pairs representing arguments for the constructor of the clustering algorithm class (e.g. `sklearn.cluster.DBSCAN`).
 
         # Argument for the find_issues() method of UnderperformingGroupIssueManager
         "cluster_ids": # A 1-D numpy array containing cluster labels for each sample in the dataset. If passed, these cluster labels are used for determining the underperforming group.
@@ -282,4 +282,4 @@ Underperforming Group Issue Parameters
 
     For more information, view the source code of:  :py:class:`datalab.internal.issue_manager.underperforming_group.UnderperformingGroupIssueManager <cleanlab.datalab.internal.issue_manager.underperforming_group.UnderperformingGroupIssueManager>`.
 
-    For more information on generating `cluster_ids` for this issue manager, refer to this `FAQ Section <../../../tutorials/faq.html#How-do-I-generate-cluster-IDs-and-pass-them-to-find_issues-for-the-Underperforming-Group-Issue-Manager?>`_.
+    For more information on generating `cluster_ids` for this issue manager, refer to this `FAQ Section <../../../tutorials/faq.html#How-do-I-specify-pre-computed-data-slices/clusters-when-detecting-the-Underperforming-Group-Issue?>`_.
