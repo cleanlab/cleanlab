@@ -197,7 +197,9 @@ class TestNearDuplicateSets:
 
     @pytest.mark.slow
     @given(issue_manager=no_issue_issue_manager_strategy())
-    @settings(deadline=800, suppress_health_check=[HealthCheck.too_slow])
+    @settings(
+        deadline=800, suppress_health_check=[HealthCheck.too_slow, HealthCheck.data_too_large]
+    )
     def test_near_duplicate_sets_empty_if_no_issue_next(self, issue_manager):
         near_duplicate_sets = issue_manager.info["near_duplicate_sets"]
         assert all(len(near_duplicate_set) == 0 for near_duplicate_set in near_duplicate_sets)

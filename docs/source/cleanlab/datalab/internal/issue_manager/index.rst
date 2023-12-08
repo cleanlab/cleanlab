@@ -26,3 +26,9 @@ These are the issue managers that Datalab has not registered (yet).
 
 .. toctree::
     null
+
+ML task-specific issue managers
+---------------------------------
+
+.. toctree::
+    regression/index
