@@ -146,7 +146,7 @@ def issues_from_scores(
     image_scores: np.ndarray, pixel_scores: Optional[np.ndarray] = None, threshold: float = 0.1
 ) -> Union[list, np.ndarray]:
     """
-    Converts scores output by :py:func:`segmentation.rank.get_label_quality_scores <cleanlab.segmentation.rank.get_label_quality_scores>`
+    Converts scores output by `~cleanlab.segmentation.rank.get_label_quality_scores`
     to a list of issues of similar format as output by :py:func:`segmentation.filter.find_label_issues <cleanlab.segmentation.filter.find_label_issues>`.
 
     Only considers as issues those tokens with label quality score lower than `threshold`,
@@ -161,11 +161,11 @@ def issues_from_scores(
     ----------
     image_scores:
       Array of shape `(N, )` of overall image scores, where `N` is the number of images in the dataset.
-      Same format as the `image_scores` returned by :py:func:`segmentation.rank.get_label_quality_scores <cleanlab.segmentation.rank.get_label_quality_scores>`.
+      Same format as the `image_scores` returned by `~cleanlab.segmentation.rank.get_label_quality_scores`.
 
     pixel_scores:
       Optional array of shape ``(N,H,W)`` of scores between 0 and 1, one per pixel in the dataset.
-      Same format as the `pixel_scores` returned by :py:func:`segmentation.rank.get_label_quality_scores <cleanlab.segmentation.rank.get_label_quality_scores>`.
+      Same format as the `pixel_scores` returned by `~cleanlab.segmentation.rank.get_label_quality_scores`.
 
     threshold:
         Optional quality scores threshold that determines which pixels are included in result. Pixels with with quality scores above the `threshold` are not
