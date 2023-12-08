@@ -72,9 +72,9 @@ class UnderperformingGroupIssueManager(IssueManager):
         2: ["threshold"],
     }
     OUTLIER_CLUSTER_LABELS: ClassVar[Tuple[int]] = (-1,)
-    """Specifies labels considered as outliers by the clustering algorithm."""
+    """ Specifies labels considered as outliers by the clustering algorithm. """
     NO_UNDERPERFORMING_CLUSTER_ID: ClassVar[int] = min(OUTLIER_CLUSTER_LABELS) - 1
-    """Constant to signify absence of any underperforming cluster."""
+    """ Constant to signify absence of any underperforming cluster. """
 
     def __init__(
         self,
