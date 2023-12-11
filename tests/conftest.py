@@ -1,7 +1,3 @@
-def pytest_configure(config):
-    config.addinivalue_line("markers", "slow: Mark for slow running tests.")
-
-
 def pytest_collection_modifyitems(config, items):
     """
     Place the slowest tests at tne end of the test execution order if `order-tests` flag is set.
