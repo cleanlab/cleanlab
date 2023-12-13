@@ -975,6 +975,20 @@ def test_calculate_true_positives_false_positives(return_false_negative):
     assert counter_dict[0][1] == 4
 
 
+def test_calculate_true_positives_false_positives_high_threshold():
+    pred_bboxes = np.array([[1, 1, 5, 5]])
+    lab_bboxes = np.array([[1, 1, 6, 6], [3, 3, 8, 8]])
+    iou_threshold = 1.0
+    (
+        true_positives,
+        false_positives,
+        false_negatives,
+    ) = _calculate_true_positives_false_positives(
+        pred_bboxes, lab_bboxes, iou_threshold=iou_threshold, return_false_negative=True
+    )
+    assert np.array_equal(false_positives, np.array([[1.0]]))
+
+
 @pytest.mark.parametrize("class_names", [None, [str(i) for i in range(NUM_CLASSES)]])
 def test_per_class_metrics(class_names):
     per_class_metrics = calculate_per_class_metrics(labels, predictions, class_names=class_names)
