@@ -455,7 +455,7 @@ def _get_per_class_confusion_matrix_dict_(
     predictions: List[np.ndarray],
     iou_threshold: Optional[float] = 0.5,
     num_procs: int = 1,
-) -> DefaultDict[Union[int, str], dict[str, int]]:
+) -> DefaultDict[Union[int, str], Dict[str, int]]:
     """
     Returns a confusion matrix dictionary for each class containing the number of True Positive, False Positive, and False Negative detections from the object detection model.
     """
