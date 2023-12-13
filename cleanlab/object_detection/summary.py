@@ -28,6 +28,7 @@ from cleanlab.internal.constants import (
     MAX_CLASS_TO_SHOW,
     ALPHA,
     EPSILON,
+    TINY_VALUE,
 )
 from cleanlab.object_detection.filter import (
     _filter_by_class,
@@ -481,9 +482,9 @@ def _get_per_class_confusion_matrix_dict_(
             counter_dict[class_num]["TP"] += np.sum(tp)
             counter_dict[class_num]["FP"] += np.sum(fp)
             counter_dict[class_num]["FN"] += np.sum(fn)
-    
+
     results: DefaultDict[int, Dict[str, int]] = collections.defaultdict(dict)
-    results = {k: dict(v) for k,v in counter_dict.items()}  # typecast counter_dict to dict
+    results = {k: dict(v) for k, v in counter_dict.items()}  # typecast counter_dict to dict
     return results
 
 
@@ -543,7 +544,10 @@ def get_average_per_class_confusion_matrix(
 
 
 def calculate_per_class_metrics(
-    labels: List[Dict[str, Any]], predictions: List[np.ndarray], num_procs: int = 1
+    labels: List[Dict[str, Any]],
+    predictions: List[np.ndarray],
+    num_procs: int = 1,
+    class_names=None,
 ) -> Dict[int, Dict[str, float]]:
     """
     Calculate the object detection model's precision, recall, and F1 score for each class in the dataset.
@@ -573,17 +577,18 @@ def calculate_per_class_metrics(
     avg_metrics = get_average_per_class_confusion_matrix(labels, predictions, num_procs)
 
     avg_metrics_dict = {}
-
+    if class_names is None:
+        class_names = list(range(len(avg_metrics)))
     for class_num in avg_metrics:
         tp = avg_metrics[class_num]["TP"]
         fp = avg_metrics[class_num]["FP"]
         fn = avg_metrics[class_num]["FN"]
 
-        precision = tp / (tp + fp + 1e-12)  # Avoid division by zero
-        recall = tp / (tp + fn + 1e-12)  # Avoid division by zero
-        f1 = 2 * (precision * recall) / (precision + recall + 1e-12)  # Avoid division by zero
+        precision = tp / (tp + fp + TINY_VALUE)  # Avoid division by zero
+        recall = tp / (tp + fn + TINY_VALUE)  # Avoid division by zero
+        f1 = 2 * (precision * recall) / (precision + recall + TINY_VALUE)  # Avoid division by zero
 
-        avg_metrics_dict[class_num] = {
+        avg_metrics_dict[class_names[class_num]] = {
             "average precision": precision,
             "average recall": recall,
             "average f1": f1,
