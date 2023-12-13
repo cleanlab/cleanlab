@@ -510,6 +510,10 @@ def get_average_per_class_confusion_matrix(
     num_procs:
         Number of processes for parallelization. Default is 1.
 
+    class_names:
+        Optional dictionary mapping one-hot-encoded class labels back to their original class names in the format ``{"integer-label": "original-class-name"}``
+
+
     Returns
     -------
     avg_metrics: dict
@@ -570,6 +574,10 @@ def calculate_per_class_metrics(
     num_procs:
         Number of processes for parallelization. Default is 1.
 
+    class_names:
+        Optional dictionary mapping one-hot-encoded class labels back to their original class names in the format ``{"integer-label": "original-class-name"}``
+
+
     Returns
     -------
     per_class_metrics: dict
@@ -577,7 +585,9 @@ def calculate_per_class_metrics(
 
         The default range of Intersection over Union thresholds is from 0.5 to 0.95 with a step size of 0.05.
     """
-    avg_metrics = get_average_per_class_confusion_matrix(labels, predictions, num_procs)
+    avg_metrics = get_average_per_class_confusion_matrix(
+        labels, predictions, num_procs, class_names=class_names
+    )
 
     avg_metrics_dict = {}
     if class_names is None:
