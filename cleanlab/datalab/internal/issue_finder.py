@@ -39,6 +39,7 @@ from cleanlab.datalab.internal.issue_manager_factory import (
     _IssueManagerFactory,
     list_default_issue_types,
 )
+from cleanlab.datalab.internal.model_outputs import MultiClassPredProbs, RegressionPredictions
 
 if TYPE_CHECKING:  # pragma: no cover
     import numpy.typing as npt
@@ -52,10 +53,11 @@ _CLASSIFICATION_ARGS_DICT = {
     "outlier": ["pred_probs", "features", "knn_graph"],
     "near_duplicate": ["features", "knn_graph"],
     "non_iid": ["pred_probs", "features", "knn_graph"],
+    "underperforming_group": ["pred_probs", "features", "knn_graph", "cluster_ids"],
     "data_valuation": ["knn_graph"],
 }
 _REGRESSION_ARGS_DICT = {
-    "label": ["features"],
+    "label": ["features", "predictions"],
 }
 
 
@@ -74,6 +76,13 @@ def _resolve_required_args_for_classification(**kwargs):
 
     # Prefer `knn_graph` over `features` if both are provided.
     for v in args_dict.values():
+        if "cluster_ids" in v and ("knn_graph" in v or "features" in v):
+            warnings.warn(
+                "`cluster_ids` have been provided with `knn_graph` or `features`."
+                "Issue managers that require cluster labels will prefer"
+                "`cluster_ids` over computation of cluster labels using"
+                "`knn_graph` or `features`. "
+            )
         if "knn_graph" in v and "features" in v:
             warnings.warn(
                 "Both `features` and `knn_graph` were provided. "
@@ -202,7 +211,8 @@ class IssueFinder:
             Out-of-sample predicted class probabilities made by the model for every example in the dataset.
             To best detect label issues, provide this input obtained from the most accurate model you can produce.
 
-            If provided, this must be a 2D array with shape (num_examples, K) where K is the number of classes in the dataset.
+            If provided for classification, this must be a 2D array with shape ``(num_examples, K)`` where K is the number of classes in the dataset.
+            If provided for regression, this must be a 1D array with shape ``(num_examples,)``.
 
         features : Optional[np.ndarray]
             Feature embeddings (vector representations) of every example in the dataset.
@@ -351,6 +361,19 @@ class IssueFinder:
         features = kwargs.get("features", None)
         knn_graph = kwargs.get("knn_graph", None)
         issue_types = kwargs.get("issue_types", None)
+
+        model_output = None
+        if pred_probs is not None:
+            if self.task == "regression":
+                model_output = RegressionPredictions(pred_probs)
+            elif self.task == "classification":
+                model_output = MultiClassPredProbs(pred_probs)
+            else:
+                raise ValueError(f"Unknown task type '{self.task}'")
+
+        if model_output is not None:
+            # A basic trick to assign the model output to the correct argument
+            kwargs.update({model_output.argument: model_output.collect()})
 
         # Determine which parameters are required for each issue type
         strategy_for_resolving_required_args = _select_strategy_for_resolving_required_args(

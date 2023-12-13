@@ -29,6 +29,7 @@ import pytest
 from datasets.dataset_dict import DatasetDict
 from scipy.sparse import csr_matrix
 from sklearn.neighbors import NearestNeighbors
+from sklearn.datasets import make_blobs
 
 import cleanlab
 from cleanlab.datalab.datalab import Datalab
@@ -980,53 +981,144 @@ class TestDatalabFindLabelIssues:
         )
 
 
-def make_data(num_examples=200, num_features=3, noise=0.2, error_frac=0.1, error_noise=5):
-    np.random.seed(SEED)
-    X = np.random.random(size=(num_examples, num_features))
-    coefficients = np.random.uniform(-1, 1, size=num_features)
-    label_noise = np.random.normal(scale=noise, size=num_examples)
+class TestDatalabForRegression:
+    @pytest.fixture
+    def regression_data(self, num_examples=400, num_features=3, error_frac=0.025, error_noise=0.25):
+        np.random.seed(SEED)
+        X = np.random.random(size=(num_examples, num_features))
+        coefficients = np.random.uniform(-5, 5, size=num_features)
 
-    true_y = np.dot(X, coefficients)
-    y = np.dot(X, coefficients) + label_noise
+        true_y = np.dot(X, coefficients)
 
-    # add extra noisy examples
-    num_errors = int(num_examples * error_frac)
-    extra_noise = np.random.normal(scale=error_noise, size=num_errors)
-    random_idx = np.random.choice(num_examples, num_errors)
-    y[random_idx] += extra_noise
-    error_idx = np.argsort(abs(y - true_y))[-num_errors:]  # get the noisiest examples idx
+        # add extra noisy examples
+        num_errors = int(num_examples * error_frac)
+        label_noise = np.clip(
+            np.random.normal(loc=error_noise, scale=error_noise / 4, size=num_errors),
+            0.25 * error_noise,
+            4 * error_noise,
+        ) * np.random.choice([-1, 1], size=num_errors)
+        random_idx = np.random.choice(num_examples, num_errors)
+        y = true_y.copy()
+        y[random_idx] += label_noise
+        error_idx = np.argsort(abs(y - true_y))[-num_errors:]  # get the noisiest examples idx
 
-    # create test set
-    X_test = np.random.random(size=(num_examples, num_features))
-    label_noise = np.random.normal(scale=noise, size=num_examples)
-    y_test = np.dot(X_test, coefficients) + label_noise
+        # Ensure that the MSE is not too large
+        from sklearn.linear_model import LinearRegression
 
-    return {
-        "X": X,
-        "y": y,
-        "true_y": true_y,
-        "X_test": X_test,
-        "y_test": y_test,
-        "error_idx": error_idx,
-    }
+        linear_model = LinearRegression()
 
+        # Validate that the label noise affects the MSE for a linear model
+        from sklearn.metrics import mean_squared_error
 
-def test_regression():
-    data = make_data()
-    X, y = data["X"], data["y"]
-    test_df = pd.DataFrame(X, columns=["c1", "c2", "c3"])
-    test_df["y"] = y
-    lab = Datalab(data=test_df, label_name="y", task="regression")
+        y_pred_true = linear_model.fit(X, true_y).predict(X)
+        mse_true = mean_squared_error(true_y, y_pred_true)
+        assert mse_true < 1e-10
 
-    assert set(lab.list_default_issue_types()) == set(["label"])
-    assert set(lab.list_possible_issue_types()) == set(["label"])
+        y_pred = linear_model.fit(X, y).predict(X)
+        mse = mean_squared_error(y, y_pred)
+        assert 1e-3 < mse < 1e-2
 
-    lab.find_issues(features=X)
-    lab.report()
-    summary = lab.get_issue_summary()
+        return {
+            "X": X,
+            "y": y,
+            "true_y": true_y,
+            "error_idx": error_idx,
+        }
 
-    assert "label" in summary["issue_type"].values
-    assert (summary[summary["issue_type"] == "label"]["num_issues"] == 40).all()
+    @pytest.fixture
+    def lab(self, regression_data):
+        X, y = regression_data["X"], regression_data["y"]
+        test_df = pd.DataFrame(X, columns=["c1", "c2", "c3"])
+        test_df["y"] = y
+        lab = Datalab(data=test_df, label_name="y", task="regression")
+        return lab
+
+    def test_available_issue_types(self, lab):
+        assert set(lab.list_default_issue_types()) == set(["label"])
+        assert set(lab.list_possible_issue_types()) == set(["label"])
+
+    def test_regression_with_features(self, lab, regression_data):
+        """Test that the regression issue checks finds 40 label issues, based on the
+        numerical features."""
+        X = regression_data["X"]
+        issue_types = {"label": {"clean_learning_kwargs": {"seed": SEED}}}
+        lab.find_issues(features=X, issue_types=issue_types)
+        lab.report()
+
+        issues = lab.get_issues("label")
+        issue_ids = issues.query("is_label_issue").index
+        expected_issue_ids = regression_data["error_idx"]
+
+        # jaccard similarity
+        intersection = len(list(set(issue_ids).intersection(set(expected_issue_ids))))
+        union = len(set(issue_ids)) + len(set(expected_issue_ids)) - intersection
+        assert float(intersection) / union >= 0.7
+
+        # FPR
+        fpr = len(list(set(issue_ids).difference(set(expected_issue_ids)))) / len(issue_ids)
+        assert fpr < 0.2
+
+    def test_regression_with_predictions(self, lab, regression_data):
+        """Test that the regression issue checks find 9 label issues, based on the
+        predictions of a model.
+
+        Instead of running a model, we use the ground-truth to emulate a perfect model's predictions.
+
+        Testing the default behavior, we expect to find some label issues with a given mean score.
+        Increasing a threshold for flagging issues will flag more issues, but won't change the score.
+        """
+
+        # Use ground-truth to emulate a perfect model's predictions
+        y_pred = regression_data["true_y"]
+
+        lab.find_issues(pred_probs=y_pred)
+        summary = lab.get_issue_summary()
+
+        issues = lab.get_issues("label")
+        issue_ids = issues.query("is_label_issue").index
+        expected_issue_ids = regression_data["error_idx"]
+
+        # jaccard similarity
+        intersection = len(list(set(issue_ids).intersection(set(expected_issue_ids))))
+        union = len(set(issue_ids)) + len(set(expected_issue_ids)) - intersection
+        assert float(intersection) / union > 0.8
+
+        # FPR
+        fpr = len(list(set(issue_ids).difference(set(expected_issue_ids)))) / len(issue_ids)
+        assert fpr == 0.0
+
+        # Try running with a different threshold
+        lab.find_issues(pred_probs=y_pred, issue_types={"label": {"threshold": 0.4}})
+        issues = lab.get_issues("label")
+        issue_ids = issues.query("is_label_issue").index
+
+        intersection = len(list(set(issue_ids).intersection(set(expected_issue_ids))))
+        union = len(set(issue_ids)) + len(set(expected_issue_ids)) - intersection
+        assert float(intersection) / union > 0.3
+
+    def test_regression_with_model_and_features(self, lab, regression_data):
+        """Test that the regression issue checks find label issue with another model."""
+        from sklearn.linear_model import RANSACRegressor
+
+        model = RANSACRegressor(random_state=SEED)
+        X = regression_data["X"]
+        issue_types = {"label": {"clean_learning_kwargs": {"model": model, "seed": SEED}}}
+        lab.find_issues(features=X, issue_types=issue_types)
+
+        issues = lab.get_issues("label")
+        issue_ids = issues.query("is_label_issue").index
+        expected_issue_ids = regression_data[
+            "error_idx"
+        ]  # Set to 5% of the data, but random noise may be too small to detect
+
+        # jaccard similarity
+        intersection = len(list(set(issue_ids).intersection(set(expected_issue_ids))))
+        union = len(set(issue_ids)) + len(set(expected_issue_ids)) - intersection
+        assert float(intersection) / union > 0.3
+
+        # FPR
+        fpr = len(list(set(issue_ids).difference(set(expected_issue_ids)))) / len(issue_ids)
+        assert fpr < 0.3
 
 
 class TestDatalabFindOutlierIssues:
@@ -1273,3 +1365,202 @@ class TestDataLabClassImbalanceIssues:
         assert "class_imbalance" in summary["issue_type"].values
         class_imbalance_summary = lab.get_issue_summary("class_imbalance")
         assert class_imbalance_summary["num_issues"].values[0] > 0
+
+
+class TestDataLabUnderperformingIssue:
+    K = 4
+    N = 400
+    num_features = 2
+
+    @pytest.fixture
+    def data(self):
+        features, labels = make_blobs(
+            n_samples=self.N, centers=self.K, n_features=self.num_features, random_state=SEED
+        )
+        pred_probs = np.full((self.N, self.K), 0.01)
+        pred_probs[np.arange(self.N), labels] = 0.99
+        # Generate incorrect prediction for 0th label samples
+        zeroth_label_indices = np.nonzero(labels == 0)
+        pred_probs[zeroth_label_indices, 0] = 0.01
+        pred_probs[zeroth_label_indices, 1] = 0.99
+        pred_probs = pred_probs / np.sum(pred_probs, axis=-1, keepdims=True)
+        data = {"features": features, "pred_probs": pred_probs, "labels": labels}
+        return data
+
+    def test_incremental_search(self, data):
+        features, labels, pred_probs = data["features"], data["labels"], data["pred_probs"]
+        lab = Datalab(data={"labels": labels}, label_name="labels")
+        lab.find_issues(pred_probs=pred_probs, issue_types={"label": {}})
+        summary = lab.get_issue_summary()
+        assert len(summary) == 1
+        assert "underperforming_group" not in summary["issue_type"].values
+        lab.find_issues(
+            features=features, pred_probs=pred_probs, issue_types={"underperforming_group": {}}
+        )
+        summary = lab.get_issue_summary()
+        assert len(summary) == 2
+        assert "underperforming_group" in summary["issue_type"].values
+        underperforming_group_summary = lab.get_issue_summary("underperforming_group")
+        assert underperforming_group_summary["num_issues"].values[0] > 1
+
+    def test_underperforming_cluster_id(self):
+        """
+        Test that the issue manager finds the correct underperforming cluster ID.
+        """
+        np.random.seed(SEED)
+        N = 200
+        K = 5
+        n_clusters = 4
+        bad_cluster_id = 2
+        flip_rate = 0.95
+        cluster_ids = np.random.choice(np.arange(n_clusters), size=N)
+        labels = np.random.choice(np.arange(K), size=N)
+        pred_probs = np.full((N, K), 0.001)
+        pred_probs[np.arange(N), labels] = 0.99  # Set any high value
+        pred_probs = pred_probs / np.sum(pred_probs, axis=-1, keepdims=True)
+        # Flip prediction probabilities of bad cluster samples
+        bad_cluster_indices = np.where(cluster_ids == bad_cluster_id)[0]
+        flip_indices = np.random.choice(
+            bad_cluster_indices, size=int(flip_rate * len(bad_cluster_indices)), replace=False
+        )
+        pred_probs[flip_indices] = 1 - pred_probs[flip_indices]  # Incorrect predictions
+        features = np.random.rand(len(labels), 2)
+        lab = Datalab(data={"labels": labels}, label_name="labels")
+        lab.find_issues(
+            features=features,
+            pred_probs=pred_probs,
+            issue_types={"underperforming_group": {"cluster_ids": cluster_ids}},
+        )
+        info = lab.get_info("underperforming_group")
+        assert info["clustering"]["stats"]["underperforming_cluster_id"] == bad_cluster_id
+        # Check that no underperforming cluster is found for correct predictions
+        pred_probs[flip_indices] = 1 - pred_probs[flip_indices]
+        lab.find_issues(
+            features=features,
+            pred_probs=pred_probs,
+            issue_types={"underperforming_group": {"cluster_ids": cluster_ids}},
+        )
+        info = lab.get_info("underperforming_group")
+        assert info["clustering"]["stats"]["underperforming_cluster_id"] not in cluster_ids
+
+    def test_features_and_knn_graph(self, data):
+        """
+        Test that if the pre-computed knn graph is passed as an argument to `find_issues`,
+        it is preferred over the `features` argument.
+        """
+        np.random.seed(SEED)
+        features, labels, pred_probs = data["features"], data["labels"], data["pred_probs"]
+        lab = Datalab(data={"labels": labels}, label_name="labels")
+        lab.find_issues(
+            features=features, pred_probs=pred_probs, issue_types={"underperforming_group": {}}
+        )
+        issues_1 = lab.get_issues("underperforming_group")
+        knn_graph = lab.get_info("statistics")["weighted_knn_graph"]
+        # Use another datalab instance to check preference of knn graph over features
+        lab = Datalab(data={"labels": labels}, label_name="labels")
+        features = np.random.rand(len(labels), 2)
+        lab.find_issues(
+            features=features,
+            pred_probs=pred_probs,
+            knn_graph=knn_graph,
+            issue_types={"underperforming_group": {}},
+        )
+        issues_2 = lab.get_issues("underperforming_group")
+        pd.testing.assert_frame_equal(issues_1, issues_2)
+
+    def test_precomputed_cluster_ids(self, data):
+        features, labels, pred_probs = data["features"], data["labels"], data["pred_probs"]
+        lab = Datalab(data={"labels": labels}, label_name="labels")
+        lab.find_issues(
+            features=features,
+            pred_probs=pred_probs,
+            issue_types={"underperforming_group": {"cluster_ids": labels}},
+        )
+        info = lab.get_info("underperforming_group")
+        assert info["clustering"]["algorithm"] is None
+        underperforming_group_summary = lab.get_issue_summary("underperforming_group")
+        assert underperforming_group_summary["num_issues"].values[0] > 1
+
+        # Use new datalab instance to compute KNN graph and perform clustering
+        lab = Datalab(data={"labels": labels}, label_name="labels")
+        time_with_clustering = timeit.timeit(
+            lambda: lab.find_issues(
+                features=features, pred_probs=pred_probs, issue_types={"underperforming_group": {}}
+            ),
+            number=1,
+        )
+        # Use another datalab instance to emphasize absense of precomputed info
+        lab = Datalab(data={"labels": labels}, label_name="labels")
+        time_without_clustering = timeit.timeit(
+            lambda: lab.find_issues(
+                features=features,
+                pred_probs=pred_probs,
+                issue_types={"underperforming_group": {"cluster_ids": labels}},
+            ),
+            number=1,
+        )
+        # find_issues must be slower when clustering needs to be performed.
+        assert (
+            time_without_clustering < time_with_clustering
+        ), "Passing cluster labels should make this run of find_issues faster."
+
+    def test_no_cluster_ids(self, data):
+        features, labels, pred_probs = data["features"], data["labels"], data["pred_probs"]
+        lab = Datalab(data={"labels": labels}, label_name="labels")
+        lab.find_issues(
+            features=features,
+            pred_probs=pred_probs,
+            issue_types={"underperforming_group": {"cluster_ids": np.array([], dtype=int)}},
+        )
+        assert len(lab.issue_summary["issue_type"].values) == 0
+
+
+class TestIssueManagersReuseKnnGraph:
+    """
+    `outlier`, `underperforming_group` and `near_duplicate` issue managers require
+    a KNN graph. This test ensures that the KNN graph is only computed once.  E.g. if outlier is called first,
+    then underperforming_group can reuse the resulting graph.
+    """
+
+    N = 3000
+    num_features = 10
+    k = 20
+    num_classes = 2
+
+    @pytest.fixture
+    def features(self):
+        np.random.seed(SEED)
+        return np.random.uniform(low=0, high=0.2, size=(self.N, self.num_features))
+
+    @pytest.fixture
+    def labels(self):
+        np.random.seed(SEED)
+        return np.random.randint(0, self.num_classes, size=self.N)
+
+    @pytest.fixture
+    def pred_probs(self):
+        np.random.seed(SEED)
+        pred_probs = np.random.rand(self.N, self.num_classes)
+        pred_probs = pred_probs / pred_probs.sum(axis=1, keepdims=True)
+        return pred_probs
+
+    def test_underperforming_group_reuses_knn_graph(self, features, pred_probs, labels):
+        # Run 1: only underperforming_group
+        lab = Datalab(data={"labels": labels}, label_name="labels")
+        find_issues_kwargs = {"issue_types": {"underperforming_group": {"k": self.k}}}
+        time_only_underperforming_group = timeit.timeit(
+            lambda: lab.find_issues(features=features, pred_probs=pred_probs, **find_issues_kwargs),
+            number=1,
+        )
+
+        # Run 2: Run outlier issue first, then underperforming_group
+        find_issues_kwargs = {
+            "issue_types": {"outlier": {"k": self.k}, "underperforming_group": {"k": self.k}},
+        }
+        time_underperforming_after_outlier = timeit.timeit(
+            lambda: lab.find_issues(features=features, pred_probs=pred_probs, **find_issues_kwargs),
+            number=1,
+        )
+        assert (
+            time_underperforming_after_outlier < time_only_underperforming_group
+        ), "KNN graph reuse should make this run of find_issues faster."

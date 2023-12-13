@@ -18,9 +18,10 @@ to detect a custom-defined type of issue alongside the pre-defined issue types i
         .. code-block:: python
 
             from cleanlab.datalab.internal.issue_manager_factory import register
-            register(MyIssueManager)
+            register(MyIssueManager)  # Defaults to task="classification"
+            # register(MyIssueManagerForRegression, task="regression")  # Alternative for regression tasks
 
-        or add as a decorator to the class definition:
+        or add as a decorator to the class definition (currently only works for classification tasks):
 
         .. code-block:: python
 

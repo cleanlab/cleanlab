@@ -187,7 +187,8 @@ class Datalab:
             Out-of-sample predicted class probabilities made by the model for every example in the dataset.
             To best detect label issues, provide this input obtained from the most accurate model you can produce.
 
-            If provided, this must be a 2D array with shape (num_examples, K) where K is the number of classes in the dataset.
+            For classification data, this must be a 2D array with shape ``(num_examples, K)`` where ``K`` is the number of classes in the dataset.
+            For regression data, this must be a 1D array with shape ``(num_examples,)`` containing the predicted value for each example.
 
         features : Optional[np.ndarray]
             Feature embeddings (vector representations) of every example in the dataset.
@@ -301,6 +302,7 @@ class Datalab:
                 >>> # lab.find_issues(pred_probs=pred_probs, issue_types=issue_types)
 
         """
+
         if issue_types is not None and not issue_types:
             warnings.warn(
                 "No issue types were specified so no issues will be found in the dataset. Set `issue_types` as None to consider a default set of issues."
