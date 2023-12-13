@@ -331,11 +331,11 @@ def _calculate_true_positives_false_positives(
     pred_bboxes: np.ndarray,
     lab_bboxes: np.ndarray,
     iou_threshold: Optional[float] = 0.5,
-    return_false_negative=False,
+    return_false_negative: bool = False,
 ) -> Union[Tuple[np.ndarray, np.ndarray], Tuple[np.ndarray, np.ndarray, np.ndarray]]:
     """Calculates true positives (TP) and false positives (FP) for object detection tasks.
     It takes predicted bounding boxes, ground truth bounding boxes, and an optional Intersection over Union (IoU) threshold as inputs.
-    If return_false_negative is True, it returns array of False negatives as well.
+    If return_false_negative is True, it returns an array of False negatives as well.
     """
     num_preds = pred_bboxes.shape[0]
     num_labels = lab_bboxes.shape[0]
