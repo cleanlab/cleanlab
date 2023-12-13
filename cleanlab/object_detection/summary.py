@@ -455,14 +455,14 @@ def _get_per_class_confusion_matrix_dict_(
     predictions: List[np.ndarray],
     iou_threshold: Optional[float] = 0.5,
     num_procs: int = 1,
-) -> DefaultDict[Union[int, str], Dict[str, int]]:
+) -> DefaultDict[int, Dict[str, int]]:
     """
     Returns a confusion matrix dictionary for each class containing the number of True Positive, False Positive, and False Negative detections from the object detection model.
     """
     num_classes = len(predictions[0])
     num_images = len(predictions)
     pool = Pool(num_procs)
-    counter_dict: DefaultDict[Union[int, str], dict[str, int]] = collections.defaultdict(
+    counter_dict: DefaultDict[int, dict[str, int]] = collections.defaultdict(
         lambda: {"TP": 0, "FP": 0, "FN": 0}
     )
 
@@ -490,7 +490,7 @@ def get_average_per_class_confusion_matrix(
     labels: List[Dict[str, Any]],
     predictions: List[np.ndarray],
     num_procs: int = 1,
-    class_names: Optional[List] = None,
+    class_names: Optional[List[Union[int, str]]] = None,
 ) -> Dict[Union[int, str], Dict[str, float]]:
     """
     Compute a confusion matrix dictionary for each class containing the average number of True Positive, False Positive, and False Negative detections from the object detection model across a range of Intersection over Union thresholds.
@@ -537,16 +537,15 @@ def get_average_per_class_confusion_matrix(
             fp = results_dict[class_num]["FP"]
             fn = results_dict[class_num]["FN"]
 
-            avg_metrics[class_num]["TP"] += tp
-            avg_metrics[class_num]["FP"] += fp
-            avg_metrics[class_num]["FN"] += fn
+            avg_metrics[class_names[class_num]]["TP"] += tp
+            avg_metrics[class_names[class_num]]["FP"] += fp
+            avg_metrics[class_names[class_num]]["FN"] += fn
 
     num_thresholds = len(iou_thrs) * len(results_dict)
-
-    for class_num in avg_metrics:
-        avg_metrics[class_num]["TP"] /= num_thresholds
-        avg_metrics[class_num]["FP"] /= num_thresholds
-        avg_metrics[class_num]["FN"] /= num_thresholds
+    for class_name in avg_metrics:
+        avg_metrics[class_name]["TP"] /= num_thresholds
+        avg_metrics[class_name]["FP"] /= num_thresholds
+        avg_metrics[class_name]["FN"] /= num_thresholds
     return avg_metrics
 
 
@@ -555,7 +554,7 @@ def calculate_per_class_metrics(
     predictions: List[np.ndarray],
     num_procs: int = 1,
     class_names=None,
-) -> Dict[int, Dict[str, float]]:
+) -> Dict[Union[int, str], Dict[str, float]]:
     """
     Calculate the object detection model's precision, recall, and F1 score for each class in the dataset.
 
@@ -590,18 +589,16 @@ def calculate_per_class_metrics(
     )
 
     avg_metrics_dict = {}
-    if class_names is None:
-        class_names = list(range(len(avg_metrics)))
-    for class_num in avg_metrics:
-        tp = avg_metrics[class_num]["TP"]
-        fp = avg_metrics[class_num]["FP"]
-        fn = avg_metrics[class_num]["FN"]
+    for class_name in avg_metrics:
+        tp = avg_metrics[class_name]["TP"]
+        fp = avg_metrics[class_name]["FP"]
+        fn = avg_metrics[class_name]["FN"]
 
         precision = tp / (tp + fp + TINY_VALUE)  # Avoid division by zero
         recall = tp / (tp + fn + TINY_VALUE)  # Avoid division by zero
         f1 = 2 * (precision * recall) / (precision + recall + TINY_VALUE)  # Avoid division by zero
 
-        avg_metrics_dict[class_names[class_num]] = {
+        avg_metrics_dict[class_name] = {
             "average precision": precision,
             "average recall": recall,
             "average f1": f1,

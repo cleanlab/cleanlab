@@ -975,7 +975,7 @@ def test_calculate_true_positives_false_positives(return_false_negative):
     assert counter_dict[0][1] == 4
 
 
-@pytest.mark.parametrize("class_names", [None, class_names])
+@pytest.mark.parametrize("class_names", [None, [str(i) for i in range(NUM_CLASSES)]])
 def test_per_class_metrics(class_names):
     per_class_metrics = calculate_per_class_metrics(labels, predictions, class_names=class_names)
     assert len(per_class_metrics) == len(predictions[0])
