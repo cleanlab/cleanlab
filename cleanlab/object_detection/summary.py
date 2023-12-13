@@ -467,7 +467,7 @@ def _get_per_class_confusion_matrix_dict_(
 
     for class_num in range(num_classes):
         pred_bboxes, lab_bboxes = _filter_by_class(labels, predictions, class_num)
-        tpfp = pool.starmap(
+        tpfpfn = pool.starmap(
             _calculate_true_positives_false_positives,
             zip(
                 pred_bboxes,
@@ -476,15 +476,14 @@ def _get_per_class_confusion_matrix_dict_(
                 [True for _ in range(num_images)],
             ),
         )
-        for j, tpfp_j in enumerate(tpfp):
-            for k, tpfp_k in enumerate(tpfp_j):
-                counter_dict[class_num][k] += np.sum(tpfp_k)
-
+        for image_idx, tpfpfn_per_image in enumerate(tpfpfn):
+            tp, fp, fn = tpfpfn_per_image
+            counter_dict[class_num]["TP"] += np.sum(tp)
+            counter_dict[class_num]["FP"] += np.sum(fp)
+            counter_dict[class_num]["FN"] += np.sum(fn)
+    
     results: DefaultDict[int, Dict[str, int]] = collections.defaultdict(dict)
-    for class_num in counter_dict:
-        results[class_num]["TP"] = counter_dict[class_num][0]
-        results[class_num]["FP"] = counter_dict[class_num][1]
-        results[class_num]["FN"] = counter_dict[class_num][2]
+    results = {k: dict(v) for k,v in counter_dict.items()}  # typecast counter_dict to dict
     return results
 
 
