@@ -15,3 +15,6 @@ exclude = '''
 filterwarnings = [
   "ignore:.*The least populated class in y has only 1 members,*"
 ]
+markers = [
+    "slow: Mark for slow running tests."
+]
