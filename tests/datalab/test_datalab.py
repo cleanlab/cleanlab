@@ -87,6 +87,7 @@ class TestDatalab:
             "outlier",
             "near_duplicate",
             "non_iid",
+            "class_imbalance",
         ]
 
     def tmp_path(self):
@@ -585,13 +586,14 @@ class TestDatalabUsingKNNGraph:
         assert lab.get_info("statistics").get("knn_metric") == "cosine"
 
     def test_without_features_or_knn_graph(self, data_tuple):
-        """Test that the `knn_graph` argument to `find_issues` is used instead of computing a new
-        one from the `features` argument."""
+        """Test that only the class_imbalance issue is run
+        when no features, knn_graph or pred_probs are passed."""
         lab, _, _ = data_tuple
 
         # Test that a warning is raised
         lab.find_issues()
-        assert lab.issues.empty  # No columns should be added to the issues dataframe
+        # Only class_imbalance issue columns should be present
+        assert list(lab.issues.columns) == ["is_class_imbalance_issue", "class_imbalance_score"]
 
     def test_data_valuation_issue_with_knn_graph(self, data_tuple):
         lab, knn_graph, features = data_tuple
@@ -856,10 +858,10 @@ class TestDatalabFindNonIIDIssues:
     def test_incremental_search(self, lab, sorted_embeddings):
         lab.find_issues(features=sorted_embeddings)
         summary = lab.get_issue_summary()
-        assert len(summary) == 3
+        assert len(summary) == 4
         lab.find_issues(features=sorted_embeddings, issue_types={"non_iid": {}})
         summary = lab.get_issue_summary()
-        assert len(summary) == 3
+        assert len(summary) == 4
         assert "non_iid" in summary["issue_type"].values
         non_iid_summary = lab.get_issue_summary("non_iid")
         assert non_iid_summary["score"].values[0] == 0
@@ -929,11 +931,11 @@ class TestDatalabFindLabelIssues:
         lab = Datalab(data=data, label_name="labels")
         lab.find_issues(features=random_embeddings)
         summary = lab.get_issue_summary()
-        assert len(summary) == 4
+        assert len(summary) == 5
         assert "label" in summary["issue_type"].values
         lab.find_issues(pred_probs=pred_probs, issue_types={"label": {}})
         summary = lab.get_issue_summary()
-        assert len(summary) == 4
+        assert len(summary) == 5
         assert "label" in summary["issue_type"].values
         label_summary = lab.get_issue_summary("label")
         assert label_summary["num_issues"].values[0] > 0
@@ -1314,8 +1316,9 @@ class TestDatalabWithoutLabels:
         issues_with_labels = lab_with_labels.issues
         issues_without_label_name = lab_without_label_name.issues
 
-        # issues_with_labels should have two additional columns about label issues
-        assert len(issues_without_labels.columns) + 2 == len(issues_with_labels.columns)
+        # issues_with_labels should have four additional columns, which include label issues
+        # and class_imbalance issues
+        assert len(issues_without_labels.columns) + 4 == len(issues_with_labels.columns)
         pd.testing.assert_frame_equal(issues_without_labels, issues_without_label_name)
 
 

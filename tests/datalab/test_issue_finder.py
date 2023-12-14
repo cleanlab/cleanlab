@@ -25,13 +25,13 @@ class TestIssueFinder:
         assert issue_finder.verbosity == 1
 
     def test_get_available_issue_types(self, issue_finder):
-        expected_issue_types = {}
+        expected_issue_types = {"class_imbalance": {}}
         # Test with no kwargs, no issue type expected to be returned
         for key in ["pred_probs", "features", "knn_graph"]:
             issue_types = issue_finder.get_available_issue_types(**{key: None})
             assert (
                 issue_types == expected_issue_types
-            ), "Every issue type for classification requires some kwargs, expected empty dict"
+            ), "Only class_imbalance issue type for classification requires no kwargs"
 
         # Test with only issue_types, input should be
         issue_types_dicts = [
