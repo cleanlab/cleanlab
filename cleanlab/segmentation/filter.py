@@ -125,18 +125,6 @@ def find_label_issues(
 
         return labels_flat, pred_probs_flat.T
 
-    def get_images_to_load(pre_pred_probs, i, n, batch_size):
-        """
-        This function loads images until the batch size is reached or the end of the dataset is reached.
-        """
-        images_to_load = 1
-        while (
-            np.prod(pre_pred_probs[i : i + images_to_load].shape[1:]) < batch_size
-            and i + images_to_load < n
-        ):
-            images_to_load += 1
-        return images_to_load
-
     ##
     _check_input(labels, pred_probs)
 
@@ -163,34 +151,31 @@ def find_label_issues(
 
         pbar = tqdm(desc="number of examples processed for estimating thresholds", total=n)
 
-    i = 0
-    while i < n:
-        images_to_load = get_images_to_load(pre_pred_probs, i, n, batch_size)
-        end_index = i + images_to_load
+    # Precompute the size of each image in the batch
+    image_size = np.prod(pre_pred_probs.shape[1:])
+    images_per_batch = max(batch_size // image_size + 1, 0)
+
+    for start_index in range(0, n, images_per_batch):
+        end_index = min(start_index + images_per_batch, n)
         labels_batch, pred_probs_batch = flatten_and_preprocess_masks(
-            pre_labels[i:end_index], pre_pred_probs[i:end_index]
+            pre_labels[start_index:end_index], pre_pred_probs[start_index:end_index]
         )
-        i = end_index
         lab.update_confident_thresholds(labels_batch, pred_probs_batch)
         if verbose:
-            pbar.update(images_to_load)
+            pbar.update(end_index - start_index)
 
     if verbose:
         pbar.close()
         pbar = tqdm(desc="number of examples processed for checking labels", total=n)
 
-    i = 0
-    while i < n:
-        images_to_load = get_images_to_load(pre_pred_probs, i, n, batch_size)
-
-        end_index = i + images_to_load
+    for start_index in range(0, n, images_per_batch):
+        end_index = min(start_index + images_per_batch, n)
         labels_batch, pred_probs_batch = flatten_and_preprocess_masks(
-            pre_labels[i:end_index], pre_pred_probs[i:end_index]
+            pre_labels[start_index:end_index], pre_pred_probs[start_index:end_index]
         )
-        i = end_index
         _ = lab.score_label_quality(labels_batch, pred_probs_batch)
         if verbose:
-            pbar.update(images_to_load)
+            pbar.update(end_index - start_index)
 
     if verbose:
         pbar.close()
