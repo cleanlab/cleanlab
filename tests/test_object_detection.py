@@ -989,7 +989,7 @@ def test_calculate_true_positives_false_positives_high_threshold():
     assert np.array_equal(false_positives, np.array([[1.0]]))
 
 
-@pytest.mark.parametrize("class_names", [None, [str(i) for i in range(NUM_CLASSES)]])
+@pytest.mark.parametrize("class_names", [None, class_names])
 def test_per_class_metrics(class_names):
     per_class_metrics = calculate_per_class_metrics(labels, predictions, class_names=class_names)
     assert len(per_class_metrics) == len(predictions[0])
