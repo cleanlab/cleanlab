@@ -511,7 +511,7 @@ def get_average_per_class_confusion_matrix(
     labels: List[Dict[str, Any]],
     predictions: List[np.ndarray],
     num_procs: int = 1,
-    class_names: Optional[Dict[Union[int, str], str]] = None,
+    class_names: Optional[Dict[Any, Any]] = None,
 ) -> Dict[Union[int, str], Dict[str, float]]:
     """
     Compute a confusion matrix dictionary for each class containing the average number of True Positive, False Positive, and False Negative detections from the object detection model across a range of Intersection over Union thresholds.
@@ -545,7 +545,7 @@ def get_average_per_class_confusion_matrix(
     iou_thrs = np.linspace(0.5, 0.95, int(np.round((0.95 - 0.5) / 0.05)) + 1, endpoint=True)
     num_classes = len(predictions[0])
     if class_names is None:
-        class_names = {str(i): str(i) for i in list(range(num_classes))}
+        class_names = {str(i): int(i) for i in list(range(num_classes))}
     class_names = _sort_dict_to_list(class_names)
     avg_metrics = {class_num: {"TP": 0.0, "FP": 0.0, "FN": 0.0} for class_num in class_names}
 

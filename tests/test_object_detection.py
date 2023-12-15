@@ -997,8 +997,8 @@ def test_per_class_metrics(class_names):
         assert np.isclose(per_class_metrics[9]["average precision"], 0.5)
         assert np.isclose(per_class_metrics[6]["average f1"], 0.66666)
     else:
-        assert np.isclose(per_class_metrics[str(9)]["average precision"], 0.5)
-        assert np.isclose(per_class_metrics[str(6)]["average f1"], 0.66666)
+        assert np.isclose(per_class_metrics[str('j')]["average precision"], 0.5)
+        assert np.isclose(per_class_metrics[str('g')]["average f1"], 0.66666)
 
 
 def test_per_class_confusion_matrix():
