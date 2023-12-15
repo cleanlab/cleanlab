@@ -23,13 +23,14 @@ instances and keeps track of each issue, a summary for each type of issue,
 related information and statistics about the issues.
 
 The collected information can be accessed using the
-:py:meth:`get_info <cleanlab.datalab.internal.data_issues.DataIssues.get_info>` method.
+`~cleanlab.datalab.internal.data_issues.DataIssues.get_info` method.
 We recommend using that method instead of this module, which is just intended for internal use.
 """
 from __future__ import annotations
 
 import warnings
-from typing import TYPE_CHECKING, Any, Dict, Optional, Union
+from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 import numpy as np
 
 import pandas as pd
@@ -40,6 +41,112 @@ if TYPE_CHECKING:  # pragma: no cover
     from cleanvision import Imagelab
 
 
+class _InfoStrategy(ABC):
+    """
+    Abstract base class for strategies that fetch information about data issues.
+
+    Subclasses must implement the `get_info` method, which takes a `Data` object, a dictionary of
+    information about data issues, and an optional issue name, and returns a dictionary of
+    information about the specified issue, augmented with dataset about the dataset as a whole.
+
+    This class also provides a helper method, `_get_info_helper`, which takes an information
+    dictionary and an optional issue name, and returns a copy of the information dictionary for
+    the specified issue. If the issue name is `None`, this method returns `None`.
+    """
+
+    @staticmethod
+    @abstractmethod
+    def get_info(
+        data: Data,
+        info: Dict[str, Dict[str, Any]],
+        issue_name: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Get information about a data issue from an information dictionary.
+
+        Parameters
+        ----------
+        info : dict
+            A dictionary of information about data issues.
+        issue_name : str or None, optional (default=None)
+            The name of the issue to get information about. If `None`, this method returns `None`.
+
+        Returns
+        -------
+        dict or None
+            A copy of the information dictionary for the specified issue, or `None` if the issue
+            name is `None`.
+
+        Raises
+        ------
+        ValueError
+            If the specified issue name is not found in the information dictionary.
+        """
+        pass  # pragma: no cover
+
+    @staticmethod
+    def _get_info_helper(
+        info: Dict[str, Dict[str, Any]],
+        issue_name: Optional[str] = None,
+    ) -> Optional[Dict[str, Any]]:
+        if issue_name is None:
+            return None
+        if issue_name not in info:
+            raise ValueError(
+                f"issue_name {issue_name} not found in self.info. These have not been computed yet."
+            )
+        info = info[issue_name].copy()
+        return info
+
+
+class _ClassificationInfoStrategy(_InfoStrategy):
+    """Strategy for computing information about data issues related to classification tasks."""
+
+    @staticmethod
+    def get_info(
+        data: Data,
+        info: Dict[str, Dict[str, Any]],
+        issue_name: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        info_extracted = _InfoStrategy._get_info_helper(info=info, issue_name=issue_name)
+        info = info_extracted if info_extracted is not None else info
+        if issue_name == "label":
+            if data.labels.is_available is False:
+                raise ValueError(
+                    "The labels are not available. "
+                    "Most likely, no label column was provided when creating the Data object."
+                )
+            # Labels that are stored as integers may need to be converted to strings.
+            label_map = data.labels.label_map
+            if not label_map:
+                raise ValueError("The label map is not available.")
+            for key in ["given_label", "predicted_label"]:
+                labels = info.get(key, None)
+                if labels is not None:
+                    info[key] = np.vectorize(label_map.get)(labels)
+            info["class_names"] = list(label_map.values())
+        return info
+
+
+class _RegressionInfoStrategy(_InfoStrategy):
+    """Strategy for computing information about data issues related to regression tasks."""
+
+    @staticmethod
+    def get_info(
+        data: Data,
+        info: Dict[str, Dict[str, Any]],
+        issue_name: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        info_extracted = _InfoStrategy._get_info_helper(info=info, issue_name=issue_name)
+        info = info_extracted if info_extracted is not None else info
+        if issue_name == "label":
+            for key in ["given_label", "predicted_label"]:
+                labels = info.get(key, None)
+                if labels is not None:
+                    info[key] = labels
+        return info
+
+
 class DataIssues:
     """
     Class that collects and stores information and statistics on issues found in a dataset.
@@ -48,8 +155,10 @@ class DataIssues:
     ----------
     data :
         The data object for which the issues are being collected.
+    strategy :
+        Strategy used for processing info dictionaries.
 
-    Parameters
+    Attributes
     ----------
     issues : pd.DataFrame
         Stores information about each individual issue found in the data,
@@ -60,7 +169,7 @@ class DataIssues:
         A dictionary that contains information and statistics about the data and each issue type.
     """
 
-    def __init__(self, data: Data) -> None:
+    def __init__(self, data: Data, strategy: _InfoStrategy) -> None:
         self.issues: pd.DataFrame = pd.DataFrame(index=range(len(data)))
         self.issue_summary: pd.DataFrame = pd.DataFrame(
             columns=["issue_type", "score", "num_issues"]
@@ -68,7 +177,11 @@ class DataIssues:
         self.info: Dict[str, Dict[str, Any]] = {
             "statistics": get_data_statistics(data),
         }
-        self._label_map = data.labels.label_map
+        self._data = data
+        self._strategy = strategy
+
+    def get_info(self, issue_name: Optional[str] = None) -> Dict[str, Any]:
+        return self._strategy.get_info(data=self._data, info=self.info, issue_name=issue_name)
 
     @property
     def statistics(self) -> Dict[str, Any]:
@@ -108,6 +221,7 @@ class DataIssues:
             raise ValueError(f"No columns found for issue type '{issue_name}'.")
         specific_issues = self.issues[columns]
         info = self.get_info(issue_name=issue_name)
+
         if issue_name == "label":
             specific_issues = specific_issues.assign(
                 given_label=info["given_label"], predicted_label=info["predicted_label"]
@@ -151,42 +265,6 @@ class DataIssues:
         if not any(row_mask):
             raise ValueError(f"Issue type {issue_name} not found in the summary.")
         return self.issue_summary[row_mask].reset_index(drop=True)
-
-    def get_info(self, issue_name: Optional[str] = None) -> Dict[str, Any]:
-        """Get the info for the issue_name key.
-
-        This function is used to get the info for a specific issue_name. If the info is not computed yet, it will raise an error.
-
-        Parameters
-        ----------
-        issue_name :
-            The issue name for which the info is required.
-
-        Returns
-        -------
-        info:
-            The info for the issue_name.
-        """
-        info = self.info.get(issue_name, None) if issue_name else self.info
-        if info is None:
-            raise ValueError(
-                f"issue_name {issue_name} not found in self.info. These have not been computed yet."
-            )
-        info = info.copy()
-        if issue_name == "label":
-            if self._label_map is None:
-                raise ValueError(
-                    "The label map is not available. "
-                    "Most likely, no label column was provided when creating the Data object."
-                )
-            # Labels that are stored as integers may need to be converted to strings.
-            for key in ["given_label", "predicted_label"]:
-                labels = info.get(key, None)
-                if labels is not None:
-                    info[key] = np.vectorize(self._label_map.get)(labels)
-
-            info["class_names"] = self.statistics["class_names"]
-        return info
 
     def collect_statistics(self, issue_manager: Union[IssueManager, "Imagelab"]) -> None:
         """Update the statistics in the info dictionary.
@@ -264,6 +342,9 @@ class DataIssues:
             ignore_index=True,
         )
         self._update_issue_info(issue_manager.issue_name, issue_manager.info)
+
+    def collect_issues_from_imagelab(self, imagelab: "Imagelab", issue_types: List[str]) -> None:
+        pass  # pragma: no cover
 
     def set_health_score(self) -> None:
         """Set the health score for the dataset based on the issue summary.

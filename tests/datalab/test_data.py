@@ -44,7 +44,6 @@ class TestData:
         dataset = Dataset.from_dict({"image": [1, 2, 3], label_name: [0, 1, 0]})
         return dataset, label_name
 
-    @pytest.mark.slow
     @given(dataset=dataset_strategy())
     @settings(max_examples=10, suppress_health_check=[HealthCheck.too_slow])
     def test_init_data_properties(self, dataset):

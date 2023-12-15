@@ -21,6 +21,7 @@ y_train = y_all[:-SKLEARN_DIGITS_TEST_SIZE].astype(np.int32)
 true_labels_test = y_all[-SKLEARN_DIGITS_TEST_SIZE:].astype(np.int32)
 
 
+@pytest.mark.slow
 def test_loaders(
     seed=0,
 ):

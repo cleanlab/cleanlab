@@ -105,7 +105,7 @@ setup(
         "scikit-learn>=1.0",
         "tqdm>=4.53.0",
         "pandas>=1.1.5",
-        "termcolor>=2.0.0",
+        "termcolor>=2.0.0,<2.4.0",
     ],
     extras_require=EXTRAS_REQUIRE,
 )
