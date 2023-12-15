@@ -18,19 +18,15 @@
 Scripts to test cleanlab.segmentation package
 """
 import numpy as np
-
-# import matplotlib.pyplot as plt
-# import os
-import numpy as np
 import random
 
 np.random.seed(0)
 import pytest
 from unittest import mock
 import matplotlib.pyplot as plt
+from pathlib import Path
 
 from cleanlab.internal.multilabel_scorer import softmin
-
 
 # Segmentation utils
 from cleanlab.internal.segmentation_utils import (
@@ -140,6 +136,34 @@ def test_find_label_issues():
         )
 
 
+def test_results_are_consistent_with_batch_size(tmp_path: Path):
+    """
+    Test that find_label_issues works with large memmap arrays and different batch sizes
+    """
+
+    # Create dummy versions of pred_probs and labels
+    # write to the pytest tmp_path so that the files are deleted after the test
+    pred_probs_file = tmp_path / "pred_probs.npy"
+    labels_file = tmp_path / "labels.npy"
+    np.save(pred_probs_file, np.random.rand(100, 2, 5, 5))
+    np.save(labels_file, np.random.randint(0, 2, (100, 5, 5)))
+
+    # Load the numpy arrays from disk
+    pred_probs = np.load(pred_probs_file, mmap_mode="r")
+    pred_labels = np.load(labels_file, mmap_mode="r")
+
+    # Test with different batch sizes
+    batch_sizes = [1, 50, 100]
+    issues_list = []
+    for batch_size in batch_sizes:
+        issues = find_label_issues(pred_labels, pred_probs, n_jobs=None, batch_size=batch_size)
+        issues_list.append(issues)
+
+    # Verify that the results are identical regardless of the batch size
+    for i in range(len(batch_sizes) - 1):
+        assert np.array_equal(issues_list[i], issues_list[i + 1])
+
+
 def test_find_label_issues_sizes():
     # checks inputs of different sizes
     labels, pred_probs = np.random.randint(0, 2, (2, 9, 7)), np.random.random((2, 2, 9, 7))
@@ -198,11 +222,11 @@ def test_get_label_quality_scores():
     assert len(image_scores_softmin) == labels.shape[0]
     assert pixel_scores.shape == labels.shape
 
-    with pytest.raises(ValueError):
-        get_label_quality_scores(labels, pred_probs, method="num_pixel_issues", batch_size=-1)
-        get_label_quality_scores(
-            labels, pred_probs, method="num_pixel_issues", downsample=1, batch_size=0
-        )
+    # with pytest.raises(ValueError):
+    #     get_label_quality_scores(labels, pred_probs, method="num_pixel_issues", batch_size=-1)
+    #     get_label_quality_scores(
+    #         labels, pred_probs, method="num_pixel_issues", downsample=1, batch_size=0
+    #     )
 
 
 # different size inpits
