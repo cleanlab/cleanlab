@@ -1113,3 +1113,40 @@ class TestDataLabClassImbalanceIssues:
         assert "class_imbalance" in summary["issue_type"].values
         class_imbalance_summary = lab.get_issue_summary("class_imbalance")
         assert class_imbalance_summary["num_issues"].values[0] > 0
+
+
+class TestDataLabReuseStatisticInfo:
+    num_examples = 100
+    K = 2
+
+    @pytest.fixture
+    def pred_probs(self):
+        np.random.seed(SEED)
+        pred_probs_array = np.random.rand(self.num_examples, self.K)
+        return pred_probs_array / pred_probs_array.sum(axis=1, keepdims=True)
+
+    @pytest.fixture
+    def trained_datalab(self):
+        data = {"labels": np.random.randint(0, self.K, self.num_examples)}
+        np.random.seed(SEED + 1)
+        pred_probs_array = np.random.rand(self.num_examples, self.K)
+        pred_probs_for_train = pred_probs_array / pred_probs_array.sum(axis=1, keepdims=True)
+        lab = Datalab(data=data, label_name="labels")
+        lab.find_issues(pred_probs=pred_probs_for_train, issue_types={"label": {}})
+        return lab
+
+    def test_reuse_statistics_info(self, trained_datalab):
+        data = {"labels": np.random.randint(0, self.K, self.num_examples)}
+        lab = Datalab(trained_datalab=trained_datalab, data=data, label_name="labels")
+        for k in trained_datalab.get_info().keys():
+            assert lab.get_info(k).keys() == trained_datalab.get_info(k).keys()
+
+    def test_find_issue_with_trained_datalab(self, trained_datalab, pred_probs):
+        data = {"labels": np.random.randint(0, self.K, self.num_examples)}
+        lab = Datalab(trained_datalab=trained_datalab, data=data, label_name="labels")
+        lab.find_issues(pred_probs=pred_probs, issue_types={"label": {}})
+        trained_statistics = trained_datalab.get_info("label")
+        test_statistics = lab.get_info("label")
+        for k, v in trained_statistics.items():
+            if k in ["noise_matrix", "inverse_noise_matrix"]:
+                assert np.array_equal(v, test_statistics[k])
