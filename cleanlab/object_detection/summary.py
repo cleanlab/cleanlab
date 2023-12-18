@@ -521,7 +521,6 @@ def get_average_per_class_confusion_matrix(
     - False Positive (FP): Instances where the model predicts the class, but IoU is below the threshold.
     - False Negative (FN): Instances where the ground truth class is not predicted by the model.
 
-
     It's important to note that lower TP at certain IoU thresholds doesn't necessarily imply that everything else is FP.
     It indicates that, at those specific IoU thresholds, the model is not performing as well in terms of correctly identifying instances. The other metrics (FP and FN) provide additional information about the model's behavior.
 
