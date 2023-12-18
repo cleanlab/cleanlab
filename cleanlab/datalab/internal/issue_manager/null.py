@@ -38,18 +38,11 @@ class NullIssueManager(IssueManager):
         """Tracks the number of null values in each row of a feature array,
         computes quality scores based on the fraction of null values in each row,
         and returns a boolean array indicating whether each row only has null values."""
-        rows = features.shape[0]
         cols = features.shape[1]
-        scores = np.ones(rows).astype(np.float32)
-        is_null_issue = np.full(rows, False)
         null_tracker = np.isnan(features)
-        if null_tracker.any():
-            for row in range(rows):
-                if null_tracker[row].any():
-                    non_null_col_count = np.count_nonzero(~null_tracker[row])
-                    scores[row] = non_null_col_count / cols
-                    if scores[row] == 0.00:
-                        is_null_issue[row] = True
+        non_null_count = cols - null_tracker.sum(axis=1)
+        scores = non_null_count / cols
+        is_null_issue = non_null_count == 0
         return is_null_issue, scores, null_tracker
 
     def find_issues(
@@ -94,8 +87,9 @@ class NullIssueManager(IssueManager):
         rows_affected: List[int] = []
         occurrence_of_most_frequent_pattern = 0
         if null_tracker.any():
+            null_row_indices = np.where(null_tracker.any(axis=1))[0]
             null_patterns_as_strings = [
-                "".join(map(str, row.astype(int).tolist())) for row in null_tracker if row.any()
+                "".join(map(str, null_tracker[i].astype(int).tolist())) for i in null_row_indices
             ]
 
             # Use Counter to efficiently count occurrences and find the most common pattern.
@@ -107,7 +101,7 @@ class NullIssueManager(IssueManager):
             rows_affected = []
             for idx, row in enumerate(null_patterns_as_strings):
                 if row == most_frequent_pattern:
-                    rows_affected.append(idx)
+                    rows_affected.append(int(null_row_indices[idx]))
         return {
             "most_common_issue": {
                 "pattern": most_frequent_pattern,
