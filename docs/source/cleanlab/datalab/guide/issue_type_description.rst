@@ -141,6 +141,14 @@ To find the underperforming group, Cleanlab clusters the data using the provided
 The underperforming group quality score is equal to `q/r` for examples belonging to the underperforming group, and is equal to 1 for all other examples.
 Advanced users:  If you have pre-computed cluster assignments for each example in the dataset, you can pass them explicitly to :py:meth:`Datalab.find_issues <cleanlab.datalab.datalab.Datalab.find_issues>` using the `cluster_ids` key in the `issue_types` dict argument.  This is useful for tabular datasets where you want to group/slice the data based on a categorical column. An integer encoding of the categorical column can be passed as cluster assignments for finding the underperforming group, based on the data slices you define.
 
+Data Valuation Issue
+--------------------
+
+An Example that contribute minimally to a model's training have low data valuation scores.
+
+Data valuation issues can only use a `knn_graph`` passed by user or pre-computed from other issue managers. If you do not provide this argument, or there isn't a `knn_graph` already computed and store in the Datalab object, this type of issue will not be considered.
+
+The data valuation score is a approximate form of shapley value, which is calculated by the label of top k nearest neighbors of an example. The detail of the knn-shapley value could be found in the paper: `Efficient Task-Specific Data Valuation for Nearest Neighbor Algorithms <https://arxiv.org/abs/1908.08619>`_ and `Scalability vs. Utility: Do We Have to Sacrifice One for the Other in Data Importance Quantification? <https://arxiv.org/abs/1911.07128>`_.
 
 Optional Issue Parameters
 =========================
@@ -283,3 +291,16 @@ Underperforming Group Issue Parameters
     For more information, view the source code of:  :py:class:`datalab.internal.issue_manager.underperforming_group.UnderperformingGroupIssueManager <cleanlab.datalab.internal.issue_manager.underperforming_group.UnderperformingGroupIssueManager>`.
 
     For more information on generating `cluster_ids` for this issue manager, refer to this `FAQ Section <../../../tutorials/faq.html#How-do-I-specify-pre-computed-data-slices/clusters-when-detecting-the-Underperforming-Group-Issue?>`_.
+
+Data Valuation Issue Parameters
+--------------------------
+
+.. code-block:: python
+
+    data_valuation_kwargs = {
+        "k": # Number of nearest neighbors to calculate the data valuation score,
+        "thresholds": # Thresholds for determing if an example has a data valuation issue,
+    }
+
+.. note::
+    For more information, view the source code of:  :py:class:`datalab.internal.issue_manager.data_valuation.DataValuationIssueManager <cleanlab.datalab.internal.issue_manager.data_valuation.DataValuationIssueManager>`.

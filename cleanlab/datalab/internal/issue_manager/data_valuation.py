@@ -81,7 +81,7 @@ class DataValuationIssueManager(IssueManager):
         assert knn_graph is not None, "knn_graph must be already calculated by other issue managers"
         assert labels is not None, "labels must be provided"
 
-        scores = _knn_shapley_score(knn_graph, labels)
+        scores = _knn_shapley_score(knn_graph, labels, self.k)
 
         self.issues = pd.DataFrame(
             {
@@ -125,12 +125,15 @@ class DataValuationIssueManager(IssueManager):
         return info_dict
 
 
-def _knn_shapley_score(knn_graph: csr_matrix, labels: np.ndarray) -> np.ndarray:
+def _knn_shapley_score(knn_graph: csr_matrix, labels: np.ndarray, k: int) -> np.ndarray:
     """Compute the Shapley values of data points based on a knn graph."""
     N = labels.shape[0]
     scores = np.zeros((N, N))
     dist = knn_graph.indices.reshape(N, -1)
-    k = dist.shape[1]
+    knn_graph_k = dist.shape[1]
+    if k > knn_graph_k:
+        k = knn_graph_k
+        Warning(f"k is larger than the number of neighbors in the knn graph. Using k={k} instead.")
 
     for i, y in enumerate(labels):
         idx = dist[i][::-1]
