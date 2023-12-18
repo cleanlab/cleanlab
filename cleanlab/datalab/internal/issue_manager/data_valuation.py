@@ -37,7 +37,22 @@ if TYPE_CHECKING:  # pragma: no cover
 
 
 class DataValuationIssueManager(IssueManager):
-    """Manages data sample with low valuation."""
+    """
+    Manages data sample with low valuation.
+
+    Examples
+    --------
+    >>> from cleanlab import Datalab
+    >>> import numpy as np
+    >>> X = np.random.normal(size=(50, 2))
+    >>> y = np.random.randint(2, size=50)
+    >>> pred_probs = X / X.sum(axis=1, keepdims=True)
+    >>> data = {"X": X, "y": y}
+    >>> lab = Datalab(data, label_name="y")
+    >>> lab.find_issues()
+    >>> issue_types={"data_valuation": {"k": 10, "threshold": 1e-6}}
+    >>> lab.find_issues(issue_types=issue_types)
+    """
 
     description: ClassVar[
         str
