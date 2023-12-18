@@ -521,7 +521,7 @@ def get_average_per_class_confusion_matrix(
     - False Positive (FP): Instances where the model predicts the class, but IoU is below the threshold.
     - False Negative (FN): Instances where the ground truth class is not predicted by the model.
 
-   The average confusion matrix provides insights into the model strengths and potential biases.
+    The average confusion matrix provides insights into the model strengths and potential biases.
 
     Note:  lower TP at certain IoU thresholds does not necessarily imply that everything else is FP, instead it indicates that, at those specific IoU thresholds, the model is not performing as well in terms of correctly identifying class instances. The other metrics (FP and FN) provide additional information about the model's behavior.
 
