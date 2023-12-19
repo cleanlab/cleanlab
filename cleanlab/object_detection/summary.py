@@ -18,6 +18,7 @@
 Methods to display examples and their label issues in an object detection dataset.
 Here each image can have multiple objects, each with its own bounding box and class label.
 """
+from multiprocessing import Pool
 from typing import Optional, Any, Dict, Tuple, Union, List, TYPE_CHECKING, TypeVar, DefaultDict
 
 import numpy as np
@@ -27,6 +28,11 @@ from cleanlab.internal.constants import (
     MAX_CLASS_TO_SHOW,
     ALPHA,
     EPSILON,
+    TINY_VALUE,
+)
+from cleanlab.object_detection.filter import (
+    _filter_by_class,
+    _calculate_true_positives_false_positives,
 )
 from cleanlab.object_detection.rank import (
     _get_valid_inputs_for_compute_scores,
@@ -442,6 +448,194 @@ def visualize(
             pad_inches=0.5,
         )
     plt.show()
+
+
+def _get_per_class_confusion_matrix_dict_(
+    labels: List[Dict[str, Any]],
+    predictions: List[np.ndarray],
+    iou_threshold: Optional[float] = 0.5,
+    num_procs: int = 1,
+) -> DefaultDict[int, Dict[str, int]]:
+    """
+    Returns a confusion matrix dictionary for each class containing the number of True Positive, False Positive, and False Negative detections from the object detection model.
+    """
+    num_classes = len(predictions[0])
+    num_images = len(predictions)
+    pool = Pool(num_procs)
+    counter_dict: DefaultDict[int, dict[str, int]] = collections.defaultdict(
+        lambda: {"TP": 0, "FP": 0, "FN": 0}
+    )
+
+    for class_num in range(num_classes):
+        pred_bboxes, lab_bboxes = _filter_by_class(labels, predictions, class_num)
+        tpfpfn = pool.starmap(
+            _calculate_true_positives_false_positives,
+            zip(
+                pred_bboxes,
+                lab_bboxes,
+                [iou_threshold for _ in range(num_images)],
+                [True for _ in range(num_images)],
+            ),
+        )
+
+        for image_idx, (tp, fp, fn) in enumerate(tpfpfn):  # type: ignore
+            counter_dict[class_num]["TP"] += np.sum(tp)
+            counter_dict[class_num]["FP"] += np.sum(fp)
+            counter_dict[class_num]["FN"] += np.sum(fn)
+
+    return counter_dict
+
+
+def _sort_dict_to_list(index_value_dict):
+    """
+    Convert a dictionary to a list sorted by index and return the values in that order.
+
+    Parameters:
+    - index_value_dict (dict): The input dictionary where keys represent indices and values are the corresponding elements.
+
+    Returns:
+    list: A list containing the values from the input dictionary, sorted by index.
+
+    Example:
+    >>> my_dict = {'0': '0', '1': '1', '2': '2', '3': '3', '4': '4'}
+    >>> sort_dict_to_list(my_dict)
+    ['0', '1', '2', '3', '4']
+    """
+    sorted_list = [
+        value for key, value in sorted(index_value_dict.items(), key=lambda x: int(x[0]))
+    ]
+    return sorted_list
+
+
+def get_average_per_class_confusion_matrix(
+    labels: List[Dict[str, Any]],
+    predictions: List[np.ndarray],
+    num_procs: int = 1,
+    class_names: Optional[Dict[Any, Any]] = None,
+) -> Dict[Union[int, str], Dict[str, float]]:
+    """
+    Compute a confusion matrix dictionary for each class containing the average number of True Positive, False Positive, and False Negative detections from the object detection model across a range of Intersection over Union thresholds.
+
+    At each IoU threshold, the metrics are calculated as follows:
+    - True Positive (TP): Instances where the model correctly identifies the class with IoU above the threshold.
+    - False Positive (FP): Instances where the model predicts the class, but IoU is below the threshold.
+    - False Negative (FN): Instances where the ground truth class is not predicted by the model.
+
+    The average confusion matrix provides insights into the model strengths and potential biases.
+
+    Note:  lower TP at certain IoU thresholds does not necessarily imply that everything else is FP, instead it indicates that, at those specific IoU thresholds, the model is not performing as well in terms of correctly identifying class instances. The other metrics (FP and FN) provide additional information about the model's behavior.
+
+    Note: Since we average over many IoU thresholds, 'TP', 'FP', and 'FN' may contain float values representing the average across these thresholds.
+
+    Parameters
+    ----------
+    labels:
+        A list of ``N`` dictionaries such that ``labels[i]`` contains the given labels for the `i`-th image.
+        Refer to documentation for this argument in :py:func:`object_detection.filter.find_label_issues <cleanlab.object_detection.filter.find_label_issues>` for further details.
+
+    predictions:
+        A list of ``N`` ``np.ndarray`` such that ``predictions[i]`` corresponds to the model predictions for the `i`-th image.
+        Refer to documentation for this argument in :py:func:`object_detection.filter.find_label_issues <cleanlab.object_detection.filter.find_label_issues>` for further details.
+
+    num_procs:
+        Number of processes for parallelization. Default is 1.
+
+    class_names:
+        Optional dictionary mapping one-hot-encoded class labels back to their original class names in the format ``{"integer-label": "original-class-name"}``
+
+
+    Returns
+    -------
+    avg_metrics: dict
+        A distionary containing the average confusion matrix.
+
+        The default range of Intersection over Union thresholds is from 0.5 to 0.95 with a step size of 0.05.
+    """
+    iou_thrs = np.linspace(0.5, 0.95, int(np.round((0.95 - 0.5) / 0.05)) + 1, endpoint=True)
+    num_classes = len(predictions[0])
+    if class_names is None:
+        class_names = {str(i): int(i) for i in list(range(num_classes))}
+    class_names = _sort_dict_to_list(class_names)
+    avg_metrics = {class_num: {"TP": 0.0, "FP": 0.0, "FN": 0.0} for class_num in class_names}
+
+    for iou_threshold in iou_thrs:
+        results_dict = _get_per_class_confusion_matrix_dict_(
+            labels, predictions, iou_threshold, num_procs
+        )
+
+        for class_num in results_dict:
+            tp = results_dict[class_num]["TP"]
+            fp = results_dict[class_num]["FP"]
+            fn = results_dict[class_num]["FN"]
+
+            avg_metrics[class_names[class_num]]["TP"] += tp
+            avg_metrics[class_names[class_num]]["FP"] += fp
+            avg_metrics[class_names[class_num]]["FN"] += fn
+
+    num_thresholds = len(iou_thrs) * len(results_dict)
+    for class_name in avg_metrics:
+        avg_metrics[class_name]["TP"] /= num_thresholds
+        avg_metrics[class_name]["FP"] /= num_thresholds
+        avg_metrics[class_name]["FN"] /= num_thresholds
+    return avg_metrics
+
+
+def calculate_per_class_metrics(
+    labels: List[Dict[str, Any]],
+    predictions: List[np.ndarray],
+    num_procs: int = 1,
+    class_names=None,
+) -> Dict[Union[int, str], Dict[str, float]]:
+    """
+    Calculate the object detection model's precision, recall, and F1 score for each class in the dataset.
+
+    These metrics can help you identify model strengths and weaknesses, and provide reference statistics for model evaluation and comparisons.
+
+    Parameters
+    ----------
+    labels:
+        A list of ``N`` dictionaries such that ``labels[i]`` contains the given labels for the `i`-th image.
+        Refer to documentation for this argument in :py:func:`object_detection.filter.find_label_issues <cleanlab.object_detection.filter.find_label_issues>` for further details.
+
+    predictions:
+        A list of ``N`` ``np.ndarray`` such that ``predictions[i]`` corresponds to the model predictions for the `i`-th image.
+        Refer to documentation for this argument in :py:func:`object_detection.filter.find_label_issues <cleanlab.object_detection.filter.find_label_issues>` for further details.
+
+    num_procs:
+        Number of processes for parallelization. Default is 1.
+
+    class_names:
+        Optional dictionary mapping one-hot-encoded class labels back to their original class names in the format ``{"integer-label": "original-class-name"}``
+
+
+    Returns
+    -------
+    per_class_metrics: dict
+        A dictionary containing per-class metrics computed from the object detection model's average confusion matrix values across a range of Intersection over Union thresholds.
+
+        The default range of Intersection over Union thresholds is from 0.5 to 0.95 with a step size of 0.05.
+    """
+    avg_metrics = get_average_per_class_confusion_matrix(
+        labels, predictions, num_procs, class_names=class_names
+    )
+
+    avg_metrics_dict = {}
+    for class_name in avg_metrics:
+        tp = avg_metrics[class_name]["TP"]
+        fp = avg_metrics[class_name]["FP"]
+        fn = avg_metrics[class_name]["FN"]
+
+        precision = tp / (tp + fp + TINY_VALUE)  # Avoid division by zero
+        recall = tp / (tp + fn + TINY_VALUE)  # Avoid division by zero
+        f1 = 2 * (precision * recall) / (precision + recall + TINY_VALUE)  # Avoid division by zero
+
+        avg_metrics_dict[class_name] = {
+            "average precision": precision,
+            "average recall": recall,
+            "average f1": f1,
+        }
+
+    return avg_metrics_dict
 
 
 def _normalize_by_total(freq):
