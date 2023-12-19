@@ -1037,8 +1037,8 @@ class TestDatalabForRegression:
         return lab
 
     def test_available_issue_types(self, lab):
-        assert set(lab.list_default_issue_types()) == set(["label", "null"])
-        assert set(lab.list_possible_issue_types()) == set(["label", "null"])
+        assert set(lab.list_default_issue_types()) == set(["label"])
+        assert set(lab.list_possible_issue_types()) == set(["label"])
 
     def test_regression_with_features(self, lab, regression_data):
         """Test that the regression issue checks finds 40 label issues, based on the
