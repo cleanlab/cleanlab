@@ -74,3 +74,11 @@ class TestDataValuationIssueManager:
                 features=embeddings["embedding"], issue_types={"outlier": {"k": 3}}
             )
             issue_manager.find_issues(k=4)
+
+    def test_get_larger_k_than_knn_graph(self, issue_manager, embeddings):
+        outlier_issue_manager = OutlierIssueManager(datalab=issue_manager.datalab, k=3)
+        outlier_issue_manager.find_issues(features=embeddings["embedding"])
+        knn_graph = outlier_issue_manager._process_knn_graph_from_features({})
+        issue_manager.k = 4
+        issue_manager.find_issues(knn_graph=knn_graph)
+        assert issue_manager.k == 3
