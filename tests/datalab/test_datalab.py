@@ -1559,9 +1559,15 @@ class TestDataLabNullIssues:
         class_imbalance_summary = lab.get_issue_summary("null")
         assert class_imbalance_summary["num_issues"].values[0] > 0
 
-    def test_most_common_null_issue(self, embeddings_with_null, labels):
+    def test_null_issues(self, embeddings_with_null):
         lab = Datalab(data={"features": embeddings_with_null})
         lab.find_issues(features=embeddings_with_null, issue_types={"null": {}})
+        issues = lab.get_issues("null")
+        expected_issue_mask = np.zeros(100, dtype=bool)
+        expected_issue_mask[[5, 10, 22]] = True
+        np.testing.assert_equal(
+            issues["is_null_issue"], expected_issue_mask, err_msg="Issue mask should be correct"
+        )
         info = lab.get_info("null")
         most_common_issue = info["most_common_issue"]
         assert most_common_issue["pattern"] == "1" * 10
