@@ -1559,6 +1559,15 @@ class TestDataLabNullIssues:
         class_imbalance_summary = lab.get_issue_summary("null")
         assert class_imbalance_summary["num_issues"].values[0] > 0
 
+    def test_most_common_null_issue(self, embeddings_with_null, labels):
+        lab = Datalab(data={"features": embeddings_with_null})
+        lab.find_issues(features=embeddings_with_null, issue_types={"null": {}})
+        info = lab.get_info("null")
+        most_common_issue = info["most_common_issue"]
+        assert most_common_issue["pattern"] == "1" * 10
+        assert most_common_issue["rows_affected"] == [5, 10, 22]
+        assert most_common_issue["count"] == 3
+
 
 class TestIssueManagersReuseKnnGraph:
     """

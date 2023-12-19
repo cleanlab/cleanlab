@@ -58,7 +58,7 @@ _CLASSIFICATION_ARGS_DICT = {
     "class_imbalance": [],
     "null": ["features"],
 }
-_REGRESSION_ARGS_DICT = {"label": ["features", "predictions"], "null": ["features"]}
+_REGRESSION_ARGS_DICT = {"label": ["features", "predictions"]}
 
 
 def _resolve_required_args_for_classification(**kwargs):

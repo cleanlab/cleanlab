@@ -146,6 +146,8 @@ Null Issue
 
 Examples flagged with null issue have null/missing values across all feature columns.
 
+Null issues are detected based on provided `features`.  If you do not provide the `features`, this type of issue will not be considered.
+
 The null issue quality score for each example is the proportion of features values that are not null. The overall null issue quality score
 is the mean of the individual quality scores.
 

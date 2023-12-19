@@ -66,7 +66,7 @@ REGISTRY: Dict[str, Dict[str, Type[IssueManager]]] = {
         "data_valuation": DataValuationIssueManager,
         "null": NullIssueManager,
     },
-    "regression": {"label": RegressionLabelIssueManager, "null": NullIssueManager},
+    "regression": {"label": RegressionLabelIssueManager},
 }
 """Registry of issue managers that can be constructed from a string
 and used in the Datalab class.
@@ -201,7 +201,7 @@ def list_default_issue_types(task: str) -> List[str]:
     :py:class:`REGISTRY <cleanlab.datalab.internal.issue_manager_factory.REGISTRY>` : All available issue types and their corresponding issue managers can be found here.
     """
     if task == "regression":
-        default_issue_types = ["label", "null"]
+        default_issue_types = ["label"]
     else:
         default_issue_types = [
             "label",
