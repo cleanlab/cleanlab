@@ -57,6 +57,7 @@ from cleanlab.object_detection.summary import (
     plot_class_size_distributions,
     visualize,
     calculate_per_class_metrics,
+    get_average_per_class_confusion_matrix,
 )
 
 np.random.seed(0)
@@ -974,8 +975,34 @@ def test_calculate_true_positives_false_positives(return_false_negative):
     assert counter_dict[0][1] == 4
 
 
-def test_per_class_metrics():
-    per_class_metrics = calculate_per_class_metrics(labels, predictions)
+def test_calculate_true_positives_false_positives_high_threshold():
+    pred_bboxes = np.array([[1, 1, 5, 5]])
+    lab_bboxes = np.array([[1, 1, 6, 6], [3, 3, 8, 8]])
+    iou_threshold = 1.0
+    (
+        true_positives,
+        false_positives,
+        false_negatives,
+    ) = _calculate_true_positives_false_positives(
+        pred_bboxes, lab_bboxes, iou_threshold=iou_threshold, return_false_negative=True
+    )
+    assert np.array_equal(false_positives, np.array([[1.0]]))
+
+
+@pytest.mark.parametrize("class_names", [None, class_names])
+def test_per_class_metrics(class_names):
+    per_class_metrics = calculate_per_class_metrics(labels, predictions, class_names=class_names)
     assert len(per_class_metrics) == len(predictions[0])
-    assert np.isclose(per_class_metrics[9]["average precision"], 0.5)
-    assert np.isclose(per_class_metrics[6]["average f1"], 0.66666)
+    if class_names is None:
+        assert np.isclose(per_class_metrics[9]["average precision"], 0.5)
+        assert np.isclose(per_class_metrics[6]["average f1"], 0.66666)
+    else:
+        assert np.isclose(per_class_metrics[str("j")]["average precision"], 0.5)
+        assert np.isclose(per_class_metrics[str("g")]["average f1"], 0.66666)
+
+
+def test_per_class_confusion_matrix():
+    per_class_confusion_matrix = get_average_per_class_confusion_matrix(labels, predictions)
+    assert np.isclose(per_class_confusion_matrix[1]["TP"], 0.2)
+    assert np.isclose(per_class_confusion_matrix[7]["FP"], 0.3)
+    assert np.isclose(per_class_confusion_matrix[5]["FN"], 0.4)

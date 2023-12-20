@@ -20,7 +20,7 @@ class TestNullIssueManager:
     def embeddings_with_null(self):
         np.random.seed(SEED)
         embeddings_array = np.random.random((4, 3))
-        embeddings_array[0][0] = np.NaN
+        embeddings_array[[0, 3], 0] = np.NaN
         embeddings_array[1] = np.NaN
         return embeddings_array
 
@@ -65,7 +65,7 @@ class TestNullIssueManager:
             issues_sort["is_null_issue"] == expected_sorted_issue_mask
         ), "Issue mask should be correct"
         assert summary_sort["issue_type"][0] == "null"
-        assert summary_sort["score"][0] == pytest.approx(expected=8 / 12, abs=1e-7)
+        assert summary_sort["score"][0] == pytest.approx(expected=7 / 12, abs=1e-7)
         assert (
             info_sort.get("average_null_score", None) is not None
         ), "Should have average null score"
@@ -133,11 +133,11 @@ class TestNullIssueManager:
         """Test some values in the info dict."""
         issue_manager.find_issues(features=embeddings_with_null)
         info = issue_manager.info
-        assert info["average_null_score"] == pytest.approx(expected=8 / 12, abs=1e-7)
+        assert info["average_null_score"] == pytest.approx(expected=7 / 12, abs=1e-7)
         assert info["most_common_issue"]["pattern"] == "100"
-        assert info["most_common_issue"]["count"] == 1
-        assert info["most_common_issue"]["rows_affected"] == [0]
-        assert info["column_impact"] == [0.5, 0.25, 0.25]
+        assert info["most_common_issue"]["count"] == 2
+        assert info["most_common_issue"]["rows_affected"] == [0, 3]
+        assert info["column_impact"] == [0.75, 0.25, 0.25]
 
     # Strategy for generating NaN values
     nan_strategy = just(np.nan)
