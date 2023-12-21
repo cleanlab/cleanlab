@@ -19,7 +19,7 @@ Methods to find label issues in image semantic segmentation datasets, where each
 
 """
 
-from cleanlab.experimental.label_issues_batched import find_label_issues_batched
+from cleanlab.experimental.label_issues_batched import LabelInspector
 import numpy as np
 from typing import Tuple, Optional
 
@@ -125,20 +125,78 @@ def find_label_issues(
 
         return labels_flat, pred_probs_flat.T
 
+    def get_images_to_load(pre_pred_probs, i, n, batch_size):
+        """
+        This function loads images until the batch size is reached or the end of the dataset is reached.
+        """
+        images_to_load = 1
+        while (
+            np.prod(pre_pred_probs[i : i + images_to_load].shape[1:]) < batch_size
+            and i + images_to_load < n
+        ):
+            images_to_load += 1
+        return images_to_load
+
     ##
     _check_input(labels, pred_probs)
 
     # Added Downsampling
     pre_labels, pre_pred_probs = downsample_arrays(labels, pred_probs, downsample)
 
-    num_image, num_classes, h, w = pre_pred_probs.shape
-    # flatten images just preps labels and pred_probs
+    num_image, _, h, w = pre_pred_probs.shape
 
-    pre_labels, pre_pred_probs = flatten_and_preprocess_masks(pre_labels, pre_pred_probs)
-
-    ranked_label_issues = find_label_issues_batched(
-        pre_labels, pre_pred_probs, batch_size=batch_size, n_jobs=n_jobs, verbose=verbose
+    ### This section is a modified version of find_label_issues_batched(), old code is commented out
+    # ranked_label_issues = find_label_issues_batched(
+    #     pre_labels, pre_pred_probs, batch_size=batch_size, n_jobs=n_jobs, verbose=verbose
+    # )
+    lab = LabelInspector(
+        num_class=pre_pred_probs.shape[1],
+        verbose=verbose,
+        n_jobs=n_jobs,
+        quality_score_kwargs=None,
+        num_issue_kwargs=None,
     )
+    n = len(pre_labels)
+
+    if verbose:
+        from tqdm.auto import tqdm
+
+        pbar = tqdm(desc="number of examples processed for estimating thresholds", total=n)
+
+    i = 0
+    while i < n:
+        images_to_load = get_images_to_load(pre_pred_probs, i, n, batch_size)
+        end_index = i + images_to_load
+        labels_batch, pred_probs_batch = flatten_and_preprocess_masks(
+            pre_labels[i:end_index], pre_pred_probs[i:end_index]
+        )
+        i = end_index
+        lab.update_confident_thresholds(labels_batch, pred_probs_batch)
+        if verbose:
+            pbar.update(images_to_load)
+
+    if verbose:
+        pbar.close()
+        pbar = tqdm(desc="number of examples processed for checking labels", total=n)
+
+    i = 0
+    while i < n:
+        images_to_load = get_images_to_load(pre_pred_probs, i, n, batch_size)
+
+        end_index = i + images_to_load
+        labels_batch, pred_probs_batch = flatten_and_preprocess_masks(
+            pre_labels[i:end_index], pre_pred_probs[i:end_index]
+        )
+        i = end_index
+        _ = lab.score_label_quality(labels_batch, pred_probs_batch)
+        if verbose:
+            pbar.update(images_to_load)
+
+    if verbose:
+        pbar.close()
+
+    ranked_label_issues = lab.get_label_issues()
+    ### End find_label_issues_batched() section
 
     # Finding the right indicies
     relative_index = ranked_label_issues % (h * w)

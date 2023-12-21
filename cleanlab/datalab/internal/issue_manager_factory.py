@@ -203,10 +203,5 @@ def list_default_issue_types(task: str) -> List[str]:
     if task == "regression":
         default_issue_types = ["label"]
     else:
-        default_issue_types = [
-            "label",
-            "outlier",
-            "near_duplicate",
-            "non_iid",
-        ]
+        default_issue_types = ["label", "outlier", "near_duplicate", "non_iid", "class_imbalance"]
     return default_issue_types

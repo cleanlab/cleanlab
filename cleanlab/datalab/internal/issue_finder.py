@@ -55,6 +55,7 @@ _CLASSIFICATION_ARGS_DICT = {
     "non_iid": ["pred_probs", "features", "knn_graph"],
     "underperforming_group": ["pred_probs", "features", "knn_graph", "cluster_ids"],
     "data_valuation": ["knn_graph"],
+    "class_imbalance": [],
 }
 _REGRESSION_ARGS_DICT = {
     "label": ["features", "predictions"],
@@ -69,9 +70,15 @@ def _resolve_required_args_for_classification(**kwargs):
         for issue_type in initial_args_dict
     }
 
+    # Some issue types (like class-imbalance) have no required args.
+    # This conditional lambda is used to include them in args dict.
+    keep_empty_argument = lambda k: not len(_CLASSIFICATION_ARGS_DICT[k])
+
     # Remove None values from argument list, rely on default values in IssueManager
     args_dict = {
-        k: {k2: v2 for k2, v2 in v.items() if v2 is not None} for k, v in args_dict.items() if v
+        k: {k2: v2 for k2, v2 in v.items() if v2 is not None}
+        for k, v in args_dict.items()
+        if (v or keep_empty_argument(k))
     }
 
     # Prefer `knn_graph` over `features` if both are provided.
@@ -91,7 +98,8 @@ def _resolve_required_args_for_classification(**kwargs):
             )
 
     # Only keep issue types that have at least one argument
-    args_dict = {k: v for k, v in args_dict.items() if v}
+    # or those that require no arguments.
+    args_dict = {k: v for k, v in args_dict.items() if (v or keep_empty_argument(k))}
 
     return args_dict
 
@@ -103,12 +111,15 @@ def _resolve_required_args_for_regression(**kwargs):
         issue_type: {arg: kwargs.get(arg, None) for arg in initial_args_dict[issue_type]}
         for issue_type in initial_args_dict
     }
+    # Some issue types have no required args.
+    # This conditional lambda is used to include them in args dict.
+    keep_empty_argument = lambda k: not len(_REGRESSION_ARGS_DICT[k])
 
     # Remove None values from argument list, rely on default values in IssueManager
     args_dict = {
         k: {k2: v2 for k2, v2 in v.items() if v2 is not None}
         for k, v in args_dict.items()
-        if v or k == "label"  # Allow label issues to require no arguments
+        if v or k == "label" or keep_empty_argument(k)  # Allow label issues to require no arguments
     }
 
     return args_dict

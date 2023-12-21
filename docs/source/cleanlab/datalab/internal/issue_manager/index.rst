@@ -8,7 +8,7 @@ issue_manager
 Registered issue managers
 -------------------------
 
-These are the issue managers that Datalab has registered. 
+These are the issue managers that Datalab has registered.
 
 .. toctree::
     Base issue_manager module <issue_manager>
@@ -17,6 +17,7 @@ These are the issue managers that Datalab has registered.
     duplicate
     noniid
     imbalance
+    underperforming_group
 
 Unregistered issue managers
 ---------------------------
@@ -31,5 +32,3 @@ ML task-specific issue managers
 
 .. toctree::
     regression/index
-
-    

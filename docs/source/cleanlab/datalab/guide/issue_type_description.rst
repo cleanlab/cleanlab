@@ -129,6 +129,19 @@ For image datasets which are properly specified as such, Datalab can detect addi
 Specifically, low-quality images which are too: dark/bright, blurry, low information, abnormally sized, etc.
 Descriptions of these image-specific issues are provided in the `CleanVision package <https://github.com/cleanlab/cleanvision>`_ and its documentation.
 
+Underperforming Group Issue
+------------------------------
+
+An underperforming group refers to a cluster of similar examples (i.e. a slice) in the dataset for which the ML model predictions are poor.  The examples in this underperforming group may have noisy labels or feature values, or the trained ML model may not have learned how to properly handle them (consider collecting more data from this subpopulation or up-weighting the existing data from this group).
+
+Underperforming Group issues are detected based on provided `features`  and `pred_probs`.
+If you do not provide both these arguments, this type of issue will not be considered.
+
+To find the underperforming group, Cleanlab clusters the data using the provided `features` and determines the cluster `c` with the lowest average model predictive performance. Model predictive performance is evaluated via the model's self-confidence of the given labels, calculated using :py:func:`rank.get_self_confidence_for_each_label <cleanlab.rank.get_self_confidence_for_each_label>`. Suppose the average predictive power across the full dataset is `r` and is `q` within a cluster of examples. This cluster is considered to be an underperforming group if `q/r` falls below a threshold. A dataset suffers from the Underperforming Group issue if there exists such a cluster within it.
+The underperforming group quality score is equal to `q/r` for examples belonging to the underperforming group, and is equal to 1 for all other examples.
+Advanced users:  If you have pre-computed cluster assignments for each example in the dataset, you can pass them explicitly to :py:meth:`Datalab.find_issues <cleanlab.datalab.datalab.Datalab.find_issues>` using the `cluster_ids` key in the `issue_types` dict argument.  This is useful for tabular datasets where you want to group/slice the data based on a categorical column. An integer encoding of the categorical column can be passed as cluster assignments for finding the underperforming group, based on the data slices you define.
+
+
 Optional Issue Parameters
 =========================
 
@@ -141,7 +154,7 @@ Appropriate defaults are used for any parameters you do not specify, so no need 
     possible_issue_types = {
         "label": label_kwargs, "outlier": outlier_kwargs,
         "near_duplicate": near_duplicate_kwargs, "non_iid": non_iid_kwargs,
-        "class_imbalance": class_imbalance_kwargs
+        "class_imbalance": class_imbalance_kwargs, "underperforming_group": underperforming_group_kwargs
     }
 
 
@@ -247,3 +260,26 @@ Imbalance Issue Parameters
 .. note::
 
     For more information, view the source code of:  :py:class:`datalab.internal.issue_manager.imbalance.ClassImbalanceIssueManager <cleanlab.datalab.internal.issue_manager.imbalance.ClassImbalanceIssueManager>`.
+
+Underperforming Group Issue Parameters
+--------------------------
+
+.. code-block:: python
+
+    underperforming_group_kwargs = {
+        # Constructor arguments for `UnderperformingGroupIssueManager`
+        "threshold": # Non-negative floating value between 0 and 1 used for determinining group of points with low confidence.
+        "metric": # String for the distance metric used for nearest neighbors search if necessary. `metric` argument to constructor of `sklearn.neighbors.NearestNeighbors`.
+        "k": # Integer representing the number of nearest neighbors for constructing the nearest neighbour graph. `n_neighbors` argument to constructor of `sklearn.neighbors.NearestNeighbors`.
+        "min_cluster_samples": # Non-negative integer value specifying the minimum number of examples required for a cluster to be considered as the underperforming group. Used in `UnderperformingGroupIssueManager.filter_cluster_ids`.
+        "clustering_kwargs": # Key-value pairs representing arguments for the constructor of the clustering algorithm class (e.g. `sklearn.cluster.DBSCAN`).
+
+        # Argument for the find_issues() method of UnderperformingGroupIssueManager
+        "cluster_ids": # A 1-D numpy array containing cluster labels for each sample in the dataset. If passed, these cluster labels are used for determining the underperforming group.
+    }
+
+.. note::
+
+    For more information, view the source code of:  :py:class:`datalab.internal.issue_manager.underperforming_group.UnderperformingGroupIssueManager <cleanlab.datalab.internal.issue_manager.underperforming_group.UnderperformingGroupIssueManager>`.
+
+    For more information on generating `cluster_ids` for this issue manager, refer to this `FAQ Section <../../../tutorials/faq.html#How-do-I-specify-pre-computed-data-slices/clusters-when-detecting-the-Underperforming-Group-Issue?>`_.
