@@ -4,7 +4,7 @@ from scipy.sparse import csr_matrix
 
 
 @st.composite
-def knn_graph_strategy(draw, num_samples, k_neighbors):
+def knn_graph_strategy(draw, num_samples, k_neighbors, min_distance=0.0, max_distance=100.0):
     """
     Generate a K-nearest neighbors (KNN) graph based on the given parameters.
 
@@ -47,7 +47,13 @@ def knn_graph_strategy(draw, num_samples, k_neighbors):
     upper_triangle = [
         draw(
             st.lists(
-                st.floats(min_value=0, max_value=100, allow_nan=False, allow_infinity=False),
+                st.floats(
+                    min_value=min_distance,
+                    max_value=max_distance,
+                    allow_nan=False,
+                    allow_infinity=False,
+                    allow_subnormal=False,
+                ),
                 min_size=i,
                 max_size=i,
                 unique=True,

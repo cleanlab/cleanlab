@@ -154,7 +154,8 @@ class TestNullIssueManager:
     )
 
     @settings(
-        suppress_health_check=[HealthCheck.function_scoped_fixture]
+        suppress_health_check=[HealthCheck.function_scoped_fixture],
+        deadline=None,
     )  # No need to reset state of issue_manager fixture
     @given(embeddings=features_with_nan_strategy)
     def test_quality_scores_and_full_null_row_identification(self, issue_manager, embeddings):

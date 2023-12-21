@@ -151,9 +151,17 @@ def build_issue_manager(
     A threshold can be provided to control the number of issues for small graphs.
     A with_issues flag can be provided to control whether the issue manager should have issues.
     """
-    knn_graph = draw(
-        knn_graph_strategy(num_samples=num_samples_strategy, k_neighbors=k_neighbors_strategy)
-    )
+
+    if with_issues:
+        knn_graph = draw(
+            knn_graph_strategy(num_samples=num_samples_strategy, k_neighbors=k_neighbors_strategy)
+        )
+    else:
+        knn_graph = draw(
+            knn_graph_strategy(
+                num_samples=num_samples_strategy, k_neighbors=k_neighbors_strategy, min_distance=0.1
+            )
+        )
 
     lab = Datalab(data={})
     inputs = {"datalab": lab, "threshold": threshold}
@@ -177,6 +185,7 @@ def no_issue_issue_manager_strategy(draw):
         st.integers(min_value=10, max_value=50),
         st.integers(min_value=2, max_value=5),
         with_issues=False,
+        threshold=0.0001,
     )
 
 
