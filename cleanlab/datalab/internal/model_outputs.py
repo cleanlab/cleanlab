@@ -18,7 +18,7 @@ This module contains the ModelOutput class, which is used internally within Data
 to represent model outputs (e.g. predictions, probabilities, etc.) and process them
 for issue finding.
 This class and associated naming conventions are subject to change and is not meant
-to be used by users. 
+to be used by users.
 """
 
 
@@ -97,6 +97,25 @@ class RegressionPredictions(ModelOutput):
         predictions = self.data
         if predictions.ndim != 1:
             raise ValueError("pred_probs must be a 1D array for regression")
+
+    def collect(self):
+        return self.data
+
+
+class MultiLabelPredProbs(ModelOutput):
+    """
+    A class for representing a model's predicted probabilities for each class
+    in a multi-class classification problem. This class is not meant to be used by users.
+    """
+
+    argument = "pred_probs"
+
+    def validate(self):
+        pred_probs = self.data
+        if pred_probs.ndim != 2:
+            raise ValueError("pred_probs must be a 2D array for multi-class classification")
+        if not np.all(pred_probs >= 0) or not np.all(pred_probs <= 1):
+            raise ValueError("pred_probs must be between 0 and 1 for multi-class classification")
 
     def collect(self):
         return self.data

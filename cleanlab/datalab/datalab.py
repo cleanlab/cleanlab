@@ -114,8 +114,11 @@ class Datalab:
         # Assume continuous values of labels for regression task
         # Map labels to integers for classification task
         map_labels_to_int = task == "classification"  # TODO: handle more generally
+        is_multilabel = task == "multilabel"
 
-        self._data = Data(data, label_name, map_to_int=map_labels_to_int)
+        self._data = Data(
+            data, label_name, map_to_int=map_labels_to_int, is_multilabel=is_multilabel
+        )
         self.data = self._data._data
         self.task = task
         self._labels = self._data.labels
@@ -139,7 +142,7 @@ class Datalab:
         return _Displayer(data_issues=self.data_issues).__str__()
 
     @property
-    def labels(self) -> np.ndarray:
+    def labels(self) -> Union(np.ndarray, List[List[int]]):
         """Labels of the dataset, in a [0, 1, ..., K-1] format."""
         return self._labels.labels
 
