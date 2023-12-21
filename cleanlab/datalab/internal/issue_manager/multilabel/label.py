@@ -17,13 +17,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional
 
-import numpy as np
 import pandas as pd
 
 from cleanlab.multilabel_classification.filter import find_label_issues
 from cleanlab.multilabel_classification.rank import get_label_quality_scores
 from cleanlab.datalab.internal.issue_manager import IssueManager
-from cleanlab.internal.validation import assert_valid_inputs
+from cleanlab.internal.multilabel_utils import onehot2int
 
 if TYPE_CHECKING:  # pragma: no cover
     import pandas as pd
@@ -45,6 +44,8 @@ class MultilabelIssueManager(IssueManager):
     ] = """Examples whose given label(s) are estimated to be potentially incorrect
     (e.g. due to annotation error) are flagged as having label issues.
     """
+
+    _predicted_label_thresh = 0.5
 
     issue_name: ClassVar[str] = "label"
     verbosity_levels = {
@@ -122,6 +123,8 @@ class MultilabelIssueManager(IssueManager):
                 "Both pred_probs and features must be provided to find label issues in multilabel data."
             )
 
+        predicted_labels = onehot2int(pred_probs > self._predicted_label_thresh)
+
         # Find examples with label issues
         is_issue_column = find_label_issues(
             labels=self.datalab.labels,
@@ -144,10 +147,13 @@ class MultilabelIssueManager(IssueManager):
         self.summary = self.make_summary(score=scores.mean())
 
         # Collect info about the label issues
-        self.info = self.collect_info()
+        self.info = self.collect_info(self.datalab.labels, predicted_labels)
 
-    def collect_info(self) -> dict:
-        return {}
+    def collect_info(self, given_labels, predicted_labels) -> dict:
+        issues_info = {
+            "given_label": given_labels,
+            "predicted_label": predicted_labels,
+        }
+        info_dict = {**issues_info}
 
-
-# Todo: Validate Input
+        return info_dict

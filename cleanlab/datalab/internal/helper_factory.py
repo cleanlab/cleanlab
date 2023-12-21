@@ -26,6 +26,7 @@ from cleanlab.datalab.internal.data_issues import (
     DataIssues,
     _ClassificationInfoStrategy,
     _RegressionInfoStrategy,
+    _MultilabelInfoStrategy,
 )
 from cleanlab.datalab.internal.issue_finder import IssueFinder
 from cleanlab.datalab.internal.report import Reporter
@@ -89,5 +90,7 @@ class _DataIssuesBuilder:
         """
         if self.task == "regression":
             return _RegressionInfoStrategy
+        elif self.task == "multilabel":
+            return _MultilabelInfoStrategy
         else:
             return _ClassificationInfoStrategy

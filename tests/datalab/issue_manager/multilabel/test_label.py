@@ -2,7 +2,6 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from sklearn.datasets import make_multilabel_classification as make_ml_clf
 from cleanlab.datalab.internal.issue_manager.multilabel.label import MultilabelIssueManager
 from cleanlab.internal.multilabel_utils import onehot2int
 from cleanlab import Datalab

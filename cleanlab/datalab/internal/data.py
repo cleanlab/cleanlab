@@ -141,6 +141,7 @@ class Data:
         self._validate_data(data)
         self._data = self._load_data(data)
         self._data_hash = hash(self._data)
+        self.labels: Label
         if is_multilabel:
             self.labels = MultiLabel(data=self._data, label_name=label_name, map_to_int=map_to_int)
         else:
@@ -311,8 +312,12 @@ class MultiLabel(Label):
         super().__init__(data=data, label_name=label_name, map_to_int=map_to_int)
 
     def _extract_labels(self, data: Dataset, label_name: str, map_to_int: bool):
-        labels = labels_to_array_multilabel(data[label_name])
-        return labels, {}
+        labels: List[List[int]] = labels_to_array_multilabel(data[label_name])
+        unique_labels = set((x for ele in labels for x in ele))
+        label_map = {label: i for i, label in enumerate(unique_labels)}
+        formatted_labels = [list(map(label_map.get, label)) for label in labels]
+        inverse_map = {i: label for label, i in label_map.items()}
+        return formatted_labels, inverse_map
 
 
 class MultiClass(Label):
