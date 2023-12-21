@@ -24,13 +24,13 @@ class NullIssueManager(IssueManager):
 
     description: ClassVar[
         str
-    ] = """Whether the dataset has any missing/null values
+    ] = """Examples identified with the null issue correspond to rows that have null/missing values across all feature columns (i.e. the entire row is missing values).
         """
     issue_name: ClassVar[str] = "null"
     verbosity_levels = {
-        0: ["average_null_score"],
-        1: ["most_common_issue"],
-        2: [],
+        0: [],
+        1: [],
+        2: ["most_common_issue"],
     }
 
     @staticmethod
