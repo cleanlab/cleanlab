@@ -15,7 +15,7 @@
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, List
 
 import pandas as pd
 
@@ -31,7 +31,7 @@ if TYPE_CHECKING:  # pragma: no cover
 
 
 class MultilabelIssueManager(IssueManager):
-    """Manages label issues in a Datalab for multilabel tasks.
+    """Manages label issues in Datalab for multilabel tasks.
 
     Parameters
     ----------
@@ -45,7 +45,8 @@ class MultilabelIssueManager(IssueManager):
     (e.g. due to annotation error) are flagged as having label issues.
     """
 
-    _predicted_label_thresh = 0.5
+    _PREDICTED_LABEL_THRESH = 0.5
+    """Internal variable specifying threshold for predicted label."""
 
     issue_name: ClassVar[str] = "label"
     verbosity_levels = {
@@ -66,13 +67,12 @@ class MultilabelIssueManager(IssueManager):
     def _process_find_label_issues_kwargs(kwargs: Dict[str, Any]) -> Dict[str, Any]:
         """Searches for keyword arguments that are meant for the
         multilabel_classification.filter.find_label_issues method call.
-        TODO: Fix docstring
 
         Examples
         --------
         >>> from cleanlab.datalab.internal.issue_manager.multilabel.label import MultilabelIssueManager
-        >>> MultilabelIssueManager._process_find_label_issues_kwargs(thresholds=[0.1, 0.9])
-        {'thresholds': [0.1, 0.9]}
+        >>> MultilabelIssueManager._process_find_label_issues_kwargs(frac_noise=0.9)
+        {'frac_noise': 0.1}
         """
         accepted_kwargs = (
             [
@@ -92,38 +92,29 @@ class MultilabelIssueManager(IssueManager):
     def _process_get_label_quality_scores_kwargs(kwargs: Dict[str, Any]) -> Dict[str, Any]:
         """Searches for keyword arguments that are meant for the
         multilabel_classification.rank.get_label_quality_scores method call.
-        TODO: Fix docstring
 
         Examples
         --------
         >>> from cleanlab.datalab.internal.issue_manager.multilabel.label import MultilabelIssueManager
-        >>> MultilabelIssueManager._process_get_label_quality_scores_kwargs(thresholds=[0.1, 0.9])
-        {'thresholds': [0.1, 0.9]}
+        >>> MultilabelIssueManager._process_get_label_quality_scores_kwargs(method="self_confidence")
+        {'method': "self_confidence"}
         """
         accepted_kwargs = (["method", "adjust_pred_probs", "aggregator_kwargs"],)
         return {k: v for k, v in kwargs.items() if k in accepted_kwargs and v is not None}
 
     def find_issues(
         self,
-        pred_probs: Optional[npt.NDArray] = None,
+        pred_probs: npt.NDArray,
         **kwargs,
     ) -> None:
-        """Find label issues in the datalab.
+        """Find label issues in a multilabel dataset.
 
         Parameters
         ----------
         pred_probs :
             The predicted probabilities for each example.
-
-        features :
-            The features for each example.
         """
-        if pred_probs is None:
-            raise ValueError(
-                "Both pred_probs and features must be provided to find label issues in multilabel data."
-            )
-
-        predicted_labels = onehot2int(pred_probs > self._predicted_label_thresh)
+        predicted_labels = onehot2int(pred_probs > self._PREDICTED_LABEL_THRESH)
 
         # Find examples with label issues
         is_issue_column = find_label_issues(
@@ -149,7 +140,9 @@ class MultilabelIssueManager(IssueManager):
         # Collect info about the label issues
         self.info = self.collect_info(self.datalab.labels, predicted_labels)
 
-    def collect_info(self, given_labels, predicted_labels) -> dict:
+    def collect_info(
+        self, given_labels: List[List[int]], predicted_labels: List[List[int]]
+    ) -> dict:
         issues_info = {
             "given_label": given_labels,
             "predicted_label": predicted_labels,

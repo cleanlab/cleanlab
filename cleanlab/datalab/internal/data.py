@@ -16,7 +16,7 @@
 """Classes and methods for datasets that are loaded into Datalab."""
 
 import os
-from typing import Any, Callable, Dict, List, Mapping, Optional, Tuple, Union, cast, TYPE_CHECKING
+from typing import Any, Callable, Dict, List, Mapping, Optional, Union, cast, TYPE_CHECKING, Tuple
 
 try:
     import datasets
@@ -302,7 +302,7 @@ class Label(ABC):
         assert len(labels) == len(self._data)
 
     @abstractmethod
-    def _extract_labels(self, *args, **kwargs) -> np.ndarray:
+    def _extract_labels(self, *args, **kwargs) -> Any:
         """Extract labels from the dataset and formats them"""
         raise NotImplementedError
 
@@ -311,11 +311,13 @@ class MultiLabel(Label):
     def __init__(self, data, label_name, map_to_int):
         super().__init__(data=data, label_name=label_name, map_to_int=map_to_int)
 
-    def _extract_labels(self, data: Dataset, label_name: str, map_to_int: bool):
+    def _extract_labels(
+        self, data: Dataset, label_name: str, map_to_int: bool
+    ) -> Tuple[List[List[int]], Dict[int, Any]]:
         labels: List[List[int]] = labels_to_array_multilabel(data[label_name])
         unique_labels = set((x for ele in labels for x in ele))
         label_map = {label: i for i, label in enumerate(unique_labels)}
-        formatted_labels = [list(map(label_map.get, label)) for label in labels]
+        formatted_labels = [[label_map[item] for item in label] for label in labels]
         inverse_map = {i: label for label, i in label_map.items()}
         return formatted_labels, inverse_map
 
