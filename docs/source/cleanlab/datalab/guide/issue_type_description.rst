@@ -144,12 +144,12 @@ Advanced users:  If you have pre-computed cluster assignments for each example i
 Null Issue
 -----------
 
-Examples flagged with null issue have null/missing values across all feature columns.
+Examples identified with the null issue correspond to rows that have null/missing values across all feature columns (i.e. the entire row is missing values).
 
-Null issues are detected based on provided `features`.  If you do not provide the `features`, this type of issue will not be considered.
+Null issues are detected based on provided `features`.  If you do not provide `features`, this type of issue will not be considered.
 
-The null issue quality score for each example is the proportion of features values that are not null. The overall null issue quality score
-is the mean of the individual quality scores.
+Each example's null issue quality score equals the proportion of features values in this row that are not null/missing. The overall dataset null issue quality score
+equals the average of the individual examples' quality scores.
 
 Presence of null examples in the dataset can lead to errors when training ML models. It can also
 result in the model learning incorrect patterns due to the null values.
