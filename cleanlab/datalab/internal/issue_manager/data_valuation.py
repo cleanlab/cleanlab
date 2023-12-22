@@ -59,6 +59,12 @@ class DataValuationIssueManager(IssueManager):
     ] = """
     Examples that contribute minimally to a model's training
     receive lower valuation scores.
+    Since the original knn-shapley value is in [-1, 1], we transform it to [0, 1] by:
+
+    .. math::
+        0.5 \times (\text{shapley} + 1)
+
+    here shapley is the original knn-shapley value.
     """
 
     issue_name: ClassVar[str] = "data_valuation"
@@ -70,7 +76,7 @@ class DataValuationIssueManager(IssueManager):
         3: ["average_data_valuation"],
     }
 
-    DEFAULT_THRESHOLD = 0
+    DEFAULT_THRESHOLD = 1e-6
 
     def __init__(
         self,
