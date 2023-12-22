@@ -125,7 +125,7 @@ class MultilabelIssueManager(IssueManager):
         scores = get_label_quality_scores(
             labels=self.datalab.labels,
             pred_probs=pred_probs,
-            **self._process_find_label_issues_kwargs(kwargs),
+            **self._process_get_label_quality_scores_kwargs(kwargs),
         )
 
         self.issues = pd.DataFrame(
