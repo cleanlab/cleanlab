@@ -142,7 +142,7 @@ class Datalab:
         return _Displayer(data_issues=self.data_issues).__str__()
 
     @property
-    def labels(self) -> Union(np.ndarray, List[List[int]]):
+    def labels(self) -> Union[np.ndarray, List[List[int]]]:
         """Labels of the dataset, in a [0, 1, ..., K-1] format."""
         return self._labels.labels
 

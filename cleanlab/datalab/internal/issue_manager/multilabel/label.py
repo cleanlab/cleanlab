@@ -117,6 +117,7 @@ class MultilabelIssueManager(IssueManager):
         predicted_labels = onehot2int(pred_probs > self._PREDICTED_LABEL_THRESH)
 
         # Find examples with label issues
+        assert isinstance(self.datalab.labels, List)  # Type Narrowing
         is_issue_column = find_label_issues(
             labels=self.datalab.labels,
             pred_probs=pred_probs,
