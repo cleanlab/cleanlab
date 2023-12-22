@@ -70,7 +70,7 @@ class DataValuationIssueManager(IssueManager):
         3: ["average_data_valuation"],
     }
 
-    DEFAULT_THRESHOLDS = 1e-6
+    DEFAULT_THRESHOLD = 0
 
     def __init__(
         self,
@@ -81,7 +81,7 @@ class DataValuationIssueManager(IssueManager):
     ):
         super().__init__(datalab)
         self.k = k
-        self.threshold = threshold if threshold is not None else self.DEFAULT_THRESHOLDS
+        self.threshold = threshold if threshold is not None else self.DEFAULT_THRESHOLD
 
     def find_issues(
         self,

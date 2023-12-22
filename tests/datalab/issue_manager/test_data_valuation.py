@@ -24,8 +24,7 @@ class TestDataValuationIssueManager:
         embeddings_array[4, :] = -1
         return {"embedding": embeddings_array}
 
-    def test_find_issues_with_input(self, issue_manager, embeddings):
-        outlier_issue_manager = OutlierIssueManager(datalab=issue_manager.datalab, k=3)
+    def test_find_issues_with_input(self, issue_manager, embeddings, outlier_issue_manager):
         outlier_issue_manager.find_issues(features=embeddings["embedding"])
         knn_graph = outlier_issue_manager._process_knn_graph_from_features({})
         issue_manager.find_issues(knn_graph=knn_graph)
@@ -75,8 +74,7 @@ class TestDataValuationIssueManager:
             )
             issue_manager.find_issues(k=4)
 
-    def test_get_larger_k_than_knn_graph(self, issue_manager, embeddings):
-        outlier_issue_manager = OutlierIssueManager(datalab=issue_manager.datalab, k=3)
+    def test_get_larger_k_than_knn_graph(self, issue_manager, embeddings, outlier_issue_manager):
         outlier_issue_manager.find_issues(features=embeddings["embedding"])
         knn_graph = outlier_issue_manager._process_knn_graph_from_features({})
         issue_manager.k = 4
