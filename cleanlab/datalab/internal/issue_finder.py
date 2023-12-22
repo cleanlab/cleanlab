@@ -435,12 +435,9 @@ class IssueFinder:
         drop_label_check = (
             "label" in issue_types_copy
             and not self.datalab.has_labels
-            and self.task
-            not in {
-                "regression",
-                "multilabel",
-            }  # TODO: Remove multilabel and make labels.is_available pass
+            and self.task != "regression"
         )
+
         if drop_label_check:
             warnings.warn("No labels were provided. " "The 'label' issue type will not be run.")
             issue_types_copy.pop("label")
