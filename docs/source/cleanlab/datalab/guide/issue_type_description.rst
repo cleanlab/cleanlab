@@ -144,11 +144,11 @@ Advanced users:  If you have pre-computed cluster assignments for each example i
 Data Valuation Issue
 --------------------
 
-An Example that contribute minimally to a model's training have low data valuation scores.
+The examples in the dataset with lowest data valuation scores contribute least to a trained ML model's performance (those whose value falls below a threshold are flagged with this type of issue).
 
-Data valuation issues can only use a `knn_graph`` passed by user or pre-computed from other issue managers. If you do not provide this argument, or there isn't a `knn_graph` already computed and store in the Datalab object, this type of issue will not be considered.
+Data valuation issues can only be detected based on a provided `knn_graph`` (or one pre-computed during the computation of other issue types).  If you do not provide this argument and there isn't a `knn_graph` already stored in the Datalab object, this type of issue will not be considered.
 
-The data valuation score is a approximate form of shapley value, which is calculated by the label of top k nearest neighbors of an example. The detail of the knn-shapley value could be found in the paper: `Efficient Task-Specific Data Valuation for Nearest Neighbor Algorithms <https://arxiv.org/abs/1908.08619>`_ and `Scalability vs. Utility: Do We Have to Sacrifice One for the Other in Data Importance Quantification? <https://arxiv.org/abs/1911.07128>`_.
+The data valuation score is an approximate Data Shapley value, calculated based on the labels of the top k nearest neighbors of an example. The details of this KNN-Shapley value could be found in the papers: `Efficient Task-Specific Data Valuation for Nearest Neighbor Algorithms <https://arxiv.org/abs/1908.08619>`_ and `Scalability vs. Utility: Do We Have to Sacrifice One for the Other in Data Importance Quantification? <https://arxiv.org/abs/1911.07128>`_.
 
 Optional Issue Parameters
 =========================
@@ -298,8 +298,8 @@ Data Valuation Issue Parameters
 .. code-block:: python
 
     data_valuation_kwargs = {
-        "k": # Number of nearest neighbors to calculate the data valuation score,
-        "thresholds": # Thresholds for determing if an example has a data valuation issue,
+        "k": # Number of nearest neighbors used to calculate data valuation scores,
+        "threshold": # Examples with scores below this  threshold will be flagged with a data valuation issue
     }
 
 .. note::

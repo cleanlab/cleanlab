@@ -38,7 +38,7 @@ if TYPE_CHECKING:  # pragma: no cover
 
 class DataValuationIssueManager(IssueManager):
     """
-    Manages data sample with low valuation.
+    Detect which examples in a dataset are least valuable via an approximate Data Shapely value.
 
     Examples
     --------
