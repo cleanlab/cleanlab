@@ -62,11 +62,11 @@ class ClassImbalanceIssueManager(IssueManager):
         class_probs = np.bincount(labels) / len(labels)
         rarest_class_idx = int(np.argmin(class_probs))
         # solely one class is identified as rarest, ties go to class w smaller integer index
+        scores = np.where(labels == rarest_class_idx, class_probs[rarest_class_idx], 1)
         imbalance_exists = class_probs[rarest_class_idx] < self.threshold * (1 / K)
-        rarest_class = rarest_class_idx if imbalance_exists else -1
-        is_issue_column = labels == rarest_class
-        scores = np.where(rarest_class_idx, class_probs[rarest_class], 1)
-
+        rarest_class_issue = rarest_class_idx if imbalance_exists else -1
+        is_issue_column = labels == rarest_class_issue
+        
         self.issues = pd.DataFrame(
             {
                 f"is_{self.issue_name}_issue": is_issue_column,
