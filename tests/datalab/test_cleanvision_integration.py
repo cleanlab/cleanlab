@@ -58,8 +58,8 @@ class TestCleanvisionIntegration:
         assert "Failed to check for these issue types: [NonIIDIssueManager]" in captured.out
         assert len(datalab.issues) == len(image_dataset)
 
-        # add up imagelab + datalab issues
-        assert len(datalab.issues.columns) == (num_imagelab_issues + num_datalab_issues) * 2
+        # add up imagelab + datalab issues with extra column for imbalance issue
+        assert len(datalab.issues.columns) == (num_imagelab_issues + num_datalab_issues) * 2 + 1
         assert len(datalab.issue_summary) == num_imagelab_issues + num_datalab_issues
 
         all_keys = IMAGELAB_ISSUE_TYPES + [
@@ -142,7 +142,8 @@ class TestCleanvisionIntegration:
             not in captured.out
         )
         assert len(datalab.issues) == len(image_dataset)
-        assert len(datalab.issues.columns) == num_datalab_issues * 2
+        # number of datalab issue columns with extra column for imbalance issue
+        assert len(datalab.issues.columns) == num_datalab_issues * 2 + 1
         assert len(datalab.issue_summary) == num_datalab_issues
 
         all_keys = ["statistics", "label", "outlier", "near_duplicate", "class_imbalance"]

@@ -593,7 +593,11 @@ class TestDatalabUsingKNNGraph:
         # Test that a warning is raised
         lab.find_issues()
         # Only class_imbalance issue columns should be present
-        assert list(lab.issues.columns) == ["is_class_imbalance_issue", "class_imbalance_score"]
+        assert list(lab.issues.columns) == [
+            "is_class_imbalance_issue",
+            "class_imbalance_score",
+            "class_imbalance_class_name",
+        ]
 
     def test_data_valuation_issue_with_knn_graph(self, data_tuple):
         lab, knn_graph, features = data_tuple
@@ -1316,9 +1320,9 @@ class TestDatalabWithoutLabels:
         issues_with_labels = lab_with_labels.issues
         issues_without_label_name = lab_without_label_name.issues
 
-        # issues_with_labels should have four additional columns, which include label issues
+        # issues_with_labels should have five additional columns, which include label issues
         # and class_imbalance issues
-        assert len(issues_without_labels.columns) + 4 == len(issues_with_labels.columns)
+        assert len(issues_without_labels.columns) + 5 == len(issues_with_labels.columns)
         pd.testing.assert_frame_equal(issues_without_labels, issues_without_label_name)
 
 
