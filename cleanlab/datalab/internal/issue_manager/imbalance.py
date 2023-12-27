@@ -64,7 +64,7 @@ class ClassImbalanceIssueManager(IssueManager):
         imbalance_exists = class_probs[rarest_class_idx] < self.threshold * (1 / K)
         rarest_class = rarest_class_idx if imbalance_exists else -1
         is_issue_column = labels == rarest_class
-        scores = np.where(is_issue_column, class_probs[rarest_class], 1)
+        scores = np.where(rarest_class_idx, class_probs[rarest_class], 1)
 
         self.issues = pd.DataFrame(
             {
