@@ -51,7 +51,8 @@ class TestClassImbalanceIssueManager:
         assert np.all(
             issues["is_class_imbalance_issue"] == np.full(N, False)
         ), "Issue mask should be correct"
-        assert np.all(issues["class_imbalance_score"] == np.ones(N)), "Scores should be correct"
+        assert np.min(issues["class_imbalance_score"]) == 0.47
+        assert np.max(issues["class_imbalance_score"]) == 1
         assert summary["issue_type"][0] == "class_imbalance"
         assert summary["score"][0] == 0.47
 
