@@ -60,7 +60,7 @@ class ClassImbalanceIssueManager(IssueManager):
         labels = self.datalab.labels
         K = len(self.datalab.class_names)
         class_probs = np.bincount(labels) / len(labels)
-        rarest_class_idx = int(np.argmin(class_probs))
+        rarest_class_idx = int(np.argmin(class_probs))  # solely one class is identified as rarest, ties go to class w smaller integer index
         imbalance_exists = class_probs[rarest_class_idx] < self.threshold * (1 / K)
         rarest_class = rarest_class_idx if imbalance_exists else -1
         is_issue_column = labels == rarest_class
