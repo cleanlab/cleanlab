@@ -88,3 +88,16 @@ class TestClassImbalanceIssueManager:
             "------------------ class_imbalance issues ------------------\n\n"
             "Number of examples with this issue:"
         ) in report
+        assert ("Additional Information: \n" "Rarest Class:") in report
+
+    def test_collect_info(self, labels, create_issue_manager):
+        # With Imbalance
+        issue_manager = create_issue_manager(labels)
+        issue_manager.find_issues()
+        assert issue_manager.info["Rarest Class"] == 5
+
+        # Without Imbalance
+        labels[0] = 0
+        issue_manager = create_issue_manager(labels)
+        issue_manager.find_issues()
+        assert issue_manager.info["Rarest Class"] == "NA"

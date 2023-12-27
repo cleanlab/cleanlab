@@ -44,7 +44,7 @@ class ClassImbalanceIssueManager(IssueManager):
 
     issue_name: ClassVar[str] = "class_imbalance"
     verbosity_levels = {
-        0: ["imbalance_class"],
+        0: ["Rarest Class"],
         1: [],
         2: [],
     }
@@ -78,6 +78,6 @@ class ClassImbalanceIssueManager(IssueManager):
         self.info = self.collect_info(class_name=rarest_class_name)
 
     def collect_info(self, class_name: str) -> dict:
-        params_dict = {"threshold": self.threshold, "imbalance_class": class_name}
+        params_dict = {"threshold": self.threshold, "Rarest Class": class_name}
         info_dict = {**params_dict}
         return info_dict
