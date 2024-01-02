@@ -157,6 +157,8 @@ class TestDatalab:
                 "label_score": [0.2, 0.4, 0.6, 0.1, 0.8],
                 "is_near_duplicate_issue": [False, True, True, False, True],
                 "near_duplicate_score": [0.5, 0.3, 0.1, 0.7, 0.2],
+                "is_class_imbalance_issue": [False, False, False, False, True],
+                "class_imbalance_score": [1.0, 1.0, 1.0, 1.0, 0.2],
             },
         )
         monkeypatch.setattr(lab, "issues", mock_issues)
@@ -173,6 +175,9 @@ class TestDatalab:
                 },
                 "near_duplicate": {
                     "distance_to_nearest_neighbor": mock_distance_to_nearest_neighbor,
+                },
+                "class_imbalance": {
+                    "Rarest Class": "class_0",
                 },
             }
         )
@@ -202,6 +207,21 @@ class TestDatalab:
         )
         pd.testing.assert_frame_equal(
             near_duplicate_issues, expected_near_duplicate_issues, check_dtype=False
+        )
+
+        imbalance_issues = lab.get_issues(issue_name="class_imbalance")
+
+        expected_imbalance_issues = pd.DataFrame(
+            {
+                **{
+                    key: mock_issues[key]
+                    for key in ["is_class_imbalance_issue", "class_imbalance_score"]
+                },
+                "class_imbalance_class_name": ["class_0"] * 5,
+            },
+        )
+        pd.testing.assert_frame_equal(
+            imbalance_issues, expected_imbalance_issues, check_dtype=False
         )
 
         issues = lab.get_issues()
@@ -593,11 +613,7 @@ class TestDatalabUsingKNNGraph:
         # Test that a warning is raised
         lab.find_issues()
         # Only class_imbalance issue columns should be present
-        assert list(lab.issues.columns) == [
-            "is_class_imbalance_issue",
-            "class_imbalance_score",
-            "class_imbalance_class_name",
-        ]
+        assert list(lab.issues.columns) == ["is_class_imbalance_issue", "class_imbalance_score"]
 
     def test_data_valuation_issue_with_knn_graph(self, data_tuple):
         lab, knn_graph, features = data_tuple
@@ -1320,9 +1336,9 @@ class TestDatalabWithoutLabels:
         issues_with_labels = lab_with_labels.issues
         issues_without_label_name = lab_without_label_name.issues
 
-        # issues_with_labels should have five additional columns, which include label issues
+        # issues_with_labels should have four additional columns, which include label issues
         # and class_imbalance issues
-        assert len(issues_without_labels.columns) + 5 == len(issues_with_labels.columns)
+        assert len(issues_without_labels.columns) + 4 == len(issues_with_labels.columns)
         pd.testing.assert_frame_equal(issues_without_labels, issues_without_label_name)
 
 

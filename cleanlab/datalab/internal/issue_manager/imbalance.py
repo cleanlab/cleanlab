@@ -71,7 +71,6 @@ class ClassImbalanceIssueManager(IssueManager):
             {
                 f"is_{self.issue_name}_issue": is_issue_column,
                 self.issue_score_key: scores,
-                f"{self.issue_name}_class_name": [rarest_class_name] * len(scores),
             },
         )
         self.summary = self.make_summary(score=class_probs[rarest_class_idx])

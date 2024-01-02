@@ -234,6 +234,11 @@ class DataIssues:
                 if info.get(k) is not None
             }
             specific_issues = specific_issues.assign(**column_dict)
+
+        if issue_name == "class_imbalance":
+            specific_issues = specific_issues.assign(
+                class_imbalance_class_name=info["Rarest Class"]
+            )
         return specific_issues
 
     def get_issue_summary(self, issue_name: Optional[str] = None) -> pd.DataFrame:

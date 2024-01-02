@@ -40,11 +40,6 @@ class TestClassImbalanceIssueManager:
         )
         assert summary["issue_type"][0] == "class_imbalance"
         assert summary["score"][0] == 0.01
-        assert list(issues.columns) == [
-            "is_class_imbalance_issue",
-            "class_imbalance_score",
-            "class_imbalance_class_name",
-        ]
 
     def test_find_issues_no_imbalance(self, labels, create_issue_manager):
         N = len(labels)
