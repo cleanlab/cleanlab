@@ -53,7 +53,7 @@ class TestClassImbalanceIssueManager:
         ), "Issue mask should be correct"
         scores = issues["class_imbalance_score"]
         expected_scores = np.ones_like(scores)
-        expected_scores[labels == 1] = 0.47 # Rare class proportion
+        expected_scores[labels == 1] = 0.47  # Rare class proportion
         np.testing.assert_allclose(scores, expected_scores, err_msg="Scores should be correct")
         assert summary["issue_type"][0] == "class_imbalance"
         assert summary["score"][0] == 0.47
