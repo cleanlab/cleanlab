@@ -110,7 +110,7 @@ class _ClassificationInfoStrategy(_InfoStrategy):
     ) -> Dict[str, Any]:
         info_extracted = _InfoStrategy._get_info_helper(info=info, issue_name=issue_name)
         info = info_extracted if info_extracted is not None else info
-        if issue_name == "label":
+        if issue_name in ["label", "class_imbalance"]:
             if data.labels.is_available is False:
                 raise ValueError(
                     "The labels are not available. "
@@ -236,9 +236,7 @@ class DataIssues:
             specific_issues = specific_issues.assign(**column_dict)
 
         if issue_name == "class_imbalance":
-            specific_issues = specific_issues.assign(
-                class_imbalance_class_name=info["Rarest Class"]
-            )
+            specific_issues = specific_issues.assign(given_label=info["given_label"])
         return specific_issues
 
     def get_issue_summary(self, issue_name: Optional[str] = None) -> pd.DataFrame:

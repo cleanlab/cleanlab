@@ -177,7 +177,7 @@ class TestDatalab:
                     "distance_to_nearest_neighbor": mock_distance_to_nearest_neighbor,
                 },
                 "class_imbalance": {
-                    "Rarest Class": "class_0",
+                    "given_label": lab.labels,
                 },
             }
         )
@@ -217,7 +217,7 @@ class TestDatalab:
                     key: mock_issues[key]
                     for key in ["is_class_imbalance_issue", "class_imbalance_score"]
                 },
-                "class_imbalance_class_name": ["class_0"] * 5,
+                "given_label": [4, 4, 5, 3, 5],
             },
         )
         pd.testing.assert_frame_equal(
