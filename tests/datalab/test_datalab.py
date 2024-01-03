@@ -83,12 +83,12 @@ class TestDatalab:
         y = ["a", "3", "2", "3"]
         lab = Datalab({"y": y}, label_name="y")
         assert lab.list_default_issue_types() == [
+            "null",
             "label",
             "outlier",
             "near_duplicate",
             "non_iid",
             "class_imbalance",
-            "null",
         ]
 
     def tmp_path(self):
