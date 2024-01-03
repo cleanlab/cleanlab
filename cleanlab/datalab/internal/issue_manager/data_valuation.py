@@ -17,12 +17,10 @@ from __future__ import annotations
 
 from typing import (
     TYPE_CHECKING,
-    Any,
     ClassVar,
     Dict,
     List,
     Optional,
-    Union,
 )
 
 import numpy as np
@@ -30,6 +28,7 @@ import pandas as pd
 from scipy.sparse import csr_matrix
 
 from cleanlab.datalab.internal.issue_manager import IssueManager
+from cleanlab.datalab.internal.issue_manager.utils import ConstructedKNNGraph
 
 if TYPE_CHECKING:  # pragma: no cover
     import pandas as pd
@@ -67,6 +66,7 @@ class DataValuationIssueManager(IssueManager):
         super().__init__(datalab)
         self.k = k
         self.threshold = threshold if threshold is not None else self.DEFAULT_THRESHOLDS
+        self.constructed_knn_graph = ConstructedKNNGraph(datalab)
 
     def find_issues(
         self,
@@ -76,7 +76,7 @@ class DataValuationIssueManager(IssueManager):
         Based on KNN-Shapley value described in https://arxiv.org/abs/1911.07128
         The larger the score, the more valuable the data point is, the more contribution it will make to the model's training.
         """
-        knn_graph = self._process_knn_graph_from_inputs(kwargs)
+        knn_graph = self.constructed_knn_graph.process_knn_graph_from_inputs(kwargs)
         labels = self.datalab.labels.reshape(-1, 1)
         assert knn_graph is not None, "knn_graph must be already calculated by other issue managers"
         assert labels is not None, "labels must be provided"
@@ -92,25 +92,6 @@ class DataValuationIssueManager(IssueManager):
         self.summary = self.make_summary(score=scores.mean())
 
         self.info = self.collect_info(self.issues)
-
-    def _process_knn_graph_from_inputs(self, kwargs: Dict[str, Any]) -> Union[csr_matrix, None]:
-        """Determine if a knn_graph is provided in the kwargs or if one is already stored in the associated Datalab instance."""
-        knn_graph_kwargs: Optional[csr_matrix] = kwargs.get("knn_graph", None)
-        knn_graph_stats = self.datalab.get_info("statistics").get("weighted_knn_graph", None)
-
-        knn_graph: Optional[csr_matrix] = None
-        if knn_graph_kwargs is not None:
-            knn_graph = knn_graph_kwargs
-        elif knn_graph_stats is not None:
-            knn_graph = knn_graph_stats
-
-        if isinstance(knn_graph, csr_matrix) and kwargs.get("k", 0) > (
-            knn_graph.nnz // knn_graph.shape[0]
-        ):
-            # If the provided knn graph is insufficient, then we need to recompute the knn graph
-            # with the provided features
-            knn_graph = None
-        return knn_graph
 
     def collect_info(self, issues: pd.DataFrame) -> dict:
         issues_info = {
