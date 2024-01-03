@@ -44,7 +44,7 @@ class ClassImbalanceIssueManager(IssueManager):
 
     issue_name: ClassVar[str] = "class_imbalance"
     verbosity_levels = {
-        0: [],
+        0: ["Rarest Class"],
         1: [],
         2: [],
     }
@@ -66,6 +66,7 @@ class ClassImbalanceIssueManager(IssueManager):
         imbalance_exists = class_probs[rarest_class_idx] < self.threshold * (1 / K)
         rarest_class_issue = rarest_class_idx if imbalance_exists else -1
         is_issue_column = labels == rarest_class_issue
+        rarest_class_name = self.datalab._label_map.get(rarest_class_issue, "NA")
 
         self.issues = pd.DataFrame(
             {
@@ -74,9 +75,9 @@ class ClassImbalanceIssueManager(IssueManager):
             },
         )
         self.summary = self.make_summary(score=class_probs[rarest_class_idx])
-        self.info = self.collect_info()
+        self.info = self.collect_info(class_name=rarest_class_name)
 
-    def collect_info(self) -> dict:
-        params_dict = {"threshold": self.threshold}
+    def collect_info(self, class_name: str) -> dict:
+        params_dict = {"threshold": self.threshold, "Rarest Class": class_name}
         info_dict = {**params_dict}
         return info_dict

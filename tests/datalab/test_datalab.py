@@ -157,6 +157,8 @@ class TestDatalab:
                 "label_score": [0.2, 0.4, 0.6, 0.1, 0.8],
                 "is_near_duplicate_issue": [False, True, True, False, True],
                 "near_duplicate_score": [0.5, 0.3, 0.1, 0.7, 0.2],
+                "is_class_imbalance_issue": [False, False, False, False, True],
+                "class_imbalance_score": [1.0, 1.0, 1.0, 1.0, 0.2],
             },
         )
         monkeypatch.setattr(lab, "issues", mock_issues)
@@ -173,6 +175,9 @@ class TestDatalab:
                 },
                 "near_duplicate": {
                     "distance_to_nearest_neighbor": mock_distance_to_nearest_neighbor,
+                },
+                "class_imbalance": {
+                    "Rarest Class": "class_0",
                 },
             }
         )
@@ -202,6 +207,21 @@ class TestDatalab:
         )
         pd.testing.assert_frame_equal(
             near_duplicate_issues, expected_near_duplicate_issues, check_dtype=False
+        )
+
+        imbalance_issues = lab.get_issues(issue_name="class_imbalance")
+
+        expected_imbalance_issues = pd.DataFrame(
+            {
+                **{
+                    key: mock_issues[key]
+                    for key in ["is_class_imbalance_issue", "class_imbalance_score"]
+                },
+                "class_imbalance_class_name": ["class_0"] * 5,
+            },
+        )
+        pd.testing.assert_frame_equal(
+            imbalance_issues, expected_imbalance_issues, check_dtype=False
         )
 
         issues = lab.get_issues()
