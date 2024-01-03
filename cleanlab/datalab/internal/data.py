@@ -246,7 +246,7 @@ class Label:
         self._data = data
         self.label_name = label_name
         self.labels = labels_to_array([])
-        self.label_map: Mapping[str, Any] = {}
+        self.label_map: Mapping[Union[str, int], Any] = {}
         if label_name is not None:
             self.labels, self.label_map = _extract_labels(data, label_name, map_to_int)
             self._validate_labels()
