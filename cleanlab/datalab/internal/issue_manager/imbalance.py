@@ -75,9 +75,13 @@ class ClassImbalanceIssueManager(IssueManager):
             },
         )
         self.summary = self.make_summary(score=class_probs[rarest_class_idx])
-        self.info = self.collect_info(class_name=rarest_class_name)
+        self.info = self.collect_info(class_name=rarest_class_name, labels=labels)
 
-    def collect_info(self, class_name: str) -> dict:
-        params_dict = {"threshold": self.threshold, "Rarest Class": class_name}
+    def collect_info(self, class_name: str, labels: np.ndarray) -> dict:
+        params_dict = {
+            "threshold": self.threshold,
+            "Rarest Class": class_name,
+            "given_label": labels,
+        }
         info_dict = {**params_dict}
         return info_dict
