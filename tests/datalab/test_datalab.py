@@ -1574,6 +1574,42 @@ class TestDataLabNullIssues:
         assert most_common_issue["rows_affected"] == [5, 10, 22]
         assert most_common_issue["count"] == 3
 
+    def test_report(self, embeddings_with_null):
+        lab = Datalab(data={"id": range(len(embeddings_with_null))})
+        lab.find_issues(features=embeddings_with_null, issue_types={"null": {}})
+        with contextlib.redirect_stdout(io.StringIO()) as f:
+            lab.report()
+        report = f.getvalue()
+
+        # Check that the report contains the additional tip
+        remove_tip = (
+            "Found 3 examples with null values in all features. These examples should be removed"
+        )
+        assert remove_tip in report, "Report should contain a tip to remove null examples"
+
+        partial_null_tip = (
+            "Found 3 examples with null values in some features. Please address these issues"
+        )
+        assert (
+            partial_null_tip in report
+        ), "Report should contain a tip to address partial null examples"
+
+        # Test a report where no null-issues are found
+        lab = Datalab(data={"id": range(len(embeddings_with_null))})
+        X = np.random.rand(*embeddings_with_null.shape)
+        lab.find_issues(features=X, issue_types={"label": {}})
+        with contextlib.redirect_stdout(io.StringIO()) as f:
+            lab.report()
+        report = f.getvalue()
+
+        # The tip should be omitted
+        assert (
+            "These examples should be removed" not in report
+        ), "Report should not contain a tip to remove null examples"
+        assert (
+            "Please address these issues" not in report
+        ), "Report should not contain a tip to address partial null examples"
+
 
 class TestIssueManagersReuseKnnGraph:
     """
