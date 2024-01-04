@@ -86,6 +86,17 @@ class TestNearDuplicateIssueManager:
         )
         new_issue_manager.find_issues(features=embeddings["embedding"])
 
+    def test_scores_of_examples_with_issues_are_smaller_than_those_without(
+        self, issue_manager, embeddings
+    ):
+        # TODO: Turn this into a property-based test
+        issue_manager.find_issues(features=embeddings["embedding"])
+        is_issue = issue_manager.issues["is_near_duplicate_issue"]
+        scores = issue_manager.issues["near_duplicate_score"]
+        max_issue_score = np.max(scores[is_issue])
+        min_non_issue_score = np.min(scores[~is_issue])
+        assert max_issue_score < min_non_issue_score
+
     def test_report(self, issue_manager, embeddings):
         issue_manager.find_issues(features=embeddings["embedding"])
         report = issue_manager.report(
