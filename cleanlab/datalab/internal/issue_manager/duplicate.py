@@ -98,8 +98,12 @@ class NearDuplicateIssueManager(IssueManager):
             knn_graph = knn.kneighbors_graph(mode="distance")
         N = knn_graph.shape[0]
         nn_distances = knn_graph.data.reshape(N, -1)[:, 0]
-        median = max(np.median(nn_distances), np.finfo(np.float_).eps)  # avoid threshold = 0
-        self.near_duplicate_sets = self._neighbors_within_radius(knn_graph, self.threshold, median)
+        median_nn_distance = max(
+            np.median(nn_distances), np.finfo(np.float_).eps
+        )  # avoid threshold = 0
+        self.near_duplicate_sets = self._neighbors_within_radius(
+            knn_graph, self.threshold, median_nn_distance
+        )
 
         # Flag every example in a near-duplicate set as a near-duplicate issue
         all_near_duplicates = np.unique(np.concatenate(self.near_duplicate_sets))
@@ -114,7 +118,7 @@ class NearDuplicateIssueManager(IssueManager):
         )
 
         self.summary = self.make_summary(score=scores.mean())
-        self.info = self.collect_info(knn_graph=knn_graph)
+        self.info = self.collect_info(knn_graph=knn_graph, median_nn_distance=median_nn_distance)
 
     @staticmethod
     def _neighbors_within_radius(knn_graph: csr_matrix, threshold: float, median: float):
@@ -169,7 +173,7 @@ class NearDuplicateIssueManager(IssueManager):
             knn_graph = None
         return knn_graph
 
-    def collect_info(self, knn_graph: csr_matrix) -> dict:
+    def collect_info(self, knn_graph: csr_matrix, median_nn_distance: float) -> dict:
         issues_dict = {
             "average_near_duplicate_score": self.issues[self.issue_score_key].mean(),
             "near_duplicate_sets": self.near_duplicate_sets,
@@ -188,6 +192,7 @@ class NearDuplicateIssueManager(IssueManager):
         knn_info_dict = {
             "nearest_neighbor": nn_ids.tolist(),
             "distance_to_nearest_neighbor": dists.tolist(),
+            "median_distance_to_nearest_neighbor": median_nn_distance,
         }
 
         statistics_dict = self._build_statistics_dictionary(knn_graph=knn_graph)
