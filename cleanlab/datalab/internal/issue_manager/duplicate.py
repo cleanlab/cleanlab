@@ -98,7 +98,8 @@ class NearDuplicateIssueManager(IssueManager):
             knn_graph = knn.kneighbors_graph(mode="distance")
         N = knn_graph.shape[0]
         nn_distances = knn_graph.data.reshape(N, -1)[:, 0]
-        self.near_duplicate_sets = self._neighbors_within_radius(knn_graph, self.threshold)
+        median = max(np.median(nn_distances), np.finfo(np.float_).eps)  # avoid threshold = 0
+        self.near_duplicate_sets = self._neighbors_within_radius(knn_graph, self.threshold, median)
 
         # Flag every example in a near-duplicate set as a near-duplicate issue
         all_near_duplicates = np.unique(np.concatenate(self.near_duplicate_sets))
@@ -116,7 +117,7 @@ class NearDuplicateIssueManager(IssueManager):
         self.info = self.collect_info(knn_graph=knn_graph)
 
     @staticmethod
-    def _neighbors_within_radius(knn_graph: csr_matrix, threshold: float):
+    def _neighbors_within_radius(knn_graph: csr_matrix, threshold: float, median: float):
         """Returns a list of lists of indices of near-duplicate examples.
 
         Each list of indices represents a set of near-duplicate examples.
@@ -128,7 +129,6 @@ class NearDuplicateIssueManager(IssueManager):
         N = knn_graph.shape[0]
         distances = knn_graph.data.reshape(N, -1)
         # Create a mask for the threshold
-        median = max(np.median(distances[:, 0]), np.finfo(np.float_).eps)  # avoid threshold = 0
         mask = distances < threshold * median
 
         # Update the indptr to reflect the new number of neighbors
