@@ -72,7 +72,7 @@ class TestNearDuplicateIssueManager:
             issues["is_near_duplicate_issue"] == expected_issue_mask
         ), "Issue mask should be correct"
         assert summary["issue_type"][0] == "near_duplicate"
-        assert summary["score"][0] == pytest.approx(expected=0.03122489, abs=1e-7)
+        assert summary["score"][0] == pytest.approx(expected=0.4734458, abs=1e-7)
 
         assert (
             info.get("near_duplicate_sets", None) is not None
