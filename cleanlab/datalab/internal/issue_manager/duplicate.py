@@ -240,6 +240,25 @@ class NearDuplicateIssueManager(IssueManager):
         return threshold
 
 
-def compute_scores(nn_distances):
+def compute_scores(nn_distances: np.ndarray) -> np.ndarray:
+    """Compute near-duplicate scores from nearest neighbor distances.
+
+    This is a non-linear transformation of the nearest neighbor distances that
+    maps distances to scores in the range [0, 1].  The score for each example is
+    its nearest neighbor distance transformed by the tanh function.
+
+    Parameters
+    ----------
+    nn_distances :
+        The nearest neighbor distances for each example.
+
+    Returns
+    -------
+    scores :
+        The near-duplicate scores for each example. The scores are in the range [0, 1].
+        A lower score indicates that an example is more likely to be a near-duplicate than
+        an example with a higher score.
+        A score of 0 indicates that an example has an exact duplicate.
+    """
     scores = np.tanh(nn_distances)
     return scores
