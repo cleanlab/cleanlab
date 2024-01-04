@@ -17,23 +17,24 @@
 
 import itertools
 import typing
+
 import numpy as np
 import pytest
 import sklearn
-from sklearn.multiclass import OneVsRestClassifier
 from sklearn.linear_model import LogisticRegression
+from sklearn.multiclass import OneVsRestClassifier
 
-from cleanlab.internal import multilabel_scorer as ml_scorer
-from cleanlab.internal.multilabel_utils import stack_complement, get_onehot_num_classes, onehot2int
 from cleanlab import multilabel_classification as ml_classification
+from cleanlab.internal import multilabel_scorer as ml_scorer
+from cleanlab.internal.multilabel_utils import get_onehot_num_classes, onehot2int, stack_complement
+from cleanlab.multilabel_classification import filter
 from cleanlab.multilabel_classification.dataset import (
     common_multilabel_issues,
-    rank_classes_by_multilabel_quality,
-    overall_multilabel_health_score,
     multilabel_health_summary,
+    overall_multilabel_health_score,
+    rank_classes_by_multilabel_quality,
 )
 from cleanlab.multilabel_classification.rank import get_label_quality_scores_per_class
-from cleanlab.multilabel_classification import filter
 
 
 @pytest.fixture
@@ -718,3 +719,45 @@ class TestExponentialMovingAverage:
         for alpha in [-0.5, 1.5]:
             with pytest.raises(ValueError, match=partial_error_msg):
                 ml_scorer.exponential_moving_average(np.ones(5).reshape(1, -1), alpha=alpha)
+
+
+import hypothesis.strategies as st
+import numpy as np
+from hypothesis import HealthCheck, given, settings
+
+import cleanlab
+from cleanlab.filter import find_label_issues
+
+
+@st.composite
+def cleanlab_data_strategy(draw):
+    num_classes = draw(st.integers(min_value=2, max_value=10))
+    num_samples = draw(st.integers(min_value=10, max_value=100))
+    true_labels = draw(
+        st.lists(
+            st.integers(min_value=0, max_value=num_classes - 1),
+            min_size=num_samples,
+            max_size=num_samples,
+        )
+    )
+    noisy_labels = cleanlab.noisy_labels(true_labels, percent_noisy=0.2, num_classes=num_classes)
+    pred_probs = draw(
+        st.lists(
+            st.lists(
+                st.floats(min_value=0, max_value=1), min_size=num_classes, max_size=num_classes
+            )
+        )
+    )
+    return true_labels, noisy_labels, pred_probs
+
+
+class TestCleanlab:
+    @given(cleanlab_data_strategy())
+    @settings(max_examples=10, suppress_health_check=[HealthCheck.too_slow])
+    def test_find_label_issues(self, data):
+        true_labels, noisy_labels, pred_probs = data
+
+        # Run cleanlab to find label issues
+        is_issue = find_label_issues(labels=noisy_labels, pred_probs=pred_probs)
+        pred_labels = pred_probs.argmax(axis=1)
+        assert sum((pred_labels == noisy_labels) & is_issue) == 0
