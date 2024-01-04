@@ -109,7 +109,8 @@ class NearDuplicateIssueManager(IssueManager):
         all_near_duplicates = np.unique(np.concatenate(self.near_duplicate_sets))
         is_issue_column = np.zeros(N, dtype=bool)
         is_issue_column[all_near_duplicates] = True
-        scores = compute_scores(nn_distances)
+        temperature = 1.0 / median_nn_distance
+        scores = _compute_scores_with_exp_transform(nn_distances, temperature=temperature)
         self.issues = pd.DataFrame(
             {
                 f"is_{self.issue_name}_issue": is_issue_column,
@@ -240,12 +241,22 @@ class NearDuplicateIssueManager(IssueManager):
         return threshold
 
 
-def compute_scores(nn_distances: np.ndarray) -> np.ndarray:
-    """Compute near-duplicate scores from nearest neighbor distances.
+def _compute_scores_with_exp_transform(nn_distances: np.ndarray, temperature: float) -> np.ndarray:
+    r"""Compute near-duplicate scores from nearest neighbor distances.
 
     This is a non-linear transformation of the nearest neighbor distances that
-    maps distances to scores in the range [0, 1].  The score for each example is
-    its nearest neighbor distance transformed by the tanh function.
+    maps distances to scores in the range [0, 1].
+
+    Note
+    ----
+
+    This transformation is given by the following formula:
+
+    .. math::
+
+        \text{score}(d, t) = 1 - e^{-dt}
+
+    where :math:`d` is the nearest neighbor distance and :math:`t > 0` is a temperature parameter.
 
     Parameters
     ----------
@@ -260,5 +271,8 @@ def compute_scores(nn_distances: np.ndarray) -> np.ndarray:
         an example with a higher score.
         A score of 0 indicates that an example has an exact duplicate.
     """
-    scores = np.tanh(nn_distances)
+    if temperature <= 0:
+        raise ValueError("Temperature must be greater than 0.")
+
+    scores = 1 - np.exp(-temperature * nn_distances)
     return scores
