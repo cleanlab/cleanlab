@@ -98,13 +98,13 @@ class NearDuplicateIssueManager(IssueManager):
             knn_graph = knn.kneighbors_graph(mode="distance")
         N = knn_graph.shape[0]
         nn_distances = knn_graph.data.reshape(N, -1)[:, 0]
-        scores = np.tanh(nn_distances)
         self.near_duplicate_sets = self._neighbors_within_radius(knn_graph, self.threshold)
 
         # Flag every example in a near-duplicate set as a near-duplicate issue
         all_near_duplicates = np.unique(np.concatenate(self.near_duplicate_sets))
         is_issue_column = np.zeros(N, dtype=bool)
         is_issue_column[all_near_duplicates] = True
+        scores = np.tanh(nn_distances)
         self.issues = pd.DataFrame(
             {
                 f"is_{self.issue_name}_issue": is_issue_column,
