@@ -718,3 +718,66 @@ class TestExponentialMovingAverage:
         for alpha in [-0.5, 1.5]:
             with pytest.raises(ValueError, match=partial_error_msg):
                 ml_scorer.exponential_moving_average(np.ones(5).reshape(1, -1), alpha=alpha)
+
+
+def flip_labels(label, flip_prob):
+    return [1 - x if np.random.rand() < flip_prob else x for x in label]
+
+
+@st.composite
+def cleanlab_data_strategy(draw):
+    num_classes = draw(st.integers(min_value=2, max_value=10))
+    num_samples = draw(st.integers(min_value=10, max_value=100))
+
+    # Generate true labels as one-hot encoded vectors for multi-label
+    true_labels = draw(
+        st.lists(
+            st.lists(
+                st.integers(min_value=0, max_value=1),  # Assume binary labels (0 or 1)
+                min_size=num_classes,
+                max_size=num_classes,
+            ),
+            min_size=num_samples,
+            max_size=num_samples,
+        )
+    )
+
+    # Generate noise matrix for multi-label
+    flip_prob = 0.2
+    noisy_labels = [flip_labels(label, flip_prob) for label in true_labels]
+
+    # Generate noisy labels using the true labels and noise matrix
+    for i in range(num_samples):
+        for j in range(num_classes):
+            if np.random.rand() < 0.2:
+                noisy_labels[i][j] = 0
+
+    true_labels = onehot2int(np.array(true_labels))
+    noisy_labels = onehot2int(np.array(noisy_labels))
+
+    # Generate predicted probabilities for each class for each sample
+    pred_probs = draw(
+        st.lists(
+            st.lists(
+                st.floats(min_value=0, max_value=1),  # Probability of belonging to each class
+                min_size=num_classes,
+                max_size=num_classes,
+            ),
+            min_size=num_samples,
+            max_size=num_samples,
+        )
+    )
+
+    return true_labels, noisy_labels, np.array(pred_probs)
+
+
+class TestCleanlab:
+    @given(cleanlab_data_strategy())
+    @settings(max_examples=10, suppress_health_check=[HealthCheck.too_slow])
+    def test_find_label_issues(self, data):
+        true_labels, noisy_labels, pred_probs = data
+
+        # Run cleanlab to find label issues
+        is_issue = filter.find_label_issues(labels=noisy_labels, pred_probs=pred_probs)
+        pred_labels = pred_probs.argmax(axis=1)
+        assert sum((pred_labels == noisy_labels) & is_issue) == 0
