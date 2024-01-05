@@ -230,9 +230,10 @@ def _reduce_issues(pred_probs, labels, K, mask=None):
     pred = pred_probs.argmax(axis=1)
     if mask is None:
         mask = pred == labels
+    return mask
     if K == 2:
         # Set mask to False wherever pred_probs == 0.5 where num_classes == 2
-        mask = mask & ((pred_probs[:, 0] < 0.5 - EPSILON) | (pred_probs[:, 0] > 0.5 + EPSILON))
+        mask = mask & ((pred_probs[:, 0] < 0.5 - EPSILON) & (pred_probs[:, 0] > 0.5 + EPSILON))
     return mask
 
 

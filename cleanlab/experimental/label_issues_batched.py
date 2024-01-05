@@ -691,16 +691,13 @@ def _compute_num_issues(arg: Tuple[np.ndarray, bool]) -> int:
     pred_prob = pred_probs_shared[ind, :]
     pred_class = np.argmax(pred_prob, axis=-1)
     batch_size = len(label)
-    mask = _reduce_issues(
-        pred_probs=pred_prob, labels=label, K=get_num_classes(labels=label, pred_probs=pred_prob)
-    )
     if thorough:
         pred_gt_thresholds = pred_prob >= adj_confident_thresholds_shared
         max_ind = np.argmax(pred_prob * pred_gt_thresholds, axis=-1)
         prune_count_batch = np.sum(
             (pred_prob[np.arange(batch_size), max_ind] >= adj_confident_thresholds_shared[max_ind])
             & (max_ind != label)
-            & (mask)
+            & (pred_class != label)
         )
     else:
         prune_count_batch = np.sum(
@@ -708,7 +705,7 @@ def _compute_num_issues(arg: Tuple[np.ndarray, bool]) -> int:
                 pred_prob[np.arange(batch_size), pred_class]
                 >= adj_confident_thresholds_shared[pred_class]
             )
-            & (mask)
+            & (pred_class != label)
         )
     return prune_count_batch
 
