@@ -17,23 +17,25 @@
 
 import itertools
 import typing
+
+import hypothesis.strategies as st
 import numpy as np
 import pytest
 import sklearn
-from sklearn.multiclass import OneVsRestClassifier
 from sklearn.linear_model import LogisticRegression
+from sklearn.multiclass import OneVsRestClassifier
 
-from cleanlab.internal import multilabel_scorer as ml_scorer
-from cleanlab.internal.multilabel_utils import stack_complement, get_onehot_num_classes, onehot2int
 from cleanlab import multilabel_classification as ml_classification
+from cleanlab.internal import multilabel_scorer as ml_scorer
+from cleanlab.internal.multilabel_utils import get_onehot_num_classes, onehot2int, stack_complement
+from cleanlab.multilabel_classification import filter
 from cleanlab.multilabel_classification.dataset import (
     common_multilabel_issues,
-    rank_classes_by_multilabel_quality,
-    overall_multilabel_health_score,
     multilabel_health_summary,
+    overall_multilabel_health_score,
+    rank_classes_by_multilabel_quality,
 )
 from cleanlab.multilabel_classification.rank import get_label_quality_scores_per_class
-from cleanlab.multilabel_classification import filter
 
 
 @pytest.fixture
@@ -721,7 +723,7 @@ class TestExponentialMovingAverage:
 
 
 def flip_labels(label, flip_prob):
-    return [1 - x if np.random.rand() < flip_prob else x for x in label]
+    return np.array([1 - x if np.random.rand() < flip_prob else x for x in label])
 
 
 @st.composite
@@ -776,7 +778,6 @@ class TestCleanlab:
     @settings(max_examples=10, suppress_health_check=[HealthCheck.too_slow])
     def test_find_label_issues(self, data):
         true_labels, noisy_labels, pred_probs = data
-
         # Run cleanlab to find label issues
         is_issue = filter.find_label_issues(labels=noisy_labels, pred_probs=pred_probs)
         pred_labels = pred_probs.argmax(axis=1)
