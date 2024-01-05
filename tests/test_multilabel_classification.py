@@ -25,7 +25,6 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.multiclass import OneVsRestClassifier
 
 from cleanlab import multilabel_classification as ml_classification
-from cleanlab.benchmarking.noise_generation import generate_noisy_labels
 from cleanlab.internal import multilabel_scorer as ml_scorer
 from cleanlab.internal.multilabel_utils import get_onehot_num_classes, onehot2int, stack_complement
 from cleanlab.multilabel_classification import filter
@@ -36,8 +35,6 @@ from cleanlab.multilabel_classification.dataset import (
     rank_classes_by_multilabel_quality,
 )
 from cleanlab.multilabel_classification.rank import get_label_quality_scores_per_class
-import hypothesis.strategies as st
-from hypothesis import HealthCheck, given, settings
 
 
 @pytest.fixture

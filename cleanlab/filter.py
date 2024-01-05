@@ -32,7 +32,6 @@ from functools import reduce
 import platform
 
 from cleanlab.count import calibrate_confident_joint, num_label_issues, _reduce_issues
-from cleanlab.internal.constants import EPSILON
 from cleanlab.rank import order_label_issues, get_label_quality_scores
 import cleanlab.internal.multilabel_scorer as ml_scorer
 from cleanlab.internal.validation import assert_valid_inputs
