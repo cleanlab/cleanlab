@@ -83,6 +83,7 @@ class TestDatalab:
         y = ["a", "3", "2", "3"]
         lab = Datalab({"y": y}, label_name="y")
         assert lab.list_default_issue_types() == [
+            "null",
             "label",
             "outlier",
             "near_duplicate",
@@ -878,10 +879,10 @@ class TestDatalabFindNonIIDIssues:
     def test_incremental_search(self, lab, sorted_embeddings):
         lab.find_issues(features=sorted_embeddings)
         summary = lab.get_issue_summary()
-        assert len(summary) == 4
+        assert len(summary) == 5
         lab.find_issues(features=sorted_embeddings, issue_types={"non_iid": {}})
         summary = lab.get_issue_summary()
-        assert len(summary) == 4
+        assert len(summary) == 5
         assert "non_iid" in summary["issue_type"].values
         non_iid_summary = lab.get_issue_summary("non_iid")
         assert non_iid_summary["score"].values[0] == 0
@@ -951,11 +952,11 @@ class TestDatalabFindLabelIssues:
         lab = Datalab(data=data, label_name="labels")
         lab.find_issues(features=random_embeddings)
         summary = lab.get_issue_summary()
-        assert len(summary) == 5
+        assert len(summary) == 6
         assert "label" in summary["issue_type"].values
         lab.find_issues(pred_probs=pred_probs, issue_types={"label": {}})
         summary = lab.get_issue_summary()
-        assert len(summary) == 5
+        assert len(summary) == 6
         assert "label" in summary["issue_type"].values
         label_summary = lab.get_issue_summary("label")
         assert label_summary["num_issues"].values[0] > 0
@@ -1536,6 +1537,98 @@ class TestDataLabUnderperformingIssue:
             issue_types={"underperforming_group": {"cluster_ids": np.array([], dtype=int)}},
         )
         assert len(lab.issue_summary["issue_type"].values) == 0
+
+
+class TestDataLabNullIssues:
+    K = 3
+    N = 100
+    num_features = 10
+
+    @pytest.fixture
+    def embeddings_with_null(self):
+        np.random.seed(SEED)
+        embeddings = np.random.rand(self.N, self.num_features)
+        # Set all feature values of some rows as null
+        embeddings[[5, 10, 22]] = np.nan
+        # Set specific feature value in some rows as null
+        embeddings[[1, 19, 25], [5, 7, 2]] = np.nan
+        return embeddings
+
+    @pytest.fixture
+    def pred_probs(self):
+        np.random.seed(SEED)
+        pred_probs_array = np.random.rand(self.N, self.K)
+        return pred_probs_array / pred_probs_array.sum(axis=1, keepdims=True)
+
+    @pytest.fixture
+    def labels(self):
+        np.random.seed(SEED)
+        return np.random.randint(0, self.K, self.N)
+
+    def test_incremental_search(self, pred_probs, embeddings_with_null, labels):
+        data = {"labels": labels}
+        lab = Datalab(data=data, label_name="labels")
+        lab.find_issues(pred_probs=pred_probs, issue_types={"label": {}})
+        summary = lab.get_issue_summary()
+        assert len(summary) == 1
+        assert "class_imbalance" not in summary["issue_type"].values
+        lab.find_issues(features=embeddings_with_null, issue_types={"null": {}})
+        summary = lab.get_issue_summary()
+        assert len(summary) == 2
+        assert "null" in summary["issue_type"].values
+        class_imbalance_summary = lab.get_issue_summary("null")
+        assert class_imbalance_summary["num_issues"].values[0] > 0
+
+    def test_null_issues(self, embeddings_with_null):
+        lab = Datalab(data={"features": embeddings_with_null})
+        lab.find_issues(features=embeddings_with_null, issue_types={"null": {}})
+        issues = lab.get_issues("null")
+        expected_issue_mask = np.zeros(100, dtype=bool)
+        expected_issue_mask[[5, 10, 22]] = True
+        np.testing.assert_equal(
+            issues["is_null_issue"], expected_issue_mask, err_msg="Issue mask should be correct"
+        )
+        info = lab.get_info("null")
+        most_common_issue = info["most_common_issue"]
+        assert most_common_issue["pattern"] == "1" * 10
+        assert most_common_issue["rows_affected"] == [5, 10, 22]
+        assert most_common_issue["count"] == 3
+
+    def test_report(self, embeddings_with_null):
+        lab = Datalab(data={"id": range(len(embeddings_with_null))})
+        lab.find_issues(features=embeddings_with_null, issue_types={"null": {}})
+        with contextlib.redirect_stdout(io.StringIO()) as f:
+            lab.report()
+        report = f.getvalue()
+
+        # Check that the report contains the additional tip
+        remove_tip = (
+            "Found 3 examples with null values in all features. These examples should be removed"
+        )
+        assert remove_tip in report, "Report should contain a tip to remove null examples"
+
+        partial_null_tip = (
+            "Found 3 examples with null values in some features. Please address these issues"
+        )
+        assert (
+            partial_null_tip in report
+        ), "Report should contain a tip to address partial null examples"
+
+        # Test a report where no null-issues are found
+        lab = Datalab(data={"id": range(len(embeddings_with_null))})
+        X = np.random.rand(*embeddings_with_null.shape)
+        lab.find_issues(features=X, issue_types={"label": {}})
+        with contextlib.redirect_stdout(io.StringIO()) as f:
+            lab.report()
+        report = f.getvalue()
+
+        # The tip should be omitted
+        assert (
+            "These examples should be removed" not in report
+        ), "Report should not contain a tip to remove null examples"
+        assert (
+            "Please address these issues" not in report
+        ), "Report should not contain a tip to address partial null examples"
 
 
 class TestIssueManagersReuseKnnGraph:
