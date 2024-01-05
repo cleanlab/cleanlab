@@ -98,13 +98,19 @@ class NearDuplicateIssueManager(IssueManager):
             knn_graph = knn.kneighbors_graph(mode="distance")
         N = knn_graph.shape[0]
         nn_distances = knn_graph.data.reshape(N, -1)[:, 0]
-        scores = np.tanh(nn_distances)
-        self.near_duplicate_sets = self._neighbors_within_radius(knn_graph, self.threshold)
+        median_nn_distance = max(
+            np.median(nn_distances), np.finfo(np.float_).eps
+        )  # avoid threshold = 0
+        self.near_duplicate_sets = self._neighbors_within_radius(
+            knn_graph, self.threshold, median_nn_distance
+        )
 
         # Flag every example in a near-duplicate set as a near-duplicate issue
         all_near_duplicates = np.unique(np.concatenate(self.near_duplicate_sets))
         is_issue_column = np.zeros(N, dtype=bool)
         is_issue_column[all_near_duplicates] = True
+        temperature = 1.0 / median_nn_distance
+        scores = _compute_scores_with_exp_transform(nn_distances, temperature=temperature)
         self.issues = pd.DataFrame(
             {
                 f"is_{self.issue_name}_issue": is_issue_column,
@@ -113,10 +119,10 @@ class NearDuplicateIssueManager(IssueManager):
         )
 
         self.summary = self.make_summary(score=scores.mean())
-        self.info = self.collect_info(knn_graph=knn_graph)
+        self.info = self.collect_info(knn_graph=knn_graph, median_nn_distance=median_nn_distance)
 
     @staticmethod
-    def _neighbors_within_radius(knn_graph: csr_matrix, threshold: float):
+    def _neighbors_within_radius(knn_graph: csr_matrix, threshold: float, median: float):
         """Returns a list of lists of indices of near-duplicate examples.
 
         Each list of indices represents a set of near-duplicate examples.
@@ -128,7 +134,7 @@ class NearDuplicateIssueManager(IssueManager):
         N = knn_graph.shape[0]
         distances = knn_graph.data.reshape(N, -1)
         # Create a mask for the threshold
-        mask = distances < threshold * np.median(distances[:, 0])
+        mask = distances < threshold * median
 
         # Update the indptr to reflect the new number of neighbors
         indptr = np.zeros(knn_graph.indptr.shape, dtype=knn_graph.indptr.dtype)
@@ -168,7 +174,7 @@ class NearDuplicateIssueManager(IssueManager):
             knn_graph = None
         return knn_graph
 
-    def collect_info(self, knn_graph: csr_matrix) -> dict:
+    def collect_info(self, knn_graph: csr_matrix, median_nn_distance: float) -> dict:
         issues_dict = {
             "average_near_duplicate_score": self.issues[self.issue_score_key].mean(),
             "near_duplicate_sets": self.near_duplicate_sets,
@@ -187,6 +193,7 @@ class NearDuplicateIssueManager(IssueManager):
         knn_info_dict = {
             "nearest_neighbor": nn_ids.tolist(),
             "distance_to_nearest_neighbor": dists.tolist(),
+            "median_distance_to_nearest_neighbor": median_nn_distance,
         }
 
         statistics_dict = self._build_statistics_dictionary(knn_graph=knn_graph)
@@ -232,3 +239,40 @@ class NearDuplicateIssueManager(IssueManager):
             )
             threshold = 0
         return threshold
+
+
+def _compute_scores_with_exp_transform(nn_distances: np.ndarray, temperature: float) -> np.ndarray:
+    r"""Compute near-duplicate scores from nearest neighbor distances.
+
+    This is a non-linear transformation of the nearest neighbor distances that
+    maps distances to scores in the range [0, 1].
+
+    Note
+    ----
+
+    This transformation is given by the following formula:
+
+    .. math::
+
+        \text{score}(d, t) = 1 - e^{-dt}
+
+    where :math:`d` is the nearest neighbor distance and :math:`t > 0` is a temperature parameter.
+
+    Parameters
+    ----------
+    nn_distances :
+        The nearest neighbor distances for each example.
+
+    Returns
+    -------
+    scores :
+        The near-duplicate scores for each example. The scores are in the range [0, 1].
+        A lower score indicates that an example is more likely to be a near-duplicate than
+        an example with a higher score.
+        A score of 0 indicates that an example has an exact duplicate.
+    """
+    if temperature <= 0:
+        raise ValueError("Temperature must be greater than 0.")
+
+    scores = 1 - np.exp(-temperature * nn_distances)
+    return scores

@@ -113,7 +113,7 @@ The assumption that examples in a dataset are Independent and Identically Distri
 
 For datasets with low non-IID score, you should consider why your data are not IID and act accordingly. For example, if the data distribution is drifting over time, consider employing a time-based train/test split instead of a random partition.  Note that shuffling the data ahead of time will ensure a good non-IID score, but this is not always a fix to the underlying problem (e.g. future deployment data may stem from a different distribution, or you may overlook the fact that examples influence each other). We thus recommend **not** shuffling your data to be able to diagnose this issue if it exists.
 
-Class-Imbalance Issue
+Class Imbalance Issue
 ---------------------
 
 Class imbalance is diagnosed just using the `labels` provided as part of the dataset. The overall class imbalance quality score of a dataset is the proportion of examples belonging to the rarest class `q`. If this proportion `q` falls below a threshold, then we say this dataset suffers from the class imbalance issue.
@@ -298,13 +298,32 @@ Underperforming Group Issue Parameters
     For more information on generating `cluster_ids` for this issue manager, refer to this `FAQ Section <../../../tutorials/faq.html#How-do-I-specify-pre-computed-data-slices/clusters-when-detecting-the-Underperforming-Group-Issue?>`_.
 
 Null Issue Parameters
---------------------------
+---------------------
 
 .. code-block:: python
 
-    null_kwargs = {
-    }
+    null_kwargs = {}
 
 .. note::
 
     For more information, view the source code of:  :py:class:`datalab.internal.issue_manager.null.NullIssueManager <cleanlab.datalab.internal.issue_manager.null.NullIssueManager>`.
+
+Image Issue Parameters
+--------------------------
+
+To customize optional parameters for specific image issue types, you can provide a dictionary format corresponding to each image issue. The following codeblock demonstrates how to specify optional parameters for all image issues. However, it's important to note that providing optional parameters for specific image issues is not mandatory. If no specific parameters are provided, defaults will be used for those issues.
+
+.. code-block:: python
+
+    image_issue_types_kwargs = {
+        "dark": {"threshold": 0.32}, # `threshold` argument for dark issue type. Non-negative floating value between 0 and 1, lower value implies fewer samples will be marked as issue and vice versa.
+        "light": {"threshold": 0.05}, # `threshold` argument for light issue type. Non-negative floating value between 0 and 1, lower value implies fewer samples will be marked as issue and vice versa.
+        "blurry": {"threshold": 0.29}, # `threshold` argument for blurry issue type. Non-negative floating value between 0 and 1, lower value implies fewer samples will be marked as issue and vice versa.
+        "low_information": {"threshold": 0.3}, # `threshold` argument for low_information issue type. Non-negative floating value between 0 and 1, lower value implies fewer samples will be marked as issue and vice versa.
+        "odd_aspect_ratio": {"threshold": 0.35}, # `threshold` argument for odd_aspect_ratio issue type. Non-negative floating value between 0 and 1, lower value implies fewer samples will be marked as issue and vice versa.
+        "odd_size": {"threshold": 10.0}, # `threshold` argument for odd_size issue type. Non-negative integer value between starting from 0, unlike other issues, here higher value implies fewer samples will be selected.
+    }
+
+.. note::
+
+    For more information, view the cleanvision `docs <https://cleanvision.readthedocs.io/en/latest/tutorials/tutorial.html#5.-Check-for-an-issue-with-a-different-threshold>`_.

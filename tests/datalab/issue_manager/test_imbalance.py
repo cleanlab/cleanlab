@@ -51,7 +51,10 @@ class TestClassImbalanceIssueManager:
         assert np.all(
             issues["is_class_imbalance_issue"] == np.full(N, False)
         ), "Issue mask should be correct"
-        assert np.all(issues["class_imbalance_score"] == np.ones(N)), "Scores should be correct"
+        scores = issues["class_imbalance_score"]
+        expected_scores = np.ones_like(scores)
+        expected_scores[labels == 1] = 0.47  # Rare class proportion
+        np.testing.assert_allclose(scores, expected_scores, err_msg="Scores should be correct")
         assert summary["issue_type"][0] == "class_imbalance"
         assert summary["score"][0] == 0.47
 
@@ -88,3 +91,16 @@ class TestClassImbalanceIssueManager:
             "------------------ class_imbalance issues ------------------\n\n"
             "Number of examples with this issue:"
         ) in report
+        assert ("Additional Information: \n" "Rarest Class:") in report
+
+    def test_collect_info(self, labels, create_issue_manager):
+        # With Imbalance
+        issue_manager = create_issue_manager(labels)
+        issue_manager.find_issues()
+        assert issue_manager.info["Rarest Class"] == 5
+
+        # Without Imbalance
+        labels[0] = 0
+        issue_manager = create_issue_manager(labels)
+        issue_manager.find_issues()
+        assert issue_manager.info["Rarest Class"] == "NA"
