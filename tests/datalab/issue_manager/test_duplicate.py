@@ -72,7 +72,7 @@ class TestNearDuplicateIssueManager:
             issues["is_near_duplicate_issue"] == expected_issue_mask
         ), "Issue mask should be correct"
         assert summary["issue_type"][0] == "near_duplicate"
-        assert summary["score"][0] == pytest.approx(expected=0.03122489, abs=1e-7)
+        assert summary["score"][0] == pytest.approx(expected=0.4734458, abs=1e-7)
 
         assert (
             info.get("near_duplicate_sets", None) is not None
@@ -85,6 +85,17 @@ class TestNearDuplicateIssueManager:
             threshold=0.1,
         )
         new_issue_manager.find_issues(features=embeddings["embedding"])
+
+    def test_scores_of_examples_with_issues_are_smaller_than_those_without(
+        self, issue_manager, embeddings
+    ):
+        # TODO: Turn this into a property-based test
+        issue_manager.find_issues(features=embeddings["embedding"])
+        is_issue = issue_manager.issues["is_near_duplicate_issue"]
+        scores = issue_manager.issues["near_duplicate_score"]
+        max_issue_score = np.max(scores[is_issue])
+        min_non_issue_score = np.min(scores[~is_issue])
+        assert max_issue_score < min_non_issue_score
 
     def test_report(self, issue_manager, embeddings):
         issue_manager.find_issues(features=embeddings["embedding"])
