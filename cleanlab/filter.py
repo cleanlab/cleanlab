@@ -32,6 +32,7 @@ from functools import reduce
 import platform
 
 from cleanlab.count import calibrate_confident_joint, num_label_issues
+from cleanlab.internal.constants import EPSILON
 from cleanlab.rank import order_label_issues, get_label_quality_scores
 import cleanlab.internal.multilabel_scorer as ml_scorer
 from cleanlab.internal.validation import assert_valid_inputs
@@ -449,7 +450,8 @@ def find_label_issues(
         mask = pred == labels
         if K == 2:
             # Set mask to False wherever pred_probs == 0.5 where num_classes == 2
-            mask = mask & (pred_probs[:, 0] != 0.5)
+            mask = mask & ((pred_probs[:, 0] < 0.5 - EPSILON) | (pred_probs[:, 0] > 0.5 + EPSILON))
+
         label_issues_mask[mask] = False
 
     if verbose:
