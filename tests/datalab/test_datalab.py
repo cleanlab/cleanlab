@@ -150,6 +150,23 @@ class TestDatalab:
         summary = lab.get_issue_summary()
         pd.testing.assert_frame_equal(summary, mock_summary)
 
+    def test_get_issue_summary_contains_num(self, lab, monkeypatch):
+        ## first column of the issue be issue name
+        mock_summary: pd.DataFrame = pd.DataFrame(
+            {
+                "issue_type": ["label", "outlier"],
+                "score": [0.5, 0.3],
+                "num_issues": [1, 2],
+            }
+        )
+        monkeypatch.setattr(lab, "issue_summary", mock_summary)
+
+        lab_issue_summary = lab.issue_summary.iloc[:, 1:]
+
+        expected_result = mock_summary.select_dtypes(include=["number"])
+
+        pd.testing.assert_frame_equal(lab_issue_summary, expected_result)
+
     def test_get_issues(self, lab, monkeypatch):
         mock_issues: pd.DataFrame = pd.DataFrame(
             {
@@ -226,6 +243,25 @@ class TestDatalab:
 
         issues = lab.get_issues()
         pd.testing.assert_frame_equal(issues, mock_issues, check_dtype=False)
+
+    def test_get_issues_contains_bool_or_num(self, lab, monkeypatch):
+        mock_issues: pd.DataFrame = pd.DataFrame(
+            {
+                "is_label_issue": [True, False, False, True, False],
+                "label_score": [0.2, 0.4, 0.6, 0.1, 0.8],
+                "is_near_duplicate_issue": [False, True, True, False, True],
+                "near_duplicate_score": [0.5, 0.3, 0.1, 0.7, 0.2],
+                "is_class_imbalance_issue": [False, False, False, False, True],
+                "class_imbalance_score": [1.0, 1.0, 1.0, 1.0, 0.2],
+            },
+        )
+        monkeypatch.setattr(lab, "issues", mock_issues)
+
+        lab_issues = lab.issues
+
+        expected_result = mock_issues.select_dtypes(include=["number", "bool"])
+
+        pd.testing.assert_frame_equal(lab_issues, expected_result, check_dtype=False)
 
     @pytest.mark.parametrize(
         "issue_types",
