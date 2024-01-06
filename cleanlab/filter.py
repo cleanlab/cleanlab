@@ -445,7 +445,7 @@ def find_label_issues(
 
     if filter_by not in ["low_self_confidence", "low_normalized_margin"]:
         # Remove label issues if given label == model prediction if issues haven't been removed yet
-        mask = _reduce_issues(pred_probs, labels, K)
+        mask = _reduce_issues(pred_probs=pred_probs, labels=labels, K=K)
         label_issues_mask[mask] = False
 
     if verbose:

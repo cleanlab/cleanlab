@@ -600,17 +600,20 @@ class LabelInspector:
         if self.n_jobs == 1:
             adj_confident_thresholds = self.confident_thresholds - FLOATING_POINT_COMPARISON
             pred_class = np.argmax(pred_probs, axis=1)
-            num_classes = get_num_classes(labels=labels, pred_probs=pred_probs)
-            mask = _reduce_issues(pred_probs, labels, num_classes)
             batch_size = len(labels)
             if thorough:
                 # add margin for floating point comparison operations:
                 pred_gt_thresholds = pred_probs >= adj_confident_thresholds
                 max_ind = np.argmax(pred_probs * pred_gt_thresholds, axis=1)
                 if not self.off_diagonal_calibrated:
-                    mask = (max_ind != labels) & (mask)
+                    mask = (max_ind != labels) & (pred_class != labels)
+                else:
+                    # calibrated
+                    # should we change to above?
+                    mask = pred_class != labels
             else:
                 max_ind = pred_class
+                mask = pred_class != labels
 
             if not self.off_diagonal_calibrated:
                 prune_count_batch = np.sum(
@@ -691,13 +694,16 @@ def _compute_num_issues(arg: Tuple[np.ndarray, bool]) -> int:
     pred_prob = pred_probs_shared[ind, :]
     pred_class = np.argmax(pred_prob, axis=-1)
     batch_size = len(label)
+    mask = _reduce_issues(
+        pred_probs=pred_prob, labels=label, K=get_num_classes(pred_prob=pred_prob)
+    )
     if thorough:
         pred_gt_thresholds = pred_prob >= adj_confident_thresholds_shared
         max_ind = np.argmax(pred_prob * pred_gt_thresholds, axis=-1)
         prune_count_batch = np.sum(
             (pred_prob[np.arange(batch_size), max_ind] >= adj_confident_thresholds_shared[max_ind])
             & (max_ind != label)
-            & (pred_class != label)
+            & (mask)
         )
     else:
         prune_count_batch = np.sum(
@@ -705,7 +711,7 @@ def _compute_num_issues(arg: Tuple[np.ndarray, bool]) -> int:
                 pred_prob[np.arange(batch_size), pred_class]
                 >= adj_confident_thresholds_shared[pred_class]
             )
-            & (pred_class != label)
+            & (mask)
         )
     return prune_count_batch
 
