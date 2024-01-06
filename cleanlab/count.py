@@ -151,7 +151,11 @@ def num_label_issues(
         label_issues_mask[cl_error_indices] = True
 
         # Remove label issues if given label == model prediction
-        mask = _reduce_issues(pred_probs=pred_probs, labels=labels)
+        mask = _reduce_issues(
+            pred_probs=pred_probs,
+            labels=labels,
+            K=get_num_classes(pred_probs=pred_probs, labels=labels),
+        )
         label_issues_mask[mask] = False
         num_issues = np.sum(label_issues_mask)
     elif estimation_method == "off_diagonal_calibrated":
