@@ -31,7 +31,7 @@ from typing import Any, Dict, Optional, Tuple, List
 from functools import reduce
 import platform
 
-from cleanlab.count import calibrate_confident_joint, num_label_issues
+from cleanlab.count import calibrate_confident_joint, num_label_issues, _reduce_issues
 from cleanlab.rank import order_label_issues, get_label_quality_scores
 import cleanlab.internal.multilabel_scorer as ml_scorer
 from cleanlab.internal.validation import assert_valid_inputs
@@ -445,8 +445,12 @@ def find_label_issues(
 
     if filter_by not in ["low_self_confidence", "low_normalized_margin"]:
         # Remove label issues if given label == model prediction if issues haven't been removed yet
-        pred = pred_probs.argmax(axis=1)
-        label_issues_mask[pred == labels] = False
+        mask = _reduce_issues(
+            pred_probs=pred_probs,
+            labels=labels,
+            num_classes=K,
+        )
+        label_issues_mask[mask] = False
 
     if verbose:
         print("Number of label issues found: {}".format(sum(label_issues_mask)))

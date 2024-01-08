@@ -38,7 +38,7 @@ from typing import Tuple, Union, Optional
 
 from cleanlab.typing import LabelLike
 from cleanlab.internal.multilabel_utils import stack_complement, get_onehot_num_classes
-from cleanlab.internal.constants import TINY_VALUE, CONFIDENT_THRESHOLDS_LOWER_BOUND
+from cleanlab.internal.constants import TINY_VALUE, CONFIDENT_THRESHOLDS_LOWER_BOUND, EPSILON
 
 from cleanlab.internal.util import (
     value_counts_fill_missing_classes,
@@ -151,8 +151,12 @@ def num_label_issues(
         label_issues_mask[cl_error_indices] = True
 
         # Remove label issues if given label == model prediction
-        pred = pred_probs.argmax(axis=1)
-        label_issues_mask[pred == labels] = False
+        mask = _reduce_issues(
+            pred_probs=pred_probs,
+            labels=labels,
+            num_classes=get_num_classes(pred_probs=pred_probs, labels=labels),
+        )
+        label_issues_mask[mask] = False
         num_issues = np.sum(label_issues_mask)
     elif estimation_method == "off_diagonal_calibrated":
         calculated_confident_joint = compute_confident_joint(
@@ -222,6 +226,14 @@ def _num_label_issues_multilabel(
         filter_by="confident_learning",  # specified to match num_label_issues
     )
     return sum(issues_idx)
+
+
+def _reduce_issues(pred_probs, labels, num_classes):
+    pred = pred_probs.argmax(axis=1)
+    mask = pred == labels
+    if num_classes == 2:
+        mask = mask | ((pred_probs[:, 0] >= 0.5 - EPSILON) & (pred_probs[:, 0] <= 0.5 + EPSILON))
+    return mask
 
 
 def calibrate_confident_joint(
