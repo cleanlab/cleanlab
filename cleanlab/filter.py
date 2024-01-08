@@ -446,11 +446,7 @@ def find_label_issues(
     if filter_by not in ["low_self_confidence", "low_normalized_margin"]:
         # Remove label issues if given label == model prediction if issues haven't been removed yet
         pred = pred_probs.argmax(axis=1)
-        mask = pred == labels
-        if K == 2:
-            # Set mask to False wherever pred_probs == 0.5 where num_classes == 2
-            mask = mask & (pred_probs[:, 0] != 0.5)
-        label_issues_mask[mask] = False
+        label_issues_mask[pred == labels] = False
 
     if verbose:
         print("Number of label issues found: {}".format(sum(label_issues_mask)))
