@@ -141,6 +141,18 @@ To find the underperforming group, Cleanlab clusters the data using the provided
 The underperforming group quality score is equal to `q/r` for examples belonging to the underperforming group, and is equal to 1 for all other examples.
 Advanced users:  If you have pre-computed cluster assignments for each example in the dataset, you can pass them explicitly to :py:meth:`Datalab.find_issues <cleanlab.datalab.datalab.Datalab.find_issues>` using the `cluster_ids` key in the `issue_types` dict argument.  This is useful for tabular datasets where you want to group/slice the data based on a categorical column. An integer encoding of the categorical column can be passed as cluster assignments for finding the underperforming group, based on the data slices you define.
 
+Null Issue
+-----------
+
+Examples identified with the null issue correspond to rows that have null/missing values across all feature columns (i.e. the entire row is missing values).
+
+Null issues are detected based on provided `features`.  If you do not provide `features`, this type of issue will not be considered.
+
+Each example's null issue quality score equals the proportion of features values in this row that are not null/missing. The overall dataset null issue quality score
+equals the average of the individual examples' quality scores.
+
+Presence of null examples in the dataset can lead to errors when training ML models. It can also
+result in the model learning incorrect patterns due to the null values.
 
 Optional Issue Parameters
 =========================
@@ -154,7 +166,8 @@ Appropriate defaults are used for any parameters you do not specify, so no need 
     possible_issue_types = {
         "label": label_kwargs, "outlier": outlier_kwargs,
         "near_duplicate": near_duplicate_kwargs, "non_iid": non_iid_kwargs,
-        "class_imbalance": class_imbalance_kwargs, "underperforming_group": underperforming_group_kwargs
+        "class_imbalance": class_imbalance_kwargs, "underperforming_group": underperforming_group_kwargs,
+        "null": null_kwargs
     }
 
 
@@ -283,6 +296,17 @@ Underperforming Group Issue Parameters
     For more information, view the source code of:  :py:class:`datalab.internal.issue_manager.underperforming_group.UnderperformingGroupIssueManager <cleanlab.datalab.internal.issue_manager.underperforming_group.UnderperformingGroupIssueManager>`.
 
     For more information on generating `cluster_ids` for this issue manager, refer to this `FAQ Section <../../../tutorials/faq.html#How-do-I-specify-pre-computed-data-slices/clusters-when-detecting-the-Underperforming-Group-Issue?>`_.
+
+Null Issue Parameters
+---------------------
+
+.. code-block:: python
+
+    null_kwargs = {}
+
+.. note::
+
+    For more information, view the source code of:  :py:class:`datalab.internal.issue_manager.null.NullIssueManager <cleanlab.datalab.internal.issue_manager.null.NullIssueManager>`.
 
 Image Issue Parameters
 --------------------------

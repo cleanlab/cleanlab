@@ -200,5 +200,5 @@ While this open-source library **finds** data issues, its utility depends on you
    GitHub <https://github.com/cleanlab/cleanlab>
    PyPI <https://pypi.org/project/cleanlab/>
    Conda <https://anaconda.org/Cleanlab/cleanlab>
-   Cleanlab Studio <https://cleanlab.ai/blog/data-centric-ai/>
+   Cleanlab Studio (Easy Mode) <https://cleanlab.ai/blog/data-centric-ai/>
    Cleanlab Studio Docs <https://help.cleanlab.ai>
