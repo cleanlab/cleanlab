@@ -230,32 +230,10 @@ class IssueFinder:
             If provided, this must be a 2D array with shape (num_examples, num_features).
 
         knn_graph :
-            Sparse matrix representing distances between examples in the dataset in a k nearest neighbor graph.
+            Sparse matrix representing distances between examples in a dataset in a k nearest neighbor graph.
 
-            If provided, this must be a square CSR matrix with shape (num_examples, num_examples) and (k*num_examples) non-zero entries (k is the number of nearest neighbors considered for each example)
-            evenly distributed across the rows.
-            The non-zero entries must be the distances between the corresponding examples. Self-distances must be omitted
-            (i.e. the diagonal must be all zeros and the k nearest neighbors of each example must not include itself).
-            Within each row, the non-zero entries (distances) must be sorted in ascending order, and the CSR column indices should reflect this order of distances. This sorting ensures correct neighbor relationships for subsequent analyses.
-
-            .. code-block:: python
-
-               knn_graph.todense()
-               # matrix([[0. , 0.3, 0.2],
-               #         [0.3, 0. , 0.4],
-               #         [0.2, 0.4, 0. ]])
-
-               knn_graph.data
-               # array([0.2, 0.3, 0.3, 0.4, 0.2, 0.4])
-
-               knn_graph.indices
-               # array([2, 1, 0, 2, 0, 1])
-
-            For any duplicated examples i,j whose distance is 0, there should be an *explicit* zero stored in the matrix, i.e. ``knn_graph[i,j] = 0``.
-
-            If both `knn_graph` and `features` are provided, the `knn_graph` will take precendence.
-            If `knn_graph` is not provided, it is constructed based on the provided `features`.
-            If neither `knn_graph` nor `features` are provided, certain issue types like (near) duplicates will not be considered.
+            For a detailed description of the formatting requirements, structure, and considerations for the `knn_graph` argument,
+            please refer to the :py:class:`Datalab.find_issues <cleanlab.datalab.datalab.Datalab.find_issues>` documentation.
 
         issue_types :
             Collection specifying which types of issues to consider in audit and any non-default parameter settings to use.
