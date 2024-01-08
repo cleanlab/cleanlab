@@ -154,7 +154,7 @@ def num_label_issues(
         mask = _reduce_issues(
             pred_probs=pred_probs,
             labels=labels,
-            K=get_num_classes(pred_probs=pred_probs, labels=labels),
+            num_classes=get_num_classes(pred_probs=pred_probs, labels=labels),
         )
         label_issues_mask[mask] = False
         num_issues = np.sum(label_issues_mask)
@@ -228,11 +228,11 @@ def _num_label_issues_multilabel(
     return sum(issues_idx)
 
 
-def _reduce_issues(pred_probs, labels, K, mask=None):
+def _reduce_issues(pred_probs, labels, num_classes, mask=None):
     pred = pred_probs.argmax(axis=1)
     if mask is None:
         mask = pred == labels
-    if K == 2:
+    if num_classes == 2:
         # Set mask to False wherever pred_probs == 0.5 where num_classes == 2
         mask = mask & ((pred_probs[:, 0] < 0.5 - EPSILON) | (pred_probs[:, 0] > 0.5 + EPSILON))
     return mask

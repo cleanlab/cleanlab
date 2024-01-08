@@ -236,7 +236,11 @@ def find_label_issues_batched(
     label_issues_indices = lab.get_label_issues()
     label_issues_mask = np.zeros(len(labels), dtype=bool)
     label_issues_mask[label_issues_indices] = True
-    mask = _reduce_issues(pred_probs=pred_probs, labels=labels)
+    mask = _reduce_issues(
+        pred_probs=pred_probs,
+        labels=labels,
+        num_classes=get_num_classes(labels=labels, pred_probs=pred_probs),
+    )
     label_issues_mask[mask] = False
     if return_mask:
         return label_issues_mask
@@ -697,7 +701,9 @@ def _compute_num_issues(arg: Tuple[np.ndarray, bool]) -> int:
     pred_class = np.argmax(pred_prob, axis=-1)
     batch_size = len(label)
     mask = _reduce_issues(
-        pred_probs=pred_prob, labels=label, K=get_num_classes(labels=label, pred_probs=pred_prob)
+        pred_probs=pred_prob,
+        labels=label,
+        num_classes=get_num_classes(labels=label, pred_probs=pred_prob),
     )
     if thorough:
         pred_gt_thresholds = pred_prob >= adj_confident_thresholds_shared
