@@ -19,24 +19,23 @@ import itertools
 import typing
 
 import hypothesis.strategies as st
-from hypothesis import given
 import numpy as np
 import pytest
 import sklearn
+from hypothesis import given
 from sklearn.linear_model import LogisticRegression
 from sklearn.multiclass import OneVsRestClassifier
 
 from cleanlab import multilabel_classification as ml_classification
 from cleanlab.internal import multilabel_scorer as ml_scorer
-from cleanlab.internal.multilabel_utils import get_onehot_num_classes, onehot2int, stack_complement
+from cleanlab.internal.multilabel_utils import (get_onehot_num_classes,
+                                                onehot2int, stack_complement)
 from cleanlab.multilabel_classification import filter
 from cleanlab.multilabel_classification.dataset import (
-    common_multilabel_issues,
-    multilabel_health_summary,
-    overall_multilabel_health_score,
-    rank_classes_by_multilabel_quality,
-)
-from cleanlab.multilabel_classification.rank import get_label_quality_scores_per_class
+    common_multilabel_issues, multilabel_health_summary,
+    overall_multilabel_health_score, rank_classes_by_multilabel_quality)
+from cleanlab.multilabel_classification.rank import \
+    get_label_quality_scores_per_class
 
 
 @pytest.fixture
@@ -728,8 +727,8 @@ def flip_labels(label, flip_prob):
 
 
 import numpy as np
-from hypothesis import strategies as st
 from hypothesis import given
+from hypothesis import strategies as st
 from hypothesis.strategies import composite
 
 
