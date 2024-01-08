@@ -234,11 +234,13 @@ def find_label_issues_batched(
         pbar.close()
 
     label_issues_indices = lab.get_label_issues()
+    label_issues_mask = np.zeros(len(labels), dtype=bool)
+    label_issues_mask[label_issues_indices] = True
+    mask = _reduce_issues(pred_probs=pred_probs, labels=labels)
+    label_issues_mask[mask] = False
     if return_mask:
-        label_issues_mask = np.zeros(len(labels), dtype=bool)
-        label_issues_mask[label_issues_indices] = True
         return label_issues_mask
-    return label_issues_indices
+    return np.where(label_issues_mask)
 
 
 class LabelInspector:
@@ -695,7 +697,7 @@ def _compute_num_issues(arg: Tuple[np.ndarray, bool]) -> int:
     pred_class = np.argmax(pred_prob, axis=-1)
     batch_size = len(label)
     mask = _reduce_issues(
-        pred_probs=pred_prob, labels=label, K=get_num_classes(pred_probs=pred_prob, labels=label)
+        pred_probs=pred_prob, labels=label, K=get_num_classes(labels=label, pred_probs=pred_prob)
     )
     if thorough:
         pred_gt_thresholds = pred_prob >= adj_confident_thresholds_shared
@@ -703,7 +705,8 @@ def _compute_num_issues(arg: Tuple[np.ndarray, bool]) -> int:
         prune_count_batch = np.sum(
             (pred_prob[np.arange(batch_size), max_ind] >= adj_confident_thresholds_shared[max_ind])
             & (max_ind != label)
-            & (mask)
+            & (pred_class != label)
+            & mask
         )
     else:
         prune_count_batch = np.sum(
@@ -711,7 +714,8 @@ def _compute_num_issues(arg: Tuple[np.ndarray, bool]) -> int:
                 pred_prob[np.arange(batch_size), pred_class]
                 >= adj_confident_thresholds_shared[pred_class]
             )
-            & (mask)
+            & (pred_class != label)
+            & mask
         )
     return prune_count_batch
 
