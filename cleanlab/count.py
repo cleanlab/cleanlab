@@ -233,7 +233,7 @@ def _reduce_issues(pred_probs, labels, num_classes):
     mask = pred == labels
     if num_classes == 2:
         # Set mask to False wherever pred_probs == 0.5 where num_classes == 2
-        mask = mask & ((pred_probs[:, 0] < 0.5 - EPSILON) | (pred_probs[:, 0] > 0.5 + EPSILON))
+        mask = mask | ((pred_probs[:, 0] < 0.5 - EPSILON) | (pred_probs[:, 0] > 0.5 + EPSILON))
     return mask
 
 
