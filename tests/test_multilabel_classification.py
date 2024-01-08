@@ -785,4 +785,3 @@ class TestCleanlab:
         pred_labels = (pred_probs > threshold).astype(int)
         equal_pred = np.where(np.all(pred_labels == noisy_labels, axis=1), True, False)
         assert sum(equal_pred & is_issue) == 0
-        print("Passed test")
