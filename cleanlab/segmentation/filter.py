@@ -153,7 +153,7 @@ def find_label_issues(
 
     # Precompute the size of each image in the batch
     image_size = np.prod(pre_pred_probs.shape[1:])
-    images_per_batch = max(batch_size // image_size + 1, 0)
+    images_per_batch = max(batch_size // image_size, 1)
 
     for start_index in range(0, n, images_per_batch):
         end_index = min(start_index + images_per_batch, n)
