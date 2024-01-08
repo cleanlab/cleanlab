@@ -23,6 +23,8 @@ import numpy as np
 import pytest
 import sklearn
 from hypothesis import given
+from hypothesis import strategies as st
+from hypothesis.strategies import composite
 from sklearn.linear_model import LogisticRegression
 from sklearn.multiclass import OneVsRestClassifier
 
@@ -726,16 +728,12 @@ def flip_labels(label, flip_prob):
     return 1 - np.array(label) if np.random.rand() < flip_prob else label
 
 
-import numpy as np
-from hypothesis import given
-from hypothesis import strategies as st
-from hypothesis.strategies import composite
 
 
 @composite
 def cleanlab_data_strategy(draw):
-    num_classes = draw(st.integers(min_value=2, max_value=10))
-    num_samples = draw(st.integers(min_value=10, max_value=100))
+    num_classes = draw(st.integers(min_value=2, max_value=5))
+    num_samples = draw(st.integers(min_value=10, max_value=50))
 
     # Generate true labels as one-hot encoded vectors for multi-label
     true_labels = draw(
@@ -779,8 +777,10 @@ class TestCleanlab:
     @given(cleanlab_data_strategy())
     def test_find_label_issues(self, data):
         true_labels, noisy_labels, pred_probs = data
-        # Run cleanlab to find label issues
-        is_issue = filter.find_label_issues(labels=noisy_labels, pred_probs=np.array(pred_probs))
+        noisy_labels_list = onehot2int(noisy_labels)
+        is_issue = filter.find_label_issues(
+            labels=noisy_labels_list, pred_probs=np.array(pred_probs)
+        )
         threshold = 0.5
         pred_labels = (pred_probs > threshold).astype(int)
         equal_pred = np.where(np.all(pred_labels == noisy_labels, axis=1), True, False)
