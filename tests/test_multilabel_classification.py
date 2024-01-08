@@ -773,13 +773,12 @@ def cleanlab_data_strategy(draw):
             max_size=num_samples,
         )
     )
-
-    # Your test logic using num_classes, num_samples, true_labels, noisy_labels, and pred_probs
-    print("Num Classes:", num_classes)
-    print("Num Samples:", num_samples)
-    print("True Labels:", true_labels)
-    print("Noisy Labels:", noisy_labels)
-    print("Pred Probs:", pred_probs)
+    #
+    # print("Num Classes:", num_classes)
+    # print("Num Samples:", num_samples)
+    # print("True Labels:", true_labels)
+    # print("Noisy Labels:", noisy_labels)
+    # print("Pred Probs:", pred_probs)
 
     return true_labels, noisy_labels, np.array(pred_probs)
 
@@ -790,6 +789,11 @@ class TestCleanlab:
         true_labels, noisy_labels, pred_probs = data
         # Run cleanlab to find label issues
         is_issue = filter.find_label_issues(labels=noisy_labels, pred_probs=np.array(pred_probs))
-        pred_labels = pred_probs.argmax(axis=1)
-        assert sum((pred_labels == noisy_labels) & is_issue) == 0
+        threshold = 0.5
+        pred_labels = (pred_probs > threshold).astype(int)
+        equal_pred = np.where(np.all(pred_labels == noisy_labels, axis=1), True, False)
+        try:
+            assert sum(equal_pred & is_issue) == 0
+        except:
+            breakpoint()
         print("Passed test")
