@@ -228,10 +228,11 @@ def _num_label_issues_multilabel(
     return sum(issues_idx)
 
 
-def _reduce_issues(pred_probs, labels, num_classes, EPSILON=1e-10):
+def _reduce_issues(pred_probs, labels, num_classes):
     pred = pred_probs.argmax(axis=1)
-    mask = (pred == labels) | ((pred_probs[:, 0] >= 0.5 - EPSILON) & (pred_probs[:, 0] <= 0.5 + EPSILON))
-
+    mask = pred == labels
+    if num_classes == 2:
+        mask = mask | ((pred_probs[:, 0] >= 0.5 - EPSILON) & (pred_probs[:, 0] <= 0.5 + EPSILON))
     return mask
 
 
