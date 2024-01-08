@@ -19,7 +19,7 @@ import itertools
 import typing
 
 import hypothesis.strategies as st
-from hypothesis import given, settings, HealthCheck
+from hypothesis import given
 import numpy as np
 import pytest
 import sklearn
@@ -773,13 +773,6 @@ def cleanlab_data_strategy(draw):
             max_size=num_samples,
         )
     )
-    #
-    # print("Num Classes:", num_classes)
-    # print("Num Samples:", num_samples)
-    # print("True Labels:", true_labels)
-    # print("Noisy Labels:", noisy_labels)
-    # print("Pred Probs:", pred_probs)
-
     return true_labels, noisy_labels, np.array(pred_probs)
 
 
