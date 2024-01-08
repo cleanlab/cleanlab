@@ -24,13 +24,13 @@ class NullIssueManager(IssueManager):
 
     description: ClassVar[
         str
-    ] = """Examples identified with the null issue correspond to rows that have null/missing values across all feature columns (i.e. the entire row is missing values).
+    ] = """Whether the dataset has any missing/null values
         """
     issue_name: ClassVar[str] = "null"
     verbosity_levels = {
-        0: [],
-        1: [],
-        2: ["most_common_issue"],
+        0: ["average_null_score"],
+        1: ["most_common_issue"],
+        2: [],
     }
 
     @staticmethod
@@ -140,66 +140,3 @@ class NullIssueManager(IssueManager):
         issues_dict = {**average_null_score, **most_common_issue, **column_impact}
         info_dict: Dict[str, Any] = {**issues_dict}
         return info_dict
-
-    @classmethod
-    def report(cls, *args, **kwargs) -> str:
-        """
-        Return a report of issues found by the NullIssueManager.
-
-        This method extends the superclass method by identifying and reporting
-        specific issues related to null values in the dataset.
-
-        Parameters
-        ----------
-        *args : list
-            Variable length argument list.
-        **kwargs : dict
-            Arbitrary keyword arguments.
-
-        Returns
-        -------
-        report_str :
-            A string containing the report.
-
-        See Also
-        --------
-        :meth:`cleanlab.datalab.Datalab.report`
-
-        Notes
-        -----
-        This method differs from other IssueManager report methods. It checks for issues
-        and prompts the user to address them to enable other issue managers to run effectively.
-        """
-        # Generate the base report using the superclass method
-        original_report = super().report(*args, **kwargs)
-
-        # Retrieve the 'issues' dataframe from keyword arguments
-        issues = kwargs["issues"]
-
-        # Identify examples that have null values in all features
-        issue_filter = f"is_{cls.issue_name}_issue"
-        examples_with_full_nulls = issues.query(issue_filter).index.tolist()
-
-        # Identify examples that have some null values (but not in all features)
-        partial_null_filter = f"{cls.issue_score_key} < 1.0 and not {issue_filter}"
-        examples_with_partial_nulls = issues.query(partial_null_filter).index.tolist()
-
-        # Append information about examples with null values in all features
-        if examples_with_full_nulls:
-            report_addition = (
-                f"\n\nFound {len(examples_with_full_nulls)} examples with null values in all features. "
-                f"These examples should be removed from the dataset before running other issue managers."
-                # TODO: Add a link to the documentation on how to handle null examples
-            )
-            original_report += report_addition
-
-        # Append information about examples with some null values
-        if examples_with_partial_nulls:
-            report_addition = (
-                f"\n\nFound {len(examples_with_partial_nulls)} examples with null values in some features. "
-                f"Please address these issues before running other issue managers."
-                # TODO: Add a link to the documentation on how to handle partially null examples
-            )
-            original_report += report_addition
-
-        return original_report
