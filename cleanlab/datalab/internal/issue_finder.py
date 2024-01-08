@@ -232,8 +232,7 @@ class IssueFinder:
         knn_graph :
             Sparse matrix representing distances between examples in a dataset in a k nearest neighbor graph.
 
-            For a detailed description of the formatting requirements, structure, and considerations for the `knn_graph` argument,
-            please refer to the :py:class:`Datalab.find_issues <cleanlab.datalab.datalab.Datalab.find_issues>` documentation.
+            For details, refer to the documentation of the same argument in :py:class:`Datalab.find_issues <cleanlab.datalab.datalab.Datalab.find_issues>`
 
         issue_types :
             Collection specifying which types of issues to consider in audit and any non-default parameter settings to use.
