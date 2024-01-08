@@ -789,6 +789,7 @@ class TestCleanlab:
     def test_find_label_issues(self, data):
         true_labels, noisy_labels, pred_probs = data
         # Run cleanlab to find label issues
-        is_issue = filter.find_label_issues(labels=noisy_labels, pred_probs=pred_probs)
+        is_issue = filter.find_label_issues(labels=noisy_labels, pred_probs=np.array(pred_probs))
         pred_labels = pred_probs.argmax(axis=1)
         assert sum((pred_labels == noisy_labels) & is_issue) == 0
+        print("Passed test")
