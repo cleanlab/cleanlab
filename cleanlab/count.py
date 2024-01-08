@@ -229,6 +229,7 @@ def _num_label_issues_multilabel(
 
 
 def _reduce_issues(pred_probs, labels, num_classes):
+    """Returns a boolean mask denoting correct predictions or predictions within a margin around 0.5 for binary classification, suitable for filtering out indices in 'is_label_issue'."""
     pred = pred_probs.argmax(axis=1)
     mask = pred == labels
     if num_classes == 2:
