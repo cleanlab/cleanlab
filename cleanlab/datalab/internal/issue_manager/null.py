@@ -24,13 +24,13 @@ class NullIssueManager(IssueManager):
 
     description: ClassVar[
         str
-    ] = """Whether the dataset has any missing/null values
+    ] = """Examples identified with the null issue correspond to rows that have null/missing values across all feature columns (i.e. the entire row is missing values).
         """
     issue_name: ClassVar[str] = "null"
     verbosity_levels = {
-        0: ["average_null_score"],
-        1: ["most_common_issue"],
-        2: [],
+        0: [],
+        1: [],
+        2: ["most_common_issue"],
     }
 
     @staticmethod
@@ -38,18 +38,11 @@ class NullIssueManager(IssueManager):
         """Tracks the number of null values in each row of a feature array,
         computes quality scores based on the fraction of null values in each row,
         and returns a boolean array indicating whether each row only has null values."""
-        rows = features.shape[0]
         cols = features.shape[1]
-        scores = np.ones(rows).astype(np.float32)
-        is_null_issue = np.full(rows, False)
         null_tracker = np.isnan(features)
-        if null_tracker.any():
-            for row in range(rows):
-                if null_tracker[row].any():
-                    non_null_col_count = np.count_nonzero(~null_tracker[row])
-                    scores[row] = non_null_col_count / cols
-                    if scores[row] == 0.00:
-                        is_null_issue[row] = True
+        non_null_count = cols - null_tracker.sum(axis=1)
+        scores = non_null_count / cols
+        is_null_issue = non_null_count == 0
         return is_null_issue, scores, null_tracker
 
     def find_issues(
@@ -94,8 +87,9 @@ class NullIssueManager(IssueManager):
         rows_affected: List[int] = []
         occurrence_of_most_frequent_pattern = 0
         if null_tracker.any():
+            null_row_indices = np.where(null_tracker.any(axis=1))[0]
             null_patterns_as_strings = [
-                "".join(map(str, row.astype(int).tolist())) for row in null_tracker if row.any()
+                "".join(map(str, null_tracker[i].astype(int).tolist())) for i in null_row_indices
             ]
 
             # Use Counter to efficiently count occurrences and find the most common pattern.
@@ -107,7 +101,7 @@ class NullIssueManager(IssueManager):
             rows_affected = []
             for idx, row in enumerate(null_patterns_as_strings):
                 if row == most_frequent_pattern:
-                    rows_affected.append(idx)
+                    rows_affected.append(int(null_row_indices[idx]))
         return {
             "most_common_issue": {
                 "pattern": most_frequent_pattern,
@@ -146,3 +140,66 @@ class NullIssueManager(IssueManager):
         issues_dict = {**average_null_score, **most_common_issue, **column_impact}
         info_dict: Dict[str, Any] = {**issues_dict}
         return info_dict
+
+    @classmethod
+    def report(cls, *args, **kwargs) -> str:
+        """
+        Return a report of issues found by the NullIssueManager.
+
+        This method extends the superclass method by identifying and reporting
+        specific issues related to null values in the dataset.
+
+        Parameters
+        ----------
+        *args : list
+            Variable length argument list.
+        **kwargs : dict
+            Arbitrary keyword arguments.
+
+        Returns
+        -------
+        report_str :
+            A string containing the report.
+
+        See Also
+        --------
+        :meth:`cleanlab.datalab.Datalab.report`
+
+        Notes
+        -----
+        This method differs from other IssueManager report methods. It checks for issues
+        and prompts the user to address them to enable other issue managers to run effectively.
+        """
+        # Generate the base report using the superclass method
+        original_report = super().report(*args, **kwargs)
+
+        # Retrieve the 'issues' dataframe from keyword arguments
+        issues = kwargs["issues"]
+
+        # Identify examples that have null values in all features
+        issue_filter = f"is_{cls.issue_name}_issue"
+        examples_with_full_nulls = issues.query(issue_filter).index.tolist()
+
+        # Identify examples that have some null values (but not in all features)
+        partial_null_filter = f"{cls.issue_score_key} < 1.0 and not {issue_filter}"
+        examples_with_partial_nulls = issues.query(partial_null_filter).index.tolist()
+
+        # Append information about examples with null values in all features
+        if examples_with_full_nulls:
+            report_addition = (
+                f"\n\nFound {len(examples_with_full_nulls)} examples with null values in all features. "
+                f"These examples should be removed from the dataset before running other issue managers."
+                # TODO: Add a link to the documentation on how to handle null examples
+            )
+            original_report += report_addition
+
+        # Append information about examples with some null values
+        if examples_with_partial_nulls:
+            report_addition = (
+                f"\n\nFound {len(examples_with_partial_nulls)} examples with null values in some features. "
+                f"Please address these issues before running other issue managers."
+                # TODO: Add a link to the documentation on how to handle partially null examples
+            )
+            original_report += report_addition
+
+        return original_report

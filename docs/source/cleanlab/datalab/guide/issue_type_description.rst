@@ -45,8 +45,8 @@ For now, Datalab can only detect label issues in a multi-class classification da
 The cleanlab library has alternative methods you can us to detect label issues in other types of datasets (multi-label, multi-annotator, token classification, etc.).
 
 Label issues are calculated based on provided `pred_probs` from a trained model. If you do not provide this argument, but you do provide `features`, then a K Nearest Neighbor model will be fit to produce `pred_probs` based on your `features`. Otherwise if neither `pred_probs` nor `features` is provided, then this type of issue will not be considered.
-For the most accurate results, provide out-of-sample `pred_probs` which can be obtained for a dataset via `cross-validation <https://docs.cleanlab.ai/stable/tutorials/pred_probs_cross_val.html>`_. 
- 
+For the most accurate results, provide out-of-sample `pred_probs` which can be obtained for a dataset via `cross-validation <https://docs.cleanlab.ai/stable/tutorials/pred_probs_cross_val.html>`_.
+
 Having mislabeled examples in your dataset may hamper the performance of supervised learning models you train on this data.
 For evaluating models or performing other types of data analytics, mislabeled examples may lead you to draw incorrect conclusions.
 To handle mislabeled examples, you can either filter out the data with label issues or try to correct their labels.
@@ -113,10 +113,10 @@ The assumption that examples in a dataset are Independent and Identically Distri
 
 For datasets with low non-IID score, you should consider why your data are not IID and act accordingly. For example, if the data distribution is drifting over time, consider employing a time-based train/test split instead of a random partition.  Note that shuffling the data ahead of time will ensure a good non-IID score, but this is not always a fix to the underlying problem (e.g. future deployment data may stem from a different distribution, or you may overlook the fact that examples influence each other). We thus recommend **not** shuffling your data to be able to diagnose this issue if it exists.
 
-Class-Imbalance Issue
+Class Imbalance Issue
 ---------------------
 
-Class imbalance is diagnosed just using the `labels` provided as part of the dataset. The overall class imbalance quality score of a dataset is the proportion of examples belonging to the rarest class `q`. If this proportion `q` falls below a threshold, then we say this dataset suffers from the class imbalance issue.  
+Class imbalance is diagnosed just using the `labels` provided as part of the dataset. The overall class imbalance quality score of a dataset is the proportion of examples belonging to the rarest class `q`. If this proportion `q` falls below a threshold, then we say this dataset suffers from the class imbalance issue.
 
 In a dataset identified as having class imbalance, the class imbalance quality score for each example is set equal to `q` if it is labeled as the rarest class, and is equal to 1 for all other examples.
 
@@ -129,6 +129,30 @@ For image datasets which are properly specified as such, Datalab can detect addi
 Specifically, low-quality images which are too: dark/bright, blurry, low information, abnormally sized, etc.
 Descriptions of these image-specific issues are provided in the `CleanVision package <https://github.com/cleanlab/cleanvision>`_ and its documentation.
 
+Underperforming Group Issue
+------------------------------
+
+An underperforming group refers to a cluster of similar examples (i.e. a slice) in the dataset for which the ML model predictions are poor.  The examples in this underperforming group may have noisy labels or feature values, or the trained ML model may not have learned how to properly handle them (consider collecting more data from this subpopulation or up-weighting the existing data from this group).
+
+Underperforming Group issues are detected based on provided `features`  and `pred_probs`.
+If you do not provide both these arguments, this type of issue will not be considered.
+
+To find the underperforming group, Cleanlab clusters the data using the provided `features` and determines the cluster `c` with the lowest average model predictive performance. Model predictive performance is evaluated via the model's self-confidence of the given labels, calculated using :py:func:`rank.get_self_confidence_for_each_label <cleanlab.rank.get_self_confidence_for_each_label>`. Suppose the average predictive power across the full dataset is `r` and is `q` within a cluster of examples. This cluster is considered to be an underperforming group if `q/r` falls below a threshold. A dataset suffers from the Underperforming Group issue if there exists such a cluster within it.
+The underperforming group quality score is equal to `q/r` for examples belonging to the underperforming group, and is equal to 1 for all other examples.
+Advanced users:  If you have pre-computed cluster assignments for each example in the dataset, you can pass them explicitly to :py:meth:`Datalab.find_issues <cleanlab.datalab.datalab.Datalab.find_issues>` using the `cluster_ids` key in the `issue_types` dict argument.  This is useful for tabular datasets where you want to group/slice the data based on a categorical column. An integer encoding of the categorical column can be passed as cluster assignments for finding the underperforming group, based on the data slices you define.
+
+Null Issue
+-----------
+
+Examples identified with the null issue correspond to rows that have null/missing values across all feature columns (i.e. the entire row is missing values).
+
+Null issues are detected based on provided `features`.  If you do not provide `features`, this type of issue will not be considered.
+
+Each example's null issue quality score equals the proportion of features values in this row that are not null/missing. The overall dataset null issue quality score
+equals the average of the individual examples' quality scores.
+
+Presence of null examples in the dataset can lead to errors when training ML models. It can also
+result in the model learning incorrect patterns due to the null values.
 
 Optional Issue Parameters
 =========================
@@ -141,7 +165,9 @@ Appropriate defaults are used for any parameters you do not specify, so no need 
 
     possible_issue_types = {
         "label": label_kwargs, "outlier": outlier_kwargs,
-        "near_duplicate": near_duplicate_kwargs, "non_iid": non_iid_kwargs
+        "near_duplicate": near_duplicate_kwargs, "non_iid": non_iid_kwargs,
+        "class_imbalance": class_imbalance_kwargs, "underperforming_group": underperforming_group_kwargs,
+        "null": null_kwargs
     }
 
 
@@ -195,7 +221,7 @@ Outlier Issue Parameters
 
 .. note::
 
-    For more information, view the source code of:  :py:class:`datalab.internal.issue_manager.outlier.OutlierIssueManager <cleanlab.datalab.internal.issue_manager.outlier.OutlierIssueManager>`.  
+    For more information, view the source code of:  :py:class:`datalab.internal.issue_manager.outlier.OutlierIssueManager <cleanlab.datalab.internal.issue_manager.outlier.OutlierIssueManager>`.
 
 Duplicate Issue Parameters
 --------------------------
@@ -214,7 +240,7 @@ Duplicate Issue Parameters
 
 .. note::
 
-    For more information, view the source code of:  :py:class:`datalab.internal.issue_manager.duplicate.NearDuplicateIssueManager <cleanlab.datalab.internal.issue_manager.duplicate.NearDuplicateIssueManager>`. 
+    For more information, view the source code of:  :py:class:`datalab.internal.issue_manager.duplicate.NearDuplicateIssueManager <cleanlab.datalab.internal.issue_manager.duplicate.NearDuplicateIssueManager>`.
 
 
 Non-IID Issue Parameters
@@ -241,9 +267,63 @@ Imbalance Issue Parameters
 .. code-block:: python
 
     class_imbalance_kwargs = {
-    	"threshold": # `threshold` argument to constructor of `ClassImbalanceIssueManager()`. Non-negative floating value between 0 and 1 indicating the minimum fraction of samples of each class that are present in a dataset without class imbalance.
+    	"threshold": # `threshold` argument to constructor of `ClassImbalanceIssueManager`. Non-negative floating value between 0 and 1 indicating the minimum fraction of samples of each class that are present in a dataset without class imbalance.
     }
 
 .. note::
 
     For more information, view the source code of:  :py:class:`datalab.internal.issue_manager.imbalance.ClassImbalanceIssueManager <cleanlab.datalab.internal.issue_manager.imbalance.ClassImbalanceIssueManager>`.
+
+Underperforming Group Issue Parameters
+--------------------------
+
+.. code-block:: python
+
+    underperforming_group_kwargs = {
+        # Constructor arguments for `UnderperformingGroupIssueManager`
+        "threshold": # Non-negative floating value between 0 and 1 used for determinining group of points with low confidence.
+        "metric": # String for the distance metric used for nearest neighbors search if necessary. `metric` argument to constructor of `sklearn.neighbors.NearestNeighbors`.
+        "k": # Integer representing the number of nearest neighbors for constructing the nearest neighbour graph. `n_neighbors` argument to constructor of `sklearn.neighbors.NearestNeighbors`.
+        "min_cluster_samples": # Non-negative integer value specifying the minimum number of examples required for a cluster to be considered as the underperforming group. Used in `UnderperformingGroupIssueManager.filter_cluster_ids`.
+        "clustering_kwargs": # Key-value pairs representing arguments for the constructor of the clustering algorithm class (e.g. `sklearn.cluster.DBSCAN`).
+
+        # Argument for the find_issues() method of UnderperformingGroupIssueManager
+        "cluster_ids": # A 1-D numpy array containing cluster labels for each sample in the dataset. If passed, these cluster labels are used for determining the underperforming group.
+    }
+
+.. note::
+
+    For more information, view the source code of:  :py:class:`datalab.internal.issue_manager.underperforming_group.UnderperformingGroupIssueManager <cleanlab.datalab.internal.issue_manager.underperforming_group.UnderperformingGroupIssueManager>`.
+
+    For more information on generating `cluster_ids` for this issue manager, refer to this `FAQ Section <../../../tutorials/faq.html#How-do-I-specify-pre-computed-data-slices/clusters-when-detecting-the-Underperforming-Group-Issue?>`_.
+
+Null Issue Parameters
+---------------------
+
+.. code-block:: python
+
+    null_kwargs = {}
+
+.. note::
+
+    For more information, view the source code of:  :py:class:`datalab.internal.issue_manager.null.NullIssueManager <cleanlab.datalab.internal.issue_manager.null.NullIssueManager>`.
+
+Image Issue Parameters
+--------------------------
+
+To customize optional parameters for specific image issue types, you can provide a dictionary format corresponding to each image issue. The following codeblock demonstrates how to specify optional parameters for all image issues. However, it's important to note that providing optional parameters for specific image issues is not mandatory. If no specific parameters are provided, defaults will be used for those issues.
+
+.. code-block:: python
+
+    image_issue_types_kwargs = {
+        "dark": {"threshold": 0.32}, # `threshold` argument for dark issue type. Non-negative floating value between 0 and 1, lower value implies fewer samples will be marked as issue and vice versa.
+        "light": {"threshold": 0.05}, # `threshold` argument for light issue type. Non-negative floating value between 0 and 1, lower value implies fewer samples will be marked as issue and vice versa.
+        "blurry": {"threshold": 0.29}, # `threshold` argument for blurry issue type. Non-negative floating value between 0 and 1, lower value implies fewer samples will be marked as issue and vice versa.
+        "low_information": {"threshold": 0.3}, # `threshold` argument for low_information issue type. Non-negative floating value between 0 and 1, lower value implies fewer samples will be marked as issue and vice versa.
+        "odd_aspect_ratio": {"threshold": 0.35}, # `threshold` argument for odd_aspect_ratio issue type. Non-negative floating value between 0 and 1, lower value implies fewer samples will be marked as issue and vice versa.
+        "odd_size": {"threshold": 10.0}, # `threshold` argument for odd_size issue type. Non-negative integer value between starting from 0, unlike other issues, here higher value implies fewer samples will be selected.
+    }
+
+.. note::
+
+    For more information, view the cleanvision `docs <https://cleanvision.readthedocs.io/en/latest/tutorials/tutorial.html#5.-Check-for-an-issue-with-a-different-threshold>`_.

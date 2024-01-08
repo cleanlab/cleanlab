@@ -28,17 +28,18 @@ import numpy as np
 import pandas as pd
 
 import cleanlab
-from cleanlab.datalab.internal.adapter.imagelab import (
-    create_imagelab,
-)
+from cleanlab.datalab.internal.adapter.imagelab import create_imagelab
 from cleanlab.datalab.internal.data import Data
 from cleanlab.datalab.internal.display import _Displayer
 from cleanlab.datalab.internal.helper_factory import (
-    data_issues_factory,
+    _DataIssuesBuilder,
     issue_finder_factory,
     report_factory,
 )
-from cleanlab.datalab.internal.issue_finder import IssueFinder
+from cleanlab.datalab.internal.issue_manager_factory import (
+    list_default_issue_types as _list_default_issue_types,
+    list_possible_issue_types as _list_possible_issue_types,
+)
 from cleanlab.datalab.internal.serialize import _Serializer
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -47,6 +48,7 @@ if TYPE_CHECKING:  # pragma: no cover
     from scipy.sparse import csr_matrix
 
     DatasetLike = Union[Dataset, pd.DataFrame, Dict[str, Any], List[Dict[str, Any]], str]
+
 
 __all__ = ["Datalab"]
 
@@ -76,6 +78,10 @@ class Datalab:
             - path to a local file: Text (.txt), CSV (.csv), JSON (.json)
             - or a dataset identifier on the Hugging Face Hub
 
+    task : str
+        The type of machine learning task that the dataset is used for.
+        By default, this is set to "classification", but you can also set it to "regression" if you are working with a regression dataset.
+
     label_name : str, optional
         The name of the label column in the dataset.
 
@@ -100,12 +106,18 @@ class Datalab:
     def __init__(
         self,
         data: "DatasetLike",
+        task: str = "classification",
         label_name: Optional[str] = None,
         image_key: Optional[str] = None,
         verbosity: int = 1,
     ) -> None:
-        self._data = Data(data, label_name)
+        # Assume continuous values of labels for regression task
+        # Map labels to integers for classification task
+        map_labels_to_int = task == "classification"  # TODO: handle more generally
+
+        self._data = Data(data, label_name, map_to_int=map_labels_to_int)
         self.data = self._data._data
+        self.task = task
         self._labels = self._data.labels
         self._label_map = self._labels.label_map
         self.label_name = self._labels.label_name
@@ -113,7 +125,11 @@ class Datalab:
         self.cleanlab_version = cleanlab.version.__version__
         self.verbosity = verbosity
         self._imagelab = create_imagelab(dataset=self.data, image_key=image_key)
-        self.data_issues = data_issues_factory(self._imagelab)(self._data)
+
+        # Create the builder for DataIssues
+        builder = _DataIssuesBuilder(self._data)
+        builder.set_imagelab(self._imagelab).set_task(task)
+        self.data_issues = builder.build()
 
     # todo: check displayer methods
     def __repr__(self) -> str:
@@ -129,7 +145,7 @@ class Datalab:
 
     @property
     def has_labels(self) -> bool:
-        """Whether the dataset has labels."""
+        """Whether the dataset has labels, and that they are in a [0, 1, ..., K-1] format."""
         return self._labels.is_available
 
     @property
@@ -171,7 +187,8 @@ class Datalab:
             Out-of-sample predicted class probabilities made by the model for every example in the dataset.
             To best detect label issues, provide this input obtained from the most accurate model you can produce.
 
-            If provided, this must be a 2D array with shape (num_examples, K) where K is the number of classes in the dataset.
+            For classification data, this must be a 2D array with shape ``(num_examples, K)`` where ``K`` is the number of classes in the dataset.
+            For regression data, this must be a 1D array with shape ``(num_examples,)`` containing the predicted value for each example.
 
         features : Optional[np.ndarray]
             Feature embeddings (vector representations) of every example in the dataset.
@@ -321,19 +338,22 @@ class Datalab:
                 >>> # lab.find_issues(pred_probs=pred_probs, issue_types=issue_types)
 
         """
+
         if issue_types is not None and not issue_types:
             warnings.warn(
                 "No issue types were specified so no issues will be found in the dataset. Set `issue_types` as None to consider a default set of issues."
             )
             return None
-
-        issue_finder = issue_finder_factory(self._imagelab)(datalab=self, verbosity=self.verbosity)
+        issue_finder = issue_finder_factory(self._imagelab)(
+            datalab=self, task=self.task, verbosity=self.verbosity
+        )
         issue_finder.find_issues(
             pred_probs=pred_probs,
             features=features,
             knn_graph=knn_graph,
             issue_types=issue_types,
         )
+
         if self.verbosity:
             print(
                 f"\nAudit complete. {self.data_issues.issue_summary['num_issues'].sum()} issues found in the dataset."
@@ -375,6 +395,7 @@ class Datalab:
 
         reporter = report_factory(self._imagelab)(
             data_issues=self.data_issues,
+            task=self.task,
             verbosity=verbosity,
             include_description=include_description,
             show_summary_score=show_summary_score,
@@ -521,8 +542,7 @@ class Datalab:
         """
         return self.data_issues.get_info(issue_name)
 
-    @staticmethod
-    def list_possible_issue_types() -> List[str]:
+    def list_possible_issue_types(self) -> List[str]:
         """Returns a list of all registered issue types.
 
         Any issue type that is not in this list cannot be used in the :py:meth:`find_issues` method.
@@ -535,10 +555,9 @@ class Datalab:
         --------
         :py:class:`REGISTRY <cleanlab.datalab.internal.issue_manager_factory.REGISTRY>` : All available issue types and their corresponding issue managers can be found here.
         """
-        return IssueFinder.list_possible_issue_types()
+        return _list_possible_issue_types(task=self.task)
 
-    @staticmethod
-    def list_default_issue_types() -> List[str]:
+    def list_default_issue_types(self) -> List[str]:
         """Returns a list of the issue types that are run by default
         when :py:meth:`find_issues` is called without specifying `issue_types`.
 
@@ -550,7 +569,7 @@ class Datalab:
         --------
         :py:class:`REGISTRY <cleanlab.datalab.internal.issue_manager_factory.REGISTRY>` : All available issue types and their corresponding issue managers can be found here.
         """
-        return IssueFinder.list_default_issue_types()
+        return _list_default_issue_types(task=self.task)
 
     def save(self, path: str, force: bool = False) -> None:
         """Saves this Datalab object to file (all files are in folder at `path/`).

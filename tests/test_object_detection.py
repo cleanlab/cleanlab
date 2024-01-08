@@ -1,79 +1,75 @@
 import os
-import collections
+from collections import Counter, defaultdict
+from multiprocessing import Pool
 
-from cleanlab.internal.object_detection_utils import (
-    softmin1d,
-    softmax,
-    bbox_xyxy_to_xywh,
+import numpy as np
+
+from cleanlab.internal.constants import (
+    ALPHA,
+    BADLOC_THRESHOLD_FACTOR,
+    CUSTOM_SCORE_WEIGHT_BADLOC,
+    CUSTOM_SCORE_WEIGHT_OVERLOOKED,
+    CUSTOM_SCORE_WEIGHT_SWAP,
+    HIGH_PROBABILITY_THRESHOLD,
+    LOW_PROBABILITY_THRESHOLD,
+    OVERLOOKED_THRESHOLD_FACTOR,
+    SWAP_THRESHOLD_FACTOR,
+    TEMPERATURE,
 )
-
+from cleanlab.internal.object_detection_utils import bbox_xyxy_to_xywh, softmax, softmin1d
+from cleanlab.object_detection.filter import (
+    _calculate_true_positives_false_positives,
+    _filter_by_class,
+    _find_label_issues,
+    _find_label_issues_per_box,
+    _get_per_class_ap,
+    _pool_box_scores_per_image,
+    _process_class_list,
+    find_label_issues,
+)
 from cleanlab.object_detection.rank import (
-    get_label_quality_scores,
-    issues_from_scores,
-    _get_min_pred_prob,
-    _get_valid_score,
-    _prune_by_threshold,
     _compute_label_quality_scores,
-    _separate_label,
-    _separate_prediction,
-    _get_overlap_matrix,
+    _get_aggregation_weights,
     _get_dist_matrix,
+    _get_min_pred_prob,
+    _get_overlap_matrix,
+    _get_prediction_type,
     _get_valid_inputs_for_compute_scores,
     _get_valid_inputs_for_compute_scores_per_image,
-    compute_overlooked_box_scores,
-    compute_badloc_box_scores,
-    compute_swap_box_scores,
-    _get_prediction_type,
+    _get_valid_score,
     _get_valid_subtype_score_params,
-    _get_aggregation_weights,
     _has_overlap,
+    _prune_by_threshold,
+    _separate_label,
+    _separate_prediction,
+    compute_badloc_box_scores,
+    compute_overlooked_box_scores,
+    compute_swap_box_scores,
+    get_label_quality_scores,
+    issues_from_scores,
 )
-
-from cleanlab.object_detection.filter import (
-    find_label_issues,
-    _find_label_issues_per_box,
-    _pool_box_scores_per_image,
-    _find_label_issues,
-    _get_per_class_ap,
-    _process_class_list,
-)
-
 from cleanlab.object_detection.summary import (
-    object_counts_per_image,
     bounding_box_size_distribution,
     class_label_distribution,
     get_sorted_bbox_count_idxs,
-    plot_class_size_distributions,
+    object_counts_per_image,
     plot_class_distribution,
+    plot_class_size_distributions,
     visualize,
+    calculate_per_class_metrics,
+    get_average_per_class_confusion_matrix,
 )
-from cleanlab.internal.constants import (
-    ALPHA,
-    LOW_PROBABILITY_THRESHOLD,
-    HIGH_PROBABILITY_THRESHOLD,
-    OVERLOOKED_THRESHOLD_FACTOR,
-    BADLOC_THRESHOLD_FACTOR,
-    SWAP_THRESHOLD_FACTOR,
-    TEMPERATURE,
-    CUSTOM_SCORE_WEIGHT_OVERLOOKED,
-    CUSTOM_SCORE_WEIGHT_SWAP,
-    CUSTOM_SCORE_WEIGHT_BADLOC,
-)
-
-import numpy as np
 
 np.random.seed(0)
 
-import warnings
-
-import pytest
-
-from PIL import Image
-import numpy as np
 import copy
+import warnings
 
 # to suppress plt.show()
 import matplotlib.pyplot as plt
+import numpy as np
+import pytest
+from PIL import Image
 
 
 def generate_image(arr=None):
@@ -664,7 +660,7 @@ def test_bounding_box_size_distribution():
 
 def test_class_label_distribution():
     auxiliary_inputs = _get_valid_inputs_for_compute_scores(ALPHA, labels, predictions)
-    lab_count, pred_count = collections.defaultdict(int), collections.defaultdict(int)
+    lab_count, pred_count = defaultdict(int), defaultdict(int)
 
     for sample in labels:
         for cl in sample["labels"]:
@@ -915,3 +911,98 @@ def test_invalid_method_raises_value_error():
     with pytest.raises(ValueError) as error:
         method = "invalid_method"
         scores = _compute_label_quality_scores(labels, predictions, method=method)
+
+
+@pytest.mark.parametrize("return_false_negative", [True, False])
+def test_calculate_true_positives_false_positives(return_false_negative):
+    num_classes = len(predictions[0])
+    num_images = len(predictions)
+    pool = Pool(1)
+    iou_threshold = 0.5
+    counter_dict = defaultdict(Counter)
+
+    for class_num in range(num_classes):
+        pred_bboxes, lab_bboxes = _filter_by_class(labels, predictions, class_num)
+        tpfp = pool.starmap(
+            _calculate_true_positives_false_positives,
+            zip(
+                pred_bboxes,
+                lab_bboxes,
+                [iou_threshold for _ in range(num_images)],
+                [return_false_negative for _ in range(num_images)],
+            ),
+        )
+        for j, tpfp_j in enumerate(tpfp):
+            for k, tpfp_k in enumerate(tpfp_j):
+                counter_dict[class_num][k] += np.sum(tpfp_k)
+
+    lab_empty = np.array([], dtype=np.float32)
+    pred_bboxes = np.array([[1, 1, 5, 5]])
+    lab_bboxes = np.array([[1, 1, 6, 6], [3, 3, 8, 8]])
+    if return_false_negative:
+        assert len(counter_dict[0]) == 3
+        assert counter_dict[0][2] == 2
+
+        (
+            true_positives,
+            false_positives,
+            false_negatives,
+        ) = _calculate_true_positives_false_positives(
+            pred_bboxes, lab_bboxes, iou_threshold=0.5, return_false_negative=return_false_negative
+        )
+        expected_false_negatives = np.array([[0.0, 1.0]])
+        np.testing.assert_array_equal(false_negatives, expected_false_negatives)
+        (
+            true_positives,
+            false_positives,
+            false_negatives,
+        ) = _calculate_true_positives_false_positives(
+            pred_bboxes, lab_empty, iou_threshold=0.5, return_false_negative=return_false_negative
+        )
+        assert len(false_negatives) == 0
+
+    else:
+        assert len(counter_dict[0]) == 2
+        (
+            true_positives,
+            false_positives,
+        ) = _calculate_true_positives_false_positives(
+            pred_bboxes, lab_empty, iou_threshold=0.5, return_false_negative=return_false_negative
+        )
+        expected_false_positives = np.array([[1.0]])
+        np.testing.assert_array_equal(expected_false_positives, false_positives)
+    assert counter_dict[4][0] == 5
+    assert counter_dict[0][1] == 4
+
+
+def test_calculate_true_positives_false_positives_high_threshold():
+    pred_bboxes = np.array([[1, 1, 5, 5]])
+    lab_bboxes = np.array([[1, 1, 6, 6], [3, 3, 8, 8]])
+    iou_threshold = 1.0
+    (
+        true_positives,
+        false_positives,
+        false_negatives,
+    ) = _calculate_true_positives_false_positives(
+        pred_bboxes, lab_bboxes, iou_threshold=iou_threshold, return_false_negative=True
+    )
+    assert np.array_equal(false_positives, np.array([[1.0]]))
+
+
+@pytest.mark.parametrize("class_names", [None, class_names])
+def test_per_class_metrics(class_names):
+    per_class_metrics = calculate_per_class_metrics(labels, predictions, class_names=class_names)
+    assert len(per_class_metrics) == len(predictions[0])
+    if class_names is None:
+        assert np.isclose(per_class_metrics[9]["average precision"], 0.5)
+        assert np.isclose(per_class_metrics[6]["average f1"], 0.66666)
+    else:
+        assert np.isclose(per_class_metrics[str("j")]["average precision"], 0.5)
+        assert np.isclose(per_class_metrics[str("g")]["average f1"], 0.66666)
+
+
+def test_per_class_confusion_matrix():
+    per_class_confusion_matrix = get_average_per_class_confusion_matrix(labels, predictions)
+    assert np.isclose(per_class_confusion_matrix[1]["TP"], 0.2)
+    assert np.isclose(per_class_confusion_matrix[7]["FP"], 0.3)
+    assert np.isclose(per_class_confusion_matrix[5]["FN"], 0.4)
