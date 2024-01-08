@@ -198,7 +198,7 @@ class Datalab:
         knn_graph :
             Sparse matrix of precomputed distances between examples in the dataset in a k nearest neighbor graph.
 
-            If provided, this must be a square CSR matrix with shape (num_examples, num_examples) and (k*num_examples) non-zero entries (k is the number of nearest neighbors considered for each example),
+            If provided, this must be a square CSR matrix with shape ``(num_examples, num_examples)`` and ``(k*num_examples)`` non-zero entries (``k`` is the number of nearest neighbors considered for each example),
             evenly distributed across the rows.
             Each non-zero entry in this matrix is a distance between a pair of examples in the dataset. Self-distances must be omitted
             (i.e. diagonal must be all zeros, k nearest neighbors for each example do not include the example itself).
