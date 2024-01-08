@@ -695,7 +695,7 @@ def _compute_num_issues(arg: Tuple[np.ndarray, bool]) -> int:
     pred_class = np.argmax(pred_prob, axis=-1)
     batch_size = len(label)
     mask = _reduce_issues(
-        pred_probs=pred_prob, labels=label, K=get_num_classes(pred_prob=pred_prob)
+        pred_probs=pred_prob, labels=label, K=get_num_classes(pred_probs=pred_prob, labels=label)
     )
     if thorough:
         pred_gt_thresholds = pred_prob >= adj_confident_thresholds_shared
