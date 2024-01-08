@@ -181,30 +181,52 @@ class Datalab:
         knn_graph :
             Sparse matrix of precomputed distances between examples in the dataset in a k nearest neighbor graph.
 
-            If provided, this must be a square CSR matrix with shape (num_examples, num_examples) and (k*num_examples) non-zero entries (k is the number of nearest neighbors considered for each example)
-            evenly distributed across the rows in a particular format.
-            The non-zero entries must be the distances between the corresponding examples. Self-distances must be omitted
-            (i.e. the diagonal must be all zeros and the k nearest neighbors of each example must not include itself).
-            Within each row of this matrix, the non-zero entries (distances) must be sorted in ascending order, and the CSR column indices should reflect this ordering of the distances.
-            This type of matrix is returned by the method: `sklearn.`TODO
+            If provided, this must be a square CSR matrix with shape (num_examples, num_examples) and (k*num_examples) non-zero entries (k is the number of nearest neighbors considered for each example),
+            evenly distributed across the rows.
+            The CSR format uses three 1D arrays (`data`, `indices`, and `indptr`) to efficiently store the 2D sparse matrix.
+
+            - `data`: This array contains all the non-zero elements of the matrix, listed in a row-wise fashion.
+            - `indices`: This array stores the column indices of the non-zero elements in the matrix. Each entry in `indices` corresponds to an entry in `data`, indicating the column position of that element.
+            - `indptr`: This array indicates the start and end indices in `data` for each row of the matrix. For example, the non-zero elements of the i-th row are stored from `data[indptr[i]]` to `data[indptr[i+1]]`.
+
+            The matrix represents distances, with each non-zero entry being a distance between examples. Self-distances must be omitted
+            (i.e. the diagonal must be all zeros and the k nearest neighbors for each example do not include the example itself).
+
+            For the knn_graph, within each conceptual "row" of the matrix (as defined by the ranges in `indptr`), the non-zero entries (distances) must be sorted in ascending order. This sorting applies to the segments of the `data` array that correspond to each row. The `indices` array should reflect this ordering, maintaining the correct column positions for these sorted distances.
+
+            This type of matrix is returned by the method: `sklearn.neighbors.NearestNeighbors.kneighbors_graph <https://scikit-learn.org/stable/modules/generated/sklearn.neighbors.NearestNeighbors.html#sklearn.neighbors.NearestNeighbors.kneighbors_graph>`_.
+
+            Below is an example to illustrate:
+
             .. code-block:: python
 
-               knn_graph.todense()
-               # matrix([[0. , 0.3, 0.2],
-               #         [0.3, 0. , 0.4],
-               #         [0.2, 0.4, 0. ]])
+                knn_graph.todense()
+                # matrix([[0. , 0.3, 0.2],
+                #         [0.3, 0. , 0.4],
+                #         [0.2, 0.4, 0. ]])
 
-               knn_graph.data
-               # array([0.2, 0.3, 0.3, 0.4, 0.2, 0.4])
+                knn_graph.data
+                # array([0.2, 0.3, 0.3, 0.4, 0.2, 0.4])
+                # Here, 0.2 and 0.3 are the sorted distances in the first row, 0.3 and 0.4 in the second row, and so on.
 
-               knn_graph.indices
-               # array([2, 1, 0, 2, 0, 1])
+                knn_graph.indices
+                # array([2, 1, 0, 2, 0, 1])
+                # Corresponding neighbor indices for the distances from the `data` array.
+
+                knn_graph.indptr
+                # array([0, 2, 4, 6])
+                # The non-zero entries in the first row are stored from `knn_graph.data[0]` to `knn_graph.data[2]`, the second row from `knn_graph.data[2]` to `knn_graph.data[4]`, and so on.
 
             For any duplicated examples i,j whose distance is 0, there should be an *explicit* zero stored in the matrix, i.e. ``knn_graph[i,j] = 0``.
 
             If both `knn_graph` and `features` are provided, the `knn_graph` will take precendence.
             If `knn_graph` is not provided, it is constructed based on the provided `features`.
             If neither `knn_graph` nor `features` are provided, certain issue types like (near) duplicates will not be considered.
+
+            .. seealso::
+                See the
+                `scipy.sparse.csr_matrix documentation <https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csr_matrix.html>`_
+                for more details on the CSR matrix format.
 
         issue_types :
             Collection specifying which types of issues to consider in audit and any non-default parameter settings to use.
