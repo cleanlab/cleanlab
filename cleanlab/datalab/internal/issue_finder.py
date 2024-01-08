@@ -56,10 +56,9 @@ _CLASSIFICATION_ARGS_DICT = {
     "underperforming_group": ["pred_probs", "features", "knn_graph", "cluster_ids"],
     "data_valuation": ["knn_graph"],
     "class_imbalance": [],
+    "null": ["features"],
 }
-_REGRESSION_ARGS_DICT = {
-    "label": ["features", "predictions"],
-}
+_REGRESSION_ARGS_DICT = {"label": ["features", "predictions"]}
 
 
 def _resolve_required_args_for_classification(**kwargs):
