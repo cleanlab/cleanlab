@@ -200,16 +200,16 @@ class Datalab:
 
             If provided, this must be a square CSR matrix with shape (num_examples, num_examples) and (k*num_examples) non-zero entries (k is the number of nearest neighbors considered for each example),
             evenly distributed across the rows.
-            The CSR format uses three 1D arrays (`data`, `indices`, and `indptr`) to efficiently store the 2D sparse matrix.
+            Each non-zero entry in this matrix is a distance between a pair of examples in the dataset. Self-distances must be omitted
+            (i.e. diagonal must be all zeros, k nearest neighbors for each example do not include the example itself).
 
-            - `data`: This array contains all the non-zero elements of the matrix, listed in a row-wise fashion.
-            - `indices`: This array stores the column indices of the non-zero elements in the matrix. Each entry in `indices` corresponds to an entry in `data`, indicating the column position of that element.
-            - `indptr`: This array indicates the start and end indices in `data` for each row of the matrix. For example, the non-zero elements of the i-th row are stored from `data[indptr[i]]` to `data[indptr[i+1]]`.
+            This CSR format uses three 1D arrays (`data`, `indices`, `indptr`) to store a 2D matrix ``M``:
 
-            The matrix represents distances, with each non-zero entry being a distance between examples. Self-distances must be omitted
-            (i.e. the diagonal must be all zeros and the k nearest neighbors for each example do not include the example itself).
+            - `data`: 1D array containing all the non-zero elements of matrix ``M``, listed in a row-wise fashion (but sorted within each row).
+            - `indices`: 1D array storing the column indices in matrix ``M`` of these non-zero elements. Each entry in `indices` corresponds to an entry in `data`, indicating the column of ``M`` containing this entry.
+            - `indptr`: 1D array indicating the start and end indices in `data` for each row of matrix ``M``. The non-zero elements of the i-th row of ``M`` are stored from ``data[indptr[i]]`` to ``data[indptr[i+1]]``.
 
-            For the knn_graph, within each conceptual "row" of the matrix (as defined by the ranges in `indptr`), the non-zero entries (distances) must be sorted in ascending order. This sorting applies to the segments of the `data` array that correspond to each row. The `indices` array should reflect this ordering, maintaining the correct column positions for these sorted distances.
+            Within each row of matrix ``M`` (defined by the ranges in `indptr`), the corresponding non-zero entries (distances) of `knn_graph` must be sorted in ascending order (specifically in the segments of the `data` array that correspond to each row of ``M``). The `indices` array must also reflect this ordering, maintaining the correct column positions for these sorted distances.
 
             This type of matrix is returned by the method: `sklearn.neighbors.NearestNeighbors.kneighbors_graph <https://scikit-learn.org/stable/modules/generated/sklearn.neighbors.NearestNeighbors.html#sklearn.neighbors.NearestNeighbors.kneighbors_graph>`_.
 
