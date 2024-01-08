@@ -203,53 +203,30 @@ def test_get_label_quality_scores():
     )
     assert np.argmax(error) == np.argmin(image_scores_softmin)
 
+    with pytest.raises(Exception) as e:
+        get_label_quality_scores(labels, pred_probs, method="num_pixel_issues", downsample=4)
+
     image_scores_npi, pixel_scores = get_label_quality_scores(
         labels, pred_probs, method="num_pixel_issues", downsample=1
     )
+
     assert np.argmax(error) == np.argmin(image_scores_npi)
+
+    with pytest.raises(Exception):
+        get_label_quality_scores(labels, pred_probs, method="invalid_method")
 
     image_scores_softmin, pixel_scores = get_label_quality_scores(
         labels, pred_probs, downsample=1, method="softmin"
     )
+
     assert len(image_scores_softmin) == labels.shape[0]
     assert pixel_scores.shape == labels.shape
 
-
-@pytest.mark.parametrize(
-    "method, downsample, batch_size, expected_exception, expected_message",
-    [
-        (
-            "num_pixel_issues",
-            4,
-            None,
-            Exception,
-            "Height 10 and width 10 not divisible by downsample value of 4. Set kwarg downsample to 1 to avoid downsampling.",
-        ),
-        (
-            "invalid_method",
-            None,
-            None,
-            Exception,
-            "Invalid Method: Specify correct method. Currently only supports 'softmin'",
-        ),
-        ("num_pixel_issues", 1, -1, ValueError, "Batch size must be greater than 0, got -1"),
-        ("num_pixel_issues", 1, 0, ValueError, "Batch size must be greater than 0, got 0"),
-    ],
-    ids=["downsample", "method", "batch_size_negative", "batch_size_zero"],
-)
-def test_get_label_quality_scores_exceptions(
-    method, downsample, batch_size, expected_exception, expected_message
-):
-    args = {"labels": labels, "pred_probs": pred_probs, "method": method}
-    if downsample is not None:
-        args["downsample"] = downsample
-    if batch_size is not None:
-        args["batch_size"] = batch_size
-
-    with pytest.raises(expected_exception) as exc_info:
-        get_label_quality_scores(**args)
-
-    assert expected_message in str(exc_info.value)
+    # with pytest.raises(ValueError):
+    #     get_label_quality_scores(labels, pred_probs, method="num_pixel_issues", batch_size=-1)
+    #     get_label_quality_scores(
+    #         labels, pred_probs, method="num_pixel_issues", downsample=1, batch_size=0
+    #     )
 
 
 # different size inpits

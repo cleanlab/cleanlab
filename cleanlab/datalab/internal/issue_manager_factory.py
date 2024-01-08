@@ -51,7 +51,6 @@ from cleanlab.datalab.internal.issue_manager import (
     UnderperformingGroupIssueManager,
     DataValuationIssueManager,
     OutlierIssueManager,
-    NullIssueManager,
 )
 from cleanlab.datalab.internal.issue_manager.regression import RegressionLabelIssueManager
 
@@ -64,9 +63,10 @@ REGISTRY: Dict[str, Dict[str, Type[IssueManager]]] = {
         "class_imbalance": ClassImbalanceIssueManager,
         "underperforming_group": UnderperformingGroupIssueManager,
         "data_valuation": DataValuationIssueManager,
-        "null": NullIssueManager,
     },
-    "regression": {"label": RegressionLabelIssueManager},
+    "regression": {
+        "label": RegressionLabelIssueManager,
+    },
 }
 """Registry of issue managers that can be constructed from a string
 and used in the Datalab class.
@@ -203,12 +203,5 @@ def list_default_issue_types(task: str) -> List[str]:
     if task == "regression":
         default_issue_types = ["label"]
     else:
-        default_issue_types = [
-            "null",
-            "label",
-            "outlier",
-            "near_duplicate",
-            "non_iid",
-            "class_imbalance",
-        ]
+        default_issue_types = ["label", "outlier", "near_duplicate", "non_iid", "class_imbalance"]
     return default_issue_types

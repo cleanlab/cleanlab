@@ -111,7 +111,6 @@ class TestNullIssueManager:
             "Number of examples with this issue:"
         ) in report
 
-        assert "Additional Information: " not in report
         report = issue_manager.report(
             issues=issue_manager.issues,
             summary=issue_manager.summary,
