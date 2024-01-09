@@ -776,7 +776,7 @@ class TestMultiLabel:
     @settings(deadline=5000)
     def test_find_label_issues(self, data):
         true_labels, noisy_labels, pred_probs = data
-        pred_probs[0,0] = 0.5
+        pred_probs[0, 0] = 0.5
         noisy_labels_list = onehot2int(noisy_labels)
         is_issue = filter.find_label_issues(
             labels=noisy_labels_list, pred_probs=np.array(pred_probs)
