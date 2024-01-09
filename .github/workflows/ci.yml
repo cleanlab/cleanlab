@@ -85,7 +85,7 @@ jobs:
           pip install .
       - name: Install test dependencies
         run: |
-          pip install pytest pytest-lazy-fixture pipdeptree
+          pip install pytest pytest-lazy-fixture pipdeptree hypothesis
           pipdeptree -j > deps.json
       - name: Install minimum versions
         run: |
