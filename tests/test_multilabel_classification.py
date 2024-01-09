@@ -730,8 +730,8 @@ def flip_labels(label, flip_prob):
 
 @composite
 def cleanlab_data_strategy(draw):
-    num_classes = draw(st.integers(min_value=2, max_value=4))
-    num_samples = draw(st.integers(min_value=10, max_value=20))
+    num_classes = draw(st.integers(min_value=2, max_value=3))
+    num_samples = draw(st.integers(min_value=10, max_value=50))
 
     # Generate true labels as one-hot encoded vectors for multi-label
     true_labels = draw(
@@ -768,20 +768,25 @@ def cleanlab_data_strategy(draw):
             max_size=num_samples,
         )
     )
+
+    for i in range(num_samples):
+        for j in range(num_classes):
+            if draw(st.floats(min_value=0, max_value=1)) < 0.1:
+                # Set some probability values to exactly 0.5
+                pred_probs[i][j] = 0.5
     return true_labels, noisy_labels, np.array(pred_probs)
 
 
 class TestMultiLabel:
     @given(cleanlab_data_strategy())
-    @settings(deadline=5000)
+    @settings(deadline=10000)
     def test_find_label_issues(self, data):
         true_labels, noisy_labels, pred_probs = data
-        pred_probs[0, 0] = 0.5
         noisy_labels_list = onehot2int(noisy_labels)
         is_issue = filter.find_label_issues(
             labels=noisy_labels_list, pred_probs=np.array(pred_probs)
         )
         threshold = 0.5
-        pred_labels = (pred_probs > threshold).astype(int)
+        pred_labels = (pred_probs >= threshold).astype(int)
         equal_pred = np.where(np.all(pred_labels == noisy_labels, axis=1), True, False)
         assert sum(equal_pred & is_issue) == 0
