@@ -233,8 +233,6 @@ def _reduce_issues(pred_probs, labels):
     pred_probs[np.arange(len(labels)), labels] += FLOATING_POINT_COMPARISON
     pred = pred_probs.argmax(axis=1)
     mask = pred == labels
-    # if num_classes == 2:
-    #     mask = mask | ((pred_probs[:, 0] >= 0.5 - FLOATING_POINT_COMPARISON) & (pred_probs[:, 0] <= 0.5 + FLOATING_POINT_COMPARISON))
     return mask
 
 
