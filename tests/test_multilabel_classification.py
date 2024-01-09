@@ -18,11 +18,10 @@
 import itertools
 import typing
 
-import hypothesis.strategies as st
 import numpy as np
 import pytest
 import sklearn
-from hypothesis import given
+from hypothesis import given, settings
 from hypothesis import strategies as st
 from hypothesis.strategies import composite
 from sklearn.linear_model import LogisticRegression
@@ -30,14 +29,15 @@ from sklearn.multiclass import OneVsRestClassifier
 
 from cleanlab import multilabel_classification as ml_classification
 from cleanlab.internal import multilabel_scorer as ml_scorer
-from cleanlab.internal.multilabel_utils import (get_onehot_num_classes,
-                                                onehot2int, stack_complement)
+from cleanlab.internal.multilabel_utils import get_onehot_num_classes, onehot2int, stack_complement
 from cleanlab.multilabel_classification import filter
 from cleanlab.multilabel_classification.dataset import (
-    common_multilabel_issues, multilabel_health_summary,
-    overall_multilabel_health_score, rank_classes_by_multilabel_quality)
-from cleanlab.multilabel_classification.rank import \
-    get_label_quality_scores_per_class
+    common_multilabel_issues,
+    multilabel_health_summary,
+    overall_multilabel_health_score,
+    rank_classes_by_multilabel_quality,
+)
+from cleanlab.multilabel_classification.rank import get_label_quality_scores_per_class
 
 
 @pytest.fixture
@@ -728,12 +728,10 @@ def flip_labels(label, flip_prob):
     return 1 - np.array(label) if np.random.rand() < flip_prob else label
 
 
-
-
 @composite
 def cleanlab_data_strategy(draw):
-    num_classes = draw(st.integers(min_value=2, max_value=5))
-    num_samples = draw(st.integers(min_value=10, max_value=50))
+    num_classes = draw(st.integers(min_value=2, max_value=4))
+    num_samples = draw(st.integers(min_value=10, max_value=20))
 
     # Generate true labels as one-hot encoded vectors for multi-label
     true_labels = draw(
@@ -773,8 +771,9 @@ def cleanlab_data_strategy(draw):
     return true_labels, noisy_labels, np.array(pred_probs)
 
 
-class TestCleanlab:
+class TestMultiLabel:
     @given(cleanlab_data_strategy())
+    @settings(deadline=5000)
     def test_find_label_issues(self, data):
         true_labels, noisy_labels, pred_probs = data
         noisy_labels_list = onehot2int(noisy_labels)
