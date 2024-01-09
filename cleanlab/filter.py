@@ -444,7 +444,7 @@ def find_label_issues(
         label_issues_mask = find_predicted_neq_given(labels, pred_probs, multi_label=multi_label)
 
     if filter_by not in ["low_self_confidence", "low_normalized_margin"]:
-        # Remove label issues if given label == model prediction if issues haven't been removed yet
+        # Remove label issues if model prediction is close to given label
         mask = _reduce_issues(pred_probs=pred_probs, labels=labels)
         label_issues_mask[mask] = False
 
