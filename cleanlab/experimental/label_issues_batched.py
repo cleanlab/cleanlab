@@ -33,7 +33,7 @@ from typing import Optional, List, Tuple, Any
 from cleanlab.count import get_confident_thresholds, _reduce_issues
 from cleanlab.rank import find_top_issues, _compute_label_quality_scores
 from cleanlab.typing import LabelLike
-from cleanlab.internal.util import value_counts_fill_missing_classes, get_num_classes
+from cleanlab.internal.util import value_counts_fill_missing_classes
 from cleanlab.internal.constants import (
     CONFIDENT_THRESHOLDS_LOWER_BOUND,
     FLOATING_POINT_COMPARISON,
