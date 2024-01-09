@@ -24,6 +24,7 @@ import sklearn
 from hypothesis import given, settings
 from hypothesis import strategies as st
 from hypothesis.strategies import composite
+from hypothesis.extra.numpy import arrays
 from sklearn.linear_model import LogisticRegression
 from sklearn.multiclass import OneVsRestClassifier
 
@@ -725,7 +726,11 @@ class TestExponentialMovingAverage:
 
 
 def flip_labels(label, flip_prob):
-    return 1 - np.array(label) if np.random.rand() < flip_prob else label
+    """Flips binary labels with a given probability."""
+    rand_flip = np.random.choice(
+        [0, 1], size=label.shape, replace=True, p=[1 - flip_prob, flip_prob]
+    )
+    return np.abs(label - rand_flip).astype(int)
 
 
 @composite
@@ -735,37 +740,19 @@ def cleanlab_data_strategy(draw):
 
     # Generate true labels as one-hot encoded vectors for multi-label
     true_labels = draw(
-        st.lists(
-            st.lists(
-                st.integers(min_value=0, max_value=1),
-                min_size=num_classes,
-                max_size=num_classes,
-            ),
-            min_size=num_samples,
-            max_size=num_samples,
-        )
+        arrays(dtype=np.int8, shape=(num_samples, num_classes), elements=st.integers(0, 1))
     )
 
-    # Generate noise matrix for multi-label
+    # Generate noise matrix for multi-label and flip those values
     flip_prob = 0.2
-    noisy_labels = np.array([flip_labels(label, flip_prob) for label in true_labels])
-
-    # Modify the noisy_labels using your logic
-    for i in range(num_samples):
-        for j in range(num_classes):
-            if draw(st.floats(min_value=0, max_value=1)) < 0.2:
-                noisy_labels[i][j] = 0
+    noisy_labels = flip_labels(true_labels, flip_prob)
 
     # Generate predicted probabilities for each class for each sample
     pred_probs = draw(
-        st.lists(
-            st.lists(
-                st.floats(min_value=0, max_value=1),
-                min_size=num_classes,
-                max_size=num_classes,
-            ),
-            min_size=num_samples,
-            max_size=num_samples,
+        arrays(
+            dtype=np.float32,
+            shape=(num_samples, num_classes),
+            elements=st.floats(min_value=0, max_value=1, width=32),  # Specify width here
         )
     )
 
@@ -788,5 +775,5 @@ class TestMultiLabel:
         )
         threshold = 0.5
         pred_labels = (pred_probs >= threshold).astype(int)
-        equal_pred = np.where(np.all(pred_labels == noisy_labels, axis=1), True, False)
+        equal_pred = np.all(pred_labels == noisy_labels, axis=1)
         assert sum(equal_pred & is_issue) == 0
