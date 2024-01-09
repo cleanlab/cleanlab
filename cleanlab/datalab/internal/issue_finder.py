@@ -230,7 +230,7 @@ class IssueFinder:
             If provided, this must be a 2D array with shape (num_examples, num_features).
 
         knn_graph :
-            Sparse matrix representing distances between examples in a dataset in a k nearest neighbor graph.
+            Sparse matrix representing distances between examples in the dataset in a k nearest neighbor graph.
 
             For details, refer to the documentation of the same argument in :py:class:`Datalab.find_issues <cleanlab.datalab.datalab.Datalab.find_issues>`
 
