@@ -774,6 +774,10 @@ class TestMultiLabel:
             labels=noisy_labels_list, pred_probs=np.array(pred_probs)
         )
         threshold = 0.5
-        pred_labels = (pred_probs >= threshold).astype(int)
-        equal_pred = np.all(pred_labels == noisy_labels, axis=1)
-        assert sum(equal_pred & is_issue) == 0
+        predicted_labels = (pred_probs >= threshold).astype(int)
+
+        # Check if predicted labels are the same as noisy labels for each example
+        labels_match = np.all(predicted_labels == noisy_labels, axis=1)
+        
+        # For any example flagged as having an issue, there should be at least one label mismatch
+        assert not np.any(labels_match & is_issue), "Examples with issues must have at least one label mismatch."
