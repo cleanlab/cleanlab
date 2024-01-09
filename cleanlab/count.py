@@ -38,7 +38,11 @@ from typing import Tuple, Union, Optional
 
 from cleanlab.typing import LabelLike
 from cleanlab.internal.multilabel_utils import stack_complement, get_onehot_num_classes
-from cleanlab.internal.constants import TINY_VALUE, CONFIDENT_THRESHOLDS_LOWER_BOUND, EPSILON
+from cleanlab.internal.constants import (
+    TINY_VALUE,
+    CONFIDENT_THRESHOLDS_LOWER_BOUND,
+    FLOATING_POINT_COMPARISON,
+)
 
 from cleanlab.internal.util import (
     value_counts_fill_missing_classes,
@@ -151,11 +155,7 @@ def num_label_issues(
         label_issues_mask[cl_error_indices] = True
 
         # Remove label issues if given label == model prediction
-        mask = _reduce_issues(
-            pred_probs=pred_probs,
-            labels=labels,
-            num_classes=get_num_classes(pred_probs=pred_probs, labels=labels),
-        )
+        mask = _reduce_issues(pred_probs=pred_probs, labels=labels)
         label_issues_mask[mask] = False
         num_issues = np.sum(label_issues_mask)
     elif estimation_method == "off_diagonal_calibrated":
@@ -228,12 +228,13 @@ def _num_label_issues_multilabel(
     return sum(issues_idx)
 
 
-def _reduce_issues(pred_probs, labels, num_classes):
+def _reduce_issues(pred_probs, labels):
     """Returns a boolean mask denoting correct predictions or predictions within a margin around 0.5 for binary classification, suitable for filtering out indices in 'is_label_issue'."""
+    pred_probs[np.arange(len(labels)), labels] += FLOATING_POINT_COMPARISON
     pred = pred_probs.argmax(axis=1)
     mask = pred == labels
-    if num_classes == 2:
-        mask = mask | ((pred_probs[:, 0] >= 0.5 - EPSILON) & (pred_probs[:, 0] <= 0.5 + EPSILON))
+    # if num_classes == 2:
+    #     mask = mask | ((pred_probs[:, 0] >= 0.5 - FLOATING_POINT_COMPARISON) & (pred_probs[:, 0] <= 0.5 + FLOATING_POINT_COMPARISON))
     return mask
 
 
