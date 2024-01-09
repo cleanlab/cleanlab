@@ -154,7 +154,7 @@ def num_label_issues(
         label_issues_mask = np.zeros(len(labels), dtype=bool)
         label_issues_mask[cl_error_indices] = True
 
-        # Remove label issues if given label == model prediction
+        # Remove label issues if model prediction is close to given label
         mask = _reduce_issues(pred_probs=pred_probs, labels=labels)
         label_issues_mask[mask] = False
         num_issues = np.sum(label_issues_mask)
