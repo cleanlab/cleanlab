@@ -780,4 +780,4 @@ class TestMultiLabel:
         labels_match = np.all(predicted_labels == noisy_labels, axis=1)
         
         # For any example flagged as having an issue, there should be at least one label mismatch
-        assert not np.any(labels_match & is_issue), "Examples with issues must have at least one label mismatch."
+        assert not np.any(is_issue & labels_match), "Examples with issues must have at least one label mismatch."
