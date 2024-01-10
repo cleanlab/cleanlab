@@ -230,11 +230,8 @@ def _num_label_issues_multilabel(
 
 def _reduce_issues(pred_probs, labels):
     """Returns a boolean mask denoting correct predictions or predictions within a margin around 0.5 for binary classification, suitable for filtering out indices in 'is_label_issue'."""
-    pred_probs_copy = np.copy(pred_probs)  # Make a copy of the original array
-    pred_probs_copy[np.arange(len(labels)), labels] += FLOATING_POINT_COMPARISON
-    pred = pred_probs_copy.argmax(axis=1)
+    pred = (pred_probs[np.arange(len(labels)), labels] + FLOATING_POINT_COMPARISON).argmax(axis=1)
     mask = pred == labels
-    del pred_probs_copy  # Delete copy
     return mask
 
 
