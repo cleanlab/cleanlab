@@ -96,6 +96,11 @@ class DataValuationIssueManager(IssueManager):
         """Calculate the data valuation score with a provided or existing knn graph.
         Based on KNN-Shapley value described in https://arxiv.org/abs/1911.07128
         The larger the score, the more valuable the data point is, the more contribution it will make to the model's training.
+
+        Parameters
+        ----------
+        knn_graph : csr_matrix
+            A sparse matrix representing the knn graph.
         """
         knn_graph = self._process_knn_graph_from_inputs(kwargs)
         labels = self.datalab.labels.reshape(-1, 1)
