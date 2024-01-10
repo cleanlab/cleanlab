@@ -236,8 +236,8 @@ def find_label_issues_batched(
     label_issues_indices = lab.get_label_issues()
     label_issues_mask = np.zeros(len(labels), dtype=bool)
     label_issues_mask[label_issues_indices] = True
-    mask = _reduce_issues(pred_probs=pred_probs[label_issues_indices], labels=labels[label_issues_indices])
-    label_issues_mask[label_issues_indices[mask]] = False
+    mask = _reduce_issues(pred_probs=pred_probs, labels=labels)
+    label_issues_mask[mask] = False
     if return_mask:
         return label_issues_mask
     return np.where(label_issues_mask)[0]
