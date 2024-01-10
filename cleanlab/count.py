@@ -155,8 +155,8 @@ def num_label_issues(
         label_issues_mask[cl_error_indices] = True
 
         # Remove label issues if model prediction is close to given label
-        mask = _reduce_issues(pred_probs=pred_probs, labels=labels)
-        label_issues_mask[mask] = False
+        mask = _reduce_issues(pred_probs=pred_probs[cl_error_indices], labels=labels[cl_error_indices])
+        label_issues_mask[cl_error_indices[mask]] = False
         num_issues = np.sum(label_issues_mask)
     elif estimation_method == "off_diagonal_calibrated":
         calculated_confident_joint = compute_confident_joint(
