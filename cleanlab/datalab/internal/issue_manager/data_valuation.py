@@ -99,8 +99,14 @@ class DataValuationIssueManager(IssueManager):
         """
         knn_graph = self._process_knn_graph_from_inputs(kwargs)
         labels = self.datalab.labels.reshape(-1, 1)
-        assert knn_graph is not None, "knn_graph must be already calculated by other issue managers"
-        assert labels is not None, "labels must be provided"
+        if knn_graph is None:
+            raise ValueError(
+                "knn_graph must be provided in kwargs or already stored in the Datalab instance\n"
+                "It should be calculated by other issue managers if it is not provided via "
+                "`Datalab.find_issues(knn_graph=knn_graph, ...)`"
+            )
+        if labels is None:
+            raise ValueError("labels must be provided to run data valuation")
 
         knn_graph_k = knn_graph.indices.reshape(labels.shape[0], -1).shape[1]
         if self.k > knn_graph_k:
