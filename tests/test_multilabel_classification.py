@@ -17,23 +17,28 @@
 
 import itertools
 import typing
+
 import numpy as np
 import pytest
 import sklearn
-from sklearn.multiclass import OneVsRestClassifier
+from hypothesis import given, settings
+from hypothesis import strategies as st
+from hypothesis.strategies import composite
+from hypothesis.extra.numpy import arrays
 from sklearn.linear_model import LogisticRegression
+from sklearn.multiclass import OneVsRestClassifier
 
-from cleanlab.internal import multilabel_scorer as ml_scorer
-from cleanlab.internal.multilabel_utils import stack_complement, get_onehot_num_classes, onehot2int
 from cleanlab import multilabel_classification as ml_classification
+from cleanlab.internal import multilabel_scorer as ml_scorer
+from cleanlab.internal.multilabel_utils import get_onehot_num_classes, onehot2int, stack_complement
+from cleanlab.multilabel_classification import filter
 from cleanlab.multilabel_classification.dataset import (
     common_multilabel_issues,
-    rank_classes_by_multilabel_quality,
-    overall_multilabel_health_score,
     multilabel_health_summary,
+    overall_multilabel_health_score,
+    rank_classes_by_multilabel_quality,
 )
 from cleanlab.multilabel_classification.rank import get_label_quality_scores_per_class
-from cleanlab.multilabel_classification import filter
 
 
 @pytest.fixture
@@ -718,3 +723,63 @@ class TestExponentialMovingAverage:
         for alpha in [-0.5, 1.5]:
             with pytest.raises(ValueError, match=partial_error_msg):
                 ml_scorer.exponential_moving_average(np.ones(5).reshape(1, -1), alpha=alpha)
+
+
+def flip_labels(label, flip_prob):
+    """Flips binary labels with a given probability."""
+    rand_flip = np.random.choice(
+        [0, 1], size=label.shape, replace=True, p=[1 - flip_prob, flip_prob]
+    )
+    return np.abs(label - rand_flip).astype(int)
+
+
+@composite
+def cleanlab_data_strategy(draw):
+    num_classes = draw(st.integers(min_value=2, max_value=3))
+    num_samples = draw(st.integers(min_value=10, max_value=50))
+
+    # Generate true labels as one-hot encoded vectors for multi-label
+    true_labels = draw(
+        arrays(dtype=np.int8, shape=(num_samples, num_classes), elements=st.integers(0, 1))
+    )
+
+    # Generate noise matrix for multi-label and flip those values
+    flip_prob = 0.2
+    noisy_labels = flip_labels(true_labels, flip_prob)
+
+    # Generate predicted probabilities for each class for each sample
+    pred_probs = draw(
+        arrays(
+            dtype=np.float32,
+            shape=(num_samples, num_classes),
+            elements=st.floats(min_value=0, max_value=1, width=32),  # Specify width here
+        )
+    )
+
+    for i in range(num_samples):
+        for j in range(num_classes):
+            if draw(st.floats(min_value=0, max_value=1)) < 0.1:
+                # Set some probability values to exactly 0.5
+                pred_probs[i][j] = 0.5
+    return true_labels, noisy_labels, np.array(pred_probs)
+
+
+class TestMultiLabel:
+    @given(cleanlab_data_strategy())
+    @settings(deadline=10000)
+    def test_find_label_issues(self, data):
+        true_labels, noisy_labels, pred_probs = data
+        noisy_labels_list = onehot2int(noisy_labels)
+        is_issue = filter.find_label_issues(
+            labels=onehot2int(noisy_labels_list), pred_probs=np.array(pred_probs)
+        )
+        threshold = 0.5
+        predicted_labels = (pred_probs >= threshold).astype(int)
+
+        # Check if predicted labels are the same as noisy labels for each example
+        labels_match = np.all(predicted_labels == noisy_labels, axis=1)
+
+        # For any example flagged as having an issue, there should be at least one label mismatch
+        assert not np.any(
+            is_issue & labels_match
+        ), "Examples with issues must have at least one label mismatch."
