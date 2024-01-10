@@ -42,16 +42,29 @@ class DataValuationIssueManager(IssueManager):
 
     Examples
     --------
-    >>> from cleanlab import Datalab
-    >>> import numpy as np
-    >>> X = np.random.normal(size=(50, 2))
-    >>> y = np.random.randint(2, size=50)
-    >>> pred_probs = X / X.sum(axis=1, keepdims=True)
-    >>> data = {"X": X, "y": y}
-    >>> lab = Datalab(data, label_name="y")
-    >>> lab.find_issues()
-    >>> issue_types={"data_valuation": {"k": 10, "threshold": 1e-6}}
-    >>> lab.find_issues(issue_types=issue_types)
+    .. code-block:: python
+
+        >>> from cleanlab import Datalab
+        >>> import numpy as np
+        >>> from sklearn.neighbors import NearestNeighbors
+        >>>
+        >>> # Generate two distinct clusters
+        >>> X = np.vstack([
+        ...     np.random.normal(-1, 1, (25, 2)),
+        ...     np.random.normal(1, 1, (25, 2)),
+        ... ])
+        >>> y = np.array([0]*25 + [1]*25)
+        >>>
+        >>> # Initialize Datalab with data
+        >>> lab = Datalab(data={"y": y}, label_name="y")
+        >>>
+        >>> # Creating a knn_graph for data valuation
+        >>> knn = NearestNeighbors(n_neighbors=10).fit(X)
+        >>> knn_graph = knn.kneighbors_graph(mode='distance')
+        >>>
+        >>> # Specifying issue types for data valuation
+        >>> issue_types = {"data_valuation": {}}
+        >>> lab.find_issues(knn_graph=knn_graph, issue_types=issue_types)
     """
 
     description: ClassVar[
