@@ -21,7 +21,9 @@ Helper functions used internally for outlier detection tasks.
 import numpy as np
 
 
-def transform_distances_to_scores(distances: np.ndarray, k: int, t: int) -> np.ndarray:
+def transform_distances_to_scores(
+    distances: np.ndarray, k: int, t: int, scaling_factor: float
+) -> np.ndarray:
     """Returns an outlier score for each example based on its average distance to its k nearest neighbors.
 
     The transformation of a distance, :math:`d` , to a score, :math:`o` , is based on the following formula:
@@ -46,6 +48,9 @@ def transform_distances_to_scores(distances: np.ndarray, k: int, t: int) -> np.n
     t : int
         Controls transformation of distances between examples into similarity scores that lie in [0,1].
 
+    scaling_factor : float
+        A scaling factor used to normalize the distances.
+
     Returns
     -------
     ood_features_scores : np.ndarray
@@ -60,9 +65,6 @@ def transform_distances_to_scores(distances: np.ndarray, k: int, t: int) -> np.n
     >>> transform_distances_to_scores(distances, k=2, t=1)
     array([0.95122942, 0.83945702])
     """
-    # Calculate average distance to k-nearest neighbors
-    avg_knn_distances = distances[:, :k].mean(axis=1)
-
     # Map ood_features_scores to range 0-1 with 0 = most concerning
-    ood_features_scores: np.ndarray = np.exp(-1 * avg_knn_distances * t)
+    ood_features_scores: np.ndarray = np.exp(-1 * avg_knn_distances / scaling_factor * t)
     return ood_features_scores
