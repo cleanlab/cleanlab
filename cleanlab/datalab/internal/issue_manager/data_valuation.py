@@ -116,7 +116,7 @@ class DataValuationIssueManager(IssueManager):
             A sparse matrix representing the knn graph.
         """
         knn_graph = self._process_knn_graph_from_inputs(kwargs)
-        labels = self.datalab.labels.reshape(-1, 1)
+        labels = self.datalab.labels
         if knn_graph is None:
             raise ValueError(
                 "knn_graph must be provided in kwargs or already stored in the Datalab instance\n"
@@ -183,14 +183,11 @@ def _knn_shapley_score(knn_graph: csr_matrix, labels: np.ndarray, k: int) -> np.
     scores = np.zeros((N, N))
     dist = knn_graph.indices.reshape(N, -1)
 
-    for i, y in enumerate(labels):
-        idx = dist[i][::-1]
+    for (y, s, dist_i) in zip(labels, scores, dist):
+        idx = dist_i[::-1]
         ans = labels[idx]
-        scores[idx[k - 1]][i] = float(ans[k - 1] == y) / k
-        cur = k - 2
-        for j in range(k - 1):
-            scores[idx[cur]][i] = scores[idx[cur + 1]][i] + float(
-                int(ans[cur] == y) - int(ans[cur + 1] == y)
-            ) / k * (min(cur, k - 1) + 1) / (cur + 1)
-            cur -= 1
-    return 0.5 * (np.mean(scores, axis=1) + 1)
+        s[idx[k - 1]] = float(ans[k - 1] == y)
+        ans_matches = (ans == y).flatten()
+        for j in range(k - 2, -1, -1):
+            s[idx[j]] = s[idx[j + 1]] + float(int(ans_matches[j]) - int(ans_matches[j + 1]))
+    return 0.5 * (np.mean(scores / k, axis=0) + 1)
