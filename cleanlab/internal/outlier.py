@@ -46,10 +46,12 @@ def transform_distances_to_scores(
         uses slicing to avoid indexing errors.
 
     t : int
-        Controls transformation of distances between examples into similarity scores that lie in [0,1].
+        A sensitivity parameter that modulates the strength of the transformation from distances to scores.
+        Higher values of `t` result in more pronounced differentiation between the scores of examples
+        lying in the range [0,1].
 
     scaling_factor : float
-        A scaling factor used to normalize the distances.
+        A scaling factor used to normalize the distances before they are converted into scores.
 
     Returns
     -------
