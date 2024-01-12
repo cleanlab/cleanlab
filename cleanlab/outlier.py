@@ -25,7 +25,7 @@ import numpy as np
 from cleanlab.count import get_confident_thresholds
 from sklearn.neighbors import NearestNeighbors
 from sklearn.exceptions import NotFittedError
-from typing import Optional, Union, Tuple, Dict, cast
+from typing import Optional, Union, Tuple, Dict
 from cleanlab.internal.label_quality_utils import (
     _subtract_confident_thresholds,
     get_normalized_entropy,
@@ -118,9 +118,9 @@ class OutOfDistribution:
                 "CAUTION: GEN method is not recommended for use with adjusted pred_probs. "
                 "To use GEN, we recommend setting: params['adjust_pred_probs'] = False"
             )
-        self.params[
-            "scaling_factor"
-        ] = None  # internally used to rescale distances based on mean distances to k nearest neighbors
+
+        # scaling_factor internally used to rescale distances based on mean distances to k nearest neighbors
+        self.params["scaling_factor"] = None
 
     def fit_score(
         self,
@@ -459,12 +459,16 @@ class OutOfDistribution:
         avg_knn_distances = distances[:, :k].mean(axis=1)
 
         if self.params["scaling_factor"] is None:
-            self.params["scaling_factor"] = max(
-                np.median(avg_knn_distances), np.finfo(np.float_).eps
+            self.params["scaling_factor"] = float(
+                max(np.median(avg_knn_distances), np.finfo(np.float_).eps)
             )
+        scaling_factor = self.params["scaling_factor"]
+
+        if not isinstance(scaling_factor, float):
+            raise ValueError(f"Scaling factor must be a float. Got {type(scaling_factor)} instead.")
 
         ood_features_scores = transform_distances_to_scores(
-            avg_knn_distances, t, scaling_factor=self.params["scaling_factor"]
+            avg_knn_distances, t, scaling_factor=scaling_factor
         )
         return (ood_features_scores, knn)
 
