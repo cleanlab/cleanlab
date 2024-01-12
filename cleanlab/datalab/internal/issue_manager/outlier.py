@@ -103,7 +103,11 @@ class OutlierIssueManager(IssueManager):
             t = cast(int, self.ood.params["t"])
             distances = knn_graph.data.reshape(-1, k)
             assert isinstance(distances, np.ndarray)
-            scores = transform_distances_to_scores(distances, k=k, t=t)
+            avg_distances = distances.mean(axis=1)
+            median_distance = np.median(avg_distances)
+            scores = transform_distances_to_scores(
+                avg_distances, t=t, scaling_factor=median_distance
+            )
         elif features is not None:
             scores = self._score_with_features(features, **kwargs)
         elif pred_probs is not None:
