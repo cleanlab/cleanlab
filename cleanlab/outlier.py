@@ -462,7 +462,7 @@ class OutOfDistribution:
             self.params["scaling_factor"] = np.median(avg_knn_distances)
 
         ood_features_scores = transform_distances_to_scores(
-            distances, cast(int, k), t, scaling_factor=self.params["scaling_factor"]
+            avg_knn_distances, t, scaling_factor=self.params["scaling_factor"]
         )
         return (ood_features_scores, knn)
 
