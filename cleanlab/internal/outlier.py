@@ -35,15 +35,9 @@ def transform_distances_to_scores(
 
     Parameters
     ----------
-    distances : np.ndarray
-        An array of distances of shape ``(N, num_neighbors)``, where N is the number of examples.
-        Each row contains the distances to each example's `num_neighbors` nearest neighbors.
-        It is assumed that each row is sorted in ascending order.
-
-    k : int
-        Number of neighbors used to compute the average distance to each example.
-        This assumes that the second dimension of distances is k or greater, but it
-        uses slicing to avoid indexing errors.
+    avg_distances : np.ndarray
+        An array of distances of shape ``(N)``, where N is the number of examples.
+        Each row represents an example's average distance to its k nearest neighbors.
 
     t : int
         A sensitivity parameter that modulates the strength of the transformation from distances to scores.
@@ -64,8 +58,9 @@ def transform_distances_to_scores(
     >>> from cleanlab.outlier import transform_distances_to_scores
     >>> distances = np.array([[0.0, 0.1, 0.25],
     ...                       [0.15, 0.2, 0.3]])
-    >>> transform_distances_to_scores(distances, k=2, t=1)
-    array([0.95122942, 0.83945702])
+    >>> avg_distances = np.mean(distances, axis=1)
+    >>> transform_distances_to_scores(avg_distances, t=1, scaling_factor=1)
+    array([0.88988177, 0.80519832])
     """
     # Map ood_features_scores to range 0-1 with 0 = most concerning
     ood_features_scores: np.ndarray = np.exp(-1 * avg_distances / scaling_factor * t)
