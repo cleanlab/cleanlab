@@ -64,7 +64,7 @@ class RegressionLabelIssueManager(IssueManager):
         self,
         datalab: Datalab,
         clean_learning_kwargs: Optional[Dict[str, Any]] = None,
-        threshold: float = 0.1,
+        threshold: float = 0.05,
         health_summary_parameters: Optional[Dict[str, Any]] = None,
         **_,
     ):
