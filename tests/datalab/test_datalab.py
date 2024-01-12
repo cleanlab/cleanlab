@@ -1111,7 +1111,7 @@ class TestDatalabForRegression:
         assert fpr == 0.0
 
         # Try running with a different threshold
-        lab.find_issues(pred_probs=y_pred, issue_types={"label": {"threshold": 0.4}})
+        lab.find_issues(pred_probs=y_pred, issue_types={"label": {"threshold": 0.2}})
         issues = lab.get_issues("label")
         issue_ids = issues.query("is_label_issue").index
 
