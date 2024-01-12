@@ -459,7 +459,9 @@ class OutOfDistribution:
         avg_knn_distances = distances[:, :k].mean(axis=1)
 
         if self.params["scaling_factor"] is None:
-            self.params["scaling_factor"] = np.median(avg_knn_distances)
+            self.params["scaling_factor"] = max(
+                np.median(avg_knn_distances), np.finfo(np.float_).eps
+            )
 
         ood_features_scores = transform_distances_to_scores(
             avg_knn_distances, t, scaling_factor=self.params["scaling_factor"]
