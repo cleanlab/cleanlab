@@ -343,7 +343,7 @@ class OutOfDistribution:
                 # Get ood features scores
                 if verbose:
                     print("Fitting OOD estimator based on provided features ...")
-                scores, knn = _get_ood_features_scores(
+                scores, knn = self._get_ood_features_scores(
                     features, **self._get_params(self.OUTLIER_PARAMS)
                 )
                 self.params["knn"] = knn
