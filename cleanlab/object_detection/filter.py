@@ -85,7 +85,7 @@ def find_label_issues(
         where ``[x1,y1,x2,y2]`` are coordinates of the bounding box predicted by the model with respect to the y-coordinate axis
         and ``pred_prob`` is the model's confidence in the predicted class label for this bounding box.
 
-        Note: Here, ``[x1,y1]`` corresponds to the coordinates of the bottom-left corner of the bounding box, while ``[x2,y2]`` corresponds to the coordinates of the top-right corner of the bounding box. The last column, pred_prob, represents the predicted probability that the bounding box contains an object of the class k.
+        Note: In this context, the coordinate system follows the y-axis convention, where [x1, y1] denotes the coordinates of the bottom-left corner of the bounding box, and [x2, y2] represents the coordinates of the top-right corner of the bounding box. The last column, pred_prob, represents the predicted probability that the bounding box contains an object of the class k.
 
         For more information see the `MMDetection package <https://github.com/open-mmlab/mmdetection>`_ for an example object detection library that outputs predictions in the correct format.
 
