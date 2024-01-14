@@ -115,8 +115,11 @@ class Datalab:
         self.verbosity = verbosity
         self._imagelab = create_imagelab(dataset=self.data, image_key=image_key)
         self.data_issues = data_issues_factory(self._imagelab)(self._data)
-        if trained_datalab is not None:
-            """The internal field _trained_statistics is used to indicate whether the datalab already has statistics information from an existing datalab trained with similar data distribution."""
+        if trained_datalab is not None and self._label_map == trained_datalab._label_map:
+            """
+            The "test" datalab will use some statistics informations from the "train" datalab passed by user when the test data has the same label distribution as the train data.
+            The internal field _trained_statistics is used to indicate whether the datalab already has statistics information from an existing datalab trained with similar data distribution.
+            """
             warnings.warn(
                 "An existing Datalab instacne has been passed, the new datalab will use the existing statistics."
             )
