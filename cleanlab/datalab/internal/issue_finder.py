@@ -221,8 +221,21 @@ class IssueFinder:
 
     def _resolve_trained_statistics_args(self, issue_types: Dict[str, Any]):
         """For label error only now"""
-        for issue in issue_types:
-            issue_types[issue].update({k: v for k, v in self.datalab.get_info(issue).items()})
+        # get 'confident_joint' if it not passed by user. Note: the 'noise_matrix' and 'inversed_noise_matrix' will always be recomputed by the `CleanLearning` instance.
+        supported_issue_types = ["label"]
+        issue_keys = {"label": ["confident_joint"]}
+        for issue in supported_issue_types:
+            issue_types[issue].update(
+                {
+                    "clean_learning_kwargs": {
+                        "find_label_issues_kwargs": {
+                            k: v
+                            for k, v in self.datalab.get_info(issue).items()
+                            if (k in issue_keys[issue] and issue_types[issue].get(k) is None)
+                        }
+                    }
+                }
+            )
         return issue_types
 
     def _set_issue_types(
