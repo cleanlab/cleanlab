@@ -29,11 +29,18 @@ import pytest
 from datasets.dataset_dict import DatasetDict
 from scipy.sparse import csr_matrix
 from sklearn.neighbors import NearestNeighbors
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import cross_val_predict
 
 import cleanlab
 from cleanlab.datalab.datalab import Datalab
 from cleanlab.datalab.internal.issue_finder import IssueFinder
 from cleanlab.datalab.internal.report import Reporter
+from cleanlab.benchmarking.noise_generation import (
+    generate_noise_matrix_from_trace,
+    generate_noisy_labels,
+)
 
 SEED = 42
 
@@ -1116,37 +1123,145 @@ class TestDataLabClassImbalanceIssues:
 
 
 class TestDataLabReuseStatisticInfo:
-    num_examples = 100
-    K = 2
+    num_examples = 2000
+    test_size = 0.1
 
     @pytest.fixture
-    def pred_probs(self):
+    def data(self):
         np.random.seed(SEED)
-        pred_probs_array = np.random.rand(self.num_examples, self.K)
-        return pred_probs_array / pred_probs_array.sum(axis=1, keepdims=True)
+
+        BINS = {
+            0: [-np.inf, 3.3],
+            1: [3.3, 6.6],
+            2: [6.6, +np.inf],
+        }
+
+        X = np.random.rand(self.num_examples, 2) * 5
+        f = np.sum(X, axis=1)
+        y = np.array([k for f_i in f for k, v in BINS.items() if v[0] <= f_i < v[1]])
+
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=self.test_size, random_state=SEED
+        )
+
+        py = np.bincount(y) / float(len(y))
+        m = len(BINS)
+
+        noise_matrix = generate_noise_matrix_from_trace(
+            m,
+            trace=0.9 * m,
+            py=py,
+            valid_noise_matrix=True,
+            seed=SEED,
+        )
+
+        noisy_labels_train = generate_noisy_labels(y_train, noise_matrix)
+        noisy_labels_test = generate_noisy_labels(y_test, noise_matrix)
+
+        return {
+            "X_train": X_train,
+            "noisy_labels_train": noisy_labels_train,
+            "X_test": X_test,
+            "noisy_labels_test": noisy_labels_test,
+        }
 
     @pytest.fixture
-    def trained_datalab(self):
-        data = {"labels": np.random.randint(0, self.K, self.num_examples)}
-        np.random.seed(SEED + 1)
-        pred_probs_array = np.random.rand(self.num_examples, self.K)
-        pred_probs_for_train = pred_probs_array / pred_probs_array.sum(axis=1, keepdims=True)
+    def pred_probs_train(self, data):
+        model = LogisticRegression()
+        pred_probs = cross_val_predict(
+            estimator=model,
+            X=data["X_train"],
+            y=data["noisy_labels_train"],
+            cv=5,
+            method="predict_proba",
+        )
+        return pred_probs
+
+    @pytest.fixture
+    def pred_probs_test(self, data):
+        model = LogisticRegression()
+        model.fit(data["X_train"], data["noisy_labels_train"])
+        pred_probs = model.predict_proba(data["X_test"])
+        return pred_probs
+
+    @pytest.fixture
+    def pred_probs_combined(self, data):
+        model = LogisticRegression()
+        pred_probs = cross_val_predict(
+            estimator=model,
+            X=np.concatenate((data["X_test"], data["X_train"])),
+            y=np.concatenate((data["noisy_labels_test"], data["noisy_labels_train"])),
+            cv=5,
+            method="predict_proba",
+        )
+        return pred_probs
+
+    @pytest.fixture
+    def trained_datalab(self, pred_probs_train, data):
+        data = {"labels": data["noisy_labels_train"]}
         lab = Datalab(data=data, label_name="labels")
-        lab.find_issues(pred_probs=pred_probs_for_train, issue_types={"label": {}})
+        lab.find_issues(pred_probs=pred_probs_train, issue_types={"label": {}})
         return lab
 
-    def test_reuse_statistics_info(self, trained_datalab):
-        data = {"labels": np.random.randint(0, self.K, self.num_examples)}
+    def test_reuse_statistics_info(self, trained_datalab, data):
+        data = {"labels": data["noisy_labels_test"]}
         lab = Datalab(trained_datalab=trained_datalab, data=data, label_name="labels")
         for k in trained_datalab.get_info().keys():
             assert lab.get_info(k).keys() == trained_datalab.get_info(k).keys()
 
-    def test_find_issue_with_trained_datalab(self, trained_datalab, pred_probs):
-        data = {"labels": np.random.randint(0, self.K, self.num_examples)}
+    def test_set_trained_statistics(self, trained_datalab, pred_probs_test, data):
+        data = {"labels": data["noisy_labels_test"]}
         lab = Datalab(trained_datalab=trained_datalab, data=data, label_name="labels")
-        lab.find_issues(pred_probs=pred_probs, issue_types={"label": {}})
+        lab.find_issues(pred_probs=pred_probs_test, issue_types={"label": {}})
         trained_statistics = trained_datalab.get_info("label")
         test_statistics = lab.get_info("label")
         for k, v in trained_statistics.items():
-            if k in ["noise_matrix", "inverse_noise_matrix"]:
+            if k in ["confident_joint"]:
                 assert np.array_equal(v, test_statistics[k])
+
+    def test_find_issue_with_trained_datalab(
+        self, trained_datalab, pred_probs_test, pred_probs_combined, data
+    ):
+        combined_data = {
+            "labels": np.concatenate((data["noisy_labels_test"], data["noisy_labels_train"]))
+        }
+        lab_all = Datalab(data=combined_data, label_name="labels")
+        lab_all.find_issues(pred_probs=pred_probs_combined, issue_types={"label": {}})
+        test_data = {"labels": data["noisy_labels_test"]}
+        lab_test = Datalab(trained_datalab=trained_datalab, data=test_data, label_name="labels")
+        lab_test.find_issues(pred_probs=pred_probs_test, issue_types={"label": {}})
+        lab1_result = lab_all.get_issues()[: int(self.num_examples * self.test_size)]
+        lab2_result = lab_test.get_issues()
+        similarity = sum(
+            lab1_result[["is_label_issue"]].values == lab2_result[["is_label_issue"]].values
+        ) / len(lab1_result)
+        assert similarity >= 0.93
+
+    def test_find_issue_with_trained_datalab_multi_different_size_batch(
+        self, trained_datalab, pred_probs_test, pred_probs_combined, data
+    ):
+        combined_data = {
+            "labels": np.concatenate((data["noisy_labels_test"], data["noisy_labels_train"]))
+        }
+        lab_all = Datalab(data=combined_data, label_name="labels")
+        lab_all.find_issues(pred_probs=pred_probs_combined, issue_types={"label": {}})
+        lab1_result = lab_all.get_issues()[: int(self.num_examples * self.test_size)]
+        lab2_result = pd.DataFrame()
+        batch_sizes = [1, 2, 5, 10, 20, 50, 100, 13]
+        start_positions = [0] * len(batch_sizes)
+        for i in range(1, len(batch_sizes)):
+            start_positions[i] = start_positions[i - 1] + batch_sizes[i - 1]
+        for batch_size, start_position in zip(batch_sizes, start_positions):
+            test_data = {
+                "labels": data["noisy_labels_test"][start_position : start_position + batch_size]
+            }
+            lab_test = Datalab(trained_datalab=trained_datalab, data=test_data, label_name="labels")
+            lab_test.find_issues(
+                pred_probs=pred_probs_test[start_position : start_position + batch_size],
+                issue_types={"label": {}},
+            )
+            lab2_result = pd.concat([lab2_result, lab_test.get_issues()], axis=0)
+        similarity = sum(
+            lab1_result[["is_label_issue"]].values == lab2_result[["is_label_issue"]].values
+        ) / len(lab1_result)
+        assert similarity >= 0.90
