@@ -68,7 +68,7 @@ class TestDataValuationIssueManager:
         ), f"Info should have the right keys, but is missing {set(expected_keys) - set(info_keys)}"
 
     def test_find_issue_wrong_knn_graph(self, issue_manager, embeddings):
-        with pytest.raises(AssertionError):
+        with pytest.raises(ValueError):
             issue_manager.datalab.find_issues(
                 features=embeddings["embedding"], issue_types={"outlier": {"k": 3}}
             )
