@@ -115,6 +115,7 @@ class DataValuationIssueManager(IssueManager):
         knn_graph : csr_matrix
             A sparse matrix representing the knn graph.
         """
+        self.k = kwargs.get("k", self.k)
         knn_graph = self._process_knn_graph_from_inputs(kwargs)
         labels = self.datalab.labels
         if knn_graph is None:
@@ -125,13 +126,6 @@ class DataValuationIssueManager(IssueManager):
             )
         if labels is None:
             raise ValueError("labels must be provided to run data valuation")
-
-        knn_graph_k = knn_graph.indices.reshape(labels.shape[0], -1).shape[1]
-        if self.k > knn_graph_k:
-            self.k = knn_graph_k
-            Warning(
-                f"k is larger than the number of neighbors in the knn graph. Using k={self.k} instead."
-            )
 
         scores = _knn_shapley_score(knn_graph, labels, self.k)
 
@@ -156,12 +150,11 @@ class DataValuationIssueManager(IssueManager):
         elif knn_graph_stats is not None:
             knn_graph = knn_graph_stats
 
-        if isinstance(knn_graph, csr_matrix) and kwargs.get("k", 0) > (
-            knn_graph.nnz // knn_graph.shape[0]
-        ):
-            # If the provided knn graph is insufficient, then we need to recompute the knn graph
-            # with the provided features
-            knn_graph = None
+        if isinstance(knn_graph, csr_matrix) and self.k > (knn_graph.nnz // knn_graph.shape[0]):
+            self.k = knn_graph.nnz // knn_graph.shape[0]
+            Warning(
+                f"k is larger than the number of neighbors in the knn graph. Using k={self.k} instead."
+            )
         return knn_graph
 
     def collect_info(self, issues: pd.DataFrame) -> dict:
