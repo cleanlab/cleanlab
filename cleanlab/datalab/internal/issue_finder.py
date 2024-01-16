@@ -56,10 +56,9 @@ _CLASSIFICATION_ARGS_DICT = {
     "underperforming_group": ["pred_probs", "features", "knn_graph", "cluster_ids"],
     "data_valuation": ["knn_graph"],
     "class_imbalance": [],
+    "null": ["features"],
 }
-_REGRESSION_ARGS_DICT = {
-    "label": ["features", "predictions"],
-}
+_REGRESSION_ARGS_DICT = {"label": ["features", "predictions"]}
 
 
 def _resolve_required_args_for_classification(**kwargs):
@@ -233,16 +232,7 @@ class IssueFinder:
         knn_graph :
             Sparse matrix representing distances between examples in the dataset in a k nearest neighbor graph.
 
-            If provided, this must be a square CSR matrix with shape (num_examples, num_examples) and (k*num_examples) non-zero entries (k is the number of nearest neighbors considered for each example)
-            evenly distributed across the rows.
-            The non-zero entries must be the distances between the corresponding examples. Self-distances must be omitted
-            (i.e. the diagonal must be all zeros and the k nearest neighbors of each example must not include itself).
-
-            For any duplicated examples i,j whose distance is 0, there should be an *explicit* zero stored in the matrix, i.e. ``knn_graph[i,j] = 0``.
-
-            If both `knn_graph` and `features` are provided, the `knn_graph` will take precendence.
-            If `knn_graph` is not provided, it is constructed based on the provided `features`.
-            If neither `knn_graph` nor `features` are provided, certain issue types like (near) duplicates will not be considered.
+            For details, refer to the documentation of the same argument in :py:class:`Datalab.find_issues <cleanlab.datalab.datalab.Datalab.find_issues>`
 
         issue_types :
             Collection specifying which types of issues to consider in audit and any non-default parameter settings to use.
