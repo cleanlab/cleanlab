@@ -183,7 +183,7 @@ def _knn_shapley_score(knn_graph: csr_matrix, labels: np.ndarray, k: int) -> np.
     scores = np.zeros((N, N))
     dist = knn_graph.indices.reshape(N, -1)
 
-    for (y, s, dist_i) in zip(labels, scores, dist):
+    for y, s, dist_i in zip(labels, scores, dist):
         idx = dist_i[::-1]
         ans = labels[idx]
         s[idx[k - 1]] = float(ans[k - 1] == y)
