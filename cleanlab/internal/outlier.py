@@ -37,7 +37,7 @@ def transform_distances_to_scores(
     ----------
     avg_distances : np.ndarray
         An array of distances of shape ``(N)``, where N is the number of examples.
-        Each row represents an example's average distance to its k nearest neighbors.
+        Each entry represents an example's average distance to its k nearest neighbors.
 
     t : int
         A sensitivity parameter that modulates the strength of the transformation from distances to scores.

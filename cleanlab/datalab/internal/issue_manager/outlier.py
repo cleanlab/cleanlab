@@ -104,9 +104,9 @@ class OutlierIssueManager(IssueManager):
             distances = knn_graph.data.reshape(-1, k)
             assert isinstance(distances, np.ndarray)
             avg_distances = distances.mean(axis=1)
-            median_distance = np.median(avg_distances)
+            median_avg_distance = np.median(avg_distances)
             scores = transform_distances_to_scores(
-                avg_distances, t=t, scaling_factor=median_distance
+                avg_distances, t=t, scaling_factor=median_avg_distance
             )
         elif features is not None:
             scores = self._score_with_features(features, **kwargs)
