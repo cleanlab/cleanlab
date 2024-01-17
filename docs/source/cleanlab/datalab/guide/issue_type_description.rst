@@ -154,6 +154,15 @@ equals the average of the individual examples' quality scores.
 Presence of null examples in the dataset can lead to errors when training ML models. It can also
 result in the model learning incorrect patterns due to the null values.
 
+Data Valuation Issue
+--------------------
+
+The examples in the dataset with lowest data valuation scores contribute least to a trained ML model's performance (those whose value falls below a threshold are flagged with this type of issue).
+
+Data valuation issues can only be detected based on a provided `knn_graph`` (or one pre-computed during the computation of other issue types).  If you do not provide this argument and there isn't a `knn_graph` already stored in the Datalab object, this type of issue will not be considered.
+
+The data valuation score is an approximate Data Shapley value, calculated based on the labels of the top k nearest neighbors of an example. The details of this KNN-Shapley value could be found in the papers: `Efficient Task-Specific Data Valuation for Nearest Neighbor Algorithms <https://arxiv.org/abs/1908.08619>`_ and `Scalability vs. Utility: Do We Have to Sacrifice One for the Other in Data Importance Quantification? <https://arxiv.org/abs/1911.07128>`_.
+
 Optional Issue Parameters
 =========================
 
@@ -307,6 +316,19 @@ Null Issue Parameters
 .. note::
 
     For more information, view the source code of:  :py:class:`datalab.internal.issue_manager.null.NullIssueManager <cleanlab.datalab.internal.issue_manager.null.NullIssueManager>`.
+
+Data Valuation Issue Parameters
+--------------------------
+
+.. code-block:: python
+
+    data_valuation_kwargs = {
+        "k": # Number of nearest neighbors used to calculate data valuation scores,
+        "threshold": # Examples with scores below this  threshold will be flagged with a data valuation issue
+    }
+
+.. note::
+    For more information, view the source code of:  :py:class:`datalab.internal.issue_manager.data_valuation.DataValuationIssueManager <cleanlab.datalab.internal.issue_manager.data_valuation.DataValuationIssueManager>`.
 
 Image Issue Parameters
 --------------------------
