@@ -45,7 +45,11 @@ def transform_distances_to_scores(
         lying in the range [0,1].
 
     scaling_factor : float
-        A scaling factor used to normalize the distances before they are converted into scores.
+        A scaling factor used to normalize the distances before they are converted into scores. A valid
+        scaling factor is any positive number. The choice of scaling factor should be based on the
+        distribution of distances between neighboring examples. A good rule of thumb is to set the
+        scaling factor to the median distance between neighboring examples. A lower scaling factor
+        results in more pronounced differentiation between the scores of examples lying in the range [0,1].
 
     Returns
     -------
