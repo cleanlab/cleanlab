@@ -58,7 +58,7 @@ y = labels  # for ease
 # Used for characterization tests
 small_labels = np.array([1, 2, 3, 4])
 small_predictions = np.array([2, 2, 5, 4.1])
-expected_score_outre = np.array([0.04536998, 0.38809391, 0.03983538, 0.38809391])
+expected_score_outre = np.array([0.2162406, 0.62585509, 0.20275104, 0.62585509])
 expected_score_residual = np.array([0.36787944, 1.0, 0.13533528, 0.90483742])
 expected_scores = {"outre": expected_score_outre, "residual": expected_score_residual}
 

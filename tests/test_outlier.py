@@ -340,6 +340,7 @@ def test_class_public_func():
 
 
 def test_get_ood_features_scores():
+    ood = OutOfDistribution()
     X_train = data["X_train"]
     X_test = data["X_test"]
 
@@ -353,20 +354,18 @@ def test_get_ood_features_scores():
     knn = NearestNeighbors(n_neighbors=5, metric="euclidean").fit(X_train)
     # Get KNN distance as outlier score
     k = 5
-    knn_distance_to_score, _ = outlier._get_ood_features_scores(
-        features=X_test_with_ood, knn=knn, k=k
-    )
+    knn_distance_to_score, _ = ood._get_ood_features_scores(features=X_test_with_ood, knn=knn, k=k)
     # Checking that X_ood has the smallest outlier score among all the datapoints
     assert np.argmin(knn_distance_to_score) == (knn_distance_to_score.shape[0] - 1)
 
     # Get KNN distance as outlier score without passing k
     # By default k=10 is used or k = n_neighbors when k > n_neighbors extracted from the knn
-    knn_distance_to_score, _ = outlier._get_ood_features_scores(features=X_test_with_ood, knn=knn)
+    knn_distance_to_score, _ = ood._get_ood_features_scores(features=X_test_with_ood, knn=knn)
     # Checking that X_ood has the smallest outlier score among all the datapoints
     assert np.argmin(knn_distance_to_score) == (knn_distance_to_score.shape[0] - 1)
 
     # Get KNN distance as outlier score passing k and t > 1
-    large_t_knn_distance_to_score, _ = outlier._get_ood_features_scores(
+    large_t_knn_distance_to_score, _ = ood._get_ood_features_scores(
         features=X_test_with_ood, knn=knn, k=k, t=5
     )
 
@@ -374,7 +373,7 @@ def test_get_ood_features_scores():
     assert np.argmin(large_t_knn_distance_to_score) == (large_t_knn_distance_to_score.shape[0] - 1)
 
     # Get KNN distance as outlier score passing k and t < 1
-    small_t_knn_distance_to_score, _ = outlier._get_ood_features_scores(
+    small_t_knn_distance_to_score, _ = ood._get_ood_features_scores(
         features=X_test_with_ood, knn=knn, k=k, t=0.002
     )
 
@@ -397,17 +396,19 @@ def test_default_k_and_model_get_ood_features_scores():
     # Create NN class object with small instantiated k and fit on data
     knn = NearestNeighbors(n_neighbors=instantiated_k, metric="euclidean").fit(X_with_ood)
 
-    avg_knn_distances_default_model, _ = outlier._get_ood_features_scores(
+    ood = OutOfDistribution()
+
+    avg_knn_distances_default_model, _ = ood._get_ood_features_scores(
         features=X_with_ood,
         k=instantiated_k,  # this should use default estimator (same as above) and k = instantiated_k
     )
 
-    avg_knn_distances_default_k, knn2 = outlier._get_ood_features_scores(
+    avg_knn_distances_default_k, knn2 = ood._get_ood_features_scores(
         features=X_with_ood,  # default k should be set to 10 == instantiated_k
     )
     assert isinstance(knn2, type(knn))
 
-    avg_knn_distances, _ = outlier._get_ood_features_scores(
+    avg_knn_distances, _ = ood._get_ood_features_scores(
         features=None,
         knn=knn,
         k=25,  # this should throw user warn, k should be set to instantiated_k
@@ -417,18 +418,18 @@ def test_default_k_and_model_get_ood_features_scores():
     assert avg_knn_distances.sum() == avg_knn_distances_default_model.sum()
     assert avg_knn_distances_default_k.sum() == avg_knn_distances.sum()
 
-    avg_knn_distances_large_k, _ = outlier._get_ood_features_scores(
+    avg_knn_distances_large_k, _ = ood._get_ood_features_scores(
         features=X_with_ood,
         k=25,  # this should use default estimator and k = 25
     )
 
-    avg_knn_distances_tiny_k, _ = outlier._get_ood_features_scores(
+    avg_knn_distances_tiny_k, _ = ood._get_ood_features_scores(
         features=None,
         knn=knn,
         k=1,  # this should use knn estimator and k = 1
     )
 
-    avg_knn_distances_tiny_k_default, _ = outlier._get_ood_features_scores(
+    avg_knn_distances_tiny_k_default, _ = ood._get_ood_features_scores(
         features=X_with_ood,
         k=1,  # this should use default estimator and k = 1
     )
@@ -440,7 +441,7 @@ def test_default_k_and_model_get_ood_features_scores():
 
     # Test that when knn is None ValueError raised if passed in k > len(features)
     try:
-        outlier._get_ood_features_scores(
+        ood._get_ood_features_scores(
             features=X_with_ood,
             knn=None,
             k=len(X_with_ood) + 1,  # this should throw ValueError, k ! > len(features)
@@ -448,7 +449,7 @@ def test_default_k_and_model_get_ood_features_scores():
     except Exception as e:
         assert "nearest neighbors" in str(e)
         with pytest.raises(ValueError) as e:
-            outlier._get_ood_features_scores(
+            ood._get_ood_features_scores(
                 features=X_with_ood,
                 knn=None,
                 k=len(X_with_ood) + 1,  # this should throw ValueError, k ! > len(features)
@@ -457,15 +458,16 @@ def test_default_k_and_model_get_ood_features_scores():
 
 def test_not_enough_info_get_ood_features_scores():
     # Testing calling function with not enough information to calculate outlier scores
+    ood = OutOfDistribution()
     try:
-        outlier._get_ood_features_scores(
+        ood._get_ood_features_scores(
             features=None,
             knn=None,  # this should throw TypeError because knn=None and features=None
         )
     except Exception as e:
         assert "Both knn and features arguments" in str(e)
         with pytest.raises(ValueError) as e:
-            outlier._get_ood_features_scores(
+            ood._get_ood_features_scores(
                 features=None,
                 knn=None,  # this should throw TypeError because knn=None and features=None
             )

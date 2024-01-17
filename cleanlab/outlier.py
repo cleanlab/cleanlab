@@ -25,7 +25,7 @@ import numpy as np
 from cleanlab.count import get_confident_thresholds
 from sklearn.neighbors import NearestNeighbors
 from sklearn.exceptions import NotFittedError
-from typing import Optional, Union, Tuple, Dict, cast
+from typing import Optional, Union, Tuple, Dict
 from cleanlab.internal.label_quality_utils import (
     _subtract_confident_thresholds,
     get_normalized_entropy,
@@ -118,6 +118,9 @@ class OutOfDistribution:
                 "CAUTION: GEN method is not recommended for use with adjusted pred_probs. "
                 "To use GEN, we recommend setting: params['adjust_pred_probs'] = False"
             )
+
+        # scaling_factor internally used to rescale distances based on mean distances to k nearest neighbors
+        self.params["scaling_factor"] = None
 
     def fit_score(
         self,
@@ -266,7 +269,9 @@ class OutOfDistribution:
                 raise ValueError(
                     "OOD estimator needs to be fit on features first. Call `fit()` or `fit_scores()` before this function."
                 )
-            scores, _ = _get_ood_features_scores(features, **self._get_params(self.OUTLIER_PARAMS))
+            scores, _ = self._get_ood_features_scores(
+                features, **self._get_params(self.OUTLIER_PARAMS)
+            )
 
         if pred_probs is not None:
             if self.params["confident_thresholds"] is None and self.params["adjust_pred_probs"]:
@@ -338,7 +343,7 @@ class OutOfDistribution:
                 # Get ood features scores
                 if verbose:
                     print("Fitting OOD estimator based on provided features ...")
-                scores, knn = _get_ood_features_scores(
+                scores, knn = self._get_ood_features_scores(
                     features, **self._get_params(self.OUTLIER_PARAMS)
                 )
                 self.params["knn"] = knn
@@ -369,89 +374,103 @@ class OutOfDistribution:
                     self.params["confident_thresholds"] = confident_thresholds
         return scores
 
+    def _get_ood_features_scores(
+        self,
+        features: Optional[np.ndarray] = None,
+        knn: Optional[NearestNeighbors] = None,
+        k: Optional[int] = None,
+        t: int = 1,
+    ) -> Tuple[np.ndarray, Optional[NearestNeighbors]]:
+        """
+        Return outlier score based on feature values using `k` nearest neighbors.
 
-def _get_ood_features_scores(
-    features: Optional[np.ndarray] = None,
-    knn: Optional[NearestNeighbors] = None,
-    k: Optional[int] = None,
-    t: int = 1,
-) -> Tuple[np.ndarray, Optional[NearestNeighbors]]:
-    """
-    Return outlier score based on feature values using `k` nearest neighbors.
+        The outlier score for each example is computed inversely proportional to
+        the average distance between this example and its K nearest neighbors (in feature space).
 
-    The outlier score for each example is computed inversely proportional to
-    the average distance between this example and its K nearest neighbors (in feature space).
+        Parameters
+        ----------
+        features : np.ndarray
+        Feature array of shape ``(N, M)``, where N is the number of examples and M is the number of features used to represent each example.
+        For details, `features` in the same format expected by the `~cleanlab.outlier.OutOfDistribution.fit` function.
 
-    Parameters
-    ----------
-    features : np.ndarray
-      Feature array of shape ``(N, M)``, where N is the number of examples and M is the number of features used to represent each example.
-      For details, `features` in the same format expected by the `~cleanlab.outlier.OutOfDistribution.fit` function.
+        knn : sklearn.neighbors.NearestNeighbors, default = None
+        For details, see key `knn` in the params dict arg of `~cleanlab.outlier.OutOfDistribution`.
 
-    knn : sklearn.neighbors.NearestNeighbors, default = None
-      For details, see key `knn` in the params dict arg of `~cleanlab.outlier.OutOfDistribution`.
+        k : int, default=None
+        Optional number of neighbors to use when calculating outlier score (average distance to neighbors).
+        For details, see key `k` in the params dict arg of `~cleanlab.outlier.OutOfDistribution`.
 
-    k : int, default=None
-      Optional number of neighbors to use when calculating outlier score (average distance to neighbors).
-      For details, see key `k` in the params dict arg of `~cleanlab.outlier.OutOfDistribution`.
+        t : int, default=1
+        Controls transformation of distances between examples into similarity scores that lie in [0,1].
+        For details, see key `t` in the params dict arg of `~cleanlab.outlier.OutOfDistribution`.
 
-    t : int, default=1
-      Controls transformation of distances between examples into similarity scores that lie in [0,1].
-      For details, see key `t` in the params dict arg of `~cleanlab.outlier.OutOfDistribution`.
+        Returns
+        -------
+        ood_features_scores : Tuple[np.ndarray, Optional[NearestNeighbors]]
+        Return a tuple whose first element is array of `ood_features_scores` and second is a `knn` Estimator object.
+        """
+        DEFAULT_K = 10
+        # fit skip over (if knn is not None) then skipping fit and suggest score else fit.
+        if knn is None:  # setup default KNN estimator
+            # Make sure both knn and features are not None
+            if features is None:
+                raise ValueError(
+                    "Both knn and features arguments cannot be None at the same time. Not enough information to compute outlier scores."
+                )
+            if k is None:
+                k = DEFAULT_K  # use default when knn and k are both None
+            if k > len(features):  # Ensure number of neighbors less than number of examples
+                raise ValueError(
+                    f"Number of nearest neighbors k={k} cannot exceed the number of examples N={len(features)} passed into the estimator (knn)."
+                )
 
-    Returns
-    -------
-    ood_features_scores : Tuple[np.ndarray, Optional[NearestNeighbors]]
-      Return a tuple whose first element is array of `ood_features_scores` and second is a `knn` Estimator object.
-    """
-    DEFAULT_K = 10
-    # fit skip over (if knn is not None) then skipping fit and suggest score else fit.
-    if knn is None:  # setup default KNN estimator
-        # Make sure both knn and features are not None
-        if features is None:
-            raise ValueError(
-                "Both knn and features arguments cannot be None at the same time. Not enough information to compute outlier scores."
+            if features.shape[1] > 3:  # use euclidean distance for lower dimensional spaces
+                metric = "cosine"
+            else:
+                metric = "euclidean"
+
+            knn = NearestNeighbors(n_neighbors=k, metric=metric).fit(features)
+            features = None  # features should be None in knn.kneighbors(features) to avoid counting duplicate data points
+
+        elif k is None:
+            k = knn.n_neighbors
+
+        max_k = knn.n_neighbors  # number of neighbors previously used in NearestNeighbors object
+        if k > max_k:  # if k provided is too high, use max possible number of nearest neighbors
+            warnings.warn(
+                f"Chosen k={k} cannot be greater than n_neighbors={max_k} which was used when fitting "
+                f"NearestNeighbors object! Value of k changed to k={max_k}.",
+                UserWarning,
             )
-        if k is None:
-            k = DEFAULT_K  # use default when knn and k are both None
-        if k > len(features):  # Ensure number of neighbors less than number of examples
-            raise ValueError(
-                f"Number of nearest neighbors k={k} cannot exceed the number of examples N={len(features)} passed into the estimator (knn)."
+            k = max_k
+
+        # Fit knn estimator on the features if a non-fitted estimator is passed in
+        try:
+            knn.kneighbors(features)
+        except NotFittedError:
+            knn.fit(features)
+
+        # Get distances to k-nearest neighbors Note that the knn object contains the specification of distance metric
+        # and n_neighbors (k value) If our query set of features matches the training set used to fit knn, the nearest
+        # neighbor of each point is the point itself, at a distance of zero.
+        distances, _ = knn.kneighbors(features)
+
+        # Calculate average distance to k-nearest neighbors
+        avg_knn_distances = distances[:, :k].mean(axis=1)
+
+        if self.params["scaling_factor"] is None:
+            self.params["scaling_factor"] = float(
+                max(np.median(avg_knn_distances), np.finfo(np.float_).eps)
             )
+        scaling_factor = self.params["scaling_factor"]
 
-        if features.shape[1] > 3:  # use euclidean distance for lower dimensional spaces
-            metric = "cosine"
-        else:
-            metric = "euclidean"
+        if not isinstance(scaling_factor, float):
+            raise ValueError(f"Scaling factor must be a float. Got {type(scaling_factor)} instead.")
 
-        knn = NearestNeighbors(n_neighbors=k, metric=metric).fit(features)
-        features = None  # features should be None in knn.kneighbors(features) to avoid counting duplicate data points
-
-    elif k is None:
-        k = knn.n_neighbors
-
-    max_k = knn.n_neighbors  # number of neighbors previously used in NearestNeighbors object
-    if k > max_k:  # if k provided is too high, use max possible number of nearest neighbors
-        warnings.warn(
-            f"Chosen k={k} cannot be greater than n_neighbors={max_k} which was used when fitting "
-            f"NearestNeighbors object! Value of k changed to k={max_k}.",
-            UserWarning,
+        ood_features_scores = transform_distances_to_scores(
+            avg_knn_distances, t, scaling_factor=scaling_factor
         )
-        k = max_k
-
-    # Fit knn estimator on the features if a non-fitted estimator is passed in
-    try:
-        knn.kneighbors(features)
-    except NotFittedError:
-        knn.fit(features)
-
-    # Get distances to k-nearest neighbors Note that the knn object contains the specification of distance metric
-    # and n_neighbors (k value) If our query set of features matches the training set used to fit knn, the nearest
-    # neighbor of each point is the point itself, at a distance of zero.
-    distances, _ = knn.kneighbors(features)
-
-    ood_features_scores = transform_distances_to_scores(distances, cast(int, k), t)
-    return (ood_features_scores, knn)
+        return (ood_features_scores, knn)
 
 
 def _get_ood_predictions_scores(

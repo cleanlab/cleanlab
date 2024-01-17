@@ -39,8 +39,13 @@ class TestOutlierIssueManager:
         assert np.all(
             issues["is_outlier_issue"] == expected_issue_mask
         ), "Issue mask should be correct"
+        # Assert that the argsort is correct
+        assert np.all(
+            issues["outlier_score"].argsort() == np.array([4, 2, 1, 3, 0])
+        ), "Outlier scores should be correct"
+
         assert summary["issue_type"][0] == "outlier"
-        assert summary["score"][0] == pytest.approx(expected=0.7732146, abs=1e-7)
+        assert summary["score"][0] == pytest.approx(expected=0.3028243, abs=1e-7)
 
         assert info.get("knn", None) is not None, "Should have knn info"
         assert issue_manager.threshold == pytest.approx(expected=0.37037, abs=1e-5)
@@ -81,8 +86,13 @@ class TestOutlierIssueManager:
         assert np.all(
             issues["is_outlier_issue"] == expected_issue_mask
         ), "Issue mask should be correct"
+        # Assert that the argsort is correct
+        assert np.all(
+            issues["outlier_score"].argsort() == np.array([4, 2, 1, 3, 0])
+        ), "Outlier scores should be correct"
+
         assert summary["issue_type"][0] == "outlier"
-        assert summary["score"][0] == pytest.approx(expected=0.7732146, abs=1e-7)
+        assert summary["score"][0] == pytest.approx(expected=0.3028243, abs=1e-7)
 
         assert issue_manager.threshold == 0.66666
 

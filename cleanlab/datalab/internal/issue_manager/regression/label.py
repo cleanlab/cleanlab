@@ -43,7 +43,7 @@ class RegressionLabelIssueManager(IssueManager):
         The threshold to use to determine if an example has a label issue. It is a multiplier
         of the median label quality score that sets the absolute threshold. Only used if
         predictions are provided to `~RegressionLabelIssueManager.find_issues`, not if
-        features are provided. Default is 0.1.
+        features are provided. Default is 0.05.
     """
 
     description: ClassVar[
@@ -64,7 +64,7 @@ class RegressionLabelIssueManager(IssueManager):
         self,
         datalab: Datalab,
         clean_learning_kwargs: Optional[Dict[str, Any]] = None,
-        threshold: float = 0.1,
+        threshold: float = 0.05,
         health_summary_parameters: Optional[Dict[str, Any]] = None,
         **_,
     ):
