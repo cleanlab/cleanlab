@@ -52,6 +52,7 @@ from cleanlab.datalab.internal.issue_manager import (
     DataValuationIssueManager,
     OutlierIssueManager,
     NullIssueManager,
+    IdentifierIssueManager,
 )
 from cleanlab.datalab.internal.issue_manager.regression import RegressionLabelIssueManager
 
@@ -65,6 +66,7 @@ REGISTRY: Dict[str, Dict[str, Type[IssueManager]]] = {
         "underperforming_group": UnderperformingGroupIssueManager,
         "data_valuation": DataValuationIssueManager,
         "null": NullIssueManager,
+        "identifier_column": IdentifierIssueManager,
     },
     "regression": {"label": RegressionLabelIssueManager},
 }

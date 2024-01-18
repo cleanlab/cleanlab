@@ -57,6 +57,7 @@ _CLASSIFICATION_ARGS_DICT = {
     "data_valuation": ["knn_graph"],
     "class_imbalance": [],
     "null": ["features"],
+    "identifier_column": ["features"],
 }
 _REGRESSION_ARGS_DICT = {"label": ["features", "predictions"]}
 
