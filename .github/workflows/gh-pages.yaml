@@ -154,10 +154,10 @@ jobs:
           REF_URL_SEGMENT: ${{ (github.ref_type == 'tag' && steps.stable_release.outcome == 'success') && 'stable' || github.ref_name }}
         uses: jacobtomlinson/gha-find-replace@v2
         with:
-          find: '(<meta property="og:url" content="https?:\/\/[^\/]+\/)([^"]+")'
-          replace: '$1${{ env.REF_URL_SEGMENT }}/$2'
+          find: '<meta property="og:url" content="${{ env.DOCS_SITE_URL }}'
+          replace: '<meta property="og:url" content="${{ env.DOCS_SITE_URL }}${{ env.REF_URL_SEGMENT }}/'
           include: "cleanlab-docs/**/*.html"
-          regex: true
+          regex: false
       
       - name: Deploy
         if: ${{ (github.ref == 'refs/heads/master') || (github.ref_type == 'tag') }}
