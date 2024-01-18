@@ -12,7 +12,9 @@ pytest-lazy-fixture
 requests
 scipy
 skorch
-tensorflow
+# Cap tensorflow at version 2.15.0 or below. 2.16.0 is not released but avaiable on PyPI. Some test are breaking on 2.16.0.
+# TODO: Remove cap before v2.6.0 release.
+tensorflow<2.16.0
 torch
 torchvision
 typing-extensions>=4.1.1
