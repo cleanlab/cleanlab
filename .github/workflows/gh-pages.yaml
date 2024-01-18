@@ -144,6 +144,12 @@ jobs:
         run: cp docs/source/_templates/redirect-to-stable.html cleanlab-docs/index.html
 
       - name: Update OpenGraph URLs in HTML files
+        # This code fixes the URLs in the HTML files with OpenGraph tags.
+        # It uses a regular expression to capture two parts of the URL:
+        #   $1: The first part of the URL, including the protocol and domain.
+        #   $2: The rest of the URL, including the path and query string.
+        # The replacement string combines the captured parts with the ref name.
+        # This ensures that the ref name is inserted into the URL correctly.
         env:
           REF_URL_SEGMENT: ${{ (github.ref_type == 'tag' && steps.stable_release.outcome == 'success') && 'stable' || github.ref_name }}
         uses: jacobtomlinson/gha-find-replace@v2
