@@ -235,10 +235,9 @@ def labels_to_list_multilabel(y: List) -> List[List[int]]:
     labels_list : List[List[int]]
         Nested list of labels.
     """
-    if isinstance(y, list):
-        if not all(isinstance(x, list) for x in y):
-            raise ValueError("Each element in list of labels must be a list.")
-
-        return y
-    else:
+    if not isinstance(y, list):
         raise ValueError("Unsupported Label format")
+    if not all(isinstance(x, list) for x in y):
+        raise ValueError("Each element in list of labels must be a list.")
+
+    return y
