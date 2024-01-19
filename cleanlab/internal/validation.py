@@ -222,7 +222,7 @@ def labels_to_array(y: Union[LabelLike, np.generic]) -> np.ndarray:
             )
 
 
-def labels_to_array_multilabel(y: List) -> List[List[int]]:
+def labels_to_list_multilabel(y: List) -> List[List[int]]:
     """Converts different types of label objects to nested list and checks their validity.
 
     Parameters
@@ -232,7 +232,7 @@ def labels_to_array_multilabel(y: List) -> List[List[int]]:
 
     Returns
     -------
-    labels_array : List[List[int]]
+    labels_list : List[List[int]]
         Nested list of labels.
     """
     if isinstance(y, list):

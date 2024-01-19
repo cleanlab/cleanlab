@@ -32,7 +32,7 @@ import pandas as pd
 from datasets.arrow_dataset import Dataset
 from datasets import ClassLabel
 
-from cleanlab.internal.validation import labels_to_array, labels_to_array_multilabel
+from cleanlab.internal.validation import labels_to_array, labels_to_list_multilabel
 
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -314,7 +314,7 @@ class MultiLabel(Label):
     def _extract_labels(
         self, data: Dataset, label_name: str, map_to_int: bool
     ) -> Tuple[List[List[int]], Dict[int, Any]]:
-        labels: List[List[int]] = labels_to_array_multilabel(data[label_name])
+        labels: List[List[int]] = labels_to_list_multilabel(data[label_name])
         unique_labels = set((x for ele in labels for x in ele))
         label_map = {label: i for i, label in enumerate(unique_labels)}
         formatted_labels = [[label_map[item] for item in label] for label in labels]
