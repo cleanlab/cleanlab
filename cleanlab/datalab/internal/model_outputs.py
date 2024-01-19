@@ -76,8 +76,12 @@ class MultiClassPredProbs(ModelOutput):
         pred_probs = self.data
         if pred_probs.ndim != 2:
             raise ValueError("pred_probs must be a 2D array for multi-class classification")
-        if not np.all(pred_probs >= 0) or not np.all(pred_probs <= 1):
-            raise ValueError("pred_probs must be between 0 and 1 for multi-class classification")
+        if not np.all((pred_probs >= 0) & (pred_probs <= 1)):
+            incorrect_range = (np.min(pred_probs), np.max(pred_probs))
+            raise ValueError(
+                "Expected pred_probs to be between 0 and 1 for multi-label classification,"
+                f" but got values in range {incorrect_range} instead."
+            )
         if not np.allclose(np.sum(pred_probs, axis=1), 1):
             raise ValueError("pred_probs must sum to 1 for each row for multi-class classification")
 
@@ -105,7 +109,7 @@ class RegressionPredictions(ModelOutput):
 class MultiLabelPredProbs(ModelOutput):
     """
     A class for representing a model's predicted probabilities for each class
-    in a multi-class classification problem. This class is not meant to be used by users.
+    in a multilabel classification problem. This class is not meant to be used by users.
     """
 
     argument = "pred_probs"
@@ -113,9 +117,16 @@ class MultiLabelPredProbs(ModelOutput):
     def validate(self):
         pred_probs = self.data
         if pred_probs.ndim != 2:
-            raise ValueError("pred_probs must be a 2D array for multi-class classification")
-        if not np.all(pred_probs >= 0) or not np.all(pred_probs <= 1):
-            raise ValueError("pred_probs must be between 0 and 1 for multi-class classification")
+            raise ValueError(
+                f"Expected pred_probs to be a 2D array for multi-label classification,"
+                " but got {pred_probs.ndim}D array instead."
+            )
+        if not np.all((pred_probs >= 0) & (pred_probs <= 1)):
+            incorrect_range = (np.min(pred_probs), np.max(pred_probs))
+            raise ValueError(
+                "Expected pred_probs to be between 0 and 1 for multi-label classification,"
+                f" but got values in range {incorrect_range} instead."
+            )
 
     def collect(self):
         return self.data
