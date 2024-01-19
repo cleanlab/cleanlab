@@ -142,7 +142,7 @@ def _resolve_required_args_for_multilabel(**kwargs):
     }
     # Some issue types have no required args.
     # This conditional lambda is used to include them in args dict.
-    keep_empty_argument = lambda k: not len(_REGRESSION_ARGS_DICT[k])
+    keep_empty_argument = lambda k: not len(_MULTILABEL_ARGS_DICT[k])
 
     # Remove None values from argument list, rely on default values in IssueManager
     args_dict = {
