@@ -88,9 +88,9 @@ class _DataIssuesBuilder:
         the appropriate strategy class based on the task during
         the `build` method-call.
         """
-        if self.task == "regression":
-            return _RegressionInfoStrategy
-        elif self.task == "multilabel":
-            return _MultilabelInfoStrategy
-        else:
-            return _ClassificationInfoStrategy
+        _default_return = _ClassificationInfoStrategy
+        strategy_lookup = {
+            "regression": _RegressionInfoStrategy,
+            "multilabel": _MultilabelInfoStrategy,
+        }
+        return strategy_lookup.get(self.task, _default_return)

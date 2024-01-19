@@ -203,10 +203,12 @@ def list_default_issue_types(task: str) -> List[str]:
     --------
     :py:class:`REGISTRY <cleanlab.datalab.internal.issue_manager_factory.REGISTRY>` : All available issue types and their corresponding issue managers can be found here.
     """
-    if task == "regression":
-        default_issue_types = ["label"]
-    elif task == "multilabel":
-        default_issue_types = ["label"]
-    else:
-        default_issue_types = ["label", "outlier", "near_duplicate", "non_iid", "class_imbalance"]
+    default_issue_types_dict = {
+        "classification": ["label", "outlier", "near_duplicate", "non_iid", "class_imbalance"],
+        "regression": ["label"],
+        "multilabel": ["label"],
+    }
+    if task not in default_issue_types_dict:
+        task = "classification"
+    default_issue_types = default_issue_types_dict[task]
     return default_issue_types

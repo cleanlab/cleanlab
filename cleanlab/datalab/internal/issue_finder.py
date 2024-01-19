@@ -405,14 +405,17 @@ class IssueFinder:
 
         model_output = None
         if pred_probs is not None:
-            if self.task == "regression":
-                model_output = RegressionPredictions(pred_probs)
-            elif self.task == "classification":
-                model_output = MultiClassPredProbs(pred_probs)
-            elif self.task == "multilabel":
-                model_output = MultiLabelPredProbs(pred_probs)
-            else:
+            model_output_dict = {
+                "regression": RegressionPredictions,
+                "classification": MultiClassPredProbs,
+                "multilabel": MultiLabelPredProbs,
+            }
+
+            model_output_class = model_output_dict.get(self.task)
+            if model_output_class is None:
                 raise ValueError(f"Unknown task type '{self.task}'")
+
+            model_output = model_output_class(pred_probs)
 
         if model_output is not None:
             # A basic trick to assign the model output to the correct argument
