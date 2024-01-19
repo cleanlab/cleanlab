@@ -142,10 +142,8 @@ class Data:
         self._data = self._load_data(data)
         self._data_hash = hash(self._data)
         self.labels: Label
-        if is_multilabel:
-            self.labels = MultiLabel(data=self._data, label_name=label_name, map_to_int=map_to_int)
-        else:
-            self.labels = MultiClass(data=self._data, label_name=label_name, map_to_int=map_to_int)
+        label_class = MultiLabel if is_multilabel else MultiClass
+        self.labels = label_class(data=self._data, label_name=label_name, map_to_int=map_to_int)
 
     def _load_data(self, data: "DatasetLike") -> Dataset:
         """Checks the type of dataset and uses the correct loader method and
