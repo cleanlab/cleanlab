@@ -100,11 +100,18 @@ class RegressionLabelIssueManager(IssueManager):
             )
         # If features are provided and either a custom model is used or no predictions are provided
         use_features = features is not None and (self._uses_custom_model or predictions is None)
+        labels = self.datalab.labels
+        if not isinstance(labels, np.ndarray):
+            error_msg = (
+                f"Expected labels to be a numpy array of shape (n_samples,) to use with RegressionLabelIssueManager, "
+                f"but got {type(labels)} instead."
+            )
+            raise TypeError(error_msg)
         if use_features:
             assert features is not None  # mypy won't narrow the type for some reason
             self.issues = find_issues_with_features(
                 features=features,
-                y=self.datalab.labels,
+                y=labels,
                 cl=self.cl,
                 **kwargs,  # function sanitizes kwargs
             )
@@ -115,7 +122,7 @@ class RegressionLabelIssueManager(IssueManager):
             assert predictions is not None  # mypy won't narrow the type for some reason
             self.issues = find_issues_with_predictions(
                 predictions=predictions,
-                y=self.datalab.labels,
+                y=labels,
                 **{**kwargs, **{"threshold": self.threshold}},  # function sanitizes kwargs
             )
 
