@@ -26,6 +26,7 @@ from cleanlab.datalab.internal.data_issues import (
     DataIssues,
     _ClassificationInfoStrategy,
     _RegressionInfoStrategy,
+    _MultilabelInfoStrategy,
 )
 from cleanlab.datalab.internal.issue_finder import IssueFinder
 from cleanlab.datalab.internal.report import Reporter
@@ -87,7 +88,9 @@ class _DataIssuesBuilder:
         the appropriate strategy class based on the task during
         the `build` method-call.
         """
-        if self.task == "regression":
-            return _RegressionInfoStrategy
-        else:
-            return _ClassificationInfoStrategy
+        _default_return = _ClassificationInfoStrategy
+        strategy_lookup = {
+            "regression": _RegressionInfoStrategy,
+            "multilabel": _MultilabelInfoStrategy,
+        }
+        return strategy_lookup.get(self.task, _default_return)

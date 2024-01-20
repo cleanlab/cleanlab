@@ -111,11 +111,15 @@ class Datalab:
         image_key: Optional[str] = None,
         verbosity: int = 1,
     ) -> None:
+        self._validate_task(task)
         # Assume continuous values of labels for regression task
         # Map labels to integers for classification task
         map_labels_to_int = task == "classification"  # TODO: handle more generally
+        is_multilabel = task == "multilabel"
 
-        self._data = Data(data, label_name, map_to_int=map_labels_to_int)
+        self._data = Data(
+            data, label_name, map_to_int=map_labels_to_int, is_multilabel=is_multilabel
+        )
         self.data = self._data._data
         self.task = task
         self._labels = self._data.labels
@@ -138,8 +142,15 @@ class Datalab:
     def __str__(self) -> str:
         return _Displayer(data_issues=self.data_issues).__str__()
 
+    def _validate_task(self, task: str) -> None:
+        """Validates the task parameter passed to the Datalab constructor."""
+        _valid_tasks = ["classification", "regression", "multilabel"]
+        if task not in _valid_tasks:
+            error_msg = f"Invalid task: {task}. Datalab only supports {_valid_tasks}."
+            raise ValueError(error_msg)
+
     @property
-    def labels(self) -> np.ndarray:
+    def labels(self) -> Union[np.ndarray, List[List[int]]]:
         """Labels of the dataset, in a [0, 1, ..., K-1] format."""
         return self._labels.labels
 
