@@ -70,11 +70,12 @@ def find_label_issues(
         Annotated boxes and class labels in the original dataset, which may contain some errors.
         This is a list of ``N`` dictionaries such that ``labels[i]`` contains the given labels for the `i`-th image in the following format:
         ``{'bboxes': np.ndarray((L,4)), 'labels': np.ndarray((L,)), 'image_name': str}`` where ``L`` is the number of annotated bounding boxes
-        for the `i`-th image and ``bboxes[l]`` is a bounding box of coordinates in ``[x1,y1,x2,y2]`` format with respect to the y-coordinate
-        axis and with given class label ``labels[j]``.
+        for the `i`-th image and ``bboxes[l]`` is a bounding box of coordinates in ``[x1,y1,x2,y2]`` format and with given class label ``labels[j]``.
         ``image_name`` is an optional part of the labels that can be used to later refer to specific images.
 
-       For more information on proper labels formatting, check out the `MMDetection library <https://mmdetection.readthedocs.io/en/dev-3.x/advanced_guides/customize_dataset.html>`_.
+        Note: Here, ``(x1,y1)`` corresponds to the top-left and ``(x2,y2)`` corresponds to the bottom-right corner of the bounding box with respect to the image matrix [e.g. `XYXY in Keras <https://keras.io/api/keras_cv/bounding_box/formats/>`, `Detectron 2 <https://detectron2.readthedocs.io/en/latest/modules/utils.html#detectron2.utils.visualizer.Visualizer.draw_box>`].
+
+        For more information on proper labels formatting, check out the `MMDetection library <https://mmdetection.readthedocs.io/en/dev-3.x/advanced_guides/customize_dataset.html>`_.
 
     predictions:
         Predictions output by a trained object detection model.
@@ -82,10 +83,9 @@ def find_label_issues(
         This is a list of ``N`` ``np.ndarray`` such that ``predictions[i]`` corresponds to the model prediction for the `i`-th image.
         For each possible class ``k`` in 0, 1, ..., K-1: ``predictions[i][k]`` is a ``np.ndarray`` of shape ``(M,5)``,
         where ``M`` is the number of predicted bounding boxes for class ``k``. Here the five columns correspond to ``[x1,y1,x2,y2,pred_prob]``,
-        where ``[x1,y1,x2,y2]`` are coordinates of the bounding box predicted by the model with respect to the y-coordinate axis
-        and ``pred_prob`` is the model's confidence in the predicted class label for this bounding box.
+        where ``[x1,y1,x2,y2]`` are coordinates of the bounding box predicted by the model and ``pred_prob`` is the model's confidence in the predicted class label for this bounding box.
 
-        Note: In this context, the coordinate system follows the y-axis convention, where [x1, y1] denotes the coordinates of the bottom-left corner of the bounding box, and [x2, y2] represents the coordinates of the top-right corner of the bounding box. The last column, pred_prob, represents the predicted probability that the bounding box contains an object of the class k.
+        Note: Here, ``(x1,y1)`` corresponds to the top-left and ``(x2,y2)`` corresponds to the bottom-right corner of the bounding box with respect to the image matrix [e.g. `XYXY in Keras <https://keras.io/api/keras_cv/bounding_box/formats/>`, `Detectron 2 <https://detectron2.readthedocs.io/en/latest/modules/utils.html#detectron2.utils.visualizer.Visualizer.draw_box>`]. The last column, pred_prob, represents the predicted probability that the bounding box contains an object of the class k.
 
         For more information see the `MMDetection package <https://github.com/open-mmlab/mmdetection>`_ for an example object detection library that outputs predictions in the correct format.
 
