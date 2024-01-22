@@ -102,7 +102,7 @@ setup(
     # https://packaging.python.org/en/latest/discussions/install-requires-vs-requirements/
     install_requires=[
         "numpy>=1.20.0",
-        "scikit-learn>=1.0,<1.4.0",
+        "scikit-learn>=1.0",
         "tqdm>=4.53.0",
         "pandas>=1.1.5",
         "termcolor>=2.0.0,<2.4.0",
