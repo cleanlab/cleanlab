@@ -50,7 +50,7 @@ from cleanlab.internal.util import format_labels
 
 def python_version_ok():  # tensorflow and torch do not play nice with older Python
     version = sys.version_info
-    return (version.major >= 3) and (version.minor >= 7)
+    return (version.major >= 3) and (version.minor >= 8)
 
 
 def run_fasttext_test():
@@ -121,7 +121,7 @@ DATA_RARE_LABEL = make_rare_label(DATA)
 
 
 @pytest.mark.slow
-@pytest.mark.skipif("not python_version_ok()", reason="need at least python 3.7")
+@pytest.mark.skipif("not python_version_ok()", reason="need at least python 3.8")
 @pytest.mark.parametrize("batch_size,shuffle_config", [(1, 0), (32, 0), (32, 1), (32, 2)])
 def test_tensorflow_sequential(batch_size, shuffle_config, data=DATA, hidden_units=128):
     dataset_tf = tf.data.Dataset.from_tensor_slices((data["X"], data["y"]))
@@ -170,7 +170,7 @@ def test_tensorflow_sequential(batch_size, shuffle_config, data=DATA, hidden_uni
 
 
 @pytest.mark.slow
-@pytest.mark.skipif("not python_version_ok()", reason="need at least python 3.7")
+@pytest.mark.skipif("not python_version_ok()", reason="need at least python 3.8")
 @pytest.mark.parametrize("batch_size,shuffle_config", [(1, 0), (32, 0), (32, 1), (32, 2)])
 def test_tensorflow_functional(batch_size, shuffle_config, data=DATA, hidden_units=64):
     dataset_tf = tf.data.Dataset.from_tensor_slices((data["X"], data["y"]))
@@ -223,7 +223,7 @@ def test_tensorflow_functional(batch_size, shuffle_config, data=DATA, hidden_uni
 
 
 @pytest.mark.slow
-@pytest.mark.skipif("not python_version_ok()", reason="need at least python 3.7")
+@pytest.mark.skipif("not python_version_ok()", reason="need at least python 3.8")
 @pytest.mark.parametrize("batch_size", [1, 32])
 @pytest.mark.filterwarnings("ignore")
 def test_tensorflow_rarelabel(batch_size, data=DATA_RARE_LABEL, hidden_units=8):
@@ -304,7 +304,7 @@ def test_keras_sklearn_compatability(data=DATA, hidden_units=32):
     gs.fit(data["X"], data["y"])
 
 
-@pytest.mark.skipif("not python_version_ok()", reason="need at least python 3.7")
+@pytest.mark.skipif("not python_version_ok()", reason="need at least python 3.8")
 def test_torch(data=DATA, hidden_units=128):
     dataset = torch.utils.data.TensorDataset(
         torch.from_numpy(data["X"]).float(), torch.from_numpy(data["y"])
@@ -340,7 +340,7 @@ def test_torch(data=DATA, hidden_units=128):
     assert err < 1e-3
 
 
-@pytest.mark.skipif("not python_version_ok()", reason="need at least python 3.7")
+@pytest.mark.skipif("not python_version_ok()", reason="need at least python 3.8")
 @pytest.mark.filterwarnings("ignore")
 def test_torch_rarelabel(data=DATA_RARE_LABEL, hidden_units=8):
     dataset = torch.utils.data.TensorDataset(
