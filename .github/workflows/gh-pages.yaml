@@ -36,6 +36,11 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: "16"
+  
+      - name: Install ffmpeg
+        uses: FedericoCarboni/setup-ffmpeg@v3
+        with:
+            ffmpeg-version: "6.1.0"
 
       - name: Upgrade pip
         run: python3 -m pip install --upgrade pip
