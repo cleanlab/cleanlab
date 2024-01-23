@@ -31,7 +31,7 @@ Get started with: [tutorials](https://docs.cleanlab.ai/stable/tutorials/image.ht
 
 [![pypi](https://img.shields.io/pypi/v/cleanlab.svg)](https://pypi.org/pypi/cleanlab/)
 [![os](https://img.shields.io/badge/platform-noarch-lightgrey)](https://pypi.org/pypi/cleanlab/)
-[![py\_versions](https://img.shields.io/badge/python-3.7%2B-blue)](https://pypi.org/pypi/cleanlab/)
+[![py\_versions](https://img.shields.io/badge/python-3.8%2B-blue)](https://pypi.org/pypi/cleanlab/)
 [![build\_status](https://github.com/cleanlab/cleanlab/workflows/CI/badge.svg)](https://github.com/cleanlab/cleanlab/actions?query=workflow%3ACI)
 [![coverage](https://codecov.io/gh/cleanlab/cleanlab/branch/master/graph/badge.svg)](https://app.codecov.io/gh/cleanlab/cleanlab)
 [![docs](https://img.shields.io/static/v1?logo=github&style=flat&color=pink&label=docs&message=cleanlab)](https://docs.cleanlab.ai/)
@@ -73,7 +73,7 @@ Examples of incorrect given labels in various image datasets <a href="https://l7
 
 ## Run cleanlab
 
-cleanlab supports Linux, macOS, and Windows and runs on Python 3.7+.
+cleanlab supports Linux, macOS, and Windows and runs on Python 3.8+.
 
 - Get started [here](https://docs.cleanlab.ai/)! Install via `pip` or `conda` as described [here](https://docs.cleanlab.ai/).
 - Developers who install the bleeding-edge from source should refer to [this master branch documentation](https://docs.cleanlab.ai/master/index.html).
