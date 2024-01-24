@@ -3,7 +3,7 @@ sphinx==7.1.2
 sphinx-tabs==3.4.5
 nbsphinx==0.9.3
 autodocsumm==0.2.12
-furo==2022.06.21
+furo==2023.09.10
 ipython==8.0.1
 ipykernel==6.29.0
 ipywidgets==8.1.1
