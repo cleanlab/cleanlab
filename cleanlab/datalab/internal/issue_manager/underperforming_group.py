@@ -101,6 +101,12 @@ class UnderperformingGroupIssueManager(IssueManager):
         **kwargs: Any,
     ) -> None:
         labels = self.datalab.labels
+        if not isinstance(labels, np.ndarray):
+            error_msg = (
+                f"Labels must be a numpy array of shape (n_samples,) for UnderperformingGroupIssueManager. "
+                f"Got {type(labels)} instead."
+            )
+            raise TypeError(error_msg)
         if cluster_ids is None:
             knn_graph = self.set_knn_graph(features, kwargs)
             cluster_ids = self.perform_clustering(knn_graph)

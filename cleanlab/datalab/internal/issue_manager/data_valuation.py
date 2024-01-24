@@ -118,6 +118,12 @@ class DataValuationIssueManager(IssueManager):
         self.k = kwargs.get("k", self.k)
         knn_graph = self._process_knn_graph_from_inputs(kwargs)
         labels = self.datalab.labels
+        if not isinstance(labels, np.ndarray):
+            error_msg = (
+                f"Expected labels to be a numpy array of shape (n_samples,) to use with DataValuationIssueManager, "
+                f"but got {type(labels)} instead."
+            )
+            raise TypeError(error_msg)
         if knn_graph is None:
             raise ValueError(
                 "knn_graph must be provided in kwargs or already stored in the Datalab instance\n"

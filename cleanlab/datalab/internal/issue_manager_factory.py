@@ -54,6 +54,8 @@ from cleanlab.datalab.internal.issue_manager import (
     NullIssueManager,
 )
 from cleanlab.datalab.internal.issue_manager.regression import RegressionLabelIssueManager
+from cleanlab.datalab.internal.issue_manager.multilabel.label import MultilabelIssueManager
+
 
 REGISTRY: Dict[str, Dict[str, Type[IssueManager]]] = {
     "classification": {
@@ -67,6 +69,7 @@ REGISTRY: Dict[str, Dict[str, Type[IssueManager]]] = {
         "null": NullIssueManager,
     },
     "regression": {"label": RegressionLabelIssueManager},
+    "multilabel": {"label": MultilabelIssueManager},
 }
 """Registry of issue managers that can be constructed from a string
 and used in the Datalab class.
@@ -200,15 +203,19 @@ def list_default_issue_types(task: str) -> List[str]:
     --------
     :py:class:`REGISTRY <cleanlab.datalab.internal.issue_manager_factory.REGISTRY>` : All available issue types and their corresponding issue managers can be found here.
     """
-    if task == "regression":
-        default_issue_types = ["label"]
-    else:
-        default_issue_types = [
+    default_issue_types_dict = {
+        "classification": [
             "null",
             "label",
             "outlier",
             "near_duplicate",
             "non_iid",
             "class_imbalance",
-        ]
+        ],
+        "regression": ["label"],
+        "multilabel": ["label"],
+    }
+    if task not in default_issue_types_dict:
+        task = "classification"
+    default_issue_types = default_issue_types_dict[task]
     return default_issue_types

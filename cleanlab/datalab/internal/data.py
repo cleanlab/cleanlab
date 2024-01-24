@@ -16,7 +16,7 @@
 """Classes and methods for datasets that are loaded into Datalab."""
 
 import os
-from typing import Any, Callable, Dict, List, Mapping, Optional, Tuple, Union, cast, TYPE_CHECKING
+from typing import Any, Callable, Dict, List, Mapping, Optional, Union, cast, TYPE_CHECKING, Tuple
 
 try:
     import datasets
@@ -26,12 +26,13 @@ except ImportError as error:
         "Please install it and try again, or just install cleanlab with "
         "all optional dependencies via: `pip install 'cleanlab[all]'`"
     ) from error
+from abc import ABC, abstractmethod
 import numpy as np
 import pandas as pd
 from datasets.arrow_dataset import Dataset
 from datasets import ClassLabel
 
-from cleanlab.internal.validation import labels_to_array
+from cleanlab.internal.validation import labels_to_array, labels_to_list_multilabel
 
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -131,12 +132,18 @@ class Data:
     """
 
     def __init__(
-        self, data: "DatasetLike", label_name: Optional[str] = None, map_to_int: bool = True
+        self,
+        data: "DatasetLike",
+        label_name: Optional[str] = None,
+        map_to_int: bool = True,
+        is_multilabel: bool = False,
     ) -> None:
         self._validate_data(data)
         self._data = self._load_data(data)
         self._data_hash = hash(self._data)
-        self.labels = Label(data=self._data, label_name=label_name, map_to_int=map_to_int)
+        self.labels: Label
+        label_class = MultiLabel if is_multilabel else MultiClass
+        self.labels = label_class(data=self._data, label_name=label_name, map_to_int=map_to_int)
 
     def _load_data(self, data: "DatasetLike") -> Dataset:
         """Checks the type of dataset and uses the correct loader method and
@@ -220,7 +227,7 @@ class Data:
         return dataset_cast
 
 
-class Label:
+class Label(ABC):
     """
     Class to represent labels in a dataset.
 
@@ -248,7 +255,7 @@ class Label:
         self.labels = labels_to_array([])
         self.label_map: Mapping[Union[str, int], Any] = {}
         if label_name is not None:
-            self.labels, self.label_map = _extract_labels(data, label_name, map_to_int)
+            self.labels, self.label_map = self._extract_labels(data, label_name, map_to_int)
             self._validate_labels()
 
     def __len__(self) -> int:
@@ -292,51 +299,77 @@ class Label:
         assert isinstance(labels, (np.ndarray, list))
         assert len(labels) == len(self._data)
 
+    @abstractmethod
+    def _extract_labels(self, *args, **kwargs) -> Any:
+        """Extract labels from the dataset and formats them"""
+        raise NotImplementedError
 
-def _extract_labels(data: Dataset, label_name: str, map_to_int: bool) -> Tuple[np.ndarray, Mapping]:
-    """
-    Picks out labels from the dataset and formats them to be [0, 1, ..., K-1]
-    where K is the number of classes. Also returns a mapping from the formatted
-    labels to the original labels in the dataset.
 
-    Note: This function is not meant to be used directly. It is used by
-    ``cleanlab.data.Data`` to extract the formatted labels from the dataset
-    and stores them as attributes.
+class MultiLabel(Label):
+    def __init__(self, data, label_name, map_to_int):
+        super().__init__(data=data, label_name=label_name, map_to_int=map_to_int)
 
-    Parameters
-    ----------
-    data : datasets.Dataset
-        A Hugging Face Dataset object.
+    def _extract_labels(
+        self, data: Dataset, label_name: str, map_to_int: bool
+    ) -> Tuple[List[List[int]], Dict[int, Any]]:
+        labels: List[List[int]] = labels_to_list_multilabel(data[label_name])
+        unique_labels = set((x for ele in labels for x in ele))
+        label_map = {label: i for i, label in enumerate(unique_labels)}
+        formatted_labels = [[label_map[item] for item in label] for label in labels]
+        inverse_map = {i: label for label, i in label_map.items()}
+        return formatted_labels, inverse_map
 
-    label_name : str
-        Name of the column in the dataset that contains the labels.
 
-    map_to_int : bool
-        Whether to map the labels to integers, e.g. [0, 1, ..., K-1] where K is the number of classes.
-        If False, the labels are not mapped to integers, e.g. for regression tasks.
-    Returns
-    -------
-    formatted_labels : np.ndarray
-        Labels in the format [0, 1, ..., K-1] where K is the number of classes.
+class MultiClass(Label):
+    def __init__(self, data, label_name, map_to_int):
+        super().__init__(data=data, label_name=label_name, map_to_int=map_to_int)
 
-    inverse_map : dict
-        Mapping from the formatted labels to the original labels in the dataset.
-    """
+    def _extract_labels(self, data: Dataset, label_name: str, map_to_int: bool):
+        """
+        Picks out labels from the dataset and formats them to be [0, 1, ..., K-1]
+        where K is the number of classes. Also returns a mapping from the formatted
+        labels to the original labels in the dataset.
 
-    labels = labels_to_array(data[label_name])  # type: ignore[assignment]
-    if labels.ndim != 1:
-        raise ValueError("labels must be 1D numpy array.")
+        Note: This function is not meant to be used directly. It is used by
+        ``cleanlab.data.Data`` to extract the formatted labels from the dataset
+        and stores them as attributes.
 
-    if not map_to_int:
-        # Don't map labels to integers, e.g. for regression tasks
-        return labels, {}
-    label_name_feature = data.features[label_name]
-    if isinstance(label_name_feature, ClassLabel):
-        label_map = {label: label_name_feature.str2int(label) for label in label_name_feature.names}
-        formatted_labels = labels
-    else:
-        label_map = {label: i for i, label in enumerate(np.unique(labels))}
-        formatted_labels = np.vectorize(label_map.get)(labels)
-    inverse_map = {i: label for label, i in label_map.items()}
+        Parameters
+        ----------
+        data : datasets.Dataset
+            A Hugging Face Dataset object.
 
-    return formatted_labels, inverse_map
+        label_name : str
+            Name of the column in the dataset that contains the labels.
+
+        map_to_int : bool
+            Whether to map the labels to integers, e.g. [0, 1, ..., K-1] where K is the number of classes.
+            If False, the labels are not mapped to integers, e.g. for regression tasks.
+        Returns
+        -------
+        formatted_labels : np.ndarray
+            Labels in the format [0, 1, ..., K-1] where K is the number of classes.
+
+        inverse_map : dict
+            Mapping from the formatted labels to the original labels in the dataset.
+        """
+
+        labels = labels_to_array(data[label_name])  # type: ignore[assignment]
+        if labels.ndim != 1:
+            raise ValueError("labels must be 1D numpy array.")
+
+        if not map_to_int:
+            # Don't map labels to integers, e.g. for regression tasks
+            return labels, {}
+        label_name_feature = data.features[label_name]
+        if isinstance(label_name_feature, ClassLabel):
+            label_map = {
+                label: label_name_feature.str2int(label) for label in label_name_feature.names
+            }
+            formatted_labels = labels
+        else:
+            label_map = {label: i for i, label in enumerate(np.unique(labels))}
+            formatted_labels = np.vectorize(label_map.get)(labels)
+        inverse_map = {i: label for label, i in label_map.items()}
+
+        return formatted_labels, inverse_map
