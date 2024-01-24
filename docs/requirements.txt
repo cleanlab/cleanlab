@@ -23,5 +23,5 @@ huggingface_hub>=0.17.0
 torch==2.1.2
 torchvision==0.16.2
 torchaudio==2.1.2
-timm==0.6.12
+timm==0.9.12
 datasets>=2.14.6
