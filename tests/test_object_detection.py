@@ -16,7 +16,12 @@ from cleanlab.internal.constants import (
     SWAP_THRESHOLD_FACTOR,
     TEMPERATURE,
 )
-from cleanlab.internal.object_detection_utils import bbox_xyxy_to_xywh, softmax, softmin1d
+from cleanlab.internal.object_detection_utils import (
+    bbox_xyxy_to_xywh,
+    softmax,
+    softmin1d,
+    calculate_bounding_box_areas,
+)
 from cleanlab.object_detection.filter import (
     _calculate_true_positives_false_positives,
     _filter_by_class,
@@ -1006,3 +1011,20 @@ def test_per_class_confusion_matrix():
     assert np.isclose(per_class_confusion_matrix[1]["TP"], 0.2)
     assert np.isclose(per_class_confusion_matrix[7]["FP"], 0.3)
     assert np.isclose(per_class_confusion_matrix[5]["FN"], 0.4)
+
+
+def test_calculate_areas_across_boxes():
+    rectangles = np.array([[0, 0, 2, 2]])
+    assert calculate_bounding_box_areas(rectangles) == 4
+
+    rectangles = np.array([[-1, -1, 1, 1]])
+    assert calculate_bounding_box_areas(rectangles) == 4
+
+    rectangles = np.array([[0, 0, 2, 2], [-1, -1, 1, 1], [2, 2, 4, 4]])
+    assert np.array_equal(calculate_bounding_box_areas(rectangles), np.array([4, 4, 4]))
+
+    rectangles = np.array([[1, 1, 1, 1]])
+    assert calculate_bounding_box_areas(rectangles) == 0
+
+    rectangles = np.array([[0, 0, 3, 4], [2, 1, 5, 5], [1, 2, 4, 6]])
+    assert np.array_equal(calculate_bounding_box_areas(rectangles), np.array([12, 15, 15]))
