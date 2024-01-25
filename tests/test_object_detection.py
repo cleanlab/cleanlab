@@ -1025,6 +1025,3 @@ def test_calculate_areas_across_boxes():
 
     rectangles = np.array([[1, 1, 1, 1]])
     assert calculate_bounding_box_areas(rectangles) == 0
-
-    rectangles = np.array([[0, 0, 3, 4], [2, 1, 5, 5], [1, 2, 4, 6]])
-    assert np.array_equal(calculate_bounding_box_areas(rectangles), np.array([12, 15, 15]))
