@@ -63,6 +63,7 @@ class Reporter:
         verbosity: int = 1,
         include_description: bool = True,
         show_summary_score: bool = False,
+        show_all_issues: bool = False,
         **kwargs,
     ):
         self.data_issues = data_issues
@@ -70,6 +71,7 @@ class Reporter:
         self.verbosity = verbosity
         self.include_description = include_description
         self.show_summary_score = show_summary_score
+        self.show_all_issues = show_all_issues
 
     def report(self, num_examples: int) -> None:
         """Prints a report about identified issues in the data.
@@ -109,6 +111,18 @@ class Reporter:
 
         issue_types = self._get_issue_types(issue_summary_sorted)
 
+        def add_issue_to_report(issue_name: str) -> bool:
+            """Returns True if the issue should be added to the report.
+            It is excluded if show_all_issues is False and there are no issues of that type
+            found in the data.
+            """
+            if self.show_all_issues:
+                return True
+            issues = self.data_issues.get_issues(issue_name=issue_name)
+            col = f"is_{issue_name}_issue"
+            has_issues = issues[col].any()
+            return has_issues
+
         issue_reports = [
             _IssueManagerFactory.from_str(issue_type=key, task=self.task).report(
                 issues=self.data_issues.get_issues(issue_name=key),
@@ -119,6 +133,7 @@ class Reporter:
                 include_description=self.include_description,
             )
             for key in issue_types
+            if add_issue_to_report(key)
         ]
 
         report_str += "\n\n\n".join(issue_reports)
