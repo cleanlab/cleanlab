@@ -1786,3 +1786,24 @@ class TestIssueManagersReuseKnnGraph:
         assert (
             time_underperforming_after_outlier < time_only_underperforming_group
         ), "KNN graph reuse should make this run of find_issues faster."
+
+
+class TestDatalabReportWithNoIssues:
+    @pytest.fixture
+    def data(self):
+        np.random.seed(SEED)
+        X = np.random.rand(100, 10)
+        y = np.random.randint(0, 2, 100)
+
+        X[y == 1] += 1.5
+        return {"X": X, "y": y}
+
+    def test_report(self, data):
+        lab = Datalab(data=data, label_name="y")
+        lab.find_issues(features=data["X"], issue_types={"label": {}})
+        with contextlib.redirect_stdout(io.StringIO()) as f:
+            lab.report()
+        report = f.getvalue()
+        assert (
+            "No issues found in the data." in report
+        ), "Report should contain a message for no issues found"

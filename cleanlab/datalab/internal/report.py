@@ -73,6 +73,12 @@ class Reporter:
         self.show_summary_score = show_summary_score
         self.show_all_issues = show_all_issues
 
+    @staticmethod
+    def _get_empty_report() -> str:
+        """This method is used to return a report when there are no issues found in the data."""
+
+        return "No issues found in the data. Good job!"
+
     def report(self, num_examples: int) -> None:
         """Prints a report about identified issues in the data.
 
@@ -106,6 +112,8 @@ class Reporter:
         """
         report_str = ""
         issue_summary = self.data_issues.issue_summary
+        if not issue_summary.empty and issue_summary["num_issues"].sum() == 0:
+            return self._get_empty_report()
         issue_summary_sorted = issue_summary.sort_values(by="num_issues", ascending=False)
         report_str += self._write_summary(summary=issue_summary_sorted)
 
