@@ -166,7 +166,7 @@ class TestReporter:
 
         reporter = Reporter(
             data_issues=data_issues,
-            task=Task.CLASSIFICATION,
+            task="classification",
             verbosity=0,
             include_description=False,
             show_all_issues=show_all_issues,

@@ -73,11 +73,18 @@ class Reporter:
         self.show_summary_score = show_summary_score
         self.show_all_issues = show_all_issues
 
-    @staticmethod
-    def _get_empty_report() -> str:
-        """This method is used to return a report when there are no issues found in the data."""
-
-        return "No issues found in the data. Good job!"
+    def _get_empty_report(self) -> str:
+        """This method is used to return a report when there are
+        no issues found in the data with Datalab.find_issues().
+        """
+        report_str = "No issues found in the data. Good job!"
+        if not self.show_summary_score:
+            recommendation_msg = (
+                "Try re-running Datalab.report() with "
+                "`show_summary_score = True` and `show_all_issues = True`."
+            )
+            report_str += f"\n\n{recommendation_msg}"
+        return report_str
 
     def report(self, num_examples: int) -> None:
         """Prints a report about identified issues in the data.
@@ -112,7 +119,11 @@ class Reporter:
         """
         report_str = ""
         issue_summary = self.data_issues.issue_summary
-        if not issue_summary.empty and issue_summary["num_issues"].sum() == 0:
+        should_return_empty_report = not (
+            self.show_all_issues or issue_summary.empty or issue_summary["num_issues"].sum() > 0
+        )
+
+        if should_return_empty_report:
             return self._get_empty_report()
         issue_summary_sorted = issue_summary.sort_values(by="num_issues", ascending=False)
         report_str += self._write_summary(summary=issue_summary_sorted)
@@ -126,9 +137,8 @@ class Reporter:
             """
             if self.show_all_issues:
                 return True
-            issues = self.data_issues.get_issues(issue_name=issue_name)
-            col = f"is_{issue_name}_issue"
-            has_issues = issues[col].any()
+            summary = self.data_issues.get_issue_summary(issue_name=issue_name)
+            has_issues = summary["num_issues"][0] > 0
             return has_issues
 
         issue_reports = [
@@ -177,7 +187,10 @@ class Reporter:
     def _get_issue_types(self, issue_summary: pd.DataFrame) -> List[str]:
         issue_types = [
             issue_type
-            for issue_type in issue_summary["issue_type"].tolist()
+            for issue_type, num_issues in zip(
+                issue_summary["issue_type"].tolist(), issue_summary["num_issues"].tolist()
+            )
             if issue_type not in DEFAULT_CLEANVISION_ISSUES
+            and (self.show_all_issues or num_issues > 0)
         ]
         return issue_types
