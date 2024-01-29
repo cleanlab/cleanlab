@@ -6,6 +6,7 @@ import pytest
 
 from cleanlab import Datalab
 from cleanlab.datalab.internal.report import Reporter
+from cleanlab.datalab.internal.task import Task
 
 
 class TestReporter:
@@ -26,7 +27,7 @@ class TestReporter:
 
     @pytest.fixture
     def reporter(self, data_issues):
-        return Reporter(data_issues=data_issues, task="classification")
+        return Reporter(data_issues=data_issues, task=Task.CLASSIFICATION)
 
     def test_init(self, reporter, data_issues):
         assert reporter.data_issues == data_issues
@@ -34,7 +35,7 @@ class TestReporter:
         assert reporter.include_description == True
         assert reporter.show_summary_score == False
 
-        another_reporter = Reporter(data_issues=data_issues, task="classification", verbosity=2)
+        another_reporter = Reporter(data_issues=data_issues, task=Task.CLASSIFICATION, verbosity=2)
         assert another_reporter.verbosity == 2
 
     def test_report(self, reporter):
@@ -87,7 +88,7 @@ class TestReporter:
 
         reporter = Reporter(
             data_issues=data_issues,
-            task="classification",
+            task=Task.CLASSIFICATION,
             verbosity=0,
             include_description=include_description,
         )

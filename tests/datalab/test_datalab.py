@@ -34,6 +34,7 @@ from sklearn.datasets import make_blobs
 import cleanlab
 from cleanlab.datalab.datalab import Datalab
 from cleanlab.datalab.internal.report import Reporter
+from cleanlab.datalab.internal.task import Task
 from cleanlab.internal.multilabel_utils import int2onehot
 
 
@@ -728,7 +729,7 @@ class TestDatalabIssueManagerInteraction:
         from cleanlab.datalab.internal.issue_manager_factory import REGISTRY
 
         # Find the custom issue manager in the registry and remove it
-        REGISTRY["classification"].pop(custom_issue_manager.issue_name)
+        REGISTRY[Task.CLASSIFICATION].pop(custom_issue_manager.issue_name)
 
 
 @pytest.mark.parametrize(
@@ -747,7 +748,7 @@ def test_report_for_outlier_issues_via_pred_probs(find_issues_kwargs):
     lab.find_issues(**find_issues_kwargs)
 
     reporter = Reporter(
-        lab.data_issues, task="classification", verbosity=0, include_description=False
+        lab.data_issues, task=Task.CLASSIFICATION, verbosity=0, include_description=False
     )
     report = reporter.get_report(num_examples=3)
     assert report, "Report should not be empty"

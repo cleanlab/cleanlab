@@ -132,7 +132,7 @@ class _Serializer:
                     f"Length of data ({len(data)}) does not match length of labels ({len(datalab.labels)})"
                 )
 
-            datalab._data = Data(data, datalab.label_name)
+            datalab._data = Data(data, datalab.task, datalab.label_name)
             datalab.data = datalab._data._data
 
         return datalab

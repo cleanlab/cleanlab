@@ -44,6 +44,7 @@ from cleanlab.datalab.internal.model_outputs import (
     RegressionPredictions,
     MultiLabelPredProbs,
 )
+from cleanlab.datalab.internal.task import Task
 
 if TYPE_CHECKING:  # pragma: no cover
     import numpy.typing as npt
@@ -153,7 +154,7 @@ def _resolve_required_args_for_multilabel(**kwargs):
     return args_dict
 
 
-def _select_strategy_for_resolving_required_args(task: str) -> Callable:
+def _select_strategy_for_resolving_required_args(task: Task) -> Callable:
     """Helper function that selects the strategy for resolving required arguments for each issue type.
 
     Each strategy resolves the required arguments for each issue type.
@@ -174,9 +175,9 @@ def _select_strategy_for_resolving_required_args(task: str) -> Callable:
         Dictionary of required arguments for each issue type, if available.
     """
     strategies = {
-        "classification": _resolve_required_args_for_classification,
-        "regression": _resolve_required_args_for_regression,
-        "multilabel": _resolve_required_args_for_multilabel,
+        Task.CLASSIFICATION: _resolve_required_args_for_classification,
+        Task.REGRESSION: _resolve_required_args_for_regression,
+        Task.MULTILABEL: _resolve_required_args_for_multilabel,
     }
     selected_strategy = strategies.get(task, None)
     if selected_strategy is None:
@@ -215,7 +216,7 @@ class IssueFinder:
     `Datalab.find_issues` method which internally utilizes an IssueFinder instance.
     """
 
-    def __init__(self, datalab: "Datalab", task: str, verbosity=1):
+    def __init__(self, datalab: "Datalab", task: Task, verbosity=1):
         self.datalab = datalab
         self.task = task
         self.verbosity = verbosity
@@ -396,9 +397,9 @@ class IssueFinder:
         model_output = None
         if pred_probs is not None:
             model_output_dict = {
-                "regression": RegressionPredictions,
-                "classification": MultiClassPredProbs,
-                "multilabel": MultiLabelPredProbs,
+                Task.REGRESSION: RegressionPredictions,
+                Task.CLASSIFICATION: MultiClassPredProbs,
+                Task.MULTILABEL: MultiLabelPredProbs,
             }
 
             model_output_class = model_output_dict.get(self.task)
@@ -428,7 +429,7 @@ class IssueFinder:
         drop_label_check = (
             "label" in issue_types_copy
             and not self.datalab.has_labels
-            and self.task != "regression"
+            and self.task != Task.REGRESSION
         )
 
         if drop_label_check:

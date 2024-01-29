@@ -41,6 +41,7 @@ from cleanlab.datalab.internal.issue_manager_factory import (
     list_possible_issue_types as _list_possible_issue_types,
 )
 from cleanlab.datalab.internal.serialize import _Serializer
+from cleanlab.datalab.internal.task import Task
 
 if TYPE_CHECKING:  # pragma: no cover
     import numpy.typing as npt
@@ -80,7 +81,11 @@ class Datalab:
 
     task : str
         The type of machine learning task that the dataset is used for.
-        By default, this is set to "classification", but you can also set it to "regression" if you are working with a regression dataset.
+
+        Supported tasks:
+          - "classification" (default): Multiclass classification
+          - "regression" : Regression
+          - "multilabel" : Multilabel classification
 
     label_name : str, optional
         The name of the label column in the dataset.
@@ -111,17 +116,11 @@ class Datalab:
         image_key: Optional[str] = None,
         verbosity: int = 1,
     ) -> None:
-        self._validate_task(task)
         # Assume continuous values of labels for regression task
         # Map labels to integers for classification task
-        map_labels_to_int = task == "classification"  # TODO: handle more generally
-        is_multilabel = task == "multilabel"
-
-        self._data = Data(
-            data, label_name, map_to_int=map_labels_to_int, is_multilabel=is_multilabel
-        )
+        self.task = Task.from_str(task)
+        self._data = Data(data, self.task, label_name)
         self.data = self._data._data
-        self.task = task
         self._labels = self._data.labels
         self._label_map = self._labels.label_map
         self.label_name = self._labels.label_name
@@ -132,7 +131,7 @@ class Datalab:
 
         # Create the builder for DataIssues
         builder = _DataIssuesBuilder(self._data)
-        builder.set_imagelab(self._imagelab).set_task(task)
+        builder.set_imagelab(self._imagelab).set_task(self.task)
         self.data_issues = builder.build()
 
     # todo: check displayer methods
@@ -141,13 +140,6 @@ class Datalab:
 
     def __str__(self) -> str:
         return _Displayer(data_issues=self.data_issues).__str__()
-
-    def _validate_task(self, task: str) -> None:
-        """Validates the task parameter passed to the Datalab constructor."""
-        _valid_tasks = ["classification", "regression", "multilabel"]
-        if task not in _valid_tasks:
-            error_msg = f"Invalid task: {task}. Datalab only supports {_valid_tasks}."
-            raise ValueError(error_msg)
 
     @property
     def labels(self) -> Union[np.ndarray, List[List[int]]]:

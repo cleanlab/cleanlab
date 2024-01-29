@@ -23,6 +23,7 @@ import pandas as pd
 
 from cleanlab.datalab.internal.adapter.constants import DEFAULT_CLEANVISION_ISSUES
 from cleanlab.datalab.internal.issue_manager_factory import _IssueManagerFactory
+from cleanlab.datalab.internal.task import Task
 
 if TYPE_CHECKING:  # pragma: no cover
     from cleanlab.datalab.internal.data_issues import DataIssues
@@ -39,7 +40,8 @@ class Reporter:
         and then passed to the :py:class:`Reporter` class to generate a report.
 
     task :
-        Specific machine learning task like classification or regression.
+        Specific machine learning task that the datset is intended for.
+        See details about supported tasks in :py:class:`Task <cleanlab.datalab.internal.task.Task>`.
 
     verbosity :
         The default verbosity of the report to generate. Each :py:class`IssueManager`
@@ -59,7 +61,7 @@ class Reporter:
     def __init__(
         self,
         data_issues: "DataIssues",
-        task: str,
+        task: Task,
         verbosity: int = 1,
         include_description: bool = True,
         show_summary_score: bool = False,

@@ -4,10 +4,11 @@ import numpy as np
 from cleanlab.datalab.internal.issue_finder import IssueFinder
 
 from cleanlab import Datalab
+from cleanlab.datalab.internal.task import Task
 
 
 class TestIssueFinder:
-    task = "classification"
+    task = Task.CLASSIFICATION
 
     @pytest.fixture
     def lab(self):
@@ -97,7 +98,7 @@ class TestRegressionIssueFinder:
 
     @pytest.fixture
     def issue_finder(self, lab):
-        return IssueFinder(datalab=lab, task=self.task)
+        return IssueFinder(datalab=lab, task=Task.from_str(self.task))
 
     def test_get_available_issue_types(self, issue_finder):
         expected_issue_types = {"label": {}}

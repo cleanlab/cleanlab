@@ -18,6 +18,8 @@
 import os
 from typing import Any, Callable, Dict, List, Mapping, Optional, Union, cast, TYPE_CHECKING, Tuple
 
+from cleanlab.datalab.internal.task import Task
+
 try:
     import datasets
 except ImportError as error:
@@ -117,9 +119,21 @@ class Data:
     label_name : Union[str, List[str]]
         Name of the label column in the dataset.
 
-    map_to_int : bool
-        Whether to map the labels to integers, e.g. [0, 1, ..., K-1] where K is the number of classes.
-        If False, the labels are not mapped to integers, e.g. for regression tasks.
+    task :
+        The task associated with the dataset. This is used to determine how to
+        to format the labels.
+
+        Note:
+
+          - If the task is a classification task, the labels
+          will be mapped to integers, e.g. [0, 1, ..., K-1] where K is the number
+          of classes. If the task is a regression task, the labels will not be
+          mapped to integers.
+
+          - If the task is a multilabel task, the labels will be formatted as a
+            list of lists, e.g. [[0, 1], [1, 2], [0, 2]] where each sublist contains
+            the labels for a single example. If the task is not a multilabel task,
+            the labels will be formatted as a 1D numpy array.
 
     Warnings
     --------
@@ -134,15 +148,15 @@ class Data:
     def __init__(
         self,
         data: "DatasetLike",
+        task: Task,
         label_name: Optional[str] = None,
-        map_to_int: bool = True,
-        is_multilabel: bool = False,
     ) -> None:
         self._validate_data(data)
         self._data = self._load_data(data)
         self._data_hash = hash(self._data)
         self.labels: Label
-        label_class = MultiLabel if is_multilabel else MultiClass
+        label_class = MultiLabel if task.is_multilabel else MultiClass
+        map_to_int = task.is_classification
         self.labels = label_class(data=self._data, label_name=label_name, map_to_int=map_to_int)
 
     def _load_data(self, data: "DatasetLike") -> Dataset:
