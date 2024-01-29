@@ -21,32 +21,24 @@ class Task(Enum):
     Represents a task supported by Datalab.
 
     Datalab supports the following tasks:
-    - Classification: for predicting discrete class labels.
-    - Regression: for predicting continuous numerical values.
-    - Multilabel: for predicting multiple binary labels simultaneously.
 
-    Usage:
+    * **Classification**: for predicting discrete class labels.
+    * **Regression**: for predicting continuous numerical values.
+    * **Multilabel**: for predicting multiple binary labels simultaneously.
+
+    Example
+    -------
     >>> task = Task.CLASSIFICATION
-    >>> print(task)
-    classification
-
-    >>> task = Task.from_str("regression")
-    >>> print(task)
-    regression
-
-    >>> print(task.is_classification)
-    False
-
-    >>> print(task.is_regression)
-    True
-
-    >>> print(task.is_multilabel)
-    False
+    >>> task
+    <Task.CLASSIFICATION: 'classification'>
     """
 
     CLASSIFICATION = "classification"
+    """Classification task."""
     REGRESSION = "regression"
+    """Regression task."""
     MULTILABEL = "multilabel"
+    """Multilabel task."""
 
     def __str__(self):
         """
@@ -62,14 +54,27 @@ class Task(Enum):
         """
         Converts a string representation of a task to a Task enum value.
 
-        Args:
-            task_str (str): The string representation of the task.
+        Parameters
+        ----------
+        task_str :
+            The string representation of the task.
 
-        Returns:
-            Task: The corresponding Task enum value.
+        Returns
+        -------
+        Task :
+            The corresponding Task enum value.
 
-        Raises:
-            ValueError: If the provided task_str is not a valid task supported by Datalab.
+        Raises
+        ------
+        ValueError :
+            If the provided task_str is not a valid task supported by Datalab.
+
+        Examples
+        --------
+        >>> Task.from_str("classification")
+        <Task.CLASSIFICATION: 'classification'>
+        >>> print(Task.from_str("regression"))
+        regression
         """
         _value_to_enum = {task.value: task for task in Task}
         try:
@@ -83,8 +88,16 @@ class Task(Enum):
         """
         Checks if the task is classification.
 
-        Returns:
-            bool: True if the task is classification, False otherwise.
+        Returns
+        -------
+        bool :
+            True if the task is classification, False otherwise.
+
+        Examples
+        --------
+        >>> task = Task.CLASSIFICATION
+        >>> print(task.is_classification)
+        True
         """
         return self == Task.CLASSIFICATION
 
@@ -93,8 +106,16 @@ class Task(Enum):
         """
         Checks if the task is regression.
 
-        Returns:
-            bool: True if the task is regression, False otherwise.
+        Returns
+        -------
+        bool :
+            True if the task is regression, False otherwise.
+
+        Examples
+        --------
+        >>> task = Task.CLASSIFICATION
+        >>> print(task.is_regression)
+        False
         """
         return self == Task.REGRESSION
 
@@ -103,7 +124,15 @@ class Task(Enum):
         """
         Checks if the task is multilabel.
 
-        Returns:
-            bool: True if the task is multilabel, False otherwise.
+        Returns
+        -------
+        bool :
+            True if the task is multilabel, False otherwise.
+
+        Examples
+        --------
+        >>> task = Task.CLASSIFICATION
+        >>> print(task.is_multilabel)
+        False
         """
         return self == Task.MULTILABEL
