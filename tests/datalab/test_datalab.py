@@ -1788,7 +1788,16 @@ class TestIssueManagersReuseKnnGraph:
         ), "KNN graph reuse should make this run of find_issues faster."
 
 
-class TestDatalabReportWithNoIssues:
+class TestDatalabDefaultReporting:
+    """This test class focuses on testing the default behavior of the reporting functionality.
+
+    If there are no issues found, the report should contain a message for no issues found.
+
+    If there are issues found, the report should start with a summary of the issues found.
+
+    Other test classes focus on testing the reporting functionality with different issue types.
+    """
+
     @pytest.fixture
     def data(self):
         np.random.seed(SEED)
@@ -1807,3 +1816,21 @@ class TestDatalabReportWithNoIssues:
         assert (
             "No issues found in the data." in report
         ), "Report should contain a message for no issues found"
+
+    def test_report_with_one_label_issue(self, data):
+        # Flip the label of one example
+        y = data["y"]
+        y[-1] = 1 - y[-1]
+
+        lab = Datalab(data={"X": data["X"], "y": y}, label_name="y")
+        lab.find_issues(features=data["X"], issue_types={"label": {}})
+        with contextlib.redirect_stdout(io.StringIO()) as f:
+            lab.report()
+        report = f.getvalue()
+        expected_header = (
+            "Here is a summary of the different kinds of issues found in the data:"
+            "\n\nissue_type  num_issues\n     label           1\n\n"
+        )
+        assert report.startswith(
+            expected_header
+        ), "Report should contain a message for one issue found"
