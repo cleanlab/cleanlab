@@ -179,3 +179,44 @@ class TestReporter:
         )
         report = reporter.get_report(num_examples=3)
         assert report == expected_report
+
+    summary = pd.DataFrame(
+        {
+            "issue_type": ["foo", "bar"],
+            "score": [0.6, 0.8],
+            "num_issues": [1, 0],
+        }
+    )
+
+    def test_summary_with_score(self, reporter, data_issues, monkeypatch):
+        """Test that the _write_summary method returns the expected output when show_summary_score is True.
+
+        It should include the score column in the summary and a note about what the score means.
+        """
+        mock_statistics = {"num_examples": 100, "num_classes": 5}
+        monkeypatch.setattr(data_issues, "get_info", lambda *args, **kwargs: mock_statistics)
+
+        expected_output = (
+            "Here is a summary of the different kinds of issues found in the data:\n\n"
+            + self.summary.to_string(index=False)
+            + "\n\n"
+            + "(Note: A lower score indicates a more severe issue across all examples in the dataset.)\n\n"
+            + "Dataset Information: num_examples: 100, num_classes: 5\n\n\n"
+        )
+
+        reporter.show_summary_score = True
+        assert reporter._write_summary(self.summary) == expected_output
+
+    def test_summary_without_score(self, reporter, data_issues, monkeypatch):
+        mock_statistics = {"num_examples": 100, "num_classes": 5}
+        monkeypatch.setattr(data_issues, "get_info", lambda *args, **kwargs: mock_statistics)
+
+        expected_output = (
+            "Here is a summary of the different kinds of issues found in the data:\n\n"
+            + self.summary.drop(columns=["score"]).to_string(index=False)
+            + "\n\n"
+            + "Dataset Information: num_examples: 100, num_classes: 5\n\n\n"
+        )
+
+        reporter.show_summary_score = False
+        assert reporter._write_summary(self.summary) == expected_output
