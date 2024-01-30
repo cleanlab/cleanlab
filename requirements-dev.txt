@@ -8,7 +8,6 @@ pre-commit
 psutil
 pytest
 pytest-cov
-pytest-lazy-fixture
 requests
 scipy
 skorch
