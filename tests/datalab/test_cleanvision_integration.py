@@ -68,7 +68,7 @@ class TestCleanvisionIntegration:
             "outlier",
             "near_duplicate",
             "class_imbalance",
-            "null"
+            "null",
             # "non_iid",
         ]
 

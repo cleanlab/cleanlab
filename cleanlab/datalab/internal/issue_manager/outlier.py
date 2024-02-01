@@ -191,7 +191,8 @@ class OutlierIssueManager(IssueManager):
         # Check if the weighted knn graph exists in info
         knn_graph = self.datalab.get_info("statistics").get("weighted_knn_graph", None)
 
-        k: int = 0  # Used to check if the knn graph needs to be recomputed, already set in the knn object
+        # Used to check if the knn graph needs to be recomputed, already set in the knn object
+        k: int = 0
         if knn_graph is not None:
             k = knn_graph.nnz // knn_graph.shape[0]
 

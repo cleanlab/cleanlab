@@ -92,7 +92,6 @@ class TestRegressionLabelIssueManager:
 
 
 class TestRegressionLabelIssueManagerIntegration:
-
     """This class contains tests for the find_issues method with a CleanLearning
     object that behaves deterministically. This is useful to run a "regression"-test on
     the results computed by the find_issues method.
