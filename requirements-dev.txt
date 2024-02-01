@@ -6,7 +6,7 @@ mypy
 pandas-stubs
 pre-commit
 psutil
-pytest
+pytest~=7.4
 pytest-cov
 requests
 scipy
