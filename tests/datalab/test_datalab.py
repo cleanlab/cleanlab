@@ -1126,8 +1126,8 @@ class TestDatalabForRegression:
         return lab
 
     def test_available_issue_types(self, lab):
-        assert set(lab.list_default_issue_types()) == set(["label", "outlier"])
-        assert set(lab.list_possible_issue_types()) == set(["label", "outlier"])
+        assert set(lab.list_default_issue_types()) == set(["label", "outlier", "near_duplicate"])
+        assert set(lab.list_possible_issue_types()) == set(["label", "outlier", "near_duplicate"])
 
     def test_regression_with_features_finds_label_issues(self, lab, regression_data):
         """Test that the regression issue checks finds 40 label issues, based on the
@@ -1414,10 +1414,10 @@ class TestDatalabForRegression:
     @pytest.mark.parametrize(
         "argument_name, data_key, expected_issue_types_in_summary",
         [
-            ("features", "X", set(["label", "outlier"])),
+            ("features", "X", set(["label", "outlier", "near_duplicate"])),
             # TODO: Add outlier when OutOfDistribution handles continuous targets
             ("pred_probs", "true_y", set(["label"])),
-            ("knn_graph", "knn_graph", set(["outlier"])),
+            ("knn_graph", "knn_graph", set(["outlier", "near_duplicate"])),
         ],
         ids=["features only", "pred_probs only", "knn_graph only"],
     )
@@ -1454,7 +1454,7 @@ class TestDatalabForRegression:
         issue_ids = issues.query("is_outlier_issue").index
         expected_issue_ids = regression_data["outlier_ids"]
 
-        plot = False  # For debugging
+        plot = True  # For debugging
         if plot:
             import matplotlib.pyplot as plt
 
@@ -1488,6 +1488,99 @@ class TestDatalabForRegression:
         # FPR
         fpr = len(list(set(issue_ids).difference(set(expected_issue_ids)))) / len(issue_ids)
         assert fpr == 0.0
+
+    @pytest.mark.parametrize(
+        "argument_name, data_key",
+        [
+            ("features", "X"),
+            ("knn_graph", "knn_graph"),
+        ],
+        ids=["features only", "knn_graph only"],
+    )
+    def test_find_near_duplicates(self, lab, regression_data, argument_name, data_key):
+        """Test that the regression issue checks find 5 near-duplicate issues."""
+
+        input_dict = {argument_name: regression_data[data_key]}
+        issue_types = {"near_duplicate": {"threshold": 0.05}}
+        lab.find_issues(**input_dict, issue_types=issue_types)
+
+        issues = lab.get_issues("near_duplicate")
+        issue_ids = issues.query("is_near_duplicate_issue").index
+        expected_issue_ids = regression_data["duplicate_ids"]
+
+        plot = False  # For debugging
+        if plot:
+            import matplotlib.pyplot as plt
+
+            X = regression_data["X"]
+            # Flag near-duplicates
+            fig, ax = plt.subplots(1, 3, figsize=(15, 5))
+
+            for plot_id, (i, j) in enumerate([(0, 1), (1, 2), (0, 2)]):
+                ax[plot_id].scatter(X[:, i], X[:, j], c=regression_data["y"])
+                ax[plot_id].set_xlabel(f"Feature {i}")
+                ax[plot_id].set_ylabel(f"Feature {j}")
+
+                # Circle expected issues
+                ax[plot_id].scatter(
+                    X[expected_issue_ids, i], X[expected_issue_ids, j], c="black", s=100, alpha=0.5
+                )
+
+                # Box detected issues
+                ax[plot_id].scatter(
+                    X[issue_ids, i], X[issue_ids, j], c="red", s=100, alpha=0.5, marker="s"
+                )
+            image_filename = "_temp_features_plot.png"
+            plt.savefig(image_filename)
+            plt.show()
+
+        # jaccard similarity
+        intersection = len(list(set(issue_ids).intersection(set(expected_issue_ids))))
+        union = len(set(issue_ids)) + len(set(expected_issue_ids)) - intersection
+        expected_jaccard_similarity_bound = 0.8
+        has_high_jaccard = float(intersection) / union > expected_jaccard_similarity_bound
+
+        # FPR
+        fpr = len(list(set(issue_ids).difference(set(expected_issue_ids)))) / len(issue_ids)
+        expected_fpr_bound = 0.0
+        has_low_fpr = fpr <= expected_fpr_bound
+
+        if not (has_high_jaccard and has_low_fpr):
+            ids_of_union = list(set(issue_ids).union(set(expected_issue_ids)))
+            _issues = issues.loc[ids_of_union]
+
+            ids_keys = [
+                "error_idx",
+                "outlier_ids",
+                "duplicate_ids",
+                "non_iid_ids",
+                "underperforming_group_ids",
+            ]
+            for new_col, ids_key in zip(self.true_columns, ids_keys):
+                _issues[new_col] = _issues.index.isin(regression_data[ids_key])
+            _near_duplicate_issues = _issues.query("is_near_duplicate_issue")
+            print(_near_duplicate_issues["near_duplicate_sets"])
+
+            for col in self.true_columns:
+                print(f"\nColumn: {col}")
+                print(_near_duplicate_issues.query(col)["near_duplicate_sets"])
+
+            error_messages = [
+                (
+                    has_high_jaccard,
+                    f"- Jaccard similarity is too low. Should be > {expected_jaccard_similarity_bound}, got {float(intersection) / union}",
+                ),
+                (
+                    has_low_fpr,
+                    f"- FPR is too high. Should be less than or equal to {expected_fpr_bound}, got {fpr}",
+                ),
+            ]
+            error_msg = "The following test(s) failed for the default threshold:\n"
+            error_msg += "\n".join(
+                [msg for (test_passes, msg) in error_messages if not test_passes]
+            )
+
+            raise AssertionError(error_msg)
 
 
 class TestDatalabFindOutlierIssues:

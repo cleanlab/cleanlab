@@ -66,6 +66,7 @@ _REGRESSION_ARGS_DICT = {
     "label": ["features", "predictions"],
     # TODO: Add "pred_probs" to "outlier" when OutOfDistribution handles continuous targets (for regression tasks)
     "outlier": ["features", "knn_graph"],
+    "near_duplicate": ["features", "knn_graph"],
 }
 
 _MULTILABEL_ARGS_DICT = {
