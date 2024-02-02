@@ -62,7 +62,11 @@ _CLASSIFICATION_ARGS_DICT = {
     "class_imbalance": [],
     "null": ["features"],
 }
-_REGRESSION_ARGS_DICT = {"label": ["features", "predictions"]}
+_REGRESSION_ARGS_DICT = {
+    "label": ["features", "predictions"],
+    # TODO: Add "pred_probs" to "outlier" when OutOfDistribution handles continuous targets (for regression tasks)
+    "outlier": ["features", "knn_graph"],
+}
 
 _MULTILABEL_ARGS_DICT = {
     "label": ["pred_probs"],
@@ -409,6 +413,7 @@ class IssueFinder:
 
         if model_output is not None:
             # A basic trick to assign the model output to the correct argument
+            # E.g. Datalab accepts only `pred_probs`, but those are assigned to the `predictions` argument for regression-related issue_managers
             kwargs.update({model_output.argument: model_output.collect()})
 
         # Determine which parameters are required for each issue type
@@ -435,7 +440,11 @@ class IssueFinder:
             warnings.warn("No labels were provided. " "The 'label' issue type will not be run.")
             issue_types_copy.pop("label")
 
-        outlier_check_needs_features = "outlier" in issue_types_copy and not self.datalab.has_labels
+        outlier_check_needs_features = (
+            "outlier" in issue_types_copy
+            and not self.datalab.has_labels
+            and self.task != "regression"
+        )
         if outlier_check_needs_features:
             no_features = features is None
             no_knn_graph = knn_graph is None

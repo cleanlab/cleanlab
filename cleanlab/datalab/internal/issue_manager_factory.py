@@ -68,7 +68,10 @@ REGISTRY: Dict[str, Dict[str, Type[IssueManager]]] = {
         "data_valuation": DataValuationIssueManager,
         "null": NullIssueManager,
     },
-    "regression": {"label": RegressionLabelIssueManager},
+    "regression": {
+        "label": RegressionLabelIssueManager,
+        "outlier": OutlierIssueManager,
+    },
     "multilabel": {"label": MultilabelIssueManager},
 }
 """Registry of issue managers that can be constructed from a string
@@ -212,7 +215,7 @@ def list_default_issue_types(task: str) -> List[str]:
             "non_iid",
             "class_imbalance",
         ],
-        "regression": ["label"],
+        "regression": ["label", "outlier"],
         "multilabel": ["label"],
     }
     if task not in default_issue_types_dict:

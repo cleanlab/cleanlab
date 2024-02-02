@@ -1012,25 +1012,77 @@ class TestDatalabFindLabelIssues:
 
 
 class TestDatalabForRegression:
+    true_columns = [
+        "true_label_error_idx",
+        "true_outlier_idx",
+        "true_duplicate_idx",
+        "true_non_iid_idx",
+        "true_underperforming_group_idx",
+    ]
+
     @pytest.fixture
-    def regression_data(self, num_examples=400, num_features=3, error_frac=0.025, error_noise=0.25):
+    def regression_data(self, num_examples=400, num_features=3, error_frac=0.025, error_noise=0.5):
         np.random.seed(SEED)
         X = np.random.random(size=(num_examples, num_features))
         coefficients = np.random.uniform(-5, 5, size=num_features)
+        coefficients[2] *= 0.005  # make the third feature less important
+
+        num_errors = int(num_examples * error_frac)
+        label_error_idx = np.random.choice(num_examples, num_errors)
+
+        # Move the examples with label errors closer to the main mass of examples
+        direction_towards_center = X[label_error_idx] - 0.5
+        direction_towards_center /= np.linalg.norm(direction_towards_center, axis=1)[:, None]
+        X[label_error_idx] -= direction_towards_center * 0.2
+
+        # Add near-duplicates
+        n_duplicates = 5
+        X = np.vstack([X, X[:n_duplicates] + 1e-6 * np.random.randn(n_duplicates, num_features)])
+        true_duplicate_ids = np.hstack(
+            [np.arange(n_duplicates), np.arange(num_examples, num_examples + n_duplicates)]
+        )
+
+        # Add outliers
+        n_outliers = 2
+        X_outliers = np.random.normal(
+            loc=[0.5, 0.5, 1.2], scale=0.05, size=(n_outliers, num_features)
+        )
+        X = np.vstack([X, X_outliers])
+        true_outlier_ids = len(X) - n_outliers + np.arange(n_outliers)
+
+        # Non-iid examples
+        n_non_iid = 30
+        # (linearly increasing features with some Gaussian noise)
+        X_non_iid = np.linspace(-0.05, 0.05, n_non_iid)[:, None] + np.random.normal(
+            loc=[0.5, 0.5, 0], scale=0.01, size=(n_non_iid, num_features)
+        )
+        X = np.vstack([X, X_non_iid])
+        true_non_iid_ids = len(X) - n_non_iid + np.arange(n_non_iid)
+
+        # Underperforming group
+        n_underperforming = 15
+        # A Gaussian blob with several targets that are too noisy
+        X_underperforming = np.random.normal(
+            loc=[0.4, 0.4, -0.1], scale=0.01, size=(n_underperforming, num_features)
+        )
+        X = np.vstack([X, X_underperforming])
+        true_underperforming_group_ids = len(X) - n_underperforming + np.arange(n_underperforming)
 
         true_y = np.dot(X, coefficients)
 
         # add extra noisy examples
-        num_errors = int(num_examples * error_frac)
+
         label_noise = np.clip(
             np.random.normal(loc=error_noise, scale=error_noise / 4, size=num_errors),
-            0.25 * error_noise,
+            1.5 * error_noise,
             4 * error_noise,
         ) * np.random.choice([-1, 1], size=num_errors)
-        random_idx = np.random.choice(num_examples, num_errors)
         y = true_y.copy()
-        y[random_idx] += label_noise
+        y[label_error_idx] += label_noise
         error_idx = np.argsort(abs(y - true_y))[-num_errors:]  # get the noisiest examples idx
+
+        # Add some noise to the underperforming group
+        y[true_underperforming_group_ids[-5:]] += np.random.normal(loc=0, scale=1e-5, size=5)
 
         # Ensure that the MSE is not too large
         from sklearn.linear_model import LinearRegression
@@ -1042,17 +1094,27 @@ class TestDatalabForRegression:
 
         y_pred_true = linear_model.fit(X, true_y).predict(X)
         mse_true = mean_squared_error(true_y, y_pred_true)
-        assert mse_true < 1e-10
+        assert float(mse_true) < 1e-10
 
         y_pred = linear_model.fit(X, y).predict(X)
         mse = mean_squared_error(y, y_pred)
-        assert 1e-3 < mse < 1e-2
+        assert 1e-3 < float(mse) < 5e-2
 
+        knn_graph = (
+            NearestNeighbors(n_neighbors=10, metric="euclidean")
+            .fit(X)
+            .kneighbors_graph(mode="distance")
+        )
         return {
             "X": X,
             "y": y,
             "true_y": true_y,
+            "knn_graph": knn_graph,
             "error_idx": error_idx,
+            "duplicate_ids": true_duplicate_ids,
+            "outlier_ids": true_outlier_ids,
+            "non_iid_ids": true_non_iid_ids,
+            "underperforming_group_ids": true_underperforming_group_ids,
         }
 
     @pytest.fixture
@@ -1064,14 +1126,14 @@ class TestDatalabForRegression:
         return lab
 
     def test_available_issue_types(self, lab):
-        assert set(lab.list_default_issue_types()) == set(["label"])
-        assert set(lab.list_possible_issue_types()) == set(["label"])
+        assert set(lab.list_default_issue_types()) == set(["label", "outlier"])
+        assert set(lab.list_possible_issue_types()) == set(["label", "outlier"])
 
-    def test_regression_with_features(self, lab, regression_data):
+    def test_regression_with_features_finds_label_issues(self, lab, regression_data):
         """Test that the regression issue checks finds 40 label issues, based on the
         numerical features."""
         X = regression_data["X"]
-        issue_types = {"label": {"clean_learning_kwargs": {"seed": SEED}}}
+        issue_types = {"label": {"clean_learning_kwargs": {"seed": SEED}, "fine_search_size": 10}}
         lab.find_issues(features=X, issue_types=issue_types)
         lab.report()
 
@@ -1082,13 +1144,156 @@ class TestDatalabForRegression:
         # jaccard similarity
         intersection = len(list(set(issue_ids).intersection(set(expected_issue_ids))))
         union = len(set(issue_ids)) + len(set(expected_issue_ids)) - intersection
-        assert float(intersection) / union >= 0.7
+        expected_jaccard_similarity_bound = 0.7
+        has_high_jaccard = float(intersection) / union > expected_jaccard_similarity_bound
+        if not has_high_jaccard:
+            # Then check if MAP@len(expected_issue_ids) is high for the scores
+            def average_precision_at_k(y_true, y_pred, k) -> float:
+                """Compute average precision at k."""
+                y_true = np.asarray(y_true)
+                y_pred = np.asarray(y_pred)
+                sort_indices = np.argsort(y_pred)[::-1]
+                y_true = y_true[sort_indices]
+                return float(np.mean(y_true[:k]))
+
+            ap_at_k = average_precision_at_k(
+                # y_true are the expected issues
+                y_true=np.isin(np.arange(len(issues)), expected_issue_ids),
+                # y_pred are the scores
+                y_pred=1 - issues["label_score"],
+                k=len(expected_issue_ids),
+            )
+            ap_at_k_bound = 0.9
+            ap_at_k_is_high_enough = ap_at_k > ap_at_k_bound
+            print(f"AP@{len(expected_issue_ids)}: {ap_at_k}")
+            assert (
+                ap_at_k_is_high_enough
+            ), f"AP@{len(expected_issue_ids)} should be > {ap_at_k_bound}, got {ap_at_k}"
 
         # FPR
         fpr = len(list(set(issue_ids).difference(set(expected_issue_ids)))) / len(issue_ids)
-        assert fpr < 0.2
+        expected_fpr_bound = 0.2
+        has_low_fpr = fpr < expected_fpr_bound
 
-    def test_regression_with_predictions(self, lab, regression_data):
+        if not (has_high_jaccard and has_low_fpr):
+            ids_of_union = list(set(issue_ids).union(set(expected_issue_ids)))
+            _issues = issues.loc[ids_of_union]
+            ids_keys = [
+                "error_idx",
+                "outlier_ids",
+                "duplicate_ids",
+                "non_iid_ids",
+                "underperforming_group_ids",
+            ]
+            for new_col, ids_key in zip(self.true_columns, ids_keys):
+                _issues[new_col] = _issues.index.isin(regression_data[ids_key])
+            # Display dataframe
+            print("Expected label issue ids", expected_issue_ids, "\n")
+            _label_issues = _issues.query("is_label_issue")
+            print(_label_issues["label_score"])
+
+            # Display expected label issues
+            print("\nExpected label issues")
+            print(
+                _issues.assign(true_label=regression_data["true_y"][ids_of_union])
+                .query("true_label_error_idx")[
+                    [
+                        "is_label_issue",
+                        "label_score",
+                        "given_label",
+                        "predicted_label",
+                        "true_label",
+                    ]
+                ]
+                .sort_values("label_score")
+            )
+
+            for col in self.true_columns:
+                print(f"\nColumn: {col}")
+                print(_label_issues.query(col)["label_score"])
+
+            error_messages = [
+                (
+                    has_high_jaccard,
+                    f"- Jaccard similarity is too low. Should be > {expected_jaccard_similarity_bound}, got {float(intersection) / union}",
+                ),
+                (
+                    has_low_fpr,
+                    f"- FPR is too high. Should be less than or equal to {expected_fpr_bound}, got {fpr}",
+                ),
+            ]
+            error_msg = "The following test(s) failed for the default threshold:\n"
+            error_msg += "\n".join(
+                [msg for (test_passes, msg) in error_messages if not test_passes]
+            )
+
+            # Work on showing more debugging information if end-to-end test fails
+            import matplotlib.pyplot as plt
+
+            # Plot features
+            fig, ax = plt.subplots(1, 3, figsize=(15, 5))
+            xs = [0, 0, 1]
+            ys = [1, 2, 2]
+            false_positive_ids = list(set(issue_ids).difference(set(expected_issue_ids)))
+            false_negative_ids = list(set(expected_issue_ids).difference(set(issue_ids)))
+            print("False positives", false_positive_ids)
+            print("False negatives", false_negative_ids)
+            for plot_id, (i, j) in enumerate(zip(xs, ys)):
+                ax[plot_id].scatter(X[:, i], X[:, j], c=regression_data["y"])
+                ax[plot_id].set_xlabel(f"Feature {i}")
+                ax[plot_id].set_ylabel(f"Feature {j}")
+
+                # Circle expected issues
+                ax[plot_id].scatter(
+                    X[expected_issue_ids, i], X[expected_issue_ids, j], c="black", s=100, alpha=0.5
+                )
+
+                # Box false positives
+                if len(false_positive_ids) > 0:
+                    ax[plot_id].scatter(
+                        X[false_positive_ids, i],
+                        X[false_positive_ids, j],
+                        c="red",
+                        s=100,
+                        alpha=0.5,
+                        marker="s",
+                    )
+
+                # Triangle false negatives
+                if len(false_negative_ids) > 0:
+                    ax[plot_id].scatter(
+                        X[false_negative_ids, i],
+                        X[false_negative_ids, j],
+                        c="blue",
+                        s=100,
+                        alpha=0.5,
+                        marker="^",
+                    )
+            image_filename = "_temp_features_plot.png"
+            plt.savefig(image_filename)
+            plt.show()
+
+            # Make pca plot
+            from sklearn.decomposition import PCA
+
+            pca = PCA(n_components=2)
+            X_pca = pca.fit_transform(X)
+            fig, ax = plt.subplots()
+            plt.scatter(X_pca[:, 0], X_pca[:, 1], c=regression_data["y"])
+            plt.xlabel("PCA 1")
+            plt.ylabel("PCA 2")
+            plt.colorbar()
+            plt.show()
+            image_filename = "_temp_pca_plot.png"
+            plt.savefig(image_filename)
+
+            # Save
+            image_filename = "_temp_3d_plot.png"
+            plt.savefig(image_filename)
+
+            raise AssertionError(error_msg)
+
+    def test_regression_with_predictions_finds_label_issues(self, lab, regression_data):
         """Test that the regression issue checks find 9 label issues, based on the
         predictions of a model.
 
@@ -1100,22 +1305,76 @@ class TestDatalabForRegression:
 
         # Use ground-truth to emulate a perfect model's predictions
         y_pred = regression_data["true_y"]
-
-        lab.find_issues(pred_probs=y_pred)
+        issue_types = {"label": {}}
+        lab.find_issues(pred_probs=y_pred, issue_types=issue_types)
         summary = lab.get_issue_summary()
 
         issues = lab.get_issues("label")
+
+        true_columns = [
+            "true_label_error_idx",
+            "true_outlier_idx",
+            "true_duplicate_idx",
+            "true_non_iid_idx",
+            "true_underperforming_group_idx",
+        ]
         issue_ids = issues.query("is_label_issue").index
         expected_issue_ids = regression_data["error_idx"]
 
         # jaccard similarity
         intersection = len(list(set(issue_ids).intersection(set(expected_issue_ids))))
         union = len(set(issue_ids)) + len(set(expected_issue_ids)) - intersection
-        assert float(intersection) / union > 0.8
+        expected_jaccard_similarity_bound = 0.8
+        has_high_jaccard = float(intersection) / union > expected_jaccard_similarity_bound
 
         # FPR
         fpr = len(list(set(issue_ids).difference(set(expected_issue_ids)))) / len(issue_ids)
-        assert fpr == 0.0
+        expected_fpr_bound = 0.0
+        has_no_fpr = fpr <= expected_fpr_bound
+
+        if not (has_high_jaccard and has_no_fpr):
+            # Work on showing more debugging information if end-to-end test fails
+            ids_of_union = list(set(issue_ids).union(set(expected_issue_ids)))
+            _issues = issues.loc[ids_of_union]
+            new_columns = [
+                "true_label_error_idx",
+                "true_outlier_idx",
+                "true_duplicate_idx",
+                "true_non_iid_idx",
+                "true_underperforming_group_idx",
+            ]
+            ids_keys = [
+                "error_idx",
+                "outlier_ids",
+                "duplicate_ids",
+                "non_iid_ids",
+                "underperforming_group_ids",
+            ]
+            for new_col, ids_key in zip(new_columns, ids_keys):
+                _issues[new_col] = _issues.index.isin(regression_data[ids_key])
+            # Display dataframe
+            print("Expected label issue ids", expected_issue_ids, "\n")
+            _label_issues = _issues.query("is_label_issue")
+            print(_label_issues)
+            for col in true_columns:
+                print(f"\nColumn: {col}")
+                print(_label_issues.query(col)["label_score"])
+
+            error_messages = [
+                (
+                    has_high_jaccard,
+                    f"- Jaccard similarity is too low. Should be > {expected_jaccard_similarity_bound}, got {float(intersection) / union}",
+                ),
+                (
+                    has_no_fpr,
+                    f"- FPR is too high. Should be less than or equal to {expected_fpr_bound}, got {fpr}",
+                ),
+            ]
+            error_msg = "The following test(s) failed for the default threshold:\n"
+            error_msg += "\n".join(
+                [msg for (test_passes, msg) in error_messages if not test_passes]
+            )
+            raise AssertionError(error_msg)
 
         # Try running with a different threshold
         lab.find_issues(pred_probs=y_pred, issue_types={"label": {"threshold": 0.2}})
@@ -1124,9 +1383,11 @@ class TestDatalabForRegression:
 
         intersection = len(list(set(issue_ids).intersection(set(expected_issue_ids))))
         union = len(set(issue_ids)) + len(set(expected_issue_ids)) - intersection
+
+        different_threshold_jaccard = float(intersection) / union
         assert float(intersection) / union > 0.3
 
-    def test_regression_with_model_and_features(self, lab, regression_data):
+    def test_regression_with_model_and_features_finds_label_issues(self, lab, regression_data):
         """Test that the regression issue checks find label issue with another model."""
         from sklearn.linear_model import RANSACRegressor
 
@@ -1149,6 +1410,84 @@ class TestDatalabForRegression:
         # FPR
         fpr = len(list(set(issue_ids).difference(set(expected_issue_ids)))) / len(issue_ids)
         assert fpr < 0.3
+
+    @pytest.mark.parametrize(
+        "argument_name, data_key, expected_issue_types_in_summary",
+        [
+            ("features", "X", set(["label", "outlier"])),
+            # TODO: Add outlier when OutOfDistribution handles continuous targets
+            ("pred_probs", "true_y", set(["label"])),
+            ("knn_graph", "knn_graph", set(["outlier"])),
+        ],
+        ids=["features only", "pred_probs only", "knn_graph only"],
+    )
+    def test_find_issues_defaults(
+        self, lab, regression_data, argument_name, data_key, expected_issue_types_in_summary
+    ):
+        """Test that the regression issue checks find various issues with the default settings."""
+        input_dict = {argument_name: regression_data[data_key]}
+        lab.find_issues(**input_dict)
+        issue_summary = lab.get_issue_summary()
+        assert issue_summary["num_issues"].sum() > 0
+        assert set(issue_summary["issue_type"].values) == expected_issue_types_in_summary
+
+    @pytest.mark.parametrize(
+        "argument_name, data_key",
+        [
+            ("features", "X"),
+            ("knn_graph", "knn_graph"),
+        ],
+        ids=["features only", "knn_graph only"],
+    )
+    def test_find_outliers(self, lab, regression_data, argument_name, data_key):
+        """Test that the regression issue checks find 2 outlier issues."""
+
+        input_dict = {argument_name: regression_data[data_key]}
+        # Other tests are too sensitive to having more obvious outliers
+        issue_types = {
+            "outlier": {"threshold": 0.20}
+        }  # Lower threshold for a more conservative result
+        lab.find_issues(**input_dict, issue_types=issue_types)
+        lab.report()
+
+        issues = lab.get_issues("outlier")
+        issue_ids = issues.query("is_outlier_issue").index
+        expected_issue_ids = regression_data["outlier_ids"]
+
+        plot = False  # For debugging
+        if plot:
+            import matplotlib.pyplot as plt
+
+            X = regression_data["X"]
+            # Flag outliers
+            fig, ax = plt.subplots(1, 3, figsize=(15, 5))
+
+            for plot_id, (i, j) in enumerate([(0, 1), (1, 2), (0, 2)]):
+                ax[plot_id].scatter(X[:, i], X[:, j], c=regression_data["y"])
+                ax[plot_id].set_xlabel(f"Feature {i}")
+                ax[plot_id].set_ylabel(f"Feature {j}")
+
+                # Circle expected issues
+                ax[plot_id].scatter(
+                    X[expected_issue_ids, i], X[expected_issue_ids, j], c="black", s=100, alpha=0.5
+                )
+
+                # Box detected issues
+                ax[plot_id].scatter(
+                    X[issue_ids, i], X[issue_ids, j], c="red", s=100, alpha=0.5, marker="s"
+                )
+            image_filename = "_temp_features_plot.png"
+            plt.savefig(image_filename)
+            plt.show()
+
+        # jaccard similarity
+        intersection = len(list(set(issue_ids).intersection(set(expected_issue_ids))))
+        union = len(set(issue_ids)) + len(set(expected_issue_ids)) - intersection
+        assert float(intersection) / union >= 0.5
+
+        # FPR
+        fpr = len(list(set(issue_ids).difference(set(expected_issue_ids)))) / len(issue_ids)
+        assert fpr == 0.0
 
 
 class TestDatalabFindOutlierIssues:
