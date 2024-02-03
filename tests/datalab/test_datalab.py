@@ -1138,10 +1138,10 @@ class TestDatalabForRegression:
 
     def test_available_issue_types(self, lab):
         assert set(lab.list_default_issue_types()) == set(
-            ["label", "outlier", "near_duplicate", "non_iid"]
+            ["label", "outlier", "near_duplicate", "non_iid", "null"]
         )
         assert set(lab.list_possible_issue_types()) == set(
-            ["label", "outlier", "near_duplicate", "non_iid"]
+            ["label", "outlier", "near_duplicate", "non_iid", "null"]
         )
 
     def test_regression_with_features_finds_label_issues(self, lab, regression_data):
@@ -1502,7 +1502,7 @@ class TestDatalabForRegression:
     @pytest.mark.parametrize(
         "argument_name, data_key, expected_issue_types_in_summary",
         [
-            ("features", "X", set(["label", "outlier", "near_duplicate", "non_iid"])),
+            ("features", "X", set(["label", "outlier", "near_duplicate", "non_iid", "null"])),
             # TODO: Add outlier when OutOfDistribution handles continuous targets
             ("pred_probs", "true_y", set(["label", "non_iid"])),
             ("knn_graph", "knn_graph", set(["outlier", "near_duplicate", "non_iid"])),
@@ -1820,6 +1820,26 @@ class TestDatalabForRegression:
             )
 
             raise AssertionError(error_msg)
+
+    def test_find_null_issues(self, lab, regression_data):
+        """Test that the regression issue checks find 0 null issues."""
+        X = regression_data["X"]
+        lab.find_issues(features=X, issue_types={"null": {}})
+        summary = lab.get_issue_summary("null")
+        assert summary["num_issues"].values[0] == 0
+
+        rand_ids = np.random.choice(X.shape[0], 10, replace=False)
+        for i in rand_ids:
+            j = np.random.choice(X.shape[1], 1, replace=False)
+            X[i, j] = np.nan
+
+        rand_ids_full = np.random.choice(X.shape[0], 3, replace=False)
+        for i in rand_ids_full:
+            X[i, :] = np.nan
+        lab.find_issues(features=X, issue_types={"null": {}})
+        issues = lab.get_issues("null")
+        null_issues = issues.query("is_null_issue")
+        assert set(rand_ids_full) == set(null_issues.index.tolist())
 
 
 class TestDatalabFindOutlierIssues:

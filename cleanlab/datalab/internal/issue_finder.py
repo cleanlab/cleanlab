@@ -68,6 +68,7 @@ _REGRESSION_ARGS_DICT = {
     "outlier": ["features", "knn_graph"],
     "near_duplicate": ["features", "knn_graph"],
     "non_iid": ["pred_probs", "features", "knn_graph"],
+    "null": ["features"],
 }
 
 _MULTILABEL_ARGS_DICT = {

@@ -73,6 +73,7 @@ REGISTRY: Dict[str, Dict[str, Type[IssueManager]]] = {
         "outlier": OutlierIssueManager,
         "near_duplicate": NearDuplicateIssueManager,
         "non_iid": NonIIDIssueManager,
+        "null": NullIssueManager,
     },
     "multilabel": {"label": MultilabelIssueManager},
 }
@@ -218,6 +219,7 @@ def list_default_issue_types(task: str) -> List[str]:
             "class_imbalance",
         ],
         "regression": [
+            "null",
             "label",
             "outlier",
             "near_duplicate",
