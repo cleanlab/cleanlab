@@ -67,6 +67,7 @@ _REGRESSION_ARGS_DICT = {
     # TODO: Add "pred_probs" to "outlier" when OutOfDistribution handles continuous targets (for regression tasks)
     "outlier": ["features", "knn_graph"],
     "near_duplicate": ["features", "knn_graph"],
+    "non_iid": ["pred_probs", "features", "knn_graph"],
 }
 
 _MULTILABEL_ARGS_DICT = {
@@ -131,8 +132,12 @@ def _resolve_required_args_for_regression(**kwargs):
     args_dict = {
         k: {k2: v2 for k2, v2 in v.items() if v2 is not None}
         for k, v in args_dict.items()
-        if v or k == "label" or keep_empty_argument(k)  # Allow label issues to require no arguments
+        if v or keep_empty_argument(k)
     }
+
+    # Only keep issue types that have at least one argument
+    # or those that require no arguments.
+    args_dict = {k: v for k, v in args_dict.items() if (v or keep_empty_argument(k))}
 
     return args_dict
 
@@ -154,6 +159,10 @@ def _resolve_required_args_for_multilabel(**kwargs):
         for k, v in args_dict.items()
         if v or keep_empty_argument(k)  # Allow label issues to require no arguments
     }
+
+    # Only keep issue types that have at least one argument
+    # or those that require no arguments.
+    args_dict = {k: v for k, v in args_dict.items() if (v or keep_empty_argument(k))}
 
     return args_dict
 
