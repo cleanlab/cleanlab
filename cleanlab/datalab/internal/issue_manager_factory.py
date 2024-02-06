@@ -75,7 +75,10 @@ REGISTRY: Dict[str, Dict[str, Type[IssueManager]]] = {
         "non_iid": NonIIDIssueManager,
         "null": NullIssueManager,
     },
-    "multilabel": {"label": MultilabelIssueManager},
+    "multilabel": {
+        "label": MultilabelIssueManager,
+        "near_duplicate": NearDuplicateIssueManager,
+    },
 }
 """Registry of issue managers that can be constructed from a string
 and used in the Datalab class.
@@ -225,7 +228,10 @@ def list_default_issue_types(task: str) -> List[str]:
             "near_duplicate",
             "non_iid",
         ],
-        "multilabel": ["label"],
+        "multilabel": [
+            "label",
+            "near_duplicate",
+        ],
     }
     if task not in default_issue_types_dict:
         task = "classification"

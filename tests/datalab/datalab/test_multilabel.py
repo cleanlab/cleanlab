@@ -16,6 +16,7 @@
 
 import numpy as np
 import pytest
+from sklearn.neighbors import NearestNeighbors
 
 
 from cleanlab.datalab.datalab import Datalab
@@ -91,12 +92,19 @@ class TestDatalabForMultilabelClassification:
         pred_probs = np.full((n, num_classes), fill_value=0.1)
         labels_onehot = int2onehot(labels, K=num_classes)
         pred_probs[labels_onehot == 1] = 0.9
+
+        knn_graph = (
+            NearestNeighbors(n_neighbors=15, metric="euclidean")
+            .fit(X_train)
+            .kneighbors_graph(mode="distance")
+        )
         return {
             "X": X_train,
             "true_y": labels,
             "y": noisy_labels,
             "error_idx": error_idx,
             "pred_probs": pred_probs,
+            "knn_graph": knn_graph,
         }
 
     @pytest.fixture
@@ -107,14 +115,30 @@ class TestDatalabForMultilabelClassification:
         return lab
 
     def test_available_issue_types(self, lab):
-        assert set(lab.list_default_issue_types()) == set(["label"])
-        assert set(lab.list_possible_issue_types()) == set(["label"])
+        assert set(lab.list_default_issue_types()) == set(["label", "near_duplicate"])
+        assert set(lab.list_possible_issue_types()) == set(["label", "near_duplicate"])
 
-    def test_multilabel_with_pred_probs(self, lab, multilabel_data):
+    @pytest.mark.parametrize(
+        "argument_name, data_key",
+        [
+            ("pred_probs", "pred_probs"),
+            # TODO: Add support for finding multilabel issues from features
+            # ("features", "X"),
+            # TODO: Add support for finding multilabel issues from knn_graph
+            # ("knn_graph", "knn_graph"),
+        ],
+        ids=[
+            "pred_probs only",
+            # "features only",
+            # "knn_graph only",
+        ],
+    )
+    def test_find_label_issues(self, lab, multilabel_data, argument_name, data_key):
         """Test that the multilabel classification issue checks finds at least 90% of the
         label issues."""
-        pred_probs = multilabel_data["pred_probs"]
-        lab.find_issues(pred_probs=pred_probs)
+        input_dict = {argument_name: multilabel_data[data_key]}
+        issue_types = {"label": {}}
+        lab.find_issues(**input_dict, issue_types=issue_types)
         lab.report()
 
         issues = lab.get_issues("label")
@@ -125,3 +149,26 @@ class TestDatalabForMultilabelClassification:
         intersection = len(list(set(issue_ids).intersection(set(expected_issue_ids))))
         union = len(set(issue_ids)) + len(set(expected_issue_ids)) - intersection
         assert float(intersection) / union >= 0.9
+
+    @pytest.mark.parametrize(
+        "argument_name, data_key, expected_issue_types_in_summary",
+        [
+            ("pred_probs", "pred_probs", ["label"]),
+            ("features", "X", ["near_duplicate"]),
+            ("knn_graph", "knn_graph", ["near_duplicate"]),
+        ],
+        ids=[
+            "pred_probs only",
+            "features only",
+            "knn_graph only",
+        ],
+    )
+    def test_find_issues_defaults(
+        self, lab, multilabel_data, argument_name, data_key, expected_issue_types_in_summary
+    ):
+        """Test that the multilabel classification issue checks for various issues by default."""
+        input_dict = {argument_name: multilabel_data[data_key]}
+        lab.find_issues(**input_dict)
+        issue_summary = lab.get_issue_summary()
+        assert issue_summary["num_issues"].sum() > 0
+        assert set(issue_summary["issue_type"].values) == set(expected_issue_types_in_summary)

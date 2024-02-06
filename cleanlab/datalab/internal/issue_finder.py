@@ -73,6 +73,7 @@ _REGRESSION_ARGS_DICT = {
 
 _MULTILABEL_ARGS_DICT = {
     "label": ["pred_probs"],
+    "near_duplicate": ["features", "knn_graph"],
 }
 
 
