@@ -34,13 +34,6 @@ from sklearn.datasets import make_blobs
 import cleanlab
 from cleanlab.datalab.datalab import Datalab
 from cleanlab.datalab.internal.report import Reporter
-from cleanlab.internal.multilabel_utils import int2onehot
-
-
-from cleanlab.benchmarking.noise_generation import (
-    generate_noise_matrix_from_trace,
-    generate_noisy_labels,
-)
 
 SEED = 42
 
