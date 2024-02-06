@@ -159,8 +159,6 @@ class NonIIDIssueManager(IssueManager):
             return features
 
         if pred_probs is not None:
-            if pred_probs.ndim == 1:  # For regression
-                pred_probs = pred_probs.reshape(-1, 1)
             return pred_probs
 
         raise ValueError(

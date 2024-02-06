@@ -516,8 +516,7 @@ class TestDatalabForRegression:
         "argument_name, data_key, expected_issue_types_in_summary",
         [
             ("features", "X", set(["label", "outlier", "near_duplicate", "non_iid", "null"])),
-            # TODO: Add outlier when OutOfDistribution handles continuous targets
-            ("pred_probs", "true_y", set(["label", "non_iid"])),
+            ("pred_probs", "true_y", set(["label"])),
             ("knn_graph", "knn_graph", set(["outlier", "near_duplicate", "non_iid"])),
         ],
         ids=["features only", "pred_probs only", "knn_graph only"],
@@ -687,10 +686,9 @@ class TestDatalabForRegression:
         "argument_name, data_key",
         [
             ("features", "X"),
-            ("pred_probs", "true_y"),
             ("knn_graph", "knn_graph"),
         ],
-        ids=["features only", "pred_probs only", "knn_graph only"],
+        ids=["features only", "knn_graph only"],
     )
     def test_find_non_iid(self, lab, regression_data, argument_name, data_key):
         """Test that the regression issue checks find 30 non-iid issues."""

@@ -115,8 +115,12 @@ class TestDatalabForMultilabelClassification:
         return lab
 
     def test_available_issue_types(self, lab):
-        assert set(lab.list_default_issue_types()) == set(["label", "near_duplicate"])
-        assert set(lab.list_possible_issue_types()) == set(["label", "near_duplicate"])
+        assert set(lab.list_default_issue_types()) == set(
+            ["label", "near_duplicate", "non_iid", "outlier", "null"]
+        )
+        assert set(lab.list_possible_issue_types()) == set(
+            ["label", "near_duplicate", "non_iid", "outlier", "null"]
+        )
 
     @pytest.mark.parametrize(
         "argument_name, data_key",
@@ -154,8 +158,8 @@ class TestDatalabForMultilabelClassification:
         "argument_name, data_key, expected_issue_types_in_summary",
         [
             ("pred_probs", "pred_probs", ["label"]),
-            ("features", "X", ["near_duplicate"]),
-            ("knn_graph", "knn_graph", ["near_duplicate"]),
+            ("features", "X", ["near_duplicate", "non_iid", "outlier", "null"]),
+            ("knn_graph", "knn_graph", ["near_duplicate", "non_iid", "outlier"]),
         ],
         ids=[
             "pred_probs only",

@@ -77,7 +77,10 @@ REGISTRY: Dict[str, Dict[str, Type[IssueManager]]] = {
     },
     "multilabel": {
         "label": MultilabelIssueManager,
+        "outlier": OutlierIssueManager,
         "near_duplicate": NearDuplicateIssueManager,
+        "non_iid": NonIIDIssueManager,
+        "null": NullIssueManager,
     },
 }
 """Registry of issue managers that can be constructed from a string
@@ -229,8 +232,11 @@ def list_default_issue_types(task: str) -> List[str]:
             "non_iid",
         ],
         "multilabel": [
+            "null",
             "label",
+            "outlier",
             "near_duplicate",
+            "non_iid",
         ],
     }
     if task not in default_issue_types_dict:
