@@ -151,7 +151,6 @@ class Reporter:
                 include_description=self.include_description,
             )
             for key in issue_types
-            if add_issue_to_report(key)
         ]
 
         report_str += "\n\n\n".join(issue_reports)
