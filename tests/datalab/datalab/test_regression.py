@@ -255,70 +255,6 @@ class TestDatalabForRegression:
                 [msg for (test_passes, msg) in error_messages if not test_passes]
             )
 
-            # Work on showing more debugging information if end-to-end test fails
-            import matplotlib.pyplot as plt
-
-            # Plot features
-            fig, ax = plt.subplots(1, 3, figsize=(15, 5))
-            xs = [0, 0, 1]
-            ys = [1, 2, 2]
-            false_positive_ids = list(set(issue_ids).difference(set(expected_issue_ids)))
-            false_negative_ids = list(set(expected_issue_ids).difference(set(issue_ids)))
-            print("False positives", false_positive_ids)
-            print("False negatives", false_negative_ids)
-            for plot_id, (i, j) in enumerate(zip(xs, ys)):
-                ax[plot_id].scatter(X[:, i], X[:, j], c=regression_data["y"])
-                ax[plot_id].set_xlabel(f"Feature {i}")
-                ax[plot_id].set_ylabel(f"Feature {j}")
-
-                # Circle expected issues
-                ax[plot_id].scatter(
-                    X[expected_issue_ids, i], X[expected_issue_ids, j], c="black", s=100, alpha=0.5
-                )
-
-                # Box false positives
-                if len(false_positive_ids) > 0:
-                    ax[plot_id].scatter(
-                        X[false_positive_ids, i],
-                        X[false_positive_ids, j],
-                        c="red",
-                        s=100,
-                        alpha=0.5,
-                        marker="s",
-                    )
-
-                # Triangle false negatives
-                if len(false_negative_ids) > 0:
-                    ax[plot_id].scatter(
-                        X[false_negative_ids, i],
-                        X[false_negative_ids, j],
-                        c="blue",
-                        s=100,
-                        alpha=0.5,
-                        marker="^",
-                    )
-            image_filename = "_temp_features_plot.png"
-            plt.savefig(image_filename)
-            plt.show()
-
-            # Make pca plot
-            from sklearn.decomposition import PCA
-
-            pca = PCA(n_components=2)
-            X_pca = pca.fit_transform(X)
-            fig, ax = plt.subplots()
-            plt.scatter(X_pca[:, 0], X_pca[:, 1], c=regression_data["y"])
-            plt.xlabel("PCA 1")
-            plt.ylabel("PCA 2")
-            plt.colorbar()
-            plt.show()
-            image_filename = "_temp_pca_plot.png"
-            plt.savefig(image_filename)
-
-            # Save
-            image_filename = "_temp_3d_plot.png"
-            plt.savefig(image_filename)
-
             raise AssertionError(error_msg)
 
     def test_regression_with_predictions_finds_label_issues(self, lab, regression_data):
@@ -439,31 +375,6 @@ class TestDatalabForRegression:
             "error_idx"
         ]  # Set to 5% of the data, but random noise may be too small to detect
 
-        plot = True
-        if plot:
-            import matplotlib.pyplot as plt
-
-            # Plot features
-            fig, ax = plt.subplots(1, 3, figsize=(15, 5))
-            xs = [0, 0, 1]
-            ys = [1, 2, 2]
-            for plot_id, (i, j) in enumerate(zip(xs, ys)):
-                ax[plot_id].scatter(X[:, i], X[:, j], c=regression_data["y"])
-                ax[plot_id].set_xlabel(f"Feature {i}")
-                ax[plot_id].set_ylabel(f"Feature {j}")
-
-                # Circle expected issues
-                ax[plot_id].scatter(
-                    X[expected_issue_ids, i], X[expected_issue_ids, j], c="black", s=100, alpha=0.5
-                )
-
-                # Box detected issues
-                ax[plot_id].scatter(
-                    X[issue_ids, i], X[issue_ids, j], c="red", s=100, alpha=0.5, marker="s"
-                )
-            image_filename = "_temp_features_plot.png"
-            plt.savefig(image_filename)
-
         # jaccard similarity
         intersection = len(list(set(issue_ids).intersection(set(expected_issue_ids))))
         union = len(set(issue_ids)) + len(set(expected_issue_ids)) - intersection
@@ -554,32 +465,6 @@ class TestDatalabForRegression:
         issue_ids = issues.query("is_outlier_issue").index
         expected_issue_ids = regression_data["outlier_ids"]
 
-        plot = True  # For debugging
-        if plot:
-            import matplotlib.pyplot as plt
-
-            X = regression_data["X"]
-            # Flag outliers
-            fig, ax = plt.subplots(1, 3, figsize=(15, 5))
-
-            for plot_id, (i, j) in enumerate([(0, 1), (1, 2), (0, 2)]):
-                ax[plot_id].scatter(X[:, i], X[:, j], c=regression_data["y"])
-                ax[plot_id].set_xlabel(f"Feature {i}")
-                ax[plot_id].set_ylabel(f"Feature {j}")
-
-                # Circle expected issues
-                ax[plot_id].scatter(
-                    X[expected_issue_ids, i], X[expected_issue_ids, j], c="black", s=100, alpha=0.5
-                )
-
-                # Box detected issues
-                ax[plot_id].scatter(
-                    X[issue_ids, i], X[issue_ids, j], c="red", s=100, alpha=0.5, marker="s"
-                )
-            image_filename = "_temp_features_plot.png"
-            plt.savefig(image_filename)
-            plt.show()
-
         # jaccard similarity
         intersection = len(list(set(issue_ids).intersection(set(expected_issue_ids))))
         union = len(set(issue_ids)) + len(set(expected_issue_ids)) - intersection
@@ -607,32 +492,6 @@ class TestDatalabForRegression:
         issues = lab.get_issues("near_duplicate")
         issue_ids = issues.query("is_near_duplicate_issue").index
         expected_issue_ids = regression_data["duplicate_ids"]
-
-        plot = True  # For debugging
-        if plot:
-            import matplotlib.pyplot as plt
-
-            X = regression_data["X"]
-            # Flag near-duplicates
-            fig, ax = plt.subplots(1, 3, figsize=(15, 5))
-
-            for plot_id, (i, j) in enumerate([(0, 1), (1, 2), (0, 2)]):
-                ax[plot_id].scatter(X[:, i], X[:, j], c=regression_data["y"])
-                ax[plot_id].set_xlabel(f"Feature {i}")
-                ax[plot_id].set_ylabel(f"Feature {j}")
-
-                # Circle expected issues
-                ax[plot_id].scatter(
-                    X[expected_issue_ids, i], X[expected_issue_ids, j], c="black", s=100, alpha=0.5
-                )
-
-                # Box detected issues
-                ax[plot_id].scatter(
-                    X[issue_ids, i], X[issue_ids, j], c="red", s=100, alpha=0.5, marker="s"
-                )
-            image_filename = "_temp_features_plot.png"
-            plt.savefig(image_filename)
-            plt.show()
 
         # jaccard similarity
         intersection = len(list(set(issue_ids).intersection(set(expected_issue_ids))))
@@ -704,66 +563,6 @@ class TestDatalabForRegression:
         issues = lab.get_issues("non_iid")
         issue_ids = issues.query("is_non_iid_issue").index
         expected_issue_ids = regression_data["non_iid_ids"]
-
-        plot = True
-        if plot:
-            import matplotlib.pyplot as plt
-
-            X = regression_data["X"]
-            # Flag non-iid
-            fig, ax = plt.subplots(1, 3, figsize=(15, 5))
-
-            for plot_id, (i, j) in enumerate([(0, 1), (1, 2), (0, 2)]):
-                ax[plot_id].scatter(X[:, i], X[:, j], c=regression_data["y"])
-                ax[plot_id].set_xlabel(f"Feature {i}")
-                ax[plot_id].set_ylabel(f"Feature {j}")
-
-                # Circle expected issues
-                ax[plot_id].scatter(
-                    X[expected_issue_ids, i], X[expected_issue_ids, j], c="black", s=100, alpha=0.5
-                )
-
-                # Box detected issues
-                ax[plot_id].scatter(
-                    X[issue_ids, i], X[issue_ids, j], c="red", s=100, alpha=0.5, marker="s"
-                )
-            image_filename = "_temp_features_plot.png"
-            plt.savefig(image_filename)
-
-            # Plot target (first is x-axis the index, the second is a histogram of the target)
-            fig, ax = plt.subplots(2, 1, figsize=(15, 5))
-            # First the index
-            ax[0].plot(regression_data["y"])
-            ax[0].scatter(
-                expected_issue_ids,
-                regression_data["y"][expected_issue_ids],
-                c="black",
-                s=100,
-                alpha=0.5,
-            )
-            ax[0].scatter(
-                issue_ids, regression_data["y"][issue_ids], c="red", s=100, alpha=0.5, marker="s"
-            )
-            # Then the histogram
-            ax[1].hist(regression_data["y"], bins=30)
-            ax[1].scatter(
-                regression_data["y"][expected_issue_ids],
-                np.zeros_like(regression_data["y"][expected_issue_ids]),
-                c="black",
-                s=100,
-                alpha=0.5,
-            )
-            ax[1].scatter(
-                regression_data["y"][issue_ids],
-                np.zeros_like(regression_data["y"][issue_ids]),
-                c="red",
-                s=100,
-                alpha=0.5,
-                marker="s",
-            )
-
-            image_filename = "_temp_target_plot.png"
-            plt.savefig(image_filename)
 
         # omitting jaccard similarity and FPR for non-iid issues
 
