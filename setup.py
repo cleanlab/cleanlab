@@ -70,10 +70,10 @@ setup(
         "Natural Language :: English",
         # We believe this package works will these versions, but we do not guarantee it!
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
         "Programming Language :: Python",
         "Topic :: Software Development",
         "Topic :: Scientific/Engineering",
@@ -82,7 +82,7 @@ setup(
         "Topic :: Software Development :: Libraries",
         "Topic :: Software Development :: Libraries :: Python Modules",
     ],
-    python_requires=">=3.7",
+    python_requires=">=3.8",
     # What does your project relate to?
     keywords="machine_learning data_cleaning confident_learning classification weak_supervision "
     "learning_with_noisy_labels unsupervised_learning datacentric_ai, datacentric",
@@ -101,11 +101,11 @@ setup(
     # requirements files see:
     # https://packaging.python.org/en/latest/discussions/install-requires-vs-requirements/
     install_requires=[
-        "numpy>=1.20.0",
-        "scikit-learn>=1.0",
+        "numpy>=1.22.0",
+        "scikit-learn>=1.1",
         "tqdm>=4.53.0",
-        "pandas>=1.1.5",
-        "termcolor>=2.0.0,<2.4.0",
+        "pandas>=1.4.0",
+        "termcolor>=2.4.0",
     ],
     extras_require=EXTRAS_REQUIRE,
 )

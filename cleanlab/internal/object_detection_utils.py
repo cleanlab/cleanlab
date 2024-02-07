@@ -45,6 +45,13 @@ def softmin1d(scores: np.ndarray, temperature: float = 0.99, axis: int = 0) -> f
     return np.dot(softmax_scores, scores)
 
 
+def calculate_bounding_box_areas(rectangle_coordinates):
+    """Calculate areas of bounding boxes represented by numpy array with x1, y1, x2, y2 format"""
+    widths = rectangle_coordinates[:, 2] - rectangle_coordinates[:, 0]
+    heights = rectangle_coordinates[:, 3] - rectangle_coordinates[:, 1]
+    return widths * heights
+
+
 def assert_valid_aggregation_weights(aggregation_weights: Dict[str, Any]) -> None:
     """assert aggregation weights are in the proper format"""
     weights = np.array(list(aggregation_weights.values()))
