@@ -398,7 +398,7 @@ class Datalab:
             Whether or not to include the overall severity of each issue type in the report.
 
         show_all_issues :
-            Whether or not to show all issues in the report, or only the top `num_examples` instances that suffer the most from each type of issue.
+            Whether or not to show all issues in the report, or only the issues for which examples were found in the dataset
             With this set to ``True``, the report may include more types of issues that were not detected in the dataset.
 
         See Also
