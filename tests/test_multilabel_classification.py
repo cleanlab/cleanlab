@@ -566,10 +566,15 @@ def test_stack_complement():
 
 @pytest.mark.parametrize(
     "pred_probs_test",
-    (None, pytest.lazy_fixture("pred_probs")),
+    (None, "pred_probs"),
     ids=["Without probabilities", "With probabilities"],
 )
-def test_get_onehot_num_classes(labels, pred_probs_test):
+def test_get_onehot_num_classes(labels, pred_probs_test, request):
+    pred_probs_test = (
+        request.getfixturevalue(pred_probs_test)
+        if isinstance(pred_probs_test, str)
+        else pred_probs_test
+    )
     labels_list = [np.nonzero(x)[0].tolist() for x in labels]
     _, num_classes = get_onehot_num_classes(labels_list, pred_probs_test)
     assert num_classes == 3
@@ -588,7 +593,7 @@ def test_get_label_quality_scores_output(labels, pred_probs, scorer):
     "given_labels,expected",
     [
         (
-            pytest.lazy_fixture("labels"),
+            "labels",
             np.full((3, 2), 0.5),
         ),
         (np.array([[0, 1], [0, 0], [1, 1]]), np.array([[2 / 3, 1 / 3], [1 / 3, 2 / 3]])),
@@ -605,7 +610,10 @@ def test_get_label_quality_scores_output(labels, pred_probs, scorer):
         "Handle more than 8 classes",
     ],
 )
-def test_multilabel_py(given_labels, expected):
+def test_multilabel_py(given_labels, expected, request):
+    given_labels = (
+        request.getfixturevalue(given_labels) if isinstance(given_labels, str) else given_labels
+    )
     py = ml_scorer.multilabel_py(given_labels)
     assert isinstance(py, np.ndarray)
     assert py.shape == (given_labels.shape[1], 2)

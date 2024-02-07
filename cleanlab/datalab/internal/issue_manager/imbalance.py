@@ -38,9 +38,9 @@ class ClassImbalanceIssueManager(IssueManager):
 
     """
 
-    description: ClassVar[
-        str
-    ] = """Examples belonging to the most under-represented class in the dataset."""
+    description: ClassVar[str] = (
+        """Examples belonging to the most under-represented class in the dataset."""
+    )
 
     issue_name: ClassVar[str] = "class_imbalance"
     verbosity_levels = {
@@ -58,6 +58,12 @@ class ClassImbalanceIssueManager(IssueManager):
         **kwargs,
     ) -> None:
         labels = self.datalab.labels
+        if not isinstance(labels, np.ndarray):
+            error_msg = (
+                f"Expected labels to be a numpy array of shape (n_samples,) to use with ClassImbalanceIssueManager, "
+                f"but got {type(labels)} instead."
+            )
+            raise TypeError(error_msg)
         K = len(self.datalab.class_names)
         class_probs = np.bincount(labels) / len(labels)
         rarest_class_idx = int(np.argmin(class_probs))

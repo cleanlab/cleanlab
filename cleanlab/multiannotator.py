@@ -1507,9 +1507,11 @@ def _get_post_pred_probs_and_weights(
                 np.average(
                     [prior_pred_probs[i, true_label]]
                     + [
-                        consensus_likelihood
-                        if annotator_label == true_label
-                        else non_consensus_likelihood
+                        (
+                            consensus_likelihood
+                            if annotator_label == true_label
+                            else non_consensus_likelihood
+                        )
                         for annotator_label in labels_subset
                     ],
                     weights=np.concatenate(
@@ -1637,9 +1639,11 @@ def _get_post_pred_probs_and_weights_ensemble(
             np.average(
                 [prior_pred_probs[ind][i, true_label] for ind in range(prior_pred_probs.shape[0])]
                 + [
-                    consensus_likelihood
-                    if annotator_label == true_label
-                    else non_consensus_likelihood
+                    (
+                        consensus_likelihood
+                        if annotator_label == true_label
+                        else non_consensus_likelihood
+                    )
                     for annotator_label in labels_subset
                 ],
                 weights=np.concatenate((model_weight, adjusted_annotator_agreement[labels_mask])),
