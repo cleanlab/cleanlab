@@ -14,7 +14,7 @@ skorch
 tensorflow
 torch
 torchvision
-typing-extensions>=4.1.1
+typing-extensions>=4.8.0
 wget
 matplotlib
 pillow
