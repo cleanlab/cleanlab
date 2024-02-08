@@ -4,7 +4,7 @@ The methods/classes in this module are just intended for internal use.
 """
 
 import warnings
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type
 
 import numpy as np
 import numpy.typing as npt
@@ -19,6 +19,7 @@ from cleanlab.datalab.internal.data import Data
 from cleanlab.datalab.internal.data_issues import DataIssues, _InfoStrategy
 from cleanlab.datalab.internal.issue_finder import IssueFinder
 from cleanlab.datalab.internal.report import Reporter
+from cleanlab.datalab.internal.task import Task
 
 if TYPE_CHECKING:  # pragma: no cover
     from cleanvision import Imagelab
@@ -84,7 +85,7 @@ class ImagelabDataIssuesAdapter(DataIssues):
         A dictionary that contains information and statistics about the data and each issue type.
     """
 
-    def __init__(self, data: Data, strategy: _InfoStrategy) -> None:
+    def __init__(self, data: Data, strategy: Type[_InfoStrategy]) -> None:
         super().__init__(data, strategy)
 
     def _update_issues_imagelab(self, imagelab: "Imagelab", overlapping_issues: List[str]) -> None:
@@ -145,7 +146,7 @@ class ImagelabReporterAdapter(Reporter):
         self,
         data_issues: "DataIssues",
         imagelab: "Imagelab",
-        task: str,
+        task: Task,
         verbosity: int = 1,
         include_description: bool = True,
         show_summary_score: bool = False,

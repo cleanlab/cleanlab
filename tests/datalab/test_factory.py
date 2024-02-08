@@ -3,6 +3,7 @@ import pytest
 from cleanlab.datalab.internal.issue_manager_factory import register, REGISTRY
 from cleanlab import Datalab
 from cleanlab.datalab.internal.issue_manager.issue_manager import IssueManager
+from cleanlab.datalab.internal.task import Task
 
 
 @pytest.fixture
@@ -39,4 +40,4 @@ def test_list_possible_issue_types(registry):
     ), "New issue type should be added to the list"
 
     # Clean up
-    del registry["classification"][test_key]
+    del registry[Task.CLASSIFICATION][test_key]

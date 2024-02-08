@@ -7,6 +7,8 @@ import numpy as np
 import hypothesis.strategies as st
 from hypothesis import given, assume, settings, HealthCheck
 
+from cleanlab.datalab.internal.task import Task
+
 
 NUM_COLS = 2
 
@@ -47,7 +49,7 @@ class TestData:
     @given(dataset=dataset_strategy())
     @settings(max_examples=10, suppress_health_check=[HealthCheck.too_slow])
     def test_init_data_properties(self, dataset):
-        data = Data(data=dataset, label_name="label")
+        data = Data(data=dataset, task=Task.CLASSIFICATION, label_name="label")
         assert data._data == dataset
 
         # All elements in the _labels attribute are integers in the range [0, num_classes - 1]
@@ -60,7 +62,7 @@ class TestData:
 
     def test_init_data(self, dataset_and_label_name):
         dataset, label_name = dataset_and_label_name
-        data = Data(data=dataset, label_name=label_name)
+        data = Data(data=dataset, task=Task.CLASSIFICATION, label_name=label_name)
 
         label_feature = dataset.features[label_name]
         if isinstance(label_feature, ClassLabel):
@@ -71,13 +73,13 @@ class TestData:
 
     def test_init_data_from_list_of_dicts(self):
         dataset = [{"X": 0, "label": 0}, {"X": 1, "label": 1}, {"X": 2, "label": 1}]
-        data = Data(data=dataset, label_name="label")
+        data = Data(data=dataset, task=Task.CLASSIFICATION, label_name="label")
         assert isinstance(data._data, Dataset)
 
     def test_init_raises_format_error(self):
         data = np.random.rand(10, 2)
         with pytest.raises(DataFormatError) as excinfo:
-            Data(data=data, label_name="label")
+            Data(data=data, task=Task.CLASSIFICATION, label_name="label")
 
         expected_error_substring = "Unsupported data type: <class 'numpy.ndarray'>\n"
         assert expected_error_substring in str(excinfo.value)
@@ -88,15 +90,15 @@ class TestData:
             "label": [0, 1],
         }
         with pytest.raises(DatasetLoadError) as excinfo:
-            Data(data=improperly_aligned_data, label_name="label")
+            Data(data=improperly_aligned_data, task=Task.CLASSIFICATION, label_name="label")
 
         expected_error_substring = "Failed to load dataset from <class 'dict'>.\n"
         assert expected_error_substring in str(excinfo.value)
 
     def test_not_equal_to_copy_or_non_data(self):
         dataset = {"X": [0, 1, 2], "label": [0, 1, 2]}
-        data = Data(data=dataset, label_name="label")
-        data_copy = Data(data=dataset, label_name="label")
+        data = Data(data=dataset, task=Task.CLASSIFICATION, label_name="label")
+        data_copy = Data(data=dataset, task=Task.CLASSIFICATION, label_name="label")
         assert data != data_copy
         assert data != dataset
 

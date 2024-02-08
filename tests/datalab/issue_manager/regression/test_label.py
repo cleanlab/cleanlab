@@ -4,6 +4,7 @@ import pytest
 
 from cleanlab import Datalab
 from cleanlab.datalab.internal.issue_manager.regression.label import RegressionLabelIssueManager
+from cleanlab.datalab.internal.task import Task
 
 
 def ground_truth_target_function(x):
@@ -17,7 +18,7 @@ class TestRegressionLabelIssueManager:
         error_msg = (
             "RegressionLabelIssueManager should be registered to the regression task as 'label'"
         )
-        assert REGISTRY["regression"].get("label") == RegressionLabelIssueManager, error_msg
+        assert REGISTRY[Task.REGRESSION].get("label") == RegressionLabelIssueManager, error_msg
 
     @pytest.fixture
     def features(self):

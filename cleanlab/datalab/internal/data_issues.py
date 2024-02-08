@@ -30,7 +30,7 @@ from __future__ import annotations
 
 import warnings
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union
 import numpy as np
 
 import pandas as pd
@@ -198,7 +198,7 @@ class DataIssues:
         A dictionary that contains information and statistics about the data and each issue type.
     """
 
-    def __init__(self, data: Data, strategy: _InfoStrategy) -> None:
+    def __init__(self, data: Data, strategy: Type[_InfoStrategy]) -> None:
         self.issues: pd.DataFrame = pd.DataFrame(index=range(len(data)))
         self.issue_summary: pd.DataFrame = pd.DataFrame(
             columns=["issue_type", "score", "num_issues"]

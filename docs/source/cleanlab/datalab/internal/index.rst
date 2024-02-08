@@ -21,3 +21,4 @@ internal
     factory
     issue_manager/index
     report
+    task

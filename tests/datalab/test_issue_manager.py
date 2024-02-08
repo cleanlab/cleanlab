@@ -7,6 +7,7 @@ from cleanlab.datalab.internal.issue_manager_factory import (
     REGISTRY,
     register,
 )
+from cleanlab.datalab.internal.task import Task
 
 
 class TestCustomIssueManager:
@@ -54,7 +55,7 @@ def test_register_custom_issue_manager(monkeypatch):
 
     Foo = register(Foo)
 
-    assert REGISTRY["classification"].get("foo") == Foo
+    assert REGISTRY[Task.CLASSIFICATION].get("foo") == Foo
 
     # Reregistering should overwrite the existing class, put print a warning
 
@@ -68,7 +69,7 @@ def test_register_custom_issue_manager(monkeypatch):
 
     NewFoo = register(NewFoo)
 
-    assert REGISTRY["classification"].get("foo") == NewFoo
+    assert REGISTRY[Task.CLASSIFICATION].get("foo") == NewFoo
     assert all(
         [
             text in sys.stdout.getvalue()
@@ -89,7 +90,7 @@ def test_register_custom_issue_manager(monkeypatch):
 
     NewerFoo = register(NewerFoo, task="classification")
 
-    assert REGISTRY["classification"].get("label") == NewerFoo
+    assert REGISTRY[Task.CLASSIFICATION].get("label") == NewerFoo
     assert all(
         [
             text in sys.stdout.getvalue()
@@ -110,7 +111,7 @@ def test_register_custom_issue_manager(monkeypatch):
 
     Bar = register(Bar, task="regression")
 
-    assert REGISTRY["regression"].get("bar") == Bar
+    assert REGISTRY[Task.REGRESSION].get("bar") == Bar
 
     # Cleanup
     REGISTRY.update(original_registry)
