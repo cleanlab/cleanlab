@@ -113,7 +113,7 @@ The assumption that examples in a dataset are Independent and Identically Distri
 
 For datasets with low non-IID score, you should consider why your data are not IID and act accordingly. For example, if the data distribution is drifting over time, consider employing a time-based train/test split instead of a random partition.  Note that shuffling the data ahead of time will ensure a good non-IID score, but this is not always a fix to the underlying problem (e.g. future deployment data may stem from a different distribution, or you may overlook the fact that examples influence each other). We thus recommend **not** shuffling your data to be able to diagnose this issue if it exists.
 
-Class-Imbalance Issue
+Class Imbalance Issue
 ---------------------
 
 Class imbalance is diagnosed just using the `labels` provided as part of the dataset. The overall class imbalance quality score of a dataset is the proportion of examples belonging to the rarest class `q`. If this proportion `q` falls below a threshold, then we say this dataset suffers from the class imbalance issue.
@@ -141,6 +141,27 @@ To find the underperforming group, Cleanlab clusters the data using the provided
 The underperforming group quality score is equal to `q/r` for examples belonging to the underperforming group, and is equal to 1 for all other examples.
 Advanced users:  If you have pre-computed cluster assignments for each example in the dataset, you can pass them explicitly to :py:meth:`Datalab.find_issues <cleanlab.datalab.datalab.Datalab.find_issues>` using the `cluster_ids` key in the `issue_types` dict argument.  This is useful for tabular datasets where you want to group/slice the data based on a categorical column. An integer encoding of the categorical column can be passed as cluster assignments for finding the underperforming group, based on the data slices you define.
 
+Null Issue
+-----------
+
+Examples identified with the null issue correspond to rows that have null/missing values across all feature columns (i.e. the entire row is missing values).
+
+Null issues are detected based on provided `features`.  If you do not provide `features`, this type of issue will not be considered.
+
+Each example's null issue quality score equals the proportion of features values in this row that are not null/missing. The overall dataset null issue quality score
+equals the average of the individual examples' quality scores.
+
+Presence of null examples in the dataset can lead to errors when training ML models. It can also
+result in the model learning incorrect patterns due to the null values.
+
+Data Valuation Issue
+--------------------
+
+The examples in the dataset with lowest data valuation scores contribute least to a trained ML model's performance (those whose value falls below a threshold are flagged with this type of issue).
+
+Data valuation issues can only be detected based on a provided `knn_graph`` (or one pre-computed during the computation of other issue types).  If you do not provide this argument and there isn't a `knn_graph` already stored in the Datalab object, this type of issue will not be considered.
+
+The data valuation score is an approximate Data Shapley value, calculated based on the labels of the top k nearest neighbors of an example. The details of this KNN-Shapley value could be found in the papers: `Efficient Task-Specific Data Valuation for Nearest Neighbor Algorithms <https://arxiv.org/abs/1908.08619>`_ and `Scalability vs. Utility: Do We Have to Sacrifice One for the Other in Data Importance Quantification? <https://arxiv.org/abs/1911.07128>`_.
 
 Optional Issue Parameters
 =========================
@@ -154,7 +175,8 @@ Appropriate defaults are used for any parameters you do not specify, so no need 
     possible_issue_types = {
         "label": label_kwargs, "outlier": outlier_kwargs,
         "near_duplicate": near_duplicate_kwargs, "non_iid": non_iid_kwargs,
-        "class_imbalance": class_imbalance_kwargs, "underperforming_group": underperforming_group_kwargs
+        "class_imbalance": class_imbalance_kwargs, "underperforming_group": underperforming_group_kwargs,
+        "null": null_kwargs
     }
 
 
@@ -283,3 +305,47 @@ Underperforming Group Issue Parameters
     For more information, view the source code of:  :py:class:`datalab.internal.issue_manager.underperforming_group.UnderperformingGroupIssueManager <cleanlab.datalab.internal.issue_manager.underperforming_group.UnderperformingGroupIssueManager>`.
 
     For more information on generating `cluster_ids` for this issue manager, refer to this `FAQ Section <../../../tutorials/faq.html#How-do-I-specify-pre-computed-data-slices/clusters-when-detecting-the-Underperforming-Group-Issue?>`_.
+
+Null Issue Parameters
+---------------------
+
+.. code-block:: python
+
+    null_kwargs = {}
+
+.. note::
+
+    For more information, view the source code of:  :py:class:`datalab.internal.issue_manager.null.NullIssueManager <cleanlab.datalab.internal.issue_manager.null.NullIssueManager>`.
+
+Data Valuation Issue Parameters
+--------------------------
+
+.. code-block:: python
+
+    data_valuation_kwargs = {
+        "k": # Number of nearest neighbors used to calculate data valuation scores,
+        "threshold": # Examples with scores below this  threshold will be flagged with a data valuation issue
+    }
+
+.. note::
+    For more information, view the source code of:  :py:class:`datalab.internal.issue_manager.data_valuation.DataValuationIssueManager <cleanlab.datalab.internal.issue_manager.data_valuation.DataValuationIssueManager>`.
+
+Image Issue Parameters
+--------------------------
+
+To customize optional parameters for specific image issue types, you can provide a dictionary format corresponding to each image issue. The following codeblock demonstrates how to specify optional parameters for all image issues. However, it's important to note that providing optional parameters for specific image issues is not mandatory. If no specific parameters are provided, defaults will be used for those issues.
+
+.. code-block:: python
+
+    image_issue_types_kwargs = {
+        "dark": {"threshold": 0.32}, # `threshold` argument for dark issue type. Non-negative floating value between 0 and 1, lower value implies fewer samples will be marked as issue and vice versa.
+        "light": {"threshold": 0.05}, # `threshold` argument for light issue type. Non-negative floating value between 0 and 1, lower value implies fewer samples will be marked as issue and vice versa.
+        "blurry": {"threshold": 0.29}, # `threshold` argument for blurry issue type. Non-negative floating value between 0 and 1, lower value implies fewer samples will be marked as issue and vice versa.
+        "low_information": {"threshold": 0.3}, # `threshold` argument for low_information issue type. Non-negative floating value between 0 and 1, lower value implies fewer samples will be marked as issue and vice versa.
+        "odd_aspect_ratio": {"threshold": 0.35}, # `threshold` argument for odd_aspect_ratio issue type. Non-negative floating value between 0 and 1, lower value implies fewer samples will be marked as issue and vice versa.
+        "odd_size": {"threshold": 10.0}, # `threshold` argument for odd_size issue type. Non-negative integer value between starting from 0, unlike other issues, here higher value implies fewer samples will be selected.
+    }
+
+.. note::
+
+    For more information, view the cleanvision `docs <https://cleanvision.readthedocs.io/en/latest/tutorials/tutorial.html#5.-Check-for-an-issue-with-a-different-threshold>`_.

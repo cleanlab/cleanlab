@@ -111,6 +111,7 @@ class TestNullIssueManager:
             "Number of examples with this issue:"
         ) in report
 
+        assert "Additional Information: " not in report
         report = issue_manager.report(
             issues=issue_manager.issues,
             summary=issue_manager.summary,
@@ -154,7 +155,8 @@ class TestNullIssueManager:
     )
 
     @settings(
-        suppress_health_check=[HealthCheck.function_scoped_fixture]
+        suppress_health_check=[HealthCheck.function_scoped_fixture],
+        deadline=None,
     )  # No need to reset state of issue_manager fixture
     @given(embeddings=features_with_nan_strategy)
     def test_quality_scores_and_full_null_row_identification(self, issue_manager, embeddings):

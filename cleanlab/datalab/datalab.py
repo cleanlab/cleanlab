@@ -111,11 +111,15 @@ class Datalab:
         image_key: Optional[str] = None,
         verbosity: int = 1,
     ) -> None:
+        self._validate_task(task)
         # Assume continuous values of labels for regression task
         # Map labels to integers for classification task
         map_labels_to_int = task == "classification"  # TODO: handle more generally
+        is_multilabel = task == "multilabel"
 
-        self._data = Data(data, label_name, map_to_int=map_labels_to_int)
+        self._data = Data(
+            data, label_name, map_to_int=map_labels_to_int, is_multilabel=is_multilabel
+        )
         self.data = self._data._data
         self.task = task
         self._labels = self._data.labels
@@ -138,8 +142,15 @@ class Datalab:
     def __str__(self) -> str:
         return _Displayer(data_issues=self.data_issues).__str__()
 
+    def _validate_task(self, task: str) -> None:
+        """Validates the task parameter passed to the Datalab constructor."""
+        _valid_tasks = ["classification", "regression", "multilabel"]
+        if task not in _valid_tasks:
+            error_msg = f"Invalid task: {task}. Datalab only supports {_valid_tasks}."
+            raise ValueError(error_msg)
+
     @property
-    def labels(self) -> np.ndarray:
+    def labels(self) -> Union[np.ndarray, List[List[int]]]:
         """Labels of the dataset, in a [0, 1, ..., K-1] format."""
         return self._labels.labels
 
@@ -196,18 +207,54 @@ class Datalab:
             If provided, this must be a 2D array with shape (num_examples, num_features).
 
         knn_graph :
-            Sparse matrix representing distances between examples in the dataset in a k nearest neighbor graph.
+            Sparse matrix of precomputed distances between examples in the dataset in a k nearest neighbor graph.
 
-            If provided, this must be a square CSR matrix with shape (num_examples, num_examples) and (k*num_examples) non-zero entries (k is the number of nearest neighbors considered for each example)
+            If provided, this must be a square CSR matrix with shape ``(num_examples, num_examples)`` and ``(k*num_examples)`` non-zero entries (``k`` is the number of nearest neighbors considered for each example),
             evenly distributed across the rows.
-            The non-zero entries must be the distances between the corresponding examples. Self-distances must be omitted
-            (i.e. the diagonal must be all zeros and the k nearest neighbors of each example must not include itself).
+            Each non-zero entry in this matrix is a distance between a pair of examples in the dataset. Self-distances must be omitted
+            (i.e. diagonal must be all zeros, k nearest neighbors for each example do not include the example itself).
+
+            This CSR format uses three 1D arrays (`data`, `indices`, `indptr`) to store a 2D matrix ``M``:
+
+            - `data`: 1D array containing all the non-zero elements of matrix ``M``, listed in a row-wise fashion (but sorted within each row).
+            - `indices`: 1D array storing the column indices in matrix ``M`` of these non-zero elements. Each entry in `indices` corresponds to an entry in `data`, indicating the column of ``M`` containing this entry.
+            - `indptr`: 1D array indicating the start and end indices in `data` for each row of matrix ``M``. The non-zero elements of the i-th row of ``M`` are stored from ``data[indptr[i]]`` to ``data[indptr[i+1]]``.
+
+            Within each row of matrix ``M`` (defined by the ranges in `indptr`), the corresponding non-zero entries (distances) of `knn_graph` must be sorted in ascending order (specifically in the segments of the `data` array that correspond to each row of ``M``). The `indices` array must also reflect this ordering, maintaining the correct column positions for these sorted distances.
+
+            This type of matrix is returned by the method: `sklearn.neighbors.NearestNeighbors.kneighbors_graph <https://scikit-learn.org/stable/modules/generated/sklearn.neighbors.NearestNeighbors.html#sklearn.neighbors.NearestNeighbors.kneighbors_graph>`_.
+
+            Below is an example to illustrate:
+
+            .. code-block:: python
+
+                knn_graph.todense()
+                # matrix([[0. , 0.3, 0.2],
+                #         [0.3, 0. , 0.4],
+                #         [0.2, 0.4, 0. ]])
+
+                knn_graph.data
+                # array([0.2, 0.3, 0.3, 0.4, 0.2, 0.4])
+                # Here, 0.2 and 0.3 are the sorted distances in the first row, 0.3 and 0.4 in the second row, and so on.
+
+                knn_graph.indices
+                # array([2, 1, 0, 2, 0, 1])
+                # Corresponding neighbor indices for the distances from the `data` array.
+
+                knn_graph.indptr
+                # array([0, 2, 4, 6])
+                # The non-zero entries in the first row are stored from `knn_graph.data[0]` to `knn_graph.data[2]`, the second row from `knn_graph.data[2]` to `knn_graph.data[4]`, and so on.
 
             For any duplicated examples i,j whose distance is 0, there should be an *explicit* zero stored in the matrix, i.e. ``knn_graph[i,j] = 0``.
 
             If both `knn_graph` and `features` are provided, the `knn_graph` will take precendence.
             If `knn_graph` is not provided, it is constructed based on the provided `features`.
             If neither `knn_graph` nor `features` are provided, certain issue types like (near) duplicates will not be considered.
+
+            .. seealso::
+                See the
+                `scipy.sparse.csr_matrix documentation <https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csr_matrix.html>`_
+                for more details on the CSR matrix format.
 
         issue_types :
             Collection specifying which types of issues to consider in audit and any non-default parameter settings to use.
@@ -330,6 +377,7 @@ class Datalab:
         verbosity: Optional[int] = None,
         include_description: bool = True,
         show_summary_score: bool = False,
+        show_all_issues: bool = False,
     ) -> None:
         """Prints informative summary of all issues.
 
@@ -345,6 +393,13 @@ class Datalab:
         include_description :
             Whether or not to include a description of each issue type in the report.
             Consider setting this to ``False`` once you're familiar with how each issue type is defined.
+
+        show_summary_score :
+            Whether or not to include the overall severity of each issue type in the report.
+
+        show_all_issues :
+            Whether or not to show all issues in the report, or only the issues for which examples were found in the dataset
+            With this set to ``True``, the report may include more types of issues that were not detected in the dataset.
 
         See Also
         --------
@@ -363,6 +418,7 @@ class Datalab:
             verbosity=verbosity,
             include_description=include_description,
             show_summary_score=show_summary_score,
+            show_all_issues=show_all_issues,
             imagelab=self._imagelab,
         )
         reporter.report(num_examples=num_examples)

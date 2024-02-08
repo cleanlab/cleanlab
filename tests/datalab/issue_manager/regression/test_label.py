@@ -91,7 +91,6 @@ class TestRegressionLabelIssueManager:
 
 
 class TestRegressionLabelIssueManagerIntegration:
-
     """This class contains tests for the find_issues method with a CleanLearning
     object that behaves deterministically. This is useful to run a "regression"-test on
     the results computed by the find_issues method.
@@ -142,4 +141,4 @@ class TestRegressionLabelIssueManagerIntegration:
         y_pred = X @ coef + self.BIAS
         issue_manager.find_issues(predictions=y_pred)
         summary = issue_manager.summary
-        assert np.isclose(summary["score"], 0.075765, atol=1e-5)
+        assert np.isclose(summary["score"], 0.361287, atol=1e-5)

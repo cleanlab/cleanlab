@@ -30,12 +30,17 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
-          python-version: "3.10"
+          python-version: "3.11"
 
       - name: Setup Node
         uses: actions/setup-node@v3
         with:
           node-version: "16"
+  
+      - name: Install FFmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
 
       - name: Upgrade pip
         run: python3 -m pip install --upgrade pip
@@ -143,6 +148,22 @@ jobs:
         if: ${{ github.ref_type == 'tag' }}
         run: cp docs/source/_templates/redirect-to-stable.html cleanlab-docs/index.html
 
+      - name: Update OpenGraph URLs in HTML files
+        # This code fixes the URLs in the HTML files with OpenGraph tags.
+        # It uses a regular expression to capture two parts of the URL:
+        #   $1: The first part of the URL, including the protocol and domain.
+        #   $2: The rest of the URL, including the path and query string.
+        # The replacement string combines the captured parts with the ref name.
+        # This ensures that the ref name is inserted into the URL correctly.
+        env:
+          REF_URL_SEGMENT: ${{ (github.ref_type == 'tag' && steps.stable_release.outcome == 'success') && 'stable' || github.ref_name }}
+        uses: jacobtomlinson/gha-find-replace@v2
+        with:
+          find: '(<meta property="og:url" content="https?://[^/]+)/([^"]+")'
+          replace: '$1/${{ env.REF_URL_SEGMENT }}/$2'
+          include: "cleanlab-docs/**/*.html"
+          regex: true
+      
       - name: Deploy
         if: ${{ (github.ref == 'refs/heads/master') || (github.ref_type == 'tag') }}
         uses: peaceiris/actions-gh-pages@v3

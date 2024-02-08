@@ -220,3 +220,24 @@ def labels_to_array(y: Union[LabelLike, np.generic]) -> np.ndarray:
             raise ValueError(
                 "List of labels must be convertable to 1D numpy array via: np.ndarray(labels)."
             )
+
+
+def labels_to_list_multilabel(y: List) -> List[List[int]]:
+    """Converts different types of label objects to nested list and checks their validity.
+
+    Parameters
+    ----------
+    y : List
+        Labels to convert to nested list. Supports only list type.
+
+    Returns
+    -------
+    labels_list : List[List[int]]
+        Nested list of labels.
+    """
+    if not isinstance(y, list):
+        raise ValueError("Unsupported Label format")
+    if not all(isinstance(x, list) for x in y):
+        raise ValueError("Each element in list of labels must be a list.")
+
+    return y

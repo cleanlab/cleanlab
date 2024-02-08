@@ -34,6 +34,13 @@ from sklearn.datasets import make_blobs
 import cleanlab
 from cleanlab.datalab.datalab import Datalab
 from cleanlab.datalab.internal.report import Reporter
+from cleanlab.internal.multilabel_utils import int2onehot
+
+
+from cleanlab.benchmarking.noise_generation import (
+    generate_noise_matrix_from_trace,
+    generate_noisy_labels,
+)
 
 SEED = 42
 
@@ -83,6 +90,7 @@ class TestDatalab:
         y = ["a", "3", "2", "3"]
         lab = Datalab({"y": y}, label_name="y")
         assert lab.list_default_issue_types() == [
+            "null",
             "label",
             "outlier",
             "near_duplicate",
@@ -157,6 +165,8 @@ class TestDatalab:
                 "label_score": [0.2, 0.4, 0.6, 0.1, 0.8],
                 "is_near_duplicate_issue": [False, True, True, False, True],
                 "near_duplicate_score": [0.5, 0.3, 0.1, 0.7, 0.2],
+                "is_class_imbalance_issue": [False, False, False, False, True],
+                "class_imbalance_score": [1.0, 1.0, 1.0, 1.0, 0.2],
             },
         )
         monkeypatch.setattr(lab, "issues", mock_issues)
@@ -173,6 +183,9 @@ class TestDatalab:
                 },
                 "near_duplicate": {
                     "distance_to_nearest_neighbor": mock_distance_to_nearest_neighbor,
+                },
+                "class_imbalance": {
+                    "given_label": lab.labels,
                 },
             }
         )
@@ -202,6 +215,21 @@ class TestDatalab:
         )
         pd.testing.assert_frame_equal(
             near_duplicate_issues, expected_near_duplicate_issues, check_dtype=False
+        )
+
+        imbalance_issues = lab.get_issues(issue_name="class_imbalance")
+
+        expected_imbalance_issues = pd.DataFrame(
+            {
+                **{
+                    key: mock_issues[key]
+                    for key in ["is_class_imbalance_issue", "class_imbalance_score"]
+                },
+                "given_label": [4, 4, 5, 3, 5],
+            },
+        )
+        pd.testing.assert_frame_equal(
+            imbalance_issues, expected_imbalance_issues, check_dtype=False
         )
 
         issues = lab.get_issues()
@@ -858,10 +886,10 @@ class TestDatalabFindNonIIDIssues:
     def test_incremental_search(self, lab, sorted_embeddings):
         lab.find_issues(features=sorted_embeddings)
         summary = lab.get_issue_summary()
-        assert len(summary) == 4
+        assert len(summary) == 5
         lab.find_issues(features=sorted_embeddings, issue_types={"non_iid": {}})
         summary = lab.get_issue_summary()
-        assert len(summary) == 4
+        assert len(summary) == 5
         assert "non_iid" in summary["issue_type"].values
         non_iid_summary = lab.get_issue_summary("non_iid")
         assert non_iid_summary["score"].values[0] == 0
@@ -931,11 +959,11 @@ class TestDatalabFindLabelIssues:
         lab = Datalab(data=data, label_name="labels")
         lab.find_issues(features=random_embeddings)
         summary = lab.get_issue_summary()
-        assert len(summary) == 5
+        assert len(summary) == 6
         assert "label" in summary["issue_type"].values
         lab.find_issues(pred_probs=pred_probs, issue_types={"label": {}})
         summary = lab.get_issue_summary()
-        assert len(summary) == 5
+        assert len(summary) == 6
         assert "label" in summary["issue_type"].values
         label_summary = lab.get_issue_summary("label")
         assert label_summary["num_issues"].values[0] > 0
@@ -1090,7 +1118,7 @@ class TestDatalabForRegression:
         assert fpr == 0.0
 
         # Try running with a different threshold
-        lab.find_issues(pred_probs=y_pred, issue_types={"label": {"threshold": 0.4}})
+        lab.find_issues(pred_probs=y_pred, issue_types={"label": {"threshold": 0.2}})
         issues = lab.get_issues("label")
         issue_ids = issues.query("is_label_issue").index
 
@@ -1518,6 +1546,197 @@ class TestDataLabUnderperformingIssue:
         assert len(lab.issue_summary["issue_type"].values) == 0
 
 
+class TestDataLabNullIssues:
+    K = 3
+    N = 100
+    num_features = 10
+
+    @pytest.fixture
+    def embeddings_with_null(self):
+        np.random.seed(SEED)
+        embeddings = np.random.rand(self.N, self.num_features)
+        # Set all feature values of some rows as null
+        embeddings[[5, 10, 22]] = np.nan
+        # Set specific feature value in some rows as null
+        embeddings[[1, 19, 25], [5, 7, 2]] = np.nan
+        return embeddings
+
+    @pytest.fixture
+    def pred_probs(self):
+        np.random.seed(SEED)
+        pred_probs_array = np.random.rand(self.N, self.K)
+        return pred_probs_array / pred_probs_array.sum(axis=1, keepdims=True)
+
+    @pytest.fixture
+    def labels(self):
+        np.random.seed(SEED)
+        return np.random.randint(0, self.K, self.N)
+
+    def test_incremental_search(self, pred_probs, embeddings_with_null, labels):
+        data = {"labels": labels}
+        lab = Datalab(data=data, label_name="labels")
+        lab.find_issues(pred_probs=pred_probs, issue_types={"label": {}})
+        summary = lab.get_issue_summary()
+        assert len(summary) == 1
+        assert "class_imbalance" not in summary["issue_type"].values
+        lab.find_issues(features=embeddings_with_null, issue_types={"null": {}})
+        summary = lab.get_issue_summary()
+        assert len(summary) == 2
+        assert "null" in summary["issue_type"].values
+        class_imbalance_summary = lab.get_issue_summary("null")
+        assert class_imbalance_summary["num_issues"].values[0] > 0
+
+    def test_null_issues(self, embeddings_with_null):
+        lab = Datalab(data={"features": embeddings_with_null})
+        lab.find_issues(features=embeddings_with_null, issue_types={"null": {}})
+        issues = lab.get_issues("null")
+        expected_issue_mask = np.zeros(100, dtype=bool)
+        expected_issue_mask[[5, 10, 22]] = True
+        np.testing.assert_equal(
+            issues["is_null_issue"], expected_issue_mask, err_msg="Issue mask should be correct"
+        )
+        info = lab.get_info("null")
+        most_common_issue = info["most_common_issue"]
+        assert most_common_issue["pattern"] == "1" * 10
+        assert most_common_issue["rows_affected"] == [5, 10, 22]
+        assert most_common_issue["count"] == 3
+
+    def test_report(self, embeddings_with_null):
+        lab = Datalab(data={"id": range(len(embeddings_with_null))})
+        lab.find_issues(features=embeddings_with_null, issue_types={"null": {}})
+        with contextlib.redirect_stdout(io.StringIO()) as f:
+            lab.report()
+        report = f.getvalue()
+
+        # Check that the report contains the additional tip
+        remove_tip = (
+            "Found 3 examples with null values in all features. These examples should be removed"
+        )
+        assert remove_tip in report, "Report should contain a tip to remove null examples"
+
+        partial_null_tip = (
+            "Found 3 examples with null values in some features. Please address these issues"
+        )
+        assert (
+            partial_null_tip in report
+        ), "Report should contain a tip to address partial null examples"
+
+        # Test a report where no null-issues are found
+        lab = Datalab(data={"id": range(len(embeddings_with_null))})
+        X = np.random.rand(*embeddings_with_null.shape)
+        lab.find_issues(features=X, issue_types={"label": {}})
+        with contextlib.redirect_stdout(io.StringIO()) as f:
+            lab.report()
+        report = f.getvalue()
+
+        # The tip should be omitted
+        assert (
+            "These examples should be removed" not in report
+        ), "Report should not contain a tip to remove null examples"
+        assert (
+            "Please address these issues" not in report
+        ), "Report should not contain a tip to address partial null examples"
+
+
+class TestDatalabForMultilabelClassification:
+    @pytest.fixture
+    def multilabel_data(
+        self,
+        means=[[-5, 3.5], [0, 2], [-3, 6]],
+        covs=[[[3, -1.5], [-1.5, 1]], [[5, -1.5], [-1.5, 1]], [[3, -1.5], [-1.5, 1]]],
+        boxes_coordinates=[[-3.5, 0, -1.5, 1.7], [-1, 3, 2, 4], [-5, 2, -3, 4], [-3, 2, -1, 4]],
+        box_multilabels=[[0, 1], [1, 2], [0, 2], [0, 1, 2]],
+        sizes=[100, 80, 100],
+        avg_trace=0.9,
+        seed=5,
+    ):
+        np.random.seed(seed=seed)
+        n = sum(sizes)
+        num_classes = len(means)
+        m = num_classes + len(
+            box_multilabels
+        )  # number of classes by treating each multilabel as 1 unique label
+        local_data = []
+        labels = []
+        for i in range(0, len(means)):
+            local_data.append(
+                np.random.multivariate_normal(mean=means[i], cov=covs[i], size=sizes[i])
+            )
+            labels += [[i]] * sizes[i]
+
+        def make_multi(X, Y, bx1, by1, bx2, by2, label_list):
+            ll = np.array([bx1, by1])  # lower-left
+            ur = np.array([bx2, by2])  # upper-right
+
+            inidx = np.all(np.logical_and(X.tolist() >= ll, X.tolist() <= ur), axis=1)
+            for i in range(0, len(Y)):
+                if inidx[i]:
+                    Y[i] = label_list
+            return Y
+
+        X_train = np.vstack(local_data)
+
+        for i in range(0, len(box_multilabels)):
+            bx1, by1, bx2, by2 = boxes_coordinates[i]
+            multi_label = box_multilabels[i]
+            labels = make_multi(X_train, labels, bx1, by1, bx2, by2, multi_label)
+
+        d = {}
+        for i in labels:
+            if str(i) not in d:
+                d[str(i)] = len(d)
+        inv_d = {v: k for k, v in d.items()}
+        labels_idx = [d[str(i)] for i in labels]
+        py = np.bincount(labels_idx) / float(len(labels_idx))
+        noise_matrix = generate_noise_matrix_from_trace(
+            m,
+            trace=avg_trace * m,
+            py=py,
+            valid_noise_matrix=True,
+            seed=seed,
+        )
+        noisy_labels_idx = generate_noisy_labels(labels_idx, noise_matrix)
+        noisy_labels = [eval(inv_d[i]) for i in noisy_labels_idx]
+        error_idx = np.where(labels_idx != noisy_labels_idx)[0]
+        pred_probs = np.full((n, num_classes), fill_value=0.1)
+        labels_onehot = int2onehot(labels, K=num_classes)
+        pred_probs[labels_onehot == 1] = 0.9
+        return {
+            "X": X_train,
+            "true_y": labels,
+            "y": noisy_labels,
+            "error_idx": error_idx,
+            "pred_probs": pred_probs,
+        }
+
+    @pytest.fixture
+    def lab(self, multilabel_data):
+        X, y = multilabel_data["X"], multilabel_data["y"]
+        data = {"X": X, "y": y}
+        lab = Datalab(data=data, label_name="y", task="multilabel")
+        return lab
+
+    def test_available_issue_types(self, lab):
+        assert set(lab.list_default_issue_types()) == set(["label"])
+        assert set(lab.list_possible_issue_types()) == set(["label"])
+
+    def test_multilabel_with_pred_probs(self, lab, multilabel_data):
+        """Test that the multilabel classification issue checks finds at least 90% of the
+        label issues."""
+        pred_probs = multilabel_data["pred_probs"]
+        lab.find_issues(pred_probs=pred_probs)
+        lab.report()
+
+        issues = lab.get_issues("label")
+        issue_ids = issues.query("is_label_issue").index
+        expected_issue_ids = multilabel_data["error_idx"]
+
+        # jaccard similarity
+        intersection = len(list(set(issue_ids).intersection(set(expected_issue_ids))))
+        union = len(set(issue_ids)) + len(set(expected_issue_ids)) - intersection
+        assert float(intersection) / union >= 0.9
+
+
 class TestIssueManagersReuseKnnGraph:
     """
     `outlier`, `underperforming_group` and `near_duplicate` issue managers require
@@ -1567,3 +1786,51 @@ class TestIssueManagersReuseKnnGraph:
         assert (
             time_underperforming_after_outlier < time_only_underperforming_group
         ), "KNN graph reuse should make this run of find_issues faster."
+
+
+class TestDatalabDefaultReporting:
+    """This test class focuses on testing the default behavior of the reporting functionality.
+
+    If there are no issues found, the report should contain a message for no issues found.
+
+    If there are issues found, the report should start with a summary of the issues found.
+
+    Other test classes focus on testing the reporting functionality with different issue types.
+    """
+
+    @pytest.fixture
+    def data(self):
+        np.random.seed(SEED)
+        X = np.random.rand(100, 10)
+        y = np.random.randint(0, 2, 100)
+
+        X[y == 1] += 1.5
+        return {"X": X, "y": y}
+
+    def test_report(self, data):
+        lab = Datalab(data=data, label_name="y")
+        lab.find_issues(features=data["X"], issue_types={"label": {}})
+        with contextlib.redirect_stdout(io.StringIO()) as f:
+            lab.report()
+        report = f.getvalue()
+        assert (
+            "No issues found in the data." in report
+        ), "Report should contain a message for no issues found"
+
+    def test_report_with_one_label_issue(self, data):
+        # Flip the label of one example
+        y = data["y"]
+        y[-1] = 1 - y[-1]
+
+        lab = Datalab(data={"X": data["X"], "y": y}, label_name="y")
+        lab.find_issues(features=data["X"], issue_types={"label": {}})
+        with contextlib.redirect_stdout(io.StringIO()) as f:
+            lab.report()
+        report = f.getvalue()
+        expected_header = (
+            "Here is a summary of the different kinds of issues found in the data:"
+            "\n\nissue_type  num_issues\n     label           1\n\n"
+        )
+        assert report.startswith(
+            expected_header
+        ), "Report should contain a message for one issue found"

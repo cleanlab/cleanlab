@@ -110,7 +110,7 @@ class _ClassificationInfoStrategy(_InfoStrategy):
     ) -> Dict[str, Any]:
         info_extracted = _InfoStrategy._get_info_helper(info=info, issue_name=issue_name)
         info = info_extracted if info_extracted is not None else info
-        if issue_name == "label":
+        if issue_name in ["label", "class_imbalance"]:
             if data.labels.is_available is False:
                 raise ValueError(
                     "The labels are not available. "
@@ -144,6 +144,35 @@ class _RegressionInfoStrategy(_InfoStrategy):
                 labels = info.get(key, None)
                 if labels is not None:
                     info[key] = labels
+        return info
+
+
+class _MultilabelInfoStrategy(_InfoStrategy):
+    """Strategy for computing information about data issues related to multilabel tasks."""
+
+    @staticmethod
+    def get_info(
+        data: Data,
+        info: Dict[str, Dict[str, Any]],
+        issue_name: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        info_extracted = _InfoStrategy._get_info_helper(info=info, issue_name=issue_name)
+        info = info_extracted if info_extracted is not None else info
+        if issue_name == "label":
+            if data.labels.is_available is False:
+                raise ValueError(
+                    "The labels are not available. "
+                    "Most likely, no label column was provided when creating the Data object."
+                )
+            # Labels that are stored as integers may need to be converted to strings.
+            label_map = data.labels.label_map
+            if not label_map:
+                raise ValueError("The label map is not available.")
+            for key in ["given_label", "predicted_label"]:
+                labels = info.get(key, None)
+                if labels is not None:
+                    info[key] = [list(map(label_map.get, label)) for label in labels]
+            info["class_names"] = list(label_map.values())
         return info
 
 
@@ -234,6 +263,9 @@ class DataIssues:
                 if info.get(k) is not None
             }
             specific_issues = specific_issues.assign(**column_dict)
+
+        if issue_name == "class_imbalance":
+            specific_issues = specific_issues.assign(given_label=info["given_label"])
         return specific_issues
 
     def get_issue_summary(self, issue_name: Optional[str] = None) -> pd.DataFrame:
