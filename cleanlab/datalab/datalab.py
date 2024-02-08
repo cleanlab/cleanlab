@@ -84,6 +84,10 @@ class Datalab:
         If specified, additional image-specific issue types can be detected in the dataset.
         See the CleanVision package `documentation <https://cleanvision.readthedocs.io/en/latest/>`_ for descriptions of these image-specific issue types.
 
+    trained_datalab : Datalab, optional
+        A Trained Datalab instance that contains statistics information from similar data distribution. This means that the `trained_datalab` should already call `find_issues` and collect statistic information.
+        If provided, the new datalab will use the existing statistics.
+
     verbosity : int, optional
         The higher the verbosity level, the more information
         Datalab prints when auditing a dataset.
