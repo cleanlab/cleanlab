@@ -455,9 +455,9 @@ class IssueFinder:
             issue_types_copy.pop("label")
 
         outlier_check_needs_features = (
-            "outlier" in issue_types_copy
+            self.task == "classification"
+            and "outlier" in issue_types_copy
             and not self.datalab.has_labels
-            and self.task != "regression"
         )
         if outlier_check_needs_features:
             no_features = features is None
