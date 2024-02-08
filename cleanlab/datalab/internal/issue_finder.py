@@ -63,10 +63,20 @@ _CLASSIFICATION_ARGS_DICT = {
     "class_imbalance": [],
     "null": ["features"],
 }
-_REGRESSION_ARGS_DICT = {"label": ["features", "predictions"]}
+_REGRESSION_ARGS_DICT = {
+    "label": ["features", "predictions"],
+    "outlier": ["features", "knn_graph"],
+    "near_duplicate": ["features", "knn_graph"],
+    "non_iid": ["features", "knn_graph"],
+    "null": ["features"],
+}
 
 _MULTILABEL_ARGS_DICT = {
     "label": ["pred_probs"],
+    "outlier": ["features", "knn_graph"],
+    "near_duplicate": ["features", "knn_graph"],
+    "non_iid": ["features", "knn_graph"],
+    "null": ["features"],
 }
 
 
@@ -127,8 +137,12 @@ def _resolve_required_args_for_regression(**kwargs):
     args_dict = {
         k: {k2: v2 for k2, v2 in v.items() if v2 is not None}
         for k, v in args_dict.items()
-        if v or k == "label" or keep_empty_argument(k)  # Allow label issues to require no arguments
+        if v or keep_empty_argument(k)
     }
+
+    # Only keep issue types that have at least one argument
+    # or those that require no arguments.
+    args_dict = {k: v for k, v in args_dict.items() if (v or keep_empty_argument(k))}
 
     return args_dict
 
@@ -150,6 +164,10 @@ def _resolve_required_args_for_multilabel(**kwargs):
         for k, v in args_dict.items()
         if v or keep_empty_argument(k)  # Allow label issues to require no arguments
     }
+
+    # Only keep issue types that have at least one argument
+    # or those that require no arguments.
+    args_dict = {k: v for k, v in args_dict.items() if (v or keep_empty_argument(k))}
 
     return args_dict
 
@@ -410,6 +428,7 @@ class IssueFinder:
 
         if model_output is not None:
             # A basic trick to assign the model output to the correct argument
+            # E.g. Datalab accepts only `pred_probs`, but those are assigned to the `predictions` argument for regression-related issue_managers
             kwargs.update({model_output.argument: model_output.collect()})
 
         # Determine which parameters are required for each issue type
@@ -436,7 +455,11 @@ class IssueFinder:
             warnings.warn("No labels were provided. " "The 'label' issue type will not be run.")
             issue_types_copy.pop("label")
 
-        outlier_check_needs_features = "outlier" in issue_types_copy and not self.datalab.has_labels
+        outlier_check_needs_features = (
+            self.task == "classification"
+            and "outlier" in issue_types_copy
+            and not self.datalab.has_labels
+        )
         if outlier_check_needs_features:
             no_features = features is None
             no_knn_graph = knn_graph is None

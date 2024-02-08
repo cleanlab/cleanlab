@@ -69,8 +69,20 @@ REGISTRY: Dict[Task, Dict[str, Type[IssueManager]]] = {
         "data_valuation": DataValuationIssueManager,
         "null": NullIssueManager,
     },
-    Task.REGRESSION: {"label": RegressionLabelIssueManager},
-    Task.MULTILABEL: {"label": MultilabelIssueManager},
+    Task.REGRESSION: {
+        "label": RegressionLabelIssueManager,
+        "outlier": OutlierIssueManager,
+        "near_duplicate": NearDuplicateIssueManager,
+        "non_iid": NonIIDIssueManager,
+        "null": NullIssueManager,
+    },
+    Task.MULTILABEL: {
+        "label": MultilabelIssueManager,
+        "outlier": OutlierIssueManager,
+        "near_duplicate": NearDuplicateIssueManager,
+        "non_iid": NonIIDIssueManager,
+        "null": NullIssueManager,
+    },
 }
 """Registry of issue managers that can be constructed from a task and issue type
 and used in the Datalab class.
@@ -237,8 +249,20 @@ def list_default_issue_types(task: Task) -> List[str]:
             "non_iid",
             "class_imbalance",
         ],
-        Task.REGRESSION: ["label"],
-        Task.MULTILABEL: ["label"],
+        Task.REGRESSION: [
+            "null",
+            "label",
+            "outlier",
+            "near_duplicate",
+            "non_iid",
+        ],
+        Task.MULTILABEL: [
+            "null",
+            "label",
+            "outlier",
+            "near_duplicate",
+            "non_iid",
+        ],
     }
     if task not in default_issue_types_dict:
         task = Task.CLASSIFICATION

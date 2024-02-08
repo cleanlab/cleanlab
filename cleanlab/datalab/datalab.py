@@ -369,6 +369,7 @@ class Datalab:
         verbosity: Optional[int] = None,
         include_description: bool = True,
         show_summary_score: bool = False,
+        show_all_issues: bool = False,
     ) -> None:
         """Prints informative summary of all issues.
 
@@ -384,6 +385,13 @@ class Datalab:
         include_description :
             Whether or not to include a description of each issue type in the report.
             Consider setting this to ``False`` once you're familiar with how each issue type is defined.
+
+        show_summary_score :
+            Whether or not to include the overall severity of each issue type in the report.
+
+        show_all_issues :
+            Whether or not to show all issues in the report, or only the issues for which examples were found in the dataset
+            With this set to ``True``, the report may include more types of issues that were not detected in the dataset.
 
         See Also
         --------
@@ -402,6 +410,7 @@ class Datalab:
             verbosity=verbosity,
             include_description=include_description,
             show_summary_score=show_summary_score,
+            show_all_issues=show_all_issues,
             imagelab=self._imagelab,
         )
         reporter.report(num_examples=num_examples)

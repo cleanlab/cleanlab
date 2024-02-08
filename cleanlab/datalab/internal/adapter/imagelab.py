@@ -150,6 +150,7 @@ class ImagelabReporterAdapter(Reporter):
         verbosity: int = 1,
         include_description: bool = True,
         show_summary_score: bool = False,
+        show_all_issues: bool = False,
     ):
         super().__init__(
             data_issues=data_issues,
@@ -157,6 +158,7 @@ class ImagelabReporterAdapter(Reporter):
             verbosity=verbosity,
             include_description=include_description,
             show_summary_score=show_summary_score,
+            show_all_issues=show_all_issues,
         )
         self.imagelab = imagelab
 

@@ -65,6 +65,7 @@ class Reporter:
         verbosity: int = 1,
         include_description: bool = True,
         show_summary_score: bool = False,
+        show_all_issues: bool = False,
         **kwargs,
     ):
         self.data_issues = data_issues
@@ -72,6 +73,20 @@ class Reporter:
         self.verbosity = verbosity
         self.include_description = include_description
         self.show_summary_score = show_summary_score
+        self.show_all_issues = show_all_issues
+
+    def _get_empty_report(self) -> str:
+        """This method is used to return a report when there are
+        no issues found in the data with Datalab.find_issues().
+        """
+        report_str = "No issues found in the data. Good job!"
+        if not self.show_summary_score:
+            recommendation_msg = (
+                "Try re-running Datalab.report() with "
+                "`show_summary_score = True` and `show_all_issues = True`."
+            )
+            report_str += f"\n\n{recommendation_msg}"
+        return report_str
 
     def report(self, num_examples: int) -> None:
         """Prints a report about identified issues in the data.
@@ -106,10 +121,27 @@ class Reporter:
         """
         report_str = ""
         issue_summary = self.data_issues.issue_summary
+        should_return_empty_report = not (
+            self.show_all_issues or issue_summary.empty or issue_summary["num_issues"].sum() > 0
+        )
+
+        if should_return_empty_report:
+            return self._get_empty_report()
         issue_summary_sorted = issue_summary.sort_values(by="num_issues", ascending=False)
         report_str += self._write_summary(summary=issue_summary_sorted)
 
         issue_types = self._get_issue_types(issue_summary_sorted)
+
+        def add_issue_to_report(issue_name: str) -> bool:
+            """Returns True if the issue should be added to the report.
+            It is excluded if show_all_issues is False and there are no issues of that type
+            found in the data.
+            """
+            if self.show_all_issues:
+                return True
+            summary = self.data_issues.get_issue_summary(issue_name=issue_name)
+            has_issues = summary["num_issues"][0] > 0
+            return has_issues
 
         issue_reports = [
             _IssueManagerFactory.from_str(issue_type=key, task=self.task).report(
@@ -156,7 +188,10 @@ class Reporter:
     def _get_issue_types(self, issue_summary: pd.DataFrame) -> List[str]:
         issue_types = [
             issue_type
-            for issue_type in issue_summary["issue_type"].tolist()
+            for issue_type, num_issues in zip(
+                issue_summary["issue_type"].tolist(), issue_summary["num_issues"].tolist()
+            )
             if issue_type not in DEFAULT_CLEANVISION_ISSUES
+            and (self.show_all_issues or num_issues > 0)
         ]
         return issue_types

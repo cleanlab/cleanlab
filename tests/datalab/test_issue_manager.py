@@ -40,6 +40,10 @@ class TestCustomIssueManager:
 def test_register_custom_issue_manager(monkeypatch):
     import io
     import sys
+    import copy
+
+    # Prepare a copy of the original registry for cleanup
+    original_registry = copy.deepcopy(REGISTRY)
 
     assert "foo" not in REGISTRY
 
@@ -108,3 +112,6 @@ def test_register_custom_issue_manager(monkeypatch):
     Bar = register(Bar, task="regression")
 
     assert REGISTRY[Task.REGRESSION].get("bar") == Bar
+
+    # Cleanup
+    REGISTRY.update(original_registry)

@@ -101,14 +101,14 @@ class TestRegressionIssueFinder:
         return IssueFinder(datalab=lab, task=Task.from_str(self.task))
 
     def test_get_available_issue_types(self, issue_finder):
-        expected_issue_types = {"label": {}}
+        expected_issue_types = {}
 
         # Test with no kwargs
         for key in ["pred_probs", "features", "knn_graph"]:
             issue_types = issue_finder.get_available_issue_types(**{key: None})
             assert (
                 issue_types == expected_issue_types
-            ), "Regression should only support label issues"
+            ), "No issue type for regression requires no kwargs"
 
         # Test with issue_types:
         issue_types_dicts = [
