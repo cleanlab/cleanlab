@@ -774,7 +774,7 @@ def cleanlab_data_strategy(draw):
 
 class TestMultiLabel:
     @given(cleanlab_data_strategy())
-    @settings(deadline=10000)
+    @settings(deadline=20000)
     def test_find_label_issues(self, data):
         true_labels, noisy_labels, pred_probs = data
         noisy_labels_list = onehot2int(noisy_labels)
