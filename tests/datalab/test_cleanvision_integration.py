@@ -32,7 +32,7 @@ class TestCleanvisionIntegration:
 
     @pytest.fixture
     def num_datalab_issues(self):
-        return 5
+        return 6
 
     @pytest.fixture
     def pred_probs(self, image_dataset):
@@ -69,6 +69,7 @@ class TestCleanvisionIntegration:
             "near_duplicate",
             "class_imbalance",
             "null",
+            "underperforming_group",
             # "non_iid",
         ]
 
@@ -94,12 +95,14 @@ class TestCleanvisionIntegration:
                     "near_duplicate",
                     "class_imbalance",
                     "null",
+                    "underperforming_group",
                 ],
-                "num_issues": [1, 1, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0],
+                "num_issues": [1, 1, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0],
             }
         )
         expected_count = df.sort_values(by="issue_type")["num_issues"].tolist()
         count = datalab.issue_summary.sort_values(by="issue_type")["num_issues"].tolist()
+        assert set(datalab.issue_summary["issue_type"].tolist()) == set(df["issue_type"].tolist())
         assert count == expected_count
         assert datalab.issue_summary["num_issues"].sum() == df["num_issues"].sum()
 
@@ -147,7 +150,15 @@ class TestCleanvisionIntegration:
         assert len(datalab.issues.columns) == num_datalab_issues * 2
         assert len(datalab.issue_summary) == num_datalab_issues
 
-        all_keys = ["statistics", "label", "outlier", "near_duplicate", "class_imbalance", "null"]
+        all_keys = [
+            "statistics",
+            "label",
+            "outlier",
+            "near_duplicate",
+            "class_imbalance",
+            "null",
+            "underperforming_group",
+        ]
 
         assert set(all_keys) == set(datalab.info.keys())
         datalab.report()

@@ -89,6 +89,7 @@ class TestDatalab:
             "near_duplicate",
             "non_iid",
             "class_imbalance",
+            "underperforming_group",
         ]
 
     def tmp_path(self):
