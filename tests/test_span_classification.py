@@ -8,7 +8,7 @@ import pytest
 import warnings
 
 warnings.filterwarnings("ignore")
-words = words = [["I", "love", "Cleanlab", "Inc"], ["A", "new", "park"]]
+words = [["I", "love", "Cleanlab", "Inc"], ["A", "new", "park"]]
 
 pred_probs = [
     np.array([0.3, 0.2, 0.9, 0.1]),
