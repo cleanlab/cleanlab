@@ -38,9 +38,9 @@ class ClassImbalanceIssueManager(IssueManager):
 
     """
 
-    description: ClassVar[str] = (
-        """Examples belonging to the most under-represented class in the dataset."""
-    )
+    description: ClassVar[
+        str
+    ] = """Examples belonging to the most under-represented class in the dataset."""
 
     issue_name: ClassVar[str] = "class_imbalance"
     verbosity_levels = {

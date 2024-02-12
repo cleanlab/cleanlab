@@ -18,6 +18,7 @@ pred_probs = [
 labels = [[0, 0, 1, 1], [0, 0, 1]]
 class_names = ["O", "Span"]
 
+
 @pytest.mark.parametrize(
     "test_labels",
     [labels, [np.array(l) for l in labels]],
@@ -30,7 +31,9 @@ def test_find_label_issues(test_labels):
     assert len(issues) == 1
     assert issues[0] == (0, 3)
 
+
 issues = find_label_issues(labels, pred_probs)
+
 
 def test_display_issues():
     display_issues(issues, words)
@@ -39,10 +42,12 @@ def test_display_issues():
     display_issues(issues, words, pred_probs=pred_probs, labels=labels)
     display_issues(issues, words, pred_probs=pred_probs, labels=labels, class_names=class_names)
 
+
 @pytest.fixture(name="label_quality_scores")
 def fixture_label_quality_scores():
     sentence_scores, token_info = get_label_quality_scores(labels, pred_probs)
     return sentence_scores, token_info
+
 
 def test_get_label_quality_scores(label_quality_scores):
     sentence_scores, token_info = label_quality_scores

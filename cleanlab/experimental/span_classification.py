@@ -9,7 +9,10 @@ from typing import List, Tuple, Optional
 
 from cleanlab.token_classification.filter import find_label_issues as find_label_issues_token
 from cleanlab.token_classification.summary import display_issues as display_issues_token
-from cleanlab.token_classification.rank import get_label_quality_scores as get_label_quality_scores_token
+from cleanlab.token_classification.rank import (
+    get_label_quality_scores as get_label_quality_scores_token,
+)
+
 
 def find_label_issues(
     labels: list,
@@ -72,7 +75,15 @@ def display_issues(
     """
     See documentation of :py:meth:`token_classification.summary.display_issues<cleanlab.token_classification.summary.display_issues>` for description.
     """
-    display_issues_token(issues, tokens, labels=labels, pred_probs=pred_probs, exclude=exclude, class_names=class_names, top=top)
+    display_issues_token(
+        issues,
+        tokens,
+        labels=labels,
+        pred_probs=pred_probs,
+        exclude=exclude,
+        class_names=class_names,
+        top=top,
+    )
 
 
 def get_label_quality_scores(
@@ -88,8 +99,7 @@ def get_label_quality_scores(
 
 
 def _get_pred_prob_token(pred_probs: list) -> list:
-    """Converts pred_probs for span classification to pred_probs for token classification.
-    """
+    """Converts pred_probs for span classification to pred_probs for token classification."""
     pred_probs_token = []
     for probs in pred_probs:
         pred_probs_token.append(np.stack([1 - probs, probs], axis=1))
