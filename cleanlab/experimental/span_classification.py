@@ -24,9 +24,10 @@ def find_label_issues(
     Parameters
     ----------
     labels:
-        Nested list of given labels for all tokens, such that `labels[i]` is a list of labels, one for each token in the `i`-th sentence.
+        Nested list of given labels for all tokens.
+         Refer to documentation for this argument in :py:func:`token_classification.filter.find_label_issues <cleanlab.token_classification.filter.find_label_issues>` for further details.
 
-        Currently, only a single span class is supported.
+      Note:  Currently, only a single span class is supported.
 
     pred_probs:
         List of np arrays, such that `pred_probs[i]` has shape ``(T, K)`` if the `i`-th sentence contains T tokens.
