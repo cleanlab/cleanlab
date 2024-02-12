@@ -41,9 +41,16 @@ def multiclass_dataset_strategy(draw):
 @st.composite
 def multilabel_dataset_strategy(draw):
     # Define strategies
+    min_dataset_size = 5
+    max_dataset_size = 5
     int_feature_strategy = st.integers(min_value=-10, max_value=10)
     float_feature_strategy = st.floats(min_value=-10, max_value=10)
-    column_name_strategy = st.text(min_size=5, max_size=5)
+    # Ensure column names do not include problematic characters
+    column_name_strategy = st.text(
+        alphabet=st.characters(blacklist_characters="\x00", min_codepoint=32, max_codepoint=126),
+        min_size=5,
+        max_size=5,
+    )
     column_data_strategy = st.one_of(int_feature_strategy, float_feature_strategy)
 
     # Draw values
@@ -51,18 +58,33 @@ def multilabel_dataset_strategy(draw):
         st.lists(column_name_strategy, min_size=NUM_COLS, max_size=NUM_COLS + 1, unique=True)
     )
     label_name = draw(st.sampled_from(col_names))
+    # Ensure labels do not include problematic characters
     classes_strategy = st.lists(
-        st.text(min_size=3, max_size=3), min_size=2, max_size=3, unique=True
+        st.text(
+            alphabet=st.characters(
+                # The null character is problematic for some string operations, e.g. key lookup
+                blacklist_characters="\x00",
+                min_codepoint=32,
+                max_codepoint=126,
+            ),
+            min_size=2,
+            max_size=3,
+        ),
+        min_size=2,
+        max_size=3,
+        unique=True,
     )
     classes = draw(classes_strategy)
     labels_strategy = st.lists(
         st.lists(st.sampled_from(classes), min_size=1, max_size=3, unique=True),
-        min_size=5,
-        max_size=5,
+        min_size=min_dataset_size,
+        max_size=max_dataset_size,
     )
-    # TODO - Make the sampling work nicely for min_size=0 (i.e. no labels for a sample)
     data = {
-        name: draw(st.lists(column_data_strategy, min_size=5, max_size=5)) for name in col_names
+        name: draw(
+            st.lists(column_data_strategy, min_size=min_dataset_size, max_size=max_dataset_size)
+        )
+        for name in col_names
     }
     data[label_name] = draw(labels_strategy)
     dataset = Dataset.from_dict(data)
@@ -213,10 +235,10 @@ class TestData:
     def test_label_map_is_lexicographically_ordered(self, dataset):
         data = Data(data=dataset, task=Task.CLASSIFICATION, label_name="label")
         label_map = data.labels.label_map
-        assert list(label_map.keys()) == sorted(label_map.keys())
+        assert list(label_map.values()) == sorted(label_map.values())
 
     @given(dataset=dataset_strategy(task=Task.MULTILABEL))
     def test_label_map_is_lexicographically_ordered_multilabel(self, dataset):
         data = Data(data=dataset, task=Task.MULTILABEL, label_name="label")
         label_map = data.labels.label_map
-        assert list(label_map.keys()) == sorted(label_map.keys())
+        assert list(label_map.values()) == sorted(label_map.values())
