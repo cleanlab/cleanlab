@@ -30,10 +30,8 @@ def find_label_issues(
       Note:  Currently, only a single span class is supported.
 
     pred_probs:
-        List of np arrays, such that `pred_probs[i]` has shape ``(T, K)`` if the `i`-th sentence contains T tokens.
-
-        Each element of `pred_probs[i]` corresponds to a token `t` in the `i`-th sentence,
-        and contains model-predicted probabilities that `t` belongs to the span classes.
+        An array of shape ``(T, K)`` of model-predicted class probabilities.
+       Refer to documentation for this argument in :py:func:`token_classification.filter.find_label_issues <cleanlab.token_classification.filter.find_label_issues>` for further details.
 
     Returns
     -------
