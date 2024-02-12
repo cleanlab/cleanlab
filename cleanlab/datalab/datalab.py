@@ -90,6 +90,9 @@ class Datalab:
     label_name : str, optional
         The name of the label column in the dataset.
 
+        In the case of classification (both multiclass and multilabel), the labels are internally mapped to integers in a [0, 1, ..., K-1] format,
+        ordered lexicographically by class name. Make sure that your model's predictions reflect this ordering.
+
     image_key : str, optional
         Optional key that can be specified for image datasets to point to the field containing the actual images themselves.
         If specified, additional image-specific issue types can be detected in the dataset.
@@ -191,7 +194,11 @@ class Datalab:
             To best detect label issues, provide this input obtained from the most accurate model you can produce.
 
             For classification data, this must be a 2D array with shape ``(num_examples, K)`` where ``K`` is the number of classes in the dataset.
+                The columns of this array should be lexicographically ordered by class name.
             For regression data, this must be a 1D array with shape ``(num_examples,)`` containing the predicted value for each example.
+            For multilabel classification data, this must be a 2D array with shape ``(num_examples, K)`` where ``K`` is the number of classes in the dataset.
+                The columns of this array should be lexicographically ordered by class name.
+
 
         features : Optional[np.ndarray]
             Feature embeddings (vector representations) of every example in the dataset.
