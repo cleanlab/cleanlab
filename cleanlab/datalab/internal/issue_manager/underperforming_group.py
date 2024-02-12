@@ -95,8 +95,8 @@ class UnderperformingGroupIssueManager(IssueManager):
 
     def find_issues(
         self,
-        features: npt.NDArray,
         pred_probs: npt.NDArray,
+        features: Optional[npt.NDArray] = None,
         cluster_ids: Optional[npt.NDArray[np.int_]] = None,
         **kwargs: Any,
     ) -> None:
@@ -145,7 +145,7 @@ class UnderperformingGroupIssueManager(IssueManager):
         )
 
     def set_knn_graph(
-        self, features: npt.NDArray, find_issues_kwargs: Dict[str, Any]
+        self, features: Optional[npt.NDArray], find_issues_kwargs: Dict[str, Any]
     ) -> csr_matrix:
         knn_graph = self._process_knn_graph_from_inputs(find_issues_kwargs)
         old_knn_metric = self.datalab.get_info("statistics").get("knn_metric")
