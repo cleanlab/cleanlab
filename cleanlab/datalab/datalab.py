@@ -90,9 +90,6 @@ class Datalab:
     label_name : str, optional
         The name of the label column in the dataset.
 
-        In the case of classification (both multiclass and multilabel), the labels are internally mapped to integers in a [0, 1, ..., K-1] format,
-        ordered lexicographically by class name. Make sure that your model's predictions reflect this ordering.
-
     image_key : str, optional
         Optional key that can be specified for image datasets to point to the field containing the actual images themselves.
         If specified, additional image-specific issue types can be detected in the dataset.
