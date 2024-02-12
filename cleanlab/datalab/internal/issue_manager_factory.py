@@ -248,6 +248,7 @@ def list_default_issue_types(task: Task) -> List[str]:
             "near_duplicate",
             "non_iid",
             "class_imbalance",
+            "underperforming_group",
         ],
         Task.REGRESSION: [
             "null",
