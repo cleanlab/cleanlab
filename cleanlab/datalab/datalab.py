@@ -194,10 +194,10 @@ class Datalab:
             To best detect label issues, provide this input obtained from the most accurate model you can produce.
 
             For classification data, this must be a 2D array with shape ``(num_examples, K)`` where ``K`` is the number of classes in the dataset.
-                The columns of this array should be lexicographically ordered by class name.
+                Make sure that the columns of your `pred_probs` are properly ordered with respect to the ordering of classes, which for Datalab is: lexicographically sorted by class name.
             For regression data, this must be a 1D array with shape ``(num_examples,)`` containing the predicted value for each example.
             For multilabel classification data, this must be a 2D array with shape ``(num_examples, K)`` where ``K`` is the number of classes in the dataset.
-                The columns of this array should be lexicographically ordered by class name.
+                Make sure that the columns of your `pred_probs` are properly ordered with respect to the ordering of classes, which for Datalab is: lexicographically sorted by class name.
 
 
         features : Optional[np.ndarray]
