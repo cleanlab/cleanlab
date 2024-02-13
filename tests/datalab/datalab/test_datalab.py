@@ -65,6 +65,7 @@ class TestDatalab:
         captured = capsys.readouterr()
         expected_output = (
             "Datalab:\n"
+            "Task: Classification\n"
             "Checks run: No\n"
             "Number of examples: 5\n"
             "Number of classes: 3\n"

@@ -136,10 +136,10 @@ class Datalab:
 
     # todo: check displayer methods
     def __repr__(self) -> str:
-        return _Displayer(data_issues=self.data_issues).__repr__()
+        return _Displayer(data_issues=self.data_issues, task=self.task).__repr__()
 
     def __str__(self) -> str:
-        return _Displayer(data_issues=self.data_issues).__str__()
+        return _Displayer(data_issues=self.data_issues, task=self.task).__str__()
 
     @property
     def labels(self) -> Union[np.ndarray, List[List[int]]]:
