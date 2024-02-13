@@ -189,6 +189,14 @@ class TestReporter:
         }
     )
 
+    expected_filtered_summary = pd.DataFrame(
+        {
+            "issue_type": ["foo"],
+            "score": [0.6],
+            "num_issues": [1],
+        }
+    )
+
     def test_summary_with_score(self, reporter, data_issues, monkeypatch):
         """Test that the _write_summary method returns the expected output when show_summary_score is True.
 
@@ -199,7 +207,7 @@ class TestReporter:
 
         expected_output = (
             "Here is a summary of the different kinds of issues found in the data:\n\n"
-            + self.summary.to_string(index=False)
+            + self.expected_filtered_summary.to_string(index=False)
             + "\n\n"
             + "(Note: A lower score indicates a more severe issue across all examples in the dataset.)\n\n"
             + "Dataset Information: num_examples: 100, num_classes: 5\n\n\n"
@@ -214,7 +222,7 @@ class TestReporter:
 
         expected_output = (
             "Here is a summary of the different kinds of issues found in the data:\n\n"
-            + self.summary.drop(columns=["score"]).to_string(index=False)
+            + self.expected_filtered_summary.drop(columns=["score"]).to_string(index=False)
             + "\n\n"
             + "Dataset Information: num_examples: 100, num_classes: 5\n\n\n"
         )
