@@ -74,7 +74,7 @@ class TestCleanvisionIntegration:
         ]
 
         assert set(all_keys) == set(datalab.info.keys())
-        datalab.report()
+        datalab.report(show_all_issues=True)
         captured = capsys.readouterr()
 
         for issue_type in IMAGELAB_ISSUE_TYPES:
@@ -161,7 +161,7 @@ class TestCleanvisionIntegration:
         ]
 
         assert set(all_keys) == set(datalab.info.keys())
-        datalab.report()
+        datalab.report(show_all_issues=True)
         captured = capsys.readouterr()
 
         for issue_type in IMAGELAB_ISSUE_TYPES:
@@ -180,7 +180,7 @@ class TestCleanvisionIntegration:
 
         assert set(all_keys) == set(datalab.info.keys())
 
-        datalab.report()
+        datalab.report(show_all_issues=True)
         captured = capsys.readouterr()
         assert "label" in captured.out
 
@@ -194,7 +194,7 @@ class TestCleanvisionIntegration:
 
         assert set(all_keys) == set(datalab.info.keys())
 
-        datalab.report()
+        datalab.report(show_all_issues=True)
         captured = capsys.readouterr()
         assert "label" in captured.out
         assert "dark" in captured.out
@@ -222,7 +222,7 @@ class TestCleanvisionIntegration:
 
         assert set(all_keys) == set(datalab.info.keys())
 
-        datalab.report()
+        datalab.report(show_all_issues=True)
         captured = capsys.readouterr()
         assert "label" in captured.out
         assert "dark" in captured.out
@@ -245,7 +245,7 @@ class TestCleanvisionIntegration:
         all_keys = IMAGELAB_ISSUE_TYPES + ["statistics"]
 
         assert set(all_keys) == set(datalab.info.keys())
-        datalab.report()
+        datalab.report(show_all_issues=True)
         captured = capsys.readouterr()
 
         for issue_type in IMAGELAB_ISSUE_TYPES:
