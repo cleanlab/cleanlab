@@ -2,7 +2,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 import pandas as pd
-from scipy.__config__ import show
 
 from cleanlab import Datalab
 import cleanlab.datalab.internal.adapter.imagelab as imagelab
