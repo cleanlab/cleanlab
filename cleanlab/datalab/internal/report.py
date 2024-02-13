@@ -169,6 +169,10 @@ class Reporter:
         if num_classes is not None:
             dataset_information += f", num_classes: {num_classes}"
 
+        if not self.show_all_issues:
+            # Drop any items in the issue_summary that have no issues
+            summary = summary.query("num_issues > 0")
+
         if self.show_summary_score:
             return (
                 "Here is a summary of the different kinds of issues found in the data:\n\n"
