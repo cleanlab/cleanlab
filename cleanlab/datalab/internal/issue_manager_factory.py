@@ -97,7 +97,7 @@ Currently, the following issue managers are registered by default for a given ta
     - ``"label"``: :py:class:`LabelIssueManager <cleanlab.datalab.internal.issue_manager.label.LabelIssueManager>`
     - ``"near_duplicate"``: :py:class:`NearDuplicateIssueManager <cleanlab.datalab.internal.issue_manager.duplicate.NearDuplicateIssueManager>`
     - ``"non_iid"``: :py:class:`NonIIDIssueManager <cleanlab.datalab.internal.issue_manager.noniid.NonIIDIssueManager>`
-    - ``"class_imbalance"``: :py:class:`ClassImbalanceIssueManager <cleanlab.datalab.internal.issue_manager.class_imbalance.ClassImbalanceIssueManager>`
+    - ``"class_imbalance"``: :py:class:`ClassImbalanceIssueManager <cleanlab.datalab.internal.issue_manager.imbalance.ClassImbalanceIssueManager>`
     - ``"underperforming_group"``: :py:class:`UnderperformingGroupIssueManager <cleanlab.datalab.internal.issue_manager.underperforming_group.UnderperformingGroupIssueManager>`
     - ``"data_valuation"``: :py:class:`DataValuationIssueManager <cleanlab.datalab.internal.issue_manager.data_valuation.DataValuationIssueManager>`
     - ``"null"``: :py:class:`NullIssueManager <cleanlab.datalab.internal.issue_manager.null.NullIssueManager>`
@@ -105,10 +105,18 @@ Currently, the following issue managers are registered by default for a given ta
 - Regression:
 
     - ``"label"``: :py:class:`RegressionLabelIssueManager <cleanlab.datalab.internal.issue_manager.regression.label.RegressionLabelIssueManager>`
+    - ``"outlier"``: :py:class:`OutlierIssueManager <cleanlab.datalab.internal.issue_manager.outlier.OutlierIssueManager>`
+    - ``"near_duplicate"``: :py:class:`NearDuplicateIssueManager <cleanlab.datalab.internal.issue_manager.duplicate.NearDuplicateIssueManager>`
+    - ``"non_iid"``: :py:class:`NonIIDIssueManager <cleanlab.datalab.internal.issue_manager.noniid.NonIIDIssueManager>`
+    - ``"null"``: :py:class:`NullIssueManager <cleanlab.datalab.internal.issue_manager.null.NullIssueManager>`
 
 - Multilabel:
 
     - ``"label"``: :py:class:`MultilabelIssueManager <cleanlab.datalab.internal.issue_manager.multilabel.label.MultilabelIssueManager>`
+    - ``"outlier"``: :py:class:`OutlierIssueManager <cleanlab.datalab.internal.issue_manager.outlier.OutlierIssueManager>`
+    - ``"near_duplicate"``: :py:class:`NearDuplicateIssueManager <cleanlab.datalab.internal.issue_manager.duplicate.NearDuplicateIssueManager>`
+    - ``"non_iid"``: :py:class:`NonIIDIssueManager <cleanlab.datalab.internal.issue_manager.noniid.NonIIDIssueManager>`
+    - ``"null"``: :py:class:`NullIssueManager <cleanlab.datalab.internal.issue_manager.null.NullIssueManager>`
 
 Warning
 -------
