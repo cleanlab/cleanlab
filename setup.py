@@ -34,7 +34,7 @@ DATALAB_REQUIRE = [
     "datasets>=2.7.0",
 ]
 
-IMAGE_REQUIRE = DATALAB_REQUIRE + ["cleanvision>=0.3.2"]
+IMAGE_REQUIRE = DATALAB_REQUIRE + ["cleanvision>=0.3.6"]
 
 EXTRAS_REQUIRE = {
     "datalab": DATALAB_REQUIRE,
