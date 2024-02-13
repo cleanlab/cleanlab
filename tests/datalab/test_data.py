@@ -14,8 +14,8 @@ NUM_COLS = 2
 
 
 @st.composite
-def dataset_strategy(draw):
-    # Deifine strategies
+def multiclass_dataset_strategy(draw):
+    # Define strategies
     int_feature_strategy = st.integers(min_value=-10, max_value=10)
     float_feature_strategy = st.floats(min_value=-10, max_value=10)
     column_name_strategy = st.text(min_size=5, max_size=5)
@@ -36,6 +36,74 @@ def dataset_strategy(draw):
     assume(len(set(dataset["label"])) > 1)
 
     return dataset
+
+
+@st.composite
+def multilabel_dataset_strategy(draw):
+    # Define strategies
+    min_dataset_size = 5
+    max_dataset_size = 5
+    int_feature_strategy = st.integers(min_value=-10, max_value=10)
+    float_feature_strategy = st.floats(min_value=-10, max_value=10)
+    # Ensure column names do not include problematic characters
+    column_name_strategy = st.text(
+        alphabet=st.characters(blacklist_characters="\x00", min_codepoint=32, max_codepoint=126),
+        min_size=5,
+        max_size=5,
+    )
+    column_data_strategy = st.one_of(int_feature_strategy, float_feature_strategy)
+
+    # Draw values
+    col_names = draw(
+        st.lists(column_name_strategy, min_size=NUM_COLS, max_size=NUM_COLS + 1, unique=True)
+    )
+    label_name = draw(st.sampled_from(col_names))
+    # Ensure labels do not include problematic characters
+    classes_strategy = st.lists(
+        st.text(
+            alphabet=st.characters(
+                # The null character is problematic for some string operations, e.g. key lookup
+                blacklist_characters="\x00",
+                min_codepoint=32,
+                max_codepoint=126,
+            ),
+            min_size=2,
+            max_size=3,
+        ),
+        min_size=2,
+        max_size=3,
+        unique=True,
+    )
+    classes = draw(classes_strategy)
+    labels_strategy = st.lists(
+        st.lists(st.sampled_from(classes), min_size=1, max_size=3, unique=True),
+        min_size=min_dataset_size,
+        max_size=max_dataset_size,
+    )
+    data = {
+        name: draw(
+            st.lists(column_data_strategy, min_size=min_dataset_size, max_size=max_dataset_size)
+        )
+        for name in col_names
+    }
+    data[label_name] = draw(labels_strategy)
+    dataset = Dataset.from_dict(data)
+    dataset = dataset.rename_column(label_name, "label")
+
+    # Make assertions about drawn values
+    assume(len(set(l for labels in dataset["label"] for l in labels)) > 1)
+
+    return dataset
+
+
+@st.composite
+def dataset_strategy(draw, task=Task.CLASSIFICATION):
+    if task == Task.CLASSIFICATION:
+        return draw(multiclass_dataset_strategy())
+    elif task == Task.MULTILABEL:
+        return draw(multilabel_dataset_strategy())
+    else:
+        raise ValueError(f"Unsupported task: {task}")
 
 
 class TestData:
@@ -162,3 +230,15 @@ class TestData:
                 Data._load_dataset_from_string("non_external_dataset")
 
             expected_error_substring = "Failed to load dataset from <class 'str'>.\n"
+
+    @given(dataset=dataset_strategy(task=Task.CLASSIFICATION))
+    def test_label_map_is_lexicographically_ordered(self, dataset):
+        data = Data(data=dataset, task=Task.CLASSIFICATION, label_name="label")
+        label_map = data.labels.label_map
+        assert list(label_map.values()) == sorted(label_map.values())
+
+    @given(dataset=dataset_strategy(task=Task.MULTILABEL))
+    def test_label_map_is_lexicographically_ordered_multilabel(self, dataset):
+        data = Data(data=dataset, task=Task.MULTILABEL, label_name="label")
+        label_map = data.labels.label_map
+        assert list(label_map.values()) == sorted(label_map.values())
