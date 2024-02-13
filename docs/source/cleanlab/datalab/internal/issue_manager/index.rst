@@ -33,3 +33,4 @@ ML task-specific issue managers
 
 .. toctree::
     regression/index
+    multilabel/index
