@@ -170,7 +170,7 @@ class Reporter:
             dataset_information += f", num_classes: {num_classes}"
 
         if not self.show_all_issues:
-            # Drop any items in the issue_summary that have no issues
+            # Drop any items in the issue_summary that have no issues (any issue detected in data needs to have num_issues > 0)
             summary = summary.query("num_issues > 0")
 
         if self.show_summary_score:
