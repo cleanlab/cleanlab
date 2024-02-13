@@ -18,7 +18,7 @@ Module that handles the string representation of Datalab objects.
 """
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, Dict, List, Optional, Type
 
 from cleanlab.datalab.internal.task import Task
 
@@ -131,13 +131,13 @@ class _Displayer:
         self.representation_strategy = self._get_representation_strategy()
 
     def _get_representation_strategy(self) -> RepresentationStrategy:
-        strategies = {
+        strategies: Dict[str, Type[RepresentationStrategy]] = {
             "classification": ClassificationRepresentation,
             "regression": RegressionRepresentation,
             "multilabel": MultilabelRepresentation,
         }
         strategy_class = strategies.get(self.task.value)
-        if not strategy_class:
+        if strategy_class is None:
             raise ValueError(f"Unsupported task type: {self.task}")
         return strategy_class(self.data_issues)
 
