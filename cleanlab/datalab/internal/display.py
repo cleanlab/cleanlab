@@ -17,45 +17,152 @@
 Module that handles the string representation of Datalab objects.
 """
 
-from typing import TYPE_CHECKING
+from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING, List, Optional
+
+from cleanlab.datalab.internal.task import Task
 
 if TYPE_CHECKING:  # pragma: no cover
     from cleanlab.datalab.internal.data_issues import DataIssues
 
 
-class _Displayer:
-    def __init__(self, data_issues: "DataIssues") -> None:
+class RepresentationStrategy(ABC):
+    def __init__(self, data_issues: "DataIssues"):
         self.data_issues = data_issues
+
+    @property
+    def checks_run(self) -> bool:
+        return not self.data_issues.issues.empty
+
+    @property
+    def num_examples(self) -> Optional[int]:
+        return self.data_issues.get_info("statistics").get("num_examples")
+
+    @property
+    def num_classes(self) -> Optional[int]:
+        return self.data_issues.get_info("statistics").get("num_classes")
+
+    @property
+    def issues_identified(self) -> str:
+        return (
+            self.data_issues.issue_summary["num_issues"].sum() if self.checks_run else "Not checked"
+        )
+
+    def show_task(self, task: "Task") -> str:
+        return f"task={str(task).capitalize()}"
+
+    def show_checks_run(self) -> str:
+        return f"checks_run={self.checks_run}"
+
+    def show_num_examples(self) -> str:
+        return f"num_examples={self.num_examples}" if self.num_examples is not None else ""
+
+    def show_num_classes(self) -> str:
+        return f"num_classes={self.num_classes}" if self.num_classes is not None else ""
+
+    def show_issues_identified(self) -> str:
+        return f"issues_identified={self.issues_identified}"
+
+    @abstractmethod
+    def represent(self) -> str:
+        pass
+
+
+class ClassificationRepresentation(RepresentationStrategy):
+    def represent(self) -> str:
+        display_strings: List[str] = [
+            self.show_task(Task.CLASSIFICATION),
+            self.show_checks_run(),
+            self.show_num_examples(),
+            self.show_num_classes(),
+            self.show_issues_identified(),
+        ]
+        # Drop empty strings
+        display_strings = [s for s in display_strings if bool(s)]
+        display_str = ", ".join(display_strings)
+        return f"Datalab({display_str})"
+
+
+class RegressionRepresentation(RepresentationStrategy):
+    def represent(self) -> str:
+        display_strings: List[str] = [
+            self.show_task(Task.REGRESSION),
+            self.show_checks_run(),
+            self.show_num_examples(),
+            self.show_issues_identified(),
+        ]
+        # Drop empty strings
+        display_strings = [s for s in display_strings if bool(s)]
+        display_str = ", ".join(display_strings)
+        return f"Datalab({display_str})"
+
+
+class MultilabelRepresentation(RepresentationStrategy):
+    def represent(self) -> str:
+        display_strings: List[str] = [
+            self.show_task(Task.MULTILABEL),
+            self.show_checks_run(),
+            self.show_num_examples(),
+            self.show_num_classes(),
+            self.show_issues_identified(),
+        ]
+        # Drop empty strings
+        display_strings = [s for s in display_strings if bool(s)]
+        display_str = ", ".join(display_strings)
+        return f"Datalab({display_str})"
+
+
+class _Displayer:
+    def __init__(self, data_issues: "DataIssues", task: "Task") -> None:
+        self.data_issues = data_issues
+        self.task = task
+        self.representation_strategy = self._get_representation_strategy()
+
+    def _get_representation_strategy(self) -> RepresentationStrategy:
+        strategies = {
+            "classification": ClassificationRepresentation,
+            "regression": RegressionRepresentation,
+            "multilabel": MultilabelRepresentation,
+        }
+        strategy_class = strategies.get(self.task.value)
+        if not strategy_class:
+            raise ValueError(f"Unsupported task type: {self.task}")
+        return strategy_class(self.data_issues)
 
     def __repr__(self) -> str:
         """What is displayed in console if user executes: >>> datalab"""
-        checks_run = not self.data_issues.issues.empty
-        display_str = f"checks_run={checks_run}"
-        num_examples = self.data_issues.get_info("statistics")["num_examples"]
-        if num_examples is not None:
-            display_str += f", num_examples={num_examples}"
-        num_classes = self.data_issues.get_info("statistics")["num_classes"]
-        if num_classes is not None:
-            display_str += f", num_classes={num_classes}"
-        if checks_run:
-            issues_identified = self.data_issues.issue_summary["num_issues"].sum()
-            display_str += f", issues_identified={issues_identified}"
-        return f"Datalab({display_str})"
+        return self.representation_strategy.represent()
+
+    @property
+    def checks_run(self) -> bool:
+        """Whether checks have been run on the data."""
+        return not self.data_issues.issues.empty
+
+    @property
+    def num_examples(self) -> Optional[int]:
+        """Number of examples in the dataset."""
+        return self.data_issues.get_info("statistics").get("num_examples")
+
+    @property
+    def num_classes(self) -> Optional[int]:
+        """Number of classes in the dataset."""
+        return self.data_issues.get_info("statistics").get("num_classes")
+
+    @property
+    def issues_identified(self) -> str:
+        """Number of issues identified in the dataset."""
+        return (
+            self.data_issues.issue_summary["num_issues"].sum() if self.checks_run else "Not checked"
+        )
 
     def __str__(self) -> str:
         """What is displayed if user executes: print(datalab)"""
-        checks_run = not self.data_issues.issues.empty
-        num_examples = self.data_issues.get_info("statistics").get("num_examples")
-        num_classes = self.data_issues.get_info("statistics").get("num_classes")
-
-        issues_identified = (
-            self.data_issues.issue_summary["num_issues"].sum() if checks_run else "Not checked"
-        )
         info_list = [
-            f"Checks run: {'Yes' if checks_run else 'No'}",
-            f"Number of examples: {num_examples if num_examples is not None else 'Unknown'}",
-            f"Number of classes: {num_classes if num_classes is not None else 'Unknown'}",
-            f"Issues identified: {issues_identified}",
+            f"Task: {str(self.task).capitalize()}",
+            f"Checks run: {'Yes' if self.checks_run else 'No'}",
+            f"Number of examples: {self.num_examples if self.num_examples is not None else 'Unknown'}",
+            f"Number of classes: {self.num_classes if self.num_classes is not None else 'Unknown'}",
+            f"Issues identified: {self.issues_identified}",
         ]
 
         return "Datalab:\n" + "\n".join(info_list)
