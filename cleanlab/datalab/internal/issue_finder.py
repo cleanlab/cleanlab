@@ -472,4 +472,12 @@ class IssueFinder:
                 )
                 issue_types_copy.pop("outlier")
 
+        drop_class_imbalance_check = (
+            "class_imbalance" in issue_types_copy
+            and not self.datalab.has_labels
+            and self.task == Task.CLASSIFICATION
+        )
+        if drop_class_imbalance_check:
+            issue_types_copy.pop("class_imbalance")
+
         return issue_types_copy
