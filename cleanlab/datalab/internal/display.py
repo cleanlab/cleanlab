@@ -67,6 +67,18 @@ class RepresentationStrategy(ABC):
     def represent(self) -> str:
         pass
 
+    def to_string(self, task: "Task") -> str:
+        """What is displayed if user executes: print(datalab)"""
+        info_list = [
+            f"Task: {str(task).capitalize()}",
+            f"Checks run: {'Yes' if self.checks_run else 'No'}",
+            f"Number of examples: {self.num_examples if self.num_examples is not None else 'Unknown'}",
+            f"Number of classes: {self.num_classes if self.num_classes is not None else 'Unknown'}",
+            f"Issues identified: {self.issues_identified}",
+        ]
+
+        return "Datalab:\n" + "\n".join(info_list)
+
 
 class ClassificationRepresentation(RepresentationStrategy):
     def represent(self) -> str:
@@ -133,36 +145,6 @@ class _Displayer:
         """What is displayed in console if user executes: >>> datalab"""
         return self.representation_strategy.represent()
 
-    @property
-    def checks_run(self) -> bool:
-        """Whether checks have been run on the data."""
-        return not self.data_issues.issues.empty
-
-    @property
-    def num_examples(self) -> Optional[int]:
-        """Number of examples in the dataset."""
-        return self.data_issues.get_info("statistics").get("num_examples")
-
-    @property
-    def num_classes(self) -> Optional[int]:
-        """Number of classes in the dataset."""
-        return self.data_issues.get_info("statistics").get("num_classes")
-
-    @property
-    def issues_identified(self) -> str:
-        """Number of issues identified in the dataset."""
-        return (
-            self.data_issues.issue_summary["num_issues"].sum() if self.checks_run else "Not checked"
-        )
-
     def __str__(self) -> str:
         """What is displayed if user executes: print(datalab)"""
-        info_list = [
-            f"Task: {str(self.task).capitalize()}",
-            f"Checks run: {'Yes' if self.checks_run else 'No'}",
-            f"Number of examples: {self.num_examples if self.num_examples is not None else 'Unknown'}",
-            f"Number of classes: {self.num_classes if self.num_classes is not None else 'Unknown'}",
-            f"Issues identified: {self.issues_identified}",
-        ]
-
-        return "Datalab:\n" + "\n".join(info_list)
+        return self.representation_strategy.to_string(self.task)
