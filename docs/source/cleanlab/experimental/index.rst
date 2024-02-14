@@ -16,6 +16,7 @@ Some of these files include various models that can be used with cleanlab to fin
 
 .. toctree::
     label_issues_batched
+    span_classification
     mnist_pytorch
     coteaching
     cifar_cnn
