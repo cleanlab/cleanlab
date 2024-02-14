@@ -586,7 +586,7 @@ class Datalab:
         force :
             If ``True``, overwrites any existing files in the folder at `path`. Use this with caution!
 
-        Note
+        NOTE
         ----
         You have to save the Dataset yourself separately if you want it saved to file.
         """
