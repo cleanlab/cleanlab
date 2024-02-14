@@ -175,14 +175,9 @@ class Datalab:
         The more of these inputs you provide, the more types of issues Datalab can detect in your dataset/labels.
         If you provide a subset of these inputs, Datalab will output what insights it can based on the limited information from your model.
 
-        Note
+        NOTE
         ----
-        This method acts as a wrapper around the :py:meth:`IssueFinder.find_issues <cleanlab.datalab.internal.issue_finder.IssueFinder.find_issues>` method,
-        where the core logic for issue detection is implemented.
-
-        Note
-        ----
-        The issues are saved in the ``self.issues`` attribute, but are not returned.
+        The issues are saved in the ``self.issues`` attribute of the ``Datalab`` object, but are not returned.
 
         Parameters
         ----------
@@ -393,10 +388,12 @@ class Datalab:
             Consider setting this to ``False`` once you're familiar with how each issue type is defined.
 
         show_summary_score :
-            Whether or not to include the overall severity of each issue type in the report.
+            Whether or not to include the overall severity score of each issue type in the report.
+            These scores are not comparable across different issue types,
+            see the ``issue_summary`` documentation to learn more.
 
         show_all_issues :
-            Whether or not to show all issues in the report, or only the issues for which examples were found in the dataset
+            Whether or not the report should show all issue types that were checked for, or only the types of issues detected in the dataset.
             With this set to ``True``, the report may include more types of issues that were not detected in the dataset.
 
         See Also
@@ -433,8 +430,18 @@ class Datalab:
     @property
     def issue_summary(self) -> pd.DataFrame:
         """Summary of issues found in the dataset and the overall severity of each type of issue.
+        
+        Each type of issue has a summary score, which is usually defined as an average of
+        per-example issue-severity scores (over all examples in the dataset).
+        So these summary scores are not directly tied to the number of examples estimated to exhibit
+        a particular type of issue. Issue-severity (ie. quality of each example) is measured differently for each issue type,
+        and these per-example scores are only comparable across different examples for the same issue-type, but are not comparable across different issue types.
+        For instance, label quality might be scored via estimated likelihood of the given label,
+        whereas outlier quality might be scored via distance to K-nearest-neighbors in feature space (fundamentally incomparable quantities).
+        For some issue types, the summary score is not an average of per-example scores, but rather a global statistic of the dataset
+        (eg. for `non_iid` issue type, the p-value for hypothesis test that data are IID).
 
-        This is a wrapper around the ``DataIssues.issue_summary`` attribute.
+        In summary, you can compare these summary scores across datasets for the same issue type, but never compare them across different issue types.
 
         Examples
         -------
@@ -456,9 +463,7 @@ class Datalab:
     @property
     def info(self) -> Dict[str, Dict[str, Any]]:
         """Information and statistics about the dataset issues found.
-
-        This is a wrapper around the ``DataIssues.info`` attribute.
-
+        
         Examples
         -------
 
@@ -489,10 +494,6 @@ class Datalab:
         """
         Use this after finding issues to see which examples suffer from which types of issues.
 
-        NOTE
-        ----
-        This is a wrapper around the :py:meth:`DataIssues.get_issues <cleanlab.datalab.internal.data_issues.DataIssues.get_issues>` method.
-
         Parameters
         ----------
         issue_name : str or None
@@ -518,10 +519,7 @@ class Datalab:
         """Summarize the issues found in dataset of a particular type,
         including how severe this type of issue is overall across the dataset.
 
-        NOTE
-        ----
-        This is a wrapper around the
-        :py:meth:`DataIssues.get_issue_summary <cleanlab.datalab.internal.data_issues.DataIssues.get_issue_summary>` method.
+        See the documentation of the ``issue_summary`` attribute to learn more.
 
         Parameters
         ----------
@@ -543,11 +541,6 @@ class Datalab:
 
         This function is used to get the info for a specific issue_name. If the info is not computed yet, it will raise an error.
 
-        NOTE
-        ----
-        This is a wrapper around the
-        :py:meth:`DataIssues.get_info <cleanlab.datalab.internal.data_issues.DataIssues.get_info>` method.
-
         Parameters
         ----------
         issue_name :
@@ -565,10 +558,6 @@ class Datalab:
 
         Any issue type that is not in this list cannot be used in the :py:meth:`find_issues` method.
 
-        Note
-        ----
-        This method is a wrapper around :py:meth:`IssueFinder.list_possible_issue_types <cleanlab.datalab.internal.issue_finder.IssueFinder.list_possible_issue_types>`.
-
         See Also
         --------
         :py:class:`REGISTRY <cleanlab.datalab.internal.issue_manager_factory.REGISTRY>` : All available issue types and their corresponding issue managers can be found here.
@@ -578,10 +567,6 @@ class Datalab:
     def list_default_issue_types(self) -> List[str]:
         """Returns a list of the issue types that are run by default
         when :py:meth:`find_issues` is called without specifying `issue_types`.
-
-        Note
-        ----
-        This method is a wrapper around :py:meth:`IssueFinder.list_default_issue_types <cleanlab.datalab.internal.issue_finder.IssueFinder.list_default_issue_types>`.
 
         See Also
         --------
