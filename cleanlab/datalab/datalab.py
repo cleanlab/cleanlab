@@ -430,7 +430,7 @@ class Datalab:
     @property
     def issue_summary(self) -> pd.DataFrame:
         """Summary of issues found in the dataset and the overall severity of each type of issue.
-        
+
         Each type of issue has a summary score, which is usually defined as an average of
         per-example issue-severity scores (over all examples in the dataset).
         So these summary scores are not directly tied to the number of examples estimated to exhibit
@@ -463,7 +463,7 @@ class Datalab:
     @property
     def info(self) -> Dict[str, Dict[str, Any]]:
         """Information and statistics about the dataset issues found.
-        
+
         Examples
         -------
 
