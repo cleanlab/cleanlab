@@ -13,6 +13,12 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
+"""
+This module contains the Task enum, which internally represents the tasks
+supported by Datalab, so that the appropriate task-specific logic can be applied.
+This class and associated naming conventions are subject to change and is not meant
+to be used by users.
+"""
 from enum import Enum
 
 
