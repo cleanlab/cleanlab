@@ -15,13 +15,18 @@
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
 
-__version__ = "2.5.1"
-
-# 2.5.1 - Not yet released, you are using bleeding-edge developer version. See its documentation at: https://docs.cleanlab.ai/master/
+__version__ = "2.6.0"
 
 # ------------------------------------------------
 # | PREVIOUS MAJOR VERSION RELEASE NOTES SUMMARY |
 # ------------------------------------------------
+
+# 2.6.0 - Elevating Data Insights: Comprehensive Issue Checks & Expanded ML Task Compatibility
+#
+#   Major new functionalities include:
+#   - Detection for null values, class imbalance, underperforming groups and data valuation in Datalab
+#   - Extend Datalab support for tasks like regression and multi-label classification
+#   - Scores for near duplicates and outliers rescaled to be more interpretable
 
 # 2.5.0 - cleanlab detects label errors in most ML tasks
 #
