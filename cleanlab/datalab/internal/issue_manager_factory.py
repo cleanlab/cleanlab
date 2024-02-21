@@ -74,6 +74,7 @@ REGISTRY: Dict[Task, Dict[str, Type[IssueManager]]] = {
         "outlier": OutlierIssueManager,
         "near_duplicate": NearDuplicateIssueManager,
         "non_iid": NonIIDIssueManager,
+        "data_valuation": DataValuationIssueManager,
         "null": NullIssueManager,
     },
     Task.MULTILABEL: {
@@ -81,6 +82,7 @@ REGISTRY: Dict[Task, Dict[str, Type[IssueManager]]] = {
         "outlier": OutlierIssueManager,
         "near_duplicate": NearDuplicateIssueManager,
         "non_iid": NonIIDIssueManager,
+        "data_valuation": DataValuationIssueManager,
         "null": NullIssueManager,
     },
 }
