@@ -28,10 +28,14 @@ from typing import (
 import numpy as np
 import pandas as pd
 from scipy.sparse import csr_matrix
+from sklearn.exceptions import NotFittedError
+from sklearn.neighbors import NearestNeighbors
+from sklearn.utils.validation import check_is_fitted
 
 from cleanlab.datalab.internal.issue_manager import IssueManager
 
 if TYPE_CHECKING:  # pragma: no cover
+    import numpy.typing as npt
     import pandas as pd
     from cleanlab.datalab.datalab import Datalab
 
@@ -94,16 +98,19 @@ class DataValuationIssueManager(IssueManager):
     def __init__(
         self,
         datalab: Datalab,
+        metric: Optional[str] = None,
         threshold: Optional[float] = None,
         k: int = 10,
         **kwargs,
     ):
         super().__init__(datalab)
+        self.metric = metric
         self.k = k
         self.threshold = threshold if threshold is not None else self.DEFAULT_THRESHOLD
 
     def find_issues(
         self,
+        features: Optional[npt.NDArray] = None,
         **kwargs,
     ) -> None:
         """Calculate the data valuation score with a provided or existing knn graph.
@@ -117,6 +124,8 @@ class DataValuationIssueManager(IssueManager):
         """
         self.k = kwargs.get("k", self.k)
         knn_graph = self._process_knn_graph_from_inputs(kwargs)
+        old_knn_metric = self.datalab.get_info("statistics").get("knn_metric")
+        metric_changes = self.metric and self.metric != old_knn_metric
         labels = self.datalab.labels
         if not isinstance(labels, np.ndarray):
             error_msg = (
@@ -124,12 +133,29 @@ class DataValuationIssueManager(IssueManager):
                 f"but got {type(labels)} instead."
             )
             raise TypeError(error_msg)
-        if knn_graph is None:
-            raise ValueError(
-                "knn_graph must be provided in kwargs or already stored in the Datalab instance\n"
-                "It should be calculated by other issue managers if it is not provided via "
-                "`Datalab.find_issues(knn_graph=knn_graph, ...)`"
-            )
+        if knn_graph is None or metric_changes:
+            if features is None:
+                raise ValueError(
+                    "If a knn_graph is not provided, features must be provided to fit a new knn."
+                )
+            if self.metric is None:
+                self.metric = "cosine" if features.shape[1] > 3 else "euclidean"
+            knn = NearestNeighbors(n_neighbors=self.k, metric=self.metric).fit(features)
+
+            if self.metric and self.metric != knn.metric:
+                warnings.warn(
+                    f"Metric {self.metric} does not match metric {knn.metric} used to fit knn. "
+                    "Most likely an existing NearestNeighbors object was passed in, but a different "
+                    "metric was specified."
+                )
+            self.metric = knn.metric
+
+            try:
+                check_is_fitted(knn)
+            except NotFittedError:
+                knn.fit(features)
+
+            knn_graph = knn.kneighbors_graph(mode="distance")
         if labels is None:
             raise ValueError("labels must be provided to run data valuation")
 
@@ -143,7 +169,7 @@ class DataValuationIssueManager(IssueManager):
         )
         self.summary = self.make_summary(score=scores.mean())
 
-        self.info = self.collect_info(self.issues)
+        self.info = self.collect_info(issues=self.issues, knn_graph=knn_graph)
 
     def _process_knn_graph_from_inputs(self, kwargs: Dict[str, Any]) -> Union[csr_matrix, None]:
         """Determine if a knn_graph is provided in the kwargs or if one is already stored in the associated Datalab instance."""
@@ -163,17 +189,46 @@ class DataValuationIssueManager(IssueManager):
             )
         return knn_graph
 
-    def collect_info(self, issues: pd.DataFrame) -> dict:
+    def collect_info(self, issues: pd.DataFrame, knn_graph: csr_matrix) -> dict:
         issues_info = {
             "num_low_valuation_issues": sum(issues[f"is_{self.issue_name}_issue"]),
             "average_data_valuation": issues[self.issue_score_key].mean(),
         }
 
+        params_dict = {
+            "metric": self.metric,
+            "k": self.k,
+            "threshold": self.threshold,
+        }
+
+        statistics_dict = self._build_statistics_dictionary(knn_graph=knn_graph)
+
         info_dict = {
             **issues_info,
+            **params_dict,
+            **statistics_dict,
         }
 
         return info_dict
+
+    def _build_statistics_dictionary(self, knn_graph: csr_matrix) -> Dict[str, Dict[str, Any]]:
+        statistics_dict: Dict[str, Dict[str, Any]] = {"statistics": {}}
+
+        # Add the knn graph as a statistic if necessary
+        graph_key = "weighted_knn_graph"
+        old_knn_graph = self.datalab.get_info("statistics").get(graph_key, None)
+        old_graph_exists = old_knn_graph is not None
+        prefer_new_graph = (
+            not old_graph_exists
+            or knn_graph.nnz > old_knn_graph.nnz
+            or self.metric != self.datalab.get_info("statistics").get("knn_metric", None)
+        )
+        if prefer_new_graph:
+            statistics_dict["statistics"][graph_key] = knn_graph
+            if self.metric is not None:
+                statistics_dict["statistics"]["knn_metric"] = self.metric
+
+        return statistics_dict
 
 
 def _knn_shapley_score(knn_graph: csr_matrix, labels: np.ndarray, k: int) -> np.ndarray:
