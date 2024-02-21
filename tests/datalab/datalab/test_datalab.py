@@ -1495,6 +1495,65 @@ class TestDataLabNullIssues:
         ), "Report should not contain a tip to address partial null examples"
 
 
+class TestDatalabDataValuation:
+    label_name: str = "y"
+
+    @pytest.fixture
+    def dataset(self):
+        from sklearn.datasets import make_classification
+
+        np.random.seed(SEED)
+
+        # Generate a 10D dataset with 2 classes
+        X, y = make_classification(
+            n_samples=100,
+            n_features=10,
+            n_informative=2,
+            n_redundant=2,
+            n_repeated=0,
+            n_classes=2,
+            n_clusters_per_class=2,
+            weights=None,
+            flip_y=0.1,
+            class_sep=1.0,
+            hypercube=True,
+            shift=0.0,
+            scale=0.1,
+            shuffle=True,
+            random_state=SEED,
+        )
+
+        return {"X": X, self.label_name: y}
+
+    def test_find_issues(self, dataset):
+        """Test that a fresh Datalab instance can check for data_valuation issues with
+        either `features` or a `knn_graph`.
+        """
+
+        lab = Datalab(data=dataset, label_name=self.label_name)
+        assert lab.issue_summary.empty
+        lab.find_issues(features=dataset["X"], issue_types={"data_valuation": {}})
+        summary = lab.get_issue_summary()
+        assert len(summary) == 1
+        assert "data_valuation" in summary["issue_type"].values
+        scores = lab.get_issues("data_valuation").get(["data_valuation_score"])
+        assert all((scores >= 0) & (scores <= 1))
+
+        lab = Datalab(data=dataset, label_name=self.label_name)
+        assert lab.issue_summary.empty
+        knn_graph = (
+            NearestNeighbors(n_neighbors=10, metric="cosine")
+            .fit(dataset["X"])
+            .kneighbors_graph(mode="distance")
+        )
+        lab.find_issues(knn_graph=knn_graph, issue_types={"data_valuation": {}})
+        summary = lab.get_issue_summary()
+        assert len(summary) == 1
+        assert "data_valuation" in summary["issue_type"].values
+        scores = lab.get_issues("data_valuation").get(["data_valuation_score"])
+        assert all((scores >= 0) & (scores <= 1))
+
+
 class TestIssueManagersReuseKnnGraph:
     """
     `outlier`, `underperforming_group` and `near_duplicate` issue managers require
