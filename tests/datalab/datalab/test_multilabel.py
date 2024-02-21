@@ -119,7 +119,7 @@ class TestDatalabForMultilabelClassification:
             ["label", "near_duplicate", "non_iid", "outlier", "null"]
         )
         assert set(lab.list_possible_issue_types()) == set(
-            ["label", "near_duplicate", "non_iid", "outlier", "null"]
+            ["label", "near_duplicate", "non_iid", "outlier", "null", "data_valuation"]
         )
 
     @pytest.mark.parametrize(
