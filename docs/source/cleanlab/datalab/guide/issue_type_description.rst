@@ -45,8 +45,8 @@ Label Issue
 Examples whose given label is estimated to be potentially incorrect (e.g. due to annotation error) are flagged as having label issues.
 Datalab estimates which examples appear mislabeled as well as a numeric label quality score for each, which quantifies the likelihood that an example is correctly labeled.
 
-For now, Datalab can only detect label issues in a multi-class classification dataset.
-The cleanlab library has alternative methods you can us to detect label issues in other types of datasets (multi-label, multi-annotator, token classification, etc.).
+For now, Datalab can only detect label issues in multi-class classification datasets, regression datasets, and multi-label classification datasets.
+The cleanlab library has alternative methods you can us to detect label issues in other types of datasets (multi-annotator, token classification, etc.).
 
 Label issues are calculated based on provided `pred_probs` from a trained model. If you do not provide this argument, but you do provide `features`, then a K Nearest Neighbor model will be fit to produce `pred_probs` based on your `features`. Otherwise if neither `pred_probs` nor `features` is provided, then this type of issue will not be considered.
 For the most accurate results, provide out-of-sample `pred_probs` which can be obtained for a dataset via `cross-validation <https://docs.cleanlab.ai/stable/tutorials/pred_probs_cross_val.html>`_.
@@ -153,7 +153,12 @@ Underperforming Group Issue
 
 An underperforming group refers to a cluster of similar examples (i.e. a slice) in the dataset for which the ML model predictions are poor.  The examples in this underperforming group may have noisy labels or feature values, or the trained ML model may not have learned how to properly handle them (consider collecting more data from this subpopulation or up-weighting the existing data from this group).
 
-Underperforming Group issues are detected based on provided `features`  and `pred_probs`.
+Underperforming Group issues are detected based on one of:
+
+- provided `pred_probs` and `features`,
+- provided `pred_probs` and `knn_graph`, or
+- provided `pred_probs` and `cluster_ids`. (This option is for advanced users, see the `FAQ <../../../tutorials/faq.html#How-do-I-specify-pre-computed-data-slices/clusters-when-detecting-the-Underperforming-Group-Issue?>`_ for more details.)
+
 If you do not provide both these arguments, this type of issue will not be considered.
 
 To find the underperforming group, Cleanlab clusters the data using the provided `features` and determines the cluster `c` with the lowest average model predictive performance. Model predictive performance is evaluated via the model's self-confidence of the given labels, calculated using :py:func:`rank.get_self_confidence_for_each_label <cleanlab.rank.get_self_confidence_for_each_label>`. Suppose the average predictive power across the full dataset is `r` and is `q` within a cluster of examples. This cluster is considered to be an underperforming group if `q/r` falls below a threshold. A dataset suffers from the Underperforming Group issue if there exists such a cluster within it.
@@ -184,7 +189,7 @@ Data Valuation Issue
 
 The examples in the dataset with lowest data valuation scores contribute least to a trained ML model's performance (those whose value falls below a threshold are flagged with this type of issue).
 
-Data valuation issues can only be detected based on a provided `knn_graph`` (or one pre-computed during the computation of other issue types).  If you do not provide this argument and there isn't a `knn_graph` already stored in the Datalab object, this type of issue will not be considered.
+Data valuation issues can only be detected based on a provided `knn_graph` (or one pre-computed during the computation of other issue types).  If you do not provide this argument and there isn't a `knn_graph` already stored in the Datalab object, this type of issue will not be considered.
 
 The data valuation score is an approximate Data Shapley value, calculated based on the labels of the top k nearest neighbors of an example. The details of this KNN-Shapley value could be found in the papers: `Efficient Task-Specific Data Valuation for Nearest Neighbor Algorithms <https://arxiv.org/abs/1908.08619>`_ and `Scalability vs. Utility: Do We Have to Sacrifice One for the Other in Data Importance Quantification? <https://arxiv.org/abs/1911.07128>`_.
 
@@ -201,7 +206,7 @@ Appropriate defaults are used for any parameters you do not specify, so no need 
         "label": label_kwargs, "outlier": outlier_kwargs,
         "near_duplicate": near_duplicate_kwargs, "non_iid": non_iid_kwargs,
         "class_imbalance": class_imbalance_kwargs, "underperforming_group": underperforming_group_kwargs,
-        "null": null_kwargs
+        "null": null_kwargs, "data_valuation": data_valuation_kwargs,
     }
 
 
@@ -309,7 +314,7 @@ Imbalance Issue Parameters
     For more information, view the source code of:  :py:class:`datalab.internal.issue_manager.imbalance.ClassImbalanceIssueManager <cleanlab.datalab.internal.issue_manager.imbalance.ClassImbalanceIssueManager>`.
 
 Underperforming Group Issue Parameters
---------------------------
+--------------------------------------
 
 .. code-block:: python
 
@@ -343,7 +348,7 @@ Null Issue Parameters
     For more information, view the source code of:  :py:class:`datalab.internal.issue_manager.null.NullIssueManager <cleanlab.datalab.internal.issue_manager.null.NullIssueManager>`.
 
 Data Valuation Issue Parameters
---------------------------
+-------------------------------
 
 .. code-block:: python
 
@@ -356,7 +361,7 @@ Data Valuation Issue Parameters
     For more information, view the source code of:  :py:class:`datalab.internal.issue_manager.data_valuation.DataValuationIssueManager <cleanlab.datalab.internal.issue_manager.data_valuation.DataValuationIssueManager>`.
 
 Image Issue Parameters
---------------------------
+----------------------
 
 To customize optional parameters for specific image issue types, you can provide a dictionary format corresponding to each image issue. The following codeblock demonstrates how to specify optional parameters for all image issues. However, it's important to note that providing optional parameters for specific image issues is not mandatory. If no specific parameters are provided, defaults will be used for those issues.
 
