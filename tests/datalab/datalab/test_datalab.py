@@ -1572,8 +1572,43 @@ class TestDatalabDataValuation:
             assert base_summary.equals(summary)
             assert np.allclose(base_scores, scores)
 
-    def test_find_issues_with_different_metrics(self, dataset):
-        pass
+    def test_find_issues_with_different_metrics(self, dataset, knn_graph):
+        """Test that a fresh Datalab instance can check for data_valuation issues with
+        different metrics.
+        """
+        knn_graph_euclidean = (
+            NearestNeighbors(n_neighbors=10, metric="euclidean")
+            .fit(dataset["X"])
+            .kneighbors_graph(mode="distance")
+        )
+
+        lab = Datalab(data=dataset, label_name=self.label_name)
+        lab.find_issues(features=dataset["X"], issue_types={"data_valuation": {}})
+
+        # The default metric should be "cosine" for "high-dimensional" features
+        assert lab.get_info("statistics")["knn_metric"] == "cosine"
+        assert np.allclose(
+            knn_graph.toarray(), lab.get_info("statistics")["weighted_knn_graph"].toarray()
+        )
+
+        # Test different scenarios of how the metric affects the knn graph
+        scenarios = [
+            {"metric": "cosine", "expected_knn_graph": knn_graph},
+            {"metric": "euclidean", "expected_knn_graph": knn_graph_euclidean},
+        ]
+
+        # Test what happens to the knn graph when the metric is changed
+        for scenario in scenarios:
+            metric = scenario["metric"]
+            expected_knn_graph = scenario["expected_knn_graph"]
+            lab.find_issues(
+                features=dataset["X"], issue_types={"data_valuation": {"metric": metric}}
+            )
+            assert metric == lab.get_info("statistics")["knn_metric"]
+            assert np.allclose(
+                expected_knn_graph.toarray(),
+                lab.get_info("statistics")["weighted_knn_graph"].toarray(),
+            )
 
 
 class TestIssueManagersReuseKnnGraph:
