@@ -12,6 +12,7 @@ sphinx-multiversion==0.2.4
 sphinx-copybutton==0.5.2
 sphinxcontrib-katex==0.9.9
 sphinxcontrib-gtagjs==0.2.1
+sphinx-jinja==2.0.2
 sphinx-autodoc-typehints==1.25.2
 sphinxext-opengraph==0.9.1
 matplotlib==3.7.4

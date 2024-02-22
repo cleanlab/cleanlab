@@ -54,6 +54,7 @@ extensions = [
     "sphinx_copybutton",
     "sphinxcontrib.katex",
     "sphinxcontrib.gtagjs",
+    "sphinx_jinja",
     "sphinx_autodoc_typehints",
     "sphinx.ext.doctest",
     "sphinxext.opengraph",
@@ -147,6 +148,28 @@ if os.getenv("CI") or shutil.which("katex") is not None:
 # -- Options for gtagjs extension -------------------------------------------
 
 gtagjs_ids = ["G-EV8RVEFX82"]
+
+# -- Options for sphinx_jinja extension -------------------------------------------
+
+
+def fetch_all_registered_issue_names():
+    """This helper function fetches all registered issue names from the issue manager registry, across all tasks.
+
+    This function is used to generate the context for the Jinja templates.
+    """
+    from cleanlab.datalab.internal.issue_manager_factory import REGISTRY
+
+    return set([issue_name for entries in REGISTRY.values() for issue_name in entries.keys()])
+
+
+ISSUE_TYPE_DESCRIPTION_CONTEXT = {
+    f"{issue_name}_context": {"issue_name": issue_name}
+    for issue_name in fetch_all_registered_issue_names()
+}
+
+jinja_contexts = {
+    **ISSUE_TYPE_DESCRIPTION_CONTEXT,
+}
 
 # -- Variables Setting ---------------------------------------------------
 
