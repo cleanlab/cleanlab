@@ -38,6 +38,10 @@ Each input is optional, if you do not provide it, Datalab will skip checks for t
 Label Issue
 -----------
 
+.. jinja:: label_context
+    :file:  cleanlab/datalab/guide/_templates/issue_types_tip.rst
+
+
 Examples whose given label is estimated to be potentially incorrect (e.g. due to annotation error) are flagged as having label issues.
 Datalab estimates which examples appear mislabeled as well as a numeric label quality score for each, which quantifies the likelihood that an example is correctly labeled.
 
@@ -57,6 +61,9 @@ Learn more about the method used to detect label issues in our paper: `Confident
 Outlier Issue
 -------------
 
+.. jinja:: outlier_context
+    :file:  cleanlab/datalab/guide/_templates/issue_types_tip.rst
+
 Examples that are very different from the rest of the dataset (i.e. potentially out-of-distribution or rare/anomalous instances).
 
 Outlier issues are calculated based on provided `features` , `knn_graph` , or `pred_probs`.
@@ -75,6 +82,9 @@ Learn more about the methods used to detect outliers in our article: `Out-of-Dis
 
 (Near) Duplicate Issue
 ----------------------
+
+.. jinja:: near_duplicate_context
+    :file:  cleanlab/datalab/guide/_templates/issue_types_tip.rst
 
 A (near) duplicate issue refers to two or more examples in a dataset that are extremely similar to each other, relative to the rest of the dataset.
 The examples flagged with this issue may be exactly duplicated, or lie atypically close together when represented as vectors (i.e. feature embeddings).
@@ -98,6 +108,9 @@ More generally, examples which happen to be duplicated can affect the final mod
 Non-IID Issue
 -------------
 
+.. jinja:: non_iid_context
+    :file:  cleanlab/datalab/guide/_templates/issue_types_tip.rst
+
 Whether the dataset exhibits statistically significant violations of the IID assumption like:  changepoints or shift, drift, autocorrelation, etc. The specific form of violation considered is whether the examples are ordered such that almost adjacent examples tend to have more similar feature values. If you care about this check, do **not** first shuffle your dataset -- this check is entirely based on the sequential order of your data.
 
 The Non-IID issue is detected based on provided `features` or `knn_graph`. If you do not provide one of these arguments, this type of issue will not be considered.
@@ -116,6 +129,9 @@ For datasets with low non-IID score, you should consider why your data are not I
 Class Imbalance Issue
 ---------------------
 
+.. jinja:: class_imbalance_context
+    :file:  cleanlab/datalab/guide/_templates/issue_types_tip.rst
+
 Class imbalance is diagnosed just using the `labels` provided as part of the dataset. The overall class imbalance quality score of a dataset is the proportion of examples belonging to the rarest class `q`. If this proportion `q` falls below a threshold, then we say this dataset suffers from the class imbalance issue.
 
 In a dataset identified as having class imbalance, the class imbalance quality score for each example is set equal to `q` if it is labeled as the rarest class, and is equal to 1 for all other examples.
@@ -130,7 +146,10 @@ Specifically, low-quality images which are too: dark/bright, blurry, low informa
 Descriptions of these image-specific issues are provided in the `CleanVision package <https://github.com/cleanlab/cleanvision>`_ and its documentation.
 
 Underperforming Group Issue
-------------------------------
+---------------------------
+
+.. jinja:: underperforming_group_context
+    :file:  cleanlab/datalab/guide/_templates/issue_types_tip.rst
 
 An underperforming group refers to a cluster of similar examples (i.e. a slice) in the dataset for which the ML model predictions are poor.  The examples in this underperforming group may have noisy labels or feature values, or the trained ML model may not have learned how to properly handle them (consider collecting more data from this subpopulation or up-weighting the existing data from this group).
 
@@ -142,7 +161,10 @@ The underperforming group quality score is equal to `q/r` for examples belonging
 Advanced users:  If you have pre-computed cluster assignments for each example in the dataset, you can pass them explicitly to :py:meth:`Datalab.find_issues <cleanlab.datalab.datalab.Datalab.find_issues>` using the `cluster_ids` key in the `issue_types` dict argument.  This is useful for tabular datasets where you want to group/slice the data based on a categorical column. An integer encoding of the categorical column can be passed as cluster assignments for finding the underperforming group, based on the data slices you define.
 
 Null Issue
------------
+----------
+
+.. jinja:: null_context
+    :file:  cleanlab/datalab/guide/_templates/issue_types_tip.rst
 
 Examples identified with the null issue correspond to rows that have null/missing values across all feature columns (i.e. the entire row is missing values).
 
@@ -156,6 +178,9 @@ result in the model learning incorrect patterns due to the null values.
 
 Data Valuation Issue
 --------------------
+
+.. jinja:: data_valuation_context
+    :file:  cleanlab/datalab/guide/_templates/issue_types_tip.rst
 
 The examples in the dataset with lowest data valuation scores contribute least to a trained ML model's performance (those whose value falls below a threshold are flagged with this type of issue).
 
