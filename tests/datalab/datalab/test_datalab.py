@@ -1525,33 +1525,55 @@ class TestDatalabDataValuation:
 
         return {"X": X, self.label_name: y}
 
-    def test_find_issues(self, dataset):
-        """Test that a fresh Datalab instance can check for data_valuation issues with
-        either `features` or a `knn_graph`.
-        """
-
-        lab = Datalab(data=dataset, label_name=self.label_name)
-        assert lab.issue_summary.empty
-        lab.find_issues(features=dataset["X"], issue_types={"data_valuation": {}})
-        summary = lab.get_issue_summary()
-        assert len(summary) == 1
-        assert "data_valuation" in summary["issue_type"].values
-        scores = lab.get_issues("data_valuation").get(["data_valuation_score"])
-        assert all((scores >= 0) & (scores <= 1))
-
-        lab = Datalab(data=dataset, label_name=self.label_name)
-        assert lab.issue_summary.empty
-        knn_graph = (
+    @pytest.fixture
+    def knn_graph(self, dataset):
+        return (
             NearestNeighbors(n_neighbors=10, metric="cosine")
             .fit(dataset["X"])
             .kneighbors_graph(mode="distance")
         )
-        lab.find_issues(knn_graph=knn_graph, issue_types={"data_valuation": {}})
-        summary = lab.get_issue_summary()
-        assert len(summary) == 1
-        assert "data_valuation" in summary["issue_type"].values
-        scores = lab.get_issues("data_valuation").get(["data_valuation_score"])
-        assert all((scores >= 0) & (scores <= 1))
+
+    def test_find_issues(self, dataset, knn_graph):
+        """Test that a fresh Datalab instance can check for data_valuation issues with
+        either `features` or a `knn_graph`.
+        """
+
+        datalabs, summaries, scores_list = [], [], []
+        find_issues_input_dicts = [
+            {"features": dataset["X"]},
+            {"knn_graph": knn_graph},
+        ]
+
+        # Make sure that the results work for both input type
+        for kwargs in find_issues_input_dicts:
+            lab = Datalab(data=dataset, label_name=self.label_name)
+            assert lab.issue_summary.empty
+            lab.find_issues(**kwargs, issue_types={"data_valuation": {}})
+            summary = lab.get_issue_summary()
+            assert len(summary) == 1
+            assert "data_valuation" in summary["issue_type"].values
+            scores = lab.get_issues("data_valuation").get(["data_valuation_score"])
+            assert all((scores >= 0) & (scores <= 1))
+
+            datalabs.append(lab)
+            summaries.append(summary)
+            scores_list.append(scores)
+
+        # Check that the results are the same for both input types
+        base_lab = datalabs[0]
+        base_summary = summaries[0]
+        base_scores = scores_list[0]
+        for lab, summary, scores in zip(datalabs, summaries, scores_list):
+            # The knn-graph is either provided or computed from the features, then stored
+            assert np.allclose(
+                knn_graph.toarray(), lab.get_info("statistics")["weighted_knn_graph"].toarray()
+            )
+            # The summary and scores should be the same
+            assert base_summary.equals(summary)
+            assert np.allclose(base_scores, scores)
+
+    def test_find_issues_with_different_metrics(self, dataset):
+        pass
 
 
 class TestIssueManagersReuseKnnGraph:
