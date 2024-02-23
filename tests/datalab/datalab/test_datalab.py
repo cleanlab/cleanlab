@@ -1708,3 +1708,42 @@ class TestDatalabDefaultReporting:
         assert report.startswith(
             expected_header
         ), "Report should contain a message for one issue found"
+
+
+@pytest.mark.issue986
+class TestDatalabGetIssuesMethod:
+
+    @pytest.fixture
+    def lab(self):
+        """Testing label issues in regression task."""
+        dataset = {"X": [[1, 2], [3, 4], [5, 6]], "y": [0, 0.5, 1.0]}
+        return Datalab(data=dataset, label_name="y", task="regression")
+
+    def test_get_issues_with_unsuccessful_find_issues(self, lab):
+        with patch("builtins.print") as mock_print:
+            # Running 5-fold CV on 3 samples shouldn't work for detecting label issues.
+            lab.find_issues(features=np.array(lab.data["X"]), issue_types={"label": {}})
+            mock_print.assert_any_call(
+                "Error in label: There are too few examples to conduct 5-fold cross validation. "
+                "You can either reduce cv_n_folds for cross validation, or decrease k to exclude less data."
+            )
+            mock_print.assert_any_call(
+                "Failed to check for these issue types: [RegressionLabelIssueManager]"
+            )
+
+        # The issues should be empty,
+        assert lab.issues.empty
+
+        # so the getter method should raise an error.
+        with pytest.raises(
+            ValueError, match="No issues available for retrieval. Please check the following"
+        ):
+            lab.get_issues("label")
+
+        # Run issue check that only needs features
+        lab.find_issues(features=np.array(lab.data["X"]), issue_types={"null": {}})
+
+        # The label issues we searched for should not be present
+        assert not lab.issues.empty
+        with pytest.raises(ValueError, match="No columns found for issue type 'label'."):
+            lab.get_issues("label")
