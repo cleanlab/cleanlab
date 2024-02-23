@@ -1495,6 +1495,122 @@ class TestDataLabNullIssues:
         ), "Report should not contain a tip to address partial null examples"
 
 
+class TestDatalabDataValuation:
+    label_name: str = "y"
+
+    @pytest.fixture
+    def dataset(self):
+        from sklearn.datasets import make_classification
+
+        np.random.seed(SEED)
+
+        # Generate a 10D dataset with 2 classes
+        X, y = make_classification(
+            n_samples=100,
+            n_features=10,
+            n_informative=2,
+            n_redundant=2,
+            n_repeated=0,
+            n_classes=2,
+            n_clusters_per_class=2,
+            weights=None,
+            flip_y=0.1,
+            class_sep=1.0,
+            hypercube=True,
+            shift=0.0,
+            scale=0.1,
+            shuffle=True,
+            random_state=SEED,
+        )
+
+        return {"X": X, self.label_name: y}
+
+    @pytest.fixture
+    def knn_graph(self, dataset):
+        return (
+            NearestNeighbors(n_neighbors=10, metric="cosine")
+            .fit(dataset["X"])
+            .kneighbors_graph(mode="distance")
+        )
+
+    def test_find_issues(self, dataset, knn_graph):
+        """Test that a fresh Datalab instance can check for data_valuation issues with
+        either `features` or a `knn_graph`.
+        """
+
+        datalabs, summaries, scores_list = [], [], []
+        find_issues_input_dicts = [
+            {"features": dataset["X"]},
+            {"knn_graph": knn_graph},
+        ]
+
+        # Make sure that the results work for both input type
+        for kwargs in find_issues_input_dicts:
+            lab = Datalab(data=dataset, label_name=self.label_name)
+            assert lab.issue_summary.empty
+            lab.find_issues(**kwargs, issue_types={"data_valuation": {}})
+            summary = lab.get_issue_summary()
+            assert len(summary) == 1
+            assert "data_valuation" in summary["issue_type"].values
+            scores = lab.get_issues("data_valuation").get(["data_valuation_score"])
+            assert all((scores >= 0) & (scores <= 1))
+
+            datalabs.append(lab)
+            summaries.append(summary)
+            scores_list.append(scores)
+
+        # Check that the results are the same for both input types
+        base_lab = datalabs[0]
+        base_summary = summaries[0]
+        base_scores = scores_list[0]
+        for lab, summary, scores in zip(datalabs, summaries, scores_list):
+            # The knn-graph is either provided or computed from the features, then stored
+            assert np.allclose(
+                knn_graph.toarray(), lab.get_info("statistics")["weighted_knn_graph"].toarray()
+            )
+            # The summary and scores should be the same
+            assert base_summary.equals(summary)
+            assert np.allclose(base_scores, scores)
+
+    def test_find_issues_with_different_metrics(self, dataset, knn_graph):
+        """Test that a fresh Datalab instance can check for data_valuation issues with
+        different metrics.
+        """
+        knn_graph_euclidean = (
+            NearestNeighbors(n_neighbors=10, metric="euclidean")
+            .fit(dataset["X"])
+            .kneighbors_graph(mode="distance")
+        )
+
+        lab = Datalab(data=dataset, label_name=self.label_name)
+        lab.find_issues(features=dataset["X"], issue_types={"data_valuation": {}})
+
+        # The default metric should be "cosine" for "high-dimensional" features
+        assert lab.get_info("statistics")["knn_metric"] == "cosine"
+        assert np.allclose(
+            knn_graph.toarray(), lab.get_info("statistics")["weighted_knn_graph"].toarray()
+        )
+
+        # Test different scenarios of how the metric affects the knn graph
+        scenarios = [
+            {"metric": "cosine", "expected_knn_graph": knn_graph},
+            {"metric": "euclidean", "expected_knn_graph": knn_graph_euclidean},
+        ]
+
+        # Test what happens to the knn graph when the metric is changed
+        for scenario in scenarios:
+            metric = scenario["metric"]
+            expected_knn_graph = scenario["expected_knn_graph"]
+            lab.find_issues(
+                features=dataset["X"], issue_types={"data_valuation": {"metric": metric}}
+            )
+            assert metric == lab.get_info("statistics")["knn_metric"]
+            assert np.allclose(
+                expected_knn_graph.toarray(),
+                lab.get_info("statistics")["weighted_knn_graph"].toarray(),
+            )
+
+
 class TestIssueManagersReuseKnnGraph:
     """
     `outlier`, `underperforming_group` and `near_duplicate` issue managers require
