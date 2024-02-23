@@ -54,6 +54,7 @@ extensions = [
     "sphinx_copybutton",
     "sphinxcontrib.katex",
     "sphinxcontrib.gtagjs",
+    "sphinx_jinja",
     "sphinx_autodoc_typehints",
     "sphinx.ext.doctest",
     "sphinxext.opengraph",
