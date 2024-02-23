@@ -239,8 +239,24 @@ To contribute a new type of issue that Datalab can automatically detect in any d
 Do not add your new issue type to the set of issues that Datalab detects by default, our team can add it to this default set later on once it's utility has been thoroughly validated.
 
 Don't forget to update the [issue type descriptions guide](https://github.com/cleanlab/cleanlab/blob/master/docs/source/cleanlab/datalab/guide/issue_type_description.rst) with a brief description of your new issue type.
+It is crucial to follow the specified format to maintain consistency and readability.
+The format includes a title, explanation, required arguments, and additional information, like how the scoring mechanism works and the impact of having this issue in the dataset.
+End the section with a short tip for users on how to detect the issue using Datalab ([see below](#using-the-jinja-template-block) for details on including this with a Jinja template block).
 
 Try to add tests for this new issue type. It's a good idea to start with some tests in a separate module in the [issue manager test directory](https://github.com/cleanlab/cleanlab/tree/master/tests/datalab/issue_manager). 
+
+
+### Using the Jinja Template Block
+
+When adding a new issue type description, incorporate a Jinja template block to insert a specific tip for users. Copy the snippet below and update `<your_issue_name_here>` with the name of your issue type. This inclusion ensures that the documentation offers a tip on how to detect the issue with Datalab, directly within the guide.
+
+```rst
+.. jinja ::
+
+    {% with issue_name = "<your_issue_name_here>" %}
+    {% include "cleanlab/datalab/guide/_templates/issue_types_tip.rst" %}
+    {% endwith %}
+```
 
 ## Documentation
 
