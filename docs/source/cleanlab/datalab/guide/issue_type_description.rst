@@ -38,10 +38,6 @@ Each input is optional, if you do not provide it, Datalab will skip checks for t
 Label Issue
 -----------
 
-.. jinja:: label_context
-    :file:  cleanlab/datalab/guide/_templates/issue_types_tip.rst
-
-
 Examples whose given label is estimated to be potentially incorrect (e.g. due to annotation error) are flagged as having label issues.
 Datalab estimates which examples appear mislabeled as well as a numeric label quality score for each, which quantifies the likelihood that an example is correctly labeled.
 
@@ -57,12 +53,15 @@ To handle mislabeled examples, you can either filter out the data with label iss
 
 Learn more about the method used to detect label issues in our paper: `Confident Learning: Estimating Uncertainty in Dataset Labels <https://arxiv.org/abs/1911.00068>`_
 
+.. jinja ::
+
+    {% with issue_name = "label" %}
+    {% include "cleanlab/datalab/guide/_templates/issue_types_tip.rst" %}
+    {% endwith %}
+
 
 Outlier Issue
 -------------
-
-.. jinja:: outlier_context
-    :file:  cleanlab/datalab/guide/_templates/issue_types_tip.rst
 
 Examples that are very different from the rest of the dataset (i.e. potentially out-of-distribution or rare/anomalous instances).
 
@@ -80,11 +79,14 @@ Closely inspect them and consider removing some outliers that may be negatively 
 
 Learn more about the methods used to detect outliers in our article: `Out-of-Distribution Detection via Embeddings or Predictions <https://cleanlab.ai/blog/outlier-detection/>`_
 
+.. jinja ::
+
+    {% with issue_name = "outlier" %}
+    {% include "cleanlab/datalab/guide/_templates/issue_types_tip.rst" %}
+    {% endwith %}
+
 (Near) Duplicate Issue
 ----------------------
-
-.. jinja:: near_duplicate_context
-    :file:  cleanlab/datalab/guide/_templates/issue_types_tip.rst
 
 A (near) duplicate issue refers to two or more examples in a dataset that are extremely similar to each other, relative to the rest of the dataset.
 The examples flagged with this issue may be exactly duplicated, or lie atypically close together when represented as vectors (i.e. feature embeddings).
@@ -104,12 +106,14 @@ Including near-duplicate examples in a dataset may negatively impact a ML model'
 In particular, it is questionable to include examples in a test dataset which are (nearly) duplicated in the corresponding training dataset.
 More generally, examples which happen to be duplicated can affect the final modeling results much more than other examples — so you should at least be aware of their presence.
 
+.. jinja ::
+
+    {% with issue_name = "near_duplicate" %}
+    {% include "cleanlab/datalab/guide/_templates/issue_types_tip.rst" %}
+    {% endwith %}
 
 Non-IID Issue
 -------------
-
-.. jinja:: non_iid_context
-    :file:  cleanlab/datalab/guide/_templates/issue_types_tip.rst
 
 Whether the dataset exhibits statistically significant violations of the IID assumption like:  changepoints or shift, drift, autocorrelation, etc. The specific form of violation considered is whether the examples are ordered such that almost adjacent examples tend to have more similar feature values. If you care about this check, do **not** first shuffle your dataset -- this check is entirely based on the sequential order of your data.
 
@@ -126,17 +130,26 @@ The assumption that examples in a dataset are Independent and Identically Distri
 
 For datasets with low non-IID score, you should consider why your data are not IID and act accordingly. For example, if the data distribution is drifting over time, consider employing a time-based train/test split instead of a random partition.  Note that shuffling the data ahead of time will ensure a good non-IID score, but this is not always a fix to the underlying problem (e.g. future deployment data may stem from a different distribution, or you may overlook the fact that examples influence each other). We thus recommend **not** shuffling your data to be able to diagnose this issue if it exists.
 
+.. jinja ::
+
+    {% with issue_name = "non_iid" %}
+    {% include "cleanlab/datalab/guide/_templates/issue_types_tip.rst" %}
+    {% endwith %}
+
 Class Imbalance Issue
 ---------------------
-
-.. jinja:: class_imbalance_context
-    :file:  cleanlab/datalab/guide/_templates/issue_types_tip.rst
 
 Class imbalance is diagnosed just using the `labels` provided as part of the dataset. The overall class imbalance quality score of a dataset is the proportion of examples belonging to the rarest class `q`. If this proportion `q` falls below a threshold, then we say this dataset suffers from the class imbalance issue.
 
 In a dataset identified as having class imbalance, the class imbalance quality score for each example is set equal to `q` if it is labeled as the rarest class, and is equal to 1 for all other examples.
 
 Class imbalance in a dataset can lead to subpar model performance for the under-represented class. Consider collecting more data from the under-represented class, or at least take special care while modeling via techniques like over/under-sampling, SMOTE, asymmetric class weighting, etc.
+
+.. jinja ::
+
+    {% with issue_name = "class_imbalance" %}
+    {% include "cleanlab/datalab/guide/_templates/issue_types_tip.rst" %}
+    {% endwith %}
 
 Image-specific Issues
 ---------------------
@@ -147,9 +160,6 @@ Descriptions of these image-specific issues are provided in the `CleanVision pac
 
 Underperforming Group Issue
 ---------------------------
-
-.. jinja:: underperforming_group_context
-    :file:  cleanlab/datalab/guide/_templates/issue_types_tip.rst
 
 An underperforming group refers to a cluster of similar examples (i.e. a slice) in the dataset for which the ML model predictions are poor.  The examples in this underperforming group may have noisy labels or feature values, or the trained ML model may not have learned how to properly handle them (consider collecting more data from this subpopulation or up-weighting the existing data from this group).
 
@@ -165,11 +175,14 @@ To find the underperforming group, Cleanlab clusters the data using the provided
 The underperforming group quality score is equal to `q/r` for examples belonging to the underperforming group, and is equal to 1 for all other examples.
 Advanced users:  If you have pre-computed cluster assignments for each example in the dataset, you can pass them explicitly to :py:meth:`Datalab.find_issues <cleanlab.datalab.datalab.Datalab.find_issues>` using the `cluster_ids` key in the `issue_types` dict argument.  This is useful for tabular datasets where you want to group/slice the data based on a categorical column. An integer encoding of the categorical column can be passed as cluster assignments for finding the underperforming group, based on the data slices you define.
 
+.. jinja ::
+
+    {% with issue_name = "underperforming_group" %}
+    {% include "cleanlab/datalab/guide/_templates/issue_types_tip.rst" %}
+    {% endwith %}
+
 Null Issue
 ----------
-
-.. jinja:: null_context
-    :file:  cleanlab/datalab/guide/_templates/issue_types_tip.rst
 
 Examples identified with the null issue correspond to rows that have null/missing values across all feature columns (i.e. the entire row is missing values).
 
@@ -181,17 +194,26 @@ equals the average of the individual examples' quality scores.
 Presence of null examples in the dataset can lead to errors when training ML models. It can also
 result in the model learning incorrect patterns due to the null values.
 
+.. jinja ::
+
+    {% with issue_name = "null"%}
+    {% include "cleanlab/datalab/guide/_templates/issue_types_tip.rst" %}
+    {% endwith %}
+
 Data Valuation Issue
 --------------------
-
-.. jinja:: data_valuation_context
-    :file:  cleanlab/datalab/guide/_templates/issue_types_tip.rst
 
 The examples in the dataset with lowest data valuation scores contribute least to a trained ML model's performance (those whose value falls below a threshold are flagged with this type of issue).
 
 Data valuation issues can only be detected based on a provided `knn_graph` (or one pre-computed during the computation of other issue types).  If you do not provide this argument and there isn't a `knn_graph` already stored in the Datalab object, this type of issue will not be considered.
 
 The data valuation score is an approximate Data Shapley value, calculated based on the labels of the top k nearest neighbors of an example. The details of this KNN-Shapley value could be found in the papers: `Efficient Task-Specific Data Valuation for Nearest Neighbor Algorithms <https://arxiv.org/abs/1908.08619>`_ and `Scalability vs. Utility: Do We Have to Sacrifice One for the Other in Data Importance Quantification? <https://arxiv.org/abs/1911.07128>`_.
+
+.. jinja ::
+
+    {% with issue_name = "data_valuation"%}
+    {% include "cleanlab/datalab/guide/_templates/issue_types_tip.rst" %}
+    {% endwith %}
 
 Optional Issue Parameters
 =========================
