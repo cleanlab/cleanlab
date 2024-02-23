@@ -253,7 +253,6 @@ instructions](./docs/README.md#build-the-cleanlab-docs-locally).
 
 If editing existing docs or adding new tutorials, please first read through our [guidelines](./docs/README.md#tips-for-editing-docstutorials).
 
-
 ## Documentation style
 
 cleanlab uses [NumPy

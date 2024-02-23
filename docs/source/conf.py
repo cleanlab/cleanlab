@@ -149,7 +149,6 @@ if os.getenv("CI") or shutil.which("katex") is not None:
 
 gtagjs_ids = ["G-EV8RVEFX82"]
 
-
 # -- Variables Setting ---------------------------------------------------
 
 # Determine doc site URL (DOCS_SITE_URL)
