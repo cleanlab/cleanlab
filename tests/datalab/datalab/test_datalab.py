@@ -1747,3 +1747,12 @@ class TestDatalabGetIssuesMethod:
         assert not lab.issues.empty
         with pytest.raises(ValueError, match="No columns found for issue type 'label'."):
             lab.get_issues("label")
+
+    def test_invalid_issue_name(self, lab):
+        lab.find_issues(features=np.array(lab.data["X"]), issue_types={"null": {}})
+
+        assert not lab.issues.empty
+
+        invalid_issue_name = "nul"
+        with pytest.raises(ValueError, match=f"Invalid issue_name: {invalid_issue_name}."):
+            lab.get_issues(issue_name=invalid_issue_name)
