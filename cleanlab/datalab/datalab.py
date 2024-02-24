@@ -513,6 +513,15 @@ class Datalab:
 
             Additional columns may be present in the DataFrame depending on the type of issue specified.
         """
+
+        # Validate issue_name
+        if issue_name is not None and issue_name not in self.list_possible_issue_types():
+            raise ValueError(
+                f"""Invalid issue_name: {issue_name}. Please specify a valid issue_name from the list of possible issue types.
+            Either, specify one of the following: {self.list_possible_issue_types()}
+            or set issue_name as None to get all issue types.
+            """
+            )
         return self.data_issues.get_issues(issue_name=issue_name)
 
     def get_issue_summary(self, issue_name: Optional[str] = None) -> pd.DataFrame:

@@ -242,12 +242,31 @@ class DataIssues:
 
             Additional columns may be present in the DataFrame depending on the type of issue specified.
         """
+        if self.issues.empty:
+            raise ValueError(
+                """No issues available for retrieval. Please check the following before using `get_issues`:
+                1. Ensure `find_issues` was executed. If not, please run it with the necessary parameters.
+                2. If `find_issues` was run but you're seeing this message,
+                    it may have encountered limitations preventing full analysis.
+                    However, partial checks can still provide valuable insights.
+            Review `find_issues` output carefully for any specific actions needed
+            to facilitate a more comprehensive analysis before calling `get_issues`.
+            """
+            )
         if issue_name is None:
             return self.issues
 
         columns = [col for col in self.issues.columns if issue_name in col]
         if not columns:
-            raise ValueError(f"No columns found for issue type '{issue_name}'.")
+            raise ValueError(
+                f"""No columns found for issue type '{issue_name}'. Ensure the following:
+                1. `find_issues` has been executed. If it hasn't, please run it.
+                2. Check `find_issues` output to verify that the issue type '{issue_name}' was included in the checks to
+                    ensure it was not excluded accidentally before the audit.
+                3. Review `find_issues` output for any errors or warnings that might indicate the check for '{issue_name}' issues failed to complete.
+                    This can provide better insights into what adjustments may be necessary.
+            """
+            )
         specific_issues = self.issues[columns]
         info = self.get_info(issue_name=issue_name)
 
