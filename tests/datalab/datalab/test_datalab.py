@@ -1756,3 +1756,28 @@ class TestDatalabGetIssuesMethod:
         invalid_issue_name = "nul"
         with pytest.raises(ValueError, match=f"Invalid issue_name: {invalid_issue_name}."):
             lab.get_issues(issue_name=invalid_issue_name)
+
+    def test_get_issues_with_label_check_run_but_no_issues_found(self):
+        """This closely mimics the edgecase discussed in issue #986. To state that no issues of a particular type
+        were found, we must make sure that the issue check ran successfully and no issues were found.
+        Then we make sure that the getter method works as expected, i.e. it fetches a DataFrame.
+        Testing the structure of that DataFrame is done in other tests.
+        """
+        lab = Datalab(
+            data={"X": np.arange(100).reshape(-1, 1) / 100, "y": np.arange(100) / 100},
+            label_name="y",
+            task="regression",
+        )
+
+        # Make perfect predictions, so no label issues are found
+        predictions = np.arange(100) / 100
+
+        # Check for label issues
+        lab.find_issues(pred_probs=predictions, issue_types={"label": {}})
+
+        # Make sure label issues were checked for, but no issues were found
+        assert "label" in lab.issue_summary["issue_type"].values
+        assert lab.issue_summary["num_issues"].values[0] == 0
+
+        # Make sure code works for get_issues while no issues are found
+        assert not lab.get_issues("label").empty
