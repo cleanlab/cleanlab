@@ -279,6 +279,7 @@ class TestCleanvisionIntegration:
         # The additional issue types found by method should be the same as IMAGELAB_ISSUE_TYPES
         assert set(issue_types).difference(datalab_issue_types) == set(IMAGELAB_ISSUE_TYPES)
 
+    @pytest.mark.issue1027
     def test_get_issues(self, lab):
         """
         Test the `get_issues` method of the `lab` object.
