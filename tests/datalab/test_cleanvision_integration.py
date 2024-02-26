@@ -250,3 +250,52 @@ class TestCleanvisionIntegration:
 
         for issue_type in IMAGELAB_ISSUE_TYPES:
             assert issue_type in captured.out
+
+    @pytest.fixture
+    def lab(self, image_dataset):
+        lab = Datalab(data=image_dataset, label_name=LABEL_NAME, image_key=IMAGE_NAME)
+        lab.find_issues()
+        return lab
+
+    def test_get_summary(self, lab):
+        summary = lab.get_issue_summary("dark")
+        assert len(summary) == 1
+        num_issues = summary["num_issues"].values[0]
+        assert num_issues == 1
+
+    @pytest.mark.parametrize(
+        "list_method", ["list_possible_issue_types", "list_default_issue_types"]
+    )
+    def test_list_issue_type_method(self, image_dataset, lab, list_method):
+        method = getattr(lab, list_method)
+        issue_types = method()
+
+        # Check that Datalab without Imagelab injected has just a subset of possible/default issue types
+        minimal_lab = Datalab(data=image_dataset)
+        minimal_method = getattr(minimal_lab, list_method)
+        datalab_issue_types = minimal_method()
+        assert set(datalab_issue_types).issubset(set(issue_types))
+
+        # The additional issue types found by method should be the same as IMAGELAB_ISSUE_TYPES
+        assert set(issue_types).difference(datalab_issue_types) == set(IMAGELAB_ISSUE_TYPES)
+
+    def test_get_issues(self, lab):
+        """
+        Test the `get_issues` method of the `lab` object.
+
+        This method checks if the columns returned by the `get_issues` method
+        match the expected columns for each issue type defined in `IMAGELAB_ISSUE_TYPES`.
+
+        Raises:
+            AssertionError: If the columns returned by `get_issues` do not match the expected columns.
+
+        """
+        test_condition = lambda s: set(lab.get_issues(s).columns) == set(
+            [f"{s}_score", f"is_{s}_issue"]
+        )
+        failed_assertions = [
+            issue_type for issue_type in IMAGELAB_ISSUE_TYPES if not test_condition(issue_type)
+        ]
+        assert (
+            len(failed_assertions) == 0
+        ), f"Tests for `get_issues` with these `issue_types` failed: {failed_assertions}"

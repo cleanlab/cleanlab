@@ -28,6 +28,7 @@ import numpy as np
 import pandas as pd
 
 import cleanlab
+from cleanlab.datalab.internal.adapter.constants import DEFAULT_CLEANVISION_ISSUES
 from cleanlab.datalab.internal.adapter.imagelab import create_imagelab
 from cleanlab.datalab.internal.data import Data
 from cleanlab.datalab.internal.display import _Displayer
@@ -571,7 +572,10 @@ class Datalab:
         --------
         :py:class:`REGISTRY <cleanlab.datalab.internal.issue_manager_factory.REGISTRY>` : All available issue types and their corresponding issue managers can be found here.
         """
-        return _list_possible_issue_types(task=self.task)
+        possible_issue_types = _list_possible_issue_types(task=self.task)
+        if self._imagelab is not None:
+            possible_issue_types.extend(DEFAULT_CLEANVISION_ISSUES.keys())
+        return possible_issue_types
 
     def list_default_issue_types(self) -> List[str]:
         """Returns a list of the issue types that are run by default
@@ -581,7 +585,10 @@ class Datalab:
         --------
         :py:class:`REGISTRY <cleanlab.datalab.internal.issue_manager_factory.REGISTRY>` : All available issue types and their corresponding issue managers can be found here.
         """
-        return _list_default_issue_types(task=self.task)
+        default_issue_types = _list_default_issue_types(task=self.task)
+        if self._imagelab is not None:
+            default_issue_types.extend(DEFAULT_CLEANVISION_ISSUES.keys())
+        return default_issue_types
 
     def save(self, path: str, force: bool = False) -> None:
         """Saves this Datalab object to file (all files are in folder at `path/`).
