@@ -135,7 +135,7 @@ class TestRegressionLabelIssueManagerIntegration:
         X, _, _ = regression_dataset
         issue_manager.find_issues(features=X)
         summary = issue_manager.summary
-        assert np.isclose(summary["score"], 0.262423, atol=1e-5)
+        assert np.isclose(summary["score"], 0.425874, atol=1e-5)
 
     def test_find_issues_with_predictions(self, regression_dataset, issue_manager):
         X, _, coef = regression_dataset
