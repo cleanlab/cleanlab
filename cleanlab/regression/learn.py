@@ -493,7 +493,9 @@ class CleanLearning(BaseEstimator):
         residual_adjusted = abs(residual / (uncertainty + TINY_VALUE))
 
         # adjust lqs by the median (for more human-readable scores)
-        residual_median = max(np.median(residual_adjusted), TINY_VALUE) # take the max to prevent median = 0
+        residual_median = max(
+            np.median(residual_adjusted), TINY_VALUE
+        )  # take the max to prevent median = 0
         label_quality_scores = np.exp(-residual_adjusted / residual_median)
 
         label_issues_mask = np.zeros(len(y), dtype=bool)
