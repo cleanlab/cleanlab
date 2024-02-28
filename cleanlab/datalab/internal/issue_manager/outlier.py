@@ -103,7 +103,11 @@ class OutlierIssueManager(IssueManager):
             t = cast(int, self.ood.params["t"])
             distances = knn_graph.data.reshape(-1, k)
             assert isinstance(distances, np.ndarray)
-            scores = transform_distances_to_scores(distances, k=k, t=t)
+            avg_distances = distances.mean(axis=1)
+            median_avg_distance = np.median(avg_distances)
+            scores = transform_distances_to_scores(
+                avg_distances, t=t, scaling_factor=median_avg_distance
+            )
         elif features is not None:
             scores = self._score_with_features(features, **kwargs)
         elif pred_probs is not None:
@@ -187,7 +191,8 @@ class OutlierIssueManager(IssueManager):
         # Check if the weighted knn graph exists in info
         knn_graph = self.datalab.get_info("statistics").get("weighted_knn_graph", None)
 
-        k: int = 0  # Used to check if the knn graph needs to be recomputed, already set in the knn object
+        # Used to check if the knn graph needs to be recomputed, already set in the knn object
+        k: int = 0
         if knn_graph is not None:
             k = knn_graph.nnz // knn_graph.shape[0]
 
@@ -268,7 +273,14 @@ class OutlierIssueManager(IssueManager):
     def _score_with_pred_probs(self, pred_probs: np.ndarray, **kwargs) -> np.ndarray:
         # Remove "threshold" from kwargs if it exists
         kwargs.pop("threshold", None)
-        scores = self.ood.fit_score(pred_probs=pred_probs, labels=self.datalab.labels, **kwargs)
+        labels = self.datalab.labels
+        if not isinstance(labels, np.ndarray):
+            error_msg = (
+                f"labels must be a numpy array of shape (n_samples,) to use the OutlierIssueManager "
+                f"with pred_probs, but got {type(labels)}."
+            )
+            raise TypeError(error_msg)
+        scores = self.ood.fit_score(pred_probs=pred_probs, labels=labels, **kwargs)
         return scores
 
     def _score_with_features(self, features: npt.NDArray, **kwargs) -> npt.NDArray:

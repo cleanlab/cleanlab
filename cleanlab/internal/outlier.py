@@ -21,7 +21,9 @@ Helper functions used internally for outlier detection tasks.
 import numpy as np
 
 
-def transform_distances_to_scores(distances: np.ndarray, k: int, t: int) -> np.ndarray:
+def transform_distances_to_scores(
+    avg_distances: np.ndarray, t: int, scaling_factor: float
+) -> np.ndarray:
     """Returns an outlier score for each example based on its average distance to its k nearest neighbors.
 
     The transformation of a distance, :math:`d` , to a score, :math:`o` , is based on the following formula:
@@ -33,18 +35,21 @@ def transform_distances_to_scores(distances: np.ndarray, k: int, t: int) -> np.n
 
     Parameters
     ----------
-    distances : np.ndarray
-        An array of distances of shape ``(N, num_neighbors)``, where N is the number of examples.
-        Each row contains the distances to each example's `num_neighbors` nearest neighbors.
-        It is assumed that each row is sorted in ascending order.
-
-    k : int
-        Number of neighbors used to compute the average distance to each example.
-        This assumes that the second dimension of distances is k or greater, but it
-        uses slicing to avoid indexing errors.
+    avg_distances : np.ndarray
+        An array of distances of shape ``(N)``, where N is the number of examples.
+        Each entry represents an example's average distance to its k nearest neighbors.
 
     t : int
-        Controls transformation of distances between examples into similarity scores that lie in [0,1].
+        A sensitivity parameter that modulates the strength of the transformation from distances to scores.
+        Higher values of `t` result in more pronounced differentiation between the scores of examples
+        lying in the range [0,1].
+
+    scaling_factor : float
+        A scaling factor used to normalize the distances before they are converted into scores. A valid
+        scaling factor is any positive number. The choice of scaling factor should be based on the
+        distribution of distances between neighboring examples. A good rule of thumb is to set the
+        scaling factor to the median distance between neighboring examples. A lower scaling factor
+        results in more pronounced differentiation between the scores of examples lying in the range [0,1].
 
     Returns
     -------
@@ -57,12 +62,10 @@ def transform_distances_to_scores(distances: np.ndarray, k: int, t: int) -> np.n
     >>> from cleanlab.outlier import transform_distances_to_scores
     >>> distances = np.array([[0.0, 0.1, 0.25],
     ...                       [0.15, 0.2, 0.3]])
-    >>> transform_distances_to_scores(distances, k=2, t=1)
-    array([0.95122942, 0.83945702])
+    >>> avg_distances = np.mean(distances, axis=1)
+    >>> transform_distances_to_scores(avg_distances, t=1, scaling_factor=1)
+    array([0.88988177, 0.80519832])
     """
-    # Calculate average distance to k-nearest neighbors
-    avg_knn_distances = distances[:, :k].mean(axis=1)
-
     # Map ood_features_scores to range 0-1 with 0 = most concerning
-    ood_features_scores: np.ndarray = np.exp(-1 * avg_knn_distances * t)
+    ood_features_scores: np.ndarray = np.exp(-1 * avg_distances / scaling_factor * t)
     return ood_features_scores

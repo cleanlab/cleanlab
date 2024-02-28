@@ -22,7 +22,7 @@ from typing import Any, Dict, List, Optional
 
 import numpy as np
 import pandas as pd
-from tqdm import tqdm
+from tqdm.auto import tqdm
 
 from cleanlab.internal.segmentation_utils import _get_summary_optional_params
 

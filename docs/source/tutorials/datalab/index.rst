@@ -8,3 +8,4 @@ Datalab Tutorials
    Advanced Data Auditing with Datalab <datalab_advanced>
    Text Dataset <text>
    Tabular Data (Numeric/Categorical) <tabular>
+   Guide to Datalab Issue Types </cleanlab/datalab/guide/issue_type_description>

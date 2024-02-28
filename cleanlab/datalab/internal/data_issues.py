@@ -30,7 +30,7 @@ from __future__ import annotations
 
 import warnings
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union
 import numpy as np
 
 import pandas as pd
@@ -110,7 +110,7 @@ class _ClassificationInfoStrategy(_InfoStrategy):
     ) -> Dict[str, Any]:
         info_extracted = _InfoStrategy._get_info_helper(info=info, issue_name=issue_name)
         info = info_extracted if info_extracted is not None else info
-        if issue_name == "label":
+        if issue_name in ["label", "class_imbalance"]:
             if data.labels.is_available is False:
                 raise ValueError(
                     "The labels are not available. "
@@ -147,6 +147,35 @@ class _RegressionInfoStrategy(_InfoStrategy):
         return info
 
 
+class _MultilabelInfoStrategy(_InfoStrategy):
+    """Strategy for computing information about data issues related to multilabel tasks."""
+
+    @staticmethod
+    def get_info(
+        data: Data,
+        info: Dict[str, Dict[str, Any]],
+        issue_name: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        info_extracted = _InfoStrategy._get_info_helper(info=info, issue_name=issue_name)
+        info = info_extracted if info_extracted is not None else info
+        if issue_name == "label":
+            if data.labels.is_available is False:
+                raise ValueError(
+                    "The labels are not available. "
+                    "Most likely, no label column was provided when creating the Data object."
+                )
+            # Labels that are stored as integers may need to be converted to strings.
+            label_map = data.labels.label_map
+            if not label_map:
+                raise ValueError("The label map is not available.")
+            for key in ["given_label", "predicted_label"]:
+                labels = info.get(key, None)
+                if labels is not None:
+                    info[key] = [list(map(label_map.get, label)) for label in labels]
+            info["class_names"] = list(label_map.values())
+        return info
+
+
 class DataIssues:
     """
     Class that collects and stores information and statistics on issues found in a dataset.
@@ -169,7 +198,7 @@ class DataIssues:
         A dictionary that contains information and statistics about the data and each issue type.
     """
 
-    def __init__(self, data: Data, strategy: _InfoStrategy) -> None:
+    def __init__(self, data: Data, strategy: Type[_InfoStrategy]) -> None:
         self.issues: pd.DataFrame = pd.DataFrame(index=range(len(data)))
         self.issue_summary: pd.DataFrame = pd.DataFrame(
             columns=["issue_type", "score", "num_issues"]
@@ -213,12 +242,31 @@ class DataIssues:
 
             Additional columns may be present in the DataFrame depending on the type of issue specified.
         """
+        if self.issues.empty:
+            raise ValueError(
+                """No issues available for retrieval. Please check the following before using `get_issues`:
+                1. Ensure `find_issues` was executed. If not, please run it with the necessary parameters.
+                2. If `find_issues` was run but you're seeing this message,
+                    it may have encountered limitations preventing full analysis.
+                    However, partial checks can still provide valuable insights.
+            Review `find_issues` output carefully for any specific actions needed
+            to facilitate a more comprehensive analysis before calling `get_issues`.
+            """
+            )
         if issue_name is None:
             return self.issues
 
         columns = [col for col in self.issues.columns if issue_name in col]
         if not columns:
-            raise ValueError(f"No columns found for issue type '{issue_name}'.")
+            raise ValueError(
+                f"""No columns found for issue type '{issue_name}'. Ensure the following:
+                1. `find_issues` has been executed. If it hasn't, please run it.
+                2. Check `find_issues` output to verify that the issue type '{issue_name}' was included in the checks to
+                    ensure it was not excluded accidentally before the audit.
+                3. Review `find_issues` output for any errors or warnings that might indicate the check for '{issue_name}' issues failed to complete.
+                    This can provide better insights into what adjustments may be necessary.
+            """
+            )
         specific_issues = self.issues[columns]
         info = self.get_info(issue_name=issue_name)
 
@@ -234,6 +282,9 @@ class DataIssues:
                 if info.get(k) is not None
             }
             specific_issues = specific_issues.assign(**column_dict)
+
+        if issue_name == "class_imbalance":
+            specific_issues = specific_issues.assign(given_label=info["given_label"])
         return specific_issues
 
     def get_issue_summary(self, issue_name: Optional[str] = None) -> pd.DataFrame:

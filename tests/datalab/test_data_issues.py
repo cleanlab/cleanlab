@@ -1,6 +1,7 @@
 import pytest
 from cleanlab.datalab.internal.data import Data
 from cleanlab.datalab.internal.data_issues import DataIssues, _ClassificationInfoStrategy
+from cleanlab.datalab.internal.task import Task
 
 
 class TestDataIssues:
@@ -10,7 +11,11 @@ class TestDataIssues:
 
     @pytest.fixture
     def data_issues(self):
-        data = Data(data={self.label_name: self.labels}, label_name=self.label_name)
+        data = Data(
+            data={self.label_name: self.labels},
+            task=Task.CLASSIFICATION,
+            label_name=self.label_name,
+        )
         data_issues = DataIssues(data=data, strategy=self.strategy)
         yield data_issues
 

@@ -4,10 +4,11 @@ import numpy as np
 from cleanlab.datalab.internal.issue_finder import IssueFinder
 
 from cleanlab import Datalab
+from cleanlab.datalab.internal.task import Task
 
 
 class TestIssueFinder:
-    task = "classification"
+    task = Task.CLASSIFICATION
 
     @pytest.fixture
     def lab(self):
@@ -25,13 +26,13 @@ class TestIssueFinder:
         assert issue_finder.verbosity == 1
 
     def test_get_available_issue_types(self, issue_finder):
-        expected_issue_types = {}
+        expected_issue_types = {"class_imbalance": {}}
         # Test with no kwargs, no issue type expected to be returned
         for key in ["pred_probs", "features", "knn_graph"]:
             issue_types = issue_finder.get_available_issue_types(**{key: None})
             assert (
                 issue_types == expected_issue_types
-            ), "Every issue type for classification requires some kwargs, expected empty dict"
+            ), "Only class_imbalance issue type for classification requires no kwargs"
 
         # Test with only issue_types, input should be
         issue_types_dicts = [
@@ -97,17 +98,17 @@ class TestRegressionIssueFinder:
 
     @pytest.fixture
     def issue_finder(self, lab):
-        return IssueFinder(datalab=lab, task=self.task)
+        return IssueFinder(datalab=lab, task=Task.from_str(self.task))
 
     def test_get_available_issue_types(self, issue_finder):
-        expected_issue_types = {"label": {}}
+        expected_issue_types = {}
 
         # Test with no kwargs
         for key in ["pred_probs", "features", "knn_graph"]:
             issue_types = issue_finder.get_available_issue_types(**{key: None})
             assert (
                 issue_types == expected_issue_types
-            ), "Regression should only support label issues"
+            ), "No issue type for regression requires no kwargs"
 
         # Test with issue_types:
         issue_types_dicts = [

@@ -30,7 +30,7 @@ or follow the examples script for the ``LabelInspector`` class if you require gr
 import numpy as np
 from typing import Optional, List, Tuple, Any
 
-from cleanlab.count import get_confident_thresholds
+from cleanlab.count import get_confident_thresholds, _reduce_issues
 from cleanlab.rank import find_top_issues, _compute_label_quality_scores
 from cleanlab.typing import LabelLike
 from cleanlab.internal.util import value_counts_fill_missing_classes
@@ -234,11 +234,13 @@ def find_label_issues_batched(
         pbar.close()
 
     label_issues_indices = lab.get_label_issues()
+    label_issues_mask = np.zeros(len(labels), dtype=bool)
+    label_issues_mask[label_issues_indices] = True
+    mask = _reduce_issues(pred_probs=pred_probs, labels=labels)
+    label_issues_mask[mask] = False
     if return_mask:
-        label_issues_mask = np.zeros(len(labels), dtype=bool)
-        label_issues_mask[label_issues_indices] = True
         return label_issues_mask
-    return label_issues_indices
+    return np.where(label_issues_mask)[0]
 
 
 class LabelInspector:
@@ -694,6 +696,7 @@ def _compute_num_issues(arg: Tuple[np.ndarray, bool]) -> int:
     pred_prob = pred_probs_shared[ind, :]
     pred_class = np.argmax(pred_prob, axis=-1)
     batch_size = len(label)
+
     if thorough:
         pred_gt_thresholds = pred_prob >= adj_confident_thresholds_shared
         max_ind = np.argmax(pred_prob * pred_gt_thresholds, axis=-1)

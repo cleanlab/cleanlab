@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
-from typing import Optional, Type
+from typing import Dict, Optional, Type
 
 from cleanlab.datalab.internal.adapter.imagelab import (
     ImagelabDataIssuesAdapter,
@@ -23,12 +23,15 @@ from cleanlab.datalab.internal.adapter.imagelab import (
 )
 from cleanlab.datalab.internal.data import Data
 from cleanlab.datalab.internal.data_issues import (
+    _InfoStrategy,
     DataIssues,
     _ClassificationInfoStrategy,
     _RegressionInfoStrategy,
+    _MultilabelInfoStrategy,
 )
 from cleanlab.datalab.internal.issue_finder import IssueFinder
 from cleanlab.datalab.internal.report import Reporter
+from cleanlab.datalab.internal.task import Task
 
 
 def issue_finder_factory(imagelab):
@@ -57,13 +60,21 @@ class _DataIssuesBuilder:
     def __init__(self, data: Data):
         self.data = data
         self.imagelab = None
-        self.task: Optional[str] = None
+        self.task: Optional[Task] = None
 
     def set_imagelab(self, imagelab):
         self.imagelab = imagelab
         return self
 
-    def set_task(self, task):
+    def set_task(self, task: Task):
+        """Set the task that the data is intended for.
+
+        Parameters
+        ----------
+        task : Task
+            Specific machine learning task that the datset is intended for.
+            See details about supported tasks in :py:class:`Task <cleanlab.datalab.internal.task.Task>`.
+        """
         self.task = task
         return self
 
@@ -81,13 +92,17 @@ class _DataIssuesBuilder:
         else:
             return DataIssues
 
-    def _select_info_strategy(self):
+    def _select_info_strategy(self) -> Type[_InfoStrategy]:
         """The DataIssues class takes in a strategy class
         for processing info dictionaries. This method selects
         the appropriate strategy class based on the task during
         the `build` method-call.
         """
-        if self.task == "regression":
-            return _RegressionInfoStrategy
-        else:
-            return _ClassificationInfoStrategy
+        _default_return = _ClassificationInfoStrategy
+        strategy_lookup: Dict[Task, Type[_InfoStrategy]] = {
+            Task.REGRESSION: _RegressionInfoStrategy,
+            Task.MULTILABEL: _MultilabelInfoStrategy,
+        }
+        if self.task is None:
+            return _default_return
+        return strategy_lookup.get(self.task, _default_return)

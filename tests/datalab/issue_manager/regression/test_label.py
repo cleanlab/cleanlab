@@ -4,6 +4,7 @@ import pytest
 
 from cleanlab import Datalab
 from cleanlab.datalab.internal.issue_manager.regression.label import RegressionLabelIssueManager
+from cleanlab.datalab.internal.task import Task
 
 
 def ground_truth_target_function(x):
@@ -17,7 +18,7 @@ class TestRegressionLabelIssueManager:
         error_msg = (
             "RegressionLabelIssueManager should be registered to the regression task as 'label'"
         )
-        assert REGISTRY["regression"].get("label") == RegressionLabelIssueManager, error_msg
+        assert REGISTRY[Task.REGRESSION].get("label") == RegressionLabelIssueManager, error_msg
 
     @pytest.fixture
     def features(self):
@@ -91,7 +92,6 @@ class TestRegressionLabelIssueManager:
 
 
 class TestRegressionLabelIssueManagerIntegration:
-
     """This class contains tests for the find_issues method with a CleanLearning
     object that behaves deterministically. This is useful to run a "regression"-test on
     the results computed by the find_issues method.
@@ -142,4 +142,4 @@ class TestRegressionLabelIssueManagerIntegration:
         y_pred = X @ coef + self.BIAS
         issue_manager.find_issues(predictions=y_pred)
         summary = issue_manager.summary
-        assert np.isclose(summary["score"], 0.075765, atol=1e-5)
+        assert np.isclose(summary["score"], 0.361287, atol=1e-5)

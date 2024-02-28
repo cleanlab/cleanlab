@@ -197,13 +197,13 @@ class NonIIDIssueManager(IssueManager):
         """
         if features is None and pred_probs is not None:
             self._skip_storing_knn_graph_for_pred_probs = True
+
+        if knn_graph is not None and not metric_changes:
+            return None
         features_to_use = self._determine_features(features, pred_probs)
 
         if self.metric is None:
             self.metric = "cosine" if features_to_use.shape[1] > 3 else "euclidean"
-
-        if knn_graph is not None and not metric_changes:
-            return None
 
         knn = NearestNeighbors(n_neighbors=self.k, metric=self.metric)
 

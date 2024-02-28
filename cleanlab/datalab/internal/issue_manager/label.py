@@ -147,12 +147,20 @@ class LabelIssueManager(IssueManager):
                     "Either pred_probs or features must be provided to find label issues."
                 )
             # produce out-of-sample pred_probs from features
+            labels = self.datalab.labels
+            if not isinstance(labels, np.ndarray):
+                error_msg = (
+                    f"Expected labels to be a numpy array of shape (n_samples,) to use in LabelIssueManager, "
+                    f"but got {type(labels)} instead."
+                )
+                raise TypeError(error_msg)
+
             knn = KNeighborsClassifier(n_neighbors=self.k + 1)
-            knn.fit(features, self.datalab.labels)
+            knn.fit(features, labels)
             pred_probs = knn.predict_proba(features)
 
             encoder = OneHotEncoder()
-            label_transform = self.datalab.labels.reshape(-1, 1)
+            label_transform = labels.reshape(-1, 1)
             one_hot_label = encoder.fit_transform(label_transform)
 
             # adjust pred_probs so it is out-of-sample

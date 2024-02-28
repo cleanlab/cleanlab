@@ -28,6 +28,7 @@ import numpy as np
 import pandas as pd
 
 import cleanlab
+from cleanlab.datalab.internal.adapter.constants import DEFAULT_CLEANVISION_ISSUES
 from cleanlab.datalab.internal.adapter.imagelab import create_imagelab
 from cleanlab.datalab.internal.data import Data
 from cleanlab.datalab.internal.display import _Displayer
@@ -41,6 +42,7 @@ from cleanlab.datalab.internal.issue_manager_factory import (
     list_possible_issue_types as _list_possible_issue_types,
 )
 from cleanlab.datalab.internal.serialize import _Serializer
+from cleanlab.datalab.internal.task import Task
 
 if TYPE_CHECKING:  # pragma: no cover
     import numpy.typing as npt
@@ -80,7 +82,11 @@ class Datalab:
 
     task : str
         The type of machine learning task that the dataset is used for.
-        By default, this is set to "classification", but you can also set it to "regression" if you are working with a regression dataset.
+
+        Supported tasks:
+          - "classification" (default): Multiclass classification
+          - "regression" : Regression
+          - "multilabel" : Multilabel classification
 
     label_name : str, optional
         The name of the label column in the dataset.
@@ -113,11 +119,9 @@ class Datalab:
     ) -> None:
         # Assume continuous values of labels for regression task
         # Map labels to integers for classification task
-        map_labels_to_int = task == "classification"  # TODO: handle more generally
-
-        self._data = Data(data, label_name, map_to_int=map_labels_to_int)
+        self.task = Task.from_str(task)
+        self._data = Data(data, self.task, label_name)
         self.data = self._data._data
-        self.task = task
         self._labels = self._data.labels
         self._label_map = self._labels.label_map
         self.label_name = self._labels.label_name
@@ -128,18 +132,18 @@ class Datalab:
 
         # Create the builder for DataIssues
         builder = _DataIssuesBuilder(self._data)
-        builder.set_imagelab(self._imagelab).set_task(task)
+        builder.set_imagelab(self._imagelab).set_task(self.task)
         self.data_issues = builder.build()
 
     # todo: check displayer methods
     def __repr__(self) -> str:
-        return _Displayer(data_issues=self.data_issues).__repr__()
+        return _Displayer(data_issues=self.data_issues, task=self.task).__repr__()
 
     def __str__(self) -> str:
-        return _Displayer(data_issues=self.data_issues).__str__()
+        return _Displayer(data_issues=self.data_issues, task=self.task).__str__()
 
     @property
-    def labels(self) -> np.ndarray:
+    def labels(self) -> Union[np.ndarray, List[List[int]]]:
         """Labels of the dataset, in a [0, 1, ..., K-1] format."""
         return self._labels.labels
 
@@ -172,14 +176,9 @@ class Datalab:
         The more of these inputs you provide, the more types of issues Datalab can detect in your dataset/labels.
         If you provide a subset of these inputs, Datalab will output what insights it can based on the limited information from your model.
 
-        Note
+        NOTE
         ----
-        This method acts as a wrapper around the :py:meth:`IssueFinder.find_issues <cleanlab.datalab.internal.issue_finder.IssueFinder.find_issues>` method,
-        where the core logic for issue detection is implemented.
-
-        Note
-        ----
-        The issues are saved in the ``self.issues`` attribute, but are not returned.
+        The issues are saved in the ``self.issues`` attribute of the ``Datalab`` object, but are not returned.
 
         Parameters
         ----------
@@ -188,7 +187,13 @@ class Datalab:
             To best detect label issues, provide this input obtained from the most accurate model you can produce.
 
             For classification data, this must be a 2D array with shape ``(num_examples, K)`` where ``K`` is the number of classes in the dataset.
+            Make sure that the columns of your `pred_probs` are properly ordered with respect to the ordering of classes, which for Datalab is: lexicographically sorted by class name.
+
             For regression data, this must be a 1D array with shape ``(num_examples,)`` containing the predicted value for each example.
+
+            For multilabel classification data, this must be a 2D array with shape ``(num_examples, K)`` where ``K`` is the number of classes in the dataset.
+                Make sure that the columns of your `pred_probs` are properly ordered with respect to the ordering of classes, which for Datalab is: lexicographically sorted by class name.
+
 
         features : Optional[np.ndarray]
             Feature embeddings (vector representations) of every example in the dataset.
@@ -196,18 +201,54 @@ class Datalab:
             If provided, this must be a 2D array with shape (num_examples, num_features).
 
         knn_graph :
-            Sparse matrix representing distances between examples in the dataset in a k nearest neighbor graph.
+            Sparse matrix of precomputed distances between examples in the dataset in a k nearest neighbor graph.
 
-            If provided, this must be a square CSR matrix with shape (num_examples, num_examples) and (k*num_examples) non-zero entries (k is the number of nearest neighbors considered for each example)
+            If provided, this must be a square CSR matrix with shape ``(num_examples, num_examples)`` and ``(k*num_examples)`` non-zero entries (``k`` is the number of nearest neighbors considered for each example),
             evenly distributed across the rows.
-            The non-zero entries must be the distances between the corresponding examples. Self-distances must be omitted
-            (i.e. the diagonal must be all zeros and the k nearest neighbors of each example must not include itself).
+            Each non-zero entry in this matrix is a distance between a pair of examples in the dataset. Self-distances must be omitted
+            (i.e. diagonal must be all zeros, k nearest neighbors for each example do not include the example itself).
+
+            This CSR format uses three 1D arrays (`data`, `indices`, `indptr`) to store a 2D matrix ``M``:
+
+            - `data`: 1D array containing all the non-zero elements of matrix ``M``, listed in a row-wise fashion (but sorted within each row).
+            - `indices`: 1D array storing the column indices in matrix ``M`` of these non-zero elements. Each entry in `indices` corresponds to an entry in `data`, indicating the column of ``M`` containing this entry.
+            - `indptr`: 1D array indicating the start and end indices in `data` for each row of matrix ``M``. The non-zero elements of the i-th row of ``M`` are stored from ``data[indptr[i]]`` to ``data[indptr[i+1]]``.
+
+            Within each row of matrix ``M`` (defined by the ranges in `indptr`), the corresponding non-zero entries (distances) of `knn_graph` must be sorted in ascending order (specifically in the segments of the `data` array that correspond to each row of ``M``). The `indices` array must also reflect this ordering, maintaining the correct column positions for these sorted distances.
+
+            This type of matrix is returned by the method: `sklearn.neighbors.NearestNeighbors.kneighbors_graph <https://scikit-learn.org/stable/modules/generated/sklearn.neighbors.NearestNeighbors.html#sklearn.neighbors.NearestNeighbors.kneighbors_graph>`_.
+
+            Below is an example to illustrate:
+
+            .. code-block:: python
+
+                knn_graph.todense()
+                # matrix([[0. , 0.3, 0.2],
+                #         [0.3, 0. , 0.4],
+                #         [0.2, 0.4, 0. ]])
+
+                knn_graph.data
+                # array([0.2, 0.3, 0.3, 0.4, 0.2, 0.4])
+                # Here, 0.2 and 0.3 are the sorted distances in the first row, 0.3 and 0.4 in the second row, and so on.
+
+                knn_graph.indices
+                # array([2, 1, 0, 2, 0, 1])
+                # Corresponding neighbor indices for the distances from the `data` array.
+
+                knn_graph.indptr
+                # array([0, 2, 4, 6])
+                # The non-zero entries in the first row are stored from `knn_graph.data[0]` to `knn_graph.data[2]`, the second row from `knn_graph.data[2]` to `knn_graph.data[4]`, and so on.
 
             For any duplicated examples i,j whose distance is 0, there should be an *explicit* zero stored in the matrix, i.e. ``knn_graph[i,j] = 0``.
 
             If both `knn_graph` and `features` are provided, the `knn_graph` will take precendence.
             If `knn_graph` is not provided, it is constructed based on the provided `features`.
             If neither `knn_graph` nor `features` are provided, certain issue types like (near) duplicates will not be considered.
+
+            .. seealso::
+                See the
+                `scipy.sparse.csr_matrix documentation <https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csr_matrix.html>`_
+                for more details on the CSR matrix format.
 
         issue_types :
             Collection specifying which types of issues to consider in audit and any non-default parameter settings to use.
@@ -330,6 +371,7 @@ class Datalab:
         verbosity: Optional[int] = None,
         include_description: bool = True,
         show_summary_score: bool = False,
+        show_all_issues: bool = False,
     ) -> None:
         """Prints informative summary of all issues.
 
@@ -345,6 +387,15 @@ class Datalab:
         include_description :
             Whether or not to include a description of each issue type in the report.
             Consider setting this to ``False`` once you're familiar with how each issue type is defined.
+
+        show_summary_score :
+            Whether or not to include the overall severity score of each issue type in the report.
+            These scores are not comparable across different issue types,
+            see the ``issue_summary`` documentation to learn more.
+
+        show_all_issues :
+            Whether or not the report should show all issue types that were checked for, or only the types of issues detected in the dataset.
+            With this set to ``True``, the report may include more types of issues that were not detected in the dataset.
 
         See Also
         --------
@@ -363,6 +414,7 @@ class Datalab:
             verbosity=verbosity,
             include_description=include_description,
             show_summary_score=show_summary_score,
+            show_all_issues=show_all_issues,
             imagelab=self._imagelab,
         )
         reporter.report(num_examples=num_examples)
@@ -380,7 +432,17 @@ class Datalab:
     def issue_summary(self) -> pd.DataFrame:
         """Summary of issues found in the dataset and the overall severity of each type of issue.
 
-        This is a wrapper around the ``DataIssues.issue_summary`` attribute.
+        Each type of issue has a summary score, which is usually defined as an average of
+        per-example issue-severity scores (over all examples in the dataset).
+        So these summary scores are not directly tied to the number of examples estimated to exhibit
+        a particular type of issue. Issue-severity (ie. quality of each example) is measured differently for each issue type,
+        and these per-example scores are only comparable across different examples for the same issue-type, but are not comparable across different issue types.
+        For instance, label quality might be scored via estimated likelihood of the given label,
+        whereas outlier quality might be scored via distance to K-nearest-neighbors in feature space (fundamentally incomparable quantities).
+        For some issue types, the summary score is not an average of per-example scores, but rather a global statistic of the dataset
+        (eg. for `non_iid` issue type, the p-value for hypothesis test that data are IID).
+
+        In summary, you can compare these summary scores across datasets for the same issue type, but never compare them across different issue types.
 
         Examples
         -------
@@ -402,8 +464,6 @@ class Datalab:
     @property
     def info(self) -> Dict[str, Dict[str, Any]]:
         """Information and statistics about the dataset issues found.
-
-        This is a wrapper around the ``DataIssues.info`` attribute.
 
         Examples
         -------
@@ -435,10 +495,6 @@ class Datalab:
         """
         Use this after finding issues to see which examples suffer from which types of issues.
 
-        NOTE
-        ----
-        This is a wrapper around the :py:meth:`DataIssues.get_issues <cleanlab.datalab.internal.data_issues.DataIssues.get_issues>` method.
-
         Parameters
         ----------
         issue_name : str or None
@@ -458,16 +514,22 @@ class Datalab:
 
             Additional columns may be present in the DataFrame depending on the type of issue specified.
         """
+
+        # Validate issue_name
+        if issue_name is not None and issue_name not in self.list_possible_issue_types():
+            raise ValueError(
+                f"""Invalid issue_name: {issue_name}. Please specify a valid issue_name from the list of possible issue types.
+            Either, specify one of the following: {self.list_possible_issue_types()}
+            or set issue_name as None to get all issue types.
+            """
+            )
         return self.data_issues.get_issues(issue_name=issue_name)
 
     def get_issue_summary(self, issue_name: Optional[str] = None) -> pd.DataFrame:
         """Summarize the issues found in dataset of a particular type,
         including how severe this type of issue is overall across the dataset.
 
-        NOTE
-        ----
-        This is a wrapper around the
-        :py:meth:`DataIssues.get_issue_summary <cleanlab.datalab.internal.data_issues.DataIssues.get_issue_summary>` method.
+        See the documentation of the ``issue_summary`` attribute to learn more.
 
         Parameters
         ----------
@@ -489,11 +551,6 @@ class Datalab:
 
         This function is used to get the info for a specific issue_name. If the info is not computed yet, it will raise an error.
 
-        NOTE
-        ----
-        This is a wrapper around the
-        :py:meth:`DataIssues.get_info <cleanlab.datalab.internal.data_issues.DataIssues.get_info>` method.
-
         Parameters
         ----------
         issue_name :
@@ -511,29 +568,27 @@ class Datalab:
 
         Any issue type that is not in this list cannot be used in the :py:meth:`find_issues` method.
 
-        Note
-        ----
-        This method is a wrapper around :py:meth:`IssueFinder.list_possible_issue_types <cleanlab.datalab.internal.issue_finder.IssueFinder.list_possible_issue_types>`.
-
         See Also
         --------
         :py:class:`REGISTRY <cleanlab.datalab.internal.issue_manager_factory.REGISTRY>` : All available issue types and their corresponding issue managers can be found here.
         """
-        return _list_possible_issue_types(task=self.task)
+        possible_issue_types = _list_possible_issue_types(task=self.task)
+        if self._imagelab is not None:
+            possible_issue_types.extend(DEFAULT_CLEANVISION_ISSUES.keys())
+        return possible_issue_types
 
     def list_default_issue_types(self) -> List[str]:
         """Returns a list of the issue types that are run by default
         when :py:meth:`find_issues` is called without specifying `issue_types`.
 
-        Note
-        ----
-        This method is a wrapper around :py:meth:`IssueFinder.list_default_issue_types <cleanlab.datalab.internal.issue_finder.IssueFinder.list_default_issue_types>`.
-
         See Also
         --------
         :py:class:`REGISTRY <cleanlab.datalab.internal.issue_manager_factory.REGISTRY>` : All available issue types and their corresponding issue managers can be found here.
         """
-        return _list_default_issue_types(task=self.task)
+        default_issue_types = _list_default_issue_types(task=self.task)
+        if self._imagelab is not None:
+            default_issue_types.extend(DEFAULT_CLEANVISION_ISSUES.keys())
+        return default_issue_types
 
     def save(self, path: str, force: bool = False) -> None:
         """Saves this Datalab object to file (all files are in folder at `path/`).
@@ -547,7 +602,7 @@ class Datalab:
         force :
             If ``True``, overwrites any existing files in the folder at `path`. Use this with caution!
 
-        Note
+        NOTE
         ----
         You have to save the Dataset yourself separately if you want it saved to file.
         """

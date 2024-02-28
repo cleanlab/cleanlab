@@ -25,5 +25,8 @@ jobs:
           ignore_missing_alt: true
           tokens: |
             {"https://github.com": "${{ secrets.GITHUB_TOKEN }}"}
+          ignore_url: |
+            https://stackoverflow.com/questions/41573587/what-is-the-difference-between-venv-pyvenv-pyenv-virtualenv-virtualenvwrappe
           swap_urls: |
-            {"^(\\..*)\\.md(#?.*)$": "\\1.md.html\\2"}
+            {"^(\\..*)\\.md(#?.*)$": "\\1.md.html\\2",
+             "^(https://github\\.com/.*)#.*$": "\\1"}

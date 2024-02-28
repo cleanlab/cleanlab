@@ -31,7 +31,7 @@ Get started with: [tutorials](https://docs.cleanlab.ai/stable/tutorials/image.ht
 
 [![pypi](https://img.shields.io/pypi/v/cleanlab.svg)](https://pypi.org/pypi/cleanlab/)
 [![os](https://img.shields.io/badge/platform-noarch-lightgrey)](https://pypi.org/pypi/cleanlab/)
-[![py\_versions](https://img.shields.io/badge/python-3.7%2B-blue)](https://pypi.org/pypi/cleanlab/)
+[![py\_versions](https://img.shields.io/badge/python-3.8%2B-blue)](https://pypi.org/pypi/cleanlab/)
 [![build\_status](https://github.com/cleanlab/cleanlab/workflows/CI/badge.svg)](https://github.com/cleanlab/cleanlab/actions?query=workflow%3ACI)
 [![coverage](https://codecov.io/gh/cleanlab/cleanlab/branch/master/graph/badge.svg)](https://app.codecov.io/gh/cleanlab/cleanlab)
 [![docs](https://img.shields.io/static/v1?logo=github&style=flat&color=pink&label=docs&message=cleanlab)](https://docs.cleanlab.ai/)
@@ -73,7 +73,7 @@ Examples of incorrect given labels in various image datasets <a href="https://l7
 
 ## Run cleanlab
 
-cleanlab supports Linux, macOS, and Windows and runs on Python 3.7+.
+cleanlab supports Linux, macOS, and Windows and runs on Python 3.8+.
 
 - Get started [here](https://docs.cleanlab.ai/)! Install via `pip` or `conda` as described [here](https://docs.cleanlab.ai/).
 - Developers who install the bleeding-edge from source should refer to [this master branch documentation](https://docs.cleanlab.ai/master/index.html).
@@ -316,9 +316,14 @@ To understand/cite other cleanlab functionality not described above, check out o
 
 - [Release notes for past versions](https://github.com/cleanlab/cleanlab/releases)
 
-- [Cleanlab Studio](https://cleanlab.ai/studio/?utm_source=github&utm_medium=readme&utm_campaign=clostostudio): *No-code Data Improvement*
+## Easy mode: *No-code Data Improvement*
 
-While this open-source library **finds** data issues, its utility depends on you having a decent existing ML model and an interface to efficiently **fix** these issues in your dataset. Providing all these pieces, [Cleanlab Studio](https://cleanlab.ai/studio/?utm_source=github&utm_medium=readme&utm_campaign=clostostudio) is a no-code platform to **find and fix** problems in real-world ML datasets. Cleanlab Studio [automatically runs](https://cleanlab.ai/blog/data-centric-ai/) optimized versions of the algorithms from this open-source library on top of AutoML & Foundation models fit to your data, and presents detected issues in a smart data editing interface. It's a data cleaning assistant to quickly turn unreliable data into reliable models/insights (via AI/automation + streamlined UX). [Try it for free!](https://cleanlab.ai/signup)
+While this open-source package **finds** data issues, its utility depends on you having: a good existing ML model + an interface to efficiently **fix** these issues in your dataset. Providing all these pieces, [Cleanlab Studio](https://cleanlab.ai/blog/data-centric-ai/) is a Data Curation platform to **find and fix** problems in any {image, text, tabular} dataset. Cleanlab Studio [automatically](https://cleanlab.ai/blog/data-centric-ai/) runs optimized algorithms from this package on top of **AutoML & Foundation** models fit to your data, and presents detected issues (+ AI-suggested fixes) in an intelligent [data correction interface](https://www.youtube.com/playlist?list=PLn_2rr2ltYqA1uAC0AnRbPyY-wWVf1aeg).
+
+**[Try it for free!](https://cleanlab.ai/signup/)** Adopting Cleanlab Studio enables users of this package to:
+- work 100x faster (1 min to analyze your raw data with **zero** code or ML work; optionally use [Python API](https://help.cleanlab.ai/tutorials/))
+- produce better-quality data (10x more [types of issues](https://help.cleanlab.ai/guide/concepts/cleanlab_columns/) auto detected & **corrected** via built-in AI)
+- accomplish more (auto-label data, deploy ML instantly, audit LLM inputs/outputs, moderate content, ...)
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/cleanlab/assets/master/cleanlab/studio.png" width=80% height=80% alt="Cleanlab Studio logo">

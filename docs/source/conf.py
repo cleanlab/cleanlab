@@ -24,6 +24,13 @@ import pathlib
 
 sys.path.insert(0, pathlib.Path(__file__).parents[2].resolve().as_posix())
 
+# Open Graph extension
+ogp_site_url = "https://docs.cleanlab.ai"
+ogp_image = (
+    "https://raw.githubusercontent.com/cleanlab/assets/master/cleanlab/clos-preview-card.png"
+)
+
+
 # -- Project information -----------------------------------------------------
 
 project = "cleanlab"
@@ -47,8 +54,10 @@ extensions = [
     "sphinx_copybutton",
     "sphinxcontrib.katex",
     "sphinxcontrib.gtagjs",
+    "sphinx_jinja",
     "sphinx_autodoc_typehints",
     "sphinx.ext.doctest",
+    "sphinxext.opengraph",
 ]
 
 numpy_show_class_members = True
@@ -163,6 +172,7 @@ html_context = {
     # Add new tags to RELEASE_VERSIONS before release
     # fmt: off
     "RELEASE_VERSIONS": [
+        "v2.6.0",
         "v2.5.0",
         "v2.4.0",
         "v2.3.1",

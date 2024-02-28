@@ -18,19 +18,15 @@
 Scripts to test cleanlab.segmentation package
 """
 import numpy as np
-
-# import matplotlib.pyplot as plt
-# import os
-import numpy as np
 import random
 
 np.random.seed(0)
 import pytest
 from unittest import mock
 import matplotlib.pyplot as plt
+from pathlib import Path
 
 from cleanlab.internal.multilabel_scorer import softmin
-
 
 # Segmentation utils
 from cleanlab.internal.segmentation_utils import (
@@ -140,6 +136,34 @@ def test_find_label_issues():
         )
 
 
+def test_results_are_consistent_with_batch_size(tmp_path: Path):
+    """
+    Test that find_label_issues works with large memmap arrays and different batch sizes
+    """
+
+    # Create dummy versions of pred_probs and labels
+    # write to the pytest tmp_path so that the files are deleted after the test
+    pred_probs_file = tmp_path / "pred_probs.npy"
+    labels_file = tmp_path / "labels.npy"
+    np.save(pred_probs_file, np.random.rand(100, 2, 5, 5))
+    np.save(labels_file, np.random.randint(0, 2, (100, 5, 5)))
+
+    # Load the numpy arrays from disk
+    pred_probs = np.load(pred_probs_file, mmap_mode="r")
+    pred_labels = np.load(labels_file, mmap_mode="r")
+
+    # Test with different batch sizes
+    batch_sizes = [1, 50, 100]
+    issues_list = []
+    for batch_size in batch_sizes:
+        issues = find_label_issues(pred_labels, pred_probs, n_jobs=None, batch_size=batch_size)
+        issues_list.append(issues)
+
+    # Verify that the results are identical regardless of the batch size
+    for i in range(len(batch_sizes) - 1):
+        assert np.array_equal(issues_list[i], issues_list[i + 1])
+
+
 def test_find_label_issues_sizes():
     # checks inputs of different sizes
     labels, pred_probs = np.random.randint(0, 2, (2, 9, 7)), np.random.random((2, 2, 9, 7))
@@ -179,30 +203,53 @@ def test_get_label_quality_scores():
     )
     assert np.argmax(error) == np.argmin(image_scores_softmin)
 
-    with pytest.raises(Exception) as e:
-        get_label_quality_scores(labels, pred_probs, method="num_pixel_issues", downsample=4)
-
     image_scores_npi, pixel_scores = get_label_quality_scores(
         labels, pred_probs, method="num_pixel_issues", downsample=1
     )
-
     assert np.argmax(error) == np.argmin(image_scores_npi)
-
-    with pytest.raises(Exception):
-        get_label_quality_scores(labels, pred_probs, method="invalid_method")
 
     image_scores_softmin, pixel_scores = get_label_quality_scores(
         labels, pred_probs, downsample=1, method="softmin"
     )
-
     assert len(image_scores_softmin) == labels.shape[0]
     assert pixel_scores.shape == labels.shape
 
-    with pytest.raises(ValueError):
-        get_label_quality_scores(labels, pred_probs, method="num_pixel_issues", batch_size=-1)
-        get_label_quality_scores(
-            labels, pred_probs, method="num_pixel_issues", downsample=1, batch_size=0
-        )
+
+@pytest.mark.parametrize(
+    "method, downsample, batch_size, expected_exception, expected_message",
+    [
+        (
+            "num_pixel_issues",
+            4,
+            None,
+            Exception,
+            "Height 10 and width 10 not divisible by downsample value of 4. Set kwarg downsample to 1 to avoid downsampling.",
+        ),
+        (
+            "invalid_method",
+            None,
+            None,
+            Exception,
+            "Invalid Method: Specify correct method. Currently only supports 'softmin'",
+        ),
+        ("num_pixel_issues", 1, -1, ValueError, "Batch size must be greater than 0, got -1"),
+        ("num_pixel_issues", 1, 0, ValueError, "Batch size must be greater than 0, got 0"),
+    ],
+    ids=["downsample", "method", "batch_size_negative", "batch_size_zero"],
+)
+def test_get_label_quality_scores_exceptions(
+    method, downsample, batch_size, expected_exception, expected_message
+):
+    args = {"labels": labels, "pred_probs": pred_probs, "method": method}
+    if downsample is not None:
+        args["downsample"] = downsample
+    if batch_size is not None:
+        args["batch_size"] = batch_size
+
+    with pytest.raises(expected_exception) as exc_info:
+        get_label_quality_scores(**args)
+
+    assert expected_message in str(exc_info.value)
 
 
 # different size inpits

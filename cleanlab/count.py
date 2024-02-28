@@ -38,7 +38,11 @@ from typing import Tuple, Union, Optional
 
 from cleanlab.typing import LabelLike
 from cleanlab.internal.multilabel_utils import stack_complement, get_onehot_num_classes
-from cleanlab.internal.constants import TINY_VALUE, CONFIDENT_THRESHOLDS_LOWER_BOUND
+from cleanlab.internal.constants import (
+    TINY_VALUE,
+    CONFIDENT_THRESHOLDS_LOWER_BOUND,
+    FLOATING_POINT_COMPARISON,
+)
 
 from cleanlab.internal.util import (
     value_counts_fill_missing_classes,
@@ -150,9 +154,9 @@ def num_label_issues(
         label_issues_mask = np.zeros(len(labels), dtype=bool)
         label_issues_mask[cl_error_indices] = True
 
-        # Remove label issues if given label == model prediction
-        pred = pred_probs.argmax(axis=1)
-        label_issues_mask[pred == labels] = False
+        # Remove label issues if model prediction is close to given label
+        mask = _reduce_issues(pred_probs=pred_probs, labels=labels)
+        label_issues_mask[mask] = False
         num_issues = np.sum(label_issues_mask)
     elif estimation_method == "off_diagonal_calibrated":
         calculated_confident_joint = compute_confident_joint(
@@ -222,6 +226,16 @@ def _num_label_issues_multilabel(
         filter_by="confident_learning",  # specified to match num_label_issues
     )
     return sum(issues_idx)
+
+
+def _reduce_issues(pred_probs, labels):
+    """Returns a boolean mask denoting correct predictions or predictions within a margin around 0.5 for binary classification, suitable for filtering out indices in 'is_label_issue'."""
+    pred_probs_copy = np.copy(pred_probs)  # Make a copy of the original array
+    pred_probs_copy[np.arange(len(labels)), labels] += FLOATING_POINT_COMPARISON
+    pred = pred_probs_copy.argmax(axis=1)
+    mask = pred == labels
+    del pred_probs_copy  # Delete copy
+    return mask
 
 
 def calibrate_confident_joint(

@@ -39,7 +39,12 @@ from cleanlab.datalab.internal.issue_manager_factory import (
     _IssueManagerFactory,
     list_default_issue_types,
 )
-from cleanlab.datalab.internal.model_outputs import MultiClassPredProbs, RegressionPredictions
+from cleanlab.datalab.internal.model_outputs import (
+    MultiClassPredProbs,
+    RegressionPredictions,
+    MultiLabelPredProbs,
+)
+from cleanlab.datalab.internal.task import Task
 
 if TYPE_CHECKING:  # pragma: no cover
     import numpy.typing as npt
@@ -54,10 +59,26 @@ _CLASSIFICATION_ARGS_DICT = {
     "near_duplicate": ["features", "knn_graph"],
     "non_iid": ["pred_probs", "features", "knn_graph"],
     "underperforming_group": ["pred_probs", "features", "knn_graph", "cluster_ids"],
-    "data_valuation": ["knn_graph"],
+    "data_valuation": ["features", "knn_graph"],
+    "class_imbalance": [],
+    "null": ["features"],
 }
 _REGRESSION_ARGS_DICT = {
     "label": ["features", "predictions"],
+    "outlier": ["features", "knn_graph"],
+    "near_duplicate": ["features", "knn_graph"],
+    "non_iid": ["features", "knn_graph"],
+    "data_valuation": ["features", "knn_graph"],
+    "null": ["features"],
+}
+
+_MULTILABEL_ARGS_DICT = {
+    "label": ["pred_probs"],
+    "outlier": ["features", "knn_graph"],
+    "near_duplicate": ["features", "knn_graph"],
+    "non_iid": ["features", "knn_graph"],
+    "data_valuation": ["features", "knn_graph"],
+    "null": ["features"],
 }
 
 
@@ -69,9 +90,15 @@ def _resolve_required_args_for_classification(**kwargs):
         for issue_type in initial_args_dict
     }
 
+    # Some issue types (like class-imbalance) have no required args.
+    # This conditional lambda is used to include them in args dict.
+    keep_empty_argument = lambda k: not len(_CLASSIFICATION_ARGS_DICT[k])
+
     # Remove None values from argument list, rely on default values in IssueManager
     args_dict = {
-        k: {k2: v2 for k2, v2 in v.items() if v2 is not None} for k, v in args_dict.items() if v
+        k: {k2: v2 for k2, v2 in v.items() if v2 is not None}
+        for k, v in args_dict.items()
+        if (v or keep_empty_argument(k))
     }
 
     # Prefer `knn_graph` over `features` if both are provided.
@@ -91,7 +118,8 @@ def _resolve_required_args_for_classification(**kwargs):
             )
 
     # Only keep issue types that have at least one argument
-    args_dict = {k: v for k, v in args_dict.items() if v}
+    # or those that require no arguments.
+    args_dict = {k: v for k, v in args_dict.items() if (v or keep_empty_argument(k))}
 
     return args_dict
 
@@ -103,18 +131,50 @@ def _resolve_required_args_for_regression(**kwargs):
         issue_type: {arg: kwargs.get(arg, None) for arg in initial_args_dict[issue_type]}
         for issue_type in initial_args_dict
     }
+    # Some issue types have no required args.
+    # This conditional lambda is used to include them in args dict.
+    keep_empty_argument = lambda k: not len(_REGRESSION_ARGS_DICT[k])
 
     # Remove None values from argument list, rely on default values in IssueManager
     args_dict = {
         k: {k2: v2 for k2, v2 in v.items() if v2 is not None}
         for k, v in args_dict.items()
-        if v or k == "label"  # Allow label issues to require no arguments
+        if v or keep_empty_argument(k)
     }
+
+    # Only keep issue types that have at least one argument
+    # or those that require no arguments.
+    args_dict = {k: v for k, v in args_dict.items() if (v or keep_empty_argument(k))}
 
     return args_dict
 
 
-def _select_strategy_for_resolving_required_args(task: str) -> Callable:
+def _resolve_required_args_for_multilabel(**kwargs):
+    """Resolves the required arguments for each issue type intended for multilabel tasks."""
+    initial_args_dict = _MULTILABEL_ARGS_DICT.copy()
+    args_dict = {
+        issue_type: {arg: kwargs.get(arg, None) for arg in initial_args_dict[issue_type]}
+        for issue_type in initial_args_dict
+    }
+    # Some issue types have no required args.
+    # This conditional lambda is used to include them in args dict.
+    keep_empty_argument = lambda k: not len(_MULTILABEL_ARGS_DICT[k])
+
+    # Remove None values from argument list, rely on default values in IssueManager
+    args_dict = {
+        k: {k2: v2 for k2, v2 in v.items() if v2 is not None}
+        for k, v in args_dict.items()
+        if v or keep_empty_argument(k)  # Allow label issues to require no arguments
+    }
+
+    # Only keep issue types that have at least one argument
+    # or those that require no arguments.
+    args_dict = {k: v for k, v in args_dict.items() if (v or keep_empty_argument(k))}
+
+    return args_dict
+
+
+def _select_strategy_for_resolving_required_args(task: Task) -> Callable:
     """Helper function that selects the strategy for resolving required arguments for each issue type.
 
     Each strategy resolves the required arguments for each issue type.
@@ -135,8 +195,9 @@ def _select_strategy_for_resolving_required_args(task: str) -> Callable:
         Dictionary of required arguments for each issue type, if available.
     """
     strategies = {
-        "classification": _resolve_required_args_for_classification,
-        "regression": _resolve_required_args_for_regression,
+        Task.CLASSIFICATION: _resolve_required_args_for_classification,
+        Task.REGRESSION: _resolve_required_args_for_regression,
+        Task.MULTILABEL: _resolve_required_args_for_multilabel,
     }
     selected_strategy = strategies.get(task, None)
     if selected_strategy is None:
@@ -175,7 +236,7 @@ class IssueFinder:
     `Datalab.find_issues` method which internally utilizes an IssueFinder instance.
     """
 
-    def __init__(self, datalab: "Datalab", task: str, verbosity=1):
+    def __init__(self, datalab: "Datalab", task: Task, verbosity=1):
         self.datalab = datalab
         self.task = task
         self.verbosity = verbosity
@@ -222,16 +283,7 @@ class IssueFinder:
         knn_graph :
             Sparse matrix representing distances between examples in the dataset in a k nearest neighbor graph.
 
-            If provided, this must be a square CSR matrix with shape (num_examples, num_examples) and (k*num_examples) non-zero entries (k is the number of nearest neighbors considered for each example)
-            evenly distributed across the rows.
-            The non-zero entries must be the distances between the corresponding examples. Self-distances must be omitted
-            (i.e. the diagonal must be all zeros and the k nearest neighbors of each example must not include itself).
-
-            For any duplicated examples i,j whose distance is 0, there should be an *explicit* zero stored in the matrix, i.e. ``knn_graph[i,j] = 0``.
-
-            If both `knn_graph` and `features` are provided, the `knn_graph` will take precendence.
-            If `knn_graph` is not provided, it is constructed based on the provided `features`.
-            If neither `knn_graph` nor `features` are provided, certain issue types like (near) duplicates will not be considered.
+            For details, refer to the documentation of the same argument in :py:class:`Datalab.find_issues <cleanlab.datalab.datalab.Datalab.find_issues>`
 
         issue_types :
             Collection specifying which types of issues to consider in audit and any non-default parameter settings to use.
@@ -364,15 +416,21 @@ class IssueFinder:
 
         model_output = None
         if pred_probs is not None:
-            if self.task == "regression":
-                model_output = RegressionPredictions(pred_probs)
-            elif self.task == "classification":
-                model_output = MultiClassPredProbs(pred_probs)
-            else:
+            model_output_dict = {
+                Task.REGRESSION: RegressionPredictions,
+                Task.CLASSIFICATION: MultiClassPredProbs,
+                Task.MULTILABEL: MultiLabelPredProbs,
+            }
+
+            model_output_class = model_output_dict.get(self.task)
+            if model_output_class is None:
                 raise ValueError(f"Unknown task type '{self.task}'")
+
+            model_output = model_output_class(pred_probs)
 
         if model_output is not None:
             # A basic trick to assign the model output to the correct argument
+            # E.g. Datalab accepts only `pred_probs`, but those are assigned to the `predictions` argument for regression-related issue_managers
             kwargs.update({model_output.argument: model_output.collect()})
 
         # Determine which parameters are required for each issue type
@@ -392,13 +450,18 @@ class IssueFinder:
         drop_label_check = (
             "label" in issue_types_copy
             and not self.datalab.has_labels
-            and self.task != "regression"
+            and self.task != Task.REGRESSION
         )
+
         if drop_label_check:
             warnings.warn("No labels were provided. " "The 'label' issue type will not be run.")
             issue_types_copy.pop("label")
 
-        outlier_check_needs_features = "outlier" in issue_types_copy and not self.datalab.has_labels
+        outlier_check_needs_features = (
+            self.task == "classification"
+            and "outlier" in issue_types_copy
+            and not self.datalab.has_labels
+        )
         if outlier_check_needs_features:
             no_features = features is None
             no_knn_graph = knn_graph is None
@@ -410,5 +473,13 @@ class IssueFinder:
                     "No labels were provided. " "The 'outlier' issue type will not be run."
                 )
                 issue_types_copy.pop("outlier")
+
+        drop_class_imbalance_check = (
+            "class_imbalance" in issue_types_copy
+            and not self.datalab.has_labels
+            and self.task == Task.CLASSIFICATION
+        )
+        if drop_class_imbalance_check:
+            issue_types_copy.pop("class_imbalance")
 
         return issue_types_copy

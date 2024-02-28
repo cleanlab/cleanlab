@@ -19,5 +19,7 @@ internal
     data_issues
     issue_finder
     factory
+    model_outputs
     issue_manager/index
     report
+    task

@@ -43,7 +43,7 @@ class RegressionLabelIssueManager(IssueManager):
         The threshold to use to determine if an example has a label issue. It is a multiplier
         of the median label quality score that sets the absolute threshold. Only used if
         predictions are provided to `~RegressionLabelIssueManager.find_issues`, not if
-        features are provided. Default is 0.1.
+        features are provided. Default is 0.05.
     """
 
     description: ClassVar[
@@ -64,7 +64,7 @@ class RegressionLabelIssueManager(IssueManager):
         self,
         datalab: Datalab,
         clean_learning_kwargs: Optional[Dict[str, Any]] = None,
-        threshold: float = 0.1,
+        threshold: float = 0.05,
         health_summary_parameters: Optional[Dict[str, Any]] = None,
         **_,
     ):
@@ -100,11 +100,18 @@ class RegressionLabelIssueManager(IssueManager):
             )
         # If features are provided and either a custom model is used or no predictions are provided
         use_features = features is not None and (self._uses_custom_model or predictions is None)
+        labels = self.datalab.labels
+        if not isinstance(labels, np.ndarray):
+            error_msg = (
+                f"Expected labels to be a numpy array of shape (n_samples,) to use with RegressionLabelIssueManager, "
+                f"but got {type(labels)} instead."
+            )
+            raise TypeError(error_msg)
         if use_features:
             assert features is not None  # mypy won't narrow the type for some reason
             self.issues = find_issues_with_features(
                 features=features,
-                y=self.datalab.labels,
+                y=labels,
                 cl=self.cl,
                 **kwargs,  # function sanitizes kwargs
             )
@@ -115,7 +122,7 @@ class RegressionLabelIssueManager(IssueManager):
             assert predictions is not None  # mypy won't narrow the type for some reason
             self.issues = find_issues_with_predictions(
                 predictions=predictions,
-                y=self.datalab.labels,
+                y=labels,
                 **{**kwargs, **{"threshold": self.threshold}},  # function sanitizes kwargs
             )
 
