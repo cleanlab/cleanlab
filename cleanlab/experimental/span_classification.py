@@ -5,7 +5,7 @@ The underlying label error detection algorithms are in `cleanlab.token_classific
 """
 
 import numpy as np
-from typing import List, Tuple, Optional, Union
+from typing import List, Tuple, Optional, Dict, Union
 
 from cleanlab.token_classification.filter import find_label_issues as find_label_issues_token
 from cleanlab.token_classification.summary import display_issues as display_issues_token
@@ -20,7 +20,7 @@ def find_label_issues(
     labels: list,
     pred_probs: list,
     **kwargs,
-) -> dict:
+) -> Union[Dict[int, List[Tuple[int, int]]], List[Tuple[int, int]]]:
     """Identifies tokens with label issues in a span classification dataset.
 
     Tokens identified with issues will be ranked by their individual label quality score.
@@ -187,7 +187,7 @@ def display_issues(
         # sentence level issues
         if cl_issues and not isinstance(cl_issues[0], tuple):
             display_issues_token(
-                issues,
+                cl_issues,
                 tokens,
                 labels=labels,
                 pred_probs=pred_probs,
@@ -243,7 +243,7 @@ def get_label_quality_scores(
     labels: list,
     pred_probs: list,
     **kwargs,
-) -> Tuple[dict, dict]:
+) -> Union[Tuple[np.ndarray, list], Tuple[dict, dict]]:
     """
     Compute label quality scores for labels in each sentence, and for individual tokens in each sentence.
 
