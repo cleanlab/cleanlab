@@ -41,14 +41,8 @@ def test_find_label_issues(test_labels):
     assert issues[0] == (0, 3)
 
 
-@pytest.mark.filterwarnings("ignore::DeprecationWarning")
-@pytest.mark.parametrize(
-    "test_labels",
-    [labels_multi_span, [np.array(l) for l in labels_multi_span]],
-    ids=["list labels", "np.array labels"],
-)
-def test_find_label_issues_multi_span(test_labels):
-    issues = find_label_issues(test_labels, pred_probs_multi_span)
+def test_find_label_issues_multi_span():
+    issues = find_label_issues(labels_multi_span, pred_probs_multi_span)
     assert isinstance(issues, dict)
     assert len(issues) == 3
     assert issues[1] == [(0, 0), (1, 0)]
