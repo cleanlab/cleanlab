@@ -304,7 +304,7 @@ class CNN(BaseEstimator):  # Inherits sklearn classifier
             # else range(self.train_size)),
             sampler=SubsetRandomSampler(train_idx),
             batch_size=self.batch_size,
-            **self.loader_kwargs
+            **self.loader_kwargs,
         )
 
         optimizer = optim.SGD(self.model.parameters(), lr=self.lr, momentum=self.momentum)
@@ -361,7 +361,7 @@ class CNN(BaseEstimator):  # Inherits sklearn classifier
         loader = torch.utils.data.DataLoader(
             dataset=dataset,
             batch_size=self.batch_size if loader == "train" else self.test_batch_size,
-            **self.loader_kwargs
+            **self.loader_kwargs,
         )
 
         # sets model.train(False) inactivating dropout and batch-norm layers
