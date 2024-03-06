@@ -316,6 +316,7 @@ To understand/cite other cleanlab functionality not described above, check out o
 
 - [Release notes for past versions](https://github.com/cleanlab/cleanlab/releases)
 
+
 ## Easy mode: *No-code Data Improvement*
 
 While this open-source package **finds** data issues, its utility depends on you having: a good existing ML model + an interface to efficiently **fix** these issues in your dataset. Providing all these pieces, [Cleanlab Studio](https://cleanlab.ai/blog/data-centric-ai/) is a Data Curation platform to **find and fix** problems in any {image, text, tabular} dataset. Cleanlab Studio [automatically](https://cleanlab.ai/blog/data-centric-ai/) runs optimized algorithms from this package on top of **AutoML & Foundation** models fit to your data, and presents detected issues (+ AI-suggested fixes) in an intelligent [data correction interface](https://www.youtube.com/playlist?list=PLn_2rr2ltYqA1uAC0AnRbPyY-wWVf1aeg).
@@ -326,8 +327,9 @@ While this open-source package **finds** data issues, its utility depends on you
 - accomplish more (auto-label data, deploy ML instantly, audit LLM inputs/outputs, moderate content, ...)
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/cleanlab/assets/master/cleanlab/studio.png" width=80% height=80% alt="Cleanlab Studio logo">
+  <img src="https://raw.githubusercontent.com/cleanlab/assets/master/cleanlab/ml-with-cleanlab-studio.png" alt="The modern AI pipeline automated with Cleanlab Studio">
 </p>
+
 
 ## Join our community
 
