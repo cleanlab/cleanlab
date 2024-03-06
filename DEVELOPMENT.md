@@ -331,3 +331,84 @@ Use relative linking to connect information between docs and jupyter notebooks, 
 - Link a different tutorial notebook from within a tutorial notebook: `[another notebook](another_notebook.html)`. (Note this only works when the other notebook is in same folder as this notebook, otherwise may need to try relative path)
 - Link another specific section of different notebook from within a tutorial notebook: `[another notebook section title](another_notebook.html#another-notebook-section-title)`
 - Linking examples notebooks from inside tutorial notebooks can be simply done by linking global url of the example notebook in master branch of github.com/cleanlab/examples/
+
+## Packaging and releasing
+
+The release process is automated using GitHub Actions. When a release is published on the main [cleanlab](https://github.com/cleanlab/cleanlab) repository, the following workflows are triggered:
+
+1. Docs are built and pushed to the `cleanlab-docs` depository within the same organization, which handles the deployment to [docs.cleanlab.ai](https://docs.cleanlab.ai/stable/index.html).
+2. A new release is created on PyPI with the same version number as the release on GitHub.
+
+There are other workflows that need to be handled manually in other repositories, but that is outside the score of this section.
+This section will focus on the PyPI release process.
+
+### Developing the PyPI release process
+
+It's important to test the release process on a separate PyPI project before releasing to the main [cleanlab project](https://pypi.org/project/cleanlab/). For the remainder of this section, we'll refer to the test project as `test-cleanlab-<username>`, where `<username>` is your GitHub username. This name should be unique to avoid conflicts with other users' test projects.
+
+#### Prerequisites
+
+##### PyPI Prerequisites
+
+- Create separate user accounts on [PyPI](https://pypi.org/) and [Test PyPI](https://test.pypi.org/).
+  - [Register here on PyPI](https://pypi.org/account/register/).
+  - [Register here on Test PyPI](https://test.pypi.org/account/register/).
+  - Ideally, these accounts should have the same username, but this is not strictly necessary.
+
+- Add a "[Trusted Publisher](https://docs.pypi.org/trusted-publishers/)" on both PyPI accounts (i.e. Publishing with OpenID Connect).
+  - This will allow you to publish packages to PyPI and Test PyPI using GitHub Actions, without needing to store your PyPI credentials in the repository.
+  - Walk through the steps in ["Creating a PyPI project with a trusted publisher"](https://docs.pypi.org/trusted-publishers/creating-a-project-through-oidc/) for both PyPI and Test PyPI.
+    - The PyPI Project name is: `test-cleanlab-<username>`.
+    - The owner is: `<username>` (your GitHub username).
+    - The repository name is: `cleanlab` (your fork of the cleanlab repository).
+    - The [workflow file](.github/workflows/release-build-publish.yml) name is: `release-build-publish.yml`
+    - ATTENTION: The environment name should be left empty in the Test PyPI project, and set to `pypi` in the PyPI project.
+      - See discussion on the environment in the [GitHub Prerequisites](#github-prerequisites) section.
+
+##### GitHub Prerequisites
+
+- [Fork the cleanlab repository](https://github.com/cleanlab/cleanlab/fork) to your GitHub account.
+  - This will allow you to test the release process on your fork, on a separate PyPI project.
+
+- On your fork of the cleanlab repository, create two environments called `testpypi` and `pypi` in the "Environments" tab, under the repository "Settings".
+  - For the `testpypi` environment, add a wait timer of 1 minute to allow TestPyPI uploads to complete processing before testing installation.
+  - For the `pypi` environment, add a protection rule for requiring a review from a maintainer. For extra security, you may disallow a self-review so that a second maintainer must approve the release. 
+  - You may wish to limit which tags can trigger a release in these environment, to avoid accidental releases.
+  - Github Docs provides instructions on [how to create a new environment](https://docs.github.com/en/actions/deployment/targeting-different-environments/using-environments-for-deployment#creating-an-environment) with these considerations.
+
+
+##### Local Prerequisites
+
+- In `pyproject.toml` replace the `project.name` configuration with the value `test-cleanlab-<username>`, where `<username>` is your GitHub username.
+
+#### Testing the release process
+
+1. Push a commit with an updated version number in `cleanlab/version.py`.
+    - Ideally, this should be a patch version bump, e.g. `0.1.0` to `0.1.1` or a minor version bump, e.g. `0.1.X` to `0.2.0`.
+    - This is typically done via a standalone PR to the cleanlab/cleanlab repository.
+
+    ```diff
+    # Bump the version number in cleanlab/version.py
+    - __version__ = "2.6.0"
+    + __version__ = "2.6.1"
+    ```
+
+2. On the repository's GitHub page, navigate to the "Releases" page and click "Draft a new release".
+    - Choose a tag version that matches the version number in `cleanlab/version.py`, it should follow the format `vX.Y.Z`, e.g. `v2.6.1` or `v2.7.0`.
+      - This kind of format will be automatically checked by the release workflow.
+      - This tag may not exist yet, but Github allows you to create it upon publishing the release.
+    - Target the `master` branch.
+    - Select the previous tag to compare against, if it exists. Usually this is the previous release tag, e.g. the previous patch version.
+      - GitHub should allow you to generate release notes based on this information.
+    - When you've finalized the release notes and are ready to publish the release, click "Publish release".
+    - This will kick off the release workflow, which will build and publish the package to Test PyPI, test the package installation, and then publish the package to PyPI.
+
+3. Open up the "Actions" tab on your fork of the cleanlab repository and monitor the progress of the release workflow.
+    - A "Release Build Publish" workflow should be triggered by the release, and you can monitor its progress there.
+    - It will check for the project name (for uploading to the proper PyPI project), and validate the version name/tag.
+    - When these steps pass, it will build the distribution and check the contents.
+    - Passing the build step, it will upload the distribution to Test PyPI.
+    - After the upload, it will kick off several test jobs to install the package from Test PyPI and run various tests.
+      - Adding more kinds of tests at this stage in the workflow is a good idea, to ensure the package is working as expected. Just create a new job that `needs` the `verify-version` job, and runs the tests you want to add.
+    - After all the tests pass, it will trigger the final job. However, the environment should be configure to require a review from a maintainer before the final job can be run.
+      - View the deployment and approve it it everything looks good so far. This will trigger the final job to publish the package to PyPI.
