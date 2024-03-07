@@ -68,7 +68,8 @@ cleanlab is:
 
 ![](https://raw.githubusercontent.com/cleanlab/assets/master/cleanlab/label-errors-examples.png)
 <p align="center">
-Examples of incorrect given labels in various image datasets <a href="https://l7.curtisnorthcutt.com/label-errors">found and corrected</a> using cleanlab.
+Examples of incorrect given labels in various image datasets <a href="https://l7.curtisnorthcutt.com/label-errors">found and corrected</a> using cleanlab. 
+While these examples are from image datasets, this also works for text, audio, tabular data.
 </p>
 
 ## Run cleanlab
