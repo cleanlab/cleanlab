@@ -8,6 +8,9 @@ Types of issues Datalab can detect
 This page describes the various types of issues that Datalab can detect in a dataset.
 For each type of issue, we explain: what it says about your data if detected, why this matters, and what parameters you can optionally specify to control the detection of this issue.
 
+In case you didn't know: you can alternatively use `Cleanlab Studio <https://cleanlab.ai/blog/data-centric-ai/>`_ to detect the same data issues as this package, plus `many more types of issues <https://help.cleanlab.ai/guide/concepts/cleanlab_columns/>`_, all without having to do any Machine Learning (or even write any code).
+
+
 Estimates for Each Issue Type
 ------------------------------
 
@@ -401,3 +404,15 @@ To customize optional parameters for specific image issue types, you can provide
 .. note::
 
     For more information, view the cleanvision `docs <https://cleanvision.readthedocs.io/en/latest/tutorials/tutorial.html#5.-Check-for-an-issue-with-a-different-threshold>`_.
+
+
+Cleanlab Studio (Easy Mode)
+---------------------------
+
+`Cleanlab Studio <https://cleanlab.ai/blog/data-centric-ai/>`_ is a fully automated platform that can detect the same data issues as this package, as well as `many more types of issues <https://help.cleanlab.ai/guide/concepts/cleanlab_columns/>`_, all without you having to do any Machine Learning (or even write any code). Beyond being 100x faster to use and producing more useful results, `Cleanlab Studio <https://cleanlab.ai/blog/data-centric-ai/>`_ also provides an intelligent data correction interface for you to quickly fix the issues detected in your dataset (a single data scientist can fix millions of data points thanks to AI suggestions).
+
+`Cleanlab Studio <https://cleanlab.ai/blog/data-centric-ai/>`_ offers a powerful AutoML system (with Foundation models) that is useful for more than improving data quality. With a few clicks, you can: find + fix issues in your dataset, identify the best type of ML model and train/tune it, and deploy this model to serve accurate predictions for new data. Also use the same AutoML to auto-label large datasets (a single user can label millions of data points thanks to powerful Foundation models). `Try Cleanlab Studio for free! <https://cleanlab.ai/signup/>`_
+
+.. image:: https://raw.githubusercontent.com/cleanlab/assets/master/cleanlab/ml-with-cleanlab-studio.png
+   :width: 800
+   :alt: Stages of modern AI pipeline that can now be automated with Cleanlab Studio

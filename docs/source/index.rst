@@ -132,9 +132,9 @@ Please see our `contributing guidelines <https://github.com/cleanlab/cleanlab/bl
 Easy Mode
 ---------
 
-While this open-source library **finds** data issues, its utility depends on you having a good ML model and  interface to efficiently **fix** these issues in your dataset. Providing all these pieces, `Cleanlab Studio <https://cleanlab.ai/studio/?utm_source=github&utm_medium=readme&utm_campaign=clostostudio>`_ is a *no-code* platform to **find and fix** problems in image/text/tabular datasets. Cleanlab Studio integrates the data quality algorithms from this library on top of cutting-edge AutoML & Foundation models fit to your data, and presents detected issues in a smart data editing interface.
+While this open-source library **finds** data issues, its utility depends on you having a good ML model and  interface to efficiently **fix** these issues in your dataset. Providing all these pieces, `Cleanlab Studio <https://cleanlab.ai/blog/data-centric-ai/>`_ is a *no-code* platform to **find and fix** problems in image/text/tabular datasets. Cleanlab Studio integrates the data quality algorithms from this library on top of cutting-edge AutoML & Foundation models fit to your data, and presents detected issues in a smart data editing interface.
 
-.. image:: https://raw.githubusercontent.com/cleanlab/assets/master/cleanlab/full-automated-ai-pipeline.jpg
+.. image:: https://raw.githubusercontent.com/cleanlab/assets/master/cleanlab/ml-with-cleanlab-studio.png
    :width: 800
    :alt: Stages of modern AI pipeline that can now be automated with Cleanlab Studio
 
@@ -205,6 +205,9 @@ Link to Cleanlab Studio docs: `help.cleanlab.ai <https://help.cleanlab.ai/>`_
    Website <https://cleanlab.ai>
    GitHub <https://github.com/cleanlab/cleanlab>
    PyPI <https://pypi.org/project/cleanlab/>
-   Conda <https://anaconda.org/Cleanlab/cleanlab>
+   Conda <https://anaconda.org/conda-forge/cleanlab>
+   Community Discussions <https://cleanlab.ai/slack>
+   Blog <https://cleanlab.ai/blog/>
+   Videos <https://www.youtube.com/@CleanlabAI/playlists>
    Cleanlab Studio (Easy Mode) <https://cleanlab.ai/blog/data-centric-ai/>
    Cleanlab Studio Docs <https://help.cleanlab.ai>
