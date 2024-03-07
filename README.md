@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/cleanlab/assets/master/cleanlab/cleanlab_logo_open_source_transparent_optimized_size.png" width=60% height=60%>
+  <img src="https://raw.githubusercontent.com/cleanlab/assets/master/cleanlab/cleanlab_logo_open_source.png" width=60% height=60%>
 </p>
 
 
@@ -66,7 +66,7 @@ cleanlab is:
 6. **general** -- works with **[any dataset](https://labelerrors.com/)** (text, image, tabular, audio,...) + **any model** (PyTorch, OpenAI, XGBoost,...)
 <br/>
 
-![](https://raw.githubusercontent.com/cleanlab/assets/master/cleanlab/label-errors-examples.png)
+![](https://raw.githubusercontent.com/cleanlab/assets/master/cleanlab/errors-examples.png)
 <p align="center">
 Examples of incorrect given labels in various image datasets <a href="https://l7.curtisnorthcutt.com/label-errors">found and corrected</a> using cleanlab.
 </p>
@@ -88,7 +88,7 @@ cleanlab supports Linux, macOS, and Windows and runs on Python 3.8+.
 Most folks jump from Step 1 → 4, but you may achieve big gains without *any* change to your modeling code by using cleanlab!
 Continuously boost performance by iterating Steps 2 → 4 (and try to evaluate with *cleaned* data).
 
-![](https://raw.githubusercontent.com/cleanlab/assets/master/cleanlab/dcai_flowchart.png)
+![](https://raw.githubusercontent.com/cleanlab/assets/master/cleanlab/flowchart.png)
 
 
 ## Use cleanlab with any model for most ML tasks
