@@ -92,9 +92,10 @@ class Datalab:
         The name of the label column in the dataset.
 
     image_key : str, optional
-        Optional key that can be specified for image datasets to point to the field containing the actual images themselves.
-        If specified, additional image-specific issue types can be detected in the dataset.
-        See the CleanVision package `documentation <https://cleanvision.readthedocs.io/en/latest/>`_ for descriptions of these image-specific issue types.
+        Name of the image column in the dataset containing the PIL image objects.
+        It is an optional argument that can be specified to check for additional image-specific issues in the dataset. See the `CleanVision package <https://github.com/cleanlab/cleanvision?tab=readme-ov-file#clean-your-data-for-better-computer-vision>`_ for descriptions of these image-specific issue types.
+        Currently, this argument is only supported for "datasets.Dataset" format.
+
 
     verbosity : int, optional
         The higher the verbosity level, the more information
