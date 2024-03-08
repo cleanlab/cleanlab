@@ -47,11 +47,14 @@ class NullIssueManager(IssueManager):
 
     def find_issues(
         self,
-        features: Optional[npt.NDArray] = None,
+        features: Optional[npt.NDArray | pd.DataFrame] = None,
         **kwargs,
     ) -> None:
         if features is None:
             raise ValueError("features must be provided to check for null values.")
+        if isinstance(features, pd.DataFrame):
+            features = features.to_numpy()
+
         is_null_issue, scores, null_tracker = self._calculate_null_issues(features=features)
 
         self.issues = pd.DataFrame(
