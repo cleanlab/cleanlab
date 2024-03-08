@@ -86,8 +86,8 @@ class NullIssueManager(IssueManager):
         most_frequent_pattern = "no_null"
         rows_affected: List[int] = []
         occurrence_of_most_frequent_pattern = 0
-        if null_tracker.any():
-            null_row_indices = np.where(null_tracker.any(axis=1))[0]
+        if np.any(null_tracker, axis=None):
+            null_row_indices = np.where(np.any(null_tracker, axis=1))[0]
             null_patterns_as_strings = [
                 "".join(map(str, null_tracker[i].astype(int).tolist())) for i in null_row_indices
             ]
