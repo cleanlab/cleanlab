@@ -47,11 +47,15 @@ class NullIssueManager(IssueManager):
 
     def find_issues(
         self,
-        features: Optional[npt.NDArray] = None,
+        features: Optional[npt.NDArray | pd.DataFrame] = None,
         **kwargs,
     ) -> None:
         if features is None:
             raise ValueError("features must be provided to check for null values.")
+        # Support features as a numpy array. Temporarily allow this issuecheck to convert a DataFrame to a numpy array.
+        if isinstance(features, pd.DataFrame):
+            features = features.to_numpy()
+
         is_null_issue, scores, null_tracker = self._calculate_null_issues(features=features)
 
         self.issues = pd.DataFrame(
@@ -86,8 +90,8 @@ class NullIssueManager(IssueManager):
         most_frequent_pattern = "no_null"
         rows_affected: List[int] = []
         occurrence_of_most_frequent_pattern = 0
-        if null_tracker.any():
-            null_row_indices = np.where(null_tracker.any(axis=1))[0]
+        if np.any(null_tracker, axis=None):
+            null_row_indices = np.where(np.any(null_tracker, axis=1))[0]
             null_patterns_as_strings = [
                 "".join(map(str, null_tracker[i].astype(int).tolist())) for i in null_row_indices
             ]
