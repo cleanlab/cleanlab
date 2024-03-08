@@ -52,6 +52,7 @@ class NullIssueManager(IssueManager):
     ) -> None:
         if features is None:
             raise ValueError("features must be provided to check for null values.")
+        # Support features as a numpy array. Temporarily allow this issuecheck to convert a DataFrame to a numpy array.
         if isinstance(features, pd.DataFrame):
             features = features.to_numpy()
 
