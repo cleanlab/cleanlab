@@ -17,7 +17,7 @@
 import numpy as np
 import pytest
 
-from scipy.sparse import csr_matrix
+from sklearn.neighbors import NearestNeighbors
 
 from cleanlab.datavaluation import data_shapley_knn
 
@@ -25,18 +25,34 @@ from cleanlab.datavaluation import data_shapley_knn
 class TestDataValuation:
     K = 3
     N = 100
+    num_features = 10
+
+    @pytest.fixture
+    def features(self):
+        return np.random.rand(self.N, self.num_features)
 
     @pytest.fixture
     def labels(self):
         return np.random.randint(0, 2, self.N)
 
     @pytest.fixture
-    def knn_graph(self):
-        knn_graph = csr_matrix(np.random.rand(self.N, self.N))
+    def knn_graph(self, features):
+        knn = NearestNeighbors(n_neighbors=self.K).fit(features)
+        knn_graph = knn.kneighbors_graph(mode="distance")
         return knn_graph
 
-    def test_data_shapley_knn(self, knn_graph, labels):
-        shapley = data_shapley_knn(knn_graph, labels, k=self.K)
+    def test_data_shapley_knn(self, labels, features):
+        shapley, _ = data_shapley_knn(labels, features=features, k=self.K)
         assert shapley.shape == (100,)
         assert np.all(shapley >= 0)
         assert np.all(shapley <= 1)
+
+    def test_data_shapley_knn_with_knn_graph(self, labels, knn_graph):
+        shapley, _ = data_shapley_knn(labels, knn_graph=knn_graph, k=self.K)
+        assert shapley.shape == (100,)
+        assert np.all(shapley >= 0)
+        assert np.all(shapley <= 1)
+
+    def test_data_shapley_knn_with_large_k(self, labels, knn_graph):
+        _, k = data_shapley_knn(labels, knn_graph=knn_graph, k=self.K + 1)
+        assert k == self.K
