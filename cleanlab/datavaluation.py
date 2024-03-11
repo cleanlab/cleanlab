@@ -72,6 +72,8 @@ def data_shapley_knn(
 
     Parameters
     ----------
+    metric: str
+        The metric to use when constructing knn.
     features: np.ndarray
     knn_graph : csr_matrix
         A sparse matrix representing the knn graph.
