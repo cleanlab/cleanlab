@@ -30,8 +30,11 @@ import warnings
 import numpy as np
 import pandas as pd
 from scipy.sparse import csr_matrix
+from sklearn.exceptions import NotFittedError
+from sklearn.neighbors import NearestNeighbors
+from sklearn.utils.validation import check_is_fitted
 
-from cleanlab.datavaluation import data_shapley_knn
+from cleanlab.data_valuation import data_shapley_knn
 from cleanlab.datalab.internal.issue_manager import IssueManager
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -140,22 +143,24 @@ class DataValuationIssueManager(IssueManager):
                 )
             if self.metric is None:
                 self.metric = "cosine" if features.shape[1] > 3 else "euclidean"
-            knn_graph = None
+            knn = NearestNeighbors(n_neighbors=self.k, metric=self.metric).fit(features)
 
-        if labels is None:
-            raise ValueError("labels must be provided to run data valuation")
+            if self.metric and self.metric != knn.metric:
+                warnings.warn(
+                    f"Metric {self.metric} does not match metric {knn.metric} used to fit knn. "
+                    "Most likely an existing NearestNeighbors object was passed in, but a different "
+                    "metric was specified."
+                )
+            self.metric = knn.metric
 
-        scores, self.k, new_metric = data_shapley_knn(
-            labels, knn_graph=knn_graph, features=features, metric=self.metric, k=self.k
-        )
+            try:
+                check_is_fitted(knn)
+            except NotFittedError:
+                knn.fit(features)
 
-        if self.metric and self.metric != new_metric:
-            warnings.warn(
-                f"Metric {self.metric} does not match metric {new_metric} used to fit knn. "
-                "Most likely an existing NearestNeighbors object was passed in, but a different "
-                "metric was specified."
-            )
-        self.metric = new_metric
+            knn_graph = knn.kneighbors_graph(mode="distance")
+
+        scores = data_shapley_knn(labels, knn_graph=knn_graph, k=self.k)
 
         self.issues = pd.DataFrame(
             {
