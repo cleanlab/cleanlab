@@ -61,11 +61,11 @@ def _process_knn_graph_from_features(features, metric, k: int = 10) -> Tuple[csr
 
 def data_shapley_knn(
     labels: np.ndarray,
-    metric: str,
+    metric: Optional[str],
     knn_graph: Optional[csr_matrix] = None,
     features: Optional[np.ndarray] = None,
     k: int = 10,
-) -> Tuple[np.ndarray, int, str]:
+) -> Tuple[np.ndarray, int, Optional[str]]:
     """Compute the Shapley values of data points based on a knn graph.
     Based on KNN-Shapley value described in https://arxiv.org/abs/1911.07128
     The larger the score, the more valuable the data point is, the more contribution it will make to the model's training.
