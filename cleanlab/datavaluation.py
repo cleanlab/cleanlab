@@ -61,9 +61,9 @@ def _process_knn_graph_from_features(features, metric, k: int = 10) -> Tuple[csr
 
 def data_shapley_knn(
     labels: np.ndarray,
+    metric: str,
     knn_graph: Optional[csr_matrix] = None,
     features: Optional[np.ndarray] = None,
-    metric: Optional[str] = None,
     k: int = 10,
 ) -> Tuple[np.ndarray, int, str]:
     """Compute the Shapley values of data points based on a knn graph.
