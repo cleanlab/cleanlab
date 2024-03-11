@@ -20,6 +20,8 @@ from typing import Optional, Tuple
 import numpy as np
 from scipy.sparse import csr_matrix
 from sklearn.neighbors import NearestNeighbors
+from sklearn.exceptions import NotFittedError
+from sklearn.utils.validation import check_is_fitted
 
 
 def _knn_shapley_score(knn_graph: csr_matrix, labels: np.ndarray, k: int) -> np.ndarray:
@@ -38,7 +40,7 @@ def _knn_shapley_score(knn_graph: csr_matrix, labels: np.ndarray, k: int) -> np.
     return 0.5 * (np.mean(scores / k, axis=0) + 1)
 
 
-def _process_knn_graph_from_features(features, metric, k: int = 10) -> csr_matrix:
+def _process_knn_graph_from_features(features, metric, k: int = 10) -> Tuple[csr_matrix, str]:
     """Calculate the knn graph from the features if it is not provided in the kwargs."""
     if k > len(features):  # Ensure number of neighbors less than number of examples
         raise ValueError(
@@ -50,7 +52,11 @@ def _process_knn_graph_from_features(features, metric, k: int = 10) -> csr_matri
 
     knn = NearestNeighbors(n_neighbors=k, metric=metric).fit(features)
     knn_graph = knn.kneighbors_graph(mode="distance")
-    return knn_graph
+    try:
+        check_is_fitted(knn)
+    except NotFittedError:
+        knn.fit(features)
+    return knn_graph, knn.metric
 
 
 def data_shapley_knn(
@@ -59,7 +65,7 @@ def data_shapley_knn(
     features: Optional[np.ndarray] = None,
     metric: Optional[str] = None,
     k: int = 10,
-) -> Tuple[np.ndarray, int]:
+) -> Tuple[np.ndarray, int, str]:
     """Compute the Shapley values of data points based on a knn graph.
     Based on KNN-Shapley value described in https://arxiv.org/abs/1911.07128
     The larger the score, the more valuable the data point is, the more contribution it will make to the model's training.
@@ -84,8 +90,9 @@ def data_shapley_knn(
                 Warning(
                     f"k is larger than the number of neighbors in the knn graph. Using k={k} instead."
                 )
+        new_metric = metric
     else:
         if features is None:
             raise ValueError("features must be provided if knn_graph is not provided.")
-        knn_graph = _process_knn_graph_from_features(features, metric, k)
-    return _knn_shapley_score(knn_graph, labels, k), k
+        knn_graph, new_metric = _process_knn_graph_from_features(features, metric, k)
+    return _knn_shapley_score(knn_graph, labels, k), k, new_metric

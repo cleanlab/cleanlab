@@ -143,26 +143,22 @@ class DataValuationIssueManager(IssueManager):
                 )
             if self.metric is None:
                 self.metric = "cosine" if features.shape[1] > 3 else "euclidean"
-            knn = NearestNeighbors(n_neighbors=self.k, metric=self.metric).fit(features)
+            knn_graph = None
 
-            if self.metric and self.metric != knn.metric:
-                warnings.warn(
-                    f"Metric {self.metric} does not match metric {knn.metric} used to fit knn. "
-                    "Most likely an existing NearestNeighbors object was passed in, but a different "
-                    "metric was specified."
-                )
-            self.metric = knn.metric
-
-            try:
-                check_is_fitted(knn)
-            except NotFittedError:
-                knn.fit(features)
-
-            knn_graph = knn.kneighbors_graph(mode="distance")
         if labels is None:
             raise ValueError("labels must be provided to run data valuation")
 
-        scores = data_shapley_knn(knn_graph, labels, self.k)
+        scores, self.k, new_metric = data_shapley_knn(
+            labels, knn_graph=knn_graph, features=features, metric=self.metric, k=self.k
+        )
+
+        if self.metric and self.metric != new_metric:
+            warnings.warn(
+                f"Metric {self.metric} does not match metric {new_metric} used to fit knn. "
+                "Most likely an existing NearestNeighbors object was passed in, but a different "
+                "metric was specified."
+            )
+        self.metric = new_metric
 
         self.issues = pd.DataFrame(
             {

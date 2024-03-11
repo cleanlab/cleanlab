@@ -42,17 +42,17 @@ class TestDataValuation:
         return knn_graph
 
     def test_data_shapley_knn(self, labels, features):
-        shapley, _ = data_shapley_knn(labels, features=features, k=self.K)
+        shapley, _, _ = data_shapley_knn(labels, features=features, k=self.K)
         assert shapley.shape == (100,)
         assert np.all(shapley >= 0)
         assert np.all(shapley <= 1)
 
     def test_data_shapley_knn_with_knn_graph(self, labels, knn_graph):
-        shapley, _ = data_shapley_knn(labels, knn_graph=knn_graph, k=self.K)
+        shapley, _, _ = data_shapley_knn(labels, knn_graph=knn_graph, k=self.K)
         assert shapley.shape == (100,)
         assert np.all(shapley >= 0)
         assert np.all(shapley <= 1)
 
     def test_data_shapley_knn_with_large_k(self, labels, knn_graph):
-        _, k = data_shapley_knn(labels, knn_graph=knn_graph, k=self.K + 1)
+        _, k, _ = data_shapley_knn(labels, knn_graph=knn_graph, k=self.K + 1)
         assert k == self.K
