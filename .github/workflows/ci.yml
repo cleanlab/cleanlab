@@ -31,7 +31,7 @@ jobs:
       - name: Overwrite tensorflow version on Windows
         run: |
           pip uninstall -y tensorflow
-          pip install tensorflow-cpu
+          pip install tensorflow-cpu<2.16
       - name: Test with coverage
         run: pytest --verbose --maxfail=3 --order-tests --cov=cleanlab/ --cov-config .coveragerc --cov-report=xml
         env:
