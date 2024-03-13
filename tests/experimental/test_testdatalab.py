@@ -175,3 +175,15 @@ class TestDataLabReuseStatisticInfo:
             lab1_result[["is_label_issue"]].values == lab2_result[["is_label_issue"]].values
         ) / len(lab1_result)
         assert similarity >= 0.90
+
+    def test_default_issue_types(self, trained_datalab, data, pred_probs_test):
+        dataset = {"labels": data["noisy_labels_test"]}
+        features = data["X_test"]
+        lab = TestDatalab(trained_datalab=trained_datalab, data=dataset, label_name="labels")
+        lab.find_issues(pred_probs=pred_probs_test, features=features)
+
+        expected_issue_types_keys = ["label", "null", "class_imbalance"]
+
+        issue_summary = lab.get_issue_summary()
+        issue_types_found = issue_summary["issue_type"]
+        assert set(issue_types_found) == set(expected_issue_types_keys)

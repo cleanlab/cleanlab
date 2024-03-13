@@ -107,4 +107,7 @@ class TestIssueFinder(IssueFinder):
         )
         if label_use_trained_statistics:
             issue_types_copy = self._resolve_trained_statistics_args(issue_types_copy)
+        # make sure the issue finder will only find issues whose issue type now supports reuse statistic information or don't need statistic information.
+        supported_issue_types = ["label", "null", "class_imbalance"]
+        issue_types_copy = {k: v for k, v in issue_types_copy.items() if k in supported_issue_types}
         return issue_types_copy
