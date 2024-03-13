@@ -11,7 +11,7 @@ pytest-cov
 requests
 scipy
 skorch
-tensorflow
+tensorflow<2.16
 torch
 torchvision
 typing-extensions>=4.8.0
