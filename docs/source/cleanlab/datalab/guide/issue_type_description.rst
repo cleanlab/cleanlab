@@ -157,9 +157,10 @@ Class imbalance in a dataset can lead to subpar model performance for the under-
 Image-specific Issues
 ---------------------
 
-For image datasets which are properly specified as such, Datalab can detect additional types of image-specific issues (if the necessary optional dependencies are installed).
-Specifically, low-quality images which are too: dark/bright, blurry, low information, abnormally sized, etc.
-Descriptions of these image-specific issues are provided in the `CleanVision package <https://github.com/cleanlab/cleanvision>`_ and its documentation.
+Datalab can identify image-specific issues in datasets, such as images that are excessively dark or bright, blurry, lack detail, or have unusual sizes.
+To detect these issues, simply specify the `image_key` argument in :py:meth:`~cleanlab.datalab.datalab.Datalab`, indicating the image column name in your dataset.
+This functionality currently works only with Hugging Face datasets. You can convert other local dataset formats into a Hugging Face dataset by following `this guide <https://huggingface.co/docs/datasets/en/loading>`_.
+More information on these image-specific issues is available in the `CleanVision package <https://github.com/cleanlab/cleanvision?tab=readme-ov-file#clean-your-data-for-better-computer-vision>`_ .
 
 Underperforming Group Issue
 ---------------------------
