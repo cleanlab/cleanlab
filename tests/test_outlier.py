@@ -14,6 +14,8 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
+from hypothesis import example, settings, strategies as st
+from hypothesis import given
 import numpy as np
 import pandas as pd
 import pytest
@@ -653,3 +655,27 @@ def test_wrong_info_get_ood_predictions_scores():
         labels=data["labels"],
         adjust_pred_probs=False,  # this should user warning because provided info is not used
     )
+
+
+@given(
+    fill_value=st.floats(
+        min_value=5 * float(np.finfo(np.float_).eps),
+        max_value=10,
+        exclude_min=False,
+        allow_subnormal=False,
+        allow_infinity=False,
+        allow_nan=False,
+    ),
+    K=st.integers(min_value=2, max_value=100),
+)
+@example(K=1, fill_value=0.0)
+@settings(max_examples=10000, deadline=None)
+def test_scores_for_identical_examples(fill_value, K):
+    N = 20
+
+    features = np.full((N, K), fill_value=fill_value)
+    scores = OutOfDistribution().fit_score(features=features)
+
+    # Dataset with only
+    expected_score = np.full(N, 1.0)
+    np.testing.assert_array_equal(scores, expected_score)
