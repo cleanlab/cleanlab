@@ -99,7 +99,7 @@ class NearDuplicateIssueManager(IssueManager):
         N = knn_graph.shape[0]
         nn_distances = knn_graph.data.reshape(N, -1)[:, 0]
         median_nn_distance = max(
-            np.median(nn_distances), np.finfo(np.float_).eps
+            np.median(nn_distances), 100 * np.finfo(np.float_).eps
         )  # avoid threshold = 0
         self.near_duplicate_sets = self._neighbors_within_radius(
             knn_graph, self.threshold, median_nn_distance
@@ -275,4 +275,9 @@ def _compute_scores_with_exp_transform(nn_distances: np.ndarray, temperature: fl
         raise ValueError("Temperature must be greater than 0.")
 
     scores = 1 - np.exp(-temperature * nn_distances)
+
+    # Ensure that for nn_distances approximately equal to 0, the score is set to 0
+    inds = np.isclose(nn_distances, 0)
+    scores[inds] = 0
+
     return scores

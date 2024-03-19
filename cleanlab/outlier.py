@@ -460,7 +460,7 @@ class OutOfDistribution:
 
         if self.params["scaling_factor"] is None:
             self.params["scaling_factor"] = float(
-                max(np.median(avg_knn_distances), np.finfo(np.float_).eps)
+                max(np.median(avg_knn_distances), 100 * np.finfo(np.float_).eps)
             )
         scaling_factor = self.params["scaling_factor"]
 
