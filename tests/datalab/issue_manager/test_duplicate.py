@@ -142,15 +142,21 @@ class TestNearDuplicateIssueManager:
         assert all_symmetric, "Some near duplicate sets are not symmetric"
 
         # Test: Near duplicate sets for issues
-        assert all(
+        all_non_issues_have_empty_near_duplicate_sets = all(
             len(near_duplicate_set) == 0
             for i, near_duplicate_set in enumerate(near_duplicate_sets)
             if not issues[i]
+        )
+        assert (
+            all_non_issues_have_empty_near_duplicate_sets
         ), "Non-issue examples should not have near duplicate sets"
-        assert all(
+        all_issues_have_non_empty_near_duplicate_sets = all(
             len(near_duplicate_set) > 0
             for i, near_duplicate_set in enumerate(near_duplicate_sets)
             if issues[i]
+        )
+        assert (
+            all_issues_have_non_empty_near_duplicate_sets
         ), "Issue examples should have near duplicate sets"
 
 
