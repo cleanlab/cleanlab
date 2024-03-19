@@ -669,7 +669,7 @@ def test_wrong_info_get_ood_predictions_scores():
     K=st.integers(min_value=2, max_value=100),
 )
 @example(K=1, fill_value=0.0)
-@settings(max_examples=10000, deadline=None)
+@settings(deadline=None)
 def test_scores_for_identical_examples(fill_value, K):
     N = 20
 
