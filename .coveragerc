@@ -3,7 +3,11 @@
 [run]
 branch = True
 omit =
-    cleanlab/experimental/*
+    cleanlab/experimental/cifar_cnn.py
+    cleanlab/experimental/coteaching.py
+    cleanlab/experimental/label_issues_batched.py
+    cleanlab/experimental/mnist_pytorch.py
+    cleanlab/experimental/span_classification.py
 
 [report]
 # Regexes for lines to exclude from consideration
