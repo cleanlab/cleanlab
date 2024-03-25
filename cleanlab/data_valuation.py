@@ -13,6 +13,16 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
+"""
+Provides methods for computing the Shapley values of data points using a K-Nearest Neighbors (KNN) graph.
+This approach allows for the assessment of individual data points' contributions to the model's performance in a dataset.
+The module's primary function, `data_shapley_knn`, enables the computation of Shapley values either directly from data features or using a precomputed KNN graph.
+Suitable for scenarios where understanding the significance of each data point in model training is crucial.
+
+The methodology is based on the approach described in https://arxiv.org/abs/1911.07128.
+The paper discusses balancing scalability and utility in data importance, suggesting KNN-based Shapley value approximation as a viable approach.
+The implementation here seeks to make these insights accessible for practical usage, offering an efficient way to quantify data point importance in ML workflows.
+"""
 
 
 from typing import Optional, cast
@@ -66,21 +76,46 @@ def data_shapley_knn(
     metric: Optional[str] = None,
     k: int = 10,
 ) -> np.ndarray:
-    """Compute the Shapley values of data points based on a knn graph.
-    Based on KNN-Shapley value described in https://arxiv.org/abs/1911.07128
-    The larger the score, the more valuable the data point is, the more contribution it will make to the model's training.
+    """
+    Compute the Shapley values of data points using a K-Nearest Neighbors (KNN) graph.
+
+    This function calculates the contribution (Shapley value) of each data point in a dataset
+    for model training, based on the principle that data points contributing more to the
+    model's accuracy are of higher value.
 
     Parameters
     ----------
-    labels: np.ndarray
-        The labels of the data points.
-    features: np.ndarray
-    knn_graph : csr_matrix
-        A sparse matrix representing the knn graph.
-    metric: str
-        The metric to use when constructing knn.
-    k: int
-        The number of nearest neighbors to consider.
+    labels :
+        An array of labels for the data points.
+    knn_graph :
+        A precomputed sparse KNN graph. If not provided, it will be computed from the `features` using the specified `metric`.
+    features :
+        The feature matrix of data points. Necessary if `knn_graph` is not supplied.
+    metric : Optional[str], default=None
+        The distance metric for KNN graph construction.
+        Supports metrics available in ``sklearn.neighbors.NearestNeighbors``
+        Default metric is ``"cosine"`` for ``dim(features) > 3``, otherwise ``"euclidean"`` for lower-dimensional data.
+    k :
+        The number of neighbors to consider for the KNN graph and Shapley value computation.
+        Must be less than the total number of data points.
+        The value may not exceed the number of neighbors of each data point stored in the KNN graph.
+
+    Returns
+    -------
+    scores :
+        An array containing transformed Shapley values for each data point, calibrated to indicate their relative importance.
+        These scores have been adjusted to fall within the range of 0 to 1.
+        Values closer to 1 suggest data points are highly influential and positively contribute to the model's performance.
+        Conversely, scores below 0.5 are interpreted as indicating a negative impact on model performance.
+
+    Raises
+    ------
+    ValueError
+        If neither `knn_graph` nor `features` are provided, or if `k` is larger than the number of examples in `features`.
+
+    Note
+    ----
+    The computation of the score is based on the approach outlined in https://arxiv.org/abs/1911.07128.
     """
     if knn_graph is None and features is None:
         raise ValueError("Either knn_graph or features must be provided.")
