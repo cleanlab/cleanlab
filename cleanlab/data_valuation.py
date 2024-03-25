@@ -113,6 +113,15 @@ def data_shapley_knn(
     ValueError
         If neither `knn_graph` nor `features` are provided, or if `k` is larger than the number of examples in `features`.
 
+    Examples
+    --------
+    >>> import numpy as np
+    >>> from cleanlab.data_valuation import data_shapley_knn
+    >>> labels = np.array([0, 1, 0, 1, 0])
+    >>> features = np.array([[0, 1, 2, 3, 4]]).T
+    >>> data_shapley_knn(labels=labels, features=features, k=4)
+    array([0.55 , 0.525, 0.55 , 0.525, 0.55 ])
+
     Note
     ----
     The computation of the score is based on the approach outlined in https://arxiv.org/abs/1911.07128.
