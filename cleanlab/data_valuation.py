@@ -70,7 +70,7 @@ def _process_knn_graph_from_features(
 
 
 def data_shapley_knn(
-    labels: np.ndarray,
+    labels: np.ndarray, *,
     knn_graph: Optional[csr_matrix] = None,
     features: Optional[np.ndarray] = None,
     metric: Optional[str] = None,
@@ -96,17 +96,17 @@ def data_shapley_knn(
         Supports metrics available in ``sklearn.neighbors.NearestNeighbors``
         Default metric is ``"cosine"`` for ``dim(features) > 3``, otherwise ``"euclidean"`` for lower-dimensional data.
     k :
-        The number of neighbors to consider for the KNN graph and Shapley value computation.
+        The number of neighbors to consider for the KNN graph and Data Shapley value computation.
         Must be less than the total number of data points.
         The value may not exceed the number of neighbors of each data point stored in the KNN graph.
 
     Returns
     -------
     scores :
-        An array containing transformed Shapley values for each data point, calibrated to indicate their relative importance.
-        These scores have been adjusted to fall within the range of 0 to 1.
-        Values closer to 1 suggest data points are highly influential and positively contribute to the model's performance.
-        Conversely, scores below 0.5 are interpreted as indicating a negative impact on model performance.
+        An array of transformed Data Shapley values for each data point, calibrated to indicate their relative importance.
+        These scores have been adjusted to fall within 0 to 1.
+        Values closer to 1 indicate data points that are highly influential and positively contribute to a trained ML model's performance.
+        Conversely, scores below 0.5 indicate data points estimated to  negatively impact model performance.
 
     Raises
     ------
