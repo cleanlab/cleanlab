@@ -14,14 +14,8 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 """
-Provides methods for computing the Shapley values of data points using a K-Nearest Neighbors (KNN) graph.
+Provides methods for computing the data valuation score.
 This approach allows for the assessment of individual data points' contributions to the model's performance in a dataset.
-The module's primary function, `data_shapley_knn`, enables the computation of Shapley values either directly from data features or using a precomputed KNN graph.
-Suitable for scenarios where understanding the significance of each data point in model training is crucial.
-
-The methodology is based on the approach described in https://arxiv.org/abs/1911.07128.
-The paper discusses balancing scalability and utility in data importance, suggesting KNN-based Shapley value approximation as a viable approach.
-The implementation here seeks to make these insights accessible for practical usage, offering an efficient way to quantify data point importance in ML workflows.
 """
 
 
@@ -70,27 +64,36 @@ def _process_knn_graph_from_features(
 
 
 def data_shapley_knn(
-    labels: np.ndarray, *,
-    knn_graph: Optional[csr_matrix] = None,
+    labels: np.ndarray,
+    *,
     features: Optional[np.ndarray] = None,
+    knn_graph: Optional[csr_matrix] = None,
     metric: Optional[str] = None,
     k: int = 10,
 ) -> np.ndarray:
     """
-    Compute the Shapley values of data points using a K-Nearest Neighbors (KNN) graph.
+    Compute the Data Shapley values of data points using a K-Nearest Neighbors (KNN) graph.
 
-    This function calculates the contribution (Shapley value) of each data point in a dataset
-    for model training, based on the principle that data points contributing more to the
-    model's accuracy are of higher value.
+    This function calculates the contribution (Data Shapley value) of each data point in a dataset
+    for model training, either directly from data features or using a precomputed KNN graph.
+
+    The examples in the dataset with lowest data valuation scores contribute least
+    to a trained ML model’s performance (those whose value falls below a threshold are flagged with this type of issue).
+    The data valuation score is an approximate Data Shapley value, calculated based on the labels of the top k nearest neighbors of an example. The details of this KNN-Shapley value could be found in the papers:
+    https://arxiv.org/abs/1908.08619 and https://arxiv.org/abs/1911.07128.
 
     Parameters
     ----------
     labels :
-        An array of labels for the data points.
+        An array of labels for the data points(only for multi-class classification datasets).
+    features :
+        Feature embeddings (vector representations) of every example in the dataset.
+
+            Necessary if `knn_graph` is not supplied.
+
+            If provided, this must be a 2D array with shape (num_examples, num_features).
     knn_graph :
         A precomputed sparse KNN graph. If not provided, it will be computed from the `features` using the specified `metric`.
-    features :
-        The feature matrix of data points. Necessary if `knn_graph` is not supplied.
     metric : Optional[str], default=None
         The distance metric for KNN graph construction.
         Supports metrics available in ``sklearn.neighbors.NearestNeighbors``
@@ -121,10 +124,6 @@ def data_shapley_knn(
     >>> features = np.array([[0, 1, 2, 3, 4]]).T
     >>> data_shapley_knn(labels=labels, features=features, k=4)
     array([0.55 , 0.525, 0.55 , 0.525, 0.55 ])
-
-    Note
-    ----
-    The computation of the score is based on the approach outlined in https://arxiv.org/abs/1911.07128.
     """
     if knn_graph is None and features is None:
         raise ValueError("Either knn_graph or features must be provided.")
