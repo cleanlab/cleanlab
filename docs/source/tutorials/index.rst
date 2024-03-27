@@ -6,6 +6,7 @@ Tutorials
 
    datalab/
    indepth_overview
+   clean_learning/
    image
    text
    tabular
