@@ -1,5 +1,5 @@
 CleanLearning Tutorials
-=================
+=======================
 
 .. toctree::
    :maxdepth: 1
