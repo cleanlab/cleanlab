@@ -5,10 +5,8 @@ Tutorials
    :maxdepth: 1
 
    datalab/
-   indepth_overview
    clean_learning/
-   image
-   audio
+   indepth_overview
    dataset_health
    outliers
    multiannotator
