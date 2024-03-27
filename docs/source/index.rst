@@ -153,9 +153,8 @@ Link to Cleanlab Studio docs: `help.cleanlab.ai <https://help.cleanlab.ai/>`_
 
    Datalab Tutorials <tutorials/datalab/index>
    Workflows of Data-Centric AI <tutorials/indepth_overview>
+   CleanLearning Tutorials <tutorials/clean_learning/index>
    Image Classification <tutorials/image>
-   Text Classification <tutorials/text>
-   Tabular Classification <tutorials/tabular>
    Audio Classification <tutorials/audio>
    Find Dataset-level Issues <tutorials/dataset_health>
    Identifying Outliers <tutorials/outliers>

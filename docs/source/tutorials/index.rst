@@ -8,8 +8,6 @@ Tutorials
    indepth_overview
    clean_learning/
    image
-   text
-   tabular
    audio
    dataset_health
    outliers
