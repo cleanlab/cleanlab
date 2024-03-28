@@ -191,12 +191,16 @@ def find_label_issues(
     label_issues = np.full((num_image, h, w), False)
 
     # only want to call it an error if pred_probs doesnt match the label at those pixels
-    label_issues[image_number, pixel_coor_i, pixel_coor_j] = True
-    if downsample == 1:
-        # check if pred_probs matches the label at those pixels
-        pred_argmax = np.argmax(pred_probs[image_number, :, pixel_coor_i, pixel_coor_j], axis=1)
-        mask = pred_argmax == labels[image_number, pixel_coor_i, pixel_coor_j]
-        label_issues[image_number[mask], pixel_coor_i[mask], pixel_coor_j[mask]] = False
+    for i in range(0, image_number.shape[0], batch_size):
+        image_batch = image_number[i : i + batch_size]
+        batch_i = pixel_coor_i[i : i + batch_size]
+        batch_j = pixel_coor_j[i : i + batch_size]
+        label_issues[image_batch, batch_i, batch_j] = True
+        if downsample == 1:
+            # check if pred_probs matches the label at those pixels
+            pred_argmax = np.argmax(pred_probs[image_batch, :, batch_i, batch_j], axis=1)
+            mask = pred_argmax == labels[image_batch, batch_i, batch_j]
+            label_issues[image_batch[mask], batch_i[mask], batch_j[mask]] = False
 
     if downsample != 1:
         label_issues = label_issues.repeat(downsample, axis=1).repeat(downsample, axis=2)
