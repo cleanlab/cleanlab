@@ -227,14 +227,16 @@ def issues_from_scores(
     [(1, 0), (3, 1), (4, 2), (5, 3), (8, 0)]
     """
     if token_scores:
-        issues_with_scores = []
+        scores_list = []
+        unsorted_issues = []
         for sentence_index, scores in enumerate(token_scores):
             for token_index, score in enumerate(scores):
                 if score < threshold:
-                    issues_with_scores.append((sentence_index, token_index, score))
+                    scores_list.append(score)
+                    unsorted_issues.append((sentence_index, token_index))
 
-        issues_with_scores = sorted(issues_with_scores, key=lambda x: x[2])
-        issues = [(i, j) for i, j, _ in issues_with_scores]
+        scores_argsort = np.argsort(scores_list)
+        issues = [unsorted_issues[index] for index in scores_argsort]
         return issues
 
     else:
