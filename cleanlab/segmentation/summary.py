@@ -23,7 +23,10 @@ from typing import List, Optional
 import numpy as np
 import pandas as pd
 
-from cleanlab.internal.segmentation_utils import _get_summary_optional_params
+from cleanlab.internal.segmentation_utils import (
+    _get_summary_optional_params,
+    _get_valid_optional_params,
+)
 
 
 def display_issues(
@@ -170,6 +173,7 @@ def common_label_issues(
     class_names: Optional[List[str]] = None,
     exclude: Optional[List[int]] = None,
     top: Optional[int] = None,
+    batch_size: Optional[int] = None,
     verbose: bool = True,
 ) -> pd.DataFrame:
     """
@@ -216,6 +220,10 @@ def common_label_issues(
     top:
       Optional maximum number of tokens to print information for. If not provided, a good default is used.
 
+    batch_size:
+      Optional size of image mini-batches used for computing the number of potentially misslabeled classes (does not affect results, just the runtime and memory requirements).
+      To maximize efficiency, try to use the largest `batch_size` your memory allows. If not provided, a good default is used.
+
     verbose:
       Set to ``False`` to suppress all print statements.
 
@@ -234,26 +242,30 @@ def common_label_issues(
     assert labels.shape == (N, H, W), "labels must be of shape (N, H, W)"
 
     class_names, exclude, top = _get_summary_optional_params(class_names, exclude, top)
+    batch_size, _ = _get_valid_optional_params(batch_size)
+
     # Find issues by pixel coordinates
-    issue_coords = np.where(issues)
-
-    label_coord_issues = labels[issue_coords]
-    preds = pred_probs[issue_coords[0], :, issue_coords[1], issue_coords[2]].argmax(axis=1)
-
-    mask = ~np.isin(preds, exclude)
+    image_issues, h_issues, w_issues = np.where(issues)
+    total_issues = image_issues.shape[0]
     unique_labels = np.unique(labels)
 
     if verbose:
         from tqdm.auto import tqdm
 
-        pbar = tqdm(desc="Labels processed", total=len(unique_labels))
+        pbar = tqdm(desc="number of batches processed", total=total_issues // batch_size)
+
     # Count issues per class (given label)
     count = {label: np.zeros(K, dtype=int) for label in unique_labels}
-    for label in unique_labels:
-        label_mask = mask & (label_coord_issues == label)
-        label_preds, pred_counts = np.unique(preds[label_mask], return_counts=True)
-        for i, pred in enumerate(label_preds):
-            count[label][pred] = pred_counts[i]
+    for i in range(0, total_issues, batch_size):
+        ib = i + batch_size
+        label_issues_batch = labels[image_issues[i:ib], h_issues[i:ib], w_issues[i:ib]]
+        preds = pred_probs[image_issues[i:ib], :, h_issues[i:ib], w_issues[i:ib]].argmax(axis=1)
+        mask = ~np.isin(preds, exclude)
+        for label in unique_labels:
+            label_mask = mask & (label_issues_batch == label)
+            label_preds, pred_counts = np.unique(preds[label_mask], return_counts=True)
+            for pred, pred_count in zip(label_preds, pred_counts):
+                count[label][pred] = pred_count
 
         if verbose:
             pbar.update(1)
