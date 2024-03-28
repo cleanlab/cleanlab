@@ -246,7 +246,7 @@ def common_label_issues(
     if verbose:
         from tqdm.auto import tqdm
 
-        pbar = tqdm(desc=f"Labels processed", total=len(unique_labels))
+        pbar = tqdm(desc="Labels processed", total=len(unique_labels))
     # Count issues per class (given label)
     count = {label: np.zeros(K, dtype=int) for label in unique_labels}
     for label in unique_labels:
