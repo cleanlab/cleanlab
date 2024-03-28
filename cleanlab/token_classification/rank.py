@@ -20,12 +20,13 @@ Methods to rank and score sentences in a token classification dataset (text data
 The underlying algorithms are described in `this paper <https://arxiv.org/abs/2210.03920>`_.
 """
 
-import pandas as pd
-import numpy as np
-from typing import List, Optional, Union, Tuple
+from typing import List, Optional, Tuple, Union
 
-from cleanlab.rank import get_label_quality_scores as main_get_label_quality_scores
+import numpy as np
+import pandas as pd
+
 from cleanlab.internal.numerics import softmax
+from cleanlab.rank import get_label_quality_scores as main_get_label_quality_scores
 
 
 def get_label_quality_scores(
@@ -239,7 +240,8 @@ def issues_from_scores(
     else:
         ranking = np.argsort(sentence_scores)
         cutoff = 0
-        while sentence_scores[ranking[cutoff]] < threshold and cutoff < len(ranking):
+        length = len(ranking)
+        while cutoff < length and sentence_scores[ranking[cutoff]] < threshold:
             cutoff += 1
         return ranking[:cutoff]
 
