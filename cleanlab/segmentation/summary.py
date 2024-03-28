@@ -243,6 +243,10 @@ def common_label_issues(
     mask = ~np.isin(preds, exclude)
     unique_labels = np.unique(labels)
 
+    if verbose:
+        from tqdm.auto import tqdm
+
+        pbar = tqdm(desc=f"Labels processed", total=len(unique_labels))
     # Count issues per class (given label)
     count = {label: np.zeros(K, dtype=int) for label in unique_labels}
     for label in unique_labels:
@@ -250,6 +254,9 @@ def common_label_issues(
         label_preds, pred_counts = np.unique(preds[label_mask], return_counts=True)
         for i, pred in enumerate(label_preds):
             count[label][pred] = pred_counts[i]
+
+        if verbose:
+            pbar.update(1)
 
     # Prepare output DataFrame
     if class_names is None:
