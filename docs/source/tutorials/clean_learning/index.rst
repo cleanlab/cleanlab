@@ -6,6 +6,3 @@ CleanLearning Tutorials
 
    Text Classification <text>
    Tabular Classification (Numeric/Categorical) <tabular>
-   Image Classification <image>
-   Audio Classification <audio>
-

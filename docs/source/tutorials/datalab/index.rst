@@ -9,3 +9,5 @@ Datalab Tutorials
    Text Dataset <text>
    Tabular Data (Numeric/Categorical) <tabular>
    Guide to Datalab Issue Types </cleanlab/datalab/guide/issue_type_description>
+   Image Classification <image>
+   Audio Classification <audio>
