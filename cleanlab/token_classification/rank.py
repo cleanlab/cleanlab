@@ -121,18 +121,24 @@ def get_label_quality_scores(
         methods
     )
 
-    labels_flatten = np.array([l for label in labels for l in label])
-    pred_probs_flatten = np.array([p for pred_prob in pred_probs for p in pred_prob])
+    labels_flatten = np.fromiter((l for label in labels for l in label), dtype=int)
+    pred_probs_flatten = np.vstack([p for p in pred_probs])
 
     sentence_length = [len(label) for label in labels]
 
-    def nested_list(x, sentence_length):
-        i = iter(x)
-        return [[next(i) for _ in range(length)] for length in sentence_length]
+    def nested_list(x: np.ndarray, sentence_length: List[int]) -> List[np.ndarray]:
+        result: List[np.ndarray] = []
+        start = 0
+        for length in sentence_length:
+            end = start + length
+            result.append(x[start:end])
+            start = end
+        return result
 
     token_scores = main_get_label_quality_scores(
         labels=labels_flatten, pred_probs=pred_probs_flatten, method=token_score_method
     )
+    # return token_scores
     scores_nl = nested_list(token_scores, sentence_length)
 
     if sentence_score_method == "min":
