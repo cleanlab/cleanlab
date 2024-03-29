@@ -20,12 +20,13 @@ Methods to find label issues in token classification datasets (text data), where
 The underlying algorithms are described in `this paper <https://arxiv.org/abs/2210.03920>`_.
 """
 
-import numpy as np
-from typing import List, Tuple
 import warnings
+from typing import List, Tuple
 
-from cleanlab.filter import find_label_issues as find_label_issues_main
+import numpy as np
+
 from cleanlab.experimental.label_issues_batched import find_label_issues_batched
+from cleanlab.filter import find_label_issues as find_label_issues_main
 
 
 def find_label_issues(
@@ -91,8 +92,8 @@ def find_label_issues(
     >>> find_label_issues(labels, pred_probs)
     [(1, 1)]
     """
-    labels_flatten = [l for label in labels for l in label]
-    pred_probs_flatten = np.array([pred for pred_prob in pred_probs for pred in pred_prob])
+    labels_flatten = np.array([l for label in labels for l in label])
+    pred_probs_flatten = np.vstack([pred for pred in pred_probs])
 
     if low_memory:
         for arg_name, _ in kwargs.items():
@@ -109,9 +110,7 @@ def find_label_issues(
             **kwargs,
         )
 
-    lengths = [len(label) for label in labels]
-    mapping = [[(i, j) for j in range(length)] for i, length in enumerate(lengths)]
-    mapping_flatten = [index for indicies in mapping for index in indicies]
-
+    lengths = (len(label) for label in labels)
+    mapping_flatten = [(i, j) for i, length in enumerate(lengths) for j in range(length)]
     issues = [mapping_flatten[issue] for issue in issues_main]
     return issues
