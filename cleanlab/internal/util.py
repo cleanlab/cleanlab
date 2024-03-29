@@ -19,7 +19,7 @@ Ancillary helper methods used internally throughout this package; mostly related
 """
 
 import warnings
-from typing import Any, Optional, Tuple, Union
+from typing import Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -139,9 +139,7 @@ def clip_values(x, low=0.0, high=1.0, new_sum=None) -> np.ndarray:
     return x
 
 
-def value_counts(
-    x, *, num_classes: Optional[int] = None, multi_label=False
-) -> np.ndarray[Any, np.dtype[np.int_]]:
+def value_counts(x, *, num_classes: Optional[int] = None, multi_label=False) -> np.ndarray:
     """Returns an np.ndarray of shape (K, 1), with the
     value counts for every unique item in the labels list/array,
     where K is the number of unique entries in labels.
