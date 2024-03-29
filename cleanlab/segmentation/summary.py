@@ -269,6 +269,8 @@ def common_label_issues(
 
         if verbose:
             pbar.update(1)
+    if verbose:
+        pbar.close()
 
     # Prepare output DataFrame
     if class_names is None:
