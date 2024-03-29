@@ -19,13 +19,14 @@ Ancillary helper methods used internally throughout this package; mostly related
 """
 
 import warnings
+from typing import Any, Optional, Tuple, Union
+
 import numpy as np
 import pandas as pd
-from typing import Union, Tuple
 
-from cleanlab.typing import DatasetLike, LabelLike
-from cleanlab.internal.validation import labels_to_array
 from cleanlab.internal.constants import FLOATING_POINT_COMPARISON, TINY_VALUE
+from cleanlab.internal.validation import labels_to_array
+from cleanlab.typing import DatasetLike, LabelLike
 
 
 def remove_noise_from_class(noise_matrix, class_without_noise) -> np.ndarray:
@@ -138,7 +139,9 @@ def clip_values(x, low=0.0, high=1.0, new_sum=None) -> np.ndarray:
     return x
 
 
-def value_counts(x, *, num_classes=None, multi_label=False) -> np.ndarray:
+def value_counts(
+    x, *, num_classes: Optional[int] = None, multi_label=False
+) -> np.ndarray[Any, np.dtype[np.int_]]:
     """Returns an np.ndarray of shape (K, 1), with the
     value counts for every unique item in the labels list/array,
     where K is the number of unique entries in labels.
@@ -176,14 +179,21 @@ def value_counts(x, *, num_classes=None, multi_label=False) -> np.ndarray:
     if num_classes is None or num_classes == len(unique_classes):
         return counts
     # Else, there are missing classes
-    if num_classes <= max(unique_classes):
-        raise ValueError(f"Required: num_classes > max(x), but {num_classes} <= {max(x)}.")
+    if num_classes <= np.max(unique_classes):
+        raise ValueError(f"Required: num_classes > max(x), but {num_classes} <= {np.max(x)}.")
     # Add zero counts for all missing classes in [0, 1,..., num_classes-1]
     # multi_label=False regardless because x was flattened.
-    missing_classes = get_missing_classes(x, num_classes=num_classes, multi_label=False)
-    missing_counts = [(z, 0) for z in missing_classes]
+    total_counts = np.zeros(num_classes, dtype=int)
+    index = 0
+    length = unique_classes.shape[0]
+    for i in range(num_classes):
+        if index >= length:
+            break
+        if unique_classes[index] == i:
+            total_counts[i] = counts[index]
+            index += 1
     # Return counts with zeros for all missing classes.
-    return np.array(list(zip(*sorted(list(zip(unique_classes, counts)) + missing_counts)))[1])
+    return total_counts
 
 
 def value_counts_fill_missing_classes(x, num_classes, *, multi_label=False) -> np.ndarray:
@@ -580,9 +590,7 @@ def unshuffle_tensorflow_dataset(X) -> tuple:
         or ``len(pre_X)`` if buffer_size cannot be determined, or None if no ShuffleDataset found.
     """
     try:
-        from tensorflow.python.data.ops.dataset_ops import (
-            ShuffleDataset,
-        )
+        from tensorflow.python.data.ops.dataset_ops import ShuffleDataset
 
         X_inputs = [X]
         while len(X_inputs) == 1:
