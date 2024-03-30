@@ -1383,24 +1383,21 @@ def _get_single_annotator_agreement(
     annotator_agreement : float
         An float repesenting the agreement of each annotator with other annotators that labeled the same examples.
     """
-    annotator_agreement_per_example = np.zeros(len(labels_multiannotator))
-
-    for i, labels in enumerate(labels_multiannotator):
-        labels_subset = labels[~np.isnan(labels)]
-        examples_num_annotators = len(labels_subset)
-        if examples_num_annotators > 1:
-            annotator_agreement_per_example[i] = (
-                np.sum(labels_subset == labels[annotator_idx]) - 1
-            ) / (examples_num_annotators - 1)
-
     adjusted_num_annotations = num_annotations - 1
     if np.sum(adjusted_num_annotations) == 0:
-        annotator_agreement = np.NaN
-    else:
-        annotator_agreement = np.average(
-            annotator_agreement_per_example, weights=num_annotations - 1
-        )
+        return np.NaN
 
+    mask = num_annotations > 1
+    annotator_agreement_per_example = np.zeros(len(labels_multiannotator))
+    for i in range(labels_multiannotator.shape[1]):
+        annotator_agreement_per_example[mask] += (
+            labels_multiannotator[mask, annotator_idx] == labels_multiannotator[mask, i]
+        )
+    annotator_agreement_per_example[mask] = (
+        annotator_agreement_per_example[mask] - 1
+    ) / adjusted_num_annotations
+
+    annotator_agreement = np.average(annotator_agreement_per_example, weights=num_annotations - 1)
     return annotator_agreement
 
 
