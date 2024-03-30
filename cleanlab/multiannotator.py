@@ -42,15 +42,12 @@ Variants of these functions are provided for settings where you have trained an 
 """
 
 import warnings
+from typing import Any, Dict, List, Optional, Tuple, Union
+
 import numpy as np
 import pandas as pd
 
-from typing import List, Dict, Any, Union, Tuple, Optional
-
-from cleanlab.rank import get_label_quality_scores
-from cleanlab.internal.util import get_num_classes, value_counts
 from cleanlab.internal.constants import CLIPPING_LOWER_BOUND
-
 from cleanlab.internal.multiannotator_utils import (
     assert_valid_inputs_multiannotator,
     assert_valid_pred_probs,
@@ -58,6 +55,8 @@ from cleanlab.internal.multiannotator_utils import (
     find_best_temp_scaler,
     temp_scale_pred_probs,
 )
+from cleanlab.internal.util import get_num_classes, value_counts
+from cleanlab.rank import get_label_quality_scores
 
 
 def get_label_quality_multiannotator(
@@ -1498,28 +1497,19 @@ def _get_post_pred_probs_and_weights(
             [(1 - (model_error / most_likely_class_error)), CLIPPING_LOWER_BOUND]
         ) * np.sqrt(np.mean(num_annotations))
 
+        labels_arange = np.arange(num_classes).reshape(-1, 1)
         # compute weighted average
         post_pred_probs = np.full(prior_pred_probs.shape, np.nan)
         for i, labels in enumerate(labels_multiannotator):
             labels_mask = ~np.isnan(labels)
             labels_subset = labels[labels_mask]
-            post_pred_probs[i] = [
-                np.average(
-                    [prior_pred_probs[i, true_label]]
-                    + [
-                        (
-                            consensus_likelihood
-                            if annotator_label == true_label
-                            else non_consensus_likelihood
-                        )
-                        for annotator_label in labels_subset
-                    ],
-                    weights=np.concatenate(
-                        ([model_weight], adjusted_annotator_agreement[labels_mask])
-                    ),
-                )
-                for true_label in range(num_classes)
-            ]
+            weights = np.concatenate(([model_weight], adjusted_annotator_agreement[labels_mask]))
+            result = np.empty((num_classes, labels_subset.shape[0] + 1))
+            result[:, 0] = prior_pred_probs[i, :]
+            result[:, 1:] = np.where(
+                labels_subset == labels_arange, consensus_likelihood, non_consensus_likelihood
+            )
+            post_pred_probs[i] = np.average(result, axis=1, weights=weights)
 
         return_model_weight = model_weight
         return_annotator_weight = adjusted_annotator_agreement
