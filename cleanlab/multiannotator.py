@@ -967,11 +967,14 @@ def get_majority_vote_label(
         )
 
     majority_vote_label = np.full(len(labels_multiannotator), np.nan)
-    label_count = np.apply_along_axis(
-        lambda s: np.bincount(s[~np.isnan(s)].astype(int), minlength=num_classes),
-        axis=1,
-        arr=labels_multiannotator,
-    )
+
+    label_arange = np.arange(labels_multiannotator.shape[0])
+    label_count = np.zeros((labels_multiannotator.shape[0], num_classes))
+    for i in range(labels_multiannotator.shape[1]):
+        mask = ~np.isnan(labels_multiannotator[:, i])
+        label_index = labels_multiannotator[mask, i].astype(int)
+        label_count[label_arange[mask], label_index] += 1
+
     mode_labels_multiannotator = np.apply_along_axis(
         get_labels_mode, axis=1, arr=label_count, num_classes=num_classes
     )
