@@ -25,7 +25,7 @@ import numpy as np
 import pandas as pd
 
 from cleanlab.internal.numerics import softmax
-from cleanlab.internal.util import get_num_classes, value_counts
+from cleanlab.internal.util import get_num_classes
 from cleanlab.internal.validation import assert_valid_class_labels
 from cleanlab.typing import LabelLike
 
