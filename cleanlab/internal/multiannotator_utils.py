@@ -18,14 +18,16 @@
 Helper methods used internally in cleanlab.multiannotator
 """
 
-from cleanlab.typing import LabelLike
-from typing import Optional, Tuple
 import warnings
+from typing import Optional, Tuple
+
 import numpy as np
 import pandas as pd
-from cleanlab.internal.validation import assert_valid_class_labels
+
 from cleanlab.internal.numerics import softmax
 from cleanlab.internal.util import get_num_classes, value_counts
+from cleanlab.internal.validation import assert_valid_class_labels
+from cleanlab.typing import LabelLike
 
 SMALL_CONST = 1e-30
 
@@ -89,11 +91,10 @@ def assert_valid_inputs_multiannotator(
 
         # Raise warning if no examples with 2 or more annotators agree
         # TODO: might shift this later in the code to avoid extra compute
-        if np.apply_along_axis(
-            lambda s: np.array_equal(np.unique(s[~np.isnan(s)]), s[~np.isnan(s)]),
-            axis=1,
-            arr=labels_multiannotator,
-        ).all():
+        has_agreement = np.zeros(labels_multiannotator.shape[0], dtype=bool)
+        for i in range(labels_multiannotator.shape[1]):
+            has_agreement |= (labels_multiannotator == i).sum(axis=1) > 1
+        if not has_agreement.any():
             warnings.warn("Annotators do not agree on any example. Check input data.")
 
     # Check labels
