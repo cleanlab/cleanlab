@@ -1395,7 +1395,7 @@ def _get_single_annotator_agreement(
         )
     annotator_agreement_per_example[mask] = (
         annotator_agreement_per_example[mask] - 1
-    ) / adjusted_num_annotations
+    ) / adjusted_num_annotations[mask]
 
     annotator_agreement = np.average(annotator_agreement_per_example, weights=num_annotations - 1)
     return annotator_agreement
