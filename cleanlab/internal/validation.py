@@ -48,7 +48,7 @@ def assert_valid_inputs(
     allow_empty_X = True
     if pred_probs is None:
         allow_empty_X = False
-    if not isinstance(X, (list, np.ndarray, np.generic, pd.Series, pd.DataFrame)):
+    if X is None or not isinstance(X, (list, np.ndarray, np.generic, pd.Series, pd.DataFrame)):
         try:
             import tensorflow
 
