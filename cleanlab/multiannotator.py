@@ -960,12 +960,6 @@ def get_majority_vote_label(
     else:
         num_classes = int(np.nanmax(labels_multiannotator) + 1)
 
-    def get_labels_mode(label_count, num_classes):
-        max_count_idx = np.where(label_count == np.nanmax(label_count))[0].astype(float)
-        return np.pad(
-            max_count_idx, (0, num_classes - len(max_count_idx)), "constant", constant_values=np.NaN
-        )
-
     majority_vote_label = np.full(len(labels_multiannotator), np.nan)
 
     label_arange = np.arange(labels_multiannotator.shape[0])
@@ -975,9 +969,12 @@ def get_majority_vote_label(
         label_index = labels_multiannotator[mask, i].astype(int)
         label_count[label_arange[mask], label_index] += 1
 
-    mode_labels_multiannotator = np.apply_along_axis(
-        get_labels_mode, axis=1, arr=label_count, num_classes=num_classes
-    )
+    mode_labels_multiannotator = np.full(label_count.shape, np.nan)
+    modes_mask = label_count == np.max(label_count, axis=1).reshape(-1, 1)
+    index_i = np.zeros(modes_mask.shape[0], dtype=int)
+    for i in range(modes_mask.shape[1]):
+        mode_labels_multiannotator[modes_mask[:, i], index_i[modes_mask[:, i]]] = i
+        index_i += modes_mask[:, i]
 
     nontied_idx = []
     tied_idx = dict()
@@ -1490,26 +1487,30 @@ def _get_post_pred_probs_and_weights(
         adjusted_annotator_agreement = np.clip(
             1 - (annotator_error / most_likely_class_error), a_min=CLIPPING_LOWER_BOUND, a_max=None
         )
-
         # compute model weight
         model_error = np.mean(np.argmax(prior_pred_probs_subset, axis=1) != consensus_label_subset)
         model_weight = np.max(
             [(1 - (model_error / most_likely_class_error)), CLIPPING_LOWER_BOUND]
         ) * np.sqrt(np.mean(num_annotations))
 
-        labels_arange = np.arange(num_classes).reshape(-1, 1)
+        non_nan_mask = ~np.isnan(labels_multiannotator)
+        annotation_weight = np.zeros(labels_multiannotator.shape[0])
+        for i in range(labels_multiannotator.shape[1]):
+            annotation_weight[non_nan_mask[:, i]] += adjusted_annotator_agreement[i]
+        total_weight = annotation_weight + model_weight
+
         # compute weighted average
         post_pred_probs = np.full(prior_pred_probs.shape, np.nan)
-        for i, labels in enumerate(labels_multiannotator):
-            labels_mask = ~np.isnan(labels)
-            labels_subset = labels[labels_mask]
-            weights = np.concatenate(([model_weight], adjusted_annotator_agreement[labels_mask]))
-            result = np.empty((num_classes, labels_subset.shape[0] + 1))
-            result[:, 0] = prior_pred_probs[i, :]
-            result[:, 1:] = np.where(
-                labels_subset == labels_arange, consensus_likelihood, non_consensus_likelihood
-            )
-            post_pred_probs[i] = np.average(result, axis=1, weights=weights)
+        for i in range(prior_pred_probs.shape[1]):
+            post_pred_probs[:, i] = prior_pred_probs[:, i] * model_weight
+            for k in range(labels_multiannotator.shape[1]):
+                mask = ~np.isnan(labels_multiannotator[:, k])
+                post_pred_probs[mask, i] += np.where(
+                    labels_multiannotator[mask, k] == i,
+                    adjusted_annotator_agreement[k] * consensus_likelihood,
+                    adjusted_annotator_agreement[k] * non_consensus_likelihood,
+                )
+            post_pred_probs[:, i] /= total_weight
 
         return_model_weight = model_weight
         return_annotator_weight = adjusted_annotator_agreement
