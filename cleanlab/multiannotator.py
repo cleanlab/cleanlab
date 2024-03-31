@@ -960,8 +960,6 @@ def get_majority_vote_label(
     else:
         num_classes = int(np.nanmax(labels_multiannotator) + 1)
 
-    majority_vote_label = np.full(len(labels_multiannotator), np.nan)
-
     label_arange = np.arange(labels_multiannotator.shape[0])
     label_count = np.zeros((labels_multiannotator.shape[0], num_classes))
     for i in range(labels_multiannotator.shape[1]):
@@ -976,17 +974,19 @@ def get_majority_vote_label(
         mode_labels_multiannotator[modes_mask[:, i], index_i[modes_mask[:, i]]] = i
         index_i += modes_mask[:, i]
 
-    nontied_idx = []
-    tied_idx = dict()
+    majority_vote_label = np.full(len(labels_multiannotator), np.nan)
+    label_mode_count = (~np.isnan(mode_labels_multiannotator)).sum(axis=1)
 
     # obtaining consensus using annotator majority vote
-    for idx, label_mode in enumerate(mode_labels_multiannotator):
-        label_mode = label_mode[~np.isnan(label_mode)].astype(int)
-        if len(label_mode) == 1:
-            majority_vote_label[idx] = label_mode[0]
-            nontied_idx.append(idx)
-        else:
-            tied_idx[idx] = label_mode
+    mask = label_mode_count == 1
+    majority_vote_label[mask] = mode_labels_multiannotator[mask, 0]
+    nontied_idx = label_arange[mask]
+    tied_idx = {
+        i: label_mode[:count].astype(int)
+        for i, label_mode, count in zip(
+            label_arange[~mask], mode_labels_multiannotator[~mask, :], label_mode_count[~mask]
+        )
+    }
 
     # tiebreak 1: using pred_probs (if provided)
     if pred_probs is not None and len(tied_idx) > 0:
