@@ -1306,9 +1306,9 @@ def _get_annotator_agreement_with_consensus(
         An array of shape ``(N,)`` with the fraction of annotators that agree with each consensus label.
     """
     annotator_agreement = np.zeros(len(labels_multiannotator))
-    for i, labels in enumerate(labels_multiannotator):
-        annotator_agreement[i] = np.mean(labels[~np.isnan(labels)] == consensus_label[i])
-
+    for i in range(labels_multiannotator.shape[1]):
+        annotator_agreement += labels_multiannotator[:, i] == consensus_label
+    annotator_agreement /= (~np.isnan(labels_multiannotator)).sum(axis=1)
     return annotator_agreement
 
 
