@@ -70,6 +70,6 @@ def transform_distances_to_scores(
     ood_features_scores: np.ndarray = np.exp(-1 * avg_distances / scaling_factor * t)
 
     # Set scores to 1 if the average distance is close to 0
-    inds = np.isclose(avg_distances, 0)
+    inds = np.isclose(avg_distances, 0, atol=5e-6)
     ood_features_scores[inds] = 1.0
     return ood_features_scores
