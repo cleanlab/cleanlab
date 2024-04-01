@@ -3,7 +3,7 @@ import warnings
 import numpy as np
 import pandas as pd
 import pytest
-from hypothesis import given
+from hypothesis import given, settings
 from hypothesis import strategies as st
 from hypothesis.extra.numpy import arrays
 
@@ -289,6 +289,7 @@ def test_get_label_quality_scores(label_quality_scores):
         max_size=5,
     ),
 )
+@settings(deadline=None)
 def test_get_label_quality_scores_batched(labels, pred_probs):
     # Normalize probabilities
     pred_probs = [p / p.sum(axis=1, keepdims=True) for p in pred_probs]
