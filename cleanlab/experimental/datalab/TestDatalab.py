@@ -45,7 +45,7 @@ class TestDatalab(Datalab):
         verbosity: int = 1,
     ):
         super().__init__(data, task, label_name, image_key, verbosity)
-        self.trained_datalab = trained_datalab
+        self.datalab = trained_datalab
         self.check_label_map()
         self._label_map = trained_datalab._label_map
         self.data.label_map = self._label_map
@@ -55,7 +55,7 @@ class TestDatalab(Datalab):
 
     def check_label_map(self):
         for k in self._label_map.keys():
-            if k not in self.trained_datalab._label_map:
+            if k not in self.datalab._label_map:
                 raise ValueError(f"The label {k} is not in the trained datalab's label_map.")
 
     def find_issues(
