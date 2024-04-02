@@ -35,6 +35,15 @@ if TYPE_CHECKING:  # pragma: no cover
 
 
 class TestDatalab(Datalab):
+    """
+    A Datalab object that can be used to audit new data using the statistics from a trained Datalab object.
+
+    Parameters
+    ----------
+    trained_datalab : Datalab
+        The Datalab object fitted to the original training dataset.
+    """
+
     def __init__(
         self,
         trained_datalab: Datalab,
