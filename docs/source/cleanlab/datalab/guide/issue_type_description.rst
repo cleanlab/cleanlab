@@ -209,7 +209,7 @@ Data Valuation Issue
 
 The examples in the dataset with lowest data valuation scores contribute least to a trained ML model's performance (those whose value falls below a threshold are flagged with this type of issue).
 
-Data valuation issues can only be detected based on a provided `knn_graph` (or one pre-computed during the computation of other issue types).  If you do not provide this argument and there isn't a `knn_graph` already stored in the Datalab object, this type of issue will not be considered.
+Data valuation issues can be detected based on provided `features` or a provided `knn_graph` (or one pre-computed during the computation of other issue types).  If you do not provide one of these two arguments and there isn't a `knn_graph` already stored in the Datalab object, this type of issue will not be considered.
 
 The data valuation score is an approximate Data Shapley value, calculated based on the labels of the top k nearest neighbors of an example. The details of this KNN-Shapley value could be found in the papers: `Efficient Task-Specific Data Valuation for Nearest Neighbor Algorithms <https://arxiv.org/abs/1908.08619>`_ and `Scalability vs. Utility: Do We Have to Sacrifice One for the Other in Data Importance Quantification? <https://arxiv.org/abs/1911.07128>`_.
 

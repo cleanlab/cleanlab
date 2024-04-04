@@ -178,6 +178,7 @@ Link to Cleanlab Studio docs: `help.cleanlab.ai <https://help.cleanlab.ai/>`_
    cleanlab/dataset
    cleanlab/outlier
    cleanlab/multiannotator
+   cleanlab/data_valuation
    cleanlab/multilabel_classification/index
    cleanlab/regression/index
    cleanlab/token_classification/index

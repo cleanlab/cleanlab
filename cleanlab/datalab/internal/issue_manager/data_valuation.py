@@ -34,6 +34,7 @@ from sklearn.exceptions import NotFittedError
 from sklearn.neighbors import NearestNeighbors
 from sklearn.utils.validation import check_is_fitted
 
+from cleanlab.data_valuation import data_shapley_knn
 from cleanlab.datalab.internal.issue_manager import IssueManager
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -158,10 +159,8 @@ class DataValuationIssueManager(IssueManager):
                 knn.fit(features)
 
             knn_graph = knn.kneighbors_graph(mode="distance")
-        if labels is None:
-            raise ValueError("labels must be provided to run data valuation")
 
-        scores = _knn_shapley_score(knn_graph, labels, self.k)
+        scores = data_shapley_knn(labels, knn_graph=knn_graph, k=self.k)
 
         self.issues = pd.DataFrame(
             {
@@ -231,19 +230,3 @@ class DataValuationIssueManager(IssueManager):
                 statistics_dict["statistics"]["knn_metric"] = self.metric
 
         return statistics_dict
-
-
-def _knn_shapley_score(knn_graph: csr_matrix, labels: np.ndarray, k: int) -> np.ndarray:
-    """Compute the Shapley values of data points based on a knn graph."""
-    N = labels.shape[0]
-    scores = np.zeros((N, N))
-    dist = knn_graph.indices.reshape(N, -1)
-
-    for y, s, dist_i in zip(labels, scores, dist):
-        idx = dist_i[::-1]
-        ans = labels[idx]
-        s[idx[k - 1]] = float(ans[k - 1] == y)
-        ans_matches = (ans == y).flatten()
-        for j in range(k - 2, -1, -1):
-            s[idx[j]] = s[idx[j + 1]] + float(int(ans_matches[j]) - int(ans_matches[j + 1]))
-    return 0.5 * (np.mean(scores / k, axis=0) + 1)
