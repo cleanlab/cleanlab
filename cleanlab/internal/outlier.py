@@ -18,6 +18,8 @@
 Helper functions used internally for outlier detection tasks.
 """
 
+from typing import Union
+
 import numpy as np
 
 
@@ -67,9 +69,56 @@ def transform_distances_to_scores(
     array([0.88988177, 0.80519832])
     """
     # Map ood_features_scores to range 0-1 with 0 = most concerning
-    ood_features_scores: np.ndarray = np.exp(-1 * avg_distances / scaling_factor * t)
+    return np.exp(-1 * avg_distances / scaling_factor * t)
 
-    # Set scores to 1 if the average distance is close to 0
-    inds = np.isclose(avg_distances, 0, atol=5e-6)
-    ood_features_scores[inds] = 1.0
-    return ood_features_scores
+
+def correct_precision_errors(
+    scores: np.ndarray,
+    avg_distances: np.ndarray,
+    metric: str,
+    C: int = 100,
+    p: Union[int, None] = None,
+):
+    """
+    Ensure that scores where avg_distances are below the tolerance threshold get a score of one.
+
+    Parameters
+    ----------
+    scores : np.ndarray
+        An array of scores of shape ``(N)``, where N is the number of examples.
+        Each entry represents a score between 0 and 1.
+
+    avg_distances : np.ndarray
+        An array of distances of shape ``(N)``, where N is the number of examples.
+        Each entry represents an example's average distance to its k nearest neighbors.
+
+    metric : str
+        The metric used by the knn algorithm to calculate the distances.
+        It must be 'cosine', 'euclidean' or 'minkowski', otherwise this function does nothing.
+
+    C : int, default=100
+        Multiplier used to increase the tolerance of the acceptable precision differences.
+
+    p : int, default=None
+        This value is only used when metric is 'minkowski'.
+        A ValueError will be raised if metric is 'minkowski' and 'p' was not provided.
+
+    Returns
+    -------
+    fixed_scores : np.ndarray
+        An array of scores of shape ``(N,)`` for N examples with scores between 0 and 1.
+    """
+    if metric == "cosine":
+        tolerance = C * np.finfo(np.float_).epsneg
+    elif metric == "euclidean":
+        tolerance = np.sqrt(C * np.finfo(np.float_).eps)
+    elif metric == "minkowski":
+        if p is None:
+            raise ValueError("When metric is 'minkowski' you must specify the 'p' parameter")
+        tolerance = (C * np.finfo(np.float_).eps) ** (1 / p)
+    else:
+        return scores
+
+    candidates_mask = avg_distances < tolerance
+    scores[candidates_mask] = 1
+    return scores
