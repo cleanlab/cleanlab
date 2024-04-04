@@ -35,6 +35,7 @@ def display_issues(
     class_names: Optional[List[str]] = None,
     exclude: Optional[List[int]] = None,
     top: Optional[int] = None,
+    **kwargs  # Accepting additional kwargs for plt.show()
 ) -> None:
     """
     Display semantic segmentation label issues, showing images with problematic pixels highlighted.
@@ -43,49 +44,28 @@ def display_issues(
 
     Parameters
     ----------
-    issues:
-      Boolean **mask** for the entire dataset
-      where ``True`` represents a pixel label issue and ``False`` represents an example that is
-      accurately labeled.
+    issues : np.ndarray
+        Boolean **mask** for the entire dataset where ``True`` represents a pixel label issue and ``False``
+        represents an example that is accurately labeled.
 
-      Same format as output by :py:func:`segmentation.filter.find_label_issues <cleanlab.segmentation.filter.find_label_issues>`
-      or :py:func:`segmentation.rank.issues_from_scores <cleanlab.segmentation.rank.issues_from_scores>`.
+    labels : Optional[np.ndarray]
+        Optional discrete array of noisy labels for a semantic segmentation dataset, in the shape ``(N,H,W,)``,
+        where each pixel must be an integer in 0, 1, ..., K-1.
 
-    labels:
-      Optional discrete array of noisy labels for a segmantic segmentation dataset, in the shape ``(N,H,W,)``,
-      where each pixel must be integer in 0, 1, ..., K-1.
-      If `labels` is provided, this function also displays given label of the pixel identified with issue.
-      Refer to documentation for this argument in :py:func:`find_label_issues <cleanlab.segmentation.filter.find_label_issues>` for more information.
+    pred_probs : Optional[np.ndarray]
+        Optional array of shape ``(N,K,H,W,)`` of model-predicted class probabilities.
 
-    pred_probs:
-      Optional array of shape ``(N,K,H,W,)`` of model-predicted class probabilities.
-      If `pred_probs` is provided, this function also displays predicted label of the pixel identified with issue.
-      Refer to documentation for this argument in :py:func:`find_label_issues <cleanlab.segmentation.filter.find_label_issues>` for more information.
+    class_names : Optional[List[str]]
+        Optional list of strings, where each string represents the name of a class in the semantic segmentation problem.
 
-      Tip
-      ---
-      If your labels are one hot encoded you can `np.argmax(labels_one_hot, axis=1)` assuming that `labels_one_hot` is of dimension (N,K,H,W)
-      before entering in the function
+    exclude : Optional[List[int]]
+        Optional list of label classes that can be ignored in the errors, each element must be 0, 1, ..., K-1.
 
-    class_names:
-      Optional list of strings, where each string represents the name of a class in the semantic segmentation problem.
-      The order of the names should correspond to the numerical order of the classes. The list length should be
-      equal to the number of unique classes present in the labels.
-      If provided, this function will generate a legend
-      showing the color mapping of each class in the provided colormap.
-
-      Example:
-      If there are three classes in your labels, represented by 0, 1, 2, then class_names might look like this:
-
-      .. code-block:: python
-
-            class_names = ['background', 'person', 'dog']
-
-    top:
+    top : Optional[int]
         Optional maximum number of issues to be printed. If not provided, a good default is used.
 
-    exclude:
-        Optional list of label classes that can be ignored in the errors, each element must be 0, 1, ..., K-1
+    **kwargs
+        Additional keyword arguments to pass to `plt.show()`.
 
     """
     class_names, exclude, top = _get_summary_optional_params(class_names, exclude, top)
@@ -100,7 +80,7 @@ def display_issues(
         import matplotlib.pyplot as plt
         import matplotlib.patches as mpatches
         from matplotlib.colors import ListedColormap
-    except:
+    except ImportError:
         raise ImportError('try "pip install matplotlib"')
 
     output_plots = (pred_probs is not None) + (labels is not None) + 1
@@ -128,7 +108,7 @@ def display_issues(
             handles=patches, loc="center", ncol=len(class_names), facecolor="white", fontsize=20
         )  # adjust fontsize for larger text
         plt.axis("off")
-        plt.show()
+        plt.show(**kwargs)  # Passing kwargs to plt.show()
 
     for i in correct_ordering:
         # Show images
@@ -158,7 +138,7 @@ def display_issues(
             mask = ~np.isin(labels[i], exclude)
         ax.imshow(issues[i] & mask, cmap=error_cmap, vmin=0, vmax=1)
         ax.set_title(f"Image {i}: Suggested Errors (in Red)")
-        plt.show()
+        plt.show(**kwargs)  # Passing kwargs to plt.show() again for the loop
 
     return None
 
