@@ -472,8 +472,12 @@ class OutOfDistribution:
         ood_features_scores = transform_distances_to_scores(
             avg_knn_distances, t, scaling_factor=scaling_factor
         )
+        distance_metric = knn.metric
+        p = None
+        if distance_metric == "minkowski":
+            p = knn.p
         ood_features_scores = correct_precision_errors(
-            ood_features_scores, avg_knn_distances, knn.metric
+            ood_features_scores, avg_knn_distances, knn.metric, p=p
         )
         return (ood_features_scores, knn)
 
