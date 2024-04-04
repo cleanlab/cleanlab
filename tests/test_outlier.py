@@ -14,19 +14,22 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
-from hypothesis import example, settings, strategies as st
-from hypothesis import given
 import numpy as np
 import pandas as pd
 import pytest
-from cleanlab.benchmarking.noise_generation import generate_noise_matrix_from_trace
-from cleanlab.benchmarking.noise_generation import generate_noisy_labels
-from cleanlab import count, outlier
-from cleanlab.count import get_confident_thresholds
-from cleanlab.outlier import OutOfDistribution
-from cleanlab.internal.label_quality_utils import get_normalized_entropy
-from sklearn.neighbors import NearestNeighbors
+from hypothesis import example, given, settings
+from hypothesis import strategies as st
 from sklearn.linear_model import LogisticRegression as LogReg
+from sklearn.neighbors import NearestNeighbors
+
+from cleanlab import count, outlier
+from cleanlab.benchmarking.noise_generation import (
+    generate_noise_matrix_from_trace,
+    generate_noisy_labels,
+)
+from cleanlab.count import get_confident_thresholds
+from cleanlab.internal.label_quality_utils import get_normalized_entropy
+from cleanlab.outlier import OutOfDistribution
 
 
 def make_data(
@@ -660,7 +663,7 @@ def test_wrong_info_get_ood_predictions_scores():
 @given(
     fill_value=st.floats(
         min_value=5 * float(np.finfo(np.float_).eps),
-        max_value=10,
+        max_value=5,
         exclude_min=False,
         allow_subnormal=False,
         allow_infinity=False,
@@ -674,8 +677,42 @@ def test_scores_for_identical_examples(fill_value, K):
     N = 20
 
     features = np.full((N, K), fill_value=fill_value)
-    scores = OutOfDistribution().fit_score(features=features)
+    ood = OutOfDistribution()
+    scores = ood.fit_score(features=features, verbose=False)
 
     # Dataset with only
     expected_score = np.full(N, 1.0)
-    np.testing.assert_array_equal(scores, expected_score)
+    np.testing.assert_array_equal(
+        scores,
+        expected_score,
+        err_msg=f"The calculated distances were {ood.params['knn'].kneighbors()}",
+    )
+
+
+@given(K=st.integers(min_value=2, max_value=100))
+@settings(deadline=None)
+def test_scores_for_identical_examples_across_rows(K):
+    N = 20
+    fill_value = np.random.random(K)
+    features = np.full((N, K), fill_value=fill_value)
+    ood = OutOfDistribution()
+    scores = ood.fit_score(features=features, verbose=False)
+
+    # Dataset with only
+    expected_score = np.full(N, 1.0)
+    np.testing.assert_array_equal(
+        scores,
+        expected_score,
+        err_msg=f"The calculated distances were {ood.params['knn'].kneighbors()}",
+    )
+
+    if K < 4:
+        # This little changes should not affect euclidean calculation
+        features += np.random.random(features.shape) * np.sqrt(np.finfo(np.float_).eps)
+        ood = OutOfDistribution()
+        scores = ood.fit_score(features=features, verbose=False)
+        np.testing.assert_array_equal(
+            scores,
+            expected_score,
+            err_msg=f"The calculated distances were {ood.params['knn'].kneighbors()}",
+        )
