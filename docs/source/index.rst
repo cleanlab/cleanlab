@@ -153,6 +153,7 @@ Link to Cleanlab Studio docs: `help.cleanlab.ai <https://help.cleanlab.ai/>`_
 
    Datalab Tutorials <tutorials/datalab/index>
    Workflows of Data-Centric AI <tutorials/indepth_overview>
+   Improving ML Performance <tutorials/improving_ml_performance>
    Image Classification <tutorials/image>
    Text Classification <tutorials/text>
    Tabular Classification <tutorials/tabular>
