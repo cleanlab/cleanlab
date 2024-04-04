@@ -5,6 +5,7 @@ Tutorials
    :maxdepth: 1
 
    datalab/
+   improving_ml_performance
    indepth_overview
    image
    text
