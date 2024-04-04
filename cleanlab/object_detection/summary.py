@@ -241,7 +241,7 @@ def get_sorted_bbox_count_idxs(labels, predictions):
 
 
 def plot_class_size_distributions(
-    labels, predictions, class_names=None, class_to_show=MAX_CLASS_TO_SHOW
+    labels, predictions, class_names=None, class_to_show=MAX_CLASS_TO_SHOW, **kwargs
 ):
     """
     Plots the size distributions for bounding boxes for each class.
@@ -265,6 +265,9 @@ def plot_class_size_distributions(
     class_to_show: optional
         The number of classes to show in the plots. Classes over `class_to_show` are hidden. If this argument is provided, then the classes are sorted by the number of instances in the dataset.
         Defaults to `MAX_CLASS_TO_SHOW` which is set to 10.
+
+    **kwargs:
+        Additional keyword arguments to pass to `plt.show()`.
     """
     try:
         import matplotlib.pyplot as plt
@@ -291,10 +294,10 @@ def plot_class_size_distributions(
             axs[i].set_ylabel("count")
             axs[i].set_title("annotated" if i == 0 else "predicted")
 
-        plt.show()
+        plt.show(**kwargs)
 
 
-def plot_class_distribution(labels, predictions, class_names=None):
+def plot_class_distribution(labels, predictions, class_names=None, **kwargs):
     """
     Plots the distribution of class labels associated with all annotated bounding boxes and predicted bounding boxes in the dataset.
 
@@ -312,6 +315,9 @@ def plot_class_distribution(labels, predictions, class_names=None):
 
     class_names: optional
         Optional dictionary mapping one-hot-encoded class labels back to their original class names in the format ``{"integer-label": "original-class-name"}``.
+
+    **kwargs:
+        Additional keyword arguments to pass to `plt.show()`.
     """
     try:
         import matplotlib.pyplot as plt
@@ -327,7 +333,7 @@ def plot_class_distribution(labels, predictions, class_names=None):
         axs[i].pie(d.values(), labels=d.keys(), autopct="%1.1f%%")
         axs[i].set_title("Annotated" if i == 0 else "Predicted")
 
-    plt.show()
+    plt.show(**kwargs)
 
 
 def visualize(
@@ -340,10 +346,11 @@ def visualize(
     class_names: Optional[Dict[Any, Any]] = None,
     figsize: Optional[Tuple[int, int]] = None,
     save_path: Optional[str] = None,
+    **kwargs
 ) -> None:
-    """Display the annotated bounding boxes (given labels) and predicted bounding boxes (model predictions) for a particular image.
+    """
+    Display the annotated bounding boxes (given labels) and predicted bounding boxes (model predictions) for a particular image.
     Given labels are shown in red, model predictions in blue.
-
 
     Parameters
     ----------
@@ -354,14 +361,10 @@ def visualize(
         The given label for a single image in the format ``{'bboxes': np.ndarray((L,4)), 'labels': np.ndarray((L,))}`` where
         ``L`` is the number of bounding boxes for the `i`-th image and ``bboxes[j]`` is in the format ``[x1,y1,x2,y2]`` with given label ``labels[j]``.
 
-        Note: Here, ``(x1,y1)`` corresponds to the top-left and ``(x2,y2)`` corresponds to the bottom-right corner of the bounding box with respect to the image matrix [e.g. `XYXY in Keras <https://keras.io/api/keras_cv/bounding_box/formats/>`, `Detectron 2 <https://detectron2.readthedocs.io/en/latest/modules/utils.html#detectron2.utils.visualizer.Visualizer.draw_box>`].
-
     prediction:
         A prediction for a single image in the format ``np.ndarray((K,))`` and ``prediction[k]`` is of shape ``np.ndarray(N,5)``
         where ``M`` is the number of predicted bounding boxes for class ``k`` and the five columns correspond to ``[x,y,x,y,pred_prob]`` where
         ``[x1,y1,x2,y2]`` are the bounding box coordinates predicted by the model and ``pred_prob`` is the model's confidence in ``predictions[i]``.
-
-        Note: Here, ``(x1,y1)`` corresponds to the top-left and ``(x2,y2)`` corresponds to the bottom-right corner of the bounding box with respect to the image matrix [e.g. `XYXY in Keras <https://keras.io/api/keras_cv/bounding_box/formats/>`, `Detectron 2 <https://detectron2.readthedocs.io/en/latest/modules/utils.html#detectron2.utils.visualizer.Visualizer.draw_box>`]. The last column, pred_prob, represents the predicted probability that the bounding box contains an object of the class k.
 
     prediction_threshold:
         All model-predicted bounding boxes with confidence (`pred_prob`)
@@ -369,7 +372,7 @@ def visualize(
 
     overlay: bool
         If True, display a single image with given labels and predictions overlaid.
-        If False, display two images (side by side) with the left image showing  the model predictions and the right image showing the given label.
+        If False, display two images (side by side) with the left image showing  the model predictions and the right image showing the given label.
 
     class_names:
         Optional dictionary mapping one-hot-encoded class labels back to their original class names in the format ``{"integer-label": "original-class-name"}``.
@@ -380,6 +383,9 @@ def visualize(
     figsize:
         Optional figure size for plotting the image.
         Corresponds to ``matplotlib.figure.figsize``.
+
+    **kwargs:
+        Additional keyword arguments to pass to `plt.show()`.
     """
     try:
         import matplotlib.pyplot as plt
@@ -451,7 +457,7 @@ def visualize(
             transparent=True,
             pad_inches=0.5,
         )
-    plt.show()
+    plt.show(**kwargs)
 
 
 def _get_per_class_confusion_matrix_dict_(
