@@ -35,7 +35,7 @@ def display_issues(
     class_names: Optional[List[str]] = None,
     exclude: Optional[List[int]] = None,
     top: Optional[int] = None,
-    **kwargs  # Accepting additional kwargs for plt.show()
+    **kwargs,  # Accepting additional kwargs for plt.show()
 ) -> None:
     """
     Display semantic segmentation label issues, showing images with problematic pixels highlighted.

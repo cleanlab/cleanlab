@@ -346,7 +346,7 @@ def visualize(
     class_names: Optional[Dict[Any, Any]] = None,
     figsize: Optional[Tuple[int, int]] = None,
     save_path: Optional[str] = None,
-    **kwargs
+    **kwargs,
 ) -> None:
     """Display the annotated bounding boxes (given labels) and predicted bounding boxes (model predictions) for a particular image.
     Given labels are shown in red, model predictions in blue.
