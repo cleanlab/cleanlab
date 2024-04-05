@@ -34,7 +34,7 @@ if TYPE_CHECKING:  # pragma: no cover
     DatasetLike = Union[Dataset, pd.DataFrame, Dict[str, Any], List[Dict[str, Any]], str]
 
 
-class TestDatalab(Datalab):
+class DataEvaluator(Datalab):
     """
     A Datalab object that can be used to audit new data using the statistics from a trained Datalab object.
 

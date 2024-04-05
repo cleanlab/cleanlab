@@ -21,7 +21,7 @@ from sklearn.model_selection import train_test_split, cross_val_predict
 from sklearn.linear_model import LogisticRegression
 
 from cleanlab.datalab.datalab import Datalab
-from cleanlab.experimental.datalab.TestDatalab import TestDatalab
+from cleanlab.experimental.datalab.data_evaluator import DataEvaluator
 from cleanlab.benchmarking.noise_generation import (
     generate_noise_matrix_from_trace,
     generate_noisy_labels,
@@ -30,7 +30,7 @@ from cleanlab.benchmarking.noise_generation import (
 SEED = 42
 
 
-class TestDataLabReuseStatisticInfo:
+class TestDataEvaluatorReuseStatisticInfo:
     num_examples = 2000
     test_size = 0.1
 
@@ -113,13 +113,13 @@ class TestDataLabReuseStatisticInfo:
 
     def test_reuse_statistics_info(self, trained_datalab, data):
         data = {"labels": data["noisy_labels_test"]}
-        lab = TestDatalab(trained_datalab=trained_datalab, data=data, label_name="labels")
+        lab = DataEvaluator(trained_datalab=trained_datalab, data=data, label_name="labels")
         for k in trained_datalab.get_info().keys():
             assert lab.get_info(k).keys() == trained_datalab.get_info(k).keys()
 
     def test_set_trained_statistics(self, trained_datalab, pred_probs_test, data):
         data = {"labels": data["noisy_labels_test"]}
-        lab = TestDatalab(trained_datalab=trained_datalab, data=data, label_name="labels")
+        lab = DataEvaluator(trained_datalab=trained_datalab, data=data, label_name="labels")
         lab.find_issues(pred_probs=pred_probs_test, issue_types={"label": {}})
         trained_statistics = trained_datalab.get_info("label")
         test_statistics = lab.get_info("label")
@@ -127,7 +127,7 @@ class TestDataLabReuseStatisticInfo:
             if k in ["confident_joint"]:
                 assert np.array_equal(v, test_statistics[k])
 
-    def test_find_issue_with_trained_datalab(
+    def test_find_issues_with_trained_datalab(
         self, trained_datalab, pred_probs_test, pred_probs_combined, data
     ):
         combined_data = {
@@ -136,7 +136,9 @@ class TestDataLabReuseStatisticInfo:
         lab_all = Datalab(data=combined_data, label_name="labels")
         lab_all.find_issues(pred_probs=pred_probs_combined, issue_types={"label": {}})
         test_data = {"labels": data["noisy_labels_test"]}
-        lab_test = TestDatalab(trained_datalab=trained_datalab, data=test_data, label_name="labels")
+        lab_test = DataEvaluator(
+            trained_datalab=trained_datalab, data=test_data, label_name="labels"
+        )
         lab_test.find_issues(pred_probs=pred_probs_test, issue_types={"label": {}})
         lab1_result = lab_all.get_issues()[: int(self.num_examples * self.test_size)]
         lab2_result = lab_test.get_issues()
@@ -145,7 +147,7 @@ class TestDataLabReuseStatisticInfo:
         ) / len(lab1_result)
         assert similarity >= 0.93
 
-    def test_find_issue_with_trained_datalab_multi_different_size_batch(
+    def test_find_issues_with_trained_datalab_multi_different_size_batch(
         self, trained_datalab, pred_probs_test, pred_probs_combined, data
     ):
         combined_data = {
@@ -163,7 +165,7 @@ class TestDataLabReuseStatisticInfo:
             test_data = {
                 "labels": data["noisy_labels_test"][start_position : start_position + batch_size]
             }
-            lab_test = TestDatalab(
+            lab_test = DataEvaluator(
                 trained_datalab=trained_datalab, data=test_data, label_name="labels"
             )
             lab_test.find_issues(
@@ -179,7 +181,7 @@ class TestDataLabReuseStatisticInfo:
     def test_default_issue_types(self, trained_datalab, data, pred_probs_test):
         dataset = {"labels": data["noisy_labels_test"]}
         features = data["X_test"]
-        lab = TestDatalab(trained_datalab=trained_datalab, data=dataset, label_name="labels")
+        lab = DataEvaluator(trained_datalab=trained_datalab, data=dataset, label_name="labels")
         lab.find_issues(pred_probs=pred_probs_test, features=features)
 
         expected_issue_types_keys = ["label", "null", "class_imbalance"]
