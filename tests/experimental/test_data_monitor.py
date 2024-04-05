@@ -14,14 +14,17 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
+from itertools import islice
+
 import numpy as np
 import pandas as pd
 import pytest
+from datasets import Dataset
 from sklearn.model_selection import train_test_split, cross_val_predict
 from sklearn.linear_model import LogisticRegression
 
 from cleanlab.datalab.datalab import Datalab
-from cleanlab.experimental.datalab.data_evaluator import DataEvaluator
+from cleanlab.experimental.datalab.data_monitor import DataMonitor
 from cleanlab.benchmarking.noise_generation import (
     generate_noise_matrix_from_trace,
     generate_noisy_labels,
@@ -30,7 +33,7 @@ from cleanlab.benchmarking.noise_generation import (
 SEED = 42
 
 
-class TestDataEvaluatorReuseStatisticInfo:
+class SetupClass:
     num_examples = 2000
     test_size = 0.1
 
@@ -105,50 +108,48 @@ class TestDataEvaluatorReuseStatisticInfo:
         return pred_probs
 
     @pytest.fixture
-    def trained_datalab(self, pred_probs_train, data):
+    def datalab(self, pred_probs_train, data):
         data = {"labels": data["noisy_labels_train"]}
         lab = Datalab(data=data, label_name="labels")
         lab.find_issues(pred_probs=pred_probs_train, issue_types={"label": {}})
         return lab
 
-    def test_reuse_statistics_info(self, trained_datalab, data):
-        data = {"labels": data["noisy_labels_test"]}
-        lab = DataEvaluator(trained_datalab=trained_datalab, data=data, label_name="labels")
-        for k in trained_datalab.get_info().keys():
-            assert lab.get_info(k).keys() == trained_datalab.get_info(k).keys()
 
-    def test_set_trained_statistics(self, trained_datalab, pred_probs_test, data):
+class TestDataMonitorReuseStatisticInfo(SetupClass):
+
+    def test_reuse_statistics_info(self, datalab, data):
         data = {"labels": data["noisy_labels_test"]}
-        lab = DataEvaluator(trained_datalab=trained_datalab, data=data, label_name="labels")
-        lab.find_issues(pred_probs=pred_probs_test, issue_types={"label": {}})
-        trained_statistics = trained_datalab.get_info("label")
-        test_statistics = lab.get_info("label")
+        monitor = DataMonitor(lab=datalab)
+        for k in datalab.get_info().keys():
+            assert monitor.info[k].keys() == datalab.get_info(k).keys()
+
+    def test_set_trained_statistics(self, datalab, pred_probs_test, data):
+        monitor = DataMonitor(lab=datalab)
+        monitor.find_issues(labels=data["noisy_labels_test"], pred_probs=pred_probs_test)
+        trained_statistics = datalab.get_info("label")
+        test_statistics = monitor.info["label"]
         for k, v in trained_statistics.items():
-            if k in ["confident_joint"]:
+            if k in ["confident_joint", "confident_thresholds"]:
                 assert np.array_equal(v, test_statistics[k])
 
-    def test_find_issues_with_trained_datalab(
-        self, trained_datalab, pred_probs_test, pred_probs_combined, data
-    ):
+    def test_find_issues_with_datalab(self, datalab, pred_probs_test, pred_probs_combined, data):
         combined_data = {
             "labels": np.concatenate((data["noisy_labels_test"], data["noisy_labels_train"]))
         }
         lab_all = Datalab(data=combined_data, label_name="labels")
         lab_all.find_issues(pred_probs=pred_probs_combined, issue_types={"label": {}})
         test_data = {"labels": data["noisy_labels_test"]}
-        lab_test = DataEvaluator(
-            trained_datalab=trained_datalab, data=test_data, label_name="labels"
-        )
-        lab_test.find_issues(pred_probs=pred_probs_test, issue_types={"label": {}})
+        monitor = DataMonitor(lab=datalab)
+        monitor.find_issues(labels=test_data["labels"], pred_probs=pred_probs_test)
         lab1_result = lab_all.get_issues()[: int(self.num_examples * self.test_size)]
-        lab2_result = lab_test.get_issues()
+        lab2_result = monitor.issues
         similarity = sum(
             lab1_result[["is_label_issue"]].values == lab2_result[["is_label_issue"]].values
         ) / len(lab1_result)
         assert similarity >= 0.93
 
-    def test_find_issues_with_trained_datalab_multi_different_size_batch(
-        self, trained_datalab, pred_probs_test, pred_probs_combined, data
+    def test_find_issues_with_datalab_multi_different_size_batch(
+        self, datalab, pred_probs_test, pred_probs_combined, data
     ):
         combined_data = {
             "labels": np.concatenate((data["noisy_labels_test"], data["noisy_labels_train"]))
@@ -165,27 +166,127 @@ class TestDataEvaluatorReuseStatisticInfo:
             test_data = {
                 "labels": data["noisy_labels_test"][start_position : start_position + batch_size]
             }
-            lab_test = DataEvaluator(
-                trained_datalab=trained_datalab, data=test_data, label_name="labels"
-            )
-            lab_test.find_issues(
+            monitor = DataMonitor(lab=datalab)
+            monitor.find_issues(
+                labels=test_data["labels"],
                 pred_probs=pred_probs_test[start_position : start_position + batch_size],
-                issue_types={"label": {}},
             )
-            lab2_result = pd.concat([lab2_result, lab_test.get_issues()], axis=0)
+            lab2_result = pd.concat([lab2_result, monitor.issues], axis=0)
         similarity = sum(
             lab1_result[["is_label_issue"]].values == lab2_result[["is_label_issue"]].values
         ) / len(lab1_result)
         assert similarity >= 0.90
 
-    def test_default_issue_types(self, trained_datalab, data, pred_probs_test):
+    def test_default_issue_types(self, datalab, data, pred_probs_test):
         dataset = {"labels": data["noisy_labels_test"]}
-        features = data["X_test"]
-        lab = DataEvaluator(trained_datalab=trained_datalab, data=dataset, label_name="labels")
-        lab.find_issues(pred_probs=pred_probs_test, features=features)
+        monitor = DataMonitor(lab=datalab)
+        monitor.find_issues(labels=dataset["labels"], pred_probs=pred_probs_test)
 
-        expected_issue_types_keys = ["label", "null", "class_imbalance"]
+        expected_issue_types_keys = ["label"]
 
-        issue_summary = lab.get_issue_summary()
+        issue_summary = monitor.issue_summary
         issue_types_found = issue_summary["issue_type"]
         assert set(issue_types_found) == set(expected_issue_types_keys)
+
+
+def batch_slices(iterable, start, batch_size, drop_last=False):
+    """
+    Generator that yields slices of the specified batch size from the iterable starting from the start index.
+    If drop_last is True, the last batch will be dropped if it is smaller than the batch size.
+    """
+    it = iter(iterable)
+    # Skip items until the start index
+    skipped = list(islice(it, start))
+    while True:
+        batch = list(islice(it, batch_size))
+        if not batch or (drop_last and len(batch) < batch_size):
+            break
+        yield np.array(batch)
+
+
+class TestDataMonitorInit(SetupClass):
+    # This test class looks at the initialization of the DataMonitor class
+    def test_data_monitor_creation(self, datalab, data):
+        data = {"labels": data["noisy_labels_test"]}
+        monitor = DataMonitor(lab=datalab)
+        assert isinstance(monitor, DataMonitor)
+
+    def test_data_monitor_with_streaming_data(self, datalab, data):
+        monitor = DataMonitor(lab=datalab)
+        assert isinstance(monitor, DataMonitor)
+
+        # The size of the dataset should be 0
+        # assert len(monitor.data) == 0
+
+        features = data["X_test"][:20]
+        labels = data["noisy_labels_test"][:20]
+        from sklearn.linear_model import LogisticRegression
+
+        clf = LogisticRegression()
+        clf.fit(data["X_train"], data["noisy_labels_train"])
+        pred_probs = clf.predict_proba(features)
+
+        singleton_stream = (
+            {
+                # "features": f[np.newaxis, :],  # TODO: Support features in the future
+                "pred_probs": p[np.newaxis, :],
+                "labels": l[np.newaxis],
+            }
+            for f, p, l in zip(features[:5], pred_probs[:5], labels[:5])
+        )
+
+        batch_stream = (
+            {
+                # "features": f,  # TODO: Support features in the future
+                "pred_probs": p,
+                "labels": l,
+            }
+            for f, p, l in zip(
+                batch_slices(features[5:], 0, 5),
+                batch_slices(pred_probs[5:], 0, 5),
+                batch_slices(labels[5:], 0, 5),
+            )
+        )
+
+        assert monitor.issues.empty
+
+        for i, eg in enumerate(singleton_stream):
+            monitor.find_issues(**eg)
+
+        for i, batch in enumerate(batch_stream):
+            monitor.find_issues(**batch)
+        issues = monitor.issues
+        assert (not issues.empty) and (len(issues) == len(labels))
+        assert list(issues["is_label_issue"]) == [False] * (len(labels) - 1) + [True]
+        expected_ids_sorted_by_label_score = [
+            19,
+            15,
+            3,
+            9,
+            8,
+            14,
+            17,
+            7,
+            11,
+            0,
+            10,
+            2,
+            1,
+            6,
+            12,
+            5,
+            4,
+            18,
+            16,
+            13,
+        ]
+
+        assert all(issues["label_score"].iloc[:-1] > 0.3) and issues["label_score"].iloc[-1] < 0.1
+
+        # Test that there's a high correlation between the expected order of the examples and the order of the examples in the issues dataframe
+        from scipy.stats import spearmanr
+
+        corr, _ = spearmanr(
+            expected_ids_sorted_by_label_score, list(issues.sort_values("label_score").index)
+        )
+        assert corr > 0.9

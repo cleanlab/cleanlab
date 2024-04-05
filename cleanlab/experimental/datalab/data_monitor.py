@@ -113,7 +113,13 @@ class DataMonitor:
             )
 
         self.label_map = lab._label_map
-        self.info = lab.info
+
+        self.info = lab.get_info()
+        # lab.get_info() is an alias for lab.info, but some keys are handled differently via lab.get_info(key) method.
+        _missing_label_info_keys = set(lab.get_info("label").keys()) - set(self.info.keys())
+        self.info["label"].update(
+            {k: v for (k, v) in lab.get_info("label").items() if k in _missing_label_info_keys}
+        )
 
         self.monitors: Dict[str, IssueMonitor] = {
             "label": LabelIssueMonitor(self.info),
@@ -137,14 +143,14 @@ class DataMonitor:
         return pd.DataFrame.from_dict(self.issues_dict)
 
     @property
-    def issues_summary(self) -> pd.DataFrame:
-        issues_summary = {}
+    def issue_summary(self) -> pd.DataFrame:
+        issue_summary_dict = {}
         issue_names = self.monitors.keys()
-        issues_summary["issue_name"] = issue_names
-        issues_summary["num_issues"] = [
-            self.issues_dict[f"is_{issue_name}_issue"].sum() for issue_name in issue_names
+        issue_summary_dict["issue_type"] = issue_names
+        issue_summary_dict["num_issues"] = [
+            np.sum(self.issues_dict[f"is_{issue_name}_issue"]) for issue_name in issue_names
         ]
-        return pd.DataFrame.from_dict(issues_summary)
+        return pd.DataFrame.from_dict(issue_summary_dict)
 
     def find_issues(self, *, labels: np.ndarray, pred_probs: np.ndarray) -> None:
         str_to_int_map = {v: k for (k, v) in self.label_map.items()}
