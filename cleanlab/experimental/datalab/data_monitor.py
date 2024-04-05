@@ -105,20 +105,29 @@ class FindIssuesKwargs:
 
 
 class DataMonitor:
-    def __init__(self, lab: Datalab):
-        if str(lab.task) != "classification":
+    """
+    An object that can be used to audit new data using the statistics from a fitted Datalab instance.
+
+    Parameters
+    ----------
+    datalab : Datalab
+        The Datalab object fitted to the original training dataset.
+    """
+
+    def __init__(self, datalab: Datalab):
+        if str(datalab.task) != "classification":
             raise NotImplementedError(
                 f"Currently, only classification tasks are supported for DataMonitor."
-                f' The task of the provided Datalab instance is "{str(lab.task)}", which is not supported by DataMonitor.'
+                f' The task of the provided Datalab instance is "{str(datalab.task)}", which is not supported by DataMonitor.'
             )
 
-        self.label_map = lab._label_map
+        self.label_map = datalab._label_map
 
-        self.info = lab.get_info()
+        self.info = datalab.get_info()
         # lab.get_info() is an alias for lab.info, but some keys are handled differently via lab.get_info(key) method.
-        _missing_label_info_keys = set(lab.get_info("label").keys()) - set(self.info.keys())
+        _missing_label_info_keys = set(datalab.get_info("label").keys()) - set(self.info.keys())
         self.info["label"].update(
-            {k: v for (k, v) in lab.get_info("label").items() if k in _missing_label_info_keys}
+            {k: v for (k, v) in datalab.get_info("label").items() if k in _missing_label_info_keys}
         )
 
         self.monitors: Dict[str, IssueMonitor] = {

@@ -119,12 +119,12 @@ class TestDataMonitorReuseStatisticInfo(SetupClass):
 
     def test_reuse_statistics_info(self, datalab, data):
         data = {"labels": data["noisy_labels_test"]}
-        monitor = DataMonitor(lab=datalab)
+        monitor = DataMonitor(datalab=datalab)
         for k in datalab.get_info().keys():
             assert monitor.info[k].keys() == datalab.get_info(k).keys()
 
     def test_set_trained_statistics(self, datalab, pred_probs_test, data):
-        monitor = DataMonitor(lab=datalab)
+        monitor = DataMonitor(datalab=datalab)
         monitor.find_issues(labels=data["noisy_labels_test"], pred_probs=pred_probs_test)
         trained_statistics = datalab.get_info("label")
         test_statistics = monitor.info["label"]
@@ -139,7 +139,7 @@ class TestDataMonitorReuseStatisticInfo(SetupClass):
         lab_all = Datalab(data=combined_data, label_name="labels")
         lab_all.find_issues(pred_probs=pred_probs_combined, issue_types={"label": {}})
         test_data = {"labels": data["noisy_labels_test"]}
-        monitor = DataMonitor(lab=datalab)
+        monitor = DataMonitor(datalab=datalab)
         monitor.find_issues(labels=test_data["labels"], pred_probs=pred_probs_test)
         lab1_result = lab_all.get_issues()[: int(self.num_examples * self.test_size)]
         lab2_result = monitor.issues
@@ -166,7 +166,7 @@ class TestDataMonitorReuseStatisticInfo(SetupClass):
             test_data = {
                 "labels": data["noisy_labels_test"][start_position : start_position + batch_size]
             }
-            monitor = DataMonitor(lab=datalab)
+            monitor = DataMonitor(datalab=datalab)
             monitor.find_issues(
                 labels=test_data["labels"],
                 pred_probs=pred_probs_test[start_position : start_position + batch_size],
@@ -179,7 +179,7 @@ class TestDataMonitorReuseStatisticInfo(SetupClass):
 
     def test_default_issue_types(self, datalab, data, pred_probs_test):
         dataset = {"labels": data["noisy_labels_test"]}
-        monitor = DataMonitor(lab=datalab)
+        monitor = DataMonitor(datalab=datalab)
         monitor.find_issues(labels=dataset["labels"], pred_probs=pred_probs_test)
 
         expected_issue_types_keys = ["label"]
@@ -208,11 +208,11 @@ class TestDataMonitorInit(SetupClass):
     # This test class looks at the initialization of the DataMonitor class
     def test_data_monitor_creation(self, datalab, data):
         data = {"labels": data["noisy_labels_test"]}
-        monitor = DataMonitor(lab=datalab)
+        monitor = DataMonitor(datalab=datalab)
         assert isinstance(monitor, DataMonitor)
 
     def test_data_monitor_with_streaming_data(self, datalab, data):
-        monitor = DataMonitor(lab=datalab)
+        monitor = DataMonitor(datalab=datalab)
         assert isinstance(monitor, DataMonitor)
 
         # The size of the dataset should be 0
