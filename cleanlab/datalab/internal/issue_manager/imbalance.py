@@ -49,7 +49,7 @@ class ClassImbalanceIssueManager(IssueManager):
         2: [],
     }
 
-    def __init__(self, datalab: Datalab, threshold: float = 0.1):
+    def __init__(self, datalab: Datalab, threshold: float = 0.1, **_):
         super().__init__(datalab)
         self.threshold = threshold
 
