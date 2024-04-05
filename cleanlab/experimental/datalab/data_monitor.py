@@ -110,7 +110,7 @@ class DataMonitor:
 
     Parameters
     ----------
-    datalab : Datalab
+    datalab :
         The Datalab object fitted to the original training dataset.
     """
 
