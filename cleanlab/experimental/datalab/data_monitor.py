@@ -60,7 +60,6 @@ class FindIssuesKwargs:
         An optional scipy sparse matrix representing the k-nearest neighbors graph.
     """
 
-    _: KW_ONLY
     labels: np.ndarray
     pred_probs: np.ndarray
     _label_map: InitVar[Optional[Dict[int, str]]] = None
