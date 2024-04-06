@@ -24,7 +24,6 @@ from dataclasses import InitVar, dataclass, KW_ONLY
 
 import pandas as pd
 import numpy as np
-from datasets import Dataset
 
 from cleanlab.datalab.datalab import Datalab
 from cleanlab.experimental.label_issues_batched import LabelInspector
