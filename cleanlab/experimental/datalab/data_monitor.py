@@ -145,7 +145,6 @@ class DataMonitor:
             )
             for col in cols
         }
-        self._last_printed_lines = 0
 
     @property
     def issues(self) -> pd.DataFrame:
