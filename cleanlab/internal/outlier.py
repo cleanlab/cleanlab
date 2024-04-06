@@ -18,7 +18,7 @@
 Helper functions used internally for outlier detection tasks.
 """
 
-from typing import Union
+from typing import Optional
 
 import numpy as np
 
@@ -77,35 +77,38 @@ def correct_precision_errors(
     avg_distances: np.ndarray,
     metric: str,
     C: int = 100,
-    p: Union[int, None] = None,
+    p: Optional[int] = None,
 ):
     """
     Ensure that scores where avg_distances are below the tolerance threshold get a score of one.
 
     Parameters
     ----------
-    scores : np.ndarray
+    scores :
         An array of scores of shape ``(N)``, where N is the number of examples.
         Each entry represents a score between 0 and 1.
 
-    avg_distances : np.ndarray
+    avg_distances :
         An array of distances of shape ``(N)``, where N is the number of examples.
         Each entry represents an example's average distance to its k nearest neighbors.
 
-    metric : str
+    metric :
         The metric used by the knn algorithm to calculate the distances.
         It must be 'cosine', 'euclidean' or 'minkowski', otherwise this function does nothing.
 
-    C : int, default=100
+    C :
         Multiplier used to increase the tolerance of the acceptable precision differences.
+        It is a multiplicative factor of the machine epsilon that is used to calculate the tolerance.
+        For the type of values that are used in the distances, a value of 100 should be a sensible
+        default value for small values of the distances, below the order of 1.
 
-    p : int, default=None
+    p :
         This value is only used when metric is 'minkowski'.
         A ValueError will be raised if metric is 'minkowski' and 'p' was not provided.
 
     Returns
     -------
-    fixed_scores : np.ndarray
+    fixed_scores :
         An array of scores of shape ``(N,)`` for N examples with scores between 0 and 1.
     """
     if metric == "cosine":
