@@ -185,18 +185,23 @@ class DataMonitor:
             issue_monitor.clear_issues_dict()
 
         if display_results:
-            self._display_batch_issues(issues_dict)
+            self._display_batch_issues(issues_dict, labels=labels, pred_probs=pred_probs)
 
         # Append the issues to the existing issues dictionary
         for k, v in issues_dict.items():
             self.issues_dict[k].extend(v)
 
-    def _display_batch_issues(self, issues_dicts: Dict[str, np.ndarray]) -> None:
-        start_index = len(next(iter(self.issues_dict.values())))
+    def _display_batch_issues(self, issues_dicts: Dict[str, np.ndarray], **kwargs) -> None:
+        start_index = len(
+            next(iter(self.issues_dict.values()))
+        )  # TODO: Abstract this into a method for checking how many examples have been processed/checked. E.g. __len__ or a property.
         end_index = start_index + len(next(iter(issues_dicts.values())))
         index = np.arange(start_index, end_index)
         df_issues = pd.DataFrame(issues_dicts, index=index)
-        # Note: Maybe filter out the rows where all the "is_X_issue" columns are False.
+        df_issues["given_label"] = kwargs["labels"]
+        df_issues["suggested_label"] = np.vectorize(self.label_map.get)(
+            np.argmax(kwargs["pred_probs"], axis=1)
+        )
         is_issue_columns = [
             col for col in df_issues.columns if (col.startswith("is_") and col.endswith("_issue"))
         ]
