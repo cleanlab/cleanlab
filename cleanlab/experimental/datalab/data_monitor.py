@@ -162,6 +162,9 @@ class DataMonitor:
         issue_summary_dict["num_issues"] = [
             np.sum(self.issues_dict[f"is_{issue_name}_issue"]) for issue_name in issue_names
         ]
+        issue_summary_dict["score"] = [
+            np.mean(self.issues_dict[f"{issue_name}_score"]) for issue_name in issue_names
+        ]
         return pd.DataFrame.from_dict(issue_summary_dict)
 
     def find_issues(self, *, labels: np.ndarray, pred_probs: np.ndarray) -> None:
