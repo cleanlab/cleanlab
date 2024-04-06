@@ -130,6 +130,10 @@ class DataMonitor:
             {k: v for (k, v) in datalab.get_info("label").items() if k in _missing_label_info_keys}
         )
 
+        # TODO: Compare monitors and the issue types that Datalab managed to check. Print types that DataMonitor won't consider.
+        # TODO: If label issues were checked by Datalab, but with features, then the monitor will skip the label issue check, explaining that it won't support that argument for now. Generalize this for all issue types.
+        # TODO: Fail on issue types that DataMonitor is asked to check, but Datalab didn't check.
+
         self.monitors: Dict[str, IssueMonitor] = {
             "label": LabelIssueMonitor(self.info),
         }
