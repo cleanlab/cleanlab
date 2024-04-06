@@ -90,6 +90,12 @@ class FindIssuesKwargs:
         if self.labels is not None and _label_map is not None:
             self.labels = np.vectorize(_label_map.get, otypes=[int])(self.labels)
 
+        def _adapt_to_singletons(self):
+            # TODO: Implement this method to adapt the input to singletons.
+            # For instance, single data points could be passed directly as scalar values or single-element arrays,
+            # and batches could be passed as lists or arrays.
+            pass
+
     def _check_unimplemented_kwargs(self, features, knn_graph):
         unimplemented_kwargs = {
             "features": features,
@@ -170,6 +176,9 @@ class DataMonitor:
         return pd.DataFrame.from_dict(issue_summary_dict)
 
     def find_issues(self, *, labels: np.ndarray, pred_probs: np.ndarray) -> None:
+        # TODO: Simplifying User Input: Ensure that users can pass input in the simplest form possible.
+        # See FindIssuesKwargs._adapt_to_singletons TODO for more details.
+
         str_to_int_map: Dict[Any, Any] = {v: k for (k, v) in self.label_map.items()}
         find_issues_kwargs = FindIssuesKwargs(
             labels=labels,
@@ -230,6 +239,8 @@ class DataMonitor:
 
 
 class IssueMonitor(ABC):
+    """Class for monitoring a batch of data for issues."""
+
     def __init__(self, info: Info):
         self.info = info
         # This issue dictionary will collect the issues for a single batch of data, then be manually cleared.
@@ -239,6 +250,7 @@ class IssueMonitor(ABC):
         }
 
     def clear_issues_dict(self):
+        """Helper method for the DataMonitor to clear the issues dictionary after processing a batch."""
         self.issues_dict["is_issue"] = []
         self.issues_dict["score"] = []
 
@@ -252,6 +264,8 @@ class IssueMonitor(ABC):
 
 
 class LabelIssueMonitor(IssueMonitor):
+    """Class that monitors a batch of data for label issues."""
+
     def __init__(self, info: Info):
         super().__init__(info)
         label_info = self.info.get("label")
