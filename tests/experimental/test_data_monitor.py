@@ -115,14 +115,19 @@ class SetupClass:
 
 
 class TestDataMonitorReuseStatisticInfo(SetupClass):
+    # TODO: Rename class
 
-    def test_reuse_statistics_info(self, datalab, data):
-        data = {"labels": data["noisy_labels_test"]}
+    def test_reuse_statistics_info(self, datalab):
+        # TODO: Rename test
+        """Test that the DataMonitor has the same info as the Datalab instance."""
         monitor = DataMonitor(datalab=datalab)
         for k in datalab.get_info().keys():
             assert monitor.info[k].keys() == datalab.get_info(k).keys()
 
     def test_set_trained_statistics(self, datalab, pred_probs_test, data):
+        # TODO: Rename test
+        """Check the label-specific info is available in the DataMonitor instance for detecting label issues.
+        The info should not be affected by the test data."""
         monitor = DataMonitor(datalab=datalab)
         monitor.find_issues(labels=data["noisy_labels_test"], pred_probs=pred_probs_test)
         trained_statistics = datalab.get_info("label")
@@ -132,31 +137,45 @@ class TestDataMonitorReuseStatisticInfo(SetupClass):
                 assert np.array_equal(v, test_statistics[k])
 
     def test_find_issues_with_datalab(self, datalab, pred_probs_test, pred_probs_combined, data):
+        """Verify that running Datalab on a train+test dataset should give very similar results
+        to running DataMonitor on the test dataset (with a Datalab instance having only seen the training dataset).
+        """
+        # Run issue checks on combined dataset
         combined_data = {
             "labels": np.concatenate((data["noisy_labels_test"], data["noisy_labels_train"]))
         }
         lab_all = Datalab(data=combined_data, label_name="labels")
         lab_all.find_issues(pred_probs=pred_probs_combined, issue_types={"label": {}})
+
+        # Monitor test data only
         test_data = {"labels": data["noisy_labels_test"]}
         monitor = DataMonitor(datalab=datalab)
         monitor.find_issues(labels=test_data["labels"], pred_probs=pred_probs_test)
-        lab1_result = lab_all.get_issues()[: int(self.num_examples * self.test_size)]
-        lab2_result = monitor.issues
+
+        # Compare results
+        lab_results = lab_all.get_issues()[: int(self.num_examples * self.test_size)]
+        monitor_results = monitor.issues
         similarity = sum(
-            lab1_result[["is_label_issue"]].values == lab2_result[["is_label_issue"]].values
-        ) / len(lab1_result)
+            lab_results[["is_label_issue"]].values == monitor_results[["is_label_issue"]].values
+        ) / len(lab_results)
         assert similarity >= 0.93
 
     def test_find_issues_with_datalab_multi_different_size_batch(
         self, datalab, pred_probs_test, pred_probs_combined, data
     ):
+        """Test that the DataMonitor can find label issues in test data over smaller batches,
+        perfomring similarly to Datalab on the combined dataset.
+        """
+        # Run issue checks on combined dataset and fetch results
         combined_data = {
             "labels": np.concatenate((data["noisy_labels_test"], data["noisy_labels_train"]))
         }
         lab_all = Datalab(data=combined_data, label_name="labels")
         lab_all.find_issues(pred_probs=pred_probs_combined, issue_types={"label": {}})
-        lab1_result = lab_all.get_issues()[: int(self.num_examples * self.test_size)]
-        lab2_result = pd.DataFrame()
+        lab_results = lab_all.get_issues()[: int(self.num_examples * self.test_size)]
+
+        # Monitor test data in smaller batches, collecting results for each batch
+        monitor_results = pd.DataFrame()
         batch_sizes = [20, 50, 100, 30]
         start_positions = [0] * len(batch_sizes)
         for i in range(1, len(batch_sizes)):
@@ -170,24 +189,31 @@ class TestDataMonitorReuseStatisticInfo(SetupClass):
                 labels=test_data["labels"],
                 pred_probs=pred_probs_test[start_position : start_position + batch_size],
             )
-            lab2_result = pd.concat([lab2_result, monitor.issues], axis=0)
+            monitor_results = pd.concat([monitor_results, monitor.issues], axis=0)
+
+        # Compare results
         similarity = sum(
-            lab1_result[["is_label_issue"]].values == lab2_result[["is_label_issue"]].values
-        ) / len(lab1_result)
+            lab_results[["is_label_issue"]].values == monitor_results[["is_label_issue"]].values
+        ) / len(lab_results)
         assert similarity >= 0.90
 
     def test_default_issue_types(self, datalab, data, pred_probs_test):
+        """Test that the DataMonitor checks for the correct types of issues by default."""
+        # TODO: Run this test with features as well
+        # Check for issues on test data
         dataset = {"labels": data["noisy_labels_test"]}
         monitor = DataMonitor(datalab=datalab)
         monitor.find_issues(labels=dataset["labels"], pred_probs=pred_probs_test)
 
         expected_issue_types_keys = ["label"]
 
+        # Verify that the correct types of issues were checked for
         issue_summary = monitor.issue_summary
         issue_types_found = issue_summary["issue_type"]
         assert set(issue_types_found) == set(expected_issue_types_keys)
 
 
+# Helper function for testing streaming workflows
 def batch_slices(iterable, start, batch_size, drop_last=False):
     """
     Generator that yields slices of the specified batch size from the iterable starting from the start index.
@@ -203,6 +229,7 @@ def batch_slices(iterable, start, batch_size, drop_last=False):
         yield np.array(batch)
 
 
+# Test class for streaming data
 class TestDataMonitorInit(SetupClass):
     # This test class looks at the initialization of the DataMonitor class
     def test_data_monitor_creation(self, datalab, data):
@@ -211,11 +238,11 @@ class TestDataMonitorInit(SetupClass):
         assert isinstance(monitor, DataMonitor)
 
     def test_data_monitor_with_streaming_data(self, datalab, data):
+        """Test that the issues DataFrame in the DataMonitor is updated after streaming data in batches.
+        Also verify that the issues DataFrame has the expected values.
+        """
         monitor = DataMonitor(datalab=datalab)
         assert isinstance(monitor, DataMonitor)
-
-        # The size of the dataset should be 0
-        # assert len(monitor.data) == 0
 
         features = data["X_test"][:20]
         labels = data["noisy_labels_test"][:20]
