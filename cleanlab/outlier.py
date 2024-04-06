@@ -21,17 +21,19 @@ The underlying algorithms are described in `this paper <https://arxiv.org/abs/22
 """
 
 import warnings
+from typing import Dict, Optional, Tuple, Union
+
 import numpy as np
-from cleanlab.count import get_confident_thresholds
-from sklearn.neighbors import NearestNeighbors
 from sklearn.exceptions import NotFittedError
-from typing import Optional, Union, Tuple, Dict
+from sklearn.neighbors import NearestNeighbors
+
+from cleanlab.count import get_confident_thresholds
 from cleanlab.internal.label_quality_utils import (
     _subtract_confident_thresholds,
     get_normalized_entropy,
 )
 from cleanlab.internal.numerics import softmax
-from cleanlab.internal.outlier import transform_distances_to_scores
+from cleanlab.internal.outlier import correct_precision_errors, transform_distances_to_scores
 from cleanlab.internal.validation import assert_valid_inputs, labels_to_array
 from cleanlab.typing import LabelLike
 
@@ -469,6 +471,13 @@ class OutOfDistribution:
 
         ood_features_scores = transform_distances_to_scores(
             avg_knn_distances, t, scaling_factor=scaling_factor
+        )
+        distance_metric = knn.metric
+        p = None
+        if distance_metric == "minkowski":
+            p = knn.p
+        ood_features_scores = correct_precision_errors(
+            ood_features_scores, avg_knn_distances, knn.metric, p=p
         )
         return (ood_features_scores, knn)
 
