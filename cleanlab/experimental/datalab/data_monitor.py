@@ -20,7 +20,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
-from dataclasses import InitVar, dataclass, KW_ONLY
+from dataclasses import InitVar, dataclass
 
 import pandas as pd
 import numpy as np
