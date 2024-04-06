@@ -139,7 +139,7 @@ class DataMonitor:
         issue_names = self.monitors.keys()
 
         # This issue dictionary will collect the issues for the entire stream of data.
-        self.issues_dict = {
+        self.issues_dict: Dict[str, Union[List[bool], List[float]]] = {
             col: []
             for cols in zip(
                 [f"is_{name}_issue" for name in issue_names],
@@ -154,25 +154,31 @@ class DataMonitor:
 
     @property
     def issue_summary(self) -> pd.DataFrame:
-        issue_summary_dict = {}
+        issue_summary_dict: Dict[str, Union[List[str], List[int], List[float]]] = {
+            "issue_type": [],
+            "num_issues": [],
+            "score": [],
+        }
         issue_names = self.monitors.keys()
-        issue_summary_dict["issue_type"] = issue_names
+        issue_summary_dict["issue_type"] = list(issue_names)
         issue_summary_dict["num_issues"] = [
             np.sum(self.issues_dict[f"is_{issue_name}_issue"]) for issue_name in issue_names
         ]
         issue_summary_dict["score"] = [
-            np.mean(self.issues_dict[f"{issue_name}_score"]) for issue_name in issue_names
+            float(np.mean(self.issues_dict[f"{issue_name}_score"])) for issue_name in issue_names
         ]
         return pd.DataFrame.from_dict(issue_summary_dict)
 
     def find_issues(self, *, labels: np.ndarray, pred_probs: np.ndarray) -> None:
-        str_to_int_map = {v: k for (k, v) in self.label_map.items()}
+        str_to_int_map: Dict[Any, Any] = {v: k for (k, v) in self.label_map.items()}
         find_issues_kwargs = FindIssuesKwargs(
             labels=labels,
             pred_probs=pred_probs,
             _label_map=str_to_int_map,
         )
-        issues_dict = {k: [] for k in self.issues_dict.keys()}
+        issues_dict: Dict[str, Union[List[float], List[bool], np.ndarray]] = {
+            k: [] for k in self.issues_dict.keys()
+        }
 
         # Flag to track if any monitor has found issues
         display_results = False
@@ -194,9 +200,11 @@ class DataMonitor:
 
         # Append the issues to the existing issues dictionary
         for k, v in issues_dict.items():
-            self.issues_dict[k].extend(v)
+            self.issues_dict[k].extend(v)  # type: ignore[arg-type]
 
-    def _display_batch_issues(self, issues_dicts: Dict[str, np.ndarray], **kwargs) -> None:
+    def _display_batch_issues(
+        self, issues_dicts: Dict[str, Union[List[float], List[bool], np.ndarray]], **kwargs
+    ) -> None:
         start_index = len(
             next(iter(self.issues_dict.values()))
         )  # TODO: Abstract this into a method for checking how many examples have been processed/checked. E.g. __len__ or a property.
@@ -225,7 +233,7 @@ class IssueMonitor(ABC):
     def __init__(self, info: Info):
         self.info = info
         # This issue dictionary will collect the issues for a single batch of data, then be manually cleared.
-        self.issues_dict = {
+        self.issues_dict: Dict[str, Union[List[bool], List[float], np.ndarray]] = {
             "is_issue": [],
             "score": [],
         }
