@@ -316,7 +316,7 @@ def plot_class_distribution(labels, predictions, class_names=None, **kwargs):
     class_names: optional
         Optional dictionary mapping one-hot-encoded class labels back to their original class names in the format ``{"integer-label": "original-class-name"}``.
 
-    **kwargs:
+    kwargs:
         Additional keyword arguments to pass to `plt.show()`.
     """
     try:
