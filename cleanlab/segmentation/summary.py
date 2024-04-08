@@ -88,7 +88,7 @@ def display_issues(
     exclude:
         Optional list of label classes that can be ignored in the errors, each element must be 0, 1, ..., K-1
 
-    **kwargs
+    kwargs
         Additional keyword arguments to pass to `plt.show()`.
     """
     class_names, exclude, top = _get_summary_optional_params(class_names, exclude, top)
